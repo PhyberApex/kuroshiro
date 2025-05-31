@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="graphics/logo_white.png" alt="Kuroshiro Logo" width="200" style="background-color:white" />
+  <img src="graphics/logo_white.png" alt="Kuroshiro Logo" width="200" />
 </p>
 
 # KUROSHIRO: Unleash Your TRMNL!
@@ -32,6 +32,25 @@ Kuroshiro is for anyone who wants to experiment, self-host, and shape their own 
 - **Mirroring**: See what's on your official TRMNL server, right here.
 - **Screens Galore**: Add screens via link or upload, cache them, or fetch fresh every time.
 - **Virtual Device**: Test without hardware—because why not?
+
+---
+
+## Screenshots
+
+Overview
+<p align="center">
+  <img src="graphics/screenshots/screenshot_overview.png" />
+</p>
+
+Device Details
+<p align="center">
+  <img src="graphics/screenshots/screenshot_device_details.png" />
+</p>
+
+Virtual Device
+<p align="center">
+  <img src="graphics/screenshots/screenshot_virtual_device.png" />
+</p>
 
 ---
 
