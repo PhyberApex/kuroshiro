@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "incremental": true,
+    "target": "es2022",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "baseUrl": "./",
+    "module": "Node16",
+    "moduleResolution": "node16",
+    "types": ["node"],
+    "declaration": true,
+    "outDir": "./dist",
+    "removeComments": true,
+    "sourceMap": true
+  },
+  "exclude": ["node_modules", "../../node_modules", "dist"]
+}

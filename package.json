@@ -1,0 +1,31 @@
+{
+  "name": "kuroshiro",
+  "version": "0.0.1",
+  "packageManager": "pnpm@10.11.0",
+  "description": "",
+  "author": "Janis Walliser",
+  "license": "MIT",
+  "keywords": [
+    "nestjs",
+    "vue",
+    "TRMNL",
+    "BYOS"
+  ],
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently -k -n FRONTEND,BACKEND -c blue,green \"pnpm run dev:ui\" \"pnpm run dev:api\"",
+    "dev:api": "pnpm --filter ./packages/api start:dev",
+    "dev:ui": "wait-on tcp:3000 && pnpm --filter ./packages/ui dev",
+    "format": "pnpm run -r lint:fix",
+    "test": "pnpm run -r test",
+    "lint": "pnpm run -r lint",
+    "type-check": "pnpm run -r type-check",
+    "build": "pnpm run -r type-check"
+  },
+  "devDependencies": {
+    "concurrently": "9.1.2",
+    "husky": "9.1.7",
+    "lint-staged": "16.1.0",
+    "wait-on": "8.0.3"
+  }
+}
