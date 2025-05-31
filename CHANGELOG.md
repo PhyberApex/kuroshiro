@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.0.1...kuroshiro-v0.1.0) (2025-05-31)
+
+
+### Features
+
+* Initial commit ([d9427da](https://github.com/PhyberApex/kuroshiro/commit/d9427da67ccb14b7ab8fb6ae3a6d28c84d63c73c))
+
 ## [0.0.1](https://github.com/PhyberApex/kuroshiro_internal/compare/kuroshiro-v0.0.1...kuroshiro-v0.0.1) (2025-05-28)
 
 
