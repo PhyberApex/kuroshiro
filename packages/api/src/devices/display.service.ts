@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Screen } from '../screens/screens.entity'
 import { convertToMonochromeBmp, downloadImage } from '../utils/imageUtils'
+import { resolveAppPath } from '../utils/pathHelper'
 import { Device } from './devices.entity'
 import { Display } from './display'
 import { DisplayScreen } from './displayScreen'
@@ -79,7 +80,7 @@ export class DeviceDisplayService {
       this.logger.log(`Returning screen ${nextScreen.id} for device ${device.id}`)
       let imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${nextScreen.id}.bmp`
       if (nextScreen.externalLink && !nextScreen.fetchManual) {
-        const destDir = path.join(__dirname, '..', '..', 'public', 'screens', 'devices', device.id)
+        const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
         const inputPath = path.join(destDir, 'tmp-source')
         const bmpFilename = `${nextScreen.id}.bmp`
         const outputPath = path.join(destDir, bmpFilename)
@@ -120,7 +121,7 @@ export class DeviceDisplayService {
         })
         const response = await res.json()
         this.logger.debug(`Got this from TRMNL ${JSON.stringify(response)}`)
-        const destDir = path.join(__dirname, '..', '..', 'public', 'screens', 'devices', device.id)
+        const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
         const inputPath = path.join(destDir, response.filename)
         const bmpFilename = 'mirror.bmp'
         const outputPath = path.join(destDir, bmpFilename)

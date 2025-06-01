@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Device } from '../devices/devices.entity'
 import { convertToMonochromeBmp, downloadImage } from '../utils/imageUtils'
+import { resolveAppPath } from '../utils/pathHelper'
 import { CreateScreenDto } from './dto/create-screen.dto'
 import { Screen } from './screens.entity'
 
@@ -48,7 +49,7 @@ export class ScreensService {
 
     // Fetch initial image right now
     if (body.externalLink && body.fetchManual) {
-      const destDir = path.join(__dirname, '..', '..', 'public', 'screens', 'devices', device.id)
+      const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
       const inputPath = path.join(destDir, 'tmp-source')
       const bmpFilename = `${saved.id}.bmp`
       const outputPath = path.join(destDir, bmpFilename)
@@ -69,7 +70,7 @@ export class ScreensService {
     // Handle file upload and conversion
     else if (file) {
       try {
-        const destDir = path.join(__dirname, '..', '..', 'public', 'screens', 'devices', device.id)
+        const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
         await fs.promises.mkdir(destDir, { recursive: true })
         const inputPath = path.join(destDir, `${saved.id}-source`)
         const bmpFilename = `${saved.id}.bmp`
@@ -109,7 +110,7 @@ export class ScreensService {
     }
     const deviceId = screen.device.id
     // Delete BMP file if it exists
-    const bmpPath = path.join(__dirname, '..', '..', 'public', 'screens', 'devices', deviceId, `${id}.bmp`)
+    const bmpPath = resolveAppPath('public', 'screens', 'devices', deviceId, `${id}.bmp`)
     try {
       await fs.promises.unlink(bmpPath)
       this.logger.log(`Deleted BMP file: ${bmpPath}`)
@@ -148,7 +149,7 @@ export class ScreensService {
     if (!screen.fetchManual) {
       throw new BadRequestException('This is only allowed for external images that are not auto refreshing')
     }
-    const destDir = path.join(__dirname, '..', '..', 'public', 'screens', 'devices', screen.device.id)
+    const destDir = resolveAppPath('public', 'screens', 'devices', screen.device.id)
     const inputPath = path.join(destDir, 'tmp-source')
     const bmpFilename = `${screen.id}.bmp`
     const outputPath = path.join(destDir, bmpFilename)

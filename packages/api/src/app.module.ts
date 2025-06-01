@@ -1,4 +1,3 @@
-import { join } from 'node:path'
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { ServeStaticModule } from '@nestjs/serve-static'
@@ -9,6 +8,7 @@ import { DevicesModule } from './devices/devices.module'
 import { LogsModule } from './logs/logs.module'
 import { Screen } from './screens/screens.entity'
 import { ScreensModule } from './screens/screens.module'
+import { resolveAppPath } from './utils/pathHelper'
 
 const conf = config()
 
@@ -19,7 +19,7 @@ const conf = config()
     }),
     // Serve ui files
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'public'),
+      rootPath: resolveAppPath('public'),
     }),
     TypeOrmModule.forRoot({
       type: 'postgres',

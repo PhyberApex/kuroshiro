@@ -14,11 +14,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+#    volumes:
+#      - postgres_data:/var/lib/postgresql/data
   app:
     build: .
-#    image: ghcr.io/phyberapex/kuroshiro_internal:latest
+#    image: ghcr.io/phyberapex/kuroshiro:latest
     depends_on:
       db:
         condition: service_healthy
@@ -34,8 +34,8 @@ services:
       KUROSHIRO_DB_USER: ${KUROSHIRO_POSTGRES_USER}
       KUROSHIRO_DB_PASSWORD: ${KUROSHIRO_POSTGRES_PASSWORD}
       KUROSHIRO_DB_DB: ${KUROSHIRO_POSTGRES_DB}
-    volumes:
-      - kuroshiro_data:/app/public/screens/devices
+#    volumes:
+#      - kuroshiro_data:/app/public/screens/devices
 volumes:
   postgres_data:
   kuroshiro_data:
