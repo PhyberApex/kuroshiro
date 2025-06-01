@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.1.0...kuroshiro-v0.1.1) (2025-06-01)
+
+
+### Bug Fixes
+
+* **config:** Fix .env.example with proper values ([61a8a9c](https://github.com/PhyberApex/kuroshiro/commit/61a8a9cf1fd1473b58c6b7049975a141e064c5d2))
+* **screens:** Fix paths not working in built image and removing unused dependencies ([a555b72](https://github.com/PhyberApex/kuroshiro/commit/a555b72a6666f4158a528f53dc557759d975711b))
+
 ## [0.1.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.0.1...kuroshiro-v0.1.0) (2025-05-31)
 
 
