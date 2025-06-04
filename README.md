@@ -52,6 +52,11 @@ Virtual Device
   <img src="graphics/screenshots/screenshot_virtual_device.png" />
 </p>
 
+HTML Preview
+<p align="center">
+  <img src="graphics/screenshots/screenshot_html_render.png" />
+</p>
+
 ---
 
 ## 🐳 Dockerized & Ready to Roll
@@ -103,7 +108,7 @@ Upload a file and Kuroshiro uses Imagemagick to fit, fill, and convert it to bla
 Provide a URL and Kuroshiro fetches, converts, and serves it. Cache it for speed, or fetch fresh every time—your choice!
 
 #### HTML Screens
-Provide HTML you can make use of the [TRMNL framework](https://usetrmnl.com/framework).
+Provide HTML you can make use of the [TRMNL framework](https://usetrmnl.com/framework). You can use the tool "HTML Preview" to help generate HTML.
 
 ---
 

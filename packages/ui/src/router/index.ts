@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useDeviceStore } from '../stores/device'
 import DeviceDetailsView from '../views/DeviceDetailsView.vue'
+import HtmlPreviewView from '../views/HtmlPreviewView.vue'
 import MaintenanceView from '../views/MaintenanceView.vue'
 import OverviewView from '../views/OverviewView.vue'
 import VirtualDeviceView from '../views/VirtualDeviceView.vue'
@@ -38,6 +39,15 @@ const router = createRouter({
       path: '/virtualDevice',
       name: 'virtualDevice',
       component: VirtualDeviceView,
+      beforeEnter: async () => {
+        const store = useDeviceStore()
+        await store.fetchDevices()
+      },
+    },
+    {
+      path: '/htmlPreview',
+      name: 'htmlPreview',
+      component: HtmlPreviewView,
       beforeEnter: async () => {
         const store = useDeviceStore()
         await store.fetchDevices()

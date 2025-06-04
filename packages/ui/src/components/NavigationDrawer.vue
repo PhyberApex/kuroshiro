@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { mdiCircle, mdiCog, mdiMonitor, mdiRobot, mdiViewDashboard } from '@mdi/js'
+import {
+  mdiCircle,
+  mdiCodeBlockTags,
+  mdiCog,
+  mdiMonitor,
+  mdiRobot,
+  mdiToolbox,
+  mdiViewDashboard,
+} from '@mdi/js'
 import { computed } from 'vue'
 import { useDeviceStore } from '@/stores/device'
 import { isDeviceOnline } from '@/utils/isDeviceOnline'
@@ -40,7 +48,17 @@ const devices = computed(() => deviceStore.devices)
           </template>
         </v-list-item>
       </v-list-group>
-      <v-list-item :prepend-icon="mdiRobot" title="Virtual Device" :to="{ name: 'virtualDevice' }" />
+      <v-list-group>
+        <template #activator="{ props }">
+          <v-list-item
+            v-bind="props"
+            :prepend-icon="mdiToolbox"
+            title="Tools"
+          />
+        </template>
+        <v-list-item :prepend-icon="mdiRobot" title="Virtual Device" :to="{ name: 'virtualDevice' }" />
+        <v-list-item :prepend-icon="mdiCodeBlockTags" title="HTML Preview" :to="{ name: 'htmlPreview' }" />
+      </v-list-group>
       <v-list-item :prepend-icon="mdiCog" title="Maintenance" :to="{ name: 'maintenance' }" />
     </v-list>
   </v-list>
