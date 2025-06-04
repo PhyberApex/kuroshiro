@@ -14,6 +14,7 @@ import {
   mdiBatteryUnknown,
   mdiCheck,
   mdiCircle,
+  mdiCodeBlockTags,
   mdiContentCopy,
   mdiContentSave,
   mdiDelete,
@@ -21,20 +22,22 @@ import {
   mdiEye,
   mdiEyeOff,
   mdiLink,
+  mdiOpenInNew,
   mdiRefresh,
   mdiSignalCellular1,
   mdiSignalCellular2,
   mdiSignalCellular3,
   mdiSignalCellularOutline,
-  mdiSync,
+  mdiStop,
   mdiUpload,
 } from '@mdi/js'
 import { useClipboard } from '@vueuse/core'
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { VTextField } from 'vuetify/components'
 import { useDeviceStore } from '@/stores/device'
 import { useScreensStore } from '@/stores/screens'
+import exampleHtml from '@/utils/exampleHtml'
 import { formatDate } from '@/utils/formatDate'
 import { isValidMac } from '@/utils/getRandomMac'
 import { isDeviceOnline } from '@/utils/isDeviceOnline'
@@ -48,9 +51,23 @@ const externalLink = ref('')
 const fetchManual = ref(false)
 const fileInput = ref<File | null>(null)
 
+const previewIframeRef = useTemplateRef('previewIframeRef')
+
 const { copy: copyToClipboard, copied: macCopied } = useClipboard()
 
-const addScreenTab = ref('link')
+const addScreenTab = ref<'link' | 'file' | 'html'>('link')
+
+const filename = ref('')
+
+const filenameRules = [
+  (value: string) => {
+    if (!value)
+      return 'A filename is required'
+    return true
+  },
+]
+
+const showHtmlPreview = ref(false)
 
 onMounted(async () => {
   await screensStore.fetchScreensForDevice(props.id)
@@ -58,7 +75,7 @@ onMounted(async () => {
 
 const device = computed(() => deviceStore.getById(props.id))
 
-const externalLinkRef = ref<null | typeof VTextField>(null)
+const externalLinkRef = useTemplateRef('externalLinkRef')
 
 onMounted(async () => {
   if (!device.value)
@@ -79,16 +96,55 @@ const linkValid = computed(() => {
   return !linkRules.map(rule => rule(externalLink.value)).some(validationResult => validationResult !== true)
 })
 
+const renderHtml = ref('')
+
+const renderHtmlValid = computed(() => {
+  return renderHtml.value !== ''
+})
+
+async function renderPreviewHtml(html: string) {
+  showHtmlPreview.value = true
+  await nextTick()
+  const iframe = previewIframeRef.value
+  if (!iframe)
+    return
+
+  const doc = iframe.contentDocument || iframe.contentWindow?.document
+  if (!doc)
+    return
+  doc.open()
+  doc.write(`<html><head><link rel="stylesheet" href="https://usetrmnl.com/css/latest/plugins.css"><script src="https://usetrmnl.com/js/latest/plugins.js"><\/script></head><body>${html}</body></html>`)
+  doc.close()
+  showHtmlPreview.value = true
+}
+
 const addScreenInputValid = computed(() => {
   // If no device or no width or no height we can't add a screen
   if (!device.value || !device.value.width || !device.value.height)
+    return false
+  if (!filename.value)
     return false
   // Check for link selected
   if (addScreenTab.value === 'link' && (!externalLink.value || !linkValid.value))
     return false
   if (addScreenTab.value === 'file' && !fileInput.value)
     return false
+  if (addScreenTab.value === 'html' && !renderHtmlValid.value)
+    return false
   return true
+})
+
+const addScreenIcon = computed(() => {
+  switch (addScreenTab.value) {
+    case 'file':
+      return mdiUpload
+    case 'link':
+      return fetchManual.value ? mdiDownload : mdiLink
+    case 'html':
+      return mdiCodeBlockTags
+    default:
+      return mdiStop
+  }
 })
 
 const rssiStrength = computed(() => {
@@ -143,9 +199,13 @@ const addScreenInfo = computed(() => {
       text = 'The URL will be fetched on each request dynamically and a image will be generated from it on the fly.'
     }
   }
-  else {
+  else if (addScreenTab.value === 'file') {
     title = 'Upload file'
     text = 'The file is uploaded, converted and will be statically served.'
+  }
+  else if (addScreenTab.value === 'html') {
+    title = 'Render HTML'
+    text = 'Enter HTML to be rendered and presented. The TRMNL framework is available.'
   }
   return { title, text }
 })
@@ -154,15 +214,19 @@ async function submitAddScreen() {
   if (addScreenTab.value === 'link') {
     if (!externalLink.value)
       return
-    await screensStore.addScreen(props.id, externalLink.value, fetchManual.value)
+    await screensStore.addScreen(props.id, externalLink.value, fetchManual.value, filename.value)
     externalLinkRef.value?.reset()
     fetchManual.value = false
   }
   else if (addScreenTab.value === 'file') {
     if (!fileInput.value)
       return
-    await screensStore.addScreenFile(props.id, fileInput.value)
+    await screensStore.addScreenFile(props.id, fileInput.value, filename.value)
     fileInput.value = null
+  }
+  else if (addScreenTab.value === 'html') {
+    await screensStore.addScreenHtml(props.id, renderHtml.value, filename.value)
+    renderHtml.value = ''
   }
 }
 
@@ -209,14 +273,6 @@ async function deleteDevice() {
     return
   await deviceStore.deleteDevice(device.value.id)
   router.push({ name: 'overview' })
-}
-
-async function updateInfo() {
-  await deviceStore.fetchDevices()
-  await screensStore.fetchScreensForDevice(props.id)
-  if (!device.value)
-    return
-  await screensStore.fetchCurrentScreenForDevice(device.value.mac, device.value.apikey)
 }
 
 const batteryPercentage = computed(() => {
@@ -298,7 +354,7 @@ const valid = computed(() => {
 </script>
 
 <template>
-  <v-container fluid>
+  <v-container v-if="device" fluid>
     <v-row justify="center">
       <v-col cols="12" lg="12">
         <v-card class="mb-6" color="primary" variant="tonal" elevation="2">
@@ -308,14 +364,19 @@ const valid = computed(() => {
         </v-card>
         <v-row>
           <v-col cols="12" sm="12" md="7">
-            <v-card v-if="device" class="mb-6" elevation="2">
+            <v-card class="mb-6" elevation="2">
               <v-card-title class="d-flex align-center justify-space-between">
                 <div>
                   {{ device.name }}
                   <v-icon :icon="mdiCircle" :color="isDeviceOnline(device) ? 'success' : 'error'" size="x-small" />
                 </div>
                 <div>
-                  <v-icon-btn class="mr-2" :icon="mdiSync" variant="tonal" color="secondary" @click="updateInfo" />
+                  <v-btn color="success" variant="tonal" :prepend-icon="mdiContentSave" class="mr-5" :disabled="!valid" @click="saveDevice">
+                    Update
+                  </v-btn>
+                  <v-btn color="error" variant="tonal" :prepend-icon="mdiDelete" @click="deleteDevice">
+                    Delete
+                  </v-btn>
                 </div>
               </v-card-title>
               <v-divider />
@@ -372,10 +433,10 @@ const valid = computed(() => {
                       label="Special Function"
                     />
                   </v-col>
-                  <v-col cols="12" sm="4" md="4" lg="3">
+                  <v-col cols="12" sm="4" md="4" lg="4">
                     <v-switch v-model="device.resetDevice" color="secondary" density="compact" label="Reset device" />
                   </v-col>
-                  <v-col cols="12" sm="4" md="4" lg="3">
+                  <v-col cols="12" sm="4" md="4" lg="4">
                     <v-switch v-model="device.updateFirmware" color="secondary" density="compact" label="Automatic updates" disabled />
                   </v-col>
                 </v-row>
@@ -391,16 +452,8 @@ const valid = computed(() => {
                     <VTextField v-model="device.mirrorApikey" density="compact" label="Apikey of mirror" :disabled="!device.mirrorEnabled" :rules="apikeyRules" />
                   </v-col>
                 </v-row>
-                <v-btn color="error" variant="tonal" class="mr-5" :prepend-icon="mdiDelete" @click="deleteDevice">
-                  Delete
-                </v-btn>
-                <v-btn color="success" variant="tonal" :prepend-icon="mdiContentSave" :disabled="!valid" @click="saveDevice">
-                  Save
-                </v-btn>
               </v-card-text>
             </v-card>
-          </v-col>
-          <v-col cols="12" sm="12" md="5">
             <v-card class="mb-6" elevation="1">
               <v-card-title>Current Screen</v-card-title>
               <v-divider />
@@ -411,10 +464,13 @@ const valid = computed(() => {
                 </div>
               </v-card-text>
             </v-card>
+          </v-col>
+          <v-col cols="12" sm="12" md="5">
             <v-card class="mb-6" elevation="1">
               <v-card-title>Add Screen</v-card-title>
               <v-divider />
               <v-card-text>
+                <VTextField v-model="filename" :rules="filenameRules" label="Filename" />
                 <v-tabs v-model="addScreenTab" grow>
                   <v-tab value="link">
                     External Link
@@ -422,13 +478,16 @@ const valid = computed(() => {
                   <v-tab value="file">
                     Upload File
                   </v-tab>
+                  <v-tab value="html">
+                    Render HTML
+                  </v-tab>
                 </v-tabs>
                 <v-window v-model="addScreenTab">
                   <v-window-item value="link">
                     <v-form>
                       <v-row>
                         <v-col cols="12">
-                          <VTextField ref="externalLinkRef" v-model="externalLink" :rules="linkRules" label="External image link" required clearable :disabled="!device?.width || !device?.height" />
+                          <VTextField ref="externalLinkRef" v-model="externalLink" :rules="linkRules" label="External image link" required clearable :disabled="!device.width || !device.height" />
                           <v-switch v-model="fetchManual" color="secondary" label="Cache (image needs to be updated manually)" />
                         </v-col>
                       </v-row>
@@ -438,7 +497,16 @@ const valid = computed(() => {
                     <v-form>
                       <v-row>
                         <v-col cols="12">
-                          <v-file-input v-model="fileInput" label="Upload image" accept="image/png, image/jpeg, image/bmp" :disabled="!device?.width || !device?.height" />
+                          <v-file-input v-model="fileInput" label="Upload image" accept="image/png, image/jpeg, image/bmp" :disabled="!device.width || !device.height" />
+                        </v-col>
+                      </v-row>
+                    </v-form>
+                  </v-window-item>
+                  <v-window-item value="html">
+                    <v-form>
+                      <v-row>
+                        <v-col cols="12">
+                          <v-textarea v-model="renderHtml" label="HTML to render" :placeholder="exampleHtml" />
                         </v-col>
                       </v-row>
                     </v-form>
@@ -452,11 +520,21 @@ const valid = computed(() => {
                 <v-btn
                   color="primary"
                   class="mt-5"
-                  :prepend-icon="addScreenTab === 'link' ? fetchManual ? mdiDownload : mdiLink : mdiUpload"
+                  :prepend-icon="addScreenIcon"
                   :disabled="!addScreenInputValid"
                   @click="submitAddScreen"
                 >
                   Add Screen
+                </v-btn>
+                <v-btn
+                  v-if="addScreenTab === 'html'"
+                  color="secondary"
+                  class="mt-5 ml-5"
+                  :prepend-icon="mdiEye"
+                  :disabled="!renderHtmlValid"
+                  @click="renderPreviewHtml(renderHtml)"
+                >
+                  Preview
                 </v-btn>
               </v-card-text>
             </v-card>
@@ -468,7 +546,7 @@ const valid = computed(() => {
                   <thead>
                     <tr>
                       <th>Type</th>
-                      <th>Filename / Link</th>
+                      <th>Filename</th>
                       <th>Status</th>
                       <th class="text-right">
                         Actions
@@ -479,12 +557,11 @@ const valid = computed(() => {
                     <tr v-for="screen in screensStore.screens" :key="screen.id">
                       <td>
                         <v-chip :color="screen.externalLink ? 'info' : 'primary'" size="small">
-                          {{ screen.externalLink ? screen.fetchManual ? 'External (cached)' : 'External' : 'File' }}
+                          {{ screen.externalLink ? screen.fetchManual ? 'External (cached)' : 'External' : screen.html ? 'HTML' : 'File' }}
                         </v-chip>
                       </td>
                       <td>
-                        <span v-if="!screen.externalLink">{{ screen.filename }}</span>
-                        <span v-else><a :href="screen.externalLink" target="_blank">Show</a></span>
+                        <span>{{ screen.filename }}</span>
                       </td>
                       <td>
                         <v-chip v-if="screen.isActive" color="success" size="small">
@@ -498,23 +575,32 @@ const valid = computed(() => {
                         <v-btn
                           v-if="screen.externalLink && screen.fetchManual"
                           color="warning"
-                          variant="tonal"
                           size="small"
+                          variant="tonal"
                           class="mr-2"
-                          :prepend-icon="mdiRefresh"
+                          :icon="mdiRefresh"
                           @click="updateExternalImage(screen.id)"
-                        >
-                          Update
-                        </v-btn>
+                        />
                         <v-btn
+                          v-if="screen.externalLink"
+                          size="small" class="mr-2" :href="screen.externalLink" target="_blank" variant="tonal" color="secondary" :icon="mdiOpenInNew"
+                        />
+                        <v-btn
+                          v-else-if="screen.html"
+                          size="small" class="mr-2" :icon="mdiEye" variant="tonal" color="secondary" @click="renderPreviewHtml(screen.html)"
+                        />
+                        <v-btn
+                          v-else
+                          size="small" class="mr-2" :href="`/screens/devices/${device?.id}/${screen.id}.bmp`" target="_blank" variant="tonal" color="secondary" :icon="mdiOpenInNew"
+                        />
+                        <v-btn
+                          size="small"
+
                           color="error"
                           variant="tonal"
-                          size="small"
-                          :prepend-icon="mdiDelete"
+                          :icon="mdiDelete"
                           @click="deleteScreen(screen.id)"
-                        >
-                          Delete
-                        </v-btn>
+                        />
                       </td>
                     </tr>
                   </tbody>
@@ -528,5 +614,8 @@ const valid = computed(() => {
         </v-row>
       </v-col>
     </v-row>
+    <v-overlay v-model="showHtmlPreview" class="align-center justify-center">
+      <iframe ref="previewIframeRef" :width="(device.width || 0) + 5" :height="(device.height || 0) + 5" class="align-center" />
+    </v-overlay>
   </v-container>
 </template>

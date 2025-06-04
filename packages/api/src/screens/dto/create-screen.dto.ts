@@ -14,4 +14,8 @@ export class CreateScreenDto {
   @IsOptional()
   @IsBoolean()
   fetchManual: boolean
+
+  @IsOptional()
+  @IsString()
+  html: string
 }

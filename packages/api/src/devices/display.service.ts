@@ -1,9 +1,11 @@
 import type { DisplayRequestHeadersDto } from './dto/display-request-headers.dto'
+import buffer from 'node:buffer'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { BadRequestException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
+import puppeteer from 'puppeteer'
 import { Repository } from 'typeorm'
 import { Screen } from '../screens/screens.entity'
 import { convertToMonochromeBmp, downloadImage } from '../utils/imageUtils'
@@ -79,6 +81,29 @@ export class DeviceDisplayService {
       await this.screenRepository.save(nextScreen)
       this.logger.log(`Returning screen ${nextScreen.id} for device ${device.id}`)
       let imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${nextScreen.id}.bmp`
+      if (nextScreen.html) {
+        const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-web-security'] })
+        const page = await browser.newPage()
+        await page.setViewport({ width: 800, height: 480 })
+        const content = `
+    <html>
+      <head>
+    <link rel="stylesheet" href="https://usetrmnl.com/css/latest/plugins.css">
+    <script src="https://usetrmnl.com/js/latest/plugins.js"></script>
+      </head>
+${nextScreen.html}
+    </html>
+  `
+        await page.setContent(content, { waitUntil: 'networkidle0' })
+        const image: Uint8Array = await page.screenshot()
+        const imgBuffer = buffer.Buffer.from(image)
+        const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
+        const inputPath = path.join(destDir, 'tmp-source')
+        await fs.promises.mkdir(path.dirname(inputPath), { recursive: true })
+        await fs.promises.writeFile(inputPath, imgBuffer)
+        const outputPath = path.join(destDir, `${nextScreen.id}.bmp`)
+        await convertToMonochromeBmp(inputPath, outputPath, device.width, device.height, this.logger)
+      }
       if (nextScreen.externalLink && !nextScreen.fetchManual) {
         const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
         const inputPath = path.join(destDir, 'tmp-source')

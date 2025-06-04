@@ -8,6 +8,7 @@ export interface Screen {
   isActive: boolean
   device: string | { id: string }
   fetchManual: boolean
+  html: string
 }
 
 export interface CurrentScreen {
@@ -36,25 +37,36 @@ export const useScreensStore = defineStore('screens', () => {
     currentScreen.value = await res.json()
   }
 
-  async function addScreen(deviceId: string, externalLink: string, fetchManual: boolean) {
+  async function addScreen(deviceId: string, externalLink: string, fetchManual: boolean, filename: string) {
     const res = await fetch('/api/screens', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ deviceId, filename: 'external', externalLink, fetchManual }),
+      body: JSON.stringify({ deviceId, filename, externalLink, fetchManual }),
     })
     if (res.ok) {
       await fetchScreensForDevice(deviceId)
     }
   }
 
-  async function addScreenFile(deviceId: string, file: File) {
+  async function addScreenFile(deviceId: string, file: File, filename: string) {
     const formData = new FormData()
     formData.append('deviceId', deviceId)
-    formData.append('filename', file.name)
+    formData.append('filename', filename)
     formData.append('file', file)
     const res = await fetch('/api/screens', {
       method: 'POST',
       body: formData,
+    })
+    if (res.ok) {
+      await fetchScreensForDevice(deviceId)
+    }
+  }
+
+  async function addScreenHtml(deviceId: string, html: string, filename: string) {
+    const res = await fetch('/api/screens', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deviceId, filename, html }),
     })
     if (res.ok) {
       await fetchScreensForDevice(deviceId)
@@ -79,5 +91,5 @@ export const useScreensStore = defineStore('screens', () => {
     }
   }
 
-  return { screens, currentScreen, fetchScreensForDevice, addScreen, addScreenFile, deleteScreen, updateExternalScreen, fetchCurrentScreenForDevice }
+  return { screens, currentScreen, fetchScreensForDevice, addScreen, addScreenFile, addScreenHtml, deleteScreen, updateExternalScreen, fetchCurrentScreenForDevice }
 })

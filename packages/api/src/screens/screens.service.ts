@@ -28,8 +28,8 @@ export class ScreensService {
     this.logger.log(`Adding screen to device ${body.deviceId}`)
     if (body.externalLink && file)
       throw new BadRequestException('Can\'t upload a file to an external image')
-    if (!body.externalLink && !file)
-      throw new BadRequestException('Need either external link or file to add screen')
+    if (!body.externalLink && !file && !body.html)
+      throw new BadRequestException('Need either external link, file or HTML to add screen')
     const device = await this.devicesRepository.findOne({ where: { id: body.deviceId }, relations: ['screens'] })
     if (!device) {
       this.logger.warn(`Device not found: ${body.deviceId}`)
@@ -42,6 +42,7 @@ export class ScreensService {
       order: device.screens ? device.screens.length + 1 : 1,
       isActive: false,
       fetchManual: body.fetchManual,
+      html: body.html,
       generatedAt: new Date(),
     })
     const saved = await this.screensRepository.save(newScreen)

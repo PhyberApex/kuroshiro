@@ -9,7 +9,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint",
-    "lint:fix": "eslint --fix"
+    "lint:fix": "eslint --fix",
+    "prepare": "puppeteer browsers install chrome"
   },
   "dependencies": {
     "@nestjs/common": "11.1.2",
@@ -23,6 +24,7 @@
     "dotenv": "16.5.0",
     "fs-extra": "11.3.0",
     "pg": "8.16.0",
+    "puppeteer": "24.10.0",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2",
     "typeorm": "0.3.24",

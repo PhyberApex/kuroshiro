@@ -12,6 +12,9 @@ export class Screen {
   @Column({ type: 'text', nullable: true })
   externalLink?: string | null
 
+  @Column({ type: 'text', nullable: true })
+  html?: string | null
+
   @Column({ type: 'boolean', default: false })
   fetchManual: boolean
 

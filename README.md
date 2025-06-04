@@ -102,6 +102,9 @@ Upload a file and Kuroshiro uses Imagemagick to fit, fill, and convert it to bla
 #### External Link Screens
 Provide a URL and Kuroshiro fetches, converts, and serves it. Cache it for speed, or fetch fresh every time—your choice!
 
+#### HTML Screens
+Provide HTML you can make use of the [TRMNL framework](https://usetrmnl.com/framework).
+
 ---
 
 ## 🤝 Contribute & Make Kuroshiro Even Better!
