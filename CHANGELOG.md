@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.1.1...kuroshiro-v0.2.0) (2025-06-04)
+
+
+### Features
+
+* **screens:** Add functionality to render html with the TRMNL framework ([9a31305](https://github.com/PhyberApex/kuroshiro/commit/9a313054ceb52b5dfe1e6dbf2d6dc3bc5da7fc01))
+* **tools:** Added new tool "HTML preview" to help create HTML screens ([487463c](https://github.com/PhyberApex/kuroshiro/commit/487463c0f2ba0ecb08c27a21cd6455f4fac7658e))
+
+
+### Bug Fixes
+
+* **deps:** update dependency pinia to v3.0.3 ([#8](https://github.com/PhyberApex/kuroshiro/issues/8)) ([02a0875](https://github.com/PhyberApex/kuroshiro/commit/02a08755d464c2f0164ac05669ee6473be7aa0a1))
+* **deps:** update dependency vuetify to v3.8.8 ([#9](https://github.com/PhyberApex/kuroshiro/issues/9)) ([9826963](https://github.com/PhyberApex/kuroshiro/commit/9826963bd41e838f1195e22c51b55a09c8f5c3b8))
+
 ## [0.1.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.1.0...kuroshiro-v0.1.1) (2025-06-01)
 
 
