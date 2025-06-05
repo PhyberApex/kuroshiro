@@ -156,11 +156,19 @@ export class DeviceDisplayService {
       let specialFunction = device.specialFunction
       let updateFirmware = false
       try {
-        const res = await fetch(`https://usetrmnl.com/api/${proxy ? 'display' : 'current_screen'}`, {
-          headers: {
-            'Access-Token': device.mirrorApikey,
+        let mirrorHeaders = {
+          'Access-Token': device.mirrorApikey,
+          'ID': device.mirrorMac,
+        }
+        if (proxy) {
+          mirrorHeaders = {
+            ...headers,
             'ID': device.mirrorMac,
-          },
+            'Access-Token': device.mirrorApikey,
+          }
+        }
+        const res = await fetch(`https://usetrmnl.com/api/${proxy ? 'display' : 'current_screen'}`, {
+          headers: mirrorHeaders,
         })
         const response = await res.json()
         this.logger.debug(`Got this from TRMNL ${JSON.stringify(response)}`)
