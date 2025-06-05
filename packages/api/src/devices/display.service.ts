@@ -140,11 +140,23 @@ export class DeviceDisplayService {
     }
     else {
       this.logger.log(`Device ${device.id} is mirrored. Fetching from TRMNL.`)
+      let proxy = false
+      if (device.mac === device.mirrorMac) {
+        this.logger.log(`MACs are identical we should proxy the device.`)
+        proxy = true
+      }
+      else {
+        this.logger.log(`MACs are different we should mirror with current_screen endpoint.`)
+      }
       let refreshRate = device.refreshRate
       let filename = 'error.bpm'
       let localImageUrl = `${this.configService.get<string>('api_url')}/screens/error.bmp`
+      let firmwareUrl = null
+      let resetFirmware = false
+      let specialFunction = device.specialFunction
+      let updateFirmware = false
       try {
-        const res = await fetch('https://usetrmnl.com/api/current_screen', {
+        const res = await fetch(`https://usetrmnl.com/api/${proxy ? 'display' : 'current_screen'}`, {
           headers: {
             'Access-Token': device.mirrorApikey,
             'ID': device.mirrorMac,
@@ -157,11 +169,20 @@ export class DeviceDisplayService {
         const bmpFilename = 'mirror.bmp'
         const outputPath = path.join(destDir, bmpFilename)
 
-        await downloadImage(response.image_url, inputPath, this.logger)
-        await convertToMonochromeBmp(inputPath, outputPath, device.width, device.height, this.logger)
-        await fs.promises.unlink(inputPath)
+        if (!proxy) {
+          await downloadImage(response.image_url, inputPath, this.logger)
+          await convertToMonochromeBmp(inputPath, outputPath, device.width, device.height, this.logger)
+          await fs.promises.unlink(inputPath)
+        }
+        else {
+          await downloadImage(response.image_url, outputPath, this.logger)
+        }
         this.logger.log(`Deleted original image: ${inputPath}`)
-        refreshRate = response.refresh_rate
+        refreshRate = proxy ? response.refresh_rate : refreshRate
+        firmwareUrl = proxy ? response.firmware_url : firmwareUrl
+        resetFirmware = proxy ? response.reset_firmware : resetFirmware
+        specialFunction = proxy ? response.special_function : specialFunction
+        updateFirmware = proxy ? response.update_firmware : updateFirmware
         localImageUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${bmpFilename}`
         filename = bmpFilename
       }
@@ -171,12 +192,12 @@ export class DeviceDisplayService {
       this.logger.log(`Returning mirrored screen for device ${device.id}`)
       return new Display({
         filename,
-        firmware_url: null,
+        firmware_url: firmwareUrl,
         image_url: localImageUrl,
         refresh_rate: refreshRate,
-        reset_firmware: false,
-        special_function: device.specialFunction,
-        update_firmware: false,
+        reset_firmware: resetFirmware,
+        special_function: specialFunction,
+        update_firmware: updateFirmware,
       })
     }
   }
