@@ -94,7 +94,7 @@ export class DeviceDisplayService {
 ${nextScreen.html}
     </html>
   `
-        await page.setContent(content, { waitUntil: 'networkidle0' })
+        await page.setContent(content, { waitUntil: 'load' })
         const image: Uint8Array = await page.screenshot()
         const imgBuffer = buffer.Buffer.from(image)
         const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
