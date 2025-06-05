@@ -138,6 +138,21 @@ watch(macInputTab, () => {
     macInputRef.value?.reset()
   }
 })
+
+watch(mac, () => {
+  if (macInputTab.value !== 'device')
+    return
+  const device = deviceStore.devices.find(d => d.mac === mac.value)
+  if (!device)
+    return
+  customHeaders.value['battery-voltage'] = device.batteryVoltage || customHeaders.value['battery-voltage']
+  customHeaders.value['fw-version'] = device.fwVersion || customHeaders.value['fw-version']
+  customHeaders.value['refresh-rate'] = device.refreshRate?.toString() || customHeaders.value['refresh-rate']
+  customHeaders.value.rssi = device.rssi || customHeaders.value.rssi
+  customHeaders.value['user-agent'] = device.userAgent || customHeaders.value['user-agent']
+  customHeaders.value.width = device.width?.toString() || customHeaders.value.width
+  customHeaders.value.height = device.height?.toString() || customHeaders.value.height
+})
 </script>
 
 <template>
