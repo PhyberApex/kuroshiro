@@ -1,7 +1,4 @@
-export default `<body class="environment trmnl">
-    <div class="screen">
-      <div class="view view--full">
-        <div class="layout">
+export default `<div class="layout">
           <div class="columns">
             <div class="column">
               <div class="markdown">
@@ -17,7 +14,4 @@ export default `<body class="environment trmnl">
           <img class="image" src="https://usetrmnl.com/images/plugins/trmnl--render.svg" />
           <span class="title">Plugin Title</span>
           <span class="instance">Instance Title</span>
-        </div>
-      </div>
-    </div>
-  </body>`
+        </div>`

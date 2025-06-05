@@ -88,10 +88,16 @@ export class DeviceDisplayService {
         const content = `
     <html>
       <head>
-    <link rel="stylesheet" href="https://usetrmnl.com/css/latest/plugins.css">
-    <script src="https://usetrmnl.com/js/latest/plugins.js"></script>
+        <link rel="stylesheet" href="https://usetrmnl.com/css/latest/plugins.css">
+        <script src="https://usetrmnl.com/js/latest/plugins.js"></script>
       </head>
-${nextScreen.html}
+      <body class="environment trmnl">
+        <div class="screen">
+          <div class="view view--full">
+            ${nextScreen.html}
+          </div>
+        </div>
+      </body>
     </html>
   `
         await page.setContent(content, { waitUntil: 'load' })
