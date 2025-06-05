@@ -19,3 +19,20 @@ export interface Device {
   updateFirmware: boolean
   lastSeen: string
 }
+
+export interface Screen {
+  id: string
+  filename?: string | null
+  externalLink?: string | null
+  isActive: boolean
+  device: string | { id: string }
+  fetchManual: boolean
+  html: string
+}
+
+export interface CurrentScreen {
+  filename: string
+  image_url: string
+  refresh_rate: number
+  rendered_at: string
+}

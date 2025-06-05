@@ -1,22 +1,6 @@
+import type { CurrentScreen, Screen } from '@/types'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-
-export interface Screen {
-  id: string
-  filename?: string | null
-  externalLink?: string | null
-  isActive: boolean
-  device: string | { id: string }
-  fetchManual: boolean
-  html: string
-}
-
-export interface CurrentScreen {
-  filename: string
-  image_url: string
-  refresh_rate: number
-  rendered_at: string
-}
 
 export const useScreensStore = defineStore('screens', () => {
   const screens = ref<Screen[]>([])
