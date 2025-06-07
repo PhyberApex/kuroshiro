@@ -96,7 +96,7 @@ For local hacking or deployment inspiration, check out [`docker-compose.yml`](./
 ## 🖥️ How Screens Work
 
 ### Mirroring from Official Server
-If you enable mirroring and provide the MAC and apikey, Kuroshiro fetches the current screen from the official server—mirroring always takes priority.
+If you enable mirroring and provide the MAC and apikey, Kuroshiro fetches the current screen (`api/current_screen`) from the official server—mirroring always takes priority. If the given MAC to mirror matches with the one of the device itself we are entering "proxy-mode" where we get the current display from the actual endpoint (`display`) and forward all the headers back and forth.
 
 ### Screens Managed by Kuroshiro
 Screens can be added after your device fetches a screen at least once (so we know its size!).
