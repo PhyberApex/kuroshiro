@@ -1,0 +1,42 @@
+name: ✨ Feature Request
+description: Suggest a new feature or improvement
+labels: ["feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Let’s make this project better.
+  - type: input
+    id: title
+    attributes:
+      label: Feature Title
+      description: A short, clear title for the feature
+      placeholder: "e.g. Add dark mode toggle"
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Why is this needed?
+      description: Explain the problem this solves or what benefit it brings.
+      placeholder: "It helps users work better at night by reducing eye strain."
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution
+      description: Describe how the feature might work or be implemented.
+      placeholder: "Add a toggle in the header, store preference in localStorage..."
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Optional — any workarounds or other ideas you thought about.
+  - type: checkboxes
+    id: impact
+    attributes:
+      label: Potential Impact
+      options:
+        - label: This feature might require backend changes
+        - label: This feature might introduce breaking changes

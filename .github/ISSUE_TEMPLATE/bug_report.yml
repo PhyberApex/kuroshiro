@@ -1,0 +1,54 @@
+name: 🐞 Bug Report
+description: Report something that isn't working as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! Please fill out this form as completely as possible.
+  - type: input
+    id: title
+    attributes:
+      label: Bug Title
+      description: A short and descriptive title for the bug.
+      placeholder: "e.g. Crash on clicking Save"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the bug and what you expected to happen.
+      placeholder: "What went wrong?"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce the bug?
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. See error
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: e.g. OS, browser, device, app version
+      placeholder: "Windows 11, Chrome 125.0, v1.2.3"
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs / Stack Trace
+      description: Paste any relevant logs or console output.
+      render: shell
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Checklist
+      options:
+        - label: I’ve double-checked that this is not already reported
+        - label: I’ve provided enough context for someone to reproduce the issue
