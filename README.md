@@ -35,6 +35,30 @@ Kuroshiro is for anyone who wants to experiment, self-host, and shape their own 
 
 ---
 
+## 🗺️ Roadmap & Planned Features
+
+We're constantly working to make Kuroshiro even better! Here's what's on our roadmap, organized by priority:
+
+### 🔥 High Priority
+- [ ] **Device Logs Viewer** - View logs directly from your TRMNL devices for better debugging and monitoring
+- [ ] **Refresh Rate UI Controls** - Adjust device refresh rates directly from the web interface
+- [ ] **Screen Management** - Switch active screens and reorder them directly in the UI
+
+### 🎯 Medium Priority  
+- [ ] **Liquid Template Syntax** - Add Liquid templating support for dynamic HTML screens
+- [ ] **Maintenance Dashboard** - Clean up unused images and manage disk space efficiently
+- [ ] **Recipes Support** - Pre-built screen templates and configurations you can easily apply
+- [ ] **Screen Mashups** - Combine multiple screens into custom layouts
+
+### 🔮 Future Enhancements
+- [ ] **System Logs Viewer** - Internal system logging and monitoring capabilities  
+- [ ] **Smart Image Caching** - Intelligent caching algorithms to optimize storage and performance
+- [ ] **Screen Playlists** - Create playlists that cycle through multiple screens automatically
+
+> **Want to contribute?** Pick a feature from the roadmap and help us build it! Check out our [contribution guidelines](#-contribute--make-kuroshiro-even-better) below.
+
+---
+
 ## Screenshots
 
 Overview
