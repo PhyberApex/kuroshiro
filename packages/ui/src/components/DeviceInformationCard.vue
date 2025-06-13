@@ -26,7 +26,7 @@ import {
   mdiSignalCellularOutline,
 } from '@mdi/js'
 import { useClipboard } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDeviceStore } from '@/stores/device'
 import { formatDate } from '@/utils/formatDate'
@@ -88,20 +88,6 @@ const specialFunctionalities = [
   { title: 'Rewind', value: 'rewind' },
   { title: 'Send to me (not working)', value: 'send_to_me' },
 ]
-
-async function saveDevice() {
-  if (!device.value)
-    return
-  await deviceStore.updateDevice(device.value.id, {
-    apikey: device.value.apikey,
-    refreshRate: device.value.refreshRate,
-    resetDevice: device.value.resetDevice,
-    mirrorEnabled: device.value.mirrorEnabled,
-    mirrorMac: device.value.mirrorMac,
-    mirrorApikey: device.value.mirrorApikey,
-    specialFunction: device.value.specialFunction,
-  })
-}
 
 const router = useRouter()
 
@@ -188,6 +174,54 @@ const valid = computed(() => {
     return rule(device.value?.mirrorApikey)
   }).some(validationResult => validationResult !== true)
 })
+
+const refreshRateUnit = ref<'hours' | 'minutes' | 'seconds'>('seconds')
+
+const refreshRateNumber = ref(300)
+
+const newRefreshRate = computed(() => {
+  switch (refreshRateUnit.value) {
+    case 'hours':
+      return refreshRateNumber.value * 3600
+    case 'minutes':
+      return refreshRateNumber.value * 60
+    case 'seconds':
+      return refreshRateNumber.value
+    default:
+      { const _: never = refreshRateUnit.value }
+      return 0
+  }
+})
+
+watch(() => device.value.refreshRate, () => {
+  if (device.value?.refreshRate && device.value.refreshRate % 3600 === 0) {
+    refreshRateNumber.value = device.value.refreshRate / 3600
+    refreshRateUnit.value = 'hours'
+  }
+  else if (device.value?.refreshRate && device.value.refreshRate % 60 === 0) {
+    refreshRateNumber.value = device.value.refreshRate / 60
+    refreshRateUnit.value = 'minutes'
+  }
+  else {
+    refreshRateNumber.value = device.value.refreshRate || 0
+    refreshRateUnit.value = 'seconds'
+  }
+})
+
+async function saveDevice() {
+  if (!device.value)
+    return
+  device.value.refreshRate = newRefreshRate.value
+  await deviceStore.updateDevice(device.value.id, {
+    apikey: device.value.apikey,
+    refreshRate: device.value.refreshRate,
+    resetDevice: device.value.resetDevice,
+    mirrorEnabled: device.value.mirrorEnabled,
+    mirrorMac: device.value.mirrorMac,
+    mirrorApikey: device.value.mirrorApikey,
+    specialFunction: device.value.specialFunction,
+  })
+}
 </script>
 
 <template>
@@ -250,7 +284,14 @@ const valid = computed(() => {
           <VTextField v-model="device.apikey" density="compact" :type="showApikey ? 'text' : 'password'" label="API Key" :append-icon="showApikey ? mdiEyeOff : mdiEye" @click:append="showApikey = !showApikey" />
         </v-col>
         <v-col cols="12" sm="12" md="6" lg="4">
-          <v-number-input v-model="device.refreshRate" type="number" control-variant="default" density="compact" hide-details label="Refresh Rate" />
+          <v-row>
+            <v-col cols="12" sm="5">
+              <v-number-input v-model="refreshRateNumber" control-variant="hidden" type="number" density="compact" label="Refresh Rate" />
+            </v-col>
+            <v-col cols="12" sm="7">
+              <v-select v-model="refreshRateUnit" density="compact" label="Unit" :items="['hours', 'minutes', 'seconds']" />
+            </v-col>
+          </v-row>
         </v-col>
         <v-col cols="12" sm="6" md="4">
           <v-select
