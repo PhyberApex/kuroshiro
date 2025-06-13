@@ -106,7 +106,7 @@ const batteryPercentage = computed(() => {
     return 100
   if (voltage <= 3.0)
     return 0
-  return Math.round((((voltage - 3.0) / (4.2 - 3.0)) * 100) * 100) / 100
+  return Math.round(((voltage - 3.0) / 0.012))
 })
 
 const batteryColor = computed(() => {
