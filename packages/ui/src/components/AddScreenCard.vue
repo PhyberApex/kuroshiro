@@ -58,13 +58,17 @@ const addScreenInputValid = computed(() => {
   if (!filename.value)
     return false
   // Check for link selected
-  if (addScreenTab.value === 'link' && (!externalLink.value || !linkValid.value))
-    return false
-  if (addScreenTab.value === 'file' && !fileInput.value)
-    return false
-  if (addScreenTab.value === 'html' && !renderHtmlValid.value)
-    return false
-  return true
+  switch (addScreenTab.value) {
+    case 'link':
+      return !!externalLink.value && linkValid.value
+    case 'file':
+      return !!fileInput.value
+    case 'html':
+      return renderHtmlValid.value
+    default:
+      { const _: never = addScreenTab.value }
+      return false
+  }
 })
 
 const addScreenIcon = computed(() => {

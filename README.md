@@ -41,7 +41,7 @@ We're constantly working to make Kuroshiro even better! Here's what's on our roa
 
 ### 🔥 High Priority
 - [ ] **Device Logs Viewer** - View logs directly from your TRMNL devices for better debugging and monitoring
-- [ ] **Refresh Rate UI Controls** - Adjust device refresh rates directly from the web interface
+- [x] **Refresh Rate UI Controls** - Adjust device refresh rates directly from the web interface
 - [ ] **Screen Management** - Switch active screens and reorder them directly in the UI
 
 ### 🎯 Medium Priority  
