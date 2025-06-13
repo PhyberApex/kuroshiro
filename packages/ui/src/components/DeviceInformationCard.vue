@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { Device } from '../types'
 import {
   mdiBattery,
   mdiBattery10,
@@ -33,10 +32,11 @@ import { formatDate } from '@/utils/formatDate'
 import { isValidMac } from '@/utils/getRandomMac'
 import { isDeviceOnline } from '@/utils/isDeviceOnline'
 
-const props = defineProps<{ device: Device }>()
-const device = computed(() => props.device)
+const props = defineProps<{ deviceId: string }>()
 
 const deviceStore = useDeviceStore()
+
+const device = computed(() => deviceStore.getById(props.deviceId))
 
 const { copy: copyToClipboard, copied: macCopied } = useClipboard()
 
@@ -193,7 +193,7 @@ const newRefreshRate = computed(() => {
   }
 })
 
-watch(() => device.value.refreshRate, () => {
+watch(() => device.value?.refreshRate, () => {
   if (device.value?.refreshRate && device.value.refreshRate % 3600 === 0) {
     refreshRateNumber.value = device.value.refreshRate / 3600
     refreshRateUnit.value = 'hours'
@@ -203,7 +203,7 @@ watch(() => device.value.refreshRate, () => {
     refreshRateUnit.value = 'minutes'
   }
   else {
-    refreshRateNumber.value = device.value.refreshRate || 0
+    refreshRateNumber.value = device.value?.refreshRate || 0
     refreshRateUnit.value = 'seconds'
   }
 })
@@ -225,101 +225,103 @@ async function saveDevice() {
 </script>
 
 <template>
-  <v-card class="mb-6" elevation="2">
-    <v-card-title class="d-flex align-center justify-space-between">
-      <div>
-        {{ device.name }}
-        <v-icon :icon="mdiCircle" :color="isDeviceOnline(device) ? 'success' : 'error'" size="x-small" />
-      </div>
-      <div>
-        <v-btn color="success" variant="tonal" :prepend-icon="mdiContentSave" class="mr-5" :disabled="!valid" @click="saveDevice">
-          Update
-        </v-btn>
-        <v-btn color="error" variant="tonal" :prepend-icon="mdiDelete" @click="deleteDevice">
-          Delete
-        </v-btn>
-      </div>
-    </v-card-title>
-    <v-divider />
-    <v-card-text>
-      <v-row class="mb-4" dense>
-        <v-col cols="12" sm="4">
-          <strong>Firmware Version:</strong>
-          <div>{{ device.fwVersion || 'N/A' }}</div>
-        </v-col>
-        <v-col cols="12" sm="4">
-          <v-icon size="x-large" :color="rssiColor" class="mr-1" :icon="rssiIcon" />
-          {{ device.rssi ? `(${device.rssi} dBm)` : 'N/A' }}
-        </v-col>
-        <v-col cols="12" sm="4">
-          <v-icon size="x-large" :color="batteryColor" class="mr-1" :icon="batteryIcon" />
-          {{ device.batteryVoltage ? `(${batteryPercentage} %)` : 'N/A' }}
-        </v-col>
-        <v-col cols="12" sm="4">
-          <strong>Display size:</strong>
-          <div>{{ device.width && device.height ? `${device.width}x${device.height}` : 'N/A' }}</div>
-        </v-col>
-        <v-col cols="12" sm="4">
-          <strong>Last seen:</strong>
-          <div class="text-truncate">
-            {{ device.lastSeen ? formatDate(device.lastSeen) : 'N/A' }}
-          </div>
-        </v-col>
-        <v-col cols="12" sm="4">
-          <strong>User Agent:</strong>
-          <div class="text-truncate">
-            {{ device.userAgent || 'N/A' }}
-          </div>
-        </v-col>
-      </v-row>
-      <v-divider class="my-2" />
-      <v-row class="mb-2" dense>
-        <v-col cols="12" sm="12" md="6" lg="4">
-          <VTextField v-model="device.friendlyId" readonly density="compact" hide-details label="Friendly ID" />
-        </v-col>
-        <v-col cols="12" sm="12" md="6" lg="4">
-          <VTextField v-model="device.mac" density="compact" label="MAC Address" readonly :append-inner-icon="macCopied ? mdiCheck : mdiContentCopy" @click:append-inner="copyToClipboard(device.mac)" />
-        </v-col>
-        <v-col cols="12" sm="12" md="6" lg="4">
-          <VTextField v-model="device.apikey" density="compact" :type="showApikey ? 'text' : 'password'" label="API Key" :append-icon="showApikey ? mdiEyeOff : mdiEye" @click:append="showApikey = !showApikey" />
-        </v-col>
-        <v-col cols="12" sm="12" md="6" lg="4">
-          <v-row>
-            <v-col cols="12" sm="5">
-              <v-number-input v-model="refreshRateNumber" control-variant="hidden" type="number" density="compact" label="Refresh Rate" />
-            </v-col>
-            <v-col cols="12" sm="7">
-              <v-select v-model="refreshRateUnit" density="compact" label="Unit" :items="['hours', 'minutes', 'seconds']" />
-            </v-col>
-          </v-row>
-        </v-col>
-        <v-col cols="12" sm="6" md="4">
-          <v-select
-            v-model="device.specialFunction"
-            :items="specialFunctionalities"
-            density="compact"
-            label="Special Function"
-          />
-        </v-col>
-        <v-col cols="12" sm="4" md="4" lg="4">
-          <v-switch v-model="device.resetDevice" color="secondary" density="compact" label="Reset device" />
-        </v-col>
-        <v-col cols="12" sm="4" md="4" lg="4">
-          <v-switch v-model="device.updateFirmware" color="secondary" density="compact" label="Automatic updates" disabled />
-        </v-col>
-      </v-row>
-      <v-divider class="my-2" />
-      <v-row class="mb-2" dense>
-        <v-col cols="12" sm="6" md="4">
-          <v-switch v-model="device.mirrorEnabled" color="secondary" label="Mirroring" />
-        </v-col>
-        <v-col cols="12" sm="6" md="4">
-          <VTextField v-model="device.mirrorMac" density="compact" label="MAC to mirror" :disabled="!device.mirrorEnabled" :rules="macRules" />
-        </v-col>
-        <v-col cols="12" sm="6" md="4">
-          <VTextField v-model="device.mirrorApikey" density="compact" label="Apikey of mirror" :disabled="!device.mirrorEnabled" :rules="apikeyRules" />
-        </v-col>
-      </v-row>
-    </v-card-text>
-  </v-card>
+  <template v-if="device">
+    <v-card class="mb-6" elevation="2">
+      <v-card-title class="d-flex align-center justify-space-between">
+        <div>
+          {{ device.name }}
+          <v-icon :icon="mdiCircle" :color="isDeviceOnline(device) ? 'success' : 'error'" size="x-small" />
+        </div>
+        <div>
+          <v-btn color="success" variant="tonal" :prepend-icon="mdiContentSave" class="mr-5" :disabled="!valid" @click="saveDevice">
+            Update
+          </v-btn>
+          <v-btn color="error" variant="tonal" :prepend-icon="mdiDelete" @click="deleteDevice">
+            Delete
+          </v-btn>
+        </div>
+      </v-card-title>
+      <v-divider />
+      <v-card-text>
+        <v-row class="mb-4" dense>
+          <v-col cols="12" sm="4">
+            <strong>Firmware Version:</strong>
+            <div>{{ device.fwVersion || 'N/A' }}</div>
+          </v-col>
+          <v-col cols="12" sm="4">
+            <v-icon size="x-large" :color="rssiColor" class="mr-1" :icon="rssiIcon" />
+            {{ device.rssi ? `(${device.rssi} dBm)` : 'N/A' }}
+          </v-col>
+          <v-col cols="12" sm="4">
+            <v-icon size="x-large" :color="batteryColor" class="mr-1" :icon="batteryIcon" />
+            {{ device.batteryVoltage ? `(${batteryPercentage} %)` : 'N/A' }}
+          </v-col>
+          <v-col cols="12" sm="4">
+            <strong>Display size:</strong>
+            <div>{{ device.width && device.height ? `${device.width}x${device.height}` : 'N/A' }}</div>
+          </v-col>
+          <v-col cols="12" sm="4">
+            <strong>Last seen:</strong>
+            <div class="text-truncate">
+              {{ device.lastSeen ? formatDate(device.lastSeen) : 'N/A' }}
+            </div>
+          </v-col>
+          <v-col cols="12" sm="4">
+            <strong>User Agent:</strong>
+            <div class="text-truncate">
+              {{ device.userAgent || 'N/A' }}
+            </div>
+          </v-col>
+        </v-row>
+        <v-divider class="my-2" />
+        <v-row class="mb-2" dense>
+          <v-col cols="12" sm="12" md="6" lg="4">
+            <VTextField v-model="device.friendlyId" readonly density="compact" hide-details label="Friendly ID" />
+          </v-col>
+          <v-col cols="12" sm="12" md="6" lg="4">
+            <VTextField v-model="device.mac" density="compact" label="MAC Address" readonly :append-inner-icon="macCopied ? mdiCheck : mdiContentCopy" @click:append-inner="copyToClipboard(device.mac)" />
+          </v-col>
+          <v-col cols="12" sm="12" md="6" lg="4">
+            <VTextField v-model="device.apikey" density="compact" :type="showApikey ? 'text' : 'password'" label="API Key" :append-icon="showApikey ? mdiEyeOff : mdiEye" @click:append="showApikey = !showApikey" />
+          </v-col>
+          <v-col cols="12" sm="12" md="6" lg="4">
+            <v-row>
+              <v-col cols="12" sm="5">
+                <v-number-input v-model="refreshRateNumber" control-variant="hidden" type="number" density="compact" label="Refresh Rate" />
+              </v-col>
+              <v-col cols="12" sm="7">
+                <v-select v-model="refreshRateUnit" density="compact" label="Unit" :items="['hours', 'minutes', 'seconds']" />
+              </v-col>
+            </v-row>
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <v-select
+              v-model="device.specialFunction"
+              :items="specialFunctionalities"
+              density="compact"
+              label="Special Function"
+            />
+          </v-col>
+          <v-col cols="12" sm="4" md="4" lg="4">
+            <v-switch v-model="device.resetDevice" color="secondary" density="compact" label="Reset device" />
+          </v-col>
+          <v-col cols="12" sm="4" md="4" lg="4">
+            <v-switch v-model="device.updateFirmware" color="secondary" density="compact" label="Automatic updates" disabled />
+          </v-col>
+        </v-row>
+        <v-divider class="my-2" />
+        <v-row class="mb-2" dense>
+          <v-col cols="12" sm="6" md="4">
+            <v-switch v-model="device.mirrorEnabled" color="secondary" label="Mirroring" />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <VTextField v-model="device.mirrorMac" density="compact" label="MAC to mirror" :disabled="!device.mirrorEnabled" :rules="macRules" />
+          </v-col>
+          <v-col cols="12" sm="6" md="4">
+            <VTextField v-model="device.mirrorApikey" density="compact" label="Apikey of mirror" :disabled="!device.mirrorEnabled" :rules="apikeyRules" />
+          </v-col>
+        </v-row>
+      </v-card-text>
+    </v-card>
+  </template>
 </template>

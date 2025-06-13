@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import type { Device } from '@/types'
 import { mdiCodeBlockTags, mdiDownload, mdiEye, mdiLink, mdiStop, mdiUpload } from '@mdi/js'
 import { computed, nextTick, ref, useTemplateRef } from 'vue'
+import { useDeviceStore } from '@/stores/device.ts'
 import { useScreensStore } from '@/stores/screens'
 import exampleHtml from '@/utils/exampleHtml'
 
-const props = defineProps<{ device: Device }>()
+const props = defineProps<{ deviceId: string }>()
 
 const screensStore = useScreensStore()
+const deviceStore = useDeviceStore()
 
-const device = computed(() => props.device)
+const device = computed(() => deviceStore.getById(props.deviceId))
 
 const externalLink = ref('')
 const fetchManual = ref(false)
@@ -120,6 +121,8 @@ async function renderPreviewHtml(html: string) {
 }
 
 async function submitAddScreen() {
+  if (!device.value)
+    return
   if (addScreenTab.value === 'link') {
     if (!externalLink.value)
       return
@@ -141,79 +144,81 @@ async function submitAddScreen() {
 </script>
 
 <template>
-  <v-card class="mb-6" elevation="1">
-    <v-card-title>Add Screen</v-card-title>
-    <v-divider />
-    <v-card-text>
-      <v-text-field v-model="filename" :rules="filenameRules" label="Filename" />
-      <v-tabs v-model="addScreenTab" grow>
-        <v-tab value="link">
-          External Link
-        </v-tab>
-        <v-tab value="file">
-          Upload File
-        </v-tab>
-        <v-tab value="html">
-          Render HTML
-        </v-tab>
-      </v-tabs>
-      <v-window v-model="addScreenTab">
-        <v-window-item value="link">
-          <v-form>
-            <v-row>
-              <v-col cols="12">
-                <v-text-field ref="externalLinkRef" v-model="externalLink" :rules="linkRules" label="External image link" required clearable :disabled="!device.width || !device.height" />
-                <v-switch v-model="fetchManual" color="secondary" label="Cache (image needs to be updated manually)" />
-              </v-col>
-            </v-row>
-          </v-form>
-        </v-window-item>
-        <v-window-item value="file">
-          <v-form>
-            <v-row>
-              <v-col cols="12">
-                <v-file-input v-model="fileInput" label="Upload image" accept="image/png, image/jpeg, image/bmp" :disabled="!device.width || !device.height" />
-              </v-col>
-            </v-row>
-          </v-form>
-        </v-window-item>
-        <v-window-item value="html">
-          <v-form>
-            <v-row>
-              <v-col cols="12">
-                <v-textarea v-model="renderHtml" label="HTML to render" :placeholder="exampleHtml" />
-              </v-col>
-            </v-row>
-          </v-form>
-        </v-window-item>
-      </v-window>
-      <v-card color="primary" variant="tonal" elevation="2">
-        <v-card-text>
-          <b>{{ addScreenInfo.title }}:</b> {{ addScreenInfo.text }}
-        </v-card-text>
-      </v-card>
-      <v-btn
-        color="primary"
-        class="mt-5"
-        :prepend-icon="addScreenIcon"
-        :disabled="!addScreenInputValid"
-        @click="submitAddScreen"
-      >
-        Add Screen
-      </v-btn>
-      <v-btn
-        v-if="addScreenTab === 'html'"
-        color="secondary"
-        class="mt-5 ml-5"
-        :prepend-icon="mdiEye"
-        :disabled="!renderHtmlValid"
-        @click="renderPreviewHtml(renderHtml)"
-      >
-        Preview
-      </v-btn>
-    </v-card-text>
-  </v-card>
-  <v-overlay v-model="showHtmlPreview" class="align-center justify-center">
-    <iframe ref="previewIframeRef" :width="(device.width || 0) + 5" :height="(device.height || 0) + 5" class="align-center" />
-  </v-overlay>
+  <template v-if="device">
+    <v-card class="mb-6" elevation="1">
+      <v-card-title>Add Screen</v-card-title>
+      <v-divider />
+      <v-card-text>
+        <v-text-field v-model="filename" :rules="filenameRules" label="Filename" />
+        <v-tabs v-model="addScreenTab" grow>
+          <v-tab value="link">
+            External Link
+          </v-tab>
+          <v-tab value="file">
+            Upload File
+          </v-tab>
+          <v-tab value="html">
+            Render HTML
+          </v-tab>
+        </v-tabs>
+        <v-window v-model="addScreenTab">
+          <v-window-item value="link">
+            <v-form>
+              <v-row>
+                <v-col cols="12">
+                  <v-text-field ref="externalLinkRef" v-model="externalLink" :rules="linkRules" label="External image link" required clearable :disabled="!device.width || !device.height" />
+                  <v-switch v-model="fetchManual" color="secondary" label="Cache (image needs to be updated manually)" />
+                </v-col>
+              </v-row>
+            </v-form>
+          </v-window-item>
+          <v-window-item value="file">
+            <v-form>
+              <v-row>
+                <v-col cols="12">
+                  <v-file-input v-model="fileInput" label="Upload image" accept="image/png, image/jpeg, image/bmp" :disabled="!device.width || !device.height" />
+                </v-col>
+              </v-row>
+            </v-form>
+          </v-window-item>
+          <v-window-item value="html">
+            <v-form>
+              <v-row>
+                <v-col cols="12">
+                  <v-textarea v-model="renderHtml" label="HTML to render" :placeholder="exampleHtml" />
+                </v-col>
+              </v-row>
+            </v-form>
+          </v-window-item>
+        </v-window>
+        <v-card color="primary" variant="tonal" elevation="2">
+          <v-card-text>
+            <b>{{ addScreenInfo.title }}:</b> {{ addScreenInfo.text }}
+          </v-card-text>
+        </v-card>
+        <v-btn
+          color="primary"
+          class="mt-5"
+          :prepend-icon="addScreenIcon"
+          :disabled="!addScreenInputValid"
+          @click="submitAddScreen"
+        >
+          Add Screen
+        </v-btn>
+        <v-btn
+          v-if="addScreenTab === 'html'"
+          color="secondary"
+          class="mt-5 ml-5"
+          :prepend-icon="mdiEye"
+          :disabled="!renderHtmlValid"
+          @click="renderPreviewHtml(renderHtml)"
+        >
+          Preview
+        </v-btn>
+      </v-card-text>
+    </v-card>
+    <v-overlay v-model="showHtmlPreview" class="align-center justify-center">
+      <iframe ref="previewIframeRef" :width="(device.width || 0) + 5" :height="(device.height || 0) + 5" class="align-center" />
+    </v-overlay>
+  </template>
 </template>
