@@ -1,3 +1,4 @@
+import type { ConfigService } from '@nestjs/config'
 import type { CreateScreenDto } from '../dto/create-screen.dto'
 import type { Screen } from '../screens.entity'
 import type { ScreensService } from '../screens.service'
@@ -18,10 +19,12 @@ function createMockService() {
 describe('screensController (unit)', () => {
   let controller: ScreensController
   let service: ReturnType<typeof createMockService>
+  let configService: { get: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     service = createMockService()
-    controller = new ScreensController(service as unknown as ScreensService)
+    configService = { get: vi.fn() }
+    controller = new ScreensController(service as unknown as ScreensService, configService as unknown as ConfigService)
   })
 
   it('getAll returns all screens', async () => {
@@ -36,6 +39,7 @@ describe('screensController (unit)', () => {
     const file = { buffer: buffer.Buffer.from('data') }
     const screen = { id: '1', filename: 'file' } as Screen
     service.add.mockResolvedValue(screen)
+    configService.get.mockReturnValue(false)
     const result = await controller.add(dto, file)
     expect(service.add).toHaveBeenCalledWith(dto, file)
     expect(result).toBe(screen)

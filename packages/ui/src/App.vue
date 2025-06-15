@@ -7,6 +7,7 @@ import { RouterView, useRoute } from 'vue-router'
 import { useTheme } from 'vuetify'
 
 import NavigationDrawer from '@/components/NavigationDrawer.vue'
+import { useDemoInfo } from '@/composeables/useDemoInfo.ts'
 import packageJson from '../../../package.json'
 
 const isDark = usePreferredDark()
@@ -35,6 +36,8 @@ const drawer = ref(false)
 onMounted(() => {
   currentRoute.value = toRaw(route.name)
 })
+
+const { isDemo } = useDemoInfo()
 </script>
 
 <template>
@@ -53,6 +56,7 @@ onMounted(() => {
       <NavigationDrawer />
     </v-navigation-drawer>
     <v-main>
+      <v-banner v-if="isDemo" bg-color="warning" text="This is a demo. Data will be reset daily! Please do not use this with your actual hardware!" />
       <RouterView />
     </v-main>
   </v-app>

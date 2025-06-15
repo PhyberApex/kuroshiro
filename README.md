@@ -35,6 +35,12 @@ Kuroshiro is for anyone who wants to experiment, self-host, and shape their own 
 
 ---
 
+## Live Demo
+
+A live demo can be found [here](https://kuroshiro-demo.phyberapex.de/)
+
+---
+
 ## 🗺️ Roadmap & Planned Features
 
 We're constantly working to make Kuroshiro even better! Here's what's on our roadmap, organized by priority:

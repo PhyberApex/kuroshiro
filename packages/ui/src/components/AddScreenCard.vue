@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { mdiCodeBlockTags, mdiDownload, mdiEye, mdiLink, mdiStop, mdiUpload } from '@mdi/js'
 import { computed, nextTick, ref, useTemplateRef } from 'vue'
+import { useDemoInfo } from '@/composeables/useDemoInfo.ts'
 import { useDeviceStore } from '@/stores/device.ts'
 import { useScreensStore } from '@/stores/screens'
 import exampleHtml from '@/utils/exampleHtml'
@@ -145,6 +146,7 @@ async function submitAddScreen() {
     renderHtml.value = ''
   }
 }
+const { isDemo } = useDemoInfo()
 </script>
 
 <template>
@@ -158,7 +160,7 @@ async function submitAddScreen() {
           <v-tab value="link">
             External Link
           </v-tab>
-          <v-tab value="file">
+          <v-tab value="file" :disabled="isDemo">
             Upload File
           </v-tab>
           <v-tab value="html">
