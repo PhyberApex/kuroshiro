@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.3.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.2.0...kuroshiro-v0.3.0) (2025-06-15)
+
+
+### Features
+
+* Added demo mode ([48a95c8](https://github.com/PhyberApex/kuroshiro/commit/48a95c85e766a9fc3327df0431b999a02508b587))
+* **mirror:** Use different endpoints depending on MAC matching or not (proxy vs. mirror) ([2507ea2](https://github.com/PhyberApex/kuroshiro/commit/2507ea23068fa2eb1ad2010c424c7287877d8675))
+* **ui:** Better UX for entering of refresh rate ([75c7d72](https://github.com/PhyberApex/kuroshiro/commit/75c7d72c9c35ea1b297d9267be9d313e2d37c399))
+* **virtual-device:** Take header attributes from real device on selection in dropdown ([9e70815](https://github.com/PhyberApex/kuroshiro/commit/9e7081558ca5962d961329e0a572bcc7668342aa))
+
+
+### Bug Fixes
+
+* **api/display:** Switched to waitFor - load for headless render to boost performance ([ce32c21](https://github.com/PhyberApex/kuroshiro/commit/ce32c21cb2c7e535615dc55d544cadddd7f692a6))
+* **deps:** Remove unused dependency (jest) ([#24](https://github.com/PhyberApex/kuroshiro/issues/24)) ([9af9886](https://github.com/PhyberApex/kuroshiro/commit/9af988671a2d33b73b4e194f2550e9c897efdba5)), closes [#23](https://github.com/PhyberApex/kuroshiro/issues/23)
+* **deps:** update dependency puppeteer to v24.10.1 ([#28](https://github.com/PhyberApex/kuroshiro/issues/28)) ([4d7bdf5](https://github.com/PhyberApex/kuroshiro/commit/4d7bdf5a11c7709f7bb5baa59d4031c5d79abdba))
+* **deps:** update dependency vuetify to v3.8.9 ([#27](https://github.com/PhyberApex/kuroshiro/issues/27)) ([0f1ccdb](https://github.com/PhyberApex/kuroshiro/commit/0f1ccdb66e71e87641357b1b8e78cb0e135059d2))
+* **deps:** update nest monorepo to v11.1.3 ([#15](https://github.com/PhyberApex/kuroshiro/issues/15)) ([7989375](https://github.com/PhyberApex/kuroshiro/commit/7989375b67684f6fc3c993d84b0f9698eebcf24a))
+* **screens:** Change HTML render to align more with plugins from TRMNL ([17cb214](https://github.com/PhyberApex/kuroshiro/commit/17cb21473cd110a7599a8c688bf8505251fcb2ba))
+* **virtual-device:** Fix header pass through to TRMNL server ([7579731](https://github.com/PhyberApex/kuroshiro/commit/7579731f3ec0afcf0ddc1e608906e248dda68872))
+
 ## [0.2.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.1.1...kuroshiro-v0.2.0) (2025-06-04)
 
 
