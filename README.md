@@ -162,7 +162,7 @@ Provide HTML you can make use of the [TRMNL framework](https://usetrmnl.com/fram
 We love contributions! Jump in:
 - Open issues or join discussions for bugs, ideas, or questions
 - Fork, branch, and submit pull requests (PRs)—all PRs welcome!
-- Please follow our code of conduct and code style
+- Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) and code style
 - Run all tests before submitting a PR
 - **We use [release-please](https://github.com/googleapis/release-please)!** Use [Conventional Commits](https://www.conventionalcommits.org/) for your commit messages to enable automatic versioning and changelogs.
 
