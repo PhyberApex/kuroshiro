@@ -37,7 +37,7 @@
     "@swc/core": "1.12.1",
     "@types/express": "5.0.3",
     "@types/multer": "1.4.13",
-    "@types/node": "22.15.31",
+    "@types/node": "22.15.32",
     "@types/supertest": "6.0.3",
     "eslint": "9.29.0",
     "supertest": "7.1.1",
