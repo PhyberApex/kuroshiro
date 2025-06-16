@@ -2,12 +2,12 @@ name: Coverage
 
 on:
   push:
-    branches: [ main, extending_tests ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
 jobs:
-  checks:
+  coverage:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
