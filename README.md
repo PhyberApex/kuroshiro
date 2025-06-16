@@ -166,10 +166,8 @@ We love contributions! Jump in:
 - Run all tests before submitting a PR
 - **We use [release-please](https://github.com/googleapis/release-please)!** Use [Conventional Commits](https://www.conventionalcommits.org/) for your commit messages to enable automatic versioning and changelogs.
 
----
+### Contributors
 
-## 💡 Ready to Take Control?
-
-Kuroshiro is all about giving you the power to shape your TRMNL experience. Self-host, customize, and have fun—your TRMNL, your way.
-
-Happy self-hosting with Kuroshiro! ✨ 
+<a href="https://github.com/phyberapex/kuroshiro/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=phyberapex/kuroshiro" />
+</a>
