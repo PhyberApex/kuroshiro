@@ -18,6 +18,7 @@
     "dev:ui": "wait-on tcp:3000 && pnpm --filter ./packages/ui dev",
     "format": "pnpm run -r lint:fix",
     "test": "pnpm run -r test",
+    "test:coverage": "pnpm run -r test:coverage",
     "lint": "pnpm run -r lint",
     "type-check": "pnpm run -r type-check",
     "build": "pnpm run -r type-check",

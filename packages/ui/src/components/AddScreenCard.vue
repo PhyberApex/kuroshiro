@@ -155,15 +155,15 @@ const { isDemo } = useDemoInfo()
       <v-card-title>Add Screen</v-card-title>
       <v-divider />
       <v-card-text>
-        <v-text-field v-model="filename" :rules="filenameRules" label="Filename" />
+        <v-text-field v-model="filename" :rules="filenameRules" label="Filename" data-test-id="filename-input" />
         <v-tabs v-model="addScreenTab" grow>
-          <v-tab value="link">
+          <v-tab value="link" data-test-id="tab-link">
             External Link
           </v-tab>
-          <v-tab value="file" :disabled="isDemo">
+          <v-tab value="file" :disabled="isDemo" data-test-id="tab-file">
             Upload File
           </v-tab>
-          <v-tab value="html">
+          <v-tab value="html" data-test-id="tab-html">
             Render HTML
           </v-tab>
         </v-tabs>
@@ -207,6 +207,7 @@ const { isDemo } = useDemoInfo()
           class="mt-5"
           :prepend-icon="addScreenIcon"
           :disabled="!addScreenInputValid"
+          data-test-id="add-screen-btn"
           @click="submitAddScreen"
         >
           Add Screen
