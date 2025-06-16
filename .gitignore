@@ -16,3 +16,7 @@ dist/
 
 # Test files
 packages/api/public
+
+# Coverage
+packages/api/coverage
+packages/ui/coverage

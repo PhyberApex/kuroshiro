@@ -229,14 +229,14 @@ async function saveDevice() {
     <v-card class="mb-6" elevation="2">
       <v-card-title class="d-flex align-center justify-space-between">
         <div>
-          {{ device.name }}
+          <span data-test-id="device-name">{{ device.name }}</span>
           <v-icon :icon="mdiCircle" :color="isDeviceOnline(device) ? 'success' : 'error'" size="x-small" />
         </div>
         <div>
           <v-btn color="success" variant="tonal" :prepend-icon="mdiContentSave" class="mr-5" :disabled="!valid" @click="saveDevice">
             Update
           </v-btn>
-          <v-btn color="error" variant="tonal" :prepend-icon="mdiDelete" @click="deleteDevice">
+          <v-btn color="error" variant="tonal" :prepend-icon="mdiDelete" data-test-id="delete-device-btn" @click="deleteDevice">
             Delete
           </v-btn>
         </div>
@@ -279,7 +279,17 @@ async function saveDevice() {
             <VTextField v-model="device.friendlyId" readonly density="compact" hide-details label="Friendly ID" />
           </v-col>
           <v-col cols="12" sm="12" md="6" lg="4">
-            <VTextField v-model="device.mac" density="compact" label="MAC Address" readonly :append-inner-icon="macCopied ? mdiCheck : mdiContentCopy" @click:append-inner="copyToClipboard(device.mac)" />
+            <v-list-item>
+              <template #prepend>
+                <v-icon :icon="mdiContentCopy" />
+              </template>
+              <span data-test-id="device-mac">{{ device.mac }}</span>
+              <template #append>
+                <v-btn icon @click="copyToClipboard(device.mac || '')">
+                  <v-icon :icon="macCopied ? mdiCheck : mdiContentCopy" />
+                </v-btn>
+              </template>
+            </v-list-item>
           </v-col>
           <v-col cols="12" sm="12" md="6" lg="4">
             <VTextField v-model="device.apikey" density="compact" :type="showApikey ? 'text' : 'password'" label="API Key" :append-icon="showApikey ? mdiEyeOff : mdiEye" @click:append="showApikey = !showApikey" />

@@ -44,7 +44,7 @@ async function renderPreviewHtml(html: string) {
       <v-card-title>Screens</v-card-title>
       <v-divider />
       <v-card-text>
-        <v-table v-if="screensStore.screens.length" density="comfortable">
+        <v-table v-if="screensStore.screens.length" density="comfortable" data-test-id="screen-table">
           <thead>
             <tr>
               <th>Type</th>
@@ -97,17 +97,17 @@ async function renderPreviewHtml(html: string) {
                 />
                 <v-btn
                   size="small"
-
                   color="error"
                   variant="tonal"
                   :icon="mdiDelete"
+                  :data-test-id="`screen-delete-btn-${screen.id}`"
                   @click="deleteScreen(screen.id)"
                 />
               </td>
             </tr>
           </tbody>
         </v-table>
-        <v-alert v-else type="info">
+        <v-alert v-else type="info" data-test-id="screen-empty-alert">
           No screens for this device. Add one.
         </v-alert>
       </v-card-text>
