@@ -80,7 +80,10 @@ describe('deviceDisplayService', () => {
 
   it('cycles screens and returns next screen if not mirrored', async () => {
     const device = { ...baseDevice, apikey: 'token', id: '1', mirrorEnabled: false }
-    const activeScreen = { id: 'screen1', order: 1, device, isActive: true, fetchManual: false, externalLink: null, filename: 'file.bmp' }
+    const filename = 'file.bmp'
+    const generatedAt = Date.now().toString()
+    const dynamicFilename = `${filename}_${generatedAt}`
+    const activeScreen = { id: 'screen1', order: 1, device, isActive: true, fetchManual: false, externalLink: null, filename, generatedAt }
     const nextScreen = { ...activeScreen, id: 'screen2', order: 2, isActive: false }
     deviceRepo.findOneBy.mockResolvedValue(device)
     screenRepo.findOneBy
@@ -92,7 +95,7 @@ describe('deviceDisplayService', () => {
     deviceRepo.save.mockResolvedValue(undefined)
     const result = await service.getCurrentImage(headers as any)
     expect(result).toBeInstanceOf(Display)
-    expect(result.filename).toBe('file.bmp')
+    expect(result.filename).toBe(dynamicFilename)
     expect(result.image_url).toBe('http://api/screens/devices/1/screen2.bmp')
   })
 })

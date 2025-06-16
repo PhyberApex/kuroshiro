@@ -129,7 +129,7 @@ export class DeviceDisplayService {
         }
       }
       return new Display({
-        filename: nextScreen.filename,
+        filename: `${nextScreen.filename}_${nextScreen.generatedAt}`,
         firmware_url: '',
         image_url: imgUrl,
         refresh_rate: device.refreshRate,
@@ -192,7 +192,7 @@ export class DeviceDisplayService {
         specialFunction = proxy ? response.special_function : specialFunction
         updateFirmware = proxy ? response.update_firmware : updateFirmware
         localImageUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${bmpFilename}`
-        filename = bmpFilename
+        filename = proxy ? response.image_name : response.filename
       }
       catch (err) {
         this.logger.error(`Failed to process image: ${err.message}`)
@@ -235,7 +235,7 @@ export class DeviceDisplayService {
     this.logger.log(`Returning screen ${activeScreen.id} for device ${device.id}`)
     const imgUrl = device.mirrorEnabled ? `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/mirror.bmp` : `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${activeScreen.id}.bmp`
     return new DisplayScreen({
-      filename: activeScreen.filename,
+      filename: `${activeScreen.filename}_${activeScreen.generatedAt}`,
       image_url: imgUrl,
       refresh_rate: device.refreshRate,
       rendered_at: device.mirrorEnabled ? new Date() : activeScreen.generatedAt,
