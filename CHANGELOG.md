@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.3.0...kuroshiro-v0.3.1) (2025-06-17)
+
+
+### Bug Fixes
+
+* **mirror:** Use proper casing for headers on sending to TRMNL server for proxy device ([a0e0e98](https://github.com/PhyberApex/kuroshiro/commit/a0e0e98adec7a8688f91bf63b591fa440c7635ba))
+* **screens:** Make filename change on new render ([#37](https://github.com/PhyberApex/kuroshiro/issues/37)) ([7bfd125](https://github.com/PhyberApex/kuroshiro/commit/7bfd12592ebfef55414cc20ac481443257eff3f3)), closes [#34](https://github.com/PhyberApex/kuroshiro/issues/34)
+
 ## [0.3.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.2.0...kuroshiro-v0.3.0) (2025-06-15)
 
 
