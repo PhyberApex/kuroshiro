@@ -109,7 +109,7 @@ const addScreenInfo = computed(() => {
   return { title, text }
 })
 const showHtmlPreview = ref(false)
-async function renderPreviewHtml(html: string) {
+async function renderPreviewHtml() {
   showHtmlPreview.value = true
   await nextTick()
   const iframe = previewIframeRef.value
@@ -120,7 +120,7 @@ async function renderPreviewHtml(html: string) {
   if (!doc)
     return
   doc.open()
-  doc.write(`<html><head><link rel="stylesheet" href="https://usetrmnl.com/css/latest/plugins.css"><script src="https://usetrmnl.com/js/latest/plugins.js"><\/script></head><body>${html}</body></html>`)
+  doc.write(`<html><head><link rel="stylesheet" href="https://usetrmnl.com/css/latest/plugins.css"><script src="https://usetrmnl.com/js/latest/plugins.js"><\/script></head><body class="environment trmnl"><div class="screen"><div class="view view--full">${renderHtml.value}</div></div></body></html>`)
   doc.close()
   showHtmlPreview.value = true
 }
@@ -218,7 +218,7 @@ const { isDemo } = useDemoInfo()
           class="mt-5 ml-5"
           :prepend-icon="mdiEye"
           :disabled="!renderHtmlValid"
-          @click="renderPreviewHtml(renderHtml)"
+          @click="renderPreviewHtml()"
         >
           Preview
         </v-btn>
