@@ -185,7 +185,7 @@ export class DeviceDisplayService {
         specialFunction = proxy ? response.special_function : specialFunction
         updateFirmware = proxy ? response.update_firmware : updateFirmware
         localImageUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${bmpFilename}`
-        filename = proxy ? response.image_name : response.filename
+        filename = response.filename
       }
       catch (err) {
         this.logger.error(`Failed to process image: ${err.message}`)
