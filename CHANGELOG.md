@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.3.1...kuroshiro-v0.3.2) (2025-06-17)
+
+
+### Bug Fixes
+
+* **mirror:** Fetching correct filename ([9dfbe42](https://github.com/PhyberApex/kuroshiro/commit/9dfbe42ad17bcd72bbd6dc0113f22930c83dccc4))
+
 ## [0.3.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.3.0...kuroshiro-v0.3.1) (2025-06-17)
 
 
