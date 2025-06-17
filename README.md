@@ -1,17 +1,8 @@
-
 ![GitHub License](https://img.shields.io/github/license/phyberapex/kuroshiro)
-[![GitHub issues](https://img.shields.io/github/issues/phyberapex/kuroshiro)](https://github.com/PhyberApex/kuroshiro/issues)
+[![Build and Push Next Docker Image](https://github.com/PhyberApex/kuroshiro/actions/workflows/docker-next.yml/badge.svg)](https://github.com/PhyberApex/kuroshiro/actions/workflows/docker-next.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/phyberapex/kuroshiro)](https://github.com/PhyberApex/kuroshiro/releases)
 [![codecov](https://codecov.io/gh/PhyberApex/kuroshiro/graph/badge.svg?token=3J6TECLYB6)](https://codecov.io/gh/PhyberApex/kuroshiro)
-[![pnpm](https://img.shields.io/badge/pnpm-F69220?logo=pnpm&logoColor=fff)](https://pnpm.io/)
-![Postgres](https://img.shields.io/badge/Postgres-%23316192.svg?logo=postgresql&logoColor=white)
-[![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=fff)](https://www.docker.com/)
-[![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=fff)](https://vite.dev/)
-[![Vitest](https://img.shields.io/badge/Vitest-6E9F18?logo=vitest&logoColor=fff)](https://vitest.dev/)
-[![Vue.js](https://img.shields.io/badge/Vue.js-4FC08D?logo=vuedotjs&logoColor=fff)](https://vuejs.org/)
-[![Vuetify](https://img.shields.io/badge/Vuetify-1867C0?logo=vuetify&logoColor=fff)](https://vuetifyjs.com/)
-[![Nest](https://img.shields.io/badge/Nest.js-%23E0234E.svg?logo=nestjs&logoColor=white)](https://nestjs.com/)
-[![TypeORM](https://img.shields.io/badge/TypeORM-FE0803?logo=typeorm&logoColor=fff)](https://typeorm.io/)
+[![GitHub Repo stars](https://img.shields.io/github/stars/phyberapex/kuroshiro?style=social)](https://github.com/PhyberApex/kuroshiro/stargazers)
 
 <p align="center">
   <img src="graphics/logo_white.png" alt="Kuroshiro Logo" width="200" />
@@ -50,9 +41,46 @@ Kuroshiro is for anyone who wants to experiment, self-host, and shape their own 
 
 ---
 
-## Live Demo
+## 🌐 Live Demo
 
-A live demo can be found [here](https://kuroshiro-demo.phyberapex.de/)
+Want to see Kuroshiro in action before diving in? We've got you covered! Check out our live demo at [kuroshiro-demo.phyberapex.de](https://kuroshiro-demo.phyberapex.de/) where you can:
+
+- **Explore the interface** - Navigate through device management, screen creation, and all the core features
+- **Test virtual devices** - Play around with the virtual device feature to see how screens render
+- **Try screen creation** - ~~Upload images~~ (This is not supported in the demo), add external links, or craft custom HTML screens
+- **See real-time updates** - Watch how the system handles device communication and screen management
+
+> **Note:** The demo will reset once a day, so you can explore freely without worrying about breaking anything. It's the perfect playground to get a feel for Kuroshiro before setting up your own instance!
+
+---
+
+## 🛠️ Technology used
+
+Kuroshiro is built on a modern, robust tech stack designed for performance, developer experience, and maintainability. Here's what powers the magic under the hood:
+
+### General
+
+[![pnpm](https://img.shields.io/badge/pnpm-F69220?logo=pnpm&logoColor=fff)](https://pnpm.io/)
+![Postgres](https://img.shields.io/badge/Postgres-%23316192.svg?logo=postgresql&logoColor=white)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=fff)](https://www.docker.com/)
+[![Vitest](https://img.shields.io/badge/Vitest-6E9F18?logo=vitest&logoColor=fff)](https://vitest.dev/)
+
+**Why this foundation?** We chose **pnpm** for lightning-fast package management and efficient monorepo handling. **PostgreSQL** gives us rock-solid data reliability with advanced features for complex queries. **Docker** ensures consistent deployments across any environment, and **Vitest** provides blazing-fast testing with excellent TypeScript support.
+
+### API
+
+[![Nest](https://img.shields.io/badge/Nest.js-%23E0234E.svg?logo=nestjs&logoColor=white)](https://nestjs.com/)
+[![TypeORM](https://img.shields.io/badge/TypeORM-FE0803?logo=typeorm&logoColor=fff)](https://typeorm.io/)
+
+**The backend powerhouse:** **NestJS** brings enterprise-grade architecture with decorators, dependency injection, and built-in TypeScript support—perfect for building scalable APIs. **TypeORM** handles our database operations with elegant Active Record patterns and automatic migrations, making data management a breeze.
+
+### UI
+
+[![Vue.js](https://img.shields.io/badge/Vue.js-4FC08D?logo=vuedotjs&logoColor=fff)](https://vuejs.org/)
+[![Vuetify](https://img.shields.io/badge/Vuetify-1867C0?logo=vuetify&logoColor=fff)](https://vuetifyjs.com/)
+[![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=fff)](https://vite.dev/)
+
+**Frontend excellence:** **Vue 3** delivers reactive, component-based UI development with incredible performance and developer ergonomics. **Vuetify** provides beautiful Material Design components out of the box, ensuring a polished, accessible interface. **Vite** powers our build process with instant hot module replacement and optimized production builds.
 
 ---
 
