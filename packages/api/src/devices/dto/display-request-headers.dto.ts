@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString } from 'class-validator'
+import { IsNumberString, IsOptional, IsString } from 'class-validator'
 
 export class DisplayRequestHeadersDto {
   @IsString()
@@ -16,8 +16,8 @@ export class DisplayRequestHeadersDto {
   'fw-version'?: string
 
   @IsOptional()
-  @IsNumber()
-  'refresh-rate'?: number
+  @IsNumberString()
+  'refresh-rate'?: string
 
   @IsOptional()
   @IsString()
@@ -28,10 +28,10 @@ export class DisplayRequestHeadersDto {
   'user-agent'?: string
 
   @IsOptional()
-  @IsNumber()
-  height?: number
+  @IsNumberString()
+  height?: string
 
   @IsOptional()
-  @IsNumber()
-  width?: number
+  @IsNumberString()
+  width?: string
 }

@@ -47,8 +47,8 @@ export class DeviceDisplayService {
       throw new BadRequestException('You can\'t change the width anymore')
     if (device.height && Number(headers.height) !== device.height)
       throw new BadRequestException('You can\'t change the height anymore')
-    device.height = headers.height
-    device.width = headers.width
+    device.height = Number.parseInt(headers.height)
+    device.width = Number.parseInt(headers.width)
     // Handling reset
     const resetDevice = device.resetDevice
     device.resetDevice = false
@@ -156,17 +156,10 @@ export class DeviceDisplayService {
       let specialFunction = device.specialFunction
       let updateFirmware = false
       try {
-        let mirrorHeaders = {
-          'Access-Token': device.mirrorApikey,
-          'ID': device.mirrorMac,
-        }
-        if (proxy) {
-          mirrorHeaders = {
-            ...headers,
-            'ID': device.mirrorMac,
-            'Access-Token': device.mirrorApikey,
-          }
-        }
+        const mirrorHeaders = proxy
+          ? { ...headers, 'ID': device.mirrorMac, 'access-token': device.mirrorApikey }
+          : { 'access-token': device.mirrorApikey, 'ID': device.mirrorMac }
+        this.logger.debug(`Sending headers: ${JSON.stringify(mirrorHeaders)}`)
         const res = await fetch(`https://usetrmnl.com/api/${proxy ? 'display' : 'current_screen'}`, {
           headers: mirrorHeaders,
         })
