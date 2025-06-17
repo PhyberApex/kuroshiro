@@ -15,10 +15,6 @@ export class UpdateDeviceDto {
 
   @IsOptional()
   @IsString()
-  apikey?: string
-
-  @IsOptional()
-  @IsString()
   batteryVoltage?: string
 
   @IsOptional()

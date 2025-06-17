@@ -19,6 +19,7 @@ import {
   mdiDelete,
   mdiEye,
   mdiEyeOff,
+  mdiPencil,
   mdiSignalCellular1,
   mdiSignalCellular2,
   mdiSignalCellular3,
@@ -213,7 +214,7 @@ async function saveDevice() {
     return
   device.value.refreshRate = newRefreshRate.value
   await deviceStore.updateDevice(device.value.id, {
-    apikey: device.value.apikey,
+    name: device.value.name,
     refreshRate: device.value.refreshRate,
     resetDevice: device.value.resetDevice,
     mirrorEnabled: device.value.mirrorEnabled,
@@ -222,15 +223,20 @@ async function saveDevice() {
     specialFunction: device.value.specialFunction,
   })
 }
+const nameEditing = ref(false)
 </script>
 
 <template>
   <template v-if="device">
     <v-card class="mb-6" elevation="2">
       <v-card-title class="d-flex align-center justify-space-between">
-        <div>
+        <div v-if="!nameEditing">
           <span data-test-id="device-name">{{ device.name }}</span>
-          <v-icon :icon="mdiCircle" :color="isDeviceOnline(device) ? 'success' : 'error'" size="x-small" />
+          <v-icon :icon="mdiPencil" class="ml-2" size="x-small" @click="nameEditing = true" />
+          <v-icon :icon="mdiCircle" :color="isDeviceOnline(device) ? 'success' : 'error'" size="x-small" class="ml-2" />
+        </div>
+        <div v-else>
+          <v-text-field v-model="device.name" variant="underlined" density="compact" autofocus :hide-details="true" min-width="200" @blur="nameEditing = false" />
         </div>
         <div>
           <v-btn color="success" variant="tonal" :prepend-icon="mdiContentSave" class="mr-5" :disabled="!valid" @click="saveDevice">
@@ -276,23 +282,13 @@ async function saveDevice() {
         <v-divider class="my-2" />
         <v-row class="mb-2" dense>
           <v-col cols="12" sm="12" md="6" lg="4">
-            <VTextField v-model="device.friendlyId" readonly density="compact" hide-details label="Friendly ID" />
+            <v-text-field v-model="device.friendlyId" readonly density="compact" hide-details label="Friendly ID" />
           </v-col>
           <v-col cols="12" sm="12" md="6" lg="4">
-            <v-list-item>
-              <template #prepend>
-                <v-icon :icon="mdiContentCopy" />
-              </template>
-              <span data-test-id="device-mac">{{ device.mac }}</span>
-              <template #append>
-                <v-btn icon @click="copyToClipboard(device.mac || '')">
-                  <v-icon :icon="macCopied ? mdiCheck : mdiContentCopy" />
-                </v-btn>
-              </template>
-            </v-list-item>
+            <v-text-field v-model="device.mac" readonly density="compact" hide-details label="MAC" :append-icon="macCopied ? mdiCheck : mdiContentCopy" @click:append="copyToClipboard(device.mac)" />
           </v-col>
           <v-col cols="12" sm="12" md="6" lg="4">
-            <VTextField v-model="device.apikey" density="compact" :type="showApikey ? 'text' : 'password'" label="API Key" :append-icon="showApikey ? mdiEyeOff : mdiEye" @click:append="showApikey = !showApikey" />
+            <v-text-field v-model="device.apikey" readonly density="compact" :type="showApikey ? 'text' : 'password'" label="API Key" :append-icon="showApikey ? mdiEyeOff : mdiEye" @click:append="showApikey = !showApikey" />
           </v-col>
           <v-col cols="12" sm="12" md="6" lg="4">
             <v-row>
