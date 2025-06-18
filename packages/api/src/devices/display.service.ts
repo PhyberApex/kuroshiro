@@ -170,15 +170,11 @@ export class DeviceDisplayService {
         const bmpFilename = 'mirror.bmp'
         const outputPath = path.join(destDir, bmpFilename)
 
-        if (!proxy) {
-          await downloadImage(response.image_url, inputPath, this.logger)
-          await convertToMonochromeBmp(inputPath, outputPath, device.width, device.height, this.logger)
-          await fs.promises.unlink(inputPath)
-        }
-        else {
-          await downloadImage(response.image_url, outputPath, this.logger)
-        }
+        await downloadImage(response.image_url, inputPath, this.logger)
+        await convertToMonochromeBmp(inputPath, outputPath, device.width, device.height, this.logger)
+        await fs.promises.unlink(inputPath)
         this.logger.log(`Deleted original image: ${inputPath}`)
+
         refreshRate = proxy ? response.refresh_rate : refreshRate
         firmwareUrl = proxy ? response.firmware_url : firmwareUrl
         resetFirmware = proxy ? response.reset_firmware : resetFirmware
