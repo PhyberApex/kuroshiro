@@ -6,14 +6,6 @@ body:
     attributes:
       value: |
         Thanks for suggesting a feature! Let’s make this project better.
-  - type: input
-    id: title
-    attributes:
-      label: Feature Title
-      description: A short, clear title for the feature
-      placeholder: "e.g. Add dark mode toggle"
-    validations:
-      required: true
   - type: textarea
     id: motivation
     attributes:
