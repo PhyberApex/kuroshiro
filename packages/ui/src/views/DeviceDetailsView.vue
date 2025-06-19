@@ -12,10 +12,6 @@ const props = defineProps<{ id: string }>()
 const deviceStore = useDeviceStore()
 const screensStore = useScreensStore()
 
-onMounted(async () => {
-  await screensStore.fetchScreensForDevice(props.id)
-})
-
 const device = computed(() => deviceStore.getById(props.id))
 
 onMounted(async () => {
@@ -37,7 +33,7 @@ onMounted(async () => {
         <v-row>
           <v-col cols="12" sm="12" md="7">
             <DeviceInformationCard :device-id="props.id" />
-            <ScreenPreviewCard v-if="screensStore.currentScreen !== null" :screen="screensStore.currentScreen" />
+            <ScreenPreviewCard :device-id="props.id" />
           </v-col>
           <v-col cols="12" sm="12" md="5">
             <AddScreenCard :device-id="props.id" />
