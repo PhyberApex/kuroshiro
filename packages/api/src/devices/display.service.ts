@@ -130,7 +130,7 @@ export class DeviceDisplayService {
         }
       }
       return new Display({
-        filename: `${nextScreen.filename}_${nextScreen.generatedAt}`,
+        filename: `${nextScreen.filename}_${nextScreen.generatedAt.toISOString()}`,
         firmware_url: '',
         image_url: imgUrl,
         refresh_rate: device.refreshRate,
@@ -235,7 +235,7 @@ export class DeviceDisplayService {
       imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${activeScreen.id}.bmp`
     }
     return new DisplayScreen({
-      filename: device.mirrorEnabled ? 'mirror' : `${activeScreen.filename}_${activeScreen.generatedAt}`,
+      filename: device.mirrorEnabled ? `mirror_${new Date().toISOString()}` : `${activeScreen.filename}_${activeScreen.generatedAt.toISOString()}`,
       image_url: imgUrl,
       refresh_rate: device.refreshRate,
       rendered_at: device.mirrorEnabled ? undefined : activeScreen.generatedAt,
