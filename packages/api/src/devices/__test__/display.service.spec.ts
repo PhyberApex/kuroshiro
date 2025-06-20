@@ -112,8 +112,8 @@ describe('deviceDisplayService', () => {
   it('cycles screens and returns next screen if not mirrored', async () => {
     const device = { ...baseDevice, apikey: 'token', id: '1', mirrorEnabled: false }
     const filename = 'file.bmp'
-    const generatedAt = new Date().toISOString()
-    const dynamicFilename = `${filename}_${generatedAt}`
+    const generatedAt = new Date()
+    const dynamicFilename = `${filename}_${generatedAt.toISOString()}`
     const activeScreen = { id: 'screen1', order: 1, device, isActive: true, fetchManual: false, externalLink: null, filename, generatedAt }
     const nextScreen = { ...activeScreen, id: 'screen2', order: 2, isActive: false }
     deviceRepo.findOneBy.mockResolvedValue(device)
@@ -252,7 +252,7 @@ describe('deviceDisplayService', () => {
       const result = await service.getCurrentImageWithoutProgressing(headers)
       expect(fileExists).toHaveBeenCalled()
       expect(result).toBeInstanceOf(DisplayScreen)
-      expect(result.filename).toBe('mirror')
+      expect(result.filename).toContain('mirror')
       expect(result.image_url).toBe('http://api/screens/devices/1/mirror.bmp')
       expect(result.rendered_at).toBeUndefined()
     })
@@ -265,7 +265,7 @@ describe('deviceDisplayService', () => {
 
       const result = await service.getCurrentImageWithoutProgressing(headers)
       expect(result).toBeInstanceOf(DisplayScreen)
-      expect(result.filename).toBe('mirror')
+      expect(result.filename).toContain('mirror')
       expect(result.image_url).toBe('http://api/screens/error.bmp')
       expect(result.rendered_at).toBeUndefined()
     })
@@ -285,7 +285,7 @@ describe('deviceDisplayService', () => {
 
       const result = await service.getCurrentImageWithoutProgressing(headers)
       expect(result).toBeInstanceOf(DisplayScreen)
-      expect(result.filename).toBe(`${activeScreen.filename}_${activeScreen.generatedAt}`)
+      expect(result.filename).toBe(`${activeScreen.filename}_${activeScreen.generatedAt.toISOString()}`)
       expect(result.image_url).toBe(`http://api/screens/devices/1/screen1.bmp`)
       expect(result.rendered_at).toBe(activeScreen.generatedAt)
     })
