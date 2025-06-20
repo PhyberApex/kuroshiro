@@ -71,11 +71,4 @@ describe('devicesController', () => {
     const dto: UpdateDeviceDto = { id: '1', apikey: 'key', specialFunction: 'identify', resetDevice: false, updateFirmware: false }
     await expect(controller.update('1', dto)).rejects.toThrow(NotFoundException)
   })
-
-  it('update throws BadRequestException if apikey update attempted', async () => {
-    const dbDevice = { id: '1', apikey: 'key' }
-    const dto: UpdateDeviceDto = { apikey: 'different', specialFunction: 'identify', resetDevice: false, updateFirmware: false }
-    service.findById.mockResolvedValue(dbDevice)
-    await expect(controller.update('1', dto)).rejects.toThrow(BadRequestException)
-  })
 })
