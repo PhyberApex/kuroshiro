@@ -1,8 +1,8 @@
-import type { DisplayRequestHeadersDto } from './dto/display-request-headers.dto'
+import type { DisplayRequestHeadersDto } from 'src/devices/dto/display-request-headers.dto'
 import { Controller, Get, Headers, UsePipes, ValidationPipe } from '@nestjs/common'
-import { Display } from './display'
-import { DeviceDisplayService } from './display.service'
-import { DisplayScreen } from './displayScreen'
+import { Display } from 'src/devices/display'
+import { DeviceDisplayService } from 'src/devices/display.service'
+import { DisplayScreen } from 'src/devices/displayScreen'
 import 'dotenv/config'
 
 @Controller('')

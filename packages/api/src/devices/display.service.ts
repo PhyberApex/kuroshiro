@@ -1,4 +1,4 @@
-import type { DisplayRequestHeadersDto } from './dto/display-request-headers.dto'
+import type { DisplayRequestHeadersDto } from 'src/devices/dto/display-request-headers.dto'
 import buffer from 'node:buffer'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
@@ -6,14 +6,14 @@ import { BadRequestException, Injectable, Logger, NotFoundException, Unauthorize
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
 import puppeteer from 'puppeteer'
+import { Device } from 'src/devices/devices.entity'
+import { Display } from 'src/devices/display'
+import { DisplayScreen } from 'src/devices/displayScreen'
+import { Screen } from 'src/screens/screens.entity'
 import { fileExists } from 'src/utils/fileExists'
 import { convertToMonochromeBmp, downloadImage } from 'src/utils/imageUtils'
+import { resolveAppPath } from 'src/utils/pathHelper'
 import { Repository } from 'typeorm'
-import { Screen } from '../screens/screens.entity'
-import { resolveAppPath } from '../utils/pathHelper'
-import { Device } from './devices.entity'
-import { Display } from './display'
-import { DisplayScreen } from './displayScreen'
 
 @Injectable()
 export class DeviceDisplayService {

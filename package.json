@@ -20,6 +20,7 @@
     "test": "pnpm run -r test",
     "test:coverage": "pnpm run -r test:coverage",
     "lint": "pnpm run -r lint",
+    "lint:fix": "pnpm run -r lint:fix",
     "type-check": "pnpm run -r type-check",
     "build": "pnpm run -r type-check",
     "prepare": "husky"
