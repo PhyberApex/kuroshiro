@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, watch } from 'vue'
 import AddScreenCard from '@/components/AddScreenCard.vue'
 import DeviceInformationCard from '@/components/DeviceInformationCard.vue'
 import ScreenListCard from '@/components/ScreenListCard.vue'
@@ -14,10 +14,11 @@ const screensStore = useScreensStore()
 
 const device = computed(() => deviceStore.getById(props.id))
 
-onMounted(async () => {
+watch(device, () => {
   if (!device.value)
     return
-  await screensStore.fetchCurrentScreenForDevice(device.value.mac, device.value.apikey)
+  screensStore.fetchScreensForDevice(device.value.id)
+  screensStore.fetchCurrentScreenForDevice(device.value.mac, device.value.apikey)
 })
 </script>
 
