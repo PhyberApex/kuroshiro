@@ -1,4 +1,4 @@
-import type { DisplayRequestHeadersDto } from './dto/display-request-headers.dto'
+import type { DisplayRequestHeadersDto } from 'src/devices/dto/display-request-headers.dto'
 import buffer from 'node:buffer'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
@@ -6,13 +6,14 @@ import { BadRequestException, Injectable, Logger, NotFoundException, Unauthorize
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
 import puppeteer from 'puppeteer'
+import { Device } from 'src/devices/devices.entity'
+import { Display } from 'src/devices/display'
+import { DisplayScreen } from 'src/devices/displayScreen'
+import { Screen } from 'src/screens/screens.entity'
+import { fileExists } from 'src/utils/fileExists'
+import { convertToMonochromeBmp, downloadImage } from 'src/utils/imageUtils'
+import { resolveAppPath } from 'src/utils/pathHelper'
 import { Repository } from 'typeorm'
-import { Screen } from '../screens/screens.entity'
-import { convertToMonochromeBmp, downloadImage } from '../utils/imageUtils'
-import { resolveAppPath } from '../utils/pathHelper'
-import { Device } from './devices.entity'
-import { Display } from './display'
-import { DisplayScreen } from './displayScreen'
 
 @Injectable()
 export class DeviceDisplayService {
@@ -170,15 +171,11 @@ export class DeviceDisplayService {
         const bmpFilename = 'mirror.bmp'
         const outputPath = path.join(destDir, bmpFilename)
 
-        if (!proxy) {
-          await downloadImage(response.image_url, inputPath, this.logger)
-          await convertToMonochromeBmp(inputPath, outputPath, device.width, device.height, this.logger)
-          await fs.promises.unlink(inputPath)
-        }
-        else {
-          await downloadImage(response.image_url, outputPath, this.logger)
-        }
+        await downloadImage(response.image_url, inputPath, this.logger)
+        await convertToMonochromeBmp(inputPath, outputPath, device.width, device.height, this.logger)
+        await fs.promises.unlink(inputPath)
         this.logger.log(`Deleted original image: ${inputPath}`)
+
         refreshRate = proxy ? response.refresh_rate : refreshRate
         firmwareUrl = proxy ? response.firmware_url : firmwareUrl
         resetFirmware = proxy ? response.reset_firmware : resetFirmware
@@ -225,13 +222,23 @@ export class DeviceDisplayService {
         rendered_at: new Date(),
       })
     }
-    this.logger.log(`Returning screen ${activeScreen.id} for device ${device.id}`)
-    const imgUrl = device.mirrorEnabled ? `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/mirror.bmp` : `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${activeScreen.id}.bmp`
+    let imgUrl = `${this.configService.get<string>('api_url')}/screens/error.bmp`
+    if (device.mirrorEnabled) {
+      this.logger.log(`Mirroring enabled for device ${device.id}, checking for image...`)
+      if (await fileExists(resolveAppPath('public', 'screens', 'devices', device.id, 'mirror.bmp'))) {
+        this.logger.log(`Image found returning`)
+        imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/mirror.bmp`
+      }
+    }
+    else {
+      this.logger.log(`Returning screen ${activeScreen.id} for device ${device.id}`)
+      imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${activeScreen.id}.bmp`
+    }
     return new DisplayScreen({
-      filename: `${activeScreen.filename}_${activeScreen.generatedAt.toISOString()}`,
+      filename: device.mirrorEnabled ? `mirror_${new Date().toISOString()}` : `${activeScreen.filename}_${activeScreen.generatedAt.toISOString()}`,
       image_url: imgUrl,
       refresh_rate: device.refreshRate,
-      rendered_at: device.mirrorEnabled ? new Date() : activeScreen.generatedAt,
+      rendered_at: device.mirrorEnabled ? undefined : activeScreen.generatedAt,
     })
   }
 }

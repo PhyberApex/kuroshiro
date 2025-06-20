@@ -1,11 +1,22 @@
 <script setup lang="ts">
-import type { CurrentScreen } from '@/types'
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
+import { useDeviceStore } from '@/stores/device.ts'
+import { useScreensStore } from '@/stores/screens.ts'
 import { formatDate } from '@/utils/formatDate'
 
-const props = defineProps<{ screen: CurrentScreen }>()
+const props = defineProps<{ deviceId: string }>()
 
-const screen = computed(() => props.screen)
+const deviceStore = useDeviceStore()
+const screensStore = useScreensStore()
+
+const device = computed(() => deviceStore.getById(props.deviceId))
+
+onMounted(async () => {
+  if (!device.value)
+    return
+  await screensStore.fetchCurrentScreenForDevice(device.value.mac, device.value.apikey)
+})
+const screen = computed(() => screensStore.currentScreen)
 </script>
 
 <template>
@@ -13,10 +24,17 @@ const screen = computed(() => props.screen)
     <v-card-title>Current Screen</v-card-title>
     <v-divider />
     <v-card-text>
-      <v-img :src="screen.image_url" data-test-id="screen-image" />
-      <div class="mt-5 text-subtitle-1" data-test-id="screen-rendered-date">
-        Generated {{ formatDate(screen.rendered_at) }}
-      </div>
+      <template v-if="screen">
+        <v-img :src="screen.image_url" data-test-id="screen-image" />
+        <div class="mt-5 text-subtitle-1" data-test-id="screen-rendered-date">
+          Generated {{ screen.rendered_at ? formatDate(screen.rendered_at) : "???" }}
+        </div>
+      </template>
+      <template v-else>
+        <div class="text-subtitle-1" data-test-id="no-screen">
+          No screen available
+        </div>
+      </template>
     </v-card-text>
   </v-card>
 </template>

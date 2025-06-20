@@ -20,13 +20,9 @@ RUN pnpm --filter ./packages/api run build
 FROM node:22-alpine AS production
 WORKDIR /app
 
-# Copy api bundle and static files only
-COPY --from=api-build /app/packages/api/dist ./dist
-COPY --from=ui-build /app/packages/ui/dist ./public
-
-# Install only production dependencies
-COPY packages/api/package.json ./package.json
-RUN corepack enable && pnpm install --prod
+# Pupeteer fix
+RUN apk add --no-cache chromium
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # Install tini
 RUN apk add --no-cache tini
@@ -38,6 +34,14 @@ RUN apk add --no-cache \
     libpng-dev \
     giflib-dev \
     tiff-dev
+
+# Copy api bundle and static files only
+COPY --from=api-build /app/packages/api/dist ./dist
+COPY --from=ui-build /app/packages/ui/dist ./public
+
+# Install only production dependencies
+COPY packages/api/package.json ./package.json
+RUN corepack enable && pnpm install --prod
 
 # Use tini as the entrypoint
 ENTRYPOINT ["/sbin/tini", "--"]

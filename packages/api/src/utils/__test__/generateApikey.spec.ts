@@ -1,6 +1,6 @@
 import buffer from 'node:buffer'
+import generateApiKey from 'src/utils/generateApikey'
 import { describe, expect, it } from 'vitest'
-import generateApiKey from '../generateApikey'
 
 // Polyfill btoa for Node.js
 globalThis.btoa = globalThis.btoa || function (str: string) {

@@ -32,7 +32,7 @@ async function renderPreviewHtml(html: string) {
   if (!doc)
     return
   doc.open()
-  doc.write(`<html><head><link rel="stylesheet" href="https://usetrmnl.com/css/latest/plugins.css"><script src="https://usetrmnl.com/js/latest/plugins.js"><\/script></head><body>${html}</body></html>`)
+  doc.write(`<html><head><link rel="stylesheet" href="https://usetrmnl.com/css/latest/plugins.css"><script src="https://usetrmnl.com/js/latest/plugins.js"><\/script></head><body class="environment trmnl"><div class="screen"><div class="view view--full">${html}</div></div></body></html>`)
   doc.close()
   showHtmlPreview.value = true
 }

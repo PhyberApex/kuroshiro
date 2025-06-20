@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { TypeOrmModule } from '@nestjs/typeorm'
-import { Screen } from '../screens/screens.entity'
-import { DevicesController } from './devices.controller'
-import { Device } from './devices.entity'
-import { DevicesService } from './devices.service'
-import { DisplayController } from './display.controller'
-import { DeviceDisplayService } from './display.service'
-import { SetupController } from './setup.controller'
-import { DeviceSetupService } from './setup.service'
+import { DevicesController } from 'src/devices/devices.controller'
+import { Device } from 'src/devices/devices.entity'
+import { DevicesService } from 'src/devices/devices.service'
+import { DisplayController } from 'src/devices/display.controller'
+import { DeviceDisplayService } from 'src/devices/display.service'
+import { SetupController } from 'src/devices/setup.controller'
+import { DeviceSetupService } from 'src/devices/setup.service'
+import { Screen } from 'src/screens/screens.entity'
 
 @Module({
   imports: [TypeOrmModule.forFeature([Device, Screen]), ConfigModule],

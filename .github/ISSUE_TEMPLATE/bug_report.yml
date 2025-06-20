@@ -6,14 +6,6 @@ body:
     attributes:
       value: |
         Thanks for reporting a bug! Please fill out this form as completely as possible.
-  - type: input
-    id: title
-    attributes:
-      label: Bug Title
-      description: A short and descriptive title for the bug.
-      placeholder: "e.g. Crash on clicking Save"
-    validations:
-      required: true
   - type: textarea
     id: description
     attributes:
