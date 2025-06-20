@@ -1,13 +1,11 @@
 import { mount } from '@vue/test-utils'
+import rop from 'resize-observer-polyfill'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import vuetify from '../../plugins/vuetify'
 import ScreenPreviewCard from '../ScreenPreviewCard.vue'
 
-globalThis.ResizeObserver = class {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-}
+globalThis.ResizeObserver = rop
+
 globalThis.window.matchMedia = globalThis.window.matchMedia || function () {
   return {
     matches: false,

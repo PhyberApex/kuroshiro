@@ -1,14 +1,12 @@
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
+import rop from 'resize-observer-polyfill'
 import { describe, expect, it, vi } from 'vitest'
 import vuetify from '../../plugins/vuetify'
 import AddScreenCard from '../AddScreenCard.vue'
 
-globalThis.ResizeObserver = class {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-}
+globalThis.ResizeObserver = rop
+
 globalThis.window.matchMedia = globalThis.window.matchMedia || function () {
   return {
     matches: false,
