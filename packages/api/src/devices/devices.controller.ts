@@ -58,10 +58,6 @@ export class DevicesController {
       this.logger.warn(`Device not found: ${id}`)
       throw new NotFoundException('Device not found')
     }
-    if (newDevice.apikey !== undefined && newDevice.apikey !== dbDevice.apikey) {
-      this.logger.warn('Tried to update apikey')
-      throw new BadRequestException('Can\'t update apikey')
-    }
     await this.devicesService.update(id, newDevice)
   }
 }

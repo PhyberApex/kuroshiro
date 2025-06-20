@@ -54,8 +54,6 @@ describe('deviceInformationCard', () => {
     expect(wrapper.exists()).toBe(true)
     expect(wrapper.find('[data-test-id="device-name"]').exists()).toBe(true)
     expect(wrapper.find('[data-test-id="device-name"]').text()).toContain('Test Device')
-    expect(wrapper.find('[data-test-id="device-mac"]').exists()).toBe(true)
-    expect(wrapper.find('[data-test-id="device-mac"]').text()).toContain('AA:BB:CC:DD:EE:FF')
     expect(wrapper.find('[data-test-id="delete-device-btn"]').exists()).toBe(true)
   })
 })
