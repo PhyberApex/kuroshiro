@@ -1,10 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
+import { Device } from 'src/devices/devices.entity'
+import generateApikey from 'src/utils/generateApikey'
+import generateFriendlyName from 'src/utils/generateFriendlyName'
 import { Repository } from 'typeorm'
-import generateApikey from '../utils/generateApikey'
-import generateFriendlyName from '../utils/generateFriendlyName'
-import { Device } from './devices.entity'
 
 interface SetupResponse {
   status: 200

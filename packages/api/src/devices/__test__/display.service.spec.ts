@@ -1,10 +1,17 @@
 import { promises as fs } from 'node:fs'
 import { BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common'
-import { fileExists } from 'src/utils/fileExists'
+import { Display } from 'src/devices/display'
+import { DeviceDisplayService } from 'src/devices/display.service'
+import { DisplayScreen } from 'src/devices/displayScreen'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { Display } from '../display'
-import { DeviceDisplayService } from '../display.service'
-import { DisplayScreen } from '../displayScreen'
+
+const { fileExists } = vi.hoisted(() => ({
+  fileExists: vi.fn(),
+}))
+
+vi.mock('src/utils/fileExists', () => ({
+  fileExists,
+}))
 
 vi.mock('node:fs', () => ({
   promises: {
@@ -15,10 +22,6 @@ vi.mock('node:fs', () => ({
 vi.mock('src/utils/imageUtils', () => ({
   downloadImage: vi.fn().mockResolvedValue(undefined),
   convertToMonochromeBmp: vi.fn().mockResolvedValue(undefined),
-}))
-
-vi.mock('src/utils/fileExists', () => ({
-  fileExists: vi.fn(),
 }))
 
 vi.mock('puppeteer', () => ({
@@ -244,9 +247,10 @@ describe('deviceDisplayService', () => {
       const device = { ...baseDevice, apikey: 'token', id: '1', mirrorEnabled: true }
       deviceRepo.findOneBy.mockResolvedValue(device)
       configService.get.mockReturnValue('http://api')
-      vi.mocked(fileExists).mockResolvedValue(true)
+      fileExists.mockResolvedValue(true)
 
       const result = await service.getCurrentImageWithoutProgressing(headers)
+      expect(fileExists).toHaveBeenCalled()
       expect(result).toBeInstanceOf(DisplayScreen)
       expect(result.filename).toBe('mirror')
       expect(result.image_url).toBe('http://api/screens/devices/1/mirror.bmp')
@@ -257,7 +261,7 @@ describe('deviceDisplayService', () => {
       const device = { ...baseDevice, apikey: 'token', id: '1', mirrorEnabled: true }
       deviceRepo.findOneBy.mockResolvedValue(device)
       configService.get.mockReturnValue('http://api')
-      vi.mocked(fileExists).mockResolvedValue(false)
+      fileExists.mockResolvedValue(false)
 
       const result = await service.getCurrentImageWithoutProgressing(headers)
       expect(result).toBeInstanceOf(DisplayScreen)
