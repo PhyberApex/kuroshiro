@@ -133,7 +133,7 @@ async function update() {
                   <span class="ms-4"><b>RSSI:</b> {{ device.rssi || 'N/A' }}</span>
                 </v-list-item-subtitle>
                 <template #append>
-                  <v-btn color="error" variant="tonal" :prepend-icon="mdiDelete" :loading="loadingDelete.find(currentId => currentId === device.id)" @click.stop="deleteDevice(device.id)">
+                  <v-btn color="error" variant="tonal" :prepend-icon="mdiDelete" :loading="loadingDelete.find(currentId => currentId === device.id)" @click.prevent="deleteDevice(device.id)">
                     Delete
                   </v-btn>
                 </template>
