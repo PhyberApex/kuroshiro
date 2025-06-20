@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.4.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.3.2...kuroshiro-v0.4.0) (2025-06-20)
+
+
+### Features
+
+* **device:** Allow changing of name ([#49](https://github.com/PhyberApex/kuroshiro/issues/49)) ([a98afcb](https://github.com/PhyberApex/kuroshiro/commit/a98afcb2442b2a16b58100c6ef6efd3ae4ea31bc))
+
+
+### Bug Fixes
+
+* **deps:** update dependency @vueuse/core to v13.4.0 ([#66](https://github.com/PhyberApex/kuroshiro/issues/66)) ([51bf575](https://github.com/PhyberApex/kuroshiro/commit/51bf575298c14c44a6fd5af26a4b635dffb92b34))
+* **deps:** update dependency pg to v8.16.1 ([#56](https://github.com/PhyberApex/kuroshiro/issues/56)) ([ff1919a](https://github.com/PhyberApex/kuroshiro/commit/ff1919aee7988e1ef6a435e11f7dd1ad3eb61d44))
+* **deps:** update dependency pg to v8.16.2 ([#67](https://github.com/PhyberApex/kuroshiro/issues/67)) ([f5201ca](https://github.com/PhyberApex/kuroshiro/commit/f5201cac42cac90937c20f4cf37034b97ca502ce))
+* **deps:** update dependency typeorm to v0.3.25 ([#68](https://github.com/PhyberApex/kuroshiro/issues/68)) ([58e2b25](https://github.com/PhyberApex/kuroshiro/commit/58e2b25f7d04440fbd00f7dd9ebcbf56ccc1e34d))
+* **deps:** update dependency vue to v3.5.17 ([#57](https://github.com/PhyberApex/kuroshiro/issues/57)) ([4260d68](https://github.com/PhyberApex/kuroshiro/commit/4260d689ab5fb2dc4ae6cfe9ca0db36d218b17c0))
+* **deps:** update dependency vuetify to v3.8.10 ([#61](https://github.com/PhyberApex/kuroshiro/issues/61)) ([577b964](https://github.com/PhyberApex/kuroshiro/commit/577b964993dc6997017ec9ad3a7010ad97fca0d6))
+* **devices:** Current screen and screen list not updating on device switch ([254a962](https://github.com/PhyberApex/kuroshiro/commit/254a96235a3a192cc755e4adcd452f0d32539fe3)), closes [#42](https://github.com/PhyberApex/kuroshiro/issues/42)
+* **display:** Change post-fix to iso date string ([#50](https://github.com/PhyberApex/kuroshiro/issues/50)) ([7db241a](https://github.com/PhyberApex/kuroshiro/commit/7db241aed0bdf2ea0759b70546cb88379ea87b1f))
+* **docker:** Fix pupeteer not working in docker ([#48](https://github.com/PhyberApex/kuroshiro/issues/48)) ([f0e694d](https://github.com/PhyberApex/kuroshiro/commit/f0e694d8cc49e4522d58bf620a46a7f0422269ba)), closes [#45](https://github.com/PhyberApex/kuroshiro/issues/45)
+* **mirror:** Fixing DeviceDetailsView not working if no screen added but mirroring enabled ([#64](https://github.com/PhyberApex/kuroshiro/issues/64)) ([611a4c6](https://github.com/PhyberApex/kuroshiro/commit/611a4c6ce06b1196b7b8fbc5418bc33b8a24e4e6)), closes [#43](https://github.com/PhyberApex/kuroshiro/issues/43)
+* **mirror:** Fixing proxy not working ([#59](https://github.com/PhyberApex/kuroshiro/issues/59)) ([7b27f6a](https://github.com/PhyberApex/kuroshiro/commit/7b27f6a24412cef9800f496afefd71a70639b503)), closes [#44](https://github.com/PhyberApex/kuroshiro/issues/44)
+* **screens:** Fixed the preview of the HTML render screens in all places ([5030d29](https://github.com/PhyberApex/kuroshiro/commit/5030d291eaf6bb0d27941007f9732cc2c5ca0886))
+* **ui:** Fix for flash screen ([a1286e8](https://github.com/PhyberApex/kuroshiro/commit/a1286e8f4d0935db168ee52bc292b5903d633deb)), closes [#46](https://github.com/PhyberApex/kuroshiro/issues/46)
+
 ## [0.3.2](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.3.1...kuroshiro-v0.3.2) (2025-06-17)
 
 
