@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.4.0...kuroshiro-v0.4.1) (2025-06-27)
+
+
+### Bug Fixes
+
+* **deps:** update dependency vuetify to v3.8.11 ([#75](https://github.com/PhyberApex/kuroshiro/issues/75)) ([1ffee06](https://github.com/PhyberApex/kuroshiro/commit/1ffee06fd6308e89a2e37f37db50c519a98207bc))
+
 ## [0.4.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.3.2...kuroshiro-v0.4.0) (2025-06-20)
 
 
