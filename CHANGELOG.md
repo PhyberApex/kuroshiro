@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.4.0...kuroshiro-v0.4.1) (2025-07-05)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @vueuse/core to v13.5.0 ([#95](https://github.com/PhyberApex/kuroshiro/issues/95)) ([1577d15](https://github.com/PhyberApex/kuroshiro/commit/1577d151b486683cdd65bf04279da659f45f04bb))
+* **deps:** update dependency dotenv to v16.6.1 ([#83](https://github.com/PhyberApex/kuroshiro/issues/83)) ([ba7f026](https://github.com/PhyberApex/kuroshiro/commit/ba7f026115b442b5bb158925ba3ec4492f906119))
+* **deps:** update dependency pg to v8.16.3 ([#84](https://github.com/PhyberApex/kuroshiro/issues/84)) ([6c1320e](https://github.com/PhyberApex/kuroshiro/commit/6c1320e42e9d12f85016a6ce9eee3fe10b1808ae))
+* **deps:** update dependency vuetify to v3.8.11 ([#75](https://github.com/PhyberApex/kuroshiro/issues/75)) ([1ffee06](https://github.com/PhyberApex/kuroshiro/commit/1ffee06fd6308e89a2e37f37db50c519a98207bc))
+* **deps:** update dependency vuetify to v3.8.12 ([#93](https://github.com/PhyberApex/kuroshiro/issues/93)) ([72dcc59](https://github.com/PhyberApex/kuroshiro/commit/72dcc59e6d15146e77440159ef18987a2ae5c0bc))
+
 ## [0.4.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.3.2...kuroshiro-v0.4.0) (2025-06-20)
 
 
