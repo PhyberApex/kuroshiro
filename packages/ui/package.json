@@ -23,7 +23,7 @@
     "vuetify": "3.9.0"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "4.16.2",
+    "@antfu/eslint-config": "4.17.0",
     "@semantic-release/changelog": "6.0.3",
     "@semantic-release/git": "10.0.1",
     "@semantic-release/github": "11.0.3",
