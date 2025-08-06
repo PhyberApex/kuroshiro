@@ -32,7 +32,7 @@
     "uuid": "11.1.0"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "5.0.0",
+    "@antfu/eslint-config": "5.2.0",
     "@nestjs/cli": "11.0.10",
     "@nestjs/testing": "11.1.5",
     "@swc/core": "1.13.3",
