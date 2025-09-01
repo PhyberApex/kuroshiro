@@ -28,7 +28,7 @@
   "devDependencies": {
     "concurrently": "9.2.1",
     "husky": "9.1.7",
-    "lint-staged": "16.1.5",
+    "lint-staged": "16.1.6",
     "wait-on": "8.0.4"
   }
 }
