@@ -38,7 +38,7 @@
     "@vue/tsconfig": "0.8.1",
     "eslint": "9.35.0",
     "jiti": "2.5.1",
-    "jsdom": "26.1.0",
+    "jsdom": "27.0.0",
     "npm-run-all2": "8.0.4",
     "resize-observer-polyfill": "1.5.1",
     "start-server-and-test": "2.1.0",
