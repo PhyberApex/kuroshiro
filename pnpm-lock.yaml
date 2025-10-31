@@ -18,8 +18,8 @@ importers:
         specifier: 16.1.6
         version: 16.1.6
       wait-on:
-        specifier: 8.0.5
-        version: 8.0.5
+        specifier: 9.0.1
+        version: 9.0.1
 
   packages/api:
     dependencies:
@@ -2198,11 +2198,11 @@ packages:
     resolution: {integrity: sha512-wvUjBtSGN7+7SjNpq/9M2Tg350UZD3q62IFZLbRAR1bSMlCo1ZaeW+BJ+D090e4hIIZLBcTDWe4Mh4jvUDajzQ==}
     engines: {node: '>= 0.4'}
 
-  axios@1.11.0:
-    resolution: {integrity: sha512-1Lx3WLFQWm3ooKDYZD1eXmoGO9fxYQjrycfHFC8P0sCfQVXyROp0p9PFWBehewBOdCwHc+f/b8I0fMto5eSfwA==}
-
   axios@1.12.1:
     resolution: {integrity: sha512-Kn4kbSXpkFHCGE6rBFNwIv0GQs4AvDT80jlveJDKFxjbTYMUeB4QtsdPCv6H8Cm19Je7IU6VFtRl2zWZI0rudQ==}
+
+  axios@1.13.1:
+    resolution: {integrity: sha512-hU4EGxxt+j7TQijx1oYdAjw4xuIp1wRQSsbMFwSthCWeBQur1eF+qJ5iQ5sN3Tw8YRzQNKb8jszgBdMDVqwJcw==}
 
   b4a@1.6.7:
     resolution: {integrity: sha512-OnAYlL5b7LEkALw87fUVafQw5rVR9RjwGd4KUwNQ6DrrNmaVaUCgLipfVlzrPQ4tWOR9P0IXGNOx50jYCCdSJg==}
@@ -5948,9 +5948,9 @@ packages:
     engines: {node: '>=12.0.0'}
     hasBin: true
 
-  wait-on@8.0.5:
-    resolution: {integrity: sha512-J3WlS0txVHkhLRb2FsmRg3dkMTCV1+M6Xra3Ho7HzZDHpE7DCOnoSoCJsZotrmW3uRMhvIJGSKUKrh/MeF4iag==}
-    engines: {node: '>=12.0.0'}
+  wait-on@9.0.1:
+    resolution: {integrity: sha512-noeCAI+XbqWMXY23sKril0BSURhuLYarkVXwJv1uUWwoojZJE7pmX3vJ7kh7SZaNgPGzfsCSQIZM/AGvu0Q9pA==}
+    engines: {node: '>=20.0.0'}
     hasBin: true
 
   watchpack@2.4.4:
@@ -8249,7 +8249,7 @@ snapshots:
     dependencies:
       possible-typed-array-names: 1.1.0
 
-  axios@1.11.0(debug@4.4.1):
+  axios@1.12.1(debug@4.4.1):
     dependencies:
       follow-redirects: 1.15.9(debug@4.4.1)
       form-data: 4.0.4
@@ -8257,7 +8257,7 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  axios@1.12.1:
+  axios@1.13.1:
     dependencies:
       follow-redirects: 1.15.9(debug@4.4.1)
       form-data: 4.0.4
@@ -8608,7 +8608,7 @@ snapshots:
       conventional-commits-filter: 5.0.0
       handlebars: 4.7.8
       meow: 13.2.0
-      semver: 7.7.2
+      semver: 7.7.3
 
   conventional-commits-filter@5.0.0: {}
 
@@ -11282,7 +11282,7 @@ snapshots:
       p-reduce: 3.0.0
       read-package-up: 11.0.0
       resolve-from: 5.0.0
-      semver: 7.7.2
+      semver: 7.7.3
       semver-diff: 4.0.0
       signale: 1.4.0
       yargs: 17.7.2
@@ -11292,7 +11292,7 @@ snapshots:
 
   semver-diff@4.0.0:
     dependencies:
-      semver: 7.7.2
+      semver: 7.7.3
 
   semver-regex@4.0.5: {}
 
@@ -12251,7 +12251,7 @@ snapshots:
 
   wait-on@8.0.4(debug@4.4.1):
     dependencies:
-      axios: 1.11.0(debug@4.4.1)
+      axios: 1.12.1(debug@4.4.1)
       joi: 17.13.3
       lodash: 4.17.21
       minimist: 1.2.8
@@ -12259,9 +12259,9 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  wait-on@8.0.5:
+  wait-on@9.0.1:
     dependencies:
-      axios: 1.12.1
+      axios: 1.13.1
       joi: 18.0.1
       lodash: 4.17.21
       minimist: 1.2.8
