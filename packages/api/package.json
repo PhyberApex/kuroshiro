@@ -14,10 +14,10 @@
     "prepare": "puppeteer browsers install chrome"
   },
   "dependencies": {
-    "@nestjs/common": "11.1.6",
+    "@nestjs/common": "11.1.8",
     "@nestjs/config": "4.0.2",
-    "@nestjs/core": "11.1.6",
-    "@nestjs/platform-express": "11.1.6",
+    "@nestjs/core": "11.1.8",
+    "@nestjs/platform-express": "11.1.8",
     "@nestjs/serve-static": "5.0.4",
     "@nestjs/typeorm": "11.0.0",
     "class-transformer": "0.5.1",
@@ -34,7 +34,7 @@
   "devDependencies": {
     "@antfu/eslint-config": "5.4.1",
     "@nestjs/cli": "11.0.10",
-    "@nestjs/testing": "11.1.6",
+    "@nestjs/testing": "11.1.8",
     "@swc/core": "1.15.0",
     "@types/express": "5.0.5",
     "@types/multer": "2.0.0",
