@@ -46,7 +46,7 @@
     "ts-loader": "9.5.4",
     "ts-node": "10.9.2",
     "tsconfig-paths": "4.2.0",
-    "tsup": "8.5.0",
+    "tsup": "8.5.1",
     "typescript": "5.9.2",
     "vitest": "3.2.4"
   }
