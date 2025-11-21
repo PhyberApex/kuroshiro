@@ -1,5 +1,5 @@
 # Stage 1: Build ui
-FROM node:22-alpine AS ui-build
+FROM node:24-alpine AS ui-build
 WORKDIR /app
 COPY packages/ui ./packages/ui
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
@@ -8,7 +8,7 @@ RUN pnpm --filter ./packages/ui build
 RUN pnpm --filter ./packages/ui build
 
 # Stage 2: Build api
-FROM node:22-alpine AS api-build
+FROM node:24-alpine AS api-build
 WORKDIR /app
 COPY packages/api ./packages/api
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
@@ -17,7 +17,7 @@ RUN corepack enable && pnpm install --frozen-lockfile
 RUN pnpm --filter ./packages/api run build
 
 # Stage 3: Production image
-FROM node:22-alpine AS production
+FROM node:24-alpine AS production
 WORKDIR /app
 
 # Pupeteer fix
