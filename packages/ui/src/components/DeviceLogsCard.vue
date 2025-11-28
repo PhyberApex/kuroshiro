@@ -73,6 +73,7 @@ function getSeverityIcon(severity: string) {
           class="mr-2"
           :prepend-icon="mdiDelete"
           :disabled="logsStore.loading"
+          data-test-id="clear-log-button"
           @click="logsStore.clearLogs()"
         >
           Clear Logs
@@ -85,7 +86,7 @@ function getSeverityIcon(severity: string) {
       <v-card-text class="pa-0">
         <v-list v-if="logsStore.logEntries.length !== 0" lines="three" data-test-id="logs-list">
           <template v-for="(logEntry, index) in logsStore.logEntries" :key="logEntry.logId">
-            <v-list-item>
+            <v-list-item data-test-id="log-list-item">
               <template #prepend>
                 <v-avatar
                   :color="getSeverityColor(getLogSeverity(parseLogEntry(logEntry.entry)?.log_message || ''))"
