@@ -8,10 +8,11 @@ import { DisplayController } from 'src/devices/display.controller'
 import { DeviceDisplayService } from 'src/devices/display.service'
 import { SetupController } from 'src/devices/setup.controller'
 import { DeviceSetupService } from 'src/devices/setup.service'
+import { LogEntry } from 'src/logs/logs.entity'
 import { Screen } from 'src/screens/screens.entity'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Device, Screen]), ConfigModule],
+  imports: [TypeOrmModule.forFeature([Device, Screen, LogEntry]), ConfigModule],
   controllers: [DevicesController, DisplayController, SetupController],
   providers: [DevicesService, DeviceDisplayService, DeviceSetupService],
   exports: [DevicesService],

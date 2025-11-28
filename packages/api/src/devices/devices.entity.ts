@@ -1,4 +1,5 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
+import { LogEntry } from '../logs/logs.entity'
 import { Screen } from '../screens/screens.entity'
 
 @Entity()
@@ -62,4 +63,7 @@ export class Device {
 
   @OneToMany(() => Screen, screen => screen.device)
   screens: Screen[]
+
+  @OneToMany(() => LogEntry, logEntry => logEntry.device)
+  logs: LogEntry[]
 }

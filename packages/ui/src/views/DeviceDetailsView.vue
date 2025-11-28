@@ -2,6 +2,7 @@
 import { computed, watch } from 'vue'
 import AddScreenCard from '@/components/AddScreenCard.vue'
 import DeviceInformationCard from '@/components/DeviceInformationCard.vue'
+import DeviceLogsCard from '@/components/DeviceLogsCard.vue'
 import ScreenListCard from '@/components/ScreenListCard.vue'
 import ScreenPreviewCard from '@/components/ScreenPreviewCard.vue'
 import { useDeviceStore } from '@/stores/device'
@@ -39,6 +40,7 @@ watch(device, () => {
           <v-col cols="12" sm="12" md="5">
             <AddScreenCard :device-id="props.id" />
             <ScreenListCard :device-id="props.id" />
+            <DeviceLogsCard :device-id="props.id" />
           </v-col>
         </v-row>
       </v-col>
