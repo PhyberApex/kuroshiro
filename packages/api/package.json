@@ -32,7 +32,7 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "6.2.0",
-    "@nestjs/cli": "11.0.13",
+    "@nestjs/cli": "11.0.14",
     "@nestjs/testing": "11.1.9",
     "@swc/core": "1.15.3",
     "@types/express": "5.0.5",
