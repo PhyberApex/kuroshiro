@@ -2,5 +2,9 @@ import { IsObject } from 'class-validator'
 
 export class CreateLogDto {
   @IsObject()
-  log: Record<string, any>
+  log: {
+    logs_array: Array<{
+      log_id: number
+    } & Record<string, any>>
+  }
 }

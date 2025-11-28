@@ -1,8 +1,8 @@
-import { v4 as uuidv4 } from 'uuid'
+import { randomUUID } from 'node:crypto'
 
 export default function () {
   // Remove hyphens from UUID
-  const cleanUuid = uuidv4().replace(/-/g, '')
+  const cleanUuid = randomUUID().replace(/-/g, '')
 
   // Convert hex string to byte array
   const hexPairs = cleanUuid.match(/.{1,2}/g) || []

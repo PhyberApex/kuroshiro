@@ -50,12 +50,12 @@ describe('screensService', () => {
   })
 
   it('add throws if both file and externalLink are provided', async () => {
-    const dto: CreateScreenDto = { filename: 'file', deviceId: 'dev', externalLink: 'url', fetchManual: false }
+    const dto: CreateScreenDto = { filename: 'file', deviceId: 'dev', externalLink: 'url', fetchManual: false, html: '' }
     await expect(service.add(dto, { buffer: buffer.Buffer.from('data') })).rejects.toThrow()
   })
 
   it('add throws if neither file nor externalLink is provided', async () => {
-    const dto: CreateScreenDto = { filename: 'file', deviceId: 'dev', fetchManual: false }
+    const dto: CreateScreenDto = { filename: 'file', deviceId: 'dev', fetchManual: false, html: '' }
     await expect(service.add(dto, undefined)).rejects.toThrow()
   })
 
@@ -67,7 +67,7 @@ describe('screensService', () => {
     screensRepo.save.mockResolvedValue(screen)
     screensRepo.update.mockResolvedValue(undefined)
     const file = { buffer: buffer.Buffer.from('data') }
-    const result = await service.add({ filename: 'file', deviceId: 'dev', fetchManual: false }, file)
+    const result = await service.add({ filename: 'file', deviceId: 'dev', fetchManual: false, html: '' }, file)
     expect(result).toBe(screen)
     expect(screensRepo.save).toHaveBeenCalledWith(screen)
   })
@@ -79,7 +79,13 @@ describe('screensService', () => {
     screensRepo.create.mockReturnValue(screen)
     screensRepo.save.mockResolvedValue(screen)
     screensRepo.update.mockResolvedValue(undefined)
-    const dto: CreateScreenDto = { filename: 'file', deviceId: 'dev', externalLink: 'url', fetchManual: true }
+    const dto: CreateScreenDto = {
+      filename: 'file',
+      deviceId: 'dev',
+      externalLink: 'url',
+      fetchManual: true,
+      html: '',
+    }
     const result = await service.add(dto, undefined)
     expect(result).toBe(screen)
     expect(screensRepo.save).toHaveBeenCalledWith(screen)

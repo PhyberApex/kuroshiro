@@ -36,3 +36,9 @@ export interface CurrentScreen {
   refresh_rate: number
   rendered_at: string
 }
+
+export interface LogEntry {
+  logId: number
+  date: Date
+  entry: string
+}

@@ -40,7 +40,7 @@ async function renderPreviewHtml(html: string) {
 
 <template>
   <template v-if="device">
-    <v-card elevation="1">
+    <v-card elevation="1" class="mb-6">
       <v-card-title>Screens</v-card-title>
       <v-divider />
       <v-card-text>

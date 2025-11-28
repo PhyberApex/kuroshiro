@@ -100,7 +100,7 @@ We're constantly working to make Kuroshiro even better! Here's what's on our roa
 - [ ] **Screen Mashups** - Combine multiple screens into custom layouts
 
 ### 🔮 Future Enhancements
-- [ ] **System Logs Viewer** - Internal system logging and monitoring capabilities  
+- [x] **System Logs Viewer** - Internal system logging and monitoring capabilities  
 - [ ] **Smart Image Caching** - Intelligent caching algorithms to optimize storage and performance
 - [ ] **Screen Playlists** - Create playlists that cycle through multiple screens automatically
 
@@ -163,6 +163,18 @@ For local hacking or deployment inspiration, check out [`docker-compose.yml`](./
 4. **Run Kuroshiro**:
    - With Docker: `docker-compose up` (full local stack)
    - Or, start Postgres manually and run: `pnpm run dev`
+
+To start postgres in docker you can run
+```
+export $(cat .env | xargs) && \
+docker run \
+--env-file .env \
+-e POSTGRES_USER=${KUROSHIRO_POSTGRES_USER} \
+-e POSTGRES_PASSWORD=${KUROSHIRO_POSTGRES_PASSWORD} \
+-e POSTGRES_DB=${KUROSHIRO_POSTGRES_DB} \
+-p 5432:5432 \
+postgres:18-alpine
+```
 
 ---
 

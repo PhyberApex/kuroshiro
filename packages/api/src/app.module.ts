@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import config from 'src/config/config'
 import { Device } from 'src/devices/devices.entity'
 import { DevicesModule } from 'src/devices/devices.module'
+import { LogEntry } from 'src/logs/logs.entity'
 import { LogsModule } from 'src/logs/logs.module'
 import { Screen } from 'src/screens/screens.entity'
 import { ScreensModule } from 'src/screens/screens.module'
@@ -28,10 +29,10 @@ const conf = config()
       username: conf.database.user,
       password: conf.database.password,
       database: conf.database.database,
-      entities: [Device, Screen],
+      entities: [Device, Screen, LogEntry],
       synchronize: true,
     }),
-    TypeOrmModule.forFeature([Device, Screen]),
+    TypeOrmModule.forFeature([Device, Screen, LogEntry]),
     ScreensModule,
     LogsModule,
     DevicesModule,
