@@ -106,45 +106,6 @@ git commit -m "feat: add newField to Device entity"
 
 ## Release Process
 
-### For New Releases
-
-When preparing a new release that includes database changes:
-
-1. **Ensure all migrations are committed**
-   ```bash
-   git status  # Check no uncommitted migrations
-   ```
-
-2. **Update version in package.json**
-   ```bash
-   # Update version following semver:
-   # - MAJOR: Breaking changes (rare)
-   # - MINOR: New features, schema changes
-   # - PATCH: Bug fixes, no schema changes
-   ```
-
-3. **Document schema changes in release notes**
-   ```markdown
-   ## v0.6.0
-
-   ### Database Changes
-   - Added `newField` column to `device` table
-   - Migration runs automatically on startup
-   ```
-
-4. **Build and tag the release**
-   ```bash
-   pnpm build
-   git tag v0.6.0
-   git push origin v0.6.0
-   ```
-
-5. **Build Docker image**
-   ```bash
-   docker build -t kuroshiro:0.6.0 .
-   docker tag kuroshiro:0.6.0 kuroshiro:latest
-   ```
-
 ### For Users Upgrading
 
 Users upgrading their self-hosted instance simply need to:
@@ -244,55 +205,3 @@ psql -h localhost -U root -c "DROP DATABASE kuroshiro_dev; CREATE DATABASE kuros
 # Restart the app - all migrations run from scratch
 pnpm start:dev
 ```
-
-## Environment Variables
-
-Migrations use the same database configuration as the app:
-
-```bash
-KUROSHIRO_DB_HOST=localhost
-KUROSHIRO_DB_PORT=5432
-KUROSHIRO_DB_DB=kuroshiro
-KUROSHIRO_DB_USER=root
-KUROSHIRO_DB_PASSWORD=root
-```
-
-## Docker Considerations
-
-### Startup Order
-
-Ensure your `docker-compose.yml` has proper health checks:
-
-```yaml
-services:
-  db:
-    image: postgres:16
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U root"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  api:
-    image: kuroshiro:latest
-    depends_on:
-      db:
-        condition: service_healthy  # Wait for DB to be ready
-```
-
-This ensures the database is ready before migrations run.
-
-### Multiple Replicas
-
-If running multiple API instances (e.g., for high availability):
-
-- TypeORM's migration system is **safe for concurrent execution**
-- Multiple instances can start simultaneously
-- Only one will run migrations (using database locks)
-- Others will wait and skip already-run migrations
-
-## Further Reading
-
-- [TypeORM Migrations Documentation](https://typeorm.io/migrations)
-- [Semantic Versioning](https://semver.org/)
-- [PostgreSQL Schema Changes](https://www.postgresql.org/docs/current/sql-altertable.html)
