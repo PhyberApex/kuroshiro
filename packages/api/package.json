@@ -11,7 +11,12 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
-    "prepare": "puppeteer browsers install chrome"
+    "prepare": "puppeteer browsers install chrome",
+    "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/config/typeorm.config.ts",
+    "migration:create": "typeorm-ts-node-commonjs migration:create",
+    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/config/typeorm.config.ts",
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/config/typeorm.config.ts",
+    "migration:show": "typeorm-ts-node-commonjs migration:show -d src/config/typeorm.config.ts"
   },
   "dependencies": {
     "@nestjs/common": "11.1.9",
