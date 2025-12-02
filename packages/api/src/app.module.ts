@@ -1,3 +1,4 @@
+import process from 'node:process'
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { ServeStaticModule } from '@nestjs/serve-static'
@@ -30,7 +31,11 @@ const conf = config()
       password: conf.database.password,
       database: conf.database.database,
       entities: [Device, Screen, LogEntry],
-      synchronize: true,
+      migrations: ['dist/src/migrations/*.js'],
+      migrationsTableName: 'migrations',
+      migrationsRun: true,
+      synchronize: false,
+      logging: process.env.NODE_ENV !== 'production',
     }),
     TypeOrmModule.forFeature([Device, Screen, LogEntry]),
     ScreensModule,
