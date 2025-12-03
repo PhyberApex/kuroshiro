@@ -33,7 +33,7 @@
     "puppeteer": "24.31.0",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2",
-    "typeorm": "0.3.27"
+    "typeorm": "0.3.28"
   },
   "devDependencies": {
     "@antfu/eslint-config": "6.2.0",
