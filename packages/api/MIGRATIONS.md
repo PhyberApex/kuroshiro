@@ -50,7 +50,7 @@ export class Device {
   // ... existing fields ...
 
   @Column('text', { nullable: true })
-  newField?: string  // New field added
+  newField?: string // New field added
 }
 ```
 
