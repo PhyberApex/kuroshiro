@@ -36,6 +36,8 @@ RUN apk add --no-cache \
     tiff-dev
 
 # Copy api bundle and static files only
+COPY --from=api-build /app/pnpm-workspace.yaml ./
+COPY --from=api-build /app/package.json ./
 COPY --from=api-build /app/packages/api/dist ./dist
 COPY --from=ui-build /app/packages/ui/dist ./public
 
