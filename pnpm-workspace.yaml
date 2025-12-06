@@ -28,7 +28,7 @@ catalog:
   '@types/node': 24.10.1
   '@types/supertest': 6.0.3
   '@vitejs/plugin-vue': 6.0.2
-  '@vitest/coverage-v8': 3.2.4
+  '@vitest/coverage-v8': 4.0.15
   '@vue/eslint-config-typescript': 14.6.0
   '@vue/test-utils': 2.4.6
   '@vue/tsconfig': 0.8.1
@@ -58,7 +58,7 @@ catalog:
   vite: 7.2.6
   vite-plugin-vue-devtools: 8.0.5
   vite-plugin-vuetify: 2.1.2
-  vitest: 3.2.4
+  vitest: 4.0.15
   vue: 3.5.25
   vue-router: 4.6.3
   vue-tsc: 3.1.6
