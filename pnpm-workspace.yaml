@@ -1,10 +1,6 @@
 packages:
   - packages/*
-onlyBuiltDependencies:
-  - '@nestjs/core'
-  - '@swc/core'
-  - esbuild
-  - unrs-resolver
+
 catalog:
   '@antfu/eslint-config': 6.7.3
   '@mdi/js': 7.4.47
@@ -63,3 +59,10 @@ catalog:
   vue-router: 4.6.4
   vue-tsc: 3.2.1
   vuetify: 3.11.4
+
+onlyBuiltDependencies:
+  - '@nestjs/core'
+  - '@swc/core'
+  - esbuild
+  - puppeteer
+  - unrs-resolver
