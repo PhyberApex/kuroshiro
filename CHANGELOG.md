@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.6.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.5.0...kuroshiro-v0.6.0) (2025-12-29)
+## [0.6.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.5.0...kuroshiro-v0.6.0) (2025-12-30)
 
 
 ### Features
