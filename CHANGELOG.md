@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.6.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.5.0...kuroshiro-v0.6.0) (2025-12-29)
+
+
+### Features
+
+* Add migrations to API package ([#272](https://github.com/PhyberApex/kuroshiro/issues/272)) ([9c4b3b1](https://github.com/PhyberApex/kuroshiro/commit/9c4b3b143644e02ff3d9e1a36a3872835cea1bdf))
+
+
+### Bug Fixes
+
+* **deps:** update dependency puppeteer to v24.32.0 ([#276](https://github.com/PhyberApex/kuroshiro/issues/276)) ([6893f6b](https://github.com/PhyberApex/kuroshiro/commit/6893f6bc3d0ca3d3be9d5dfc764c593b7483b752))
+* **deps:** update dependency typeorm to v0.3.28 ([#275](https://github.com/PhyberApex/kuroshiro/issues/275)) ([b3b03c3](https://github.com/PhyberApex/kuroshiro/commit/b3b03c3a75ffabaed6e32cb0534d58a4ab9b79b3))
+* **deps:** update dependency vuetify to v3.11.2 ([#273](https://github.com/PhyberApex/kuroshiro/issues/273)) ([e1fb986](https://github.com/PhyberApex/kuroshiro/commit/e1fb986e7ab5e213b79a3ece35d53508792c2beb))
+* Fix build issue ([#280](https://github.com/PhyberApex/kuroshiro/issues/280)) ([acf90eb](https://github.com/PhyberApex/kuroshiro/commit/acf90eb7de388d781058bdce00b7facfebbf7b82)), closes [#279](https://github.com/PhyberApex/kuroshiro/issues/279)
+
 ## [0.5.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.4.0...kuroshiro-v0.5.0) (2025-11-28)
 
 
