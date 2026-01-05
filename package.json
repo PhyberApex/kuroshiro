@@ -13,7 +13,7 @@
   ],
   "main": "index.js",
   "scripts": {
-    "dev": "concurrently -k -n FRONTEND,BACKEND -c blue,green \"pnpm run dev:ui\" \"pnpm run dev:api\"",
+    "dev": "dotenv -- concurrently -k -n FRONTEND,BACKEND -c blue,green \"pnpm run dev:ui\" \"pnpm run dev:api\"",
     "dev:api": "pnpm --filter ./packages/api start:dev",
     "dev:ui": "wait-on tcp:3000 && pnpm --filter ./packages/ui dev",
     "format": "pnpm run -r lint:fix",
@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "concurrently": "9.2.1",
+    "dotenv-cli": "^11.0.0",
     "husky": "9.1.7",
     "lint-staged": "16.2.7",
     "wait-on": "9.0.3"

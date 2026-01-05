@@ -1,7 +1,7 @@
 import process from 'node:process'
 
 export default () => ({
-  port: Number.parseInt(process.env.KUROSHIRO_PORT, 10) || 3000,
+  port: Number.parseInt(process.env.KUROSHIRO_API_PORT, 10) || 3000,
   api_url: process.env.KUROSHIRO_API_URL || 'http://localhost:5173',
   demo_mode: process.env.KUROSHIRO_DEMO_MODE === 'true' || false,
   database: {
