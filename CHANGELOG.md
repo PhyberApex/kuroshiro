@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.6.0...kuroshiro-v0.7.0) (2026-01-05)
+
+
+### Features
+
+* Added logging interceptor to API ([b3dff0f](https://github.com/PhyberApex/kuroshiro/commit/b3dff0f1ade0f16615e7b8f0e1fbe005185a51e0))
+
+
+### Bug Fixes
+
+* API port in env file not correct ([b1d9903](https://github.com/PhyberApex/kuroshiro/commit/b1d9903e719c64739794775f7af94031b90a5708))
+* Fixed env variables not being used correctly ([b7def25](https://github.com/PhyberApex/kuroshiro/commit/b7def25be516adc4c65af8b294cda5d6b7c78746))
+
 ## [0.6.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.5.0...kuroshiro-v0.6.0) (2025-12-29)
 
 
