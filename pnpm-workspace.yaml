@@ -51,7 +51,7 @@ catalog:
   tsup: 8.5.1
   typeorm: 0.3.28
   typescript: 5.9.3
-  vite: 7.3.0
+  vite: 7.3.1
   vite-plugin-vue-devtools: 8.0.5
   vite-plugin-vuetify: 2.1.2
   vitest: 3.2.4
