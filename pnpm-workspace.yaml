@@ -37,7 +37,7 @@ catalog:
   jiti: 2.6.1
   jsdom: 27.4.0
   npm-run-all2: 8.0.4
-  pg: 8.17.1
+  pg: 8.17.2
   pinia: 3.0.4
   puppeteer: 24.35.0
   reflect-metadata: 0.2.2
