@@ -94,8 +94,8 @@ catalogs:
       specifier: 0.14.3
       version: 0.14.3
     dotenv:
-      specifier: 17.2.3
-      version: 17.2.3
+      specifier: 17.2.4
+      version: 17.2.4
     eslint:
       specifier: 9.39.2
       version: 9.39.2
@@ -226,7 +226,7 @@ importers:
         version: 0.14.3
       dotenv:
         specifier: 'catalog:'
-        version: 17.2.3
+        version: 17.2.4
       fs-extra:
         specifier: 'catalog:'
         version: 11.3.3
@@ -3120,6 +3120,10 @@ packages:
 
   dotenv@17.2.3:
     resolution: {integrity: sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w==}
+    engines: {node: '>=12'}
+
+  dotenv@17.2.4:
+    resolution: {integrity: sha512-mudtfb4zRB4bVvdj0xRo+e6duH1csJRM8IukBqfTRvHotn9+LBXB8ynAidP9zHqoRC/fsllXgk4kCKlR21fIhw==}
     engines: {node: '>=12'}
 
   dunder-proto@1.0.1:
@@ -9089,10 +9093,8 @@ snapshots:
       zod: 3.25.50
     transitivePeerDependencies:
       - bare-buffer
-      - bufferutil
       - supports-color
       - typescript
-      - utf-8-validate
 
   ci-info@4.3.1: {}
 
@@ -9433,6 +9435,8 @@ snapshots:
   dotenv@16.6.1: {}
 
   dotenv@17.2.3: {}
+
+  dotenv@17.2.4: {}
 
   dunder-proto@1.0.1:
     dependencies:
@@ -11673,7 +11677,7 @@ snapshots:
 
   punycode@2.3.1: {}
 
-  puppeteer-core@24.37.0:
+  puppeteer-core@24.37.0(typescript@5.9.3):
     dependencies:
       '@puppeteer/browsers': 2.12.0
       chromium-bidi: 13.1.0(devtools-protocol@0.0.1566079)(typescript@5.9.3)
@@ -11686,6 +11690,7 @@ snapshots:
       - bare-buffer
       - bufferutil
       - supports-color
+      - typescript
       - utf-8-validate
 
   puppeteer@24.37.0(typescript@5.9.3):
@@ -11694,7 +11699,7 @@ snapshots:
       chromium-bidi: 13.1.0(devtools-protocol@0.0.1566079)(typescript@5.9.3)
       cosmiconfig: 9.0.0(typescript@5.9.3)
       devtools-protocol: 0.0.1566079
-      puppeteer-core: 24.37.0
+      puppeteer-core: 24.37.0(typescript@5.9.3)
       typed-query-selector: 2.12.0
     transitivePeerDependencies:
       - bare-buffer
