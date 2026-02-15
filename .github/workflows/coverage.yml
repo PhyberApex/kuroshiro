@@ -28,7 +28,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/api/lcov.info
+          files: ./packages/api/coverage/lcov.info
           flags: api
           name: api-coverage
           fail_ci_if_error: true
@@ -37,7 +37,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/ui/lcov.info
+          files: ./packages/ui/coverage/lcov.info
           flags: ui
           name: ui-coverage
           fail_ci_if_error: true
