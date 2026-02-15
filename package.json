@@ -30,6 +30,6 @@
     "dotenv-cli": "^11.0.0",
     "husky": "9.1.7",
     "lint-staged": "16.2.7",
-    "wait-on": "9.0.3"
+    "wait-on": "9.0.4"
   }
 }
