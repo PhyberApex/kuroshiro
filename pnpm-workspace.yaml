@@ -58,7 +58,7 @@ catalog:
   vue: 3.5.28
   vue-router: 5.0.3
   vue-tsc: 3.2.5
-  vuetify: 3.12.0
+  vuetify: 3.12.1
 
 onlyBuiltDependencies:
   - '@nestjs/core'
