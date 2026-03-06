@@ -33,7 +33,7 @@ catalog:
   class-validator: 0.14.3
   dotenv: 17.3.1
   eslint: 10.0.2
-  fs-extra: 11.3.3
+  fs-extra: 11.3.4
   jiti: 2.6.1
   jsdom: 28.1.0
   npm-run-all2: 8.0.4

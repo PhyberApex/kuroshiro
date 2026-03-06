@@ -100,8 +100,8 @@ catalogs:
       specifier: 10.0.2
       version: 10.0.2
     fs-extra:
-      specifier: 11.3.3
-      version: 11.3.3
+      specifier: 11.3.4
+      version: 11.3.4
     jiti:
       specifier: 2.6.1
       version: 2.6.1
@@ -229,7 +229,7 @@ importers:
         version: 17.3.1
       fs-extra:
         specifier: 'catalog:'
-        version: 11.3.3
+        version: 11.3.4
       pg:
         specifier: 'catalog:'
         version: 8.18.0
@@ -3629,12 +3629,12 @@ packages:
     resolution: {integrity: sha512-oRXApq54ETRj4eMiFzGnHWGy+zo5raudjuxN0b8H7s/RU2oW0Wvsx9O0ACRN/kRq9E8Vu/ReskGB5o3ji+FzHQ==}
     engines: {node: '>=12'}
 
-  fs-extra@11.3.2:
-    resolution: {integrity: sha512-Xr9F6z6up6Ws+NjzMCZc6WXg2YFRlrLP9NQDO3VQrWrfiojdhS56TzueT88ze0uBdCTwEIhQ3ptnmKeWGFAe0A==}
-    engines: {node: '>=14.14'}
-
   fs-extra@11.3.3:
     resolution: {integrity: sha512-VWSRii4t0AFm6ixFFmLLx1t7wS1gh+ckoa84aOeapGum0h+EZd1EhEumSB+ZdDLnEPuucsVB9oB7cxJHap6Afg==}
+    engines: {node: '>=14.14'}
+
+  fs-extra@11.3.4:
+    resolution: {integrity: sha512-CTXd6rk/M3/ULNQj8FBqBWHYBVYybQ3VPBw0xGKFe3tuH7ytT6ACnvzpIQ3UZtB8yvUKC2cXn1a+x+5EVQLovA==}
     engines: {node: '>=14.14'}
 
   fs-monkey@1.0.6:
@@ -7713,7 +7713,7 @@ snapshots:
     dependencies:
       '@semantic-release/error': 3.0.0
       aggregate-error: 3.1.0
-      fs-extra: 11.3.2
+      fs-extra: 11.3.3
       lodash: 4.17.21
       semantic-release: 24.2.5(typescript@5.9.3)
 
@@ -10056,13 +10056,13 @@ snapshots:
       jsonfile: 6.1.0
       universalify: 2.0.1
 
-  fs-extra@11.3.2:
+  fs-extra@11.3.3:
     dependencies:
       graceful-fs: 4.2.11
       jsonfile: 6.1.0
       universalify: 2.0.1
 
-  fs-extra@11.3.3:
+  fs-extra@11.3.4:
     dependencies:
       graceful-fs: 4.2.11
       jsonfile: 6.1.0
