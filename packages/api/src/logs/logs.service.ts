@@ -22,20 +22,20 @@ export class LogsService {
       throw new NotFoundException('Device not found')
     }
     this.logger.debug(`Checking ${logs.log.logs_array.length} entries of payload to consume.`)
-    logs.log.logs_array.forEach((log) => {
+    for (const log of logs.log.logs_array) {
       if (device.logs.find(logEntry => logEntry.logId === log.log_id)) {
         this.logger.log(`Log entry with id: ${log.log_id} for device ${device.id} already exists.`)
       }
       else {
         this.logger.debug(`Writing log entry with id: ${log.log_id} for device ${device.id}.`)
-        this.logsRepository.create({
+        await this.logsRepository.save({
           entry: JSON.stringify(log),
           date: new Date().toISOString(),
           device,
           logId: log.log_id,
         })
       }
-    })
+    }
   }
 
   async getByDevice(deviceId: string): Promise<LogEntry[]> {
