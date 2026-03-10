@@ -35,7 +35,7 @@ jobs:
         id: get_version
         run: echo "RELEASE_VERSION=$(jq -r '.version' package.json)" >> $GITHUB_ENV
       - name: Build and push Docker image (latest and semver)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
