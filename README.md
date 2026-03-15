@@ -169,9 +169,9 @@ To start postgres in docker you can run
 export $(cat .env | xargs) && \
 docker run \
 --env-file .env \
--e POSTGRES_USER=${KUROSHIRO_POSTGRES_USER} \
--e POSTGRES_PASSWORD=${KUROSHIRO_POSTGRES_PASSWORD} \
--e POSTGRES_DB=${KUROSHIRO_POSTGRES_DB} \
+-e POSTGRES_USER=${KUROSHIRO_DB_USER} \
+-e POSTGRES_PASSWORD=${KUROSHIRO_DB_PASSWORD} \
+-e POSTGRES_DB=${KUROSHIRO_DB_DB} \
 -p 5432:5432 \
 postgres:18-alpine
 ```
