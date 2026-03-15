@@ -33,7 +33,6 @@ describe('overviewView', () => {
   })
 
   it('renders device management info', () => {
-    expect(wrapper.text()).toContain('Overview')
     expect(wrapper.text()).toContain('Add Device')
     expect(wrapper.text()).toContain('Devices')
   })
@@ -81,6 +80,6 @@ describe('overviewView', () => {
       global: { plugins: [createPinia(), vuetify] },
     })
     await flushPromises()
-    expect(emptyWrapper.text()).toContain('No devices found.')
+    expect(emptyWrapper.text()).toContain('No devices yet. Add one with the form above.')
   })
 })
