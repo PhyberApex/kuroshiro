@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": false,
+    "outDir": "./dist"
+  },
+  "include": ["src/migrations/**/*.ts"],
+  "exclude": ["node_modules", "../../node_modules", "dist"]
+}

@@ -7,6 +7,9 @@ export class Baseline1733155200000 implements MigrationInterface {
     // Baseline migration - schema already exists from synchronize: true
     // This migration creates all tables from scratch for new installations
 
+    // Required for uuid_generate_v4() on fresh PostgreSQL
+    await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`)
+
     // Create device table
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "device" (

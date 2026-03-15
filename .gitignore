@@ -20,3 +20,6 @@ packages/api/public
 # Coverage
 packages/api/coverage
 packages/ui/coverage
+
+# TSBuildinfo
+packages/api/tsconfig.migrations.tsbuildinfo
