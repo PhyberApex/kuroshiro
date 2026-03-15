@@ -26,7 +26,7 @@ const filename = ref('')
 const filenameRules = [
   (value: string) => {
     if (!value)
-      return 'A filename is required'
+      return 'Filename is required'
     return true
   },
 ]
@@ -38,7 +38,7 @@ const linkRules = [
     if (value.startsWith('http://') || value.startsWith('https://')) {
       return true
     }
-    return 'Needs to start with http:// or https://'
+    return 'Enter a URL starting with http:// or https://'
   },
 ]
 
@@ -86,27 +86,11 @@ const addScreenIcon = computed(() => {
 })
 
 const addScreenInfo = computed(() => {
-  let title = ''
-  let text = ''
-  if (addScreenTab.value === 'link') {
-    if (fetchManual.value) {
-      title = 'External link (cached)'
-      text = 'The image will be downloaded and converted now and is only updated with the link on manually.'
-    }
-    else {
-      title = 'External link (no cache)'
-      text = 'The URL will be fetched on each request dynamically and a image will be generated from it on the fly.'
-    }
-  }
-  else if (addScreenTab.value === 'file') {
-    title = 'Upload file'
-    text = 'The file is uploaded, converted and will be statically served.'
-  }
-  else if (addScreenTab.value === 'html') {
-    title = 'Render HTML'
-    text = 'Enter HTML to be rendered and presented. The TRMNL framework is available.'
-  }
-  return { title, text }
+  if (addScreenTab.value !== 'link')
+    return null
+  return fetchManual.value
+    ? 'Cached: fetched once. Update manually when the source changes.'
+    : 'No cache: fetched on each request.'
 })
 const showHtmlPreview = ref(false)
 async function renderPreviewHtml() {
@@ -173,7 +157,7 @@ const { isDemo } = useDemoInfo()
               <v-row>
                 <v-col cols="12">
                   <v-text-field ref="externalLinkRef" v-model="externalLink" :rules="linkRules" label="External image link" required clearable :disabled="!device.width || !device.height" />
-                  <v-switch v-model="fetchManual" color="secondary" label="Cache (image needs to be updated manually)" />
+                  <v-switch v-model="fetchManual" color="secondary" label="Cache image (update manually when source changes)" />
                 </v-col>
               </v-row>
             </v-form>
@@ -197,11 +181,9 @@ const { isDemo } = useDemoInfo()
             </v-form>
           </v-window-item>
         </v-window>
-        <v-card color="primary" variant="tonal" elevation="2">
-          <v-card-text>
-            <b>{{ addScreenInfo.title }}:</b> {{ addScreenInfo.text }}
-          </v-card-text>
-        </v-card>
+        <p v-if="addScreenInfo" class="text-body-2 text-medium-emphasis mt-3 mb-0">
+          {{ addScreenInfo }}
+        </p>
         <v-btn
           color="primary"
           class="mt-5"
@@ -225,7 +207,7 @@ const { isDemo } = useDemoInfo()
       </v-card-text>
     </v-card>
     <v-overlay v-model="showHtmlPreview" class="align-center justify-center">
-      <iframe ref="previewIframeRef" :width="(device.width || 0) + 5" :height="(device.height || 0) + 5" class="align-center" />
+      <iframe ref="previewIframeRef" :width="(device.width || 0) + 5" :height="(device.height || 0) + 5" class="align-center" title="HTML preview" />
     </v-overlay>
   </template>
 </template>

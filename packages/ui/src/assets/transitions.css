@@ -1,0 +1,24 @@
+/**
+ * Minimal route and motion styles.
+ * Easing: ease-out-quart for natural deceleration (no bounce/elastic).
+ * All motion respects prefers-reduced-motion.
+ */
+
+/* --- Route transition (fade, 200ms) --- */
+.route-enter-active,
+.route-leave-active {
+  transition: opacity 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.route-enter-from,
+.route-leave-to {
+  opacity: 0;
+}
+
+/* --- Reduced motion: disable transitions --- */
+@media (prefers-reduced-motion: reduce) {
+  .route-enter-active,
+  .route-leave-active {
+    transition-duration: 0.01ms;
+  }
+}

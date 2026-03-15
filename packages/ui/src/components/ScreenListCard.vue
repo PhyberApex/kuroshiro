@@ -44,71 +44,97 @@ async function renderPreviewHtml(html: string) {
       <v-card-title>Screens</v-card-title>
       <v-divider />
       <v-card-text>
-        <v-table v-if="screensStore.screens.length" density="comfortable" data-test-id="screen-table">
-          <thead>
-            <tr>
-              <th>Type</th>
-              <th>Filename</th>
-              <th>Status</th>
-              <th class="text-right">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="screen in screensStore.screens" :key="screen.id">
-              <td>
-                <v-chip :color="screen.externalLink ? 'info' : 'primary'" size="small">
-                  {{ screen.externalLink ? screen.fetchManual ? 'External (cached)' : 'External' : screen.html ? 'HTML' : 'File' }}
-                </v-chip>
-              </td>
-              <td>
-                <span>{{ screen.filename }}</span>
-              </td>
-              <td>
-                <v-chip v-if="screen.isActive" color="success" size="small">
-                  Active
-                </v-chip>
-                <v-chip v-else color="grey" size="small">
-                  Queued
-                </v-chip>
-              </td>
-              <td class="text-right">
-                <v-btn
-                  v-if="screen.externalLink && screen.fetchManual"
-                  color="warning"
-                  size="small"
-                  variant="tonal"
-                  class="mr-2"
-                  :icon="mdiRefresh"
-                  @click="updateExternalImage(screen.id)"
-                />
-                <v-btn
-                  v-if="screen.externalLink"
-                  size="small" class="mr-2" :href="screen.externalLink" target="_blank" variant="tonal" color="secondary" :icon="mdiOpenInNew"
-                />
-                <v-btn
-                  v-else-if="screen.html"
-                  size="small" class="mr-2" :icon="mdiEye" variant="tonal" color="secondary" @click="renderPreviewHtml(screen.html)"
-                />
-                <v-btn
-                  v-else
-                  size="small" class="mr-2" :href="`/screens/devices/${device?.id}/${screen.id}.bmp`" target="_blank" variant="tonal" color="secondary" :icon="mdiOpenInNew"
-                />
-                <v-btn
-                  size="small"
-                  color="error"
-                  variant="tonal"
-                  :icon="mdiDelete"
-                  :data-test-id="`screen-delete-btn-${screen.id}`"
-                  @click="deleteScreen(screen.id)"
-                />
-              </td>
-            </tr>
-          </tbody>
-        </v-table>
-        <v-alert v-else type="info" data-test-id="screen-empty-alert">
-          No screens for this device. Add one.
+        <template v-if="screensStore.screens.length">
+          <div class="overflow-x-auto">
+            <v-table density="comfortable" data-test-id="screen-table">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Filename</th>
+                  <th>Status</th>
+                  <th class="text-right">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="screen in screensStore.screens" :key="screen.id">
+                  <td>
+                    <v-chip :color="screen.externalLink ? 'info' : 'primary'" size="small">
+                      {{ screen.externalLink ? screen.fetchManual ? 'External (cached)' : 'External' : screen.html ? 'HTML' : 'File' }}
+                    </v-chip>
+                  </td>
+                  <td>
+                    <span>{{ screen.filename }}</span>
+                  </td>
+                  <td>
+                    <v-chip v-if="screen.isActive" color="success" size="small">
+                      Active
+                    </v-chip>
+                    <v-chip v-else color="secondary" size="small">
+                      Queued
+                    </v-chip>
+                  </td>
+                  <td class="text-right">
+                    <v-btn
+                      v-if="screen.externalLink && screen.fetchManual"
+                      color="warning"
+                      size="small"
+                      variant="tonal"
+                      class="mr-2"
+                      :icon="mdiRefresh"
+                      aria-label="Update cached image"
+                      @click="updateExternalImage(screen.id)"
+                    />
+                    <v-btn
+                      v-if="screen.externalLink"
+                      size="small"
+                      class="mr-2"
+                      :href="screen.externalLink"
+                      target="_blank"
+                      variant="tonal"
+                      color="secondary"
+                      :icon="mdiOpenInNew"
+                      aria-label="Open link in new tab"
+                    />
+                    <v-btn
+                      v-else-if="screen.html"
+                      size="small"
+                      class="mr-2"
+                      :icon="mdiEye"
+                      variant="tonal"
+                      color="secondary"
+                      aria-label="Preview HTML"
+                      @click="renderPreviewHtml(screen.html)"
+                    />
+                    <v-btn
+                      v-else
+                      size="small"
+                      class="mr-2"
+                      :href="`/screens/devices/${device?.id}/${screen.id}.bmp`"
+                      target="_blank"
+                      variant="tonal"
+                      color="secondary"
+                      :icon="mdiOpenInNew"
+                      aria-label="Open image in new tab"
+                    />
+                    <v-btn
+                      size="small"
+                      color="error"
+                      variant="tonal"
+                      :icon="mdiDelete"
+                      aria-label="Delete screen"
+                      :data-test-id="`screen-delete-btn-${screen.id}`"
+                      @click="deleteScreen(screen.id)"
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </v-table>
+          </div>
+        </template>
+        <v-alert v-else type="info" variant="tonal" class="text-body-2" data-test-id="screen-empty-alert">
+          No screens yet. Add one in Add Screen above.
         </v-alert>
       </v-card-text>
     </v-card>

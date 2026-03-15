@@ -1,3 +1,5 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import process from 'node:process'
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
@@ -31,9 +33,16 @@ const conf = config()
       password: conf.database.password,
       database: conf.database.database,
       entities: [Device, Screen, LogEntry],
-      migrations: ['dist/src/migrations/*.js'],
+      migrations: (() => {
+        const dir = path.join(process.cwd(), 'dist', 'src', 'migrations')
+        if (!fs.existsSync(dir))
+          return []
+        return fs.readdirSync(dir)
+          .filter((f: string) => f.endsWith('.js'))
+          .map((f: string) => path.join(dir, f))
+      })(),
       migrationsTableName: 'migrations',
-      migrationsRun: true,
+      migrationsRun: false,
       synchronize: false,
       logging: process.env.NODE_ENV !== 'production',
     }),

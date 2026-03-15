@@ -101,7 +101,7 @@ const macRules = [
     if (isValidMac(value)) {
       return true
     }
-    return 'Please enter a valid MAC'
+    return 'Enter a valid MAC address'
   },
 ]
 
@@ -114,7 +114,7 @@ const apikeyRules = [
     if (value !== null) {
       return true
     }
-    return 'Please enter an apikey'
+    return 'API key is required'
   },
 ]
 
@@ -159,12 +159,7 @@ watch(mac, () => {
   <v-container fluid>
     <v-row justify="center">
       <v-col cols="12" sm="12">
-        <v-card class="mb-6" color="primary" variant="tonal" elevation="2">
-          <v-card-text>
-            <b>Virtual Device:</b> This can be used to test your screens.
-          </v-card-text>
-        </v-card>
-        <v-card elevation="2" class="mb-6">
+        <v-card elevation="1" class="mb-6">
           <v-card-title>Virtual Device</v-card-title>
           <v-divider />
           <v-card-text>
@@ -188,15 +183,15 @@ watch(mac, () => {
                   <v-autocomplete v-model="mac" :items="autocompleteDevices" label="Device" />
                 </v-window-item>
               </v-window>
-              <v-btn variant="tonal" color="primary" :loading="loadingSetup" type="submit" :disabled="!mac" :prepend-icon="mdiSend" :disable="validForSetupCall">
-                Get API-key (Call Setup)
+              <v-btn variant="tonal" color="primary" :loading="loadingSetup" type="submit" :disabled="!mac || !validForSetupCall" :prepend-icon="mdiSend">
+                Call setup to get API key
               </v-btn>
             </v-form>
             <v-divider class="my-4" />
             <v-form @submit.prevent="callDisplay">
               <v-row>
                 <v-col cols="12" md="12">
-                  <VTextField v-model="apiKey" label="API Key (from setup)" :rules="apikeyRules" clearable />
+                  <VTextField v-model="apiKey" label="API key" :rules="apikeyRules" clearable />
                 </v-col>
               </v-row>
               <v-row>
@@ -205,14 +200,19 @@ watch(mac, () => {
                 </v-col>
               </v-row>
               <v-btn variant="tonal" color="primary" :loading="loadingDisplay" type="submit" :disabled="!validForDisplayCall" :prepend-icon="mdiSend">
-                Fetch screen (Like a TRMNL device)
+                Fetch screen
               </v-btn>
             </v-form>
-            <div v-if="displayResponse" class="mt-4">
-              <pre>{{ displayResponse }}</pre>
-            </div>
+            <v-expansion-panels v-if="displayResponse" class="mt-4" flat>
+              <v-expansion-panel>
+                <v-expansion-panel-title>Response</v-expansion-panel-title>
+                <v-expansion-panel-text>
+                  <pre class="text-caption">{{ displayResponse }}</pre>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+            </v-expansion-panels>
             <div v-if="displayImageUrl" class="mt-4">
-              <v-img :src="displayImageUrl" />
+              <v-img :src="displayImageUrl" aspect-ratio="800/480" alt="Virtual device screen preview" />
             </div>
           </v-card-text>
         </v-card>

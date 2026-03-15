@@ -5,12 +5,9 @@
   <v-container fluid>
     <v-row justify="center">
       <v-col cols="12">
-        <v-card class="mb-6" color="primary" variant="tonal" elevation="2">
-          <v-card-text>
-            <b>Maintenance:</b> Here you can see manage your screens and files across devices and run cleanup tasks.
-          </v-card-text>
-        </v-card>
-        Coming Soon...
+        <p class="text-body-2 text-medium-emphasis mb-0">
+          Coming soon.
+        </p>
       </v-col>
     </v-row>
   </v-container>

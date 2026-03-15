@@ -1,10 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useDeviceStore } from '../stores/device'
-import DeviceDetailsView from '../views/DeviceDetailsView.vue'
-import HtmlPreviewView from '../views/HtmlPreviewView.vue'
-import MaintenanceView from '../views/MaintenanceView.vue'
-import OverviewView from '../views/OverviewView.vue'
-import VirtualDeviceView from '../views/VirtualDeviceView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -12,7 +7,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'overview',
-      component: OverviewView,
+      component: () => import('../views/OverviewView.vue'),
       beforeEnter: async () => {
         const store = useDeviceStore()
         await store.fetchDevices()
@@ -21,24 +16,24 @@ const router = createRouter({
     {
       path: '/devices/:id',
       name: 'device',
-      component: DeviceDetailsView,
+      component: () => import('../views/DeviceDetailsView.vue'),
       props: true,
       beforeEnter: async (to) => {
         const store = useDeviceStore()
         await store.fetchDevices()
         if (!store.getById(to.params.id as string))
-          return 'devices'
+          return { name: 'overview' }
       },
     },
     {
       path: '/maintenance',
       name: 'maintenance',
-      component: MaintenanceView,
+      component: () => import('../views/MaintenanceView.vue'),
     },
     {
       path: '/virtualDevice',
       name: 'virtualDevice',
-      component: VirtualDeviceView,
+      component: () => import('../views/VirtualDeviceView.vue'),
       beforeEnter: async () => {
         const store = useDeviceStore()
         await store.fetchDevices()
@@ -47,13 +42,12 @@ const router = createRouter({
     {
       path: '/htmlPreview',
       name: 'htmlPreview',
-      component: HtmlPreviewView,
+      component: () => import('../views/HtmlPreviewView.vue'),
       beforeEnter: async () => {
         const store = useDeviceStore()
         await store.fetchDevices()
       },
     },
-    // { path: '/:pathMatch(.*)*', name: 'NotFound', component: NotFound },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 })

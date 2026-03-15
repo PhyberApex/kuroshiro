@@ -25,14 +25,19 @@ const screen = computed(() => screensStore.currentScreen)
     <v-divider />
     <v-card-text>
       <template v-if="screen">
-        <v-img :src="screen.image_url" data-test-id="screen-image" />
+        <v-img
+          :src="screen.image_url"
+          :aspect-ratio="device?.width && device?.height ? device.width / device.height : 800 / 480"
+          alt="Current device screen display"
+          data-test-id="screen-image"
+        />
         <div class="mt-5 text-subtitle-1" data-test-id="screen-rendered-date">
           Generated {{ screen.rendered_at ? formatDate(screen.rendered_at) : "???" }}
         </div>
       </template>
       <template v-else>
-        <div class="text-subtitle-1" data-test-id="no-screen">
-          No screen available
+        <div class="text-body-2 text-medium-emphasis" data-test-id="no-screen">
+          No screen available.
         </div>
       </template>
     </v-card-text>

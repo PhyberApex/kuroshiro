@@ -5,7 +5,6 @@ import {
   mdiCog,
   mdiMonitor,
   mdiRobot,
-  mdiToolbox,
   mdiViewDashboard,
 } from '@mdi/js'
 import { computed } from 'vue'
@@ -32,7 +31,9 @@ const devices = computed(() => deviceStore.devices)
         </template>
         <v-list-item
           v-if="devices.length === 0"
+          :to="{ name: 'overview' }"
           title="No devices yet"
+          subtitle="Add one from Overview"
         />
         <v-list-item
           v-for="device in devices" :key="device.id"
@@ -49,17 +50,8 @@ const devices = computed(() => deviceStore.devices)
           </template>
         </v-list-item>
       </v-list-group>
-      <v-list-group>
-        <template #activator="{ props }">
-          <v-list-item
-            v-bind="props"
-            :prepend-icon="mdiToolbox"
-            title="Tools"
-          />
-        </template>
-        <v-list-item :prepend-icon="mdiRobot" title="Virtual Device" :to="{ name: 'virtualDevice' }" />
-        <v-list-item :prepend-icon="mdiCodeBlockTags" title="HTML Preview" :to="{ name: 'htmlPreview' }" />
-      </v-list-group>
+      <v-list-item :prepend-icon="mdiRobot" title="Virtual Device" :to="{ name: 'virtualDevice' }" />
+      <v-list-item :prepend-icon="mdiCodeBlockTags" title="HTML Preview" :to="{ name: 'htmlPreview' }" />
       <v-list-item :prepend-icon="mdiCog" title="Maintenance" :to="{ name: 'maintenance' }" />
     </v-list>
   </v-list>

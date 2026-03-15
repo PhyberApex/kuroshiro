@@ -27,11 +27,6 @@ watch(device, () => {
   <v-container v-if="device" fluid>
     <v-row justify="center">
       <v-col cols="12" lg="12">
-        <v-card class="mb-6" color="primary" variant="tonal" elevation="2">
-          <v-card-text>
-            <b>Device Details:</b> View and edit device details, manage screens, and access device-specific actions.
-          </v-card-text>
-        </v-card>
         <v-row>
           <v-col cols="12" sm="12" md="7">
             <DeviceInformationCard :device-id="props.id" />

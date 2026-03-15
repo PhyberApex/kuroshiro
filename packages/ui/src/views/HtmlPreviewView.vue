@@ -34,8 +34,19 @@ watch(html, () => {
         <v-textarea v-model="html" label="HTML to render" auto-grow />
       </v-col>
       <v-col cols="12" sm="12" md="12" lg="6">
-        <iframe ref="previewIframeRef" width="805" height="485" />
+        <iframe ref="previewIframeRef" class="preview-iframe" title="HTML preview" />
       </v-col>
     </v-row>
   </v-container>
 </template>
+
+<style scoped>
+.preview-iframe {
+  width: 100%;
+  min-height: 320px;
+  aspect-ratio: 805 / 485;
+  max-width: 805px;
+  border: 0;
+  display: block;
+}
+</style>

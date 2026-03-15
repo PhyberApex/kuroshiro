@@ -85,9 +85,9 @@ const specialFunctionalities = [
   { title: 'Identify', value: 'identify' },
   { title: 'Sleep', value: 'sleep' },
   { title: 'Add WiFi', value: 'add_wifi' },
-  { title: 'Restart Playlist (Not working)', value: 'restart_playlist' },
+  { title: 'Restart playlist (unavailable)', value: 'restart_playlist' },
   { title: 'Rewind', value: 'rewind' },
-  { title: 'Send to me (not working)', value: 'send_to_me' },
+  { title: 'Send to me (unavailable)', value: 'send_to_me' },
 ]
 
 const router = useRouter()
@@ -118,7 +118,7 @@ const batteryColor = computed(() => {
   if (batteryPercentage.value <= 20)
     return 'warning'
   if (batteryPercentage.value <= 60)
-    return 'orange'
+    return 'warning'
   return 'success'
 })
 
@@ -148,7 +148,7 @@ const macRules = [
     if (isValidMac(value)) {
       return true
     }
-    return 'Please enter a valid MAC'
+    return 'Enter a valid MAC address'
   },
 ]
 
@@ -157,7 +157,7 @@ const apikeyRules = [
     if (!device.value?.mirrorEnabled)
       return true
     if (!value) {
-      return 'An apikey is required'
+      return 'API key is required'
     }
     return true
   },
@@ -228,11 +228,11 @@ const nameEditing = ref(false)
 
 <template>
   <template v-if="device">
-    <v-card class="mb-6" elevation="2">
+    <v-card class="mb-6" elevation="1">
       <v-card-title class="d-flex align-center justify-space-between">
         <div v-if="!nameEditing">
           <span data-test-id="device-name">{{ device.name }}</span>
-          <v-icon :icon="mdiPencil" class="ml-2" size="x-small" @click="nameEditing = true" />
+          <v-icon-btn :icon="mdiPencil" size="x-small" class="ml-2" aria-label="Edit device name" variant="text" @click="nameEditing = true" />
           <v-icon :icon="mdiCircle" :color="isDeviceOnline(device) ? 'success' : 'error'" size="x-small" class="ml-2" />
         </div>
         <div v-else>
@@ -288,45 +288,53 @@ const nameEditing = ref(false)
             <v-text-field v-model="device.mac" readonly density="compact" hide-details label="MAC" :append-icon="macCopied ? mdiCheck : mdiContentCopy" @click:append="copyToClipboard(device.mac)" />
           </v-col>
           <v-col cols="12" sm="12" md="6" lg="4">
-            <v-text-field v-model="device.apikey" readonly density="compact" :type="showApikey ? 'text' : 'password'" label="API Key" :append-icon="showApikey ? mdiEyeOff : mdiEye" @click:append="showApikey = !showApikey" />
-          </v-col>
-          <v-col cols="12" sm="12" md="6" lg="4">
-            <v-row>
-              <v-col cols="12" sm="5">
-                <v-number-input v-model="refreshRateNumber" control-variant="hidden" type="number" density="compact" label="Refresh Rate" />
-              </v-col>
-              <v-col cols="12" sm="7">
-                <v-select v-model="refreshRateUnit" density="compact" label="Unit" :items="['hours', 'minutes', 'seconds']" />
-              </v-col>
-            </v-row>
-          </v-col>
-          <v-col cols="12" sm="6" md="4">
-            <v-select
-              v-model="device.specialFunction"
-              :items="specialFunctionalities"
-              density="compact"
-              label="Special Function"
-            />
-          </v-col>
-          <v-col cols="12" sm="4" md="4" lg="4">
-            <v-switch v-model="device.resetDevice" color="secondary" density="compact" label="Reset device" />
-          </v-col>
-          <v-col cols="12" sm="4" md="4" lg="4">
-            <v-switch v-model="device.updateFirmware" color="secondary" density="compact" label="Automatic updates" disabled />
+            <v-text-field v-model="device.apikey" readonly density="compact" :type="showApikey ? 'text' : 'password'" label="API key" :append-icon="showApikey ? mdiEyeOff : mdiEye" @click:append="showApikey = !showApikey" />
           </v-col>
         </v-row>
-        <v-divider class="my-2" />
-        <v-row class="mb-2" dense>
-          <v-col cols="12" sm="6" md="4">
-            <v-switch v-model="device.mirrorEnabled" color="secondary" label="Mirroring" />
-          </v-col>
-          <v-col cols="12" sm="6" md="4">
-            <VTextField v-model="device.mirrorMac" density="compact" label="MAC to mirror" :disabled="!device.mirrorEnabled" :rules="macRules" />
-          </v-col>
-          <v-col cols="12" sm="6" md="4">
-            <VTextField v-model="device.mirrorApikey" density="compact" label="Apikey of mirror" :disabled="!device.mirrorEnabled" :rules="apikeyRules" />
-          </v-col>
-        </v-row>
+        <v-expansion-panels class="mt-2" flat>
+          <v-expansion-panel>
+            <v-expansion-panel-title>Advanced</v-expansion-panel-title>
+            <v-expansion-panel-text>
+              <v-row class="mb-2" dense>
+                <v-col cols="12" sm="12" md="6" lg="4">
+                  <v-row>
+                    <v-col cols="12" sm="5">
+                      <v-number-input v-model="refreshRateNumber" control-variant="hidden" type="number" density="compact" label="Refresh Rate" />
+                    </v-col>
+                    <v-col cols="12" sm="7">
+                      <v-select v-model="refreshRateUnit" density="compact" label="Unit" :items="['hours', 'minutes', 'seconds']" />
+                    </v-col>
+                  </v-row>
+                </v-col>
+                <v-col cols="12" sm="6" md="4">
+                  <v-select
+                    v-model="device.specialFunction"
+                    :items="specialFunctionalities"
+                    density="compact"
+                    label="Special Function"
+                  />
+                </v-col>
+                <v-col cols="12" sm="4" md="4" lg="4">
+                  <v-switch v-model="device.resetDevice" color="secondary" density="compact" label="Reset device" />
+                </v-col>
+                <v-col cols="12" sm="4" md="4" lg="4">
+                  <v-switch v-model="device.updateFirmware" color="secondary" density="compact" label="Automatic updates" disabled />
+                </v-col>
+              </v-row>
+              <v-row class="mb-0" dense>
+                <v-col cols="12" sm="6" md="4">
+                  <v-switch v-model="device.mirrorEnabled" color="secondary" label="Mirroring" />
+                </v-col>
+                <v-col cols="12" sm="6" md="4">
+                  <VTextField v-model="device.mirrorMac" density="compact" label="Mirror MAC address" :disabled="!device.mirrorEnabled" :rules="macRules" />
+                </v-col>
+                <v-col cols="12" sm="6" md="4">
+                  <VTextField v-model="device.mirrorApikey" density="compact" label="Mirror API key" :disabled="!device.mirrorEnabled" :rules="apikeyRules" />
+                </v-col>
+              </v-row>
+            </v-expansion-panel-text>
+          </v-expansion-panel>
+        </v-expansion-panels>
       </v-card-text>
     </v-card>
   </template>

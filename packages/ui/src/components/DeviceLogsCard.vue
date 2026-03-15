@@ -30,6 +30,13 @@ function parseLogEntry(entryString: string) {
   }
 }
 
+const parsedLogEntries = computed(() =>
+  logsStore.logEntries.map(logEntry => ({
+    logEntry,
+    parsed: parseLogEntry(logEntry.entry),
+  })),
+)
+
 function getLogSeverity(message: string) {
   const lowerMessage = message.toLowerCase()
   if (lowerMessage.includes('error') || lowerMessage.includes('failed'))
@@ -62,7 +69,7 @@ function getSeverityIcon(severity: string) {
 
 <template>
   <template v-if="device">
-    <v-card elevation="2">
+    <v-card elevation="1">
       <v-card-title class="d-flex align-center">
         Logs
         <v-spacer />
@@ -84,40 +91,40 @@ function getSeverityIcon(severity: string) {
       </v-card-title>
       <v-divider />
       <v-card-text class="pa-0">
-        <v-list v-if="logsStore.logEntries.length !== 0" lines="three" data-test-id="logs-list">
-          <template v-for="(logEntry, index) in logsStore.logEntries" :key="logEntry.logId">
+        <v-list v-if="parsedLogEntries.length !== 0" lines="three" data-test-id="logs-list">
+          <template v-for="(item, index) in parsedLogEntries" :key="item.logEntry.logId">
             <v-list-item data-test-id="log-list-item">
               <template #prepend>
                 <v-avatar
-                  :color="getSeverityColor(getLogSeverity(parseLogEntry(logEntry.entry)?.log_message || ''))"
+                  :color="getSeverityColor(getLogSeverity(item.parsed?.log_message || ''))"
                   size="40"
                 >
-                  <v-icon :icon="getSeverityIcon(getLogSeverity(parseLogEntry(logEntry.entry)?.log_message || ''))" />
+                  <v-icon :icon="getSeverityIcon(getLogSeverity(item.parsed?.log_message || ''))" />
                 </v-avatar>
               </template>
 
               <v-list-item-title class="text-wrap mb-2">
-                {{ parseLogEntry(logEntry.entry)?.log_message || logEntry.entry }}
+                {{ item.parsed?.log_message || item.logEntry.entry }}
               </v-list-item-title>
 
               <v-list-item-subtitle>
                 <div class="d-flex flex-column gap-1">
                   <div class="d-flex align-center gap-2 flex-wrap">
                     <v-chip size="x-small" prepend-icon="mdi-clock-outline" variant="text">
-                      {{ formatDate(logEntry.date) }}
+                      {{ formatDate(item.logEntry.date) }}
                     </v-chip>
                     <v-chip
-                      v-if="parseLogEntry(logEntry.entry)?.log_sourcefile"
+                      v-if="item.parsed?.log_sourcefile"
                       size="x-small"
                       prepend-icon="mdi-file-code"
                       variant="text"
                     >
-                      {{ parseLogEntry(logEntry.entry).log_sourcefile }}:{{ parseLogEntry(logEntry.entry).log_codeline }}
+                      {{ item.parsed.log_sourcefile }}:{{ item.parsed.log_codeline }}
                     </v-chip>
                   </div>
 
                   <v-expansion-panels
-                    v-if="parseLogEntry(logEntry.entry)?.device_status_stamp || parseLogEntry(logEntry.entry)?.additional_info"
+                    v-if="item.parsed?.device_status_stamp || item.parsed?.additional_info"
                     flat
                   >
                     <v-expansion-panel elevation="0" class="bg-transparent">
@@ -127,6 +134,7 @@ function getSeverityIcon(severity: string) {
                             size="x-small"
                             variant="text"
                             :prepend-icon="expanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+                            :aria-label="expanded ? 'Hide log details' : 'Show log details'"
                           >
                             {{ expanded ? 'Less' : 'Show Details' }}
                           </v-btn>
@@ -136,7 +144,7 @@ function getSeverityIcon(severity: string) {
                         <v-card variant="tonal" class="mb-2">
                           <v-card-text class="pa-3">
                             <!-- Device Status -->
-                            <div v-if="parseLogEntry(logEntry.entry)?.device_status_stamp" class="mb-3">
+                            <div v-if="item.parsed?.device_status_stamp" class="mb-3">
                               <div class="text-subtitle-2 mb-2 font-weight-bold">
                                 Device Status
                               </div>
@@ -146,7 +154,7 @@ function getSeverityIcon(severity: string) {
                                     WiFi RSSI
                                   </div>
                                   <div class="text-body-2">
-                                    {{ parseLogEntry(logEntry.entry).device_status_stamp.wifi_rssi_level }} dBm
+                                    {{ item.parsed.device_status_stamp.wifi_rssi_level }} dBm
                                   </div>
                                 </v-col>
                                 <v-col cols="6" sm="4">
@@ -154,7 +162,7 @@ function getSeverityIcon(severity: string) {
                                     Battery
                                   </div>
                                   <div class="text-body-2">
-                                    {{ parseLogEntry(logEntry.entry).device_status_stamp.battery_voltage }} V
+                                    {{ item.parsed.device_status_stamp.battery_voltage }} V
                                   </div>
                                 </v-col>
                                 <v-col cols="6" sm="4">
@@ -162,7 +170,7 @@ function getSeverityIcon(severity: string) {
                                     Firmware
                                   </div>
                                   <div class="text-body-2">
-                                    {{ parseLogEntry(logEntry.entry).device_status_stamp.current_fw_version }}
+                                    {{ item.parsed.device_status_stamp.current_fw_version }}
                                   </div>
                                 </v-col>
                                 <v-col cols="6" sm="4">
@@ -170,7 +178,7 @@ function getSeverityIcon(severity: string) {
                                     Free Heap
                                   </div>
                                   <div class="text-body-2">
-                                    {{ (parseLogEntry(logEntry.entry).device_status_stamp.free_heap_size / 1024).toFixed(1) }} KB
+                                    {{ (item.parsed.device_status_stamp.free_heap_size / 1024).toFixed(1) }} KB
                                   </div>
                                 </v-col>
                                 <v-col cols="6" sm="4">
@@ -178,7 +186,7 @@ function getSeverityIcon(severity: string) {
                                     Wakeup Reason
                                   </div>
                                   <div class="text-body-2">
-                                    {{ parseLogEntry(logEntry.entry).device_status_stamp.wakeup_reason }}
+                                    {{ item.parsed.device_status_stamp.wakeup_reason }}
                                   </div>
                                 </v-col>
                                 <v-col cols="6" sm="4">
@@ -186,7 +194,7 @@ function getSeverityIcon(severity: string) {
                                     WiFi Status
                                   </div>
                                   <div class="text-body-2">
-                                    {{ parseLogEntry(logEntry.entry).device_status_stamp.wifi_status }}
+                                    {{ item.parsed.device_status_stamp.wifi_status }}
                                   </div>
                                 </v-col>
                               </v-row>
@@ -194,15 +202,15 @@ function getSeverityIcon(severity: string) {
 
                             <!-- Additional Info -->
                             <div
-                              v-if="parseLogEntry(logEntry.entry)?.additional_info
-                                && Object.keys(parseLogEntry(logEntry.entry).additional_info).length > 0"
+                              v-if="item.parsed?.additional_info
+                                && Object.keys(item.parsed.additional_info).length > 0"
                             >
                               <div class="text-subtitle-2 mb-2 font-weight-bold">
                                 Additional Info
                               </div>
                               <v-row dense>
                                 <v-col
-                                  v-for="(value, key) in parseLogEntry(logEntry.entry).additional_info"
+                                  v-for="(value, key) in item.parsed.additional_info"
                                   :key="key"
                                   cols="12"
                                   sm="6"
@@ -224,11 +232,11 @@ function getSeverityIcon(severity: string) {
                 </div>
               </v-list-item-subtitle>
             </v-list-item>
-            <v-divider v-if="index < logsStore.logEntries.length - 1" />
+            <v-divider v-if="index < parsedLogEntries.length - 1" />
           </template>
         </v-list>
-        <v-alert v-else type="info" data-test-id="log-list-empty-alert">
-          No logs for this device yet.
+        <v-alert v-else type="info" variant="tonal" data-test-id="log-list-empty-alert">
+          No logs yet.
         </v-alert>
       </v-card-text>
     </v-card>
@@ -236,14 +244,8 @@ function getSeverityIcon(severity: string) {
 </template>
 
 <style scoped>
-.gap-1 {
-  gap: 0.25rem;
-}
-
-.gap-2 {
-  gap: 0.5rem;
-}
-
+.gap-1 { gap: 0.25rem; }
+.gap-2 { gap: 0.5rem; }
 .min-height-auto {
   min-height: auto !important;
 }
