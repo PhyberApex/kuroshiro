@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.8.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.7.0...kuroshiro-v0.8.0) (2026-03-15)
+
+
+### Features
+
+* Redesign ([a8d0ebf](https://github.com/PhyberApex/kuroshiro/commit/a8d0ebfca4f7ead78b476c5adbfecf7fa023cadc))
+
+
+### Bug Fixes
+
+* Fix migrations not working ([fd7b65a](https://github.com/PhyberApex/kuroshiro/commit/fd7b65a484effafb2375cc46346c2986a7380fdf))
+* Fix missing migration for log entries. ([57a66a4](https://github.com/PhyberApex/kuroshiro/commit/57a66a4d1ca6cc9568a4beb91472a93a9736dc9e))
+
 ## [0.7.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.6.0...kuroshiro-v0.7.0) (2026-01-05)
 
 
