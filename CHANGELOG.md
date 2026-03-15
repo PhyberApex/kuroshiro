@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.8.0...kuroshiro-v0.8.1) (2026-03-15)
+
+
+### Bug Fixes
+
+* Fixed test failure ([db8d070](https://github.com/PhyberApex/kuroshiro/commit/db8d070cce302c660260678acde19f0975998779))
+
 ## [0.8.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.7.0...kuroshiro-v0.8.0) (2026-03-15)
 
 
