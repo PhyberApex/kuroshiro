@@ -35,7 +35,7 @@ catalog:
   eslint: 10.1.0
   fs-extra: 11.3.4
   jiti: 2.6.1
-  jsdom: 29.0.0
+  jsdom: 29.0.1
   npm-run-all2: 8.0.4
   pg: 8.20.0
   pinia: 3.0.4
