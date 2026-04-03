@@ -32,7 +32,7 @@ catalog:
   class-transformer: 0.5.1
   class-validator: 0.15.1
   dotenv: 17.4.0
-  eslint: 10.1.0
+  eslint: 10.2.0
   fs-extra: 11.3.4
   jiti: 2.6.1
   jsdom: 29.0.1
