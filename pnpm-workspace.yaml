@@ -16,7 +16,7 @@ catalog:
   '@semantic-release/git': 10.0.1
   '@semantic-release/github': 12.0.6
   '@semantic-release/npm': 13.1.5
-  '@swc/core': 1.15.21
+  '@swc/core': 1.15.24
   '@tsconfig/node24': 24.0.4
   '@types/express': 5.0.6
   '@types/jsdom': 28.0.1
