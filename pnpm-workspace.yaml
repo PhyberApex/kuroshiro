@@ -9,7 +9,7 @@ catalog:
   '@nestjs/config': 4.0.3
   '@nestjs/core': 11.1.17
   '@nestjs/platform-express': 11.1.17
-  '@nestjs/serve-static': 5.0.4
+  '@nestjs/serve-static': 5.0.5
   '@nestjs/testing': 11.1.17
   '@nestjs/typeorm': 11.0.0
   '@semantic-release/changelog': 6.0.3
