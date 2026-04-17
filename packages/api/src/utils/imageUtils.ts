@@ -42,7 +42,7 @@ async function ensureColormapExists(colormapPath: string, logger: Logger): Promi
 }
 
 export async function convertToPng(inputPath: string, outputPath: string, width: number, height: number, logger: Logger) {
-  const colormapPath = path.join(process.cwd(), 'packages/api/public/colormap-2bit.png')
+  const colormapPath = path.join(process.cwd(), 'public/colormap-2bit.png')
 
   await ensureColormapExists(colormapPath, logger)
 
