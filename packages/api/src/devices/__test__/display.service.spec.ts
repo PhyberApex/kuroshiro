@@ -111,7 +111,7 @@ describe('deviceDisplayService', () => {
 
   it('cycles screens and returns next screen if not mirrored', async () => {
     const device = { ...baseDevice, apikey: 'token', id: '1', mirrorEnabled: false }
-    const filename = 'file.bmp'
+    const filename = 'file.png'
     const generatedAt = new Date()
     const dynamicFilename = `${filename}_${generatedAt.toISOString()}`
     const activeScreen = { id: 'screen1', order: 1, device, isActive: true, fetchManual: false, externalLink: null, filename, generatedAt }
@@ -173,7 +173,7 @@ describe('deviceDisplayService', () => {
     configService.get.mockReturnValue('http://api')
 
     const mockResponse = {
-      filename: 'mirror.bmp',
+      filename: 'mirror.png',
       image_url: 'http://example.com/image.jpg',
       refresh_rate: 30,
       firmware_url: 'http://example.com/firmware',
@@ -191,7 +191,7 @@ describe('deviceDisplayService', () => {
     vi.mocked(fs.unlink).mockResolvedValueOnce()
     const result = await service.getCurrentImage(testHeaders as any)
     expect(result).toBeInstanceOf(Display)
-    expect(result.filename).toBe('mirror.bmp')
+    expect(result.filename).toBe('mirror.png')
     expect(result.image_url).toContain('mirror.png')
     expect(result.refresh_rate).toBe(30)
     expect(result.firmware_url).toBe('http://example.com/firmware')
@@ -218,7 +218,7 @@ describe('deviceDisplayService', () => {
     configService.get.mockReturnValue('http://api')
 
     const mockResponse = {
-      filename: 'mirror.bmp',
+      filename: 'mirror.png',
       image_url: 'http://example.com/image.jpg',
     }
 
@@ -231,7 +231,7 @@ describe('deviceDisplayService', () => {
     vi.mocked(fs.unlink).mockResolvedValueOnce()
     const result = await service.getCurrentImage(testHeaders as any)
     expect(result).toBeInstanceOf(Display)
-    expect(result.filename).toBe('mirror.bmp')
+    expect(result.filename).toBe('mirror.png')
     expect(result.image_url).toContain('mirror.png')
     expect(result.refresh_rate).toBe(device.refreshRate)
     expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', expect.any(String), expect.any(Object))
