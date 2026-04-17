@@ -160,10 +160,14 @@ describe('deviceDisplayService', () => {
       ...baseDevice,
       apikey: 'token',
       id: '1',
+      width: 800,
+      height: 480,
       mirrorEnabled: true,
       mirrorMac: 'mac',
       mirrorApikey: 'mirror-token',
     }
+
+    const testHeaders = { ...headers, width: 800, height: 480 }
 
     deviceRepo.findOneBy.mockResolvedValue(device)
     configService.get.mockReturnValue('http://api')
@@ -181,12 +185,18 @@ describe('deviceDisplayService', () => {
     mockFetch.mockResolvedValueOnce({
       json: () => Promise.resolve(mockResponse),
     })
+
+    const { downloadImage, convertToPng } = await import('src/utils/imageUtils')
+
     vi.mocked(fs.unlink).mockResolvedValueOnce()
-    const result = await service.getCurrentImage(headers as any)
+    const result = await service.getCurrentImage(testHeaders as any)
     expect(result).toBeInstanceOf(Display)
     expect(result.filename).toBe('mirror.bmp')
+    expect(result.image_url).toContain('mirror.png')
     expect(result.refresh_rate).toBe(30)
     expect(result.firmware_url).toBe('http://example.com/firmware')
+    expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', expect.any(String), expect.any(Object))
+    expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('mirror.png'), 800, 480, expect.any(Object))
     expect(fs.unlink).toHaveBeenCalled()
   })
 
@@ -195,10 +205,14 @@ describe('deviceDisplayService', () => {
       ...baseDevice,
       apikey: 'token',
       id: '1',
+      width: 800,
+      height: 480,
       mirrorEnabled: true,
       mirrorMac: 'different-mac',
       mirrorApikey: 'mirror-token',
     }
+
+    const testHeaders = { ...headers, width: 800, height: 480 }
 
     deviceRepo.findOneBy.mockResolvedValue(device)
     configService.get.mockReturnValue('http://api')
@@ -212,11 +226,16 @@ describe('deviceDisplayService', () => {
       json: () => Promise.resolve(mockResponse),
     })
 
+    const { downloadImage, convertToPng } = await import('src/utils/imageUtils')
+
     vi.mocked(fs.unlink).mockResolvedValueOnce()
-    const result = await service.getCurrentImage(headers as any)
+    const result = await service.getCurrentImage(testHeaders as any)
     expect(result).toBeInstanceOf(Display)
     expect(result.filename).toBe('mirror.bmp')
+    expect(result.image_url).toContain('mirror.png')
     expect(result.refresh_rate).toBe(device.refreshRate)
+    expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', expect.any(String), expect.any(Object))
+    expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('mirror.png'), 800, 480, expect.any(Object))
     expect(fs.unlink).toHaveBeenCalled()
   })
 
