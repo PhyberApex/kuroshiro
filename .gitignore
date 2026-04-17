@@ -25,4 +25,8 @@ packages/ui/coverage
 
 # TSBuildinfo
 packages/api/tsconfig.migrations.tsbuildinfo
-.claude/progress.json
+
+# AI
+.claude
+.cursor
+ralph/
