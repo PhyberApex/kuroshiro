@@ -105,8 +105,8 @@ describe('deviceDisplayService', () => {
     deviceRepo.save.mockResolvedValue(undefined)
     const result = await service.getCurrentImage(headers as any)
     expect(result).toBeInstanceOf(Display)
-    expect(result.filename).toBe('noScreen.bmp')
-    expect(result.image_url).toBe('http://api/screens/noScreen.bmp')
+    expect(result.filename).toBe('noScreen.png')
+    expect(result.image_url).toBe('http://api/screens/noScreen.png')
   })
 
   it('cycles screens and returns next screen if not mirrored', async () => {
@@ -257,8 +257,8 @@ describe('deviceDisplayService', () => {
 
       const result = await service.getCurrentImageWithoutProgressing(headers)
       expect(result).toBeInstanceOf(DisplayScreen)
-      expect(result.filename).toBe('noScreen.bmp')
-      expect(result.image_url).toBe('http://api/screens/noScreen.bmp')
+      expect(result.filename).toBe('noScreen.png')
+      expect(result.image_url).toBe('http://api/screens/noScreen.png')
       expect(result.rendered_at).toBeInstanceOf(Date)
     })
 
@@ -285,7 +285,7 @@ describe('deviceDisplayService', () => {
       const result = await service.getCurrentImageWithoutProgressing(headers)
       expect(result).toBeInstanceOf(DisplayScreen)
       expect(result.filename).toContain('mirror')
-      expect(result.image_url).toBe('http://api/screens/error.bmp')
+      expect(result.image_url).toBe('http://api/screens/error.png')
       expect(result.rendered_at).toBeUndefined()
     })
 

@@ -61,9 +61,9 @@ export class DeviceDisplayService {
     if (!activeScreen && !device.mirrorEnabled) {
       this.logger.log('No screen found returning default no screen image')
       return new Display({
-        filename: 'noScreen.bmp',
+        filename: 'noScreen.png',
         firmware_url: '',
-        image_url: `${this.configService.get<string>('api_url')}/screens/noScreen.bmp`,
+        image_url: `${this.configService.get<string>('api_url')}/screens/noScreen.png`,
         refresh_rate: device.refreshRate,
         reset_firmware: resetDevice,
         special_function: device.specialFunction,
@@ -128,7 +128,7 @@ export class DeviceDisplayService {
         }
         catch (err) {
           this.logger.error(`Failed to process image: ${err.message}`)
-          imgUrl = `${this.configService.get<string>('api_url')}/screens/error.bmp`
+          imgUrl = `${this.configService.get<string>('api_url')}/screens/error.png`
         }
       }
       return new Display({
@@ -152,8 +152,8 @@ export class DeviceDisplayService {
         this.logger.log(`MACs are different we should mirror with current_screen endpoint.`)
       }
       let refreshRate = device.refreshRate
-      let filename = 'error.bpm'
-      let localImageUrl = `${this.configService.get<string>('api_url')}/screens/error.bmp`
+      let filename = 'error.png'
+      let localImageUrl = `${this.configService.get<string>('api_url')}/screens/error.png`
       let firmwareUrl = null
       let resetFirmware = false
       let specialFunction = device.specialFunction
@@ -218,13 +218,13 @@ export class DeviceDisplayService {
     if (!activeScreen && !device.mirrorEnabled) {
       this.logger.log('No screen found returning default no screen image')
       return new DisplayScreen({
-        filename: 'noScreen.bmp',
-        image_url: `${this.configService.get<string>('api_url')}/screens/noScreen.bmp`,
+        filename: 'noScreen.png',
+        image_url: `${this.configService.get<string>('api_url')}/screens/noScreen.png`,
         refresh_rate: device.refreshRate,
         rendered_at: new Date(),
       })
     }
-    let imgUrl = `${this.configService.get<string>('api_url')}/screens/error.bmp`
+    let imgUrl = `${this.configService.get<string>('api_url')}/screens/error.png`
     if (device.mirrorEnabled) {
       this.logger.log(`Mirroring enabled for device ${device.id}, checking for image...`)
       if (await fileExists(resolveAppPath('public', 'screens', 'devices', device.id, 'mirror.png'))) {
