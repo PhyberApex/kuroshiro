@@ -11,7 +11,7 @@ import { Display } from 'src/devices/display'
 import { DisplayScreen } from 'src/devices/displayScreen'
 import { Screen } from 'src/screens/screens.entity'
 import { fileExists } from 'src/utils/fileExists'
-import { convertToMonochromeBmp, downloadImage } from 'src/utils/imageUtils'
+import { convertToPng, downloadImage } from 'src/utils/imageUtils'
 import { resolveAppPath } from 'src/utils/pathHelper'
 import { Repository } from 'typeorm'
 
@@ -81,7 +81,7 @@ export class DeviceDisplayService {
       nextScreen.isActive = true
       await this.screenRepository.save(nextScreen)
       this.logger.log(`Returning screen ${nextScreen.id} for device ${device.id}`)
-      let imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${nextScreen.id}.bmp`
+      let imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${nextScreen.id}.png`
       if (nextScreen.html) {
         const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-web-security'] })
         const page = await browser.newPage()
@@ -108,21 +108,23 @@ export class DeviceDisplayService {
         const inputPath = path.join(destDir, 'tmp-source')
         await fs.promises.mkdir(path.dirname(inputPath), { recursive: true })
         await fs.promises.writeFile(inputPath, imgBuffer)
-        const outputPath = path.join(destDir, `${nextScreen.id}.bmp`)
-        await convertToMonochromeBmp(inputPath, outputPath, device.width, device.height, this.logger)
+        const outputPath = path.join(destDir, `${nextScreen.id}.png`)
+        await convertToPng(inputPath, outputPath, device.width, device.height, this.logger)
+        imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${nextScreen.id}.png`
       }
       if (nextScreen.externalLink && !nextScreen.fetchManual) {
         const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
         const inputPath = path.join(destDir, 'tmp-source')
-        const bmpFilename = `${nextScreen.id}.bmp`
-        const outputPath = path.join(destDir, bmpFilename)
+        const pngFilename = `${nextScreen.id}.png`
+        const outputPath = path.join(destDir, pngFilename)
         try {
           await downloadImage(nextScreen.externalLink, inputPath, this.logger)
-          await convertToMonochromeBmp(inputPath, outputPath, device.width, device.height, this.logger)
+          await convertToPng(inputPath, outputPath, device.width, device.height, this.logger)
           this.logger.log('Updating generation date on screen')
           nextScreen.generatedAt = new Date()
           await this.screenRepository.save(nextScreen)
           this.logger.log('Download and conversion successful')
+          imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${pngFilename}`
         }
         catch (err) {
           this.logger.error(`Failed to process image: ${err.message}`)
@@ -168,11 +170,11 @@ export class DeviceDisplayService {
         this.logger.debug(`Got this from TRMNL ${JSON.stringify(response)}`)
         const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
         const inputPath = path.join(destDir, response.filename)
-        const bmpFilename = 'mirror.bmp'
-        const outputPath = path.join(destDir, bmpFilename)
+        const pngFilename = 'mirror.png'
+        const outputPath = path.join(destDir, pngFilename)
 
         await downloadImage(response.image_url, inputPath, this.logger)
-        await convertToMonochromeBmp(inputPath, outputPath, device.width, device.height, this.logger)
+        await convertToPng(inputPath, outputPath, device.width, device.height, this.logger)
         await fs.promises.unlink(inputPath)
         this.logger.log(`Deleted original image: ${inputPath}`)
 
@@ -181,7 +183,7 @@ export class DeviceDisplayService {
         resetFirmware = proxy ? response.reset_firmware : resetFirmware
         specialFunction = proxy ? response.special_function : specialFunction
         updateFirmware = proxy ? response.update_firmware : updateFirmware
-        localImageUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${bmpFilename}`
+        localImageUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${pngFilename}`
         filename = response.filename
       }
       catch (err) {
@@ -225,14 +227,14 @@ export class DeviceDisplayService {
     let imgUrl = `${this.configService.get<string>('api_url')}/screens/error.bmp`
     if (device.mirrorEnabled) {
       this.logger.log(`Mirroring enabled for device ${device.id}, checking for image...`)
-      if (await fileExists(resolveAppPath('public', 'screens', 'devices', device.id, 'mirror.bmp'))) {
+      if (await fileExists(resolveAppPath('public', 'screens', 'devices', device.id, 'mirror.png'))) {
         this.logger.log(`Image found returning`)
-        imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/mirror.bmp`
+        imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/mirror.png`
       }
     }
     else {
       this.logger.log(`Returning screen ${activeScreen.id} for device ${device.id}`)
-      imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${activeScreen.id}.bmp`
+      imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${activeScreen.id}.png`
     }
     return new DisplayScreen({
       filename: device.mirrorEnabled ? `mirror_${new Date().toISOString()}` : `${activeScreen.filename}_${activeScreen.generatedAt.toISOString()}`,

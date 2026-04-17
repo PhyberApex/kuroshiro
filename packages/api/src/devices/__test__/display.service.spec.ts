@@ -21,7 +21,7 @@ vi.mock('node:fs', () => ({
 
 vi.mock('src/utils/imageUtils', () => ({
   downloadImage: vi.fn().mockResolvedValue(undefined),
-  convertToMonochromeBmp: vi.fn().mockResolvedValue(undefined),
+  convertToPng: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('puppeteer', () => ({
@@ -127,7 +127,7 @@ describe('deviceDisplayService', () => {
     const result = await service.getCurrentImage(headers as any)
     expect(result).toBeInstanceOf(Display)
     expect(result.filename).toBe(dynamicFilename)
-    expect(result.image_url).toBe('http://api/screens/devices/1/screen2.bmp')
+    expect(result.image_url).toBe('http://api/screens/devices/1/screen2.png')
   })
 
   it('processes external link images when fetchManual is false', async () => {
@@ -139,8 +139,8 @@ describe('deviceDisplayService', () => {
       isActive: true,
       externalLink: 'http://example.com/image.jpg',
       fetchManual: false,
-      filename: 'test.bmp',
-      generatedAt: new Date().toISOString(),
+      filename: 'test.png',
+      generatedAt: new Date(),
     }
     const nextScreen = { ...activeScreen, id: 'screen2', order: 2, isActive: false }
 
@@ -152,7 +152,7 @@ describe('deviceDisplayService', () => {
 
     const result = await service.getCurrentImage(headers as any)
     expect(result).toBeInstanceOf(Display)
-    expect(result.image_url).toBe('http://api/screens/devices/1/screen2.bmp')
+    expect(result.image_url).toBe('http://api/screens/devices/1/screen2.png')
   })
 
   it('handles mirroring with proxy when MACs are identical', async () => {
@@ -253,7 +253,7 @@ describe('deviceDisplayService', () => {
       expect(fileExists).toHaveBeenCalled()
       expect(result).toBeInstanceOf(DisplayScreen)
       expect(result.filename).toContain('mirror')
-      expect(result.image_url).toBe('http://api/screens/devices/1/mirror.bmp')
+      expect(result.image_url).toBe('http://api/screens/devices/1/mirror.png')
       expect(result.rendered_at).toBeUndefined()
     })
 
@@ -274,7 +274,7 @@ describe('deviceDisplayService', () => {
       const device = { ...baseDevice, apikey: 'token', id: '1', mirrorEnabled: false }
       const activeScreen = {
         id: 'screen1',
-        filename: 'test.bmp',
+        filename: 'test.png',
         generatedAt: new Date(),
         isActive: true,
       }
@@ -286,7 +286,7 @@ describe('deviceDisplayService', () => {
       const result = await service.getCurrentImageWithoutProgressing(headers)
       expect(result).toBeInstanceOf(DisplayScreen)
       expect(result.filename).toBe(`${activeScreen.filename}_${activeScreen.generatedAt.toISOString()}`)
-      expect(result.image_url).toBe(`http://api/screens/devices/1/screen1.bmp`)
+      expect(result.image_url).toBe(`http://api/screens/devices/1/screen1.png`)
       expect(result.rendered_at).toBe(activeScreen.generatedAt)
     })
   })
