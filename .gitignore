@@ -16,6 +16,8 @@ dist/
 
 # Test files
 packages/api/public
+!packages/api/public/screens/*.png
+!packages/api/public/colormap-2bit.png
 
 # Coverage
 packages/api/coverage
@@ -23,3 +25,8 @@ packages/ui/coverage
 
 # TSBuildinfo
 packages/api/tsconfig.migrations.tsbuildinfo
+
+# AI
+.claude
+.cursor
+ralph/

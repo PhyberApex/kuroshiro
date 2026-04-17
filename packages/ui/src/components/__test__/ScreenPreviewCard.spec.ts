@@ -42,8 +42,8 @@ describe('screenPreviewCard', () => {
       deleteScreen: vi.fn(),
       updateExternalScreen: vi.fn(),
       currentScreen: {
-        filename: 'test.bmp',
-        image_url: 'http://example.com/image.bmp',
+        filename: 'test.png',
+        image_url: 'http://example.com/image.png',
         refresh_rate: 60,
         rendered_at: '2024-01-01T00:00:00Z',
       },
@@ -59,7 +59,7 @@ describe('screenPreviewCard', () => {
     })
     expect(wrapper.exists()).toBe(true)
     expect(wrapper.find('[data-test-id="screen-image"]').exists()).toBe(true)
-    expect(wrapper.findComponent({ name: 'VImg' }).props('src')).toBe('http://example.com/image.bmp')
+    expect(wrapper.findComponent({ name: 'VImg' }).props('src')).toBe('http://example.com/image.png')
     expect(wrapper.find('[data-test-id="screen-rendered-date"]').exists()).toBe(true)
     expect(wrapper.find('[data-test-id="screen-rendered-date"]').text()).toContain('formatted: 2024-01-01T00:00:00Z')
   })
@@ -74,7 +74,7 @@ describe('screenPreviewCard', () => {
     })
     expect(wrapper.exists()).toBe(true)
     expect(wrapper.find('[data-test-id="screen-image"]').exists()).toBe(true)
-    expect(wrapper.findComponent({ name: 'VImg' }).props('src')).toBe('http://example.com/image.bmp')
+    expect(wrapper.findComponent({ name: 'VImg' }).props('src')).toBe('http://example.com/image.png')
     expect(wrapper.find('[data-test-id="screen-rendered-date"]').exists()).toBe(true)
     expect(wrapper.find('[data-test-id="screen-rendered-date"]').text()).toContain('???')
   })

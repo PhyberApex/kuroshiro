@@ -16,7 +16,7 @@ describe('displayController (unit)', () => {
   it('display should return display from service', async () => {
     const headers = { 'id': 'mac', 'access-token': 'token' }
     const display = new Display({
-      filename: 'file.bmp',
+      filename: 'file.png',
       firmware_url: '',
       image_url: 'url',
       refresh_rate: 60,
@@ -41,7 +41,7 @@ describe('displayController (unit)', () => {
   it('current_screen should return display from service', async () => {
     const headers = { 'id': 'mac', 'access-token': 'token' }
     const display = new Display({
-      filename: 'file.bmp',
+      filename: 'file.png',
       firmware_url: '',
       image_url: 'url',
       refresh_rate: 60,

@@ -111,7 +111,7 @@ async function renderPreviewHtml(html: string) {
                       v-else
                       size="small"
                       class="mr-2"
-                      :href="`/screens/devices/${device?.id}/${screen.id}.bmp`"
+                      :href="`/screens/devices/${device?.id}/${screen.id}.png`"
                       target="_blank"
                       variant="tonal"
                       color="secondary"

@@ -9,7 +9,7 @@ import { ScreensService } from '../screens.service'
 
 vi.mock('../../utils/imageUtils', () => ({
   downloadImage: vi.fn().mockResolvedValue(undefined),
-  convertToMonochromeBmp: vi.fn().mockResolvedValue(undefined),
+  convertToPng: vi.fn().mockResolvedValue(undefined),
 }))
 
 function createMockRepo() {
@@ -108,7 +108,7 @@ describe('screensService', () => {
     await expect(service.delete('1')).resolves.toBeUndefined()
     expect(screensRepo.delete).toHaveBeenCalledWith('1')
     expect(screensRepo.save).toHaveBeenCalled()
-    expect(unlinkMock).toHaveBeenCalledWith(expect.stringContaining('public/screens/devices/dev/1.bmp'))
+    expect(unlinkMock).toHaveBeenCalledWith(expect.stringContaining('public/screens/devices/dev/1.png'))
   })
 
   it('updateExternalScreen refetches and converts image', async () => {

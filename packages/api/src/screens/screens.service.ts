@@ -4,7 +4,7 @@ import { BadRequestException, Injectable, InternalServerErrorException, Logger, 
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Device } from '../devices/devices.entity'
-import { convertToMonochromeBmp, downloadImage } from '../utils/imageUtils'
+import { convertToPng, downloadImage } from '../utils/imageUtils'
 import { resolveAppPath } from '../utils/pathHelper'
 import { CreateScreenDto } from './dto/create-screen.dto'
 import { Screen } from './screens.entity'
@@ -52,13 +52,13 @@ export class ScreensService {
     if (body.externalLink && body.fetchManual) {
       const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
       const inputPath = path.join(destDir, 'tmp-source')
-      const bmpFilename = `${saved.id}.bmp`
-      const outputPath = path.join(destDir, bmpFilename)
+      const pngFilename = `${saved.id}.png`
+      const outputPath = path.join(destDir, pngFilename)
       this.logger.debug(`Input path: ${inputPath}`)
       this.logger.debug(`Planned output path: ${outputPath}`)
       try {
         await downloadImage(body.externalLink, inputPath, this.logger)
-        await convertToMonochromeBmp(inputPath, outputPath, device.width, device.height, this.logger)
+        await convertToPng(inputPath, outputPath, device.width, device.height, this.logger)
         this.logger.log('Download and conversion successful')
       }
       catch (err) {
@@ -74,15 +74,15 @@ export class ScreensService {
         const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
         await fs.promises.mkdir(destDir, { recursive: true })
         const inputPath = path.join(destDir, `${saved.id}-source`)
-        const bmpFilename = `${saved.id}.bmp`
-        const outputPath = path.join(destDir, bmpFilename)
+        const pngFilename = `${saved.id}.png`
+        const outputPath = path.join(destDir, pngFilename)
         this.logger.debug(`Input path: ${inputPath}`)
         this.logger.debug(`Planned output path: ${outputPath}`)
         await fs.promises.writeFile(inputPath, file.buffer)
         this.logger.log(`Uploaded file saved to ${inputPath}`)
-        await convertToMonochromeBmp(inputPath, outputPath, device.width, device.height, this.logger)
+        await convertToPng(inputPath, outputPath, device.width, device.height, this.logger)
         await fs.promises.unlink(inputPath)
-        this.logger.log(`Converted and saved BMP to ${outputPath}`)
+        this.logger.log(`Converted and saved PNG to ${outputPath}`)
       }
       catch {
         this.logger.error('Error on uploading file. Removing screen again.')
@@ -110,18 +110,18 @@ export class ScreensService {
       throw new NotFoundException('Screen not found')
     }
     const deviceId = screen.device.id
-    // Delete BMP file if it exists
-    const bmpPath = resolveAppPath('public', 'screens', 'devices', deviceId, `${id}.bmp`)
+    // Delete PNG file if it exists
+    const pngPath = resolveAppPath('public', 'screens', 'devices', deviceId, `${id}.png`)
     try {
-      await fs.promises.unlink(bmpPath)
-      this.logger.log(`Deleted BMP file: ${bmpPath}`)
+      await fs.promises.unlink(pngPath)
+      this.logger.log(`Deleted PNG file: ${pngPath}`)
     }
     catch (err) {
       if (err.code === 'ENOENT') {
-        this.logger.warn(`BMP file not found for deletion: ${bmpPath}`)
+        this.logger.warn(`PNG file not found for deletion: ${pngPath}`)
       }
       else {
-        this.logger.error(`Failed to delete BMP file: ${bmpPath} - ${err.message}`)
+        this.logger.error(`Failed to delete PNG file: ${pngPath} - ${err.message}`)
       }
     }
     await this.screensRepository.delete(id)
@@ -152,11 +152,11 @@ export class ScreensService {
     }
     const destDir = resolveAppPath('public', 'screens', 'devices', screen.device.id)
     const inputPath = path.join(destDir, 'tmp-source')
-    const bmpFilename = `${screen.id}.bmp`
-    const outputPath = path.join(destDir, bmpFilename)
+    const pngFilename = `${screen.id}.png`
+    const outputPath = path.join(destDir, pngFilename)
     try {
       await downloadImage(screen.externalLink, inputPath, this.logger)
-      await convertToMonochromeBmp(inputPath, outputPath, screen.device.width, screen.device.height, this.logger)
+      await convertToPng(inputPath, outputPath, screen.device.width, screen.device.height, this.logger)
       this.logger.log('Updating generation date on screen')
       screen.generatedAt = new Date()
       await this.screensRepository.save(screen)
