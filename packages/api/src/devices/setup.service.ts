@@ -27,7 +27,7 @@ export class DeviceSetupService {
     this.logger.log(`Setup request for MAC: ${headers.id}`)
     const baseSetupResponse = {
       status: 200 as const,
-      image_url: `${this.configService.get<string>('api_url')}/screens/welcome.bmp`,
+      image_url: `${this.configService.get<string>('api_url')}/screens/welcome.png`,
       message: 'Welcome to Kuroshiro',
     }
     let friendlyId = generateFriendlyName()
