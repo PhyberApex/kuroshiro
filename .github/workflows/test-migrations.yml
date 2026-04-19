@@ -1,0 +1,138 @@
+name: Test Migrations
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/api/src/migrations/**'
+      - 'packages/api/src/**/*.entity.ts'
+      - '.github/workflows/test-migrations.yml'
+
+jobs:
+  test-fresh-db:
+    name: Test migrations on fresh database
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build migrations
+        run: pnpm --filter kuroshiro-api run build:migrations
+
+      - name: Run migrations on fresh DB
+        run: pnpm --filter kuroshiro-api migration:run
+        env:
+          KUROSHIRO_DB_HOST: localhost
+          KUROSHIRO_DB_PORT: 5432
+          KUROSHIRO_DB_USER: test
+          KUROSHIRO_DB_PASSWORD: test
+          KUROSHIRO_DB_DB: test
+
+      - name: Verify all migrations ran
+        run: pnpm --filter kuroshiro-api migration:show
+        env:
+          KUROSHIRO_DB_HOST: localhost
+          KUROSHIRO_DB_PORT: 5432
+          KUROSHIRO_DB_USER: test
+          KUROSHIRO_DB_PASSWORD: test
+          KUROSHIRO_DB_DB: test
+
+  test-incremental:
+    name: Test migrations from baseline
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build migrations
+        run: pnpm --filter kuroshiro-api run build:migrations
+
+      - name: Get baseline migration filename
+        id: baseline
+        run: |
+          BASELINE_FILE=$(ls packages/api/dist/src/migrations/*.js | head -1 | xargs basename)
+          echo "baseline_file=${BASELINE_FILE}" >> "${GITHUB_OUTPUT}"
+
+      - name: Run only baseline migration
+        run: |
+          cd packages/api
+          npx typeorm migration:run -d dist/src/config/typeorm.config.js
+        env:
+          KUROSHIRO_DB_HOST: localhost
+          KUROSHIRO_DB_PORT: 5432
+          KUROSHIRO_DB_USER: test
+          KUROSHIRO_DB_PASSWORD: test
+          KUROSHIRO_DB_DB: test
+          BASELINE_FILE: ${{ steps.baseline.outputs.baseline_file }}
+
+      - name: Run remaining migrations
+        run: pnpm --filter kuroshiro-api migration:run
+        env:
+          KUROSHIRO_DB_HOST: localhost
+          KUROSHIRO_DB_PORT: 5432
+          KUROSHIRO_DB_USER: test
+          KUROSHIRO_DB_PASSWORD: test
+          KUROSHIRO_DB_DB: test
+
+      - name: Verify migrations state
+        run: pnpm --filter kuroshiro-api migration:show
+        env:
+          KUROSHIRO_DB_HOST: localhost
+          KUROSHIRO_DB_PORT: 5432
+          KUROSHIRO_DB_USER: test
+          KUROSHIRO_DB_PASSWORD: test
+          KUROSHIRO_DB_DB: test

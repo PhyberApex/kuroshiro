@@ -41,6 +41,10 @@ COPY --from=api-build /app/package.json ./
 COPY --from=api-build /app/packages/api/dist ./dist
 COPY --from=ui-build /app/packages/ui/dist ./public
 
+# Copy entrypoint
+COPY entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+
 # Install only production dependencies
 COPY packages/api/package.json ./package.json
 RUN corepack enable && pnpm install --prod
@@ -50,4 +54,4 @@ ENTRYPOINT ["/sbin/tini", "--"]
 
 ENV NODE_ENV=production
 EXPOSE 3000
-CMD ["node", "dist/main.js"] 
+CMD ["/app/entrypoint.sh"] 

@@ -28,6 +28,7 @@ import {
 import { useClipboard } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { VBtn, VCard, VCardText, VCardTitle, VCol, VDivider, VExpansionPanel, VExpansionPanels, VExpansionPanelText, VExpansionPanelTitle, VIcon, VNumberInput, VRow, VSelect, VSwitch, VTextField } from 'vuetify/components'
 import { useDeviceStore } from '@/stores/device'
 import { formatDate } from '@/utils/formatDate'
 import { isValidMac } from '@/utils/getRandomMac'
@@ -228,114 +229,114 @@ const nameEditing = ref(false)
 
 <template>
   <template v-if="device">
-    <v-card class="mb-6" elevation="1">
-      <v-card-title class="d-flex align-center justify-space-between">
+    <VCard class="mb-6" elevation="1">
+      <VCardTitle class="d-flex align-center justify-space-between">
         <div v-if="!nameEditing">
           <span data-test-id="device-name">{{ device.name }}</span>
           <v-icon-btn :icon="mdiPencil" size="x-small" class="ml-2" aria-label="Edit device name" variant="text" @click="nameEditing = true" />
-          <v-icon :icon="mdiCircle" :color="isDeviceOnline(device) ? 'success' : 'error'" size="x-small" class="ml-2" />
+          <VIcon :icon="mdiCircle" :color="isDeviceOnline(device) ? 'success' : 'error'" size="x-small" class="ml-2" />
         </div>
         <div v-else>
-          <v-text-field v-model="device.name" variant="underlined" density="compact" autofocus :hide-details="true" min-width="200" @blur="nameEditing = false" />
+          <VTextField v-model="device.name" variant="underlined" density="compact" autofocus :hide-details="true" min-width="200" @blur="nameEditing = false" />
         </div>
         <div>
-          <v-btn color="success" variant="tonal" :prepend-icon="mdiContentSave" class="mr-5" :disabled="!valid" @click="saveDevice">
+          <VBtn color="success" variant="tonal" :prepend-icon="mdiContentSave" class="mr-5" :disabled="!valid" @click="saveDevice">
             Update
-          </v-btn>
-          <v-btn color="error" variant="tonal" :prepend-icon="mdiDelete" data-test-id="delete-device-btn" @click="deleteDevice">
+          </VBtn>
+          <VBtn color="error" variant="tonal" :prepend-icon="mdiDelete" data-test-id="delete-device-btn" @click="deleteDevice">
             Delete
-          </v-btn>
+          </VBtn>
         </div>
-      </v-card-title>
-      <v-divider />
-      <v-card-text>
-        <v-row class="mb-4" dense>
-          <v-col cols="12" sm="4">
+      </VCardTitle>
+      <VDivider />
+      <VCardText>
+        <VRow class="mb-4" density="comfortable">
+          <VCol cols="12" sm="4">
             <strong>Firmware Version:</strong>
             <div>{{ device.fwVersion || 'N/A' }}</div>
-          </v-col>
-          <v-col cols="12" sm="4">
-            <v-icon size="x-large" :color="rssiColor" class="mr-1" :icon="rssiIcon" />
+          </VCol>
+          <VCol cols="12" sm="4">
+            <VIcon size="x-large" :color="rssiColor" class="mr-1" :icon="rssiIcon" />
             {{ device.rssi ? `(${device.rssi} dBm)` : 'N/A' }}
-          </v-col>
-          <v-col cols="12" sm="4">
-            <v-icon size="x-large" :color="batteryColor" class="mr-1" :icon="batteryIcon" />
+          </VCol>
+          <VCol cols="12" sm="4">
+            <VIcon size="x-large" :color="batteryColor" class="mr-1" :icon="batteryIcon" />
             {{ device.batteryVoltage ? `(${batteryPercentage} %)` : 'N/A' }}
-          </v-col>
-          <v-col cols="12" sm="4">
+          </VCol>
+          <VCol cols="12" sm="4">
             <strong>Display size:</strong>
             <div>{{ device.width && device.height ? `${device.width}x${device.height}` : 'N/A' }}</div>
-          </v-col>
-          <v-col cols="12" sm="4">
+          </VCol>
+          <VCol cols="12" sm="4">
             <strong>Last seen:</strong>
             <div class="text-truncate">
               {{ device.lastSeen ? formatDate(device.lastSeen) : 'N/A' }}
             </div>
-          </v-col>
-          <v-col cols="12" sm="4">
+          </VCol>
+          <VCol cols="12" sm="4">
             <strong>User Agent:</strong>
             <div class="text-truncate">
               {{ device.userAgent || 'N/A' }}
             </div>
-          </v-col>
-        </v-row>
-        <v-divider class="my-2" />
-        <v-row class="mb-2" dense>
-          <v-col cols="12" sm="12" md="6" lg="4">
-            <v-text-field v-model="device.friendlyId" readonly density="compact" hide-details label="Friendly ID" />
-          </v-col>
-          <v-col cols="12" sm="12" md="6" lg="4">
-            <v-text-field v-model="device.mac" readonly density="compact" hide-details label="MAC" :append-icon="macCopied ? mdiCheck : mdiContentCopy" @click:append="copyToClipboard(device.mac)" />
-          </v-col>
-          <v-col cols="12" sm="12" md="6" lg="4">
-            <v-text-field v-model="device.apikey" readonly density="compact" :type="showApikey ? 'text' : 'password'" label="API key" :append-icon="showApikey ? mdiEyeOff : mdiEye" @click:append="showApikey = !showApikey" />
-          </v-col>
-        </v-row>
-        <v-expansion-panels class="mt-2" flat>
-          <v-expansion-panel>
-            <v-expansion-panel-title>Advanced</v-expansion-panel-title>
-            <v-expansion-panel-text>
-              <v-row class="mb-2" dense>
-                <v-col cols="12" sm="12" md="6" lg="4">
-                  <v-row>
-                    <v-col cols="12" sm="5">
-                      <v-number-input v-model="refreshRateNumber" control-variant="hidden" type="number" density="compact" label="Refresh Rate" />
-                    </v-col>
-                    <v-col cols="12" sm="7">
-                      <v-select v-model="refreshRateUnit" density="compact" label="Unit" :items="['hours', 'minutes', 'seconds']" />
-                    </v-col>
-                  </v-row>
-                </v-col>
-                <v-col cols="12" sm="6" md="4">
-                  <v-select
+          </VCol>
+        </VRow>
+        <VDivider class="my-2" />
+        <VRow class="mb-2" density="comfortable">
+          <VCol cols="12" sm="12" md="6" lg="4">
+            <VTextField v-model="device.friendlyId" readonly density="compact" hide-details label="Friendly ID" />
+          </VCol>
+          <VCol cols="12" sm="12" md="6" lg="4">
+            <VTextField v-model="device.mac" readonly density="compact" hide-details label="MAC" :append-icon="macCopied ? mdiCheck : mdiContentCopy" @click:append="copyToClipboard(device.mac)" />
+          </VCol>
+          <VCol cols="12" sm="12" md="6" lg="4">
+            <VTextField v-model="device.apikey" readonly density="compact" :type="showApikey ? 'text' : 'password'" label="API key" :append-icon="showApikey ? mdiEyeOff : mdiEye" @click:append="showApikey = !showApikey" />
+          </VCol>
+        </VRow>
+        <VExpansionPanels class="mt-2" flat>
+          <VExpansionPanel>
+            <VExpansionPanelTitle>Advanced</VExpansionPanelTitle>
+            <VExpansionPanelText>
+              <VRow class="mb-2" density="comfortable">
+                <VCol cols="12" sm="12" md="6" lg="4">
+                  <VRow>
+                    <VCol cols="12" sm="5">
+                      <VNumberInput v-model="refreshRateNumber" control-variant="hidden" type="number" density="compact" label="Refresh Rate" />
+                    </VCol>
+                    <VCol cols="12" sm="7">
+                      <VSelect v-model="refreshRateUnit" density="compact" label="Unit" :items="['hours', 'minutes', 'seconds']" />
+                    </VCol>
+                  </VRow>
+                </VCol>
+                <VCol cols="12" sm="6" md="4">
+                  <VSelect
                     v-model="device.specialFunction"
                     :items="specialFunctionalities"
                     density="compact"
                     label="Special Function"
                   />
-                </v-col>
-                <v-col cols="12" sm="4" md="4" lg="4">
-                  <v-switch v-model="device.resetDevice" color="secondary" density="compact" label="Reset device" />
-                </v-col>
-                <v-col cols="12" sm="4" md="4" lg="4">
-                  <v-switch v-model="device.updateFirmware" color="secondary" density="compact" label="Automatic updates" disabled />
-                </v-col>
-              </v-row>
-              <v-row class="mb-0" dense>
-                <v-col cols="12" sm="6" md="4">
-                  <v-switch v-model="device.mirrorEnabled" color="secondary" label="Mirroring" />
-                </v-col>
-                <v-col cols="12" sm="6" md="4">
+                </VCol>
+                <VCol cols="12" sm="4" md="4" lg="4">
+                  <VSwitch v-model="device.resetDevice" color="secondary" density="compact" label="Reset device" />
+                </VCol>
+                <VCol cols="12" sm="4" md="4" lg="4">
+                  <VSwitch v-model="device.updateFirmware" color="secondary" density="compact" label="Automatic updates" disabled />
+                </VCol>
+              </VRow>
+              <VRow class="mb-0" density="comfortable">
+                <VCol cols="12" sm="6" md="4">
+                  <VSwitch v-model="device.mirrorEnabled" color="secondary" label="Mirroring" />
+                </VCol>
+                <VCol cols="12" sm="6" md="4">
                   <VTextField v-model="device.mirrorMac" density="compact" label="Mirror MAC address" :disabled="!device.mirrorEnabled" :rules="macRules" />
-                </v-col>
-                <v-col cols="12" sm="6" md="4">
+                </VCol>
+                <VCol cols="12" sm="6" md="4">
                   <VTextField v-model="device.mirrorApikey" density="compact" label="Mirror API key" :disabled="!device.mirrorEnabled" :rules="apikeyRules" />
-                </v-col>
-              </v-row>
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-        </v-expansion-panels>
-      </v-card-text>
-    </v-card>
+                </VCol>
+              </VRow>
+            </VExpansionPanelText>
+          </VExpansionPanel>
+        </VExpansionPanels>
+      </VCardText>
+    </VCard>
   </template>
 </template>

@@ -9,6 +9,9 @@ import puppeteer from 'puppeteer'
 import { Device } from 'src/devices/devices.entity'
 import { Display } from 'src/devices/display'
 import { DisplayScreen } from 'src/devices/displayScreen'
+import { PluginDataFetcherService } from 'src/plugins/services/plugin-data-fetcher.service'
+import { PluginRendererService } from 'src/plugins/services/plugin-renderer.service'
+import { PluginTransformService } from 'src/plugins/services/plugin-transform.service'
 import { Screen } from 'src/screens/screens.entity'
 import { fileExists } from 'src/utils/fileExists'
 import { convertToPng, downloadImage } from 'src/utils/imageUtils'
@@ -24,6 +27,9 @@ export class DeviceDisplayService {
     @InjectRepository(Screen)
     private screenRepository: Repository<Screen>,
     private configService: ConfigService,
+    private pluginDataFetcher: PluginDataFetcherService,
+    private pluginRenderer: PluginRendererService,
+    private pluginTransformer: PluginTransformService,
   ) {}
 
   async getCurrentImage(headers: DisplayRequestHeadersDto): Promise<Display> {
@@ -81,8 +87,118 @@ export class DeviceDisplayService {
       nextScreen.isActive = true
       await this.screenRepository.save(nextScreen)
       this.logger.log(`Returning screen ${nextScreen.id} for device ${device.id}`)
+
+      // Load plugin relationship if needed
+      const screenWithPlugin = await this.screenRepository.findOne({
+        where: { id: nextScreen.id },
+        relations: ['plugin', 'plugin.dataSource', 'plugin.templates'],
+      })
+
       let imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${nextScreen.id}.png`
-      if (nextScreen.html) {
+
+      // Handle plugin screen
+      if (screenWithPlugin?.plugin) {
+        const plugin = screenWithPlugin.plugin
+
+        // Use cached output if available
+        if (screenWithPlugin.cachedPluginOutput) {
+          try {
+            this.logger.log(`Using cached plugin output for plugin ${plugin.id}, screen ${nextScreen.id}`)
+            const renderedHtml = screenWithPlugin.cachedPluginOutput
+            const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-web-security'] })
+            const page = await browser.newPage()
+            await page.setViewport({ width: 800, height: 480 })
+            await page.setContent(renderedHtml, { waitUntil: 'load' })
+            const image: Uint8Array = await page.screenshot()
+            await browser.close()
+            const imgBuffer = buffer.Buffer.from(image)
+            const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
+            const inputPath = path.join(destDir, 'tmp-source')
+            await fs.promises.mkdir(path.dirname(inputPath), { recursive: true })
+            await fs.promises.writeFile(inputPath, imgBuffer)
+            const outputPath = path.join(destDir, `${nextScreen.id}.png`)
+            await convertToPng(inputPath, outputPath, device.width, device.height, this.logger)
+            imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${nextScreen.id}.png`
+          }
+          catch (err) {
+            this.logger.error(`Failed to render cached plugin output: ${err.message}`)
+            imgUrl = `${this.configService.get<string>('api_url')}/screens/error.png`
+          }
+        }
+        // Fallback: fetch and render on-demand
+        else if (plugin.dataSource && plugin.templates && plugin.templates.length > 0) {
+          try {
+            this.logger.log(`No cache, rendering plugin ${plugin.id} on-demand for screen ${nextScreen.id}`)
+
+            // Build template context with trmnl system variables
+            const templateContext: any = {
+              trmnl: {
+                system: {
+                  timestamp_utc: Math.floor(Date.now() / 1000),
+                },
+                plugin_settings: {
+                  instance_name: plugin.name,
+                  strategy: 'polling',
+                  dark_mode: 'no',
+                  no_screen_padding: 'no',
+                },
+                user: {
+                  id: 'kuroshiro-user',
+                  locale: 'en',
+                },
+              },
+            }
+
+            // TODO: Add plugin field values to context when we have device-specific values
+
+            let data = await this.pluginDataFetcher.fetchData(
+              plugin.dataSource.method,
+              plugin.dataSource.url,
+              plugin.dataSource.headers,
+              plugin.dataSource.body,
+              templateContext,
+            )
+
+            // Apply transform if exists
+            if (plugin.dataSource.transformJs) {
+              this.logger.debug('Applying transform.js to fetched data')
+              data = this.pluginTransformer.transform(plugin.dataSource.transformJs, data)
+            }
+
+            const fullTemplate = plugin.templates.find(t => t.layout === 'full')
+            if (fullTemplate) {
+              const renderedHtml = await this.pluginRenderer.renderForDisplay(fullTemplate.liquidMarkup, data)
+
+              // Cache for next time
+              await this.screenRepository.update(
+                { id: nextScreen.id },
+                { cachedPluginOutput: renderedHtml, generatedAt: new Date() },
+              )
+
+              const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-web-security'] })
+              const page = await browser.newPage()
+              await page.setViewport({ width: 800, height: 480 })
+              await page.setContent(renderedHtml, { waitUntil: 'load' })
+              const image: Uint8Array = await page.screenshot()
+              await browser.close()
+              const imgBuffer = buffer.Buffer.from(image)
+              const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
+              const inputPath = path.join(destDir, 'tmp-source')
+              await fs.promises.mkdir(path.dirname(inputPath), { recursive: true })
+              await fs.promises.writeFile(inputPath, imgBuffer)
+              const outputPath = path.join(destDir, `${nextScreen.id}.png`)
+              await convertToPng(inputPath, outputPath, device.width, device.height, this.logger)
+              imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${nextScreen.id}.png`
+            }
+          }
+          catch (err) {
+            this.logger.error(`Failed to render plugin: ${err.message}`)
+            imgUrl = `${this.configService.get<string>('api_url')}/screens/error.png`
+          }
+        }
+      }
+      // Handle HTML screen
+      else if (nextScreen.html) {
         const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-web-security'] })
         const page = await browser.newPage()
         await page.setViewport({ width: 800, height: 480 })

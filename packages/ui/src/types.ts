@@ -27,7 +27,10 @@ export interface Screen {
   isActive: boolean
   device: string | { id: string }
   fetchManual: boolean
-  html: string
+  html?: string | null
+  plugin?: { id: string, name: string } | null
+  devicePluginId?: string | null
+  cachedPluginOutput?: string | null
 }
 
 export interface CurrentScreen {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { mdiDelete } from '@mdi/js'
 import { computed } from 'vue'
+import { VAlert, VAvatar, VBtn, VCard, VCardText, VCardTitle, VChip, VCol, VDivider, VExpansionPanel, VExpansionPanels, VExpansionPanelText, VExpansionPanelTitle, VIcon, VList, VListItem, VListItemSubtitle, VListItemTitle, VRow, VSpacer } from 'vuetify/components'
 import { useDeviceStore } from '@/stores/device.ts'
 import { useLogStore } from '@/stores/logs.ts'
 
@@ -69,11 +70,11 @@ function getSeverityIcon(severity: string) {
 
 <template>
   <template v-if="device">
-    <v-card elevation="1">
-      <v-card-title class="d-flex align-center">
+    <VCard elevation="1">
+      <VCardTitle class="d-flex align-center">
         Logs
-        <v-spacer />
-        <v-btn
+        <VSpacer />
+        <VBtn
           color="error"
           size="small"
           variant="tonal"
@@ -84,120 +85,120 @@ function getSeverityIcon(severity: string) {
           @click="logsStore.clearLogs()"
         >
           Clear Logs
-        </v-btn>
-        <v-chip v-if="logsStore.logEntries.length > 0" size="small" color="primary">
+        </VBtn>
+        <VChip v-if="logsStore.logEntries.length > 0" size="small" color="primary">
           {{ logsStore.logEntries.length }} {{ logsStore.logEntries.length === 1 ? 'Entry' : 'Entries' }}
-        </v-chip>
-      </v-card-title>
-      <v-divider />
-      <v-card-text class="pa-0">
-        <v-list v-if="parsedLogEntries.length !== 0" lines="three" data-test-id="logs-list">
+        </VChip>
+      </VCardTitle>
+      <VDivider />
+      <VCardText class="pa-0">
+        <VList v-if="parsedLogEntries.length !== 0" lines="three" data-test-id="logs-list">
           <template v-for="(item, index) in parsedLogEntries" :key="item.logEntry.logId">
-            <v-list-item data-test-id="log-list-item">
+            <VListItem data-test-id="log-list-item">
               <template #prepend>
-                <v-avatar
+                <VAvatar
                   :color="getSeverityColor(getLogSeverity(item.parsed?.log_message || ''))"
                   size="40"
                 >
-                  <v-icon :icon="getSeverityIcon(getLogSeverity(item.parsed?.log_message || ''))" />
-                </v-avatar>
+                  <VIcon :icon="getSeverityIcon(getLogSeverity(item.parsed?.log_message || ''))" />
+                </VAvatar>
               </template>
 
-              <v-list-item-title class="text-wrap mb-2">
+              <VListItemTitle class="text-wrap mb-2">
                 {{ item.parsed?.log_message || item.logEntry.entry }}
-              </v-list-item-title>
+              </VListItemTitle>
 
-              <v-list-item-subtitle>
+              <VListItemSubtitle>
                 <div class="d-flex flex-column gap-1">
                   <div class="d-flex align-center gap-2 flex-wrap">
-                    <v-chip size="x-small" prepend-icon="mdi-clock-outline" variant="text">
+                    <VChip size="x-small" prepend-icon="mdi-clock-outline" variant="text">
                       {{ formatDate(item.logEntry.date) }}
-                    </v-chip>
-                    <v-chip
+                    </VChip>
+                    <VChip
                       v-if="item.parsed?.log_sourcefile"
                       size="x-small"
                       prepend-icon="mdi-file-code"
                       variant="text"
                     >
                       {{ item.parsed.log_sourcefile }}:{{ item.parsed.log_codeline }}
-                    </v-chip>
+                    </VChip>
                   </div>
 
-                  <v-expansion-panels
+                  <VExpansionPanels
                     v-if="item.parsed?.device_status_stamp || item.parsed?.additional_info"
                     flat
                   >
-                    <v-expansion-panel elevation="0" class="bg-transparent">
-                      <v-expansion-panel-title class="pa-0 min-height-auto">
+                    <VExpansionPanel elevation="0" class="bg-transparent">
+                      <VExpansionPanelTitle class="pa-0 min-height-auto">
                         <template #default="{ expanded }">
-                          <v-btn
+                          <VBtn
                             size="x-small"
                             variant="text"
                             :prepend-icon="expanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"
                             :aria-label="expanded ? 'Hide log details' : 'Show log details'"
                           >
                             {{ expanded ? 'Less' : 'Show Details' }}
-                          </v-btn>
+                          </VBtn>
                         </template>
-                      </v-expansion-panel-title>
-                      <v-expansion-panel-text class="pa-0 mt-2">
-                        <v-card variant="tonal" class="mb-2">
-                          <v-card-text class="pa-3">
+                      </VExpansionPanelTitle>
+                      <VExpansionPanelText class="pa-0 mt-2">
+                        <VCard variant="tonal" class="mb-2">
+                          <VCardText class="pa-3">
                             <!-- Device Status -->
                             <div v-if="item.parsed?.device_status_stamp" class="mb-3">
                               <div class="text-subtitle-2 mb-2 font-weight-bold">
                                 Device Status
                               </div>
-                              <v-row dense>
-                                <v-col cols="6" sm="4">
+                              <VRow dense>
+                                <VCol cols="6" sm="4">
                                   <div class="text-caption text-medium-emphasis">
                                     WiFi RSSI
                                   </div>
                                   <div class="text-body-2">
                                     {{ item.parsed.device_status_stamp.wifi_rssi_level }} dBm
                                   </div>
-                                </v-col>
-                                <v-col cols="6" sm="4">
+                                </VCol>
+                                <VCol cols="6" sm="4">
                                   <div class="text-caption text-medium-emphasis">
                                     Battery
                                   </div>
                                   <div class="text-body-2">
                                     {{ item.parsed.device_status_stamp.battery_voltage }} V
                                   </div>
-                                </v-col>
-                                <v-col cols="6" sm="4">
+                                </VCol>
+                                <VCol cols="6" sm="4">
                                   <div class="text-caption text-medium-emphasis">
                                     Firmware
                                   </div>
                                   <div class="text-body-2">
                                     {{ item.parsed.device_status_stamp.current_fw_version }}
                                   </div>
-                                </v-col>
-                                <v-col cols="6" sm="4">
+                                </VCol>
+                                <VCol cols="6" sm="4">
                                   <div class="text-caption text-medium-emphasis">
                                     Free Heap
                                   </div>
                                   <div class="text-body-2">
                                     {{ (item.parsed.device_status_stamp.free_heap_size / 1024).toFixed(1) }} KB
                                   </div>
-                                </v-col>
-                                <v-col cols="6" sm="4">
+                                </VCol>
+                                <VCol cols="6" sm="4">
                                   <div class="text-caption text-medium-emphasis">
                                     Wakeup Reason
                                   </div>
                                   <div class="text-body-2">
                                     {{ item.parsed.device_status_stamp.wakeup_reason }}
                                   </div>
-                                </v-col>
-                                <v-col cols="6" sm="4">
+                                </VCol>
+                                <VCol cols="6" sm="4">
                                   <div class="text-caption text-medium-emphasis">
                                     WiFi Status
                                   </div>
                                   <div class="text-body-2">
                                     {{ item.parsed.device_status_stamp.wifi_status }}
                                   </div>
-                                </v-col>
-                              </v-row>
+                                </VCol>
+                              </VRow>
                             </div>
 
                             <!-- Additional Info -->
@@ -208,8 +209,8 @@ function getSeverityIcon(severity: string) {
                               <div class="text-subtitle-2 mb-2 font-weight-bold">
                                 Additional Info
                               </div>
-                              <v-row dense>
-                                <v-col
+                              <VRow dense>
+                                <VCol
                                   v-for="(value, key) in item.parsed.additional_info"
                                   :key="key"
                                   cols="12"
@@ -221,25 +222,25 @@ function getSeverityIcon(severity: string) {
                                   <div class="text-body-2">
                                     {{ value || '—' }}
                                   </div>
-                                </v-col>
-                              </v-row>
+                                </VCol>
+                              </VRow>
                             </div>
-                          </v-card-text>
-                        </v-card>
-                      </v-expansion-panel-text>
-                    </v-expansion-panel>
-                  </v-expansion-panels>
+                          </VCardText>
+                        </VCard>
+                      </VExpansionPanelText>
+                    </VExpansionPanel>
+                  </VExpansionPanels>
                 </div>
-              </v-list-item-subtitle>
-            </v-list-item>
-            <v-divider v-if="index < parsedLogEntries.length - 1" />
+              </VListItemSubtitle>
+            </VListItem>
+            <VDivider v-if="index < parsedLogEntries.length - 1" />
           </template>
-        </v-list>
-        <v-alert v-else type="info" variant="tonal" data-test-id="log-list-empty-alert">
+        </VList>
+        <VAlert v-else type="info" variant="tonal" data-test-id="log-list-empty-alert">
           No logs yet.
-        </v-alert>
-      </v-card-text>
-    </v-card>
+        </VAlert>
+      </VCardText>
+    </VCard>
   </template>
 </template>
 

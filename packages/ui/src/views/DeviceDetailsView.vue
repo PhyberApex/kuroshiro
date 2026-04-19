@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
+import { VCol, VContainer, VRow } from 'vuetify/components'
 import AddScreenCard from '@/components/AddScreenCard.vue'
 import DeviceInformationCard from '@/components/DeviceInformationCard.vue'
 import DeviceLogsCard from '@/components/DeviceLogsCard.vue'
@@ -21,24 +22,31 @@ watch(device, () => {
   screensStore.fetchScreensForDevice(device.value.id)
   screensStore.fetchCurrentScreenForDevice(device.value.mac, device.value.apikey)
 })
+
+onMounted(() => {
+  if (device.value) {
+    screensStore.fetchScreensForDevice(device.value.id)
+    screensStore.fetchCurrentScreenForDevice(device.value.mac, device.value.apikey)
+  }
+})
 </script>
 
 <template>
-  <v-container v-if="device" fluid>
-    <v-row justify="center">
-      <v-col cols="12" lg="12">
-        <v-row>
-          <v-col cols="12" sm="12" md="7">
+  <VContainer v-if="device" fluid>
+    <VRow justify="center">
+      <VCol cols="12" lg="12">
+        <VRow>
+          <VCol cols="12" sm="12" md="7">
             <DeviceInformationCard :device-id="props.id" />
             <ScreenPreviewCard :device-id="props.id" />
-          </v-col>
-          <v-col cols="12" sm="12" md="5">
+          </VCol>
+          <VCol cols="12" sm="12" md="5">
             <AddScreenCard :device-id="props.id" />
             <ScreenListCard :device-id="props.id" />
             <DeviceLogsCard :device-id="props.id" />
-          </v-col>
-        </v-row>
-      </v-col>
-    </v-row>
-  </v-container>
+          </VCol>
+        </VRow>
+      </VCol>
+    </VRow>
+  </VContainer>
 </template>

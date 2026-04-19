@@ -19,6 +19,9 @@ packages/api/public
 !packages/api/public/screens/*.png
 !packages/api/public/colormap-2bit.png
 
+# Uploads
+packages/api/uploads
+
 # Coverage
 packages/api/coverage
 packages/ui/coverage
