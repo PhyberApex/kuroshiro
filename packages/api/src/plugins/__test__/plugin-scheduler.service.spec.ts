@@ -79,4 +79,73 @@ describe('pluginSchedulerService', () => {
     expect(service.getCronExpression(30)).toBe('*/30 * * * *')
     expect(service.getCronExpression(60)).toBe('0 * * * *')
   })
+
+  it('schedules multiple plugins independently', () => {
+    const plugin1 = {
+      id: 'plugin-1',
+      refreshInterval: 15,
+      isActive: true,
+      dataSource: { url: 'https://api1.com', method: 'GET' },
+      templates: [{ layout: 'full', liquidMarkup: 'Test 1' }],
+    } as unknown as Plugin
+
+    const plugin2 = {
+      id: 'plugin-2',
+      refreshInterval: 30,
+      isActive: true,
+      dataSource: { url: 'https://api2.com', method: 'GET' },
+      templates: [{ layout: 'full', liquidMarkup: 'Test 2' }],
+    } as unknown as Plugin
+
+    service.schedulePlugin(plugin1)
+    service.schedulePlugin(plugin2)
+
+    expect(service.hasScheduledJob('plugin-1')).toBe(true)
+    expect(service.hasScheduledJob('plugin-2')).toBe(true)
+  })
+
+  it('reschedules plugin after removal', () => {
+    const plugin = {
+      id: 'plugin-1',
+      refreshInterval: 15,
+      isActive: true,
+      dataSource: { url: 'https://api.com', method: 'GET' },
+      templates: [{ layout: 'full', liquidMarkup: 'Test' }],
+    } as unknown as Plugin
+
+    service.schedulePlugin(plugin)
+    expect(service.hasScheduledJob('plugin-1')).toBe(true)
+
+    service.removeScheduledJob('plugin-1')
+    expect(service.hasScheduledJob('plugin-1')).toBe(false)
+
+    service.schedulePlugin(plugin)
+    expect(service.hasScheduledJob('plugin-1')).toBe(true)
+  })
+
+  it('does not schedule if data source is missing', () => {
+    const plugin = {
+      id: 'plugin-1',
+      refreshInterval: 15,
+      isActive: true,
+      templates: [{ layout: 'full', liquidMarkup: 'Test' }],
+    } as unknown as Plugin
+
+    service.schedulePlugin(plugin)
+
+    expect(service.hasScheduledJob('plugin-1')).toBe(false)
+  })
+
+  it('does not schedule if templates are missing', () => {
+    const plugin = {
+      id: 'plugin-1',
+      refreshInterval: 15,
+      isActive: true,
+      dataSource: { url: 'https://api.com', method: 'GET' },
+    } as unknown as Plugin
+
+    service.schedulePlugin(plugin)
+
+    expect(service.hasScheduledJob('plugin-1')).toBe(false)
+  })
 })

@@ -78,4 +78,48 @@ describe('pluginRendererService', () => {
     expect(result).toContain('<div>Test</div>')
     expect(result).toContain('class="environment trmnl"')
   })
+
+  it('handles filters in templates', async () => {
+    const template = '{{ title | capitalize }}'
+    const data = { title: 'hello world' }
+
+    const result = await service.render(template, data)
+
+    expect(result).toBe('Hello world')
+  })
+
+  it('renders complex templates with multiple features', async () => {
+    const template = `
+      {% if items.size > 0 %}
+        <ul>
+        {% for item in items %}
+          <li>{{ item.name | upcase }} - {{ item.price }}</li>
+        {% endfor %}
+        </ul>
+      {% else %}
+        <p>No items</p>
+      {% endif %}
+    `
+    const data = {
+      items: [
+        { name: 'apple', price: '$1' },
+        { name: 'banana', price: '$2' },
+      ],
+    }
+
+    const result = await service.render(template, data)
+
+    expect(result).toContain('APPLE')
+    expect(result).toContain('BANANA')
+    expect(result).toContain('$1')
+    expect(result).toContain('$2')
+  })
+
+  it('handles empty data', async () => {
+    const template = '<div>Static content</div>'
+
+    const result = await service.render(template, {})
+
+    expect(result).toBe('<div>Static content</div>')
+  })
 })
