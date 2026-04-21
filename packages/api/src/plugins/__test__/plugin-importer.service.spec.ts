@@ -17,6 +17,117 @@ describe('pluginImporterService', () => {
     expect(service).toBeDefined()
   })
 
+  it('handles polling_body with invalid JSON', async () => {
+    const zip = new AdmZip()
+
+    const manifest = {
+      name: 'Test Plugin',
+    }
+
+    const settings = {
+      refresh_interval: 15,
+      polling_url: 'https://api.example.com',
+      polling_body: 'invalid json{{{',
+    }
+
+    zip.addFile('.trmnlp.yml', Buffer.from(yaml.dump(manifest), 'utf8'))
+    zip.addFile('src/settings.yml', Buffer.from(yaml.dump(settings), 'utf8'))
+    zip.addFile('src/full.liquid', Buffer.from('test', 'utf8'))
+
+    const tempZipPath = path.join('/tmp', `test-${Date.now()}.zip`)
+    await fs.promises.writeFile(tempZipPath, zip.toBuffer())
+
+    const result = await service.importFromFile(tempZipPath)
+
+    await fs.promises.unlink(tempZipPath)
+
+    expect(result.dataSource.body).toEqual({})
+  })
+
+  it('handles custom_fields from settings instead of manifest', async () => {
+    const zip = new AdmZip()
+
+    const manifest = {
+      name: 'Test Plugin',
+    }
+
+    const settings = {
+      refresh_interval: 15,
+      endpoint: 'https://api.example.com',
+      custom_fields: [
+        {
+          keyname: 'api_key',
+          field_type: 'string',
+          name: 'API Key',
+        },
+      ],
+    }
+
+    zip.addFile('.trmnlp.yml', Buffer.from(yaml.dump(manifest), 'utf8'))
+    zip.addFile('src/settings.yml', Buffer.from(yaml.dump(settings), 'utf8'))
+    zip.addFile('src/full.liquid', Buffer.from('test', 'utf8'))
+
+    const tempZipPath = path.join('/tmp', `test-${Date.now()}.zip`)
+    await fs.promises.writeFile(tempZipPath, zip.toBuffer())
+
+    const result = await service.importFromFile(tempZipPath)
+
+    await fs.promises.unlink(tempZipPath)
+
+    expect(result.fields).toHaveLength(1)
+    expect(result.fields[0].keyname).toBe('api_key')
+  })
+
+  it('handles polling_headers with invalid JSON', async () => {
+    const zip = new AdmZip()
+
+    const manifest = {
+      name: 'Test Plugin',
+    }
+
+    const settings = {
+      refresh_interval: 15,
+      polling_url: 'https://api.example.com',
+      polling_headers: 'invalid json{{{',
+    }
+
+    zip.addFile('.trmnlp.yml', Buffer.from(yaml.dump(manifest), 'utf8'))
+    zip.addFile('src/settings.yml', Buffer.from(yaml.dump(settings), 'utf8'))
+    zip.addFile('src/full.liquid', Buffer.from('test', 'utf8'))
+
+    const tempZipPath = path.join('/tmp', `test-${Date.now()}.zip`)
+    await fs.promises.writeFile(tempZipPath, zip.toBuffer())
+
+    const result = await service.importFromFile(tempZipPath)
+
+    await fs.promises.unlink(tempZipPath)
+
+    expect(result.dataSource.headers).toEqual({})
+  })
+
+  it('throws error when ZIP has no templates', async () => {
+    const zip = new AdmZip()
+
+    const manifest = {
+      name: 'Test Plugin',
+    }
+
+    const settings = {
+      refresh_interval: 15,
+      polling_url: 'https://api.example.com',
+    }
+
+    zip.addFile('.trmnlp.yml', Buffer.from(yaml.dump(manifest), 'utf8'))
+    zip.addFile('src/settings.yml', Buffer.from(yaml.dump(settings), 'utf8'))
+
+    const tempZipPath = path.join('/tmp', `test-${Date.now()}.zip`)
+    await fs.promises.writeFile(tempZipPath, zip.toBuffer())
+
+    await expect(service.importFromFile(tempZipPath)).rejects.toThrow('At least one .liquid template file is required')
+
+    await fs.promises.unlink(tempZipPath)
+  })
+
   describe('importFromZip', () => {
     it('should parse a Terminus ZIP file correctly', async () => {
       const zip = new AdmZip()
