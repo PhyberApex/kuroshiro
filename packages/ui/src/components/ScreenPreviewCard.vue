@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import { VCard, VCardText, VCardTitle, VDivider, VImg } from 'vuetify/components'
 import { useDeviceStore } from '@/stores/device.ts'
 import { useScreensStore } from '@/stores/screens.ts'
 import { formatDate } from '@/utils/formatDate'
@@ -20,12 +21,12 @@ const screen = computed(() => screensStore.currentScreen)
 </script>
 
 <template>
-  <v-card class="mb-6" elevation="1">
-    <v-card-title>Current Screen</v-card-title>
-    <v-divider />
-    <v-card-text>
+  <VCard class="mb-6" elevation="1">
+    <VCardTitle>Current Screen</VCardTitle>
+    <VDivider />
+    <VCardText>
       <template v-if="screen">
-        <v-img
+        <VImg
           :src="screen.image_url"
           :aspect-ratio="device?.width && device?.height ? device.width / device.height : 800 / 480"
           alt="Current device screen display"
@@ -40,6 +41,6 @@ const screen = computed(() => screensStore.currentScreen)
           No screen available.
         </div>
       </template>
-    </v-card-text>
-  </v-card>
+    </VCardText>
+  </VCard>
 </template>

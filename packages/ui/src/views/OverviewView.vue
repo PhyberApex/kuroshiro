@@ -2,7 +2,8 @@
 import type { CreateDevice } from '../stores/device'
 import { mdiDelete, mdiPlus, mdiSync } from '@mdi/js'
 import { computed, ref } from 'vue'
-import { VForm } from 'vuetify/components'
+import { VAlert, VBtn, VCard, VCardText, VCardTitle, VCol, VContainer, VDivider, VForm, VList, VListItem, VListItemSubtitle, VListItemTitle, VRow, VTextField } from 'vuetify/components'
+import { VIconBtn } from 'vuetify/labs/VIconBtn'
 import { getRandomMac, isValidMac } from '@/utils/getRandomMac'
 import { useDeviceStore } from '../stores/device'
 
@@ -67,28 +68,28 @@ async function update() {
 </script>
 
 <template>
-  <v-container fluid>
-    <v-row justify="center">
-      <v-col cols="12" sm="12">
-        <v-card class="mb-6" elevation="1">
-          <v-card-title class="d-flex align-center justify-space-between">
+  <VContainer fluid>
+    <VRow justify="center">
+      <VCol cols="12" sm="12">
+        <VCard class="mb-6" elevation="1">
+          <VCardTitle class="d-flex align-center justify-space-between">
             Add Device
-            <v-icon-btn :icon="mdiSync" variant="tonal" color="secondary" aria-label="Refresh device list" :disabled="loadingUpdate" @click="update()" />
-          </v-card-title>
-          <v-divider />
-          <v-card-text>
+            <VIconBtn :icon="mdiSync" variant="tonal" color="secondary" aria-label="Refresh device list" :disabled="loadingUpdate" @click="update()" />
+          </VCardTitle>
+          <VDivider />
+          <VCardText>
             <VForm ref="newDeviceFormRef" @submit.prevent="addDevice">
-              <v-row>
-                <v-col cols="12" md="6">
-                  <v-text-field
+              <VRow>
+                <VCol cols="12" md="6">
+                  <VTextField
                     v-model="newDevice.name"
                     label="Name"
                     clearable
                     :rules="nameRules"
                   />
-                </v-col>
-                <v-col cols="12" md="6">
-                  <v-text-field
+                </VCol>
+                <VCol cols="12" md="6">
+                  <VTextField
                     v-model="newDevice.mac"
                     label="MAC Address"
                     required
@@ -97,49 +98,49 @@ async function update() {
                     :rules="macRules"
                     @click:append-inner="generateMac"
                   />
-                </v-col>
-                <v-col cols="12" md="3" class="d-flex align-end">
-                  <v-btn color="primary" type="submit" variant="tonal" :prepend-icon="mdiPlus" :disabled="!valid">
+                </VCol>
+                <VCol cols="12" md="3" class="d-flex align-end">
+                  <VBtn color="primary" type="submit" variant="tonal" :prepend-icon="mdiPlus" :disabled="!valid">
                     Add Device
-                  </v-btn>
-                </v-col>
-              </v-row>
+                  </VBtn>
+                </VCol>
+              </VRow>
             </VForm>
-          </v-card-text>
-        </v-card>
-        <v-card elevation="1">
-          <v-card-title>Devices</v-card-title>
-          <v-divider />
-          <v-card-text>
-            <v-list v-if="deviceStore.devices.length">
-              <v-list-item
+          </VCardText>
+        </VCard>
+        <VCard elevation="1">
+          <VCardTitle>Devices</VCardTitle>
+          <VDivider />
+          <VCardText>
+            <VList v-if="deviceStore.devices.length">
+              <VListItem
                 v-for="device in deviceStore.devices"
                 :key="device.id"
                 :to="{ name: 'device', params: { id: device.id } }"
                 link
                 class="mb-2"
               >
-                <v-list-item-title>
+                <VListItemTitle>
                   <span class="font-weight-bold">{{ device.name }}</span>
                   <span class="text-medium-emphasis ms-2">({{ device.mac }})</span>
-                </v-list-item-title>
-                <v-list-item-subtitle>
+                </VListItemTitle>
+                <VListItemSubtitle>
                   <span><b>Battery Voltage:</b> {{ device.batteryVoltage || 'N/A' }}</span>
                   <span class="ms-4"><b>RSSI:</b> {{ device.rssi || 'N/A' }}</span>
-                </v-list-item-subtitle>
+                </VListItemSubtitle>
                 <template #append>
-                  <v-btn color="error" variant="tonal" :prepend-icon="mdiDelete" :loading="loadingDelete.find(currentId => currentId === device.id)" @click.prevent="deleteDevice(device.id)">
+                  <VBtn color="error" variant="tonal" :prepend-icon="mdiDelete" :loading="loadingDelete.find(currentId => currentId === device.id)" @click.prevent="deleteDevice(device.id)">
                     Delete
-                  </v-btn>
+                  </VBtn>
                 </template>
-              </v-list-item>
-            </v-list>
-            <v-alert v-else type="info" variant="tonal" class="text-body-2">
+              </VListItem>
+            </VList>
+            <VAlert v-else type="info" variant="tonal" class="text-body-2">
               No devices yet. Add one with the form above.
-            </v-alert>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
-  </v-container>
+            </VAlert>
+          </VCardText>
+        </VCard>
+      </VCol>
+    </VRow>
+  </VContainer>
 </template>

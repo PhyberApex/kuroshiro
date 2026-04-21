@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, useTemplateRef, watch } from 'vue'
+import { VCol, VContainer, VRow, VTextarea } from 'vuetify/components'
 import exampleHtml from '@/utils/exampleHtml'
 
 const html = ref(exampleHtml)
@@ -28,16 +29,16 @@ watch(html, () => {
 </script>
 
 <template>
-  <v-container fluid>
-    <v-row justify="center">
-      <v-col cols="12" sm="12" md="12" lg="6">
-        <v-textarea v-model="html" label="HTML to render" auto-grow />
-      </v-col>
-      <v-col cols="12" sm="12" md="12" lg="6">
+  <VContainer fluid>
+    <VRow justify="center">
+      <VCol cols="12" sm="12" md="12" lg="6">
+        <VTextarea v-model="html" label="HTML to render" auto-grow />
+      </VCol>
+      <VCol cols="12" sm="12" md="12" lg="6">
         <iframe ref="previewIframeRef" class="preview-iframe" title="HTML preview" />
-      </v-col>
-    </v-row>
-  </v-container>
+      </VCol>
+    </VRow>
+  </VContainer>
 </template>
 
 <style scoped>

@@ -42,6 +42,7 @@ globalThis.fetch = mockFetch
 function createMockRepo() {
   return {
     findOneBy: vi.fn(),
+    findOne: vi.fn(),
     save: vi.fn(),
     update: vi.fn(),
   }

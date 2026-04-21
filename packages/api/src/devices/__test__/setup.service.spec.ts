@@ -3,10 +3,10 @@ import { DeviceSetupService } from 'src/devices/setup.service'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('src/utils/generateApikey', () => ({
-  default: () => 'mocked-api-key',
+  default: vi.fn(() => 'mocked-api-key'),
 }))
-vi.mock('../../utils/generateFriendlyName', () => ({
-  default: () => 'mocked-friendly-id',
+vi.mock('src/utils/generateFriendlyName', () => ({
+  default: vi.fn(() => 'mocked-friendly-id'),
 }))
 
 function createMockRepo() {
@@ -47,18 +47,36 @@ describe('deviceSetupService', () => {
   })
 
   it('creates new device and returns new credentials if device does not exist', async () => {
+    const newDevice = { id: 'new', mac: 'mac', friendlyId: 'mocked-friendly-id', apikey: 'mocked-api-key' }
     deviceRepo.findOneBy.mockResolvedValue(null)
-    deviceRepo.create.mockReturnValue({ id: 'new', mac: 'mac', friendlyId: 'some-id', apikey: 'some-key' })
-    deviceRepo.save.mockResolvedValue({ id: 'new', mac: 'mac', friendlyId: 'some-id', apikey: 'some-key' })
+    deviceRepo.create.mockReturnValue(newDevice)
+    deviceRepo.save.mockResolvedValue(newDevice)
     configService.get.mockReturnValue('http://api')
+
     const result = await service.setupDevice(headers)
-    expect(deviceRepo.save).toHaveBeenCalled()
-    expect(typeof result.api_key).toBe('string')
-    expect(result.api_key.length).toBeGreaterThan(0)
-    expect(typeof result.friendly_id).toBe('string')
-    expect(result.friendly_id.length).toBeGreaterThan(0)
+
+    expect(deviceRepo.findOneBy).toHaveBeenCalledWith({ mac: 'mac' })
+    expect(deviceRepo.create).toHaveBeenCalledWith({
+      mac: 'mac',
+      friendlyId: 'mocked-friendly-id',
+      apikey: 'mocked-api-key',
+      name: 'mocked-friendly-id',
+    })
+    expect(deviceRepo.save).toHaveBeenCalledWith(newDevice)
+    expect(result.api_key).toBe('mocked-api-key')
+    expect(result.friendly_id).toBe('mocked-friendly-id')
     expect(result.image_url).toBe('http://api/screens/welcome.png')
     expect(result.status).toBe(200)
     expect(result.message).toBe('Welcome to Kuroshiro')
+  })
+
+  it('calls config service to get API URL', async () => {
+    deviceRepo.findOneBy.mockResolvedValue({ apikey: 'key', friendlyId: 'id' } as Device)
+    configService.get.mockReturnValue('https://custom-api.com')
+
+    const result = await service.setupDevice(headers)
+
+    expect(configService.get).toHaveBeenCalledWith('api_url')
+    expect(result.image_url).toBe('https://custom-api.com/screens/welcome.png')
   })
 })

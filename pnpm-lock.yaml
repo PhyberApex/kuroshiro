@@ -54,9 +54,15 @@ catalogs:
     '@tsconfig/node24':
       specifier: 24.0.4
       version: 24.0.4
+    '@types/adm-zip':
+      specifier: ^0.5.8
+      version: 0.5.8
     '@types/express':
       specifier: 5.0.6
       version: 5.0.6
+    '@types/js-yaml':
+      specifier: ^4.0.9
+      version: 4.0.9
     '@types/jsdom':
       specifier: 28.0.1
       version: 28.0.1
@@ -66,6 +72,9 @@ catalogs:
     '@types/node':
       specifier: 24.12.0
       version: 24.12.0
+    '@types/node-cron':
+      specifier: ^3.0.11
+      version: 3.0.11
     '@types/supertest':
       specifier: 7.2.0
       version: 7.2.0
@@ -87,6 +96,9 @@ catalogs:
     '@vueuse/core':
       specifier: 14.2.1
       version: 14.2.1
+    adm-zip:
+      specifier: ^0.5.17
+      version: 0.5.17
     class-transformer:
       specifier: 0.5.1
       version: 0.5.1
@@ -105,9 +117,21 @@ catalogs:
     jiti:
       specifier: 2.6.1
       version: 2.6.1
+    js-yaml:
+      specifier: ^4.1.1
+      version: 4.1.1
     jsdom:
       specifier: 29.0.2
       version: 29.0.2
+    liquidjs:
+      specifier: ^10.25.5
+      version: 10.25.5
+    multer:
+      specifier: ^2.1.1
+      version: 2.1.1
+    node-cron:
+      specifier: ^4.2.1
+      version: 4.2.1
     npm-run-all2:
       specifier: 8.0.4
       version: 8.0.4
@@ -165,6 +189,9 @@ catalogs:
     vitest:
       specifier: 3.2.4
       version: 3.2.4
+    vm2:
+      specifier: ^3.10.5
+      version: 3.10.5
     vue:
       specifier: 3.5.32
       version: 3.5.32
@@ -218,6 +245,12 @@ importers:
       '@nestjs/typeorm':
         specifier: 'catalog:'
         version: 11.0.1(@nestjs/common@11.1.19(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.19)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@0.3.28(pg@8.20.0)(ts-node@10.9.2(@swc/core@1.15.26)(@types/node@24.12.0)(typescript@5.9.3)))
+      '@types/node-cron':
+        specifier: 'catalog:'
+        version: 3.0.11
+      adm-zip:
+        specifier: 'catalog:'
+        version: 0.5.17
       class-transformer:
         specifier: 'catalog:'
         version: 0.5.1
@@ -230,6 +263,18 @@ importers:
       fs-extra:
         specifier: 'catalog:'
         version: 11.3.4
+      js-yaml:
+        specifier: 'catalog:'
+        version: 4.1.1
+      liquidjs:
+        specifier: 'catalog:'
+        version: 10.25.5
+      multer:
+        specifier: 'catalog:'
+        version: 2.1.1
+      node-cron:
+        specifier: 'catalog:'
+        version: 4.2.1
       pg:
         specifier: 'catalog:'
         version: 8.20.0
@@ -245,6 +290,9 @@ importers:
       typeorm:
         specifier: 'catalog:'
         version: 0.3.28(pg@8.20.0)(ts-node@10.9.2(@swc/core@1.15.26)(@types/node@24.12.0)(typescript@5.9.3))
+      vm2:
+        specifier: 'catalog:'
+        version: 3.10.5
     devDependencies:
       '@antfu/eslint-config':
         specifier: 'catalog:'
@@ -258,9 +306,15 @@ importers:
       '@swc/core':
         specifier: 'catalog:'
         version: 1.15.26
+      '@types/adm-zip':
+        specifier: 'catalog:'
+        version: 0.5.8
       '@types/express':
         specifier: 'catalog:'
         version: 5.0.6
+      '@types/js-yaml':
+        specifier: 'catalog:'
+        version: 4.0.9
       '@types/multer':
         specifier: 'catalog:'
         version: 2.1.0
@@ -2008,6 +2062,9 @@ packages:
   '@tybys/wasm-util@0.10.1':
     resolution: {integrity: sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg==}
 
+  '@types/adm-zip@0.5.8':
+    resolution: {integrity: sha512-RVVH7QvZYbN+ihqZ4kX/dMiowf6o+Jk1fNwiSdx0NahBJLU787zkULhGhJM8mf/obmLGmgdMM0bXsQTmyfbR7Q==}
+
   '@types/body-parser@1.19.5':
     resolution: {integrity: sha512-fB3Zu92ucau0iQ0JMCFQE7b/dv8Ot07NI3KaZIkIUNXq82k4eBAqUaneXfleGY9JWskeS9y+u0nXMyspcuQrCg==}
 
@@ -2047,6 +2104,9 @@ packages:
   '@types/http-errors@2.0.4':
     resolution: {integrity: sha512-D0CFMMtydbJAegzOyHjtiKPLlvnm3iTZyZRSZoLq2mRhDdmLfIWOCYPfQJ4cu2erKghU++QvjcUjp/5h7hESpA==}
 
+  '@types/js-yaml@4.0.9':
+    resolution: {integrity: sha512-k4MGaQl5TGo/iipqb2UDG2UwjXziSWkh0uysQelTlJpX1qGlpUZYm8PnO4DxG1qBomtJUdYJ6qR6xdIah10JLg==}
+
   '@types/jsdom@28.0.1':
     resolution: {integrity: sha512-GJq2QE4TAZ5ajSoCasn5DOFm8u1mI3tIFvM5tIq3W5U/RTB6gsHwc6Yhpl91X9VSDOUVblgXmG+2+sSvFQrdlw==}
 
@@ -2067,6 +2127,9 @@ packages:
 
   '@types/multer@2.1.0':
     resolution: {integrity: sha512-zYZb0+nJhOHtPpGDb3vqPjwpdeGlGC157VpkqNQL+UU2qwoacoQ7MpsAmUptI/0Oa127X32JzWDqQVEXp2RcIA==}
+
+  '@types/node-cron@3.0.11':
+    resolution: {integrity: sha512-0ikrnug3/IyneSHqCBeslAhlK2aBfYek1fGo4bP4QnZPmiqSGRK+Oy7ZMisLWkesffJvQ1cqAcBnJC+8+nxIAg==}
 
   '@types/node@24.12.0':
     resolution: {integrity: sha512-GYDxsZi3ChgmckRT9HPU0WEhKLP08ev/Yfcq2AstjrDASOYCSXeyjDsHg4v5t4jOj7cyDX3vmprafKlWIG9MXQ==}
@@ -2526,6 +2589,10 @@ packages:
     resolution: {integrity: sha512-UVJyE9MttOsBQIDKw1skb9nAwQuR5wuGD3+82K6JgJlm/Y+KI92oNsMNGZCYdDsVtRHSak0pcV5Dno5+4jh9sw==}
     engines: {node: '>=0.4.0'}
     hasBin: true
+
+  adm-zip@0.5.17:
+    resolution: {integrity: sha512-+Ut8d9LLqwEvHHJl1+PIHqoyDxFgVN847JTVM3Izi3xHDWPE4UtzzXysMZQs64DMcrJfBeS/uoEP4AD3HQHnQQ==}
+    engines: {node: '>=12.0'}
 
   agent-base@7.1.3:
     resolution: {integrity: sha512-jRR5wdylq8CkOe6hei19GGZnxM6rBGwFl3Bg0YItGDimvjGtAvdZk4Pu6Cl4u4Igsws4a1fd1Vq3ezrhn4KmFw==}
@@ -4230,8 +4297,8 @@ packages:
   js-tokens@9.0.1:
     resolution: {integrity: sha512-mxa9E9ITFOt0ban3j6L5MpjwegGz6lBQmM1IJkWeBZGcMxto50+eWdjC/52xDbS2vy0k7vIMK0Fe2wfL9OQSpQ==}
 
-  js-yaml@4.1.0:
-    resolution: {integrity: sha512-wpxZs9NoxZaJESJGIZTyDEaYpl0FKSA+FB9aJiyemKhMwkxQg63h4T1KJgUGHpTqPDNRcmmYLugrRjJlBtWvRA==}
+  js-yaml@4.1.1:
+    resolution: {integrity: sha512-qQKT4zQxXl8lLwBtHMWwaTcGfFOZviOJet3Oy/xmGk2gZH677CJM9EvtfdSkgWcATZhj/55JZ0rmy3myCT5lsA==}
     hasBin: true
 
   jsbn@1.1.0:
@@ -4393,6 +4460,11 @@ packages:
   lint-staged@16.4.0:
     resolution: {integrity: sha512-lBWt8hujh/Cjysw5GYVmZpFHXDCgZzhrOm8vbcUdobADZNOK/bRshr2kM3DfgrrtR1DQhfupW9gnIXOfiFi+bw==}
     engines: {node: '>=20.17'}
+    hasBin: true
+
+  liquidjs@10.25.5:
+    resolution: {integrity: sha512-GKiKeZjJDdVoQAu+S9rzkYsYnYhcep5W3WwZXgb5f+yq484P/k9JqamBbGYu+LBEixcUAXZr2jogdAIjB3ki1w==}
+    engines: {node: '>=16'}
     hasBin: true
 
   listr2@9.0.5:
@@ -4804,6 +4876,10 @@ packages:
 
   node-abort-controller@3.1.1:
     resolution: {integrity: sha512-AGK2yQKIjRuqnc6VkX2Xj5d+QW8xZ87pa1UK6yA6ouUyuxfHuMP6umE5QK7UmTeOAymo+Zx1Fxiuw9rVx8taHQ==}
+
+  node-cron@4.2.1:
+    resolution: {integrity: sha512-lgimEHPE/QDgFlywTd8yTR61ptugX3Qer29efeyWw2rv259HtGBNn1vZVmp8lB9uo9wC0t/AT4iGqXxia+CJFg==}
+    engines: {node: '>=6.0.0'}
 
   node-emoji@1.11.0:
     resolution: {integrity: sha512-wo2DpQkQp7Sjm2A0cq+sN7EHKO6Sl0ctXeBdFZrL9T9+UywORbufTcTZxom8YqpLQt/FqNMUkOpkZrJVYSKD3A==}
@@ -6507,6 +6583,11 @@ packages:
         optional: true
       jsdom:
         optional: true
+
+  vm2@3.10.5:
+    resolution: {integrity: sha512-3P/2QDccVFBcujfCOeP8vVNuGfuBJHEuvGR8eMmI10p/iwLL2UwF5PDaNaoOS2pRGQEDmJRyeEcc8kmm2Z59RA==}
+    engines: {node: '>=6.0'}
+    hasBin: true
 
   vscode-uri@3.1.0:
     resolution: {integrity: sha512-/BpdSx+yCQGnCvecbyXdxHDkuk55/G3xwnC0GqY4gmQ3j+A+g8kzzgB4Nk/SINjqn6+waqw3EgbVF2QKExkRxQ==}
@@ -8241,6 +8322,10 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
+  '@types/adm-zip@0.5.8':
+    dependencies:
+      '@types/node': 24.12.0
+
   '@types/body-parser@1.19.5':
     dependencies:
       '@types/connect': 3.4.38
@@ -8291,6 +8376,8 @@ snapshots:
 
   '@types/http-errors@2.0.4': {}
 
+  '@types/js-yaml@4.0.9': {}
+
   '@types/jsdom@28.0.1':
     dependencies:
       '@types/node': 24.12.0
@@ -8313,6 +8400,8 @@ snapshots:
   '@types/multer@2.1.0':
     dependencies:
       '@types/express': 5.0.6
+
+  '@types/node-cron@3.0.11': {}
 
   '@types/node@24.12.0':
     dependencies:
@@ -8971,6 +9060,8 @@ snapshots:
 
   acorn@8.16.0: {}
 
+  adm-zip@0.5.17: {}
+
   agent-base@7.1.3: {}
 
   aggregate-error@3.1.0:
@@ -9497,7 +9588,7 @@ snapshots:
   cosmiconfig@8.3.6(typescript@5.9.3):
     dependencies:
       import-fresh: 3.3.1
-      js-yaml: 4.1.0
+      js-yaml: 4.1.1
       parse-json: 5.2.0
       path-type: 4.0.0
     optionalDependencies:
@@ -9507,7 +9598,7 @@ snapshots:
     dependencies:
       env-paths: 2.2.1
       import-fresh: 3.3.1
-      js-yaml: 4.1.0
+      js-yaml: 4.1.1
       parse-json: 5.2.0
     optionalDependencies:
       typescript: 5.9.3
@@ -10764,7 +10855,7 @@ snapshots:
 
   js-tokens@9.0.1: {}
 
-  js-yaml@4.1.0:
+  js-yaml@4.1.1:
     dependencies:
       argparse: 2.0.1
 
@@ -10906,6 +10997,10 @@ snapshots:
       string-argv: 0.3.2
       tinyexec: 1.0.4
       yaml: 2.8.2
+
+  liquidjs@10.25.5:
+    dependencies:
+      commander: 10.0.1
 
   listr2@9.0.5:
     dependencies:
@@ -11457,6 +11552,8 @@ snapshots:
   netmask@2.0.2: {}
 
   node-abort-controller@3.1.1: {}
+
+  node-cron@4.2.1: {}
 
   node-emoji@1.11.0:
     dependencies:
@@ -13069,6 +13166,11 @@ snapshots:
       - terser
       - tsx
       - yaml
+
+  vm2@3.10.5:
+    dependencies:
+      acorn: 8.16.0
+      acorn-walk: 8.3.4
 
   vscode-uri@3.1.0: {}
 

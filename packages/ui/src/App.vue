@@ -75,6 +75,9 @@ const { isDemo } = useDemoInfo()
         <v-tab value="overview" :to="{ name: 'overview' }">
           Overview
         </v-tab>
+        <v-tab value="pluginsOverview" :to="{ name: 'pluginsOverview' }">
+          Plugins
+        </v-tab>
         <v-tab value="maintenance" :to="{ name: 'maintenance' }">
           Maintenance
         </v-tab>
@@ -92,9 +95,11 @@ const { isDemo } = useDemoInfo()
     </v-navigation-drawer>
     <v-main>
       <v-banner v-if="isDemo" bg-color="warning" text="Demo mode. Data resets daily. Do not use with real hardware." />
-      <Transition name="route" mode="out-in">
-        <RouterView />
-      </Transition>
+      <RouterView v-slot="{ Component }">
+        <Transition name="route" mode="out-in">
+          <component :is="Component" />
+        </Transition>
+      </RouterView>
     </v-main>
   </v-app>
 </template>

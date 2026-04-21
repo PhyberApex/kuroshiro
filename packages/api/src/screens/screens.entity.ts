@@ -1,3 +1,4 @@
+import type { Plugin } from '../plugins/entities/plugin.entity'
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { Device } from '../devices/devices.entity'
 
@@ -27,6 +28,15 @@ export class Screen {
   @Column({ type: 'timestamptz' })
   generatedAt: Date
 
+  @Column({ type: 'text', nullable: true })
+  cachedPluginOutput?: string | null
+
   @ManyToOne(() => Device, { onDelete: 'CASCADE' })
   device: Device
+
+  @ManyToOne('Plugin', { onDelete: 'CASCADE', nullable: true })
+  plugin?: Plugin
+
+  @Column({ type: 'uuid', nullable: true })
+  devicePluginId?: string | null
 }

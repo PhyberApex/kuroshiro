@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { mdiCodeBlockTags, mdiDownload, mdiEye, mdiLink, mdiStop, mdiUpload } from '@mdi/js'
 import { computed, nextTick, ref, useTemplateRef } from 'vue'
+import { VBtn, VCard, VCardText, VCardTitle, VCol, VDivider, VFileInput, VForm, VOverlay, VRow, VSwitch, VTab, VTabs, VTextarea, VTextField, VWindow, VWindowItem } from 'vuetify/components'
 import { useDemoInfo } from '@/composeables/useDemoInfo.ts'
 import { useDeviceStore } from '@/stores/device.ts'
 import { useScreensStore } from '@/stores/screens'
@@ -135,56 +136,56 @@ const { isDemo } = useDemoInfo()
 
 <template>
   <template v-if="device">
-    <v-card class="mb-6" elevation="1">
-      <v-card-title>Add Screen</v-card-title>
-      <v-divider />
-      <v-card-text>
-        <v-text-field v-model="filename" :rules="filenameRules" label="Filename" data-test-id="filename-input" />
-        <v-tabs v-model="addScreenTab" grow>
-          <v-tab value="link" data-test-id="tab-link">
+    <VCard class="mb-6" elevation="1">
+      <VCardTitle>Add Screen</VCardTitle>
+      <VDivider />
+      <VCardText>
+        <VTextField v-model="filename" :rules="filenameRules" label="Filename" data-test-id="filename-input" />
+        <VTabs v-model="addScreenTab" grow>
+          <VTab value="link" data-test-id="tab-link">
             External Link
-          </v-tab>
-          <v-tab value="file" :disabled="isDemo" data-test-id="tab-file">
+          </VTab>
+          <VTab value="file" :disabled="isDemo" data-test-id="tab-file">
             Upload File
-          </v-tab>
-          <v-tab value="html" data-test-id="tab-html">
+          </VTab>
+          <VTab value="html" data-test-id="tab-html">
             Render HTML
-          </v-tab>
-        </v-tabs>
-        <v-window v-model="addScreenTab">
-          <v-window-item value="link">
-            <v-form>
-              <v-row>
-                <v-col cols="12">
-                  <v-text-field ref="externalLinkRef" v-model="externalLink" :rules="linkRules" label="External image link" required clearable :disabled="!device.width || !device.height" />
-                  <v-switch v-model="fetchManual" color="secondary" label="Cache image (update manually when source changes)" />
-                </v-col>
-              </v-row>
-            </v-form>
-          </v-window-item>
-          <v-window-item value="file">
-            <v-form>
-              <v-row>
-                <v-col cols="12">
-                  <v-file-input v-model="fileInput" label="Upload image" accept="image/png, image/jpeg, image/bmp" :disabled="!device.width || !device.height" />
-                </v-col>
-              </v-row>
-            </v-form>
-          </v-window-item>
-          <v-window-item value="html">
-            <v-form>
-              <v-row>
-                <v-col cols="12">
-                  <v-textarea v-model="renderHtml" label="HTML to render" :placeholder="exampleHtml" />
-                </v-col>
-              </v-row>
-            </v-form>
-          </v-window-item>
-        </v-window>
+          </VTab>
+        </VTabs>
+        <VWindow v-model="addScreenTab">
+          <VWindowItem value="link">
+            <VForm>
+              <VRow>
+                <VCol cols="12">
+                  <VTextField ref="externalLinkRef" v-model="externalLink" :rules="linkRules" label="External image link" required clearable :disabled="!device.width || !device.height" />
+                  <VSwitch v-model="fetchManual" color="secondary" label="Cache image (update manually when source changes)" />
+                </VCol>
+              </VRow>
+            </VForm>
+          </VWindowItem>
+          <VWindowItem value="file">
+            <VForm>
+              <VRow>
+                <VCol cols="12">
+                  <VFileInput v-model="fileInput" label="Upload image" accept="image/png, image/jpeg, image/bmp" :disabled="!device.width || !device.height" />
+                </VCol>
+              </VRow>
+            </VForm>
+          </VWindowItem>
+          <VWindowItem value="html">
+            <VForm>
+              <VRow>
+                <VCol cols="12">
+                  <VTextarea v-model="renderHtml" label="HTML to render" :placeholder="exampleHtml" />
+                </VCol>
+              </VRow>
+            </VForm>
+          </VWindowItem>
+        </VWindow>
         <p v-if="addScreenInfo" class="text-body-2 text-medium-emphasis mt-3 mb-0">
           {{ addScreenInfo }}
         </p>
-        <v-btn
+        <VBtn
           color="primary"
           class="mt-5"
           :prepend-icon="addScreenIcon"
@@ -193,8 +194,8 @@ const { isDemo } = useDemoInfo()
           @click="submitAddScreen"
         >
           Add Screen
-        </v-btn>
-        <v-btn
+        </VBtn>
+        <VBtn
           v-if="addScreenTab === 'html'"
           color="secondary"
           class="mt-5 ml-5"
@@ -203,11 +204,11 @@ const { isDemo } = useDemoInfo()
           @click="renderPreviewHtml()"
         >
           Preview
-        </v-btn>
-      </v-card-text>
-    </v-card>
-    <v-overlay v-model="showHtmlPreview" class="align-center justify-center">
+        </VBtn>
+      </VCardText>
+    </VCard>
+    <VOverlay v-model="showHtmlPreview" class="align-center justify-center">
       <iframe ref="previewIframeRef" :width="(device.width || 0) + 5" :height="(device.height || 0) + 5" class="align-center" title="HTML preview" />
-    </v-overlay>
+    </VOverlay>
   </template>
 </template>

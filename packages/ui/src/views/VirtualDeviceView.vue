@@ -2,7 +2,7 @@
 import { mdiClipboardArrowRight, mdiSend, mdiSync } from '@mdi/js'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { VTextField } from 'vuetify/components'
+import { VAlert, VAutocomplete, VBtn, VCard, VCardText, VCardTitle, VCol, VContainer, VDivider, VExpansionPanel, VExpansionPanels, VExpansionPanelText, VExpansionPanelTitle, VForm, VImg, VRow, VTab, VTabs, VTextField, VWindow, VWindowItem } from 'vuetify/components'
 import { useDeviceStore } from '@/stores/device'
 import { getRandomMac, isValidMac } from '@/utils/getRandomMac'
 
@@ -156,67 +156,67 @@ watch(mac, () => {
 </script>
 
 <template>
-  <v-container fluid>
-    <v-row justify="center">
-      <v-col cols="12" sm="12">
-        <v-card elevation="1" class="mb-6">
-          <v-card-title>Virtual Device</v-card-title>
-          <v-divider />
-          <v-card-text>
-            <v-alert v-if="error" type="error" class="mb-4">
+  <VContainer fluid>
+    <VRow justify="center">
+      <VCol cols="12" sm="12">
+        <VCard elevation="1" class="mb-6">
+          <VCardTitle>Virtual Device</VCardTitle>
+          <VDivider />
+          <VCardText>
+            <VAlert v-if="error" type="error" class="mb-4">
               {{ error }}
-            </v-alert>
-            <v-form @submit.prevent="callSetup">
-              <v-tabs v-model="macInputTab" grow>
-                <v-tab value="mac">
+            </VAlert>
+            <VForm @submit.prevent="callSetup">
+              <VTabs v-model="macInputTab" grow>
+                <VTab value="mac">
                   MAC
-                </v-tab>
-                <v-tab value="device">
+                </VTab>
+                <VTab value="device">
                   Device
-                </v-tab>
-              </v-tabs>
-              <v-window v-model="macInputTab">
-                <v-window-item value="mac">
+                </VTab>
+              </VTabs>
+              <VWindow v-model="macInputTab">
+                <VWindowItem value="mac">
                   <VTextField ref="macInputRef" v-model="mac" label="MAC Address" :rules="macRules" clearable :append-inner-icon="mdiSync" :prepend-icon="currentMac ? mdiClipboardArrowRight : undefined" @click:append-inner="generateMac" @click:prepend="takeCurrentMac" />
-                </v-window-item>
-                <v-window-item value="device">
-                  <v-autocomplete v-model="mac" :items="autocompleteDevices" label="Device" />
-                </v-window-item>
-              </v-window>
-              <v-btn variant="tonal" color="primary" :loading="loadingSetup" type="submit" :disabled="!mac || !validForSetupCall" :prepend-icon="mdiSend">
+                </VWindowItem>
+                <VWindowItem value="device">
+                  <VAutocomplete v-model="mac" :items="autocompleteDevices" label="Device" />
+                </VWindowItem>
+              </VWindow>
+              <VBtn variant="tonal" color="primary" :loading="loadingSetup" type="submit" :disabled="!mac || !validForSetupCall" :prepend-icon="mdiSend">
                 Call setup to get API key
-              </v-btn>
-            </v-form>
-            <v-divider class="my-4" />
-            <v-form @submit.prevent="callDisplay">
-              <v-row>
-                <v-col cols="12" md="12">
+              </VBtn>
+            </VForm>
+            <VDivider class="my-4" />
+            <VForm @submit.prevent="callDisplay">
+              <VRow>
+                <VCol cols="12" md="12">
                   <VTextField v-model="apiKey" label="API key" :rules="apikeyRules" clearable />
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col v-for="(v, k) in customHeaders" :key="k" cols="12" md="6">
+                </VCol>
+              </VRow>
+              <VRow>
+                <VCol v-for="(v, k) in customHeaders" :key="k" cols="12" md="6">
                   <VTextField v-model="customHeaders[k]" :label="k" clearable />
-                </v-col>
-              </v-row>
-              <v-btn variant="tonal" color="primary" :loading="loadingDisplay" type="submit" :disabled="!validForDisplayCall" :prepend-icon="mdiSend">
+                </VCol>
+              </VRow>
+              <VBtn variant="tonal" color="primary" :loading="loadingDisplay" type="submit" :disabled="!validForDisplayCall" :prepend-icon="mdiSend">
                 Fetch screen
-              </v-btn>
-            </v-form>
-            <v-expansion-panels v-if="displayResponse" class="mt-4" flat>
-              <v-expansion-panel>
-                <v-expansion-panel-title>Response</v-expansion-panel-title>
-                <v-expansion-panel-text>
+              </VBtn>
+            </VForm>
+            <VExpansionPanels v-if="displayResponse" class="mt-4" flat>
+              <VExpansionPanel>
+                <VExpansionPanelTitle>Response</VExpansionPanelTitle>
+                <VExpansionPanelText>
                   <pre class="text-caption">{{ displayResponse }}</pre>
-                </v-expansion-panel-text>
-              </v-expansion-panel>
-            </v-expansion-panels>
+                </VExpansionPanelText>
+              </VExpansionPanel>
+            </VExpansionPanels>
             <div v-if="displayImageUrl" class="mt-4">
-              <v-img :src="displayImageUrl" aspect-ratio="800/480" alt="Virtual device screen preview" />
+              <VImg :src="displayImageUrl" aspect-ratio="800/480" alt="Virtual device screen preview" />
             </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
-  </v-container>
+          </VCardText>
+        </VCard>
+      </VCol>
+    </VRow>
+  </VContainer>
 </template>

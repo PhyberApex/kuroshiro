@@ -99,7 +99,11 @@ export class ScreensService {
 
   async getByDevice(deviceId: string): Promise<Screen[]> {
     this.logger.log(`Fetching screens for device ${deviceId}`)
-    return this.screensRepository.find({ where: { device: { id: deviceId } }, order: { order: 'ASC' } })
+    return this.screensRepository.find({
+      where: { device: { id: deviceId } },
+      relations: ['plugin'],
+      order: { order: 'ASC' },
+    })
   }
 
   async delete(id: string): Promise<void> {
