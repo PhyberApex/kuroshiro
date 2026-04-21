@@ -277,4 +277,129 @@ describe('pluginsService', () => {
 
     expect(result).toBeNull()
   })
+
+  it('update creates new dataSource if none exists', async () => {
+    const pluginWithoutDataSource = { ...basePlugin, dataSource: null }
+    pluginRepo.findOne.mockResolvedValue(pluginWithoutDataSource)
+    dataSourceRepo.create.mockReturnValue({ id: 'ds-1' })
+    dataSourceRepo.save.mockResolvedValue({ id: 'ds-1' })
+    pluginRepo.save.mockResolvedValue(pluginWithoutDataSource)
+
+    await service.update('1', {
+      dataSource: { url: 'https://new-api.com', method: 'GET', headers: {}, body: {} },
+    } as any)
+
+    expect(dataSourceRepo.create).toHaveBeenCalled()
+    expect(dataSourceRepo.save).toHaveBeenCalled()
+  })
+
+  it('update creates new template if none exists', async () => {
+    const pluginWithoutTemplates = { ...basePlugin, templates: [] }
+    pluginRepo.findOne.mockResolvedValue(pluginWithoutTemplates)
+    templateRepo.create.mockReturnValue({ id: 't-1' })
+    templateRepo.save.mockResolvedValue({ id: 't-1' })
+    pluginRepo.save.mockResolvedValue(pluginWithoutTemplates)
+
+    await service.update('1', {
+      templates: [{ layout: 'full', liquidMarkup: 'New template' }],
+    } as any)
+
+    expect(templateRepo.create).toHaveBeenCalled()
+    expect(templateRepo.save).toHaveBeenCalled()
+  })
+
+  it('update replaces existing fields', async () => {
+    const pluginWithFields = {
+      ...basePlugin,
+      fields: [{ id: 'field-1', keyname: 'old_field' }],
+    }
+    pluginRepo.findOne.mockResolvedValue(pluginWithFields)
+    fieldRepo.remove.mockResolvedValue(undefined)
+    fieldRepo.create.mockReturnValue({ id: 'field-2' })
+    fieldRepo.save.mockResolvedValue({ id: 'field-2' })
+    pluginRepo.save.mockResolvedValue(pluginWithFields)
+
+    await service.update('1', {
+      fields: [{ keyname: 'new_field', fieldType: 'string', name: 'New Field', required: false }],
+    } as any)
+
+    expect(fieldRepo.remove).toHaveBeenCalledWith(pluginWithFields.fields)
+    expect(fieldRepo.create).toHaveBeenCalled()
+    expect(fieldRepo.save).toHaveBeenCalled()
+  })
+
+  it('update removes fields when empty array provided', async () => {
+    const pluginWithFields = {
+      ...basePlugin,
+      fields: [{ id: 'field-1', keyname: 'old_field' }],
+    }
+    pluginRepo.findOne.mockResolvedValue(pluginWithFields)
+    fieldRepo.remove.mockResolvedValue(undefined)
+    pluginRepo.save.mockResolvedValue(pluginWithFields)
+
+    await service.update('1', { fields: [] } as any)
+
+    expect(fieldRepo.remove).toHaveBeenCalledWith(pluginWithFields.fields)
+    expect(fieldRepo.create).not.toHaveBeenCalled()
+  })
+
+  it('update reschedules plugin when dataSource or templates change', async () => {
+    const pluginWithDataSource = {
+      ...basePlugin,
+      dataSource: { id: 'ds-1', url: 'https://api.com' },
+      templates: [{ id: 't-1', layout: 'full' }],
+    }
+    pluginRepo.findOne.mockResolvedValueOnce(pluginWithDataSource)
+    pluginRepo.findOne.mockResolvedValueOnce(pluginWithDataSource)
+    dataSourceRepo.save.mockResolvedValue(pluginWithDataSource.dataSource)
+    pluginRepo.save.mockResolvedValue(pluginWithDataSource)
+
+    await service.update('1', {
+      dataSource: { url: 'https://new-api.com' },
+    } as any)
+
+    expect(mockScheduler.removeScheduledJob).toHaveBeenCalledWith('1')
+    expect(mockScheduler.schedulePlugin).toHaveBeenCalledWith(pluginWithDataSource)
+  })
+
+  it('create schedules plugin when it has dataSource and templates', async () => {
+    const createdPlugin = {
+      ...basePlugin,
+      dataSource: { id: 'ds-1' },
+      templates: [{ id: 't-1' }],
+    }
+    pluginRepo.save.mockResolvedValue(basePlugin)
+    dataSourceRepo.create.mockReturnValue({})
+    dataSourceRepo.save.mockResolvedValue({})
+    templateRepo.create.mockReturnValue({})
+    templateRepo.save.mockResolvedValue({})
+    pluginRepo.findOne.mockResolvedValue(createdPlugin)
+
+    await service.create({
+      name: 'Plugin',
+      dataSource: { url: 'https://api.com', method: 'GET', headers: {}, body: {} },
+      templates: [{ layout: 'full', liquidMarkup: 'Template' }],
+    } as any)
+
+    expect(mockScheduler.schedulePlugin).toHaveBeenCalledWith(createdPlugin)
+  })
+
+  it('create does not schedule plugin without dataSource', async () => {
+    const createdPlugin = {
+      ...basePlugin,
+      dataSource: null,
+      templates: [{ id: 't-1' }],
+    }
+    pluginRepo.save.mockResolvedValue(basePlugin)
+    templateRepo.create.mockReturnValue({})
+    templateRepo.save.mockResolvedValue({})
+    pluginRepo.findOne.mockResolvedValue(createdPlugin)
+
+    await service.create({
+      name: 'Plugin',
+      templates: [{ layout: 'full', liquidMarkup: 'Template' }],
+    } as any)
+
+    expect(mockScheduler.schedulePlugin).not.toHaveBeenCalled()
+  })
 })
