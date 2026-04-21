@@ -402,4 +402,83 @@ describe('pluginsService', () => {
 
     expect(mockScheduler.schedulePlugin).not.toHaveBeenCalled()
   })
+
+  it('preview fetches data and renders template', async () => {
+    const apiData = { temperature: 25, location: 'Tokyo' }
+    mockDataFetcher.fetchData = vi.fn().mockResolvedValue(apiData)
+    mockRenderer.renderForDisplay = vi.fn().mockResolvedValue('<html>25°C in Tokyo</html>')
+
+    const result = await service.preview(
+      'https://api.example.com',
+      'GET',
+      {},
+      {},
+      '{{ temperature }}°C in {{ location }}',
+    )
+
+    expect(mockDataFetcher.fetchData).toHaveBeenCalledWith('GET', 'https://api.example.com', {}, {}, expect.any(Object))
+    expect(mockRenderer.renderForDisplay).toHaveBeenCalled()
+    expect(result.html).toBe('<html>25°C in Tokyo</html>')
+    expect(result.data).toEqual(apiData)
+  })
+
+  it('preview applies transform to data', async () => {
+    const apiData = { value: 10 }
+    const transformedData = { value: 20 }
+    mockDataFetcher.fetchData = vi.fn().mockResolvedValue(apiData)
+    mockTransformer.transform = vi.fn().mockReturnValue(transformedData)
+    mockRenderer.renderForDisplay = vi.fn().mockResolvedValue('<html>20</html>')
+
+    await service.preview(
+      'https://api.example.com',
+      'GET',
+      {},
+      {},
+      '{{ value }}',
+      'module.exports = (d) => ({ value: d.value * 2 })',
+    )
+
+    expect(mockTransformer.transform).toHaveBeenCalledWith('module.exports = (d) => ({ value: d.value * 2 })', apiData)
+    expect(mockRenderer.renderForDisplay).toHaveBeenCalledWith('{{ value }}', expect.objectContaining({ value: 20 }))
+  })
+
+  it('preview handles array data', async () => {
+    const apiData = [{ id: 1 }, { id: 2 }]
+    mockDataFetcher.fetchData = vi.fn().mockResolvedValue(apiData)
+    mockRenderer.renderForDisplay = vi.fn().mockResolvedValue('<html>items</html>')
+
+    const result = await service.preview(
+      'https://api.example.com',
+      'GET',
+      {},
+      {},
+      '{% for item in items %}{{ item.id }}{% endfor %}',
+    )
+
+    expect(result.data).toEqual(apiData)
+  })
+
+  it('preview includes field values in context', async () => {
+    const apiData = { temp: 25 }
+    mockDataFetcher.fetchData = vi.fn().mockResolvedValue(apiData)
+    mockRenderer.renderForDisplay = vi.fn().mockResolvedValue('<html>test</html>')
+
+    await service.preview(
+      'https://api.example.com',
+      'GET',
+      {},
+      {},
+      '{{ api_key }}',
+      undefined,
+      { api_key: 'secret-123' },
+    )
+
+    expect(mockDataFetcher.fetchData).toHaveBeenCalledWith(
+      'GET',
+      'https://api.example.com',
+      {},
+      {},
+      expect.objectContaining({ api_key: 'secret-123' }),
+    )
+  })
 })
