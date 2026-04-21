@@ -58,7 +58,7 @@ catalog:
   tsconfig-paths: 4.2.0
   tsup: 8.5.1
   typeorm: 0.3.28
-  typescript: 5.9.3
+  typescript: 6.0.3
   vite: 8.0.9
   vite-plugin-vue-devtools: 8.1.1
   vite-plugin-vuetify: 2.1.3
