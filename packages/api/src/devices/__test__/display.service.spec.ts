@@ -1,15 +1,15 @@
 import { promises as fs } from 'node:fs'
 import { BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common'
-import { Display } from 'src/devices/display'
-import { DeviceDisplayService } from 'src/devices/display.service'
-import { DisplayScreen } from 'src/devices/displayScreen'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { Display } from '../display'
+import { DeviceDisplayService } from '../display.service'
+import { DisplayScreen } from '../displayScreen'
 
 const { fileExists } = vi.hoisted(() => ({
   fileExists: vi.fn(),
 }))
 
-vi.mock('src/utils/fileExists', () => ({
+vi.mock('../../utils/fileExists', () => ({
   fileExists,
 }))
 
@@ -19,7 +19,7 @@ vi.mock('node:fs', () => ({
   },
 }))
 
-vi.mock('src/utils/imageUtils', () => ({
+vi.mock('../../utils/imageUtils', () => ({
   downloadImage: vi.fn().mockResolvedValue(undefined),
   convertToPng: vi.fn().mockResolvedValue(undefined),
 }))
@@ -187,7 +187,7 @@ describe('deviceDisplayService', () => {
       json: () => Promise.resolve(mockResponse),
     })
 
-    const { downloadImage, convertToPng } = await import('src/utils/imageUtils')
+    const { downloadImage, convertToPng } = await import('../../utils/imageUtils')
 
     vi.mocked(fs.unlink).mockResolvedValueOnce()
     const result = await service.getCurrentImage(testHeaders as any)
@@ -227,7 +227,7 @@ describe('deviceDisplayService', () => {
       json: () => Promise.resolve(mockResponse),
     })
 
-    const { downloadImage, convertToPng } = await import('src/utils/imageUtils')
+    const { downloadImage, convertToPng } = await import('../../utils/imageUtils')
 
     vi.mocked(fs.unlink).mockResolvedValueOnce()
     const result = await service.getCurrentImage(testHeaders as any)

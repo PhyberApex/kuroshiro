@@ -1,7 +1,7 @@
 import type { Logger } from '@nestjs/common'
 import { Buffer } from 'node:buffer'
-import { convertToPng, downloadImage } from 'src/utils/imageUtils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { convertToPng, downloadImage } from '../imageUtils'
 
 const mockExec = vi.fn()
 const mockFs = vi.hoisted(() => ({

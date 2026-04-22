@@ -1,5 +1,5 @@
-import { fileExists } from 'src/utils/fileExists'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fileExists } from '../fileExists'
 
 const fs = vi.hoisted(() => ({
   promises: {

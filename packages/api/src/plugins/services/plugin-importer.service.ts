@@ -4,7 +4,7 @@ import * as path from 'node:path'
 import { Injectable, Logger } from '@nestjs/common'
 import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
-import { resolveAppPath } from 'src/utils/pathHelper'
+import { resolveAppPath } from '../../utils/pathHelper'
 
 interface TerminusManifest {
   name: string

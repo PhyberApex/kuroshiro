@@ -1,11 +1,11 @@
-import type { Device } from 'src/devices/devices.entity'
-import { DeviceSetupService } from 'src/devices/setup.service'
+import type { Device } from '../devices.entity'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { DeviceSetupService } from '../setup.service'
 
-vi.mock('src/utils/generateApikey', () => ({
+vi.mock('../../utils/generateApikey', () => ({
   default: vi.fn(() => 'mocked-api-key'),
 }))
-vi.mock('src/utils/generateFriendlyName', () => ({
+vi.mock('../../utils/generateFriendlyName', () => ({
   default: vi.fn(() => 'mocked-friendly-id'),
 }))
 
