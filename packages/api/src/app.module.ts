@@ -10,6 +10,9 @@ import { Device } from './devices/devices.entity'
 import { DevicesModule } from './devices/devices.module'
 import { LogEntry } from './logs/logs.entity'
 import { LogsModule } from './logs/logs.module'
+import { MashupConfiguration } from './mashup/entities/mashup-configuration.entity'
+import { MashupSlot } from './mashup/entities/mashup-slot.entity'
+import { MashupModule } from './mashup/mashup.module'
 import { DevicePlugin } from './plugins/entities/device-plugin.entity'
 import { PluginDataSource } from './plugins/entities/plugin-data-source.entity'
 import { PluginFieldValue } from './plugins/entities/plugin-field-value.entity'
@@ -40,7 +43,7 @@ const conf = config()
       username: conf.database.user,
       password: conf.database.password,
       database: conf.database.database,
-      entities: [Device, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, PluginVariable],
+      entities: [Device, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, PluginVariable, MashupConfiguration, MashupSlot],
       migrations: (() => {
         const dir = path.join(process.cwd(), 'dist', 'src', 'migrations')
         if (!fs.existsSync(dir))
@@ -59,6 +62,7 @@ const conf = config()
     LogsModule,
     DevicesModule,
     PluginsModule,
+    MashupModule,
   ],
 })
 export class AppModule {}

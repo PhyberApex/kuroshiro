@@ -6,6 +6,10 @@
     "noEmit": false,
     "outDir": "./dist"
   },
-  "include": ["src/migrations/**/*.ts", "src/config/typeorm.config.ts"],
+  "include": [
+    "src/migrations/**/*.ts",
+    "src/config/typeorm.config.ts",
+    "src/**/*.entity.ts"
+  ],
   "exclude": ["node_modules", "../../node_modules", "dist"]
 }

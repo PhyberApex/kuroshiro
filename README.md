@@ -97,7 +97,7 @@ We're constantly working to make Kuroshiro even better! Here's what's on our roa
 - [ ] **Liquid Template Syntax** - Add Liquid templating support for dynamic HTML screens
 - [ ] **Maintenance Dashboard** - Clean up unused images and manage disk space efficiently
 - [ ] **Recipes Support** - Pre-built screen templates and configurations you can easily apply
-- [ ] **Screen Mashups** - Combine multiple screens into custom layouts
+- [x] **Screen Mashups** - Combine multiple plugin screens into custom layouts (7 layouts supported!)
 
 ### 🔮 Future Enhancements
 - [x] **System Logs Viewer** - Internal system logging and monitoring capabilities  
@@ -194,6 +194,18 @@ Provide a URL and Kuroshiro fetches, converts, and serves it. Cache it for speed
 
 #### HTML Screens
 Provide HTML you can make use of the [TRMNL framework](https://usetrmnl.com/framework). You can use the tool "HTML Preview" to help generate HTML.
+
+#### Mashup Screens
+Combine multiple plugin outputs into a single screen using one of 7 available layouts:
+- **1L×1R** - One left panel, one right panel (50/50 split)
+- **1T×1B** - One top panel, one bottom panel (50/50 split)
+- **1L×2R** - One large left panel, two stacked right panels
+- **2L×1R** - Two stacked left panels, one large right panel
+- **2T×1B** - Two side-by-side top panels, one bottom panel
+- **1T×2B** - One top panel, two side-by-side bottom panels
+- **2×2** - Four equal panels in a 2×2 grid
+
+Mashups use the official TRMNL CSS framework for consistent styling. If a plugin fails to render, an error placeholder is shown instead—allowing the rest of the mashup to display successfully (partial rendering).
 
 ---
 

@@ -171,6 +171,87 @@ describe('pluginsService', () => {
     expect(result).toBe(false)
   })
 
+  it('checkPluginUsage returns empty array when not used in mashups', async () => {
+    const mashupSlotRepo = { find: vi.fn().mockResolvedValue([]) }
+    ;(service as any).mashupSlotRepository = mashupSlotRepo
+
+    const result = await service.checkPluginUsage('plugin-1')
+
+    expect(result.inMashups).toEqual([])
+    expect(mashupSlotRepo.find).toHaveBeenCalledWith({
+      where: { plugin: { id: 'plugin-1' } },
+      relations: ['mashupConfiguration', 'mashupConfiguration.screen'],
+    })
+  })
+
+  it('checkPluginUsage returns mashup info when plugin used', async () => {
+    const mashupSlotRepo = {
+      find: vi.fn().mockResolvedValue([
+        {
+          id: 'slot-1',
+          mashupConfiguration: {
+            id: 'config-1',
+            screen: { id: 'screen-1', filename: 'Dashboard 1' },
+          },
+        },
+        {
+          id: 'slot-2',
+          mashupConfiguration: {
+            id: 'config-2',
+            screen: { id: 'screen-2', filename: 'Dashboard 2' },
+          },
+        },
+      ]),
+    }
+    ;(service as any).mashupSlotRepository = mashupSlotRepo
+
+    const result = await service.checkPluginUsage('plugin-1')
+
+    expect(result.inMashups).toHaveLength(2)
+    expect(result.inMashups[0]).toEqual({ screenId: 'screen-1', screenName: 'Dashboard 1' })
+    expect(result.inMashups[1]).toEqual({ screenId: 'screen-2', screenName: 'Dashboard 2' })
+  })
+
+  it('remove without force throws error if plugin used in mashups', async () => {
+    pluginRepo.findOneBy.mockResolvedValue(basePlugin)
+
+    const mashupSlotRepo = {
+      find: vi.fn().mockResolvedValue([
+        {
+          mashupConfiguration: {
+            screen: { id: 'screen-1', filename: 'My Dashboard' },
+          },
+        },
+      ]),
+    }
+    ;(service as any).mashupSlotRepository = mashupSlotRepo
+
+    await expect(service.remove('1', false)).rejects.toThrow('Plugin is used in 1 mashup(s)')
+    expect(pluginRepo.remove).not.toHaveBeenCalled()
+  })
+
+  it('remove with force=true deletes plugin even if used in mashups', async () => {
+    pluginRepo.findOneBy.mockResolvedValue(basePlugin)
+    pluginRepo.remove.mockResolvedValue(undefined)
+
+    const mashupSlotRepo = {
+      find: vi.fn().mockResolvedValue([
+        {
+          mashupConfiguration: {
+            screen: { id: 'screen-1', filename: 'My Dashboard' },
+          },
+        },
+      ]),
+    }
+    ;(service as any).mashupSlotRepository = mashupSlotRepo
+
+    const result = await service.remove('1', true)
+
+    expect(result).toBe(true)
+    expect(pluginRepo.remove).toHaveBeenCalledWith(basePlugin)
+    expect(mockScheduler.removeScheduledJob).toHaveBeenCalledWith('1')
+  })
+
   it('create saves plugin with dataSource, templates, and fields', async () => {
     const pluginData = {
       name: 'Complete Plugin',

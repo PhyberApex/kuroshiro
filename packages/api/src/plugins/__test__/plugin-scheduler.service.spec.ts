@@ -17,6 +17,7 @@ describe('pluginSchedulerService', () => {
   let service: PluginSchedulerService
   let mockDataFetcher: PluginDataFetcherService
   let mockRenderer: PluginRendererService
+  let mockScreenRepo: any
 
   beforeEach(() => {
     mockDataFetcher = {
@@ -28,7 +29,12 @@ describe('pluginSchedulerService', () => {
       renderForDisplay: vi.fn(),
     } as any
 
-    service = new PluginSchedulerService(mockDataFetcher, mockRenderer)
+    mockScreenRepo = {
+      update: vi.fn(),
+      find: vi.fn(),
+    }
+
+    service = new PluginSchedulerService(mockDataFetcher, mockRenderer, mockScreenRepo)
   })
 
   it('schedules a plugin with refresh interval', () => {
@@ -147,5 +153,48 @@ describe('pluginSchedulerService', () => {
     service.schedulePlugin(plugin)
 
     expect(service.hasScheduledJob('plugin-1')).toBe(false)
+  })
+
+  it('invalidates mashup caches when plugin updates', async () => {
+    const mockMashupSlotRepo = {
+      find: vi.fn().mockResolvedValue([
+        {
+          id: 'slot-1',
+          mashupConfiguration: {
+            screen: { id: 'screen-1' },
+          },
+        },
+        {
+          id: 'slot-2',
+          mashupConfiguration: {
+            screen: { id: 'screen-2' },
+          },
+        },
+      ]),
+    }
+
+    service.mashupSlotRepository = mockMashupSlotRepo
+
+    await service.invalidateMashupCaches('plugin-1')
+
+    expect(mockMashupSlotRepo.find).toHaveBeenCalledWith({
+      where: { plugin: { id: 'plugin-1' } },
+      relations: ['mashupConfiguration', 'mashupConfiguration.screen'],
+    })
+    expect(mockScreenRepo.update).toHaveBeenCalledWith(
+      { id: 'screen-1' },
+      { cachedPluginOutput: null },
+    )
+    expect(mockScreenRepo.update).toHaveBeenCalledWith(
+      { id: 'screen-2' },
+      { cachedPluginOutput: null },
+    )
+  })
+
+  it('does not fail if mashupSlotRepository not available', async () => {
+    service.mashupSlotRepository = null
+
+    await expect(service.invalidateMashupCaches('plugin-1')).resolves.toBeUndefined()
+    expect(mockScreenRepo.update).not.toHaveBeenCalled()
   })
 })

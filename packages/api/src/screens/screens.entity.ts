@@ -1,11 +1,15 @@
 import type { Plugin } from '../plugins/entities/plugin.entity'
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
+import { Column, Entity, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { Device } from '../devices/devices.entity'
+import { MashupConfiguration } from '../mashup/entities/mashup-configuration.entity'
 
 @Entity()
 export class Screen {
   @PrimaryGeneratedColumn('uuid')
   id: string
+
+  @Column({ type: 'text', default: 'file' })
+  type: 'file' | 'external' | 'html' | 'plugin' | 'mashup'
 
   @Column({ type: 'text', nullable: true })
   filename?: string | null
@@ -39,4 +43,7 @@ export class Screen {
 
   @Column({ type: 'uuid', nullable: true })
   devicePluginId?: string | null
+
+  @OneToOne(() => MashupConfiguration, mashupConfig => mashupConfig.screen, { nullable: true })
+  mashupConfiguration?: MashupConfiguration
 }
