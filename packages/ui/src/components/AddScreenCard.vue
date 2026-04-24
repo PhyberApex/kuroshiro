@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { mdiCodeBlockTags, mdiDownload, mdiEye, mdiLink, mdiStop, mdiUpload } from '@mdi/js'
+import { mdiCodeBlockTags, mdiDownload, mdiEye, mdiGridLarge, mdiLink, mdiStop, mdiUpload } from '@mdi/js'
 import { computed, nextTick, ref, useTemplateRef } from 'vue'
 import { VBtn, VCard, VCardText, VCardTitle, VCol, VDivider, VFileInput, VForm, VOverlay, VRow, VSwitch, VTab, VTabs, VTextarea, VTextField, VWindow, VWindowItem } from 'vuetify/components'
+import AddMashupCard from '@/components/AddMashupCard.vue'
 import { useDemoInfo } from '@/composeables/useDemoInfo.ts'
 import { useDeviceStore } from '@/stores/device.ts'
 import { useScreensStore } from '@/stores/screens'
@@ -20,7 +21,7 @@ const fileInput = ref<File | null>(null)
 
 const previewIframeRef = useTemplateRef('previewIframeRef')
 
-const addScreenTab = ref<'link' | 'file' | 'html'>('link')
+const addScreenTab = ref<'link' | 'file' | 'html' | 'mashup'>('link')
 
 const filename = ref('')
 
@@ -57,6 +58,8 @@ const addScreenInputValid = computed(() => {
   // If no device or no width or no height we can't add a screen
   if (!device.value || !device.value.width || !device.value.height)
     return false
+  if (addScreenTab.value === 'mashup')
+    return true
   if (!filename.value)
     return false
   // Check for link selected
@@ -81,6 +84,8 @@ const addScreenIcon = computed(() => {
       return fetchManual.value ? mdiDownload : mdiLink
     case 'html':
       return mdiCodeBlockTags
+    case 'mashup':
+      return mdiGridLarge
     default:
       return mdiStop
   }
@@ -151,6 +156,9 @@ const { isDemo } = useDemoInfo()
           <VTab value="html" data-test-id="tab-html">
             Render HTML
           </VTab>
+          <VTab value="mashup" data-test-id="tab-mashup">
+            Mashup
+          </VTab>
         </VTabs>
         <VWindow v-model="addScreenTab">
           <VWindowItem value="link">
@@ -181,30 +189,35 @@ const { isDemo } = useDemoInfo()
               </VRow>
             </VForm>
           </VWindowItem>
+          <VWindowItem value="mashup">
+            <AddMashupCard :device-id="deviceId" />
+          </VWindowItem>
         </VWindow>
-        <p v-if="addScreenInfo" class="text-body-2 text-medium-emphasis mt-3 mb-0">
-          {{ addScreenInfo }}
-        </p>
-        <VBtn
-          color="primary"
-          class="mt-5"
-          :prepend-icon="addScreenIcon"
-          :disabled="!addScreenInputValid"
-          data-test-id="add-screen-btn"
-          @click="submitAddScreen"
-        >
-          Add Screen
-        </VBtn>
-        <VBtn
-          v-if="addScreenTab === 'html'"
-          color="secondary"
-          class="mt-5 ml-5"
-          :prepend-icon="mdiEye"
-          :disabled="!renderHtmlValid"
-          @click="renderPreviewHtml()"
-        >
-          Preview
-        </VBtn>
+        <template v-if="addScreenTab !== 'mashup'">
+          <p v-if="addScreenInfo" class="text-body-2 text-medium-emphasis mt-3 mb-0">
+            {{ addScreenInfo }}
+          </p>
+          <VBtn
+            color="primary"
+            class="mt-5"
+            :prepend-icon="addScreenIcon"
+            :disabled="!addScreenInputValid"
+            data-test-id="add-screen-btn"
+            @click="submitAddScreen"
+          >
+            Add Screen
+          </VBtn>
+          <VBtn
+            v-if="addScreenTab === 'html'"
+            color="secondary"
+            class="mt-5 ml-5"
+            :prepend-icon="mdiEye"
+            :disabled="!renderHtmlValid"
+            @click="renderPreviewHtml()"
+          >
+            Preview
+          </VBtn>
+        </template>
       </VCardText>
     </VCard>
     <VOverlay v-model="showHtmlPreview" class="align-center justify-center">

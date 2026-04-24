@@ -25,7 +25,7 @@ async function updateExternalImage(screenId: string) {
 const showHtmlPreview = ref(false)
 const showScreenPreview = ref(false)
 const selectedPreviewScreen = ref<Screen | null>(null)
-const previewMode = ref<'html' | 'image' | 'plugin'>('image')
+const previewMode = ref<'html' | 'image' | 'plugin' | 'mashup'>('image')
 
 async function renderPreviewHtml(html: string) {
   showHtmlPreview.value = true
@@ -48,7 +48,10 @@ function previewScreen(screen: Screen) {
     return
   selectedPreviewScreen.value = screen
 
-  if (screen.html) {
+  if (screen.type === 'mashup') {
+    previewMode.value = 'mashup'
+  }
+  else if (screen.html) {
     previewMode.value = 'html'
   }
   else if (screen.plugin) {
@@ -85,10 +88,10 @@ function previewScreen(screen: Screen) {
                 <tr v-for="screen in screensStore.screens" :key="screen.id">
                   <td>
                     <VChip
-                      :color="screen.plugin ? 'purple' : screen.externalLink ? 'info' : 'primary'"
+                      :color="screen.type === 'mashup' ? 'orange' : screen.plugin ? 'purple' : screen.externalLink ? 'info' : 'primary'"
                       size="small"
                     >
-                      {{ screen.plugin ? 'Plugin' : screen.externalLink ? screen.fetchManual ? 'External (cached)' : 'External' : screen.html ? 'HTML' : 'File' }}
+                      {{ screen.type === 'mashup' ? 'Mashup' : screen.plugin ? 'Plugin' : screen.externalLink ? screen.fetchManual ? 'External (cached)' : 'External' : screen.html ? 'HTML' : 'File' }}
                     </VChip>
                   </td>
                   <td>
@@ -141,7 +144,7 @@ function previewScreen(screen: Screen) {
                       :icon="mdiEye"
                       variant="tonal"
                       color="secondary"
-                      :aria-label="screen.plugin ? 'Preview plugin output' : 'Preview screen'"
+                      :aria-label="screen.type === 'mashup' ? 'Preview mashup' : screen.plugin ? 'Preview plugin output' : 'Preview screen'"
                       @click="previewScreen(screen)"
                     />
                     <VBtn
@@ -188,8 +191,23 @@ function previewScreen(screen: Screen) {
         </VCardTitle>
         <VDivider />
         <VCardText class="d-flex flex-column align-center pa-4">
+          <!-- Mashup screens: show cached HTML if available, else show message -->
+          <div v-if="previewMode === 'mashup'">
+            <div v-if="selectedPreviewScreen.cachedPluginOutput" class="mb-4">
+              <iframe
+                :srcdoc="selectedPreviewScreen.cachedPluginOutput"
+                width="800"
+                height="480"
+                style="border: 1px solid #ccc;"
+              />
+            </div>
+            <VAlert v-else type="info" variant="tonal">
+              Mashup output will be generated when a device requests it or when the scheduler runs.
+            </VAlert>
+          </div>
+
           <!-- Plugin screens: show cached HTML if available, else show message -->
-          <div v-if="previewMode === 'plugin'">
+          <div v-else-if="previewMode === 'plugin'">
             <div v-if="selectedPreviewScreen.cachedPluginOutput" class="mb-4">
               <iframe
                 :srcdoc="selectedPreviewScreen.cachedPluginOutput"

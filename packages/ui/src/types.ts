@@ -22,6 +22,7 @@ export interface Device {
 
 export interface Screen {
   id: string
+  type?: 'file' | 'external' | 'html' | 'plugin' | 'mashup'
   filename?: string | null
   externalLink?: string | null
   isActive: boolean
@@ -31,6 +32,7 @@ export interface Screen {
   plugin?: { id: string, name: string } | null
   devicePluginId?: string | null
   cachedPluginOutput?: string | null
+  mashupConfiguration?: { id: string, layout: string }
 }
 
 export interface CurrentScreen {

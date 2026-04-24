@@ -1,5 +1,6 @@
+import type { MashupSlot } from '../mashup/entities/mashup-slot.entity'
 import type { AssignPluginToDeviceDto } from './dto/assign-plugin-to-device.dto'
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
+import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Screen } from '../screens/screens.entity'
@@ -16,6 +17,8 @@ import { PluginTransformService } from './services/plugin-transform.service'
 @Injectable()
 export class PluginsService implements OnModuleInit {
   private readonly logger = new Logger(PluginsService.name)
+
+  private mashupSlotRepository: Repository<MashupSlot>
 
   constructor(
     @InjectRepository(Plugin)
@@ -34,7 +37,18 @@ export class PluginsService implements OnModuleInit {
     private readonly renderer: PluginRendererService,
     private readonly scheduler: PluginSchedulerService,
     private readonly transformer: PluginTransformService,
-  ) {}
+  ) {
+    // Lazy injection to avoid circular dependency with MashupModule
+    setTimeout(() => {
+      try {
+        this.mashupSlotRepository = this.pluginRepository.manager.getRepository('MashupSlot')
+      }
+      catch {
+        // MashupSlot might not be registered yet during tests or initialization
+        this.logger.debug('MashupSlot repository not available')
+      }
+    }, 0)
+  }
 
   async onModuleInit() {
     this.logger.log('Initializing plugin scheduler...')
@@ -292,10 +306,39 @@ export class PluginsService implements OnModuleInit {
     return updated
   }
 
-  async remove(id: string): Promise<boolean> {
+  async checkPluginUsage(id: string): Promise<{ inMashups: Array<{ screenId: string, screenName: string }> }> {
+    if (!this.mashupSlotRepository) {
+      return { inMashups: [] }
+    }
+
+    const mashupsWithPlugin = await this.mashupSlotRepository.find({
+      where: { plugin: { id } },
+      relations: ['mashupConfiguration', 'mashupConfiguration.screen'],
+    })
+
+    return {
+      inMashups: mashupsWithPlugin.map(slot => ({
+        screenId: slot.mashupConfiguration.screen.id,
+        screenName: slot.mashupConfiguration.screen.filename,
+      })),
+    }
+  }
+
+  async remove(id: string, force = false): Promise<boolean> {
     const plugin = await this.pluginRepository.findOneBy({ id })
     if (!plugin)
       return false
+
+    // Check if plugin is used in mashups
+    if (!force) {
+      const usage = await this.checkPluginUsage(id)
+      if (usage.inMashups.length > 0) {
+        this.logger.warn(`Plugin ${id} is used in ${usage.inMashups.length} mashup(s)`)
+        throw new BadRequestException(
+          `Plugin is used in ${usage.inMashups.length} mashup(s). Mashups: ${usage.inMashups.map(m => m.screenName).join(', ')}`,
+        )
+      }
+    }
 
     this.scheduler.removeScheduledJob(id)
     this.logger.log(`Removed scheduled job for plugin: ${plugin.name}`)

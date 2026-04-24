@@ -310,4 +310,126 @@ describe('deviceDisplayService', () => {
       expect(result.rendered_at).toBe(activeScreen.generatedAt)
     })
   })
+
+  describe('mashup screen rendering', () => {
+    beforeEach(() => {
+      // Inject services needed for mashup
+      service.pluginDataFetcher = { fetchData: vi.fn() } as any
+      service.pluginRenderer = { render: vi.fn(), renderForDisplay: vi.fn() } as any
+      service.pluginTransformer = { transform: vi.fn() } as any
+    })
+
+    it('should detect mashup screen and call renderer', async () => {
+      const device = { ...baseDevice, width: 800, height: 480, apikey: 'token', id: 'device-1' }
+
+      const mashupConfig = {
+        id: 'config-1',
+        layout: '2x2',
+        slots: [
+          { id: 'slot-1', plugin: { id: 'p1', name: 'Weather', dataSource: {}, templates: [] } },
+          { id: 'slot-2', plugin: { id: 'p2', name: 'Calendar', dataSource: {}, templates: [] } },
+        ],
+      }
+
+      const activeScreen = {
+        id: 'screen1',
+        type: 'file',
+        filename: 'First',
+        order: 1,
+        isActive: true,
+        device,
+      }
+
+      const nextScreenBase = {
+        id: 'screen2',
+        type: 'mashup',
+        filename: 'Dashboard',
+        order: 2,
+        isActive: false,
+        generatedAt: new Date(),
+        device,
+      }
+
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      deviceRepo.save.mockResolvedValue(device)
+      screenRepo.findOneBy.mockResolvedValueOnce(activeScreen).mockResolvedValueOnce(nextScreenBase)
+      screenRepo.findOne.mockResolvedValue({ ...nextScreenBase, mashupConfiguration: mashupConfig })
+      screenRepo.update.mockResolvedValue(undefined)
+      screenRepo.save.mockResolvedValue({ ...nextScreenBase, isActive: true })
+      configService.get.mockReturnValue('http://api')
+
+      // Mock MashupRendererService
+      const mockMashupRenderer = {
+        renderMashup: vi.fn().mockResolvedValue('<html>Mashup HTML</html>'),
+      }
+      service.mashupRenderer = mockMashupRenderer
+
+      const result = await service.getCurrentImage({ ...headers, width: 800, height: 480 } as any)
+
+      expect(mockMashupRenderer.renderMashup).toHaveBeenCalled()
+      expect(result).toBeInstanceOf(Display)
+    })
+
+    it('should handle mashup with cached output', async () => {
+      const device = { ...baseDevice, width: 800, height: 480, apikey: 'token' }
+      const activeScreen = { id: 'screen1', isActive: true, order: 1, device }
+      const nextScreen = {
+        id: 'screen2',
+        type: 'mashup',
+        filename: 'Dashboard',
+        order: 2,
+        isActive: false,
+        generatedAt: new Date(),
+        device,
+        cachedPluginOutput: '<html>Cached mashup</html>',
+        mashupConfiguration: { id: 'config-1' },
+      }
+
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      deviceRepo.save.mockResolvedValue(device)
+      screenRepo.findOneBy.mockResolvedValueOnce(activeScreen).mockResolvedValueOnce(nextScreen)
+      screenRepo.findOne.mockResolvedValue(nextScreen)
+      screenRepo.update.mockResolvedValue(undefined)
+      screenRepo.save.mockResolvedValue(nextScreen)
+      configService.get.mockReturnValue('http://api')
+
+      const result = await service.getCurrentImage({ ...headers, width: 800, height: 480 } as any)
+
+      expect(result).toBeInstanceOf(Display)
+      expect(result.image_url).toContain('/screens/devices/')
+    })
+
+    it('should fallback to error.png if mashup rendering fails', async () => {
+      const device = { ...baseDevice, width: 800, height: 480, apikey: 'token' }
+      const activeScreen = { id: 'screen1', isActive: true, order: 1, device }
+      const nextScreen = {
+        id: 'screen2',
+        type: 'mashup',
+        filename: 'Dashboard',
+        order: 2,
+        isActive: false,
+        generatedAt: new Date(),
+        device,
+        mashupConfiguration: { id: 'config-1', slots: [] },
+      }
+
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      deviceRepo.save.mockResolvedValue(device)
+      screenRepo.findOneBy.mockResolvedValueOnce(activeScreen).mockResolvedValueOnce(nextScreen)
+      screenRepo.findOne.mockResolvedValue(nextScreen)
+      screenRepo.update.mockResolvedValue(undefined)
+      screenRepo.save.mockResolvedValue(nextScreen)
+      configService.get.mockReturnValue('http://api')
+
+      const mockMashupRenderer = {
+        renderMashup: vi.fn().mockRejectedValue(new Error('Render failed')),
+      }
+      service.mashupRenderer = mockMashupRenderer
+
+      const result = await service.getCurrentImage({ ...headers, width: 800, height: 480 } as any)
+
+      expect(result).toBeInstanceOf(Display)
+      expect(result.image_url).toBe('http://api/screens/error.png')
+    })
+  })
 })
