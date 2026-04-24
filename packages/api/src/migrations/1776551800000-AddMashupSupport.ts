@@ -1,6 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm'
 
-export class AddMashupSupport1745908800000 implements MigrationInterface {
+export class AddMashupSupport1776551800000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Add type column to screen table
     await queryRunner.query(`
