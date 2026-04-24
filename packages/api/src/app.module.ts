@@ -10,6 +10,7 @@ import { Device } from './devices/devices.entity'
 import { DevicesModule } from './devices/devices.module'
 import { LogEntry } from './logs/logs.entity'
 import { LogsModule } from './logs/logs.module'
+import { MaintenanceModule } from './maintenance/maintenance.module'
 import { MashupConfiguration } from './mashup/entities/mashup-configuration.entity'
 import { MashupSlot } from './mashup/entities/mashup-slot.entity'
 import { MashupModule } from './mashup/mashup.module'
@@ -63,6 +64,7 @@ const conf = config()
     DevicesModule,
     PluginsModule,
     MashupModule,
+    MaintenanceModule,
   ],
 })
 export class AppModule {}
