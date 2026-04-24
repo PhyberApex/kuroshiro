@@ -37,7 +37,7 @@ export class DeviceDisplayService {
     // Lazy injection to avoid circular dependency
     setTimeout(async () => {
       try {
-        const { MashupRendererService } = await import('../mashup/services/mashup-renderer.service')
+        const { MashupRendererService } = await import('../mashup/services/mashup-renderer.service.js')
         // Get it from the module (this is a workaround for circular deps)
         this.mashupRenderer = new MashupRendererService(
           this.pluginDataFetcher,
