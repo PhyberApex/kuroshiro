@@ -1,7 +1,7 @@
-import type { MashupConfiguration } from '../mashup/entities/mashup-configuration.entity'
 import type { Plugin } from '../plugins/entities/plugin.entity'
 import { Column, Entity, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { Device } from '../devices/devices.entity'
+import { MashupConfiguration } from '../mashup/entities/mashup-configuration.entity'
 
 @Entity()
 export class Screen {
@@ -44,6 +44,6 @@ export class Screen {
   @Column({ type: 'uuid', nullable: true })
   devicePluginId?: string | null
 
-  @OneToOne('MashupConfiguration', 'screen', { nullable: true })
+  @OneToOne(() => MashupConfiguration, mashupConfig => mashupConfig.screen, { nullable: true })
   mashupConfiguration?: MashupConfiguration
 }

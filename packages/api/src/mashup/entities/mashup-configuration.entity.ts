@@ -10,7 +10,7 @@ export class MashupConfiguration {
   @Column('text')
   layout: string
 
-  @OneToOne(() => Screen, { onDelete: 'CASCADE' })
+  @OneToOne(() => Screen, screen => screen.mashupConfiguration, { onDelete: 'CASCADE' })
   @JoinColumn()
   screen: Screen
 
