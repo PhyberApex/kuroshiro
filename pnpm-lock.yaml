@@ -189,9 +189,6 @@ catalogs:
     vitest:
       specifier: 3.2.4
       version: 3.2.4
-    vm2:
-      specifier: ^3.10.5
-      version: 3.10.5
     vue:
       specifier: 3.5.33
       version: 3.5.33
@@ -292,7 +289,7 @@ importers:
         version: 0.3.28(pg@8.20.0)(ts-node@10.9.2(@swc/core@1.15.32)(@types/node@24.12.2)(typescript@6.0.3))
       vm2:
         specifier: 'catalog:'
-        version: 3.10.5
+        version: 3.11.1
     devDependencies:
       '@antfu/eslint-config':
         specifier: 'catalog:'
@@ -2626,6 +2623,10 @@ packages:
     resolution: {integrity: sha512-ueEepnujpqee2o5aIYnvHU6C0A42MNdsIDeqy5BydrkuC5R1ZuUFnm27EeFJGoEHJQgn3uleRvmTXaJgfXbt4g==}
     engines: {node: '>=0.4.0'}
 
+  acorn-walk@8.3.5:
+    resolution: {integrity: sha512-HEHNfbars9v4pgpW6SO1KSPkfoS0xVOM/9UzkJltjlsHZmJasxg8aXkuZa7SMf8vKGIBhpUsPluQSqhJFCqebw==}
+    engines: {node: '>=0.4.0'}
+
   acorn@8.15.0:
     resolution: {integrity: sha512-NZyJarBfL7nWwIq+FDL6Zp/yHEhePMNnnJ0y3qfieCrmNvYct8uvtiV41UvlSe6apAfk0fY1FbWx+NwfmpvtTg==}
     engines: {node: '>=0.4.0'}
@@ -4314,6 +4315,10 @@ packages:
 
   issue-parser@7.0.1:
     resolution: {integrity: sha512-3YZcUUR2Wt1WsapF+S/WiA2WmlW0cWAoPccMqne7AxEBhCdFeTPjfv/Axb8V2gyCgY3nRw+ksZ3xSUX+R47iAg==}
+    engines: {node: ^18.17 || >=20.6.1}
+
+  issue-parser@7.0.2:
+    resolution: {integrity: sha512-7atWPjhGEIX3JEtMrOYd8TKzboYlq+5sNbdl9POiLYOI14G5HZiQbZP0Xj5EZdrufQVXfJlpTV0hys0CuxwxZw==}
     engines: {node: ^18.17 || >=20.6.1}
 
   istanbul-lib-coverage@3.2.2:
@@ -6705,8 +6710,8 @@ packages:
       jsdom:
         optional: true
 
-  vm2@3.10.5:
-    resolution: {integrity: sha512-3P/2QDccVFBcujfCOeP8vVNuGfuBJHEuvGR8eMmI10p/iwLL2UwF5PDaNaoOS2pRGQEDmJRyeEcc8kmm2Z59RA==}
+  vm2@3.11.1:
+    resolution: {integrity: sha512-X0U/jIuaec0GU9toK9ZT0XA51DsNUkTSV7gmE3ct69rsvBx5dDNsiJGI9Eq5/Hz8waJQ9Uf9FC3yGZKE+STRBw==}
     engines: {node: '>=6.0'}
     hasBin: true
 
@@ -8318,7 +8323,7 @@ snapshots:
       dir-glob: 3.0.1
       http-proxy-agent: 7.0.2
       https-proxy-agent: 7.0.6
-      issue-parser: 7.0.1
+      issue-parser: 7.0.2
       lodash-es: 4.18.1
       mime: 4.1.0
       p-filter: 4.1.0
@@ -9239,6 +9244,10 @@ snapshots:
   acorn-walk@8.3.4:
     dependencies:
       acorn: 8.15.0
+
+  acorn-walk@8.3.5:
+    dependencies:
+      acorn: 8.16.0
 
   acorn@8.15.0: {}
 
@@ -11012,6 +11021,14 @@ snapshots:
   isexe@3.1.1: {}
 
   issue-parser@7.0.1:
+    dependencies:
+      lodash.capitalize: 4.2.1
+      lodash.escaperegexp: 4.1.2
+      lodash.isplainobject: 4.0.6
+      lodash.isstring: 4.0.1
+      lodash.uniqby: 4.7.0
+
+  issue-parser@7.0.2:
     dependencies:
       lodash.capitalize: 4.2.1
       lodash.escaperegexp: 4.1.2
@@ -13437,10 +13454,10 @@ snapshots:
       - tsx
       - yaml
 
-  vm2@3.10.5:
+  vm2@3.11.1:
     dependencies:
       acorn: 8.16.0
-      acorn-walk: 8.3.4
+      acorn-walk: 8.3.5
 
   vscode-uri@3.1.0: {}
 
