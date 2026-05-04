@@ -23,7 +23,7 @@ export class LogsService {
     }
     this.logger.debug(`Checking ${logs.log.logs_array.length} entries of payload to consume.`)
     for (const log of logs.log.logs_array) {
-      if (device.logs.find(logEntry => logEntry.logId === log.log_id)) {
+      if (device.logs.some(logEntry => logEntry.logId === log.log_id)) {
         this.logger.log(`Log entry with id: ${log.log_id} for device ${device.id} already exists.`)
       }
       else {

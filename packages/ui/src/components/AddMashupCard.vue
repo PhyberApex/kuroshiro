@@ -43,7 +43,7 @@ onMounted(async () => {
 })
 
 function updateSlotCount() {
-  selectedPlugins.value = Array.from({ length: slotCount.value }, () => '')
+  selectedPlugins.value = Array.from<string>({ length: slotCount.value }).fill('')
 }
 
 async function createMashup() {
