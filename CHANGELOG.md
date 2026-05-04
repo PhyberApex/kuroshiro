@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.9.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.8.2...kuroshiro-v0.9.0) (2026-05-04)
+
+
+### Features
+
+* Add maintenance dashboard for cleanup ([#511](https://github.com/PhyberApex/kuroshiro/issues/511)) ([9ff032b](https://github.com/PhyberApex/kuroshiro/commit/9ff032b829abf37e3ac8907f6cc2e1527c4a6a19))
+* Add mashup support for combining multiple plugin screens ([#509](https://github.com/PhyberApex/kuroshiro/issues/509)) ([d668d91](https://github.com/PhyberApex/kuroshiro/commit/d668d91280580ec40e1eeda817fa20a5d8021d60))
+* Plugin System ([#496](https://github.com/PhyberApex/kuroshiro/issues/496)) ([1764b13](https://github.com/PhyberApex/kuroshiro/commit/1764b13842c037ff9914dd1f4315e06739485b40))
+
+
+### Bug Fixes
+
+* Build issue ([a4ab986](https://github.com/PhyberApex/kuroshiro/commit/a4ab98651ea5eebdf24094c92d76386d47223268))
+* Build issue ([bcb7967](https://github.com/PhyberApex/kuroshiro/commit/bcb7967b7046de04c2be15a260adfcb85c48016c))
+* Import not working ([01e8047](https://github.com/PhyberApex/kuroshiro/commit/01e804794dfbbd7007b2bbdc15e3838f5854935e))
+* log returning mock data only ([2a9aed1](https://github.com/PhyberApex/kuroshiro/commit/2a9aed17f7184207b5a16e72fcb9f30e4583f69b))
+
 ## [0.8.2](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.8.1...kuroshiro-v0.8.2) (2026-03-16)
 
 
