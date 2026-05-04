@@ -189,9 +189,6 @@ catalogs:
     vitest:
       specifier: 3.2.4
       version: 3.2.4
-    vm2:
-      specifier: ^3.10.5
-      version: 3.11.1
     vue:
       specifier: 3.5.33
       version: 3.5.33
@@ -292,7 +289,7 @@ importers:
         version: 0.3.28(pg@8.20.0)(ts-node@10.9.2(@swc/core@1.15.33)(@types/node@24.12.2)(typescript@6.0.3))
       vm2:
         specifier: 'catalog:'
-        version: 3.11.1
+        version: 3.11.2
     devDependencies:
       '@antfu/eslint-config':
         specifier: 'catalog:'
@@ -6801,8 +6798,8 @@ packages:
       jsdom:
         optional: true
 
-  vm2@3.11.1:
-    resolution: {integrity: sha512-X0U/jIuaec0GU9toK9ZT0XA51DsNUkTSV7gmE3ct69rsvBx5dDNsiJGI9Eq5/Hz8waJQ9Uf9FC3yGZKE+STRBw==}
+  vm2@3.11.2:
+    resolution: {integrity: sha512-hnsYAgBSAgwwPM/Gq66gMmUY0VlY9mKC8nvVRAZiJp+tYxF4sfNRlZymP8uqzIUK2U/7+SVZ/H8p7USxNHLlZA==}
     engines: {node: '>=6.0'}
     hasBin: true
 
@@ -9406,7 +9403,7 @@ snapshots:
 
   acorn-walk@8.3.4:
     dependencies:
-      acorn: 8.16.0
+      acorn: 8.15.0
 
   acorn-walk@8.3.5:
     dependencies:
@@ -13659,7 +13656,7 @@ snapshots:
       - tsx
       - yaml
 
-  vm2@3.11.1:
+  vm2@3.11.2:
     dependencies:
       acorn: 8.16.0
       acorn-walk: 8.3.5
