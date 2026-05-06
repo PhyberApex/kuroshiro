@@ -1,11 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+import { assertPublicUrl } from '../../utils/ssrfGuard'
 import { PluginRendererService } from './plugin-renderer.service'
 
 @Injectable()
 export class PluginDataFetcherService {
   private readonly logger = new Logger(PluginDataFetcherService.name)
 
-  constructor(private readonly renderer: PluginRendererService) {}
+  constructor(
+    private readonly renderer: PluginRendererService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async fetchData(
     method: string,
@@ -22,6 +27,9 @@ export class PluginDataFetcherService {
       resolvedUrl = await this.renderer.render(url, templateContext || {})
       this.logger.debug(`Resolved URL: ${resolvedUrl}`)
     }
+
+    if (this.configService.get<boolean>('demo_mode'))
+      assertPublicUrl(resolvedUrl)
 
     const options: RequestInit = {
       method,

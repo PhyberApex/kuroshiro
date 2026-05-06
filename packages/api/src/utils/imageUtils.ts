@@ -5,6 +5,26 @@ import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 
+// Maps magic-byte signatures to the ImageMagick format prefix used when invoking magick.
+// Only raster image formats that make sense on an e-ink display are permitted.
+const MAGIC_BYTES: Array<{ bytes: number[], format: string }> = [
+  { bytes: [0xFF, 0xD8, 0xFF], format: 'JPEG' },
+  { bytes: [0x89, 0x50, 0x4E, 0x47], format: 'PNG' },
+  { bytes: [0x47, 0x49, 0x46], format: 'GIF' },
+  { bytes: [0x42, 0x4D], format: 'BMP' },
+  { bytes: [0x49, 0x49, 0x2A, 0x00], format: 'TIFF' },
+  { bytes: [0x4D, 0x4D, 0x00, 0x2A], format: 'TIFF' },
+  { bytes: [0x52, 0x49, 0x46, 0x46], format: 'WEBP' },
+]
+
+function detectImageFormat(buf: buffer.Buffer): string {
+  for (const { bytes, format } of MAGIC_BYTES) {
+    if (bytes.every((b, i) => buf[i] === b))
+      return format
+  }
+  throw new Error('Unsupported or unrecognised image format')
+}
+
 export async function downloadImage(url: string, dest: string, logger: Logger) {
   logger.log(`Downloading image from ${url} to ${dest}`)
   const res = await fetch(url)
@@ -42,12 +62,21 @@ async function ensureColormapExists(colormapPath: string, logger: Logger): Promi
 }
 
 export async function convertToPng(inputPath: string, outputPath: string, width: number, height: number, logger: Logger) {
-  const colormapPath = path.join(process.cwd(), 'public/colormap-2bit.png')
+  const header = buffer.Buffer.allocUnsafe(8)
+  const fd = await fs.promises.open(inputPath, 'r')
+  try {
+    await fd.read(header, 0, 8, 0)
+  }
+  finally {
+    await fd.close()
+  }
+  const format = detectImageFormat(header)
 
+  const colormapPath = path.join(process.cwd(), 'public/colormap-2bit.png')
   await ensureColormapExists(colormapPath, logger)
 
   return new Promise<void>((resolve, reject) => {
-    const cmd = `magick "${inputPath}" -resize ${width}x${height} -gravity Center -extent ${width}x${height} -dither FloydSteinberg -remap "${colormapPath}" -define png:bit-depth=2 -define png:color-type=0 -strip png:"${outputPath}"`
+    const cmd = `magick "${format}:${inputPath}" -resize ${width}x${height} -gravity Center -extent ${width}x${height} -dither FloydSteinberg -remap "${colormapPath}" -define png:bit-depth=2 -define png:color-type=0 -strip png:"${outputPath}"`
     logger.log(`Running ImageMagick: ${cmd}`)
     exec(cmd, (error, stdout, stderr) => {
       if (error) {

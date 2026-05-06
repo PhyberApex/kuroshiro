@@ -1,11 +1,13 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Device } from '../devices/devices.entity'
 import { convertToPng, downloadImage } from '../utils/imageUtils'
 import { resolveAppPath } from '../utils/pathHelper'
+import { assertPublicUrl } from '../utils/ssrfGuard'
 import { CreateScreenDto } from './dto/create-screen.dto'
 import { Screen } from './screens.entity'
 
@@ -17,6 +19,7 @@ export class ScreensService {
     private screensRepository: Repository<Screen>,
     @InjectRepository(Device)
     private devicesRepository: Repository<Device>,
+    private readonly configService: ConfigService,
   ) {}
 
   async getAll(): Promise<Screen[]> {
@@ -50,6 +53,8 @@ export class ScreensService {
 
     // Fetch initial image right now
     if (body.externalLink && body.fetchManual) {
+      if (this.configService.get<boolean>('demo_mode'))
+        assertPublicUrl(body.externalLink)
       const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
       const inputPath = path.join(destDir, 'tmp-source')
       const pngFilename = `${saved.id}.png`
@@ -154,6 +159,8 @@ export class ScreensService {
     if (!screen.fetchManual) {
       throw new BadRequestException('This is only allowed for external images that are not auto refreshing')
     }
+    if (this.configService.get<boolean>('demo_mode'))
+      assertPublicUrl(screen.externalLink)
     const destDir = resolveAppPath('public', 'screens', 'devices', screen.device.id)
     const inputPath = path.join(destDir, 'tmp-source')
     const pngFilename = `${screen.id}.png`

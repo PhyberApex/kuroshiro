@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common'
+import { ConfigModule } from '@nestjs/config'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { Screen } from '../screens/screens.entity'
 import { DevicePlugin } from './entities/device-plugin.entity'
@@ -18,6 +19,7 @@ import { PluginTransformService } from './services/plugin-transform.service'
 
 @Module({
   imports: [
+    ConfigModule,
     TypeOrmModule.forFeature([
       Plugin,
       DevicePlugin,
