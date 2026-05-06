@@ -5,10 +5,13 @@ globalThis.fetch = vi.fn()
 
 describe('pluginDataFetcherService', () => {
   let service: PluginDataFetcherService
+  const mockRenderer = { render: vi.fn() }
+  const mockConfigService = { get: vi.fn().mockReturnValue(false) }
 
   beforeEach(() => {
-    service = new PluginDataFetcherService()
+    service = new PluginDataFetcherService(mockRenderer as any, mockConfigService as any)
     vi.clearAllMocks()
+    mockConfigService.get.mockReturnValue(false)
   })
 
   it('fetches data from a GET endpoint', async () => {

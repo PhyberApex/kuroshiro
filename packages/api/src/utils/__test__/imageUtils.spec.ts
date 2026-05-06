@@ -4,11 +4,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { convertToPng, downloadImage } from '../imageUtils'
 
 const mockExec = vi.fn()
+const mockFd = {
+  read: vi.fn().mockImplementation((buf: any) => {
+    buf[0] = 0xFF
+    buf[1] = 0xD8
+    buf[2] = 0xFF
+    return Promise.resolve()
+  }),
+  close: vi.fn().mockResolvedValue(undefined),
+}
 const mockFs = vi.hoisted(() => ({
   existsSync: vi.fn(),
   promises: {
     mkdir: vi.fn(),
     writeFile: vi.fn(),
+    open: vi.fn(),
   },
 }))
 
@@ -32,6 +42,14 @@ describe('imageUtils', () => {
       log: vi.fn(),
       error: vi.fn(),
     } as unknown as Logger
+    mockFs.promises.open.mockResolvedValue(mockFd)
+    mockFd.read.mockImplementation((buf: any) => {
+      buf[0] = 0xFF
+      buf[1] = 0xD8
+      buf[2] = 0xFF
+      return Promise.resolve()
+    })
+    mockFd.close.mockResolvedValue(undefined)
   })
 
   afterEach(() => {

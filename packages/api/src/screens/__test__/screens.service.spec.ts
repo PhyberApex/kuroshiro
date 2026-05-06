@@ -30,6 +30,7 @@ describe('screensService', () => {
   let screensRepo: ReturnType<typeof createMockRepo>
   let devicesRepo: ReturnType<typeof createMockRepo>
   let unlinkMock: any
+  const mockConfigService = { get: vi.fn().mockReturnValue(false) }
 
   beforeEach(() => {
     screensRepo = createMockRepo()
@@ -37,6 +38,7 @@ describe('screensService', () => {
     service = new ScreensService(
       screensRepo as any,
       devicesRepo as any,
+      mockConfigService as any,
     )
     vi.resetAllMocks()
     unlinkMock = vi.spyOn(fs.promises, 'unlink').mockResolvedValue(undefined)
