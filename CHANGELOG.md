@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.2](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.9.1...kuroshiro-v0.9.2) (2026-05-07)
+
+
+### Bug Fixes
+
+* **docker:** add packageManager pin to api package.json ([6ebcc36](https://github.com/PhyberApex/kuroshiro/commit/6ebcc361fe4be7ee97f786a5caac3a314676880e))
+
 ## [0.9.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.9.0...kuroshiro-v0.9.1) (2026-05-07)
 
 
