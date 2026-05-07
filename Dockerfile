@@ -46,8 +46,8 @@ COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
 
 # Install only production dependencies
-COPY packages/api/package.json ./package.json
-RUN corepack enable && pnpm install --prod
+COPY packages/api/package.json ./packages/api/package.json
+RUN corepack enable && pnpm install --prod --ignore-scripts
 
 # Use tini as the entrypoint
 ENTRYPOINT ["/sbin/tini", "--"]
