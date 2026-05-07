@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.9.0...kuroshiro-v0.9.1) (2026-05-07)
+
+
+### Bug Fixes
+
+* **docker:** preserve pnpm version pin in production stage ([0f68cff](https://github.com/PhyberApex/kuroshiro/commit/0f68cff2b70d77744f889e1e038b47986841b950))
+
 ## [0.9.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.8.2...kuroshiro-v0.9.0) (2026-05-07)
 
 
