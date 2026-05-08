@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.3](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.9.2...kuroshiro-v0.9.3) (2026-05-08)
+
+
+### Bug Fixes
+
+* **migration:** make AddPluginSystem migration idempotent ([d389ae9](https://github.com/PhyberApex/kuroshiro/commit/d389ae93cdb4cd88fc3e360957ccb7b28a85875f))
+
 ## [0.9.2](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.9.1...kuroshiro-v0.9.2) (2026-05-07)
 
 
