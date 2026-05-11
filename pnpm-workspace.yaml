@@ -14,7 +14,7 @@ catalog:
   '@nestjs/typeorm': 11.0.1
   '@semantic-release/changelog': 6.0.3
   '@semantic-release/git': 10.0.1
-  '@semantic-release/github': 12.0.6
+  '@semantic-release/github': 12.0.8
   '@semantic-release/npm': 13.1.5
   '@swc/core': 1.15.33
   '@tsconfig/node24': 24.0.4
