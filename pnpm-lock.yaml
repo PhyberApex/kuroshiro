@@ -64,8 +64,8 @@ catalogs:
       specifier: ^4.0.9
       version: 4.0.9
     '@types/jsdom':
-      specifier: 28.0.2
-      version: 28.0.2
+      specifier: 28.0.3
+      version: 28.0.3
     '@types/multer':
       specifier: 2.1.0
       version: 2.1.0
@@ -396,7 +396,7 @@ importers:
         version: 24.0.4
       '@types/jsdom':
         specifier: 'catalog:'
-        version: 28.0.2
+        version: 28.0.3
       '@types/node':
         specifier: 'catalog:'
         version: 24.12.4
@@ -2120,8 +2120,8 @@ packages:
   '@types/js-yaml@4.0.9':
     resolution: {integrity: sha512-k4MGaQl5TGo/iipqb2UDG2UwjXziSWkh0uysQelTlJpX1qGlpUZYm8PnO4DxG1qBomtJUdYJ6qR6xdIah10JLg==}
 
-  '@types/jsdom@28.0.2':
-    resolution: {integrity: sha512-zZYItekplnGirFhVDrcB0+103TMakXfKfIp7uECxaFzFG3Ws5kYQSwVb1d4pQfJMMjQda6pfuZxueAv9CMiJbw==}
+  '@types/jsdom@28.0.3':
+    resolution: {integrity: sha512-/HQ2uFoetFTXuye8vzIcHw2z6Fwi7Hi/qcgC+RoS9NCyewiqxhVGqlG+ViGB6lkax481R6dmhf1I7lIGlzJStQ==}
 
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
@@ -8619,7 +8619,7 @@ snapshots:
 
   '@types/js-yaml@4.0.9': {}
 
-  '@types/jsdom@28.0.2':
+  '@types/jsdom@28.0.3':
     dependencies:
       '@types/node': 24.12.4
       '@types/tough-cookie': 4.0.5
@@ -8770,8 +8770,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@6.0.3)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.59.1(typescript@6.0.3)
-      '@typescript-eslint/types': 8.59.1
+      '@typescript-eslint/tsconfig-utils': 8.59.3(typescript@6.0.3)
+      '@typescript-eslint/types': 8.59.3
       debug: 4.4.3
       typescript: 6.0.3
     transitivePeerDependencies:
