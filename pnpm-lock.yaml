@@ -189,9 +189,6 @@ catalogs:
     vitest:
       specifier: 3.2.4
       version: 3.2.4
-    vm2:
-      specifier: ^3.10.5
-      version: 3.11.3
     vue:
       specifier: 3.5.34
       version: 3.5.34
@@ -292,7 +289,7 @@ importers:
         version: 0.3.29(pg@8.20.0)(ts-node@10.9.2(@swc/core@1.15.33)(@types/node@24.12.4)(typescript@6.0.3))
       vm2:
         specifier: 'catalog:'
-        version: 3.11.3
+        version: 3.11.5
     devDependencies:
       '@antfu/eslint-config':
         specifier: 'catalog:'
@@ -2703,8 +2700,8 @@ packages:
     resolution: {integrity: sha512-+Ut8d9LLqwEvHHJl1+PIHqoyDxFgVN847JTVM3Izi3xHDWPE4UtzzXysMZQs64DMcrJfBeS/uoEP4AD3HQHnQQ==}
     engines: {node: '>=12.0'}
 
-  agent-base@7.1.3:
-    resolution: {integrity: sha512-jRR5wdylq8CkOe6hei19GGZnxM6rBGwFl3Bg0YItGDimvjGtAvdZk4Pu6Cl4u4Igsws4a1fd1Vq3ezrhn4KmFw==}
+  agent-base@7.1.4:
+    resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
 
   agent-base@9.0.0:
@@ -6682,8 +6679,8 @@ packages:
       jsdom:
         optional: true
 
-  vm2@3.11.3:
-    resolution: {integrity: sha512-DO1TTKuOc+veL11VNOvJwRab80mghFKE40Av3bl6pdXs11bdiDMuR73owy+dS2EsTZEvRUeBkkBuDVRjV/RgEw==}
+  vm2@3.11.5:
+    resolution: {integrity: sha512-RSrkBiwrj6FRU+QdqNs6KG0XdlvJCjpQ4GXiqmMbrhmwfu5k/XIMpAer0L8f6iuf0uJ3a4T1xJN126Q8yf0VIA==}
     engines: {node: '>=6.0'}
     hasBin: true
 
@@ -8668,8 +8665,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@6.0.3)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.59.3(typescript@6.0.3)
-      '@typescript-eslint/types': 8.59.3
+      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@6.0.3)
+      '@typescript-eslint/types': 8.56.1
       debug: 4.4.3
       typescript: 6.0.3
     transitivePeerDependencies:
@@ -9273,7 +9270,7 @@ snapshots:
 
   acorn-walk@8.3.4:
     dependencies:
-      acorn: 8.16.0
+      acorn: 8.15.0
 
   acorn-walk@8.3.5:
     dependencies:
@@ -9285,7 +9282,7 @@ snapshots:
 
   adm-zip@0.5.17: {}
 
-  agent-base@7.1.3: {}
+  agent-base@7.1.4: {}
 
   agent-base@9.0.0: {}
 
@@ -10836,7 +10833,7 @@ snapshots:
 
   http-proxy-agent@7.0.2:
     dependencies:
-      agent-base: 7.1.3
+      agent-base: 7.1.4
       debug: 4.4.3
     transitivePeerDependencies:
       - supports-color
@@ -10850,7 +10847,7 @@ snapshots:
 
   https-proxy-agent@7.0.6:
     dependencies:
-      agent-base: 7.1.3
+      agent-base: 7.1.4
       debug: 4.4.3
     transitivePeerDependencies:
       - supports-color
@@ -13376,7 +13373,7 @@ snapshots:
       - tsx
       - yaml
 
-  vm2@3.11.3:
+  vm2@3.11.5:
     dependencies:
       acorn: 8.16.0
       acorn-walk: 8.3.5
