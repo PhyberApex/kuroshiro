@@ -5,12 +5,12 @@ catalog:
   '@antfu/eslint-config': 9.0.0
   '@mdi/js': 7.4.47
   '@nestjs/cli': 11.0.21
-  '@nestjs/common': 11.1.21
+  '@nestjs/common': 11.1.24
   '@nestjs/config': 4.0.4
-  '@nestjs/core': 11.1.21
-  '@nestjs/platform-express': 11.1.21
+  '@nestjs/core': 11.1.24
+  '@nestjs/platform-express': 11.1.24
   '@nestjs/serve-static': 5.0.5
-  '@nestjs/testing': 11.1.21
+  '@nestjs/testing': 11.1.24
   '@nestjs/typeorm': 11.0.1
   '@semantic-release/changelog': 6.0.3
   '@semantic-release/git': 10.0.1
