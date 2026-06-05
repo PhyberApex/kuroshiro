@@ -51,7 +51,7 @@ catalog:
   reflect-metadata: 0.2.2
   resize-observer-polyfill: 1.5.1
   rxjs: 7.8.2
-  start-server-and-test: 3.0.6
+  start-server-and-test: 3.0.7
   supertest: 7.2.2
   ts-loader: 9.6.0
   ts-node: 10.9.2
