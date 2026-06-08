@@ -199,8 +199,8 @@ catalogs:
       specifier: 5.1.0
       version: 5.1.0
     vue-tsc:
-      specifier: 3.3.3
-      version: 3.3.3
+      specifier: 3.3.4
+      version: 3.3.4
     vuetify:
       specifier: 4.0.8
       version: 4.0.8
@@ -447,7 +447,7 @@ importers:
         version: 3.2.6(@types/debug@4.1.12)(@types/node@24.13.0)(jiti@2.7.0)(jsdom@29.1.1(@noble/hashes@1.8.0))(lightningcss@1.32.0)(terser@5.39.2)(yaml@2.9.0)
       vue-tsc:
         specifier: 'catalog:'
-        version: 3.3.3(typescript@6.0.3)
+        version: 3.3.4(typescript@6.0.3)
 
 packages:
 
@@ -2405,8 +2405,8 @@ packages:
       typescript:
         optional: true
 
-  '@vue/language-core@3.3.3':
-    resolution: {integrity: sha512-X6p+7nfY7vVT6dQwUJ+v0Jfq/lwIfhL2jMi91dQ3ln4hnlGXlxsDu/FNkeyHYgvYtyQy18ZX76IZy7X4diDbiQ==}
+  '@vue/language-core@3.3.4':
+    resolution: {integrity: sha512-IuHqQ5zGGOE7CXP72VX6A42IVeIzYv4WAhO6arej11TRNqtdZfGyH8Yr2FOCaDX0dSQG+JwULLoFHGY1igYVjQ==}
 
   '@vue/reactivity@3.5.35':
     resolution: {integrity: sha512-tVc+SsHConvh/Lz64qq1pP3rYArBmK42xonovEcxY74SQtvctZodG/zhq54P5dr38cVuw25d27cPNRdlMidpGQ==}
@@ -6428,8 +6428,8 @@ packages:
       vite:
         optional: true
 
-  vue-tsc@3.3.3:
-    resolution: {integrity: sha512-SWUEG7YRUeDJHT7Xsuhf02elYX2gxPzzAII7OxDAh4KNOr4QHQ0Lls0YfnaO5GNd560CwVa2HTfdqmA5MqvRqQ==}
+  vue-tsc@3.3.4:
+    resolution: {integrity: sha512-XA/JqmQwS2GZmfgpjOEGdrKwaTSEuPwxpHa7/t6f4yiGrJb3gVHTPb9wBfByMNZwQ+xDXs41b8gaS2DKsOozUw==}
     hasBin: true
     peerDependencies:
       typescript: '>=5.0.0'
@@ -8640,7 +8640,7 @@ snapshots:
       '@babel/types': 7.29.0
       '@vue/babel-helper-vue-transform-on': 1.4.0
       '@vue/babel-plugin-resolve-type': 1.4.0(@babel/core@7.27.1)
-      '@vue/shared': 3.5.34
+      '@vue/shared': 3.5.35
     optionalDependencies:
       '@babel/core': 7.27.1
     transitivePeerDependencies:
@@ -8767,11 +8767,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@vue/language-core@3.3.3':
+  '@vue/language-core@3.3.4':
     dependencies:
       '@volar/language-core': 2.4.28
-      '@vue/compiler-dom': 3.5.34
-      '@vue/shared': 3.5.34
+      '@vue/compiler-dom': 3.5.35
+      '@vue/shared': 3.5.35
       alien-signals: 3.2.0
       muggle-string: 0.4.1
       path-browserify: 1.0.1
@@ -12909,10 +12909,10 @@ snapshots:
       pinia: 3.0.4(typescript@6.0.3)(vue@3.5.35(typescript@6.0.3))
       vite: 8.0.16(@types/node@24.13.0)(esbuild@0.27.0)(jiti@2.7.0)(terser@5.39.2)(yaml@2.9.0)
 
-  vue-tsc@3.3.3(typescript@6.0.3):
+  vue-tsc@3.3.4(typescript@6.0.3):
     dependencies:
       '@volar/typescript': 2.4.28
-      '@vue/language-core': 3.3.3
+      '@vue/language-core': 3.3.4
       typescript: 6.0.3
 
   vue@3.5.35(typescript@6.0.3):
