@@ -154,8 +154,8 @@ catalogs:
       specifier: 7.8.2
       version: 7.8.2
     start-server-and-test:
-      specifier: 3.0.7
-      version: 3.0.7
+      specifier: 3.0.8
+      version: 3.0.8
     supertest:
       specifier: 7.2.2
       version: 7.2.2
@@ -432,7 +432,7 @@ importers:
         version: 1.5.1
       start-server-and-test:
         specifier: 'catalog:'
-        version: 3.0.7
+        version: 3.0.8
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -5665,8 +5665,8 @@ packages:
   stackback@0.0.2:
     resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
 
-  start-server-and-test@3.0.7:
-    resolution: {integrity: sha512-bREV2smSYwybdmnkNUjzoL7WTolg+6MN7sXaZC2/JB7zZSUKmkcqQ3eaRX2yoL+ZnrUMk2FRHMwmmD9LPwKGzg==}
+  start-server-and-test@3.0.8:
+    resolution: {integrity: sha512-BG1tHNyEW/mPhw50DFPb0uKoq7f7yNQFO+CJb83MKZkCPKmWqb522YGMM3f4XG1Kra2v3xU3ou6O+s8taChM6A==}
     engines: {node: ^22 || >=24}
     hasBin: true
 
@@ -12169,7 +12169,7 @@ snapshots:
 
   stackback@0.0.2: {}
 
-  start-server-and-test@3.0.7:
+  start-server-and-test@3.0.8:
     dependencies:
       arg: 5.0.2
       check-more-types: 2.24.0
