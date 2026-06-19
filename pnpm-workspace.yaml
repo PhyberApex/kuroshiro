@@ -45,7 +45,7 @@ catalog:
   multer: ^2.1.1
   node-cron: ^4.2.1
   npm-run-all2: 9.0.2
-  pg: 8.21.0
+  pg: 8.22.0
   pinia: 3.0.4
   puppeteer: 25.1.0
   reflect-metadata: 0.2.2

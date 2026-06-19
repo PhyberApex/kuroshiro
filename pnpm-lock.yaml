@@ -129,12 +129,15 @@ catalogs:
     multer:
       specifier: ^2.1.1
       version: 2.2.0
+    node-cron:
+      specifier: ^4.2.1
+      version: 4.4.1
     npm-run-all2:
       specifier: 9.0.2
       version: 9.0.2
     pg:
-      specifier: 8.21.0
-      version: 8.21.0
+      specifier: 8.22.0
+      version: 8.22.0
     pinia:
       specifier: 3.0.4
       version: 3.0.4
@@ -241,7 +244,7 @@ importers:
         version: 5.0.5(@nestjs/common@11.1.27(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.27)(express@5.2.1)
       '@nestjs/typeorm':
         specifier: 'catalog:'
-        version: 11.0.2(@nestjs/common@11.1.27(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.27)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@1.0.0(pg@8.21.0)(ts-node@10.9.2(@swc/core@1.15.41)(@types/node@24.13.2)(typescript@6.0.3)))
+        version: 11.0.2(@nestjs/common@11.1.27(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.27)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@1.0.0(pg@8.22.0)(ts-node@10.9.2(@swc/core@1.15.41)(@types/node@24.13.2)(typescript@6.0.3)))
       '@types/node-cron':
         specifier: 'catalog:'
         version: 3.0.11
@@ -274,7 +277,7 @@ importers:
         version: 4.4.1
       pg:
         specifier: 'catalog:'
-        version: 8.21.0
+        version: 8.22.0
       puppeteer:
         specifier: 'catalog:'
         version: 25.1.0
@@ -286,7 +289,7 @@ importers:
         version: 7.8.2
       typeorm:
         specifier: 'catalog:'
-        version: 1.0.0(pg@8.21.0)(ts-node@10.9.2(@swc/core@1.15.41)(@types/node@24.13.2)(typescript@6.0.3))
+        version: 1.0.0(pg@8.22.0)(ts-node@10.9.2(@swc/core@1.15.41)(@types/node@24.13.2)(typescript@6.0.3))
       vm2:
         specifier: 'catalog:'
         version: 3.11.5
@@ -5179,8 +5182,8 @@ packages:
   pg-cloudflare@1.4.0:
     resolution: {integrity: sha512-Vo7z/6rrQYxpNRylp4Tlob2elzbh+N/MOQbxFVWCxS7oEx6jF53GTJFxK2WWpKuBRkmiin4Mt+xofFDjx09R0A==}
 
-  pg-connection-string@2.13.0:
-    resolution: {integrity: sha512-EMnU9E2fSULdsbErBbMaXJvFeD9B4+nPcM3f+4lsiCR0BHLPrLVjv3DbyM2hgQQviKJaTWIRRTjKjWlHg3p2ig==}
+  pg-connection-string@2.14.0:
+    resolution: {integrity: sha512-XwWDGcLRGCXAR8F/AM5bG7Q+A3Wm2s6QeEjlOKZLlH3UYcguiqCWKyWXVag5TLTIjR7oOJUY8kcADaZgWPyLeg==}
 
   pg-int8@1.0.1:
     resolution: {integrity: sha512-WCtabS6t3c8SkpDBUlb1kjOs7l66xsGdKpIPZsg4wR+B3+u9UAum2odSsF9tnvxg80h4ZxLWMy4pRjOsFIqQpw==}
@@ -5191,15 +5194,15 @@ packages:
     peerDependencies:
       pg: '>=8.0'
 
-  pg-protocol@1.14.0:
-    resolution: {integrity: sha512-n5taZ1kO3s9ngDTVxsEznOqCyToTgz0FLuPq0B33COy5pPpuWJpY3/2oRBVETuOgzdqRXfWpM9HIhp2LBBT1BA==}
+  pg-protocol@1.15.0:
+    resolution: {integrity: sha512-cq9sECI5s0+uPUXjbz8ioyPJni6RzsRib0US67i5IoTZKw8fNeYlVE7u8F4dG7vEJJtc5wdD1K189lCCUwqWTQ==}
 
   pg-types@2.2.0:
     resolution: {integrity: sha512-qTAAlrEsl8s4OiEQY69wDvcMIdQN6wdz5ojQiOy6YRMuynxenON0O5oCpJI6lshc6scgAY8qvJ2On/p+CXY0GA==}
     engines: {node: '>=4'}
 
-  pg@8.21.0:
-    resolution: {integrity: sha512-AUP1EYJuHraQGsVoCQVIcM7TEJVGtDzxWtGFZd8rds9d+CCXlU5Js1rYgfLNvxy9iJrpHjGrRjoi/3BT9fRyiA==}
+  pg@8.22.0:
+    resolution: {integrity: sha512-8wih1vVIBMxoUM2oB4soJsD9tDnDpLv4OXBJ+EJzFsvycD+lfyIreC2gGHq78f8jbLLt+bvlPTFdFZfJkOuzAA==}
     engines: {node: '>= 16.0.0'}
     peerDependencies:
       pg-native: '>=3.0.1'
@@ -7623,13 +7626,13 @@ snapshots:
     optionalDependencies:
       '@nestjs/platform-express': 11.1.27(@nestjs/common@11.1.27(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.27)
 
-  '@nestjs/typeorm@11.0.2(@nestjs/common@11.1.27(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.27)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@1.0.0(pg@8.21.0)(ts-node@10.9.2(@swc/core@1.15.41)(@types/node@24.13.2)(typescript@6.0.3)))':
+  '@nestjs/typeorm@11.0.2(@nestjs/common@11.1.27(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.27)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@1.0.0(pg@8.22.0)(ts-node@10.9.2(@swc/core@1.15.41)(@types/node@24.13.2)(typescript@6.0.3)))':
     dependencies:
       '@nestjs/common': 11.1.27(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/core': 11.1.27(@nestjs/common@11.1.27(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@11.1.27)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       reflect-metadata: 0.2.2
       rxjs: 7.8.2
-      typeorm: 1.0.0(pg@8.21.0)(ts-node@10.9.2(@swc/core@1.15.41)(@types/node@24.13.2)(typescript@6.0.3))
+      typeorm: 1.0.0(pg@8.22.0)(ts-node@10.9.2(@swc/core@1.15.41)(@types/node@24.13.2)(typescript@6.0.3))
 
   '@noble/hashes@1.8.0': {}
 
@@ -8309,8 +8312,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@6.0.3)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@6.0.3)
-      '@typescript-eslint/types': 8.56.1
+      '@typescript-eslint/tsconfig-utils': 8.60.1(typescript@6.0.3)
+      '@typescript-eslint/types': 8.60.1
       debug: 4.4.3
       typescript: 6.0.3
     transitivePeerDependencies:
@@ -11633,15 +11636,15 @@ snapshots:
   pg-cloudflare@1.4.0:
     optional: true
 
-  pg-connection-string@2.13.0: {}
+  pg-connection-string@2.14.0: {}
 
   pg-int8@1.0.1: {}
 
-  pg-pool@3.14.0(pg@8.21.0):
+  pg-pool@3.14.0(pg@8.22.0):
     dependencies:
-      pg: 8.21.0
+      pg: 8.22.0
 
-  pg-protocol@1.14.0: {}
+  pg-protocol@1.15.0: {}
 
   pg-types@2.2.0:
     dependencies:
@@ -11651,11 +11654,11 @@ snapshots:
       postgres-date: 1.0.7
       postgres-interval: 1.2.0
 
-  pg@8.21.0:
+  pg@8.22.0:
     dependencies:
-      pg-connection-string: 2.13.0
-      pg-pool: 3.14.0(pg@8.21.0)
-      pg-protocol: 1.14.0
+      pg-connection-string: 2.14.0
+      pg-pool: 3.14.0(pg@8.22.0)
+      pg-protocol: 1.15.0
       pg-types: 2.2.0
       pgpass: 1.0.5
     optionalDependencies:
@@ -12606,7 +12609,7 @@ snapshots:
 
   typedarray@0.0.6: {}
 
-  typeorm@1.0.0(pg@8.21.0)(ts-node@10.9.2(@swc/core@1.15.41)(@types/node@24.13.2)(typescript@6.0.3)):
+  typeorm@1.0.0(pg@8.22.0)(ts-node@10.9.2(@swc/core@1.15.41)(@types/node@24.13.2)(typescript@6.0.3)):
     dependencies:
       '@sqltools/formatter': 1.2.5
       ansis: 4.2.0
@@ -12619,7 +12622,7 @@ snapshots:
       tslib: 2.8.1
       yargs: 18.0.0
     optionalDependencies:
-      pg: 8.21.0
+      pg: 8.22.0
       ts-node: 10.9.2(@swc/core@1.15.41)(@types/node@24.13.2)(typescript@6.0.3)
     transitivePeerDependencies:
       - babel-plugin-macros
