@@ -2,7 +2,7 @@
   "name": "kuroshiro-api",
   "version": "0.9.3",
   "private": true,
-  "packageManager": "pnpm@10.34.3",
+  "packageManager": "pnpm@10.34.4",
   "scripts": {
     "build": "tsup src/main.ts && pnpm run build:migrations",
     "build:migrations": "tsc -p tsconfig.migrations.json",
