@@ -39,7 +39,7 @@ catalog:
   eslint: 10.5.0
   fs-extra: 11.3.5
   jiti: 2.7.0
-  js-yaml: ^4.1.1
+  js-yaml: ^5.0.0
   jsdom: 29.1.1
   liquidjs: ^10.25.5
   multer: ^2.1.1
