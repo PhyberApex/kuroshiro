@@ -117,9 +117,6 @@ catalogs:
     jiti:
       specifier: 2.7.0
       version: 2.7.0
-    js-yaml:
-      specifier: ^5.0.0
-      version: 5.0.0
     jsdom:
       specifier: 29.1.1
       version: 29.1.1
@@ -262,7 +259,7 @@ importers:
         version: 11.3.5
       js-yaml:
         specifier: 'catalog:'
-        version: 5.0.0
+        version: 5.1.0
       liquidjs:
         specifier: 'catalog:'
         version: 10.27.1
@@ -4156,8 +4153,8 @@ packages:
     resolution: {integrity: sha512-ePWsvanv0DWuDRsW8dnt+R4jQ31SCRCQ7hhNcPXZPsoBZiemuZNYGf7adZdqX2D86j6rvKp3RpCxVTSb8WQlOw==}
     hasBin: true
 
-  js-yaml@5.0.0:
-    resolution: {integrity: sha512-GSvaPUbk1U+FMZ7rJzF+F8e5YVtu7KnD40et/5rBXXRBv2jCO9L3qCewvIDDdudC0QycTFlf6EAA+h3kxBsuUw==}
+  js-yaml@5.1.0:
+    resolution: {integrity: sha512-s8VA5jkR8f22S3NAXmhKPFqGUduqZGlsufabVOgN14iTdw/RXcym7bKkbwjxLK9Yw2lEvvmJjFp119+KPeo8Kg==}
     hasBin: true
 
   jsdoc-type-pratt-parser@7.1.1:
@@ -10592,7 +10589,7 @@ snapshots:
     dependencies:
       argparse: 2.0.1
 
-  js-yaml@5.0.0:
+  js-yaml@5.1.0:
     dependencies:
       argparse: 2.0.1
 
