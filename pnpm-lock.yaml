@@ -117,9 +117,6 @@ catalogs:
     jiti:
       specifier: 2.7.0
       version: 2.7.0
-    js-yaml:
-      specifier: ^5.0.0
-      version: 5.1.0
     jsdom:
       specifier: 29.1.1
       version: 29.1.1
@@ -265,7 +262,7 @@ importers:
         version: 11.3.5
       js-yaml:
         specifier: 'catalog:'
-        version: 5.1.0
+        version: 5.2.0
       liquidjs:
         specifier: 'catalog:'
         version: 10.27.1
@@ -4166,8 +4163,8 @@ packages:
     resolution: {integrity: sha512-ePWsvanv0DWuDRsW8dnt+R4jQ31SCRCQ7hhNcPXZPsoBZiemuZNYGf7adZdqX2D86j6rvKp3RpCxVTSb8WQlOw==}
     hasBin: true
 
-  js-yaml@5.1.0:
-    resolution: {integrity: sha512-s8VA5jkR8f22S3NAXmhKPFqGUduqZGlsufabVOgN14iTdw/RXcym7bKkbwjxLK9Yw2lEvvmJjFp119+KPeo8Kg==}
+  js-yaml@5.2.0:
+    resolution: {integrity: sha512-YeLUMlvR4Ou1B119LIaM0r65JvbOBooJDc9yEu0dClb/uSC5P4FrLU8OCCz/HXWvtPoIrR0dRzABTjo1sTN9Bw==}
     hasBin: true
 
   jsdoc-type-pratt-parser@7.1.1:
@@ -8302,8 +8299,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@6.0.3)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.62.0(typescript@6.0.3)
-      '@typescript-eslint/types': 8.62.0
+      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@6.0.3)
+      '@typescript-eslint/types': 8.56.1
       debug: 4.4.3
       typescript: 6.0.3
     transitivePeerDependencies:
@@ -10604,7 +10601,7 @@ snapshots:
     dependencies:
       argparse: 2.0.1
 
-  js-yaml@5.1.0:
+  js-yaml@5.2.0:
     dependencies:
       argparse: 2.0.1
 
