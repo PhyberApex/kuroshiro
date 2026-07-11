@@ -13,8 +13,8 @@ catalogs:
       specifier: 7.4.47
       version: 7.4.47
     '@nestjs/cli':
-      specifier: 11.0.23
-      version: 11.0.23
+      specifier: 11.0.24
+      version: 11.0.24
     '@nestjs/common':
       specifier: 11.1.28
       version: 11.1.28
@@ -299,7 +299,7 @@ importers:
         version: 9.1.0(@typescript-eslint/rule-tester@8.63.0(eslint@10.7.0(jiti@2.7.0))(typescript@6.0.3))(@typescript-eslint/typescript-estree@8.63.0(typescript@6.0.3))(@typescript-eslint/utils@8.63.0(eslint@10.7.0(jiti@2.7.0))(typescript@6.0.3))(@vue/compiler-sfc@3.5.39)(eslint@10.7.0(jiti@2.7.0))(typescript@6.0.3)(vitest@3.2.7(@types/debug@4.1.13)(@types/node@24.13.3)(jiti@2.7.0)(jsdom@29.1.1(@noble/hashes@1.8.0))(lightningcss@1.32.0)(terser@5.49.0)(yaml@2.9.0))
       '@nestjs/cli':
         specifier: 'catalog:'
-        version: 11.0.23(@swc/core@1.15.43)(@types/node@24.13.3)(esbuild@0.27.7)(lightningcss@1.32.0)(postcss@8.5.16)
+        version: 11.0.24(@swc/core@1.15.43)(@types/node@24.13.3)(esbuild@0.27.7)(lightningcss@1.32.0)(postcss@8.5.16)
       '@nestjs/testing':
         specifier: 'catalog:'
         version: 11.1.28(@nestjs/common@11.1.28(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.28)(@nestjs/platform-express@11.1.28)
@@ -1433,8 +1433,8 @@ packages:
       '@emnapi/core': ^1.7.1
       '@emnapi/runtime': ^1.7.1
 
-  '@nestjs/cli@11.0.23':
-    resolution: {integrity: sha512-2V0Bf5jz0KXhUZk3eJi9GljIyqH04otwsE/mYLbqJR+X0iiYx+6bkNJ2Qz28uHNFj1cpHgimf9xDzHkqarie0g==}
+  '@nestjs/cli@11.0.24':
+    resolution: {integrity: sha512-aIHxQLSYtXShifA3zwWIeznEsZnNa3Iz2QRykFj+sl9IcbERBHr5nH87FRgywM+He3NxoF5WazHfR8FsmVeWxw==}
     engines: {node: '>= 20.11'}
     hasBin: true
     peerDependencies:
@@ -7454,7 +7454,7 @@ snapshots:
       '@tybys/wasm-util': 0.10.3
     optional: true
 
-  '@nestjs/cli@11.0.23(@swc/core@1.15.43)(@types/node@24.13.3)(esbuild@0.27.7)(lightningcss@1.32.0)(postcss@8.5.16)':
+  '@nestjs/cli@11.0.24(@swc/core@1.15.43)(@types/node@24.13.3)(esbuild@0.27.7)(lightningcss@1.32.0)(postcss@8.5.16)':
     dependencies:
       '@angular-devkit/core': 19.2.27(chokidar@4.0.3)
       '@angular-devkit/schematics': 19.2.27(chokidar@4.0.3)
