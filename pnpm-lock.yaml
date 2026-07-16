@@ -172,8 +172,8 @@ catalogs:
       specifier: 8.5.1
       version: 8.5.1
     typeorm:
-      specifier: 1.0.0
-      version: 1.0.0
+      specifier: 1.1.0
+      version: 1.1.0
     typescript:
       specifier: 6.0.3
       version: 6.0.3
@@ -244,7 +244,7 @@ importers:
         version: 5.0.5(@nestjs/common@11.1.28(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.28)(express@5.2.1)
       '@nestjs/typeorm':
         specifier: 'catalog:'
-        version: 11.0.3(@nestjs/common@11.1.28(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.28)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@1.0.0(pg@8.22.0)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@24.13.3)(typescript@6.0.3)))
+        version: 11.0.3(@nestjs/common@11.1.28(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.28)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@1.1.0(pg@8.22.0)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@24.13.3)(typescript@6.0.3)))
       '@types/node-cron':
         specifier: 'catalog:'
         version: 3.0.11
@@ -289,7 +289,7 @@ importers:
         version: 7.8.2
       typeorm:
         specifier: 'catalog:'
-        version: 1.0.0(pg@8.22.0)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@24.13.3)(typescript@6.0.3))
+        version: 1.1.0(pg@8.22.0)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@24.13.3)(typescript@6.0.3))
       vm2:
         specifier: 'catalog:'
         version: 3.11.5
@@ -5929,8 +5929,8 @@ packages:
   typedarray@0.0.6:
     resolution: {integrity: sha512-/aCDEGatGvZ2BIk+HmLf4ifCJFwvKFNb9/JeZPMulfgFracn9QFcAf5GO8B/mweUjSoblS5In0cWhqpfs/5PQA==}
 
-  typeorm@1.0.0:
-    resolution: {integrity: sha512-2mSKNqucP8vo+xQLP59xlHUcqLvG6qajxA7q7tnhJgeZjTrA6lK/Ar7LRyiAxdXhyXmGbIPsArPmcUB9Xg+M7w==}
+  typeorm@1.1.0:
+    resolution: {integrity: sha512-iX/kvsV42/htCNAQUyElGW87E4Z12neZc6YUFBTEu0BnLiREYDNT5Wfw3wRqZw9vyOEC36zUBAY6Qvywoig06Q==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24.11.0}
     hasBin: true
     peerDependencies:
@@ -5941,11 +5941,11 @@ packages:
       mongodb: ^7.0.0
       mssql: ^12.0.0
       mysql2: ^3.15.3
-      oracledb: ^6.3.0
+      oracledb: ^6.3.0 || ^7.0.0
       pg: ^8.5.1
       pg-native: ^3.0.0
       pg-query-stream: ^4.0.0
-      redis: ^5.0.0
+      redis: ^5.0.0 || ^6.0.0
       sql.js: ^1.4.0
       ts-node: ^10.9.2
       typeorm-aurora-data-api-driver: ^3.0.0
@@ -7570,13 +7570,13 @@ snapshots:
     optionalDependencies:
       '@nestjs/platform-express': 11.1.28(@nestjs/common@11.1.28(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.28)
 
-  '@nestjs/typeorm@11.0.3(@nestjs/common@11.1.28(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.28)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@1.0.0(pg@8.22.0)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@24.13.3)(typescript@6.0.3)))':
+  '@nestjs/typeorm@11.0.3(@nestjs/common@11.1.28(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.28)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@1.1.0(pg@8.22.0)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@24.13.3)(typescript@6.0.3)))':
     dependencies:
       '@nestjs/common': 11.1.28(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/core': 11.1.28(@nestjs/common@11.1.28(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@11.1.28)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       reflect-metadata: 0.2.2
       rxjs: 7.8.2
-      typeorm: 1.0.0(pg@8.22.0)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@24.13.3)(typescript@6.0.3))
+      typeorm: 1.1.0(pg@8.22.0)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@24.13.3)(typescript@6.0.3))
 
   '@noble/hashes@1.8.0': {}
 
@@ -12203,7 +12203,7 @@ snapshots:
 
   typedarray@0.0.6: {}
 
-  typeorm@1.0.0(pg@8.22.0)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@24.13.3)(typescript@6.0.3)):
+  typeorm@1.1.0(pg@8.22.0)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@24.13.3)(typescript@6.0.3)):
     dependencies:
       '@sqltools/formatter': 1.2.5
       ansis: 4.3.1
