@@ -46,7 +46,7 @@ catalog:
   node-cron: ^4.2.1
   npm-run-all2: 9.0.2
   pg: 8.22.0
-  pinia: 3.0.4
+  pinia: 4.0.2
   puppeteer: 25.3.0
   reflect-metadata: 0.2.2
   resize-observer-polyfill: 1.5.1
