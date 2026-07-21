@@ -125,6 +125,7 @@ describe('deviceDisplayService', () => {
     screenRepo.save.mockResolvedValue(nextScreen)
     configService.get.mockReturnValue('http://api')
     deviceRepo.save.mockResolvedValue(undefined)
+    fileExists.mockResolvedValue(true)
     const result = await service.getCurrentImage(headers as any)
     expect(result).toBeInstanceOf(Display)
     expect(result.filename).toBe(dynamicFilename)
@@ -358,7 +359,7 @@ describe('deviceDisplayService', () => {
       deviceRepo.findOneBy.mockResolvedValue(device)
       screenRepo.findOneBy.mockResolvedValue(activeScreen)
       configService.get.mockReturnValue('http://api')
-      fileExists.mockResolvedValueOnce(false).mockResolvedValueOnce(true)
+      fileExists.mockResolvedValue(false)
 
       const { downloadImage, convertToPng } = await import('../../utils/imageUtils')
 
@@ -389,10 +390,9 @@ describe('deviceDisplayService', () => {
       expect(result.image_url).toBe('http://api/screens/error.png')
     })
 
-    it('returns refreshed screen metadata after on-demand generation', async () => {
+    it('returns fresh generation metadata after on-demand generation', async () => {
       const device = { ...baseDevice, apikey: 'token', id: '1', width: 800, height: 480, mirrorEnabled: false }
       const staleDate = new Date('2026-01-01T00:00:00.000Z')
-      const freshDate = new Date('2026-07-21T00:00:00.000Z')
       const activeScreen = {
         id: 'screen1',
         filename: 'test.png',
@@ -403,15 +403,14 @@ describe('deviceDisplayService', () => {
       }
 
       deviceRepo.findOneBy.mockResolvedValue(device)
-      screenRepo.findOneBy
-        .mockResolvedValueOnce(activeScreen)
-        .mockResolvedValueOnce({ ...activeScreen, generatedAt: freshDate })
+      screenRepo.findOneBy.mockResolvedValue(activeScreen)
       configService.get.mockReturnValue('http://api')
-      fileExists.mockResolvedValueOnce(false).mockResolvedValueOnce(true)
+      fileExists.mockResolvedValue(false)
 
       const result = await service.getCurrentImageWithoutProgressing(headers)
-      expect(result.rendered_at).toBe(freshDate)
-      expect(result.filename).toBe(`test.png_${freshDate.toISOString()}`)
+      expect(result.rendered_at).not.toBe(staleDate)
+      expect(result.rendered_at).toBe(activeScreen.generatedAt)
+      expect(result.filename).toBe(`test.png_${activeScreen.generatedAt.toISOString()}`)
     })
   })
 
@@ -496,6 +495,7 @@ describe('deviceDisplayService', () => {
       screenRepo.update.mockResolvedValue(undefined)
       screenRepo.save.mockResolvedValue(nextScreen)
       configService.get.mockReturnValue('http://api')
+      fileExists.mockResolvedValue(true)
 
       const result = await service.getCurrentImage({ ...headers, width: 800, height: 480 } as any)
 
