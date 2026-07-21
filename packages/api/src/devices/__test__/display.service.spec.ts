@@ -358,7 +358,7 @@ describe('deviceDisplayService', () => {
       deviceRepo.findOneBy.mockResolvedValue(device)
       screenRepo.findOneBy.mockResolvedValue(activeScreen)
       configService.get.mockReturnValue('http://api')
-      fileExists.mockResolvedValue(false)
+      fileExists.mockResolvedValueOnce(false).mockResolvedValueOnce(true)
 
       const { downloadImage, convertToPng } = await import('../../utils/imageUtils')
 
@@ -367,6 +367,51 @@ describe('deviceDisplayService', () => {
       expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('screen1.png'), 800, 480, expect.any(Object))
       expect(result).toBeInstanceOf(DisplayScreen)
       expect(result.image_url).toBe('http://api/screens/devices/1/screen1.png')
+    })
+
+    it('returns error image if the screen image is missing and cannot be regenerated', async () => {
+      const device = { ...baseDevice, apikey: 'token', id: '1', mirrorEnabled: false }
+      const activeScreen = {
+        id: 'screen1',
+        type: 'file',
+        filename: 'test.png',
+        generatedAt: new Date(),
+        isActive: true,
+      }
+
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      screenRepo.findOneBy.mockResolvedValue(activeScreen)
+      configService.get.mockReturnValue('http://api')
+      fileExists.mockResolvedValue(false)
+
+      const result = await service.getCurrentImageWithoutProgressing(headers)
+      expect(result).toBeInstanceOf(DisplayScreen)
+      expect(result.image_url).toBe('http://api/screens/error.png')
+    })
+
+    it('returns refreshed screen metadata after on-demand generation', async () => {
+      const device = { ...baseDevice, apikey: 'token', id: '1', width: 800, height: 480, mirrorEnabled: false }
+      const staleDate = new Date('2026-01-01T00:00:00.000Z')
+      const freshDate = new Date('2026-07-21T00:00:00.000Z')
+      const activeScreen = {
+        id: 'screen1',
+        filename: 'test.png',
+        generatedAt: staleDate,
+        isActive: true,
+        externalLink: 'http://example.com/image.jpg',
+        fetchManual: false,
+      }
+
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      screenRepo.findOneBy
+        .mockResolvedValueOnce(activeScreen)
+        .mockResolvedValueOnce({ ...activeScreen, generatedAt: freshDate })
+      configService.get.mockReturnValue('http://api')
+      fileExists.mockResolvedValueOnce(false).mockResolvedValueOnce(true)
+
+      const result = await service.getCurrentImageWithoutProgressing(headers)
+      expect(result.rendered_at).toBe(freshDate)
+      expect(result.filename).toBe(`test.png_${freshDate.toISOString()}`)
     })
   })
 

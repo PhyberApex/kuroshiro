@@ -19,6 +19,16 @@ import { Device } from './devices.entity'
 import { Display } from './display'
 import { DisplayScreen } from './displayScreen'
 
+interface TrmnlScreenResponse {
+  filename: string
+  image_url: string
+  refresh_rate?: number
+  firmware_url?: string
+  reset_firmware?: boolean
+  special_function?: string
+  update_firmware?: boolean
+}
+
 @Injectable()
 export class DeviceDisplayService {
   private readonly logger = new Logger(DeviceDisplayService.name)
@@ -138,16 +148,7 @@ export class DeviceDisplayService {
       let specialFunction = device.specialFunction
       let updateFirmware = false
       try {
-        const mirrorHeaders = proxy
-          ? { ...headers, 'ID': device.mirrorMac, 'access-token': device.mirrorApikey }
-          : { 'access-token': device.mirrorApikey, 'ID': device.mirrorMac }
-        this.logger.debug(`Sending headers: ${JSON.stringify(mirrorHeaders)}`)
-        const res = await fetch(`https://usetrmnl.com/api/${proxy ? 'display' : 'current_screen'}`, {
-          headers: mirrorHeaders,
-        })
-        const response = await res.json()
-        this.logger.debug(`Got this from TRMNL ${JSON.stringify(response)}`)
-        const localImage = await this.downloadMirrorImage(device, response)
+        const { response, localImageUrl: localImage } = await this.fetchAndStoreMirrorImage(device, proxy ? headers : undefined)
 
         refreshRate = proxy ? response.refresh_rate : refreshRate
         firmwareUrl = proxy ? response.firmware_url : firmwareUrl
@@ -185,7 +186,7 @@ export class DeviceDisplayService {
       this.logger.warn(`Invalid API key for device: ${headers.id}`)
       throw new UnauthorizedException('Invalid API key')
     }
-    const activeScreen = await this.screenRepository.findOneBy({ device, isActive: true })
+    let activeScreen = await this.screenRepository.findOneBy({ device, isActive: true })
     if (!activeScreen && !device.mirrorEnabled) {
       this.logger.log('No screen found returning default no screen image')
       return new DisplayScreen({
@@ -205,12 +206,8 @@ export class DeviceDisplayService {
       else {
         this.logger.log(`Mirror image missing on disk, fetching from TRMNL on demand`)
         try {
-          const res = await fetch(`https://usetrmnl.com/api/current_screen`, {
-            headers: { 'access-token': device.mirrorApikey, 'ID': device.mirrorMac },
-          })
-          const response = await res.json()
-          this.logger.debug(`Got this from TRMNL ${JSON.stringify(response)}`)
-          imgUrl = await this.downloadMirrorImage(device, response)
+          const { localImageUrl } = await this.fetchAndStoreMirrorImage(device)
+          imgUrl = localImageUrl
         }
         catch (err) {
           this.logger.error(`Failed to fetch mirror image on demand: ${err.message}`)
@@ -219,12 +216,18 @@ export class DeviceDisplayService {
     }
     else {
       this.logger.log(`Returning screen ${activeScreen.id} for device ${device.id}`)
-      if (await fileExists(resolveAppPath('public', 'screens', 'devices', device.id, `${activeScreen.id}.png`))) {
+      const screenImagePath = resolveAppPath('public', 'screens', 'devices', device.id, `${activeScreen.id}.png`)
+      if (await fileExists(screenImagePath)) {
         imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${activeScreen.id}.png`
       }
       else {
         this.logger.log(`Screen image for ${activeScreen.id} missing on disk, generating on demand`)
         imgUrl = await this.generateScreenImage(activeScreen, device)
+        activeScreen = await this.screenRepository.findOneBy({ id: activeScreen.id }) ?? activeScreen
+        if (!await fileExists(screenImagePath)) {
+          this.logger.warn(`Screen image for ${activeScreen.id} could not be generated on demand, returning error image`)
+          imgUrl = `${this.configService.get<string>('api_url')}/screens/error.png`
+        }
       }
     }
     return new DisplayScreen({
@@ -235,18 +238,28 @@ export class DeviceDisplayService {
     })
   }
 
-  private async downloadMirrorImage(device: Device, trmnlResponse: { filename: string, image_url: string }): Promise<string> {
+  private async fetchAndStoreMirrorImage(device: Device, proxyHeaders?: DisplayRequestHeadersDto): Promise<{ response: TrmnlScreenResponse, localImageUrl: string }> {
+    const mirrorHeaders = proxyHeaders
+      ? { ...proxyHeaders, 'ID': device.mirrorMac, 'access-token': device.mirrorApikey }
+      : { 'access-token': device.mirrorApikey, 'ID': device.mirrorMac }
+    this.logger.debug(`Sending headers: ${JSON.stringify(mirrorHeaders)}`)
+    const res = await fetch(`https://usetrmnl.com/api/${proxyHeaders ? 'display' : 'current_screen'}`, {
+      headers: mirrorHeaders,
+    })
+    const response: TrmnlScreenResponse = await res.json()
+    this.logger.debug(`Got this from TRMNL ${JSON.stringify(response)}`)
+
     const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
-    const inputPath = path.join(destDir, trmnlResponse.filename)
+    const inputPath = path.join(destDir, response.filename)
     const pngFilename = 'mirror.png'
     const outputPath = path.join(destDir, pngFilename)
 
-    await downloadImage(trmnlResponse.image_url, inputPath, this.logger)
+    await downloadImage(response.image_url, inputPath, this.logger)
     await convertToPng(inputPath, outputPath, device.width, device.height, this.logger)
     await fs.promises.unlink(inputPath)
     this.logger.log(`Deleted original image: ${inputPath}`)
 
-    return `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${pngFilename}`
+    return { response, localImageUrl: `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${pngFilename}` }
   }
 
   private async generateScreenImage(screen: Screen, device: Device): Promise<string> {
