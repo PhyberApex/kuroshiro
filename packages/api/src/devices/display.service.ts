@@ -1,4 +1,5 @@
 import type { MashupRendererService } from '../mashup/services/mashup-renderer.service'
+import type { Plugin } from '../plugins/entities/plugin.entity'
 import type { DisplayRequestHeadersDto } from './dto/display-request-headers.dto'
 import buffer from 'node:buffer'
 import * as fs from 'node:fs'
@@ -18,6 +19,16 @@ import { resolveAppPath } from '../utils/pathHelper'
 import { Device } from './devices.entity'
 import { Display } from './display'
 import { DisplayScreen } from './displayScreen'
+
+interface TrmnlScreenResponse {
+  filename: string
+  image_url: string
+  refresh_rate?: number
+  firmware_url?: string
+  reset_firmware?: boolean
+  special_function?: string
+  update_firmware?: boolean
+}
 
 @Injectable()
 export class DeviceDisplayService {
@@ -108,225 +119,8 @@ export class DeviceDisplayService {
       await this.screenRepository.save(nextScreen)
       this.logger.log(`Returning screen ${nextScreen.id} for device ${device.id}`)
 
-      let imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${nextScreen.id}.png`
+      const imgUrl = await this.generateScreenImage(nextScreen, device)
 
-      // Handle mashup screen
-      if (nextScreen.type === 'mashup') {
-        try {
-          const screenWithMashup = await this.screenRepository.findOne({
-            where: { id: nextScreen.id },
-            relations: [
-              'mashupConfiguration',
-              'mashupConfiguration.slots',
-              'mashupConfiguration.slots.plugin',
-              'mashupConfiguration.slots.plugin.dataSource',
-              'mashupConfiguration.slots.plugin.templates',
-            ],
-          })
-
-          if (screenWithMashup?.mashupConfiguration && this.mashupRenderer) {
-            let renderedHtml: string
-
-            // Use cached output if available
-            if (screenWithMashup.cachedPluginOutput) {
-              this.logger.log(`Using cached mashup output for screen ${nextScreen.id}`)
-              renderedHtml = screenWithMashup.cachedPluginOutput
-            }
-            else {
-              // Render mashup on-demand
-              this.logger.log(`Rendering mashup ${screenWithMashup.mashupConfiguration.id} for screen ${nextScreen.id}`)
-              renderedHtml = await this.mashupRenderer.renderMashup(screenWithMashup.mashupConfiguration, device)
-
-              // Cache for next time
-              await this.screenRepository.update(
-                { id: nextScreen.id },
-                { cachedPluginOutput: renderedHtml, generatedAt: new Date() },
-              )
-            }
-
-            // Convert HTML to PNG using puppeteer
-            const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-web-security'] })
-            const page = await browser.newPage()
-            await page.setViewport({ width: 800, height: 480 })
-            await page.setContent(renderedHtml, { waitUntil: 'load' })
-            const image: Uint8Array = await page.screenshot()
-            await browser.close()
-
-            const imgBuffer = buffer.Buffer.from(image)
-            const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
-            const inputPath = path.join(destDir, 'tmp-source')
-            await fs.promises.mkdir(path.dirname(inputPath), { recursive: true })
-            await fs.promises.writeFile(inputPath, imgBuffer)
-            const outputPath = path.join(destDir, `${nextScreen.id}.png`)
-            await convertToPng(inputPath, outputPath, device.width, device.height, this.logger)
-            imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${nextScreen.id}.png`
-          }
-        }
-        catch (err) {
-          this.logger.error(`Failed to render mashup: ${err.message}`)
-          imgUrl = `${this.configService.get<string>('api_url')}/screens/error.png`
-        }
-      }
-      // Handle plugin screen
-      else {
-        // Load plugin relationship if needed
-        const screenWithPlugin = await this.screenRepository.findOne({
-          where: { id: nextScreen.id },
-          relations: ['plugin', 'plugin.dataSource', 'plugin.templates'],
-        })
-
-        if (screenWithPlugin?.plugin) {
-          const plugin = screenWithPlugin.plugin
-
-          // Use cached output if available
-          if (screenWithPlugin.cachedPluginOutput) {
-            try {
-              this.logger.log(`Using cached plugin output for plugin ${plugin.id}, screen ${nextScreen.id}`)
-              const renderedHtml = screenWithPlugin.cachedPluginOutput
-              const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-web-security'] })
-              const page = await browser.newPage()
-              await page.setViewport({ width: 800, height: 480 })
-              await page.setContent(renderedHtml, { waitUntil: 'load' })
-              const image: Uint8Array = await page.screenshot()
-              await browser.close()
-              const imgBuffer = buffer.Buffer.from(image)
-              const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
-              const inputPath = path.join(destDir, 'tmp-source')
-              await fs.promises.mkdir(path.dirname(inputPath), { recursive: true })
-              await fs.promises.writeFile(inputPath, imgBuffer)
-              const outputPath = path.join(destDir, `${nextScreen.id}.png`)
-              await convertToPng(inputPath, outputPath, device.width, device.height, this.logger)
-              imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${nextScreen.id}.png`
-            }
-            catch (err) {
-              this.logger.error(`Failed to render cached plugin output: ${err.message}`)
-              imgUrl = `${this.configService.get<string>('api_url')}/screens/error.png`
-            }
-          }
-          // Fallback: fetch and render on-demand
-          else if (plugin.dataSource && plugin.templates && plugin.templates.length > 0) {
-            try {
-              this.logger.log(`No cache, rendering plugin ${plugin.id} on-demand for screen ${nextScreen.id}`)
-
-              // Build template context with trmnl system variables
-              const templateContext: any = {
-                trmnl: {
-                  system: {
-                    timestamp_utc: Math.floor(Date.now() / 1000),
-                  },
-                  plugin_settings: {
-                    instance_name: plugin.name,
-                    strategy: 'polling',
-                    dark_mode: 'no',
-                    no_screen_padding: 'no',
-                  },
-                  user: {
-                    id: 'kuroshiro-user',
-                    locale: 'en',
-                  },
-                },
-              }
-
-              // TODO: Add plugin field values to context when we have device-specific values
-
-              let data = await this.pluginDataFetcher.fetchData(
-                plugin.dataSource.method,
-                plugin.dataSource.url,
-                plugin.dataSource.headers,
-                plugin.dataSource.body,
-                templateContext,
-              )
-
-              // Apply transform if exists
-              if (plugin.dataSource.transformJs) {
-                this.logger.debug('Applying transform.js to fetched data')
-                data = this.pluginTransformer.transform(plugin.dataSource.transformJs, data)
-              }
-
-              const fullTemplate = plugin.templates.find(t => t.layout === 'full')
-              if (fullTemplate) {
-                const renderedHtml = await this.pluginRenderer.renderForDisplay(fullTemplate.liquidMarkup, data)
-
-                // Cache for next time
-                await this.screenRepository.update(
-                  { id: nextScreen.id },
-                  { cachedPluginOutput: renderedHtml, generatedAt: new Date() },
-                )
-
-                const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-web-security'] })
-                const page = await browser.newPage()
-                await page.setViewport({ width: 800, height: 480 })
-                await page.setContent(renderedHtml, { waitUntil: 'load' })
-                const image: Uint8Array = await page.screenshot()
-                await browser.close()
-                const imgBuffer = buffer.Buffer.from(image)
-                const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
-                const inputPath = path.join(destDir, 'tmp-source')
-                await fs.promises.mkdir(path.dirname(inputPath), { recursive: true })
-                await fs.promises.writeFile(inputPath, imgBuffer)
-                const outputPath = path.join(destDir, `${nextScreen.id}.png`)
-                await convertToPng(inputPath, outputPath, device.width, device.height, this.logger)
-                imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${nextScreen.id}.png`
-              }
-            }
-            catch (err) {
-              this.logger.error(`Failed to render plugin: ${err.message}`)
-              imgUrl = `${this.configService.get<string>('api_url')}/screens/error.png`
-            }
-          }
-        }
-        // Handle HTML screen
-        else if (nextScreen.html) {
-          const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-web-security'] })
-          const page = await browser.newPage()
-          await page.setViewport({ width: 800, height: 480 })
-          const content = `
-    <html>
-      <head>
-        <link rel="stylesheet" href="https://usetrmnl.com/css/latest/plugins.css">
-        <script src="https://usetrmnl.com/js/latest/plugins.js"></script>
-      </head>
-      <body class="environment trmnl">
-        <div class="screen">
-          <div class="view view--full">
-            ${nextScreen.html}
-          </div>
-        </div>
-      </body>
-    </html>
-  `
-          await page.setContent(content, { waitUntil: 'load' })
-          const image: Uint8Array = await page.screenshot()
-          const imgBuffer = buffer.Buffer.from(image)
-          const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
-          const inputPath = path.join(destDir, 'tmp-source')
-          await fs.promises.mkdir(path.dirname(inputPath), { recursive: true })
-          await fs.promises.writeFile(inputPath, imgBuffer)
-          const outputPath = path.join(destDir, `${nextScreen.id}.png`)
-          await convertToPng(inputPath, outputPath, device.width, device.height, this.logger)
-          imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${nextScreen.id}.png`
-        }
-      }
-      // Handle external link screen
-      if (nextScreen.externalLink && !nextScreen.fetchManual) {
-        const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
-        const inputPath = path.join(destDir, 'tmp-source')
-        const pngFilename = `${nextScreen.id}.png`
-        const outputPath = path.join(destDir, pngFilename)
-        try {
-          await downloadImage(nextScreen.externalLink, inputPath, this.logger)
-          await convertToPng(inputPath, outputPath, device.width, device.height, this.logger)
-          this.logger.log('Updating generation date on screen')
-          nextScreen.generatedAt = new Date()
-          await this.screenRepository.save(nextScreen)
-          this.logger.log('Download and conversion successful')
-          imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${pngFilename}`
-        }
-        catch (err) {
-          this.logger.error(`Failed to process image: ${err.message}`)
-          imgUrl = `${this.configService.get<string>('api_url')}/screens/error.png`
-        }
-      }
       return new Display({
         filename: `${nextScreen.filename}_${nextScreen.generatedAt.toISOString()}`,
         firmware_url: '',
@@ -355,31 +149,14 @@ export class DeviceDisplayService {
       let specialFunction = device.specialFunction
       let updateFirmware = false
       try {
-        const mirrorHeaders = proxy
-          ? { ...headers, 'ID': device.mirrorMac, 'access-token': device.mirrorApikey }
-          : { 'access-token': device.mirrorApikey, 'ID': device.mirrorMac }
-        this.logger.debug(`Sending headers: ${JSON.stringify(mirrorHeaders)}`)
-        const res = await fetch(`https://usetrmnl.com/api/${proxy ? 'display' : 'current_screen'}`, {
-          headers: mirrorHeaders,
-        })
-        const response = await res.json()
-        this.logger.debug(`Got this from TRMNL ${JSON.stringify(response)}`)
-        const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
-        const inputPath = path.join(destDir, response.filename)
-        const pngFilename = 'mirror.png'
-        const outputPath = path.join(destDir, pngFilename)
-
-        await downloadImage(response.image_url, inputPath, this.logger)
-        await convertToPng(inputPath, outputPath, device.width, device.height, this.logger)
-        await fs.promises.unlink(inputPath)
-        this.logger.log(`Deleted original image: ${inputPath}`)
+        const { response, localImageUrl: localImage } = await this.fetchAndStoreMirrorImage(device, proxy ? headers : undefined)
 
         refreshRate = proxy ? response.refresh_rate : refreshRate
         firmwareUrl = proxy ? response.firmware_url : firmwareUrl
         resetFirmware = proxy ? response.reset_firmware : resetFirmware
         specialFunction = proxy ? response.special_function : specialFunction
         updateFirmware = proxy ? response.update_firmware : updateFirmware
-        localImageUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${pngFilename}`
+        localImageUrl = localImage
         filename = response.filename
       }
       catch (err) {
@@ -427,10 +204,26 @@ export class DeviceDisplayService {
         this.logger.log(`Image found returning`)
         imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/mirror.png`
       }
+      else {
+        this.logger.log(`Mirror image missing on disk, fetching from TRMNL on demand`)
+        try {
+          const { localImageUrl } = await this.fetchAndStoreMirrorImage(device)
+          imgUrl = localImageUrl
+        }
+        catch (err) {
+          this.logger.error(`Failed to fetch mirror image on demand: ${err.message}`)
+        }
+      }
     }
     else {
       this.logger.log(`Returning screen ${activeScreen.id} for device ${device.id}`)
-      imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${activeScreen.id}.png`
+      if (await fileExists(this.screenImagePath(device, activeScreen))) {
+        imgUrl = this.screenImageUrl(device, activeScreen)
+      }
+      else {
+        this.logger.log(`Screen image for ${activeScreen.id} missing on disk, generating on demand`)
+        imgUrl = await this.generateScreenImage(activeScreen, device)
+      }
     }
     return new DisplayScreen({
       filename: device.mirrorEnabled ? `mirror_${new Date().toISOString()}` : `${activeScreen.filename}_${activeScreen.generatedAt.toISOString()}`,
@@ -438,5 +231,237 @@ export class DeviceDisplayService {
       refresh_rate: device.refreshRate,
       rendered_at: device.mirrorEnabled ? undefined : activeScreen.generatedAt,
     })
+  }
+
+  private async fetchAndStoreMirrorImage(device: Device, proxyHeaders?: DisplayRequestHeadersDto): Promise<{ response: TrmnlScreenResponse, localImageUrl: string }> {
+    const mirrorHeaders = proxyHeaders
+      ? { ...proxyHeaders, 'ID': device.mirrorMac, 'access-token': device.mirrorApikey }
+      : { 'access-token': device.mirrorApikey, 'ID': device.mirrorMac }
+    this.logger.debug(`Sending headers: ${JSON.stringify(mirrorHeaders)}`)
+    const res = await fetch(`https://usetrmnl.com/api/${proxyHeaders ? 'display' : 'current_screen'}`, {
+      headers: mirrorHeaders,
+    })
+    const response: TrmnlScreenResponse = await res.json()
+    this.logger.debug(`Got this from TRMNL ${JSON.stringify(response)}`)
+
+    const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
+    const inputPath = path.join(destDir, response.filename)
+    const pngFilename = 'mirror.png'
+    const outputPath = path.join(destDir, pngFilename)
+
+    await downloadImage(response.image_url, inputPath, this.logger)
+    await convertToPng(inputPath, outputPath, device.width, device.height, this.logger)
+    await fs.promises.unlink(inputPath)
+    this.logger.log(`Deleted original image: ${inputPath}`)
+
+    return { response, localImageUrl: `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${pngFilename}` }
+  }
+
+  private async generateScreenImage(screen: Screen, device: Device): Promise<string> {
+    let imgUrl: string | null = null
+
+    // Handle mashup screen
+    if (screen.type === 'mashup') {
+      try {
+        const screenWithMashup = await this.screenRepository.findOne({
+          where: { id: screen.id },
+          relations: [
+            'mashupConfiguration',
+            'mashupConfiguration.slots',
+            'mashupConfiguration.slots.plugin',
+            'mashupConfiguration.slots.plugin.dataSource',
+            'mashupConfiguration.slots.plugin.templates',
+          ],
+        })
+
+        if (screenWithMashup?.mashupConfiguration && this.mashupRenderer) {
+          let renderedHtml: string
+
+          // Use cached output if available
+          if (screenWithMashup.cachedPluginOutput) {
+            this.logger.log(`Using cached mashup output for screen ${screen.id}`)
+            renderedHtml = screenWithMashup.cachedPluginOutput
+          }
+          else {
+            this.logger.log(`Rendering mashup ${screenWithMashup.mashupConfiguration.id} for screen ${screen.id}`)
+            renderedHtml = await this.mashupRenderer.renderMashup(screenWithMashup.mashupConfiguration, device)
+            await this.cachePluginOutput(screen, renderedHtml)
+          }
+
+          imgUrl = await this.renderHtmlToScreenPng(renderedHtml, screen, device)
+        }
+      }
+      catch (err) {
+        this.logger.error(`Failed to render mashup: ${err.message}`)
+        imgUrl = this.errorImageUrl()
+      }
+    }
+    // Handle plugin screen
+    else {
+      // Load plugin relationship if needed
+      const screenWithPlugin = await this.screenRepository.findOne({
+        where: { id: screen.id },
+        relations: ['plugin', 'plugin.dataSource', 'plugin.templates'],
+      })
+
+      if (screenWithPlugin?.plugin) {
+        const plugin = screenWithPlugin.plugin
+
+        // Use cached output if available
+        if (screenWithPlugin.cachedPluginOutput) {
+          try {
+            this.logger.log(`Using cached plugin output for plugin ${plugin.id}, screen ${screen.id}`)
+            imgUrl = await this.renderHtmlToScreenPng(screenWithPlugin.cachedPluginOutput, screen, device)
+          }
+          catch (err) {
+            this.logger.error(`Failed to render cached plugin output: ${err.message}`)
+            imgUrl = this.errorImageUrl()
+          }
+        }
+        // Fallback: fetch and render on-demand
+        else if (plugin.dataSource && plugin.templates && plugin.templates.length > 0) {
+          try {
+            const renderedHtml = await this.renderPluginHtml(plugin, screen)
+            if (renderedHtml)
+              imgUrl = await this.renderHtmlToScreenPng(renderedHtml, screen, device)
+          }
+          catch (err) {
+            this.logger.error(`Failed to render plugin: ${err.message}`)
+            imgUrl = this.errorImageUrl()
+          }
+        }
+      }
+      // Handle HTML screen
+      else if (screen.html) {
+        imgUrl = await this.renderHtmlToScreenPng(this.wrapInTrmnlShell(screen.html), screen, device)
+      }
+    }
+    // Handle external link screen
+    if (screen.externalLink && !screen.fetchManual) {
+      const inputPath = path.join(resolveAppPath('public', 'screens', 'devices', device.id), 'tmp-source')
+      try {
+        await downloadImage(screen.externalLink, inputPath, this.logger)
+        await convertToPng(inputPath, this.screenImagePath(device, screen), device.width, device.height, this.logger)
+        this.logger.log('Updating generation date on screen')
+        screen.generatedAt = new Date()
+        await this.screenRepository.save(screen)
+        this.logger.log('Download and conversion successful')
+        imgUrl = this.screenImageUrl(device, screen)
+      }
+      catch (err) {
+        this.logger.error(`Failed to process image: ${err.message}`)
+        imgUrl = this.errorImageUrl()
+      }
+    }
+    if (imgUrl !== null)
+      return imgUrl
+
+    // No rendering source (e.g. uploaded file screens) — serve the stored image if present
+    return await fileExists(this.screenImagePath(device, screen))
+      ? this.screenImageUrl(device, screen)
+      : this.errorImageUrl()
+  }
+
+  private async renderPluginHtml(plugin: Plugin, screen: Screen): Promise<string | null> {
+    this.logger.log(`No cache, rendering plugin ${plugin.id} on-demand for screen ${screen.id}`)
+
+    // Build template context with trmnl system variables
+    const templateContext: any = {
+      trmnl: {
+        system: {
+          timestamp_utc: Math.floor(Date.now() / 1000),
+        },
+        plugin_settings: {
+          instance_name: plugin.name,
+          strategy: 'polling',
+          dark_mode: 'no',
+          no_screen_padding: 'no',
+        },
+        user: {
+          id: 'kuroshiro-user',
+          locale: 'en',
+        },
+      },
+    }
+
+    // TODO: Add plugin field values to context when we have device-specific values
+
+    let data = await this.pluginDataFetcher.fetchData(
+      plugin.dataSource.method,
+      plugin.dataSource.url,
+      plugin.dataSource.headers,
+      plugin.dataSource.body,
+      templateContext,
+    )
+
+    // Apply transform if exists
+    if (plugin.dataSource.transformJs) {
+      this.logger.debug('Applying transform.js to fetched data')
+      data = this.pluginTransformer.transform(plugin.dataSource.transformJs, data)
+    }
+
+    const fullTemplate = plugin.templates.find(t => t.layout === 'full')
+    if (!fullTemplate)
+      return null
+
+    const renderedHtml = await this.pluginRenderer.renderForDisplay(fullTemplate.liquidMarkup, data)
+    await this.cachePluginOutput(screen, renderedHtml)
+    return renderedHtml
+  }
+
+  private async renderHtmlToScreenPng(html: string, screen: Screen, device: Device): Promise<string> {
+    const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-web-security'] })
+    try {
+      const page = await browser.newPage()
+      await page.setViewport({ width: 800, height: 480 })
+      await page.setContent(html, { waitUntil: 'load' })
+      const image: Uint8Array = await page.screenshot()
+
+      const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
+      const inputPath = path.join(destDir, 'tmp-source')
+      await fs.promises.mkdir(destDir, { recursive: true })
+      await fs.promises.writeFile(inputPath, buffer.Buffer.from(image))
+      await convertToPng(inputPath, this.screenImagePath(device, screen), device.width, device.height, this.logger)
+      return this.screenImageUrl(device, screen)
+    }
+    finally {
+      await browser.close()
+    }
+  }
+
+  private wrapInTrmnlShell(html: string): string {
+    return `
+    <html>
+      <head>
+        <link rel="stylesheet" href="https://usetrmnl.com/css/latest/plugins.css">
+        <script src="https://usetrmnl.com/js/latest/plugins.js"></script>
+      </head>
+      <body class="environment trmnl">
+        <div class="screen">
+          <div class="view view--full">
+            ${html}
+          </div>
+        </div>
+      </body>
+    </html>
+  `
+  }
+
+  private async cachePluginOutput(screen: Screen, renderedHtml: string): Promise<void> {
+    const generatedAt = new Date()
+    await this.screenRepository.update({ id: screen.id }, { cachedPluginOutput: renderedHtml, generatedAt })
+    screen.generatedAt = generatedAt
+  }
+
+  private screenImagePath(device: Device, screen: Screen): string {
+    return resolveAppPath('public', 'screens', 'devices', device.id, `${screen.id}.png`)
+  }
+
+  private screenImageUrl(device: Device, screen: Screen): string {
+    return `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${screen.id}.png`
+  }
+
+  private errorImageUrl(): string {
+    return `${this.configService.get<string>('api_url')}/screens/error.png`
   }
 }
