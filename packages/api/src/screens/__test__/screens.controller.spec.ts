@@ -13,6 +13,7 @@ function createMockService() {
     getByDevice: vi.fn(),
     delete: vi.fn(),
     updateExternalScreen: vi.fn(),
+    reorder: vi.fn(),
   }
 }
 
@@ -63,5 +64,13 @@ describe('screensController (unit)', () => {
     service.updateExternalScreen.mockResolvedValue(undefined)
     await expect(controller.updateExternalScreen('1')).resolves.toBeUndefined()
     expect(service.updateExternalScreen).toHaveBeenCalledWith('1')
+  })
+
+  it('reorder calls service with device id and screen ids', async () => {
+    const screens = [{ id: '2' } as Screen, { id: '1' } as Screen]
+    service.reorder.mockResolvedValue(screens)
+    const result = await controller.reorder('dev', { screenIds: ['2', '1'] })
+    expect(service.reorder).toHaveBeenCalledWith('dev', ['2', '1'])
+    expect(result).toBe(screens)
   })
 })

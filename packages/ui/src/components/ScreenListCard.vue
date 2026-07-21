@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { Screen } from '@/types'
-import { mdiDelete, mdiEye, mdiOpenInNew, mdiRefresh } from '@mdi/js'
+import { mdiChevronDown, mdiChevronUp, mdiDelete, mdiDrag, mdiEye, mdiOpenInNew, mdiRefresh } from '@mdi/js'
 import { computed, nextTick, ref, useTemplateRef } from 'vue'
-import { VAlert, VBtn, VCard, VCardActions, VCardText, VCardTitle, VChip, VDialog, VDivider, VOverlay, VSpacer, VTable, VTooltip } from 'vuetify/components'
+import { VAlert, VBtn, VCard, VCardActions, VCardText, VCardTitle, VChip, VDialog, VDivider, VIcon, VOverlay, VSpacer, VTable, VTooltip } from 'vuetify/components'
 import { useDeviceStore } from '@/stores/device.ts'
 import { useScreensStore } from '@/stores/screens'
 
@@ -21,6 +21,65 @@ async function updateExternalImage(screenId: string) {
   if (!device.value)
     return
   await screensStore.updateExternalScreen(device.value.id, screenId)
+}
+
+const isReordering = ref(false)
+const reorderError = ref<string | null>(null)
+const draggingIndex = ref<number | null>(null)
+const dragOverIndex = ref<number | null>(null)
+
+async function persistOrder(orderedIds: string[]) {
+  if (!device.value)
+    return
+  isReordering.value = true
+  reorderError.value = null
+  try {
+    await screensStore.reorderScreens(device.value.id, orderedIds)
+  }
+  catch {
+    reorderError.value = 'Failed to save the new screen order. The list has been reloaded.'
+  }
+  finally {
+    isReordering.value = false
+  }
+}
+
+function onDragStart(index: number) {
+  draggingIndex.value = index
+}
+
+function onDragEnter(index: number) {
+  dragOverIndex.value = index
+}
+
+function onDragEnd() {
+  draggingIndex.value = null
+  dragOverIndex.value = null
+}
+
+function currentScreenIds() {
+  return screensStore.screens.map(screen => screen.id)
+}
+
+function onDrop(targetIndex: number) {
+  const sourceIndex = draggingIndex.value
+  draggingIndex.value = null
+  dragOverIndex.value = null
+  if (sourceIndex === null || sourceIndex === targetIndex)
+    return
+  const orderedIds = currentScreenIds()
+  const [movedId] = orderedIds.splice(sourceIndex, 1)
+  orderedIds.splice(targetIndex, 0, movedId)
+  persistOrder(orderedIds)
+}
+
+function moveScreen(index: number, direction: -1 | 1) {
+  const targetIndex = index + direction
+  if (targetIndex < 0 || targetIndex >= screensStore.screens.length)
+    return
+  const orderedIds = currentScreenIds()
+  ;[orderedIds[index], orderedIds[targetIndex]] = [orderedIds[targetIndex], orderedIds[index]]
+  persistOrder(orderedIds)
 }
 const showHtmlPreview = ref(false)
 const showScreenPreview = ref(false)
@@ -68,14 +127,31 @@ function previewScreen(screen: Screen) {
 <template>
   <template v-if="device">
     <VCard elevation="1" class="mb-6">
-      <VCardTitle>Screens</VCardTitle>
+      <VCardTitle class="d-flex align-center">
+        Screens
+        <VChip v-if="isReordering" size="small" color="info" variant="tonal" class="ml-3" data-test-id="reorder-saving-indicator">
+          Saving order…
+        </VChip>
+      </VCardTitle>
       <VDivider />
       <VCardText>
+        <VAlert
+          v-if="reorderError"
+          type="error"
+          variant="tonal"
+          class="mb-4"
+          closable
+          data-test-id="reorder-error-alert"
+          @click:close="reorderError = null"
+        >
+          {{ reorderError }}
+        </VAlert>
         <template v-if="screensStore.screens.length">
           <div class="overflow-x-auto">
             <VTable density="comfortable" data-test-id="screen-table">
               <thead>
                 <tr>
+                  <th>Order</th>
                   <th>Type</th>
                   <th>Filename</th>
                   <th>Status</th>
@@ -85,7 +161,44 @@ function previewScreen(screen: Screen) {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="screen in screensStore.screens" :key="screen.id">
+                <tr
+                  v-for="(screen, index) in screensStore.screens"
+                  :key="screen.id"
+                  :draggable="!isReordering"
+                  :class="{ 'bg-grey-lighten-3': dragOverIndex === index && draggingIndex !== null && draggingIndex !== index }"
+                  :data-test-id="`screen-row-${screen.id}`"
+                  @dragstart="onDragStart(index)"
+                  @dragover.prevent="onDragEnter(index)"
+                  @drop="onDrop(index)"
+                  @dragend="onDragEnd"
+                >
+                  <td>
+                    <div class="d-flex align-center">
+                      <VIcon :icon="mdiDrag" class="mr-1 cursor-grab" aria-hidden="true" />
+                      <div class="d-flex flex-column">
+                        <VBtn
+                          size="x-small"
+                          variant="text"
+                          density="compact"
+                          :icon="mdiChevronUp"
+                          :disabled="isReordering || index === 0"
+                          aria-label="Move screen up"
+                          :data-test-id="`screen-move-up-${screen.id}`"
+                          @click="moveScreen(index, -1)"
+                        />
+                        <VBtn
+                          size="x-small"
+                          variant="text"
+                          density="compact"
+                          :icon="mdiChevronDown"
+                          :disabled="isReordering || index === screensStore.screens.length - 1"
+                          aria-label="Move screen down"
+                          :data-test-id="`screen-move-down-${screen.id}`"
+                          @click="moveScreen(index, 1)"
+                        />
+                      </div>
+                    </div>
+                  </td>
                   <td>
                     <VChip
                       :color="screen.type === 'mashup' ? 'orange' : screen.plugin ? 'purple' : screen.externalLink ? 'info' : 'primary'"

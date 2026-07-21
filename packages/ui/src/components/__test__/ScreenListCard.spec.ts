@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import rop from 'resize-observer-polyfill'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -48,6 +48,7 @@ describe('screenListCard', () => {
       screens: [],
       deleteScreen: vi.fn(),
       updateExternalScreen: vi.fn(),
+      reorderScreens: vi.fn(),
     }
   })
 
@@ -134,6 +135,111 @@ describe('screenListCard', () => {
     expect((wrapper.vm as any).selectedPreviewScreen.cachedPluginOutput).toBe(cachedHtml)
 
     wrapper.unmount()
+  })
+
+  it('moving a screen down with the button calls reorderScreens with the swapped id order', async () => {
+    screensStoreMock.screens = [
+      { id: 'screen1', filename: 'file1', externalLink: null, isActive: true, device: 'device1', fetchManual: false, html: '' },
+      { id: 'screen2', filename: 'file2', externalLink: null, isActive: false, device: 'device1', fetchManual: false, html: '' },
+    ]
+    screensStoreMock.reorderScreens.mockResolvedValue(undefined)
+    const wrapper = mount(ScreenListCard, {
+      props: { deviceId: 'device1' },
+      global: {
+        plugins: [createPinia(), vuetify],
+      },
+    })
+
+    await wrapper.find('[data-test-id="screen-move-down-screen1"]').trigger('click')
+
+    expect(screensStoreMock.reorderScreens).toHaveBeenCalledWith('device1', ['screen2', 'screen1'])
+  })
+
+  it('the up button is disabled for the first row and the down button for the last row', () => {
+    screensStoreMock.screens = [
+      { id: 'screen1', filename: 'file1', externalLink: null, isActive: true, device: 'device1', fetchManual: false, html: '' },
+      { id: 'screen2', filename: 'file2', externalLink: null, isActive: false, device: 'device1', fetchManual: false, html: '' },
+    ]
+    const wrapper = mount(ScreenListCard, {
+      props: { deviceId: 'device1' },
+      global: {
+        plugins: [createPinia(), vuetify],
+      },
+    })
+
+    expect(wrapper.find('[data-test-id="screen-move-up-screen1"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[data-test-id="screen-move-down-screen2"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[data-test-id="screen-move-down-screen1"]').attributes('disabled')).toBeUndefined()
+    expect(wrapper.find('[data-test-id="screen-move-up-screen2"]').attributes('disabled')).toBeUndefined()
+  })
+
+  it('shows a saving indicator and disables the move buttons while a reorder request is in flight', async () => {
+    screensStoreMock.screens = [
+      { id: 'screen1', filename: 'file1', externalLink: null, isActive: true, device: 'device1', fetchManual: false, html: '' },
+      { id: 'screen2', filename: 'file2', externalLink: null, isActive: false, device: 'device1', fetchManual: false, html: '' },
+    ]
+    let resolveReorder: () => void = () => {}
+    screensStoreMock.reorderScreens.mockReturnValue(new Promise<void>((resolve) => {
+      resolveReorder = resolve
+    }))
+    const wrapper = mount(ScreenListCard, {
+      props: { deviceId: 'device1' },
+      global: {
+        plugins: [createPinia(), vuetify],
+      },
+    })
+
+    expect(wrapper.find('[data-test-id="reorder-saving-indicator"]').exists()).toBe(false)
+
+    await wrapper.find('[data-test-id="screen-move-down-screen1"]').trigger('click')
+    expect(wrapper.find('[data-test-id="reorder-saving-indicator"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test-id="screen-move-up-screen2"]').attributes('disabled')).toBeDefined()
+
+    resolveReorder()
+    await flushPromises()
+
+    expect(wrapper.find('[data-test-id="reorder-saving-indicator"]').exists()).toBe(false)
+  })
+
+  it('shows an error alert when the reorder request fails', async () => {
+    screensStoreMock.screens = [
+      { id: 'screen1', filename: 'file1', externalLink: null, isActive: true, device: 'device1', fetchManual: false, html: '' },
+      { id: 'screen2', filename: 'file2', externalLink: null, isActive: false, device: 'device1', fetchManual: false, html: '' },
+    ]
+    screensStoreMock.reorderScreens.mockRejectedValue(new Error('Failed to reorder screens'))
+    const wrapper = mount(ScreenListCard, {
+      props: { deviceId: 'device1' },
+      global: {
+        plugins: [createPinia(), vuetify],
+      },
+    })
+
+    await wrapper.find('[data-test-id="screen-move-down-screen1"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-test-id="reorder-error-alert"]').exists()).toBe(true)
+  })
+
+  it('reorders via drag and drop and calls reorderScreens with the new order', async () => {
+    screensStoreMock.screens = [
+      { id: 'screen1', filename: 'file1', externalLink: null, isActive: true, device: 'device1', fetchManual: false, html: '' },
+      { id: 'screen2', filename: 'file2', externalLink: null, isActive: false, device: 'device1', fetchManual: false, html: '' },
+    ]
+    screensStoreMock.reorderScreens.mockResolvedValue(undefined)
+    const wrapper = mount(ScreenListCard, {
+      props: { deviceId: 'device1' },
+      global: {
+        plugins: [createPinia(), vuetify],
+      },
+    })
+
+    const firstRow = wrapper.find('[data-test-id="screen-row-screen1"]')
+    const secondRow = wrapper.find('[data-test-id="screen-row-screen2"]')
+    await firstRow.trigger('dragstart')
+    await secondRow.trigger('dragover')
+    await secondRow.trigger('drop')
+
+    expect(screensStoreMock.reorderScreens).toHaveBeenCalledWith('device1', ['screen2', 'screen1'])
   })
 
   it('shows info alert when mashup has no cached output', async () => {
