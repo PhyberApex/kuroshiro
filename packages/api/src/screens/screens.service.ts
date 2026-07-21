@@ -3,7 +3,7 @@ import * as path from 'node:path'
 import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { EntityManager, Repository } from 'typeorm'
 import { Device } from '../devices/devices.entity'
 import { convertToPng, downloadImage } from '../utils/imageUtils'
 import { resolveAppPath } from '../utils/pathHelper'
@@ -135,15 +135,56 @@ export class ScreensService {
     }
     await this.screensRepository.delete(id)
     this.logger.log(`Screen deleted: ${id}`)
-    // Reindex order for remaining screens
+    // Reindex order for remaining screens, closing the gap left by the deleted screen
     const screens = await this.screensRepository.find({ where: { device: { id: deviceId } }, order: { order: 'ASC' } })
+    await this.reindexScreens(screens)
+    this.logger.log(`Reindexed screen order for device ${deviceId}`)
+  }
+
+  async reorder(deviceId: string, screenIds: string[]): Promise<Screen[]> {
+    this.logger.log(`Reordering screens for device ${deviceId}`)
+    const device = await this.devicesRepository.findOne({ where: { id: deviceId } })
+    if (!device) {
+      this.logger.warn(`Device not found: ${deviceId}`)
+      throw new NotFoundException('Device not found')
+    }
+
+    const screens = await this.screensRepository.find({ where: { device: { id: deviceId } } })
+    const invalidPermutationMessage = 'screenIds must be an exact permutation of the device\'s current screens'
+    const uniqueIds = new Set(screenIds)
+    if (uniqueIds.size !== screenIds.length || screens.length !== screenIds.length) {
+      throw new BadRequestException(invalidPermutationMessage)
+    }
+
+    const screensById = new Map(screens.map(screen => [screen.id, screen]))
+    const orderedScreens = screenIds.map((screenId) => {
+      const screen = screensById.get(screenId)
+      if (!screen)
+        throw new BadRequestException(invalidPermutationMessage)
+      return screen
+    })
+
+    await this.screensRepository.manager.transaction(async (manager) => {
+      await this.reindexScreens(orderedScreens, manager)
+    })
+    this.logger.log(`Reordered screens for device ${deviceId}`)
+
+    return this.getByDevice(deviceId)
+  }
+
+  /**
+   * Assigns sequential order (1..N) to the given screens in the order they were passed,
+   * persisting only the screens whose order actually changed. Shared by the delete-reindex
+   * path (gap closing) and the reorder path (arbitrary new order).
+   */
+  private async reindexScreens(screens: Screen[], manager: EntityManager = this.screensRepository.manager): Promise<void> {
+    const repository = manager.getRepository(Screen)
     for (let i = 0; i < screens.length; i++) {
       if (screens[i].order !== i + 1) {
         screens[i].order = i + 1
-        await this.screensRepository.save(screens[i])
+        await repository.save(screens[i])
       }
     }
-    this.logger.log(`Reindexed screen order for device ${deviceId}`)
   }
 
   async updateExternalScreen(id: string) {

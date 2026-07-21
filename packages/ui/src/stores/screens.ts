@@ -75,5 +75,18 @@ export const useScreensStore = defineStore('screens', () => {
     }
   }
 
-  return { screens, currentScreen, fetchScreensForDevice, addScreen, addScreenFile, addScreenHtml, deleteScreen, updateExternalScreen, fetchCurrentScreenForDevice }
+  async function reorderScreens(deviceId: string, screenIds: string[]) {
+    const res = await fetch(`/api/screens/device/${deviceId}/reorder`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ screenIds }),
+    })
+    if (!res.ok) {
+      await fetchScreensForDevice(deviceId)
+      throw new Error('Failed to reorder screens')
+    }
+    screens.value = await res.json()
+  }
+
+  return { screens, currentScreen, fetchScreensForDevice, addScreen, addScreenFile, addScreenHtml, deleteScreen, updateExternalScreen, reorderScreens, fetchCurrentScreenForDevice }
 })

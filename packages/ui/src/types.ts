@@ -33,6 +33,7 @@ export interface Screen {
   devicePluginId?: string | null
   cachedPluginOutput?: string | null
   mashupConfiguration?: { id: string, layout: string }
+  order?: number
 }
 
 export interface CurrentScreen {

@@ -3,6 +3,7 @@ import type { CreateScreenDto } from '../dto/create-screen.dto'
 import type { Screen } from '../screens.entity'
 import buffer from 'node:buffer'
 import * as fs from 'node:fs'
+import { BadRequestException, NotFoundException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ScreensService } from '../screens.service'
@@ -13,7 +14,7 @@ vi.mock('../../utils/imageUtils', () => ({
 }))
 
 function createMockRepo() {
-  return {
+  const repo: any = {
     find: vi.fn(),
     findOne: vi.fn(),
     findOneBy: vi.fn(),
@@ -23,6 +24,11 @@ function createMockRepo() {
     remove: vi.fn(),
     delete: vi.fn(),
   }
+  repo.manager = {
+    getRepository: vi.fn(() => repo),
+    transaction: vi.fn(async (cb: (manager: any) => Promise<void>) => cb(repo.manager)),
+  }
+  return repo
 }
 
 describe('screensService', () => {
@@ -123,5 +129,69 @@ describe('screensService', () => {
   it('updateExternalScreen throws if not found', async () => {
     screensRepo.findOne.mockResolvedValue(null)
     await expect(service.updateExternalScreen('1')).rejects.toThrow()
+  })
+
+  it('reorder throws if device not found', async () => {
+    devicesRepo.findOne.mockResolvedValue(null)
+    await expect(service.reorder('dev', ['1', '2'])).rejects.toThrow(NotFoundException)
+  })
+
+  it('reorder reassigns order sequentially to match submitted array within a transaction', async () => {
+    const device = { id: 'dev' } as Device
+    devicesRepo.findOne.mockResolvedValue(device)
+    const screenA = { id: 'a', order: 1, device } as Screen
+    const screenB = { id: 'b', order: 2, device } as Screen
+    screensRepo.find
+      .mockResolvedValueOnce([screenA, screenB]) // fetch device screens
+      .mockResolvedValueOnce([screenB, screenA]) // getByDevice after reorder
+    screensRepo.save.mockResolvedValue(undefined)
+
+    const result = await service.reorder('dev', ['b', 'a'])
+
+    expect(screensRepo.manager.transaction).toHaveBeenCalled()
+    expect(screenB.order).toBe(1)
+    expect(screenA.order).toBe(2)
+    expect(screensRepo.save).toHaveBeenCalledWith(screenB)
+    expect(screensRepo.save).toHaveBeenCalledWith(screenA)
+    expect(result).toEqual([screenB, screenA])
+  })
+
+  it('reorder rejects payload with duplicate ids', async () => {
+    const device = { id: 'dev' } as Device
+    devicesRepo.findOne.mockResolvedValue(device)
+    const screenA = { id: 'a', order: 1, device } as Screen
+    const screenB = { id: 'b', order: 2, device } as Screen
+    screensRepo.find.mockResolvedValue([screenA, screenB])
+
+    await expect(service.reorder('dev', ['a', 'a'])).rejects.toThrow(BadRequestException)
+  })
+
+  it('reorder rejects payload missing a screen id', async () => {
+    const device = { id: 'dev' } as Device
+    devicesRepo.findOne.mockResolvedValue(device)
+    const screenA = { id: 'a', order: 1, device } as Screen
+    const screenB = { id: 'b', order: 2, device } as Screen
+    screensRepo.find.mockResolvedValue([screenA, screenB])
+
+    await expect(service.reorder('dev', ['a'])).rejects.toThrow(BadRequestException)
+  })
+
+  it('reorder rejects payload with a foreign screen id', async () => {
+    const device = { id: 'dev' } as Device
+    devicesRepo.findOne.mockResolvedValue(device)
+    const screenA = { id: 'a', order: 1, device } as Screen
+    const screenB = { id: 'b', order: 2, device } as Screen
+    screensRepo.find.mockResolvedValue([screenA, screenB])
+
+    await expect(service.reorder('dev', ['a', 'foreign-id'])).rejects.toThrow(BadRequestException)
+  })
+
+  it('reorder rejects payload with an extra screen id', async () => {
+    const device = { id: 'dev' } as Device
+    devicesRepo.findOne.mockResolvedValue(device)
+    const screenA = { id: 'a', order: 1, device } as Screen
+    screensRepo.find.mockResolvedValue([screenA])
+
+    await expect(service.reorder('dev', ['a', 'b'])).rejects.toThrow(BadRequestException)
   })
 })

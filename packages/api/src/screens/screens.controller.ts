@@ -5,6 +5,7 @@ import {
   Get,
   MethodNotAllowedException,
   Param,
+  Patch,
   Post,
   UploadedFile,
   UseInterceptors,
@@ -14,6 +15,7 @@ import {
 import { ConfigService } from '@nestjs/config'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { CreateScreenDto } from './dto/create-screen.dto'
+import { ReorderScreensDto } from './dto/reorder-screens.dto'
 import { Screen } from './screens.entity'
 import { ScreensService } from './screens.service'
 
@@ -38,6 +40,12 @@ export class ScreensController {
   @Get('device/:deviceId')
   async getByDevice(@Param('deviceId') deviceId: string): Promise<Screen[]> {
     return this.screensService.getByDevice(deviceId)
+  }
+
+  @Patch('device/:deviceId/reorder')
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  async reorder(@Param('deviceId') deviceId: string, @Body() body: ReorderScreensDto): Promise<Screen[]> {
+    return this.screensService.reorder(deviceId, body.screenIds)
   }
 
   @Delete(':id')
