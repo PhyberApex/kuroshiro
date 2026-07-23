@@ -112,8 +112,8 @@ catalogs:
       specifier: 10.7.0
       version: 10.7.0
     fs-extra:
-      specifier: 11.3.6
-      version: 11.3.6
+      specifier: 11.4.0
+      version: 11.4.0
     jiti:
       specifier: 2.7.0
       version: 2.7.0
@@ -262,7 +262,7 @@ importers:
         version: 17.4.2
       fs-extra:
         specifier: 'catalog:'
-        version: 11.3.6
+        version: 11.4.0
       js-yaml:
         specifier: 'catalog:'
         version: 5.2.1
@@ -3751,6 +3751,10 @@ packages:
 
   fs-extra@11.3.6:
     resolution: {integrity: sha512-w8ZNZr2mKIc7qeNaQ9AVPT1+iFaI+Avd4xudVOvdDJ8VytREi1Ft5Ih7hd9jjehod8vAM5GMsfQ/TpPf4EyoEA==}
+    engines: {node: '>=14.14'}
+
+  fs-extra@11.4.0:
+    resolution: {integrity: sha512-EQsFzMUJkCKGr1ePqlYADkIUmHW1s3ZXr5Yqy6wbGrfUCphpl2maM/kyOIRA2HpP3AaFQTZXD4ldjek+nccddA==}
     engines: {node: '>=14.14'}
 
   fs-monkey@1.1.0:
@@ -9957,6 +9961,12 @@ snapshots:
       universalify: 2.0.1
 
   fs-extra@11.3.6:
+    dependencies:
+      graceful-fs: 4.2.11
+      jsonfile: 6.2.1
+      universalify: 2.0.1
+
+  fs-extra@11.4.0:
     dependencies:
       graceful-fs: 4.2.11
       jsonfile: 6.2.1
