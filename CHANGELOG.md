@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.9.3...kuroshiro-v0.10.0) (2026-07-24)
+
+
+### Features
+
+* Add screen reordering endpoint and drag-and-drop UI ([#675](https://github.com/PhyberApex/kuroshiro/issues/675)) ([#676](https://github.com/PhyberApex/kuroshiro/issues/676)) ([c978a2c](https://github.com/PhyberApex/kuroshiro/commit/c978a2c482e7bcf343a0f04bc39de8dee18265e1))
+* Generate missing screen images on demand for current_screen ([#673](https://github.com/PhyberApex/kuroshiro/issues/673)) ([5c4f2c1](https://github.com/PhyberApex/kuroshiro/commit/5c4f2c1ac8ab7e1a97413fcb47781ec95f4f359c))
+
 ## [0.9.3](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.9.2...kuroshiro-v0.9.3) (2026-05-08)
 
 
