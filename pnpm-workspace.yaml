@@ -40,7 +40,7 @@ catalog:
   fs-extra: 11.4.0
   jiti: 2.7.0
   js-yaml: ^5.0.0
-  jsdom: 29.1.1
+  jsdom: 30.0.0
   liquidjs: ^10.25.5
   multer: ^2.1.1
   node-cron: ^4.2.1
