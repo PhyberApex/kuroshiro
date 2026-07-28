@@ -6,7 +6,6 @@ import { Test } from '@nestjs/testing'
 import { getRepositoryToken } from '@nestjs/typeorm'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Device } from '../../devices/devices.entity'
-import { DeviceDisplayService } from '../../devices/display.service'
 import { Plugin } from '../../plugins/entities/plugin.entity'
 import { PluginDataFetcherService } from '../../plugins/services/plugin-data-fetcher.service'
 import { PluginRendererService } from '../../plugins/services/plugin-renderer.service'
@@ -147,8 +146,6 @@ describe('mashup Integration Tests', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MashupService,
-        MashupRendererService,
-        DeviceDisplayService,
         {
           provide: getRepositoryToken(Device),
           useValue: deviceRepo,
