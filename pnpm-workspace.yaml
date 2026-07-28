@@ -1,6 +1,11 @@
 packages:
   - packages/*
 
+allowBuilds:
+  '@swc/core': true
+  esbuild: true
+  puppeteer: true
+
 catalog:
   '@antfu/eslint-config': 9.2.0
   '@mdi/js': 7.4.47
@@ -68,6 +73,10 @@ catalog:
   vue-router: 5.2.0
   vue-tsc: 3.3.8
   vuetify: 4.1.6
+
+minimumReleaseAgeExclude:
+  - puppeteer-core@25.4.0
+  - puppeteer@25.4.0
 
 onlyBuiltDependencies:
   - '@nestjs/core'
