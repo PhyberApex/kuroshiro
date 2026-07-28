@@ -2,8 +2,7 @@
 import type { CreateDevice } from '../stores/device'
 import { mdiDelete, mdiPlus, mdiSync } from '@mdi/js'
 import { computed, ref } from 'vue'
-import { VAlert, VBtn, VCard, VCardText, VCardTitle, VCol, VContainer, VDivider, VForm, VList, VListItem, VListItemSubtitle, VListItemTitle, VRow, VTextField } from 'vuetify/components'
-import { VIconBtn } from 'vuetify/labs/VIconBtn'
+import { VAlert, VBtn, VCard, VCardText, VCardTitle, VCol, VContainer, VDivider, VForm, VIconBtn, VList, VListItem, VListItemSubtitle, VListItemTitle, VRow, VTextField } from 'vuetify/components'
 import { getRandomMac, isValidMac } from '@/utils/getRandomMac'
 import { useDeviceStore } from '../stores/device'
 
