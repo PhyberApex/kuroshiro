@@ -26,7 +26,7 @@ catalog:
   '@types/adm-zip': ^0.5.8
   '@types/express': 5.0.6
   '@types/js-yaml': ^4.0.9
-  '@types/jsdom': 28.0.3
+  '@types/jsdom': 30.0.0
   '@types/multer': 2.2.0
   '@types/node': 24.13.3
   '@types/node-cron': ^3.0.11
