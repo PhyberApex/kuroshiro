@@ -125,7 +125,7 @@ catalogs:
       version: 30.0.1
     liquidjs:
       specifier: ^10.25.5
-      version: 10.28.0
+      version: 10.29.0
     multer:
       specifier: ^2.1.1
       version: 2.2.0
@@ -268,7 +268,7 @@ importers:
         version: 5.2.3
       liquidjs:
         specifier: 'catalog:'
-        version: 10.28.0
+        version: 10.29.0
       multer:
         specifier: 'catalog:'
         version: 2.2.0
@@ -4169,8 +4169,8 @@ packages:
     engines: {node: '>=22.22.1'}
     hasBin: true
 
-  liquidjs@10.28.0:
-    resolution: {integrity: sha512-b6tmBXYMQTuGPnM5vB0CuZMo5kvmKMtSB/gvUWP6RFn2pIB5s+bJkBfIyJnattkc5bgeAiflrZVptx3iaLLioQ==}
+  liquidjs@10.29.0:
+    resolution: {integrity: sha512-pCVOhs6FLAR8su3ItJ07diN26t6W5dHQRnmTMy8HPyTFuv1+oSCVJIGp5pGjfQyOZfh50KswvKtMTp6p4JEIdw==}
     engines: {node: '>=16'}
     hasBin: true
 
@@ -10244,7 +10244,7 @@ snapshots:
     optionalDependencies:
       yaml: 2.9.0
 
-  liquidjs@10.28.0:
+  liquidjs@10.29.0:
     dependencies:
       commander: 10.0.1
 
