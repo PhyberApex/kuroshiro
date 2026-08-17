@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.2](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.10.1...kuroshiro-v0.10.2) (2026-08-17)
+
+
+### Bug Fixes
+
+* **api:** pass device id instead of full entity to screen findOneBy ([#726](https://github.com/PhyberApex/kuroshiro/issues/726)) ([038af2b](https://github.com/PhyberApex/kuroshiro/commit/038af2bfdfa91d29ab00f8fbfc3a7dfcd1fc8a02))
+
 ## [0.10.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.10.0...kuroshiro-v0.10.1) (2026-08-17)
 
 
