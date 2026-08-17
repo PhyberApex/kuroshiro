@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.10.0...kuroshiro-v0.10.1) (2026-08-17)
+
+
+### Bug Fixes
+
+* **api:** migrate relations to TypeORM v1 object syntax ([#723](https://github.com/PhyberApex/kuroshiro/issues/723)) ([0b5823b](https://github.com/PhyberApex/kuroshiro/commit/0b5823b99dcf642c54a3804fa08b2cdca4fabb78)), closes [#722](https://github.com/PhyberApex/kuroshiro/issues/722)
+
 ## [0.10.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.9.3...kuroshiro-v0.10.0) (2026-08-17)
 
 
