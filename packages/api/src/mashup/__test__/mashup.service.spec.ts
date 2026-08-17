@@ -86,7 +86,7 @@ describe('mashupService', () => {
       const result = await service.create(dto)
 
       expect(result).toBe(screen)
-      expect(deviceRepo.findOne).toHaveBeenCalledWith({ where: { id: 'device-1' }, relations: ['screens'] })
+      expect(deviceRepo.findOne).toHaveBeenCalledWith({ where: { id: 'device-1' }, relations: { screens: true } })
       expect(pluginRepo.findOne).toHaveBeenCalledTimes(4)
       expect(screenRepo.create).toHaveBeenCalled()
       expect(mashupConfigRepo.create).toHaveBeenCalled()
@@ -241,7 +241,7 @@ describe('mashupService', () => {
       expect(result).toBe(config)
       expect(mashupConfigRepo.findOne).toHaveBeenCalledWith({
         where: { screen: { id: 'screen-1' } },
-        relations: ['slots', 'slots.plugin'],
+        relations: { slots: { plugin: true } },
       })
     })
 

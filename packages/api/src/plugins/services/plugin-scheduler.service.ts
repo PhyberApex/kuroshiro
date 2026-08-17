@@ -103,7 +103,7 @@ export class PluginSchedulerService {
     try {
       const mashupsWithPlugin = await this.mashupSlotRepository.find({
         where: { plugin: { id: pluginId } },
-        relations: ['mashupConfiguration', 'mashupConfiguration.screen'],
+        relations: { mashupConfiguration: { screen: true } },
       })
 
       for (const slot of mashupsWithPlugin) {

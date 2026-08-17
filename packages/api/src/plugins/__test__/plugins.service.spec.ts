@@ -89,7 +89,7 @@ describe('pluginsService', () => {
     pluginRepo.find.mockResolvedValue(plugins)
     const result = await service.findAll()
     expect(pluginRepo.find).toHaveBeenCalledWith({
-      relations: ['dataSource', 'templates', 'fields'],
+      relations: { dataSource: true, templates: true, fields: true },
       order: { name: 'ASC' },
     })
     expect(result).toBe(plugins)
@@ -100,7 +100,7 @@ describe('pluginsService', () => {
     const result = await service.findById('1')
     expect(pluginRepo.findOne).toHaveBeenCalledWith({
       where: { id: '1' },
-      relations: ['dataSource', 'templates', 'fields', 'deviceAssignments', 'deviceAssignments.device'],
+      relations: { dataSource: true, templates: true, fields: true, deviceAssignments: { device: true } },
     })
     expect(result).toBe(basePlugin)
   })
@@ -116,7 +116,7 @@ describe('pluginsService', () => {
     const result = await service.findByDevice('device-1')
     expect(devicePluginRepo.find).toHaveBeenCalledWith({
       where: { device: { id: 'device-1' } },
-      relations: ['plugin', 'plugin.dataSource', 'plugin.templates', 'plugin.fields'],
+      relations: { plugin: { dataSource: true, templates: true, fields: true } },
       order: { order: 'ASC' },
     })
     expect(result).toHaveLength(1)
@@ -131,7 +131,7 @@ describe('pluginsService', () => {
     expect(pluginRepo.save).toHaveBeenCalled()
     expect(pluginRepo.findOne).toHaveBeenCalledWith({
       where: { id: '1' },
-      relations: ['dataSource', 'templates', 'fields'],
+      relations: { dataSource: true, templates: true, fields: true },
     })
     expect(result).toBe(basePlugin)
   })
@@ -143,7 +143,7 @@ describe('pluginsService', () => {
     const result = await service.update('1', { name: 'Updated Weather' } as any)
     expect(pluginRepo.findOne).toHaveBeenCalledWith({
       where: { id: '1' },
-      relations: ['dataSource', 'templates', 'fields'],
+      relations: { dataSource: true, templates: true, fields: true },
     })
     expect(pluginRepo.save).toHaveBeenCalled()
     expect(result).toEqual(updated)
@@ -180,7 +180,7 @@ describe('pluginsService', () => {
     expect(result.inMashups).toEqual([])
     expect(mashupSlotRepo.find).toHaveBeenCalledWith({
       where: { plugin: { id: 'plugin-1' } },
-      relations: ['mashupConfiguration', 'mashupConfiguration.screen'],
+      relations: { mashupConfiguration: { screen: true } },
     })
   })
 

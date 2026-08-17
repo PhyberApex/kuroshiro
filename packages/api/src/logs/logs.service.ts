@@ -16,7 +16,7 @@ export class LogsService {
   ) {}
 
   async addLogToDevice(deviceMac: string, logs: CreateLogDto) {
-    const device = await this.devicesRepository.findOne({ where: { mac: deviceMac }, relations: ['logs'] })
+    const device = await this.devicesRepository.findOne({ where: { mac: deviceMac }, relations: { logs: true } })
     if (!device) {
       this.logger.warn(`Device not found: ${deviceMac}`)
       throw new NotFoundException('Device not found')

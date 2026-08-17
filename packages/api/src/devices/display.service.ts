@@ -265,13 +265,16 @@ export class DeviceDisplayService {
       try {
         const screenWithMashup = await this.screenRepository.findOne({
           where: { id: screen.id },
-          relations: [
-            'mashupConfiguration',
-            'mashupConfiguration.slots',
-            'mashupConfiguration.slots.plugin',
-            'mashupConfiguration.slots.plugin.dataSource',
-            'mashupConfiguration.slots.plugin.templates',
-          ],
+          relations: {
+            mashupConfiguration: {
+              slots: {
+                plugin: {
+                  dataSource: true,
+                  templates: true,
+                },
+              },
+            },
+          },
         })
 
         if (screenWithMashup?.mashupConfiguration && this.mashupRenderer) {
@@ -301,7 +304,7 @@ export class DeviceDisplayService {
       // Load plugin relationship if needed
       const screenWithPlugin = await this.screenRepository.findOne({
         where: { id: screen.id },
-        relations: ['plugin', 'plugin.dataSource', 'plugin.templates'],
+        relations: { plugin: { dataSource: true, templates: true } },
       })
 
       if (screenWithPlugin?.plugin) {

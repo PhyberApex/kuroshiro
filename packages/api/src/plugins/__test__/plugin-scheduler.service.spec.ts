@@ -179,7 +179,7 @@ describe('pluginSchedulerService', () => {
 
     expect(mockMashupSlotRepo.find).toHaveBeenCalledWith({
       where: { plugin: { id: 'plugin-1' } },
-      relations: ['mashupConfiguration', 'mashupConfiguration.screen'],
+      relations: { mashupConfiguration: { screen: true } },
     })
     expect(mockScreenRepo.update).toHaveBeenCalledWith(
       { id: 'screen-1' },
