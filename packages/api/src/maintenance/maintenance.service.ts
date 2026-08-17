@@ -82,7 +82,7 @@ export class MaintenanceService {
     const oldUploads: TempFile[] = []
 
     const devices = await this.deviceRepository.find()
-    const screens = await this.screenRepository.find({ relations: ['device'] })
+    const screens = await this.screenRepository.find({ relations: { device: true } })
 
     const devicesPath = resolveAppPath('public', 'screens', 'devices')
 

@@ -33,7 +33,7 @@ export class ScreensService {
       throw new BadRequestException('Can\'t upload a file to an external image')
     if (!body.externalLink && !file && !body.html)
       throw new BadRequestException('Need either external link, file or HTML to add screen')
-    const device = await this.devicesRepository.findOne({ where: { id: body.deviceId }, relations: ['screens'] })
+    const device = await this.devicesRepository.findOne({ where: { id: body.deviceId }, relations: { screens: true } })
     if (!device) {
       this.logger.warn(`Device not found: ${body.deviceId}`)
       throw new NotFoundException('Device not found')
@@ -106,14 +106,14 @@ export class ScreensService {
     this.logger.log(`Fetching screens for device ${deviceId}`)
     return this.screensRepository.find({
       where: { device: { id: deviceId } },
-      relations: ['plugin'],
+      relations: { plugin: true },
       order: { order: 'ASC' },
     })
   }
 
   async delete(id: string): Promise<void> {
     this.logger.log(`Deleting screen ${id}`)
-    const screen = await this.screensRepository.findOne({ where: { id }, relations: ['device'] })
+    const screen = await this.screensRepository.findOne({ where: { id }, relations: { device: true } })
     if (!screen) {
       this.logger.warn(`Screen not found: ${id}`)
       throw new NotFoundException('Screen not found')
@@ -189,7 +189,7 @@ export class ScreensService {
 
   async updateExternalScreen(id: string) {
     this.logger.log(`Refetching screen: ${id}`)
-    const screen = await this.screensRepository.findOne({ where: { id }, relations: ['device'] })
+    const screen = await this.screensRepository.findOne({ where: { id }, relations: { device: true } })
     if (!screen) {
       this.logger.warn(`Screen not found: ${id}`)
       throw new NotFoundException('Screen not found')

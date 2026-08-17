@@ -33,7 +33,7 @@ export class MashupService {
     // 1. Validate device exists
     const device = await this.deviceRepository.findOne({
       where: { id: dto.deviceId },
-      relations: ['screens'],
+      relations: { screens: true },
     })
 
     if (!device) {
@@ -133,7 +133,7 @@ export class MashupService {
     if (dto.layout || dto.pluginIds) {
       const config = await this.mashupConfigRepository.findOne({
         where: { screen: { id: screenId } },
-        relations: ['slots'],
+        relations: { slots: true },
       })
 
       if (!config) {
@@ -226,7 +226,7 @@ export class MashupService {
   async getConfiguration(screenId: string): Promise<MashupConfiguration> {
     const config = await this.mashupConfigRepository.findOne({
       where: { screen: { id: screenId } },
-      relations: ['slots', 'slots.plugin'],
+      relations: { slots: { plugin: true } },
     })
 
     if (!config) {

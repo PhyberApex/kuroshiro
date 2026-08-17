@@ -53,7 +53,7 @@ export class PluginsService implements OnModuleInit {
   async onModuleInit() {
     this.logger.log('Initializing plugin scheduler...')
     const plugins = await this.pluginRepository.find({
-      relations: ['dataSource', 'templates'],
+      relations: { dataSource: true, templates: true },
     })
 
     for (const plugin of plugins) {
@@ -66,7 +66,7 @@ export class PluginsService implements OnModuleInit {
 
   async findAll(): Promise<Plugin[]> {
     return this.pluginRepository.find({
-      relations: ['dataSource', 'templates', 'fields'],
+      relations: { dataSource: true, templates: true, fields: true },
       order: { name: 'ASC' },
     })
   }
@@ -74,14 +74,14 @@ export class PluginsService implements OnModuleInit {
   async findById(id: string): Promise<Plugin | null> {
     return this.pluginRepository.findOne({
       where: { id },
-      relations: ['dataSource', 'templates', 'fields', 'deviceAssignments', 'deviceAssignments.device'],
+      relations: { dataSource: true, templates: true, fields: true, deviceAssignments: { device: true } },
     })
   }
 
   async findByDevice(deviceId: string): Promise<Plugin[]> {
     const devicePlugins = await this.devicePluginRepository.find({
       where: { device: { id: deviceId } },
-      relations: ['plugin', 'plugin.dataSource', 'plugin.templates', 'plugin.fields'],
+      relations: { plugin: { dataSource: true, templates: true, fields: true } },
       order: { order: 'ASC' },
     })
 
@@ -213,7 +213,7 @@ export class PluginsService implements OnModuleInit {
 
     const created = await this.pluginRepository.findOne({
       where: { id: savedPlugin.id },
-      relations: ['dataSource', 'templates', 'fields'],
+      relations: { dataSource: true, templates: true, fields: true },
     })
 
     if (created && created.dataSource && created.templates && created.templates.length > 0) {
@@ -227,7 +227,7 @@ export class PluginsService implements OnModuleInit {
   async update(id: string, pluginData: Partial<Plugin>): Promise<Plugin | null> {
     const plugin = await this.pluginRepository.findOne({
       where: { id },
-      relations: ['dataSource', 'templates', 'fields'],
+      relations: { dataSource: true, templates: true, fields: true },
     })
     if (!plugin)
       return null
@@ -295,7 +295,7 @@ export class PluginsService implements OnModuleInit {
       this.scheduler.removeScheduledJob(id)
       const fullPlugin = await this.pluginRepository.findOne({
         where: { id },
-        relations: ['dataSource', 'templates'],
+        relations: { dataSource: true, templates: true },
       })
       if (fullPlugin && fullPlugin.dataSource && fullPlugin.templates && fullPlugin.templates.length > 0) {
         this.scheduler.schedulePlugin(fullPlugin)
@@ -313,7 +313,7 @@ export class PluginsService implements OnModuleInit {
 
     const mashupsWithPlugin = await this.mashupSlotRepository.find({
       where: { plugin: { id } },
-      relations: ['mashupConfiguration', 'mashupConfiguration.screen'],
+      relations: { mashupConfiguration: { screen: true } },
     })
 
     return {
