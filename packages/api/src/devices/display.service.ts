@@ -94,7 +94,7 @@ export class DeviceDisplayService {
     device.lastSeen = new Date()
     await this.deviceRepository.save(device)
     this.logger.log(`Device info updated for MAC: ${headers.id}`)
-    const activeScreen = await this.screenRepository.findOneBy({ device, isActive: true })
+    const activeScreen = await this.screenRepository.findOneBy({ device: { id: device.id }, isActive: true })
     if (!activeScreen && !device.mirrorEnabled) {
       this.logger.log('No screen found returning default no screen image')
       return new Display({
@@ -110,10 +110,10 @@ export class DeviceDisplayService {
     if (!device.mirrorEnabled) {
       this.logger.log(`Device ${device.id} is not mirrored. Cycling screens.`)
       await this.screenRepository.update({ device: { id: device.id } }, { isActive: false })
-      let nextScreen = await this.screenRepository.findOneBy({ device, order: activeScreen.order + 1 })
+      let nextScreen = await this.screenRepository.findOneBy({ device: { id: device.id }, order: activeScreen.order + 1 })
       if (!nextScreen) {
         this.logger.log(`No next screen found, cycling to first screen for device ${device.id}`)
-        nextScreen = await this.screenRepository.findOneBy({ device, order: 1 })
+        nextScreen = await this.screenRepository.findOneBy({ device: { id: device.id }, order: 1 })
       }
       nextScreen.isActive = true
       await this.screenRepository.save(nextScreen)
@@ -187,7 +187,7 @@ export class DeviceDisplayService {
       this.logger.warn(`Invalid API key for device: ${headers.id}`)
       throw new UnauthorizedException('Invalid API key')
     }
-    const activeScreen = await this.screenRepository.findOneBy({ device, isActive: true })
+    const activeScreen = await this.screenRepository.findOneBy({ device: { id: device.id }, isActive: true })
     if (!activeScreen && !device.mirrorEnabled) {
       this.logger.log('No screen found returning default no screen image')
       return new DisplayScreen({
