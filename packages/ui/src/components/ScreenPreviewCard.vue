@@ -3,6 +3,7 @@ import { computed, onMounted } from 'vue'
 import { VCard, VCardText, VCardTitle, VDivider, VImg } from 'vuetify/components'
 import { useDeviceStore } from '@/stores/device.ts'
 import { useScreensStore } from '@/stores/screens.ts'
+import { deviceRenderSize } from '@/utils/deviceRenderSize'
 import { formatDate } from '@/utils/formatDate'
 
 const props = defineProps<{ deviceId: string }>()
@@ -11,6 +12,7 @@ const deviceStore = useDeviceStore()
 const screensStore = useScreensStore()
 
 const device = computed(() => deviceStore.getById(props.deviceId))
+const renderSize = computed(() => deviceRenderSize(device.value))
 
 onMounted(async () => {
   if (!device.value)
@@ -28,7 +30,7 @@ const screen = computed(() => screensStore.currentScreen)
       <template v-if="screen">
         <VImg
           :src="screen.image_url"
-          :aspect-ratio="device?.width && device?.height ? device.width / device.height : 800 / 480"
+          :aspect-ratio="renderSize.width / renderSize.height"
           alt="Current device screen display"
           data-test-id="screen-image"
         />

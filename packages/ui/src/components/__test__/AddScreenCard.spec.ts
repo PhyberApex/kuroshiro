@@ -29,7 +29,7 @@ vi.mock('@/stores/screens', () => ({
 // Mock the device store
 vi.mock('@/stores/device', () => ({
   useDeviceStore: () => ({
-    getById: vi.fn(() => ({ id: 'device1', width: 800, height: 480 })),
+    getById: vi.fn(() => ({ id: 'device1' })),
   }),
 }))
 // Mock useDemoInfo
@@ -52,5 +52,19 @@ describe('addScreenCard', () => {
     expect(wrapper.find('[data-test-id="tab-file"]').exists()).toBe(true)
     expect(wrapper.find('[data-test-id="tab-html"]').exists()).toBe(true)
     expect(wrapper.find('[data-test-id="add-screen-btn"]').text()).toContain('Add Screen')
+  })
+
+  it('lets a device without reported dimensions add screens', async () => {
+    const wrapper = mount(AddScreenCard, {
+      props: { deviceId: 'device1' },
+      global: {
+        plugins: [createPinia(), vuetify],
+      },
+    })
+    const vm = wrapper.vm as any
+    vm.filename = 'shot'
+    vm.externalLink = 'https://example.com/image.png'
+    await wrapper.vm.$nextTick()
+    expect(vm.addScreenInputValid).toBe(true)
   })
 })

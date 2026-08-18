@@ -19,6 +19,7 @@ const customHeaders = ref({
   'user-agent': window.navigator.userAgent,
   'width': '800',
   'height': '480',
+  'model': 'og',
 })
 const loadingSetup = ref(false)
 const loadingDisplay = ref(false)
@@ -29,7 +30,7 @@ async function callSetup() {
   loadingSetup.value = true
   try {
     const res = await fetch('/api/setup', {
-      headers: { id: mac.value },
+      headers: { id: mac.value, model: customHeaders.value.model },
     })
     if (!res.ok)
       throw new Error('Setup failed')
@@ -152,6 +153,7 @@ watch(mac, () => {
   customHeaders.value['user-agent'] = device.userAgent || customHeaders.value['user-agent']
   customHeaders.value.width = device.width?.toString() || customHeaders.value.width
   customHeaders.value.height = device.height?.toString() || customHeaders.value.height
+  customHeaders.value.model = device.reportedModel || customHeaders.value.model
 })
 </script>
 

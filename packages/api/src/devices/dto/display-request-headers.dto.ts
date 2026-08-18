@@ -34,4 +34,8 @@ export class DisplayRequestHeadersDto {
   @IsOptional()
   @IsNumberString()
   width?: string
+
+  @IsOptional()
+  @IsString()
+  model?: string
 }

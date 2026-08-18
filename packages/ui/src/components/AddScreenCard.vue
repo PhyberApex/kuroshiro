@@ -6,6 +6,7 @@ import AddMashupCard from '@/components/AddMashupCard.vue'
 import { useDemoInfo } from '@/composeables/useDemoInfo.ts'
 import { useDeviceStore } from '@/stores/device.ts'
 import { useScreensStore } from '@/stores/screens'
+import { deviceRenderSize } from '@/utils/deviceRenderSize'
 import exampleHtml from '@/utils/exampleHtml'
 
 const props = defineProps<{ deviceId: string }>()
@@ -14,6 +15,7 @@ const screensStore = useScreensStore()
 const deviceStore = useDeviceStore()
 
 const device = computed(() => deviceStore.getById(props.deviceId))
+const renderSize = computed(() => deviceRenderSize(device.value))
 
 const externalLink = ref('')
 const fetchManual = ref(false)
@@ -55,8 +57,7 @@ const renderHtmlValid = computed(() => {
 })
 
 const addScreenInputValid = computed(() => {
-  // If no device or no width or no height we can't add a screen
-  if (!device.value || !device.value.width || !device.value.height)
+  if (!device.value)
     return false
   if (addScreenTab.value === 'mashup')
     return true
@@ -165,7 +166,7 @@ const { isDemo } = useDemoInfo()
             <VForm>
               <VRow>
                 <VCol cols="12">
-                  <VTextField ref="externalLinkRef" v-model="externalLink" :rules="linkRules" label="External image link" required clearable :disabled="!device.width || !device.height" />
+                  <VTextField ref="externalLinkRef" v-model="externalLink" :rules="linkRules" label="External image link" required clearable />
                   <VSwitch v-model="fetchManual" color="secondary" label="Cache image (update manually when source changes)" />
                 </VCol>
               </VRow>
@@ -175,7 +176,7 @@ const { isDemo } = useDemoInfo()
             <VForm>
               <VRow>
                 <VCol cols="12">
-                  <VFileInput v-model="fileInput" label="Upload image" accept="image/png, image/jpeg, image/bmp" :disabled="!device.width || !device.height" />
+                  <VFileInput v-model="fileInput" label="Upload image" accept="image/png, image/jpeg, image/bmp" />
                 </VCol>
               </VRow>
             </VForm>
@@ -221,7 +222,7 @@ const { isDemo } = useDemoInfo()
       </VCardText>
     </VCard>
     <VOverlay v-model="showHtmlPreview" class="align-center justify-center">
-      <iframe ref="previewIframeRef" :width="(device.width || 0) + 5" :height="(device.height || 0) + 5" class="align-center" title="HTML preview" />
+      <iframe ref="previewIframeRef" :width="renderSize.width + 5" :height="renderSize.height + 5" class="align-center" title="HTML preview" />
     </VOverlay>
   </template>
 </template>

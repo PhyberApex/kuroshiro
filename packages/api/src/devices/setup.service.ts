@@ -1,7 +1,9 @@
+import type { SetupRequestHeadersDto } from './dto/setup-request-headers.dto'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
+import { DeviceModelsService } from '../device-models/device-models.service'
 import generateApikey from '../utils/generateApikey'
 import generateFriendlyName from '../utils/generateFriendlyName'
 import { Device } from './devices.entity'
@@ -21,36 +23,42 @@ export class DeviceSetupService {
     @InjectRepository(Device)
     private deviceRepository: Repository<Device>,
     private configService: ConfigService,
+    private deviceModels: DeviceModelsService,
   ) {}
 
-  async setupDevice(headers: { id: string }): Promise<SetupResponse> {
+  async setupDevice(headers: SetupRequestHeadersDto): Promise<SetupResponse> {
     this.logger.log(`Setup request for MAC: ${headers.id}`)
     const baseSetupResponse = {
       status: 200 as const,
       image_url: `${this.configService.get<string>('api_url')}/screens/welcome.png`,
       message: 'Welcome to Kuroshiro',
     }
-    let friendlyId = generateFriendlyName()
-    let apikey = generateApikey()
 
-    const device = await this.deviceRepository.findOneBy({ mac: headers.id })
-    if (device) {
-      this.logger.log(`Device found for MAC: ${headers.id}, returning existing credentials.`)
-      apikey = device.apikey
-      friendlyId = device.friendlyId
-    }
-    else {
-      this.logger.log(`No device found for MAC: ${headers.id}, creating new device.`)
-      const newDevice = this.deviceRepository.create({ mac: headers.id, friendlyId, apikey, name: friendlyId })
-      await this.deviceRepository.save(newDevice)
-      this.logger.log(`New device created with id: ${newDevice.id}`)
-    }
+    const existing = await this.deviceRepository.findOneBy({ mac: headers.id })
+    const device = existing ?? this.createDevice(headers.id)
+    this.logger.log(existing
+      ? `Device found for MAC: ${headers.id}, returning existing credentials.`
+      : `No device found for MAC: ${headers.id}, creating new device.`)
+
+    device.fwVersion = headers['fw-version'] ?? device.fwVersion
+    device.reportedModel = headers.model ?? device.reportedModel
+    if (!device.deviceModel)
+      await this.deviceModels.assignResolvedModel(device)
+    await this.deviceRepository.save(device)
+    if (!existing)
+      this.logger.log(`New device created with id: ${device.id}`)
+
     const setupResponse: SetupResponse = {
       ...baseSetupResponse,
-      friendly_id: friendlyId,
-      api_key: apikey,
+      friendly_id: device.friendlyId,
+      api_key: device.apikey,
     }
     this.logger.debug(`Returning setup: ${JSON.stringify(setupResponse)}`)
     return setupResponse
+  }
+
+  private createDevice(mac: string): Device {
+    const friendlyId = generateFriendlyName()
+    return this.deviceRepository.create({ mac, friendlyId, apikey: generateApikey(), name: friendlyId })
   }
 }

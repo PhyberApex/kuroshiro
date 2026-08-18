@@ -184,7 +184,7 @@ postgres:18-alpine
 If you enable mirroring and provide the MAC and apikey, Kuroshiro fetches the current screen (`api/current_screen`) from the official server—mirroring always takes priority. If the given MAC to mirror matches with the one of the device itself we are entering "proxy-mode" where we get the current display from the actual endpoint (`display`) and forward all the headers back and forth.
 
 ### Screens Managed by Kuroshiro
-Screens can be added after your device fetches a screen at least once (so we know its size!).
+Images are generated for the device's **Device Model** (panel size, colour depth, rotation), which Kuroshiro resolves from what the firmware reports (`Model` header, then reported width×height) and which you can override per device under *Advanced*. The model list is synced from the official TRMNL server (`/api/models`) on startup and daily, with a bundled snapshot as offline fallback — see *Maintenance → Device Models*. Devices without a resolved model render as a TRMNL OG (800×480).
 
 #### Uploaded Screens
 Upload a file and Kuroshiro uses Imagemagick to fit, fill, and convert it to black and white. Stored locally, ready to go.

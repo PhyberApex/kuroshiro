@@ -1,6 +1,9 @@
 import type { Repository } from 'typeorm'
+import type { MockDeviceModelsService } from '../../device-models/__test__/mockDeviceModelsService'
 import type { Device } from '../devices.entity'
+import { BadRequestException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { BW, createMockDeviceModelsService, GRAY_4, GRAY_16, OG_PLUS, V2 } from '../../device-models/__test__/mockDeviceModelsService'
 import { DevicesService } from '../devices.service'
 
 interface MockRepository {
@@ -24,10 +27,12 @@ function createMockRepository(): MockRepository {
 describe('devicesService', () => {
   let service: DevicesService
   let repo: MockRepository
+  let deviceModels: MockDeviceModelsService
 
   beforeEach(() => {
     repo = createMockRepository()
-    service = new DevicesService(repo as unknown as Repository<Device>)
+    deviceModels = createMockDeviceModelsService()
+    service = new DevicesService(repo as unknown as Repository<Device>, deviceModels as any)
   })
 
   const baseDevice = {
@@ -81,7 +86,7 @@ describe('devicesService', () => {
     repo.findOneBy.mockResolvedValue(baseDevice)
     const updated = { ...baseDevice, mac: 'AA:BB:CC:DD:EE:FF' } as unknown as Device
     repo.save.mockResolvedValue(updated)
-    const result = await service.update('1', { mac: 'AA:BB:CC:DD:EE:FF' })
+    const result = await service.update('1', { mac: 'AA:BB:CC:DD:EE:FF' } as any)
     expect(repo.findOneBy).toHaveBeenCalledWith({ id: '1' })
     expect(repo.save).toHaveBeenCalledWith({ ...baseDevice, mac: 'AA:BB:CC:DD:EE:FF' })
     expect(result).toEqual(updated)
@@ -89,8 +94,65 @@ describe('devicesService', () => {
 
   it('update returns null if device not found', async () => {
     repo.findOneBy.mockResolvedValue(null)
-    const result = await service.update('1', { mac: 'AA:BB:CC:DD:EE:FF' })
+    const result = await service.update('1', { mac: 'AA:BB:CC:DD:EE:FF' } as any)
     expect(result).toBeNull()
+  })
+
+  describe('update with device model and palette', () => {
+    beforeEach(() => {
+      repo.save.mockImplementation(async (device: Device) => device)
+    })
+
+    it('assigns a new model with its default palette', async () => {
+      repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: OG_PLUS, palette: GRAY_4 })
+      deviceModels.findByName.mockResolvedValue(V2)
+      deviceModels.defaultPaletteFor.mockResolvedValue(GRAY_16)
+      const result = await service.update('1', { deviceModelName: 'v2' } as any)
+      expect(deviceModels.findByName).toHaveBeenCalledWith('v2')
+      expect(result.deviceModel).toBe(V2)
+      expect(result.palette).toBe(GRAY_16)
+    })
+
+    it('assigns a new model together with an explicitly chosen palette', async () => {
+      repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: OG_PLUS, palette: GRAY_4 })
+      deviceModels.findByName.mockResolvedValue(V2)
+      deviceModels.findPalette.mockResolvedValue(BW)
+      const result = await service.update('1', { deviceModelName: 'v2', paletteId: 'bw' } as any)
+      expect(result.deviceModel).toBe(V2)
+      expect(result.palette).toBe(BW)
+      expect(deviceModels.defaultPaletteFor).not.toHaveBeenCalled()
+    })
+
+    it('changes only the palette when the model stays the same', async () => {
+      repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: OG_PLUS, palette: GRAY_4 })
+      deviceModels.findPalette.mockResolvedValue(BW)
+      const result = await service.update('1', { deviceModelName: 'og_plus', paletteId: 'bw' } as any)
+      expect(deviceModels.findByName).not.toHaveBeenCalled()
+      expect(result.deviceModel).toBe(OG_PLUS)
+      expect(result.palette).toBe(BW)
+    })
+
+    it('rejects an unknown model', async () => {
+      repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: OG_PLUS })
+      deviceModels.findByName.mockResolvedValue(null)
+      await expect(service.update('1', { deviceModelName: 'nope' } as any)).rejects.toThrow(BadRequestException)
+      expect(repo.save).not.toHaveBeenCalled()
+    })
+
+    it('rejects a palette the model does not support', async () => {
+      repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: OG_PLUS, palette: GRAY_4 })
+      deviceModels.findPalette.mockResolvedValue(GRAY_16)
+      await expect(service.update('1', { paletteId: 'gray-16' } as any)).rejects.toThrow(BadRequestException)
+      expect(repo.save).not.toHaveBeenCalled()
+    })
+
+    it('fills in the default palette for a device that has a model but no palette', async () => {
+      repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: OG_PLUS, palette: null })
+      deviceModels.defaultPaletteFor.mockResolvedValue(GRAY_4)
+      const result = await service.update('1', { name: 'renamed' } as any)
+      expect(result.name).toBe('renamed')
+      expect(result.palette).toBe(GRAY_4)
+    })
   })
 
   it('remove deletes a device and returns true', async () => {

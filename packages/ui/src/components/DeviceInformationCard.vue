@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  mdiAlert,
   mdiBattery,
   mdiBattery10,
   mdiBattery20,
@@ -26,10 +27,12 @@ import {
   mdiSignalCellularOutline,
 } from '@mdi/js'
 import { useClipboard } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { VBtn, VCard, VCardText, VCardTitle, VCol, VDivider, VExpansionPanel, VExpansionPanels, VExpansionPanelText, VExpansionPanelTitle, VIcon, VNumberInput, VRow, VSelect, VSwitch, VTextField } from 'vuetify/components'
+import { VBtn, VCard, VCardText, VCardTitle, VChip, VCol, VDivider, VExpansionPanel, VExpansionPanels, VExpansionPanelText, VExpansionPanelTitle, VIcon, VNumberInput, VRow, VSelect, VSwitch, VTextField, VTooltip } from 'vuetify/components'
 import { useDeviceStore } from '@/stores/device'
+import { useDeviceModelsStore } from '@/stores/deviceModels'
+import { DEFAULT_RENDER_SIZE } from '@/utils/deviceRenderSize'
 import { formatDate } from '@/utils/formatDate'
 import { isValidMac } from '@/utils/getRandomMac'
 import { isDeviceOnline } from '@/utils/isDeviceOnline'
@@ -37,8 +40,62 @@ import { isDeviceOnline } from '@/utils/isDeviceOnline'
 const props = defineProps<{ deviceId: string }>()
 
 const deviceStore = useDeviceStore()
+const deviceModelsStore = useDeviceModelsStore()
 
 const device = computed(() => deviceStore.getById(props.deviceId))
+
+onMounted(() => deviceModelsStore.ensureLoaded())
+
+const selectedModelName = ref<string | null>(null)
+const selectedPaletteId = ref<string | null>(null)
+
+watch(device, (current) => {
+  selectedModelName.value = current?.deviceModel?.name ?? null
+  selectedPaletteId.value = current?.palette?.id ?? null
+}, { immediate: true })
+
+const selectedModel = computed(() => deviceModelsStore.getByName(selectedModelName.value))
+
+const modelOptions = computed(() => {
+  const assigned = device.value?.deviceModel
+  const models = assigned && assigned.deprecated ? [assigned, ...deviceModelsStore.activeModels] : deviceModelsStore.activeModels
+  return models.map(model => ({
+    title: `${model.label} (${model.width}x${model.height})${model.deprecated ? ' — deprecated' : ''}`,
+    value: model.name,
+  }))
+})
+
+const paletteOptions = computed(() =>
+  deviceModelsStore.palettesFor(selectedModel.value).map(palette => ({ title: palette.name, value: palette.id })),
+)
+
+watch(selectedModel, (model) => {
+  if (model && selectedPaletteId.value && !model.paletteIds.includes(selectedPaletteId.value))
+    selectedPaletteId.value = null
+})
+
+const modelSummary = computed(() => {
+  const model = device.value?.deviceModel
+  if (!model)
+    return `Not resolved yet — renders as TRMNL OG (${DEFAULT_RENDER_SIZE.width}x${DEFAULT_RENDER_SIZE.height})`
+  return `${model.label} (${model.width}x${model.height})`
+})
+
+const reportedSummary = computed(() => {
+  const current = device.value
+  if (!current)
+    return null
+  const parts = [current.reportedModel, current.width && current.height ? `${current.width}x${current.height}` : null].filter(Boolean)
+  return parts.length > 0 ? parts.join(' · ') : null
+})
+
+const reportMismatch = computed(() => {
+  const current = device.value
+  const model = current?.deviceModel
+  if (!current || !model || !current.width || !current.height)
+    return false
+  return current.width !== model.width || current.height !== model.height
+})
 
 const { copy: copyToClipboard, copied: macCopied } = useClipboard()
 
@@ -222,6 +279,8 @@ async function saveDevice() {
     mirrorMac: device.value.mirrorMac,
     mirrorApikey: device.value.mirrorApikey,
     specialFunction: device.value.specialFunction,
+    ...(selectedModelName.value ? { deviceModelName: selectedModelName.value } : {}),
+    ...(selectedPaletteId.value ? { paletteId: selectedPaletteId.value } : {}),
   })
 }
 const nameEditing = ref(false)
@@ -264,8 +323,18 @@ const nameEditing = ref(false)
             {{ device.batteryVoltage ? `(${batteryPercentage} %)` : 'N/A' }}
           </VCol>
           <VCol cols="12" sm="4">
-            <strong>Display size:</strong>
-            <div>{{ device.width && device.height ? `${device.width}x${device.height}` : 'N/A' }}</div>
+            <strong>Model:</strong>
+            <div data-test-id="device-model-summary">
+              {{ modelSummary }}
+              <VTooltip v-if="reportMismatch" location="top" text="The device reports a different panel size than its assigned model. Check the model in Advanced.">
+                <template #activator="{ props: tooltipProps }">
+                  <VIcon v-bind="tooltipProps" :icon="mdiAlert" color="warning" size="small" class="ml-1" data-test-id="device-model-mismatch" />
+                </template>
+              </VTooltip>
+            </div>
+            <div v-if="reportedSummary" class="text-caption text-medium-emphasis">
+              Reported: {{ reportedSummary }}
+            </div>
           </VCol>
           <VCol cols="12" sm="4">
             <strong>Last seen:</strong>
@@ -320,6 +389,34 @@ const nameEditing = ref(false)
                 </VCol>
                 <VCol cols="12" sm="4" md="4" lg="4">
                   <VSwitch v-model="device.updateFirmware" color="secondary" density="compact" label="Automatic updates" disabled />
+                </VCol>
+              </VRow>
+              <VRow class="mb-2" density="comfortable">
+                <VCol cols="12" sm="6" md="4">
+                  <VSelect
+                    v-model="selectedModelName"
+                    :items="modelOptions"
+                    density="compact"
+                    label="Device model"
+                    data-test-id="device-model-select"
+                  />
+                </VCol>
+                <VCol cols="12" sm="6" md="4">
+                  <VSelect
+                    v-model="selectedPaletteId"
+                    :items="paletteOptions"
+                    :disabled="!selectedModel"
+                    density="compact"
+                    label="Palette"
+                    placeholder="Default (richest available)"
+                    persistent-placeholder
+                    data-test-id="device-palette-select"
+                  />
+                </VCol>
+                <VCol v-if="device.deviceModel?.deprecated" cols="12" sm="12" md="4" class="d-flex align-center">
+                  <VChip color="warning" size="small" variant="tonal">
+                    Assigned model no longer exists upstream
+                  </VChip>
                 </VCol>
               </VRow>
               <VRow class="mb-0" density="comfortable">

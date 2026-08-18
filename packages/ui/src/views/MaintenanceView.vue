@@ -1,10 +1,25 @@
 <script setup lang="ts">
-import { mdiAlertCircle, mdiCheckCircle, mdiDelete, mdiRefresh } from '@mdi/js'
+import type { DeviceModelSyncResult } from '../types'
+import { mdiAlertCircle, mdiCheckCircle, mdiCloudSync, mdiDelete, mdiRefresh } from '@mdi/js'
 import { computed, onMounted, ref } from 'vue'
 import { VAlert, VBtn, VCard, VCardText, VCardTitle, VCheckbox, VChip, VCol, VContainer, VDialog, VDivider, VList, VListItem, VListItemSubtitle, VListItemTitle, VProgressCircular, VRow, VSwitch } from 'vuetify/components'
+import { useDeviceModelsStore } from '../stores/deviceModels'
 import { useMaintenanceStore } from '../stores/maintenance'
+import { formatDate } from '../utils/formatDate'
 
 const maintenanceStore = useMaintenanceStore()
+const deviceModelsStore = useDeviceModelsStore()
+
+const syncResult = ref<DeviceModelSyncResult | null>(null)
+
+const lastModelSync = computed(() => {
+  const dates = deviceModelsStore.models.map(model => model.syncedAt).filter((date): date is string => !!date).sort()
+  return dates.at(-1) ?? null
+})
+
+async function handleModelSync() {
+  syncResult.value = await deviceModelsStore.sync()
+}
 
 const selectedOrphanedFiles = ref<string[]>([])
 const selectedOrphanedDirs = ref<string[]>([])
@@ -52,7 +67,7 @@ const totalSelectedSize = computed(() => {
 })
 
 onMounted(async () => {
-  await maintenanceStore.scanSystem()
+  await Promise.all([maintenanceStore.scanSystem(), deviceModelsStore.ensureLoaded()])
 })
 
 async function handleScan() {
@@ -180,6 +195,44 @@ async function executeCleanup() {
             <p class="text-body-2 text-medium-emphasis">
               Scan filesystem for orphaned files, broken screens, and temporary data that can be cleaned up.
             </p>
+          </VCardText>
+        </VCard>
+
+        <VCard elevation="1" class="mb-4" data-test-id="device-models-card">
+          <VCardTitle class="d-flex align-center justify-space-between">
+            Device Models
+            <VBtn
+              :prepend-icon="mdiCloudSync"
+              variant="tonal"
+              color="secondary"
+              :loading="deviceModelsStore.syncing"
+              data-test-id="sync-device-models-btn"
+              @click="handleModelSync"
+            >
+              Sync from TRMNL
+            </VBtn>
+          </VCardTitle>
+          <VDivider />
+          <VCardText>
+            <p class="text-body-2 text-medium-emphasis mb-2">
+              Panel sizes, colour depths and rendering settings for supported devices, synced from usetrmnl.com on startup and daily. Models removed upstream are kept and marked deprecated.
+            </p>
+            <div class="text-body-2">
+              {{ deviceModelsStore.activeModels.length }} models, {{ deviceModelsStore.palettes.length }} palettes
+              <span v-if="deviceModelsStore.models.length - deviceModelsStore.activeModels.length > 0">
+                ({{ deviceModelsStore.models.length - deviceModelsStore.activeModels.length }} deprecated)
+              </span>
+              · Last synced: {{ lastModelSync ? formatDate(lastModelSync) : 'never (bundled snapshot)' }}
+            </div>
+            <VAlert v-if="deviceModelsStore.error" type="error" variant="tonal" class="mt-3" :icon="mdiAlertCircle">
+              {{ deviceModelsStore.error }}
+            </VAlert>
+            <VAlert v-else-if="syncResult" type="success" variant="tonal" class="mt-3" :icon="mdiCheckCircle" closable @click:close="syncResult = null">
+              Synced {{ syncResult.models }} models and {{ syncResult.palettes }} palettes
+              <span v-if="syncResult.deprecatedModels || syncResult.deprecatedPalettes">
+                ({{ syncResult.deprecatedModels }} models, {{ syncResult.deprecatedPalettes }} palettes newly deprecated)
+              </span>
+            </VAlert>
           </VCardText>
         </VCard>
 

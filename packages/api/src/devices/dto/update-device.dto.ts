@@ -38,12 +38,12 @@ export class UpdateDeviceDto {
   userAgent?: string
 
   @IsOptional()
-  @IsNumber()
-  width?: number
+  @IsString()
+  deviceModelName?: string
 
   @IsOptional()
-  @IsNumber()
-  height?: number
+  @IsString()
+  paletteId?: string
 
   @IsOptional()
   @IsBoolean()
