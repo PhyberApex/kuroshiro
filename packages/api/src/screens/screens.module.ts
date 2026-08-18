@@ -11,5 +11,6 @@ import { ScreensService } from './screens.service'
   imports: [TypeOrmModule.forFeature([Screen, Device]), ConfigModule, DeviceModelsModule],
   controllers: [ScreensController],
   providers: [ScreensService],
+  exports: [ScreensService],
 })
 export class ScreensModule {}

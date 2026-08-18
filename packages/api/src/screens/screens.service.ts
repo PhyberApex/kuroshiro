@@ -6,6 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { EntityManager, Repository } from 'typeorm'
 import { DeviceModelsService } from '../device-models/device-models.service'
 import { Device } from '../devices/devices.entity'
+import { fileExists } from '../utils/fileExists'
 import { convertToPng, downloadImage } from '../utils/imageUtils'
 import { resolveAppPath } from '../utils/pathHelper'
 import { assertPublicUrl } from '../utils/ssrfGuard'
@@ -57,16 +58,13 @@ export class ScreensService {
     if (body.externalLink && body.fetchManual) {
       if (this.configService.get<boolean>('demo_mode'))
         assertPublicUrl(body.externalLink)
-      const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
-      const inputPath = path.join(destDir, 'tmp-source')
-      const pngFilename = `${saved.id}.png`
-      const outputPath = path.join(destDir, pngFilename)
+      const inputPath = this.originalImagePath(device.id, saved.id)
+      const outputPath = this.screenImagePath(device.id, saved.id)
       this.logger.debug(`Input path: ${inputPath}`)
       this.logger.debug(`Planned output path: ${outputPath}`)
       try {
         await downloadImage(body.externalLink, inputPath, this.logger)
-        const { width, height } = await this.deviceModels.outputSizeFor(device)
-        await convertToPng(inputPath, outputPath, width, height, this.logger)
+        await convertToPng(inputPath, outputPath, await this.deviceModels.renderTargetFor(device), this.logger)
         this.logger.log('Download and conversion successful')
       }
       catch (err) {
@@ -79,18 +77,14 @@ export class ScreensService {
     // Handle file upload and conversion
     else if (file) {
       try {
-        const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
-        await fs.promises.mkdir(destDir, { recursive: true })
-        const inputPath = path.join(destDir, `${saved.id}-source`)
-        const pngFilename = `${saved.id}.png`
-        const outputPath = path.join(destDir, pngFilename)
+        const inputPath = this.originalImagePath(device.id, saved.id)
+        const outputPath = this.screenImagePath(device.id, saved.id)
+        await fs.promises.mkdir(path.dirname(inputPath), { recursive: true })
         this.logger.debug(`Input path: ${inputPath}`)
         this.logger.debug(`Planned output path: ${outputPath}`)
         await fs.promises.writeFile(inputPath, file.buffer)
         this.logger.log(`Uploaded file saved to ${inputPath}`)
-        const { width, height } = await this.deviceModels.outputSizeFor(device)
-        await convertToPng(inputPath, outputPath, width, height, this.logger)
-        await fs.promises.unlink(inputPath)
+        await convertToPng(inputPath, outputPath, await this.deviceModels.renderTargetFor(device), this.logger)
         this.logger.log(`Converted and saved PNG to ${outputPath}`)
       }
       catch {
@@ -123,20 +117,8 @@ export class ScreensService {
       throw new NotFoundException('Screen not found')
     }
     const deviceId = screen.device.id
-    // Delete PNG file if it exists
-    const pngPath = resolveAppPath('public', 'screens', 'devices', deviceId, `${id}.png`)
-    try {
-      await fs.promises.unlink(pngPath)
-      this.logger.log(`Deleted PNG file: ${pngPath}`)
-    }
-    catch (err) {
-      if (err.code === 'ENOENT') {
-        this.logger.warn(`PNG file not found for deletion: ${pngPath}`)
-      }
-      else {
-        this.logger.error(`Failed to delete PNG file: ${pngPath} - ${err.message}`)
-      }
-    }
+    await this.deleteFileIfExists(this.screenImagePath(deviceId, id))
+    await this.deleteFileIfExists(this.originalImagePath(deviceId, id))
     await this.screensRepository.delete(id)
     this.logger.log(`Screen deleted: ${id}`)
     // Reindex order for remaining screens, closing the gap left by the deleted screen
@@ -206,14 +188,11 @@ export class ScreensService {
     }
     if (this.configService.get<boolean>('demo_mode'))
       assertPublicUrl(screen.externalLink)
-    const destDir = resolveAppPath('public', 'screens', 'devices', screen.device.id)
-    const inputPath = path.join(destDir, 'tmp-source')
-    const pngFilename = `${screen.id}.png`
-    const outputPath = path.join(destDir, pngFilename)
+    const inputPath = this.originalImagePath(screen.device.id, screen.id)
+    const outputPath = this.screenImagePath(screen.device.id, screen.id)
     try {
       await downloadImage(screen.externalLink, inputPath, this.logger)
-      const { width, height } = await this.deviceModels.outputSizeFor(screen.device)
-      await convertToPng(inputPath, outputPath, width, height, this.logger)
+      await convertToPng(inputPath, outputPath, await this.deviceModels.renderTargetFor(screen.device), this.logger)
       this.logger.log('Updating generation date on screen')
       screen.generatedAt = new Date()
       await this.screensRepository.save(screen)
@@ -222,6 +201,59 @@ export class ScreensService {
     catch (err) {
       this.logger.error(`Failed to process image: ${err.message}. Removing screen again.`)
       throw new InternalServerErrorException('Error processing image')
+    }
+  }
+
+  /**
+   * Regenerates every stored image of a device (uploads and cached external
+   * images) for its current model and palette, from the retained original
+   * where one exists and from the previous PNG otherwise.
+   */
+  async reconvertImageScreens(device: Device): Promise<number> {
+    const screens = await this.screensRepository.find({ where: { device: { id: device.id } } })
+    const target = await this.deviceModels.renderTargetFor(device)
+    let converted = 0
+    for (const screen of screens.filter(s => s.type === 'file' || (s.type === 'external' && s.fetchManual))) {
+      const outputPath = this.screenImagePath(device.id, screen.id)
+      const originalPath = this.originalImagePath(device.id, screen.id)
+      const sourcePath = await fileExists(originalPath) ? originalPath : outputPath
+      if (!await fileExists(sourcePath)) {
+        this.logger.warn(`No image to reconvert for screen ${screen.id}`)
+        continue
+      }
+      try {
+        const tempPath = path.join(path.dirname(outputPath), `tmp-${screen.id}.png`)
+        await convertToPng(sourcePath, tempPath, target, this.logger)
+        await fs.promises.rename(tempPath, outputPath)
+        await this.screensRepository.update({ id: screen.id }, { generatedAt: new Date() })
+        converted++
+      }
+      catch (err) {
+        this.logger.error(`Failed to reconvert screen ${screen.id}: ${err.message}`)
+      }
+    }
+    this.logger.log(`Reconverted ${converted} image screen(s) for device ${device.id} as ${target.model.name}/${target.palette.id}`)
+    return converted
+  }
+
+  private screenImagePath(deviceId: string, screenId: string): string {
+    return resolveAppPath('public', 'screens', 'devices', deviceId, `${screenId}.png`)
+  }
+
+  private originalImagePath(deviceId: string, screenId: string): string {
+    return resolveAppPath('public', 'screens', 'devices', deviceId, `${screenId}.original`)
+  }
+
+  private async deleteFileIfExists(filePath: string): Promise<void> {
+    try {
+      await fs.promises.unlink(filePath)
+      this.logger.log(`Deleted file: ${filePath}`)
+    }
+    catch (err) {
+      if (err.code === 'ENOENT')
+        this.logger.warn(`File not found for deletion: ${filePath}`)
+      else
+        this.logger.error(`Failed to delete file: ${filePath} - ${err.message}`)
     }
   }
 }

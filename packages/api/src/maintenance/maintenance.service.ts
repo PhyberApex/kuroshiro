@@ -133,10 +133,10 @@ export class MaintenanceService {
             continue
           }
 
-          const screenId = file.replace('.png', '')
+          const screenId = file.replace(/\.(png|original)$/, '')
           const screen = screens.find(s => s.id === screenId && s.device.id === deviceDir)
 
-          if (!screen && file.endsWith('.png')) {
+          if (!screen && (file.endsWith('.png') || file.endsWith('.original'))) {
             orphanedScreenFiles.push({
               deviceId: deviceDir,
               screenId,

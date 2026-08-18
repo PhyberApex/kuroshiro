@@ -5,6 +5,7 @@ import { DeviceModelsModule } from '../device-models/device-models.module'
 import { LogEntry } from '../logs/logs.entity'
 import { PluginsModule } from '../plugins/plugins.module'
 import { Screen } from '../screens/screens.entity'
+import { ScreensModule } from '../screens/screens.module'
 import { DevicesController } from './devices.controller'
 import { Device } from './devices.entity'
 import { DevicesService } from './devices.service'
@@ -14,7 +15,7 @@ import { SetupController } from './setup.controller'
 import { DeviceSetupService } from './setup.service'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Device, Screen, LogEntry]), ConfigModule, PluginsModule, DeviceModelsModule],
+  imports: [TypeOrmModule.forFeature([Device, Screen, LogEntry]), ConfigModule, PluginsModule, DeviceModelsModule, ScreensModule],
   controllers: [DevicesController, DisplayController, SetupController],
   providers: [DevicesService, DeviceDisplayService, DeviceSetupService],
   exports: [DevicesService],

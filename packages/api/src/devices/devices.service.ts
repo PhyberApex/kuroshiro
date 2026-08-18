@@ -3,6 +3,7 @@ import type { UpdateDeviceDto } from './dto/update-device.dto'
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { DeviceModelsService } from '../device-models/device-models.service'
+import { ScreensService } from '../screens/screens.service'
 import generateApikey from '../utils/generateApikey'
 import generateFriendlyName from '../utils/generateFriendlyName'
 import { Device } from './devices.entity'
@@ -14,6 +15,7 @@ export class DevicesService {
     @InjectRepository(Device)
     private deviceRepository: Repository<Device>,
     private deviceModels: DeviceModelsService,
+    private screensService: ScreensService,
   ) {}
 
   async findAll(): Promise<Device[]> {
@@ -37,8 +39,12 @@ export class DevicesService {
       return null
     const { deviceModelName, paletteId, ...attributes } = changes
     Object.assign(dbDevice, attributes)
+    const before = { model: dbDevice.deviceModel?.name, palette: dbDevice.palette?.id }
     await this.applyModelChanges(dbDevice, deviceModelName, paletteId)
-    return this.deviceRepository.save(dbDevice)
+    const saved = await this.deviceRepository.save(dbDevice)
+    if (before.model !== saved.deviceModel?.name || before.palette !== saved.palette?.id)
+      await this.screensService.reconvertImageScreens(saved)
+    return saved
   }
 
   async remove(id: string): Promise<boolean> {

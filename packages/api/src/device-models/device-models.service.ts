@@ -126,11 +126,6 @@ export class DeviceModelsService {
     return { model, palette }
   }
 
-  async outputSizeFor(device: DeviceLike): Promise<{ width: number, height: number }> {
-    const { model } = await this.renderTargetFor(device)
-    return { width: model.width, height: model.height }
-  }
-
   private async resolveByName(reportedModel?: string | null): Promise<DeviceModel | null> {
     if (!reportedModel)
       return null
