@@ -28,11 +28,13 @@ describe('devicesService', () => {
   let service: DevicesService
   let repo: MockRepository
   let deviceModels: MockDeviceModelsService
+  let screensService: { reconvertImageScreens: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     repo = createMockRepository()
     deviceModels = createMockDeviceModelsService()
-    service = new DevicesService(repo as unknown as Repository<Device>, deviceModels as any)
+    screensService = { reconvertImageScreens: vi.fn().mockResolvedValue(0) }
+    service = new DevicesService(repo as unknown as Repository<Device>, deviceModels as any, screensService as any)
   })
 
   const baseDevice = {
@@ -111,6 +113,7 @@ describe('devicesService', () => {
       expect(deviceModels.findByName).toHaveBeenCalledWith('v2')
       expect(result.deviceModel).toBe(V2)
       expect(result.palette).toBe(GRAY_16)
+      expect(screensService.reconvertImageScreens).toHaveBeenCalledWith(result)
     })
 
     it('assigns a new model together with an explicitly chosen palette', async () => {
@@ -130,6 +133,14 @@ describe('devicesService', () => {
       expect(deviceModels.findByName).not.toHaveBeenCalled()
       expect(result.deviceModel).toBe(OG_PLUS)
       expect(result.palette).toBe(BW)
+      expect(screensService.reconvertImageScreens).toHaveBeenCalledWith(result)
+    })
+
+    it('does not reconvert images when neither model nor palette changed', async () => {
+      repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: OG_PLUS, palette: GRAY_4 })
+      deviceModels.findPalette.mockResolvedValue(GRAY_4)
+      await service.update('1', { name: 'renamed', deviceModelName: 'og_plus', paletteId: 'gray-4' } as any)
+      expect(screensService.reconvertImageScreens).not.toHaveBeenCalled()
     })
 
     it('rejects an unknown model', async () => {

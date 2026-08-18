@@ -53,7 +53,6 @@ export function createMockDeviceModelsService() {
     resolve: vi.fn(),
     assignResolvedModel: vi.fn(),
     renderTargetFor: vi.fn(),
-    outputSizeFor: vi.fn(),
   }
 }
 
@@ -62,8 +61,18 @@ export type MockDeviceModelsService = ReturnType<typeof createMockDeviceModelsSe
 /** Default behaviour after `vi.resetAllMocks()`: everything renders as an OG with 4 grays. */
 export function primeMockDeviceModelsService(mock: MockDeviceModelsService) {
   mock.renderTargetFor.mockResolvedValue({ model: OG_PLUS, palette: GRAY_4 })
-  mock.outputSizeFor.mockResolvedValue({ width: OG_PLUS.width, height: OG_PLUS.height })
   mock.defaultPaletteFor.mockResolvedValue(GRAY_4)
   mock.resolve.mockResolvedValue(null)
   mock.assignResolvedModel.mockResolvedValue(null)
+}
+
+export function createMockFallbackScreensService() {
+  return { urlFor: vi.fn() }
+}
+
+export type MockFallbackScreensService = ReturnType<typeof createMockFallbackScreensService>
+
+/** Default behaviour after `vi.resetAllMocks()`: static placeholder URLs under http://api. */
+export function primeMockFallbackScreensService(mock: MockFallbackScreensService) {
+  mock.urlFor.mockImplementation(async (kind: string) => `http://api/screens/${kind}.png`)
 }

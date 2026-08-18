@@ -187,7 +187,7 @@ If you enable mirroring and provide the MAC and apikey, Kuroshiro fetches the cu
 Images are generated for the device's **Device Model** (panel size, colour depth, rotation), which Kuroshiro resolves from what the firmware reports (`Model` header, then reported width×height) and which you can override per device under *Advanced*. The model list is synced from the official TRMNL server (`/api/models`) on startup and daily, with a bundled snapshot as offline fallback — see *Maintenance → Device Models*. Devices without a resolved model render as a TRMNL OG (800×480).
 
 #### Uploaded Screens
-Upload a file and Kuroshiro uses Imagemagick to fit, fill, and convert it to black and white. Stored locally, ready to go.
+Upload a file and Kuroshiro uses ImageMagick to fit it onto the device's panel (letterboxed, rotated if the model needs it) and dither it to the device's palette — 1-bit, 4 or 16 grays, or the colours of a colour panel. The original is kept, so switching a device's model or palette re-generates the image from the source.
 
 #### External Link Screens
 Provide a URL and Kuroshiro fetches, converts, and serves it. Cache it for speed, or fetch fresh every time—your choice!

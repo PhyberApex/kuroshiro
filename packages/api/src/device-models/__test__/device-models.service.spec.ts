@@ -103,7 +103,6 @@ describe('deviceModelsService', () => {
 
     it('renders unassigned devices as an OG with 4 grays', async () => {
       await expect(service.renderTargetFor({})).resolves.toEqual({ model: OG_PLUS, palette: GRAY_4 })
-      await expect(service.outputSizeFor({})).resolves.toEqual({ width: 800, height: 480 })
     })
 
     it('falls back to the bundled snapshot when the reference table is empty', async () => {

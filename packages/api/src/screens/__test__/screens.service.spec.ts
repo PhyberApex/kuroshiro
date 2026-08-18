@@ -9,10 +9,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMockDeviceModelsService, primeMockDeviceModelsService } from '../../device-models/__test__/mockDeviceModelsService'
 import { ScreensService } from '../screens.service'
 
+const { fileExistsMock } = vi.hoisted(() => ({ fileExistsMock: vi.fn() }))
+
 vi.mock('../../utils/imageUtils', () => ({
   downloadImage: vi.fn().mockResolvedValue(undefined),
   convertToPng: vi.fn().mockResolvedValue(undefined),
 }))
+
+vi.mock('../../utils/fileExists', () => ({ fileExists: fileExistsMock }))
 
 function createMockRepo() {
   const repo: any = {
@@ -80,8 +84,12 @@ describe('screensService', () => {
     screensRepo.save.mockResolvedValue(screen)
     screensRepo.update.mockResolvedValue(undefined)
     const file = { buffer: buffer.Buffer.from('data') }
+    const writeFileMock = vi.spyOn(fs.promises, 'writeFile').mockResolvedValue(undefined)
+    vi.spyOn(fs.promises, 'mkdir').mockResolvedValue(undefined)
     const result = await service.add({ filename: 'file', deviceId: 'dev', fetchManual: false, html: '' }, file)
     expect(result).toBe(screen)
+    expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('public/screens/devices/dev/1.original'), file.buffer)
+    expect(unlinkMock).not.toHaveBeenCalled()
     expect(screensRepo.save).toHaveBeenCalledWith(screen)
   })
 
@@ -122,13 +130,52 @@ describe('screensService', () => {
     expect(screensRepo.delete).toHaveBeenCalledWith('1')
     expect(screensRepo.save).toHaveBeenCalled()
     expect(unlinkMock).toHaveBeenCalledWith(expect.stringContaining('public/screens/devices/dev/1.png'))
+    expect(unlinkMock).toHaveBeenCalledWith(expect.stringContaining('public/screens/devices/dev/1.original'))
   })
 
-  it('updateExternalScreen refetches and converts image', async () => {
+  it('updateExternalScreen refetches into the retained original and converts it', async () => {
     const device = { id: 'dev', width: 100, height: 100 } as Device
     const screen = { id: '1', device, externalLink: 'url', fetchManual: true } as Screen
     screensRepo.findOne.mockResolvedValue(screen)
     await expect(service.updateExternalScreen('1')).resolves.toBeUndefined()
+    const { downloadImage, convertToPng } = await import('../../utils/imageUtils')
+    expect(downloadImage).toHaveBeenCalledWith('url', expect.stringContaining('public/screens/devices/dev/1.original'), expect.any(Object))
+    expect(convertToPng).toHaveBeenCalledWith(expect.stringContaining('1.original'), expect.stringContaining('1.png'), expect.anything(), expect.any(Object))
+  })
+
+  describe('reconvertImageScreens', () => {
+    const device = { id: 'dev' } as Device
+
+    it('reconverts uploads and cached external images from their original, or from the PNG when none is retained', async () => {
+      screensRepo.find.mockResolvedValue([
+        { id: 'upload', type: 'file' },
+        { id: 'legacy', type: 'file' },
+        { id: 'cached', type: 'external', fetchManual: true },
+        { id: 'live', type: 'external', fetchManual: false },
+        { id: 'plugin', type: 'plugin' },
+      ])
+      fileExistsMock.mockImplementation(async (p: string) => !p.endsWith('legacy.original'))
+      const renameMock = vi.spyOn(fs.promises, 'rename').mockResolvedValue(undefined)
+      const { convertToPng } = await import('../../utils/imageUtils')
+
+      await expect(service.reconvertImageScreens(device)).resolves.toBe(3)
+
+      const sources = vi.mocked(convertToPng).mock.calls.map(call => call[0].split('/').pop())
+      expect(sources).toEqual(['upload.original', 'legacy.png', 'cached.original'])
+      expect(renameMock).toHaveBeenCalledWith(expect.stringContaining('tmp-upload.png'), expect.stringContaining('/upload.png'))
+      expect(screensRepo.update).toHaveBeenCalledWith({ id: 'upload' }, { generatedAt: expect.any(Date) })
+      expect(screensRepo.update).not.toHaveBeenCalledWith({ id: 'live' }, expect.anything())
+    })
+
+    it('keeps going when one screen fails to convert', async () => {
+      screensRepo.find.mockResolvedValue([{ id: 'a', type: 'file' }, { id: 'b', type: 'file' }])
+      fileExistsMock.mockResolvedValue(true)
+      vi.spyOn(fs.promises, 'rename').mockResolvedValue(undefined)
+      const { convertToPng } = await import('../../utils/imageUtils')
+      vi.mocked(convertToPng).mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce(undefined)
+
+      await expect(service.reconvertImageScreens(device)).resolves.toBe(1)
+    })
   })
 
   it('updateExternalScreen throws if not found', async () => {

@@ -85,6 +85,30 @@ describe('maintenanceService', () => {
       })
     })
 
+    it('treats retained originals like screen images: orphaned without a screen, kept with one', async () => {
+      const device = { id: 'device-1' } as Device
+      deviceRepo.find.mockResolvedValue([device])
+      screenRepo.find.mockResolvedValue([{ id: 'kept', type: 'file', device } as any])
+
+      vi.spyOn(fs.promises, 'stat').mockImplementation(async (path: any) => {
+        if (path === '/mock/public/screens/devices' || path === '/mock/public/screens/devices/device-1')
+          return { isDirectory: () => true } as any
+        return { isDirectory: () => false, size: 10, mtimeMs: Date.now() } as any
+      })
+      vi.spyOn(fs.promises, 'readdir').mockImplementation(async (path: any) => {
+        if (path === '/mock/public/screens/devices')
+          return ['device-1'] as any
+        if (path === '/mock/public/screens/devices/device-1')
+          return ['kept.png', 'kept.original', 'gone.original'] as any
+        return [] as any
+      })
+
+      const result = await service.scan()
+
+      expect(result.orphanedScreenFiles.map(f => f.path)).toEqual(['/mock/public/screens/devices/device-1/gone.original'])
+      expect(result.orphanedScreenFiles[0].screenId).toBe('gone')
+    })
+
     it('detects orphaned device directories', async () => {
       deviceRepo.find.mockResolvedValue([])
       screenRepo.find.mockResolvedValue([])

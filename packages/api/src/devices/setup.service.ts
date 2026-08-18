@@ -1,9 +1,9 @@
 import type { SetupRequestHeadersDto } from './dto/setup-request-headers.dto'
 import { Injectable, Logger } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { DeviceModelsService } from '../device-models/device-models.service'
+import { FallbackScreensService } from '../device-models/fallback-screens.service'
 import generateApikey from '../utils/generateApikey'
 import generateFriendlyName from '../utils/generateFriendlyName'
 import { Device } from './devices.entity'
@@ -22,18 +22,12 @@ export class DeviceSetupService {
   constructor(
     @InjectRepository(Device)
     private deviceRepository: Repository<Device>,
-    private configService: ConfigService,
     private deviceModels: DeviceModelsService,
+    private fallbackScreens: FallbackScreensService,
   ) {}
 
   async setupDevice(headers: SetupRequestHeadersDto): Promise<SetupResponse> {
     this.logger.log(`Setup request for MAC: ${headers.id}`)
-    const baseSetupResponse = {
-      status: 200 as const,
-      image_url: `${this.configService.get<string>('api_url')}/screens/welcome.png`,
-      message: 'Welcome to Kuroshiro',
-    }
-
     const existing = await this.deviceRepository.findOneBy({ mac: headers.id })
     const device = existing ?? this.createDevice(headers.id)
     this.logger.log(existing
@@ -49,7 +43,9 @@ export class DeviceSetupService {
       this.logger.log(`New device created with id: ${device.id}`)
 
     const setupResponse: SetupResponse = {
-      ...baseSetupResponse,
+      status: 200,
+      image_url: await this.fallbackScreens.urlFor('welcome', await this.deviceModels.renderTargetFor(device)),
+      message: 'Welcome to Kuroshiro',
       friendly_id: device.friendlyId,
       api_key: device.apikey,
     }

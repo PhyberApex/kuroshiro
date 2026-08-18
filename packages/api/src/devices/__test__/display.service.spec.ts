@@ -1,8 +1,8 @@
-import type { MockDeviceModelsService } from '../../device-models/__test__/mockDeviceModelsService'
+import type { MockDeviceModelsService, MockFallbackScreensService } from '../../device-models/__test__/mockDeviceModelsService'
 import { promises as fs } from 'node:fs'
 import { NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createMockDeviceModelsService, GRAY_16, OG_PLUS, primeMockDeviceModelsService, V2 } from '../../device-models/__test__/mockDeviceModelsService'
+import { createMockDeviceModelsService, createMockFallbackScreensService, GRAY_4, GRAY_16, OG_PLUS, primeMockDeviceModelsService, primeMockFallbackScreensService, V2 } from '../../device-models/__test__/mockDeviceModelsService'
 import { Display } from '../display'
 import { DeviceDisplayService } from '../display.service'
 import { DisplayScreen } from '../displayScreen'
@@ -63,20 +63,24 @@ describe('deviceDisplayService', () => {
   let screenRepo: ReturnType<typeof createMockRepo>
   let configService: { get: ReturnType<typeof vi.fn> }
   let deviceModels: MockDeviceModelsService
+  let fallbackScreens: MockFallbackScreensService
 
   beforeEach(() => {
     deviceRepo = createMockRepo()
     screenRepo = createMockRepo()
     configService = { get: vi.fn() }
     deviceModels = createMockDeviceModelsService()
+    fallbackScreens = createMockFallbackScreensService()
     service = new DeviceDisplayService(
       deviceRepo as any,
       screenRepo as any,
       configService as any,
       deviceModels as any,
+      fallbackScreens as any,
     )
     vi.resetAllMocks()
     primeMockDeviceModelsService(deviceModels)
+    primeMockFallbackScreensService(fallbackScreens)
     primePuppeteer()
   })
 
@@ -165,7 +169,7 @@ describe('deviceDisplayService', () => {
       expect(html).toContain('--screen-w: 1040px;')
       expect(html).toContain('<div class="view view--full"><p>hi</p></div>')
       const { convertToPng } = await import('../../utils/imageUtils')
-      expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('screen2.png'), 1872, 1404, expect.any(Object))
+      expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('screen2.png'), { model: V2, palette: GRAY_16 }, expect.any(Object))
       expect(result.image_url).toBe('http://api/screens/devices/1/screen2.png')
     })
 
@@ -308,7 +312,7 @@ describe('deviceDisplayService', () => {
     expect(result.refresh_rate).toBe(30)
     expect(result.firmware_url).toBe('http://example.com/firmware')
     expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', expect.any(String), expect.any(Object))
-    expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('mirror.png'), 800, 480, expect.any(Object))
+    expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('mirror.png'), { model: OG_PLUS, palette: GRAY_4 }, expect.any(Object))
     expect(fs.unlink).toHaveBeenCalled()
   })
 
@@ -347,7 +351,7 @@ describe('deviceDisplayService', () => {
     expect(result.image_url).toContain('mirror.png')
     expect(result.refresh_rate).toBe(device.refreshRate)
     expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', expect.any(String), expect.any(Object))
-    expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('mirror.png'), 800, 480, expect.any(Object))
+    expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('mirror.png'), { model: OG_PLUS, palette: GRAY_4 }, expect.any(Object))
     expect(fs.unlink).toHaveBeenCalled()
   })
 
@@ -413,7 +417,7 @@ describe('deviceDisplayService', () => {
         headers: { 'access-token': 'mirror-token', 'ID': 'different-mac' },
       })
       expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', expect.any(String), expect.any(Object))
-      expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('mirror.png'), 800, 480, expect.any(Object))
+      expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('mirror.png'), { model: OG_PLUS, palette: GRAY_4 }, expect.any(Object))
       expect(result).toBeInstanceOf(DisplayScreen)
       expect(result.filename).toContain('mirror')
       expect(result.image_url).toBe('http://api/screens/devices/1/mirror.png')
@@ -475,7 +479,7 @@ describe('deviceDisplayService', () => {
 
       const result = await service.getCurrentImageWithoutProgressing(headers)
       expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', expect.any(String), expect.any(Object))
-      expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('screen1.png'), 800, 480, expect.any(Object))
+      expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('screen1.png'), { model: OG_PLUS, palette: GRAY_4 }, expect.any(Object))
       expect(result).toBeInstanceOf(DisplayScreen)
       expect(result.image_url).toBe('http://api/screens/devices/1/screen1.png')
     })

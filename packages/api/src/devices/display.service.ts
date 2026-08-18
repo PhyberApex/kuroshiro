@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import puppeteer from 'puppeteer'
 import { Repository } from 'typeorm'
 import { DeviceModelsService } from '../device-models/device-models.service'
+import { FallbackScreensService } from '../device-models/fallback-screens.service'
 import { viewFull, wrapInScreenShell } from '../device-models/screen-shell'
 import { PluginDataFetcherService } from '../plugins/services/plugin-data-fetcher.service'
 import { PluginRendererService } from '../plugins/services/plugin-renderer.service'
@@ -45,6 +46,7 @@ export class DeviceDisplayService {
     private screenRepository: Repository<Screen>,
     private configService: ConfigService,
     private deviceModels: DeviceModelsService,
+    private fallbackScreens: FallbackScreensService,
     private pluginDataFetcher: PluginDataFetcherService,
     private pluginRenderer: PluginRendererService,
     private pluginTransformer: PluginTransformService,
@@ -102,7 +104,7 @@ export class DeviceDisplayService {
       return new Display({
         filename: 'noScreen.png',
         firmware_url: '',
-        image_url: `${this.configService.get<string>('api_url')}/screens/noScreen.png`,
+        image_url: await this.fallbackImageUrl('noScreen', device),
         refresh_rate: device.refreshRate,
         reset_firmware: resetDevice,
         special_function: device.specialFunction,
@@ -145,7 +147,7 @@ export class DeviceDisplayService {
       }
       let refreshRate = device.refreshRate
       let filename = 'error.png'
-      let localImageUrl = `${this.configService.get<string>('api_url')}/screens/error.png`
+      let localImageUrl = await this.fallbackImageUrl('error', device)
       let firmwareUrl = null
       let resetFirmware = false
       let specialFunction = device.specialFunction
@@ -194,12 +196,12 @@ export class DeviceDisplayService {
       this.logger.log('No screen found returning default no screen image')
       return new DisplayScreen({
         filename: 'noScreen.png',
-        image_url: `${this.configService.get<string>('api_url')}/screens/noScreen.png`,
+        image_url: await this.fallbackImageUrl('noScreen', device),
         refresh_rate: device.refreshRate,
         rendered_at: new Date(),
       })
     }
-    let imgUrl = `${this.configService.get<string>('api_url')}/screens/error.png`
+    let imgUrl = await this.fallbackImageUrl('error', device)
     if (device.mirrorEnabled) {
       this.logger.log(`Mirroring enabled for device ${device.id}, checking for image...`)
       if (await fileExists(resolveAppPath('public', 'screens', 'devices', device.id, 'mirror.png'))) {
@@ -252,8 +254,7 @@ export class DeviceDisplayService {
     const outputPath = path.join(destDir, pngFilename)
 
     await downloadImage(response.image_url, inputPath, this.logger)
-    const { width, height } = await this.deviceModels.outputSizeFor(device)
-    await convertToPng(inputPath, outputPath, width, height, this.logger)
+    await convertToPng(inputPath, outputPath, await this.deviceModels.renderTargetFor(device), this.logger)
     await fs.promises.unlink(inputPath)
     this.logger.log(`Deleted original image: ${inputPath}`)
 
@@ -299,7 +300,7 @@ export class DeviceDisplayService {
       }
       catch (err) {
         this.logger.error(`Failed to render mashup: ${err.message}`)
-        imgUrl = this.errorImageUrl()
+        imgUrl = await this.fallbackImageUrl('error', device)
       }
     }
     // Handle plugin screen
@@ -321,7 +322,7 @@ export class DeviceDisplayService {
           }
           catch (err) {
             this.logger.error(`Failed to render cached plugin output: ${err.message}`)
-            imgUrl = this.errorImageUrl()
+            imgUrl = await this.fallbackImageUrl('error', device)
           }
         }
         // Fallback: fetch and render on-demand
@@ -333,7 +334,7 @@ export class DeviceDisplayService {
           }
           catch (err) {
             this.logger.error(`Failed to render plugin: ${err.message}`)
-            imgUrl = this.errorImageUrl()
+            imgUrl = await this.fallbackImageUrl('error', device)
           }
         }
       }
@@ -347,8 +348,7 @@ export class DeviceDisplayService {
       const inputPath = path.join(resolveAppPath('public', 'screens', 'devices', device.id), 'tmp-source')
       try {
         await downloadImage(screen.externalLink, inputPath, this.logger)
-        const { width, height } = await this.deviceModels.outputSizeFor(device)
-        await convertToPng(inputPath, this.screenImagePath(device, screen), width, height, this.logger)
+        await convertToPng(inputPath, this.screenImagePath(device, screen), await this.deviceModels.renderTargetFor(device), this.logger)
         this.logger.log('Updating generation date on screen')
         screen.generatedAt = new Date()
         await this.screenRepository.save(screen)
@@ -357,7 +357,7 @@ export class DeviceDisplayService {
       }
       catch (err) {
         this.logger.error(`Failed to process image: ${err.message}`)
-        imgUrl = this.errorImageUrl()
+        imgUrl = await this.fallbackImageUrl('error', device)
       }
     }
     if (imgUrl !== null)
@@ -366,7 +366,7 @@ export class DeviceDisplayService {
     // No rendering source (e.g. uploaded file screens) — serve the stored image if present
     return await fileExists(this.screenImagePath(device, screen))
       ? this.screenImageUrl(device, screen)
-      : this.errorImageUrl()
+      : await this.fallbackImageUrl('error', device)
   }
 
   private async renderPluginHtml(plugin: Plugin, screen: Screen): Promise<string | null> {
@@ -434,7 +434,7 @@ export class DeviceDisplayService {
       const inputPath = path.join(destDir, 'tmp-source')
       await fs.promises.mkdir(destDir, { recursive: true })
       await fs.promises.writeFile(inputPath, buffer.Buffer.from(image))
-      await convertToPng(inputPath, this.screenImagePath(device, screen), target.model.width, target.model.height, this.logger)
+      await convertToPng(inputPath, this.screenImagePath(device, screen), target, this.logger)
       return this.screenImageUrl(device, screen)
     }
     finally {
@@ -456,7 +456,7 @@ export class DeviceDisplayService {
     return `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${screen.id}.png`
   }
 
-  private errorImageUrl(): string {
-    return `${this.configService.get<string>('api_url')}/screens/error.png`
+  private async fallbackImageUrl(kind: 'noScreen' | 'error', device: Device): Promise<string> {
+    return this.fallbackScreens.urlFor(kind, await this.deviceModels.renderTargetFor(device))
   }
 }
