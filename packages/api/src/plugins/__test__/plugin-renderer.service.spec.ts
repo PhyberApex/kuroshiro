@@ -67,18 +67,6 @@ describe('pluginRendererService', () => {
     expect(result).toBe('')
   })
 
-  it('wraps rendered content in TRMNL framework', async () => {
-    const template = '<div>Test</div>'
-    const data = {}
-
-    const result = await service.renderForDisplay(template, data)
-
-    expect(result).toContain('https://usetrmnl.com/css/latest/plugins.css')
-    expect(result).toContain('https://usetrmnl.com/js/latest/plugins.js')
-    expect(result).toContain('<div>Test</div>')
-    expect(result).toContain('class="environment trmnl"')
-  })
-
   it('handles filters in templates', async () => {
     const template = '{{ title | capitalize }}'
     const data = { title: 'hello world' }

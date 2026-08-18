@@ -26,7 +26,6 @@ describe('pluginSchedulerService', () => {
 
     mockRenderer = {
       render: vi.fn(),
-      renderForDisplay: vi.fn(),
     } as any
 
     mockScreenRepo = {

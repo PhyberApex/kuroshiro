@@ -418,7 +418,7 @@ export class PluginsService implements OnModuleInit {
       templateData.data = rawData
     }
 
-    const html = template ? await this.renderer.renderForDisplay(template, templateData) : ''
+    const html = template ? await this.renderer.render(template, templateData) : ''
     return { html, data: rawData } // Return raw data for display in preview tab
   }
 }

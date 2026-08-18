@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import type { Plugin } from '../types/plugin'
+import type { RenderTarget } from '@/utils/screenShell'
 import { mdiArrowLeft, mdiContentSave, mdiEye } from '@mdi/js'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { VAlert, VBtn, VCard, VCardActions, VCardText, VCardTitle, VCol, VContainer, VDialog, VDivider, VExpandTransition, VExpansionPanel, VExpansionPanels, VExpansionPanelText, VExpansionPanelTitle, VForm, VProgressCircular, VRow, VSelect, VSpacer, VSwitch, VTab, VTabs, VTextarea, VTextField, VWindow, VWindowItem } from 'vuetify/components'
+import RenderTargetPicker from '@/components/RenderTargetPicker.vue'
+import ScreenFrame from '@/components/ScreenFrame.vue'
+import { DEFAULT_MODEL, DEFAULT_PALETTE } from '@/utils/renderTarget'
+import { viewFull } from '@/utils/screenShell'
 import { usePluginsStore } from '../stores/plugins'
 
 const props = defineProps<{
@@ -93,6 +98,7 @@ onMounted(async () => {
 const loading = ref(false)
 const previewLoading = ref(false)
 const previewHtml = ref('')
+const previewTarget = ref<RenderTarget>({ model: DEFAULT_MODEL, palette: DEFAULT_PALETTE })
 const previewData = ref<any>(null)
 const previewError = ref('')
 const showPreview = ref(false)
@@ -436,12 +442,8 @@ function cancel() {
           <VWindow v-model="previewTab">
             <VWindowItem value="rendered">
               <div v-if="previewHtml" class="mt-4">
-                <iframe
-                  :srcdoc="previewHtml"
-                  width="800"
-                  height="480"
-                  style="border: 1px solid #ccc;"
-                />
+                <RenderTargetPicker v-model="previewTarget" class="mb-3" />
+                <ScreenFrame :body="viewFull(previewHtml)" :target="previewTarget" />
               </div>
             </VWindowItem>
             <VWindowItem value="data">

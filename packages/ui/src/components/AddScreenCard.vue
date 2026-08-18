@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { mdiCodeBlockTags, mdiDownload, mdiEye, mdiGridLarge, mdiLink, mdiStop, mdiUpload } from '@mdi/js'
-import { computed, nextTick, ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { VBtn, VCard, VCardText, VCardTitle, VCol, VDivider, VFileInput, VForm, VOverlay, VRow, VSwitch, VTab, VTabs, VTextarea, VTextField, VWindow, VWindowItem } from 'vuetify/components'
 import AddMashupCard from '@/components/AddMashupCard.vue'
+import ScreenFrame from '@/components/ScreenFrame.vue'
 import { useDemoInfo } from '@/composeables/useDemoInfo.ts'
+import { useDeviceRenderTarget } from '@/composeables/useDeviceRenderTarget'
 import { useDeviceStore } from '@/stores/device.ts'
 import { useScreensStore } from '@/stores/screens'
-import { deviceRenderSize } from '@/utils/deviceRenderSize'
 import exampleHtml from '@/utils/exampleHtml'
+import { viewFull } from '@/utils/screenShell'
 
 const props = defineProps<{ deviceId: string }>()
 
@@ -15,13 +17,11 @@ const screensStore = useScreensStore()
 const deviceStore = useDeviceStore()
 
 const device = computed(() => deviceStore.getById(props.deviceId))
-const renderSize = computed(() => deviceRenderSize(device.value))
+const renderTarget = useDeviceRenderTarget(device)
 
 const externalLink = ref('')
 const fetchManual = ref(false)
 const fileInput = ref<File | null>(null)
-
-const previewIframeRef = useTemplateRef('previewIframeRef')
 
 const addScreenTab = ref<'link' | 'file' | 'html' | 'mashup'>('link')
 
@@ -100,21 +100,6 @@ const addScreenInfo = computed(() => {
     : 'No cache: fetched on each request.'
 })
 const showHtmlPreview = ref(false)
-async function renderPreviewHtml() {
-  showHtmlPreview.value = true
-  await nextTick()
-  const iframe = previewIframeRef.value
-  if (!iframe)
-    return
-
-  const doc = iframe.contentDocument || iframe.contentWindow?.document
-  if (!doc)
-    return
-  doc.open()
-  doc.write(`<html><head><link rel="stylesheet" href="https://usetrmnl.com/css/latest/plugins.css"><script src="https://usetrmnl.com/js/latest/plugins.js"><\/script></head><body class="environment trmnl"><div class="screen"><div class="view view--full">${renderHtml.value}</div></div></body></html>`)
-  doc.close()
-  showHtmlPreview.value = true
-}
 
 async function submitAddScreen() {
   if (!device.value)
@@ -214,7 +199,7 @@ const { isDemo } = useDemoInfo()
             class="mt-5 ml-5"
             :prepend-icon="mdiEye"
             :disabled="!renderHtmlValid"
-            @click="renderPreviewHtml()"
+            @click="showHtmlPreview = true"
           >
             Preview
           </VBtn>
@@ -222,7 +207,9 @@ const { isDemo } = useDemoInfo()
       </VCardText>
     </VCard>
     <VOverlay v-model="showHtmlPreview" class="align-center justify-center">
-      <iframe ref="previewIframeRef" :width="renderSize.width + 5" :height="renderSize.height + 5" class="align-center" title="HTML preview" />
+      <div :style="{ width: `min(90vw, ${renderTarget.model.width}px)` }">
+        <ScreenFrame v-if="showHtmlPreview" :body="viewFull(renderHtml)" :target="renderTarget" />
+      </div>
     </VOverlay>
   </template>
 </template>

@@ -170,13 +170,11 @@ describe('mashupRendererService', () => {
     const result = await service.renderMashup(config, device)
 
     expect(result).toContain('class="mashup mashup--2x2"')
-    expect(result).toContain('<html>')
-    expect(result).toContain('<body class="environment trmnl">')
-    expect(result).toContain('usetrmnl.com/css/latest/plugins.css')
-    expect(result).toContain('usetrmnl.com/js/latest/plugins.js')
+    expect(result.trim().startsWith('<div class="mashup')).toBe(true)
+    expect(result).not.toContain('<html>')
   })
 
-  it('should include TRMNL CSS and JS in rendered output', async () => {
+  it('returns device-independent body markup without a document shell', async () => {
     const device = { id: 'device-1', width: 800, height: 480 } as Device
 
     const slots: MashupSlot[] = [
@@ -202,7 +200,8 @@ describe('mashupRendererService', () => {
 
     const result = await service.renderMashup(config, device)
 
-    expect(result).toContain('<link rel="stylesheet" href="https://usetrmnl.com/css/latest/plugins.css">')
-    expect(result).toContain('<script src="https://usetrmnl.com/js/latest/plugins.js">')
+    expect(result).toContain('class="mashup mashup--1Tx1B"')
+    expect(result).not.toContain('<html>')
+    expect(result).not.toContain('plugins.css')
   })
 })
