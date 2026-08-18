@@ -4,17 +4,19 @@ import type { DisplayRequestHeadersDto } from './dto/display-request-headers.dto
 import buffer from 'node:buffer'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import { BadRequestException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common'
+import { Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
 import puppeteer from 'puppeteer'
 import { Repository } from 'typeorm'
+import { DeviceModelsService } from '../device-models/device-models.service'
 import { PluginDataFetcherService } from '../plugins/services/plugin-data-fetcher.service'
 import { PluginRendererService } from '../plugins/services/plugin-renderer.service'
 import { PluginTransformService } from '../plugins/services/plugin-transform.service'
 import { Screen } from '../screens/screens.entity'
 import { fileExists } from '../utils/fileExists'
 import { convertToPng, downloadImage } from '../utils/imageUtils'
+import { parseHeaderInt } from '../utils/parseHeaderInt'
 import { resolveAppPath } from '../utils/pathHelper'
 import { Device } from './devices.entity'
 import { Display } from './display'
@@ -41,6 +43,7 @@ export class DeviceDisplayService {
     @InjectRepository(Screen)
     private screenRepository: Repository<Screen>,
     private configService: ConfigService,
+    private deviceModels: DeviceModelsService,
     private pluginDataFetcher: PluginDataFetcherService,
     private pluginRenderer: PluginRendererService,
     private pluginTransformer: PluginTransformService,
@@ -80,13 +83,11 @@ export class DeviceDisplayService {
     device.fwVersion = headers['fw-version']
     device.rssi = headers.rssi
     device.userAgent = headers['user-agent']
-    // Check if height or width has been set already and send error if not initial set
-    if (device.width && Number(headers.width) !== device.width)
-      throw new BadRequestException('You can\'t change the width anymore')
-    if (device.height && Number(headers.height) !== device.height)
-      throw new BadRequestException('You can\'t change the height anymore')
-    device.height = Number.parseInt(headers.height)
-    device.width = Number.parseInt(headers.width)
+    device.width = parseHeaderInt(headers.width) ?? device.width
+    device.height = parseHeaderInt(headers.height) ?? device.height
+    device.reportedModel = headers.model ?? device.reportedModel
+    if (!device.deviceModel)
+      await this.deviceModels.assignResolvedModel(device)
     // Handling reset
     const resetDevice = device.resetDevice
     device.resetDevice = false
@@ -250,7 +251,8 @@ export class DeviceDisplayService {
     const outputPath = path.join(destDir, pngFilename)
 
     await downloadImage(response.image_url, inputPath, this.logger)
-    await convertToPng(inputPath, outputPath, device.width, device.height, this.logger)
+    const { width, height } = await this.deviceModels.outputSizeFor(device)
+    await convertToPng(inputPath, outputPath, width, height, this.logger)
     await fs.promises.unlink(inputPath)
     this.logger.log(`Deleted original image: ${inputPath}`)
 
@@ -344,7 +346,8 @@ export class DeviceDisplayService {
       const inputPath = path.join(resolveAppPath('public', 'screens', 'devices', device.id), 'tmp-source')
       try {
         await downloadImage(screen.externalLink, inputPath, this.logger)
-        await convertToPng(inputPath, this.screenImagePath(device, screen), device.width, device.height, this.logger)
+        const { width, height } = await this.deviceModels.outputSizeFor(device)
+        await convertToPng(inputPath, this.screenImagePath(device, screen), width, height, this.logger)
         this.logger.log('Updating generation date on screen')
         screen.generatedAt = new Date()
         await this.screenRepository.save(screen)
@@ -424,7 +427,8 @@ export class DeviceDisplayService {
       const inputPath = path.join(destDir, 'tmp-source')
       await fs.promises.mkdir(destDir, { recursive: true })
       await fs.promises.writeFile(inputPath, buffer.Buffer.from(image))
-      await convertToPng(inputPath, this.screenImagePath(device, screen), device.width, device.height, this.logger)
+      const { width, height } = await this.deviceModels.outputSizeFor(device)
+      await convertToPng(inputPath, this.screenImagePath(device, screen), width, height, this.logger)
       return this.screenImageUrl(device, screen)
     }
     finally {

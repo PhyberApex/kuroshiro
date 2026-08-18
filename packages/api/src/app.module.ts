@@ -6,6 +6,9 @@ import { ConfigModule } from '@nestjs/config'
 import { ServeStaticModule } from '@nestjs/serve-static'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import config from './config/config'
+import { DeviceModelsModule } from './device-models/device-models.module'
+import { DeviceModel } from './device-models/entities/device-model.entity'
+import { Palette } from './device-models/entities/palette.entity'
 import { Device } from './devices/devices.entity'
 import { DevicesModule } from './devices/devices.module'
 import { LogEntry } from './logs/logs.entity'
@@ -44,7 +47,7 @@ const conf = config()
       username: conf.database.user,
       password: conf.database.password,
       database: conf.database.database,
-      entities: [Device, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, PluginVariable, MashupConfiguration, MashupSlot],
+      entities: [Device, DeviceModel, Palette, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, PluginVariable, MashupConfiguration, MashupSlot],
       migrations: (() => {
         const dir = path.join(process.cwd(), 'dist', 'src', 'migrations')
         if (!fs.existsSync(dir))
@@ -61,6 +64,7 @@ const conf = config()
     TypeOrmModule.forFeature([Device, Screen, LogEntry]),
     ScreensModule,
     LogsModule,
+    DeviceModelsModule,
     DevicesModule,
     PluginsModule,
     MashupModule,

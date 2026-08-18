@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { TypeOrmModule } from '@nestjs/typeorm'
+import { DeviceModelsModule } from '../device-models/device-models.module'
 import { LogEntry } from '../logs/logs.entity'
 import { PluginsModule } from '../plugins/plugins.module'
 import { Screen } from '../screens/screens.entity'
@@ -13,7 +14,7 @@ import { SetupController } from './setup.controller'
 import { DeviceSetupService } from './setup.service'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Device, Screen, LogEntry]), ConfigModule, PluginsModule],
+  imports: [TypeOrmModule.forFeature([Device, Screen, LogEntry]), ConfigModule, PluginsModule, DeviceModelsModule],
   controllers: [DevicesController, DisplayController, SetupController],
   providers: [DevicesService, DeviceDisplayService, DeviceSetupService],
   exports: [DevicesService],

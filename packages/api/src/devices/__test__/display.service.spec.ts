@@ -1,6 +1,8 @@
+import type { MockDeviceModelsService } from '../../device-models/__test__/mockDeviceModelsService'
 import { promises as fs } from 'node:fs'
-import { BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common'
+import { NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createMockDeviceModelsService, OG_PLUS, primeMockDeviceModelsService, V2 } from '../../device-models/__test__/mockDeviceModelsService'
 import { Display } from '../display'
 import { DeviceDisplayService } from '../display.service'
 import { DisplayScreen } from '../displayScreen'
@@ -53,17 +55,21 @@ describe('deviceDisplayService', () => {
   let deviceRepo: ReturnType<typeof createMockRepo>
   let screenRepo: ReturnType<typeof createMockRepo>
   let configService: { get: ReturnType<typeof vi.fn> }
+  let deviceModels: MockDeviceModelsService
 
   beforeEach(() => {
     deviceRepo = createMockRepo()
     screenRepo = createMockRepo()
     configService = { get: vi.fn() }
+    deviceModels = createMockDeviceModelsService()
     service = new DeviceDisplayService(
       deviceRepo as any,
       screenRepo as any,
       configService as any,
+      deviceModels as any,
     )
     vi.resetAllMocks()
+    primeMockDeviceModelsService(deviceModels)
   })
 
   const baseDevice = {
@@ -91,12 +97,41 @@ describe('deviceDisplayService', () => {
     await expect(service.getCurrentImage(headers as any)).rejects.toThrow(UnauthorizedException)
   })
 
-  it('throws BadRequestException if width or height is changed after set', async () => {
-    deviceRepo.findOneBy.mockResolvedValue({ ...baseDevice, width: 100, height: 200, apikey: 'token' })
-    // width changed
-    await expect(service.getCurrentImage({ ...headers, width: 101 } as any)).rejects.toThrow(BadRequestException)
-    // height changed
-    await expect(service.getCurrentImage({ ...headers, width: 100, height: 201 } as any)).rejects.toThrow(BadRequestException)
+  describe('device report handling', () => {
+    beforeEach(() => {
+      screenRepo.findOneBy.mockResolvedValue(null)
+      configService.get.mockReturnValue('http://api')
+    })
+
+    it('records the reported dimensions and model without rejecting changed values', async () => {
+      const device = { ...baseDevice, width: 100, height: 200, deviceModel: OG_PLUS }
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      await service.getCurrentImage({ ...headers, width: '1872', height: '1404', model: 'x' } as any)
+      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ width: 1872, height: 1404, reportedModel: 'x' }))
+    })
+
+    it('keeps the stored dimensions when the headers are missing or unparsable', async () => {
+      const device = { ...baseDevice, width: 800, height: 480, reportedModel: 'og', deviceModel: OG_PLUS }
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      await service.getCurrentImage({ ...headers, width: 'abc' } as any)
+      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ width: 800, height: 480, reportedModel: 'og' }))
+    })
+
+    it('resolves and assigns a device model when the device has none', async () => {
+      const device = { ...baseDevice, deviceModel: null }
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      deviceModels.assignResolvedModel.mockResolvedValue(V2)
+      await service.getCurrentImage({ ...headers, width: '1872', height: '1404', model: 'x' } as any)
+      expect(deviceModels.assignResolvedModel).toHaveBeenCalledWith(expect.objectContaining({ reportedModel: 'x', width: 1872, height: 1404 }))
+      expect(deviceRepo.save).toHaveBeenCalled()
+    })
+
+    it('never re-resolves a device that already has a model', async () => {
+      const device = { ...baseDevice, deviceModel: OG_PLUS }
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      await service.getCurrentImage({ ...headers, model: 'x' } as any)
+      expect(deviceModels.assignResolvedModel).not.toHaveBeenCalled()
+    })
   })
 
   it('returns default no screen image if no active screen and not mirrored', async () => {

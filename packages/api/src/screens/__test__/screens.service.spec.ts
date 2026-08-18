@@ -1,3 +1,4 @@
+import type { MockDeviceModelsService } from '../../device-models/__test__/mockDeviceModelsService'
 import type { Device } from '../../devices/devices.entity'
 import type { CreateScreenDto } from '../dto/create-screen.dto'
 import type { Screen } from '../screens.entity'
@@ -5,7 +6,7 @@ import buffer from 'node:buffer'
 import * as fs from 'node:fs'
 import { BadRequestException, NotFoundException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
+import { createMockDeviceModelsService, primeMockDeviceModelsService } from '../../device-models/__test__/mockDeviceModelsService'
 import { ScreensService } from '../screens.service'
 
 vi.mock('../../utils/imageUtils', () => ({
@@ -36,17 +37,21 @@ describe('screensService', () => {
   let screensRepo: ReturnType<typeof createMockRepo>
   let devicesRepo: ReturnType<typeof createMockRepo>
   let unlinkMock: any
+  let deviceModels: MockDeviceModelsService
   const mockConfigService = { get: vi.fn().mockReturnValue(false) }
 
   beforeEach(() => {
     screensRepo = createMockRepo()
     devicesRepo = createMockRepo()
+    deviceModels = createMockDeviceModelsService()
     service = new ScreensService(
       screensRepo as any,
       devicesRepo as any,
       mockConfigService as any,
+      deviceModels as any,
     )
     vi.resetAllMocks()
+    primeMockDeviceModelsService(deviceModels)
     unlinkMock = vi.spyOn(fs.promises, 'unlink').mockResolvedValue(undefined)
   })
 

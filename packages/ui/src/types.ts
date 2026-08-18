@@ -1,3 +1,44 @@
+export interface DeviceModel {
+  name: string
+  label: string
+  description?: string | null
+  width: number
+  height: number
+  colors: number
+  bitDepth: number
+  scaleFactor: number
+  rotation: number
+  offsetX: number
+  offsetY: number
+  mimeType: string
+  kind: string
+  paletteIds: string[]
+  cssClasses: string[]
+  cssVariables: Record<string, string>
+  imageSizeLimit?: number | null
+  deprecated: boolean
+  syncedAt?: string | null
+}
+
+export interface Palette {
+  id: string
+  name: string
+  grays: number
+  colors?: string[] | null
+  frameworkClass: string
+  grayscaleBitDepth?: number | null
+  deprecated: boolean
+  syncedAt?: string | null
+}
+
+export interface DeviceModelSyncResult {
+  models: number
+  palettes: number
+  deprecatedModels: number
+  deprecatedPalettes: number
+  syncedAt: string
+}
+
 export interface Device {
   id: string
   name: string
@@ -11,6 +52,9 @@ export interface Device {
   userAgent?: string
   width?: number
   height?: number
+  reportedModel?: string | null
+  deviceModel?: DeviceModel | null
+  palette?: Palette | null
   mirrorEnabled: boolean
   mirrorMac: string
   mirrorApikey: string

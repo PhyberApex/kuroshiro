@@ -1,4 +1,6 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
+import { DeviceModel } from '../device-models/entities/device-model.entity'
+import { Palette } from '../device-models/entities/palette.entity'
 import { LogEntry } from '../logs/logs.entity'
 import { Screen } from '../screens/screens.entity'
 
@@ -39,6 +41,17 @@ export class Device {
 
   @Column('int', { nullable: true })
   height?: number
+
+  @Column('text', { nullable: true })
+  reportedModel?: string | null
+
+  @ManyToOne(() => DeviceModel, { nullable: true, eager: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'deviceModelName' })
+  deviceModel?: DeviceModel | null
+
+  @ManyToOne(() => Palette, { nullable: true, eager: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'paletteId' })
+  palette?: Palette | null
 
   @Column('boolean', { nullable: true })
   mirrorEnabled?: boolean

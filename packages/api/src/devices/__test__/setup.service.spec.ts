@@ -1,5 +1,7 @@
+import type { MockDeviceModelsService } from '../../device-models/__test__/mockDeviceModelsService'
 import type { Device } from '../devices.entity'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createMockDeviceModelsService, OG_PLUS, primeMockDeviceModelsService } from '../../device-models/__test__/mockDeviceModelsService'
 import { DeviceSetupService } from '../setup.service'
 
 vi.mock('../../utils/generateApikey', () => ({
@@ -21,15 +23,19 @@ describe('deviceSetupService', () => {
   let service: DeviceSetupService
   let deviceRepo: ReturnType<typeof createMockRepo>
   let configService: { get: ReturnType<typeof vi.fn> }
+  let deviceModels: MockDeviceModelsService
 
   beforeEach(() => {
     deviceRepo = createMockRepo()
     configService = { get: vi.fn() }
+    deviceModels = createMockDeviceModelsService()
     service = new DeviceSetupService(
       deviceRepo as any,
       configService as any,
+      deviceModels as any,
     )
     vi.resetAllMocks()
+    primeMockDeviceModelsService(deviceModels)
   })
 
   const headers = { id: 'mac' }
@@ -62,7 +68,7 @@ describe('deviceSetupService', () => {
       apikey: 'mocked-api-key',
       name: 'mocked-friendly-id',
     })
-    expect(deviceRepo.save).toHaveBeenCalledWith(newDevice)
+    expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining(newDevice))
     expect(result.api_key).toBe('mocked-api-key')
     expect(result.friendly_id).toBe('mocked-friendly-id')
     expect(result.image_url).toBe('http://api/screens/welcome.png')
@@ -78,5 +84,28 @@ describe('deviceSetupService', () => {
 
     expect(configService.get).toHaveBeenCalledWith('api_url')
     expect(result.image_url).toBe('https://custom-api.com/screens/welcome.png')
+  })
+
+  it('records the reported firmware version and model, and resolves a model when none is assigned', async () => {
+    const device = { apikey: 'key', friendlyId: 'id', deviceModel: null } as unknown as Device
+    deviceRepo.findOneBy.mockResolvedValue(device)
+    configService.get.mockReturnValue('http://api')
+    deviceModels.assignResolvedModel.mockResolvedValue(OG_PLUS)
+
+    await service.setupDevice({ 'id': 'mac', 'fw-version': '1.6.0', 'model': 'og' })
+
+    expect(deviceModels.assignResolvedModel).toHaveBeenCalledWith(expect.objectContaining({ reportedModel: 'og' }))
+    expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ fwVersion: '1.6.0', reportedModel: 'og' }))
+  })
+
+  it('leaves an already assigned model alone', async () => {
+    const device = { apikey: 'key', friendlyId: 'id', deviceModel: OG_PLUS } as unknown as Device
+    deviceRepo.findOneBy.mockResolvedValue(device)
+    configService.get.mockReturnValue('http://api')
+
+    await service.setupDevice({ id: 'mac', model: 'x' })
+
+    expect(deviceModels.assignResolvedModel).not.toHaveBeenCalled()
+    expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ reportedModel: 'x', deviceModel: OG_PLUS }))
   })
 })

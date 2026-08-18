@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 export type CreateDevice = Pick<Device, 'mac' | 'name'>
-export type UpdateDevice = Partial<Omit<Device, 'id' | 'mac' | 'friendlyId'>>
+export type UpdateDevice = Partial<Omit<Device, 'id' | 'mac' | 'friendlyId' | 'deviceModel' | 'palette'>> & { deviceModelName?: string, paletteId?: string }
 
 export const useDeviceStore = defineStore('device', () => {
   const devices = ref<Device[]>([])

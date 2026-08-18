@@ -4,6 +4,7 @@ import { BadRequestException, Injectable, InternalServerErrorException, Logger, 
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
 import { EntityManager, Repository } from 'typeorm'
+import { DeviceModelsService } from '../device-models/device-models.service'
 import { Device } from '../devices/devices.entity'
 import { convertToPng, downloadImage } from '../utils/imageUtils'
 import { resolveAppPath } from '../utils/pathHelper'
@@ -20,6 +21,7 @@ export class ScreensService {
     @InjectRepository(Device)
     private devicesRepository: Repository<Device>,
     private readonly configService: ConfigService,
+    private readonly deviceModels: DeviceModelsService,
   ) {}
 
   async getAll(): Promise<Screen[]> {
@@ -63,7 +65,8 @@ export class ScreensService {
       this.logger.debug(`Planned output path: ${outputPath}`)
       try {
         await downloadImage(body.externalLink, inputPath, this.logger)
-        await convertToPng(inputPath, outputPath, device.width, device.height, this.logger)
+        const { width, height } = await this.deviceModels.outputSizeFor(device)
+        await convertToPng(inputPath, outputPath, width, height, this.logger)
         this.logger.log('Download and conversion successful')
       }
       catch (err) {
@@ -85,7 +88,8 @@ export class ScreensService {
         this.logger.debug(`Planned output path: ${outputPath}`)
         await fs.promises.writeFile(inputPath, file.buffer)
         this.logger.log(`Uploaded file saved to ${inputPath}`)
-        await convertToPng(inputPath, outputPath, device.width, device.height, this.logger)
+        const { width, height } = await this.deviceModels.outputSizeFor(device)
+        await convertToPng(inputPath, outputPath, width, height, this.logger)
         await fs.promises.unlink(inputPath)
         this.logger.log(`Converted and saved PNG to ${outputPath}`)
       }
@@ -208,7 +212,8 @@ export class ScreensService {
     const outputPath = path.join(destDir, pngFilename)
     try {
       await downloadImage(screen.externalLink, inputPath, this.logger)
-      await convertToPng(inputPath, outputPath, screen.device.width, screen.device.height, this.logger)
+      const { width, height } = await this.deviceModels.outputSizeFor(screen.device)
+      await convertToPng(inputPath, outputPath, width, height, this.logger)
       this.logger.log('Updating generation date on screen')
       screen.generatedAt = new Date()
       await this.screensRepository.save(screen)

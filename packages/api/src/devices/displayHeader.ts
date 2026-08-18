@@ -9,4 +9,5 @@ export interface DisplayRequestHeaders {
   'user-agent'?: string
   'height'?: number
   'width'?: number
+  'model'?: string
 }

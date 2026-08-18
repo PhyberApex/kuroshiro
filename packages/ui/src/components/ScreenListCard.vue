@@ -5,12 +5,14 @@ import { computed, nextTick, ref, useTemplateRef } from 'vue'
 import { VAlert, VBtn, VCard, VCardActions, VCardText, VCardTitle, VChip, VDialog, VDivider, VIcon, VOverlay, VSpacer, VTable, VTooltip } from 'vuetify/components'
 import { useDeviceStore } from '@/stores/device.ts'
 import { useScreensStore } from '@/stores/screens'
+import { deviceRenderSize } from '@/utils/deviceRenderSize'
 
 const props = defineProps<{ deviceId: string }>()
 
 const screensStore = useScreensStore()
 const deviceStore = useDeviceStore()
 const device = computed(() => deviceStore.getById(props.deviceId))
+const renderSize = computed(() => deviceRenderSize(device.value))
 const previewIframeRef = useTemplateRef('previewIframeRef')
 async function deleteScreen(screenId: string) {
   if (!device.value)
@@ -294,7 +296,7 @@ function previewScreen(screen: Screen) {
       </VCardText>
     </VCard>
     <VOverlay v-model="showHtmlPreview" class="align-center justify-center">
-      <iframe ref="previewIframeRef" :width="(device.width || 0) + 5" :height="(device.height || 0) + 5" class="align-center" />
+      <iframe ref="previewIframeRef" :width="renderSize.width + 5" :height="renderSize.height + 5" class="align-center" />
     </VOverlay>
 
     <VDialog v-model="showScreenPreview" max-width="900px">
