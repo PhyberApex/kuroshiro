@@ -88,18 +88,4 @@ export class PluginRendererService {
   async render(template: string, data: Record<string, any>): Promise<string> {
     return this.liquid.parseAndRender(template, data)
   }
-
-  async renderForDisplay(template: string, data: Record<string, any>): Promise<string> {
-    const renderedContent = await this.render(template, data)
-
-    return `<html>
-  <head>
-    <link rel="stylesheet" href="https://usetrmnl.com/css/latest/plugins.css">
-    <script src="https://usetrmnl.com/js/latest/plugins.js"></script>
-  </head>
-  <body class="environment trmnl">
-    <div class="screen"><div class="view view--full">${renderedContent}</div></div>
-  </body>
-</html>`
-  }
 }

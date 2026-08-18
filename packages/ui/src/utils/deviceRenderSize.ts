@@ -1,6 +1,7 @@
 import type { Device } from '../types'
+import { DEFAULT_MODEL } from './renderTarget'
 
-export const DEFAULT_RENDER_SIZE = { width: 800, height: 480 }
+export const DEFAULT_RENDER_SIZE = { width: DEFAULT_MODEL.width, height: DEFAULT_MODEL.height }
 
 /** Pixel size images are generated at for a device; unassigned devices render as a TRMNL OG. */
 export function deviceRenderSize(device: Pick<Device, 'deviceModel'> | null | undefined): { width: number, height: number } {

@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { VAlert, VAutocomplete, VBtn, VCard, VCardText, VCardTitle, VCol, VContainer, VDivider, VExpansionPanel, VExpansionPanels, VExpansionPanelText, VExpansionPanelTitle, VForm, VImg, VRow, VTab, VTabs, VTextField, VWindow, VWindowItem } from 'vuetify/components'
 import { useDeviceStore } from '@/stores/device'
+import { deviceRenderSize } from '@/utils/deviceRenderSize'
 import { getRandomMac, isValidMac } from '@/utils/getRandomMac'
 
 const mac = ref('')
@@ -85,6 +86,10 @@ function generateMac() {
 }
 
 const deviceStore = useDeviceStore()
+const displayAspectRatio = computed(() => {
+  const { width, height } = deviceRenderSize(deviceStore.devices.find(d => d.mac === mac.value))
+  return width / height
+})
 const route = useRoute()
 
 const currentMac = computed(() => {
@@ -214,7 +219,7 @@ watch(mac, () => {
               </VExpansionPanel>
             </VExpansionPanels>
             <div v-if="displayImageUrl" class="mt-4">
-              <VImg :src="displayImageUrl" aspect-ratio="800/480" alt="Virtual device screen preview" />
+              <VImg :src="displayImageUrl" :aspect-ratio="displayAspectRatio" alt="Virtual device screen preview" />
             </div>
           </VCardText>
         </VCard>

@@ -12,12 +12,18 @@ export const useDeviceModelsStore = defineStore('deviceModels', () => {
   const activeModels = computed(() => models.value.filter(model => !model.deprecated))
 
   async function fetchAll() {
-    const [modelsRes, palettesRes] = await Promise.all([fetch('/api/device-models'), fetch('/api/device-models/palettes')])
-    if (modelsRes.ok)
-      models.value = await modelsRes.json()
-    if (palettesRes.ok)
-      palettes.value = await palettesRes.json()
-    loaded.value = modelsRes.ok && palettesRes.ok
+    try {
+      const [modelsRes, palettesRes] = await Promise.all([fetch('/api/device-models'), fetch('/api/device-models/palettes')])
+      if (modelsRes.ok)
+        models.value = await modelsRes.json()
+      if (palettesRes.ok)
+        palettes.value = await palettesRes.json()
+      loaded.value = modelsRes.ok && palettesRes.ok
+    }
+    catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to load device models'
+      loaded.value = false
+    }
   }
 
   async function ensureLoaded() {

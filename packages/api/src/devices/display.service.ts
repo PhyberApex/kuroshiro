@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import puppeteer from 'puppeteer'
 import { Repository } from 'typeorm'
 import { DeviceModelsService } from '../device-models/device-models.service'
+import { viewFull, wrapInScreenShell } from '../device-models/screen-shell'
 import { PluginDataFetcherService } from '../plugins/services/plugin-data-fetcher.service'
 import { PluginRendererService } from '../plugins/services/plugin-renderer.service'
 import { PluginTransformService } from '../plugins/services/plugin-transform.service'
@@ -293,7 +294,7 @@ export class DeviceDisplayService {
             await this.cachePluginOutput(screen, renderedHtml)
           }
 
-          imgUrl = await this.renderHtmlToScreenPng(renderedHtml, screen, device)
+          imgUrl = await this.renderBodyToScreenPng(renderedHtml, screen, device)
         }
       }
       catch (err) {
@@ -316,7 +317,7 @@ export class DeviceDisplayService {
         if (screenWithPlugin.cachedPluginOutput) {
           try {
             this.logger.log(`Using cached plugin output for plugin ${plugin.id}, screen ${screen.id}`)
-            imgUrl = await this.renderHtmlToScreenPng(screenWithPlugin.cachedPluginOutput, screen, device)
+            imgUrl = await this.renderBodyToScreenPng(viewFull(screenWithPlugin.cachedPluginOutput), screen, device)
           }
           catch (err) {
             this.logger.error(`Failed to render cached plugin output: ${err.message}`)
@@ -328,7 +329,7 @@ export class DeviceDisplayService {
           try {
             const renderedHtml = await this.renderPluginHtml(plugin, screen)
             if (renderedHtml)
-              imgUrl = await this.renderHtmlToScreenPng(renderedHtml, screen, device)
+              imgUrl = await this.renderBodyToScreenPng(viewFull(renderedHtml), screen, device)
           }
           catch (err) {
             this.logger.error(`Failed to render plugin: ${err.message}`)
@@ -338,7 +339,7 @@ export class DeviceDisplayService {
       }
       // Handle HTML screen
       else if (screen.html) {
-        imgUrl = await this.renderHtmlToScreenPng(this.wrapInTrmnlShell(screen.html), screen, device)
+        imgUrl = await this.renderBodyToScreenPng(viewFull(screen.html), screen, device)
       }
     }
     // Handle external link screen
@@ -410,48 +411,35 @@ export class DeviceDisplayService {
     if (!fullTemplate)
       return null
 
-    const renderedHtml = await this.pluginRenderer.renderForDisplay(fullTemplate.liquidMarkup, data)
+    const renderedHtml = await this.pluginRenderer.render(fullTemplate.liquidMarkup, data)
     await this.cachePluginOutput(screen, renderedHtml)
     return renderedHtml
   }
 
-  private async renderHtmlToScreenPng(html: string, screen: Screen, device: Device): Promise<string> {
+  /**
+   * Screenshots screen body markup (a `.view` or `.mashup` element) inside the
+   * device's model shell at the model's native pixel size and converts it to
+   * the device's PNG.
+   */
+  private async renderBodyToScreenPng(bodyHtml: string, screen: Screen, device: Device): Promise<string> {
+    const target = await this.deviceModels.renderTargetFor(device)
     const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-web-security'] })
     try {
       const page = await browser.newPage()
-      await page.setViewport({ width: 800, height: 480 })
-      await page.setContent(html, { waitUntil: 'load' })
+      await page.setViewport({ width: target.model.width, height: target.model.height })
+      await page.setContent(wrapInScreenShell(target, bodyHtml), { waitUntil: 'load' })
       const image: Uint8Array = await page.screenshot()
 
       const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
       const inputPath = path.join(destDir, 'tmp-source')
       await fs.promises.mkdir(destDir, { recursive: true })
       await fs.promises.writeFile(inputPath, buffer.Buffer.from(image))
-      const { width, height } = await this.deviceModels.outputSizeFor(device)
-      await convertToPng(inputPath, this.screenImagePath(device, screen), width, height, this.logger)
+      await convertToPng(inputPath, this.screenImagePath(device, screen), target.model.width, target.model.height, this.logger)
       return this.screenImageUrl(device, screen)
     }
     finally {
       await browser.close()
     }
-  }
-
-  private wrapInTrmnlShell(html: string): string {
-    return `
-    <html>
-      <head>
-        <link rel="stylesheet" href="https://usetrmnl.com/css/latest/plugins.css">
-        <script src="https://usetrmnl.com/js/latest/plugins.js"></script>
-      </head>
-      <body class="environment trmnl">
-        <div class="screen">
-          <div class="view view--full">
-            ${html}
-          </div>
-        </div>
-      </body>
-    </html>
-  `
   }
 
   private async cachePluginOutput(screen: Screen, renderedHtml: string): Promise<void> {

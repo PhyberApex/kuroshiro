@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import type { Screen } from '@/types'
 import { mdiChevronDown, mdiChevronUp, mdiDelete, mdiDrag, mdiEye, mdiOpenInNew, mdiRefresh } from '@mdi/js'
-import { computed, nextTick, ref, useTemplateRef } from 'vue'
+import { computed, ref } from 'vue'
 import { VAlert, VBtn, VCard, VCardActions, VCardText, VCardTitle, VChip, VDialog, VDivider, VIcon, VOverlay, VSpacer, VTable, VTooltip } from 'vuetify/components'
+import ScreenFrame from '@/components/ScreenFrame.vue'
+import { useDeviceRenderTarget } from '@/composeables/useDeviceRenderTarget'
 import { useDeviceStore } from '@/stores/device.ts'
 import { useScreensStore } from '@/stores/screens'
-import { deviceRenderSize } from '@/utils/deviceRenderSize'
+import { viewFull } from '@/utils/screenShell'
 
 const props = defineProps<{ deviceId: string }>()
 
 const screensStore = useScreensStore()
 const deviceStore = useDeviceStore()
 const device = computed(() => deviceStore.getById(props.deviceId))
-const renderSize = computed(() => deviceRenderSize(device.value))
-const previewIframeRef = useTemplateRef('previewIframeRef')
+const renderTarget = useDeviceRenderTarget(device)
 async function deleteScreen(screenId: string) {
   if (!device.value)
     return
@@ -88,19 +89,9 @@ const showScreenPreview = ref(false)
 const selectedPreviewScreen = ref<Screen | null>(null)
 const previewMode = ref<'html' | 'image' | 'plugin' | 'mashup'>('image')
 
-async function renderPreviewHtml(html: string) {
-  showHtmlPreview.value = true
-  await nextTick()
-  const iframe = previewIframeRef.value
-  if (!iframe)
-    return
-
-  const doc = iframe.contentDocument || iframe.contentWindow?.document
-  if (!doc)
-    return
-  doc.open()
-  doc.write(`<html><head><link rel="stylesheet" href="https://usetrmnl.com/css/latest/plugins.css"><script src="https://usetrmnl.com/js/latest/plugins.js"><\/script></head><body class="environment trmnl"><div class="screen"><div class="view view--full">${html}</div></div></body></html>`)
-  doc.close()
+const overlayHtml = ref('')
+function renderPreviewHtml(html: string) {
+  overlayHtml.value = html
   showHtmlPreview.value = true
 }
 
@@ -296,10 +287,12 @@ function previewScreen(screen: Screen) {
       </VCardText>
     </VCard>
     <VOverlay v-model="showHtmlPreview" class="align-center justify-center">
-      <iframe ref="previewIframeRef" :width="renderSize.width + 5" :height="renderSize.height + 5" class="align-center" />
+      <div :style="{ width: `min(90vw, ${renderTarget.model.width}px)` }">
+        <ScreenFrame v-if="showHtmlPreview" :body="viewFull(overlayHtml)" :target="renderTarget" />
+      </div>
     </VOverlay>
 
-    <VDialog v-model="showScreenPreview" max-width="900px">
+    <VDialog v-model="showScreenPreview" :max-width="`min(90vw, ${Math.max(900, renderTarget.model.width + 48)}px)`">
       <VCard v-if="selectedPreviewScreen">
         <VCardTitle>
           {{ selectedPreviewScreen.plugin ? `Plugin: ${selectedPreviewScreen.plugin.name}` : selectedPreviewScreen.filename || 'Screen Preview' }}
@@ -307,14 +300,9 @@ function previewScreen(screen: Screen) {
         <VDivider />
         <VCardText class="d-flex flex-column align-center pa-4">
           <!-- Mashup screens: show cached HTML if available, else show message -->
-          <div v-if="previewMode === 'mashup'">
+          <div v-if="previewMode === 'mashup'" class="w-100">
             <div v-if="selectedPreviewScreen.cachedPluginOutput" class="mb-4">
-              <iframe
-                :srcdoc="selectedPreviewScreen.cachedPluginOutput"
-                width="800"
-                height="480"
-                style="border: 1px solid #ccc;"
-              />
+              <ScreenFrame :body="selectedPreviewScreen.cachedPluginOutput" :target="renderTarget" />
             </div>
             <VAlert v-else type="info" variant="tonal">
               Mashup output will be generated when a device requests it or when the scheduler runs.
@@ -322,14 +310,9 @@ function previewScreen(screen: Screen) {
           </div>
 
           <!-- Plugin screens: show cached HTML if available, else show message -->
-          <div v-else-if="previewMode === 'plugin'">
+          <div v-else-if="previewMode === 'plugin'" class="w-100">
             <div v-if="selectedPreviewScreen.cachedPluginOutput" class="mb-4">
-              <iframe
-                :srcdoc="selectedPreviewScreen.cachedPluginOutput"
-                width="800"
-                height="480"
-                style="border: 1px solid #ccc;"
-              />
+              <ScreenFrame :body="viewFull(selectedPreviewScreen.cachedPluginOutput)" :target="renderTarget" />
             </div>
             <VAlert v-else type="info" variant="tonal">
               Plugin output will be generated when a device requests it or when the scheduler runs.
@@ -337,13 +320,8 @@ function previewScreen(screen: Screen) {
           </div>
 
           <!-- HTML screens -->
-          <div v-else-if="previewMode === 'html' && selectedPreviewScreen.html">
-            <iframe
-              :srcdoc="`<html><head><link rel='stylesheet' href='https://usetrmnl.com/css/latest/plugins.css'><script src='https://usetrmnl.com/js/latest/plugins.js'></script></head><body class='environment trmnl'><div class='screen'><div class='view view--full'>${selectedPreviewScreen.html}</div></div></body></html>`"
-              width="800"
-              height="480"
-              style="border: 1px solid #ccc;"
-            />
+          <div v-else-if="previewMode === 'html' && selectedPreviewScreen.html" class="w-100">
+            <ScreenFrame :body="viewFull(selectedPreviewScreen.html)" :target="renderTarget" />
           </div>
 
           <!-- Image screens -->

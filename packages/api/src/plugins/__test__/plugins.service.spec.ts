@@ -52,7 +52,7 @@ describe('pluginsService', () => {
     fieldRepo = createMockRepository()
 
     mockDataFetcher = { fetchData: vi.fn() } as any
-    mockRenderer = { render: vi.fn(), renderForDisplay: vi.fn() } as any
+    mockRenderer = { render: vi.fn() } as any
     mockScheduler = {
       schedulePlugin: vi.fn(),
       removeScheduledJob: vi.fn(),
@@ -487,7 +487,7 @@ describe('pluginsService', () => {
   it('preview fetches data and renders template', async () => {
     const apiData = { temperature: 25, location: 'Tokyo' }
     mockDataFetcher.fetchData = vi.fn().mockResolvedValue(apiData)
-    mockRenderer.renderForDisplay = vi.fn().mockResolvedValue('<html>25°C in Tokyo</html>')
+    mockRenderer.render = vi.fn().mockResolvedValue('25°C in Tokyo')
 
     const result = await service.preview(
       'https://api.example.com',
@@ -498,8 +498,8 @@ describe('pluginsService', () => {
     )
 
     expect(mockDataFetcher.fetchData).toHaveBeenCalledWith('GET', 'https://api.example.com', {}, {}, expect.any(Object))
-    expect(mockRenderer.renderForDisplay).toHaveBeenCalled()
-    expect(result.html).toBe('<html>25°C in Tokyo</html>')
+    expect(mockRenderer.render).toHaveBeenCalled()
+    expect(result.html).toBe('25°C in Tokyo')
     expect(result.data).toEqual(apiData)
   })
 
@@ -508,7 +508,7 @@ describe('pluginsService', () => {
     const transformedData = { value: 20 }
     mockDataFetcher.fetchData = vi.fn().mockResolvedValue(apiData)
     mockTransformer.transform = vi.fn().mockReturnValue(transformedData)
-    mockRenderer.renderForDisplay = vi.fn().mockResolvedValue('<html>20</html>')
+    mockRenderer.render = vi.fn().mockResolvedValue('20')
 
     await service.preview(
       'https://api.example.com',
@@ -520,7 +520,7 @@ describe('pluginsService', () => {
     )
 
     expect(mockTransformer.transform).toHaveBeenCalledWith('module.exports = (d) => ({ value: d.value * 2 })', apiData)
-    expect(mockRenderer.renderForDisplay).toHaveBeenCalledWith('{{ value }}', expect.objectContaining({ value: 20 }))
+    expect(mockRenderer.render).toHaveBeenCalledWith('{{ value }}', expect.objectContaining({ value: 20 }))
   })
 
   it('preview handles array data', async () => {

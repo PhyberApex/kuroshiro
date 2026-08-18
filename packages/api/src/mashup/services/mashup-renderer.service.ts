@@ -39,7 +39,6 @@ export class MashupRendererService {
     // Sort by order
     slotHtmls.sort((a, b) => a.slot.order - b.slot.order)
 
-    // Build complete mashup HTML
     return this.buildMashupHtml(mashupConfig.layout, slotHtmls)
   }
 
@@ -95,17 +94,9 @@ export class MashupRendererService {
       `<div class="view ${slot.size}">${html}</div>`,
     ).join('\n    ')
 
-    return `<html>
-  <head>
-    <link rel="stylesheet" href="https://usetrmnl.com/css/latest/plugins.css">
-    <script src="https://usetrmnl.com/js/latest/plugins.js"></script>
-  </head>
-  <body class="environment trmnl">
-    <div class="mashup mashup--${layout}">
+    return `<div class="mashup mashup--${layout}">
     ${viewsHtml}
-    </div>
-  </body>
-</html>`
+    </div>`
   }
 
   private errorPlaceholder(_pluginName: string): string {

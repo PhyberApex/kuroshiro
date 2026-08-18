@@ -66,4 +66,12 @@ describe('deviceModels store', () => {
     expect(store.error).toBe('Could not sync device models from TRMNL: boom')
     expect(store.syncing).toBe(false)
   })
+
+  it('fetchAll records a network failure instead of throwing', async () => {
+    ;(globalThis.fetch as any).mockRejectedValue(new TypeError('Failed to fetch'))
+    const store = useDeviceModelsStore()
+    await expect(store.fetchAll()).resolves.toBeUndefined()
+    expect(store.loaded).toBe(false)
+    expect(store.error).toBe('Failed to fetch')
+  })
 })

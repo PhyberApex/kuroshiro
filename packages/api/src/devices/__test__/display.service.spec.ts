@@ -2,13 +2,19 @@ import type { MockDeviceModelsService } from '../../device-models/__test__/mockD
 import { promises as fs } from 'node:fs'
 import { NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createMockDeviceModelsService, OG_PLUS, primeMockDeviceModelsService, V2 } from '../../device-models/__test__/mockDeviceModelsService'
+import { createMockDeviceModelsService, GRAY_16, OG_PLUS, primeMockDeviceModelsService, V2 } from '../../device-models/__test__/mockDeviceModelsService'
 import { Display } from '../display'
 import { DeviceDisplayService } from '../display.service'
 import { DisplayScreen } from '../displayScreen'
 
-const { fileExists } = vi.hoisted(() => ({
+const { fileExists, puppeteerPage, puppeteerLaunch } = vi.hoisted(() => ({
   fileExists: vi.fn(),
+  puppeteerPage: {
+    setViewport: vi.fn(),
+    setContent: vi.fn(),
+    screenshot: vi.fn(),
+  },
+  puppeteerLaunch: vi.fn(),
 }))
 
 vi.mock('../../utils/fileExists', () => ({
@@ -18,6 +24,8 @@ vi.mock('../../utils/fileExists', () => ({
 vi.mock('node:fs', () => ({
   promises: {
     unlink: vi.fn(),
+    mkdir: vi.fn(),
+    writeFile: vi.fn(),
   },
 }))
 
@@ -27,16 +35,15 @@ vi.mock('../../utils/imageUtils', () => ({
 }))
 
 vi.mock('puppeteer', () => ({
-  default: {
-    launch: vi.fn().mockResolvedValue({
-      newPage: vi.fn().mockResolvedValue({
-        setViewport: vi.fn().mockResolvedValue(undefined),
-        setContent: vi.fn().mockResolvedValue(undefined),
-        screenshot: vi.fn().mockResolvedValue(new Uint8Array()),
-      }),
-    }),
-  },
+  default: { launch: puppeteerLaunch },
 }))
+
+function primePuppeteer() {
+  puppeteerPage.setViewport.mockResolvedValue(undefined)
+  puppeteerPage.setContent.mockResolvedValue(undefined)
+  puppeteerPage.screenshot.mockResolvedValue(new Uint8Array())
+  puppeteerLaunch.mockResolvedValue({ newPage: vi.fn().mockResolvedValue(puppeteerPage), close: vi.fn() })
+}
 
 const mockFetch = vi.fn()
 globalThis.fetch = mockFetch
@@ -70,6 +77,7 @@ describe('deviceDisplayService', () => {
     )
     vi.resetAllMocks()
     primeMockDeviceModelsService(deviceModels)
+    primePuppeteer()
   })
 
   const baseDevice = {
@@ -131,6 +139,73 @@ describe('deviceDisplayService', () => {
       deviceRepo.findOneBy.mockResolvedValue(device)
       await service.getCurrentImage({ ...headers, model: 'x' } as any)
       expect(deviceModels.assignResolvedModel).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('rendering in the device model shell', () => {
+    function primeRotation(nextScreen: Record<string, unknown>, device: Record<string, unknown>) {
+      const activeScreen = { id: 'screen1', order: 1, device, isActive: true, generatedAt: new Date() }
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      screenRepo.findOneBy.mockResolvedValueOnce(activeScreen).mockResolvedValueOnce(nextScreen)
+      screenRepo.findOne.mockResolvedValue(nextScreen)
+      screenRepo.save.mockResolvedValue(nextScreen)
+      configService.get.mockReturnValue('http://api')
+    }
+
+    it('renders HTML screens at the model size inside the model shell', async () => {
+      const device = { ...baseDevice, deviceModel: V2, palette: GRAY_16 }
+      deviceModels.renderTargetFor.mockResolvedValue({ model: V2, palette: GRAY_16 })
+      primeRotation({ id: 'screen2', type: 'html', order: 2, device, html: '<p>hi</p>', filename: 'x', generatedAt: new Date() }, device)
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(puppeteerPage.setViewport).toHaveBeenCalledWith({ width: 1872, height: 1404 })
+      const html: string = puppeteerPage.setContent.mock.calls[0][0]
+      expect(html).toContain('class="screen screen--v2 screen--lg screen--density-2x screen--4bit screen--landscape"')
+      expect(html).toContain('--screen-w: 1040px;')
+      expect(html).toContain('<div class="view view--full"><p>hi</p></div>')
+      const { convertToPng } = await import('../../utils/imageUtils')
+      expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('screen2.png'), 1872, 1404, expect.any(Object))
+      expect(result.image_url).toBe('http://api/screens/devices/1/screen2.png')
+    })
+
+    it('wraps cached plugin output in a full view and the shell', async () => {
+      const device = { ...baseDevice, deviceModel: OG_PLUS }
+      primeRotation({ id: 'screen2', type: 'plugin', order: 2, device, plugin: { id: 'p1' }, cachedPluginOutput: '<span>cached</span>', filename: 'x', generatedAt: new Date() }, device)
+
+      await service.getCurrentImage(headers as any)
+
+      expect(puppeteerPage.setViewport).toHaveBeenCalledWith({ width: 800, height: 480 })
+      const html: string = puppeteerPage.setContent.mock.calls[0][0]
+      expect(html).toContain('screen--og_plus')
+      expect(html).toContain('screen--2bit')
+      expect(html).toContain('<div class="view view--full"><span>cached</span></div>')
+    })
+
+    it('caches only the rendered plugin body when rendering on demand', async () => {
+      const device = { ...baseDevice, deviceModel: OG_PLUS }
+      const plugin = { id: 'p1', name: 'P', dataSource: { method: 'GET', url: 'http://x' }, templates: [{ layout: 'full', liquidMarkup: '{{ v }}' }] }
+      primeRotation({ id: 'screen2', type: 'plugin', order: 2, device, plugin, filename: 'x', generatedAt: new Date() }, device)
+      service.pluginDataFetcher = { fetchData: vi.fn().mockResolvedValue({ v: 1 }) } as any
+      service.pluginRenderer = { render: vi.fn().mockResolvedValue('<b>1</b>') } as any
+
+      await service.getCurrentImage(headers as any)
+
+      expect(screenRepo.update).toHaveBeenCalledWith({ id: 'screen2' }, expect.objectContaining({ cachedPluginOutput: '<b>1</b>' }))
+      const html: string = puppeteerPage.setContent.mock.calls[0][0]
+      expect(html).toContain('<div class="view view--full"><b>1</b></div>')
+    })
+
+    it('places cached mashup markup directly inside the shell', async () => {
+      const device = { ...baseDevice, deviceModel: OG_PLUS }
+      primeRotation({ id: 'screen2', type: 'mashup', order: 2, device, cachedPluginOutput: '<div class="mashup mashup--1Lx1R">m</div>', mashupConfiguration: { id: 'c' }, filename: 'x', generatedAt: new Date() }, device)
+      service.mashupRenderer = { renderMashup: vi.fn() } as any
+
+      await service.getCurrentImage(headers as any)
+
+      const html: string = puppeteerPage.setContent.mock.calls[0][0]
+      expect(html).toMatch(/screen--landscape"[^>]*><div class="mashup mashup--1Lx1R">m<\/div><\/div>/)
+      expect(html).not.toContain('view--full')
     })
   })
 
@@ -453,7 +528,7 @@ describe('deviceDisplayService', () => {
     beforeEach(() => {
       // Inject services needed for mashup
       service.pluginDataFetcher = { fetchData: vi.fn() } as any
-      service.pluginRenderer = { render: vi.fn(), renderForDisplay: vi.fn() } as any
+      service.pluginRenderer = { render: vi.fn() } as any
       service.pluginTransformer = { transform: vi.fn() } as any
     })
 
