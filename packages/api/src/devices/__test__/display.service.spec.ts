@@ -165,7 +165,7 @@ describe('deviceDisplayService', () => {
 
       expect(puppeteerPage.setViewport).toHaveBeenCalledWith({ width: 1872, height: 1404 })
       const html: string = puppeteerPage.setContent.mock.calls[0][0]
-      expect(html).toContain('class="screen screen--v2 screen--lg screen--density-2x screen--4bit screen--landscape"')
+      expect(html).toContain('class="screen screen--v2 screen--lg screen--density-2x screen--4bit"')
       expect(html).toContain('--screen-w: 1040px;')
       expect(html).toContain('<div class="view view--full"><p>hi</p></div>')
       const { convertToPng } = await import('../../utils/imageUtils')
@@ -208,7 +208,7 @@ describe('deviceDisplayService', () => {
       await service.getCurrentImage(headers as any)
 
       const html: string = puppeteerPage.setContent.mock.calls[0][0]
-      expect(html).toMatch(/screen--landscape"[^>]*><div class="mashup mashup--1Lx1R">m<\/div><\/div>/)
+      expect(html).toMatch(/screen--2bit"[^>]*><div class="mashup mashup--1Lx1R">m<\/div><\/div>/)
       expect(html).not.toContain('view--full')
     })
   })

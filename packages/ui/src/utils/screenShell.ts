@@ -8,9 +8,13 @@ export interface RenderTarget {
 export const TRMNL_FRAMEWORK_CSS = 'https://usetrmnl.com/css/latest/plugins.css'
 export const TRMNL_FRAMEWORK_JS = 'https://usetrmnl.com/js/latest/plugins.js'
 
-/** Mirrors the API's `screen-shell.ts` so previews match what the device receives. */
+/**
+ * Mirrors the API's `screen-shell.ts` so previews match what the device
+ * receives. No orientation class here — see the API copy for why
+ * `model.rotation` doesn't map to `screen--portrait`/`screen--landscape`.
+ */
 export function screenClasses({ model, palette }: RenderTarget): string[] {
-  return ['screen', ...model.cssClasses, palette.frameworkClass, model.rotation === 0 ? 'screen--landscape' : 'screen--portrait']
+  return ['screen', ...model.cssClasses, palette.frameworkClass]
 }
 
 export function screenStyle({ model }: RenderTarget): string {

@@ -24,8 +24,12 @@ const GRAY_16: Palette = { id: 'gray-16', name: '16 Grays (4-bit)', grays: 16, f
 
 describe('screenShell', () => {
   it('builds the same class list as the API', () => {
-    expect(screenClasses({ model: V2, palette: GRAY_16 })).toEqual(['screen', 'screen--v2', 'screen--lg', 'screen--density-2x', 'screen--4bit', 'screen--landscape'])
-    expect(screenClasses({ model: { ...V2, rotation: 90 }, palette: GRAY_16 })).toContain('screen--portrait')
+    expect(screenClasses({ model: V2, palette: GRAY_16 })).toEqual(['screen', 'screen--v2', 'screen--lg', 'screen--density-2x', 'screen--4bit'])
+  })
+
+  it('emits no orientation class regardless of model.rotation', () => {
+    expect(screenClasses({ model: { ...V2, rotation: 90 }, palette: GRAY_16 })).not.toContain('screen--portrait')
+    expect(screenClasses({ model: { ...V2, rotation: 90 }, palette: GRAY_16 })).not.toContain('screen--landscape')
   })
 
   it('serialises css variables', () => {
@@ -36,6 +40,6 @@ describe('screenShell', () => {
     const html = wrapInScreenShell({ model: V2, palette: GRAY_16 }, viewFull('<p>x</p>'))
     expect(html).toContain('href="https://usetrmnl.com/css/latest/plugins.css"')
     expect(html).toContain('<body class="environment trmnl">')
-    expect(html).toContain('<div class="screen screen--v2 screen--lg screen--density-2x screen--4bit screen--landscape" style="--screen-w: 1040px; --screen-h: 780px;"><div class="view view--full"><p>x</p></div></div>')
+    expect(html).toContain('<div class="screen screen--v2 screen--lg screen--density-2x screen--4bit" style="--screen-w: 1040px; --screen-h: 780px;"><div class="view view--full"><p>x</p></div></div>')
   })
 })
