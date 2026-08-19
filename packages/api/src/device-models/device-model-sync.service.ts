@@ -6,7 +6,7 @@ import { In, Repository } from 'typeorm'
 import { TRMNL_MODELS_SNAPSHOT, TRMNL_PALETTES_SNAPSHOT } from './data/trmnl-snapshot'
 import { DeviceModel } from './entities/device-model.entity'
 import { Palette } from './entities/palette.entity'
-import { toDeviceModelAttributes, toPaletteAttributes, TRMNL_API_URL, TrmnlModelPayload, TrmnlPalettePayload } from './trmnl-payloads'
+import { toDeviceModelAttributes, toPaletteAttributes, TRMNL_API_URL, TrmnlModelPayload, TrmnlPalettePayload, validateModelPayload, validatePalettePayload } from './trmnl-payloads'
 
 export interface DeviceModelSyncResult {
   models: number
@@ -45,13 +45,15 @@ export class DeviceModelSyncService implements OnApplicationBootstrap {
    * a live sync) are left untouched.
    */
   async seedFromSnapshot(): Promise<{ models: number, palettes: number }> {
+    const validPalettes = this.filterValid(TRMNL_PALETTES_SNAPSHOT, validatePalettePayload, 'palette')
     const existingPalettes = new Set((await this.paletteRepository.find({ select: { id: true } })).map(p => p.id))
-    const missingPalettes = TRMNL_PALETTES_SNAPSHOT.filter(p => !existingPalettes.has(p.id)).map(toPaletteAttributes)
+    const missingPalettes = validPalettes.filter(p => !existingPalettes.has(p.id)).map(toPaletteAttributes)
     if (missingPalettes.length > 0)
       await this.paletteRepository.insert(missingPalettes)
 
+    const validModels = this.filterValid(TRMNL_MODELS_SNAPSHOT, validateModelPayload, 'model')
     const existingModels = new Set((await this.deviceModelRepository.find({ select: { name: true } })).map(m => m.name))
-    const missingModels = TRMNL_MODELS_SNAPSHOT.filter(m => !existingModels.has(m.name)).map(toDeviceModelAttributes)
+    const missingModels = validModels.filter(m => !existingModels.has(m.name)).map(toDeviceModelAttributes)
     if (missingModels.length > 0)
       await this.deviceModelRepository.insert(missingModels)
 
@@ -75,10 +77,12 @@ export class DeviceModelSyncService implements OnApplicationBootstrap {
 
   private async runSync(): Promise<DeviceModelSyncResult> {
     this.logger.log('Syncing device models from TRMNL')
-    const [palettes, models] = await Promise.all([
+    const [rawPalettes, rawModels] = await Promise.all([
       this.fetchList<TrmnlPalettePayload>('palettes'),
       this.fetchList<TrmnlModelPayload>('models'),
     ])
+    const palettes = this.filterValid(rawPalettes, validatePalettePayload, 'palette')
+    const models = this.filterValid(rawModels, validateModelPayload, 'model')
     const syncedAt = new Date()
 
     await this.paletteRepository.upsert(palettes.map(p => ({ ...toPaletteAttributes(p), deprecated: false, syncedAt })), ['id'])
@@ -89,6 +93,16 @@ export class DeviceModelSyncService implements OnApplicationBootstrap {
 
     this.logger.log(`Synced ${models.length} device models and ${palettes.length} palettes (${deprecatedModels} models, ${deprecatedPalettes} palettes deprecated)`)
     return { models: models.length, palettes: palettes.length, deprecatedModels, deprecatedPalettes, syncedAt }
+  }
+
+  /** Drops payload entries that fail validation, logging each so a bad upstream response is visible without failing the whole sync. */
+  private filterValid<T>(items: T[], validate: (item: T) => string | null, kind: string): T[] {
+    return items.filter((item) => {
+      const reason = validate(item)
+      if (reason)
+        this.logger.warn(`Skipping invalid ${kind}: ${reason}`)
+      return !reason
+    })
   }
 
   private async fetchList<T>(endpoint: string): Promise<T[]> {

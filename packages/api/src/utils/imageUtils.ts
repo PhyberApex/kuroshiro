@@ -2,7 +2,7 @@ import type { Logger } from '@nestjs/common'
 import type { DeviceRenderTarget } from '../device-models/device-models.service'
 import type { Palette } from '../device-models/entities/palette.entity'
 import buffer from 'node:buffer'
-import { exec } from 'node:child_process'
+import { execFile } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { resolveAppPath } from './pathHelper'
@@ -62,10 +62,10 @@ function grayLevelsHex(levels: number): string[] {
   })
 }
 
-function runMagick(cmd: string, logger: Logger): Promise<void> {
-  logger.log(`Running ImageMagick: ${cmd}`)
+function runMagick(args: string[], logger: Logger): Promise<void> {
+  logger.log(`Running ImageMagick: magick ${args.join(' ')}`)
   return new Promise<void>((resolve, reject) => {
-    exec(cmd, (error, stdout, stderr) => {
+    execFile('magick', args, (error, stdout, stderr) => {
       if (error) {
         logger.error(`ImageMagick error: ${stderr}`)
         reject(error)
@@ -84,24 +84,24 @@ async function ensureColormap(paletteId: string, colors: string[], logger: Logge
     return colormapPath
   logger.log(`Creating colormap for palette ${paletteId} at ${colormapPath}`)
   await fs.promises.mkdir(path.dirname(colormapPath), { recursive: true })
-  const swatches = colors.map(color => `xc:"${color}"`).join(' ')
-  await runMagick(`magick -size 1x1 ${swatches} +append -type Palette "${colormapPath}"`, logger)
+  const swatches = colors.map(color => `xc:${color}`)
+  await runMagick(['-size', '1x1', ...swatches, '+append', '-type', 'Palette', colormapPath], logger)
   return colormapPath
 }
 
-async function paletteOperators(palette: Palette, logger: Logger): Promise<string> {
+async function paletteOperators(palette: Palette, logger: Logger): Promise<string[]> {
   const conversion = paletteConversion(palette)
   switch (conversion.kind) {
     case 'gray': {
       const colormap = await ensureColormap(palette.id, grayLevelsHex(conversion.levels), logger)
-      return `-colorspace Gray -dither FloydSteinberg -remap "${colormap}" -define png:bit-depth=${conversion.bitDepth} -define png:color-type=0`
+      return ['-colorspace', 'Gray', '-dither', 'FloydSteinberg', '-remap', colormap, '-define', `png:bit-depth=${conversion.bitDepth}`, '-define', 'png:color-type=0']
     }
     case 'color': {
       const colormap = await ensureColormap(palette.id, conversion.colors, logger)
-      return `-dither FloydSteinberg -remap "${colormap}" -define png:color-type=3`
+      return ['-dither', 'FloydSteinberg', '-remap', colormap, '-define', 'png:color-type=3']
     }
     case 'full-color':
-      return '-colorspace sRGB -define png:color-type=2'
+      return ['-colorspace', 'sRGB', '-define', 'png:color-type=2']
   }
 }
 
@@ -110,14 +110,14 @@ async function paletteOperators(palette: Palette, logger: Logger): Promise<strin
  * white), rotate to the panel's orientation, then trim the model's offsets
  * from the top-left edge.
  */
-function geometryOperators({ model }: DeviceRenderTarget): string {
+function geometryOperators({ model }: DeviceRenderTarget): string[] {
   const size = `${model.width}x${model.height}`
-  const ops = [`-resize ${size}`, '-gravity Center', `-extent ${size}`]
+  const ops = ['-resize', size, '-gravity', 'Center', '-extent', size]
   if (model.rotation !== 0)
-    ops.push(`-rotate ${model.rotation}`)
+    ops.push('-rotate', String(model.rotation))
   if (model.offsetX !== 0 || model.offsetY !== 0)
-    ops.push(`-crop +${model.offsetX}+${model.offsetY} +repage`)
-  return ops.join(' ')
+    ops.push('-crop', `+${model.offsetX}+${model.offsetY}`, '+repage')
+  return ops
 }
 
 /** Converts any supported raster image into the PNG a device with the given render target expects. */
@@ -133,6 +133,18 @@ export async function convertToPng(inputPath: string, outputPath: string, target
   const format = detectImageFormat(header)
   const palette = await paletteOperators(target.palette, logger)
 
-  const cmd = `magick "${format}:${inputPath}" -background white -alpha remove -alpha off ${geometryOperators(target)} ${palette} -strip png:"${outputPath}"`
-  await runMagick(cmd, logger)
+  const args = [
+    `${format}:${inputPath}`,
+    '-background',
+    'white',
+    '-alpha',
+    'remove',
+    '-alpha',
+    'off',
+    ...geometryOperators(target),
+    ...palette,
+    '-strip',
+    `png:${outputPath}`,
+  ]
+  await runMagick(args, logger)
 }
