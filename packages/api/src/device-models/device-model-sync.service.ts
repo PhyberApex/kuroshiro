@@ -17,10 +17,12 @@ export interface DeviceModelSyncResult {
 }
 
 const DAILY_AT_4AM = '0 4 * * *'
+const TRMNL_FETCH_TIMEOUT_MS = 15_000
 
 @Injectable()
 export class DeviceModelSyncService implements OnApplicationBootstrap {
   private readonly logger = new Logger(DeviceModelSyncService.name)
+  private syncing: Promise<DeviceModelSyncResult> | null = null
 
   constructor(
     @InjectRepository(DeviceModel)
@@ -61,8 +63,17 @@ export class DeviceModelSyncService implements OnApplicationBootstrap {
   /**
    * Upserts the live TRMNL model and palette lists. Rows that disappeared
    * upstream are flagged deprecated but kept, so no device loses its model.
+   * A scheduled run and a manual sync request share the same in-flight
+   * promise instead of racing on the same upsert.
    */
-  async sync(): Promise<DeviceModelSyncResult> {
+  sync(): Promise<DeviceModelSyncResult> {
+    this.syncing ??= this.runSync().finally(() => {
+      this.syncing = null
+    })
+    return this.syncing
+  }
+
+  private async runSync(): Promise<DeviceModelSyncResult> {
     this.logger.log('Syncing device models from TRMNL')
     const [palettes, models] = await Promise.all([
       this.fetchList<TrmnlPalettePayload>('palettes'),
@@ -81,7 +92,15 @@ export class DeviceModelSyncService implements OnApplicationBootstrap {
   }
 
   private async fetchList<T>(endpoint: string): Promise<T[]> {
-    const res = await fetch(`${TRMNL_API_URL}/${endpoint}`)
+    let res: Response
+    try {
+      res = await fetch(`${TRMNL_API_URL}/${endpoint}`, { signal: AbortSignal.timeout(TRMNL_FETCH_TIMEOUT_MS) })
+    }
+    catch (err) {
+      if (err instanceof Error && err.name === 'TimeoutError')
+        throw new Error(`TRMNL ${endpoint} request timed out`)
+      throw err
+    }
     if (!res.ok)
       throw new Error(`TRMNL ${endpoint} request failed: ${res.status} ${res.statusText}`)
     const body = await res.json()

@@ -80,8 +80,8 @@ describe('deviceModelSyncService', () => {
 
       const result = await service.sync()
 
-      expect(mockFetch).toHaveBeenCalledWith('https://usetrmnl.com/api/palettes')
-      expect(mockFetch).toHaveBeenCalledWith('https://usetrmnl.com/api/models')
+      expect(mockFetch).toHaveBeenCalledWith('https://usetrmnl.com/api/palettes', { signal: expect.any(AbortSignal) })
+      expect(mockFetch).toHaveBeenCalledWith('https://usetrmnl.com/api/models', { signal: expect.any(AbortSignal) })
       expect(paletteRepo.upsert).toHaveBeenCalledWith(
         [expect.objectContaining({ id: 'bw', deprecated: false }), expect.objectContaining({ id: 'gray-4', deprecated: false })],
         ['id'],
@@ -124,6 +124,28 @@ describe('deviceModelSyncService', () => {
     it('throws when the response has no data array', async () => {
       mockFetch.mockResolvedValue({ ok: true, status: 200, statusText: 'OK', json: async () => ({ nope: [] }) })
       await expect(service.sync()).rejects.toThrow(/no data array/)
+    })
+
+    it('surfaces a clear error when a fetch times out', async () => {
+      mockFetch.mockImplementation(async () => {
+        throw new DOMException('The operation was aborted due to timeout', 'TimeoutError')
+      })
+      await expect(service.sync()).rejects.toThrow(/request timed out/)
+    })
+
+    it('coalesces concurrent sync() calls into a single run', async () => {
+      mockFetch.mockImplementation(async (url: string) =>
+        url.endsWith('/palettes') ? jsonResponse([paletteA]) : jsonResponse([modelA]))
+      paletteRepo.find.mockResolvedValue([])
+      modelRepo.find.mockResolvedValue([])
+
+      const [first, second] = await Promise.all([service.sync(), service.sync()])
+
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+      expect(first).toBe(second)
+
+      await service.sync()
+      expect(mockFetch).toHaveBeenCalledTimes(4)
     })
   })
 })
