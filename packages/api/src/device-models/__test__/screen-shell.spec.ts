@@ -1,6 +1,10 @@
+import type { DeviceRenderTarget } from '../device-models.service'
 import { describe, expect, it } from 'vitest'
+import { SCREEN_SHELL_FIXTURE_BODY, SCREEN_SHELL_FIXTURE_EXPECTED, SCREEN_SHELL_FIXTURE_MODEL, SCREEN_SHELL_FIXTURE_PALETTE } from '../../../../../test/fixtures/screen-shell.fixture'
 import { screenClasses, screenStyle, viewFull, wrapInScreenShell } from '../screen-shell'
 import { BW, GRAY_4, GRAY_16, OG_PLUS, V2 } from './mockDeviceModelsService'
+
+const fixtureTarget = { model: SCREEN_SHELL_FIXTURE_MODEL, palette: SCREEN_SHELL_FIXTURE_PALETTE } as unknown as DeviceRenderTarget
 
 describe('screen shell', () => {
   it('builds the screen class list from model and palette', () => {
@@ -41,5 +45,11 @@ describe('screen shell', () => {
   it('omits the style attribute when the model has no CSS variables', () => {
     const html = wrapInScreenShell({ model: { ...OG_PLUS, cssVariables: {} }, palette: GRAY_4 }, 'x')
     expect(html).toContain('<div class="screen screen--og_plus screen--md screen--density-1x screen--2bit">x</div>')
+  })
+
+  it('matches the cross-package golden fixture shared with the UI copy', () => {
+    expect(screenClasses(fixtureTarget)).toEqual(SCREEN_SHELL_FIXTURE_EXPECTED.classes)
+    expect(screenStyle(fixtureTarget)).toBe(SCREEN_SHELL_FIXTURE_EXPECTED.style)
+    expect(wrapInScreenShell(fixtureTarget, SCREEN_SHELL_FIXTURE_BODY)).toContain(SCREEN_SHELL_FIXTURE_EXPECTED.wrappedDiv)
   })
 })

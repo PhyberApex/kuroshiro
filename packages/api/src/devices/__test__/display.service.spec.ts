@@ -171,6 +171,7 @@ describe('deviceDisplayService', () => {
       const { convertToPng } = await import('../../utils/imageUtils')
       expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('screen2.png'), { model: V2, palette: GRAY_16 }, expect.any(Object))
       expect(result.image_url).toBe('http://api/screens/devices/1/screen2.png')
+      expect(fs.unlink).toHaveBeenCalledWith(expect.stringContaining('tmp-source'))
     })
 
     it('wraps cached plugin output in a full view and the shell', async () => {
@@ -269,6 +270,7 @@ describe('deviceDisplayService', () => {
     const result = await service.getCurrentImage(headers as any)
     expect(result).toBeInstanceOf(Display)
     expect(result.image_url).toBe('http://api/screens/devices/1/screen2.png')
+    expect(fs.unlink).toHaveBeenCalledWith(expect.stringContaining('tmp-source'))
   })
 
   it('handles mirroring with proxy when MACs are identical', async () => {

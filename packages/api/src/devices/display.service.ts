@@ -359,6 +359,14 @@ export class DeviceDisplayService {
         this.logger.error(`Failed to process image: ${err.message}`)
         imgUrl = await this.fallbackImageUrl('error', device)
       }
+      finally {
+        try {
+          await fs.promises.unlink(inputPath)
+        }
+        catch {
+          // best-effort cleanup
+        }
+      }
     }
     if (imgUrl !== null)
       return imgUrl
@@ -424,14 +432,14 @@ export class DeviceDisplayService {
   private async renderBodyToScreenPng(bodyHtml: string, screen: Screen, device: Device): Promise<string> {
     const target = await this.deviceModels.renderTargetFor(device)
     const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-web-security'] })
+    const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
+    const inputPath = path.join(destDir, 'tmp-source')
     try {
       const page = await browser.newPage()
       await page.setViewport({ width: target.model.width, height: target.model.height })
       await page.setContent(wrapInScreenShell(target, bodyHtml), { waitUntil: 'load' })
       const image: Uint8Array = await page.screenshot()
 
-      const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
-      const inputPath = path.join(destDir, 'tmp-source')
       await fs.promises.mkdir(destDir, { recursive: true })
       await fs.promises.writeFile(inputPath, buffer.Buffer.from(image))
       await convertToPng(inputPath, this.screenImagePath(device, screen), target, this.logger)
@@ -439,6 +447,12 @@ export class DeviceDisplayService {
     }
     finally {
       await browser.close()
+      try {
+        await fs.promises.unlink(inputPath)
+      }
+      catch {
+        // best-effort cleanup
+      }
     }
   }
 

@@ -328,7 +328,17 @@ const nameEditing = ref(false)
               {{ modelSummary }}
               <VTooltip v-if="reportMismatch" location="top" text="The device reports a different panel size than its assigned model. Check the model in Advanced.">
                 <template #activator="{ props: tooltipProps }">
-                  <VIcon v-bind="tooltipProps" :icon="mdiAlert" color="warning" size="small" class="ml-1" data-test-id="device-model-mismatch" />
+                  <VIcon
+                    v-bind="tooltipProps"
+                    :icon="mdiAlert"
+                    color="warning"
+                    size="small"
+                    class="ml-1"
+                    tabindex="0"
+                    role="img"
+                    aria-label="The device reports a different panel size than its assigned model. Check the model in Advanced."
+                    data-test-id="device-model-mismatch"
+                  />
                 </template>
               </VTooltip>
             </div>
