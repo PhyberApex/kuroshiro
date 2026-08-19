@@ -13,7 +13,7 @@ describe('screenFrame', () => {
     const iframe = wrapper.find('iframe')
     expect(iframe.attributes('width')).toBe('1872')
     expect(iframe.attributes('height')).toBe('1404')
-    expect(iframe.attributes('srcdoc')).toContain('class="screen screen--v2 screen--2bit screen--landscape"')
+    expect(iframe.attributes('srcdoc')).toContain('class="screen screen--v2 screen--2bit"')
     expect(iframe.attributes('srcdoc')).toContain('<div class="view view--full">hi</div>')
     expect(iframe.attributes('style')).toContain('transform: scale(1)')
   })

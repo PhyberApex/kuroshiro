@@ -5,13 +5,22 @@ export const TRMNL_FRAMEWORK_JS = 'https://usetrmnl.com/js/latest/plugins.js'
 
 /**
  * Class list for the `.screen` element the TRMNL framework sizes and scales:
- * the model's own classes (device, size tier, density), the palette's bit-depth
- * class and the orientation.
+ * the model's own classes (device, size tier, density) and the palette's
+ * bit-depth class. No orientation modifier is emitted here — plugins.css's
+ * `screen--portrait` swaps the device's own w/h variables and is unrelated to
+ * `model.rotation`, which is the post-render image rotation for panels whose
+ * framebuffer is portrait (landscape-classed models can have `rotation: 90`).
  */
 export function screenClasses({ model, palette }: DeviceRenderTarget): string[] {
-  return ['screen', ...model.cssClasses, palette.frameworkClass, model.rotation === 0 ? 'screen--landscape' : 'screen--portrait']
+  return ['screen', ...model.cssClasses, palette.frameworkClass]
 }
 
+/**
+ * Inline fallback for models' CSS variables. Kept as an inline `style` (not
+ * just the model's CSS class) so sizing still works for models missing from
+ * the loaded plugins.css version — but this also means it overrides any
+ * `screen--portrait` swap, since inline styles beat class-based rules.
+ */
 export function screenStyle({ model }: DeviceRenderTarget): string {
   return Object.entries(model.cssVariables).map(([name, value]) => `${name}: ${value};`).join(' ')
 }
