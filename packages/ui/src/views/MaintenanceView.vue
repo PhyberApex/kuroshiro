@@ -182,7 +182,7 @@ async function executeCleanup() {
     <VRow justify="center">
       <VCol cols="12">
         <VCard elevation="1" class="mb-4">
-          <VCardTitle class="d-flex align-center justify-space-between">
+          <VCardTitle class="d-flex align-center justify-space-between flex-wrap ga-2">
             Maintenance Dashboard
             <VBtn
               :prepend-icon="mdiRefresh"
@@ -203,7 +203,7 @@ async function executeCleanup() {
         </VCard>
 
         <VCard elevation="1" class="mb-4" data-test-id="device-models-card">
-          <VCardTitle class="d-flex align-center justify-space-between">
+          <VCardTitle class="d-flex align-center justify-space-between flex-wrap ga-2">
             Device Models
             <VBtn
               :prepend-icon="mdiCloudSync"
@@ -352,7 +352,7 @@ async function executeCleanup() {
           </VCard>
 
           <VCard v-if="maintenanceStore.issues.orphanedScreenFiles.length > 0" elevation="1" class="mb-4">
-            <VCardTitle class="d-flex align-center justify-space-between">
+            <VCardTitle class="d-flex align-center justify-space-between flex-wrap ga-2">
               Orphaned Screen Files
               <VBtn
                 size="small"
@@ -388,7 +388,7 @@ async function executeCleanup() {
           </VCard>
 
           <VCard v-if="maintenanceStore.issues.orphanedDeviceDirs.length > 0" elevation="1" class="mb-4">
-            <VCardTitle class="d-flex align-center justify-space-between">
+            <VCardTitle class="d-flex align-center justify-space-between flex-wrap ga-2">
               Orphaned Device Directories
               <VBtn
                 size="small"
@@ -424,7 +424,7 @@ async function executeCleanup() {
           </VCard>
 
           <VCard v-if="maintenanceStore.issues.brokenScreens.length > 0" elevation="1" class="mb-4">
-            <VCardTitle class="d-flex align-center justify-space-between">
+            <VCardTitle class="d-flex align-center justify-space-between flex-wrap ga-2">
               Broken Screens (Missing Files)
               <VBtn
                 size="small"
@@ -462,7 +462,7 @@ async function executeCleanup() {
           </VCard>
 
           <VCard v-if="maintenanceStore.issues.tempFiles.length > 0" elevation="1" class="mb-4">
-            <VCardTitle class="d-flex align-center justify-space-between">
+            <VCardTitle class="d-flex align-center justify-space-between flex-wrap ga-2">
               Temporary Files
               <VBtn
                 size="small"
@@ -500,7 +500,7 @@ async function executeCleanup() {
           </VCard>
 
           <VCard v-if="maintenanceStore.issues.oldUploads.length > 0" elevation="1" class="mb-4">
-            <VCardTitle class="d-flex align-center justify-space-between">
+            <VCardTitle class="d-flex align-center justify-space-between flex-wrap ga-2">
               Old Upload Files
               <VBtn
                 size="small"

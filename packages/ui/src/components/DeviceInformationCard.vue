@@ -289,7 +289,7 @@ const nameEditing = ref(false)
 <template>
   <template v-if="device">
     <VCard class="mb-6" elevation="1">
-      <VCardTitle class="d-flex align-center justify-space-between">
+      <VCardTitle class="d-flex align-center justify-space-between flex-wrap ga-2">
         <div v-if="!nameEditing">
           <span data-test-id="device-name">{{ device.name }}</span>
           <v-icon-btn :icon="mdiPencil" size="x-small" class="ml-2" aria-label="Edit device name" variant="text" @click="nameEditing = true" />

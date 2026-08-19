@@ -48,7 +48,7 @@ function onPluginImported() {
     <VRow justify="center">
       <VCol cols="12">
         <VCard elevation="1">
-          <VCardTitle class="d-flex align-center justify-space-between">
+          <VCardTitle class="d-flex align-center justify-space-between flex-wrap ga-2">
             <span>All Plugins</span>
             <div class="d-flex ga-2">
               <VIconBtn
