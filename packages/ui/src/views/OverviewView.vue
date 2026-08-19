@@ -117,20 +117,26 @@ async function update() {
                 :key="device.id"
                 :to="{ name: 'device', params: { id: device.id } }"
                 link
+                lines="two"
                 class="mb-2"
               >
                 <VListItemTitle>
                   <span class="font-weight-bold">{{ device.name }}</span>
                   <span class="text-medium-emphasis ms-2">({{ device.mac }})</span>
                 </VListItemTitle>
-                <VListItemSubtitle>
+                <VListItemSubtitle style="display: flex; flex-direction: column;">
                   <span><b>Battery Voltage:</b> {{ device.batteryVoltage || 'N/A' }}</span>
-                  <span class="ms-4"><b>RSSI:</b> {{ device.rssi || 'N/A' }}</span>
+                  <span><b>RSSI:</b> {{ device.rssi || 'N/A' }}</span>
                 </VListItemSubtitle>
                 <template #append>
-                  <VBtn color="error" variant="tonal" :prepend-icon="mdiDelete" :loading="loadingDelete.find(currentId => currentId === device.id)" @click.prevent="deleteDevice(device.id)">
-                    Delete
-                  </VBtn>
+                  <VBtn
+                    color="error"
+                    variant="tonal"
+                    :icon="mdiDelete"
+                    aria-label="Delete device"
+                    :loading="loadingDelete.find(currentId => currentId === device.id)"
+                    @click.prevent="deleteDevice(device.id)"
+                  />
                 </template>
               </VListItem>
             </VList>
