@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import rop from 'resize-observer-polyfill'
 import { describe, expect, it, vi } from 'vitest'
+import { defineComponent, ref } from 'vue'
 import vuetify from '../../plugins/vuetify'
 import RenderTargetPicker from '../RenderTargetPicker.vue'
 
@@ -22,15 +23,22 @@ vi.mock('@/stores/deviceModels', () => ({
 
 globalThis.ResizeObserver = rop
 
+function mountPicker(modelValue: any) {
+  return mount(RenderTargetPicker, {
+    props: { modelValue },
+    global: { plugins: [createPinia(), vuetify] },
+  })
+}
+
 describe('renderTargetPicker', () => {
   it('emits the OG model with its richest palette by default', () => {
-    const wrapper = mount(RenderTargetPicker, { global: { plugins: [createPinia(), vuetify] } })
+    const wrapper = mountPicker({ model: OG, palette: GRAY_4 })
     const emitted = wrapper.emitted('update:modelValue')!
     expect(emitted[0][0]).toEqual({ model: OG, palette: GRAY_4 })
   })
 
   it('re-emits with the new model and drops a palette it does not support', async () => {
-    const wrapper = mount(RenderTargetPicker, { global: { plugins: [createPinia(), vuetify] } })
+    const wrapper = mountPicker({ model: OG, palette: GRAY_4 })
     const vm = wrapper.vm as any
     vm.selectedPaletteId = 'gray-4'
     await wrapper.vm.$nextTick()
@@ -40,5 +48,53 @@ describe('renderTargetPicker', () => {
     const emitted = wrapper.emitted('update:modelValue')!
     expect(emitted.at(-1)![0]).toEqual({ model: V2, palette: GRAY_16 })
     expect(vm.selectedPaletteId).toBeNull()
+  })
+
+  it('does not leak a modelvalue attribute onto the root element', () => {
+    const wrapper = mountPicker({ model: OG, palette: GRAY_4 })
+    expect(wrapper.attributes('modelvalue')).toBeUndefined()
+    expect(wrapper.html()).not.toContain('modelvalue')
+  })
+
+  it('seeds its selection from an incoming modelValue, shown in the selects', () => {
+    const wrapper = mountPicker({ model: V2, palette: GRAY_16 })
+    const vm = wrapper.vm as any
+    expect(vm.selectedModelName).toBe('v2')
+    expect(vm.selectedPaletteId).toBe('gray-16')
+    expect(wrapper.get('[data-test-id="render-target-model"]').text()).toContain('TRMNL X')
+    expect(wrapper.get('[data-test-id="render-target-palette"]').text()).toContain('g16')
+  })
+
+  it('keeps the parent-held target after being toggled out and back with v-if', async () => {
+    const Host = defineComponent({
+      components: { RenderTargetPicker },
+      setup() {
+        const target = ref({ model: OG, palette: GRAY_4 })
+        const shown = ref(true)
+        return { target, shown }
+      },
+      template: `
+        <RenderTargetPicker v-if="shown" v-model="target" />
+      `,
+    })
+
+    const wrapper = mount(Host, { global: { plugins: [createPinia(), vuetify] } })
+    const picker = () => wrapper.findComponent(RenderTargetPicker).vm as any
+    picker().selectedModelName = 'v2'
+    await wrapper.vm.$nextTick()
+    await wrapper.vm.$nextTick()
+    const targetAfterEdit = (wrapper.vm as any).target
+    expect(targetAfterEdit).toEqual({ model: V2, palette: GRAY_16 })
+
+    ;(wrapper.vm as any).shown = false
+    await wrapper.vm.$nextTick()
+    expect(wrapper.findComponent(RenderTargetPicker).exists()).toBe(false)
+
+    ;(wrapper.vm as any).shown = true
+    await wrapper.vm.$nextTick()
+
+    expect((wrapper.vm as any).target).toEqual(targetAfterEdit)
+    expect(picker().selectedModelName).toBe('v2')
+    expect(picker().selectedPaletteId).toBe('gray-16')
   })
 })
