@@ -327,7 +327,7 @@ function previewScreen(screen: Screen) {
           <!-- Image screens -->
           <div v-else>
             <img
-              :src="`/screens/devices/${device?.id}/${selectedPreviewScreen.id}.png`"
+              :src="`/screens/devices/${device?.id}/${selectedPreviewScreen.id}.png?v=${encodeURIComponent(selectedPreviewScreen.generatedAt ?? '')}`"
               style="max-width: 100%; height: auto; border: 1px solid #ccc;"
               alt="Screen preview"
               @error="($event.target as HTMLImageElement).src = '/screens/error.png'"

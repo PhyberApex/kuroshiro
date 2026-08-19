@@ -78,6 +78,7 @@ export interface Screen {
   cachedPluginOutput?: string | null
   mashupConfiguration?: { id: string, layout: string }
   order?: number
+  generatedAt?: string
 }
 
 export interface CurrentScreen {

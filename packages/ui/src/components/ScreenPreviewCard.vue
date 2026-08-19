@@ -20,6 +20,9 @@ onMounted(async () => {
   await screensStore.fetchCurrentScreenForDevice(device.value.mac, device.value.apikey)
 })
 const screen = computed(() => screensStore.currentScreen)
+const cacheBustedImageUrl = computed(() => screen.value?.rendered_at
+  ? `${screen.value.image_url}?v=${encodeURIComponent(screen.value.rendered_at)}`
+  : screen.value?.image_url)
 </script>
 
 <template>
@@ -29,7 +32,7 @@ const screen = computed(() => screensStore.currentScreen)
     <VCardText>
       <template v-if="screen">
         <VImg
-          :src="screen.image_url"
+          :src="cacheBustedImageUrl"
           :aspect-ratio="renderSize.width / renderSize.height"
           alt="Current device screen display"
           data-test-id="screen-image"
