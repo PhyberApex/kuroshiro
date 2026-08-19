@@ -1,17 +1,19 @@
 import type { DeviceRenderTarget } from './device-models.service'
 import * as fs from 'node:fs'
-import * as path from 'node:path'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { convertToPng } from '../utils/imageUtils'
 import { resolveAppPath } from '../utils/pathHelper'
+import { FALLBACK_SCREEN_TEMPLATE_VERSION, fallbackScreenBody } from './fallback-screen-templates'
+import { renderHtmlToPng } from './render-html-to-png'
+import { viewFull, wrapInScreenShell } from './screen-shell'
 
 export type FallbackScreenKind = 'noScreen' | 'error' | 'welcome'
 
 /**
- * Serves the built-in placeholder screens (no screen, error, welcome) converted
- * for a render target, generated on first use and cached under
- * `public/screens/fallback/<model>-<palette>/`.
+ * Serves the built-in placeholder screens (no screen, error, welcome), rendered
+ * natively at a render target's model size through the same puppeteer shell
+ * regular screens use, generated on first use and cached under
+ * `public/screens/fallback/v<template version>/<model>-<palette>/`.
  */
 @Injectable()
 export class FallbackScreensService {
@@ -20,13 +22,12 @@ export class FallbackScreensService {
   constructor(private readonly configService: ConfigService) {}
 
   async urlFor(kind: FallbackScreenKind, target: DeviceRenderTarget): Promise<string> {
-    const relativePath = ['screens', 'fallback', `${target.model.name}-${target.palette.id}`, `${kind}.png`]
-    const sourcePath = resolveAppPath('public', 'screens', `${kind}.png`)
+    const relativePath = ['screens', 'fallback', `v${FALLBACK_SCREEN_TEMPLATE_VERSION}`, `${target.model.name}-${target.palette.id}`, `${kind}.png`]
     const outputPath = resolveAppPath('public', ...relativePath)
     try {
-      if (await this.isStale(sourcePath, outputPath)) {
-        await fs.promises.mkdir(path.dirname(outputPath), { recursive: true })
-        await convertToPng(sourcePath, outputPath, target, this.logger)
+      if (await this.isStale(outputPath)) {
+        const html = wrapInScreenShell(target, viewFull(fallbackScreenBody(kind)))
+        await renderHtmlToPng(html, target, outputPath, this.logger)
       }
       return `${this.apiUrl()}/${relativePath.join('/')}`
     }
@@ -36,10 +37,10 @@ export class FallbackScreensService {
     }
   }
 
-  private async isStale(sourcePath: string, outputPath: string): Promise<boolean> {
+  private async isStale(outputPath: string): Promise<boolean> {
     try {
-      const [source, output] = await Promise.all([fs.promises.stat(sourcePath), fs.promises.stat(outputPath)])
-      return source.mtimeMs > output.mtimeMs
+      await fs.promises.stat(outputPath)
+      return false
     }
     catch {
       return true
