@@ -71,7 +71,7 @@ async function update() {
     <VRow justify="center">
       <VCol cols="12" sm="12">
         <VCard class="mb-6" elevation="1">
-          <VCardTitle class="d-flex align-center justify-space-between">
+          <VCardTitle class="d-flex align-center justify-space-between flex-wrap ga-2">
             Add Device
             <VIconBtn :icon="mdiSync" variant="tonal" color="secondary" aria-label="Refresh device list" :disabled="loadingUpdate" @click="update()" />
           </VCardTitle>

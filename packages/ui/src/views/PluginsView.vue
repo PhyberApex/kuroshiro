@@ -41,7 +41,7 @@ function createPlugin() {
     <VRow justify="center">
       <VCol cols="12">
         <VCard elevation="1">
-          <VCardTitle class="d-flex align-center justify-space-between">
+          <VCardTitle class="d-flex align-center justify-space-between flex-wrap ga-2">
             <div>
               <span>Plugins for </span>
               <span class="font-weight-bold">{{ device?.name }}</span>

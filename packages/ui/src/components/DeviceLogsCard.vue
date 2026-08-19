@@ -71,7 +71,7 @@ function getSeverityIcon(severity: string) {
 <template>
   <template v-if="device">
     <VCard elevation="1">
-      <VCardTitle class="d-flex align-center">
+      <VCardTitle class="d-flex align-center flex-wrap ga-2">
         Logs
         <VSpacer />
         <VBtn

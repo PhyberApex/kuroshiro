@@ -85,7 +85,7 @@ function onAssigned() {
     <VSnackbar v-model="showExportSnackbar" :timeout="3000" color="success">
       Downloading plugin export...
     </VSnackbar>
-    <VCardTitle class="d-flex align-center justify-space-between">
+    <VCardTitle class="d-flex align-center justify-space-between flex-wrap ga-2">
       <span>{{ plugin.name }}</span>
       <div class="d-flex ga-2">
         <VChip
