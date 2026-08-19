@@ -1,5 +1,6 @@
 import type { Logger } from '@nestjs/common'
 import type { DeviceRenderTarget } from '../device-models/device-models.service'
+import type { DeviceModel } from '../device-models/entities/device-model.entity'
 import type { Palette } from '../device-models/entities/palette.entity'
 import buffer from 'node:buffer'
 import { execFile } from 'node:child_process'
@@ -105,10 +106,18 @@ async function paletteOperators(palette: Palette, logger: Logger): Promise<strin
   }
 }
 
+/** The panel's pixel dimensions once rotated — 90/270 swap width and height. */
+function rotatedSize(model: Pick<DeviceModel, 'width' | 'height' | 'rotation'>): string {
+  const swapped = model.rotation === 90 || model.rotation === 270
+  return swapped ? `${model.height}x${model.width}` : `${model.width}x${model.height}`
+}
+
 /**
  * Geometry for a render target: fit into the model's canvas (letterboxed on
- * white), rotate to the panel's orientation, then trim the model's offsets
- * from the top-left edge.
+ * white), rotate to the panel's orientation, then shift the model's offset
+ * out of the top-left corner and re-extend to the full (rotated) canvas so
+ * the output always matches the panel's pixel dimensions — offsetting crops
+ * content rather than shrinking the frame.
  */
 function geometryOperators({ model }: DeviceRenderTarget): string[] {
   const size = `${model.width}x${model.height}`
@@ -116,7 +125,7 @@ function geometryOperators({ model }: DeviceRenderTarget): string[] {
   if (model.rotation !== 0)
     ops.push('-rotate', String(model.rotation))
   if (model.offsetX !== 0 || model.offsetY !== 0)
-    ops.push('-crop', `+${model.offsetX}+${model.offsetY}`, '+repage')
+    ops.push('-crop', `+${model.offsetX}+${model.offsetY}`, '+repage', '-gravity', 'NorthWest', '-extent', rotatedSize(model))
   return ops
 }
 
