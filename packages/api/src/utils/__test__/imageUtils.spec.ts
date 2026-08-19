@@ -3,7 +3,7 @@ import { Buffer } from 'node:buffer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { convertToPng, downloadImage, paletteConversion } from '../imageUtils'
 
-const mockExec = vi.fn()
+const mockExecFile = vi.fn()
 const mockFd = {
   read: vi.fn().mockImplementation((buf: any) => {
     buf[0] = 0xFF
@@ -23,8 +23,8 @@ const mockFs = vi.hoisted(() => ({
 }))
 
 vi.mock('node:child_process', () => ({
-  exec: (cmd: string, callback: (error: Error | null, stdout: string, stderr: string) => void) => {
-    mockExec(cmd, callback)
+  execFile: (file: string, args: string[], callback: (error: Error | null, stdout: string, stderr: string) => void) => {
+    mockExecFile(file, args, callback)
   },
 }))
 
@@ -64,7 +64,7 @@ describe('imageUtils', () => {
   const COLOR_24 = { id: 'color-24bit', grays: 2, colors: null, frameworkClass: 'screen--color-full' } as any
 
   function magickSucceeds() {
-    mockExec.mockImplementation((cmd: string, callback: any) => {
+    mockExecFile.mockImplementation((_file: string, _args: string[], callback: any) => {
       callback(null, '', '')
     })
   }
@@ -91,9 +91,9 @@ describe('imageUtils', () => {
       await convertToPng('/input.jpg', '/output.png', { model: OG_PLUS, palette: GRAY_4 }, mockLogger)
 
       expect(mockFs.promises.mkdir).toHaveBeenCalled()
-      expect(mockExec).toHaveBeenCalledTimes(2)
-      expect(mockExec.mock.calls[0][0]).toContain('xc:"#000000" xc:"#555555" xc:"#aaaaaa" xc:"#ffffff" +append -type Palette')
-      expect(mockExec.mock.calls[0][0]).toContain('colormaps/gray-4.png')
+      expect(mockExecFile).toHaveBeenCalledTimes(2)
+      expect(mockExecFile.mock.calls[0][0]).toBe('magick')
+      expect(mockExecFile.mock.calls[0][1]).toEqual(['-size', '1x1', 'xc:#000000', 'xc:#555555', 'xc:#aaaaaa', 'xc:#ffffff', '+append', '-type', 'Palette', expect.stringContaining('colormaps/gray-4.png')])
     })
 
     it('creates a colormap from the palette colours for colour panels', async () => {
@@ -102,12 +102,11 @@ describe('imageUtils', () => {
 
       await convertToPng('/input.jpg', '/output.png', { model: OG_PLUS, palette: COLOR_6A }, mockLogger)
 
-      expect(mockExec.mock.calls[0][0]).toContain('xc:"#FF0000" xc:"#00FF00" xc:"#0000FF" xc:"#FFFF00" xc:"#000000" xc:"#FFFFFF" +append')
-      expect(mockExec.mock.calls[0][0]).toContain('colormaps/color-6a.png')
-      const cmd = mockExec.mock.calls[1][0]
-      expect(cmd).toContain('-remap')
-      expect(cmd).toContain('-define png:color-type=3')
-      expect(cmd).not.toContain('-colorspace Gray')
+      expect(mockExecFile.mock.calls[0][1]).toEqual(['-size', '1x1', 'xc:#FF0000', 'xc:#00FF00', 'xc:#0000FF', 'xc:#FFFF00', 'xc:#000000', 'xc:#FFFFFF', '+append', '-type', 'Palette', expect.stringContaining('colormaps/color-6a.png')])
+      const args = mockExecFile.mock.calls[1][1]
+      expect(args).toContain('-remap')
+      expect(args).toEqual(expect.arrayContaining(['-define', 'png:color-type=3']))
+      expect(args).not.toContain('-colorspace')
     })
 
     it('skips colormap creation if it already exists', async () => {
@@ -116,7 +115,7 @@ describe('imageUtils', () => {
 
       await convertToPng('/input.jpg', '/output.png', { model: OG_PLUS, palette: GRAY_4 }, mockLogger)
 
-      expect(mockExec).toHaveBeenCalledTimes(1)
+      expect(mockExecFile).toHaveBeenCalledTimes(1)
     })
 
     it('calls ImageMagick with 2-bit gray parameters for the 4-gray palette', async () => {
@@ -125,16 +124,18 @@ describe('imageUtils', () => {
 
       await convertToPng('/input.jpg', '/output.png', { model: OG_PLUS, palette: GRAY_4 }, mockLogger)
 
-      const cmd = mockExec.mock.calls[0][0]
-      expect(cmd).toContain('magick "JPEG:/input.jpg"')
-      expect(cmd).toContain('-background white -alpha remove -alpha off')
-      expect(cmd).toContain('-resize 800x480 -gravity Center -extent 800x480')
-      expect(cmd).toContain('-colorspace Gray -dither FloydSteinberg -remap')
-      expect(cmd).toContain('colormaps/gray-4.png')
-      expect(cmd).toContain('-define png:bit-depth=2 -define png:color-type=0')
-      expect(cmd).toContain('-strip png:"/output.png"')
-      expect(cmd).not.toContain('-rotate')
-      expect(cmd).not.toContain('-crop')
+      expect(mockExecFile.mock.calls[0][0]).toBe('magick')
+      const args = mockExecFile.mock.calls[0][1]
+      expect(args[0]).toBe('JPEG:/input.jpg')
+      expect(args).toEqual(expect.arrayContaining(['-background', 'white', '-alpha', 'remove', '-alpha', 'off']))
+      expect(args).toEqual(expect.arrayContaining(['-resize', '800x480', '-gravity', 'Center', '-extent', '800x480']))
+      expect(args).toEqual(expect.arrayContaining(['-colorspace', 'Gray', '-dither', 'FloydSteinberg', '-remap']))
+      expect(args.some((a: string) => a.includes('colormaps/gray-4.png'))).toBe(true)
+      expect(args).toEqual(expect.arrayContaining(['-define', 'png:bit-depth=2', '-define', 'png:color-type=0']))
+      expect(args[args.length - 2]).toBe('-strip')
+      expect(args[args.length - 1]).toBe('png:/output.png')
+      expect(args).not.toContain('-rotate')
+      expect(args).not.toContain('-crop')
     })
 
     it('uses 1-bit and 4-bit output for the bw and 16-gray palettes', async () => {
@@ -142,9 +143,9 @@ describe('imageUtils', () => {
       magickSucceeds()
 
       await convertToPng('/input.jpg', '/output.png', { model: OG_PLUS, palette: BW }, mockLogger)
-      expect(mockExec.mock.calls[0][0]).toContain('-define png:bit-depth=1')
+      expect(mockExecFile.mock.calls[0][1]).toContain('png:bit-depth=1')
       await convertToPng('/input.jpg', '/output.png', { model: OG_PLUS, palette: GRAY_16 }, mockLogger)
-      expect(mockExec.mock.calls[1][0]).toContain('-define png:bit-depth=4')
+      expect(mockExecFile.mock.calls[1][1]).toContain('png:bit-depth=4')
     })
 
     it('keeps full colour for full-colour palettes without remapping', async () => {
@@ -152,10 +153,10 @@ describe('imageUtils', () => {
 
       await convertToPng('/input.jpg', '/output.png', { model: OG_PLUS, palette: COLOR_24 }, mockLogger)
 
-      expect(mockExec).toHaveBeenCalledTimes(1)
-      const cmd = mockExec.mock.calls[0][0]
-      expect(cmd).toContain('-colorspace sRGB -define png:color-type=2')
-      expect(cmd).not.toContain('-remap')
+      expect(mockExecFile).toHaveBeenCalledTimes(1)
+      const args = mockExecFile.mock.calls[0][1]
+      expect(args).toEqual(expect.arrayContaining(['-colorspace', 'sRGB', '-define', 'png:color-type=2']))
+      expect(args).not.toContain('-remap')
     })
 
     it('fits to the model size, then rotates and trims offsets', async () => {
@@ -165,14 +166,14 @@ describe('imageUtils', () => {
 
       await convertToPng('/input.jpg', '/output.png', { model: kindle, palette: GRAY_4 }, mockLogger)
 
-      const cmd = mockExec.mock.calls[0][0]
-      expect(cmd).toContain('-resize 1400x840 -gravity Center -extent 1400x840 -rotate 90 -crop +75+25 +repage -colorspace Gray')
+      const args = mockExecFile.mock.calls[0][1]
+      expect(args).toEqual(expect.arrayContaining(['-resize', '1400x840', '-gravity', 'Center', '-extent', '1400x840', '-rotate', '90', '-crop', '+75+25', '+repage']))
     })
 
     it('handles ImageMagick errors during colormap creation', async () => {
       mockFs.existsSync.mockReturnValue(false)
-      mockExec.mockImplementation((cmd: string, callback: any) => {
-        if (cmd.includes('colormap')) {
+      mockExecFile.mockImplementation((_file: string, args: string[], callback: any) => {
+        if (args.some(a => a.includes('colormap'))) {
           callback(new Error('ImageMagick failed'), '', 'ImageMagick error')
         }
       })
@@ -186,7 +187,7 @@ describe('imageUtils', () => {
 
     it('handles ImageMagick errors during conversion', async () => {
       mockFs.existsSync.mockReturnValue(true)
-      mockExec.mockImplementation((cmd: string, callback: any) => {
+      mockExecFile.mockImplementation((_file: string, _args: string[], callback: any) => {
         callback(new Error('Conversion failed'), '', 'conversion stderr')
       })
 

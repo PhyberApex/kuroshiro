@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TRMNL_MODELS_SNAPSHOT, TRMNL_PALETTES_SNAPSHOT } from '../data/trmnl-snapshot'
 import { DeviceModelSyncService } from '../device-model-sync.service'
@@ -131,6 +132,38 @@ describe('deviceModelSyncService', () => {
         throw new DOMException('The operation was aborted due to timeout', 'TimeoutError')
       })
       await expect(service.sync()).rejects.toThrow(/request timed out/)
+    })
+
+    it('skips a palette with an invalid colour and logs it, without dropping other valid palettes', async () => {
+      const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+      const badPalette = { ...paletteB, id: 'gray-8', colors: ['#zzzzzz'] }
+      mockFetch.mockImplementation(async (url: string) =>
+        url.endsWith('/palettes') ? jsonResponse([paletteA, badPalette]) : jsonResponse([modelA]))
+      paletteRepo.find.mockResolvedValue([])
+      modelRepo.find.mockResolvedValue([])
+
+      const result = await service.sync()
+
+      expect(paletteRepo.upsert).toHaveBeenCalledWith([expect.objectContaining({ id: 'bw' })], ['id'])
+      expect(result.palettes).toBe(1)
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Skipping invalid palette'))
+      warnSpy.mockRestore()
+    })
+
+    it('skips a model with an invalid id and logs it, without dropping other valid models', async () => {
+      const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+      const badModel = { ...modelA, name: '../evil' }
+      mockFetch.mockImplementation(async (url: string) =>
+        url.endsWith('/palettes') ? jsonResponse([paletteA]) : jsonResponse([modelA, badModel]))
+      paletteRepo.find.mockResolvedValue([])
+      modelRepo.find.mockResolvedValue([])
+
+      const result = await service.sync()
+
+      expect(modelRepo.upsert).toHaveBeenCalledWith([expect.objectContaining({ name: 'og_plus' })], ['name'])
+      expect(result.models).toBe(1)
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Skipping invalid model'))
+      warnSpy.mockRestore()
     })
 
     it('coalesces concurrent sync() calls into a single run', async () => {
