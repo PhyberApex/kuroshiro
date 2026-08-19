@@ -3,14 +3,14 @@ import type { RenderTarget } from '@/utils/screenShell'
 import { computed, onMounted, ref, watch } from 'vue'
 import { VCol, VRow, VSelect } from 'vuetify/components'
 import { useDeviceModelsStore } from '@/stores/deviceModels'
-import { DEFAULT_MODEL, DEFAULT_MODEL_NAME, DEFAULT_PALETTE, richestPalette } from '@/utils/renderTarget'
+import { DEFAULT_MODEL, renderTargetFor } from '@/utils/renderTarget'
 
-const emit = defineEmits<{ 'update:modelValue': [target: RenderTarget] }>()
+const target = defineModel<RenderTarget>({ required: true })
 
 const deviceModelsStore = useDeviceModelsStore()
 
-const selectedModelName = ref(DEFAULT_MODEL_NAME)
-const selectedPaletteId = ref<string | null>(null)
+const selectedModelName = ref(target.value.model.name)
+const selectedPaletteId = ref<string | null>(target.value.palette.id)
 
 onMounted(() => deviceModelsStore.ensureLoaded())
 
@@ -22,18 +22,16 @@ const modelOptions = computed(() => deviceModelsStore.activeModels.map(model => 
 const selectedModel = computed(() => deviceModelsStore.getByName(selectedModelName.value) ?? DEFAULT_MODEL)
 const allowedPalettes = computed(() => deviceModelsStore.palettesFor(selectedModel.value))
 const paletteOptions = computed(() => allowedPalettes.value.map(palette => ({ title: palette.name, value: palette.id })))
-
-const target = computed<RenderTarget>(() => ({
-  model: selectedModel.value,
-  palette: allowedPalettes.value.find(p => p.id === selectedPaletteId.value) ?? richestPalette(allowedPalettes.value) ?? DEFAULT_PALETTE,
-}))
+const selectedPalette = computed(() => allowedPalettes.value.find(p => p.id === selectedPaletteId.value) ?? null)
 
 watch(selectedModel, (model) => {
   if (selectedPaletteId.value && !model.paletteIds.includes(selectedPaletteId.value))
     selectedPaletteId.value = null
 })
 
-watch(target, value => emit('update:modelValue', value), { immediate: true })
+watch([selectedModel, selectedPalette], ([model, palette]) => {
+  target.value = renderTargetFor({ deviceModel: model, palette }, deviceModelsStore)
+}, { immediate: true })
 </script>
 
 <template>
