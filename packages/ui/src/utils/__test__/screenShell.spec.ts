@@ -1,6 +1,10 @@
+import type { RenderTarget } from '../screenShell'
 import type { DeviceModel, Palette } from '@/types'
 import { describe, expect, it } from 'vitest'
+import { SCREEN_SHELL_FIXTURE_BODY, SCREEN_SHELL_FIXTURE_EXPECTED, SCREEN_SHELL_FIXTURE_MODEL, SCREEN_SHELL_FIXTURE_PALETTE } from '../../../../../test/fixtures/screen-shell.fixture'
 import { screenClasses, screenStyle, viewFull, wrapInScreenShell } from '../screenShell'
+
+const fixtureTarget = { model: SCREEN_SHELL_FIXTURE_MODEL, palette: SCREEN_SHELL_FIXTURE_PALETTE } as unknown as RenderTarget
 
 const V2: DeviceModel = {
   name: 'v2',
@@ -41,5 +45,11 @@ describe('screenShell', () => {
     expect(html).toContain('href="https://usetrmnl.com/css/latest/plugins.css"')
     expect(html).toContain('<body class="environment trmnl">')
     expect(html).toContain('<div class="screen screen--v2 screen--lg screen--density-2x screen--4bit" style="--screen-w: 1040px; --screen-h: 780px;"><div class="view view--full"><p>x</p></div></div>')
+  })
+
+  it('matches the cross-package golden fixture shared with the API copy', () => {
+    expect(screenClasses(fixtureTarget)).toEqual(SCREEN_SHELL_FIXTURE_EXPECTED.classes)
+    expect(screenStyle(fixtureTarget)).toBe(SCREEN_SHELL_FIXTURE_EXPECTED.style)
+    expect(wrapInScreenShell(fixtureTarget, SCREEN_SHELL_FIXTURE_BODY)).toContain(SCREEN_SHELL_FIXTURE_EXPECTED.wrappedDiv)
   })
 })

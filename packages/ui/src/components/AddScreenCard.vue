@@ -207,9 +207,7 @@ const { isDemo } = useDemoInfo()
       </VCardText>
     </VCard>
     <VOverlay v-model="showHtmlPreview" class="align-center justify-center">
-      <div :style="{ width: `min(90vw, ${renderTarget.model.width}px)` }">
-        <ScreenFrame v-if="showHtmlPreview" :body="viewFull(renderHtml)" :target="renderTarget" />
-      </div>
+      <ScreenFrame v-if="showHtmlPreview" :body="viewFull(renderHtml)" :target="renderTarget" />
     </VOverlay>
   </template>
 </template>

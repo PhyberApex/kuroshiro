@@ -288,9 +288,7 @@ function previewScreen(screen: Screen) {
       </VCardText>
     </VCard>
     <VOverlay v-model="showHtmlPreview" class="align-center justify-center">
-      <div :style="{ width: `min(90vw, ${renderTarget.model.width}px)` }">
-        <ScreenFrame v-if="showHtmlPreview" :body="viewFull(overlayHtml)" :target="renderTarget" />
-      </div>
+      <ScreenFrame v-if="showHtmlPreview" :body="viewFull(overlayHtml)" :target="renderTarget" />
     </VOverlay>
 
     <VDialog v-model="showScreenPreview" :max-width="`min(90vw, ${Math.max(900, renderTarget.model.width + 48)}px)`">

@@ -222,8 +222,8 @@ export class ScreensService {
         this.logger.warn(`No image to reconvert for screen ${screen.id}`)
         continue
       }
+      const tempPath = path.join(path.dirname(outputPath), `tmp-${screen.id}.png`)
       try {
-        const tempPath = path.join(path.dirname(outputPath), `tmp-${screen.id}.png`)
         await convertToPng(sourcePath, tempPath, target, this.logger)
         await fs.promises.rename(tempPath, outputPath)
         await this.screensRepository.update({ id: screen.id }, { generatedAt: new Date() })
@@ -231,6 +231,7 @@ export class ScreensService {
       }
       catch (err) {
         this.logger.error(`Failed to reconvert screen ${screen.id}: ${err.message}`)
+        await fs.promises.unlink(tempPath).catch(() => {})
       }
     }
     this.logger.log(`Reconverted ${converted} image screen(s) for device ${device.id} as ${target.model.name}/${target.palette.id}`)

@@ -63,7 +63,9 @@ export class DevicesService {
       device.deviceModel = model
       device.palette = null
     }
-    if (device.deviceModel && paletteId !== undefined) {
+    if (paletteId !== undefined) {
+      if (!device.deviceModel)
+        throw new BadRequestException('Cannot set a palette on a device with no assigned device model')
       const palette = await this.deviceModels.findPalette(paletteId)
       if (!palette || !device.deviceModel.paletteIds.includes(paletteId))
         throw new BadRequestException(`Palette ${paletteId} is not supported by device model ${device.deviceModel.name}`)

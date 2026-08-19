@@ -17,7 +17,7 @@ const srcdoc = computed(() => wrapInScreenShell(props.target, props.body))
   <div
     ref="container"
     class="screen-frame"
-    :style="{ maxWidth: `${target.model.width}px`, height: `${Math.round(target.model.height * scale)}px` }"
+    :style="{ width: `min(90vw, ${target.model.width}px)`, maxWidth: `min(100%, ${target.model.width}px)`, height: `${Math.round(target.model.height * scale)}px` }"
     data-test-id="screen-frame"
   >
     <iframe
@@ -27,13 +27,13 @@ const srcdoc = computed(() => wrapInScreenShell(props.target, props.body))
       :style="{ transform: `scale(${scale})` }"
       class="screen-frame__iframe"
       title="Screen preview"
+      sandbox="allow-scripts"
     />
   </div>
 </template>
 
 <style scoped>
 .screen-frame {
-  width: 100%;
   overflow: hidden;
   position: relative;
 }

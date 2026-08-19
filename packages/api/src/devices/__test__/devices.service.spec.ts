@@ -157,6 +157,13 @@ describe('devicesService', () => {
       expect(repo.save).not.toHaveBeenCalled()
     })
 
+    it('rejects a palette sent for a device with no assigned device model', async () => {
+      repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: null, palette: null })
+      await expect(service.update('1', { paletteId: 'bw' } as any)).rejects.toThrow(BadRequestException)
+      expect(deviceModels.findPalette).not.toHaveBeenCalled()
+      expect(repo.save).not.toHaveBeenCalled()
+    })
+
     it('fills in the default palette for a device that has a model but no palette', async () => {
       repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: OG_PLUS, palette: null })
       deviceModels.defaultPaletteFor.mockResolvedValue(GRAY_4)

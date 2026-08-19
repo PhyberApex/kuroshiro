@@ -184,7 +184,7 @@ describe('screensService', () => {
       expect(screensRepo.update).not.toHaveBeenCalledWith({ id: 'markup' }, expect.anything())
     })
 
-    it('keeps going when one screen fails to convert', async () => {
+    it('keeps going when one screen fails to convert, cleaning up its temp file', async () => {
       screensRepo.find.mockResolvedValue([{ id: 'a', type: 'file' }, { id: 'b', type: 'file' }])
       fileExistsMock.mockResolvedValue(true)
       vi.spyOn(fs.promises, 'rename').mockResolvedValue(undefined)
@@ -192,6 +192,7 @@ describe('screensService', () => {
       vi.mocked(convertToPng).mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce(undefined)
 
       await expect(service.reconvertImageScreens(device)).resolves.toBe(1)
+      expect(unlinkMock).toHaveBeenCalledWith(expect.stringContaining('tmp-a.png'))
     })
   })
 
