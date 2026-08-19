@@ -44,10 +44,18 @@ describe('overviewView', () => {
   })
 
   it('shows device details and delete button', () => {
-    // Find a button with text 'Delete'
     const deleteBtns = wrapper.findAll('button')
-    const found = deleteBtns.some(btn => btn.text().toLowerCase().includes('delete'))
+    const found = deleteBtns.some(btn => btn.attributes('aria-label')?.toLowerCase() === 'delete device')
     expect(found).toBe(true)
+  })
+
+  it('keeps battery voltage and rssi on their own lines so both stay legible on narrow screens', () => {
+    const subtitle = wrapper.find('.v-list-item-subtitle')
+    expect(subtitle.exists()).toBe(true)
+    const lines = subtitle.findAll('span')
+    expect(lines).toHaveLength(2)
+    expect(lines[0]?.text()).toContain('Battery Voltage:')
+    expect(lines[1]?.text()).toContain('RSSI:')
   })
 
   it('renders the add device form', () => {
