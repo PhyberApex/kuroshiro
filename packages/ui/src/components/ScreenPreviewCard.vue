@@ -3,6 +3,7 @@ import { computed, onMounted } from 'vue'
 import { VCard, VCardText, VCardTitle, VDivider, VImg } from 'vuetify/components'
 import { useDeviceStore } from '@/stores/device.ts'
 import { useScreensStore } from '@/stores/screens.ts'
+import { cacheBustedUrl } from '@/utils/cacheBustedUrl'
 import { deviceRenderSize } from '@/utils/deviceRenderSize'
 import { formatDate } from '@/utils/formatDate'
 
@@ -20,6 +21,7 @@ onMounted(async () => {
   await screensStore.fetchCurrentScreenForDevice(device.value.mac, device.value.apikey)
 })
 const screen = computed(() => screensStore.currentScreen)
+const cacheBustedImageUrl = computed(() => screen.value ? cacheBustedUrl(screen.value.image_url, screen.value.rendered_at) : undefined)
 </script>
 
 <template>
@@ -29,7 +31,7 @@ const screen = computed(() => screensStore.currentScreen)
     <VCardText>
       <template v-if="screen">
         <VImg
-          :src="screen.image_url"
+          :src="cacheBustedImageUrl"
           :aspect-ratio="renderSize.width / renderSize.height"
           alt="Current device screen display"
           data-test-id="screen-image"

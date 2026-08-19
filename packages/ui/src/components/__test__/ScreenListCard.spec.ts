@@ -137,6 +137,34 @@ describe('screenListCard', () => {
     wrapper.unmount()
   })
 
+  it('cache-busts the image preview src with the screen generatedAt', async () => {
+    screensStoreMock.screens = [
+      { id: 'screen1', filename: 'file1', externalLink: null, isActive: true, device: 'device1', fetchManual: false, html: '', generatedAt: '2024-01-01T00:00:00Z' },
+    ]
+    const wrapper = mount(ScreenListCard, {
+      props: { deviceId: 'device1' },
+      global: {
+        plugins: [createPinia(), vuetify],
+      },
+      attachTo: document.body,
+    })
+
+    const previewBtn = wrapper.findAll('button').find(b => b.attributes('aria-label') === 'Preview screen')
+    expect(previewBtn).toBeDefined()
+    await previewBtn?.trigger('click')
+    await wrapper.vm.$nextTick()
+    await wrapper.vm.$nextTick()
+
+    expect((wrapper.vm as any).showScreenPreview).toBe(true)
+    expect((wrapper.vm as any).previewMode).toBe('image')
+
+    const img = document.body.querySelector('img[alt="Screen preview"]')
+    expect(img).not.toBeNull()
+    expect(img?.getAttribute('src')).toBe(`/screens/devices/device1/screen1.png?v=${encodeURIComponent('2024-01-01T00:00:00Z')}`)
+
+    wrapper.unmount()
+  })
+
   it('moving a screen down with the button calls reorderScreens with the swapped id order', async () => {
     screensStoreMock.screens = [
       { id: 'screen1', filename: 'file1', externalLink: null, isActive: true, device: 'device1', fetchManual: false, html: '' },

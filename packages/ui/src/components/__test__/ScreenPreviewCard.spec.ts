@@ -59,7 +59,9 @@ describe('screenPreviewCard', () => {
     })
     expect(wrapper.exists()).toBe(true)
     expect(wrapper.find('[data-test-id="screen-image"]').exists()).toBe(true)
-    expect(wrapper.findComponent({ name: 'VImg' }).props('src')).toBe('http://example.com/image.png')
+    const src = wrapper.findComponent({ name: 'VImg' }).props('src') as string
+    expect(src).toContain('http://example.com/image.png')
+    expect(src).toContain(encodeURIComponent('2024-01-01T00:00:00Z'))
     expect(wrapper.find('[data-test-id="screen-rendered-date"]').exists()).toBe(true)
     expect(wrapper.find('[data-test-id="screen-rendered-date"]').text()).toContain('formatted: 2024-01-01T00:00:00Z')
   })

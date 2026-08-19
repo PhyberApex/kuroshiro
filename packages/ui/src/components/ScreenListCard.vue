@@ -7,6 +7,7 @@ import ScreenFrame from '@/components/ScreenFrame.vue'
 import { useDeviceRenderTarget } from '@/composeables/useDeviceRenderTarget'
 import { useDeviceStore } from '@/stores/device.ts'
 import { useScreensStore } from '@/stores/screens'
+import { cacheBustedUrl } from '@/utils/cacheBustedUrl'
 import { viewFull } from '@/utils/screenShell'
 
 const props = defineProps<{ deviceId: string }>()
@@ -327,7 +328,7 @@ function previewScreen(screen: Screen) {
           <!-- Image screens -->
           <div v-else>
             <img
-              :src="`/screens/devices/${device?.id}/${selectedPreviewScreen.id}.png`"
+              :src="cacheBustedUrl(`/screens/devices/${device?.id}/${selectedPreviewScreen.id}.png`, selectedPreviewScreen.generatedAt)"
               style="max-width: 100%; height: auto; border: 1px solid #ccc;"
               alt="Screen preview"
               @error="($event.target as HTMLImageElement).src = '/screens/error.png'"
