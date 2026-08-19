@@ -427,6 +427,9 @@ importers:
       npm-run-all2:
         specifier: 'catalog:'
         version: 9.0.3
+      puppeteer:
+        specifier: 'catalog:'
+        version: 25.7.0
       resize-observer-polyfill:
         specifier: 'catalog:'
         version: 1.5.1

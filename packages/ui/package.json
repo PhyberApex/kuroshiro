@@ -9,9 +9,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "type-check": "vue-tsc --build",
     "lint": "eslint",
-    "lint:fix": "eslint --fix"
+    "lint:fix": "eslint --fix",
+    "prepare": "puppeteer browsers install chrome"
   },
   "dependencies": {
     "@mdi/js": "catalog:",
@@ -40,6 +42,7 @@
     "jiti": "catalog:",
     "jsdom": "catalog:",
     "npm-run-all2": "catalog:",
+    "puppeteer": "catalog:",
     "resize-observer-polyfill": "catalog:",
     "start-server-and-test": "catalog:",
     "typescript": "catalog:",
