@@ -8,7 +8,7 @@ const BW = { id: 'bw', name: 'Black & White (1-bit)', grays: 2 }
 const GRAY_4 = { id: 'gray-4', name: '4 Grays (2-bit)', grays: 4 }
 
 function jsonResponse(body: unknown, ok = true) {
-  return { ok, statusText: ok ? 'OK' : 'Service Unavailable', json: async () => body }
+  return { ok, status: ok ? 200 : 503, statusText: ok ? 'OK' : 'Service Unavailable', json: async () => body }
 }
 
 describe('deviceModels store', () => {
@@ -28,12 +28,41 @@ describe('deviceModels store', () => {
     expect(store.loaded).toBe(true)
   })
 
-  it('ensureLoaded fetches once', async () => {
+  it('ensureLoaded only fetches on the first call once loaded', async () => {
     ;(globalThis.fetch as any).mockResolvedValue(jsonResponse([]))
     const store = useDeviceModelsStore()
     await store.ensureLoaded()
     await store.ensureLoaded()
     expect(globalThis.fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('ensureLoaded dedupes concurrent calls into a single fetchAll', async () => {
+    ;(globalThis.fetch as any).mockResolvedValue(jsonResponse([]))
+    const store = useDeviceModelsStore()
+    await Promise.all([store.ensureLoaded(), store.ensureLoaded(), store.ensureLoaded()])
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('fetchAll records the status and statusText when a response is not ok', async () => {
+    ;(globalThis.fetch as any).mockImplementation(async (url: string) =>
+      url.endsWith('/palettes') ? jsonResponse([BW, GRAY_4]) : jsonResponse(null, false))
+    const store = useDeviceModelsStore()
+    await store.fetchAll()
+    expect(store.loaded).toBe(false)
+    expect(store.error).toBe('503 Service Unavailable')
+  })
+
+  it('fetchAll clears a previous error on a later successful load', async () => {
+    const store = useDeviceModelsStore()
+    ;(globalThis.fetch as any).mockResolvedValue(jsonResponse(null, false))
+    await store.fetchAll()
+    expect(store.error).not.toBeNull()
+
+    ;(globalThis.fetch as any).mockImplementation(async (url: string) =>
+      url.endsWith('/palettes') ? jsonResponse([BW]) : jsonResponse([OG_PLUS]))
+    await store.fetchAll()
+    expect(store.error).toBeNull()
+    expect(store.loaded).toBe(true)
   })
 
   it('palettesFor returns the palettes a model allows, in the model order', async () => {

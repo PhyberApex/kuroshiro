@@ -17,6 +17,10 @@ const lastModelSync = computed(() => {
   return dates.at(-1) ?? null
 })
 
+// A successful sync always wins over a stale/unrelated store error (e.g. a refresh
+// hiccup after the sync itself succeeded), so it never gets masked by an old alert.
+const modelError = computed(() => (syncResult.value ? null : deviceModelsStore.error))
+
 async function handleModelSync() {
   syncResult.value = await deviceModelsStore.sync()
 }
@@ -224,8 +228,8 @@ async function executeCleanup() {
               </span>
               · Last synced: {{ lastModelSync ? formatDate(lastModelSync) : 'never (bundled snapshot)' }}
             </div>
-            <VAlert v-if="deviceModelsStore.error" type="error" variant="tonal" class="mt-3" :icon="mdiAlertCircle">
-              {{ deviceModelsStore.error }}
+            <VAlert v-if="modelError" type="error" variant="tonal" class="mt-3" :icon="mdiAlertCircle">
+              {{ modelError }}
             </VAlert>
             <VAlert v-else-if="syncResult" type="success" variant="tonal" class="mt-3" :icon="mdiCheckCircle" closable @click:close="syncResult = null">
               Synced {{ syncResult.models }} models and {{ syncResult.palettes }} palettes
