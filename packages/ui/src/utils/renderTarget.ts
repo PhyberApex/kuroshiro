@@ -18,8 +18,15 @@ export const DEFAULT_MODEL: DeviceModel = {
   mimeType: 'image/png',
   kind: 'trmnl',
   paletteIds: ['bw', 'gray-4'],
-  cssClasses: ['screen--og_plus', 'screen--md', 'screen--density-1x'],
-  cssVariables: {},
+  cssClasses: ['screen--ogv2', 'screen--md', 'screen--density-1x'],
+  cssVariables: {
+    '--screen-w': '800px',
+    '--screen-h': '480px',
+    '--pixel-ratio': '1.0',
+    '--dither-pixel-ratio': '1.0',
+    '--device-ui-scale': '1.0',
+    '--gap-scale': '1.0',
+  },
   deprecated: false,
 }
 
