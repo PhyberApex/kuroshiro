@@ -5,6 +5,9 @@ import { BW, GRAY_4, GRAY_16, OG_PLUS, V2 } from './mockDeviceModelsService'
 const SEEED_E1003 = { ...V2, name: 'seeed_e1003', label: 'reTerminal E1003', kind: 'byod' }
 const COLOR_6A = { ...BW, id: 'color-6a', name: 'Color (6 colors)', grays: 2, colors: ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#000000', '#FFFFFF'], frameworkClass: 'screen--color-6a', grayscaleBitDepth: 1 }
 const SEEED_E1002 = { ...OG_PLUS, name: 'seeed_e1002', label: 'reTerminal E1002', kind: 'byod', paletteIds: ['color-6a', 'bw'] }
+const OG_BWRY = { ...OG_PLUS, name: 'og_bwry', label: 'TRMNL OG (colour)', kind: 'trmnl' }
+const OG_PNG = { ...OG_PLUS, name: 'og_png', label: 'TRMNL OG (1-bit)', kind: 'trmnl' }
+const ONYX_BOOX_NOVA_AIR_C = { ...V2, name: 'onxy_boox_nova_air_c', label: 'Onyx Boox Nova Air C', kind: 'byod' }
 
 function createMockRepo() {
   return {
@@ -18,7 +21,7 @@ describe('deviceModelsService', () => {
   let modelRepo: ReturnType<typeof createMockRepo>
   let paletteRepo: ReturnType<typeof createMockRepo>
 
-  const models = [OG_PLUS, V2, SEEED_E1003, SEEED_E1002]
+  const models = [OG_PLUS, V2, SEEED_E1003, SEEED_E1002, OG_BWRY, OG_PNG, ONYX_BOOX_NOVA_AIR_C]
   const palettes = [BW, GRAY_4, GRAY_16, COLOR_6A]
 
   beforeEach(() => {
@@ -44,12 +47,12 @@ describe('deviceModelsService', () => {
     })
 
     it('resolves nothing for an unknown name without dimensions', async () => {
-      await expect(service.resolve({ reportedModel: 'waveshare' })).resolves.toBeNull()
+      await expect(service.resolve({ reportedModel: 'unknown_board' })).resolves.toBeNull()
       await expect(service.resolve({})).resolves.toBeNull()
     })
 
     it('matches an unknown name on dimensions, preferring TRMNL hardware', async () => {
-      await expect(service.resolve({ reportedModel: 'lilygo', width: 1872, height: 1404 })).resolves.toBe(V2)
+      await expect(service.resolve({ reportedModel: 'unknown_x_class', width: 1872, height: 1404 })).resolves.toBe(V2)
     })
 
     it('matches on dimensions when no name is reported at all', async () => {
@@ -58,6 +61,16 @@ describe('deviceModelsService', () => {
 
     it('falls back to the OG model when nothing matches', async () => {
       await expect(service.resolve({ reportedModel: 'waveshare_397', width: 480, height: 800 })).resolves.toBe(OG_PLUS)
+    })
+
+    it('deterministically prefers the fallback model over other TRMNL hardware at the same dimensions, regardless of DB order', async () => {
+      modelRepo.find.mockResolvedValueOnce([OG_BWRY, OG_PNG, OG_PLUS])
+      await expect(service.resolve({ reportedModel: 'unknown_800x480_board', width: 800, height: 480 })).resolves.toBe(OG_PLUS)
+    })
+
+    it('deterministically prefers TRMNL hardware over BYOD at the same dimensions, regardless of DB order', async () => {
+      modelRepo.find.mockResolvedValueOnce([ONYX_BOOX_NOVA_AIR_C, V2])
+      await expect(service.resolve({ reportedModel: 'unknown_x_class', width: 1872, height: 1404 })).resolves.toBe(V2)
     })
   })
 
@@ -85,7 +98,7 @@ describe('deviceModelsService', () => {
     })
 
     it('leaves the device untouched when nothing resolves', async () => {
-      const device = { reportedModel: 'waveshare' } as any
+      const device = { reportedModel: 'unknown_board' } as any
       await expect(service.assignResolvedModel(device)).resolves.toBeNull()
       expect(device.deviceModel).toBeUndefined()
       expect(device.palette).toBeUndefined()
