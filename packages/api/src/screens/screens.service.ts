@@ -42,6 +42,7 @@ export class ScreensService {
       throw new NotFoundException('Device not found')
     }
     const newScreen = this.screensRepository.create({
+      type: body.externalLink ? 'external' : body.html ? 'html' : 'file',
       filename: body.filename,
       externalLink: body.externalLink,
       device,

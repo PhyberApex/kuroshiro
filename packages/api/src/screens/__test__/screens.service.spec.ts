@@ -91,6 +91,19 @@ describe('screensService', () => {
     expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('public/screens/devices/dev/1.original'), file.buffer)
     expect(unlinkMock).not.toHaveBeenCalled()
     expect(screensRepo.save).toHaveBeenCalledWith(screen)
+    expect(screensRepo.create).toHaveBeenCalledWith(expect.objectContaining({ type: 'file' }))
+  })
+
+  it('add creates a screen with html', async () => {
+    const device = { id: 'dev', screens: [], width: 100, height: 100 } as Device
+    devicesRepo.findOne.mockResolvedValue(device)
+    const screen = { id: '1', html: '<div>hi</div>', device, order: 1, isActive: false } as Screen
+    screensRepo.create.mockReturnValue(screen)
+    screensRepo.save.mockResolvedValue(screen)
+    screensRepo.update.mockResolvedValue(undefined)
+    const result = await service.add({ filename: 'file', deviceId: 'dev', fetchManual: false, html: '<div>hi</div>' }, undefined)
+    expect(result).toBe(screen)
+    expect(screensRepo.create).toHaveBeenCalledWith(expect.objectContaining({ type: 'html' }))
   })
 
   it('add creates a screen with externalLink and fetchManual', async () => {
@@ -110,6 +123,7 @@ describe('screensService', () => {
     const result = await service.add(dto, undefined)
     expect(result).toBe(screen)
     expect(screensRepo.save).toHaveBeenCalledWith(screen)
+    expect(screensRepo.create).toHaveBeenCalledWith(expect.objectContaining({ type: 'external' }))
   })
 
   it('getByDevice returns screens for a device', async () => {
@@ -153,6 +167,7 @@ describe('screensService', () => {
         { id: 'cached', type: 'external', fetchManual: true },
         { id: 'live', type: 'external', fetchManual: false },
         { id: 'plugin', type: 'plugin' },
+        { id: 'markup', type: 'html' },
       ])
       fileExistsMock.mockImplementation(async (p: string) => !p.endsWith('legacy.original'))
       const renameMock = vi.spyOn(fs.promises, 'rename').mockResolvedValue(undefined)
@@ -165,6 +180,8 @@ describe('screensService', () => {
       expect(renameMock).toHaveBeenCalledWith(expect.stringContaining('tmp-upload.png'), expect.stringContaining('/upload.png'))
       expect(screensRepo.update).toHaveBeenCalledWith({ id: 'upload' }, { generatedAt: expect.any(Date) })
       expect(screensRepo.update).not.toHaveBeenCalledWith({ id: 'live' }, expect.anything())
+      expect(screensRepo.update).not.toHaveBeenCalledWith({ id: 'plugin' }, expect.anything())
+      expect(screensRepo.update).not.toHaveBeenCalledWith({ id: 'markup' }, expect.anything())
     })
 
     it('keeps going when one screen fails to convert', async () => {
