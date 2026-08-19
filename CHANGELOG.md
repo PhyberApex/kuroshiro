@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.11.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.10.2...kuroshiro-v0.11.0) (2026-08-19)
+
+
+### Features
+
+* add device models and palettes as the basis for multi-size TRMNL support ([#739](https://github.com/PhyberApex/kuroshiro/issues/739)) ([0581049](https://github.com/PhyberApex/kuroshiro/commit/05810495fbec657d069577806ad0fba6d20c8ebf))
+* convert images per device palette, rotation and offsets, keep originals, and serve fallback screens per model ([#742](https://github.com/PhyberApex/kuroshiro/issues/742)) ([57016d6](https://github.com/PhyberApex/kuroshiro/commit/57016d64343cbd1cdd69bc9ba7b851d2e7bd9f4c))
+* render screens at the device model's native size inside the TRMNL screen shell ([#740](https://github.com/PhyberApex/kuroshiro/issues/740)) ([936ec91](https://github.com/PhyberApex/kuroshiro/commit/936ec91b79fbc2aa446f7edda768c97f8b55a252))
+
+
+### Bug Fixes
+
+* **device-models:** address small follow-ups from device-model support review ([#767](https://github.com/PhyberApex/kuroshiro/issues/767)) ([782881e](https://github.com/PhyberApex/kuroshiro/commit/782881e940aa34ffadc30dacd88d77095877d22e)), closes [#757](https://github.com/PhyberApex/kuroshiro/issues/757)
+* **device-models:** make dimension-based model fallback deterministic ([#762](https://github.com/PhyberApex/kuroshiro/issues/762)) ([781745a](https://github.com/PhyberApex/kuroshiro/commit/781745aabc4beff11b2fd0473588626c5102970b)), closes [#746](https://github.com/PhyberApex/kuroshiro/issues/746)
+* **device-models:** render fallback screens natively per model instead of upscaling PNGs ([#770](https://github.com/PhyberApex/kuroshiro/issues/770)) ([4b262a3](https://github.com/PhyberApex/kuroshiro/commit/4b262a36d1e6f9c07c60414cec14508327da3686)), closes [#755](https://github.com/PhyberApex/kuroshiro/issues/755)
+* **device-models:** stop deriving screen orientation class from model.rotation ([#759](https://github.com/PhyberApex/kuroshiro/issues/759)) ([c182cf9](https://github.com/PhyberApex/kuroshiro/commit/c182cf9773088f30ecec42b2f42d04611197d635)), closes [#745](https://github.com/PhyberApex/kuroshiro/issues/745)
+* **device-models:** time out TRMNL sync fetches and coalesce concurrent runs ([#761](https://github.com/PhyberApex/kuroshiro/issues/761)) ([e0b279e](https://github.com/PhyberApex/kuroshiro/commit/e0b279e8e3ab9480d6353030c081b72a74f99553)), closes [#754](https://github.com/PhyberApex/kuroshiro/issues/754)
+* **device-models:** validate synced model/palette payloads and drop shell exec ([#765](https://github.com/PhyberApex/kuroshiro/issues/765)) ([c99ca62](https://github.com/PhyberApex/kuroshiro/commit/c99ca6235cfab74a77f27049324c81cd5379b2e8))
+* **image-utils:** boost saturation on colour palette PNGs, confirm indexed format is firmware-safe ([#773](https://github.com/PhyberApex/kuroshiro/issues/773)) ([3e333ef](https://github.com/PhyberApex/kuroshiro/commit/3e333ef375a5b76b64094557324bca3893deb04a)), closes [#756](https://github.com/PhyberApex/kuroshiro/issues/756)
+* **image-utils:** keep offset panels at full model size instead of cropping smaller ([#768](https://github.com/PhyberApex/kuroshiro/issues/768)) ([0439653](https://github.com/PhyberApex/kuroshiro/commit/0439653e33462892d9e0f6a0316e7d80761826c1)), closes [#751](https://github.com/PhyberApex/kuroshiro/issues/751)
+* **screens:** set Screen.type on create and backfill existing rows ([#764](https://github.com/PhyberApex/kuroshiro/issues/764)) ([966c2c3](https://github.com/PhyberApex/kuroshiro/commit/966c2c374ea102731d9851563fc154f5270e5c98)), closes [#747](https://github.com/PhyberApex/kuroshiro/issues/747)
+* **ui:** add real-browser viewport overflow CI check, fix plugin toolbar overflow at 375px ([#774](https://github.com/PhyberApex/kuroshiro/issues/774)) ([d0cc08d](https://github.com/PhyberApex/kuroshiro/commit/d0cc08d9af3c34cbfdf9940f461ef0e27503161f))
+* **ui:** cache-bust screen preview image URLs after reconversion ([#763](https://github.com/PhyberApex/kuroshiro/issues/763)) ([96151f2](https://github.com/PhyberApex/kuroshiro/commit/96151f273056c6f1abda445c463b00580b349714))
+* **ui:** dedupe deviceModels fetches and surface HTTP errors ([#760](https://github.com/PhyberApex/kuroshiro/issues/760)) ([5085670](https://github.com/PhyberApex/kuroshiro/commit/508567029db54b778bb5c5e7ce1a01830b088c20)), closes [#753](https://github.com/PhyberApex/kuroshiro/issues/753)
+* **ui:** fix DEFAULT_MODEL drift from the og_plus snapshot ([#766](https://github.com/PhyberApex/kuroshiro/issues/766)) ([c6bf32b](https://github.com/PhyberApex/kuroshiro/commit/c6bf32b35f87e89e349b67c531abdfbaa147fcdf))
+* **ui:** give RenderTargetPicker a real modelValue prop ([#758](https://github.com/PhyberApex/kuroshiro/issues/758)) ([c361e16](https://github.com/PhyberApex/kuroshiro/commit/c361e1689dd1491ba1c3f5aed7fb0a53913cb058)), closes [#750](https://github.com/PhyberApex/kuroshiro/issues/750)
+* **ui:** hide the tab strip on mobile and add Plugins to the nav drawer ([#772](https://github.com/PhyberApex/kuroshiro/issues/772)) ([12759ea](https://github.com/PhyberApex/kuroshiro/commit/12759ea67c8b574a16697f84e85832cda1f755e7)), closes [#736](https://github.com/PhyberApex/kuroshiro/issues/736)
+* **ui:** keep battery voltage and RSSI legible on Overview at narrow widths ([#771](https://github.com/PhyberApex/kuroshiro/issues/771)) ([4810e08](https://github.com/PhyberApex/kuroshiro/commit/4810e08b8a8390b6bb8f62a9bda2f98cd8b8d684))
+* **ui:** let card title action buttons wrap instead of overflowing on mobile ([#769](https://github.com/PhyberApex/kuroshiro/issues/769)) ([5243e1e](https://github.com/PhyberApex/kuroshiro/commit/5243e1e9af4d8ef50ce64879c55121a21b57cdb2)), closes [#733](https://github.com/PhyberApex/kuroshiro/issues/733)
+
 ## [0.10.2](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.10.1...kuroshiro-v0.10.2) (2026-08-17)
 
 

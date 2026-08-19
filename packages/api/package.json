@@ -1,6 +1,6 @@
 {
   "name": "kuroshiro-api",
-  "version": "0.10.2",
+  "version": "0.11.0",
   "private": true,
   "packageManager": "pnpm@11.22.0",
   "scripts": {
