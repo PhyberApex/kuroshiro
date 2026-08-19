@@ -19,7 +19,7 @@ vi.mock('@/utils/isDeviceOnline', () => ({
 }))
 
 describe('navigationDrawer', () => {
-  it('renders without error and shows Overview and Devices', () => {
+  it('renders without error and shows Overview, Plugins and Devices', () => {
     const wrapper = mount(NavigationDrawer, {
       global: {
         plugins: [createPinia(), vuetify],
@@ -27,6 +27,7 @@ describe('navigationDrawer', () => {
     })
     expect(wrapper.exists()).toBe(true)
     expect(wrapper.find('[data-test-id="nav-overview"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test-id="nav-plugins"]').exists()).toBe(true)
     expect(wrapper.find('[data-test-id="nav-devices-group"]').exists()).toBe(true)
     expect(wrapper.find('[data-test-id="nav-device-device1"]').exists()).toBe(true)
     expect(wrapper.find('[data-test-id="nav-device-device2"]').exists()).toBe(true)
