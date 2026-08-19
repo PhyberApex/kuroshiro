@@ -105,6 +105,7 @@ export class PluginsService implements OnModuleInit {
     // Create a Screen entity for this plugin assignment
     const maxOrder = await this.screenRepository.maximum('order', { device: { id: assignData.deviceId } }) || 0
     const screen = this.screenRepository.create({
+      type: 'plugin',
       device: { id: assignData.deviceId } as any,
       plugin: { id: pluginId } as Plugin,
       devicePluginId: saved.id,

@@ -307,7 +307,7 @@ describe('pluginsService', () => {
 
     expect(devicePluginRepo.create).toHaveBeenCalled()
     expect(devicePluginRepo.save).toHaveBeenCalled()
-    expect(screenRepo.create).toHaveBeenCalled()
+    expect(screenRepo.create).toHaveBeenCalledWith(expect.objectContaining({ type: 'plugin' }))
     expect(screenRepo.save).toHaveBeenCalled()
     expect(result).toBe(devicePlugin)
   })
