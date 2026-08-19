@@ -1,10 +1,14 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
+import rop from 'resize-observer-polyfill'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import vuetify from '../../plugins/vuetify'
 import OverviewView from '../OverviewView.vue'
 
+globalThis.ResizeObserver = rop
+
 // Mock the device store
+const { deleteDeviceMock } = vi.hoisted(() => ({ deleteDeviceMock: vi.fn() }))
 vi.mock('../../stores/device', () => {
   const devices = [
     { id: '1', friendlyId: 'Test Device', mac: 'AA:BB:CC:DD:EE:FF', apikey: 'key', mirrorEnabled: false, mirrorMac: '', mirrorApikey: '', specialFunction: '', batteryVoltage: '3.7', rssi: '-70' },
@@ -15,7 +19,7 @@ vi.mock('../../stores/device', () => {
       devices,
       fetchDevices: vi.fn(),
       addDevice: vi.fn(),
-      deleteDevice: vi.fn(),
+      deleteDevice: deleteDeviceMock,
       getById: vi.fn(),
       updateDevice: vi.fn(),
     }),
@@ -25,6 +29,7 @@ vi.mock('../../stores/device', () => {
 describe('overviewView', () => {
   let wrapper: ReturnType<typeof mount>
   beforeEach(() => {
+    deleteDeviceMock.mockClear()
     wrapper = mount(OverviewView, {
       global: {
         plugins: [createPinia(), vuetify],
@@ -47,6 +52,13 @@ describe('overviewView', () => {
     const deleteBtns = wrapper.findAll('button')
     const found = deleteBtns.some(btn => btn.attributes('aria-label')?.toLowerCase() === 'delete device')
     expect(found).toBe(true)
+  })
+
+  it('calls deleteDevice with the device id when the delete button is clicked', async () => {
+    const deleteBtn = wrapper.findAll('button').find(btn => btn.attributes('aria-label')?.toLowerCase() === 'delete device')
+    expect(deleteBtn).toBeDefined()
+    await deleteBtn?.trigger('click')
+    expect(deleteDeviceMock).toHaveBeenCalledWith('1')
   })
 
   it('keeps battery voltage and rssi on their own lines so both stay legible on narrow screens', () => {
