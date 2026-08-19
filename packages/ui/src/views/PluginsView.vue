@@ -42,11 +42,11 @@ function createPlugin() {
       <VCol cols="12">
         <VCard elevation="1">
           <VCardTitle class="d-flex align-center justify-space-between flex-wrap ga-2">
-            <div>
+            <div class="text-truncate">
               <span>Plugins for </span>
               <span class="font-weight-bold">{{ device?.name }}</span>
             </div>
-            <div class="d-flex ga-2">
+            <div class="d-flex flex-wrap ga-2">
               <VIconBtn
                 :icon="mdiSync"
                 variant="tonal"
