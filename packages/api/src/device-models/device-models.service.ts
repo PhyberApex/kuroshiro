@@ -134,8 +134,8 @@ export class DeviceModelsService {
   }
 
   private async resolveByDimensions(width: number, height: number): Promise<DeviceModel | null> {
-    const candidates = await this.deviceModelRepository.find({ where: { width, height, deprecated: false } })
-    return candidates.find(c => c.kind === 'trmnl') ?? candidates[0] ?? null
+    const candidates = await this.deviceModelRepository.find({ where: { width, height, deprecated: false }, order: { name: 'ASC' } })
+    return candidates.find(c => c.name === FALLBACK_MODEL_NAME) ?? candidates.find(c => c.kind === 'trmnl') ?? candidates[0] ?? null
   }
 
   private fallbackModelFromSnapshot(): DeviceModel {
