@@ -159,7 +159,7 @@ describe('imageUtils', () => {
       expect(args).not.toContain('-remap')
     })
 
-    it('fits to the model size, then rotates and trims offsets', async () => {
+    it('fits to the model size, rotates, then shifts the offset back into a full-canvas frame', async () => {
       mockFs.existsSync.mockReturnValue(true)
       magickSucceeds()
       const kindle = { ...OG_PLUS, name: 'kindle', width: 1400, height: 840, rotation: 90, offsetX: 75, offsetY: 25 }
@@ -167,7 +167,34 @@ describe('imageUtils', () => {
       await convertToPng('/input.jpg', '/output.png', { model: kindle, palette: GRAY_4 }, mockLogger)
 
       const args = mockExecFile.mock.calls[0][1]
-      expect(args).toEqual(expect.arrayContaining(['-resize', '1400x840', '-gravity', 'Center', '-extent', '1400x840', '-rotate', '90', '-crop', '+75+25', '+repage']))
+      expect(args).toEqual(expect.arrayContaining([
+        '-resize',
+        '1400x840',
+        '-gravity',
+        'Center',
+        '-extent',
+        '1400x840',
+        '-rotate',
+        '90',
+        '-crop',
+        '+75+25',
+        '+repage',
+        '-gravity',
+        'NorthWest',
+        '-extent',
+        '840x1400',
+      ]))
+    })
+
+    it('keeps the offset frame at the unrotated model size when rotation does not swap dimensions', async () => {
+      mockFs.existsSync.mockReturnValue(true)
+      magickSucceeds()
+      const shifted = { ...OG_PLUS, name: 'shifted', width: 1400, height: 840, rotation: 180, offsetX: 10, offsetY: 5 }
+
+      await convertToPng('/input.jpg', '/output.png', { model: shifted, palette: GRAY_4 }, mockLogger)
+
+      const args = mockExecFile.mock.calls[0][1]
+      expect(args).toEqual(expect.arrayContaining(['-crop', '+10+5', '+repage', '-gravity', 'NorthWest', '-extent', '1400x840']))
     })
 
     it('handles ImageMagick errors during colormap creation', async () => {
