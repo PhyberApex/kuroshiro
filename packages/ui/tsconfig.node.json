@@ -11,9 +11,11 @@
   "include": [
     "vite.config.*",
     "vitest.config.*",
+    "vitest.e2e.config.*",
     "cypress.config.*",
     "nightwatch.conf.*",
     "playwright.config.*",
-    "eslint.config.*"
+    "eslint.config.*",
+    "e2e/**/*"
   ]
 }

@@ -25,5 +25,7 @@ jobs:
         run: pnpm run type-check
       - name: Test
         run: pnpm run test
+      - name: Test UI viewport regressions
+        run: pnpm --filter ./packages/ui test:e2e
       - name: Build
         run: pnpm run build

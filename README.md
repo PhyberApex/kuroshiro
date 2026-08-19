@@ -218,6 +218,10 @@ We love contributions! Jump in:
 - Run all tests before submitting a PR
 - **We use [release-please](https://github.com/googleapis/release-please)!** Use [Conventional Commits](https://www.conventionalcommits.org/) for your commit messages to enable automatic versioning and changelogs.
 
+### UI responsive support
+
+The dashboard (`packages/ui`) supports viewports down to **375px** wide. CI drives every route in a real Chromium browser at 375 / 768 / 1280px (`pnpm --filter ./packages/ui test:e2e`) and fails on horizontal overflow, so if you add a toolbar, card header, or dialog, check it at 375px before opening a PR.
+
 ### Contributors
 
 <a href="https://github.com/phyberapex/kuroshiro/graphs/contributors">
