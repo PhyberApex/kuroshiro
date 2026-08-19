@@ -99,7 +99,10 @@ async function paletteOperators(palette: Palette, logger: Logger): Promise<strin
     }
     case 'color': {
       const colormap = await ensureColormap(palette.id, conversion.colors, logger)
-      return ['-dither', 'FloydSteinberg', '-remap', colormap, '-define', 'png:color-type=3']
+      // -modulate brightness,saturation: pushed colours past the thresholds the firmware
+      // uses to tell red/yellow apart from gray (see docs/adr/0002-color-palette-png-format.md)
+      const saturationBoost = '110,150'
+      return ['-normalize', '-modulate', saturationBoost, '-colorspace', 'RGB', '-dither', 'FloydSteinberg', '-remap', colormap, '-colorspace', 'sRGB', '-define', 'png:color-type=3']
     }
     case 'full-color':
       return ['-colorspace', 'sRGB', '-define', 'png:color-type=2']

@@ -106,7 +106,20 @@ describe('imageUtils', () => {
       const args = mockExecFile.mock.calls[1][1]
       expect(args).toContain('-remap')
       expect(args).toEqual(expect.arrayContaining(['-define', 'png:color-type=3']))
-      expect(args).not.toContain('-colorspace')
+    })
+
+    it('boosts saturation before remapping colour panels, matching Terminus\'s colour path', async () => {
+      mockFs.existsSync.mockReturnValue(true)
+      magickSucceeds()
+
+      await convertToPng('/input.jpg', '/output.png', { model: OG_PLUS, palette: COLOR_6A }, mockLogger)
+
+      const args = mockExecFile.mock.calls[0][1]
+      expect(args).toEqual(expect.arrayContaining(['-normalize', '-modulate', '110,150', '-colorspace', 'RGB', '-dither', 'FloydSteinberg', '-remap']))
+      expect(args).toEqual(expect.arrayContaining(['-colorspace', 'sRGB', '-define', 'png:color-type=3']))
+      // saturation boost runs before the remap, and the colourspace is restored to sRGB after it
+      expect(args.indexOf('-normalize')).toBeLessThan(args.indexOf('-remap'))
+      expect(args.lastIndexOf('-colorspace')).toBeGreaterThan(args.indexOf('-remap'))
     })
 
     it('skips colormap creation if it already exists', async () => {
