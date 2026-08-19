@@ -4,7 +4,7 @@ import { mdiThemeLightDark } from '@mdi/js'
 import { usePreferredDark } from '@vueuse/core'
 import { onMounted, ref, toRaw, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
-import { useTheme } from 'vuetify'
+import { useDisplay, useTheme } from 'vuetify'
 
 import NavigationDrawer from '@/components/NavigationDrawer.vue'
 import { useDemoInfo } from '@/composeables/useDemoInfo.ts'
@@ -13,6 +13,7 @@ import packageJson from '../../../package.json'
 const isDark = usePreferredDark()
 
 const theme = useTheme()
+const { mobile } = useDisplay()
 
 onMounted(() => {
   theme.global.name.value = isDark.value ? 'dark' : 'light'
@@ -68,6 +69,7 @@ const { isDemo } = useDemoInfo()
         </v-btn>
       </v-app-bar-title>
       <v-tabs
+        v-if="!mobile"
         v-model="currentRoute"
         align-tabs="center"
         class="ml-4"

@@ -4,6 +4,7 @@ import {
   mdiCodeBlockTags,
   mdiCog,
   mdiMonitor,
+  mdiPuzzle,
   mdiRobot,
   mdiViewDashboard,
 } from '@mdi/js'
@@ -21,6 +22,7 @@ const devices = computed(() => deviceStore.devices)
   <VList>
     <VList density="compact" nav>
       <VListItem :prepend-icon="mdiViewDashboard" title="Overview" :to="{ name: 'overview' }" data-test-id="nav-overview" />
+      <VListItem :prepend-icon="mdiPuzzle" title="Plugins" :to="{ name: 'pluginsOverview' }" data-test-id="nav-plugins" />
       <VDivider />
       <VListGroup data-test-id="nav-devices-group">
         <template #activator="{ props }">
