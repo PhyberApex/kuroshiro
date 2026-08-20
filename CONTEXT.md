@@ -25,7 +25,7 @@ An integer position (1..N, sequential, no gaps) that determines a Screen's place
 _Avoid_: Position, index, sequence number
 
 **Active Screen**:
-The one Screen per Device currently being shown (`isActive: true`). Not a fixed pointer — advances dynamically to the next Screen by `order` each time the Device polls for its display, wrapping back to `order: 1` after the last screen.
+The one Screen per Device currently being shown (`isActive: true`). Not a fixed pointer — advances dynamically to the next eligible Screen by `order` each time the Device polls for its display, wrapping back to `order: 1` after the last screen. If no Screen on the Device is currently eligible (every Screen has a Schedule, and none match), there is no Active Screen — the Device gets the same fallback image as a Device with zero Screens at all.
 _Avoid_: Selected screen
 
 **Current Screen**:
@@ -33,8 +33,12 @@ The specific feature/endpoint (`/current_screen`) that returns the Active Screen
 _Avoid_: Active screen (see above — related but not the same concept)
 
 **Rotation**:
-The cycle through a Device's Screens in `order`, one step per `/display` poll.
-_Avoid_: Cycling, playlist
+The cycle through a Device's Screens in `order`, one step per `/display` poll — skipping any Screen currently ineligible per its Schedule, if it has one.
+_Avoid_: Cycling, playlist (see Schedule below — the concept "playlist" usually points at is Schedule, not Rotation)
+
+**Schedule**:
+A set of day/time constraints (weekday selection, daily time-of-day window — may cross midnight — optional active date range) plus an independent enabled/disabled toggle, attached to at most one per Screen, that gates whether that Screen is eligible to become the Active Screen. A Screen with no Schedule is always eligible; a disabled Schedule makes its Screen ineligible outright regardless of the day/time rules, without discarding them (soft-hide). Time-of-day windows are evaluated in the server's local timezone — Devices have no timezone of their own. Applies uniformly to every Screen type, including Mashup. Distinct from Rotation, which orders currently-eligible Screens — Schedule only narrows eligibility, it never reorders. A Screen needing more than one window (e.g. two separate times of day) needs a second Screen with its own Schedule, not a compound rule on one Schedule.
+_Avoid_: Playlist, playlist item, recurrence rule
 
 **Plugin Kind**:
 Which strategy a Plugin uses to get data into its template — `Poll` (Kuroshiro fetches from a Data Source on a schedule) or `Webhook` (an external system pushes data by POSTing to the Plugin's Webhook URL, rendered synchronously on arrival).
