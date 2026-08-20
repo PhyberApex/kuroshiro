@@ -35,3 +35,11 @@ _Avoid_: Active screen (see above — related but not the same concept)
 **Rotation**:
 The cycle through a Device's Screens in `order`, one step per `/display` poll.
 _Avoid_: Cycling, playlist
+
+**Plugin Kind**:
+Which strategy a Plugin uses to get data into its template — `Poll` (Kuroshiro fetches from a Data Source on a schedule) or `Webhook` (an external system pushes data by POSTing to the Plugin's Webhook URL, rendered synchronously on arrival).
+_Avoid_: Plugin type, strategy
+
+**Webhook Token**:
+A dedicated, regenerable secret embedded in a Webhook-kind Plugin's ingest URL — distinct from the Plugin's `id`, so the Plugin's admin URL leaking doesn't grant write access.
+_Avoid_: Plugin ID, API key (reserve "API key" for Device auth)
