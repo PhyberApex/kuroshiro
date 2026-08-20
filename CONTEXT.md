@@ -43,3 +43,15 @@ _Avoid_: Plugin type, strategy
 **Webhook Token**:
 A dedicated, regenerable secret embedded in a Webhook-kind Plugin's ingest URL — distinct from the Plugin's `id`, so the Plugin's admin URL leaking doesn't grant write access.
 _Avoid_: Plugin ID, API key (reserve "API key" for Device auth)
+
+**Merge Strategy**:
+How an incoming Webhook POST combines with the Webhook Payload already stored — `standard` (replace outright), `deep_merge` (recursively merge objects, replacing arrays on collision), or `stream` (append top-level arrays, replacing other keys normally). Fixed on the Plugin when it's created; never supplied per-POST.
+_Avoid_: merge_variables strategy, merge mode
+
+**Stream Limit**:
+The maximum length a `stream` Merge Strategy retains for its arrays — enforced server-side, oldest entries evicted first as new ones arrive. Required when Merge Strategy is `stream`; meaningless otherwise.
+_Avoid_: stream_limit (bare, in prose — reserve backticks for the field name)
+
+**Webhook Payload**:
+The single JSON blob a Webhook-kind Plugin persists across POSTs, mutated according to its Merge Strategy and rendered against on every arrival. Readable as-is via `GET` on the Plugin's Webhook URL.
+_Avoid_: merge_variables (TRMNL's term), webhook data, raw payload
