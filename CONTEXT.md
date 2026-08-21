@@ -63,3 +63,7 @@ _Avoid_: merge_variables (TRMNL's term), webhook data, raw payload
 **Data Source**:
 One independently-configured HTTP fetch (method, URL, headers, body, optional per-source JS transform), identified by a required, unique-per-Plugin `name`. Belongs to a `Poll`-kind Plugin, which holds an ordered list of zero or more Data Sources, each fetched in parallel on the Plugin's shared `refreshInterval` and exposed to its templates as its own top-level Liquid variable keyed by that `name`. If a Data Source's fetch fails, its variable is still present but carries an error marker instead of real data — the rest of the render proceeds with whatever succeeded. Distinct from a Mashup, which combines multiple Plugins' rendered outputs into layout slots on one Screen — a Data Source combines multiple fetches within a single Plugin.
 _Avoid_: Extension, Exchange (Terminus's terms — not adopted here)
+
+**Recipe**:
+A pre-built, TRMNL-vetted Plugin template published at trmnl.com/recipes, importable into Kuroshiro by pasting its id or page URL. A Recipe exists only as an import source — the result of importing one is a normal Poll-kind Plugin, indistinguishable from a hand-built one, carrying only its source Recipe's id as inert metadata (no ongoing link, no auto-updates).
+_Avoid_: Extension, Exchange (Terminus's terms), Plugin (the imported result — see above)
