@@ -60,7 +60,7 @@ export class PluginSchedulerService {
         await this.renderCache.renderAndCache(plugin, data)
       }
       catch (error) {
-        this.logger.error(`Error executing plugin ${plugin.id}: ${error.message}`)
+        this.logger.error(`Error executing plugin ${plugin.id}`, error)
       }
     })
 

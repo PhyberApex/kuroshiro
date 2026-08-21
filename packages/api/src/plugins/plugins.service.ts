@@ -258,28 +258,24 @@ export class PluginsService implements OnModuleInit {
 
     const { dataSource, templates, fields, webhookToken, webhookPayload, ...basicFields } = pluginData as any
 
-    if (basicFields.kind != null && basicFields.kind !== plugin.kind) {
+    if ('kind' in basicFields && basicFields.kind !== plugin.kind) {
       throw new BadRequestException(`A Plugin's Kind is fixed at creation and cannot be changed`)
     }
 
-    if (webhookToken != null && webhookToken !== plugin.webhookToken) {
-      throw new BadRequestException('The Webhook Token is issued by Kuroshiro and cannot be set directly')
-    }
-
     const mergeStrategy = 'mergeStrategy' in basicFields ? basicFields.mergeStrategy : plugin.mergeStrategy
-    const streamLimit = 'streamLimit' in basicFields ? basicFields.streamLimit : plugin.streamLimit
-    const effectiveStreamLimit = plugin.kind === 'Webhook' && mergeStrategy !== 'stream' ? null : streamLimit
+    const streamLimit = mergeStrategy === 'stream' ? basicFields.streamLimit ?? plugin.streamLimit : basicFields.streamLimit
 
     this.assertKindFields({
       kind: plugin.kind,
       dataSource: dataSource ?? plugin.dataSource,
+      webhookToken: webhookToken === plugin.webhookToken ? undefined : webhookToken,
       mergeStrategy,
-      streamLimit: effectiveStreamLimit,
+      streamLimit,
     })
 
     if (plugin.kind === 'Webhook') {
       basicFields.mergeStrategy = mergeStrategy
-      basicFields.streamLimit = effectiveStreamLimit
+      basicFields.streamLimit = streamLimit ?? null
     }
 
     Object.assign(plugin, basicFields)

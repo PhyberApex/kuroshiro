@@ -1,4 +1,4 @@
-import type { MergeStrategy, WebhookPayload } from '../entities/plugin.entity'
+import type { WebhookPayload } from '../entities/plugin.entity'
 import { Injectable, Logger, UnprocessableEntityException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
@@ -25,7 +25,7 @@ function deepMerge(stored: unknown, incoming: unknown): unknown {
   )
 }
 
-function appendStream(stored: unknown, incoming: unknown, streamLimit?: number | null): unknown {
+function appendStream(stored: unknown, incoming: unknown, streamLimit: number): unknown {
   if (!isPlainObject(incoming)) {
     return incoming
   }
@@ -40,19 +40,8 @@ function appendStream(stored: unknown, incoming: unknown, streamLimit?: number |
     const existing = Array.isArray(merged[key]) ? merged[key] : []
     const appended = [...existing, ...value]
 
-    return { ...merged, [key]: streamLimit && streamLimit > 0 ? appended.slice(-streamLimit) : appended }
+    return { ...merged, [key]: appended.slice(-streamLimit) }
   }, base)
-}
-
-function merge(strategy: MergeStrategy | null | undefined, stored: unknown, incoming: unknown, streamLimit?: number | null): unknown {
-  switch (strategy) {
-    case 'deep_merge':
-      return deepMerge(stored, incoming)
-    case 'stream':
-      return appendStream(stored, incoming, streamLimit)
-    default:
-      return incoming
-  }
 }
 
 @Injectable()
@@ -70,7 +59,7 @@ export class WebhookIngestService {
       throw new UnprocessableEntityException(`Plugin "${plugin.name}" has no template configured`)
     }
 
-    const merged = merge(plugin.mergeStrategy, plugin.webhookPayload, body, plugin.streamLimit) as WebhookPayload
+    const merged = this.merge(plugin, body)
 
     await this.pluginRepository.update(plugin.id, { webhookPayload: merged })
     await this.renderCache.renderAndCache(plugin, merged)
@@ -82,5 +71,19 @@ export class WebhookIngestService {
 
   readPayload(plugin: Plugin): WebhookPayload {
     return plugin.webhookPayload ?? null
+  }
+
+  private merge(plugin: Plugin, body: unknown): WebhookPayload {
+    switch (plugin.mergeStrategy) {
+      case 'deep_merge':
+        return deepMerge(plugin.webhookPayload, body) as WebhookPayload
+      case 'stream':
+        if (!plugin.streamLimit || plugin.streamLimit < 1) {
+          throw new UnprocessableEntityException(`Plugin "${plugin.name}" has a stream Merge Strategy without a Stream Limit`)
+        }
+        return appendStream(plugin.webhookPayload, body, plugin.streamLimit) as WebhookPayload
+      default:
+        return body as WebhookPayload
+    }
   }
 }

@@ -179,6 +179,14 @@ describe('webhook ingest integration', () => {
       expect(screens[1].cachedPluginOutput).toBeNull()
     })
 
+    it('rejects with 422 rather than accumulating unbounded when a stream Plugin has no Stream Limit', async () => {
+      plugin.mergeStrategy = 'stream'
+      plugin.streamLimit = null
+
+      await expect(ingest.ingest(plugin, { readings: [1] })).rejects.toThrow(UnprocessableEntityException)
+      expect(plugin.webhookPayload).toBeNull()
+    })
+
     it('rejects with 422 and stores nothing when the Plugin has no template', async () => {
       plugin.templates = []
 

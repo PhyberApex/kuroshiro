@@ -19,7 +19,7 @@ export class WebhookPluginGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<WebhookRequest>()
-    const token = request.params?.token
+    const token = request.params?.token as string | undefined
 
     if (!token) {
       throw new UnauthorizedException('Invalid webhook token')

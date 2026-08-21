@@ -607,6 +607,22 @@ describe('pluginsService', () => {
       )
     })
 
+    it('update rejects a nulled kind', async () => {
+      pluginRepo.findOne.mockResolvedValue({ ...webhookPlugin })
+
+      await expect(service.update('1', { kind: null } as any)).rejects.toThrow(
+        'A Plugin\'s Kind is fixed at creation and cannot be changed',
+      )
+    })
+
+    it('update rejects an explicit stream limit alongside a non-stream merge strategy', async () => {
+      pluginRepo.findOne.mockResolvedValue({ ...webhookPlugin })
+
+      await expect(service.update('1', { mergeStrategy: 'deep_merge', streamLimit: 20 } as any)).rejects.toThrow(
+        'A Stream Limit is only valid for the stream Merge Strategy',
+      )
+    })
+
     it('update accepts an unchanged kind', async () => {
       const stored = { ...webhookPlugin }
       pluginRepo.findOne.mockResolvedValue(stored)

@@ -16,8 +16,7 @@ export class AddWebhookPlugins1787100000000 implements MigrationInterface {
       CREATE UNIQUE INDEX "UQ_plugin_webhookToken" ON "plugin" ("webhookToken")
     `)
 
-    // "kind" was an unconstrained text column nothing branched on, so a client
-    // could have written any value into it before the check constraint lands.
+    // Normalises any value the check constraint below would reject.
     await queryRunner.query(`
       UPDATE "plugin" SET "kind" = 'Poll' WHERE "kind" NOT IN ('Poll', 'Webhook')
     `)

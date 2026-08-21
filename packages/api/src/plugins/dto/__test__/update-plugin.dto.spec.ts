@@ -66,8 +66,6 @@ describe('update-plugin dto', () => {
       await expect(violations({ streamLimit: 0 })).resolves.toContain('streamLimit must not be less than 1')
     })
 
-    // Kind immutability and the Poll/Webhook field restrictions need the stored
-    // Plugin to compare against, so PluginsService.update enforces them.
     it('rejects a kind outside Poll and Webhook', async () => {
       await expect(violations({ kind: 'Push' })).resolves.toContain(
         'kind must be one of the following values: Poll, Webhook',
