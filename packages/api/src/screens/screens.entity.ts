@@ -2,6 +2,7 @@ import type { Plugin } from '../plugins/entities/plugin.entity'
 import { Column, Entity, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { Device } from '../devices/devices.entity'
 import { MashupConfiguration } from '../mashup/entities/mashup-configuration.entity'
+import { Schedule } from '../schedule/schedule.entity'
 
 @Entity()
 export class Screen {
@@ -46,4 +47,7 @@ export class Screen {
 
   @OneToOne(() => MashupConfiguration, mashupConfig => mashupConfig.screen, { nullable: true })
   mashupConfiguration?: MashupConfiguration
+
+  @OneToOne(() => Schedule, schedule => schedule.screen, { nullable: true })
+  schedule?: Schedule | null
 }

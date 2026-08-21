@@ -25,6 +25,8 @@ import { PluginTemplate } from './plugins/entities/plugin-template.entity'
 import { PluginVariable } from './plugins/entities/plugin-variable.entity'
 import { Plugin } from './plugins/entities/plugin.entity'
 import { PluginsModule } from './plugins/plugins.module'
+import { Schedule } from './schedule/schedule.entity'
+import { ScheduleModule } from './schedule/schedule.module'
 import { Screen } from './screens/screens.entity'
 import { ScreensModule } from './screens/screens.module'
 import { resolveAppPath } from './utils/pathHelper'
@@ -47,7 +49,7 @@ const conf = config()
       username: conf.database.user,
       password: conf.database.password,
       database: conf.database.database,
-      entities: [Device, DeviceModel, Palette, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, PluginVariable, MashupConfiguration, MashupSlot],
+      entities: [Device, DeviceModel, Palette, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, PluginVariable, MashupConfiguration, MashupSlot, Schedule],
       migrations: (() => {
         const dir = path.join(process.cwd(), 'dist', 'src', 'migrations')
         if (!fs.existsSync(dir))
@@ -68,6 +70,7 @@ const conf = config()
     DevicesModule,
     PluginsModule,
     MashupModule,
+    ScheduleModule,
     MaintenanceModule,
   ],
 })

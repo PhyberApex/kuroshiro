@@ -14,6 +14,7 @@ import { viewFull, wrapInScreenShell } from '../device-models/screen-shell'
 import { PluginDataFetcherService } from '../plugins/services/plugin-data-fetcher.service'
 import { PluginRendererService } from '../plugins/services/plugin-renderer.service'
 import { PluginTransformService } from '../plugins/services/plugin-transform.service'
+import { isScheduleEligible } from '../schedule/schedule-eligibility'
 import { Screen } from '../screens/screens.entity'
 import { fileExists } from '../utils/fileExists'
 import { convertToPng, downloadImage } from '../utils/imageUtils'
@@ -101,28 +102,28 @@ export class DeviceDisplayService {
     device.lastSeen = new Date()
     await this.deviceRepository.save(device)
     this.logger.log(`Device info updated for MAC: ${headers.id}`)
-    const activeScreen = await this.screenRepository.findOneBy({ device: { id: device.id }, isActive: true })
-    if (!activeScreen && !device.mirrorEnabled) {
-      this.logger.log('No screen found returning default no screen image')
-      return new Display({
-        action: specialFunction,
-        filename: 'noScreen.png',
-        firmware_url: '',
-        image_url: await this.fallbackImageUrl('noScreen', device),
-        refresh_rate: device.refreshRate,
-        reset_firmware: resetDevice,
-        special_function: specialFunction,
-        temperature_profile: 'default',
-        update_firmware: updateFirmware,
-      })
-    }
     if (!device.mirrorEnabled) {
       this.logger.log(`Device ${device.id} is not mirrored. Cycling screens.`)
+      const screens = await this.screenRepository.find({
+        where: { device: { id: device.id } },
+        relations: { schedule: true },
+        order: { order: 'ASC' },
+      })
+      const nextScreen = this.nextEligibleScreen(screens, new Date())
       await this.screenRepository.update({ device: { id: device.id } }, { isActive: false })
-      let nextScreen = await this.screenRepository.findOneBy({ device: { id: device.id }, order: activeScreen.order + 1 })
       if (!nextScreen) {
-        this.logger.log(`No next screen found, cycling to first screen for device ${device.id}`)
-        nextScreen = await this.screenRepository.findOneBy({ device: { id: device.id }, order: 1 })
+        this.logger.log(`No eligible screen for device ${device.id} returning default no screen image`)
+        return new Display({
+          action: specialFunction,
+          filename: 'noScreen.png',
+          firmware_url: '',
+          image_url: await this.fallbackImageUrl('noScreen', device),
+          refresh_rate: device.refreshRate,
+          reset_firmware: resetDevice,
+          special_function: specialFunction,
+          temperature_profile: 'default',
+          update_firmware: updateFirmware,
+        })
       }
       nextScreen.isActive = true
       await this.screenRepository.save(nextScreen)
@@ -188,6 +189,23 @@ export class DeviceDisplayService {
         update_firmware: updateFirmware,
       })
     }
+  }
+
+  /**
+   * Scans forward by `order` from the Active Screen, wrapping past the end, and
+   * returns the first Screen whose Schedule currently lets it show. Scanning from
+   * the start of the Rotation when no Screen is active is what lets a Device that
+   * had nothing eligible pick the Rotation back up on a later poll.
+   */
+  private nextEligibleScreen(screens: Screen[], now: Date): Screen | null {
+    const activeIndex = screens.findIndex(screen => screen.isActive)
+    const startIndex = activeIndex === -1 ? 0 : activeIndex + 1
+    for (let offset = 0; offset < screens.length; offset++) {
+      const candidate = screens[(startIndex + offset) % screens.length]
+      if (isScheduleEligible(candidate.schedule, now))
+        return candidate
+    }
+    return null
   }
 
   async getCurrentImageWithoutProgressing(headers: Pick<DisplayRequestHeadersDto, 'id' | 'access-token'>): Promise<DisplayScreen> {

@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import type { Screen } from '@/types'
-import { mdiChevronDown, mdiChevronUp, mdiDelete, mdiDrag, mdiEye, mdiOpenInNew, mdiRefresh } from '@mdi/js'
+import { mdiCalendarClock, mdiChevronDown, mdiChevronUp, mdiDelete, mdiDrag, mdiEye, mdiOpenInNew, mdiRefresh } from '@mdi/js'
 import { computed, ref } from 'vue'
 import { VAlert, VBtn, VCard, VCardActions, VCardText, VCardTitle, VChip, VDialog, VDivider, VIcon, VOverlay, VSpacer, VTable, VTooltip } from 'vuetify/components'
 import ScreenFrame from '@/components/ScreenFrame.vue'
+import ScreenScheduleDialog from '@/components/ScreenScheduleDialog.vue'
 import { useDeviceRenderTarget } from '@/composeables/useDeviceRenderTarget'
 import { useDeviceStore } from '@/stores/device.ts'
 import { useScreensStore } from '@/stores/screens'
 import { cacheBustedUrl } from '@/utils/cacheBustedUrl'
+import { scheduleSummary } from '@/utils/scheduleSummary'
 import { viewFull } from '@/utils/screenShell'
 
 const props = defineProps<{ deviceId: string }>()
@@ -85,6 +87,27 @@ function moveScreen(index: number, direction: -1 | 1) {
   ;[orderedIds[index], orderedIds[targetIndex]] = [orderedIds[targetIndex], orderedIds[index]]
   persistOrder(orderedIds)
 }
+const showScheduleDialog = ref(false)
+const scheduleScreen = ref<Screen | null>(null)
+
+function editSchedule(screen: Screen) {
+  scheduleScreen.value = screen
+  showScheduleDialog.value = true
+}
+
+function scheduleLabel(screen: Screen) {
+  if (!screen.schedule)
+    return 'Always'
+  const summary = scheduleSummary(screen.schedule)
+  return screen.schedule.enabled ? summary : `Paused · ${summary}`
+}
+
+function scheduleColor(screen: Screen) {
+  if (!screen.schedule)
+    return 'secondary'
+  return screen.schedule.enabled ? 'success' : 'warning'
+}
+
 const showHtmlPreview = ref(false)
 const showScreenPreview = ref(false)
 const selectedPreviewScreen = ref<Screen | null>(null)
@@ -148,6 +171,7 @@ function previewScreen(screen: Screen) {
                   <th>Order</th>
                   <th>Type</th>
                   <th>Filename</th>
+                  <th>Schedule</th>
                   <th>Status</th>
                   <th class="text-right">
                     Actions
@@ -203,6 +227,19 @@ function previewScreen(screen: Screen) {
                   </td>
                   <td>
                     <span>{{ screen.plugin ? screen.plugin.name : screen.filename }}</span>
+                  </td>
+                  <td>
+                    <VBtn
+                      size="small"
+                      variant="tonal"
+                      :color="scheduleColor(screen)"
+                      :prepend-icon="mdiCalendarClock"
+                      :aria-label="`Edit schedule for ${screen.filename ?? screen.id}`"
+                      :data-test-id="`screen-schedule-btn-${screen.id}`"
+                      @click="editSchedule(screen)"
+                    >
+                      {{ scheduleLabel(screen) }}
+                    </VBtn>
                   </td>
                   <td>
                     <VChip v-if="screen.isActive" color="success" size="small">
@@ -287,6 +324,13 @@ function previewScreen(screen: Screen) {
         </VAlert>
       </VCardText>
     </VCard>
+    <ScreenScheduleDialog
+      v-if="scheduleScreen"
+      v-model="showScheduleDialog"
+      :device-id="device.id"
+      :screen="scheduleScreen"
+    />
+
     <VOverlay v-model="showHtmlPreview" class="align-center justify-center">
       <ScreenFrame v-if="showHtmlPreview" :body="viewFull(overlayHtml)" :target="renderTarget" />
     </VOverlay>

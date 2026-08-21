@@ -1,7 +1,7 @@
 import type { MockDeviceModelsService, MockFallbackScreensService } from '../../device-models/__test__/mockDeviceModelsService'
 import { promises as fs } from 'node:fs'
 import { NotFoundException, UnauthorizedException } from '@nestjs/common'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMockDeviceModelsService, createMockFallbackScreensService, GRAY_4, GRAY_16, OG_PLUS, primeMockDeviceModelsService, primeMockFallbackScreensService, V2 } from '../../device-models/__test__/mockDeviceModelsService'
 import { Display } from '../display'
 import { DeviceDisplayService } from '../display.service'
@@ -50,6 +50,7 @@ globalThis.fetch = mockFetch
 
 function createMockRepo() {
   return {
+    find: vi.fn(),
     findOneBy: vi.fn(),
     findOne: vi.fn(),
     save: vi.fn(),
@@ -111,7 +112,7 @@ describe('deviceDisplayService', () => {
 
   describe('device report handling', () => {
     beforeEach(() => {
-      screenRepo.findOneBy.mockResolvedValue(null)
+      screenRepo.find.mockResolvedValue([])
       configService.get.mockReturnValue('http://api')
     })
 
@@ -150,7 +151,7 @@ describe('deviceDisplayService', () => {
     function primeRotation(nextScreen: Record<string, unknown>, device: Record<string, unknown>) {
       const activeScreen = { id: 'screen1', order: 1, device, isActive: true, generatedAt: new Date() }
       deviceRepo.findOneBy.mockResolvedValue(device)
-      screenRepo.findOneBy.mockResolvedValueOnce(activeScreen).mockResolvedValueOnce(nextScreen)
+      screenRepo.find.mockResolvedValue([activeScreen, nextScreen])
       screenRepo.findOne.mockResolvedValue(nextScreen)
       screenRepo.save.mockResolvedValue(nextScreen)
       configService.get.mockReturnValue('http://api')
@@ -214,9 +215,9 @@ describe('deviceDisplayService', () => {
     })
   })
 
-  it('returns default no screen image if no active screen and not mirrored', async () => {
+  it('returns default no screen image if the device has no screens and is not mirrored', async () => {
     deviceRepo.findOneBy.mockResolvedValue({ ...baseDevice, apikey: 'token' })
-    screenRepo.findOneBy.mockResolvedValue(null)
+    screenRepo.find.mockResolvedValue([])
     configService.get.mockReturnValue('http://api')
     deviceRepo.save.mockResolvedValue(undefined)
     const result = await service.getCurrentImage(headers as any)
@@ -233,9 +234,7 @@ describe('deviceDisplayService', () => {
     const activeScreen = { id: 'screen1', order: 1, device, isActive: true, fetchManual: false, externalLink: null, filename, generatedAt }
     const nextScreen = { ...activeScreen, id: 'screen2', order: 2, isActive: false }
     deviceRepo.findOneBy.mockResolvedValue(device)
-    screenRepo.findOneBy
-      .mockResolvedValueOnce(activeScreen) // activeScreen
-      .mockResolvedValueOnce(nextScreen) // nextScreen
+    screenRepo.find.mockResolvedValue([activeScreen, nextScreen])
     screenRepo.update.mockResolvedValue(undefined)
     screenRepo.save.mockResolvedValue(nextScreen)
     configService.get.mockReturnValue('http://api')
@@ -262,9 +261,7 @@ describe('deviceDisplayService', () => {
     const nextScreen = { ...activeScreen, id: 'screen2', order: 2, isActive: false }
 
     deviceRepo.findOneBy.mockResolvedValue(device)
-    screenRepo.findOneBy
-      .mockResolvedValueOnce(activeScreen)
-      .mockResolvedValueOnce(nextScreen)
+    screenRepo.find.mockResolvedValue([activeScreen, nextScreen])
     configService.get.mockReturnValue('http://api')
 
     const result = await service.getCurrentImage(headers as any)
@@ -683,7 +680,7 @@ describe('deviceDisplayService', () => {
 
       deviceRepo.findOneBy.mockResolvedValue(device)
       deviceRepo.save.mockResolvedValue(device)
-      screenRepo.findOneBy.mockResolvedValueOnce(activeScreen).mockResolvedValueOnce(nextScreenBase)
+      screenRepo.find.mockResolvedValue([activeScreen, nextScreenBase])
       screenRepo.findOne.mockResolvedValue({ ...nextScreenBase, mashupConfiguration: mashupConfig })
       screenRepo.update.mockResolvedValue(undefined)
       screenRepo.save.mockResolvedValue({ ...nextScreenBase, isActive: true })
@@ -718,7 +715,7 @@ describe('deviceDisplayService', () => {
 
       deviceRepo.findOneBy.mockResolvedValue(device)
       deviceRepo.save.mockResolvedValue(device)
-      screenRepo.findOneBy.mockResolvedValueOnce(activeScreen).mockResolvedValueOnce(nextScreen)
+      screenRepo.find.mockResolvedValue([activeScreen, nextScreen])
       screenRepo.findOne.mockResolvedValue(nextScreen)
       screenRepo.update.mockResolvedValue(undefined)
       screenRepo.save.mockResolvedValue(nextScreen)
@@ -747,7 +744,7 @@ describe('deviceDisplayService', () => {
 
       deviceRepo.findOneBy.mockResolvedValue(device)
       deviceRepo.save.mockResolvedValue(device)
-      screenRepo.findOneBy.mockResolvedValueOnce(activeScreen).mockResolvedValueOnce(nextScreen)
+      screenRepo.find.mockResolvedValue([activeScreen, nextScreen])
       screenRepo.findOne.mockResolvedValue(nextScreen)
       screenRepo.update.mockResolvedValue(undefined)
       screenRepo.save.mockResolvedValue(nextScreen)
@@ -762,6 +759,151 @@ describe('deviceDisplayService', () => {
 
       expect(result).toBeInstanceOf(Display)
       expect(result.image_url).toBe('http://api/screens/error.png')
+    })
+  })
+
+  describe('schedule-gated rotation', () => {
+    const scheduledDevice = { ...baseDevice, apikey: 'token', id: '1', mirrorEnabled: false }
+
+    function screen(overrides: Record<string, unknown>) {
+      return {
+        device: scheduledDevice,
+        type: 'file',
+        isActive: false,
+        fetchManual: false,
+        externalLink: null,
+        filename: 'file.png',
+        generatedAt: new Date('2026-08-21T00:00:00'),
+        schedule: null,
+        ...overrides,
+      }
+    }
+
+    function primeRotation(screens: Record<string, unknown>[]) {
+      deviceRepo.findOneBy.mockResolvedValue(scheduledDevice)
+      deviceRepo.save.mockResolvedValue(undefined)
+      screenRepo.find.mockResolvedValue(screens)
+      screenRepo.findOne.mockResolvedValue(undefined)
+      screenRepo.update.mockResolvedValue(undefined)
+      screenRepo.save.mockResolvedValue(undefined)
+      configService.get.mockReturnValue('http://api')
+      fileExists.mockResolvedValue(true)
+    }
+
+    // 2026-08-21 is a Friday, 2026-08-22 a Saturday.
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('skips a screen whose schedule does not match now and advances to the next eligible one', async () => {
+      vi.setSystemTime(new Date('2026-08-22T12:00:00'))
+      primeRotation([
+        screen({ id: 'screen1', order: 1, isActive: true }),
+        screen({ id: 'screen2', order: 2, schedule: { enabled: true, weekdays: [1, 2, 3, 4, 5] } }),
+        screen({ id: 'screen3', order: 3 }),
+      ])
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.image_url).toBe('http://api/screens/devices/1/screen3.png')
+      expect(screenRepo.save).toHaveBeenCalledWith(expect.objectContaining({ id: 'screen3', isActive: true }))
+    })
+
+    it('wraps past the end of the rotation to reach an eligible screen', async () => {
+      vi.setSystemTime(new Date('2026-08-22T12:00:00'))
+      primeRotation([
+        screen({ id: 'screen1', order: 1 }),
+        screen({ id: 'screen2', order: 2, isActive: true }),
+        screen({ id: 'screen3', order: 3, schedule: { enabled: true, weekdays: [1, 2, 3, 4, 5] } }),
+      ])
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.image_url).toBe('http://api/screens/devices/1/screen1.png')
+    })
+
+    it('skips a scheduled mashup screen the same way as any other type', async () => {
+      vi.setSystemTime(new Date('2026-08-22T12:00:00'))
+      primeRotation([
+        screen({ id: 'screen1', order: 1, isActive: true }),
+        screen({ id: 'screen2', order: 2, type: 'mashup', schedule: { enabled: true, weekdays: [1, 2, 3, 4, 5] } }),
+        screen({ id: 'screen3', order: 3 }),
+      ])
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.image_url).toBe('http://api/screens/devices/1/screen3.png')
+    })
+
+    it('returns the no screen image and leaves no screen active when every screen is ineligible', async () => {
+      vi.setSystemTime(new Date('2026-08-22T12:00:00'))
+      primeRotation([
+        screen({ id: 'screen1', order: 1, isActive: true, schedule: { enabled: true, weekdays: [1, 2, 3, 4, 5] } }),
+        screen({ id: 'screen2', order: 2, schedule: { enabled: false } }),
+      ])
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result).toBeInstanceOf(Display)
+      expect(result.filename).toBe('noScreen.png')
+      expect(result.image_url).toBe('http://api/screens/noScreen.png')
+      expect(screenRepo.update).toHaveBeenCalledWith({ device: { id: '1' } }, { isActive: false })
+      expect(screenRepo.save).not.toHaveBeenCalled()
+    })
+
+    it('resumes the rotation once a screen becomes eligible again, without an active screen to advance from', async () => {
+      vi.setSystemTime(new Date('2026-08-21T08:00:00'))
+      primeRotation([
+        screen({ id: 'screen1', order: 1, schedule: { enabled: true, startTime: '07:00', endTime: '09:00' } }),
+      ])
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.image_url).toBe('http://api/screens/devices/1/screen1.png')
+      expect(screenRepo.save).toHaveBeenCalledWith(expect.objectContaining({ id: 'screen1', isActive: true }))
+    })
+
+    it('keeps a screen out of the rotation while its daily window is closed', async () => {
+      vi.setSystemTime(new Date('2026-08-21T18:00:00'))
+      primeRotation([
+        screen({ id: 'screen1', order: 1, schedule: { enabled: true, startTime: '07:00', endTime: '09:00' } }),
+      ])
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.filename).toBe('noScreen.png')
+    })
+
+    it('shows a screen whose schedule spans midnight on both sides of it', async () => {
+      const overnight = { enabled: true, startTime: '22:00', endTime: '02:00' }
+
+      vi.setSystemTime(new Date('2026-08-21T23:00:00'))
+      primeRotation([screen({ id: 'screen1', order: 1, schedule: overnight })])
+      expect((await service.getCurrentImage(headers as any)).image_url).toBe('http://api/screens/devices/1/screen1.png')
+
+      vi.setSystemTime(new Date('2026-08-21T01:00:00'))
+      primeRotation([screen({ id: 'screen1', order: 1, schedule: overnight })])
+      expect((await service.getCurrentImage(headers as any)).image_url).toBe('http://api/screens/devices/1/screen1.png')
+
+      vi.setSystemTime(new Date('2026-08-21T12:00:00'))
+      primeRotation([screen({ id: 'screen1', order: 1, schedule: overnight })])
+      expect((await service.getCurrentImage(headers as any)).filename).toBe('noScreen.png')
+    })
+
+    it('drops a seasonal screen from the rotation once its date range has passed', async () => {
+      const december = { enabled: true, startDate: '2026-12-01', endDate: '2026-12-25' }
+
+      vi.setSystemTime(new Date('2026-12-13T12:00:00'))
+      primeRotation([screen({ id: 'screen1', order: 1, schedule: december })])
+      expect((await service.getCurrentImage(headers as any)).image_url).toBe('http://api/screens/devices/1/screen1.png')
+
+      vi.setSystemTime(new Date('2026-12-26T12:00:00'))
+      primeRotation([screen({ id: 'screen1', order: 1, schedule: december })])
+      expect((await service.getCurrentImage(headers as any)).filename).toBe('noScreen.png')
     })
   })
 })
