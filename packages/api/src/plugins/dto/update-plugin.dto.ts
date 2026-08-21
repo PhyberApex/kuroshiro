@@ -26,8 +26,11 @@ export class UpdatePluginDto {
   order?: number
 
   @IsOptional()
-  dataSource?: any
+  dataSources?: any[]
 
   @IsOptional()
   templates?: any[]
+
+  @IsOptional()
+  fields?: any[]
 }

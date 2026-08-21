@@ -22,13 +22,27 @@ interface CustomField {
   optional?: boolean
 }
 
+interface DataSourceEntry {
+  name?: string
+  endpoint?: string
+  method?: string
+  headers?: Record<string, string>
+  body?: Record<string, any>
+  transform_js?: string
+}
+
 interface TerminusSettings {
   // Standard fields
   name?: string
   refresh_interval?: number
   custom_fields?: CustomField[] | Record<string, any>
 
-  // Our expected format
+  // Kuroshiro's own multi-source round-trip format (issue #776)
+  data_sources?: DataSourceEntry[]
+  // Rejected: a stale single-source export predating #776 — never coerced
+  data_source?: unknown
+
+  // Our previous single-source format
   endpoint?: string
   method?: string
   headers?: Record<string, string>
@@ -41,18 +55,21 @@ interface TerminusSettings {
   polling_body?: string
 }
 
+interface ParsedDataSource {
+  name: string
+  method: string
+  url: string
+  headers?: Record<string, string>
+  body?: Record<string, any>
+  transformJs?: string | null
+}
+
 interface ParsedPlugin {
   name: string
   description?: string
   kind: string
   refreshInterval: number
-  dataSource: {
-    method: string
-    url: string
-    headers?: Record<string, string>
-    body?: Record<string, any>
-    transformJs?: string
-  }
+  dataSources: ParsedDataSource[]
   templates: Array<{
     layout: string
     liquidMarkup: string
@@ -309,16 +326,77 @@ export class PluginImporterService {
     const nameSource = manifest.name ? 'manifest' : settings.name ? 'settings' : 'filename'
     this.logger.log(`Using plugin name: ${pluginName} (from ${nameSource})`)
 
-    // Support both our format (endpoint/method) and Terminus format (polling_url/polling_verb)
+    if (settings.data_source) {
+      throw new Error('This plugin was exported in a legacy single-data-source format that is no longer supported. Re-export it from its source Plugin to get the current "data_sources" format.')
+    }
+
+    if (templates.length === 0) {
+      throw new Error('At least one .liquid template file is required in src/ directory (e.g., src/full.liquid)')
+    }
+
+    const hasDataSourcesArray = Array.isArray(settings.data_sources) && settings.data_sources.length > 0
+
+    if (hasDataSourcesArray && transformJs) {
+      this.logger.warn('Ignoring src/transform.js: settings.yml uses the "data_sources" array format, where each entry carries its own "transform_js" instead')
+    }
+
+    const dataSources = hasDataSourcesArray
+      ? this.parseDataSourcesArray(settings.data_sources!)
+      : [this.parseLegacySingleDataSource(settings, transformJs)]
+
+    // custom_fields can be in manifest or settings, can be empty object {}, missing, or an array
+    const customFieldsSource = Array.isArray(manifest.custom_fields)
+      ? manifest.custom_fields
+      : Array.isArray(settings.custom_fields)
+        ? settings.custom_fields
+        : []
+    const fields = customFieldsSource.map((field, index) => ({
+      keyname: field.keyname,
+      fieldType: field.field_type,
+      name: field.name,
+      description: field.description,
+      defaultValue: field.default_value,
+      required: !field.optional,
+      order: index + 1,
+    }))
+
+    return {
+      name: pluginName,
+      description: manifest.description?.trim(),
+      kind: 'Poll',
+      refreshInterval: settings.refresh_interval || 15,
+      dataSources,
+      templates,
+      fields,
+    }
+  }
+
+  private parseDataSourcesArray(entries: DataSourceEntry[]): ParsedDataSource[] {
+    return entries.map((entry, index) => {
+      if (!entry.endpoint || entry.endpoint.trim() === '') {
+        throw new Error(`Data source at index ${index} is missing an "endpoint"`)
+      }
+
+      const name = entry.name && entry.name.trim() !== '' ? entry.name.trim() : `source_${index + 1}`
+
+      return {
+        name,
+        method: (entry.method || 'GET').toUpperCase(),
+        url: entry.endpoint.trim(),
+        headers: entry.headers || {},
+        body: entry.body || {},
+        transformJs: entry.transform_js || null,
+      }
+    })
+  }
+
+  private parseLegacySingleDataSource(settings: TerminusSettings, transformJs?: string): ParsedDataSource {
+    // Support both our previous format (endpoint/method) and Terminus's own format (polling_url/polling_verb)
     const endpoint = settings.endpoint || settings.polling_url
     const method = settings.method || settings.polling_verb
 
     if (!endpoint || endpoint.trim() === '') {
       throw new Error('Data source endpoint is required in src/settings.yml. Expected format:\npolling_url: https://api.example.com/data\npolling_verb: get')
-    }
-
-    if (templates.length === 0) {
-      throw new Error('At least one .liquid template file is required in src/ directory (e.g., src/full.liquid)')
     }
 
     // Parse headers if they're a string (Terminus format)
@@ -343,36 +421,13 @@ export class PluginImporterService {
       }
     }
 
-    // custom_fields can be in manifest or settings, can be empty object {}, missing, or an array
-    const customFieldsSource = Array.isArray(manifest.custom_fields)
-      ? manifest.custom_fields
-      : Array.isArray(settings.custom_fields)
-        ? settings.custom_fields
-        : []
-    const fields = customFieldsSource.map((field, index) => ({
-      keyname: field.keyname,
-      fieldType: field.field_type,
-      name: field.name,
-      description: field.description,
-      defaultValue: field.default_value,
-      required: !field.optional,
-      order: index + 1,
-    }))
-
     return {
-      name: pluginName,
-      description: manifest.description?.trim(),
-      kind: 'Poll',
-      refreshInterval: settings.refresh_interval || 15,
-      dataSource: {
-        method: method?.toUpperCase() || 'GET',
-        url: endpoint.trim(),
-        headers,
-        body,
-        transformJs,
-      },
-      templates,
-      fields,
+      name: 'source',
+      method: method?.toUpperCase() || 'GET',
+      url: endpoint.trim(),
+      headers,
+      body,
+      transformJs: transformJs || null,
     }
   }
 }

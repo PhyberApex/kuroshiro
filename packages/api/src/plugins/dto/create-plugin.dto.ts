@@ -25,7 +25,7 @@ export class CreatePluginDto {
   order?: number
 
   @IsOptional()
-  dataSource?: any
+  dataSources?: any[]
 
   @IsOptional()
   templates?: any[]

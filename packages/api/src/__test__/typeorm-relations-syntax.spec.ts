@@ -47,7 +47,7 @@ describe('typeORM v1 relations syntax', () => {
   it('accepts the object relations syntax', () => {
     expect(() =>
       FindOptionsUtils.rejectStringArrayRelations({
-        relations: { plugin: { dataSource: true, templates: true } },
+        relations: { plugin: { dataSources: true, templates: true } },
       }),
     ).not.toThrow()
   })

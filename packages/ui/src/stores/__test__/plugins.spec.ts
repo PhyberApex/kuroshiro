@@ -151,4 +151,26 @@ describe('plugins store', () => {
 
     await expect(store.fetchPluginsForDevice('device-1')).rejects.toThrow('Failed to fetch plugins')
   })
+
+  it('createPlugin surfaces the server\'s validation message on failure', async () => {
+    ;(globalThis.fetch as any).mockResolvedValue({
+      ok: false,
+      json: async () => ({ message: 'Data source name "trmnl" is reserved' }),
+    })
+
+    const store = usePluginsStore()
+
+    await expect(store.createPlugin({ name: 'Test Plugin' })).rejects.toThrow('Data source name "trmnl" is reserved')
+  })
+
+  it('updatePlugin surfaces the server\'s validation message on failure', async () => {
+    ;(globalThis.fetch as any).mockResolvedValue({
+      ok: false,
+      json: async () => ({ message: 'Data source name "weather" is used by more than one data source' }),
+    })
+
+    const store = usePluginsStore()
+
+    await expect(store.updatePlugin('plugin-1', { name: 'Updated' })).rejects.toThrow('used by more than one data source')
+  })
 })

@@ -33,7 +33,7 @@ export class PluginSchedulerService {
   }
 
   schedulePlugin(plugin: Plugin): void {
-    if (!plugin.dataSource || !plugin.templates || plugin.templates.length === 0) {
+    if (!plugin.dataSources || plugin.dataSources.length === 0 || !plugin.templates || plugin.templates.length === 0) {
       return
     }
 
@@ -62,17 +62,29 @@ export class PluginSchedulerService {
 
         // TODO: Add plugin field values to context when we have device-specific values
 
-        const data = await this.dataFetcher.fetchData(
-          plugin.dataSource.method,
-          plugin.dataSource.url,
-          plugin.dataSource.headers,
-          plugin.dataSource.body,
-          templateContext,
+        // Fetch all of the plugin's data sources in parallel; a source that fails
+        // gets an error marker instead of aborting the whole render (ADR-0005)
+        const results = await Promise.allSettled(
+          plugin.dataSources.map(source =>
+            this.dataFetcher.fetchData(source.method, source.url, source.headers, source.body, templateContext),
+          ),
         )
+
+        const data: Record<string, any> = {}
+        results.forEach((result, index) => {
+          const name = plugin.dataSources[index].name
+          if (result.status === 'fulfilled') {
+            data[name] = result.value
+          }
+          else {
+            this.logger.warn(`Data source "${name}" failed for plugin ${plugin.id}: ${result.reason?.message || result.reason}`)
+            data[name] = { error: true, message: result.reason?.message || String(result.reason) }
+          }
+        })
 
         // Render primary template and cache to all associated screens
         if (plugin.templates.length > 0) {
-          const rendered = await this.renderer.render(plugin.templates[0].liquidMarkup, data)
+          const rendered = await this.renderer.render(plugin.templates[0].liquidMarkup, { ...templateContext, ...data })
 
           // Update all screens for this plugin
           await this.screenRepository.update(

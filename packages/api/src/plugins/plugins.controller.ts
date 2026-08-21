@@ -18,8 +18,8 @@ export class PluginsController {
   ) {}
 
   @Post('preview')
-  async preview(@Body() previewData: { url: string, method: string, headers?: Record<string, string>, body?: any, template: string, transformJs?: string, fieldValues?: Record<string, string> }) {
-    return this.pluginsService.preview(previewData.url, previewData.method, previewData.headers, previewData.body, previewData.template, previewData.transformJs, previewData.fieldValues)
+  async preview(@Body() previewData: { sources: Array<{ name: string, url: string, method: string, headers?: Record<string, string>, body?: any, transformJs?: string }>, template: string, fieldValues?: Record<string, string> }) {
+    return this.pluginsService.preview(previewData.sources, previewData.template, previewData.fieldValues)
   }
 
   @Get()
@@ -88,7 +88,7 @@ export class PluginsController {
     // Return plugin with security warning if transform.js exists
     return {
       ...plugin,
-      _hasTransform: !!parsedPlugin.dataSource?.transformJs,
+      _hasTransform: !!parsedPlugin.dataSources?.some(source => source.transformJs),
     }
   }
 
@@ -116,7 +116,7 @@ export class PluginsController {
     // Return plugin with security warning if transform.js exists
     return {
       ...plugin,
-      _hasTransform: !!parsedPlugin.dataSource?.transformJs,
+      _hasTransform: !!parsedPlugin.dataSources?.some(source => source.transformJs),
     }
   }
 

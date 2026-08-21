@@ -53,11 +53,11 @@ export class PluginsService implements OnModuleInit {
   async onModuleInit() {
     this.logger.log('Initializing plugin scheduler...')
     const plugins = await this.pluginRepository.find({
-      relations: { dataSource: true, templates: true },
+      relations: { dataSources: true, templates: true },
     })
 
     for (const plugin of plugins) {
-      if (plugin.dataSource && plugin.templates && plugin.templates.length > 0) {
+      if (plugin.dataSources && plugin.dataSources.length > 0 && plugin.templates && plugin.templates.length > 0) {
         this.scheduler.schedulePlugin(plugin)
         this.logger.log(`Scheduled plugin: ${plugin.name}`)
       }
@@ -66,7 +66,7 @@ export class PluginsService implements OnModuleInit {
 
   async findAll(): Promise<Plugin[]> {
     return this.pluginRepository.find({
-      relations: { dataSource: true, templates: true, fields: true },
+      relations: { dataSources: true, templates: true, fields: true },
       order: { name: 'ASC' },
     })
   }
@@ -74,14 +74,14 @@ export class PluginsService implements OnModuleInit {
   async findById(id: string): Promise<Plugin | null> {
     return this.pluginRepository.findOne({
       where: { id },
-      relations: { dataSource: true, templates: true, fields: true, deviceAssignments: { device: true } },
+      relations: { dataSources: true, templates: true, fields: true, deviceAssignments: { device: true } },
     })
   }
 
   async findByDevice(deviceId: string): Promise<Plugin[]> {
     const devicePlugins = await this.devicePluginRepository.find({
       where: { device: { id: deviceId } },
-      relations: { plugin: { dataSource: true, templates: true, fields: true } },
+      relations: { plugin: { dataSources: true, templates: true, fields: true } },
       order: { order: 'ASC' },
     })
 
@@ -152,9 +152,13 @@ export class PluginsService implements OnModuleInit {
   }
 
   async create(pluginData: Partial<Plugin>): Promise<Plugin> {
-    const { dataSource, templates, fields, ...basicFields } = pluginData as any
+    const { dataSources, templates, fields, ...basicFields } = pluginData as any
 
-    this.logger.debug(`Creating plugin with data: ${JSON.stringify({ dataSource, templates, fields, basicFields })}`)
+    this.logger.debug(`Creating plugin with data: ${JSON.stringify({ dataSources, templates, fields, basicFields })}`)
+
+    if (dataSources && Array.isArray(dataSources) && dataSources.length > 0) {
+      this.validateDataSourceNames(dataSources, fields || [])
+    }
 
     const pluginToSave = {
       name: basicFields.name,
@@ -167,18 +171,22 @@ export class PluginsService implements OnModuleInit {
 
     this.logger.debug(`Saved plugin: ${savedPlugin.id}`)
 
-    if (dataSource) {
-      this.logger.debug(`Creating dataSource: ${JSON.stringify(dataSource)}`)
-      const newDataSource = this.dataSourceRepository.create({
-        method: dataSource.method || 'GET',
-        url: dataSource.url,
-        headers: dataSource.headers || {},
-        body: dataSource.body || {},
-        transformJs: dataSource.transformJs || null,
-        plugin: savedPlugin,
-      })
-      await this.dataSourceRepository.save(newDataSource)
-      this.logger.debug(`Saved dataSource`)
+    if (dataSources && Array.isArray(dataSources) && dataSources.length > 0) {
+      this.logger.debug(`Creating ${dataSources.length} data sources`)
+      for (const [index, sourceData] of dataSources.entries()) {
+        const newDataSource = this.dataSourceRepository.create({
+          name: sourceData.name,
+          method: sourceData.method || 'GET',
+          url: sourceData.url,
+          headers: sourceData.headers || {},
+          body: sourceData.body || {},
+          transformJs: sourceData.transformJs || null,
+          order: sourceData.order ?? index,
+          plugin: savedPlugin,
+        })
+        await this.dataSourceRepository.save(newDataSource)
+        this.logger.debug(`Saved data source: ${newDataSource.name}`)
+      }
     }
 
     if (templates && Array.isArray(templates) && templates.length > 0) {
@@ -214,10 +222,10 @@ export class PluginsService implements OnModuleInit {
 
     const created = await this.pluginRepository.findOne({
       where: { id: savedPlugin.id },
-      relations: { dataSource: true, templates: true, fields: true },
+      relations: { dataSources: true, templates: true, fields: true },
     })
 
-    if (created && created.dataSource && created.templates && created.templates.length > 0) {
+    if (created && created.dataSources && created.dataSources.length > 0 && created.templates && created.templates.length > 0) {
       this.scheduler.schedulePlugin(created)
       this.logger.log(`Scheduled new plugin: ${created.name}`)
     }
@@ -228,27 +236,42 @@ export class PluginsService implements OnModuleInit {
   async update(id: string, pluginData: Partial<Plugin>): Promise<Plugin | null> {
     const plugin = await this.pluginRepository.findOne({
       where: { id },
-      relations: { dataSource: true, templates: true, fields: true },
+      relations: { dataSources: true, templates: true, fields: true },
     })
     if (!plugin)
       return null
 
-    const { dataSource, templates, fields, ...basicFields } = pluginData as any
+    const { dataSources, templates, fields, ...basicFields } = pluginData as any
+
+    if (dataSources !== undefined || fields !== undefined) {
+      const finalDataSources = dataSources !== undefined ? dataSources : (plugin.dataSources || [])
+      const finalFields = fields !== undefined ? fields : (plugin.fields || [])
+      this.validateDataSourceNames(finalDataSources, finalFields)
+    }
 
     Object.assign(plugin, basicFields)
 
-    if (dataSource) {
-      if (plugin.dataSource) {
-        Object.assign(plugin.dataSource, dataSource)
-        await this.dataSourceRepository.save(plugin.dataSource)
+    if (dataSources !== undefined) {
+      if (plugin.dataSources && plugin.dataSources.length > 0) {
+        await this.dataSourceRepository.remove(plugin.dataSources)
       }
-      else {
-        const newDataSource = this.dataSourceRepository.create({
-          ...dataSource,
-          plugin,
-        })
-        await this.dataSourceRepository.save(newDataSource)
+      const newDataSources: PluginDataSource[] = []
+      if (Array.isArray(dataSources) && dataSources.length > 0) {
+        for (const [index, sourceData] of dataSources.entries()) {
+          const newDataSource = this.dataSourceRepository.create({
+            name: sourceData.name,
+            method: sourceData.method || 'GET',
+            url: sourceData.url,
+            headers: sourceData.headers || {},
+            body: sourceData.body || {},
+            transformJs: sourceData.transformJs || null,
+            order: sourceData.order ?? index,
+            plugin,
+          })
+          newDataSources.push(await this.dataSourceRepository.save(newDataSource))
+        }
       }
+      plugin.dataSources = newDataSources
     }
 
     if (templates && Array.isArray(templates) && templates.length > 0) {
@@ -291,20 +314,44 @@ export class PluginsService implements OnModuleInit {
 
     const updated = await this.pluginRepository.save(plugin)
 
-    // Reschedule if dataSource or templates changed
-    if (dataSource || templates) {
+    // Reschedule if dataSources or templates changed
+    if (dataSources !== undefined || templates) {
       this.scheduler.removeScheduledJob(id)
       const fullPlugin = await this.pluginRepository.findOne({
         where: { id },
-        relations: { dataSource: true, templates: true },
+        relations: { dataSources: true, templates: true },
       })
-      if (fullPlugin && fullPlugin.dataSource && fullPlugin.templates && fullPlugin.templates.length > 0) {
+      if (fullPlugin && fullPlugin.dataSources && fullPlugin.dataSources.length > 0 && fullPlugin.templates && fullPlugin.templates.length > 0) {
         this.scheduler.schedulePlugin(fullPlugin)
         this.logger.log(`Rescheduled plugin: ${fullPlugin.name}`)
       }
     }
 
     return updated
+  }
+
+  private validateDataSourceNames(dataSources: Array<{ name?: string }>, fields: Array<{ keyname?: string }>): void {
+    const seenNames = new Set<string>()
+
+    for (const source of dataSources) {
+      const name = source.name?.trim()
+      if (!name) {
+        throw new BadRequestException('Each data source needs a name')
+      }
+      if (name === 'trmnl') {
+        throw new BadRequestException('Data source name "trmnl" is reserved')
+      }
+      if (seenNames.has(name)) {
+        throw new BadRequestException(`Data source name "${name}" is used by more than one data source`)
+      }
+      seenNames.add(name)
+    }
+
+    for (const field of fields) {
+      if (field.keyname && seenNames.has(field.keyname)) {
+        throw new BadRequestException(`Data source name "${field.keyname}" collides with a plugin field's keyname`)
+      }
+    }
   }
 
   async checkPluginUsage(id: string): Promise<{ inMashups: Array<{ screenId: string, screenName: string }> }> {
@@ -348,7 +395,7 @@ export class PluginsService implements OnModuleInit {
     return true
   }
 
-  async preview(url: string, method: string, headers?: Record<string, string>, body?: any, template?: string, transformJs?: string, fieldValues?: Record<string, string>): Promise<{ html: string, data: any }> {
+  async preview(sources: Array<{ name: string, url: string, method: string, headers?: Record<string, string>, body?: any, transformJs?: string }>, template?: string, fieldValues?: Record<string, string>): Promise<{ html: string, data: Record<string, any> }> {
     // Build template context with trmnl system variables and plugin field values
     const templateContext: any = {
       trmnl: {
@@ -373,53 +420,32 @@ export class PluginsService implements OnModuleInit {
       Object.assign(templateContext, fieldValues)
     }
 
-    let rawData = await this.dataFetcher.fetchData(method, url, headers, body, templateContext)
-
-    // Apply transform if provided
-    if (transformJs) {
-      this.logger.debug('Applying transform.js to fetched data')
-      rawData = this.transformer.transform(transformJs, rawData)
-    }
-
-    this.logger.debug(`Raw data from API: ${JSON.stringify(rawData).substring(0, 200)}...`)
-
-    // Try to detect variable names from template
-    const detectedVars: string[] = []
-    if (template) {
-      const varMatches = template.matchAll(/\{\{\s*(\w+)\s*[|}]/g)
-      for (const match of varMatches) {
-        const varName = match[1]
-        if (varName !== 'trmnl' && !detectedVars.includes(varName)) {
-          detectedVars.push(varName)
+    const results = await Promise.allSettled(
+      (sources || []).map(async (source) => {
+        let rawData = await this.dataFetcher.fetchData(source.method, source.url, source.headers, source.body, templateContext)
+        if (source.transformJs) {
+          this.logger.debug(`Applying transform.js to data source: ${source.name}`)
+          rawData = this.transformer.transform(source.transformJs, rawData)
         }
+        return rawData
+      }),
+    )
+
+    const data: Record<string, any> = {}
+    results.forEach((result, index) => {
+      const name = sources[index].name
+      if (result.status === 'fulfilled') {
+        data[name] = result.value
       }
-    }
+      else {
+        this.logger.warn(`Data source "${name}" failed during preview: ${result.reason?.message || result.reason}`)
+        data[name] = { error: true, message: result.reason?.message || String(result.reason) }
+      }
+    })
 
-    this.logger.debug(`Detected template variables: ${detectedVars.join(', ')}`)
-
-    // Wrap data in TRMNL-compatible structure
-    const templateData: any = { ...templateContext }
-
-    // If API returns object, spread it at root level
-    if (typeof rawData === 'object' && rawData !== null && !Array.isArray(rawData)) {
-      Object.assign(templateData, rawData)
-    }
-    // If API returns array, assign to detected variable names OR common fallbacks
-    else if (Array.isArray(rawData)) {
-      // Use first detected variable if available
-      const primaryVar = detectedVars[0] || 'data'
-      templateData[primaryVar] = rawData
-      this.logger.debug(`Assigned array data to variable: ${primaryVar}`)
-      // Also set common fallbacks
-      templateData.data = rawData
-      templateData.items = rawData
-    }
-    // Primitive value
-    else {
-      templateData.data = rawData
-    }
+    const templateData: any = { ...templateContext, ...data }
 
     const html = template ? await this.renderer.render(template, templateData) : ''
-    return { html, data: rawData } // Return raw data for display in preview tab
+    return { html, data }
   }
 }

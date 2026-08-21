@@ -17,12 +17,16 @@ describe('pluginExporterService', () => {
       name: 'Test Plugin',
       description: 'Test Description',
       refreshInterval: 15,
-      dataSource: {
-        url: 'https://api.example.com',
-        method: 'GET',
-        headers: {},
-        body: {},
-      },
+      dataSources: [
+        {
+          name: 'source',
+          url: 'https://api.example.com',
+          method: 'GET',
+          headers: {},
+          body: {},
+          order: 0,
+        },
+      ],
       templates: [
         {
           layout: 'full',
@@ -49,12 +53,14 @@ describe('pluginExporterService', () => {
       name: 'Weather Plugin',
       description: 'Shows weather',
       refreshInterval: 30,
-      dataSource: {
+      dataSources: [{
+        name: 'source',
         url: 'https://api.weather.com',
         method: 'GET',
         headers: {},
         body: {},
-      },
+        order: 0,
+      }],
       templates: [{ layout: 'full', liquidMarkup: 'Test' }],
       fields: [
         {
@@ -82,16 +88,18 @@ describe('pluginExporterService', () => {
     expect(manifest.custom_fields[0].optional).toBe(false)
   })
 
-  it('includes settings with data source config', async () => {
+  it('includes settings with a data_sources array', async () => {
     const plugin = {
       name: 'Test',
       refreshInterval: 60,
-      dataSource: {
+      dataSources: [{
+        name: 'weather',
         url: 'https://api.example.com/data',
         method: 'POST',
         headers: { Authorization: 'Bearer token' },
         body: { key: 'value' },
-      },
+        order: 0,
+      }],
       templates: [{ layout: 'full', liquidMarkup: 'Test' }],
       fields: [],
     } as unknown as Plugin
@@ -103,22 +111,48 @@ describe('pluginExporterService', () => {
     const settings = yaml.load(settingsContent) as any
 
     expect(settings.refresh_interval).toBe(60)
-    expect(settings.endpoint).toBe('https://api.example.com/data')
-    expect(settings.method).toBe('POST')
-    expect(settings.headers.Authorization).toBe('Bearer token')
-    expect(settings.body.key).toBe('value')
+    expect(settings.data_sources).toHaveLength(1)
+    expect(settings.data_sources[0].name).toBe('weather')
+    expect(settings.data_sources[0].endpoint).toBe('https://api.example.com/data')
+    expect(settings.data_sources[0].method).toBe('POST')
+    expect(settings.data_sources[0].headers.Authorization).toBe('Bearer token')
+    expect(settings.data_sources[0].body.key).toBe('value')
+  })
+
+  it('exports multiple data sources in order, each with its own name', async () => {
+    const plugin = {
+      name: 'Multi Source',
+      refreshInterval: 15,
+      dataSources: [
+        { name: 'air_quality', url: 'https://api.example.com/air', method: 'GET', order: 1 },
+        { name: 'weather', url: 'https://api.example.com/weather', method: 'GET', order: 0, transformJs: 'module.exports = (d) => d' },
+      ],
+      templates: [{ layout: 'full', liquidMarkup: 'Test' }],
+      fields: [],
+    } as unknown as Plugin
+
+    const buffer = await service.exportToZip(plugin)
+    const zip = new AdmZip(buffer)
+    const settings = yaml.load(zip.getEntry('src/settings.yml').getData().toString('utf8')) as any
+
+    expect(settings.data_sources).toHaveLength(2)
+    expect(settings.data_sources[0].name).toBe('weather')
+    expect(settings.data_sources[0].transform_js).toBe('module.exports = (d) => d')
+    expect(settings.data_sources[1].name).toBe('air_quality')
   })
 
   it('exports multiple templates with different layouts', async () => {
     const plugin = {
       name: 'Multi Layout',
       refreshInterval: 15,
-      dataSource: {
+      dataSources: [{
+        name: 'source',
         url: 'https://api.example.com',
         method: 'GET',
         headers: {},
         body: {},
-      },
+        order: 0,
+      }],
       templates: [
         { layout: 'full', liquidMarkup: 'Full layout' },
         { layout: 'half_horizontal', liquidMarkup: 'Half layout' },
@@ -159,12 +193,14 @@ describe('pluginExporterService', () => {
     const plugin = {
       name: 'No Templates',
       refreshInterval: 15,
-      dataSource: {
+      dataSources: [{
+        name: 'source',
         url: 'https://api.example.com',
         method: 'GET',
         headers: {},
         body: {},
-      },
+        order: 0,
+      }],
       fields: [],
     } as unknown as Plugin
 
@@ -182,12 +218,14 @@ describe('pluginExporterService', () => {
       name: 'Test',
       description: undefined,
       refreshInterval: 15,
-      dataSource: {
+      dataSources: [{
+        name: 'source',
         url: 'https://api.example.com',
         method: 'GET',
         headers: undefined,
         body: undefined,
-      },
+        order: 0,
+      }],
       templates: [{ layout: 'full', liquidMarkup: 'Test' }],
       fields: [
         {

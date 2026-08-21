@@ -3,7 +3,7 @@ import type { PluginDataSource } from './plugin-data-source.entity'
 import type { PluginField } from './plugin-field.entity'
 import type { PluginTemplate } from './plugin-template.entity'
 import type { PluginVariable } from './plugin-variable.entity'
-import { Column, CreateDateColumn, Entity, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 
 @Entity()
 export class Plugin {
@@ -31,8 +31,8 @@ export class Plugin {
   @OneToMany('DevicePlugin', 'plugin')
   deviceAssignments?: DevicePlugin[]
 
-  @OneToOne('PluginDataSource', 'plugin')
-  dataSource?: PluginDataSource
+  @OneToMany('PluginDataSource', 'plugin')
+  dataSources: PluginDataSource[]
 
   @OneToMany('PluginTemplate', 'plugin')
   templates: PluginTemplate[]

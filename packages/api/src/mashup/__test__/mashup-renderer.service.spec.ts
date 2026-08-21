@@ -55,7 +55,7 @@ describe('mashupRendererService', () => {
         plugin: {
           id: 'plugin-1',
           name: 'Weather',
-          dataSource: { method: 'GET', url: 'http://api/weather' },
+          dataSources: [{ name: 'source', method: 'GET', url: 'http://api/weather' }],
           templates: [{ layout: 'full', liquidMarkup: '<div>Weather: {{temp}}</div>' }],
         } as Plugin,
       } as MashupSlot,
@@ -67,7 +67,7 @@ describe('mashupRendererService', () => {
         plugin: {
           id: 'plugin-2',
           name: 'Calendar',
-          dataSource: { method: 'GET', url: 'http://api/calendar' },
+          dataSources: [{ name: 'source', method: 'GET', url: 'http://api/calendar' }],
           templates: [{ layout: 'full', liquidMarkup: '<div>Events: {{count}}</div>' }],
         } as Plugin,
       } as MashupSlot,
@@ -94,7 +94,7 @@ describe('mashupRendererService', () => {
     expect(pluginRenderer.render).toHaveBeenCalledTimes(2)
   })
 
-  it('should render partial mashup with error placeholder when plugin fails', async () => {
+  it('gives a failing data source an error marker instead of aborting its slot render (ADR-0005)', async () => {
     const device = { id: 'device-1', width: 800, height: 480 } as Device
 
     const slots: MashupSlot[] = [
@@ -106,7 +106,7 @@ describe('mashupRendererService', () => {
         plugin: {
           id: 'plugin-1',
           name: 'Working Plugin',
-          dataSource: { method: 'GET', url: 'http://api/working' },
+          dataSources: [{ name: 'source', method: 'GET', url: 'http://api/working' }],
           templates: [{ layout: 'full', liquidMarkup: '<div>Success</div>' }],
         } as Plugin,
       } as MashupSlot,
@@ -118,8 +118,8 @@ describe('mashupRendererService', () => {
         plugin: {
           id: 'plugin-2',
           name: 'Failing Plugin',
-          dataSource: { method: 'GET', url: 'http://api/failing' },
-          templates: [{ layout: 'full', liquidMarkup: '<div>{{data}}</div>' }],
+          dataSources: [{ name: 'source', method: 'GET', url: 'http://api/failing' }],
+          templates: [{ layout: 'full', liquidMarkup: '<div>{{ source.error }}</div>' }],
         } as Plugin,
       } as MashupSlot,
     ]
@@ -134,13 +134,48 @@ describe('mashupRendererService', () => {
       .mockResolvedValueOnce({ data: 'success' })
       .mockRejectedValueOnce(new Error('API timeout'))
 
-    pluginRenderer.render = vi.fn().mockResolvedValue('<div>Success</div>')
+    pluginRenderer.render = vi.fn()
+      .mockResolvedValueOnce('<div>Success</div>')
+      .mockResolvedValueOnce('<div>true</div>')
 
     const result = await service.renderMashup(config, device)
 
     expect(result).toContain('Success')
+    expect(result).not.toContain('error.png')
+    expect(pluginRenderer.render).toHaveBeenCalledWith(
+      '<div>{{ source.error }}</div>',
+      expect.objectContaining({ source: { error: true, message: 'API timeout' } }),
+    )
+  })
+
+  it('falls back to the error placeholder when a slot has no data sources at all', async () => {
+    const device = { id: 'device-1', width: 800, height: 480 } as Device
+
+    const slots: MashupSlot[] = [
+      {
+        id: 'slot-1',
+        position: 'left',
+        size: 'view--half_vertical',
+        order: 0,
+        plugin: {
+          id: 'plugin-1',
+          name: 'Draft Plugin',
+          dataSources: [],
+          templates: [{ layout: 'full', liquidMarkup: '<div>Never rendered</div>' }],
+        } as unknown as Plugin,
+      } as MashupSlot,
+    ]
+
+    const config: MashupConfiguration = {
+      id: 'config-1',
+      layout: '1Lx1R',
+      slots,
+    } as MashupConfiguration
+
+    const result = await service.renderMashup(config, device)
+
     expect(result).toContain('error.png')
-    expect(result).toContain('class="mashup mashup--1Lx1R"')
+    expect(pluginDataFetcher.fetchData).not.toHaveBeenCalled()
   })
 
   it('should build correct HTML structure for 2x2 layout', async () => {
@@ -154,7 +189,7 @@ describe('mashupRendererService', () => {
     ]
 
     for (const slot of slots) {
-      (slot.plugin as any).dataSource = { method: 'GET', url: 'http://api' };
+      (slot.plugin as any).dataSources = [{ name: 'source', method: 'GET', url: 'http://api' }];
       (slot.plugin as any).templates = [{ layout: 'full', liquidMarkup: '<div>Test</div>' }]
     }
 
@@ -184,7 +219,7 @@ describe('mashupRendererService', () => {
         order: 0,
         plugin: {
           name: 'Test',
-          dataSource: { method: 'GET', url: 'http://api' },
+          dataSources: [{ name: 'source', method: 'GET', url: 'http://api' }],
           templates: [{ layout: 'full', liquidMarkup: '<div>Test</div>' }],
         } as Plugin,
       } as MashupSlot,

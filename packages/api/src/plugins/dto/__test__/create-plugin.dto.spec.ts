@@ -13,17 +13,21 @@ describe('create-plugin dto', () => {
     expect(dto.refreshInterval).toBe(30)
   })
 
-  it('includes optional dataSource', () => {
+  it('includes optional dataSources array', () => {
     const dto = new CreatePluginDto()
-    dto.dataSource = {
-      url: 'https://api.example.com',
-      method: 'GET',
-      headers: {},
-      body: {},
-    }
+    dto.dataSources = [
+      {
+        name: 'weather',
+        url: 'https://api.example.com',
+        method: 'GET',
+        headers: {},
+        body: {},
+      },
+    ]
 
-    expect(dto.dataSource).toBeDefined()
-    expect(dto.dataSource?.url).toBe('https://api.example.com')
+    expect(dto.dataSources).toHaveLength(1)
+    expect(dto.dataSources?.[0].name).toBe('weather')
+    expect(dto.dataSources?.[0].url).toBe('https://api.example.com')
   })
 
   it('includes optional templates array', () => {

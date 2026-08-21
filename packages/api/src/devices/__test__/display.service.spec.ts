@@ -189,7 +189,7 @@ describe('deviceDisplayService', () => {
 
     it('caches only the rendered plugin body when rendering on demand', async () => {
       const device = { ...baseDevice, deviceModel: OG_PLUS }
-      const plugin = { id: 'p1', name: 'P', dataSource: { method: 'GET', url: 'http://x' }, templates: [{ layout: 'full', liquidMarkup: '{{ v }}' }] }
+      const plugin = { id: 'p1', name: 'P', dataSources: [{ name: 'source', method: 'GET', url: 'http://x' }], templates: [{ layout: 'full', liquidMarkup: '{{ v }}' }] }
       primeRotation({ id: 'screen2', type: 'plugin', order: 2, device, plugin, filename: 'x', generatedAt: new Date() }, device)
       service.pluginDataFetcher = { fetchData: vi.fn().mockResolvedValue({ v: 1 }) } as any
       service.pluginRenderer = { render: vi.fn().mockResolvedValue('<b>1</b>') } as any
@@ -545,8 +545,8 @@ describe('deviceDisplayService', () => {
         id: 'config-1',
         layout: '2x2',
         slots: [
-          { id: 'slot-1', plugin: { id: 'p1', name: 'Weather', dataSource: {}, templates: [] } },
-          { id: 'slot-2', plugin: { id: 'p2', name: 'Calendar', dataSource: {}, templates: [] } },
+          { id: 'slot-1', plugin: { id: 'p1', name: 'Weather', dataSources: [], templates: [] } },
+          { id: 'slot-2', plugin: { id: 'p2', name: 'Calendar', dataSources: [], templates: [] } },
         ],
       }
 
