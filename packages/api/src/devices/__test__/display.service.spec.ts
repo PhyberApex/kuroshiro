@@ -425,6 +425,24 @@ describe('deviceDisplayService', () => {
       expect(result.action).toBe('sleep')
     })
 
+    it('falls back to the upstream special function when a proxied response omits the action', async () => {
+      primeMirror({ ...mirroredDevice('mac'), specialFunction: 'identify' }, { filename: 'mirror.png', image_url: 'http://example.com/image.jpg', special_function: 'rewind' })
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.special_function).toBe('rewind')
+      expect(result.action).toBe('rewind')
+    })
+
+    it('reports none on both fields when a proxied response carries neither', async () => {
+      primeMirror({ ...mirroredDevice('mac'), specialFunction: 'identify' }, { filename: 'mirror.png', image_url: 'http://example.com/image.jpg' })
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.special_function).toBe('none')
+      expect(result.action).toBe('none')
+    })
+
     it('keeps the locally pending special function and action when mirroring another device', async () => {
       primeMirror({ ...mirroredDevice('different-mac'), specialFunction: 'identify' }, upstreamResponse)
 

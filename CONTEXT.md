@@ -73,7 +73,7 @@ A pre-built, TRMNL-vetted Plugin template published at trmnl.com/recipes, import
 _Avoid_: Extension, Exchange (Terminus's terms), Plugin (the imported result — see above)
 
 **Special Function**:
-A one-shot command an admin triggers on a Device (`identify`, `sleep`, `add_wifi`, `rewind`, or `none` for nothing pending) that reaches the Device on its next `/display` poll. That response carries the value twice — as `special_function`, and echoed back as `action`, which is the field firmware waits for before actually performing the behaviour — and the Device's stored value is cleared to `none` in the same poll, so the command fires exactly once instead of re-asserting on every poll. On a proxied Device (mirroring a Device with an identical MAC) both fields come from TRMNL's own `/display` response instead of the local value.
+A one-shot command an admin triggers on a Device — `identify`, `sleep`, `add_wifi` or `rewind`, with `none` meaning nothing pending — that reaches the Device on its next `/display` poll. (`restart_playlist` and `send_to_me` are accepted by the API and offered in the UI, but marked unavailable: no Device Kuroshiro targets acts on them.) That response carries the value twice — as `special_function`, and echoed back as `action`, which is the field firmware waits for before actually performing the behaviour — and the Device's stored value is cleared to `none` in the same poll, so the command fires exactly once instead of re-asserting on every poll. On a proxied Device (mirroring a Device with an identical MAC) both fields come from TRMNL's own `/display` response instead of the local value.
 _Avoid_: Special function toggle, device action, command
 
 **Sleep Mode**:

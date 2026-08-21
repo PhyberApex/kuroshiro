@@ -95,7 +95,7 @@ export class DeviceDisplayService {
     const resetDevice = device.resetDevice
     device.resetDevice = false
     // A Special Function fires once: this response acknowledges it, the next poll gets 'none'
-    const specialFunction = device.specialFunction
+    const specialFunction = device.specialFunction ?? 'none'
     device.specialFunction = 'none'
     const updateFirmware = false
     device.lastSeen = new Date()
@@ -166,8 +166,8 @@ export class DeviceDisplayService {
         refreshRate = proxy ? response.refresh_rate : refreshRate
         firmwareUrl = proxy ? response.firmware_url : firmwareUrl
         resetFirmware = proxy ? response.reset_firmware : resetFirmware
-        mirrorSpecialFunction = proxy ? response.special_function : mirrorSpecialFunction
-        mirrorAction = proxy ? response.action : mirrorAction
+        mirrorSpecialFunction = proxy ? (response.special_function ?? 'none') : mirrorSpecialFunction
+        mirrorAction = proxy ? (response.action ?? mirrorSpecialFunction) : mirrorAction
         updateFirmware = proxy ? response.update_firmware : updateFirmware
         localImageUrl = localImage
         filename = response.filename
