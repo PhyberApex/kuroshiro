@@ -24,6 +24,7 @@ import { Display } from './display'
 import { DisplayScreen } from './displayScreen'
 
 interface TrmnlScreenResponse {
+  action?: string
   filename: string
   image_url: string
   refresh_rate?: number
@@ -93,6 +94,9 @@ export class DeviceDisplayService {
     // Handling reset
     const resetDevice = device.resetDevice
     device.resetDevice = false
+    // A Special Function fires once: this response acknowledges it, the next poll gets 'none'
+    const specialFunction = device.specialFunction
+    device.specialFunction = 'none'
     const updateFirmware = false
     device.lastSeen = new Date()
     await this.deviceRepository.save(device)
@@ -101,12 +105,14 @@ export class DeviceDisplayService {
     if (!activeScreen && !device.mirrorEnabled) {
       this.logger.log('No screen found returning default no screen image')
       return new Display({
+        action: specialFunction,
         filename: 'noScreen.png',
         firmware_url: '',
         image_url: await this.fallbackImageUrl('noScreen', device),
         refresh_rate: device.refreshRate,
         reset_firmware: resetDevice,
-        special_function: device.specialFunction,
+        special_function: specialFunction,
+        temperature_profile: 'default',
         update_firmware: updateFirmware,
       })
     }
@@ -125,12 +131,14 @@ export class DeviceDisplayService {
       const imgUrl = await this.generateScreenImage(nextScreen, device)
 
       return new Display({
+        action: specialFunction,
         filename: `${nextScreen.filename}_${nextScreen.generatedAt.toISOString()}`,
         firmware_url: '',
         image_url: imgUrl,
         refresh_rate: device.refreshRate,
         reset_firmware: false,
-        special_function: device.specialFunction,
+        special_function: specialFunction,
+        temperature_profile: 'default',
         update_firmware: false,
       })
     }
@@ -149,7 +157,8 @@ export class DeviceDisplayService {
       let localImageUrl = await this.fallbackImageUrl('error', device)
       let firmwareUrl = null
       let resetFirmware = false
-      let specialFunction = device.specialFunction
+      let mirrorSpecialFunction = specialFunction
+      let mirrorAction = specialFunction
       let updateFirmware = false
       try {
         const { response, localImageUrl: localImage } = await this.fetchAndStoreMirrorImage(device, proxy ? headers : undefined)
@@ -157,7 +166,8 @@ export class DeviceDisplayService {
         refreshRate = proxy ? response.refresh_rate : refreshRate
         firmwareUrl = proxy ? response.firmware_url : firmwareUrl
         resetFirmware = proxy ? response.reset_firmware : resetFirmware
-        specialFunction = proxy ? response.special_function : specialFunction
+        mirrorSpecialFunction = proxy ? response.special_function : mirrorSpecialFunction
+        mirrorAction = proxy ? response.action : mirrorAction
         updateFirmware = proxy ? response.update_firmware : updateFirmware
         localImageUrl = localImage
         filename = response.filename
@@ -167,12 +177,14 @@ export class DeviceDisplayService {
       }
       this.logger.log(`Returning mirrored screen for device ${device.id}`)
       return new Display({
+        action: mirrorAction,
         filename,
         firmware_url: firmwareUrl,
         image_url: localImageUrl,
         refresh_rate: refreshRate,
         reset_firmware: resetFirmware,
-        special_function: specialFunction,
+        special_function: mirrorSpecialFunction,
+        temperature_profile: 'default',
         update_firmware: updateFirmware,
       })
     }

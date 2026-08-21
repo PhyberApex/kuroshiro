@@ -16,12 +16,14 @@ describe('displayController (unit)', () => {
   it('display should return display from service', async () => {
     const headers = { 'id': 'mac', 'access-token': 'token' }
     const display = new Display({
+      action: 'identify',
       filename: 'file.png',
       firmware_url: '',
       image_url: 'url',
       refresh_rate: 60,
       reset_firmware: false,
       special_function: 'identify',
+      temperature_profile: 'default',
       update_firmware: false,
     })
     service.getCurrentImage.mockResolvedValue(display)
@@ -41,12 +43,14 @@ describe('displayController (unit)', () => {
   it('current_screen should return display from service', async () => {
     const headers = { 'id': 'mac', 'access-token': 'token' }
     const display = new Display({
+      action: 'identify',
       filename: 'file.png',
       firmware_url: '',
       image_url: 'url',
       refresh_rate: 60,
       reset_firmware: false,
       special_function: 'identify',
+      temperature_profile: 'default',
       update_firmware: false,
     })
     service.getCurrentImageWithoutProgressing.mockResolvedValue(display)
