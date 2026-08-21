@@ -67,3 +67,7 @@ _Avoid_: Extension, Exchange (Terminus's terms — not adopted here)
 **Recipe**:
 A pre-built, TRMNL-vetted Plugin template published at trmnl.com/recipes, importable into Kuroshiro by pasting its id or page URL. A Recipe exists only as an import source — the result of importing one is a normal Poll-kind Plugin, indistinguishable from a hand-built one, carrying only its source Recipe's id as inert metadata (no ongoing link, no auto-updates).
 _Avoid_: Extension, Exchange (Terminus's terms), Plugin (the imported result — see above)
+
+**Sensor**:
+A Device's current reading for one Qwiic sensor add-on kind — `carbon_dioxide`, `humidity`, `pressure`, or `temperature` — parsed from the `SENSORS` header official OG firmware sends on every `/display` poll. At most one Sensor per Device per kind: each poll's header is the authoritative full snapshot, so a kind missing from a poll is deleted rather than left stale, and a kind present is upserted with its `value`/`unit`. Exposed to Plugin Liquid templates as an implicit `sensors` object keyed by kind (e.g. `sensors.temperature.value`), present only when the Device currently has that reading — no Plugin opt-in required. Device-attached only; a physically separate concept from server-attached (Raspberry Pi) sensors, which Kuroshiro does not support.
+_Avoid_: Telemetry (too broad), Extension, Exchange (Terminus's terms — not adopted here)
