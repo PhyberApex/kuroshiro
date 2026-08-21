@@ -71,3 +71,11 @@ _Avoid_: Extension, Exchange (Terminus's terms), Plugin (the imported result —
 **Sleep Mode**:
 A per-Device night window (`sleepStartTime`–`sleepEndTime`, time-of-day, may cross midnight, evaluated in the server's timezone) gated by an independent `sleepModeEnabled` toggle, mirroring Schedule's enabled/window split. While active, the Device's Active Screen stops advancing, and `/display` returns a `refresh_rate` computed as seconds-until-`sleepEndTime` so the Device wakes exactly when the window ends rather than on its usual cadence. A second toggle, `sleepScreenEnabled`, chooses between showing a dedicated `sleep` fallback screen (a new kind on the same mechanism as `noScreen`/`error`/`welcome`) or freezing whatever content was already showing. Applies only to non-mirrored Devices, and is entirely independent of the `sleep` specialFunction value — a separate, persisted manual override sent verbatim in every `/display` response, sharing nothing but a name.
 _Avoid_: Sleep (bare, in prose — ambiguous with the specialFunction value of the same name), Night Mode, Do Not Disturb
+
+**Firmware**:
+A versioned OTA binary a Device can be pushed to — either `official-synced` (mirrored automatically from `usetrmnl.com/api/firmware/latest`) or `custom` (uploaded directly by an admin). Carries a SHA-256 checksum, verified again at serve-time, and an optional set of compatible Device Models (empty means universal) enforced whenever a Firmware is assigned to a Device. A Device references at most one Firmware as its target for the next push, cleared once served — the same explicit, admin-driven assignment Device Model already uses, never inferred by comparing version numbers. Applies only to non-mirrored Devices.
+_Avoid_: Update, OTA package, release, firmware version (bare — reserve for the `version` field)
+
+**Firmware Kind**:
+Where a Firmware came from — `official-synced` (Kuroshiro's daily sync job) or `custom` (an admin's direct upload).
+_Avoid_: Firmware type, firmware source
