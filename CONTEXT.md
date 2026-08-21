@@ -13,8 +13,12 @@ The hardware class a Device belongs to — pixel dimensions, colour depth, rotat
 _Avoid_: Model (bare, in prose), panel, profile, display type
 
 **Palette**:
-The set of greys or colours an image is reduced to for a Device — chosen per Device from those its Device Model supports. Determines the image's bit depth.
+The set of greys or colours an image is reduced to for a Device — chosen per Device from those its Device Model supports. Determines the image's bit depth. Either `official` (synced from TRMNL, curated per Device Model via `paletteIds`) or `custom` (admin-created, restricted to a fixed colour family — see Palette Family — with compatibility derived automatically rather than curated per model).
 _Avoid_: Colour mode, bit depth (as a name for the choice), dither mode
+
+**Palette Family**:
+Which of TRMNL's 9 fixed rendering modes a Palette belongs to — 3 grayscale (1/2/4-bit), 5 colour (`3bwr`/`3bwy`/`4bwry`/`6a`/`7a`, each a fixed set of physical ink colours), or full-color. Identified by `frameworkClass`, which also drives the on-device CSS class — not a freely inventable string. Custom Palettes may only be authored in a colour family; a "custom" grayscale or full-color Palette would be indistinguishable from the official one of that family, so isn't offered.
+_Avoid_: Framework class (bare, in prose — reserve for the field name), colour mode, render mode
 
 **Screen**:
 A single unit of content assigned to a Device's rotation — a static image, an externally-fetched image, raw HTML, a plugin's rendered output, or a mashup. Screens belong to exactly one Device.
