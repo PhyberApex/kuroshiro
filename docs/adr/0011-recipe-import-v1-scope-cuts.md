@@ -1,0 +1,13 @@
+# Recipe import v1 is a one-time copy via id/URL paste; no gallery, no OAuth, no static-data recipes
+
+Issue #778's evidence section raises several open questions beyond "can we import a Recipe at all." Grilling this issue deliberately cut the following from v1:
+
+- **No Browse/Gallery UI.** Recipes are imported by pasting an id or URL, mirroring the existing GitHub-import UX. A searchable gallery against `recipes-api`/`categories-api` is a materially bigger surface (search, facets, pagination) that isn't needed to prove the import mechanics work, and can be layered on top of the same import path later without revisiting it.
+- **OAuth-enabled recipes are rejected outright**, with a clear error at import time. Kuroshiro's Data Source model has no OAuth support anywhere today; importing one would silently produce a Data Source that can never authenticate, which is a worse failure mode than refusing up front. Matches Terminus's own behavior (`terminus/app/aspects/extensions/importers/remote/transformers/kind.rb` fails the same way).
+- **`strategy: static` recipes are rejected outright.** We initially assumed "static" was just a UI label for a `Poll`-kind Plugin with zero Data Sources (already valid per the Data Source glossary entry from #776). Inspecting Terminus's importer (`transformers/kind.rb`) showed this is wrong: a static recipe carries a real fixed `static_data` JSON payload, kept as its own `static_body` distinct from `poll_body` — there's nowhere in Kuroshiro's current model (Data Source is explicitly "one independently-configured HTTP fetch") to put that literal data. Building real support for it is a separate feature, tracked at #794, not something to fold into this issue's scope.
+- **Import is a one-time, disconnected copy.** The resulting Plugin stores its source Recipe's id as inert metadata but has no ongoing link back to it — no auto-update, no "check for updates" action. TRMNL auto-propagates Recipe updates to installers; Terminus itself doesn't replicate that (no `external_id`/source column persists past its importer's in-memory transform step). We reject it too: silently overwriting a user's local edits to an imported Plugin (custom field tweaks, template edits) needs its own conflict-handling design, which is out of scope here.
+
+## Consequences
+
+- A future Browse/Gallery UI, OAuth support, static-data Plugins (#794), and Recipe update-sync are all additive — none require reshaping what v1 ships.
+- The stored source Recipe id has no consumer yet beyond being present on the Plugin record; it exists so a future update-sync feature doesn't need a data migration to backfill it.
