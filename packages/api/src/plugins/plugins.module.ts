@@ -8,14 +8,18 @@ import { PluginFieldValue } from './entities/plugin-field-value.entity'
 import { PluginField } from './entities/plugin-field.entity'
 import { PluginTemplate } from './entities/plugin-template.entity'
 import { Plugin } from './entities/plugin.entity'
+import { WebhookPluginGuard } from './guards/webhook-plugin.guard'
 import { PluginsController } from './plugins.controller'
 import { PluginsService } from './plugins.service'
 import { PluginDataFetcherService } from './services/plugin-data-fetcher.service'
 import { PluginExporterService } from './services/plugin-exporter.service'
 import { PluginImporterService } from './services/plugin-importer.service'
+import { PluginRenderCacheService } from './services/plugin-render-cache.service'
 import { PluginRendererService } from './services/plugin-renderer.service'
 import { PluginSchedulerService } from './services/plugin-scheduler.service'
 import { PluginTransformService } from './services/plugin-transform.service'
+import { WebhookIngestService } from './services/webhook-ingest.service'
+import { WebhookIngestController } from './webhook-ingest.controller'
 
 @Module({
   imports: [
@@ -30,7 +34,7 @@ import { PluginTransformService } from './services/plugin-transform.service'
       Screen,
     ]),
   ],
-  controllers: [PluginsController],
+  controllers: [PluginsController, WebhookIngestController],
   providers: [
     PluginsService,
     PluginDataFetcherService,
@@ -39,7 +43,10 @@ import { PluginTransformService } from './services/plugin-transform.service'
     PluginImporterService,
     PluginExporterService,
     PluginTransformService,
+    PluginRenderCacheService,
+    WebhookIngestService,
+    WebhookPluginGuard,
   ],
-  exports: [PluginsService, PluginSchedulerService, PluginDataFetcherService, PluginRendererService, PluginTransformService],
+  exports: [PluginsService, PluginSchedulerService, PluginDataFetcherService, PluginRendererService, PluginTransformService, PluginRenderCacheService],
 })
 export class PluginsModule {}
