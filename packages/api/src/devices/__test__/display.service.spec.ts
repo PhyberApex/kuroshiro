@@ -357,6 +357,118 @@ describe('deviceDisplayService', () => {
     expect(fs.unlink).toHaveBeenCalled()
   })
 
+  describe('special function acknowledgement and protocol fields', () => {
+    function primeNoScreen(device: Record<string, unknown>) {
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      screenRepo.findOneBy.mockResolvedValue(null)
+      configService.get.mockReturnValue('http://api')
+    }
+
+    function primeCycling(device: Record<string, unknown>) {
+      const activeScreen = { id: 'screen1', order: 1, device, isActive: true, fetchManual: false, externalLink: null, filename: 'file.png', generatedAt: new Date() }
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      screenRepo.findOneBy
+        .mockResolvedValueOnce(activeScreen)
+        .mockResolvedValueOnce({ ...activeScreen, id: 'screen2', order: 2, isActive: false })
+      configService.get.mockReturnValue('http://api')
+      fileExists.mockResolvedValue(true)
+    }
+
+    function primeMirror(device: Record<string, unknown>, response: Record<string, unknown>) {
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      configService.get.mockReturnValue('http://api')
+      mockFetch.mockResolvedValueOnce({ json: () => Promise.resolve(response) })
+    }
+
+    function mirroredDevice(mirrorMac: string) {
+      return { ...baseDevice, deviceModel: OG_PLUS, mirrorEnabled: true, mirrorMac, mirrorApikey: 'mirror-token' }
+    }
+
+    const upstreamResponse = { filename: 'mirror.png', image_url: 'http://example.com/image.jpg', special_function: 'sleep', action: 'sleep' }
+
+    it('acknowledges the pending special function and clears it for the next poll', async () => {
+      primeNoScreen({ ...baseDevice, deviceModel: OG_PLUS, specialFunction: 'sleep' })
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.special_function).toBe('sleep')
+      expect(result.action).toBe('sleep')
+      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ specialFunction: 'none' }))
+    })
+
+    it('echoes none as the action when nothing is pending', async () => {
+      primeNoScreen({ ...baseDevice, deviceModel: OG_PLUS, specialFunction: 'none' })
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.special_function).toBe('none')
+      expect(result.action).toBe('none')
+      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ specialFunction: 'none' }))
+    })
+
+    it('acknowledges and clears the pending special function while cycling screens', async () => {
+      primeCycling({ ...baseDevice, deviceModel: OG_PLUS, specialFunction: 'add_wifi' })
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.special_function).toBe('add_wifi')
+      expect(result.action).toBe('add_wifi')
+      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ specialFunction: 'none' }))
+    })
+
+    it('relays the upstream special function and action when proxying', async () => {
+      primeMirror({ ...mirroredDevice('mac'), specialFunction: 'identify' }, upstreamResponse)
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.special_function).toBe('sleep')
+      expect(result.action).toBe('sleep')
+    })
+
+    it('falls back to the upstream special function when a proxied response omits the action', async () => {
+      primeMirror({ ...mirroredDevice('mac'), specialFunction: 'identify' }, { filename: 'mirror.png', image_url: 'http://example.com/image.jpg', special_function: 'rewind' })
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.special_function).toBe('rewind')
+      expect(result.action).toBe('rewind')
+    })
+
+    it('reports none on both fields when a proxied response carries neither', async () => {
+      primeMirror({ ...mirroredDevice('mac'), specialFunction: 'identify' }, { filename: 'mirror.png', image_url: 'http://example.com/image.jpg' })
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.special_function).toBe('none')
+      expect(result.action).toBe('none')
+    })
+
+    it('keeps the locally pending special function and action when mirroring another device', async () => {
+      primeMirror({ ...mirroredDevice('different-mac'), specialFunction: 'identify' }, upstreamResponse)
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.special_function).toBe('identify')
+      expect(result.action).toBe('identify')
+      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ specialFunction: 'none' }))
+    })
+
+    it.each([
+      ['without a screen', () => primeNoScreen({ ...baseDevice, deviceModel: OG_PLUS })],
+      ['while cycling screens', () => primeCycling({ ...baseDevice, deviceModel: OG_PLUS })],
+      ['while mirroring', () => primeMirror(mirroredDevice('different-mac'), upstreamResponse)],
+    ])('reports the default temperature profile and omits unsupported firmware fields %s', async (_path, prime) => {
+      prime()
+
+      const result: any = await service.getCurrentImage(headers as any)
+
+      expect(result.temperature_profile).toBe('default')
+      expect(result.touchbar_mode).toBeUndefined()
+      expect(result.maximum_compatibility).toBeUndefined()
+      expect(result.image_url_timeout).toBeUndefined()
+    })
+  })
+
   describe('getCurrentImageWithoutProgressing', () => {
     it('throws NotFoundException if device not found', async () => {
       deviceRepo.findOneBy.mockResolvedValue(null)
