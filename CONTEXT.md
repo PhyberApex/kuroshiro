@@ -67,3 +67,7 @@ _Avoid_: Extension, Exchange (Terminus's terms — not adopted here)
 **Recipe**:
 A pre-built, TRMNL-vetted Plugin template published at trmnl.com/recipes, importable into Kuroshiro by pasting its id or page URL. A Recipe exists only as an import source — the result of importing one is a normal Poll-kind Plugin, indistinguishable from a hand-built one, carrying only its source Recipe's id as inert metadata (no ongoing link, no auto-updates).
 _Avoid_: Extension, Exchange (Terminus's terms), Plugin (the imported result — see above)
+
+**Sleep Mode**:
+A per-Device night window (`sleepStartTime`–`sleepEndTime`, time-of-day, may cross midnight, evaluated in the server's timezone) gated by an independent `sleepModeEnabled` toggle, mirroring Schedule's enabled/window split. While active, the Device's Active Screen stops advancing, and `/display` returns a `refresh_rate` computed as seconds-until-`sleepEndTime` so the Device wakes exactly when the window ends rather than on its usual cadence. A second toggle, `sleepScreenEnabled`, chooses between showing a dedicated `sleep` fallback screen (a new kind on the same mechanism as `noScreen`/`error`/`welcome`) or freezing whatever content was already showing. Applies only to non-mirrored Devices, and is entirely independent of the `sleep` specialFunction value — a separate, persisted manual override sent verbatim in every `/display` response, sharing nothing but a name.
+_Avoid_: Sleep (bare, in prose — ambiguous with the specialFunction value of the same name), Night Mode, Do Not Disturb
