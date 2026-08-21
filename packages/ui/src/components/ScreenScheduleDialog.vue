@@ -5,7 +5,7 @@ import { computed, ref, watch } from 'vue'
 import { VAlert, VBtn, VBtnToggle, VCard, VCardActions, VCardText, VCardTitle, VDialog, VDivider, VSpacer, VSwitch, VTextField } from 'vuetify/components'
 import { useScheduleStore } from '@/stores/schedule'
 import { useScreensStore } from '@/stores/screens'
-import { WEEKDAY_LABELS, withoutSeconds } from '@/utils/scheduleSummary'
+import { WEEKDAY_LABELS, withoutSeconds } from '@/utils/schedule'
 
 const props = defineProps<{
   modelValue: boolean
@@ -129,7 +129,7 @@ function close() {
           data-test-id="schedule-enabled-switch"
         />
         <p class="text-caption text-medium-emphasis mb-4">
-          Disable to pause the screen without losing the rules below.
+          A disabled schedule keeps its rules but holds the screen out of the rotation.
         </p>
 
         <div class="text-subtitle-2 mb-1">

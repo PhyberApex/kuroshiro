@@ -9,7 +9,7 @@ import { useDeviceRenderTarget } from '@/composeables/useDeviceRenderTarget'
 import { useDeviceStore } from '@/stores/device.ts'
 import { useScreensStore } from '@/stores/screens'
 import { cacheBustedUrl } from '@/utils/cacheBustedUrl'
-import { scheduleSummary } from '@/utils/scheduleSummary'
+import { screenScheduleColor, screenScheduleLabel } from '@/utils/schedule'
 import { viewFull } from '@/utils/screenShell'
 
 const props = defineProps<{ deviceId: string }>()
@@ -93,19 +93,6 @@ const scheduleScreen = ref<Screen | null>(null)
 function editSchedule(screen: Screen) {
   scheduleScreen.value = screen
   showScheduleDialog.value = true
-}
-
-function scheduleLabel(screen: Screen) {
-  if (!screen.schedule)
-    return 'Always'
-  const summary = scheduleSummary(screen.schedule)
-  return screen.schedule.enabled ? summary : `Paused · ${summary}`
-}
-
-function scheduleColor(screen: Screen) {
-  if (!screen.schedule)
-    return 'secondary'
-  return screen.schedule.enabled ? 'success' : 'warning'
 }
 
 const showHtmlPreview = ref(false)
@@ -232,13 +219,13 @@ function previewScreen(screen: Screen) {
                     <VBtn
                       size="small"
                       variant="tonal"
-                      :color="scheduleColor(screen)"
+                      :color="screenScheduleColor(screen)"
                       :prepend-icon="mdiCalendarClock"
                       :aria-label="`Edit schedule for ${screen.filename ?? screen.id}`"
                       :data-test-id="`screen-schedule-btn-${screen.id}`"
                       @click="editSchedule(screen)"
                     >
-                      {{ scheduleLabel(screen) }}
+                      {{ screenScheduleLabel(screen) }}
                     </VBtn>
                   </td>
                   <td>

@@ -110,7 +110,8 @@ export class DeviceDisplayService {
         order: { order: 'ASC' },
       })
       const nextScreen = this.nextEligibleScreen(screens, new Date())
-      await this.screenRepository.update({ device: { id: device.id } }, { isActive: false })
+      if (screens.length > 0)
+        await this.screenRepository.update({ device: { id: device.id } }, { isActive: false })
       if (!nextScreen) {
         this.logger.log(`No eligible screen for device ${device.id} returning default no screen image`)
         return new Display({

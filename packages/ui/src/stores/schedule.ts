@@ -1,6 +1,15 @@
 import type { Schedule, ScheduleInput } from '@/types'
 import { defineStore } from 'pinia'
 
+async function send(method: string, screenId: string, fallbackError: string, input?: ScheduleInput): Promise<Response> {
+  const res = await fetch(`/api/screens/${screenId}/schedule`, input
+    ? { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) }
+    : { method })
+  if (!res.ok)
+    throw new Error(await failureMessage(res, fallbackError))
+  return res
+}
+
 async function failureMessage(res: Response, fallback: string): Promise<string> {
   try {
     const body = await res.json()
@@ -13,31 +22,15 @@ async function failureMessage(res: Response, fallback: string): Promise<string> 
 
 export const useScheduleStore = defineStore('schedule', () => {
   async function create(screenId: string, input: ScheduleInput): Promise<Schedule> {
-    const res = await fetch(`/api/screens/${screenId}/schedule`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input),
-    })
-    if (!res.ok)
-      throw new Error(await failureMessage(res, 'Failed to create schedule'))
-    return await res.json()
+    return (await send('POST', screenId, 'Failed to create schedule', input)).json()
   }
 
   async function update(screenId: string, input: ScheduleInput): Promise<Schedule> {
-    const res = await fetch(`/api/screens/${screenId}/schedule`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input),
-    })
-    if (!res.ok)
-      throw new Error(await failureMessage(res, 'Failed to update schedule'))
-    return await res.json()
+    return (await send('PATCH', screenId, 'Failed to update schedule', input)).json()
   }
 
   async function remove(screenId: string): Promise<void> {
-    const res = await fetch(`/api/screens/${screenId}/schedule`, { method: 'DELETE' })
-    if (!res.ok)
-      throw new Error(await failureMessage(res, 'Failed to delete schedule'))
+    await send('DELETE', screenId, 'Failed to delete schedule')
   }
 
   return { create, update, remove }

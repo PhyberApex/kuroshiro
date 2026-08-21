@@ -326,11 +326,11 @@ describe('screenListCard', () => {
       expect(wrapper.find('[data-test-id="screen-schedule-btn-screen1"]').text()).toBe('Mon, Tue, Wed, Thu, Fri · 07:00–09:00')
     })
 
-    it('marks a disabled schedule as paused while still showing its rules', () => {
+    it('marks a disabled schedule while still showing its rules', () => {
       const wrapper = mountWithScreens([
         { ...baseScreen, id: 'screen1', schedule: { id: 's1', enabled: false, weekdays: [0] } },
       ])
-      expect(wrapper.find('[data-test-id="screen-schedule-btn-screen1"]').text()).toBe('Paused · Sun')
+      expect(wrapper.find('[data-test-id="screen-schedule-btn-screen1"]').text()).toBe('Disabled · Sun')
     })
 
     it('opens the schedule dialog for the screen that was clicked', async () => {

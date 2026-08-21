@@ -357,16 +357,14 @@ describe('deviceDisplayService', () => {
   describe('special function acknowledgement and protocol fields', () => {
     function primeNoScreen(device: Record<string, unknown>) {
       deviceRepo.findOneBy.mockResolvedValue(device)
-      screenRepo.findOneBy.mockResolvedValue(null)
+      screenRepo.find.mockResolvedValue([])
       configService.get.mockReturnValue('http://api')
     }
 
     function primeCycling(device: Record<string, unknown>) {
       const activeScreen = { id: 'screen1', order: 1, device, isActive: true, fetchManual: false, externalLink: null, filename: 'file.png', generatedAt: new Date() }
       deviceRepo.findOneBy.mockResolvedValue(device)
-      screenRepo.findOneBy
-        .mockResolvedValueOnce(activeScreen)
-        .mockResolvedValueOnce({ ...activeScreen, id: 'screen2', order: 2, isActive: false })
+      screenRepo.find.mockResolvedValue([activeScreen, { ...activeScreen, id: 'screen2', order: 2, isActive: false }])
       configService.get.mockReturnValue('http://api')
       fileExists.mockResolvedValue(true)
     }
