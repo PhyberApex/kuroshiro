@@ -43,6 +43,12 @@ export class Plugin {
   @Column('jsonb', { nullable: true })
   webhookPayload?: WebhookPayload
 
+  // Inert: the id of the TRMNL Recipe this Plugin was imported from, if any.
+  // Nothing reads it yet — kept so a future update-check feature (#794-adjacent)
+  // doesn't need a backfill migration (ADR-0011).
+  @Column('text', { nullable: true })
+  sourceRecipeId?: string
+
   @CreateDateColumn()
   createdAt: Date
 

@@ -181,6 +181,7 @@ export class PluginsService implements OnModuleInit {
       description: basicFields.description,
       kind,
       refreshInterval: basicFields.refreshInterval || 15,
+      sourceRecipeId: basicFields.sourceRecipeId,
       ...(kind === 'Webhook'
         ? {
             webhookToken: generateApikey(),

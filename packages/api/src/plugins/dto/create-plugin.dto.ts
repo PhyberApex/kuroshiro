@@ -75,6 +75,10 @@ export class CreatePluginDto {
   streamLimit?: number
 
   @IsOptional()
+  @IsString()
+  sourceRecipeId?: string
+
+  @IsOptional()
   dataSources?: any[]
 
   @IsOptional()

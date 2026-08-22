@@ -7,7 +7,7 @@ import { CreatePluginDto } from './dto/create-plugin.dto'
 import { UpdatePluginDto } from './dto/update-plugin.dto'
 import { PluginsService } from './plugins.service'
 import { PluginExporterService } from './services/plugin-exporter.service'
-import { PluginImporterService } from './services/plugin-importer.service'
+import { ParsedPlugin, PluginImporterService } from './services/plugin-importer.service'
 
 @Controller('plugins')
 export class PluginsController {
@@ -83,7 +83,30 @@ export class PluginsController {
     }
 
     const parsedPlugin = await this.importerService.importFromFile(file.path)
+    return this.createPluginFromImport(parsedPlugin, deviceId)
+  }
 
+  @Post('import-github')
+  async importFromGithub(@Body() body: { githubUrl: string, deviceId?: string }) {
+    if (!body.githubUrl) {
+      throw new Error('GitHub URL is required')
+    }
+
+    const parsedPlugin = await this.importerService.importFromGithubUrl(body.githubUrl)
+    return this.createPluginFromImport(parsedPlugin, body.deviceId)
+  }
+
+  @Post('import-recipe')
+  async importFromRecipe(@Body() body: { recipeId: string, deviceId?: string }) {
+    if (!body.recipeId) {
+      throw new Error('Recipe id or URL is required')
+    }
+
+    const parsedPlugin = await this.importerService.importFromRecipe(body.recipeId)
+    return this.createPluginFromImport(parsedPlugin, body.deviceId)
+  }
+
+  private async createPluginFromImport(parsedPlugin: ParsedPlugin, deviceId?: string) {
     const createDto: CreatePluginDto = {
       ...parsedPlugin,
       isActive: false,
@@ -95,34 +118,6 @@ export class PluginsController {
     // If deviceId provided, auto-assign to that device
     if (deviceId) {
       await this.pluginsService.assignToDevice(plugin.id, { deviceId, isActive: true, order: 0 })
-    }
-
-    // Return plugin with security warning if transform.js exists
-    return {
-      ...plugin,
-      _hasTransform: !!parsedPlugin.dataSources?.some(source => source.transformJs),
-    }
-  }
-
-  @Post('import-github')
-  async importFromGithub(@Body() body: { githubUrl: string, deviceId?: string }) {
-    if (!body.githubUrl) {
-      throw new Error('GitHub URL is required')
-    }
-
-    const parsedPlugin = await this.importerService.importFromGithubUrl(body.githubUrl)
-
-    const createDto: CreatePluginDto = {
-      ...parsedPlugin,
-      isActive: false,
-      order: 1,
-    }
-
-    const plugin = await this.pluginsService.create(createDto)
-
-    // If deviceId provided, auto-assign to that device
-    if (body.deviceId) {
-      await this.pluginsService.assignToDevice(plugin.id, { deviceId: body.deviceId, isActive: true, order: 0 })
     }
 
     // Return plugin with security warning if transform.js exists
