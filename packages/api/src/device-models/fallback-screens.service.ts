@@ -7,10 +7,10 @@ import { FALLBACK_SCREEN_TEMPLATE_VERSION, fallbackScreenBody } from './fallback
 import { renderHtmlToPng } from './render-html-to-png'
 import { viewFull, wrapInScreenShell } from './screen-shell'
 
-export type FallbackScreenKind = 'noScreen' | 'error' | 'welcome'
+export type FallbackScreenKind = 'noScreen' | 'error' | 'welcome' | 'sleep'
 
 /**
- * Serves the built-in placeholder screens (no screen, error, welcome), rendered
+ * Serves the built-in placeholder screens (no screen, error, welcome, sleep), rendered
  * natively at a render target's model size through the same puppeteer shell
  * regular screens use, generated on first use and cached under
  * `public/screens/fallback/v<template version>/<model>-<palette>/`.

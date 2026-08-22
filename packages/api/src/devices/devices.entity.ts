@@ -67,6 +67,18 @@ export class Device {
   specialFunction?: string
 
   @Column('boolean', { default: false })
+  sleepModeEnabled: boolean
+
+  @Column('int', { nullable: true })
+  sleepStartTime?: number | null
+
+  @Column('int', { nullable: true })
+  sleepEndTime?: number | null
+
+  @Column('boolean', { default: false })
+  sleepScreenEnabled: boolean
+
+  @Column('boolean', { default: false })
   resetDevice: boolean
 
   @Column('boolean', { default: false })

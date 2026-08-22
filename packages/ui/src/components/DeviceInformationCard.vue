@@ -37,6 +37,7 @@ import { DEFAULT_RENDER_SIZE } from '@/utils/deviceRenderSize'
 import { formatDate } from '@/utils/formatDate'
 import { isValidMac } from '@/utils/getRandomMac'
 import { isDeviceOnline } from '@/utils/isDeviceOnline'
+import { secondsToTimeInput, timeInputToSeconds } from '@/utils/sleepMode'
 
 const props = defineProps<{ deviceId: string }>()
 
@@ -54,12 +55,18 @@ onMounted(() => {
 const selectedModelName = ref<string | null>(null)
 const selectedPaletteId = ref<string | null>(null)
 const selectedFirmwareId = ref<string | null>(null)
+const sleepStartTime = ref('')
+const sleepEndTime = ref('')
 
 watch(device, (current) => {
   selectedModelName.value = current?.deviceModel?.name ?? null
   selectedPaletteId.value = current?.palette?.id ?? null
   selectedFirmwareId.value = current?.targetFirmware?.id ?? null
+  sleepStartTime.value = secondsToTimeInput(current?.sleepStartTime)
+  sleepEndTime.value = secondsToTimeInput(current?.sleepEndTime)
 }, { immediate: true })
+
+const sleepWindowSpansMidnight = computed(() => Boolean(sleepStartTime.value && sleepEndTime.value && sleepStartTime.value > sleepEndTime.value))
 
 const firmwareOptions = computed(() => {
   const assigned = device.value?.targetFirmware
@@ -252,6 +259,8 @@ const apikeyRules = [
   },
 ]
 
+const sleepWindowValid = computed(() => !device.value?.sleepModeEnabled || (Boolean(sleepStartTime.value) && Boolean(sleepEndTime.value)))
+
 const valid = computed(() => {
   return !macRules.map((rule) => {
     if (!device.value)
@@ -263,6 +272,7 @@ const valid = computed(() => {
       return null
     return rule(device.value?.mirrorApikey)
   }).some(validationResult => validationResult !== true)
+  && sleepWindowValid.value
 })
 
 const refreshRateUnit = ref<'hours' | 'minutes' | 'seconds'>('seconds')
@@ -299,7 +309,7 @@ watch(() => device.value?.refreshRate, () => {
 })
 
 async function saveDevice() {
-  if (!device.value)
+  if (!device.value || !sleepWindowValid.value)
     return
   device.value.refreshRate = newRefreshRate.value
   await deviceStore.updateDevice(device.value.id, {
@@ -310,6 +320,10 @@ async function saveDevice() {
     mirrorMac: device.value.mirrorMac,
     mirrorApikey: device.value.mirrorApikey,
     specialFunction: device.value.specialFunction,
+    sleepModeEnabled: device.value.sleepModeEnabled,
+    sleepStartTime: timeInputToSeconds(sleepStartTime.value),
+    sleepEndTime: timeInputToSeconds(sleepEndTime.value),
+    sleepScreenEnabled: device.value.sleepScreenEnabled,
     ...(selectedModelName.value ? { deviceModelName: selectedModelName.value } : {}),
     ...(selectedPaletteId.value ? { paletteId: selectedPaletteId.value } : {}),
   })
@@ -487,7 +501,7 @@ const nameEditing = ref(false)
                   </VChip>
                 </VCol>
               </VRow>
-              <VRow class="mb-0" density="comfortable">
+              <VRow class="mb-2" density="comfortable">
                 <VCol cols="12" sm="6" md="4">
                   <VSwitch v-model="device.mirrorEnabled" color="secondary" label="Mirroring" />
                 </VCol>
@@ -496,6 +510,40 @@ const nameEditing = ref(false)
                 </VCol>
                 <VCol cols="12" sm="6" md="4">
                   <VTextField v-model="device.mirrorApikey" density="compact" label="Mirror API key" :disabled="!device.mirrorEnabled" :rules="apikeyRules" />
+                </VCol>
+              </VRow>
+              <VDivider class="my-2" />
+              <VRow class="mb-0" density="comfortable">
+                <VCol cols="12" sm="6" md="3">
+                  <VSwitch v-model="device.sleepModeEnabled" color="secondary" label="Sleep Mode" data-test-id="sleep-mode-switch" />
+                </VCol>
+                <VCol cols="12" sm="6" md="3">
+                  <VTextField
+                    v-model="sleepStartTime"
+                    type="time"
+                    density="compact"
+                    label="Sleep window from"
+                    :error="!sleepWindowValid"
+                    :error-messages="!sleepWindowValid ? ['Set both a start and end time to enable Sleep Mode.'] : []"
+                    data-test-id="sleep-start-time"
+                  />
+                </VCol>
+                <VCol cols="12" sm="6" md="3">
+                  <VTextField
+                    v-model="sleepEndTime"
+                    type="time"
+                    density="compact"
+                    label="Sleep window to"
+                    :error="!sleepWindowValid"
+                    :error-messages="!sleepWindowValid ? ['Set both a start and end time to enable Sleep Mode.'] : []"
+                    data-test-id="sleep-end-time"
+                  />
+                </VCol>
+                <VCol cols="12" sm="6" md="3">
+                  <VSwitch v-model="device.sleepScreenEnabled" color="secondary" label="Show dedicated sleep screen" data-test-id="sleep-screen-switch" />
+                </VCol>
+                <VCol v-if="sleepWindowSpansMidnight" cols="12">
+                  <span class="text-caption text-medium-emphasis" data-test-id="sleep-window-midnight-hint">This window crosses midnight.</span>
                 </VCol>
               </VRow>
             </VExpansionPanelText>

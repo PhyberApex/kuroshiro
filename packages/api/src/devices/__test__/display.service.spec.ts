@@ -975,4 +975,147 @@ describe('deviceDisplayService', () => {
       expect((await service.getCurrentImage(headers as any)).filename).toBe('noScreen.png')
     })
   })
+
+  describe('sleep mode', () => {
+    const sleepingDevice = { ...baseDevice, apikey: 'token', id: '1', deviceModel: OG_PLUS, mirrorEnabled: false, sleepModeEnabled: true, sleepStartTime: 22 * 3600, sleepEndTime: 6 * 3600, sleepScreenEnabled: false }
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      configService.get.mockReturnValue('http://api')
+      fileExists.mockResolvedValue(true)
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('leaves rotation and refresh rate unaffected when sleep mode is disabled', async () => {
+      const device = { ...sleepingDevice, sleepModeEnabled: false, refreshRate: 60 }
+      const activeScreen = { id: 'screen1', order: 1, device, isActive: true, fetchManual: false, externalLink: null, filename: 'file.png', generatedAt: new Date() }
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      screenRepo.find.mockResolvedValue([activeScreen, { ...activeScreen, id: 'screen2', order: 2, isActive: false }])
+
+      vi.setSystemTime(new Date('2026-08-22T23:00:00'))
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.image_url).toBe('http://api/screens/devices/1/screen2.png')
+      expect(result.refresh_rate).toBe(60)
+    })
+
+    it('does not advance the active screen while asleep', async () => {
+      const activeScreen = { id: 'screen1', order: 1, device: sleepingDevice, isActive: true, fetchManual: false, externalLink: null, filename: 'file.png', generatedAt: new Date() }
+      deviceRepo.findOneBy.mockResolvedValue(sleepingDevice)
+      screenRepo.find.mockResolvedValue([activeScreen, { ...activeScreen, id: 'screen2', order: 2, isActive: false }])
+
+      vi.setSystemTime(new Date('2026-08-22T23:00:00'))
+      await service.getCurrentImage(headers as any)
+
+      expect(screenRepo.update).not.toHaveBeenCalled()
+      expect(screenRepo.save).not.toHaveBeenCalled()
+    })
+
+    it('returns a refresh rate of seconds-until-sleepEndTime, wrapping past midnight', async () => {
+      deviceRepo.findOneBy.mockResolvedValue(sleepingDevice)
+      screenRepo.findOneBy.mockResolvedValue(null)
+
+      vi.setSystemTime(new Date('2026-08-22T23:00:00'))
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.refresh_rate).toBe(7 * 3600)
+    })
+
+    it('floors the refresh rate at the minimum right at the boundary', async () => {
+      deviceRepo.findOneBy.mockResolvedValue(sleepingDevice)
+      screenRepo.findOneBy.mockResolvedValue(null)
+
+      vi.setSystemTime(new Date('2026-08-22T05:59:30'))
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.refresh_rate).toBe(60)
+    })
+
+    it('is not asleep outside the configured window', async () => {
+      const device = { ...sleepingDevice, refreshRate: 60 }
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      screenRepo.find.mockResolvedValue([])
+
+      vi.setSystemTime(new Date('2026-08-22T12:00:00'))
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.refresh_rate).toBe(60)
+    })
+
+    it('serves the dedicated sleep screen when enabled, even for a screenless device', async () => {
+      const device = { ...sleepingDevice, sleepScreenEnabled: true }
+      deviceRepo.findOneBy.mockResolvedValue(device)
+
+      vi.setSystemTime(new Date('2026-08-22T23:00:00'))
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.filename).toBe('sleep.png')
+      expect(result.image_url).toBe('http://api/screens/sleep.png')
+      expect(screenRepo.find).not.toHaveBeenCalled()
+    })
+
+    it('keeps showing noScreen for a screenless device with the sleep screen disabled', async () => {
+      deviceRepo.findOneBy.mockResolvedValue(sleepingDevice)
+      screenRepo.findOneBy.mockResolvedValue(null)
+
+      vi.setSystemTime(new Date('2026-08-22T23:00:00'))
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.filename).toBe('noScreen.png')
+      expect(result.image_url).toBe('http://api/screens/noScreen.png')
+    })
+
+    it('freezes the existing active screen image when the sleep screen is disabled', async () => {
+      const generatedAt = new Date('2026-08-20T00:00:00Z')
+      const activeScreen = { id: 'screen1', device: sleepingDevice, isActive: true, filename: 'file.png', generatedAt }
+      deviceRepo.findOneBy.mockResolvedValue(sleepingDevice)
+      screenRepo.findOneBy.mockResolvedValue(activeScreen)
+
+      vi.setSystemTime(new Date('2026-08-22T23:00:00'))
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.filename).toBe(`file.png_${generatedAt.toISOString()}`)
+      expect(result.image_url).toBe('http://api/screens/devices/1/screen1.png')
+    })
+
+    it('skips sleep mode entirely for a mirrored device', async () => {
+      const device = { ...sleepingDevice, mirrorEnabled: true, mirrorMac: 'different-mac', mirrorApikey: 'mirror-token' }
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      mockFetch.mockResolvedValueOnce({ json: () => Promise.resolve({ filename: 'mirror.png', image_url: 'http://example.com/image.jpg', refresh_rate: 30 }) })
+
+      vi.setSystemTime(new Date('2026-08-22T23:00:00'))
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.filename).toBe('mirror.png')
+    })
+
+    describe('getCurrentImageWithoutProgressing', () => {
+      it('mirrors the sleep-screen resolution used by the poll handler', async () => {
+        const device = { ...sleepingDevice, sleepScreenEnabled: true }
+        deviceRepo.findOneBy.mockResolvedValue(device)
+
+        vi.setSystemTime(new Date('2026-08-22T23:00:00'))
+        const result = await service.getCurrentImageWithoutProgressing(headers)
+
+        expect(result.filename).toBe('sleep.png')
+        expect(result.image_url).toBe('http://api/screens/sleep.png')
+        expect(result.refresh_rate).toBe(7 * 3600)
+      })
+
+      it('keeps showing the active screen when the sleep screen is disabled', async () => {
+        const activeScreen = { id: 'screen1', filename: 'file.png', generatedAt: new Date(), isActive: true }
+        deviceRepo.findOneBy.mockResolvedValue(sleepingDevice)
+        screenRepo.findOneBy.mockResolvedValue(activeScreen)
+
+        vi.setSystemTime(new Date('2026-08-22T23:00:00'))
+        const result = await service.getCurrentImageWithoutProgressing(headers)
+
+        expect(result.image_url).toBe('http://api/screens/devices/1/screen1.png')
+        expect(result.refresh_rate).toBe(7 * 3600)
+      })
+    })
+  })
 })

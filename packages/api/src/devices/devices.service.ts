@@ -43,6 +43,7 @@ export class DevicesService {
       return null
     const { deviceModelName, paletteId, targetFirmwareId, ...attributes } = changes
     Object.assign(dbDevice, attributes)
+    this.assertSleepWindowConfigured(dbDevice)
     const before = { model: dbDevice.deviceModel?.name, palette: dbDevice.palette?.id }
     await this.applyModelChanges(dbDevice, deviceModelName, paletteId)
     await this.applyFirmwareChanges(dbDevice, targetFirmwareId)
@@ -101,5 +102,16 @@ export class DevicesService {
     if (firmware.compatibleModels.length > 0 && !firmware.compatibleModels.includes(device.deviceModel?.name ?? ''))
       throw new BadRequestException(`Firmware ${targetFirmwareId} is not compatible with device model ${device.deviceModel?.name ?? 'unknown'}`)
     device.targetFirmware = firmware
+  }
+
+  /**
+   * UpdateDeviceDto's own cross-field check only sees a single request's
+   * payload, so a PATCH that clears just `sleepStartTime`/`sleepEndTime`
+   * (with `sleepModeEnabled` already `true` from an earlier request) would
+   * slip past it. Re-checking the merged entity here catches that case too.
+   */
+  private assertSleepWindowConfigured(device: Device): void {
+    if (device.sleepModeEnabled && (device.sleepStartTime == null || device.sleepEndTime == null))
+      throw new BadRequestException('sleepModeEnabled requires both sleepStartTime and sleepEndTime to be set')
   }
 }

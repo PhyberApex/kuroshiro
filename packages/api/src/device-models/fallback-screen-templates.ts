@@ -11,6 +11,7 @@ const CAPTIONS: Record<FallbackScreenKind, string> = {
   noScreen: 'Empty screen',
   error: 'Error',
   welcome: 'Setup in progress',
+  sleep: 'Sleeping',
 }
 
 // Traced from the legacy public/screens/*.png artwork with potrace so the

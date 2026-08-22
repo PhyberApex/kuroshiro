@@ -102,6 +102,27 @@ describe('devicesService', () => {
     expect(result).toBeNull()
   })
 
+  describe('update with sleep mode', () => {
+    it('rejects a PATCH that clears the window while sleep mode is already enabled', async () => {
+      repo.findOneBy.mockResolvedValue({ ...baseDevice, sleepModeEnabled: true, sleepStartTime: 79200, sleepEndTime: 21600 })
+      await expect(service.update('1', { sleepStartTime: null } as any)).rejects.toThrow(BadRequestException)
+      expect(repo.save).not.toHaveBeenCalled()
+    })
+
+    it('allows disabling sleep mode without sending the window', async () => {
+      const device = { ...baseDevice, sleepModeEnabled: true, sleepStartTime: 79200, sleepEndTime: 21600 }
+      repo.findOneBy.mockResolvedValue(device)
+      repo.save.mockResolvedValue({ ...device, sleepModeEnabled: false })
+      await expect(service.update('1', { sleepModeEnabled: false } as any)).resolves.toBeTruthy()
+    })
+
+    it('allows enabling sleep mode together with a full window in the same request', async () => {
+      repo.findOneBy.mockResolvedValue({ ...baseDevice, sleepModeEnabled: false, sleepStartTime: null, sleepEndTime: null })
+      repo.save.mockResolvedValue({ ...baseDevice, sleepModeEnabled: true, sleepStartTime: 79200, sleepEndTime: 21600 })
+      await expect(service.update('1', { sleepModeEnabled: true, sleepStartTime: 79200, sleepEndTime: 21600 } as any)).resolves.toBeTruthy()
+    })
+  })
+
   describe('update with device model and palette', () => {
     beforeEach(() => {
       repo.save.mockImplementation(async (device: Device) => device)
