@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Device } from '../devices/devices.entity'
 import { Screen } from '../screens/screens.entity'
+import { getErrorMessage } from '../utils/getErrorMessage'
 import { resolveAppPath } from '../utils/pathHelper'
 
 export interface OrphanedScreenFile {
@@ -243,7 +244,8 @@ export class MaintenanceService {
         result.bytesFreed += stat.size
       }
       catch (err) {
-        result.errors.push(`Failed to delete ${filePath}: ${err.message}`)
+        const message = getErrorMessage(err)
+        result.errors.push(`Failed to delete ${filePath}: ${message}`)
       }
     }
 
@@ -263,7 +265,8 @@ export class MaintenanceService {
         result.bytesFreed += stat.size
       }
       catch (err) {
-        result.errors.push(`Failed to delete ${filePath}: ${err.message}`)
+        const message = getErrorMessage(err)
+        result.errors.push(`Failed to delete ${filePath}: ${message}`)
       }
     }
 
@@ -283,7 +286,8 @@ export class MaintenanceService {
         result.bytesFreed += size
       }
       catch (err) {
-        result.errors.push(`Failed to delete ${dirPath}: ${err.message}`)
+        const message = getErrorMessage(err)
+        result.errors.push(`Failed to delete ${dirPath}: ${message}`)
       }
     }
 
@@ -296,7 +300,8 @@ export class MaintenanceService {
         result.screensDeleted++
       }
       catch (err) {
-        result.errors.push(`Failed to delete screen ${screenId}: ${err.message}`)
+        const message = getErrorMessage(err)
+        result.errors.push(`Failed to delete screen ${screenId}: ${message}`)
       }
     }
 

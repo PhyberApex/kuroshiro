@@ -30,6 +30,7 @@ describe('pluginsController', () => {
     mockImporter = {
       importFromFile: vi.fn(),
       importFromGithubUrl: vi.fn(),
+      importFromRecipe: vi.fn(),
     } as any
 
     mockExporter = {
@@ -82,7 +83,7 @@ describe('pluginsController', () => {
   })
 
   it('create creates a new plugin', async () => {
-    const createDto = { name: 'Weather Plugin', deviceId: 'device-1' }
+    const createDto = { name: 'Weather Plugin', deviceId: 'device-1', kind: 'Poll' as const }
     ;(mockService.create as any).mockResolvedValue(basePlugin)
 
     const result = await controller.create(createDto)
@@ -220,6 +221,52 @@ describe('pluginsController', () => {
 
   it('importFromGithub throws error if no URL provided', async () => {
     await expect(controller.importFromGithub({ githubUrl: '' })).rejects.toThrow('GitHub URL is required')
+  })
+
+  it('importFromRecipe imports from a Recipe id without device assignment', async () => {
+    const body = { recipeId: '150460' }
+    const parsedPlugin = {
+      name: 'Daily Weather',
+      dataSources: [{ name: 'source', url: 'https://api.com', method: 'GET', headers: {}, body: {} }],
+      sourceRecipeId: '150460',
+    }
+    const createdPlugin = { id: 'plugin-3', name: 'Daily Weather' }
+    ;(mockImporter.importFromRecipe as any).mockResolvedValue(parsedPlugin)
+    ;(mockService.create as any).mockResolvedValue(createdPlugin)
+
+    const result = await controller.importFromRecipe(body)
+
+    expect(mockImporter.importFromRecipe).toHaveBeenCalledWith(body.recipeId)
+    expect(mockService.create).toHaveBeenCalled()
+    expect(mockService.assignToDevice).not.toHaveBeenCalled()
+    expect(result).toMatchObject(createdPlugin)
+    expect(result._hasTransform).toBe(false)
+  })
+
+  it('importFromRecipe imports from a Recipe id with device assignment', async () => {
+    const body = { recipeId: '150460', deviceId: 'device-1' }
+    const parsedPlugin = {
+      name: 'Daily Weather',
+      dataSources: [{ name: 'source', url: 'https://api.com', method: 'GET', headers: {}, body: {}, transformJs: 'module.exports = (d) => d' }],
+      sourceRecipeId: '150460',
+    }
+    const createdPlugin = { id: 'plugin-3', name: 'Daily Weather' }
+    ;(mockImporter.importFromRecipe as any).mockResolvedValue(parsedPlugin)
+    ;(mockService.create as any).mockResolvedValue(createdPlugin)
+    ;(mockService.assignToDevice as any).mockResolvedValue({})
+
+    const result = await controller.importFromRecipe(body)
+
+    expect(mockService.assignToDevice).toHaveBeenCalledWith('plugin-3', {
+      deviceId: 'device-1',
+      isActive: true,
+      order: 0,
+    })
+    expect(result._hasTransform).toBe(true)
+  })
+
+  it('importFromRecipe throws error if no Recipe id/URL provided', async () => {
+    await expect(controller.importFromRecipe({ recipeId: '' })).rejects.toThrow('Recipe id or URL is required')
   })
 
   it('exportPlugin exports plugin as ZIP', async () => {

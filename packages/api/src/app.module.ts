@@ -9,6 +9,7 @@ import config from './config/config'
 import { DeviceModelsModule } from './device-models/device-models.module'
 import { DeviceModel } from './device-models/entities/device-model.entity'
 import { Palette } from './device-models/entities/palette.entity'
+import { DeviceSensor } from './device-sensors/entities/device-sensor.entity'
 import { Device } from './devices/devices.entity'
 import { DevicesModule } from './devices/devices.module'
 import { Firmware } from './firmware/entities/firmware.entity'
@@ -51,7 +52,7 @@ const conf = config()
       username: conf.database.user,
       password: conf.database.password,
       database: conf.database.database,
-      entities: [Device, DeviceModel, Palette, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, PluginVariable, MashupConfiguration, MashupSlot, Schedule, Firmware],
+      entities: [Device, DeviceModel, Palette, DeviceSensor, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, PluginVariable, MashupConfiguration, MashupSlot, Schedule, Firmware],
       migrations: (() => {
         const dir = path.join(process.cwd(), 'dist', 'src', 'migrations')
         if (!fs.existsSync(dir))

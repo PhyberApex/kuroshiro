@@ -3,6 +3,7 @@ import type { PluginDataFetcherService } from '../services/plugin-data-fetcher.s
 import type { PluginRenderCacheService } from '../services/plugin-render-cache.service'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PluginSchedulerService } from '../services/plugin-scheduler.service'
+import { PluginTemplateContextService } from '../services/plugin-template-context.service'
 
 let capturedCallback: (() => Promise<void>) | undefined
 
@@ -34,7 +35,7 @@ describe('pluginSchedulerService', () => {
       renderAndCache: vi.fn(),
     } as any
 
-    service = new PluginSchedulerService(mockDataFetcher, mockRenderCache)
+    service = new PluginSchedulerService(mockDataFetcher, mockRenderCache, new PluginTemplateContextService())
   })
 
   it('schedules a plugin with refresh interval', () => {
@@ -80,10 +81,10 @@ describe('pluginSchedulerService', () => {
   })
 
   it('converts refresh interval to cron expression', () => {
-    expect(service.getCronExpression(1)).toBe('*/1 * * * *')
-    expect(service.getCronExpression(15)).toBe('*/15 * * * *')
-    expect(service.getCronExpression(30)).toBe('*/30 * * * *')
-    expect(service.getCronExpression(60)).toBe('0 * * * *')
+    expect((service as any).getCronExpression(1)).toBe('*/1 * * * *')
+    expect((service as any).getCronExpression(15)).toBe('*/15 * * * *')
+    expect((service as any).getCronExpression(30)).toBe('*/30 * * * *')
+    expect((service as any).getCronExpression(60)).toBe('0 * * * *')
   })
 
   it('schedules multiple plugins independently', () => {

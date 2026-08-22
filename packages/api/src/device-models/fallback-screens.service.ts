@@ -2,6 +2,7 @@ import type { DeviceRenderTarget } from './device-models.service'
 import * as fs from 'node:fs'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { getErrorMessage } from '../utils/getErrorMessage'
 import { resolveAppPath } from '../utils/pathHelper'
 import { FALLBACK_SCREEN_TEMPLATE_VERSION, fallbackScreenBody } from './fallback-screen-templates'
 import { renderHtmlToPng } from './render-html-to-png'
@@ -32,7 +33,8 @@ export class FallbackScreensService {
       return `${this.apiUrl()}/${relativePath.join('/')}`
     }
     catch (err) {
-      this.logger.error(`Could not generate ${kind} screen for ${target.model.name}/${target.palette.id}, serving the static image: ${err.message}`)
+      const message = getErrorMessage(err)
+      this.logger.error(`Could not generate ${kind} screen for ${target.model.name}/${target.palette.id}, serving the static image: ${message}`)
       return `${this.apiUrl()}/screens/${kind}.png`
     }
   }
@@ -48,6 +50,6 @@ export class FallbackScreensService {
   }
 
   private apiUrl(): string {
-    return this.configService.get<string>('api_url')
+    return this.configService.get<string>('api_url', 'http://localhost:5173')
   }
 }

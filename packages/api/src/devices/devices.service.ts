@@ -37,7 +37,7 @@ export class DevicesService {
     return this.deviceRepository.save(newDevice)
   }
 
-  async update(id: string, changes: UpdateDeviceDto): Promise<Device> {
+  async update(id: string, changes: UpdateDeviceDto): Promise<Device | null> {
     const dbDevice = await this.deviceRepository.findOneBy({ id })
     if (!dbDevice)
       return null

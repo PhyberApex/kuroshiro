@@ -7,6 +7,7 @@ import { EntityManager, Repository } from 'typeorm'
 import { DeviceModelsService } from '../device-models/device-models.service'
 import { Device } from '../devices/devices.entity'
 import { fileExists } from '../utils/fileExists'
+import { getErrorMessage } from '../utils/getErrorMessage'
 import { convertToPng, downloadImage } from '../utils/imageUtils'
 import { resolveAppPath } from '../utils/pathHelper'
 import { assertPublicUrl } from '../utils/ssrfGuard'
@@ -69,7 +70,8 @@ export class ScreensService {
         this.logger.log('Download and conversion successful')
       }
       catch (err) {
-        this.logger.error(`Failed to process image: ${err.message}. Removing screen again.`)
+        const message = getErrorMessage(err)
+        this.logger.error(`Failed to process image: ${message}. Removing screen again.`)
         await this.screensRepository.remove(saved)
         throw new InternalServerErrorException('Error processing image')
       }
@@ -200,7 +202,8 @@ export class ScreensService {
       this.logger.log('Download and conversion successful')
     }
     catch (err) {
-      this.logger.error(`Failed to process image: ${err.message}. Removing screen again.`)
+      const message = getErrorMessage(err)
+      this.logger.error(`Failed to process image: ${message}. Removing screen again.`)
       throw new InternalServerErrorException('Error processing image')
     }
   }
@@ -230,7 +233,8 @@ export class ScreensService {
         converted++
       }
       catch (err) {
-        this.logger.error(`Failed to reconvert screen ${screen.id}: ${err.message}`)
+        const message = getErrorMessage(err)
+        this.logger.error(`Failed to reconvert screen ${screen.id}: ${message}`)
         await fs.promises.unlink(tempPath).catch(() => {})
       }
     }
@@ -252,10 +256,11 @@ export class ScreensService {
       this.logger.log(`Deleted file: ${filePath}`)
     }
     catch (err) {
-      if (err.code === 'ENOENT')
+      const errno = err as NodeJS.ErrnoException
+      if (errno.code === 'ENOENT')
         this.logger.warn(`File not found for deletion: ${filePath}`)
       else
-        this.logger.error(`Failed to delete file: ${filePath} - ${err.message}`)
+        this.logger.error(`Failed to delete file: ${filePath} - ${errno.message}`)
     }
   }
 }

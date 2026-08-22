@@ -41,7 +41,7 @@ describe('logsService', () => {
 
   it('addLogToDevice is not saving duplicate log entries', async () => {
     const dto: CreateLogDto = { log: { logs_array: [{ log_id: 1 }, { log_id: 2 }] } }
-    const device = { id: 'dev', screens: [], width: 100, height: 100, logs: [{ logId: 1 }, { logId: 2 }] } as Device
+    const device = { id: 'dev', screens: [], width: 100, height: 100, logs: [{ logId: 1 }, { logId: 2 }] } as unknown as Device
     devicesRepo.findOne.mockResolvedValue(device)
     await service.addLogToDevice(deviceMac, dto)
     expect(logsRepo.save).not.toHaveBeenCalled()
@@ -49,7 +49,7 @@ describe('logsService', () => {
 
   it('addLogToDevice saves new log entries', async () => {
     const dto: CreateLogDto = { log: { logs_array: [{ log_id: 1 }, { log_id: 2 }, { log_id: 3 }] } }
-    const device = { id: 'dev', screens: [], width: 100, height: 100, logs: [{ logId: 1 }, { logId: 2 }] } as Device
+    const device = { id: 'dev', screens: [], width: 100, height: 100, logs: [{ logId: 1 }, { logId: 2 }] } as unknown as Device
     devicesRepo.findOne.mockResolvedValue(device)
     await service.addLogToDevice(deviceMac, dto)
     expect(logsRepo.save).toHaveBeenCalledOnce()

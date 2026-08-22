@@ -56,6 +56,14 @@ interface TerminusSettings {
   polling_body?: string
 }
 
+// A TRMNL Recipe archive's flat settings.yml also carries these, alongside
+// the TerminusSettings fields above (issue #796 / ADR-0010)
+interface RecipeSettings extends TerminusSettings {
+  description?: string
+  oauth_enabled?: boolean
+  strategy?: string
+}
+
 interface ParsedDataSource {
   name: string
   method: string
@@ -65,7 +73,7 @@ interface ParsedDataSource {
   transformJs?: string | null
 }
 
-interface ParsedPlugin {
+export interface ParsedPlugin {
   name: string
   description?: string
   kind: PluginKind
@@ -84,6 +92,7 @@ interface ParsedPlugin {
     required: boolean
     order: number
   }>
+  sourceRecipeId?: string
 }
 
 @Injectable()
@@ -164,6 +173,10 @@ export class PluginImporterService {
 
   private async importFromZip(zipPath: string, fallbackName: string): Promise<ParsedPlugin> {
     const zip = new AdmZip(zipPath)
+    return this.parseZip(zip, fallbackName)
+  }
+
+  private parseZip(zip: AdmZip, fallbackName: string): ParsedPlugin {
     const zipEntries = zip.getEntries()
 
     this.logger.debug(`ZIP contains ${zipEntries.length} entries:`)
@@ -250,7 +263,95 @@ export class PluginImporterService {
       }
     })
 
-    return this.buildParsedPlugin(manifest, settings, templates, fallbackName, transformJs)
+    return this.buildParsedPlugin(manifest, settings, templates, fallbackName, transformJs ?? undefined)
+  }
+
+  parseRecipeId(recipeIdOrUrl: string): string {
+    const trimmed = recipeIdOrUrl.trim()
+
+    if (/^\d+$/.test(trimmed)) {
+      return trimmed
+    }
+
+    const match = trimmed.match(/recipes\/(\d+)/)
+    if (match) {
+      return match[1]
+    }
+
+    throw new Error(`Invalid Recipe id or URL: ${recipeIdOrUrl}`)
+  }
+
+  async importFromRecipe(recipeIdOrUrl: string): Promise<ParsedPlugin> {
+    const recipeId = this.parseRecipeId(recipeIdOrUrl)
+    this.logger.log(`Importing plugin from TRMNL Recipe: ${recipeId}`)
+
+    const archiveUrl = `https://trmnl.com/api/plugin_settings/${recipeId}/archive`
+    const response = await fetch(archiveUrl)
+
+    if (!response.ok) {
+      throw new Error(`Failed to download Recipe archive: ${response.statusText}`)
+    }
+
+    const arrayBuffer = await response.arrayBuffer()
+    return this.importFromRecipeArchive(Buffer.from(arrayBuffer), recipeId)
+  }
+
+  async importFromRecipeArchive(archiveBuffer: Buffer, recipeId: string): Promise<ParsedPlugin> {
+    const archiveZip = new AdmZip(archiveBuffer)
+    const entries = archiveZip.getEntries()
+
+    const settingsEntry = entries.find(entry => entry.entryName === 'settings.yml')
+    if (!settingsEntry) {
+      throw new Error('settings.yml not found in Recipe archive')
+    }
+
+    const settingsContent = settingsEntry.getData().toString('utf8')
+    const recipeSettings = yaml.load(settingsContent) as RecipeSettings
+
+    if (recipeSettings.oauth_enabled) {
+      throw new Error('OAuth recipes aren\'t supported yet')
+    }
+
+    if (recipeSettings.strategy === 'static') {
+      throw new Error('Recipes with a "static" strategy are not supported yet')
+    }
+
+    if (recipeSettings.strategy !== 'polling') {
+      throw new Error(`Recipe strategy "${recipeSettings.strategy ?? 'none'}" is not supported; only "polling" recipes can be imported`)
+    }
+
+    const reshapedZip = this.reshapeRecipeArchive(entries, settingsContent, recipeSettings)
+    const parsed = this.parseZip(reshapedZip, `recipe-${recipeId}`)
+
+    return {
+      ...parsed,
+      fields: parsed.fields.map(field => field.fieldType === 'author_bio' ? { ...field, required: false } : field),
+      sourceRecipeId: recipeId,
+    }
+  }
+
+  // A real Recipe archive is flat: settings.yml + *.liquid at the zip root,
+  // no .trmnlp.yml manifest, no src/ prefix (ADR-0010). Reshape it into the
+  // shape parseZip already expects, rather than duplicating its field mapping.
+  private reshapeRecipeArchive(entries: AdmZip.IZipEntry[], settingsContent: string, recipeSettings: RecipeSettings): AdmZip {
+    const manifest: TerminusManifest = {
+      name: recipeSettings.name || '',
+      description: recipeSettings.description,
+      custom_fields: Array.isArray(recipeSettings.custom_fields) ? recipeSettings.custom_fields : undefined,
+    }
+
+    const reshaped = new AdmZip()
+    reshaped.addFile('.trmnlp.yml', Buffer.from(yaml.dump(manifest), 'utf8'))
+    reshaped.addFile('src/settings.yml', Buffer.from(settingsContent, 'utf8'))
+
+    for (const entry of entries) {
+      if (entry.isDirectory || entry.entryName === 'settings.yml') {
+        continue
+      }
+      reshaped.addFile(`src/${entry.entryName}`, entry.getData())
+    }
+
+    return reshaped
   }
 
   private async importFromYaml(yamlPath: string, fallbackName: string): Promise<ParsedPlugin> {
@@ -303,7 +404,7 @@ export class PluginImporterService {
       }
     }
 
-    return this.buildParsedPlugin(manifest, settings, templates, fallbackName, transformJs)
+    return this.buildParsedPlugin(manifest, settings, templates, fallbackName, transformJs ?? undefined)
   }
 
   private buildParsedPlugin(

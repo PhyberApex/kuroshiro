@@ -80,7 +80,7 @@ describe('devicesService', () => {
     const device: Partial<Device> = { mac: '00:11:22:33:44:55' }
     repo.create.mockReturnValue(baseDevice)
     repo.save.mockResolvedValue(baseDevice)
-    const result = await service.create(device)
+    const result = await service.create(device as any)
     expect(repo.create).toHaveBeenCalled()
     expect(repo.save).toHaveBeenCalledWith(baseDevice)
     expect(result).toBe(baseDevice)
@@ -132,7 +132,7 @@ describe('devicesService', () => {
       repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: OG_PLUS, palette: GRAY_4 })
       deviceModels.findByName.mockResolvedValue(V2)
       deviceModels.defaultPaletteFor.mockResolvedValue(GRAY_16)
-      const result = await service.update('1', { deviceModelName: 'v2' } as any)
+      const result = (await service.update('1', { deviceModelName: 'v2' } as any))!
       expect(deviceModels.findByName).toHaveBeenCalledWith('v2')
       expect(result.deviceModel).toBe(V2)
       expect(result.palette).toBe(GRAY_16)
@@ -143,7 +143,7 @@ describe('devicesService', () => {
       repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: OG_PLUS, palette: GRAY_4 })
       deviceModels.findByName.mockResolvedValue(V2)
       deviceModels.findPalette.mockResolvedValue(BW)
-      const result = await service.update('1', { deviceModelName: 'v2', paletteId: 'bw' } as any)
+      const result = (await service.update('1', { deviceModelName: 'v2', paletteId: 'bw' } as any))!
       expect(result.deviceModel).toBe(V2)
       expect(result.palette).toBe(BW)
       expect(deviceModels.defaultPaletteFor).not.toHaveBeenCalled()
@@ -152,7 +152,7 @@ describe('devicesService', () => {
     it('changes only the palette when the model stays the same', async () => {
       repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: OG_PLUS, palette: GRAY_4 })
       deviceModels.findPalette.mockResolvedValue(BW)
-      const result = await service.update('1', { deviceModelName: 'og_plus', paletteId: 'bw' } as any)
+      const result = (await service.update('1', { deviceModelName: 'og_plus', paletteId: 'bw' } as any))!
       expect(deviceModels.findByName).not.toHaveBeenCalled()
       expect(result.deviceModel).toBe(OG_PLUS)
       expect(result.palette).toBe(BW)
@@ -190,7 +190,7 @@ describe('devicesService', () => {
     it('fills in the default palette for a device that has a model but no palette', async () => {
       repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: OG_PLUS, palette: null })
       deviceModels.defaultPaletteFor.mockResolvedValue(GRAY_4)
-      const result = await service.update('1', { name: 'renamed' } as any)
+      const result = (await service.update('1', { name: 'renamed' } as any))!
       expect(result.name).toBe('renamed')
       expect(result.palette).toBe(GRAY_4)
     })
@@ -199,7 +199,7 @@ describe('devicesService', () => {
       repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: OG_PLUS, palette: GRAY_4 })
       deviceModels.findPalette.mockResolvedValue(CUSTOM_RED_3BWR)
       deviceModels.compatibleFamiliesFor.mockResolvedValue(new Set(['screen--color-3bwr']))
-      const result = await service.update('1', { paletteId: CUSTOM_RED_3BWR.id } as any)
+      const result = (await service.update('1', { paletteId: CUSTOM_RED_3BWR.id } as any))!
       expect(deviceModels.compatibleFamiliesFor).toHaveBeenCalledWith(OG_PLUS)
       expect(result.palette).toBe(CUSTOM_RED_3BWR)
     })
@@ -224,7 +224,7 @@ describe('devicesService', () => {
     it('assigns a firmware compatible with the device model', async () => {
       repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: OG_PLUS })
       firmwareService.findById.mockResolvedValue(compatibleFirmware)
-      const result = await service.update('1', { targetFirmwareId: 'fw-1' } as any)
+      const result = (await service.update('1', { targetFirmwareId: 'fw-1' } as any))!
       expect(firmwareService.findById).toHaveBeenCalledWith('fw-1')
       expect(result.targetFirmware).toBe(compatibleFirmware)
     })
@@ -232,7 +232,7 @@ describe('devicesService', () => {
     it('assigns a universal firmware (empty compatibleModels) regardless of device model', async () => {
       repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: null })
       firmwareService.findById.mockResolvedValue(universalFirmware)
-      const result = await service.update('1', { targetFirmwareId: 'fw-2' } as any)
+      const result = (await service.update('1', { targetFirmwareId: 'fw-2' } as any))!
       expect(result.targetFirmware).toBe(universalFirmware)
     })
 

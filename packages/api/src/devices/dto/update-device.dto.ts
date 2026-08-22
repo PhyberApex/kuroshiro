@@ -27,7 +27,7 @@ function RequiresSleepWindow(validationOptions?: ValidationOptions) {
 export class UpdateDeviceDto {
   @IsOptional()
   @IsString()
-  name: string
+  name?: string
 
   @IsOptional()
   @IsString()
@@ -84,7 +84,7 @@ export class UpdateDeviceDto {
   @IsOptional()
   @IsString()
   @IsIn(['none', 'identify', 'sleep', 'add_wifi', 'restart_playlist', 'rewind', 'send_to_me'])
-  specialFunction: string
+  specialFunction?: string
 
   @IsOptional()
   @IsBoolean()
@@ -109,11 +109,11 @@ export class UpdateDeviceDto {
 
   @IsOptional()
   @IsBoolean()
-  resetDevice: boolean
+  resetDevice?: boolean
 
   @IsOptional()
   @IsBoolean()
-  updateFirmware: boolean
+  updateFirmware?: boolean
 
   @IsOptional()
   @IsString()

@@ -14,5 +14,9 @@
     "sourceMap": true,
     "skipLibCheck": true
   },
-  "exclude": ["node_modules", "../../node_modules", "dist"]
+  // screen-shell.spec.ts imports a fixture from the repo-root test/fixtures/
+  // directory (shared with packages/ui) that lies outside this package's
+  // rootDir. With `outDir` set, tsc requires a single rootDir containing every
+  // compiled file, so it's excluded from tsc here; vitest still runs it fine.
+  "exclude": ["node_modules", "../../node_modules", "dist", "src/device-models/__test__/screen-shell.spec.ts"]
 }

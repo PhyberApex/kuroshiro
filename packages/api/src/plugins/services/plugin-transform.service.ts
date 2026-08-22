@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { VM } from 'vm2'
+import { getErrorMessage } from '../../utils/getErrorMessage'
 
 @Injectable()
 export class PluginTransformService {
@@ -46,7 +47,8 @@ export class PluginTransformService {
       return result
     }
     catch (error) {
-      this.logger.error(`Transform execution failed: ${error.message}`)
+      const message = getErrorMessage(error)
+      this.logger.error(`Transform execution failed: ${message}`)
       this.logger.warn('Returning raw data without transformation')
       return rawData
     }

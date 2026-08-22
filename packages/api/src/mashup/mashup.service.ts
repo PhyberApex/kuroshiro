@@ -197,7 +197,10 @@ export class MashupService {
     }
 
     this.logger.log(`Mashup updated: ${screenId}`)
-    return this.screenRepository.findOne({ where: { id: screenId } })
+    const updated = await this.screenRepository.findOne({ where: { id: screenId } })
+    if (!updated)
+      throw new NotFoundException('Mashup screen not found')
+    return updated
   }
 
   async delete(screenId: string): Promise<void> {

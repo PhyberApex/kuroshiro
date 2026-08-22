@@ -3,7 +3,6 @@ import type { DeviceRenderTarget } from './device-models.service'
 import buffer from 'node:buffer'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import puppeteer from 'puppeteer'
 import { convertToPng } from '../utils/imageUtils'
 
 /**
@@ -11,6 +10,7 @@ import { convertToPng } from '../utils/imageUtils'
  * pixel size and converts the screenshot to the target's PNG at `outputPath`.
  */
 export async function renderHtmlToPng(html: string, target: DeviceRenderTarget, outputPath: string, logger: Logger): Promise<void> {
+  const { default: puppeteer } = await import('puppeteer')
   const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-web-security'] })
   const tmpPath = `${outputPath}.tmp-source`
   try {

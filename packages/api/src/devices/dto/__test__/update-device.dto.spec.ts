@@ -21,14 +21,10 @@ describe('update-device dto', () => {
     dto.batteryVoltage = '3.7V'
     dto.fwVersion = '1.0.0'
     dto.rssi = '-60'
-    dto.width = 800
-    dto.height = 480
 
     expect(dto.batteryVoltage).toBe('3.7V')
     expect(dto.fwVersion).toBe('1.0.0')
     expect(dto.rssi).toBe('-60')
-    expect(dto.width).toBe(800)
-    expect(dto.height).toBe(480)
   })
 
   it('includes mirror configuration fields', () => {

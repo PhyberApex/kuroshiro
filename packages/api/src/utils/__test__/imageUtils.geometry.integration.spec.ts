@@ -22,7 +22,7 @@ const snapshotGeometries = Array.from(
   new Map(
     TRMNL_MODELS_SNAPSHOT.map(m => [
       `${m.width}x${m.height}@${m.rotation}+${m.offset_x}+${m.offset_y}`,
-      { name: m.name, width: m.width, height: m.height, rotation: m.rotation, offsetX: m.offset_x, offsetY: m.offset_y },
+      { name: m.name, width: m.width, height: m.height, rotation: m.rotation, offsetX: m.offset_x, offsetY: m.offset_y } as any,
     ]),
   ).values(),
 )

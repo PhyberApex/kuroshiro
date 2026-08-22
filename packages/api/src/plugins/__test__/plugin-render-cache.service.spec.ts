@@ -53,7 +53,7 @@ describe('pluginRenderCacheService', () => {
       { id: 'slot-1', mashupConfiguration: { screen: { id: 'screen-1' } } },
       { id: 'slot-2', mashupConfiguration: { screen: { id: 'screen-2' } } },
     ])
-    service.mashupSlotRepository = mockMashupSlotRepo
+    ;(service as any).mashupSlotRepository = mockMashupSlotRepo
 
     await service.invalidateMashupCaches('plugin-1')
 
@@ -72,7 +72,7 @@ describe('pluginRenderCacheService', () => {
   })
 
   it('does not fail if mashupSlotRepository not available', async () => {
-    service.mashupSlotRepository = null
+    ;(service as any).mashupSlotRepository = null
 
     await expect(service.invalidateMashupCaches('plugin-1')).resolves.toBeUndefined()
     expect(mockScreenRepo.update).not.toHaveBeenCalled()

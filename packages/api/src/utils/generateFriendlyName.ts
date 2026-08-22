@@ -9,7 +9,7 @@ export default function () {
   const byteArray = new Uint8Array(hexPairs.map(hex => Number.parseInt(hex, 16)))
 
   // Convert to Base64
-  const base64 = btoa(String.fromCharCode.apply(null, byteArray))
+  const base64 = btoa(String.fromCharCode.apply(null, Array.from(byteArray)))
 
   // Make URL-safe by replacing + with - and / with _
   const urlSafe = base64.replace(/\+/g, '-').replace(/\//g, '_')

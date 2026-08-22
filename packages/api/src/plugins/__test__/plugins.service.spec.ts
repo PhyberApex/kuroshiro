@@ -16,7 +16,8 @@ interface MockRepository {
   save: ReturnType<typeof vi.fn>
   remove: ReturnType<typeof vi.fn>
   update: ReturnType<typeof vi.fn>
-  maximum?: ReturnType<typeof vi.fn>
+  maximum: ReturnType<typeof vi.fn>
+  delete?: ReturnType<typeof vi.fn>
 }
 
 function createMockRepository(): MockRepository {
@@ -136,6 +137,16 @@ describe('pluginsService', () => {
       relations: { dataSources: true, templates: true, fields: true },
     })
     expect(result).toBe(basePlugin)
+  })
+
+  it('create persists the source Recipe id when provided', async () => {
+    const pluginData = { name: 'Daily Weather', sourceRecipeId: '150460' }
+    pluginRepo.save.mockResolvedValue(basePlugin)
+    pluginRepo.findOne.mockResolvedValue(basePlugin)
+
+    await service.create(pluginData as any)
+
+    expect(pluginRepo.save).toHaveBeenCalledWith(expect.objectContaining({ sourceRecipeId: '150460' }))
   })
 
   it('update updates and saves an existing plugin', async () => {
