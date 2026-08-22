@@ -54,7 +54,14 @@ describe('pluginsService', () => {
     templateRepo = createMockRepository()
     fieldRepo = createMockRepository()
 
-    mockDataFetcher = { fetchData: vi.fn() } as any
+    mockDataFetcher = {
+      fetchData: vi.fn(),
+      fetchOrLiteral: vi.fn((source: any, ctx: any) =>
+        source.mode === 'literal'
+          ? Promise.resolve(source.literalValue ?? null)
+          : mockDataFetcher.fetchData(source.method || 'GET', source.url || '', source.headers, source.body, ctx),
+      ),
+    } as any
     mockRenderer = { render: vi.fn() } as any
     mockScheduler = {
       schedulePlugin: vi.fn(),
@@ -305,6 +312,59 @@ describe('pluginsService', () => {
     expect(fieldRepo.create).toHaveBeenCalled()
     expect(fieldRepo.save).toHaveBeenCalled()
     expect(result).toBe(savedPlugin)
+  })
+
+  it('create builds a literal-mode data source with its literalValue and no fetch fields', async () => {
+    const pluginData = {
+      name: 'Static Plugin',
+      dataSources: [
+        { name: 'title', mode: 'literal', literalValue: { text: 'Hello' } },
+      ],
+    }
+
+    const savedPlugin = { ...basePlugin, id: '2' } as Plugin
+    pluginRepo.save.mockResolvedValue(savedPlugin)
+    dataSourceRepo.create.mockReturnValue({})
+    dataSourceRepo.save.mockResolvedValue({})
+    pluginRepo.findOne.mockResolvedValue(savedPlugin)
+
+    await service.create(pluginData as any)
+
+    expect(dataSourceRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+      name: 'title',
+      mode: 'literal',
+      literalValue: { text: 'Hello' },
+    }))
+    expect(dataSourceRepo.create).not.toHaveBeenCalledWith(expect.objectContaining({ url: expect.anything() }))
+  })
+
+  it('create tolerates a literal-mode data source carrying method "GET", the entity column\'s non-nullable default rather than a real fetch field', async () => {
+    const pluginData = {
+      name: 'Round-tripped Static Plugin',
+      dataSources: [
+        { name: 'title', mode: 'literal', literalValue: { text: 'Hello' }, method: 'GET' },
+      ],
+    }
+
+    const savedPlugin = { ...basePlugin, id: '2' } as Plugin
+    pluginRepo.save.mockResolvedValue(savedPlugin)
+    dataSourceRepo.create.mockReturnValue({})
+    dataSourceRepo.save.mockResolvedValue({})
+    pluginRepo.findOne.mockResolvedValue(savedPlugin)
+
+    await expect(service.create(pluginData as any)).resolves.toBe(savedPlugin)
+  })
+
+  it('create rejects a literal-mode data source that also carries a URL', async () => {
+    const pluginData = {
+      name: 'Bad Static Plugin',
+      dataSources: [
+        { name: 'title', mode: 'literal', literalValue: { text: 'Hello' }, url: 'https://api.example.com' },
+      ],
+    }
+
+    await expect(service.create(pluginData as any)).rejects.toThrow('A literal-mode Data Source cannot have a URL')
+    expect(pluginRepo.save).not.toHaveBeenCalled()
   })
 
   it('assignToDevice creates device plugin and screen', async () => {

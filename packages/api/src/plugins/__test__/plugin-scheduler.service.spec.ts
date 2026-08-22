@@ -29,6 +29,11 @@ describe('pluginSchedulerService', () => {
 
     mockDataFetcher = {
       fetchData: vi.fn(),
+      fetchOrLiteral: vi.fn((source: any, ctx: any) =>
+        source.mode === 'literal'
+          ? Promise.resolve(source.literalValue ?? null)
+          : mockDataFetcher.fetchData(source.method, source.url ?? '', source.headers, source.body, ctx),
+      ),
     } as any
 
     mockRenderCache = {
@@ -224,6 +229,86 @@ describe('pluginSchedulerService', () => {
       expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(
         plugin,
         expect.objectContaining({ weather: { temp: 25 }, air_quality: { aqi: 42 } }),
+      )
+    })
+
+    it('schedules a plugin with only literal-mode data sources and renders its stored value without calling the data fetcher', async () => {
+      const plugin = {
+        id: 'plugin-1',
+        name: 'Literal Only',
+        refreshInterval: 15,
+        isActive: true,
+        dataSources: [
+          { name: 'source', mode: 'literal', literalValue: { title: 'Hello' } },
+        ],
+        templates: [{ layout: 'full', liquidMarkup: '{{ source.title }}' }],
+      } as unknown as Plugin
+
+      mockRenderCache.renderAndCache = vi.fn().mockResolvedValue(undefined)
+
+      service.schedulePlugin(plugin)
+      expect(service.hasScheduledJob('plugin-1')).toBe(true)
+
+      await capturedCallback!()
+
+      expect(mockDataFetcher.fetchData).not.toHaveBeenCalled()
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(
+        plugin,
+        expect.objectContaining({ source: { title: 'Hello' } }),
+      )
+    })
+
+    it('renders a mixed plugin with one fetch and one literal source, without fetching the literal one', async () => {
+      const plugin = {
+        id: 'plugin-1',
+        name: 'Mixed',
+        refreshInterval: 15,
+        isActive: true,
+        dataSources: [
+          { name: 'weather', mode: 'fetch', url: 'https://api.example.com/weather', method: 'GET' },
+          { name: 'title', mode: 'literal', literalValue: 'Static Title' },
+        ],
+        templates: [{ layout: 'full', liquidMarkup: '{{ title }} {{ weather.temp }}' }],
+      } as unknown as Plugin
+
+      mockDataFetcher.fetchData = vi.fn().mockResolvedValue({ temp: 25 })
+      mockRenderCache.renderAndCache = vi.fn().mockResolvedValue(undefined)
+
+      service.schedulePlugin(plugin)
+      await capturedCallback!()
+
+      expect(mockDataFetcher.fetchData).toHaveBeenCalledTimes(1)
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(
+        plugin,
+        expect.objectContaining({ weather: { temp: 25 }, title: 'Static Title' }),
+      )
+    })
+
+    it('gives a failing fetch-mode source an error marker while a literal-mode source alongside it still renders normally', async () => {
+      const plugin = {
+        id: 'plugin-1',
+        name: 'Mixed Partial Failure',
+        refreshInterval: 15,
+        isActive: true,
+        dataSources: [
+          { name: 'weather', mode: 'fetch', url: 'https://api.example.com/weather', method: 'GET' },
+          { name: 'title', mode: 'literal', literalValue: 'Static Title' },
+        ],
+        templates: [{ layout: 'full', liquidMarkup: '{{ title }}' }],
+      } as unknown as Plugin
+
+      mockDataFetcher.fetchData = vi.fn().mockRejectedValue(new Error('API timeout'))
+      mockRenderCache.renderAndCache = vi.fn().mockResolvedValue(undefined)
+
+      service.schedulePlugin(plugin)
+      await capturedCallback!()
+
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(
+        plugin,
+        expect.objectContaining({
+          weather: { error: true, message: 'API timeout' },
+          title: 'Static Title',
+        }),
       )
     })
 

@@ -60,10 +60,12 @@ export class MashupRendererService {
     const templateContext = this.pluginTemplateContext.build(plugin, sensors)
 
     // Fetch all of the plugin's data sources in parallel; a source that fails
-    // gets an error marker instead of aborting the whole render (ADR-0005)
+    // gets an error marker instead of aborting the whole render (ADR-0005).
+    // A literal-mode source has no fetch to make — it contributes its stored
+    // value directly, with no call to the data fetcher at all.
     const results = await Promise.allSettled(
       plugin.dataSources.map(async (source) => {
-        let rawData = await this.pluginDataFetcher.fetchData(source.method, source.url, source.headers, source.body, templateContext)
+        let rawData = await this.pluginDataFetcher.fetchOrLiteral(source, templateContext)
         if (source.transformJs) {
           rawData = this.pluginTransformer.transform(source.transformJs, rawData)
         }

@@ -145,12 +145,53 @@ describe('pluginImporterService recipe import', () => {
       await expect(service.importFromRecipeArchive(archive, '1')).rejects.toThrow('OAuth')
     })
 
-    it('rejects a "static" strategy recipe with a clear "not supported yet" error', async () => {
+    it('imports a "static" strategy recipe as a Poll plugin with one literal-mode Data Source named "source"', async () => {
+      const settings = { name: 'Static Recipe', strategy: 'static', static_data: { title: 'Hello', count: 3 } }
+      const archive = buildFlatRecipeArchive(settings)
+
+      const service = new PluginImporterService()
+      const result = await service.importFromRecipeArchive(archive, '1')
+
+      expect(result.kind).toBe('Poll')
+      expect(result.dataSources).toHaveLength(1)
+      expect(result.dataSources[0]).toMatchObject({
+        name: 'source',
+        mode: 'literal',
+        literalValue: { title: 'Hello', count: 3 },
+      })
+      expect(result.dataSources[0].url).toBeUndefined()
+      expect(result.sourceRecipeId).toBe('1')
+    })
+
+    it('imports a "static" strategy recipe with missing static_data as an empty literal value', async () => {
       const settings = { name: 'Static Recipe', strategy: 'static' }
       const archive = buildFlatRecipeArchive(settings)
 
       const service = new PluginImporterService()
-      await expect(service.importFromRecipeArchive(archive, '1')).rejects.toThrow(/static.*not supported/i)
+      const result = await service.importFromRecipeArchive(archive, '1')
+
+      expect(result.dataSources[0].literalValue).toEqual({})
+    })
+
+    it('imports a "static" strategy recipe with a null static_data as an empty literal value', async () => {
+      const settings = { name: 'Static Recipe', strategy: 'static', static_data: null }
+      const archive = buildFlatRecipeArchive(settings)
+
+      const service = new PluginImporterService()
+      const result = await service.importFromRecipeArchive(archive, '1')
+
+      expect(result.dataSources[0].literalValue).toEqual({})
+    })
+
+    it('rejects a "static" strategy recipe that also carries a transform.js', async () => {
+      const settings = { name: 'Static Recipe', strategy: 'static', static_data: { title: 'Hello' } }
+      const archive = buildFlatRecipeArchive(settings, {
+        'full.liquid': '<div>{{ source.title }}</div>',
+        'transform.js': 'module.exports = (data) => data',
+      })
+
+      const service = new PluginImporterService()
+      await expect(service.importFromRecipeArchive(archive, '1')).rejects.toThrow(/transform\.js/i)
     })
 
     it('rejects a recipe with a missing/unrecognized strategy, naming the value', async () => {

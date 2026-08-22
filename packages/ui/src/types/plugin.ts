@@ -26,14 +26,19 @@ export interface DeviceAssignment {
   }
 }
 
+export type DataSourceMode = 'fetch' | 'literal'
+export type DataSourceLiteralValue = Record<string, unknown> | unknown[] | string | number | boolean | null
+
 export interface PluginDataSource {
   id: string
   name: string
+  mode: DataSourceMode
   method: string
-  url: string
+  url?: string
   headers?: Record<string, string>
   body?: Record<string, unknown>
   transformJs?: string
+  literalValue?: DataSourceLiteralValue
   order: number
 }
 
@@ -64,11 +69,13 @@ export interface PluginFieldValue {
 
 export interface CreatePluginDataSourcePayload {
   name: string
+  mode?: DataSourceMode
   method?: string
-  url: string
+  url?: string
   headers?: Record<string, string>
   body?: Record<string, unknown>
   transformJs?: string
+  literalValue?: DataSourceLiteralValue
   order?: number
 }
 

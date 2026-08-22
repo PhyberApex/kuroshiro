@@ -75,6 +75,8 @@ const canProceedStep2 = computed(() => {
   return sources.every((source) => {
     if (!source.name || source.name.trim() === '' || source.name.trim() === 'trmnl')
       return false
+    if (source.mode === 'literal')
+      return source.literalValue !== undefined && source.literalValue !== null
     try {
       const _url = new URL(source.url || '')
       return true
@@ -126,10 +128,12 @@ async function previewPlugin() {
       body: JSON.stringify({
         sources: sources.map(source => ({
           name: source.name,
+          mode: source.mode,
           url: source.url,
           method: source.method,
           headers: source.headers,
           body: source.body,
+          literalValue: source.literalValue,
         })),
         template: pluginData.value.templates[0].liquidMarkup,
       }),
@@ -182,10 +186,12 @@ async function createPlugin() {
       refreshInterval: pluginData.value.refreshInterval,
       dataSources: sources.map((source, index) => ({
         name: source.name,
+        mode: source.mode,
         method: source.method,
         url: source.url,
         headers: source.headers,
         body: source.body,
+        literalValue: source.literalValue,
         order: index,
       })),
       templates: template

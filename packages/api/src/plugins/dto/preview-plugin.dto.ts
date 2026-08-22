@@ -1,16 +1,24 @@
 import type { JsonObject } from '../../utils/json'
+import type { DataSourceLiteralValue, DataSourceMode } from '../entities/plugin-data-source.entity'
 import { Type } from 'class-transformer'
-import { IsArray, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { IsArray, IsIn, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { DATA_SOURCE_MODES } from '../entities/plugin-data-source.entity'
 
 export class PreviewSourceDto {
   @IsString()
   name: string
 
-  @IsString()
-  url: string
+  @IsOptional()
+  @IsIn(DATA_SOURCE_MODES)
+  mode?: DataSourceMode
 
+  @IsOptional()
   @IsString()
-  method: string
+  url?: string
+
+  @IsOptional()
+  @IsString()
+  method?: string
 
   @IsOptional()
   @IsObject()
@@ -23,6 +31,9 @@ export class PreviewSourceDto {
   @IsOptional()
   @IsString()
   transformJs?: string
+
+  @IsOptional()
+  literalValue?: DataSourceLiteralValue
 }
 
 export class PreviewPluginDto {

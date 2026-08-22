@@ -72,6 +72,7 @@ onMounted(async () => {
       plugin.value.dataSources = (plugin.value.dataSources ?? []).map(source => ({
         ...source,
         headersJson: source.headers ? JSON.stringify(source.headers, null, 2) : '',
+        literalValueJson: source.literalValue !== undefined ? JSON.stringify(source.literalValue, null, 2) : '',
       }))
     }
     // Initialize field values from plugin fields
@@ -110,11 +111,13 @@ async function savePlugin() {
       ...plugin.value,
       dataSources: (plugin.value.dataSources || []).map((source, index): CreatePluginDataSourcePayload => ({
         name: source.name ?? '',
+        mode: source.mode,
         method: source.method,
-        url: source.url ?? '',
+        url: source.url,
         headers: source.headers,
         body: source.body,
         transformJs: source.transformJs,
+        literalValue: source.literalValue,
         order: index,
       })),
     }
@@ -142,11 +145,13 @@ async function previewPlugin() {
       body: JSON.stringify({
         sources: sources.map(source => ({
           name: source.name,
+          mode: source.mode,
           url: source.url,
           method: source.method,
           headers: source.headers,
           body: source.body,
           transformJs: source.transformJs,
+          literalValue: source.literalValue,
         })),
         template: plugin.value.templates[0].liquidMarkup,
         fieldValues: fieldValues.value,
