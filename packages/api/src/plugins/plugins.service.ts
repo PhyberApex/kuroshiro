@@ -271,9 +271,17 @@ export class PluginsService implements OnModuleInit {
     if (!plugin)
       return null
 
-    const { dataSources, templates, fields, webhookToken, ...basicFields } = pluginData
+    const { dataSources, templates, fields, webhookToken, ...rawBasicFields } = pluginData
 
-    if ('kind' in basicFields && basicFields.kind !== plugin.kind) {
+    // class-transformer's plainToInstance (the real ValidationPipe path) gives every declared
+    // UpdatePluginDto field an own property equal to `undefined` even when the caller never sent
+    // it, so unset fields must be dropped here before they reach the Object.assign below —
+    // otherwise a partial PATCH would blank out every field the caller omitted.
+    const basicFields = Object.fromEntries(
+      Object.entries(rawBasicFields).filter(([, value]) => value !== undefined),
+    ) as typeof rawBasicFields
+
+    if (basicFields.kind !== undefined && basicFields.kind !== plugin.kind) {
       throw new BadRequestException(`A Plugin's Kind is fixed at creation and cannot be changed`)
     }
 
@@ -287,7 +295,7 @@ export class PluginsService implements OnModuleInit {
       this.assertDataSourceModeFields(dataSources)
     }
 
-    const mergeStrategy = 'mergeStrategy' in basicFields ? basicFields.mergeStrategy : plugin.mergeStrategy
+    const mergeStrategy = basicFields.mergeStrategy !== undefined ? basicFields.mergeStrategy : plugin.mergeStrategy
     const streamLimit = mergeStrategy === 'stream' ? basicFields.streamLimit ?? plugin.streamLimit : basicFields.streamLimit
 
     this.assertKindFields({
