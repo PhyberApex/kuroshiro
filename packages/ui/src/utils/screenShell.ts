@@ -5,8 +5,8 @@ export interface RenderTarget {
   palette: Palette
 }
 
-export const TRMNL_FRAMEWORK_CSS = 'https://usetrmnl.com/css/latest/plugins.css'
-export const TRMNL_FRAMEWORK_JS = 'https://usetrmnl.com/js/latest/plugins.js'
+const TRMNL_FRAMEWORK_CSS = 'https://usetrmnl.com/css/latest/plugins.css'
+const TRMNL_FRAMEWORK_JS = 'https://usetrmnl.com/js/latest/plugins.js'
 
 /**
  * Mirrors the API's `screen-shell.ts` so previews match what the device

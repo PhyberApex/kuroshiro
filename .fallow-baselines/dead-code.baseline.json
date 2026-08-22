@@ -8,20 +8,10 @@
     "completeness": "complete"
   },
   "unused_files": [
-    "packages/api/scripts/migrate.js",
-    "packages/api/scripts/update_device_model_snapshot.mjs",
-    "packages/api/src/devices/displayHeader.ts"
+    "packages/api/scripts/update_device_model_snapshot.mjs"
   ],
-  "unused_exports": [
-    "packages/api/src/device-models/entities/palette.entity.ts:PALETTE_KINDS",
-    "packages/api/src/device-models/screen-shell.ts:TRMNL_FRAMEWORK_CSS",
-    "packages/api/src/device-models/screen-shell.ts:TRMNL_FRAMEWORK_JS",
-    "packages/ui/src/utils/screenShell.ts:TRMNL_FRAMEWORK_CSS",
-    "packages/ui/src/utils/screenShell.ts:TRMNL_FRAMEWORK_JS"
-  ],
-  "unused_types": [
-    "packages/ui/src/stores/device.ts:UpdateDevice"
-  ],
+  "unused_exports": [],
+  "unused_types": [],
   "private_type_leaks": [],
   "unused_dependencies": [
     "packages/api/package.json:fs-extra"
