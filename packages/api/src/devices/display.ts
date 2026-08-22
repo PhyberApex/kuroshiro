@@ -1,7 +1,7 @@
 export class Display {
   action: string
   filename: string
-  firmware_url: string
+  firmware_url: string | null
   image_url: string
   refresh_rate: number
   reset_firmware: boolean

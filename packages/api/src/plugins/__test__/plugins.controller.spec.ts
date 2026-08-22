@@ -82,7 +82,7 @@ describe('pluginsController', () => {
   })
 
   it('create creates a new plugin', async () => {
-    const createDto = { name: 'Weather Plugin', deviceId: 'device-1' }
+    const createDto = { name: 'Weather Plugin', deviceId: 'device-1', kind: 'Poll' as const }
     ;(mockService.create as any).mockResolvedValue(basePlugin)
 
     const result = await controller.create(createDto)

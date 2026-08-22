@@ -13,17 +13,15 @@ describe('plugin-variable entity', () => {
     expect(variable.value).toBe('secret-123')
   })
 
-  it('has relationship to device plugin', () => {
+  it('has relationship to plugin', () => {
     const variable = new PluginVariable()
-    expect(variable.devicePlugin).toBeUndefined()
+    expect(variable.plugin).toBeUndefined()
   })
 
-  it('has timestamps', () => {
+  it('has an isSecret flag', () => {
     const variable = new PluginVariable()
-    variable.createdAt = new Date('2026-01-01')
-    variable.updatedAt = new Date('2026-01-02')
+    variable.isSecret = true
 
-    expect(variable.createdAt).toEqual(new Date('2026-01-01'))
-    expect(variable.updatedAt).toEqual(new Date('2026-01-02'))
+    expect(variable.isSecret).toBe(true)
   })
 })

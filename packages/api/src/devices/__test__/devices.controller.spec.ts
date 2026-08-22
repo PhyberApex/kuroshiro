@@ -59,7 +59,7 @@ describe('devicesController', () => {
   it('update updates a device if found and valid', async () => {
     const id = '1'
     const dbDevice = { id, apikey: 'key' }
-    const dto: UpdateDeviceDto = { id, apikey: 'key', specialFunction: 'identify', resetDevice: false, updateFirmware: false }
+    const dto: UpdateDeviceDto = { specialFunction: 'identify', resetDevice: false, updateFirmware: false }
     service.findById.mockResolvedValue(dbDevice)
     service.update.mockResolvedValue({ ...dbDevice, ...dto })
     await expect(controller.update(id, dto)).resolves.toBeUndefined()
@@ -68,7 +68,7 @@ describe('devicesController', () => {
 
   it('update throws NotFoundException if device not found', async () => {
     service.findById.mockResolvedValue(null)
-    const dto: UpdateDeviceDto = { id: '1', apikey: 'key', specialFunction: 'identify', resetDevice: false, updateFirmware: false }
+    const dto: UpdateDeviceDto = { specialFunction: 'identify', resetDevice: false, updateFirmware: false }
     await expect(controller.update('1', dto)).rejects.toThrow(NotFoundException)
   })
 })

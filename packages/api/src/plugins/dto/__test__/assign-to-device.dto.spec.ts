@@ -13,14 +13,11 @@ describe('assign-plugin-to-device dto', () => {
     expect(dto.order).toBe(1)
   })
 
-  it('includes field values', () => {
+  it('allows optional order', () => {
     const dto = new AssignPluginToDeviceDto()
-    dto.fieldValues = [
-      { fieldId: 'field-1', value: 'test-value' },
-    ]
+    dto.deviceId = 'device-123'
 
-    expect(dto.fieldValues).toHaveLength(1)
-    expect(dto.fieldValues?.[0].fieldId).toBe('field-1')
+    expect(dto.order).toBeUndefined()
   })
 
   it('allows optional isActive', () => {

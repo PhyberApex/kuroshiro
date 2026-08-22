@@ -248,7 +248,10 @@ export class PluginsService implements OnModuleInit {
       relations: { dataSources: true, templates: true, fields: true },
     })
 
-    if (created && created.dataSources && created.dataSources.length > 0 && created.templates && created.templates.length > 0) {
+    if (!created)
+      throw new Error(`Failed to load newly created plugin: ${savedPlugin.id}`)
+
+    if (created.dataSources && created.dataSources.length > 0 && created.templates && created.templates.length > 0) {
       this.scheduler.schedulePlugin(created)
       this.logger.log(`Scheduled new plugin: ${created.name}`)
     }
@@ -447,7 +450,7 @@ export class PluginsService implements OnModuleInit {
     return {
       inMashups: mashupsWithPlugin.map(slot => ({
         screenId: slot.mashupConfiguration.screen.id,
-        screenName: slot.mashupConfiguration.screen.filename,
+        screenName: slot.mashupConfiguration.screen.filename ?? 'Untitled Screen',
       })),
     }
   }

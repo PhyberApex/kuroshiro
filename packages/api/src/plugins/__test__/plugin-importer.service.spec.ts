@@ -232,8 +232,8 @@ describe('pluginImporterService', () => {
       expect(result.refreshInterval).toBe(45)
       expect(result.dataSources[0].url).toBe('https://terminus.com/api')
       expect(result.dataSources[0].method).toBe('POST')
-      expect(result.dataSources[0].headers['X-API-Key']).toBe('key')
-      expect(result.dataSources[0].body.query).toBe('data')
+      expect(result.dataSources[0].headers!['X-API-Key']).toBe('key')
+      expect(result.dataSources[0].body!.query).toBe('data')
 
       fs.unlinkSync(tmpPath)
     })

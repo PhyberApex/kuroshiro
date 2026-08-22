@@ -38,14 +38,14 @@ describe('mashup Integration Tests', () => {
         name: 'Weather Plugin',
         template: {
           html: '<div class="plugin-weather">{{weather}}</div>',
-        } as PluginTemplate,
+        } as unknown as PluginTemplate,
       },
       {
         id: 'plugin-2',
         name: 'Calendar Plugin',
         template: {
           html: '<div class="plugin-calendar">{{events}}</div>',
-        } as PluginTemplate,
+        } as unknown as PluginTemplate,
       },
     ]
 
@@ -256,7 +256,7 @@ describe('mashup Integration Tests', () => {
             name: 'Weather Plugin',
             dataSource: { type: 'static', config: {} },
             templates: [{ html: '<div>test</div>' }],
-          } as Plugin,
+          } as unknown as Plugin,
         },
         {
           id: 'slot-2',
@@ -268,7 +268,7 @@ describe('mashup Integration Tests', () => {
             name: 'Calendar Plugin',
             dataSource: { type: 'static', config: {} },
             templates: [{ html: '<div>test</div>' }],
-          } as Plugin,
+          } as unknown as Plugin,
         },
       ],
     } as MashupConfiguration

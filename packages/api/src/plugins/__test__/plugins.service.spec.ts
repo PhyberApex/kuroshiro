@@ -16,7 +16,8 @@ interface MockRepository {
   save: ReturnType<typeof vi.fn>
   remove: ReturnType<typeof vi.fn>
   update: ReturnType<typeof vi.fn>
-  maximum?: ReturnType<typeof vi.fn>
+  maximum: ReturnType<typeof vi.fn>
+  delete?: ReturnType<typeof vi.fn>
 }
 
 function createMockRepository(): MockRepository {

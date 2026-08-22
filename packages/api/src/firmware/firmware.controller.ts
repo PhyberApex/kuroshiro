@@ -1,5 +1,6 @@
 import { BadRequestException, Body, Controller, Delete, Get, Logger, Param, Post, ServiceUnavailableException, UploadedFile, UseInterceptors } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
+import { getErrorMessage } from '../utils/getErrorMessage'
 import { Firmware } from './entities/firmware.entity'
 import { FirmwareSyncResult, FirmwareSyncService } from './firmware-sync.service'
 import { FirmwareService, MAX_FIRMWARE_UPLOAD_BYTES } from './firmware.service'
@@ -24,7 +25,7 @@ export class FirmwareController {
       return await this.syncService.sync()
     }
     catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
+      const message = getErrorMessage(err)
       this.logger.error(`Firmware sync failed: ${message}`)
       throw new ServiceUnavailableException(`Could not sync firmware from TRMNL: ${message}`)
     }

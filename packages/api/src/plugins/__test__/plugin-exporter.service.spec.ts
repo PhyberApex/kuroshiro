@@ -76,7 +76,7 @@ describe('pluginExporterService', () => {
 
     const buffer = await service.exportToZip(plugin)
     const zip = new AdmZip(buffer)
-    const manifestEntry = zip.getEntry('.trmnlp.yml')
+    const manifestEntry = zip.getEntry('.trmnlp.yml')!
     const manifestContent = manifestEntry.getData().toString('utf8')
     const manifest = yaml.load(manifestContent) as any
 
@@ -106,7 +106,7 @@ describe('pluginExporterService', () => {
 
     const buffer = await service.exportToZip(plugin)
     const zip = new AdmZip(buffer)
-    const settingsEntry = zip.getEntry('src/settings.yml')
+    const settingsEntry = zip.getEntry('src/settings.yml')!
     const settingsContent = settingsEntry.getData().toString('utf8')
     const settings = yaml.load(settingsContent) as any
 
@@ -133,7 +133,7 @@ describe('pluginExporterService', () => {
 
     const buffer = await service.exportToZip(plugin)
     const zip = new AdmZip(buffer)
-    const settings = yaml.load(zip.getEntry('src/settings.yml').getData().toString('utf8')) as any
+    const settings = yaml.load(zip.getEntry('src/settings.yml')!.getData().toString('utf8')) as any
 
     expect(settings.data_sources).toHaveLength(2)
     expect(settings.data_sources[0].name).toBe('weather')
@@ -168,7 +168,7 @@ describe('pluginExporterService', () => {
     expect(zip.getEntry('src/half_horizontal.liquid')).toBeTruthy()
     expect(zip.getEntry('src/quadrant.liquid')).toBeTruthy()
 
-    const fullContent = zip.getEntry('src/full.liquid').getData().toString('utf8')
+    const fullContent = zip.getEntry('src/full.liquid')!.getData().toString('utf8')
     expect(fullContent).toBe('Full layout')
   })
 
@@ -241,7 +241,7 @@ describe('pluginExporterService', () => {
 
     const buffer = await service.exportToZip(plugin)
     const zip = new AdmZip(buffer)
-    const manifestEntry = zip.getEntry('.trmnlp.yml')
+    const manifestEntry = zip.getEntry('.trmnlp.yml')!
     const manifest = yaml.load(manifestEntry.getData().toString('utf8')) as any
 
     expect(manifest.description).toBe('')

@@ -6,6 +6,7 @@ import { ConfigService } from '@nestjs/config'
 import { PluginDataFetcherService } from '../../plugins/services/plugin-data-fetcher.service'
 import { PluginRendererService } from '../../plugins/services/plugin-renderer.service'
 import { PluginTransformService } from '../../plugins/services/plugin-transform.service'
+import { getErrorMessage } from '../../utils/getErrorMessage'
 
 @Injectable()
 export class MashupRendererService {
@@ -30,7 +31,8 @@ export class MashupRendererService {
         slotHtmls.push({ slot, html })
       }
       catch (err) {
-        this.logger.error(`Failed to render plugin ${slot.plugin.id} in slot ${slot.id}: ${err.message}`)
+        const message = getErrorMessage(err)
+        this.logger.error(`Failed to render plugin ${slot.plugin.id} in slot ${slot.id}: ${message}`)
         const errorHtml = this.errorPlaceholder(slot.plugin.name)
         slotHtmls.push({ slot, html: errorHtml })
       }

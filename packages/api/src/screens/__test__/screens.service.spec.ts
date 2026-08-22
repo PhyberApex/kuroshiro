@@ -77,7 +77,7 @@ describe('screensService', () => {
   })
 
   it('add creates a screen with file', async () => {
-    const device = { id: 'dev', screens: [], width: 100, height: 100 } as Device
+    const device = { id: 'dev', screens: [], width: 100, height: 100 } as unknown as Device
     devicesRepo.findOne.mockResolvedValue(device)
     const screen = { id: '1', filename: 'file', device, order: 1, isActive: false } as Screen
     screensRepo.create.mockReturnValue(screen)
@@ -95,7 +95,7 @@ describe('screensService', () => {
   })
 
   it('add creates a screen with html', async () => {
-    const device = { id: 'dev', screens: [], width: 100, height: 100 } as Device
+    const device = { id: 'dev', screens: [], width: 100, height: 100 } as unknown as Device
     devicesRepo.findOne.mockResolvedValue(device)
     const screen = { id: '1', html: '<div>hi</div>', device, order: 1, isActive: false } as Screen
     screensRepo.create.mockReturnValue(screen)
@@ -107,7 +107,7 @@ describe('screensService', () => {
   })
 
   it('add creates a screen with externalLink and fetchManual', async () => {
-    const device = { id: 'dev', screens: [], width: 100, height: 100 } as Device
+    const device = { id: 'dev', screens: [], width: 100, height: 100 } as unknown as Device
     devicesRepo.findOne.mockResolvedValue(device)
     const screen = { id: '1', filename: 'file', device, order: 1, isActive: false } as Screen
     screensRepo.create.mockReturnValue(screen)
@@ -152,7 +152,7 @@ describe('screensService', () => {
     const screen = { id: '1', device, externalLink: 'url', fetchManual: true } as Screen
     screensRepo.findOne.mockResolvedValue(screen)
     await expect(service.updateExternalScreen('1')).resolves.toBeUndefined()
-    const { downloadImage, convertToPng } = await import('../../utils/imageUtils')
+    const { downloadImage, convertToPng } = await import('../../utils/imageUtils.js')
     expect(downloadImage).toHaveBeenCalledWith('url', expect.stringContaining('public/screens/devices/dev/1.original'), expect.any(Object))
     expect(convertToPng).toHaveBeenCalledWith(expect.stringContaining('1.original'), expect.stringContaining('1.png'), expect.anything(), expect.any(Object))
   })
@@ -171,7 +171,7 @@ describe('screensService', () => {
       ])
       fileExistsMock.mockImplementation(async (p: string) => !p.endsWith('legacy.original'))
       const renameMock = vi.spyOn(fs.promises, 'rename').mockResolvedValue(undefined)
-      const { convertToPng } = await import('../../utils/imageUtils')
+      const { convertToPng } = await import('../../utils/imageUtils.js')
 
       await expect(service.reconvertImageScreens(device)).resolves.toBe(3)
 
@@ -188,7 +188,7 @@ describe('screensService', () => {
       screensRepo.find.mockResolvedValue([{ id: 'a', type: 'file' }, { id: 'b', type: 'file' }])
       fileExistsMock.mockResolvedValue(true)
       vi.spyOn(fs.promises, 'rename').mockResolvedValue(undefined)
-      const { convertToPng } = await import('../../utils/imageUtils')
+      const { convertToPng } = await import('../../utils/imageUtils.js')
       vi.mocked(convertToPng).mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce(undefined)
 
       await expect(service.reconvertImageScreens(device)).resolves.toBe(1)
