@@ -18,6 +18,7 @@ const deviceStore = useDeviceStore()
 const importTab = ref('file')
 const selectedFile = ref<File | null>(null)
 const githubUrl = ref('')
+const recipeId = ref('')
 const selectedDeviceId = ref('')
 const loading = ref(false)
 const error = ref('')
@@ -60,7 +61,7 @@ async function importPlugin() {
         throw new Error(errorData.message || 'Import failed')
       }
     }
-    else {
+    else if (importTab.value === 'github') {
       if (!githubUrl.value) {
         error.value = 'Please enter a GitHub URL'
         return
@@ -71,6 +72,26 @@ async function importPlugin() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           githubUrl: githubUrl.value,
+          deviceId: selectedDeviceId.value,
+        }),
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.message || 'Import failed')
+      }
+    }
+    else {
+      if (!recipeId.value) {
+        error.value = 'Please enter a Recipe id or URL'
+        return
+      }
+
+      const res = await fetch('/api/plugins/import-recipe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipeId: recipeId.value,
           deviceId: selectedDeviceId.value,
         }),
       })
@@ -96,6 +117,7 @@ function close() {
   emit('update:modelValue', false)
   selectedFile.value = null
   githubUrl.value = ''
+  recipeId.value = ''
   selectedDeviceId.value = ''
   error.value = ''
 }
@@ -121,6 +143,9 @@ function close() {
           </VTab>
           <VTab value="github">
             GitHub URL
+          </VTab>
+          <VTab value="recipe">
+            Recipe
           </VTab>
         </VTabs>
 
@@ -151,6 +176,19 @@ function close() {
               Kuroshiro will download the repository and import the plugin automatically.
             </VAlert>
           </VWindowItem>
+
+          <VWindowItem value="recipe">
+            <VTextField
+              v-model="recipeId"
+              label="TRMNL Recipe id or URL"
+              placeholder="150460 or https://trmnl.com/recipes/150460"
+              hint="Enter a Recipe's numeric id or its trmnl.com/recipes/... page URL"
+              persistent-hint
+            />
+            <VAlert type="info" variant="tonal" class="mt-4 text-body-2">
+              Kuroshiro will download the Recipe from trmnl.com and import it as a Plugin.
+            </VAlert>
+          </VWindowItem>
         </VWindow>
 
         <VSelect
@@ -174,7 +212,7 @@ function close() {
           color="primary"
           variant="tonal"
           :loading="loading"
-          :disabled="(!selectedFile && !githubUrl) || !selectedDeviceId"
+          :disabled="(!selectedFile && !githubUrl && !recipeId) || !selectedDeviceId"
           @click="importPlugin"
         >
           Import

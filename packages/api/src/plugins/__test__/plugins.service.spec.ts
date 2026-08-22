@@ -139,6 +139,16 @@ describe('pluginsService', () => {
     expect(result).toBe(basePlugin)
   })
 
+  it('create persists the source Recipe id when provided', async () => {
+    const pluginData = { name: 'Daily Weather', sourceRecipeId: '150460' }
+    pluginRepo.save.mockResolvedValue(basePlugin)
+    pluginRepo.findOne.mockResolvedValue(basePlugin)
+
+    await service.create(pluginData as any)
+
+    expect(pluginRepo.save).toHaveBeenCalledWith(expect.objectContaining({ sourceRecipeId: '150460' }))
+  })
+
   it('update updates and saves an existing plugin', async () => {
     pluginRepo.findOne.mockResolvedValue(basePlugin)
     const updated = { ...basePlugin, name: 'Updated Weather' } as unknown as Plugin
