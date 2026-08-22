@@ -41,8 +41,11 @@ export class UpdatePluginDto {
   streamLimit?: number
 
   @IsOptional()
-  dataSource?: any
+  dataSources?: any[]
 
   @IsOptional()
   templates?: any[]
+
+  @IsOptional()
+  fields?: any[]
 }

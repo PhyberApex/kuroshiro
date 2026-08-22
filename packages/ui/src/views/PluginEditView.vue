@@ -4,7 +4,8 @@ import type { RenderTarget } from '@/utils/screenShell'
 import { mdiArrowLeft, mdiContentSave, mdiEye } from '@mdi/js'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { VAlert, VBtn, VCard, VCardActions, VCardText, VCardTitle, VCol, VContainer, VDialog, VDivider, VExpandTransition, VExpansionPanel, VExpansionPanels, VExpansionPanelText, VExpansionPanelTitle, VForm, VProgressCircular, VRow, VSelect, VSpacer, VSwitch, VTab, VTabs, VTextarea, VTextField, VWindow, VWindowItem } from 'vuetify/components'
+import { VAlert, VBtn, VCard, VCardActions, VCardText, VCardTitle, VCol, VContainer, VDialog, VDivider, VExpandTransition, VExpansionPanel, VExpansionPanels, VExpansionPanelText, VExpansionPanelTitle, VForm, VProgressCircular, VRow, VSpacer, VSwitch, VTab, VTabs, VTextarea, VTextField, VWindow, VWindowItem } from 'vuetify/components'
+import PluginDataSourcesEditor from '@/components/PluginDataSourcesEditor.vue'
 import RenderTargetPicker from '@/components/RenderTargetPicker.vue'
 import ScreenFrame from '@/components/ScreenFrame.vue'
 import { DEFAULT_MODEL, DEFAULT_PALETTE } from '@/utils/renderTarget'
@@ -30,21 +31,6 @@ const nameRules = [
   },
 ]
 
-const urlRules = [
-  (value: string) => {
-    if (!value || value.trim() === '') {
-      return 'Data source URL is required'
-    }
-    try {
-      const _url = new URL(value)
-      return true
-    }
-    catch {
-      return 'Enter a valid URL'
-    }
-  },
-]
-
 const templateRules = [
   (value: string) => {
     if (!value || value.trim() === '') {
@@ -63,7 +49,6 @@ const refreshIntervalRules = [
   },
 ]
 
-const headersJson = ref('')
 const fieldValues = ref<Record<string, string>>({})
 const showTemplateHelp = ref(false)
 
@@ -79,9 +64,12 @@ onMounted(async () => {
     if (!res.ok)
       throw new Error('Failed to fetch plugin')
     plugin.value = await res.json()
-    if (plugin.value?.dataSource?.headers) {
-      headersJson.value = JSON.stringify(plugin.value.dataSource.headers, null, 2)
+    if (plugin.value && !plugin.value.dataSources) {
+      plugin.value.dataSources = []
     }
+    plugin.value?.dataSources?.forEach((source: any) => {
+      source.headersJson = source.headers ? JSON.stringify(source.headers, null, 2) : ''
+    })
     // Initialize field values from plugin fields
     if (plugin.value?.fields) {
       plugin.value.fields.forEach((field) => {
@@ -96,6 +84,7 @@ onMounted(async () => {
 })
 
 const loading = ref(false)
+const saveError = ref('')
 const previewLoading = ref(false)
 const previewHtml = ref('')
 const previewTarget = ref<RenderTarget>({ model: DEFAULT_MODEL, palette: DEFAULT_PALETTE })
@@ -109,23 +98,22 @@ async function savePlugin() {
     return
 
   loading.value = true
+  saveError.value = ''
   try {
-    let headers = {}
-    if (headersJson.value && headersJson.value.trim()) {
-      try {
-        headers = JSON.parse(headersJson.value)
-      }
-      catch {
-        headers = {}
-      }
+    // Re-derive order from the current array position: entries added/removed
+    // in the editor may carry stale or colliding order values.
+    const payload = {
+      ...plugin.value,
+      dataSources: (plugin.value.dataSources || []).map((source, index) => ({
+        ...source,
+        order: index,
+      })),
     }
-
-    if (plugin.value.dataSource) {
-      plugin.value.dataSource.headers = headers
-    }
-
-    await pluginsStore.updatePlugin(props.id, plugin.value)
+    await pluginsStore.updatePlugin(props.id, payload)
     router.push({ name: 'pluginsOverview' })
+  }
+  catch (err: any) {
+    saveError.value = err.message || 'Failed to save plugin. Check console for details.'
   }
   finally {
     loading.value = false
@@ -133,31 +121,25 @@ async function savePlugin() {
 }
 
 async function previewPlugin() {
-  if (!plugin.value?.dataSource || !plugin.value?.templates?.[0])
+  const sources = plugin.value?.dataSources || []
+  if (sources.length === 0 || !plugin.value?.templates?.[0])
     return
 
   previewLoading.value = true
   try {
-    let headers = {}
-    if (headersJson.value && headersJson.value.trim()) {
-      try {
-        headers = JSON.parse(headersJson.value)
-      }
-      catch {
-        headers = {}
-      }
-    }
-
     const res = await fetch('/api/plugins/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        url: plugin.value.dataSource.url,
-        method: plugin.value.dataSource.method,
-        headers,
-        body: plugin.value.dataSource.body,
+        sources: sources.map(source => ({
+          name: source.name,
+          url: source.url,
+          method: source.method,
+          headers: source.headers,
+          body: source.body,
+          transformJs: source.transformJs,
+        })),
         template: plugin.value.templates[0].liquidMarkup,
-        transformJs: plugin.value.dataSource.transformJs,
         fieldValues: fieldValues.value,
       }),
     })
@@ -230,45 +212,25 @@ function cancel() {
 
               <VDivider class="my-6" />
 
-              <VExpansionPanels class="mb-6">
-                <VExpansionPanel v-if="plugin.dataSource">
-                  <VExpansionPanelTitle>
-                    <h3 class="text-h6">
-                      Data Source
-                    </h3>
-                  </VExpansionPanelTitle>
-                  <VExpansionPanelText>
-                    <VTextField
-                      v-model="plugin.dataSource.url"
-                      label="Data Source URL"
-                      :rules="urlRules"
-                      required
-                      placeholder="https://api.example.com/data"
-                      class="mt-4"
-                    />
-                    <VSelect
-                      v-model="plugin.dataSource.method"
-                      label="HTTP Method"
-                      :items="['GET', 'POST']"
-                    />
-                    <VTextField
-                      v-model.number="plugin.refreshInterval"
-                      label="Refresh Interval (minutes)"
-                      type="number"
-                      :rules="refreshIntervalRules"
-                      required
-                      min="1"
-                    />
-                    <VTextarea
-                      v-model="headersJson"
-                      label="Request Headers (JSON)"
-                      rows="3"
-                      placeholder="{&quot;Authorization&quot;: &quot;Bearer token&quot;}"
-                      hint="Optional: Enter valid JSON for custom headers"
-                    />
-                  </VExpansionPanelText>
-                </VExpansionPanel>
+              <div class="mb-6">
+                <h3 class="text-h6 mb-3">
+                  Data Sources
+                </h3>
+                <VTextField
+                  v-model.number="plugin.refreshInterval"
+                  label="Refresh Interval (minutes)"
+                  type="number"
+                  :rules="refreshIntervalRules"
+                  required
+                  min="1"
+                  class="mb-4"
+                />
+                <PluginDataSourcesEditor v-model="plugin.dataSources!" />
+              </div>
 
+              <VDivider class="my-6" />
+
+              <VExpansionPanels class="mb-6">
                 <VExpansionPanel v-if="configurableFields.length > 0">
                   <VExpansionPanelTitle>
                     <h3 class="text-h6">
@@ -390,6 +352,9 @@ function cancel() {
               </div>
             </VForm>
           </VCardText>
+          <VAlert v-if="saveError" type="error" variant="tonal" class="mx-4 mb-4">
+            {{ saveError }}
+          </VAlert>
           <VDivider />
           <VCardActions class="d-flex justify-space-between pa-4">
             <VBtn

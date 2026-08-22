@@ -8,14 +8,40 @@ describe('pluginDataSource entity', () => {
 
     const dataSource = new PluginDataSource()
     dataSource.id = 'ds-1'
+    dataSource.name = 'weather'
     dataSource.plugin = plugin
     dataSource.method = 'GET'
     dataSource.url = 'https://api.weather.com/data'
 
     expect(dataSource.id).toBe('ds-1')
+    expect(dataSource.name).toBe('weather')
     expect(dataSource.plugin).toBe(plugin)
     expect(dataSource.method).toBe('GET')
     expect(dataSource.url).toBe('https://api.weather.com/data')
+  })
+
+  it('belongs to a Plugin via a many-to-one relation, so several can share one plugin', () => {
+    const plugin = { id: 'plugin-1' } as Plugin
+
+    const weather = new PluginDataSource()
+    weather.name = 'weather'
+    weather.plugin = plugin
+
+    const airQuality = new PluginDataSource()
+    airQuality.name = 'air_quality'
+    airQuality.plugin = plugin
+
+    expect(weather.plugin).toBe(airQuality.plugin)
+  })
+
+  it('defaults order to 0 and supports ordering multiple sources', () => {
+    const first = new PluginDataSource()
+    expect(first.order).toBe(0)
+
+    const second = new PluginDataSource()
+    second.order = 1
+
+    expect(second.order).toBe(1)
   })
 
   it('supports POST method', () => {

@@ -91,7 +91,7 @@ describe('pluginsService', () => {
     pluginRepo.find.mockResolvedValue(plugins)
     const result = await service.findAll()
     expect(pluginRepo.find).toHaveBeenCalledWith({
-      relations: { dataSource: true, templates: true, fields: true },
+      relations: { dataSources: true, templates: true, fields: true },
       order: { name: 'ASC' },
     })
     expect(result).toBe(plugins)
@@ -102,7 +102,7 @@ describe('pluginsService', () => {
     const result = await service.findById('1')
     expect(pluginRepo.findOne).toHaveBeenCalledWith({
       where: { id: '1' },
-      relations: { dataSource: true, templates: true, fields: true, deviceAssignments: { device: true } },
+      relations: { dataSources: true, templates: true, fields: true, deviceAssignments: { device: true } },
     })
     expect(result).toBe(basePlugin)
   })
@@ -118,7 +118,7 @@ describe('pluginsService', () => {
     const result = await service.findByDevice('device-1')
     expect(devicePluginRepo.find).toHaveBeenCalledWith({
       where: { device: { id: 'device-1' } },
-      relations: { plugin: { dataSource: true, templates: true, fields: true } },
+      relations: { plugin: { dataSources: true, templates: true, fields: true } },
       order: { order: 'ASC' },
     })
     expect(result).toHaveLength(1)
@@ -133,7 +133,7 @@ describe('pluginsService', () => {
     expect(pluginRepo.save).toHaveBeenCalled()
     expect(pluginRepo.findOne).toHaveBeenCalledWith({
       where: { id: '1' },
-      relations: { dataSource: true, templates: true, fields: true },
+      relations: { dataSources: true, templates: true, fields: true },
     })
     expect(result).toBe(basePlugin)
   })
@@ -145,7 +145,7 @@ describe('pluginsService', () => {
     const result = await service.update('1', { name: 'Updated Weather' } as any)
     expect(pluginRepo.findOne).toHaveBeenCalledWith({
       where: { id: '1' },
-      relations: { dataSource: true, templates: true, fields: true },
+      relations: { dataSources: true, templates: true, fields: true },
     })
     expect(pluginRepo.save).toHaveBeenCalled()
     expect(result).toEqual(updated)
@@ -254,16 +254,19 @@ describe('pluginsService', () => {
     expect(mockScheduler.removeScheduledJob).toHaveBeenCalledWith('1')
   })
 
-  it('create saves plugin with dataSource, templates, and fields', async () => {
+  it('create saves plugin with dataSources, templates, and fields', async () => {
     const pluginData = {
       name: 'Complete Plugin',
-      dataSource: {
-        url: 'https://api.example.com',
-        method: 'GET',
-        headers: {},
-        body: {},
-        transformJs: 'module.exports = (data) => data',
-      },
+      dataSources: [
+        {
+          name: 'weather',
+          url: 'https://api.example.com',
+          method: 'GET',
+          headers: {},
+          body: {},
+          transformJs: 'module.exports = (data) => data',
+        },
+      ],
       templates: [
         { layout: 'full', liquidMarkup: 'Template' },
       ],
@@ -361,19 +364,74 @@ describe('pluginsService', () => {
     expect(result).toBeNull()
   })
 
-  it('update creates new dataSource if none exists', async () => {
-    const pluginWithoutDataSource = { ...basePlugin, dataSource: null }
-    pluginRepo.findOne.mockResolvedValue(pluginWithoutDataSource)
+  it('update creates new data sources if none exist', async () => {
+    const pluginWithoutDataSources = { ...basePlugin, dataSources: [] }
+    pluginRepo.findOne.mockResolvedValue(pluginWithoutDataSources)
     dataSourceRepo.create.mockReturnValue({ id: 'ds-1' })
     dataSourceRepo.save.mockResolvedValue({ id: 'ds-1' })
-    pluginRepo.save.mockResolvedValue(pluginWithoutDataSource)
+    pluginRepo.save.mockResolvedValue(pluginWithoutDataSources)
 
     await service.update('1', {
-      dataSource: { url: 'https://new-api.com', method: 'GET', headers: {}, body: {} },
+      dataSources: [{ name: 'weather', url: 'https://new-api.com', method: 'GET', headers: {}, body: {} }],
     } as any)
 
     expect(dataSourceRepo.create).toHaveBeenCalled()
     expect(dataSourceRepo.save).toHaveBeenCalled()
+  })
+
+  it('update removes existing data sources and creates the replacement set', async () => {
+    const oldDataSources = [{ id: 'ds-old', name: 'old' }]
+    const pluginWithDataSources = {
+      ...basePlugin,
+      dataSources: oldDataSources,
+    }
+    pluginRepo.findOne.mockResolvedValue(pluginWithDataSources)
+    dataSourceRepo.remove.mockResolvedValue(undefined)
+    dataSourceRepo.create.mockReturnValue({ id: 'ds-new' })
+    dataSourceRepo.save.mockResolvedValue({ id: 'ds-new' })
+    pluginRepo.save.mockResolvedValue(pluginWithDataSources)
+
+    const result = await service.update('1', {
+      dataSources: [{ name: 'weather', url: 'https://new-api.com', method: 'GET' }],
+    } as any)
+
+    expect(dataSourceRepo.remove).toHaveBeenCalledWith(oldDataSources)
+    expect(dataSourceRepo.create).toHaveBeenCalled()
+    // The returned plugin reflects the new data sources, not the removed ones
+    expect(result?.dataSources).toEqual([{ id: 'ds-new' }])
+  })
+
+  it('update rejects a data source named "trmnl"', async () => {
+    pluginRepo.findOne.mockResolvedValue({ ...basePlugin, dataSources: [], fields: [] })
+
+    await expect(service.update('1', {
+      dataSources: [{ name: 'trmnl', url: 'https://api.com', method: 'GET' }],
+    } as any)).rejects.toThrow('reserved')
+
+    expect(dataSourceRepo.save).not.toHaveBeenCalled()
+  })
+
+  it('update rejects two data sources sharing a name', async () => {
+    pluginRepo.findOne.mockResolvedValue({ ...basePlugin, dataSources: [], fields: [] })
+
+    await expect(service.update('1', {
+      dataSources: [
+        { name: 'weather', url: 'https://api.com/1', method: 'GET' },
+        { name: 'weather', url: 'https://api.com/2', method: 'GET' },
+      ],
+    } as any)).rejects.toThrow('more than one data source')
+  })
+
+  it('update rejects a data source name colliding with a plugin field keyname', async () => {
+    pluginRepo.findOne.mockResolvedValue({
+      ...basePlugin,
+      dataSources: [],
+      fields: [{ id: 'field-1', keyname: 'weather' }],
+    })
+
+    await expect(service.update('1', {
+      dataSources: [{ name: 'weather', url: 'https://api.com', method: 'GET' }],
+    } as any)).rejects.toThrow('collides')
   })
 
   it('update creates new template if none exists', async () => {
@@ -426,29 +484,29 @@ describe('pluginsService', () => {
     expect(fieldRepo.create).not.toHaveBeenCalled()
   })
 
-  it('update reschedules plugin when dataSource or templates change', async () => {
+  it('update reschedules plugin when dataSources or templates change', async () => {
     const pluginWithDataSource = {
       ...basePlugin,
-      dataSource: { id: 'ds-1', url: 'https://api.com' },
+      dataSources: [{ id: 'ds-1', name: 'weather', url: 'https://api.com' }],
       templates: [{ id: 't-1', layout: 'full' }],
     }
     pluginRepo.findOne.mockResolvedValueOnce(pluginWithDataSource)
     pluginRepo.findOne.mockResolvedValueOnce(pluginWithDataSource)
-    dataSourceRepo.save.mockResolvedValue(pluginWithDataSource.dataSource)
+    dataSourceRepo.save.mockResolvedValue(pluginWithDataSource.dataSources[0])
     pluginRepo.save.mockResolvedValue(pluginWithDataSource)
 
     await service.update('1', {
-      dataSource: { url: 'https://new-api.com' },
+      dataSources: [{ name: 'weather', url: 'https://new-api.com', method: 'GET' }],
     } as any)
 
     expect(mockScheduler.removeScheduledJob).toHaveBeenCalledWith('1')
     expect(mockScheduler.schedulePlugin).toHaveBeenCalledWith(pluginWithDataSource)
   })
 
-  it('create schedules plugin when it has dataSource and templates', async () => {
+  it('create schedules plugin when it has data sources and templates', async () => {
     const createdPlugin = {
       ...basePlugin,
-      dataSource: { id: 'ds-1' },
+      dataSources: [{ id: 'ds-1', name: 'weather' }],
       templates: [{ id: 't-1' }],
     }
     pluginRepo.save.mockResolvedValue(basePlugin)
@@ -460,17 +518,17 @@ describe('pluginsService', () => {
 
     await service.create({
       name: 'Plugin',
-      dataSource: { url: 'https://api.com', method: 'GET', headers: {}, body: {} },
+      dataSources: [{ name: 'weather', url: 'https://api.com', method: 'GET', headers: {}, body: {} }],
       templates: [{ layout: 'full', liquidMarkup: 'Template' }],
     } as any)
 
     expect(mockScheduler.schedulePlugin).toHaveBeenCalledWith(createdPlugin)
   })
 
-  it('create does not schedule plugin without dataSource', async () => {
+  it('create does not schedule plugin without any data sources', async () => {
     const createdPlugin = {
       ...basePlugin,
-      dataSource: null,
+      dataSources: [],
       templates: [{ id: 't-1' }],
     }
     pluginRepo.save.mockResolvedValue(basePlugin)
@@ -486,26 +544,75 @@ describe('pluginsService', () => {
     expect(mockScheduler.schedulePlugin).not.toHaveBeenCalled()
   })
 
-  it('preview fetches data and renders template', async () => {
+  it('create allows zero data sources as a valid draft state', async () => {
+    const createdPlugin = { ...basePlugin, dataSources: [], templates: [] }
+    pluginRepo.save.mockResolvedValue(basePlugin)
+    pluginRepo.findOne.mockResolvedValue(createdPlugin)
+
+    const result = await service.create({ name: 'Draft Plugin' } as any)
+
+    expect(dataSourceRepo.create).not.toHaveBeenCalled()
+    expect(result).toBe(createdPlugin)
+  })
+
+  it('create rejects a data source named "trmnl"', async () => {
+    pluginRepo.save.mockResolvedValue(basePlugin)
+
+    await expect(service.create({
+      name: 'Plugin',
+      dataSources: [{ name: 'trmnl', url: 'https://api.com', method: 'GET' }],
+    } as any)).rejects.toThrow('reserved')
+
+    expect(pluginRepo.save).not.toHaveBeenCalled()
+  })
+
+  it('create rejects a data source colliding with a sibling field keyname', async () => {
+    pluginRepo.save.mockResolvedValue(basePlugin)
+
+    await expect(service.create({
+      name: 'Plugin',
+      dataSources: [{ name: 'weather', url: 'https://api.com', method: 'GET' }],
+      fields: [{ keyname: 'weather', fieldType: 'string', name: 'Weather' }],
+    } as any)).rejects.toThrow('collides')
+  })
+
+  it('preview fetches a single source and renders template under its name', async () => {
     const apiData = { temperature: 25, location: 'Tokyo' }
     mockDataFetcher.fetchData = vi.fn().mockResolvedValue(apiData)
     mockRenderer.render = vi.fn().mockResolvedValue('25°C in Tokyo')
 
     const result = await service.preview(
-      'https://api.example.com',
-      'GET',
-      {},
-      {},
-      '{{ temperature }}°C in {{ location }}',
+      [{ name: 'weather', url: 'https://api.example.com', method: 'GET' }],
+      '{{ weather.temperature }}°C in {{ weather.location }}',
     )
 
-    expect(mockDataFetcher.fetchData).toHaveBeenCalledWith('GET', 'https://api.example.com', {}, {}, expect.any(Object))
-    expect(mockRenderer.render).toHaveBeenCalled()
+    expect(mockDataFetcher.fetchData).toHaveBeenCalledWith('GET', 'https://api.example.com', undefined, undefined, expect.any(Object))
+    expect(mockRenderer.render).toHaveBeenCalledWith(
+      '{{ weather.temperature }}°C in {{ weather.location }}',
+      expect.objectContaining({ weather: apiData }),
+    )
     expect(result.html).toBe('25°C in Tokyo')
-    expect(result.data).toEqual(apiData)
+    expect(result.data).toEqual({ weather: apiData })
   })
 
-  it('preview applies transform to data', async () => {
+  it('preview fetches multiple sources in parallel, each keyed by its own name', async () => {
+    mockDataFetcher.fetchData = vi.fn()
+      .mockImplementation((_method, url) => Promise.resolve(url === 'https://api.example.com/weather' ? { temp: 25 } : { aqi: 42 }))
+    mockRenderer.render = vi.fn().mockResolvedValue('rendered')
+
+    const result = await service.preview(
+      [
+        { name: 'weather', url: 'https://api.example.com/weather', method: 'GET' },
+        { name: 'air_quality', url: 'https://api.example.com/air', method: 'GET' },
+      ],
+      '{{ weather.temp }} / {{ air_quality.aqi }}',
+    )
+
+    expect(mockDataFetcher.fetchData).toHaveBeenCalledTimes(2)
+    expect(result.data).toEqual({ weather: { temp: 25 }, air_quality: { aqi: 42 } })
+  })
+
+  it('preview applies each source\'s own transform to its own data', async () => {
     const apiData = { value: 10 }
     const transformedData = { value: 20 }
     mockDataFetcher.fetchData = vi.fn().mockResolvedValue(apiData)
@@ -513,54 +620,53 @@ describe('pluginsService', () => {
     mockRenderer.render = vi.fn().mockResolvedValue('20')
 
     await service.preview(
-      'https://api.example.com',
-      'GET',
-      {},
-      {},
-      '{{ value }}',
-      'module.exports = (d) => ({ value: d.value * 2 })',
+      [{
+        name: 'source',
+        url: 'https://api.example.com',
+        method: 'GET',
+        transformJs: 'module.exports = (d) => ({ value: d.value * 2 })',
+      }],
+      '{{ source.value }}',
     )
 
     expect(mockTransformer.transform).toHaveBeenCalledWith('module.exports = (d) => ({ value: d.value * 2 })', apiData)
-    expect(mockRenderer.render).toHaveBeenCalledWith('{{ value }}', expect.objectContaining({ value: 20 }))
+    expect(mockRenderer.render).toHaveBeenCalledWith('{{ source.value }}', expect.objectContaining({ source: transformedData }))
   })
 
-  it('preview handles array data', async () => {
-    const apiData = [{ id: 1 }, { id: 2 }]
-    mockDataFetcher.fetchData = vi.fn().mockResolvedValue(apiData)
-    mockRenderer.renderForDisplay = vi.fn().mockResolvedValue('<html>items</html>')
+  it('preview gives a failing source an error marker instead of rejecting the whole preview', async () => {
+    mockDataFetcher.fetchData = vi.fn()
+      .mockResolvedValueOnce({ temp: 25 })
+      .mockRejectedValueOnce(new Error('API timeout'))
+    mockRenderer.render = vi.fn().mockResolvedValue('rendered')
 
     const result = await service.preview(
-      'https://api.example.com',
-      'GET',
-      {},
-      {},
-      '{% for item in items %}{{ item.id }}{% endfor %}',
+      [
+        { name: 'weather', url: 'https://api.example.com/weather', method: 'GET' },
+        { name: 'air_quality', url: 'https://api.example.com/air', method: 'GET' },
+      ],
+      '{{ weather.temp }}',
     )
 
-    expect(result.data).toEqual(apiData)
+    expect(result.data.weather).toEqual({ temp: 25 })
+    expect(result.data.air_quality).toEqual({ error: true, message: 'API timeout' })
   })
 
   it('preview includes field values in context', async () => {
     const apiData = { temp: 25 }
     mockDataFetcher.fetchData = vi.fn().mockResolvedValue(apiData)
-    mockRenderer.renderForDisplay = vi.fn().mockResolvedValue('<html>test</html>')
+    mockRenderer.render = vi.fn().mockResolvedValue('<html>test</html>')
 
     await service.preview(
-      'https://api.example.com',
-      'GET',
-      {},
-      {},
+      [{ name: 'source', url: 'https://api.example.com', method: 'GET' }],
       '{{ api_key }}',
-      undefined,
       { api_key: 'secret-123' },
     )
 
     expect(mockDataFetcher.fetchData).toHaveBeenCalledWith(
       'GET',
       'https://api.example.com',
-      {},
-      {},
+      undefined,
+      undefined,
       expect.objectContaining({ api_key: 'secret-123' }),
     )
   })
@@ -595,8 +701,8 @@ describe('pluginsService', () => {
         name: 'Sensor Feed',
         kind: 'Webhook',
         mergeStrategy: 'standard',
-        dataSource: { url: 'https://api.example.com' },
-      } as any)).rejects.toThrow('A Webhook-kind Plugin cannot have a Data Source')
+        dataSources: [{ name: 'source', url: 'https://api.example.com' }],
+      } as any)).rejects.toThrow('A Webhook-kind Plugin cannot have Data Sources')
     })
 
     it('update rejects a change of kind', async () => {

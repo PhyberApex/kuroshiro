@@ -18,8 +18,10 @@ export const usePluginsStore = defineStore('plugins', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(pluginData),
     })
-    if (!res.ok)
-      throw new Error('Failed to create plugin')
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}))
+      throw new Error(errorData.message || 'Failed to create plugin')
+    }
     const newPlugin = await res.json()
     if (newPlugin.device?.id) {
       await fetchPluginsForDevice(newPlugin.device.id)
@@ -33,8 +35,10 @@ export const usePluginsStore = defineStore('plugins', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(pluginData),
     })
-    if (!res.ok)
-      throw new Error('Failed to update plugin')
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}))
+      throw new Error(errorData.message || 'Failed to update plugin')
+    }
     const updatedPlugin = await res.json()
     if (updatedPlugin.device?.id) {
       await fetchPluginsForDevice(updatedPlugin.device.id)

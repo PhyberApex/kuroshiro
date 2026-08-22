@@ -303,7 +303,7 @@ export class DeviceDisplayService {
             mashupConfiguration: {
               slots: {
                 plugin: {
-                  dataSource: true,
+                  dataSources: true,
                   templates: true,
                 },
               },
@@ -338,7 +338,7 @@ export class DeviceDisplayService {
       // Load plugin relationship if needed
       const screenWithPlugin = await this.screenRepository.findOne({
         where: { id: screen.id },
-        relations: { plugin: { dataSource: true, templates: true } },
+        relations: { plugin: { dataSources: true, templates: true } },
       })
 
       if (screenWithPlugin?.plugin) {
@@ -356,7 +356,7 @@ export class DeviceDisplayService {
           }
         }
         // Fallback: fetch and render on-demand
-        else if (plugin.dataSource && plugin.templates && plugin.templates.length > 0) {
+        else if (plugin.dataSources && plugin.dataSources.length > 0 && plugin.templates && plugin.templates.length > 0) {
           try {
             const renderedHtml = await this.renderPluginHtml(plugin, screen)
             if (renderedHtml)
@@ -431,25 +431,36 @@ export class DeviceDisplayService {
 
     // TODO: Add plugin field values to context when we have device-specific values
 
-    let data = await this.pluginDataFetcher.fetchData(
-      plugin.dataSource.method,
-      plugin.dataSource.url,
-      plugin.dataSource.headers,
-      plugin.dataSource.body,
-      templateContext,
+    // Fetch all of the plugin's data sources in parallel; a source that fails
+    // gets an error marker instead of aborting the whole render (ADR-0005)
+    const results = await Promise.allSettled(
+      plugin.dataSources.map(async (source) => {
+        let rawData = await this.pluginDataFetcher.fetchData(source.method, source.url, source.headers, source.body, templateContext)
+        if (source.transformJs) {
+          this.logger.debug(`Applying transform.js to data source: ${source.name}`)
+          rawData = this.pluginTransformer.transform(source.transformJs, rawData)
+        }
+        return rawData
+      }),
     )
 
-    // Apply transform if exists
-    if (plugin.dataSource.transformJs) {
-      this.logger.debug('Applying transform.js to fetched data')
-      data = this.pluginTransformer.transform(plugin.dataSource.transformJs, data)
-    }
+    const data: Record<string, any> = {}
+    results.forEach((result, index) => {
+      const name = plugin.dataSources[index].name
+      if (result.status === 'fulfilled') {
+        data[name] = result.value
+      }
+      else {
+        this.logger.warn(`Data source "${name}" failed for plugin ${plugin.id}: ${result.reason?.message || result.reason}`)
+        data[name] = { error: true, message: result.reason?.message || String(result.reason) }
+      }
+    })
 
     const fullTemplate = plugin.templates.find(t => t.layout === 'full')
     if (!fullTemplate)
       return null
 
-    const renderedHtml = await this.pluginRenderer.render(fullTemplate.liquidMarkup, data)
+    const renderedHtml = await this.pluginRenderer.render(fullTemplate.liquidMarkup, { ...templateContext, ...data })
     await this.cachePluginOutput(screen, renderedHtml)
     return renderedHtml
   }

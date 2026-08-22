@@ -5,6 +5,7 @@ import { mdiArrowLeft, mdiArrowRight, mdiCheck, mdiEye } from '@mdi/js'
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { VAlert, VBtn, VCard, VCardActions, VCardText, VCardTitle, VCol, VContainer, VDialog, VDivider, VExpandTransition, VForm, VRow, VSelect, VSpacer, VStepper, VStepperHeader, VStepperItem, VStepperWindow, VStepperWindowItem, VTab, VTabs, VTextarea, VTextField, VWindow, VWindowItem } from 'vuetify/components'
+import PluginDataSourcesEditor from '@/components/PluginDataSourcesEditor.vue'
 import RenderTargetPicker from '@/components/RenderTargetPicker.vue'
 import ScreenFrame from '@/components/ScreenFrame.vue'
 import { DEFAULT_MODEL, DEFAULT_PALETTE } from '@/utils/renderTarget'
@@ -25,13 +26,7 @@ const pluginData = ref<Partial<Plugin>>({
   description: '',
   kind: 'Poll',
   refreshInterval: 15,
-  dataSource: {
-    id: '',
-    method: 'GET',
-    url: '',
-    headers: {},
-    body: {},
-  },
+  dataSources: [],
   templates: [{
     id: '',
     layout: 'full',
@@ -39,29 +34,12 @@ const pluginData = ref<Partial<Plugin>>({
   }],
 })
 
-const headersJson = ref('')
-
 const nameRules = [
   (value: string) => {
     if (!value || value.trim() === '') {
       return 'Plugin name is required'
     }
     return true
-  },
-]
-
-const urlRules = [
-  (value: string) => {
-    if (!value || value.trim() === '') {
-      return 'Data source URL is required'
-    }
-    try {
-      const _url = new URL(value)
-      return true
-    }
-    catch {
-      return 'Enter a valid URL'
-    }
   },
 ]
 
@@ -88,14 +66,21 @@ const canProceedStep1 = computed(() => {
 })
 
 const canProceedStep2 = computed(() => {
-  const url = pluginData.value.dataSource?.url || ''
-  try {
-    const _url = new URL(url)
-    return url.trim() !== '' && pluginData.value.refreshInterval && pluginData.value.refreshInterval >= 1
-  }
-  catch {
+  if (!pluginData.value.refreshInterval || pluginData.value.refreshInterval < 1)
     return false
-  }
+
+  const sources = pluginData.value.dataSources || []
+  return sources.every((source) => {
+    if (!source.name || source.name.trim() === '' || source.name.trim() === 'trmnl')
+      return false
+    try {
+      const _url = new URL(source.url || '')
+      return true
+    }
+    catch {
+      return false
+    }
+  })
 })
 
 const canProceedStep3 = computed(() => {
@@ -116,6 +101,7 @@ function prevStep() {
 }
 
 const loading = ref(false)
+const saveError = ref('')
 const previewLoading = ref(false)
 const previewHtml = ref('')
 const previewTarget = ref<RenderTarget>({ model: DEFAULT_MODEL, palette: DEFAULT_PALETTE })
@@ -126,29 +112,23 @@ const previewTab = ref('rendered')
 const showTemplateHelp = ref(false)
 
 async function previewPlugin() {
-  if (!pluginData.value.dataSource?.url || !pluginData.value.templates?.[0]?.liquidMarkup)
+  const sources = pluginData.value.dataSources || []
+  if (sources.length === 0 || !pluginData.value.templates?.[0]?.liquidMarkup)
     return
 
   previewLoading.value = true
   try {
-    let headers = {}
-    if (headersJson.value && headersJson.value.trim()) {
-      try {
-        headers = JSON.parse(headersJson.value)
-      }
-      catch {
-        headers = {}
-      }
-    }
-
     const res = await fetch('/api/plugins/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        url: pluginData.value.dataSource.url,
-        method: pluginData.value.dataSource.method,
-        headers,
-        body: pluginData.value.dataSource.body,
+        sources: sources.map(source => ({
+          name: source.name,
+          url: source.url,
+          method: source.method,
+          headers: source.headers,
+          body: source.body,
+        })),
         template: pluginData.value.templates[0].liquidMarkup,
       }),
     })
@@ -188,33 +168,24 @@ async function previewPlugin() {
 
 async function createPlugin() {
   loading.value = true
+  saveError.value = ''
   try {
-    const dataSource = pluginData.value.dataSource
+    const sources = pluginData.value.dataSources || []
     const template = pluginData.value.templates?.[0]
-
-    let headers = {}
-    if (headersJson.value && headersJson.value.trim()) {
-      try {
-        headers = JSON.parse(headersJson.value)
-      }
-      catch {
-        headers = {}
-      }
-    }
 
     const payload: any = {
       name: pluginData.value.name,
       description: pluginData.value.description,
       kind: pluginData.value.kind,
       refreshInterval: pluginData.value.refreshInterval,
-      dataSource: dataSource
-        ? {
-            method: dataSource.method,
-            url: dataSource.url,
-            headers,
-            body: dataSource.body,
-          }
-        : undefined,
+      dataSources: sources.map((source, index) => ({
+        name: source.name,
+        method: source.method,
+        url: source.url,
+        headers: source.headers,
+        body: source.body,
+        order: index,
+      })),
       templates: template
         ? [{
             layout: template.layout,
@@ -232,6 +203,9 @@ async function createPlugin() {
     else {
       router.push({ name: 'pluginsOverview' })
     }
+  }
+  catch (err: any) {
+    saveError.value = err.message || 'Failed to create plugin. Check console for details.'
   }
   finally {
     loading.value = false
@@ -264,7 +238,7 @@ function cancel() {
                 <VStepperItem
                   :complete="step > 2"
                   :value="2"
-                  title="Data Source"
+                  title="Data Sources"
                 />
                 <VDivider />
                 <VStepperItem
@@ -303,32 +277,15 @@ function cancel() {
                 <VStepperWindowItem :value="2">
                   <VForm ref="formRef">
                     <VTextField
-                      v-model="pluginData.dataSource!.url"
-                      label="Data Source URL"
-                      :rules="urlRules"
-                      required
-                      placeholder="https://api.example.com/data"
-                    />
-                    <VSelect
-                      v-model="pluginData.dataSource!.method"
-                      label="HTTP Method"
-                      :items="['GET', 'POST']"
-                    />
-                    <VTextField
                       v-model.number="pluginData.refreshInterval"
                       label="Refresh Interval (minutes)"
                       type="number"
                       :rules="refreshIntervalRules"
                       required
                       min="1"
+                      class="mb-4"
                     />
-                    <VTextarea
-                      v-model="headersJson"
-                      label="Request Headers (JSON)"
-                      rows="3"
-                      placeholder="{&quot;Authorization&quot;: &quot;Bearer token&quot;}"
-                      hint="Optional: Enter valid JSON for custom headers"
-                    />
+                    <PluginDataSourcesEditor v-model="pluginData.dataSources!" />
                   </VForm>
                 </VStepperWindowItem>
 
@@ -342,7 +299,7 @@ function cancel() {
                         size="small"
                         :prepend-icon="mdiEye"
                         :loading="previewLoading"
-                        :disabled="!canProceedStep2 || !pluginData.templates![0].liquidMarkup"
+                        :disabled="!canProceedStep2 || !(pluginData.dataSources || []).length || !pluginData.templates![0].liquidMarkup"
                         @click="previewPlugin"
                       >
                         Preview
@@ -404,6 +361,9 @@ function cancel() {
               </VStepperWindow>
             </VStepper>
           </VCardText>
+          <VAlert v-if="saveError" type="error" variant="tonal" class="mx-4 mb-4">
+            {{ saveError }}
+          </VAlert>
           <VDivider />
           <VCardActions class="d-flex justify-space-between pa-4">
             <VBtn

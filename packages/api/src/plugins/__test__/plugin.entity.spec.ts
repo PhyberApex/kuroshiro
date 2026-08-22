@@ -26,13 +26,19 @@ describe('plugin entity', () => {
     expect(plugin.updatedAt).toEqual(new Date('2026-01-02'))
   })
 
-  it('has optional relationships to data source, templates, fields', () => {
+  it('has optional relationships to data sources, templates, fields', () => {
     const plugin = new Plugin()
-    plugin.dataSource = undefined
 
-    expect(plugin.dataSource).toBeUndefined()
+    expect(plugin.dataSources).toBeUndefined()
     expect(plugin.templates).toBeUndefined()
     expect(plugin.fields).toBeUndefined()
+  })
+
+  it('supports an ordered list of zero or more data sources', () => {
+    const plugin = new Plugin()
+    plugin.dataSources = []
+
+    expect(plugin.dataSources).toEqual([])
   })
 
   it('has relationships to device assignments', () => {
