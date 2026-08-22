@@ -1,5 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { jsonResponse, stubFetch } from '../../test/fetch'
 import { useFirmwareStore } from '../firmware'
 
 const OFFICIAL = { id: 'fw-1', version: '1.5.6', kind: 'official-synced', compatibleModels: ['og_png', 'og_plus', 'og_bwry'], deprecated: false }
@@ -7,18 +8,16 @@ const CUSTOM_UNIVERSAL = { id: 'fw-2', version: '1.0.0', kind: 'custom', compati
 const CUSTOM_V2 = { id: 'fw-3', version: '2.0.0', kind: 'custom', compatibleModels: ['v2'], deprecated: false }
 const DEPRECATED = { id: 'fw-0', version: '1.5.5', kind: 'official-synced', compatibleModels: ['og_png'], deprecated: true }
 
-function jsonResponse(body: unknown, ok = true) {
-  return { ok, status: ok ? 200 : 503, statusText: ok ? 'OK' : 'Service Unavailable', json: async () => body }
-}
-
 describe('firmware store', () => {
+  let mockFetch: ReturnType<typeof stubFetch>
+
   beforeEach(() => {
     setActivePinia(createPinia())
-    globalThis.fetch = vi.fn()
+    mockFetch = stubFetch()
   })
 
   it('fetchAll loads firmware and exposes only active rows', async () => {
-    ;(globalThis.fetch as any).mockResolvedValue(jsonResponse([OFFICIAL, DEPRECATED]))
+    mockFetch.mockResolvedValue(jsonResponse([OFFICIAL, DEPRECATED]))
     const store = useFirmwareStore()
     await store.fetchAll()
     expect(store.firmware).toHaveLength(2)
@@ -27,14 +26,14 @@ describe('firmware store', () => {
   })
 
   it('ensureLoaded dedupes concurrent calls into a single fetchAll', async () => {
-    ;(globalThis.fetch as any).mockResolvedValue(jsonResponse([]))
+    mockFetch.mockResolvedValue(jsonResponse([]))
     const store = useFirmwareStore()
     await Promise.all([store.ensureLoaded(), store.ensureLoaded(), store.ensureLoaded()])
-    expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
   })
 
   it('fetchAll records the status and statusText when a response is not ok', async () => {
-    ;(globalThis.fetch as any).mockResolvedValue(jsonResponse(null, false))
+    mockFetch.mockResolvedValue(jsonResponse(null, { status: 503, statusText: 'Service Unavailable' }))
     const store = useFirmwareStore()
     await store.fetchAll()
     expect(store.loaded).toBe(false)
@@ -42,7 +41,7 @@ describe('firmware store', () => {
   })
 
   it('compatibleWith returns universal and model-matching firmware, excluding other models and deprecated rows', async () => {
-    ;(globalThis.fetch as any).mockResolvedValue(jsonResponse([OFFICIAL, CUSTOM_UNIVERSAL, CUSTOM_V2, DEPRECATED]))
+    mockFetch.mockResolvedValue(jsonResponse([OFFICIAL, CUSTOM_UNIVERSAL, CUSTOM_V2, DEPRECATED]))
     const store = useFirmwareStore()
     await store.fetchAll()
     expect(store.compatibleWith('og_plus')).toEqual([OFFICIAL, CUSTOM_UNIVERSAL])
@@ -51,7 +50,7 @@ describe('firmware store', () => {
   })
 
   it('getById finds a firmware row by id', async () => {
-    ;(globalThis.fetch as any).mockResolvedValue(jsonResponse([OFFICIAL]))
+    mockFetch.mockResolvedValue(jsonResponse([OFFICIAL]))
     const store = useFirmwareStore()
     await store.fetchAll()
     expect(store.getById('fw-1')).toEqual(OFFICIAL)
@@ -60,16 +59,16 @@ describe('firmware store', () => {
 
   it('sync posts to the sync endpoint and refreshes the list', async () => {
     const result = { inserted: true, version: '1.5.7' }
-    ;(globalThis.fetch as any).mockImplementation(async (url: string, init?: RequestInit) =>
+    mockFetch.mockImplementation(async (_url, init) =>
       init?.method === 'POST' ? jsonResponse(result) : jsonResponse([OFFICIAL]))
     const store = useFirmwareStore()
     await expect(store.sync()).resolves.toEqual(result)
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/firmware/sync', { method: 'POST' })
+    expect(mockFetch).toHaveBeenCalledWith('/api/firmware/sync', { method: 'POST' })
     expect(store.firmware).toEqual([OFFICIAL])
   })
 
   it('sync records the server error message and returns null on failure', async () => {
-    ;(globalThis.fetch as any).mockResolvedValue(jsonResponse({ message: 'Could not sync firmware from TRMNL: boom' }, false))
+    mockFetch.mockResolvedValue(jsonResponse({ message: 'Could not sync firmware from TRMNL: boom' }, false))
     const store = useFirmwareStore()
     await expect(store.sync()).resolves.toBeNull()
     expect(store.error).toBe('Could not sync firmware from TRMNL: boom')
@@ -78,7 +77,7 @@ describe('firmware store', () => {
 
   it('upload posts multipart form data and refreshes the list', async () => {
     let capturedBody: FormData | undefined
-    ;(globalThis.fetch as any).mockImplementation(async (url: string, init?: RequestInit) => {
+    mockFetch.mockImplementation(async (_url, init) => {
       if (init?.method === 'POST') {
         capturedBody = init.body as FormData
         return jsonResponse({ id: 'fw-2' })
@@ -96,7 +95,7 @@ describe('firmware store', () => {
   })
 
   it('upload records the server error and returns false on failure', async () => {
-    ;(globalThis.fetch as any).mockResolvedValue(jsonResponse({ message: 'Firmware upload must be a .bin file' }, false))
+    mockFetch.mockResolvedValue(jsonResponse({ message: 'Firmware upload must be a .bin file' }, false))
     const store = useFirmwareStore()
     const file = new File(['binary'], 'og.zip')
     await expect(store.upload(file, '1.0.0')).resolves.toBe(false)
@@ -105,15 +104,15 @@ describe('firmware store', () => {
   })
 
   it('remove deletes a firmware and refreshes the list', async () => {
-    ;(globalThis.fetch as any).mockImplementation(async (url: string, init?: RequestInit) =>
+    mockFetch.mockImplementation(async (_url, init) =>
       init?.method === 'DELETE' ? jsonResponse({}) : jsonResponse([]))
     const store = useFirmwareStore()
     await expect(store.remove('fw-2')).resolves.toBe(true)
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/firmware/fw-2', { method: 'DELETE' })
+    expect(mockFetch).toHaveBeenCalledWith('/api/firmware/fw-2', { method: 'DELETE' })
   })
 
   it('remove records the server error and returns false on failure', async () => {
-    ;(globalThis.fetch as any).mockResolvedValue(jsonResponse({ message: 'Only custom firmware can be deleted' }, false))
+    mockFetch.mockResolvedValue(jsonResponse({ message: 'Only custom firmware can be deleted' }, false))
     const store = useFirmwareStore()
     await expect(store.remove('fw-1')).resolves.toBe(false)
     expect(store.error).toBe('Only custom firmware can be deleted')

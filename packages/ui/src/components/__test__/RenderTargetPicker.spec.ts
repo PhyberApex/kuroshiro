@@ -1,3 +1,5 @@
+import type { DeviceModel, Palette } from '@/types'
+import type { RenderTarget } from '@/utils/screenShell'
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import rop from 'resize-observer-polyfill'
@@ -6,24 +8,24 @@ import { defineComponent, ref } from 'vue'
 import vuetify from '../../plugins/vuetify'
 import RenderTargetPicker from '../RenderTargetPicker.vue'
 
-const OG = { name: 'og_plus', label: 'TRMNL OG', width: 800, height: 480, paletteIds: ['bw', 'gray-4'], cssClasses: [], cssVariables: {}, rotation: 0, deprecated: false }
-const V2 = { ...OG, name: 'v2', label: 'TRMNL X', width: 1872, height: 1404, paletteIds: ['gray-16', 'bw'] }
-const BW = { id: 'bw', name: 'bw', grays: 2, frameworkClass: 'screen--1bit', deprecated: false }
-const GRAY_4 = { id: 'gray-4', name: 'g4', grays: 4, frameworkClass: 'screen--2bit', deprecated: false }
-const GRAY_16 = { id: 'gray-16', name: 'g16', grays: 16, frameworkClass: 'screen--4bit', deprecated: false }
+const OG: DeviceModel = { name: 'og_plus', label: 'TRMNL OG', description: null, width: 800, height: 480, colors: 4, bitDepth: 2, scaleFactor: 1, rotation: 0, offsetX: 0, offsetY: 0, mimeType: 'image/png', kind: 'trmnl', paletteIds: ['bw', 'gray-4'], cssClasses: [], cssVariables: {}, deprecated: false }
+const V2: DeviceModel = { ...OG, name: 'v2', label: 'TRMNL X', width: 1872, height: 1404, paletteIds: ['gray-16', 'bw'] }
+const BW: Palette = { id: 'bw', name: 'bw', grays: 2, frameworkClass: 'screen--1bit', deprecated: false }
+const GRAY_4: Palette = { id: 'gray-4', name: 'g4', grays: 4, frameworkClass: 'screen--2bit', deprecated: false }
+const GRAY_16: Palette = { id: 'gray-16', name: 'g16', grays: 16, frameworkClass: 'screen--4bit', deprecated: false }
 
 vi.mock('@/stores/deviceModels', () => ({
   useDeviceModelsStore: () => ({
     ensureLoaded: vi.fn(),
     activeModels: [OG, V2],
     getByName: (name: string) => [OG, V2].find(m => m.name === name),
-    palettesFor: (model: any) => [BW, GRAY_4, GRAY_16].filter(p => model?.paletteIds.includes(p.id)),
+    palettesFor: (model: DeviceModel | null | undefined) => [BW, GRAY_4, GRAY_16].filter(p => model?.paletteIds.includes(p.id)),
   }),
 }))
 
 globalThis.ResizeObserver = rop
 
-function mountPicker(modelValue: any) {
+function mountPicker(modelValue: RenderTarget) {
   return mount(RenderTargetPicker, {
     props: { modelValue },
     global: { plugins: [createPinia(), vuetify] },
@@ -39,7 +41,7 @@ describe('renderTargetPicker', () => {
 
   it('re-emits with the new model and drops a palette it does not support', async () => {
     const wrapper = mountPicker({ model: OG, palette: GRAY_4 })
-    const vm = wrapper.vm as any
+    const vm = wrapper.vm
     vm.selectedPaletteId = 'gray-4'
     await wrapper.vm.$nextTick()
     vm.selectedModelName = 'v2'
@@ -58,7 +60,7 @@ describe('renderTargetPicker', () => {
 
   it('seeds its selection from an incoming modelValue, shown in the selects', () => {
     const wrapper = mountPicker({ model: V2, palette: GRAY_16 })
-    const vm = wrapper.vm as any
+    const vm = wrapper.vm
     expect(vm.selectedModelName).toBe('v2')
     expect(vm.selectedPaletteId).toBe('gray-16')
     expect(wrapper.get('[data-test-id="render-target-model"]').text()).toContain('TRMNL X')
@@ -69,7 +71,7 @@ describe('renderTargetPicker', () => {
     const Host = defineComponent({
       components: { RenderTargetPicker },
       setup() {
-        const target = ref({ model: OG, palette: GRAY_4 })
+        const target = ref<RenderTarget>({ model: OG, palette: GRAY_4 })
         const shown = ref(true)
         return { target, shown }
       },
@@ -79,21 +81,21 @@ describe('renderTargetPicker', () => {
     })
 
     const wrapper = mount(Host, { global: { plugins: [createPinia(), vuetify] } })
-    const picker = () => wrapper.findComponent(RenderTargetPicker).vm as any
+    const picker = () => wrapper.findComponent(RenderTargetPicker).vm
     picker().selectedModelName = 'v2'
     await wrapper.vm.$nextTick()
     await wrapper.vm.$nextTick()
-    const targetAfterEdit = (wrapper.vm as any).target
+    const targetAfterEdit = wrapper.vm.target
     expect(targetAfterEdit).toEqual({ model: V2, palette: GRAY_16 })
 
-    ;(wrapper.vm as any).shown = false
+    wrapper.vm.shown = false
     await wrapper.vm.$nextTick()
     expect(wrapper.findComponent(RenderTargetPicker).exists()).toBe(false)
 
-    ;(wrapper.vm as any).shown = true
+    wrapper.vm.shown = true
     await wrapper.vm.$nextTick()
 
-    expect((wrapper.vm as any).target).toEqual(targetAfterEdit)
+    expect(wrapper.vm.target).toEqual(targetAfterEdit)
     expect(picker().selectedModelName).toBe('v2')
     expect(picker().selectedPaletteId).toBe('gray-16')
   })

@@ -1,7 +1,9 @@
+import type { useScreensStore } from '@/stores/screens'
 import { mount } from '@vue/test-utils'
 import rop from 'resize-observer-polyfill'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import vuetify from '../../plugins/vuetify'
+import { asStore } from '../../test/mockStore'
 import ScreenPreviewCard from '../ScreenPreviewCard.vue'
 
 globalThis.ResizeObserver = rop
@@ -23,7 +25,7 @@ vi.mock('@/utils/formatDate', () => ({
 }))
 
 // Use a local variable to control the mock return value
-let screensStoreMock: any
+let screensStoreMock: ReturnType<typeof useScreensStore>
 vi.mock('@/stores/screens', () => ({
   useScreensStore: () => screensStoreMock,
 }))
@@ -36,7 +38,7 @@ vi.mock('@/stores/device', () => ({
 
 describe('screenPreviewCard', () => {
   beforeEach(() => {
-    screensStoreMock = {
+    screensStoreMock = asStore<ReturnType<typeof useScreensStore>>({
       fetchCurrentScreenForDevice: vi.fn(),
       screens: [],
       deleteScreen: vi.fn(),
@@ -47,7 +49,7 @@ describe('screenPreviewCard', () => {
         refresh_rate: 60,
         rendered_at: '2024-01-01T00:00:00Z',
       },
-    }
+    })
   })
 
   it('renders without error and shows image and date', () => {
@@ -67,7 +69,7 @@ describe('screenPreviewCard', () => {
   })
 
   it('renders non date if renderedAt is empty', () => {
-    screensStoreMock.currentScreen.rendered_at = undefined
+    screensStoreMock.currentScreen!.rendered_at = ''
     const wrapper = mount(ScreenPreviewCard, {
       props: { deviceId: 'device1' },
       global: {
@@ -82,7 +84,7 @@ describe('screenPreviewCard', () => {
   })
 
   it('renders default text on screen not available', () => {
-    screensStoreMock.currentScreen = undefined
+    screensStoreMock.currentScreen = null
     const wrapper = mount(ScreenPreviewCard, {
       props: { deviceId: 'device1' },
       global: {

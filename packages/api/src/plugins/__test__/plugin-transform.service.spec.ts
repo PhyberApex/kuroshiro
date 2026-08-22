@@ -15,7 +15,7 @@ describe('pluginTransformService', () => {
       };
     `
     const rawData = { value: 42 }
-    const result = service.transform(transformJs, rawData) as Record<string, any>
+    const result = service.transform(transformJs, rawData) as Record<string, unknown>
 
     expect(result.transformed).toBe(true)
     expect(result.original).toEqual({ value: 42 })
@@ -28,7 +28,7 @@ describe('pluginTransformService', () => {
       }
     `
     const rawData = { value: 10 }
-    const result = service.transform(transformJs, rawData) as Record<string, any>
+    const result = service.transform(transformJs, rawData) as Record<string, unknown>
 
     expect(result.doubled).toBe(20)
   })
@@ -55,7 +55,7 @@ describe('pluginTransformService', () => {
       };
     `
     const rawData = { items: [{ id: 1 }, { id: 2 }] }
-    const result = service.transform(transformJs, rawData) as Record<string, any>
+    const result = service.transform(transformJs, rawData) as { items: { processed: boolean }[] }
 
     expect(result.items).toHaveLength(2)
     expect(result.items[0].processed).toBe(true)
@@ -95,7 +95,7 @@ describe('pluginTransformService', () => {
       };
     `
     const rawData = { value: 42 }
-    const result = service.transform(transformJs, rawData) as Record<string, any>
+    const result = service.transform(transformJs, rawData) as Record<string, unknown>
 
     expect(result.logged).toBe(true)
   })

@@ -1,8 +1,13 @@
+import type { Mocked } from 'vitest'
+import type { useScreensStore } from '@/stores/screens'
+import type { Screen } from '@/types'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import rop from 'resize-observer-polyfill'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import vuetify from '../../plugins/vuetify'
+import { stubVisualViewport } from '../../test/browser'
+import { asStore } from '../../test/mockStore'
 import ScreenListCard from '../ScreenListCard.vue'
 
 globalThis.ResizeObserver = rop
@@ -18,20 +23,12 @@ globalThis.window.matchMedia = globalThis.window.matchMedia || function () {
   }
 }
 
-globalThis.visualViewport = globalThis.visualViewport || {
-  addEventListener: () => {},
-  removeEventListener: () => {},
-  width: 1024,
-  height: 768,
-  offsetLeft: 0,
-  offsetTop: 0,
-  pageLeft: 0,
-  pageTop: 0,
-  scale: 1,
-} as any
+globalThis.visualViewport = globalThis.visualViewport || stubVisualViewport()
+
+type ScreensStoreMock = Mocked<Pick<ReturnType<typeof useScreensStore>, 'screens' | 'deleteScreen' | 'updateExternalScreen' | 'reorderScreens'>>
 
 // Use a local variable to control the mock return value
-let screensStoreMock: any
+let screensStoreMock: ScreensStoreMock
 vi.mock('@/stores/screens', () => ({
   useScreensStore: () => screensStoreMock,
 }))
@@ -44,12 +41,12 @@ vi.mock('@/stores/device', () => ({
 
 describe('screenListCard', () => {
   beforeEach(() => {
-    screensStoreMock = {
+    screensStoreMock = asStore<ScreensStoreMock>({
       screens: [],
       deleteScreen: vi.fn(),
       updateExternalScreen: vi.fn(),
       reorderScreens: vi.fn(),
-    }
+    })
   })
 
   it('renders without error and shows empty state', () => {
@@ -130,9 +127,9 @@ describe('screenListCard', () => {
     await wrapper.vm.$nextTick()
     await wrapper.vm.$nextTick()
 
-    expect((wrapper.vm as any).showScreenPreview).toBe(true)
-    expect((wrapper.vm as any).previewMode).toBe('mashup')
-    expect((wrapper.vm as any).selectedPreviewScreen.cachedPluginOutput).toBe(cachedHtml)
+    expect(wrapper.vm.showScreenPreview).toBe(true)
+    expect(wrapper.vm.previewMode).toBe('mashup')
+    expect(wrapper.vm.selectedPreviewScreen?.cachedPluginOutput).toBe(cachedHtml)
 
     wrapper.unmount()
   })
@@ -155,8 +152,8 @@ describe('screenListCard', () => {
     await wrapper.vm.$nextTick()
     await wrapper.vm.$nextTick()
 
-    expect((wrapper.vm as any).showScreenPreview).toBe(true)
-    expect((wrapper.vm as any).previewMode).toBe('image')
+    expect(wrapper.vm.showScreenPreview).toBe(true)
+    expect(wrapper.vm.previewMode).toBe('image')
 
     const img = document.body.querySelector('img[alt="Screen preview"]')
     expect(img).not.toBeNull()
@@ -296,15 +293,15 @@ describe('screenListCard', () => {
     await wrapper.vm.$nextTick()
     await wrapper.vm.$nextTick()
 
-    expect((wrapper.vm as any).showScreenPreview).toBe(true)
-    expect((wrapper.vm as any).previewMode).toBe('mashup')
-    expect((wrapper.vm as any).selectedPreviewScreen.cachedPluginOutput).toBeNull()
+    expect(wrapper.vm.showScreenPreview).toBe(true)
+    expect(wrapper.vm.previewMode).toBe('mashup')
+    expect(wrapper.vm.selectedPreviewScreen?.cachedPluginOutput).toBeNull()
 
     wrapper.unmount()
   })
 
   describe('schedule column', () => {
-    function mountWithScreens(screens: any[]) {
+    function mountWithScreens(screens: Screen[]) {
       screensStoreMock.screens = screens
       return mount(ScreenListCard, {
         props: { deviceId: 'device1' },

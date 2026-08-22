@@ -1,4 +1,8 @@
+import type { Firmware } from '../entities/firmware.entity'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { jsonResponse, stubFetch } from '../../test/fetch'
+import { makeFirmware } from '../../test/fixtures'
+import { asRepository, createMockRepository } from '../../test/mockRepository'
 import { FirmwareSyncService } from '../firmware-sync.service'
 
 const { fsMock, cronMock } = vi.hoisted(() => ({
@@ -17,42 +21,29 @@ vi.mock('node-cron', () => ({
   default: cronMock,
 }))
 
-const mockFetch = vi.fn()
-globalThis.fetch = mockFetch
+const mockFetch = stubFetch()
 
-function createMockRepo() {
-  return {
-    findOne: vi.fn(),
-    insert: vi.fn(),
-    update: vi.fn(),
-  }
-}
-
-function jsonResponse(data: unknown, ok = true) {
-  return { ok, status: ok ? 200 : 502, statusText: ok ? 'OK' : 'Bad Gateway', json: async () => data }
-}
-
-function binaryResponse(ok = true) {
-  return { ok, status: ok ? 200 : 502, statusText: ok ? 'OK' : 'Bad Gateway', arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer }
+function binaryResponse(ok = true): Response {
+  return new Response(new Uint8Array([1, 2, 3]), { status: ok ? 200 : 502, statusText: ok ? 'OK' : 'Bad Gateway' })
 }
 
 const latestPayload = { url: 'https://trmnl-fw.example.com/trmnl_og/FW1.5.6.bin', version: '1.5.6' }
 
 describe('firmwareSyncService', () => {
   let service: FirmwareSyncService
-  let firmwareRepo: ReturnType<typeof createMockRepo>
+  let firmwareRepo: ReturnType<typeof createMockRepository<Firmware>>
 
   beforeEach(() => {
     vi.resetAllMocks()
     fsMock.mkdir.mockResolvedValue(undefined)
     fsMock.writeFile.mockResolvedValue(undefined)
-    firmwareRepo = createMockRepo()
-    service = new FirmwareSyncService(firmwareRepo as any)
+    firmwareRepo = createMockRepository<Firmware>()
+    service = new FirmwareSyncService(asRepository(firmwareRepo))
   })
 
   describe('onApplicationBootstrap', () => {
     it('schedules the daily sync and swallows a boot-time sync failure instead of throwing', async () => {
-      mockFetch.mockResolvedValue(jsonResponse(null, false))
+      mockFetch.mockImplementation(async () => jsonResponse(null, { ok: false }))
       await expect(service.onApplicationBootstrap()).resolves.toBeUndefined()
       expect(cronMock.schedule).toHaveBeenCalledWith('0 4 * * *', expect.any(Function))
     })
@@ -63,7 +54,7 @@ describe('firmwareSyncService', () => {
       mockFetch
         .mockResolvedValueOnce(jsonResponse(latestPayload))
         .mockResolvedValueOnce(binaryResponse())
-      firmwareRepo.findOne.mockResolvedValue({ id: 'old', version: '1.5.5' })
+      firmwareRepo.findOne.mockResolvedValue(makeFirmware({ id: 'old', version: '1.5.5' }))
 
       const result = await service.sync()
 
@@ -82,7 +73,7 @@ describe('firmwareSyncService', () => {
 
     it('is a no-op when the version matches the newest existing row', async () => {
       mockFetch.mockResolvedValueOnce(jsonResponse(latestPayload))
-      firmwareRepo.findOne.mockResolvedValue({ id: 'current', version: '1.5.6' })
+      firmwareRepo.findOne.mockResolvedValue(makeFirmware({ id: 'current', version: '1.5.6' }))
 
       const result = await service.sync()
 
@@ -105,8 +96,8 @@ describe('firmwareSyncService', () => {
     })
 
     it('coalesces concurrent sync() calls into a single run', async () => {
-      mockFetch.mockResolvedValue(jsonResponse(latestPayload))
-      firmwareRepo.findOne.mockResolvedValue({ id: 'current', version: '1.5.6' })
+      mockFetch.mockImplementation(async () => jsonResponse(latestPayload))
+      firmwareRepo.findOne.mockResolvedValue(makeFirmware({ id: 'current', version: '1.5.6' }))
 
       const [first, second] = await Promise.all([service.sync(), service.sync()])
 
@@ -118,7 +109,7 @@ describe('firmwareSyncService', () => {
     })
 
     it('throws and writes nothing when TRMNL is unreachable', async () => {
-      mockFetch.mockResolvedValueOnce(jsonResponse(null, false))
+      mockFetch.mockResolvedValueOnce(jsonResponse(null, { ok: false }))
       await expect(service.sync()).rejects.toThrow(/request failed/)
       expect(firmwareRepo.insert).not.toHaveBeenCalled()
     })
@@ -139,7 +130,7 @@ describe('firmwareSyncService', () => {
       mockFetch
         .mockResolvedValueOnce(jsonResponse(latestPayload))
         .mockResolvedValueOnce(binaryResponse(false))
-      firmwareRepo.findOne.mockResolvedValue({ id: 'old', version: '1.5.5' })
+      firmwareRepo.findOne.mockResolvedValue(makeFirmware({ id: 'old', version: '1.5.5' }))
 
       await expect(service.sync()).rejects.toThrow(/Failed to download firmware binary/)
       expect(firmwareRepo.insert).not.toHaveBeenCalled()

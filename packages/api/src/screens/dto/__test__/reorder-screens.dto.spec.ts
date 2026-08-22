@@ -38,7 +38,8 @@ describe('reorder-screens dto', () => {
 
   it('fails validation when screenIds contains non-string entries', async () => {
     const dto = new ReorderScreensDto()
-    dto.screenIds = [1, 2] as unknown as string[]
+    // @ts-expect-error deliberately non-string entries to prove validation rejects them
+    dto.screenIds = [1, 2]
 
     const errors = await validate(dto)
 

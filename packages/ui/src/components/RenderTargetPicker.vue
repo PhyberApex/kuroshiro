@@ -32,6 +32,8 @@ watch(selectedModel, (model) => {
 watch([selectedModel, selectedPalette], ([model, palette]) => {
   target.value = renderTargetFor({ deviceModel: model, palette }, deviceModelsStore)
 }, { immediate: true })
+
+defineExpose({ selectedModelName, selectedPaletteId })
 </script>
 
 <template>

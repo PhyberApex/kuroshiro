@@ -37,7 +37,7 @@ describe('scheduleSummary', () => {
 
 describe('screenScheduleLabel', () => {
   function screen(schedule: Schedule | null): Screen {
-    return { id: 'screen-1', isActive: false, device: 'device-1', fetchManual: false, schedule } as Screen
+    return { id: 'screen-1', isActive: false, device: 'device-1', fetchManual: false, schedule }
   }
 
   it('reads as always for a screen with no schedule', () => {

@@ -1,16 +1,19 @@
 import type { TestingModule } from '@nestjs/testing'
-import type { Repository } from 'typeorm'
 import type { PluginTemplate } from '../../plugins/entities/plugin-template.entity'
+import type { Plugin } from '../../plugins/entities/plugin.entity'
+import type { Screen } from '../../screens/screens.entity'
 import { ConfigService } from '@nestjs/config'
 import { Test } from '@nestjs/testing'
 import { getRepositoryToken } from '@nestjs/typeorm'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Device } from '../../devices/devices.entity'
-import { Plugin } from '../../plugins/entities/plugin.entity'
+import { Plugin as PluginEntity } from '../../plugins/entities/plugin.entity'
 import { PluginDataFetcherService } from '../../plugins/services/plugin-data-fetcher.service'
 import { PluginRendererService } from '../../plugins/services/plugin-renderer.service'
 import { PluginTransformService } from '../../plugins/services/plugin-transform.service'
-import { Screen } from '../../screens/screens.entity'
+import { Screen as ScreenEntity } from '../../screens/screens.entity'
+import { makeDevice, makeMashupConfiguration, makeMashupSlot, makePlugin, makePluginTemplate, makeScreen } from '../../test/fixtures'
+import { createMockRepository, whereId } from '../../test/mockRepository'
 import { MashupConfiguration } from '../entities/mashup-configuration.entity'
 import { MashupSlot } from '../entities/mashup-slot.entity'
 import { MashupService } from '../mashup.service'
@@ -18,119 +21,77 @@ import { MashupRendererService } from '../services/mashup-renderer.service'
 
 describe('mashup Integration Tests', () => {
   let mashupService: MashupService
-  let deviceRepo: Repository<Device>
-  let screenRepo: Repository<Screen>
-  let pluginRepo: Repository<Plugin>
-  let mashupConfigRepo: Repository<MashupConfiguration>
-  let mashupSlotRepo: Repository<MashupSlot>
+  let deviceRepo: ReturnType<typeof createMockRepository<Device>>
+  let screenRepo: ReturnType<typeof createMockRepository<Screen>>
+  let pluginRepo: ReturnType<typeof createMockRepository<Plugin>>
+  let mashupConfigRepo: ReturnType<typeof createMockRepository<MashupConfiguration>>
+  let mashupSlotRepo: ReturnType<typeof createMockRepository<MashupSlot>>
 
   beforeEach(async () => {
-    const mockDevice = {
-      id: 'device-1',
-      name: 'Test Device',
-      width: 800,
-      height: 480,
-    }
+    const mockDevice = makeDevice({ id: 'device-1', name: 'Test Device', width: 800, height: 480 })
 
-    const mockPlugins = [
+    const mockPlugins: Array<Plugin & { template: PluginTemplate }> = [
       {
-        id: 'plugin-1',
-        name: 'Weather Plugin',
-        template: {
-          html: '<div class="plugin-weather">{{weather}}</div>',
-        } as unknown as PluginTemplate,
+        ...makePlugin({ id: 'plugin-1', name: 'Weather Plugin' }),
+        template: makePluginTemplate({ liquidMarkup: '<div class="plugin-weather">{{weather}}</div>' }),
       },
       {
-        id: 'plugin-2',
-        name: 'Calendar Plugin',
-        template: {
-          html: '<div class="plugin-calendar">{{events}}</div>',
-        } as unknown as PluginTemplate,
+        ...makePlugin({ id: 'plugin-2', name: 'Calendar Plugin' }),
+        template: makePluginTemplate({ liquidMarkup: '<div class="plugin-calendar">{{events}}</div>' }),
       },
     ]
 
-    deviceRepo = {
-      findOne: vi.fn().mockResolvedValue(mockDevice),
-    } as any
+    deviceRepo = createMockRepository<Device>()
+    deviceRepo.findOne.mockResolvedValue(mockDevice)
 
-    pluginRepo = {
-      findOne: vi.fn((opts) => {
-        const id = opts.where.id
-        return Promise.resolve(mockPlugins.find(p => p.id === id) || null)
-      }),
-      find: vi.fn().mockResolvedValue(mockPlugins),
-    } as any
+    pluginRepo = createMockRepository<Plugin>()
+    pluginRepo.findOne.mockImplementation(async options =>
+      mockPlugins.find(p => p.id === whereId(options)) ?? null)
+    pluginRepo.find.mockResolvedValue(mockPlugins)
 
-    screenRepo = {
-      create: vi.fn((data) => {
-        return { ...data, id: 'screen-1', isActive: false }
-      }),
-      save: vi.fn((screen) => {
-        return Promise.resolve(screen)
-      }),
-      update: vi.fn().mockResolvedValue(undefined),
-      findOne: vi.fn((opts) => {
-        if (opts.where.id === 'screen-1') {
-          return Promise.resolve({
-            id: 'screen-1',
-            type: 'mashup',
-            filename: 'Test Mashup',
-            device: mockDevice,
-            mashupConfiguration: {
-              id: 'config-1',
-              layout: '1Lx1R',
-              slots: [
-                {
-                  id: 'slot-1',
-                  position: 'L',
-                  size: '50',
-                  order: 0,
-                  plugin: mockPlugins[0],
-                },
-                {
-                  id: 'slot-2',
-                  position: 'R',
-                  size: '50',
-                  order: 1,
-                  plugin: mockPlugins[1],
-                },
-              ],
-            },
-          })
-        }
-        return Promise.resolve(null)
-      }),
-    } as any
+    screenRepo = createMockRepository<Screen>()
+    screenRepo.create.mockImplementation(data => makeScreen({ ...(data as Partial<Screen>), id: 'screen-1', isActive: false }))
+    screenRepo.save.mockImplementation(async screen => screen)
+    screenRepo.update.mockResolvedValue({ raw: [], generatedMaps: [] })
+    screenRepo.findOne.mockImplementation(async (options) => {
+      if (whereId(options) === 'screen-1') {
+        return makeScreen({
+          id: 'screen-1',
+          type: 'mashup',
+          filename: 'Test Mashup',
+          device: mockDevice,
+          mashupConfiguration: makeMashupConfiguration({
+            id: 'config-1',
+            layout: '1Lx1R',
+            slots: [
+              makeMashupSlot({ id: 'slot-1', position: 'L', size: '50', order: 0, plugin: mockPlugins[0] }),
+              makeMashupSlot({ id: 'slot-2', position: 'R', size: '50', order: 1, plugin: mockPlugins[1] }),
+            ],
+          }),
+        })
+      }
+      return null
+    })
 
-    mashupConfigRepo = {
-      create: vi.fn((data) => {
-        return { ...data, id: 'config-1' }
-      }),
-      save: vi.fn((config) => {
-        return Promise.resolve(config)
-      }),
-      findOne: vi.fn().mockResolvedValue(null),
-    } as any
+    mashupConfigRepo = createMockRepository<MashupConfiguration>()
+    mashupConfigRepo.create.mockImplementation(data => makeMashupConfiguration({ ...(data as Partial<MashupConfiguration>), id: 'config-1' }))
+    mashupConfigRepo.save.mockImplementation(async config => config)
+    mashupConfigRepo.findOne.mockResolvedValue(null)
 
-    mashupSlotRepo = {
-      create: vi.fn((data) => {
-        return { ...data, id: `slot-${Math.random()}` }
-      }),
-      save: vi.fn((slot) => {
-        return Promise.resolve(slot)
-      }),
-      find: vi.fn().mockResolvedValue([]),
-      remove: vi.fn().mockResolvedValue(undefined),
-    } as any
+    mashupSlotRepo = createMockRepository<MashupSlot>()
+    mashupSlotRepo.create.mockImplementation(data => makeMashupSlot({ ...(data as Partial<MashupSlot>), id: `slot-${Math.random()}` }))
+    mashupSlotRepo.save.mockImplementation(async slot => slot)
+    mashupSlotRepo.find.mockResolvedValue([])
+    mashupSlotRepo.remove.mockResolvedValue([])
 
     const mockPluginRenderer = {
-      render: vi.fn((plugin) => {
-        if (plugin.id === 'plugin-1') {
+      render: vi.fn((plugin: Plugin) => {
+        if (plugin.id === 'plugin-1')
           return Promise.resolve('<div class="plugin-weather">Sunny 72°F</div>')
-        }
-        if (plugin.id === 'plugin-2') {
+
+        if (plugin.id === 'plugin-2')
           return Promise.resolve('<div class="plugin-calendar">Meeting at 2pm</div>')
-        }
+
         return Promise.resolve('<div>Unknown</div>')
       }),
     }
@@ -151,11 +112,11 @@ describe('mashup Integration Tests', () => {
           useValue: deviceRepo,
         },
         {
-          provide: getRepositoryToken(Screen),
+          provide: getRepositoryToken(ScreenEntity),
           useValue: screenRepo,
         },
         {
-          provide: getRepositoryToken(Plugin),
+          provide: getRepositoryToken(PluginEntity),
           useValue: pluginRepo,
         },
         {
@@ -201,13 +162,13 @@ describe('mashup Integration Tests', () => {
 
   it.skip('should render mashup HTML with plugin content', async () => {
     const mockPluginRenderer = {
-      render: vi.fn((plugin) => {
-        if (plugin.id === 'plugin-1') {
+      render: vi.fn((plugin: Plugin) => {
+        if (plugin.id === 'plugin-1')
           return Promise.resolve('<div class="plugin-weather">Sunny 72°F</div>')
-        }
-        if (plugin.id === 'plugin-2') {
+
+        if (plugin.id === 'plugin-2')
           return Promise.resolve('<div class="plugin-calendar">Meeting at 2pm</div>')
-        }
+
         return Promise.resolve('<div>Unknown</div>')
       }),
     }
@@ -242,43 +203,36 @@ describe('mashup Integration Tests', () => {
 
     const renderer = module.get<MashupRendererService>(MashupRendererService)
 
-    const mockMashupConfig = {
+    const mockMashupConfig = makeMashupConfiguration({
       id: 'config-1',
       layout: '1Lx1R',
       slots: [
-        {
+        makeMashupSlot({
           id: 'slot-1',
           position: 'L',
           size: '50',
           order: 0,
-          plugin: {
+          plugin: makePlugin({
             id: 'plugin-1',
             name: 'Weather Plugin',
-            dataSource: { type: 'static', config: {} },
-            templates: [{ html: '<div>test</div>' }],
-          } as unknown as Plugin,
-        },
-        {
+            templates: [makePluginTemplate({ liquidMarkup: '<div>test</div>' })],
+          }),
+        }),
+        makeMashupSlot({
           id: 'slot-2',
           position: 'R',
           size: '50',
           order: 1,
-          plugin: {
+          plugin: makePlugin({
             id: 'plugin-2',
             name: 'Calendar Plugin',
-            dataSource: { type: 'static', config: {} },
-            templates: [{ html: '<div>test</div>' }],
-          } as unknown as Plugin,
-        },
+            templates: [makePluginTemplate({ liquidMarkup: '<div>test</div>' })],
+          }),
+        }),
       ],
-    } as MashupConfiguration
+    })
 
-    const mockDevice = {
-      id: 'device-1',
-      name: 'Test Device',
-      width: 800,
-      height: 480,
-    } as Device
+    const mockDevice = makeDevice({ id: 'device-1', name: 'Test Device', width: 800, height: 480 })
 
     const html = await renderer.renderMashup(mockMashupConfig, mockDevice)
 
@@ -292,10 +246,10 @@ describe('mashup Integration Tests', () => {
 
   it.skip('should handle plugin rendering errors gracefully in mashup', async () => {
     const mockPluginRenderer = {
-      render: vi.fn((plugin) => {
-        if (plugin.id === 'plugin-1') {
+      render: vi.fn((plugin: Plugin) => {
+        if (plugin.id === 'plugin-1')
           return Promise.reject(new Error('Plugin render failed'))
-        }
+
         return Promise.resolve('<div class="plugin-calendar">Meeting at 2pm</div>')
       }),
     }
@@ -330,38 +284,16 @@ describe('mashup Integration Tests', () => {
 
     const renderer = module.get<MashupRendererService>(MashupRendererService)
 
-    const mockMashupConfig = {
+    const mockMashupConfig = makeMashupConfiguration({
       id: 'config-1',
       layout: '1Lx1R',
       slots: [
-        {
-          id: 'slot-1',
-          position: 'L',
-          size: '50',
-          order: 0,
-          plugin: {
-            id: 'plugin-1',
-            name: 'Weather Plugin',
-          } as Plugin,
-        },
-        {
-          id: 'slot-2',
-          position: 'R',
-          size: '50',
-          order: 1,
-          plugin: {
-            id: 'plugin-2',
-            name: 'Calendar Plugin',
-          } as Plugin,
-        },
+        makeMashupSlot({ id: 'slot-1', position: 'L', size: '50', order: 0, plugin: makePlugin({ id: 'plugin-1', name: 'Weather Plugin' }) }),
+        makeMashupSlot({ id: 'slot-2', position: 'R', size: '50', order: 1, plugin: makePlugin({ id: 'plugin-2', name: 'Calendar Plugin' }) }),
       ],
-    } as MashupConfiguration
+    })
 
-    const mockDevice = {
-      id: 'device-1',
-      width: 800,
-      height: 480,
-    } as Device
+    const mockDevice = makeDevice({ id: 'device-1', width: 800, height: 480 })
 
     const html = await renderer.renderMashup(mockMashupConfig, mockDevice)
 
@@ -371,22 +303,22 @@ describe('mashup Integration Tests', () => {
   })
 
   it('should update an existing mashup and clear old slots', async () => {
-    const existingScreen = {
+    const existingScreen = makeScreen({
       id: 'screen-1',
-      type: 'mashup' as const,
+      type: 'mashup',
       filename: 'Old Mashup',
-      device: { id: 'device-1' },
-      mashupConfiguration: {
+      device: makeDevice({ id: 'device-1' }),
+      mashupConfiguration: makeMashupConfiguration({
         id: 'config-1',
         slots: [
-          { id: 'old-slot-1', plugin: { id: 'plugin-1' } },
-          { id: 'old-slot-2', plugin: { id: 'plugin-2' } },
+          makeMashupSlot({ id: 'old-slot-1', plugin: makePlugin({ id: 'plugin-1' }) }),
+          makeMashupSlot({ id: 'old-slot-2', plugin: makePlugin({ id: 'plugin-2' }) }),
         ],
-      },
-    }
+      }),
+    })
 
-    screenRepo.findOne = vi.fn().mockResolvedValue(existingScreen)
-    mashupConfigRepo.findOne = vi.fn().mockResolvedValue(existingScreen.mashupConfiguration)
+    screenRepo.findOne.mockResolvedValue(existingScreen)
+    mashupConfigRepo.findOne.mockResolvedValue(existingScreen.mashupConfiguration ?? null)
 
     const dto = {
       filename: 'Updated Mashup',
@@ -398,22 +330,20 @@ describe('mashup Integration Tests', () => {
 
     expect(result).toBeDefined()
     expect(result.filename).toBe('Updated Mashup')
-    expect(mashupSlotRepo.remove).toHaveBeenCalledWith(existingScreen.mashupConfiguration.slots)
+    expect(mashupSlotRepo.remove).toHaveBeenCalledWith(existingScreen.mashupConfiguration?.slots)
     expect(mashupSlotRepo.save).toHaveBeenCalled()
   })
 
   it('should delete mashup and cascade to configuration and slots', async () => {
-    const existingScreen = {
+    const existingScreen = makeScreen({
       id: 'screen-1',
-      type: 'mashup' as const,
-      device: { id: 'device-1' },
-      mashupConfiguration: {
-        id: 'config-1',
-      },
-    }
+      type: 'mashup',
+      device: makeDevice({ id: 'device-1' }),
+      mashupConfiguration: makeMashupConfiguration({ id: 'config-1' }),
+    })
 
-    screenRepo.findOne = vi.fn().mockResolvedValue(existingScreen)
-    screenRepo.remove = vi.fn().mockResolvedValue(undefined)
+    screenRepo.findOne.mockResolvedValue(existingScreen)
+    screenRepo.remove.mockResolvedValue([])
 
     await mashupService.delete('screen-1')
 

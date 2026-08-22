@@ -126,6 +126,12 @@ function previewScreen(screen: Screen) {
 
   showScreenPreview.value = true
 }
+
+defineExpose({
+  showScreenPreview,
+  previewMode,
+  selectedPreviewScreen,
+})
 </script>
 
 <template>

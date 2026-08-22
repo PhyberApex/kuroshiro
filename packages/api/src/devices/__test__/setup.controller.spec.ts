@@ -1,6 +1,7 @@
 import type { DeviceSetupService } from '../setup.service'
 import { BadRequestException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { asService } from '../../test/mockService'
 import { SetupController } from '../setup.controller'
 
 describe('setupController (unit)', () => {
@@ -9,7 +10,7 @@ describe('setupController (unit)', () => {
 
   beforeEach(() => {
     service = { setupDevice: vi.fn() }
-    controller = new SetupController(service as unknown as DeviceSetupService)
+    controller = new SetupController(asService<DeviceSetupService>(service))
   })
 
   it('should return setup response from service', async () => {
@@ -22,7 +23,7 @@ describe('setupController (unit)', () => {
       friendly_id: 'friendly',
     }
     service.setupDevice.mockResolvedValue(response)
-    const result = await controller.setupDevice(headers as any)
+    const result = await controller.setupDevice(headers)
     expect(service.setupDevice).toHaveBeenCalledWith(headers)
     expect(result).toBe(response)
   })
@@ -31,6 +32,7 @@ describe('setupController (unit)', () => {
     service.setupDevice.mockImplementation(() => {
       throw new BadRequestException('Missing headers')
     })
-    await expect(controller.setupDevice({} as any)).rejects.toThrow(BadRequestException)
+    // @ts-expect-error deliberately missing the required id header
+    await expect(controller.setupDevice({})).rejects.toThrow(BadRequestException)
   })
 })

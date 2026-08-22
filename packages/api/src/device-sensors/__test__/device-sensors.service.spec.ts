@@ -1,27 +1,19 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { DeviceSensor } from '../entities/device-sensor.entity'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { makeDevice, makeDeviceSensor } from '../../test/fixtures'
+import { asRepository, createMockRepository } from '../../test/mockRepository'
 import { DeviceSensorsService } from '../device-sensors.service'
-
-function createMockRepo() {
-  return {
-    find: vi.fn(),
-    save: vi.fn(),
-    remove: vi.fn(),
-    create: vi.fn((attrs: any) => attrs),
-  }
-}
 
 describe('deviceSensorsService', () => {
   let service: DeviceSensorsService
-  let sensorRepo: ReturnType<typeof createMockRepo>
+  let sensorRepo: ReturnType<typeof createMockRepository<DeviceSensor>>
 
-  const device = { id: 'device-1' } as any
+  const device = makeDevice({ id: 'device-1' })
 
   beforeEach(() => {
-    sensorRepo = createMockRepo()
+    sensorRepo = createMockRepository<DeviceSensor>()
     sensorRepo.find.mockResolvedValue([])
-    sensorRepo.save.mockImplementation(async (row: any) => row)
-    sensorRepo.remove.mockResolvedValue(undefined)
-    service = new DeviceSensorsService(sensorRepo as any)
+    service = new DeviceSensorsService(asRepository(sensorRepo))
   })
 
   describe('syncFromHeader', () => {
@@ -37,7 +29,7 @@ describe('deviceSensorsService', () => {
     })
 
     it('updates value/unit in place for a kind that already has a row', async () => {
-      const existingRow = { id: 'row-1', kind: 'temperature', value: 20, unit: 'C' }
+      const existingRow = makeDeviceSensor({ id: 'row-1', kind: 'temperature', value: 20, unit: 'C', device })
       sensorRepo.find.mockResolvedValue([existingRow])
 
       await service.syncFromHeader(device, 'kind=temperature;value=22.1;unit=C')
@@ -47,8 +39,8 @@ describe('deviceSensorsService', () => {
     })
 
     it('clears only the kinds missing from this poll, leaving present kinds untouched', async () => {
-      const temperatureRow = { id: 'row-1', kind: 'temperature', value: 20, unit: 'C' }
-      const humidityRow = { id: 'row-2', kind: 'humidity', value: 40, unit: '%' }
+      const temperatureRow = makeDeviceSensor({ id: 'row-1', kind: 'temperature', value: 20, unit: 'C', device })
+      const humidityRow = makeDeviceSensor({ id: 'row-2', kind: 'humidity', value: 40, unit: '%', device })
       sensorRepo.find.mockResolvedValue([temperatureRow, humidityRow])
 
       await service.syncFromHeader(device, 'kind=temperature;value=21;unit=C')
@@ -83,7 +75,7 @@ describe('deviceSensorsService', () => {
     })
 
     it('clears every existing row when the header is absent', async () => {
-      const temperatureRow = { id: 'row-1', kind: 'temperature', value: 20, unit: 'C' }
+      const temperatureRow = makeDeviceSensor({ id: 'row-1', kind: 'temperature', value: 20, unit: 'C', device })
       sensorRepo.find.mockResolvedValue([temperatureRow])
 
       await service.syncFromHeader(device, undefined)
@@ -93,7 +85,7 @@ describe('deviceSensorsService', () => {
     })
 
     it('clears every existing row when the header is blank', async () => {
-      const temperatureRow = { id: 'row-1', kind: 'temperature', value: 20, unit: 'C' }
+      const temperatureRow = makeDeviceSensor({ id: 'row-1', kind: 'temperature', value: 20, unit: 'C', device })
       sensorRepo.find.mockResolvedValue([temperatureRow])
 
       await service.syncFromHeader(device, '')
@@ -111,7 +103,7 @@ describe('deviceSensorsService', () => {
 
   describe('findForDevice', () => {
     it('queries rows scoped to the given device', async () => {
-      const rows = [{ id: 'row-1', kind: 'temperature', value: 21, unit: 'C' }]
+      const rows = [makeDeviceSensor({ id: 'row-1', kind: 'temperature', value: 21, unit: 'C', device })]
       sensorRepo.find.mockResolvedValue(rows)
 
       await expect(service.findForDevice('device-1')).resolves.toBe(rows)

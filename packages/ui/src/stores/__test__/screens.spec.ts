@@ -1,19 +1,17 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { jsonResponse, stubFetch } from '../../test/fetch'
 import { useScreensStore } from '../screens'
 
 describe('screens store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    globalThis.fetch = vi.fn()
   })
 
   it('reorderScreens sends the ordered ids and stores the server-confirmed order', async () => {
+    const mockFetch = stubFetch()
     const reordered = [{ id: 'b', order: 1 }, { id: 'a', order: 2 }]
-    ;(globalThis.fetch as any).mockResolvedValue({
-      ok: true,
-      json: async () => reordered,
-    })
+    mockFetch.mockResolvedValue(jsonResponse(reordered))
 
     const store = useScreensStore()
     await store.reorderScreens('device-1', ['b', 'a'])
@@ -27,10 +25,11 @@ describe('screens store', () => {
   })
 
   it('reorderScreens refetches the device screens and throws on failure', async () => {
+    const mockFetch = stubFetch()
     const serverScreens = [{ id: 'a', order: 1 }, { id: 'b', order: 2 }]
-    ;(globalThis.fetch as any)
-      .mockResolvedValueOnce({ ok: false })
-      .mockResolvedValueOnce({ ok: true, json: async () => serverScreens })
+    mockFetch
+      .mockResolvedValueOnce(jsonResponse(null, false))
+      .mockResolvedValueOnce(jsonResponse(serverScreens))
 
     const store = useScreensStore()
     await expect(store.reorderScreens('device-1', ['b', 'a'])).rejects.toThrow('Failed to reorder screens')

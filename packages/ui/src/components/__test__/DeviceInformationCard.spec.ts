@@ -147,7 +147,7 @@ describe('deviceInformationCard', () => {
   it('sends the selected model and palette when saving', async () => {
     mockDevice.current = baseDevice({ deviceModel: OG_PLUS, palette: GRAY_4, refreshRate: 300 })
     const wrapper = mountCard()
-    const vm = wrapper.vm as any
+    const vm = wrapper.vm
     vm.selectedModelName = 'v2'
     vm.selectedPaletteId = 'gray-16'
     await vm.saveDevice()
@@ -157,7 +157,7 @@ describe('deviceInformationCard', () => {
   it('never includes the one-shot specialFunction/resetDevice fields in a regular save', async () => {
     mockDevice.current = baseDevice({ specialFunction: 'identify', resetDevice: true, refreshRate: 300 })
     const wrapper = mountCard()
-    const vm = wrapper.vm as any
+    const vm = wrapper.vm
     await vm.saveDevice()
     expect(updateDevice.mock.calls[0][1]).not.toHaveProperty('specialFunction')
     expect(updateDevice.mock.calls[0][1]).not.toHaveProperty('resetDevice')
@@ -166,7 +166,7 @@ describe('deviceInformationCard', () => {
   it('drops a palette the newly selected model does not support', async () => {
     mockDevice.current = baseDevice({ deviceModel: V2, palette: GRAY_16, refreshRate: 300 })
     const wrapper = mountCard()
-    const vm = wrapper.vm as any
+    const vm = wrapper.vm
     vm.selectedModelName = 'og_plus'
     await wrapper.vm.$nextTick()
     expect(vm.selectedPaletteId).toBeNull()
@@ -179,14 +179,14 @@ describe('deviceInformationCard', () => {
     it('pre-selects the device\'s currently pending special function', () => {
       mockDevice.current = baseDevice({ specialFunction: 'identify' })
       const wrapper = mountCard()
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm
       expect(vm.pendingSpecialFunction).toBe('identify')
     })
 
     it('sends only the selected special function, isolated from the rest of the form', async () => {
       mockDevice.current = baseDevice({ name: 'Unsaved rename in progress' })
       const wrapper = mountCard()
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm
       vm.pendingSpecialFunction = 'sleep'
       await vm.triggerSpecialFunction()
       expect(updateDevice).toHaveBeenCalledWith('device1', { specialFunction: 'sleep' })
@@ -197,7 +197,7 @@ describe('deviceInformationCard', () => {
     it('sends only resetDevice, isolated from the rest of the form', async () => {
       mockDevice.current = baseDevice({ name: 'Unsaved rename in progress' })
       const wrapper = mountCard()
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm
       await vm.triggerReset()
       expect(updateDevice).toHaveBeenCalledWith('device1', { resetDevice: true })
     })
@@ -207,14 +207,14 @@ describe('deviceInformationCard', () => {
     it('pre-selects the device\'s currently assigned target firmware', () => {
       mockDevice.current = baseDevice({ deviceModel: OG_PLUS, targetFirmware: OFFICIAL_FW })
       const wrapper = mountCard()
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm
       expect(vm.selectedFirmwareId).toBe('fw-1')
     })
 
     it('does nothing when triggered without a selected firmware', async () => {
       mockDevice.current = baseDevice({ deviceModel: OG_PLUS })
       const wrapper = mountCard()
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm
       await vm.triggerFirmwareUpdate()
       expect(updateDevice).not.toHaveBeenCalled()
     })
@@ -222,7 +222,7 @@ describe('deviceInformationCard', () => {
     it('assigns the firmware and flips the update flag in a single call', async () => {
       mockDevice.current = baseDevice({ deviceModel: OG_PLUS })
       const wrapper = mountCard()
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm
       vm.selectedFirmwareId = 'fw-1'
       await vm.triggerFirmwareUpdate()
       expect(updateDevice).toHaveBeenCalledWith('device1', { targetFirmwareId: 'fw-1', updateFirmware: true })
@@ -232,9 +232,9 @@ describe('deviceInformationCard', () => {
       const deprecatedFw = { ...OFFICIAL_FW, deprecated: true }
       mockDevice.current = baseDevice({ deviceModel: OG_PLUS, targetFirmware: deprecatedFw })
       const wrapper = mountCard()
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm
       expect(vm.selectedFirmwareId).toBe('fw-1')
-      expect(vm.firmwareOptions.some((opt: any) => opt.value === 'fw-1')).toBe(true)
+      expect(vm.firmwareOptions.some(opt => opt.value === 'fw-1')).toBe(true)
     })
 
     it('shows an update pending chip while the flag is set', async () => {
@@ -250,7 +250,7 @@ describe('deviceInformationCard', () => {
     it('pre-fills the configured sleep window as time inputs', () => {
       mockDevice.current = baseDevice({ deviceModel: OG_PLUS, sleepModeEnabled: true, sleepStartTime: 22 * 3600, sleepEndTime: 6 * 3600 })
       const wrapper = mountCard()
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm
       expect(vm.sleepStartTime).toBe('22:00')
       expect(vm.sleepEndTime).toBe('06:00')
     })
@@ -258,7 +258,7 @@ describe('deviceInformationCard', () => {
     it('leaves the time inputs empty when no window is configured', () => {
       mockDevice.current = baseDevice({ deviceModel: OG_PLUS })
       const wrapper = mountCard()
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm
       expect(vm.sleepStartTime).toBe('')
       expect(vm.sleepEndTime).toBe('')
     })
@@ -266,7 +266,7 @@ describe('deviceInformationCard', () => {
     it('sends the sleep window converted back to seconds-since-midnight when saving', async () => {
       mockDevice.current = baseDevice({ deviceModel: OG_PLUS, refreshRate: 300, sleepModeEnabled: true, sleepScreenEnabled: true })
       const wrapper = mountCard()
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm
       vm.sleepStartTime = '22:00'
       vm.sleepEndTime = '06:00'
       await vm.saveDevice()
@@ -281,7 +281,7 @@ describe('deviceInformationCard', () => {
     it('rejects enabling sleep mode without a full window and does not save', async () => {
       mockDevice.current = baseDevice({ deviceModel: OG_PLUS, refreshRate: 300, sleepModeEnabled: true })
       const wrapper = mountCard()
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm
       vm.sleepStartTime = ''
       vm.sleepEndTime = ''
       expect(vm.sleepWindowValid).toBe(false)
@@ -293,7 +293,7 @@ describe('deviceInformationCard', () => {
       mockDevice.current = baseDevice({ deviceModel: OG_PLUS })
       const wrapper = mountCard()
       await wrapper.find('.v-expansion-panel-title').trigger('click')
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm
       vm.sleepStartTime = '22:00'
       vm.sleepEndTime = '06:00'
       await wrapper.vm.$nextTick()

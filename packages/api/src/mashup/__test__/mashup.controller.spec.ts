@@ -3,11 +3,12 @@ import type { UpdateMashupDto } from '../dto/update-mashup.dto'
 import type { MashupService } from '../mashup.service'
 import { BadRequestException, NotFoundException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { asService } from '../../test/mockService'
 import { MashupController } from '../mashup.controller'
 
 describe('mashupController', () => {
   let controller: MashupController
-  let mockService: MashupService
+  let mockService: { create: ReturnType<typeof vi.fn>, update: ReturnType<typeof vi.fn>, delete: ReturnType<typeof vi.fn>, getConfiguration: ReturnType<typeof vi.fn>, getLayouts: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     mockService = {
@@ -16,9 +17,9 @@ describe('mashupController', () => {
       delete: vi.fn(),
       getConfiguration: vi.fn(),
       getLayouts: vi.fn(),
-    } as any
+    }
 
-    controller = new MashupController(mockService)
+    controller = new MashupController(asService<MashupService>(mockService))
   })
 
   describe('create', () => {

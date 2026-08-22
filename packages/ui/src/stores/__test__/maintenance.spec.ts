@@ -1,8 +1,9 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { jsonResponse, stubFetch } from '../../test/fetch'
 import { useMaintenanceStore } from '../maintenance'
 
-globalThis.fetch = vi.fn()
+const mockFetch = stubFetch()
 
 describe('maintenanceStore', () => {
   beforeEach(() => {
@@ -22,10 +23,7 @@ describe('maintenanceStore', () => {
         scannedAt: '2026-04-24T12:00:00Z',
       }
 
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockIssues,
-      } as Response)
+      mockFetch.mockResolvedValueOnce(jsonResponse(mockIssues))
 
       const store = useMaintenanceStore()
       await store.scanSystem()
@@ -37,26 +35,22 @@ describe('maintenanceStore', () => {
     })
 
     it('sets loading state during scan', async () => {
-      vi.mocked(fetch).mockImplementationOnce(() =>
+      mockFetch.mockImplementationOnce(() =>
         new Promise(resolve =>
           setTimeout(
             () =>
-              resolve({
-                ok: true,
-                json: async () => ({
-                  orphanedScreenFiles: [],
-                  orphanedDeviceDirs: [],
-                  brokenScreens: [],
-                  tempFiles: [],
-                  oldUploads: [],
-                  totalSize: 0,
-                  scannedAt: '2026-04-24T12:00:00Z',
-                }),
-              } as Response),
+              resolve(jsonResponse({
+                orphanedScreenFiles: [],
+                orphanedDeviceDirs: [],
+                brokenScreens: [],
+                tempFiles: [],
+                oldUploads: [],
+                totalSize: 0,
+                scannedAt: '2026-04-24T12:00:00Z',
+              })),
             100,
           ),
-        ),
-      )
+        ))
 
       const store = useMaintenanceStore()
       const scanPromise = store.scanSystem()
@@ -69,10 +63,7 @@ describe('maintenanceStore', () => {
     })
 
     it('handles scan errors', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Internal Server Error',
-      } as Response)
+      mockFetch.mockResolvedValueOnce(new Response(null, { status: 500, statusText: 'Internal Server Error' }))
 
       const store = useMaintenanceStore()
 
@@ -83,7 +74,7 @@ describe('maintenanceStore', () => {
     })
 
     it('handles network errors', async () => {
-      vi.mocked(fetch).mockRejectedValueOnce(new Error('Network error'))
+      mockFetch.mockRejectedValueOnce(new Error('Network error'))
 
       const store = useMaintenanceStore()
 
@@ -104,10 +95,7 @@ describe('maintenanceStore', () => {
         errors: [],
       }
 
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResult,
-      } as Response)
+      mockFetch.mockResolvedValueOnce(jsonResponse(mockResult))
 
       const store = useMaintenanceStore()
       const result = await store.cleanupIssues(
@@ -146,10 +134,7 @@ describe('maintenanceStore', () => {
         errors: [],
       }
 
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResult,
-      } as Response)
+      mockFetch.mockResolvedValueOnce(jsonResponse(mockResult))
 
       const store = useMaintenanceStore()
       await store.cleanupIssues()
@@ -177,25 +162,19 @@ describe('maintenanceStore', () => {
         errors: [],
       }
 
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResult,
-      } as Response)
+      mockFetch.mockResolvedValueOnce(jsonResponse(mockResult))
 
       const store = useMaintenanceStore()
       await store.cleanupIssues(['/file.png'], [], [], [], [], true)
 
-      const callArgs = vi.mocked(fetch).mock.calls[0]
+      const callArgs = mockFetch.mock.calls[0]
       const body = JSON.parse(callArgs[1]!.body as string)
 
       expect(body.dryRun).toBe(true)
     })
 
     it('handles cleanup errors', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Forbidden',
-      } as Response)
+      mockFetch.mockResolvedValueOnce(new Response(null, { status: 500, statusText: 'Forbidden' }))
 
       const store = useMaintenanceStore()
 
@@ -206,7 +185,7 @@ describe('maintenanceStore', () => {
     })
 
     it('handles network errors during cleanup', async () => {
-      vi.mocked(fetch).mockRejectedValueOnce(new Error('Connection refused'))
+      mockFetch.mockRejectedValueOnce(new Error('Connection refused'))
 
       const store = useMaintenanceStore()
 
@@ -224,10 +203,7 @@ describe('maintenanceStore', () => {
         totalSize: 1024000,
       }
 
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockStats,
-      } as Response)
+      mockFetch.mockResolvedValueOnce(jsonResponse(mockStats))
 
       const store = useMaintenanceStore()
       const result = await store.getStats()
@@ -237,10 +213,7 @@ describe('maintenanceStore', () => {
     })
 
     it('handles stats fetch errors', async () => {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Service Unavailable',
-      } as Response)
+      mockFetch.mockResolvedValueOnce(new Response(null, { status: 500, statusText: 'Service Unavailable' }))
 
       const store = useMaintenanceStore()
 
@@ -250,7 +223,7 @@ describe('maintenanceStore', () => {
     })
 
     it('handles network errors during stats fetch', async () => {
-      vi.mocked(fetch).mockRejectedValueOnce(new Error('Timeout'))
+      mockFetch.mockRejectedValueOnce(new Error('Timeout'))
 
       const store = useMaintenanceStore()
 
@@ -272,10 +245,7 @@ describe('maintenanceStore', () => {
         scannedAt: '2026-04-24T12:00:00Z',
       }
 
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockIssues,
-      } as Response)
+      mockFetch.mockResolvedValueOnce(jsonResponse(mockIssues))
 
       const store = useMaintenanceStore()
       await store.scanSystem()

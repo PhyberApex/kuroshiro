@@ -1,9 +1,20 @@
-import type { Plugin } from '../entities/plugin.entity'
 import { Buffer } from 'node:buffer'
 import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { makePlugin, makePluginDataSource, makePluginField, makePluginTemplate } from '../../test/fixtures'
 import { PluginExporterService } from '../services/plugin-exporter.service'
+
+interface ExportedManifest {
+  name: string
+  description: string
+  custom_fields: Array<{ keyname: string, field_type: string, optional: boolean, description: string, default_value: string }>
+}
+
+interface ExportedSettings {
+  refresh_interval: number
+  data_sources?: Array<{ name: string, endpoint: string, method: string, headers?: Record<string, string>, body?: Record<string, unknown>, transform_js?: string }>
+}
 
 describe('pluginExporterService', () => {
   let service: PluginExporterService
@@ -13,28 +24,18 @@ describe('pluginExporterService', () => {
   })
 
   it('exports a basic plugin to ZIP', async () => {
-    const plugin = {
+    const plugin = makePlugin({
       name: 'Test Plugin',
       description: 'Test Description',
       refreshInterval: 15,
       dataSources: [
-        {
-          name: 'source',
-          url: 'https://api.example.com',
-          method: 'GET',
-          headers: {},
-          body: {},
-          order: 0,
-        },
+        makePluginDataSource({ name: 'source', url: 'https://api.example.com', method: 'GET', headers: {}, body: {}, order: 0 }),
       ],
       templates: [
-        {
-          layout: 'full',
-          liquidMarkup: '<div>{{ data }}</div>',
-        },
+        makePluginTemplate({ layout: 'full', liquidMarkup: '<div>{{ data }}</div>' }),
       ],
       fields: [],
-    } as unknown as Plugin
+    })
 
     const buffer = await service.exportToZip(plugin)
     expect(buffer).toBeInstanceOf(Buffer)
@@ -49,36 +50,29 @@ describe('pluginExporterService', () => {
   })
 
   it('includes manifest with custom fields', async () => {
-    const plugin = {
+    const plugin = makePlugin({
       name: 'Weather Plugin',
       description: 'Shows weather',
       refreshInterval: 30,
-      dataSources: [{
-        name: 'source',
-        url: 'https://api.weather.com',
-        method: 'GET',
-        headers: {},
-        body: {},
-        order: 0,
-      }],
-      templates: [{ layout: 'full', liquidMarkup: 'Test' }],
+      dataSources: [makePluginDataSource({ name: 'source', url: 'https://api.weather.com', method: 'GET', headers: {}, body: {}, order: 0 })],
+      templates: [makePluginTemplate({ layout: 'full', liquidMarkup: 'Test' })],
       fields: [
-        {
+        makePluginField({
           keyname: 'api_key',
           fieldType: 'password',
           name: 'API Key',
           description: 'Your API key',
           defaultValue: '',
           required: true,
-        },
+        }),
       ],
-    } as unknown as Plugin
+    })
 
     const buffer = await service.exportToZip(plugin)
     const zip = new AdmZip(buffer)
     const manifestEntry = zip.getEntry('.trmnlp.yml')!
     const manifestContent = manifestEntry.getData().toString('utf8')
-    const manifest = yaml.load(manifestContent) as any
+    const manifest = yaml.load(manifestContent) as ExportedManifest
 
     expect(manifest.name).toBe('Weather Plugin')
     expect(manifest.description).toBe('Shows weather')
@@ -89,56 +83,56 @@ describe('pluginExporterService', () => {
   })
 
   it('includes settings with a data_sources array', async () => {
-    const plugin = {
+    const plugin = makePlugin({
       name: 'Test',
       refreshInterval: 60,
-      dataSources: [{
+      dataSources: [makePluginDataSource({
         name: 'weather',
         url: 'https://api.example.com/data',
         method: 'POST',
         headers: { Authorization: 'Bearer token' },
         body: { key: 'value' },
         order: 0,
-      }],
-      templates: [{ layout: 'full', liquidMarkup: 'Test' }],
+      })],
+      templates: [makePluginTemplate({ layout: 'full', liquidMarkup: 'Test' })],
       fields: [],
-    } as unknown as Plugin
+    })
 
     const buffer = await service.exportToZip(plugin)
     const zip = new AdmZip(buffer)
     const settingsEntry = zip.getEntry('src/settings.yml')!
     const settingsContent = settingsEntry.getData().toString('utf8')
-    const settings = yaml.load(settingsContent) as any
+    const settings = yaml.load(settingsContent) as ExportedSettings
 
     expect(settings.refresh_interval).toBe(60)
     expect(settings.data_sources).toHaveLength(1)
-    expect(settings.data_sources[0].name).toBe('weather')
-    expect(settings.data_sources[0].endpoint).toBe('https://api.example.com/data')
-    expect(settings.data_sources[0].method).toBe('POST')
-    expect(settings.data_sources[0].headers.Authorization).toBe('Bearer token')
-    expect(settings.data_sources[0].body.key).toBe('value')
+    expect(settings.data_sources![0].name).toBe('weather')
+    expect(settings.data_sources![0].endpoint).toBe('https://api.example.com/data')
+    expect(settings.data_sources![0].method).toBe('POST')
+    expect(settings.data_sources![0].headers!.Authorization).toBe('Bearer token')
+    expect(settings.data_sources![0].body!.key).toBe('value')
   })
 
   it('exports multiple data sources in order, each with its own name', async () => {
-    const plugin = {
+    const plugin = makePlugin({
       name: 'Multi Source',
       refreshInterval: 15,
       dataSources: [
-        { name: 'air_quality', url: 'https://api.example.com/air', method: 'GET', order: 1 },
-        { name: 'weather', url: 'https://api.example.com/weather', method: 'GET', order: 0, transformJs: 'module.exports = (d) => d' },
+        makePluginDataSource({ name: 'air_quality', url: 'https://api.example.com/air', method: 'GET', order: 1 }),
+        makePluginDataSource({ name: 'weather', url: 'https://api.example.com/weather', method: 'GET', order: 0, transformJs: 'module.exports = (d) => d' }),
       ],
-      templates: [{ layout: 'full', liquidMarkup: 'Test' }],
+      templates: [makePluginTemplate({ layout: 'full', liquidMarkup: 'Test' })],
       fields: [],
-    } as unknown as Plugin
+    })
 
     const buffer = await service.exportToZip(plugin)
     const zip = new AdmZip(buffer)
-    const settings = yaml.load(zip.getEntry('src/settings.yml')!.getData().toString('utf8')) as any
+    const settings = yaml.load(zip.getEntry('src/settings.yml')!.getData().toString('utf8')) as ExportedSettings
 
     expect(settings.data_sources).toHaveLength(2)
-    expect(settings.data_sources[0].name).toBe('weather')
-    expect(settings.data_sources[0].transform_js).toBe('module.exports = (d) => d')
-    expect(settings.data_sources[1].name).toBe('air_quality')
+    expect(settings.data_sources![0].name).toBe('weather')
+    expect(settings.data_sources![0].transform_js).toBe('module.exports = (d) => d')
+    expect(settings.data_sources![1].name).toBe('air_quality')
   })
 
   it('exports a literal-mode data source as a mode/literal_value entry, not a broken endpoint', async () => {
@@ -169,24 +163,17 @@ describe('pluginExporterService', () => {
   })
 
   it('exports multiple templates with different layouts', async () => {
-    const plugin = {
+    const plugin = makePlugin({
       name: 'Multi Layout',
       refreshInterval: 15,
-      dataSources: [{
-        name: 'source',
-        url: 'https://api.example.com',
-        method: 'GET',
-        headers: {},
-        body: {},
-        order: 0,
-      }],
+      dataSources: [makePluginDataSource({ name: 'source', url: 'https://api.example.com', method: 'GET', headers: {}, body: {}, order: 0 })],
       templates: [
-        { layout: 'full', liquidMarkup: 'Full layout' },
-        { layout: 'half_horizontal', liquidMarkup: 'Half layout' },
-        { layout: 'quadrant', liquidMarkup: 'Quadrant layout' },
+        makePluginTemplate({ layout: 'full', liquidMarkup: 'Full layout' }),
+        makePluginTemplate({ layout: 'half_horizontal', liquidMarkup: 'Half layout' }),
+        makePluginTemplate({ layout: 'quadrant', liquidMarkup: 'Quadrant layout' }),
       ],
       fields: [],
-    } as unknown as Plugin
+    })
 
     const buffer = await service.exportToZip(plugin)
     const zip = new AdmZip(buffer)
@@ -200,12 +187,12 @@ describe('pluginExporterService', () => {
   })
 
   it('handles plugin without data source', async () => {
-    const plugin = {
+    const plugin = makePlugin({
       name: 'No Data Source',
       refreshInterval: 15,
-      templates: [{ layout: 'full', liquidMarkup: 'Static content' }],
+      templates: [makePluginTemplate({ layout: 'full', liquidMarkup: 'Static content' })],
       fields: [],
-    } as unknown as Plugin
+    })
 
     const buffer = await service.exportToZip(plugin)
     const zip = new AdmZip(buffer)
@@ -217,19 +204,12 @@ describe('pluginExporterService', () => {
   })
 
   it('handles plugin without templates', async () => {
-    const plugin = {
+    const plugin = makePlugin({
       name: 'No Templates',
       refreshInterval: 15,
-      dataSources: [{
-        name: 'source',
-        url: 'https://api.example.com',
-        method: 'GET',
-        headers: {},
-        body: {},
-        order: 0,
-      }],
+      dataSources: [makePluginDataSource({ name: 'source', url: 'https://api.example.com', method: 'GET', headers: {}, body: {}, order: 0 })],
       fields: [],
-    } as unknown as Plugin
+    })
 
     const buffer = await service.exportToZip(plugin)
     const zip = new AdmZip(buffer)
@@ -241,35 +221,35 @@ describe('pluginExporterService', () => {
   })
 
   it('handles empty or undefined descriptions and defaults', async () => {
-    const plugin = {
+    const plugin = makePlugin({
       name: 'Test',
       description: undefined,
       refreshInterval: 15,
-      dataSources: [{
+      dataSources: [makePluginDataSource({
         name: 'source',
         url: 'https://api.example.com',
         method: 'GET',
         headers: undefined,
         body: undefined,
         order: 0,
-      }],
-      templates: [{ layout: 'full', liquidMarkup: 'Test' }],
+      })],
+      templates: [makePluginTemplate({ layout: 'full', liquidMarkup: 'Test' })],
       fields: [
-        {
+        makePluginField({
           keyname: 'field1',
           fieldType: 'string',
           name: 'Field',
           description: undefined,
           defaultValue: undefined,
           required: false,
-        },
+        }),
       ],
-    } as unknown as Plugin
+    })
 
     const buffer = await service.exportToZip(plugin)
     const zip = new AdmZip(buffer)
     const manifestEntry = zip.getEntry('.trmnlp.yml')!
-    const manifest = yaml.load(manifestEntry.getData().toString('utf8')) as any
+    const manifest = yaml.load(manifestEntry.getData().toString('utf8')) as ExportedManifest
 
     expect(manifest.description).toBe('')
     expect(manifest.custom_fields[0].description).toBe('')

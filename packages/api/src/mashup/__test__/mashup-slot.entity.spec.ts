@@ -1,5 +1,5 @@
-import type { Plugin } from '../../plugins/entities/plugin.entity'
 import { describe, expect, it } from 'vitest'
+import { makePlugin } from '../../test/fixtures'
 import { MashupConfiguration } from '../entities/mashup-configuration.entity'
 import { MashupSlot } from '../entities/mashup-slot.entity'
 
@@ -29,7 +29,7 @@ describe('mashupSlot entity', () => {
 
   it('should have plugin relationship', () => {
     const slot = new MashupSlot()
-    const mockPlugin = { id: 'plugin-1', name: 'Weather' } as Plugin
+    const mockPlugin = makePlugin({ id: 'plugin-1', name: 'Weather' })
 
     slot.plugin = mockPlugin
 

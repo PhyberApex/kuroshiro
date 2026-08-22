@@ -1,19 +1,20 @@
 import type { CleanupResult, MaintenanceIssues, MaintenanceService } from '../maintenance.service'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { asService } from '../../test/mockService'
 import { MaintenanceController } from '../maintenance.controller'
 
 describe('maintenanceController', () => {
   let controller: MaintenanceController
-  let service: MaintenanceService
+  let service: { scan: ReturnType<typeof vi.fn>, cleanup: ReturnType<typeof vi.fn>, getStats: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     service = {
       scan: vi.fn(),
       cleanup: vi.fn(),
       getStats: vi.fn(),
-    } as any
+    }
 
-    controller = new MaintenanceController(service)
+    controller = new MaintenanceController(asService<MaintenanceService>(service))
   })
 
   describe('scan', () => {

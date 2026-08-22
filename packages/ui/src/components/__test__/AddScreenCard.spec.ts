@@ -61,7 +61,7 @@ describe('addScreenCard', () => {
         plugins: [createPinia(), vuetify],
       },
     })
-    const vm = wrapper.vm as any
+    const vm = wrapper.vm
     vm.filename = 'shot'
     vm.externalLink = 'https://example.com/image.png'
     await wrapper.vm.$nextTick()

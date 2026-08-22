@@ -1,10 +1,14 @@
 import type { DeviceRenderTarget } from '../device-models.service'
 import { describe, expect, it } from 'vitest'
 import { SCREEN_SHELL_FIXTURE_BODY, SCREEN_SHELL_FIXTURE_EXPECTED, SCREEN_SHELL_FIXTURE_MODEL, SCREEN_SHELL_FIXTURE_PALETTE } from '../../../../../test/fixtures/screen-shell.fixture'
+import { BW, GRAY_4, GRAY_16, OG_PLUS, V2 } from '../../test/mockDeviceModelsService'
+import { asService } from '../../test/mockService'
 import { screenClasses, screenStyle, viewFull, wrapInScreenShell } from '../screen-shell'
-import { BW, GRAY_4, GRAY_16, OG_PLUS, V2 } from './mockDeviceModelsService'
 
-const fixtureTarget = { model: SCREEN_SHELL_FIXTURE_MODEL, palette: SCREEN_SHELL_FIXTURE_PALETTE } as unknown as DeviceRenderTarget
+// The shared cross-package fixture is deliberately untyped against either package's
+// DeviceModel/Palette entities (see the comment in screen-shell.fixture.ts) — this is the
+// one documented boundary cast into this package's DeviceRenderTarget shape.
+const fixtureTarget = asService<DeviceRenderTarget>({ model: SCREEN_SHELL_FIXTURE_MODEL, palette: SCREEN_SHELL_FIXTURE_PALETTE })
 
 describe('screen shell', () => {
   it('builds the screen class list from model and palette', () => {

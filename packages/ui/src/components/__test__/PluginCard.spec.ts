@@ -1,9 +1,11 @@
-import type { Plugin } from '@/types/plugin'
+import type { usePluginsStore } from '@/stores/plugins'
+import type { DeviceAssignment, Plugin } from '@/types/plugin'
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import rop from 'resize-observer-polyfill'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import vuetify from '../../plugins/vuetify'
+import { asStore } from '../../test/mockStore'
 import PluginCard from '../PluginCard.vue'
 
 globalThis.ResizeObserver = rop
@@ -29,7 +31,7 @@ Object.defineProperty(globalThis, 'visualViewport', {
   writable: true,
 })
 
-let pluginsStoreMock: any
+let pluginsStoreMock: ReturnType<typeof usePluginsStore>
 vi.mock('@/stores/plugins', () => ({
   usePluginsStore: () => pluginsStoreMock,
 }))
@@ -50,11 +52,11 @@ vi.mock('../PluginAssignDialog.vue', () => ({
 
 describe('pluginCard', () => {
   beforeEach(() => {
-    pluginsStoreMock = {
+    pluginsStoreMock = asStore<ReturnType<typeof usePluginsStore>>({
       deletePlugin: vi.fn(),
       updateDeviceAssignment: vi.fn(),
       fetchPluginsForDevice: vi.fn(),
-    }
+    })
     mockRouter.push.mockClear()
   })
 
@@ -93,9 +95,10 @@ describe('pluginCard', () => {
   })
 
   it('shows assigned device count when not on device page', () => {
+    const deviceAssignment = (id: string): DeviceAssignment => ({ id, isActive: true, order: 0, device: { id, name: `Device ${id}` } })
     const plugin = {
       ...basePlugin,
-      deviceAssignments: [{}, {}] as any,
+      deviceAssignments: [deviceAssignment('1'), deviceAssignment('2')],
     }
     const wrapper = mount(PluginCard, {
       props: { plugin },

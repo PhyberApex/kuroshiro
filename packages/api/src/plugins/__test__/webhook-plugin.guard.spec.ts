@@ -1,27 +1,34 @@
 import type { ExecutionContext } from '@nestjs/common'
+import type { Plugin } from '../entities/plugin.entity'
 import { UnauthorizedException } from '@nestjs/common'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { makePlugin } from '../../test/fixtures'
+import { asRepository, createMockRepository } from '../../test/mockRepository'
+import { asService } from '../../test/mockService'
 import { WebhookPluginGuard } from '../guards/webhook-plugin.guard'
 
 describe('webhookPluginGuard', () => {
   let guard: WebhookPluginGuard
-  let pluginRepo: any
-  let request: any
+  let pluginRepo: ReturnType<typeof createMockRepository<Plugin>>
+  let request: { params: { token?: string }, plugin?: Plugin }
 
-  const plugin = { id: 'plugin-1', kind: 'Webhook', webhookToken: 'token-abc' }
+  const plugin = makePlugin({ id: 'plugin-1', kind: 'Webhook', webhookToken: 'token-abc' })
 
   function contextFor(token?: string): ExecutionContext {
     request = { params: token === undefined ? {} : { token } }
-    return {
+    return asService<ExecutionContext>({
       switchToHttp: () => ({ getRequest: () => request }),
-    } as unknown as ExecutionContext
+    })
   }
 
   beforeEach(() => {
-    pluginRepo = {
-      findOne: vi.fn(async ({ where }: any) => (where.webhookToken === plugin.webhookToken ? plugin : null)),
-    }
-    guard = new WebhookPluginGuard(pluginRepo)
+    pluginRepo = createMockRepository<Plugin>()
+    pluginRepo.findOne.mockImplementation(async (options) => {
+      const where = options.where
+      const webhookToken = where && !Array.isArray(where) ? where.webhookToken : undefined
+      return webhookToken === plugin.webhookToken ? plugin : null
+    })
+    guard = new WebhookPluginGuard(asRepository(pluginRepo))
   })
 
   it('resolves the Plugin from its Webhook Token and attaches it to the request', async () => {

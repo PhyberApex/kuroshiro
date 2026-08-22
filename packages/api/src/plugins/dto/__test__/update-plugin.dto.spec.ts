@@ -11,7 +11,7 @@ function flattenConstraints(errors: ValidationError[]): string[] {
   ])
 }
 
-async function violations(payload: Record<string, any>): Promise<string[]> {
+async function violations(payload: Record<string, unknown>): Promise<string[]> {
   const errors = await validate(plainToInstance(UpdatePluginDto, payload))
   return flattenConstraints(errors)
 }

@@ -1,7 +1,11 @@
+import type { MockPluginDataFetcherService } from '../../test/mockPluginCollaborators'
 import type { Plugin } from '../entities/plugin.entity'
 import type { PluginDataFetcherService } from '../services/plugin-data-fetcher.service'
 import type { PluginRenderCacheService } from '../services/plugin-render-cache.service'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makePlugin, makePluginDataSource, makePluginTemplate } from '../../test/fixtures'
+import { createMockPluginDataFetcherService } from '../../test/mockPluginCollaborators'
+import { asService, callPrivate } from '../../test/mockService'
 import { PluginSchedulerService } from '../services/plugin-scheduler.service'
 import { PluginTemplateContextService } from '../services/plugin-template-context.service'
 
@@ -21,36 +25,32 @@ vi.mock('node-cron', () => ({
 
 describe('pluginSchedulerService', () => {
   let service: PluginSchedulerService
-  let mockDataFetcher: PluginDataFetcherService
-  let mockRenderCache: PluginRenderCacheService
+  let mockDataFetcher: MockPluginDataFetcherService
+  let mockRenderCache: { renderAndCache: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     capturedCallback = undefined
 
-    mockDataFetcher = {
-      fetchData: vi.fn(),
-      fetchOrLiteral: vi.fn((source: any, ctx: any) =>
-        source.mode === 'literal'
-          ? Promise.resolve(source.literalValue ?? null)
-          : mockDataFetcher.fetchData(source.method, source.url ?? '', source.headers, source.body, ctx),
-      ),
-    } as any
+    mockDataFetcher = createMockPluginDataFetcherService()
 
     mockRenderCache = {
       renderAndCache: vi.fn(),
-    } as any
+    }
 
-    service = new PluginSchedulerService(mockDataFetcher, mockRenderCache, new PluginTemplateContextService())
+    service = new PluginSchedulerService(
+      asService<PluginDataFetcherService>(mockDataFetcher),
+      asService<PluginRenderCacheService>(mockRenderCache),
+      new PluginTemplateContextService(),
+    )
   })
 
   it('schedules a plugin with refresh interval', () => {
-    const plugin = {
+    const plugin = makePlugin({
       id: 'plugin-1',
       refreshInterval: 15,
-      isActive: true,
-      dataSources: [{ name: 'source', url: 'https://api.example.com', method: 'GET' }],
-      templates: [{ layout: 'full', liquidMarkup: '{{ data }}' }],
-    } as unknown as Plugin
+      dataSources: [makePluginDataSource({ name: 'source', url: 'https://api.example.com', method: 'GET' })],
+      templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '{{ data }}' })],
+    })
 
     service.schedulePlugin(plugin)
 
@@ -58,11 +58,10 @@ describe('pluginSchedulerService', () => {
   })
 
   it('does not schedule inactive plugins', () => {
-    const plugin = {
+    const plugin = makePlugin({
       id: 'plugin-1',
-      isActive: false,
       refreshInterval: 15,
-    } as unknown as Plugin
+    })
 
     service.schedulePlugin(plugin)
 
@@ -70,13 +69,12 @@ describe('pluginSchedulerService', () => {
   })
 
   it('removes a scheduled job', () => {
-    const plugin = {
+    const plugin = makePlugin({
       id: 'plugin-1',
       refreshInterval: 15,
-      isActive: true,
-      dataSources: [{ name: 'source', url: 'https://api.example.com', method: 'GET' }],
-      templates: [{ layout: 'full', liquidMarkup: '{{ data }}' }],
-    } as unknown as Plugin
+      dataSources: [makePluginDataSource({ name: 'source', url: 'https://api.example.com', method: 'GET' })],
+      templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '{{ data }}' })],
+    })
 
     service.schedulePlugin(plugin)
     expect(service.hasScheduledJob('plugin-1')).toBe(true)
@@ -86,28 +84,26 @@ describe('pluginSchedulerService', () => {
   })
 
   it('converts refresh interval to cron expression', () => {
-    expect((service as any).getCronExpression(1)).toBe('*/1 * * * *')
-    expect((service as any).getCronExpression(15)).toBe('*/15 * * * *')
-    expect((service as any).getCronExpression(30)).toBe('*/30 * * * *')
-    expect((service as any).getCronExpression(60)).toBe('0 * * * *')
+    expect(callPrivate<string>(service, 'getCronExpression', 1)).toBe('*/1 * * * *')
+    expect(callPrivate<string>(service, 'getCronExpression', 15)).toBe('*/15 * * * *')
+    expect(callPrivate<string>(service, 'getCronExpression', 30)).toBe('*/30 * * * *')
+    expect(callPrivate<string>(service, 'getCronExpression', 60)).toBe('0 * * * *')
   })
 
   it('schedules multiple plugins independently', () => {
-    const plugin1 = {
+    const plugin1 = makePlugin({
       id: 'plugin-1',
       refreshInterval: 15,
-      isActive: true,
-      dataSources: [{ name: 'source', url: 'https://api1.com', method: 'GET' }],
-      templates: [{ layout: 'full', liquidMarkup: 'Test 1' }],
-    } as unknown as Plugin
+      dataSources: [makePluginDataSource({ name: 'source', url: 'https://api1.com', method: 'GET' })],
+      templates: [makePluginTemplate({ layout: 'full', liquidMarkup: 'Test 1' })],
+    })
 
-    const plugin2 = {
+    const plugin2 = makePlugin({
       id: 'plugin-2',
       refreshInterval: 30,
-      isActive: true,
-      dataSources: [{ name: 'source', url: 'https://api2.com', method: 'GET' }],
-      templates: [{ layout: 'full', liquidMarkup: 'Test 2' }],
-    } as unknown as Plugin
+      dataSources: [makePluginDataSource({ name: 'source', url: 'https://api2.com', method: 'GET' })],
+      templates: [makePluginTemplate({ layout: 'full', liquidMarkup: 'Test 2' })],
+    })
 
     service.schedulePlugin(plugin1)
     service.schedulePlugin(plugin2)
@@ -117,13 +113,12 @@ describe('pluginSchedulerService', () => {
   })
 
   it('reschedules plugin after removal', () => {
-    const plugin = {
+    const plugin = makePlugin({
       id: 'plugin-1',
       refreshInterval: 15,
-      isActive: true,
-      dataSources: [{ name: 'source', url: 'https://api.com', method: 'GET' }],
-      templates: [{ layout: 'full', liquidMarkup: 'Test' }],
-    } as unknown as Plugin
+      dataSources: [makePluginDataSource({ name: 'source', url: 'https://api.com', method: 'GET' })],
+      templates: [makePluginTemplate({ layout: 'full', liquidMarkup: 'Test' })],
+    })
 
     service.schedulePlugin(plugin)
     expect(service.hasScheduledJob('plugin-1')).toBe(true)
@@ -136,12 +131,11 @@ describe('pluginSchedulerService', () => {
   })
 
   it('does not schedule if there are no data sources', () => {
-    const plugin = {
+    const plugin = makePlugin({
       id: 'plugin-1',
       refreshInterval: 15,
-      isActive: true,
-      templates: [{ layout: 'full', liquidMarkup: 'Test' }],
-    } as unknown as Plugin
+      templates: [makePluginTemplate({ layout: 'full', liquidMarkup: 'Test' })],
+    })
 
     service.schedulePlugin(plugin)
 
@@ -149,13 +143,12 @@ describe('pluginSchedulerService', () => {
   })
 
   it('does not schedule a draft plugin with zero data sources', () => {
-    const plugin = {
+    const plugin = makePlugin({
       id: 'plugin-1',
       refreshInterval: 15,
-      isActive: true,
       dataSources: [],
-      templates: [{ layout: 'full', liquidMarkup: 'Test' }],
-    } as unknown as Plugin
+      templates: [makePluginTemplate({ layout: 'full', liquidMarkup: 'Test' })],
+    })
 
     service.schedulePlugin(plugin)
 
@@ -163,12 +156,11 @@ describe('pluginSchedulerService', () => {
   })
 
   it('does not schedule if templates are missing', () => {
-    const plugin = {
+    const plugin = makePlugin({
       id: 'plugin-1',
       refreshInterval: 15,
-      isActive: true,
-      dataSources: [{ name: 'source', url: 'https://api.com', method: 'GET' }],
-    } as unknown as Plugin
+      dataSources: [makePluginDataSource({ name: 'source', url: 'https://api.com', method: 'GET' })],
+    })
 
     service.schedulePlugin(plugin)
 
@@ -176,12 +168,12 @@ describe('pluginSchedulerService', () => {
   })
 
   it('does not schedule Webhook-kind plugins', () => {
-    const plugin = {
+    const plugin = makePlugin({
       id: 'plugin-1',
       kind: 'Webhook',
       refreshInterval: 15,
-      templates: [{ layout: 'full', liquidMarkup: 'Test' }],
-    } as unknown as Plugin
+      templates: [makePluginTemplate({ layout: 'full', liquidMarkup: 'Test' })],
+    })
 
     service.schedulePlugin(plugin)
 
@@ -190,20 +182,19 @@ describe('pluginSchedulerService', () => {
 
   describe('scheduled tick', () => {
     it('fetches all data sources in parallel and renders them under their own names', async () => {
-      const plugin = {
+      const plugin: Plugin = makePlugin({
         id: 'plugin-1',
         name: 'Multi Source',
         refreshInterval: 15,
-        isActive: true,
         dataSources: [
-          { name: 'weather', url: 'https://api.example.com/weather', method: 'GET' },
-          { name: 'air_quality', url: 'https://api.example.com/air', method: 'GET' },
+          makePluginDataSource({ name: 'weather', url: 'https://api.example.com/weather', method: 'GET' }),
+          makePluginDataSource({ name: 'air_quality', url: 'https://api.example.com/air', method: 'GET' }),
         ],
-        templates: [{ layout: 'full', liquidMarkup: '{{ weather.temp }} / {{ air_quality.aqi }}' }],
-      } as unknown as Plugin
+        templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '{{ weather.temp }} / {{ air_quality.aqi }}' })],
+      })
 
-      let resolveWeather: (value: any) => void
-      let resolveAirQuality: (value: any) => void
+      let resolveWeather: (value: unknown) => void
+      let resolveAirQuality: (value: unknown) => void
       const weatherPromise = new Promise((resolve) => {
         resolveWeather = resolve
       })
@@ -211,10 +202,9 @@ describe('pluginSchedulerService', () => {
         resolveAirQuality = resolve
       })
 
-      mockDataFetcher.fetchData = vi.fn((_method, url) => {
-        return url.includes('weather') ? weatherPromise : airQualityPromise
-      }) as any
-      mockRenderCache.renderAndCache = vi.fn().mockResolvedValue(undefined)
+      mockDataFetcher.fetchData.mockImplementation((_method: string, url: string) =>
+        url.includes('weather') ? weatherPromise : airQualityPromise)
+      mockRenderCache.renderAndCache.mockResolvedValue(undefined)
 
       service.schedulePlugin(plugin)
       const tickPromise = capturedCallback!()
@@ -313,24 +303,22 @@ describe('pluginSchedulerService', () => {
     })
 
     it('gives a failing data source an error marker and still renders the sources that succeeded', async () => {
-      const plugin = {
+      const plugin: Plugin = makePlugin({
         id: 'plugin-1',
         name: 'Partial Failure',
         refreshInterval: 15,
-        isActive: true,
         dataSources: [
-          { name: 'weather', url: 'https://api.example.com/weather', method: 'GET' },
-          { name: 'air_quality', url: 'https://api.example.com/air', method: 'GET' },
+          makePluginDataSource({ name: 'weather', url: 'https://api.example.com/weather', method: 'GET' }),
+          makePluginDataSource({ name: 'air_quality', url: 'https://api.example.com/air', method: 'GET' }),
         ],
-        templates: [{ layout: 'full', liquidMarkup: '{{ weather.temp }}' }],
-      } as unknown as Plugin
+        templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '{{ weather.temp }}' })],
+      })
 
-      mockDataFetcher.fetchData = vi.fn((_method, url) => {
-        return url.includes('weather')
+      mockDataFetcher.fetchData.mockImplementation((_method: string, url: string) =>
+        url.includes('weather')
           ? Promise.resolve({ temp: 25 })
-          : Promise.reject(new Error('API timeout'))
-      }) as any
-      mockRenderCache.renderAndCache = vi.fn().mockResolvedValue(undefined)
+          : Promise.reject(new Error('API timeout')))
+      mockRenderCache.renderAndCache.mockResolvedValue(undefined)
 
       service.schedulePlugin(plugin)
       await capturedCallback!()

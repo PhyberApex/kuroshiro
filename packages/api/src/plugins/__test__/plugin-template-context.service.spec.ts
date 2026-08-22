@@ -1,12 +1,11 @@
-import type { DeviceSensor } from '../../device-sensors/entities/device-sensor.entity'
-import type { Plugin } from '../entities/plugin.entity'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { makeDeviceSensor, makePlugin } from '../../test/fixtures'
 import { PluginTemplateContextService } from '../services/plugin-template-context.service'
 
 describe('pluginTemplateContextService', () => {
   let service: PluginTemplateContextService
 
-  const plugin = { name: 'Weather' } as Plugin
+  const plugin = makePlugin({ name: 'Weather' })
 
   beforeEach(() => {
     service = new PluginTemplateContextService()
@@ -22,9 +21,9 @@ describe('pluginTemplateContextService', () => {
 
   it('shapes a sensors object keyed by kind for a device with readings across multiple kinds', () => {
     const sensors = [
-      { kind: 'temperature', value: 21.5, unit: 'C' },
-      { kind: 'humidity', value: 45, unit: '%' },
-    ] as DeviceSensor[]
+      makeDeviceSensor({ kind: 'temperature', value: 21.5, unit: 'C' }),
+      makeDeviceSensor({ kind: 'humidity', value: 45, unit: '%' }),
+    ]
 
     const context = service.build(plugin, sensors)
 
@@ -41,7 +40,7 @@ describe('pluginTemplateContextService', () => {
   })
 
   it('omits kinds the device has no current reading for', () => {
-    const sensors = [{ kind: 'pressure', value: 1013, unit: 'hPa' }] as DeviceSensor[]
+    const sensors = [makeDeviceSensor({ kind: 'pressure', value: 1013, unit: 'hPa' })]
 
     const context = service.build(plugin, sensors)
 

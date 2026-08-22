@@ -1,5 +1,5 @@
-import type { MashupConfiguration } from '../../mashup/entities/mashup-configuration.entity'
 import { describe, expect, it } from 'vitest'
+import { makeMashupConfiguration } from '../../test/fixtures'
 import { Screen } from '../screens.entity'
 
 describe('screen entity with type field', () => {
@@ -29,7 +29,7 @@ describe('screen entity with type field', () => {
   it('should have mashupConfiguration relationship for mashup type', () => {
     const screen = new Screen()
     screen.type = 'mashup'
-    const mockConfig = { id: 'config-1', layout: '2x2' } as MashupConfiguration
+    const mockConfig = makeMashupConfiguration({ id: 'config-1', layout: '2x2' })
 
     screen.mashupConfiguration = mockConfig
 

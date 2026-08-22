@@ -1,17 +1,33 @@
 import type { Response } from 'express'
-import type { Plugin } from '../entities/plugin.entity'
 import type { PluginsService } from '../plugins.service'
 import type { PluginExporterService } from '../services/plugin-exporter.service'
 import type { PluginImporterService } from '../services/plugin-importer.service'
 import { Buffer } from 'node:buffer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makePlugin } from '../../test/fixtures'
+import { asService } from '../../test/mockService'
 import { PluginsController } from '../plugins.controller'
 
 describe('pluginsController', () => {
   let controller: PluginsController
-  let mockService: PluginsService
-  let mockImporter: PluginImporterService
-  let mockExporter: PluginExporterService
+  let mockService: {
+    findAll: ReturnType<typeof vi.fn>
+    findById: ReturnType<typeof vi.fn>
+    findByDevice: ReturnType<typeof vi.fn>
+    create: ReturnType<typeof vi.fn>
+    update: ReturnType<typeof vi.fn>
+    remove: ReturnType<typeof vi.fn>
+    assignToDevice: ReturnType<typeof vi.fn>
+    unassignFromDevice: ReturnType<typeof vi.fn>
+    updateDeviceAssignment: ReturnType<typeof vi.fn>
+    preview: ReturnType<typeof vi.fn>
+  }
+  let mockImporter: {
+    importFromFile: ReturnType<typeof vi.fn>
+    importFromGithubUrl: ReturnType<typeof vi.fn>
+    importFromRecipe: ReturnType<typeof vi.fn>
+  }
+  let mockExporter: { exportToZip: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     mockService = {
@@ -25,37 +41,36 @@ describe('pluginsController', () => {
       unassignFromDevice: vi.fn(),
       updateDeviceAssignment: vi.fn(),
       preview: vi.fn(),
-    } as any
+    }
 
     mockImporter = {
       importFromFile: vi.fn(),
       importFromGithubUrl: vi.fn(),
       importFromRecipe: vi.fn(),
-    } as any
+    }
 
     mockExporter = {
       exportToZip: vi.fn(),
-    } as any
+    }
 
-    controller = new PluginsController(mockService, mockImporter, mockExporter)
+    controller = new PluginsController(
+      asService<PluginsService>(mockService),
+      asService<PluginImporterService>(mockImporter),
+      asService<PluginExporterService>(mockExporter),
+    )
   })
 
-  const basePlugin = {
+  const basePlugin = makePlugin({
     id: '1',
     name: 'Weather Plugin',
     description: 'Shows weather',
     kind: 'Poll',
     refreshInterval: 15,
-    isActive: true,
-    order: 1,
-    device: { id: 'device-1' },
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  } as unknown as Plugin
+  })
 
   it('findAll returns all plugins', async () => {
     const plugins = [basePlugin]
-    ;(mockService.findAll as any).mockResolvedValue(plugins)
+    mockService.findAll.mockResolvedValue(plugins)
 
     const result = await controller.findAll()
 
@@ -64,7 +79,7 @@ describe('pluginsController', () => {
   })
 
   it('findById returns a plugin by id', async () => {
-    ;(mockService.findById as any).mockResolvedValue(basePlugin)
+    mockService.findById.mockResolvedValue(basePlugin)
 
     const result = await controller.findById('1')
 
@@ -74,7 +89,7 @@ describe('pluginsController', () => {
 
   it('findByDevice returns plugins for a device', async () => {
     const plugins = [basePlugin]
-    ;(mockService.findByDevice as any).mockResolvedValue(plugins)
+    mockService.findByDevice.mockResolvedValue(plugins)
 
     const result = await controller.findByDevice('device-1')
 
@@ -83,8 +98,8 @@ describe('pluginsController', () => {
   })
 
   it('create creates a new plugin', async () => {
-    const createDto = { name: 'Weather Plugin', deviceId: 'device-1', kind: 'Poll' as const }
-    ;(mockService.create as any).mockResolvedValue(basePlugin)
+    const createDto = { name: 'Weather Plugin', kind: 'Poll' as const }
+    mockService.create.mockResolvedValue(basePlugin)
 
     const result = await controller.create(createDto)
 
@@ -94,8 +109,8 @@ describe('pluginsController', () => {
 
   it('update updates a plugin', async () => {
     const updateDto = { name: 'Updated Weather' }
-    const updated = { ...basePlugin, name: 'Updated Weather' } as unknown as Plugin
-    ;(mockService.update as any).mockResolvedValue(updated)
+    const updated = { ...basePlugin, name: 'Updated Weather' }
+    mockService.update.mockResolvedValue(updated)
 
     const result = await controller.update('1', updateDto)
 
@@ -104,7 +119,7 @@ describe('pluginsController', () => {
   })
 
   it('remove deletes a plugin', async () => {
-    ;(mockService.remove as any).mockResolvedValue(true)
+    mockService.remove.mockResolvedValue(true)
 
     const result = await controller.remove('1')
 
@@ -118,9 +133,9 @@ describe('pluginsController', () => {
       template: '<div>{{ source }}</div>',
     }
     const previewResult = { html: '<div>test</div>', data: { source: { test: true } } }
-    ;(mockService.preview as any).mockResolvedValue(previewResult)
+    mockService.preview.mockResolvedValue(previewResult)
 
-    const result = await controller.preview(previewData as any)
+    const result = await controller.preview(previewData)
 
     expect(result).toBe(previewResult)
     expect(mockService.preview).toHaveBeenCalledWith(
@@ -131,14 +146,14 @@ describe('pluginsController', () => {
   })
 
   it('importPlugin imports from file without device assignment', async () => {
-    const file = { path: '/tmp/plugin.zip' } as Express.Multer.File
+    const file = asService<Express.Multer.File>({ path: '/tmp/plugin.zip' })
     const parsedPlugin = {
       name: 'Imported Plugin',
       dataSources: [{ name: 'source', url: 'https://api.com', method: 'GET', headers: {}, body: {} }],
     }
     const createdPlugin = { id: 'plugin-1', name: 'Imported Plugin' }
-    ;(mockImporter.importFromFile as any).mockResolvedValue(parsedPlugin)
-    ;(mockService.create as any).mockResolvedValue(createdPlugin)
+    mockImporter.importFromFile.mockResolvedValue(parsedPlugin)
+    mockService.create.mockResolvedValue(createdPlugin)
 
     const result = await controller.importPlugin(file)
 
@@ -150,7 +165,7 @@ describe('pluginsController', () => {
   })
 
   it('importPlugin imports from file with device assignment', async () => {
-    const file = { path: '/tmp/plugin.zip' } as Express.Multer.File
+    const file = asService<Express.Multer.File>({ path: '/tmp/plugin.zip' })
     const parsedPlugin = {
       name: 'Imported Plugin',
       dataSources: [{
@@ -163,9 +178,9 @@ describe('pluginsController', () => {
       }],
     }
     const createdPlugin = { id: 'plugin-1', name: 'Imported Plugin' }
-    ;(mockImporter.importFromFile as any).mockResolvedValue(parsedPlugin)
-    ;(mockService.create as any).mockResolvedValue(createdPlugin)
-    ;(mockService.assignToDevice as any).mockResolvedValue({})
+    mockImporter.importFromFile.mockResolvedValue(parsedPlugin)
+    mockService.create.mockResolvedValue(createdPlugin)
+    mockService.assignToDevice.mockResolvedValue({})
 
     const result = await controller.importPlugin(file, 'device-1')
 
@@ -178,7 +193,8 @@ describe('pluginsController', () => {
   })
 
   it('importPlugin throws error if no file uploaded', async () => {
-    await expect(controller.importPlugin(undefined as any)).rejects.toThrow('No file uploaded')
+    // @ts-expect-error file is intentionally omitted to prove the controller rejects a missing upload
+    await expect(controller.importPlugin(undefined)).rejects.toThrow('No file uploaded')
   })
 
   it('importFromGithub imports from GitHub URL without device assignment', async () => {
@@ -188,8 +204,8 @@ describe('pluginsController', () => {
       dataSources: [{ name: 'source', url: 'https://api.com', method: 'GET', headers: {}, body: {} }],
     }
     const createdPlugin = { id: 'plugin-2', name: 'GitHub Plugin' }
-    ;(mockImporter.importFromGithubUrl as any).mockResolvedValue(parsedPlugin)
-    ;(mockService.create as any).mockResolvedValue(createdPlugin)
+    mockImporter.importFromGithubUrl.mockResolvedValue(parsedPlugin)
+    mockService.create.mockResolvedValue(createdPlugin)
 
     const result = await controller.importFromGithub(body)
 
@@ -206,9 +222,9 @@ describe('pluginsController', () => {
       dataSources: [{ name: 'source', url: 'https://api.com', method: 'GET', headers: {}, body: {} }],
     }
     const createdPlugin = { id: 'plugin-2', name: 'GitHub Plugin' }
-    ;(mockImporter.importFromGithubUrl as any).mockResolvedValue(parsedPlugin)
-    ;(mockService.create as any).mockResolvedValue(createdPlugin)
-    ;(mockService.assignToDevice as any).mockResolvedValue({})
+    mockImporter.importFromGithubUrl.mockResolvedValue(parsedPlugin)
+    mockService.create.mockResolvedValue(createdPlugin)
+    mockService.assignToDevice.mockResolvedValue({})
 
     await controller.importFromGithub(body)
 
@@ -231,8 +247,8 @@ describe('pluginsController', () => {
       sourceRecipeId: '150460',
     }
     const createdPlugin = { id: 'plugin-3', name: 'Daily Weather' }
-    ;(mockImporter.importFromRecipe as any).mockResolvedValue(parsedPlugin)
-    ;(mockService.create as any).mockResolvedValue(createdPlugin)
+    mockImporter.importFromRecipe.mockResolvedValue(parsedPlugin)
+    mockService.create.mockResolvedValue(createdPlugin)
 
     const result = await controller.importFromRecipe(body)
 
@@ -251,9 +267,9 @@ describe('pluginsController', () => {
       sourceRecipeId: '150460',
     }
     const createdPlugin = { id: 'plugin-3', name: 'Daily Weather' }
-    ;(mockImporter.importFromRecipe as any).mockResolvedValue(parsedPlugin)
-    ;(mockService.create as any).mockResolvedValue(createdPlugin)
-    ;(mockService.assignToDevice as any).mockResolvedValue({})
+    mockImporter.importFromRecipe.mockResolvedValue(parsedPlugin)
+    mockService.create.mockResolvedValue(createdPlugin)
+    mockService.assignToDevice.mockResolvedValue({})
 
     const result = await controller.importFromRecipe(body)
 
@@ -272,13 +288,13 @@ describe('pluginsController', () => {
   it('exportPlugin exports plugin as ZIP', async () => {
     const plugin = { id: '1', name: 'Test Plugin' }
     const zipBuffer = Buffer.from('zip-content')
-    ;(mockService.findById as any).mockResolvedValue(plugin)
-    ;(mockExporter.exportToZip as any).mockResolvedValue(zipBuffer)
+    mockService.findById.mockResolvedValue(plugin)
+    mockExporter.exportToZip.mockResolvedValue(zipBuffer)
 
-    const res = {
+    const res = asService<Response>({
       setHeader: vi.fn(),
       send: vi.fn(),
-    } as unknown as Response
+    })
 
     await controller.exportPlugin('1', res)
 
@@ -290,12 +306,12 @@ describe('pluginsController', () => {
   })
 
   it('exportPlugin returns 404 if plugin not found', async () => {
-    ;(mockService.findById as any).mockResolvedValue(null)
+    mockService.findById.mockResolvedValue(null)
 
-    const res = {
+    const res = asService<Response>({
       status: vi.fn().mockReturnThis(),
       json: vi.fn(),
-    } as unknown as Response
+    })
 
     await controller.exportPlugin('1', res)
 
@@ -306,16 +322,16 @@ describe('pluginsController', () => {
   it('assignToDevice assigns plugin to device', async () => {
     const assignData = { deviceId: 'device-1', isActive: true, order: 0 }
     const devicePlugin = { id: 'dp-1' }
-    ;(mockService.assignToDevice as any).mockResolvedValue(devicePlugin)
+    mockService.assignToDevice.mockResolvedValue(devicePlugin)
 
-    const result = await controller.assignToDevice('plugin-1', assignData as any)
+    const result = await controller.assignToDevice('plugin-1', assignData)
 
     expect(result).toBe(devicePlugin)
     expect(mockService.assignToDevice).toHaveBeenCalledWith('plugin-1', assignData)
   })
 
   it('unassignFromDevice removes plugin from device', async () => {
-    ;(mockService.unassignFromDevice as any).mockResolvedValue(true)
+    mockService.unassignFromDevice.mockResolvedValue(true)
 
     const result = await controller.unassignFromDevice('plugin-1', 'device-1')
 
@@ -326,7 +342,7 @@ describe('pluginsController', () => {
   it('updateDeviceAssignment updates device assignment', async () => {
     const updates = { isActive: false }
     const devicePlugin = { id: 'dp-1', isActive: false }
-    ;(mockService.updateDeviceAssignment as any).mockResolvedValue(devicePlugin)
+    mockService.updateDeviceAssignment.mockResolvedValue(devicePlugin)
 
     const result = await controller.updateDeviceAssignment('dp-1', updates)
 

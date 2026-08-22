@@ -1,23 +1,14 @@
+import type { DeviceModel } from '../entities/device-model.entity'
+import type { Palette } from '../entities/palette.entity'
 import { Logger } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { jsonResponse, stubFetch } from '../../test/fetch'
+import { makeDeviceModel, makePalette } from '../../test/fixtures'
+import { asRepository, createMockRepository } from '../../test/mockRepository'
 import { TRMNL_MODELS_SNAPSHOT, TRMNL_PALETTES_SNAPSHOT } from '../data/trmnl-snapshot'
 import { DeviceModelSyncService } from '../device-model-sync.service'
 
-const mockFetch = vi.fn()
-globalThis.fetch = mockFetch
-
-function createMockRepo() {
-  return {
-    find: vi.fn(),
-    insert: vi.fn(),
-    upsert: vi.fn(),
-    update: vi.fn(),
-  }
-}
-
-function jsonResponse(data: unknown, ok = true) {
-  return { ok, status: ok ? 200 : 502, statusText: ok ? 'OK' : 'Bad Gateway', json: async () => ({ data }) }
-}
+const mockFetch = stubFetch()
 
 const paletteA = { id: 'bw', name: 'Black & White (1-bit)', grays: 2, framework_class: 'screen--1bit' }
 const paletteB = { id: 'gray-4', name: '4 Grays (2-bit)', grays: 4, framework_class: 'screen--2bit' }
@@ -40,14 +31,14 @@ const modelA = {
 
 describe('deviceModelSyncService', () => {
   let service: DeviceModelSyncService
-  let modelRepo: ReturnType<typeof createMockRepo>
-  let paletteRepo: ReturnType<typeof createMockRepo>
+  let modelRepo: ReturnType<typeof createMockRepository<DeviceModel>>
+  let paletteRepo: ReturnType<typeof createMockRepository<Palette>>
 
   beforeEach(() => {
     vi.resetAllMocks()
-    modelRepo = createMockRepo()
-    paletteRepo = createMockRepo()
-    service = new DeviceModelSyncService(modelRepo as any, paletteRepo as any)
+    modelRepo = createMockRepository<DeviceModel>()
+    paletteRepo = createMockRepository<Palette>()
+    service = new DeviceModelSyncService(asRepository(modelRepo), asRepository(paletteRepo))
   })
 
   describe('seedFromSnapshot', () => {
@@ -61,8 +52,8 @@ describe('deviceModelSyncService', () => {
     })
 
     it('only inserts rows that are missing and never touches existing ones', async () => {
-      modelRepo.find.mockResolvedValue(TRMNL_MODELS_SNAPSHOT.filter(m => m.name !== 'v2').map(m => ({ name: m.name })))
-      paletteRepo.find.mockResolvedValue(TRMNL_PALETTES_SNAPSHOT.map(p => ({ id: p.id })))
+      modelRepo.find.mockResolvedValue(TRMNL_MODELS_SNAPSHOT.filter(m => m.name !== 'v2').map(m => makeDeviceModel({ name: m.name })))
+      paletteRepo.find.mockResolvedValue(TRMNL_PALETTES_SNAPSHOT.map(p => makePalette({ id: p.id })))
       const result = await service.seedFromSnapshot()
       expect(result).toEqual({ models: 1, palettes: 0 })
       expect(paletteRepo.insert).not.toHaveBeenCalled()
@@ -74,10 +65,10 @@ describe('deviceModelSyncService', () => {
 
   describe('sync', () => {
     it('upserts the live lists and deprecates rows that vanished upstream without deleting them', async () => {
-      mockFetch.mockImplementation(async (url: string) =>
-        url.endsWith('/palettes') ? jsonResponse([paletteA, paletteB]) : jsonResponse([modelA]))
-      paletteRepo.find.mockResolvedValue([{ id: 'bw' }, { id: 'gray-4' }, { id: 'gray-16' }])
-      modelRepo.find.mockResolvedValue([{ name: 'og_plus' }, { name: 'gone' }])
+      mockFetch.mockImplementation(async url =>
+        url.toString().endsWith('/palettes') ? jsonResponse({ data: [paletteA, paletteB] }) : jsonResponse({ data: [modelA] }))
+      paletteRepo.find.mockResolvedValue([makePalette({ id: 'bw' }), makePalette({ id: 'gray-4' }), makePalette({ id: 'gray-16' })])
+      modelRepo.find.mockResolvedValue([makeDeviceModel({ name: 'og_plus' }), makeDeviceModel({ name: 'gone' })])
 
       const result = await service.sync()
 
@@ -105,10 +96,10 @@ describe('deviceModelSyncService', () => {
     })
 
     it('never upserts or deprecates a kind: custom palette, regardless of what upstream reports', async () => {
-      mockFetch.mockImplementation(async (url: string) =>
-        url.endsWith('/palettes') ? jsonResponse([paletteA]) : jsonResponse([modelA]))
-      paletteRepo.find.mockResolvedValue([{ id: 'bw' }])
-      modelRepo.find.mockResolvedValue([{ name: 'og_plus' }])
+      mockFetch.mockImplementation(async url =>
+        url.toString().endsWith('/palettes') ? jsonResponse({ data: [paletteA] }) : jsonResponse({ data: [modelA] }))
+      paletteRepo.find.mockResolvedValue([makePalette({ id: 'bw' })])
+      modelRepo.find.mockResolvedValue([makeDeviceModel({ name: 'og_plus' })])
 
       await service.sync()
 
@@ -120,10 +111,10 @@ describe('deviceModelSyncService', () => {
     })
 
     it('does not deprecate anything when the live list matches', async () => {
-      mockFetch.mockImplementation(async (url: string) =>
-        url.endsWith('/palettes') ? jsonResponse([paletteA]) : jsonResponse([modelA]))
-      paletteRepo.find.mockResolvedValue([{ id: 'bw' }])
-      modelRepo.find.mockResolvedValue([{ name: 'og_plus' }])
+      mockFetch.mockImplementation(async url =>
+        url.toString().endsWith('/palettes') ? jsonResponse({ data: [paletteA] }) : jsonResponse({ data: [modelA] }))
+      paletteRepo.find.mockResolvedValue([makePalette({ id: 'bw' })])
+      modelRepo.find.mockResolvedValue([makeDeviceModel({ name: 'og_plus' })])
       const result = await service.sync()
       expect(paletteRepo.update).not.toHaveBeenCalled()
       expect(modelRepo.update).not.toHaveBeenCalled()
@@ -131,14 +122,14 @@ describe('deviceModelSyncService', () => {
     })
 
     it('throws and writes nothing when TRMNL is unreachable', async () => {
-      mockFetch.mockResolvedValue(jsonResponse(null, false))
+      mockFetch.mockImplementation(async () => jsonResponse(null, { ok: false }))
       await expect(service.sync()).rejects.toThrow(/request failed/)
       expect(paletteRepo.upsert).not.toHaveBeenCalled()
       expect(modelRepo.upsert).not.toHaveBeenCalled()
     })
 
     it('throws when the response has no data array', async () => {
-      mockFetch.mockResolvedValue({ ok: true, status: 200, statusText: 'OK', json: async () => ({ nope: [] }) })
+      mockFetch.mockImplementation(async () => jsonResponse({ nope: [] }))
       await expect(service.sync()).rejects.toThrow(/no data array/)
     })
 
@@ -152,8 +143,8 @@ describe('deviceModelSyncService', () => {
     it('skips a palette with an invalid colour and logs it, without dropping other valid palettes', async () => {
       const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
       const badPalette = { ...paletteB, id: 'gray-8', colors: ['#zzzzzz'] }
-      mockFetch.mockImplementation(async (url: string) =>
-        url.endsWith('/palettes') ? jsonResponse([paletteA, badPalette]) : jsonResponse([modelA]))
+      mockFetch.mockImplementation(async url =>
+        url.toString().endsWith('/palettes') ? jsonResponse({ data: [paletteA, badPalette] }) : jsonResponse({ data: [modelA] }))
       paletteRepo.find.mockResolvedValue([])
       modelRepo.find.mockResolvedValue([])
 
@@ -168,8 +159,8 @@ describe('deviceModelSyncService', () => {
     it('skips a model with an invalid id and logs it, without dropping other valid models', async () => {
       const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
       const badModel = { ...modelA, name: '../evil' }
-      mockFetch.mockImplementation(async (url: string) =>
-        url.endsWith('/palettes') ? jsonResponse([paletteA]) : jsonResponse([modelA, badModel]))
+      mockFetch.mockImplementation(async url =>
+        url.toString().endsWith('/palettes') ? jsonResponse({ data: [paletteA] }) : jsonResponse({ data: [modelA, badModel] }))
       paletteRepo.find.mockResolvedValue([])
       modelRepo.find.mockResolvedValue([])
 
@@ -182,8 +173,8 @@ describe('deviceModelSyncService', () => {
     })
 
     it('coalesces concurrent sync() calls into a single run', async () => {
-      mockFetch.mockImplementation(async (url: string) =>
-        url.endsWith('/palettes') ? jsonResponse([paletteA]) : jsonResponse([modelA]))
+      mockFetch.mockImplementation(async url =>
+        url.toString().endsWith('/palettes') ? jsonResponse({ data: [paletteA] }) : jsonResponse({ data: [modelA] }))
       paletteRepo.find.mockResolvedValue([])
       modelRepo.find.mockResolvedValue([])
 

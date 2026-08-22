@@ -1,6 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { DeviceReport } from '../device-models.service'
+import type { DeviceModel } from '../entities/device-model.entity'
+import type { Palette } from '../entities/palette.entity'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { BW, GRAY_4, GRAY_16, OG_PLUS, V2 } from '../../test/mockDeviceModelsService'
+import { asRepository, createMockRepository } from '../../test/mockRepository'
 import { DeviceModelsService } from '../device-models.service'
-import { BW, GRAY_4, GRAY_16, OG_PLUS, V2 } from './mockDeviceModelsService'
 
 const SEEED_E1003 = { ...V2, name: 'seeed_e1003', label: 'reTerminal E1003', kind: 'byod' }
 const COLOR_6A = { ...BW, id: 'color-6a', name: 'Color (6 colors)', grays: 2, colors: ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#000000', '#FFFFFF'], frameworkClass: 'screen--color-6a', grayscaleBitDepth: 1 }
@@ -9,30 +13,35 @@ const OG_BWRY = { ...OG_PLUS, name: 'og_bwry', label: 'TRMNL OG (colour)', kind:
 const OG_PNG = { ...OG_PLUS, name: 'og_png', label: 'TRMNL OG (1-bit)', kind: 'trmnl' }
 const ONYX_BOOX_NOVA_AIR_C = { ...V2, name: 'onxy_boox_nova_air_c', label: 'Onyx Boox Nova Air C', kind: 'byod' }
 
-function createMockRepo() {
-  return {
-    find: vi.fn(),
-    findOneBy: vi.fn(),
-  }
+function firstWhere<T>(where: T | T[] | undefined): T | undefined {
+  return Array.isArray(where) ? where[0] : where
 }
 
 describe('deviceModelsService', () => {
   let service: DeviceModelsService
-  let modelRepo: ReturnType<typeof createMockRepo>
-  let paletteRepo: ReturnType<typeof createMockRepo>
+  let modelRepo: ReturnType<typeof createMockRepository<DeviceModel>>
+  let paletteRepo: ReturnType<typeof createMockRepository<Palette>>
 
   const models = [OG_PLUS, V2, SEEED_E1003, SEEED_E1002, OG_BWRY, OG_PNG, ONYX_BOOX_NOVA_AIR_C]
   const palettes = [BW, GRAY_4, GRAY_16, COLOR_6A]
 
   beforeEach(() => {
-    modelRepo = createMockRepo()
-    paletteRepo = createMockRepo()
-    modelRepo.findOneBy.mockImplementation(async ({ name }) => models.find(m => m.name === name) ?? null)
-    modelRepo.find.mockImplementation(async ({ where } = {}) =>
-      where ? models.filter(m => m.width === where.width && m.height === where.height && m.deprecated === where.deprecated) : models)
+    modelRepo = createMockRepository<DeviceModel>()
+    paletteRepo = createMockRepository<Palette>()
+    modelRepo.findOneBy.mockImplementation(async (where) => {
+      const w = firstWhere(where)
+      return models.find(m => m.name === w?.name) ?? null
+    })
+    modelRepo.find.mockImplementation(async (options = {}) => {
+      const where = firstWhere(options.where)
+      return where ? models.filter(m => m.width === where.width && m.height === where.height && m.deprecated === where.deprecated) : models
+    })
     paletteRepo.find.mockResolvedValue(palettes)
-    paletteRepo.findOneBy.mockImplementation(async ({ id }) => palettes.find(p => p.id === id) ?? null)
-    service = new DeviceModelsService(modelRepo as any, paletteRepo as any)
+    paletteRepo.findOneBy.mockImplementation(async (where) => {
+      const w = firstWhere(where)
+      return palettes.find(p => p.id === w?.id) ?? null
+    })
+    service = new DeviceModelsService(asRepository(modelRepo), asRepository(paletteRepo))
   })
 
   describe('resolve', () => {
@@ -106,14 +115,14 @@ describe('deviceModelsService', () => {
 
   describe('assignResolvedModel', () => {
     it('sets model and default palette on the device', async () => {
-      const device = { reportedModel: 'x', width: 1872, height: 1404 } as any
+      const device: DeviceReport & { deviceModel?: DeviceModel | null, palette?: Palette | null } = { reportedModel: 'x', width: 1872, height: 1404 }
       await expect(service.assignResolvedModel(device)).resolves.toBe(V2)
       expect(device.deviceModel).toBe(V2)
       expect(device.palette).toBe(GRAY_16)
     })
 
     it('leaves the device untouched when nothing resolves', async () => {
-      const device = { reportedModel: 'unknown_board' } as any
+      const device: DeviceReport & { deviceModel?: DeviceModel | null, palette?: Palette | null } = { reportedModel: 'unknown_board' }
       await expect(service.assignResolvedModel(device)).resolves.toBeNull()
       expect(device.deviceModel).toBeUndefined()
       expect(device.palette).toBeUndefined()

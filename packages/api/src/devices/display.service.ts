@@ -29,7 +29,7 @@ import { Display } from './display'
 import { DisplayScreen } from './displayScreen'
 import { isDeviceAsleep, secondsUntilSleepEnd } from './sleep-mode'
 
-interface TrmnlScreenResponse {
+export interface TrmnlScreenResponse {
   action?: string
   filename: string
   image_url: string

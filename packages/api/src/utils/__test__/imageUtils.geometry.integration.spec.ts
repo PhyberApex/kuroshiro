@@ -6,6 +6,8 @@ import path from 'node:path'
 import { promisify } from 'node:util'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { TRMNL_MODELS_SNAPSHOT } from '../../device-models/data/trmnl-snapshot'
+import { makeDeviceModel, makePalette } from '../../test/fixtures'
+import { asService } from '../../test/mockService'
 import { convertToPng } from '../imageUtils'
 
 const execFileAsync = promisify(execFile)
@@ -22,7 +24,7 @@ const snapshotGeometries = Array.from(
   new Map(
     TRMNL_MODELS_SNAPSHOT.map(m => [
       `${m.width}x${m.height}@${m.rotation}+${m.offset_x}+${m.offset_y}`,
-      { name: m.name, width: m.width, height: m.height, rotation: m.rotation, offsetX: m.offset_x, offsetY: m.offset_y } as any,
+      makeDeviceModel({ name: m.name, width: m.width, height: m.height, rotation: m.rotation, offsetX: m.offset_x, offsetY: m.offset_y }),
     ]),
   ).values(),
 )
@@ -39,22 +41,22 @@ function magickAvailable(): boolean {
 
 // amazon_kindle_2024 from the TRMNL snapshot: the one model with a non-zero
 // offset, and the case #751 found producing an undersized output.
-const KINDLE_MODEL = {
+const KINDLE_MODEL = makeDeviceModel({
   name: 'amazon_kindle_2024',
   width: 1400,
   height: 840,
   rotation: 90,
   offsetX: 75,
   offsetY: 25,
-} as any
+})
 
-const GRAY_256: any = { id: 'gray-256', grays: 256, colors: null, frameworkClass: 'screen--8bit' }
+const GRAY_256 = makePalette({ id: 'gray-256', grays: 256, colors: null, frameworkClass: 'screen--8bit' })
 
 describe.runIf(magickAvailable())('convertToPng (real magick)', () => {
   let tmpDir: string
   let inputPath: string
   let outputPath: string
-  const logger = { log: () => {}, error: () => {} } as unknown as Logger
+  const logger = asService<Logger>({ log: () => {}, error: () => {} })
 
   beforeAll(async () => {
     tmpDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'kuroshiro-imageutils-'))

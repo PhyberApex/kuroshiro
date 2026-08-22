@@ -1,5 +1,5 @@
-import type { DeviceModel } from '../entities/device-model.entity'
-import type { Palette } from '../entities/palette.entity'
+import type { DeviceModel } from '../device-models/entities/device-model.entity'
+import type { Palette } from '../device-models/entities/palette.entity'
 import { vi } from 'vitest'
 
 export const OG_PLUS: DeviceModel = {

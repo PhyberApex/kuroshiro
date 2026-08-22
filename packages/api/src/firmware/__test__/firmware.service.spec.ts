@@ -1,7 +1,11 @@
+import type { Firmware } from '../entities/firmware.entity'
 import nodeBuffer from 'node:buffer'
 import * as crypto from 'node:crypto'
 import { BadRequestException, NotFoundException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeFirmware } from '../../test/fixtures'
+import { asRepository, createMockRepository } from '../../test/mockRepository'
+import { asService } from '../../test/mockService'
 import { FirmwareService } from '../firmware.service'
 
 const { fsMock, fileExistsMock } = vi.hoisted(() => ({
@@ -22,26 +26,12 @@ vi.mock('../../utils/fileExists', () => ({
   fileExists: fileExistsMock,
 }))
 
-function createMockRepo() {
-  const queryBuilder = {
-    orderBy: vi.fn(),
-    getMany: vi.fn(),
-  }
-  queryBuilder.orderBy.mockReturnValue(queryBuilder)
-  return {
-    find: vi.fn(),
-    findOneBy: vi.fn(),
-    create: vi.fn(),
-    save: vi.fn(),
-    remove: vi.fn(),
-    createQueryBuilder: vi.fn().mockReturnValue(queryBuilder),
-    queryBuilder,
-  }
-}
-
 describe('firmwareService', () => {
   let service: FirmwareService
-  let repo: ReturnType<typeof createMockRepo>
+  let repo: ReturnType<typeof createMockRepository<Firmware>> & {
+    queryBuilder: { orderBy: ReturnType<typeof vi.fn>, getMany: ReturnType<typeof vi.fn> }
+    createQueryBuilder: ReturnType<typeof vi.fn>
+  }
   let configService: { get: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
@@ -49,18 +39,27 @@ describe('firmwareService', () => {
     fsMock.mkdir.mockResolvedValue(undefined)
     fsMock.writeFile.mockResolvedValue(undefined)
     fsMock.unlink.mockResolvedValue(undefined)
-    repo = createMockRepo()
+
+    const queryBuilder = {
+      orderBy: vi.fn(),
+      getMany: vi.fn(),
+    }
+    queryBuilder.orderBy.mockReturnValue(queryBuilder)
+
+    repo = {
+      ...createMockRepository<Firmware>(),
+      queryBuilder,
+      createQueryBuilder: vi.fn().mockReturnValue(queryBuilder),
+    }
+
     configService = { get: vi.fn().mockReturnValue('http://api') }
-    service = new FirmwareService(repo as any, configService as any)
+    service = new FirmwareService(asRepository(repo), asService(configService))
   })
 
   describe('upload', () => {
     const file = { buffer: nodeBuffer.Buffer.from('binary-content'), originalname: 'og.bin', mimetype: 'application/octet-stream', size: 14 }
 
     it('computes and stores a correct checksum', async () => {
-      repo.create.mockImplementation(attrs => attrs)
-      repo.save.mockImplementation(async attrs => attrs)
-
       const result = await service.upload(file, { version: '1.0.0' })
 
       const expectedChecksum = crypto.createHash('sha256').update(file.buffer).digest('hex')
@@ -71,9 +70,6 @@ describe('firmwareService', () => {
     })
 
     it('defaults the label to the original filename and compatibleModels to empty', async () => {
-      repo.create.mockImplementation(attrs => attrs)
-      repo.save.mockImplementation(async attrs => attrs)
-
       const result = await service.upload(file, { version: '1.0.0' })
 
       expect(result.label).toBe('og.bin')
@@ -98,7 +94,7 @@ describe('firmwareService', () => {
 
   describe('delete', () => {
     it('deletes a custom firmware', async () => {
-      const firmware = { id: 'fw-1', kind: 'custom' }
+      const firmware = makeFirmware({ id: 'fw-1', kind: 'custom' })
       repo.findOneBy.mockResolvedValue(firmware)
 
       await service.delete('fw-1')
@@ -108,7 +104,7 @@ describe('firmwareService', () => {
     })
 
     it('refuses to delete an official-synced firmware', async () => {
-      repo.findOneBy.mockResolvedValue({ id: 'fw-1', kind: 'official-synced' })
+      repo.findOneBy.mockResolvedValue(makeFirmware({ id: 'fw-1', kind: 'official-synced' }))
       await expect(service.delete('fw-1')).rejects.toThrow(BadRequestException)
       expect(repo.remove).not.toHaveBeenCalled()
     })
@@ -121,14 +117,14 @@ describe('firmwareService', () => {
 
   describe('findAll / findById', () => {
     it('lists firmware ordered by most recent first, coalescing uploadedAt and syncedAt', async () => {
-      const rows = [{ id: 'fw-1' }]
+      const rows = [makeFirmware({ id: 'fw-1' })]
       repo.queryBuilder.getMany.mockResolvedValue(rows)
       await expect(service.findAll()).resolves.toBe(rows)
       expect(repo.queryBuilder.orderBy).toHaveBeenCalledWith('COALESCE(firmware.uploadedAt, firmware.syncedAt)', 'DESC')
     })
 
     it('finds a firmware by id', async () => {
-      const firmware = { id: 'fw-1' }
+      const firmware = makeFirmware({ id: 'fw-1' })
       repo.findOneBy.mockResolvedValue(firmware)
       await expect(service.findById('fw-1')).resolves.toBe(firmware)
     })
@@ -141,19 +137,19 @@ describe('firmwareService', () => {
       fileExistsMock.mockResolvedValue(true)
       fsMock.readFile.mockResolvedValue(fileBuffer)
 
-      await expect(service.verifyChecksum({ id: 'fw-1', checksum } as any)).resolves.toBe(true)
+      await expect(service.verifyChecksum(makeFirmware({ id: 'fw-1', checksum }))).resolves.toBe(true)
     })
 
     it('returns false when the on-disk checksum does not match', async () => {
       fileExistsMock.mockResolvedValue(true)
       fsMock.readFile.mockResolvedValue(nodeBuffer.Buffer.from('corrupted'))
 
-      await expect(service.verifyChecksum({ id: 'fw-1', checksum: 'deadbeef' } as any)).resolves.toBe(false)
+      await expect(service.verifyChecksum(makeFirmware({ id: 'fw-1', checksum: 'deadbeef' }))).resolves.toBe(false)
     })
 
     it('returns false when the binary is missing on disk', async () => {
       fileExistsMock.mockResolvedValue(false)
-      await expect(service.verifyChecksum({ id: 'fw-1', checksum: 'deadbeef' } as any)).resolves.toBe(false)
+      await expect(service.verifyChecksum(makeFirmware({ id: 'fw-1', checksum: 'deadbeef' }))).resolves.toBe(false)
       expect(fsMock.readFile).not.toHaveBeenCalled()
     })
   })

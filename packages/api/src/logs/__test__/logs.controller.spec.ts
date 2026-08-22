@@ -1,7 +1,8 @@
 import type { CreateLogDto } from '../dto/create-log.dto'
-import type { LogEntry } from '../logs.entity'
 import type { LogsService } from '../logs.service'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeLogEntry } from '../../test/fixtures'
+import { asService } from '../../test/mockService'
 import { LogsController } from '../logs.controller'
 
 function createMockService() {
@@ -18,7 +19,7 @@ describe('logsController (unit)', () => {
 
   beforeEach(() => {
     service = createMockService()
-    controller = new LogsController(service as unknown as LogsService)
+    controller = new LogsController(asService<LogsService>(service))
   })
 
   it('consumeLog calls the service', async () => {
@@ -29,7 +30,7 @@ describe('logsController (unit)', () => {
   })
 
   it('getLogsByDevice returns logs for a device', async () => {
-    const logs = [{ } as LogEntry]
+    const logs = [makeLogEntry()]
     service.getByDevice.mockResolvedValue(logs)
     const result = await controller.getLogsByDevice('dev')
     expect(service.getByDevice).toHaveBeenCalledWith('dev')
