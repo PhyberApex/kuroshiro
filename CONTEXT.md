@@ -87,3 +87,7 @@ _Avoid_: Update, OTA package, release, firmware version (bare — reserve for th
 **Firmware Kind**:
 Where a Firmware came from — `official-synced` (Kuroshiro's daily sync job) or `custom` (an admin's direct upload).
 _Avoid_: Firmware type, firmware source
+
+**Sensor**:
+A Device's current reading for one Qwiic sensor add-on kind — `carbon_dioxide`, `humidity`, `pressure`, or `temperature` — parsed from the `SENSORS` header official OG firmware sends on every `/display` poll. At most one Sensor per Device per kind: each poll's header is the authoritative full snapshot, so a kind missing from a poll is deleted rather than left stale, and a kind present is upserted with its `value`/`unit`. Exposed to Plugin Liquid templates as an implicit `sensors` object keyed by kind (e.g. `sensors.temperature.value`), present only when the Device currently has that reading — no Plugin opt-in required. Device-attached only; a physically separate concept from server-attached (Raspberry Pi) sensors, which Kuroshiro does not support.
+_Avoid_: Telemetry (too broad), Extension, Exchange (Terminus's terms — not adopted here)

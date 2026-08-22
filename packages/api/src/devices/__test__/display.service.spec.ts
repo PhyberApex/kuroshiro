@@ -1,8 +1,11 @@
 import type { MockDeviceModelsService, MockFallbackScreensService } from '../../device-models/__test__/mockDeviceModelsService'
+import type { MockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService'
 import { promises as fs } from 'node:fs'
 import { NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMockDeviceModelsService, createMockFallbackScreensService, GRAY_4, GRAY_16, OG_PLUS, primeMockDeviceModelsService, primeMockFallbackScreensService, V2 } from '../../device-models/__test__/mockDeviceModelsService'
+import { createMockDeviceSensorsService, primeMockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService'
+import { PluginTemplateContextService } from '../../plugins/services/plugin-template-context.service'
 import { Display } from '../display'
 import { DeviceDisplayService } from '../display.service'
 import { DisplayScreen } from '../displayScreen'
@@ -66,6 +69,7 @@ describe('deviceDisplayService', () => {
   let deviceModels: MockDeviceModelsService
   let fallbackScreens: MockFallbackScreensService
   let firmwareService: { verifyChecksum: ReturnType<typeof vi.fn>, fileUrl: ReturnType<typeof vi.fn> }
+  let deviceSensors: MockDeviceSensorsService
 
   beforeEach(() => {
     deviceRepo = createMockRepo()
@@ -74,6 +78,7 @@ describe('deviceDisplayService', () => {
     deviceModels = createMockDeviceModelsService()
     fallbackScreens = createMockFallbackScreensService()
     firmwareService = { verifyChecksum: vi.fn(), fileUrl: vi.fn() }
+    deviceSensors = createMockDeviceSensorsService()
     service = new DeviceDisplayService(
       deviceRepo as any,
       screenRepo as any,
@@ -84,10 +89,13 @@ describe('deviceDisplayService', () => {
       {} as any,
       {} as any,
       {} as any,
+      deviceSensors as any,
+      new PluginTemplateContextService(),
     )
     vi.resetAllMocks()
     primeMockDeviceModelsService(deviceModels)
     primeMockFallbackScreensService(fallbackScreens)
+    primeMockDeviceSensorsService(deviceSensors)
     primePuppeteer()
   })
 
@@ -150,6 +158,31 @@ describe('deviceDisplayService', () => {
       deviceRepo.findOneBy.mockResolvedValue(device)
       await service.getCurrentImage({ ...headers, model: 'x' } as any)
       expect(deviceModels.assignResolvedModel).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('sensor ingestion', () => {
+    beforeEach(() => {
+      screenRepo.find.mockResolvedValue([])
+      configService.get.mockReturnValue('http://api')
+    })
+
+    it('syncs sensor readings from the resolved device and the raw sensors header', async () => {
+      const device = { ...baseDevice, deviceModel: OG_PLUS }
+      deviceRepo.findOneBy.mockResolvedValue(device)
+
+      await service.getCurrentImage({ ...headers, sensors: 'kind=temperature;value=21.5;unit=C' } as any)
+
+      expect(deviceSensors.syncFromHeader).toHaveBeenCalledWith(device, 'kind=temperature;value=21.5;unit=C')
+    })
+
+    it('syncs even when the sensors header is absent, clearing any stale readings', async () => {
+      const device = { ...baseDevice, deviceModel: OG_PLUS }
+      deviceRepo.findOneBy.mockResolvedValue(device)
+
+      await service.getCurrentImage(headers as any)
+
+      expect(deviceSensors.syncFromHeader).toHaveBeenCalledWith(device, undefined)
     })
   })
 

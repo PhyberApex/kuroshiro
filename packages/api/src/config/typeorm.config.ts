@@ -2,6 +2,7 @@ import process from 'node:process'
 import { DataSource } from 'typeorm'
 import { DeviceModel } from '../device-models/entities/device-model.entity'
 import { Palette } from '../device-models/entities/palette.entity'
+import { DeviceSensor } from '../device-sensors/entities/device-sensor.entity'
 import { Device } from '../devices/devices.entity'
 import { Firmware } from '../firmware/entities/firmware.entity'
 import { LogEntry } from '../logs/logs.entity'
@@ -24,7 +25,7 @@ const AppDataSource = new DataSource({
   username: process.env.KUROSHIRO_DB_USER || 'root',
   password: process.env.KUROSHIRO_DB_PASSWORD || 'root',
   database: process.env.KUROSHIRO_DB_DB || 'test',
-  entities: [Device, DeviceModel, Palette, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, PluginVariable, MashupConfiguration, MashupSlot, Schedule, Firmware],
+  entities: [Device, DeviceModel, Palette, DeviceSensor, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, PluginVariable, MashupConfiguration, MashupSlot, Schedule, Firmware],
   migrations: ['dist/src/migrations/*.js'],
   migrationsTableName: 'migrations',
   synchronize: false,

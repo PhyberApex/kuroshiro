@@ -17,6 +17,7 @@ import { PluginImporterService } from './services/plugin-importer.service'
 import { PluginRenderCacheService } from './services/plugin-render-cache.service'
 import { PluginRendererService } from './services/plugin-renderer.service'
 import { PluginSchedulerService } from './services/plugin-scheduler.service'
+import { PluginTemplateContextService } from './services/plugin-template-context.service'
 import { PluginTransformService } from './services/plugin-transform.service'
 import { WebhookIngestService } from './services/webhook-ingest.service'
 import { WebhookIngestController } from './webhook-ingest.controller'
@@ -44,9 +45,10 @@ import { WebhookIngestController } from './webhook-ingest.controller'
     PluginExporterService,
     PluginTransformService,
     PluginRenderCacheService,
+    PluginTemplateContextService,
     WebhookIngestService,
     WebhookPluginGuard,
   ],
-  exports: [PluginsService, PluginSchedulerService, PluginDataFetcherService, PluginRendererService, PluginTransformService, PluginRenderCacheService],
+  exports: [PluginsService, PluginSchedulerService, PluginDataFetcherService, PluginRendererService, PluginTransformService, PluginRenderCacheService, PluginTemplateContextService],
 })
 export class PluginsModule {}
