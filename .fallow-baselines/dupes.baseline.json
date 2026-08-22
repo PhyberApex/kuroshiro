@@ -4,7 +4,6 @@
     "packages/ui/src/views/PluginCreateView.vue:414-459|packages/ui/src/views/PluginEditView.vue:398-443",
     "packages/ui/src/views/PluginCreateView.vue:128-172|packages/ui/src/views/PluginEditView.vue:145-191",
     "packages/api/src/maintenance/maintenance.service.ts:11-54|packages/ui/src/types.ts:140-183",
-    "packages/api/src/utils/generateApikey.ts:3-21|packages/api/src/utils/generateFriendlyName.ts:3-21",
     "packages/api/src/devices/display.service.ts:290-300|packages/api/src/devices/display.service.ts:84-94",
     "packages/api/src/mashup/mashup.service.ts:150-168|packages/api/src/mashup/mashup.service.ts:52-70",
     "packages/api/src/maintenance/maintenance.service.ts:233-252|packages/api/src/maintenance/maintenance.service.ts:254-273",
@@ -31,7 +30,6 @@
     "dup:3f7e87f2:2",
     "dup:15bba9f8:2",
     "dup:d32ddf4a:2",
-    "dup:ffabf660:2",
     "dup:04d1333c:2",
     "dup:6ce3de45:2",
     "dup:7a63f3f3:2",
@@ -55,7 +53,6 @@
   ],
   "normalized_clone_fingerprints": [
     "dup:c77b3abb6f87acd9-10:2",
-    "dup:c77b3abb6f87acd9-20:2",
     "dup:c77b3abb6f87acd9-2:2",
     "dup:a3006799:2",
     "dup:c77b3abb6f87acd9-12:2",
