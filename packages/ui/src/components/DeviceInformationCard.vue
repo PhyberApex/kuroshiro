@@ -54,11 +54,13 @@ onMounted(() => {
 const selectedModelName = ref<string | null>(null)
 const selectedPaletteId = ref<string | null>(null)
 const selectedFirmwareId = ref<string | null>(null)
+const pendingSpecialFunction = ref('none')
 
 watch(device, (current) => {
   selectedModelName.value = current?.deviceModel?.name ?? null
   selectedPaletteId.value = current?.palette?.id ?? null
   selectedFirmwareId.value = current?.targetFirmware?.id ?? null
+  pendingSpecialFunction.value = current?.specialFunction ?? 'none'
 }, { immediate: true })
 
 const firmwareOptions = computed(() => {
@@ -82,6 +84,34 @@ async function triggerFirmwareUpdate() {
   }
   finally {
     firmwareUpdating.value = false
+  }
+}
+
+const specialFunctionTriggering = ref(false)
+
+async function triggerSpecialFunction() {
+  if (!device.value)
+    return
+  specialFunctionTriggering.value = true
+  try {
+    await deviceStore.updateDevice(device.value.id, { specialFunction: pendingSpecialFunction.value })
+  }
+  finally {
+    specialFunctionTriggering.value = false
+  }
+}
+
+const resetTriggering = ref(false)
+
+async function triggerReset() {
+  if (!device.value)
+    return
+  resetTriggering.value = true
+  try {
+    await deviceStore.updateDevice(device.value.id, { resetDevice: true })
+  }
+  finally {
+    resetTriggering.value = false
   }
 }
 
@@ -305,11 +335,9 @@ async function saveDevice() {
   await deviceStore.updateDevice(device.value.id, {
     name: device.value.name,
     refreshRate: device.value.refreshRate,
-    resetDevice: device.value.resetDevice,
     mirrorEnabled: device.value.mirrorEnabled,
     mirrorMac: device.value.mirrorMac,
     mirrorApikey: device.value.mirrorApikey,
-    specialFunction: device.value.specialFunction,
     ...(selectedModelName.value ? { deviceModelName: selectedModelName.value } : {}),
     ...(selectedPaletteId.value ? { paletteId: selectedPaletteId.value } : {}),
   })
@@ -417,16 +445,37 @@ const nameEditing = ref(false)
                     </VCol>
                   </VRow>
                 </VCol>
-                <VCol cols="12" sm="6" md="4">
+                <VCol cols="12" sm="8" md="6" class="d-flex align-center ga-3">
                   <VSelect
-                    v-model="device.specialFunction"
+                    v-model="pendingSpecialFunction"
                     :items="specialFunctionalities"
                     density="compact"
                     label="Special Function"
+                    data-test-id="device-special-function-select"
                   />
+                  <VBtn
+                    size="small"
+                    color="secondary"
+                    variant="tonal"
+                    :loading="specialFunctionTriggering"
+                    :disabled="pendingSpecialFunction === 'none'"
+                    data-test-id="device-special-function-trigger-btn"
+                    @click="triggerSpecialFunction"
+                  >
+                    Trigger
+                  </VBtn>
                 </VCol>
-                <VCol cols="12" sm="4" md="4" lg="4">
-                  <VSwitch v-model="device.resetDevice" color="secondary" density="compact" label="Reset device" />
+                <VCol cols="12" sm="4" md="6" class="d-flex align-center">
+                  <VBtn
+                    size="small"
+                    color="secondary"
+                    variant="tonal"
+                    :loading="resetTriggering"
+                    data-test-id="device-reset-trigger-btn"
+                    @click="triggerReset"
+                  >
+                    Reset device
+                  </VBtn>
                 </VCol>
               </VRow>
               <VRow class="mb-2" density="comfortable">
