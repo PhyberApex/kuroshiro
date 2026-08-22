@@ -1,6 +1,8 @@
-import { Controller, Get, Logger, Post, ServiceUnavailableException } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Logger, Param, Post, ServiceUnavailableException, UsePipes, ValidationPipe } from '@nestjs/common'
+import { CustomPalettesService } from './custom-palettes.service'
 import { DeviceModelSyncResult, DeviceModelSyncService } from './device-model-sync.service'
 import { DeviceModelsService } from './device-models.service'
+import { CreateCustomPaletteDto } from './dto/create-custom-palette.dto'
 import { DeviceModel } from './entities/device-model.entity'
 import { Palette } from './entities/palette.entity'
 
@@ -11,6 +13,7 @@ export class DeviceModelsController {
   constructor(
     private readonly deviceModelsService: DeviceModelsService,
     private readonly syncService: DeviceModelSyncService,
+    private readonly customPalettesService: CustomPalettesService,
   ) {}
 
   @Get()
@@ -21,6 +24,17 @@ export class DeviceModelsController {
   @Get('palettes')
   getPalettes(): Promise<Palette[]> {
     return this.deviceModelsService.findAllPalettes()
+  }
+
+  @Post('palettes')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  createPalette(@Body() dto: CreateCustomPaletteDto): Promise<Palette> {
+    return this.customPalettesService.create(dto)
+  }
+
+  @Delete('palettes/:id')
+  deletePalette(@Param('id') id: string): Promise<void> {
+    return this.customPalettesService.delete(id)
   }
 
   @Post('sync')

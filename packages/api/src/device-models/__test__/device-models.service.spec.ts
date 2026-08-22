@@ -89,6 +89,21 @@ describe('deviceModelsService', () => {
     })
   })
 
+  describe('compatibleFamiliesFor', () => {
+    it('returns every colour family represented among the model\'s official palettes', async () => {
+      await expect(service.compatibleFamiliesFor(SEEED_E1002)).resolves.toEqual(new Set(['screen--color-6a']))
+    })
+
+    it('returns an empty set for a model with only grayscale official palettes', async () => {
+      await expect(service.compatibleFamiliesFor(OG_PLUS)).resolves.toEqual(new Set())
+    })
+
+    it('is derived from paletteIds-matched rows, not from colors/bitDepth', async () => {
+      const grayscaleOnlyModel = { ...OG_PLUS, colors: 999, bitDepth: 99, paletteIds: ['bw'] }
+      await expect(service.compatibleFamiliesFor(grayscaleOnlyModel)).resolves.toEqual(new Set())
+    })
+  })
+
   describe('assignResolvedModel', () => {
     it('sets model and default palette on the device', async () => {
       const device = { reportedModel: 'x', width: 1872, height: 1404 } as any

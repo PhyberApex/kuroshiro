@@ -3,7 +3,7 @@ import type { MockDeviceModelsService } from '../../device-models/__test__/mockD
 import type { Device } from '../devices.entity'
 import { BadRequestException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { BW, createMockDeviceModelsService, GRAY_4, GRAY_16, OG_PLUS, V2 } from '../../device-models/__test__/mockDeviceModelsService'
+import { BW, createMockDeviceModelsService, CUSTOM_RED_3BWR, GRAY_4, GRAY_16, OG_PLUS, V2 } from '../../device-models/__test__/mockDeviceModelsService'
 import { DevicesService } from '../devices.service'
 
 interface MockRepository {
@@ -170,6 +170,23 @@ describe('devicesService', () => {
       const result = await service.update('1', { name: 'renamed' } as any)
       expect(result.name).toBe('renamed')
       expect(result.palette).toBe(GRAY_4)
+    })
+
+    it('accepts a custom palette whose colour family is compatible with the device model', async () => {
+      repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: OG_PLUS, palette: GRAY_4 })
+      deviceModels.findPalette.mockResolvedValue(CUSTOM_RED_3BWR)
+      deviceModels.compatibleFamiliesFor.mockResolvedValue(new Set(['screen--color-3bwr']))
+      const result = await service.update('1', { paletteId: CUSTOM_RED_3BWR.id } as any)
+      expect(deviceModels.compatibleFamiliesFor).toHaveBeenCalledWith(OG_PLUS)
+      expect(result.palette).toBe(CUSTOM_RED_3BWR)
+    })
+
+    it('rejects a custom palette whose colour family is not compatible with the device model', async () => {
+      repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: OG_PLUS, palette: GRAY_4 })
+      deviceModels.findPalette.mockResolvedValue(CUSTOM_RED_3BWR)
+      deviceModels.compatibleFamiliesFor.mockResolvedValue(new Set())
+      await expect(service.update('1', { paletteId: CUSTOM_RED_3BWR.id } as any)).rejects.toThrow(BadRequestException)
+      expect(repo.save).not.toHaveBeenCalled()
     })
   })
 
