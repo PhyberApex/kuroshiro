@@ -435,9 +435,9 @@ async function executeCleanup() {
 
         <template v-else-if="maintenanceStore.issues">
           <VCard elevation="1" class="mb-4">
-            <VCardTitle>
+            <VCardTitle class="d-flex align-center flex-wrap ga-2">
               Scan Summary
-              <VChip v-if="maintenanceStore.issues.scannedAt" size="small" class="ml-2">
+              <VChip v-if="maintenanceStore.issues.scannedAt" size="small">
                 {{ new Date(maintenanceStore.issues.scannedAt).toLocaleString() }}
               </VChip>
             </VCardTitle>

@@ -40,7 +40,6 @@ const availablePlugins = computed(() => {
 
 onMounted(async () => {
   await pluginsStore.fetchPluginsForDevice(props.deviceId)
-  await mashupStore.fetchLayouts()
 })
 
 function updateSlotCount() {

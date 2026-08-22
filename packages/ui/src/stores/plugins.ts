@@ -57,15 +57,6 @@ export const usePluginsStore = defineStore('plugins', () => {
     }
   }
 
-  const testPlugin = async (id: string) => {
-    const res = await fetch(`/api/plugins/${id}/test`, {
-      method: 'POST',
-    })
-    if (!res.ok)
-      throw new Error('Failed to test plugin')
-    return await res.json()
-  }
-
   const assignToDevice = async (pluginId: string, deviceId: string, isActive = true, order = 0) => {
     const res = await fetch(`/api/plugins/${pluginId}/assign`, {
       method: 'POST',
@@ -102,7 +93,6 @@ export const usePluginsStore = defineStore('plugins', () => {
     createPlugin,
     updatePlugin,
     deletePlugin,
-    testPlugin,
     assignToDevice,
     unassignFromDevice,
     updateDeviceAssignment,

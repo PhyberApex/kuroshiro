@@ -31,12 +31,7 @@
   "unused_optional_dependencies": [],
   "unused_enum_members": [],
   "unused_class_members": [],
-  "unused_store_members": [
-    "packages/ui/src/stores/mashup.ts:useMashupStore.getConfiguration",
-    "packages/ui/src/stores/mashup.ts:useMashupStore.layouts",
-    "packages/ui/src/stores/mashup.ts:useMashupStore.update",
-    "packages/ui/src/stores/plugins.ts:usePluginsStore.testPlugin"
-  ],
+  "unused_store_members": [],
   "unprovided_injects": [],
   "unrendered_components": [],
   "unused_component_props": [],
