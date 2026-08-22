@@ -5,7 +5,9 @@ import type { PluginDataFetcherService } from '../services/plugin-data-fetcher.s
 import type { PluginRendererService } from '../services/plugin-renderer.service'
 import type { PluginSchedulerService } from '../services/plugin-scheduler.service'
 import type { PluginTransformService } from '../services/plugin-transform.service'
+import { plainToInstance } from 'class-transformer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { UpdatePluginDto } from '../dto/update-plugin.dto'
 import { PluginsService } from '../plugins.service'
 
 interface MockRepository {
@@ -848,6 +850,63 @@ describe('pluginsService', () => {
 
       await expect(service.clearWebhookPayload('1')).rejects.toThrow('is not a Webhook-kind Plugin')
       expect(pluginRepo.update).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('update through the real DTO transformation pipeline (regression for #828)', () => {
+    // plainToInstance gives every UpdatePluginDto field (incl. `kind`, `mergeStrategy`) an own
+    // property set to `undefined` even when the caller never sent it — a plain object literal
+    // cast `as any` doesn't reproduce that, so these tests go through the real pipeline instead.
+    function transform(body: Record<string, unknown>): UpdatePluginDto {
+      return plainToInstance(UpdatePluginDto, body)
+    }
+
+    it('update accepts a body that omits kind entirely, and leaves kind and other unset fields untouched', async () => {
+      const stored = { ...basePlugin }
+      pluginRepo.findOne.mockResolvedValue(stored)
+      pluginRepo.save.mockImplementation(async (plugin: any) => plugin)
+
+      const result = await service.update('1', transform({ description: 'test only' }))
+
+      expect(result).toMatchObject({
+        description: 'test only',
+        kind: basePlugin.kind,
+        name: basePlugin.name,
+        refreshInterval: basePlugin.refreshInterval,
+      })
+      expect(result?.kind).not.toBeUndefined()
+      expect(result?.name).not.toBeUndefined()
+    })
+
+    it('update accepts a webhook-kind body that omits mergeStrategy entirely, and leaves it untouched', async () => {
+      const stored = {
+        id: '1',
+        name: 'Sensor Feed',
+        kind: 'Webhook',
+        refreshInterval: 15,
+        webhookToken: 'token-abc',
+        mergeStrategy: 'stream',
+        streamLimit: 20,
+      } as unknown as Plugin
+      pluginRepo.findOne.mockResolvedValue(stored)
+      pluginRepo.save.mockImplementation(async (plugin: any) => plugin)
+
+      const result = await service.update('1', transform({ description: 'test only' }))
+
+      expect(result).toMatchObject({
+        description: 'test only',
+        kind: 'Webhook',
+        mergeStrategy: 'stream',
+        streamLimit: 20,
+      })
+    })
+
+    it('update still rejects an explicit kind change sent through the real pipeline', async () => {
+      pluginRepo.findOne.mockResolvedValue({ ...basePlugin })
+
+      await expect(service.update('1', transform({ kind: 'Webhook' }))).rejects.toThrow(
+        'A Plugin\'s Kind is fixed at creation and cannot be changed',
+      )
     })
   })
 })
