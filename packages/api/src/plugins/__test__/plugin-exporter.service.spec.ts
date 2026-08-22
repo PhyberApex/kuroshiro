@@ -141,6 +141,33 @@ describe('pluginExporterService', () => {
     expect(settings.data_sources[1].name).toBe('air_quality')
   })
 
+  it('exports a literal-mode data source as a mode/literal_value entry, not a broken endpoint', async () => {
+    const plugin = {
+      name: 'Mixed',
+      refreshInterval: 15,
+      dataSources: [
+        { name: 'weather', mode: 'fetch', url: 'https://api.example.com/weather', method: 'GET', order: 0 },
+        { name: 'title', mode: 'literal', literalValue: { text: 'Hello' }, order: 1 },
+      ],
+      templates: [{ layout: 'full', liquidMarkup: 'Test' }],
+      fields: [],
+    } as unknown as Plugin
+
+    const buffer = await service.exportToZip(plugin)
+    const zip = new AdmZip(buffer)
+    const settings = yaml.load(zip.getEntry('src/settings.yml')!.getData().toString('utf8')) as any
+
+    expect(settings.data_sources).toHaveLength(2)
+    const literalEntry = settings.data_sources.find((s: any) => s.name === 'title')
+    expect(literalEntry.mode).toBe('literal')
+    expect(literalEntry.literal_value).toEqual({ text: 'Hello' })
+    expect(literalEntry.endpoint).toBeUndefined()
+
+    const fetchEntry = settings.data_sources.find((s: any) => s.name === 'weather')
+    expect(fetchEntry.endpoint).toBe('https://api.example.com/weather')
+    expect(fetchEntry.mode).toBeUndefined()
+  })
+
   it('exports multiple templates with different layouts', async () => {
     const plugin = {
       name: 'Multi Layout',

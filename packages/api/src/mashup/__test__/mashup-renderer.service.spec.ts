@@ -23,6 +23,11 @@ describe('mashupRendererService', () => {
   beforeEach(() => {
     pluginDataFetcher = {
       fetchData: vi.fn(),
+      fetchOrLiteral: vi.fn((source: any, ctx: any) =>
+        source.mode === 'literal'
+          ? Promise.resolve(source.literalValue ?? null)
+          : pluginDataFetcher.fetchData(source.method, source.url ?? '', source.headers, source.body, ctx),
+      ),
     } as any
 
     pluginRenderer = {

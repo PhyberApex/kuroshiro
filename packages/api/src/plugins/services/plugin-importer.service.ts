@@ -35,11 +35,13 @@ interface CustomField {
 
 interface DataSourceEntry {
   name?: string
+  mode?: string
   endpoint?: string
   method?: string
   headers?: Record<string, string>
   body?: JsonObject
   transform_js?: string
+  literal_value?: JsonObject | JsonObject[] | string | number | boolean | null
 }
 
 interface TerminusSettings {
@@ -72,15 +74,20 @@ interface RecipeSettings extends TerminusSettings {
   description?: string
   oauth_enabled?: boolean
   strategy?: string
+  // Terminus schema: `maybe :hash` — a `strategy: static` recipe's fixed
+  // payload (issue #794 / ADR-0018)
+  static_data?: JsonObject | null
 }
 
 interface ParsedDataSource {
   name: string
-  method: string
-  url: string
+  mode: 'fetch' | 'literal'
+  method?: string
+  url?: string
   headers?: Record<string, string>
   body?: JsonObject
   transformJs?: string | null
+  literalValue?: JsonObject | JsonObject[] | string | number | boolean | null
 }
 
 export interface ParsedPlugin {
@@ -186,7 +193,7 @@ export class PluginImporterService {
     return this.parseZip(zip, fallbackName)
   }
 
-  private parseZip(zip: AdmZip, fallbackName: string): ParsedPlugin {
+  private parseZip(zip: AdmZip, fallbackName: string, forcedDataSources?: ParsedDataSource[]): ParsedPlugin {
     const zipEntries = zip.getEntries()
 
     this.logger.debug(`ZIP contains ${zipEntries.length} entries:`)
@@ -273,7 +280,7 @@ export class PluginImporterService {
       }
     })
 
-    return this.buildParsedPlugin(manifest, settings, templates, fallbackName, transformJs ?? undefined)
+    return this.buildParsedPlugin(manifest, settings, templates, fallbackName, transformJs ?? undefined, forcedDataSources)
   }
 
   parseRecipeId(recipeIdOrUrl: string): string {
@@ -323,7 +330,7 @@ export class PluginImporterService {
     }
 
     if (recipeSettings.strategy === 'static') {
-      throw new Error('Recipes with a "static" strategy are not supported yet')
+      return this.importStaticRecipe(entries, settingsContent, recipeSettings, recipeId)
     }
 
     if (recipeSettings.strategy !== 'polling') {
@@ -332,6 +339,35 @@ export class PluginImporterService {
 
     const reshapedZip = this.reshapeRecipeArchive(entries, settingsContent, recipeSettings)
     const parsed = this.parseZip(reshapedZip, `recipe-${recipeId}`)
+
+    return {
+      ...parsed,
+      fields: parsed.fields.map(field => field.fieldType === 'author_bio' ? { ...field, required: false } : field),
+      sourceRecipeId: recipeId,
+    }
+  }
+
+  // A `strategy: static` Recipe carries its fixed payload as `static_data`
+  // instead of a `polling_*` endpoint — it imports as a single `literal`-mode
+  // Data Source named 'source', matching the existing single-implicit-source
+  // naming convention (issue #794 / ADR-0018). Nothing fetches for a literal
+  // source, so a `transform.js` alongside it has nothing to transform.
+  private importStaticRecipe(entries: AdmZip.IZipEntry[], settingsContent: string, recipeSettings: RecipeSettings, recipeId: string): ParsedPlugin {
+    const hasTransform = entries.some(entry =>
+      entry.entryName === 'transform.js' || entry.entryName.endsWith('/transform.js'),
+    )
+    if (hasTransform) {
+      throw new Error('Static recipes with a transform.js aren\'t supported — nothing to transform')
+    }
+
+    const staticDataSource: ParsedDataSource = {
+      name: 'source',
+      mode: 'literal',
+      literalValue: isPlainObject(recipeSettings.static_data) ? recipeSettings.static_data as JsonObject : {},
+    }
+
+    const reshapedZip = this.reshapeRecipeArchive(entries, settingsContent, recipeSettings)
+    const parsed = this.parseZip(reshapedZip, `recipe-${recipeId}`, [staticDataSource])
 
     return {
       ...parsed,
@@ -423,6 +459,7 @@ export class PluginImporterService {
     templates: Array<{ layout: string, liquidMarkup: string }>,
     fallbackName: string,
     transformJs?: string,
+    forcedDataSources?: ParsedDataSource[],
   ): ParsedPlugin {
     this.logger.debug(`Parsed manifest: ${JSON.stringify(manifest)}`)
     this.logger.debug(`Parsed settings: ${JSON.stringify(settings)}`)
@@ -452,9 +489,10 @@ export class PluginImporterService {
       this.logger.warn('Ignoring src/transform.js: settings.yml uses the "data_sources" array format, where each entry carries its own "transform_js" instead')
     }
 
-    const dataSources = hasDataSourcesArray
-      ? this.parseDataSourcesArray(settings.data_sources!)
-      : [this.parseLegacySingleDataSource(settings, transformJs)]
+    const dataSources = forcedDataSources
+      ?? (hasDataSourcesArray
+        ? this.parseDataSourcesArray(settings.data_sources!)
+        : [this.parseLegacySingleDataSource(settings, transformJs)])
 
     // custom_fields can be in manifest or settings, can be empty object {}, missing, or an array
     const customFieldsSource = Array.isArray(manifest.custom_fields)
@@ -485,14 +523,23 @@ export class PluginImporterService {
 
   private parseDataSourcesArray(entries: DataSourceEntry[]): ParsedDataSource[] {
     return entries.map((entry, index) => {
+      const name = entry.name && entry.name.trim() !== '' ? entry.name.trim() : `source_${index + 1}`
+
+      if (entry.mode === 'literal') {
+        return {
+          name,
+          mode: 'literal' as const,
+          literalValue: entry.literal_value ?? {},
+        }
+      }
+
       if (!entry.endpoint || entry.endpoint.trim() === '') {
         throw new Error(`Data source at index ${index} is missing an "endpoint"`)
       }
 
-      const name = entry.name && entry.name.trim() !== '' ? entry.name.trim() : `source_${index + 1}`
-
       return {
         name,
+        mode: 'fetch' as const,
         method: (entry.method || 'GET').toUpperCase(),
         url: entry.endpoint.trim(),
         headers: entry.headers || {},
@@ -535,6 +582,7 @@ export class PluginImporterService {
 
     return {
       name: 'source',
+      mode: 'fetch',
       method: method?.toUpperCase() || 'GET',
       url: endpoint.trim(),
       headers,

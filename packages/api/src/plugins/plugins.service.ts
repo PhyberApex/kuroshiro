@@ -1,6 +1,7 @@
 import type { MashupSlot } from '../mashup/entities/mashup-slot.entity'
 import type { AssignPluginToDeviceDto } from './dto/assign-plugin-to-device.dto'
 import type { CreatePluginDto } from './dto/create-plugin.dto'
+import type { PluginDataSourceDto } from './dto/plugin-data-source.dto'
 import type { PreviewSourceDto } from './dto/preview-plugin.dto'
 import type { UpdateDeviceAssignmentDto } from './dto/update-device-assignment.dto'
 import type { UpdatePluginDto } from './dto/update-plugin.dto'
@@ -17,6 +18,7 @@ import { PluginDataSource } from './entities/plugin-data-source.entity'
 import { PluginField } from './entities/plugin-field.entity'
 import { PluginTemplate } from './entities/plugin-template.entity'
 import { Plugin } from './entities/plugin.entity'
+import { dataSourceModeViolation } from './plugin-data-source-mode'
 import { pluginKindFieldViolation } from './plugin-kind-fields'
 import { PluginDataFetcherService } from './services/plugin-data-fetcher.service'
 import { PluginRendererService } from './services/plugin-renderer.service'
@@ -170,6 +172,7 @@ export class PluginsService implements OnModuleInit {
 
     if (dataSources && Array.isArray(dataSources) && dataSources.length > 0) {
       this.validateDataSourceNames(dataSources, fields || [])
+      this.assertDataSourceModeFields(dataSources)
     }
 
     const kind = basicFields.kind || 'Poll'
@@ -205,13 +208,7 @@ export class PluginsService implements OnModuleInit {
       this.logger.debug(`Creating ${dataSources.length} data sources`)
       for (const [index, sourceData] of dataSources.entries()) {
         const newDataSource = this.dataSourceRepository.create({
-          name: sourceData.name,
-          method: sourceData.method || 'GET',
-          url: sourceData.url,
-          headers: sourceData.headers || {},
-          body: sourceData.body || {},
-          transformJs: sourceData.transformJs || null,
-          order: sourceData.order ?? index,
+          ...this.buildDataSourceFields(sourceData, index),
           plugin: savedPlugin,
         })
         await this.dataSourceRepository.save(newDataSource)
@@ -286,6 +283,10 @@ export class PluginsService implements OnModuleInit {
       this.validateDataSourceNames(finalDataSources, finalFields)
     }
 
+    if (dataSources !== undefined && Array.isArray(dataSources) && dataSources.length > 0) {
+      this.assertDataSourceModeFields(dataSources)
+    }
+
     const mergeStrategy = 'mergeStrategy' in basicFields ? basicFields.mergeStrategy : plugin.mergeStrategy
     const streamLimit = mergeStrategy === 'stream' ? basicFields.streamLimit ?? plugin.streamLimit : basicFields.streamLimit
 
@@ -307,13 +308,7 @@ export class PluginsService implements OnModuleInit {
       if (Array.isArray(dataSources) && dataSources.length > 0) {
         for (const [index, sourceData] of dataSources.entries()) {
           const newDataSource = this.dataSourceRepository.create({
-            name: sourceData.name,
-            method: sourceData.method || 'GET',
-            url: sourceData.url,
-            headers: sourceData.headers || {},
-            body: sourceData.body || {},
-            transformJs: sourceData.transformJs || null,
-            order: sourceData.order ?? index,
+            ...this.buildDataSourceFields(sourceData, index),
             plugin,
           })
           newDataSources.push(await this.dataSourceRepository.save(newDataSource))
@@ -376,6 +371,40 @@ export class PluginsService implements OnModuleInit {
     }
 
     return updated
+  }
+
+  private assertDataSourceModeFields(dataSources: PluginDataSourceDto[]): void {
+    for (const source of dataSources) {
+      const violation = dataSourceModeViolation(source)
+      if (violation) {
+        throw new BadRequestException(`Data source "${source.name}": ${violation}`)
+      }
+    }
+  }
+
+  private buildDataSourceFields(sourceData: PluginDataSourceDto, index: number) {
+    const mode = sourceData.mode || 'fetch'
+    const order = sourceData.order ?? index
+
+    if (mode === 'literal') {
+      return {
+        name: sourceData.name,
+        mode,
+        literalValue: sourceData.literalValue ?? null,
+        order,
+      }
+    }
+
+    return {
+      name: sourceData.name,
+      mode,
+      method: sourceData.method || 'GET',
+      url: sourceData.url,
+      headers: sourceData.headers || {},
+      body: sourceData.body || {},
+      transformJs: sourceData.transformJs || null,
+      order,
+    }
   }
 
   private validateDataSourceNames(dataSources: Array<{ name?: string }>, fields: Array<{ keyname?: string }>): void {
@@ -507,7 +536,7 @@ export class PluginsService implements OnModuleInit {
 
     const results = await Promise.allSettled(
       (sources || []).map(async (source) => {
-        let rawData = await this.dataFetcher.fetchData(source.method, source.url, source.headers, source.body, templateContext)
+        let rawData = await this.dataFetcher.fetchOrLiteral(source, templateContext)
         if (source.transformJs) {
           this.logger.debug(`Applying transform.js to data source: ${source.name}`)
           rawData = this.transformer.transform(source.transformJs, rawData)

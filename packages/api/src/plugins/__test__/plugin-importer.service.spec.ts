@@ -393,6 +393,32 @@ describe('pluginImporterService', () => {
       expect(result.dataSources[1]).toMatchObject({ name: 'air_quality', url: 'https://api.example.com/air', method: 'GET', transformJs: 'module.exports = (d) => d' })
     })
 
+    it('round-trips a "mode: literal" entry in a "data_sources" array into a literal-mode Data Source', async () => {
+      const zip = new AdmZip()
+
+      const manifest = { name: 'Literal Source Plugin' }
+      const settings = {
+        data_sources: [
+          { name: 'title', mode: 'literal', literal_value: { text: 'Hello' } },
+        ],
+      }
+
+      zip.addFile('.trmnlp.yml', Buffer.from(yaml.dump(manifest), 'utf8'))
+      zip.addFile('src/settings.yml', Buffer.from(yaml.dump(settings), 'utf8'))
+      zip.addFile('src/full.liquid', Buffer.from('{{ title.text }}', 'utf8'))
+
+      const tmpPath = path.join(__dirname, 'test-literal-source.zip')
+      zip.writeZip(tmpPath)
+
+      const result = await service.importFromFile(tmpPath)
+
+      fs.unlinkSync(tmpPath)
+
+      expect(result.dataSources).toHaveLength(1)
+      expect(result.dataSources[0]).toMatchObject({ name: 'title', mode: 'literal', literalValue: { text: 'Hello' } })
+      expect(result.dataSources[0].url).toBeUndefined()
+    })
+
     it('defaults an unnamed entry in a "data_sources" array to source_N', async () => {
       const zip = new AdmZip()
 

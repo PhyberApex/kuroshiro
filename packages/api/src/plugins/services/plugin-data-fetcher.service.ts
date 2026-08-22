@@ -1,8 +1,21 @@
 import type { JsonObject } from '../../utils/json'
+import type { DataSourceLiteralValue, DataSourceMode } from '../entities/plugin-data-source.entity'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { assertPublicUrl } from '../../utils/ssrfGuard'
 import { PluginRendererService } from './plugin-renderer.service'
+
+// The subset of a Data Source's fields fetchOrLiteral needs — shared by the
+// PluginDataSource entity and PreviewSourceDto, which carry the same fields
+// under slightly different types.
+export interface FetchableDataSource {
+  mode?: DataSourceMode
+  method?: string
+  url?: string | null
+  headers?: Record<string, string>
+  body?: JsonObject
+  literalValue?: DataSourceLiteralValue
+}
 
 @Injectable()
 export class PluginDataFetcherService {
@@ -12,6 +25,20 @@ export class PluginDataFetcherService {
     private readonly renderer: PluginRendererService,
     private readonly configService: ConfigService,
   ) {}
+
+  /**
+   * Resolves one Data Source's value regardless of mode: a literal-mode
+   * source contributes its stored value directly, with no network call at
+   * all; a fetch-mode source is fetched as usual. Every render/schedule/
+   * preview path that iterates a Plugin's Data Sources should go through
+   * this rather than re-deriving the mode branch itself.
+   */
+  async fetchOrLiteral(source: FetchableDataSource, templateContext?: object): Promise<unknown> {
+    if (source.mode === 'literal') {
+      return source.literalValue ?? null
+    }
+    return this.fetchData(source.method || 'GET', source.url || '', source.headers, source.body, templateContext)
+  }
 
   async fetchData(
     method: string,

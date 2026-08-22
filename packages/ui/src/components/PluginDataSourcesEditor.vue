@@ -3,9 +3,14 @@ import type { PluginDataSource } from '@/types/plugin'
 import { mdiDelete, mdiPlus } from '@mdi/js'
 import { VAlert, VBtn, VExpansionPanel, VExpansionPanels, VExpansionPanelText, VExpansionPanelTitle, VSelect, VTextarea, VTextField } from 'vuetify/components'
 
-export type EditableDataSource = Partial<PluginDataSource> & { headersJson?: string }
+export type EditableDataSource = Partial<PluginDataSource> & { headersJson?: string, literalValueJson?: string }
 
 const dataSources = defineModel<EditableDataSource[]>({ required: true })
+
+const modeOptions = [
+  { title: 'Fetch (HTTP request)', value: 'fetch' },
+  { title: 'Literal (fixed value)', value: 'literal' },
+]
 
 const nameRules = [
   (value: string) => {
@@ -44,10 +49,24 @@ const urlRules = [
   },
 ]
 
+const literalValueRules = [
+  (value: string) => {
+    if (!value || !value.trim())
+      return 'Value is required'
+    try {
+      JSON.parse(value)
+      return true
+    }
+    catch {
+      return 'Enter valid JSON'
+    }
+  },
+]
+
 function addDataSource() {
   dataSources.value = [
     ...dataSources.value,
-    { name: '', method: 'GET', url: '', headers: {}, body: {}, headersJson: '', order: dataSources.value.length },
+    { name: '', mode: 'fetch', method: 'GET', url: '', headers: {}, body: {}, headersJson: '', order: dataSources.value.length },
   ]
 }
 
@@ -65,6 +84,35 @@ function syncHeaders(source: EditableDataSource) {
   }
   catch {
     // Leave the last valid headers in place until the JSON becomes valid again
+  }
+}
+
+function syncLiteralValue(source: EditableDataSource) {
+  if (!source.literalValueJson || !source.literalValueJson.trim()) {
+    source.literalValue = undefined
+    return
+  }
+  try {
+    source.literalValue = JSON.parse(source.literalValueJson)
+  }
+  catch {
+    // Leave the last valid value in place until the JSON becomes valid again
+  }
+}
+
+function onModeChange(source: EditableDataSource) {
+  if (source.mode === 'literal') {
+    source.method = undefined
+    source.url = undefined
+    source.headers = undefined
+    source.body = undefined
+    source.transformJs = undefined
+    source.headersJson = ''
+  }
+  else {
+    source.method = source.method || 'GET'
+    source.literalValue = undefined
+    source.literalValueJson = ''
   }
 }
 </script>
@@ -90,27 +138,56 @@ function syncHeaders(source: EditableDataSource) {
             required
             class="mt-2"
           />
-          <VTextField
-            v-model="source.url"
-            label="URL"
-            :rules="urlRules"
-            required
-            placeholder="https://api.example.com/data"
-            class="mt-4"
-          />
           <VSelect
-            v-model="source.method"
-            label="HTTP Method"
-            :items="['GET', 'POST']"
+            v-model="source.mode"
+            label="Data Source Mode"
+            :items="modeOptions"
+            item-title="title"
+            item-value="value"
+            hint="Fetch makes an HTTP request; Literal is a fixed value you type in"
+            persistent-hint
+            class="mt-4"
+            @update:model-value="onModeChange(source)"
           />
-          <VTextarea
-            v-model="source.headersJson"
-            label="Request Headers (JSON)"
-            rows="3"
-            placeholder="{&quot;Authorization&quot;: &quot;Bearer token&quot;}"
-            hint="Optional: Enter valid JSON for custom headers"
-            @update:model-value="syncHeaders(source)"
-          />
+
+          <template v-if="source.mode === 'literal'">
+            <VTextarea
+              v-model="source.literalValueJson"
+              label="Value (JSON)"
+              :rules="literalValueRules"
+              required
+              rows="5"
+              placeholder="{&quot;title&quot;: &quot;Hello&quot;}"
+              hint="Used in your template as {{ name.field }} — any JSON value"
+              persistent-hint
+              class="mt-4"
+              @update:model-value="syncLiteralValue(source)"
+            />
+          </template>
+          <template v-else>
+            <VTextField
+              v-model="source.url"
+              label="URL"
+              :rules="urlRules"
+              required
+              placeholder="https://api.example.com/data"
+              class="mt-4"
+            />
+            <VSelect
+              v-model="source.method"
+              label="HTTP Method"
+              :items="['GET', 'POST']"
+            />
+            <VTextarea
+              v-model="source.headersJson"
+              label="Request Headers (JSON)"
+              rows="3"
+              placeholder="{&quot;Authorization&quot;: &quot;Bearer token&quot;}"
+              hint="Optional: Enter valid JSON for custom headers"
+              @update:model-value="syncHeaders(source)"
+            />
+          </template>
+
           <VBtn
             variant="text"
             size="small"

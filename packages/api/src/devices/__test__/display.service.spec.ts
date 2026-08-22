@@ -231,7 +231,10 @@ describe('deviceDisplayService', () => {
       const device = { ...baseDevice, deviceModel: OG_PLUS }
       const plugin = { id: 'p1', name: 'P', dataSources: [{ name: 'source', method: 'GET', url: 'http://x' }], templates: [{ layout: 'full', liquidMarkup: '{{ v }}' }] }
       primeRotation({ id: 'screen2', type: 'plugin', order: 2, device, plugin, filename: 'x', generatedAt: new Date() }, device)
-      ;(service as any).pluginDataFetcher = { fetchData: vi.fn().mockResolvedValue({ v: 1 }) } as any
+      ;(service as any).pluginDataFetcher = {
+        fetchData: vi.fn().mockResolvedValue({ v: 1 }),
+        fetchOrLiteral: vi.fn().mockResolvedValue({ v: 1 }),
+      } as any
       ;(service as any).pluginRenderer = { render: vi.fn().mockResolvedValue('<b>1</b>') } as any
 
       await service.getCurrentImage(headers as any)
@@ -830,7 +833,7 @@ describe('deviceDisplayService', () => {
   describe('mashup screen rendering', () => {
     beforeEach(() => {
       // Inject services needed for mashup
-      ;(service as any).pluginDataFetcher = { fetchData: vi.fn() } as any
+      ;(service as any).pluginDataFetcher = { fetchData: vi.fn(), fetchOrLiteral: vi.fn() } as any
       ;(service as any).pluginRenderer = { render: vi.fn() } as any
       ;(service as any).pluginTransformer = { transform: vi.fn() } as any
     })

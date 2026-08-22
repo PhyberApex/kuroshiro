@@ -33,6 +33,7 @@ describe('create-plugin dto', () => {
     dto.dataSources = [
       {
         name: 'weather',
+        mode: 'fetch',
         url: 'https://api.example.com',
         method: 'GET',
         headers: {},
@@ -80,6 +81,40 @@ describe('create-plugin dto', () => {
       const errors = await violations(payload)
 
       expect(errors.some(message => message.includes('name must be a string'))).toBe(true)
+    })
+  })
+
+  describe('data source mode', () => {
+    it('accepts a literal-mode data source with only a literalValue', async () => {
+      const payload = { name: 'Plugin', dataSources: [{ name: 'source', mode: 'literal', literalValue: { title: 'Hello' } }] }
+
+      await expect(violations(payload)).resolves.toEqual([])
+    })
+
+    it('defaults to fetch mode and requires a URL when mode is omitted', async () => {
+      const payload = { name: 'Plugin', dataSources: [{ name: 'source' }] }
+
+      await expect(violations(payload)).resolves.toContain('A fetch-mode Data Source requires a URL')
+    })
+
+    it('rejects a literal-mode data source carrying a URL', async () => {
+      const payload = { name: 'Plugin', dataSources: [{ name: 'source', mode: 'literal', literalValue: {}, url: 'https://api.example.com' }] }
+
+      await expect(violations(payload)).resolves.toContain('A literal-mode Data Source cannot have a URL')
+    })
+
+    it('rejects a literal-mode data source missing a literalValue', async () => {
+      const payload = { name: 'Plugin', dataSources: [{ name: 'source', mode: 'literal' }] }
+
+      await expect(violations(payload)).resolves.toContain('A literal-mode Data Source requires a Value')
+    })
+
+    it('rejects an unknown mode', async () => {
+      const payload = { name: 'Plugin', dataSources: [{ name: 'source', mode: 'weird', url: 'https://api.example.com' }] }
+
+      const errors = await violations(payload)
+
+      expect(errors.some(message => message.includes('mode must be one of the following values: fetch, literal'))).toBe(true)
     })
   })
 

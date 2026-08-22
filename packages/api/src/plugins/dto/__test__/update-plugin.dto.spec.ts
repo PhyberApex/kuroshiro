@@ -31,6 +31,7 @@ describe('update-plugin dto', () => {
     dto.dataSources = [
       {
         name: 'weather',
+        mode: 'fetch',
         url: 'https://new-api.example.com',
         method: 'POST',
         headers: { Authorization: 'Bearer token' },

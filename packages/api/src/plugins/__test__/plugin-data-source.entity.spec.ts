@@ -97,4 +97,28 @@ describe('pluginDataSource entity', () => {
     const dataSource = new PluginDataSource()
     expect(dataSource.method).toBe('GET')
   })
+
+  it('defaults mode to fetch', () => {
+    const dataSource = new PluginDataSource()
+    expect(dataSource.mode).toBe('fetch')
+  })
+
+  it('stores a literal-mode value of any JSON shape', () => {
+    const dataSource = new PluginDataSource()
+    dataSource.mode = 'literal'
+    dataSource.literalValue = { title: 'Hello', count: 3 }
+
+    expect(dataSource.mode).toBe('literal')
+    expect(dataSource.literalValue).toEqual({ title: 'Hello', count: 3 })
+  })
+
+  it('accepts a scalar or array literalValue', () => {
+    const dataSource = new PluginDataSource()
+    dataSource.mode = 'literal'
+    dataSource.literalValue = 'a plain string'
+    expect(dataSource.literalValue).toBe('a plain string')
+
+    dataSource.literalValue = [1, 2, 3]
+    expect(dataSource.literalValue).toEqual([1, 2, 3])
+  })
 })
