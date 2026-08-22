@@ -7,9 +7,7 @@
     "backend_family": "",
     "completeness": "complete"
   },
-  "unused_files": [
-    "packages/api/scripts/update_device_model_snapshot.mjs"
-  ],
+  "unused_files": [],
   "unused_exports": [],
   "unused_types": [],
   "private_type_leaks": [],
