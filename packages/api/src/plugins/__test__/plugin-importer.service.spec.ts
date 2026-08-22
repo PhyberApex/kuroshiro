@@ -204,6 +204,48 @@ describe('pluginImporterService', () => {
       fs.unlinkSync(tmpPath)
     })
 
+    it('rejects a manifest.yml that is a YAML scalar instead of an object', async () => {
+      const zip = new AdmZip()
+      zip.addFile('.trmnlp.yml', Buffer.from('just a plain string', 'utf8'))
+      zip.addFile('src/settings.yml', Buffer.from(yaml.dump({ endpoint: 'https://api.example.com' }), 'utf8'))
+      zip.addFile('src/full.liquid', Buffer.from('test', 'utf8'))
+
+      const tmpPath = path.join(__dirname, 'test-scalar-manifest.zip')
+      zip.writeZip(tmpPath)
+
+      await expect(service.importFromFile(tmpPath)).rejects.toThrow('Invalid manifest.yml')
+
+      fs.unlinkSync(tmpPath)
+    })
+
+    it('rejects a manifest.yml that is a YAML array instead of an object', async () => {
+      const zip = new AdmZip()
+      zip.addFile('.trmnlp.yml', Buffer.from(yaml.dump(['not', 'an', 'object']), 'utf8'))
+      zip.addFile('src/settings.yml', Buffer.from(yaml.dump({ endpoint: 'https://api.example.com' }), 'utf8'))
+      zip.addFile('src/full.liquid', Buffer.from('test', 'utf8'))
+
+      const tmpPath = path.join(__dirname, 'test-array-manifest.zip')
+      zip.writeZip(tmpPath)
+
+      await expect(service.importFromFile(tmpPath)).rejects.toThrow('Invalid manifest.yml')
+
+      fs.unlinkSync(tmpPath)
+    })
+
+    it('rejects a settings.yml that is a YAML array instead of an object', async () => {
+      const zip = new AdmZip()
+      zip.addFile('.trmnlp.yml', Buffer.from(yaml.dump({ name: 'Test Plugin' }), 'utf8'))
+      zip.addFile('src/settings.yml', Buffer.from(yaml.dump(['not', 'an', 'object']), 'utf8'))
+      zip.addFile('src/full.liquid', Buffer.from('test', 'utf8'))
+
+      const tmpPath = path.join(__dirname, 'test-array-settings.zip')
+      zip.writeZip(tmpPath)
+
+      await expect(service.importFromFile(tmpPath)).rejects.toThrow('Invalid settings.yml')
+
+      fs.unlinkSync(tmpPath)
+    })
+
     it('parses plugin with Terminus-style settings', async () => {
       const zip = new AdmZip()
 

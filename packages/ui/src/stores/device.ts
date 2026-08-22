@@ -24,7 +24,7 @@ export const useDeviceStore = defineStore('device', () => {
     }
   }
 
-  function getById(id: string) {
+  function getById(id: string | undefined) {
     return devices.value.find(device => device.id === id)
   }
 

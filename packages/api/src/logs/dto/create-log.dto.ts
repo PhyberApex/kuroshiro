@@ -1,3 +1,4 @@
+import type { JsonObject } from '../../utils/json'
 import { IsObject } from 'class-validator'
 
 export class CreateLogDto {
@@ -5,6 +6,6 @@ export class CreateLogDto {
   log: {
     logs_array: Array<{
       log_id: number
-    } & Record<string, any>>
+    } & JsonObject>
   }
 }

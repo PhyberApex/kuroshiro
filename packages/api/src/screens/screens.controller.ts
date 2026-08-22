@@ -31,7 +31,7 @@ export class ScreensController {
   @Post()
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   @UseInterceptors(FileInterceptor('file'))
-  async add(@Body() body: CreateScreenDto, @UploadedFile() file?: any): Promise<Screen> {
+  async add(@Body() body: CreateScreenDto, @UploadedFile() file?: Express.Multer.File): Promise<Screen> {
     if (file && this.configService.get<string>('demo_mode'))
       throw new MethodNotAllowedException('Not available in demo mode')
     return this.screensService.add(body, file)

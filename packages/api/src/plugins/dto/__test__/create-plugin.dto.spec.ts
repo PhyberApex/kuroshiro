@@ -1,11 +1,19 @@
+import type { ValidationError } from 'class-validator'
 import { plainToInstance } from 'class-transformer'
 import { validate } from 'class-validator'
 import { describe, expect, it } from 'vitest'
 import { CreatePluginDto } from '../create-plugin.dto'
 
+function flattenConstraints(errors: ValidationError[]): string[] {
+  return errors.flatMap(error => [
+    ...Object.values(error.constraints ?? {}),
+    ...flattenConstraints(error.children ?? []),
+  ])
+}
+
 async function violations(payload: Record<string, any>): Promise<string[]> {
   const errors = await validate(plainToInstance(CreatePluginDto, payload))
-  return errors.flatMap(error => Object.values(error.constraints ?? {}))
+  return flattenConstraints(errors)
 }
 
 describe('create-plugin dto', () => {
@@ -55,6 +63,24 @@ describe('create-plugin dto', () => {
 
     expect(dto.fields).toHaveLength(1)
     expect(dto.fields?.[0].keyname).toBe('api_key')
+  })
+
+  describe('nested dataSources validation', () => {
+    it('rejects a data source with a non-string url', async () => {
+      const payload = { name: 'Weather Plugin', dataSources: [{ name: 'weather', url: 123, method: 'GET' }] }
+
+      const errors = await violations(payload)
+
+      expect(errors.some(message => message.includes('url must be a string'))).toBe(true)
+    })
+
+    it('rejects a data source missing a name', async () => {
+      const payload = { name: 'Weather Plugin', dataSources: [{ url: 'https://api.example.com', method: 'GET' }] }
+
+      const errors = await violations(payload)
+
+      expect(errors.some(message => message.includes('name must be a string'))).toBe(true)
+    })
   })
 
   describe('plugin kind', () => {

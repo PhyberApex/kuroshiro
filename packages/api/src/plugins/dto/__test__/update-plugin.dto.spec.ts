@@ -1,11 +1,19 @@
+import type { ValidationError } from 'class-validator'
 import { plainToInstance } from 'class-transformer'
 import { validate } from 'class-validator'
 import { describe, expect, it } from 'vitest'
 import { UpdatePluginDto } from '../update-plugin.dto'
 
+function flattenConstraints(errors: ValidationError[]): string[] {
+  return errors.flatMap(error => [
+    ...Object.values(error.constraints ?? {}),
+    ...flattenConstraints(error.children ?? []),
+  ])
+}
+
 async function violations(payload: Record<string, any>): Promise<string[]> {
   const errors = await validate(plainToInstance(UpdatePluginDto, payload))
-  return errors.flatMap(error => Object.values(error.constraints ?? {}))
+  return flattenConstraints(errors)
 }
 
 describe('update-plugin dto', () => {
@@ -53,6 +61,14 @@ describe('update-plugin dto', () => {
 
     expect(dto.fields).toHaveLength(1)
     expect(dto.fields?.[0].keyname).toBe('new_field')
+  })
+
+  describe('nested dataSources validation', () => {
+    it('rejects a data source with a non-string url', async () => {
+      const errors = await violations({ dataSources: [{ name: 'weather', url: 123, method: 'GET' }] })
+
+      expect(errors.some(message => message.includes('url must be a string'))).toBe(true)
+    })
   })
 
   describe('webhook fields', () => {

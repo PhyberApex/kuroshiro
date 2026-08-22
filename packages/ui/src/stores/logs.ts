@@ -5,7 +5,7 @@ import { ref } from 'vue'
 function createLogStore(deviceId: string) {
   return () => {
     const error = ref('')
-    const logEntries = ref([] as LogEntry[])
+    const logEntries = ref<LogEntry[]>([])
     const loading = ref(true)
 
     const clearLogs = async () => {

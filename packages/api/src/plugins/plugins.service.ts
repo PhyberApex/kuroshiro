@@ -1,11 +1,17 @@
 import type { MashupSlot } from '../mashup/entities/mashup-slot.entity'
 import type { AssignPluginToDeviceDto } from './dto/assign-plugin-to-device.dto'
+import type { CreatePluginDto } from './dto/create-plugin.dto'
+import type { PreviewSourceDto } from './dto/preview-plugin.dto'
+import type { UpdateDeviceAssignmentDto } from './dto/update-device-assignment.dto'
+import type { UpdatePluginDto } from './dto/update-plugin.dto'
+import type { DevicePluginView } from './entities/plugin.entity'
 import type { PluginKindFields } from './plugin-kind-fields'
 import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Screen } from '../screens/screens.entity'
 import generateApikey from '../utils/generateApikey'
+import { getErrorMessage } from '../utils/getErrorMessage'
 import { DevicePlugin } from './entities/device-plugin.entity'
 import { PluginDataSource } from './entities/plugin-data-source.entity'
 import { PluginField } from './entities/plugin-field.entity'
@@ -84,7 +90,7 @@ export class PluginsService implements OnModuleInit {
     })
   }
 
-  async findByDevice(deviceId: string): Promise<Plugin[]> {
+  async findByDevice(deviceId: string): Promise<DevicePluginView[]> {
     const devicePlugins = await this.devicePluginRepository.find({
       where: { device: { id: deviceId } },
       relations: { plugin: { dataSources: true, templates: true, fields: true } },
@@ -96,13 +102,13 @@ export class PluginsService implements OnModuleInit {
       _devicePluginId: dp.id,
       _isActive: dp.isActive,
       _order: dp.order,
-    })) as any
+    }))
   }
 
   async assignToDevice(pluginId: string, assignData: AssignPluginToDeviceDto): Promise<DevicePlugin> {
     const devicePlugin = this.devicePluginRepository.create({
-      plugin: { id: pluginId } as Plugin,
-      device: { id: assignData.deviceId } as any,
+      plugin: { id: pluginId },
+      device: { id: assignData.deviceId },
       isActive: assignData.isActive ?? true,
       order: assignData.order ?? 0,
     })
@@ -112,8 +118,8 @@ export class PluginsService implements OnModuleInit {
     const maxOrder = await this.screenRepository.maximum('order', { device: { id: assignData.deviceId } }) || 0
     const screen = this.screenRepository.create({
       type: 'plugin',
-      device: { id: assignData.deviceId } as any,
-      plugin: { id: pluginId } as Plugin,
+      device: { id: assignData.deviceId },
+      plugin: { id: pluginId },
       devicePluginId: saved.id,
       isActive: assignData.isActive ?? true,
       order: maxOrder + 1,
@@ -139,7 +145,7 @@ export class PluginsService implements OnModuleInit {
     return true
   }
 
-  async updateDeviceAssignment(devicePluginId: string, updates: Partial<DevicePlugin>): Promise<DevicePlugin | null> {
+  async updateDeviceAssignment(devicePluginId: string, updates: UpdateDeviceAssignmentDto): Promise<DevicePlugin | null> {
     const devicePlugin = await this.devicePluginRepository.findOneBy({ id: devicePluginId })
     if (!devicePlugin)
       return null
@@ -157,8 +163,8 @@ export class PluginsService implements OnModuleInit {
     return saved
   }
 
-  async create(pluginData: Partial<Plugin>): Promise<Plugin> {
-    const { dataSources, templates, fields, ...basicFields } = pluginData as any
+  async create(pluginData: CreatePluginDto): Promise<Plugin> {
+    const { dataSources, templates, fields, ...basicFields } = pluginData
 
     this.logger.debug(`Creating plugin with data: ${JSON.stringify({ dataSources, templates, fields, basicFields })}`)
 
@@ -260,7 +266,7 @@ export class PluginsService implements OnModuleInit {
     return created
   }
 
-  async update(id: string, pluginData: Partial<Plugin>): Promise<Plugin | null> {
+  async update(id: string, pluginData: UpdatePluginDto): Promise<Plugin | null> {
     const plugin = await this.pluginRepository.findOne({
       where: { id },
       relations: { dataSources: true, templates: true, fields: true },
@@ -268,7 +274,7 @@ export class PluginsService implements OnModuleInit {
     if (!plugin)
       return null
 
-    const { dataSources, templates, fields, webhookToken, webhookPayload, ...basicFields } = pluginData as any
+    const { dataSources, templates, fields, webhookToken, ...basicFields } = pluginData
 
     if ('kind' in basicFields && basicFields.kind !== plugin.kind) {
       throw new BadRequestException(`A Plugin's Kind is fixed at creation and cannot be changed`)
@@ -291,12 +297,7 @@ export class PluginsService implements OnModuleInit {
       streamLimit,
     })
 
-    if (plugin.kind === 'Webhook') {
-      basicFields.mergeStrategy = mergeStrategy
-      basicFields.streamLimit = streamLimit ?? null
-    }
-
-    Object.assign(plugin, basicFields)
+    Object.assign(plugin, basicFields, plugin.kind === 'Webhook' ? { mergeStrategy, streamLimit: streamLimit ?? null } : {})
 
     if (dataSources !== undefined) {
       if (plugin.dataSources && plugin.dataSources.length > 0) {
@@ -479,9 +480,9 @@ export class PluginsService implements OnModuleInit {
     return true
   }
 
-  async preview(sources: Array<{ name: string, url: string, method: string, headers?: Record<string, string>, body?: any, transformJs?: string }>, template?: string, fieldValues?: Record<string, string>): Promise<{ html: string, data: Record<string, any> }> {
+  async preview(sources: PreviewSourceDto[], template?: string, fieldValues?: Record<string, string>): Promise<{ html: string, data: Record<string, unknown> }> {
     // Build template context with trmnl system variables and plugin field values
-    const templateContext: any = {
+    const templateContext: Record<string, unknown> = {
       trmnl: {
         system: {
           timestamp_utc: Math.floor(Date.now() / 1000),
@@ -515,19 +516,20 @@ export class PluginsService implements OnModuleInit {
       }),
     )
 
-    const data: Record<string, any> = {}
+    const data: Record<string, unknown> = {}
     results.forEach((result, index) => {
       const name = sources[index].name
       if (result.status === 'fulfilled') {
         data[name] = result.value
       }
       else {
-        this.logger.warn(`Data source "${name}" failed during preview: ${result.reason?.message || result.reason}`)
-        data[name] = { error: true, message: result.reason?.message || String(result.reason) }
+        const message = getErrorMessage(result.reason)
+        this.logger.warn(`Data source "${name}" failed during preview: ${message}`)
+        data[name] = { error: true, message }
       }
     })
 
-    const templateData: any = { ...templateContext, ...data }
+    const templateData: Record<string, unknown> = { ...templateContext, ...data }
 
     const html = template ? await this.renderer.render(template, templateData) : ''
     return { html, data }

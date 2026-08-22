@@ -57,7 +57,7 @@ export class MashupRendererService {
       throw new Error('Plugin missing data sources or templates')
     }
 
-    const templateContext: any = this.pluginTemplateContext.build(plugin, sensors)
+    const templateContext = this.pluginTemplateContext.build(plugin, sensors)
 
     // Fetch all of the plugin's data sources in parallel; a source that fails
     // gets an error marker instead of aborting the whole render (ADR-0005)
@@ -71,7 +71,7 @@ export class MashupRendererService {
       }),
     )
 
-    const data: Record<string, any> = {}
+    const data: Record<string, unknown> = {}
     results.forEach((result, index) => {
       const name = plugin.dataSources[index].name
       data[name] = result.status === 'fulfilled'

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Plugin } from '../types/plugin'
+import type { CreatePluginPayload, Plugin } from '../types/plugin'
 import type { RenderTarget } from '@/utils/screenShell'
 import { mdiArrowLeft, mdiArrowRight, mdiCheck, mdiEye } from '@mdi/js'
 import { computed, ref } from 'vue'
@@ -8,7 +8,9 @@ import { VAlert, VBtn, VCard, VCardActions, VCardText, VCardTitle, VCol, VContai
 import PluginDataSourcesEditor from '@/components/PluginDataSourcesEditor.vue'
 import RenderTargetPicker from '@/components/RenderTargetPicker.vue'
 import ScreenFrame from '@/components/ScreenFrame.vue'
+import { errorMessage } from '@/utils/errorMessage'
 import { DEFAULT_MODEL, DEFAULT_PALETTE } from '@/utils/renderTarget'
+import { routeParam } from '@/utils/routeParam'
 import { viewFull } from '@/utils/screenShell'
 import { usePluginsStore } from '../stores/plugins'
 
@@ -19,7 +21,7 @@ const pluginsStore = usePluginsStore()
 const step = ref(1)
 const formRef = ref<null | typeof VForm>(null)
 
-const deviceId = computed(() => route.query.deviceId as string | undefined)
+const deviceId = computed(() => routeParam(route.query.deviceId))
 
 const pluginData = ref<Partial<Plugin>>({
   name: '',
@@ -105,7 +107,7 @@ const saveError = ref('')
 const previewLoading = ref(false)
 const previewHtml = ref('')
 const previewTarget = ref<RenderTarget>({ model: DEFAULT_MODEL, palette: DEFAULT_PALETTE })
-const previewData = ref<any>(null)
+const previewData = ref<Record<string, unknown> | null>(null)
 const previewError = ref('')
 const showPreview = ref(false)
 const previewTab = ref('rendered')
@@ -157,9 +159,9 @@ async function previewPlugin() {
     previewError.value = ''
     showPreview.value = true
   }
-  catch (err: any) {
+  catch (err) {
     console.error('Preview error:', err)
-    previewError.value = err.message || 'Failed to generate preview. Check console for details.'
+    previewError.value = errorMessage(err, 'Failed to generate preview. Check console for details.')
   }
   finally {
     previewLoading.value = false
@@ -173,10 +175,10 @@ async function createPlugin() {
     const sources = pluginData.value.dataSources || []
     const template = pluginData.value.templates?.[0]
 
-    const payload: any = {
-      name: pluginData.value.name,
+    const payload: CreatePluginPayload = {
+      name: pluginData.value.name ?? '',
       description: pluginData.value.description,
-      kind: pluginData.value.kind,
+      kind: pluginData.value.kind ?? 'Poll',
       refreshInterval: pluginData.value.refreshInterval,
       dataSources: sources.map((source, index) => ({
         name: source.name,
@@ -204,8 +206,8 @@ async function createPlugin() {
       router.push({ name: 'pluginsOverview' })
     }
   }
-  catch (err: any) {
-    saveError.value = err.message || 'Failed to create plugin. Check console for details.'
+  catch (err) {
+    saveError.value = errorMessage(err, 'Failed to create plugin. Check console for details.')
   }
   finally {
     loading.value = false

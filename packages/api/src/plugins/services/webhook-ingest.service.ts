@@ -2,21 +2,23 @@ import type { WebhookPayload } from '../entities/plugin.entity'
 import { Injectable, Logger, UnprocessableEntityException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
+import { isPlainObject } from '../../utils/json'
 import { Plugin } from '../entities/plugin.entity'
 import { PluginRenderCacheService } from './plugin-render-cache.service'
 
-type JsonObject = Record<string, any>
-
-function isPlainObject(value: unknown): value is JsonObject {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
+function isWebhookPayload(value: unknown): value is WebhookPayload {
+  return value === null || Array.isArray(value) || isPlainObject(value)
 }
 
+// `incoming`/`value` are only ever reached here once `isWebhookPayload` has
+// confirmed the root body is JSON-object/array/null shaped, so recursing
+// through it with `unknown` and handing leaf values back as-is is safe.
 function deepMerge(stored: unknown, incoming: unknown): unknown {
   if (!isPlainObject(stored) || !isPlainObject(incoming)) {
     return incoming
   }
 
-  return Object.entries(incoming).reduce<JsonObject>(
+  return Object.entries(incoming).reduce<Record<string, unknown>>(
     (merged, [key, value]) => ({
       ...merged,
       [key]: isPlainObject(value) && isPlainObject(stored[key]) ? deepMerge(stored[key], value) : value,
@@ -30,9 +32,9 @@ function appendStream(stored: unknown, incoming: unknown, streamLimit: number): 
     return incoming
   }
 
-  const base: JsonObject = isPlainObject(stored) ? { ...stored } : {}
+  const base: Record<string, unknown> = isPlainObject(stored) ? { ...stored } : {}
 
-  return Object.entries(incoming).reduce<JsonObject>((merged, [key, value]) => {
+  return Object.entries(incoming).reduce<Record<string, unknown>>((merged, [key, value]) => {
     if (!Array.isArray(value)) {
       return { ...merged, [key]: value }
     }
@@ -59,9 +61,16 @@ export class WebhookIngestService {
       throw new UnprocessableEntityException(`Plugin "${plugin.name}" has no template configured`)
     }
 
+    if (!isWebhookPayload(body)) {
+      throw new UnprocessableEntityException('Webhook body must be a JSON object or array')
+    }
+
     const merged = this.merge(plugin, body)
 
-    await this.pluginRepository.update(plugin.id, { webhookPayload: merged })
+    // TypeORM's QueryDeepPartialEntity can't distribute over the WebhookPayload
+    // union against a union-typed value, even though `merged`'s type already
+    // matches the column exactly — hence the assertion rather than a real gap.
+    await this.pluginRepository.update(plugin.id, { webhookPayload: merged } as Parameters<typeof this.pluginRepository.update>[1])
     await this.renderCache.renderAndCache(plugin, merged)
 
     this.logger.debug(`Ingested webhook payload for plugin ${plugin.id} using ${plugin.mergeStrategy} merge strategy`)
@@ -73,7 +82,7 @@ export class WebhookIngestService {
     return plugin.webhookPayload ?? null
   }
 
-  private merge(plugin: Plugin, body: unknown): WebhookPayload {
+  private merge(plugin: Plugin, body: WebhookPayload): WebhookPayload {
     switch (plugin.mergeStrategy) {
       case 'deep_merge':
         return deepMerge(plugin.webhookPayload, body) as WebhookPayload
@@ -83,7 +92,7 @@ export class WebhookIngestService {
         }
         return appendStream(plugin.webhookPayload, body, plugin.streamLimit) as WebhookPayload
       default:
-        return body as WebhookPayload
+        return body
     }
   }
 }

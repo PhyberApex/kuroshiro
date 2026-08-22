@@ -6,7 +6,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Plugin as PluginEntity } from '../entities/plugin.entity'
 
-export interface WebhookRequest extends Request {
+export interface WebhookRequest extends Request<{ token: string }> {
   plugin: Plugin
 }
 
@@ -19,7 +19,7 @@ export class WebhookPluginGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<WebhookRequest>()
-    const token = request.params?.token as string | undefined
+    const token = request.params?.token
 
     if (!token) {
       throw new UnauthorizedException('Invalid webhook token')

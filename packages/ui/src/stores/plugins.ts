@@ -1,4 +1,4 @@
-import type { Plugin } from '@/types/plugin'
+import type { CreatePluginPayload, Plugin } from '@/types/plugin'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
@@ -12,7 +12,7 @@ export const usePluginsStore = defineStore('plugins', () => {
     plugins.value = await res.json()
   }
 
-  const createPlugin = async (pluginData: Partial<Plugin>) => {
+  const createPlugin = async (pluginData: CreatePluginPayload) => {
     const res = await fetch('/api/plugins', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -29,7 +29,7 @@ export const usePluginsStore = defineStore('plugins', () => {
     return newPlugin
   }
 
-  const updatePlugin = async (id: string, pluginData: Partial<Plugin>) => {
+  const updatePlugin = async (id: string, pluginData: Partial<CreatePluginPayload>) => {
     const res = await fetch(`/api/plugins/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },

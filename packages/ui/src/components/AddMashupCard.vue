@@ -5,6 +5,7 @@ import { useMashupStore } from '@/stores/mashup'
 import { usePluginsStore } from '@/stores/plugins'
 import { useScreensStore } from '@/stores/screens'
 import { MASHUP_LAYOUTS } from '@/types/mashup'
+import { errorMessage } from '@/utils/errorMessage'
 
 const props = defineProps<{ deviceId: string }>()
 
@@ -64,8 +65,8 @@ async function createMashup() {
     selectedLayout.value = ''
     selectedPlugins.value = []
   }
-  catch (err: any) {
-    error.value = err.message || 'Failed to create mashup'
+  catch (err) {
+    error.value = errorMessage(err, 'Failed to create mashup')
   }
   finally {
     loading.value = false

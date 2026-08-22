@@ -1,6 +1,7 @@
 import type { PluginVariable } from '../entities/plugin-variable.entity'
 import process from 'node:process'
 import { Injectable, Logger } from '@nestjs/common'
+import { isPlainObject } from '../../utils/json'
 
 @Injectable()
 export class PluginVariableResolverService {
@@ -37,21 +38,26 @@ export class PluginVariableResolverService {
     return resolved
   }
 
-  resolveInObject(obj: Record<string, any>, variables: PluginVariable[]): Record<string, any> {
-    const resolved: Record<string, any> = {}
+  resolveInObject<T extends Record<string, unknown>>(obj: T, variables: PluginVariable[]): T {
+    const resolved: Record<string, unknown> = {}
 
     for (const [key, value] of Object.entries(obj)) {
-      if (typeof value === 'string') {
-        resolved[key] = this.resolveVariables(value, variables)
-      }
-      else if (typeof value === 'object' && value !== null) {
-        resolved[key] = this.resolveInObject(value, variables)
-      }
-      else {
-        resolved[key] = value
-      }
+      resolved[key] = this.resolveValue(value, variables)
     }
 
-    return resolved
+    return resolved as T
+  }
+
+  private resolveValue(value: unknown, variables: PluginVariable[]): unknown {
+    if (typeof value === 'string') {
+      return this.resolveVariables(value, variables)
+    }
+    if (Array.isArray(value)) {
+      return value.map(item => this.resolveValue(item, variables))
+    }
+    if (isPlainObject(value)) {
+      return this.resolveInObject(value, variables)
+    }
+    return value
   }
 }

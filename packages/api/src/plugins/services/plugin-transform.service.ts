@@ -10,7 +10,7 @@ export class PluginTransformService {
    * Execute transform.js on fetched data
    * Runs in a sandboxed VM to prevent malicious code execution
    */
-  transform(transformJs: string, rawData: any): any {
+  transform(transformJs: string, rawData: unknown): unknown {
     try {
       // Provide module and exports objects for Terminus compatibility
       const moduleObj = { exports: {} }
@@ -23,7 +23,7 @@ export class PluginTransformService {
           module: moduleObj,
           exports: moduleObj.exports,
           console: {
-            log: (...args: any[]) => this.logger.debug(`[Transform] ${args.join(' ')}`),
+            log: (...args: unknown[]) => this.logger.debug(`[Transform] ${args.join(' ')}`),
           },
         },
       })

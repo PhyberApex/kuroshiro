@@ -1,3 +1,4 @@
+import type { JsonObject } from '../../utils/json'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { assertPublicUrl } from '../../utils/ssrfGuard'
@@ -16,9 +17,9 @@ export class PluginDataFetcherService {
     method: string,
     url: string,
     headers: Record<string, string> = {},
-    body?: Record<string, any>,
-    templateContext?: Record<string, any>,
-  ): Promise<any> {
+    body?: JsonObject,
+    templateContext?: object,
+  ): Promise<unknown> {
     let resolvedUrl = url
 
     // If URL contains Liquid template syntax, render it first

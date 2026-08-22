@@ -1,3 +1,4 @@
+import type { JsonObject } from '../../utils/json'
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { Plugin } from './plugin.entity'
 
@@ -19,10 +20,10 @@ export class PluginDataSource {
   headers?: Record<string, string>
 
   @Column('jsonb', { nullable: true })
-  body?: Record<string, any>
+  body?: JsonObject
 
   @Column('text', { nullable: true })
-  transformJs?: string
+  transformJs?: string | null
 
   @Column('int', { default: 0 })
   order: number = 0

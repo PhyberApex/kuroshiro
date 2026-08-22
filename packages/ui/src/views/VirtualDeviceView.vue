@@ -5,12 +5,14 @@ import { useRoute } from 'vue-router'
 import { VAlert, VAutocomplete, VBtn, VCard, VCardText, VCardTitle, VCol, VContainer, VDivider, VExpansionPanel, VExpansionPanels, VExpansionPanelText, VExpansionPanelTitle, VForm, VImg, VRow, VTab, VTabs, VTextField, VWindow, VWindowItem } from 'vuetify/components'
 import { useDeviceStore } from '@/stores/device'
 import { deviceRenderSize } from '@/utils/deviceRenderSize'
+import { errorMessage } from '@/utils/errorMessage'
 import { getRandomMac, isValidMac } from '@/utils/getRandomMac'
+import { routeParam } from '@/utils/routeParam'
 
 const mac = ref('')
 const apiKey = ref<string | null>(null)
 const friendlyId = ref('')
-const displayResponse = ref<any>(null)
+const displayResponse = ref<Record<string, unknown> | null>(null)
 const displayImageUrl = ref('')
 const customHeaders = ref({
   'battery-voltage': '4.2V',
@@ -39,8 +41,8 @@ async function callSetup() {
     apiKey.value = data.api_key
     friendlyId.value = data.friendly_id
   }
-  catch (e: any) {
-    error.value = e.message
+  catch (e) {
+    error.value = errorMessage(e, 'Setup failed')
   }
   finally {
     loadingSetup.value = false
@@ -73,8 +75,8 @@ async function callDisplay() {
     displayResponse.value = data
     displayImageUrl.value = data.image_url
   }
-  catch (e: any) {
-    error.value = e.message
+  catch (e) {
+    error.value = errorMessage(e, 'Display failed')
   }
   finally {
     loadingDisplay.value = false
@@ -95,7 +97,7 @@ const route = useRoute()
 const currentMac = computed(() => {
   if (route.name !== 'device')
     return null
-  return deviceStore.getById(route.params?.id as string)?.mac || null
+  return deviceStore.getById(routeParam(route.params?.id))?.mac || null
 })
 
 function takeCurrentMac() {
