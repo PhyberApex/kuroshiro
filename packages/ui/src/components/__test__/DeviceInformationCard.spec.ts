@@ -152,24 +152,13 @@ describe('deviceInformationCard', () => {
     expect(updateDevice).toHaveBeenCalledWith('device1', expect.objectContaining({ deviceModelName: 'v2', paletteId: 'gray-16' }))
   })
 
-  it('resets specialFunction and resetDevice locally after a successful save, so they are not resent on the next save', async () => {
+  it('never includes the one-shot specialFunction/resetDevice fields in a regular save', async () => {
     mockDevice.current = baseDevice({ specialFunction: 'identify', resetDevice: true, refreshRate: 300 })
-    updateDevice.mockResolvedValue(true)
     const wrapper = mountCard()
     const vm = wrapper.vm as any
     await vm.saveDevice()
-    expect(vm.device.specialFunction).toBe('none')
-    expect(vm.device.resetDevice).toBe(false)
-  })
-
-  it('leaves specialFunction and resetDevice untouched when the save fails', async () => {
-    mockDevice.current = baseDevice({ specialFunction: 'identify', resetDevice: true, refreshRate: 300 })
-    updateDevice.mockResolvedValue(false)
-    const wrapper = mountCard()
-    const vm = wrapper.vm as any
-    await vm.saveDevice()
-    expect(vm.device.specialFunction).toBe('identify')
-    expect(vm.device.resetDevice).toBe(true)
+    expect(updateDevice.mock.calls[0][1]).not.toHaveProperty('specialFunction')
+    expect(updateDevice.mock.calls[0][1]).not.toHaveProperty('resetDevice')
   })
 
   it('drops a palette the newly selected model does not support', async () => {
@@ -182,6 +171,34 @@ describe('deviceInformationCard', () => {
     await vm.saveDevice()
     expect(updateDevice).toHaveBeenCalledWith('device1', expect.objectContaining({ deviceModelName: 'og_plus' }))
     expect(updateDevice.mock.calls[0][1]).not.toHaveProperty('paletteId')
+  })
+
+  describe('special function trigger', () => {
+    it('pre-selects the device\'s currently pending special function', () => {
+      mockDevice.current = baseDevice({ specialFunction: 'identify' })
+      const wrapper = mountCard()
+      const vm = wrapper.vm as any
+      expect(vm.pendingSpecialFunction).toBe('identify')
+    })
+
+    it('sends only the selected special function, isolated from the rest of the form', async () => {
+      mockDevice.current = baseDevice({ name: 'Unsaved rename in progress' })
+      const wrapper = mountCard()
+      const vm = wrapper.vm as any
+      vm.pendingSpecialFunction = 'sleep'
+      await vm.triggerSpecialFunction()
+      expect(updateDevice).toHaveBeenCalledWith('device1', { specialFunction: 'sleep' })
+    })
+  })
+
+  describe('reset device trigger', () => {
+    it('sends only resetDevice, isolated from the rest of the form', async () => {
+      mockDevice.current = baseDevice({ name: 'Unsaved rename in progress' })
+      const wrapper = mountCard()
+      const vm = wrapper.vm as any
+      await vm.triggerReset()
+      expect(updateDevice).toHaveBeenCalledWith('device1', { resetDevice: true })
+    })
   })
 
   describe('firmware section', () => {

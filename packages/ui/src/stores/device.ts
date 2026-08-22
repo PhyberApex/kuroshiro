@@ -44,7 +44,6 @@ export const useDeviceStore = defineStore('device', () => {
     if (res.ok) {
       await fetchDevices()
     }
-    return res.ok
   }
 
   return { devices, fetchDevices, addDevice, deleteDevice, getById, updateDevice }
