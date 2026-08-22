@@ -5,6 +5,7 @@ import type { UpdateDeviceDto } from './dto/update-device.dto'
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { DeviceModelsService } from '../device-models/device-models.service'
+import { FirmwareService } from '../firmware/firmware.service'
 import { ScreensService } from '../screens/screens.service'
 import generateApikey from '../utils/generateApikey'
 import generateFriendlyName from '../utils/generateFriendlyName'
@@ -17,6 +18,7 @@ export class DevicesService {
     @InjectRepository(Device)
     private deviceRepository: Repository<Device>,
     private deviceModels: DeviceModelsService,
+    private firmwareService: FirmwareService,
     private screensService: ScreensService,
   ) {}
 
@@ -39,10 +41,11 @@ export class DevicesService {
     const dbDevice = await this.deviceRepository.findOneBy({ id })
     if (!dbDevice)
       return null
-    const { deviceModelName, paletteId, ...attributes } = changes
+    const { deviceModelName, paletteId, targetFirmwareId, ...attributes } = changes
     Object.assign(dbDevice, attributes)
     const before = { model: dbDevice.deviceModel?.name, palette: dbDevice.palette?.id }
     await this.applyModelChanges(dbDevice, deviceModelName, paletteId)
+    await this.applyFirmwareChanges(dbDevice, targetFirmwareId)
     const saved = await this.deviceRepository.save(dbDevice)
     if (before.model !== saved.deviceModel?.name || before.palette !== saved.palette?.id)
       await this.screensService.reconvertImageScreens(saved)
@@ -87,5 +90,16 @@ export class DevicesService {
       return model.paletteIds.includes(palette.id)
     const compatibleFamilies = await this.deviceModels.compatibleFamiliesFor(model)
     return compatibleFamilies.has(palette.frameworkClass)
+  }
+
+  private async applyFirmwareChanges(device: Device, targetFirmwareId?: string): Promise<void> {
+    if (targetFirmwareId === undefined)
+      return
+    const firmware = await this.firmwareService.findById(targetFirmwareId)
+    if (!firmware)
+      throw new BadRequestException(`Unknown firmware: ${targetFirmwareId}`)
+    if (firmware.compatibleModels.length > 0 && !firmware.compatibleModels.includes(device.deviceModel?.name ?? ''))
+      throw new BadRequestException(`Firmware ${targetFirmwareId} is not compatible with device model ${device.deviceModel?.name ?? 'unknown'}`)
+    device.targetFirmware = firmware
   }
 }

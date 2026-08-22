@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import type { DeviceModelSyncResult } from '../types'
-import { mdiAlertCircle, mdiCheckCircle, mdiCloudSync, mdiDelete, mdiRefresh } from '@mdi/js'
+import type { DeviceModelSyncResult, FirmwareSyncResult } from '../types'
+import { mdiAlertCircle, mdiCheckCircle, mdiCloudSync, mdiDelete, mdiRefresh, mdiUpload } from '@mdi/js'
 import { computed, onMounted, ref } from 'vue'
-import { VAlert, VBtn, VCard, VCardText, VCardTitle, VCheckbox, VChip, VCol, VContainer, VDialog, VDivider, VList, VListItem, VListItemSubtitle, VListItemTitle, VProgressCircular, VRow, VSwitch } from 'vuetify/components'
+import { VAlert, VBtn, VCard, VCardText, VCardTitle, VCheckbox, VChip, VCol, VContainer, VDialog, VDivider, VFileInput, VList, VListItem, VListItemSubtitle, VListItemTitle, VProgressCircular, VRow, VSelect, VSwitch, VTextField } from 'vuetify/components'
 import { useDeviceModelsStore } from '../stores/deviceModels'
+import { useFirmwareStore } from '../stores/firmware'
 import { useMaintenanceStore } from '../stores/maintenance'
 import { formatDate } from '../utils/formatDate'
 
 const maintenanceStore = useMaintenanceStore()
 const deviceModelsStore = useDeviceModelsStore()
+const firmwareStore = useFirmwareStore()
 
 const syncResult = ref<DeviceModelSyncResult | null>(null)
 
@@ -23,6 +25,44 @@ const modelError = computed(() => (syncResult.value ? null : deviceModelsStore.e
 
 async function handleModelSync() {
   syncResult.value = await deviceModelsStore.sync()
+}
+
+const firmwareSyncResult = ref<FirmwareSyncResult | null>(null)
+const firmwareError = computed(() => (firmwareSyncResult.value ? null : firmwareStore.error))
+
+const lastFirmwareSync = computed(() => {
+  const dates = firmwareStore.firmware.map(fw => fw.syncedAt).filter((date): date is string => !!date).sort()
+  return dates.at(-1) ?? null
+})
+
+async function handleFirmwareSync() {
+  firmwareSyncResult.value = await firmwareStore.sync()
+}
+
+const uploadVersion = ref('')
+const uploadLabel = ref('')
+const uploadCompatibleModels = ref<string[]>([])
+const uploadFile = ref<File[]>([])
+
+const deviceModelOptions = computed(() => deviceModelsStore.activeModels.map(model => ({ title: model.label, value: model.name })))
+
+const canUpload = computed(() => !!uploadVersion.value && uploadFile.value.length > 0)
+
+async function handleFirmwareUpload() {
+  const file = uploadFile.value[0]
+  if (!file)
+    return
+  const ok = await firmwareStore.upload(file, uploadVersion.value, uploadLabel.value || undefined, uploadCompatibleModels.value.length > 0 ? uploadCompatibleModels.value : undefined)
+  if (ok) {
+    uploadVersion.value = ''
+    uploadLabel.value = ''
+    uploadCompatibleModels.value = []
+    uploadFile.value = []
+  }
+}
+
+async function handleFirmwareDelete(id: string) {
+  await firmwareStore.remove(id)
 }
 
 const selectedOrphanedFiles = ref<string[]>([])
@@ -71,7 +111,7 @@ const totalSelectedSize = computed(() => {
 })
 
 onMounted(async () => {
-  await Promise.all([maintenanceStore.scanSystem(), deviceModelsStore.ensureLoaded()])
+  await Promise.all([maintenanceStore.scanSystem(), deviceModelsStore.ensureLoaded(), firmwareStore.ensureLoaded()])
 })
 
 async function handleScan() {
@@ -237,6 +277,111 @@ async function executeCleanup() {
                 ({{ syncResult.deprecatedModels }} models, {{ syncResult.deprecatedPalettes }} palettes newly deprecated)
               </span>
             </VAlert>
+          </VCardText>
+        </VCard>
+
+        <VCard elevation="1" class="mb-4" data-test-id="firmware-card">
+          <VCardTitle class="d-flex align-center justify-space-between flex-wrap ga-2">
+            Firmware
+            <VBtn
+              :prepend-icon="mdiCloudSync"
+              variant="tonal"
+              color="secondary"
+              :loading="firmwareStore.syncing"
+              data-test-id="sync-firmware-btn"
+              @click="handleFirmwareSync"
+            >
+              Sync from TRMNL
+            </VBtn>
+          </VCardTitle>
+          <VDivider />
+          <VCardText>
+            <p class="text-body-2 text-medium-emphasis mb-2">
+              OTA binaries a Device can be pushed to — official-synced daily from usetrmnl.com, or uploaded directly. A push is always an explicit per-Device action from the Device's own settings.
+            </p>
+            <div class="text-body-2 mb-3">
+              {{ firmwareStore.activeFirmware.length }} firmware
+              <span v-if="firmwareStore.firmware.length - firmwareStore.activeFirmware.length > 0">
+                ({{ firmwareStore.firmware.length - firmwareStore.activeFirmware.length }} deprecated)
+              </span>
+              · Last synced: {{ lastFirmwareSync ? formatDate(lastFirmwareSync) : 'never' }}
+            </div>
+            <VAlert v-if="firmwareError" type="error" variant="tonal" class="mb-3" :icon="mdiAlertCircle">
+              {{ firmwareError }}
+            </VAlert>
+            <VAlert v-else-if="firmwareSyncResult" type="success" variant="tonal" class="mb-3" :icon="mdiCheckCircle" closable @click:close="firmwareSyncResult = null">
+              <span v-if="firmwareSyncResult.inserted">Synced firmware {{ firmwareSyncResult.version }}</span>
+              <span v-else>Already up to date at {{ firmwareSyncResult.version }}</span>
+            </VAlert>
+
+            <VList v-if="firmwareStore.activeFirmware.length > 0" density="compact" class="mb-4">
+              <VListItem v-for="fw in firmwareStore.activeFirmware" :key="fw.id" :data-test-id="`firmware-row-${fw.id}`">
+                <VListItemTitle class="text-body-2">
+                  {{ fw.version }}
+                  <VChip size="x-small" class="ml-2">
+                    {{ fw.kind === 'official-synced' ? 'official' : 'custom' }}
+                  </VChip>
+                  <VChip v-if="fw.label" size="x-small" variant="tonal" class="ml-1">
+                    {{ fw.label }}
+                  </VChip>
+                </VListItemTitle>
+                <VListItemSubtitle class="text-caption">
+                  {{ fw.compatibleModels.length > 0 ? fw.compatibleModels.join(', ') : 'Universal (all models)' }}
+                </VListItemSubtitle>
+                <template v-if="fw.kind === 'custom'" #append>
+                  <VBtn
+                    :icon="mdiDelete"
+                    size="small"
+                    variant="text"
+                    color="error"
+                    :data-test-id="`firmware-delete-${fw.id}`"
+                    @click="handleFirmwareDelete(fw.id)"
+                  />
+                </template>
+              </VListItem>
+            </VList>
+
+            <VDivider class="mb-4" />
+
+            <div class="text-subtitle-2 mb-2">
+              Upload custom firmware
+            </div>
+            <VRow dense>
+              <VCol cols="12" sm="4">
+                <VTextField v-model="uploadVersion" density="compact" label="Version" hide-details data-test-id="firmware-upload-version" />
+              </VCol>
+              <VCol cols="12" sm="4">
+                <VTextField v-model="uploadLabel" density="compact" label="Label (optional)" hide-details />
+              </VCol>
+              <VCol cols="12" sm="4">
+                <VSelect
+                  v-model="uploadCompatibleModels"
+                  :items="deviceModelOptions"
+                  density="compact"
+                  label="Compatible models"
+                  placeholder="Universal"
+                  persistent-placeholder
+                  multiple
+                  hide-details
+                />
+              </VCol>
+              <VCol cols="12" sm="8">
+                <VFileInput v-model="uploadFile" density="compact" label="Binary (.bin)" accept=".bin" hide-details data-test-id="firmware-upload-file" />
+              </VCol>
+              <VCol cols="12" sm="4" class="d-flex align-center">
+                <VBtn
+                  :prepend-icon="mdiUpload"
+                  color="primary"
+                  variant="tonal"
+                  :disabled="!canUpload"
+                  :loading="firmwareStore.uploading"
+                  data-test-id="firmware-upload-btn"
+                  @click="handleFirmwareUpload"
+                >
+                  Upload
+                </VBtn>
+              </VCol>
+            </VRow>
           </VCardText>
         </VCard>
 

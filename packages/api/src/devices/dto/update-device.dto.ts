@@ -69,4 +69,8 @@ export class UpdateDeviceDto {
   @IsOptional()
   @IsBoolean()
   updateFirmware: boolean
+
+  @IsOptional()
+  @IsString()
+  targetFirmwareId?: string
 }

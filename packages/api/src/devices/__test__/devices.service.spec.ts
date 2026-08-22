@@ -28,13 +28,15 @@ describe('devicesService', () => {
   let service: DevicesService
   let repo: MockRepository
   let deviceModels: MockDeviceModelsService
+  let firmwareService: { findById: ReturnType<typeof vi.fn> }
   let screensService: { reconvertImageScreens: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     repo = createMockRepository()
     deviceModels = createMockDeviceModelsService()
+    firmwareService = { findById: vi.fn() }
     screensService = { reconvertImageScreens: vi.fn().mockResolvedValue(0) }
-    service = new DevicesService(repo as unknown as Repository<Device>, deviceModels as any, screensService as any)
+    service = new DevicesService(repo as unknown as Repository<Device>, deviceModels as any, firmwareService as any, screensService as any)
   })
 
   const baseDevice = {
@@ -187,6 +189,50 @@ describe('devicesService', () => {
       deviceModels.compatibleFamiliesFor.mockResolvedValue(new Set())
       await expect(service.update('1', { paletteId: CUSTOM_RED_3BWR.id } as any)).rejects.toThrow(BadRequestException)
       expect(repo.save).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('update with target firmware', () => {
+    const compatibleFirmware = { id: 'fw-1', version: '1.5.6', kind: 'official-synced', compatibleModels: ['og_plus'] }
+    const universalFirmware = { id: 'fw-2', version: '1.0.0', kind: 'custom', compatibleModels: [] }
+
+    beforeEach(() => {
+      repo.save.mockImplementation(async (device: Device) => device)
+    })
+
+    it('assigns a firmware compatible with the device model', async () => {
+      repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: OG_PLUS })
+      firmwareService.findById.mockResolvedValue(compatibleFirmware)
+      const result = await service.update('1', { targetFirmwareId: 'fw-1' } as any)
+      expect(firmwareService.findById).toHaveBeenCalledWith('fw-1')
+      expect(result.targetFirmware).toBe(compatibleFirmware)
+    })
+
+    it('assigns a universal firmware (empty compatibleModels) regardless of device model', async () => {
+      repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: null })
+      firmwareService.findById.mockResolvedValue(universalFirmware)
+      const result = await service.update('1', { targetFirmwareId: 'fw-2' } as any)
+      expect(result.targetFirmware).toBe(universalFirmware)
+    })
+
+    it('rejects a firmware incompatible with the device model', async () => {
+      repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: V2 })
+      firmwareService.findById.mockResolvedValue(compatibleFirmware)
+      await expect(service.update('1', { targetFirmwareId: 'fw-1' } as any)).rejects.toThrow(BadRequestException)
+      expect(repo.save).not.toHaveBeenCalled()
+    })
+
+    it('rejects an unknown firmware id', async () => {
+      repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: OG_PLUS })
+      firmwareService.findById.mockResolvedValue(null)
+      await expect(service.update('1', { targetFirmwareId: 'nope' } as any)).rejects.toThrow(BadRequestException)
+      expect(repo.save).not.toHaveBeenCalled()
+    })
+
+    it('is a no-op when targetFirmwareId is not provided', async () => {
+      repo.findOneBy.mockResolvedValue({ ...baseDevice, deviceModel: OG_PLUS })
+      await service.update('1', { name: 'renamed' } as any)
+      expect(firmwareService.findById).not.toHaveBeenCalled()
     })
   })
 

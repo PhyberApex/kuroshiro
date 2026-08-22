@@ -11,6 +11,7 @@ import { DeviceModelsService } from '../device-models/device-models.service'
 import { FallbackScreensService } from '../device-models/fallback-screens.service'
 import { renderHtmlToPng } from '../device-models/render-html-to-png'
 import { viewFull, wrapInScreenShell } from '../device-models/screen-shell'
+import { FirmwareService } from '../firmware/firmware.service'
 import { PluginDataFetcherService } from '../plugins/services/plugin-data-fetcher.service'
 import { PluginRendererService } from '../plugins/services/plugin-renderer.service'
 import { PluginTransformService } from '../plugins/services/plugin-transform.service'
@@ -48,6 +49,7 @@ export class DeviceDisplayService {
     private configService: ConfigService,
     private deviceModels: DeviceModelsService,
     private fallbackScreens: FallbackScreensService,
+    private firmwareService: FirmwareService,
     private pluginDataFetcher: PluginDataFetcherService,
     private pluginRenderer: PluginRendererService,
     private pluginTransformer: PluginTransformService,
@@ -98,7 +100,7 @@ export class DeviceDisplayService {
     // A Special Function fires once: this response acknowledges it, the next poll gets 'none'
     const specialFunction = device.specialFunction ?? 'none'
     device.specialFunction = 'none'
-    const updateFirmware = false
+    const { firmwareUrl: pushedFirmwareUrl, updateFirmware: pushedUpdateFirmware } = await this.resolveFirmwarePush(device)
     device.lastSeen = new Date()
     await this.deviceRepository.save(device)
     this.logger.log(`Device info updated for MAC: ${headers.id}`)
@@ -117,13 +119,13 @@ export class DeviceDisplayService {
         return new Display({
           action: specialFunction,
           filename: 'noScreen.png',
-          firmware_url: '',
+          firmware_url: pushedFirmwareUrl,
           image_url: await this.fallbackImageUrl('noScreen', device),
           refresh_rate: device.refreshRate,
           reset_firmware: resetDevice,
           special_function: specialFunction,
           temperature_profile: 'default',
-          update_firmware: updateFirmware,
+          update_firmware: pushedUpdateFirmware,
         })
       }
       nextScreen.isActive = true
@@ -135,13 +137,13 @@ export class DeviceDisplayService {
       return new Display({
         action: specialFunction,
         filename: `${nextScreen.filename}_${nextScreen.generatedAt.toISOString()}`,
-        firmware_url: '',
+        firmware_url: pushedFirmwareUrl,
         image_url: imgUrl,
         refresh_rate: device.refreshRate,
         reset_firmware: false,
         special_function: specialFunction,
         temperature_profile: 'default',
-        update_firmware: false,
+        update_firmware: pushedUpdateFirmware,
       })
     }
     else {
@@ -190,6 +192,27 @@ export class DeviceDisplayService {
         update_firmware: updateFirmware,
       })
     }
+  }
+
+  /**
+   * A non-mirrored Device's own OTA push: a one-shot pull of its assigned target
+   * Firmware, triggered only by an explicit admin assignment (never inferred from
+   * `fwVersion`). The flag only clears once the binary is actually served, so a
+   * checksum mismatch (a corrupted file on disk) leaves it set to retry on the
+   * Device's next poll instead of silently skipping the update for good. A
+   * mirrored Device is left untouched — its firmware comes from TRMNL's own
+   * pass-through instead.
+   */
+  private async resolveFirmwarePush(device: Device): Promise<{ firmwareUrl: string, updateFirmware: boolean }> {
+    if (device.mirrorEnabled || !device.updateFirmware || !device.targetFirmware)
+      return { firmwareUrl: '', updateFirmware: false }
+    const target = device.targetFirmware
+    if (!await this.firmwareService.verifyChecksum(target)) {
+      this.logger.warn(`Firmware ${target.id} (${target.version}) failed checksum verification, skipping OTA push for device ${device.id}`)
+      return { firmwareUrl: '', updateFirmware: false }
+    }
+    device.updateFirmware = false
+    return { firmwareUrl: this.firmwareService.fileUrl(target.id), updateFirmware: true }
   }
 
   /**

@@ -1,6 +1,7 @@
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
 import { DeviceModel } from '../device-models/entities/device-model.entity'
 import { Palette } from '../device-models/entities/palette.entity'
+import { Firmware } from '../firmware/entities/firmware.entity'
 import { LogEntry } from '../logs/logs.entity'
 import { Screen } from '../screens/screens.entity'
 
@@ -70,6 +71,10 @@ export class Device {
 
   @Column('boolean', { default: false })
   updateFirmware: boolean
+
+  @ManyToOne(() => Firmware, { nullable: true, eager: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'targetFirmwareId' })
+  targetFirmware?: Firmware | null
 
   @Column('timestamptz', { default: new Date() })
   lastSeen: Date

@@ -65,6 +65,7 @@ describe('deviceDisplayService', () => {
   let configService: { get: ReturnType<typeof vi.fn> }
   let deviceModels: MockDeviceModelsService
   let fallbackScreens: MockFallbackScreensService
+  let firmwareService: { verifyChecksum: ReturnType<typeof vi.fn>, fileUrl: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     deviceRepo = createMockRepo()
@@ -72,12 +73,14 @@ describe('deviceDisplayService', () => {
     configService = { get: vi.fn() }
     deviceModels = createMockDeviceModelsService()
     fallbackScreens = createMockFallbackScreensService()
+    firmwareService = { verifyChecksum: vi.fn(), fileUrl: vi.fn() }
     service = new DeviceDisplayService(
       deviceRepo as any,
       screenRepo as any,
       configService as any,
       deviceModels as any,
       fallbackScreens as any,
+      firmwareService as any,
     )
     vi.resetAllMocks()
     primeMockDeviceModelsService(deviceModels)
@@ -461,6 +464,74 @@ describe('deviceDisplayService', () => {
       expect(result.touchbar_mode).toBeUndefined()
       expect(result.maximum_compatibility).toBeUndefined()
       expect(result.image_url_timeout).toBeUndefined()
+    })
+  })
+
+  describe('firmware push', () => {
+    const targetFirmware = { id: 'fw-1', version: '1.5.6', checksum: 'abc123' }
+
+    function primeNoScreen(device: Record<string, unknown>) {
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      screenRepo.find.mockResolvedValue([])
+      configService.get.mockReturnValue('http://api')
+    }
+
+    it('serves the target firmware url and clears the flag when the checksum matches', async () => {
+      const device = { ...baseDevice, deviceModel: OG_PLUS, updateFirmware: true, targetFirmware }
+      primeNoScreen(device)
+      firmwareService.verifyChecksum.mockResolvedValue(true)
+      firmwareService.fileUrl.mockReturnValue('http://api/firmware/fw-1.bin')
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(firmwareService.verifyChecksum).toHaveBeenCalledWith(targetFirmware)
+      expect(result.firmware_url).toBe('http://api/firmware/fw-1.bin')
+      expect(result.update_firmware).toBe(true)
+      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ updateFirmware: false }))
+    })
+
+    it('skips serving the url and leaves the flag set when the checksum does not match', async () => {
+      const device = { ...baseDevice, deviceModel: OG_PLUS, updateFirmware: true, targetFirmware }
+      primeNoScreen(device)
+      firmwareService.verifyChecksum.mockResolvedValue(false)
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.firmware_url).toBe('')
+      expect(result.update_firmware).toBe(false)
+      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ updateFirmware: true }))
+    })
+
+    it('does nothing when updateFirmware is false', async () => {
+      primeNoScreen({ ...baseDevice, deviceModel: OG_PLUS, updateFirmware: false, targetFirmware })
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(firmwareService.verifyChecksum).not.toHaveBeenCalled()
+      expect(result.firmware_url).toBe('')
+      expect(result.update_firmware).toBe(false)
+    })
+
+    it('does nothing when no firmware is targeted', async () => {
+      primeNoScreen({ ...baseDevice, deviceModel: OG_PLUS, updateFirmware: true, targetFirmware: null })
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(firmwareService.verifyChecksum).not.toHaveBeenCalled()
+      expect(result.update_firmware).toBe(false)
+    })
+
+    it('leaves a mirrored device unaffected by any firmware assignment', async () => {
+      const device = { ...baseDevice, deviceModel: OG_PLUS, mirrorEnabled: true, mirrorMac: 'different-mac', updateFirmware: true, targetFirmware }
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      configService.get.mockReturnValue('http://api')
+      mockFetch.mockResolvedValueOnce({ json: () => Promise.resolve({ filename: 'mirror.png', image_url: 'http://example.com/image.jpg' }) })
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(firmwareService.verifyChecksum).not.toHaveBeenCalled()
+      expect(result.firmware_url).toBeNull()
+      expect(result.update_firmware).toBe(false)
     })
   })
 
