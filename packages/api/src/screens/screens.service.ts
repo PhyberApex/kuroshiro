@@ -105,7 +105,7 @@ export class ScreensService {
     this.logger.log(`Fetching screens for device ${deviceId}`)
     return this.screensRepository.find({
       where: { device: { id: deviceId } },
-      relations: { plugin: true },
+      relations: { plugin: true, schedule: true },
       order: { order: 'ASC' },
     })
   }

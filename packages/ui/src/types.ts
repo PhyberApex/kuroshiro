@@ -64,6 +64,25 @@ export interface Device {
   lastSeen: string
 }
 
+export interface Schedule {
+  id: string
+  enabled: boolean
+  weekdays?: number[] | null
+  startTime?: string | null
+  endTime?: string | null
+  startDate?: string | null
+  endDate?: string | null
+}
+
+export interface ScheduleInput {
+  enabled?: boolean
+  weekdays?: number[] | null
+  startTime?: string | null
+  endTime?: string | null
+  startDate?: string | null
+  endDate?: string | null
+}
+
 export interface Screen {
   id: string
   type?: 'file' | 'external' | 'html' | 'plugin' | 'mashup'
@@ -79,6 +98,7 @@ export interface Screen {
   mashupConfiguration?: { id: string, layout: string }
   order?: number
   generatedAt?: string
+  schedule?: Schedule | null
 }
 
 export interface CurrentScreen {
