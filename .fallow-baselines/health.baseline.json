@@ -1,0 +1,173 @@
+{
+  "finding_counts": {
+    "packages/api/src/config/config.ts": {
+      "crap_critical": {
+        "count": 1
+      }
+    },
+    "packages/api/src/devices/devices.service.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/api/src/devices/display.service.ts": {
+      "complexity_critical": {
+        "count": 2
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "packages/api/src/maintenance/maintenance.service.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "packages/api/src/mashup/mashup.service.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/api/src/plugins/plugin-data-source-mode.ts": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "packages/api/src/plugins/plugins.service.ts": {
+      "complexity_critical": {
+        "count": 2
+      },
+      "crap_critical": {
+        "count": 2
+      }
+    },
+    "packages/api/src/plugins/services/plugin-data-fetcher.service.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/api/src/plugins/services/plugin-importer.service.ts": {
+      "complexity_high": {
+        "count": 2
+      },
+      "crap_high": {
+        "count": 2
+      },
+      "crap_moderate": {
+        "count": 2
+      }
+    },
+    "packages/api/src/screens/screens.service.ts": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "packages/api/src/utils/ssrfGuard.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/ui/src/components/DeviceInformationCard.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/ui/src/components/DeviceLogsCard.vue": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "packages/ui/src/components/PluginCard.vue": {
+      "complexity_moderate": {
+        "count": 1
+      }
+    },
+    "packages/ui/src/components/PluginImportDialog.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "packages/ui/src/components/ScreenListCard.vue": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "packages/ui/src/components/ScreenScheduleDialog.vue": {
+      "crap_high": {
+        "count": 1
+      }
+    },
+    "packages/ui/src/views/MaintenanceView.vue": {
+      "complexity_critical": {
+        "count": 1
+      }
+    },
+    "packages/ui/src/views/PluginCreateView.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/ui/src/views/PluginEditView.vue": {
+      "complexity_high": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
+    "packages/ui/src/views/VirtualDeviceView.vue": {
+      "crap_moderate": {
+        "count": 1
+      }
+    }
+  },
+  "runtime_coverage_findings": [],
+  "target_keys": [
+    "packages/ui/src/components/ScreenListCard.vue:complexity",
+    "packages/api/src/plugins/plugins.service.ts:complexity",
+    "packages/api/src/devices/display.service.ts:complexity",
+    "packages/ui/src/stores/deviceModels.ts:high impact",
+    "packages/api/src/mashup/entities/mashup-configuration.entity.ts:circular dependency",
+    "packages/api/src/mashup/mashup.service.ts:complexity",
+    "packages/ui/src/components/DeviceInformationCard.vue:complexity",
+    "packages/ui/src/views/PluginEditView.vue:complexity",
+    "packages/api/src/devices/devices.entity.ts:circular dependency",
+    "packages/api/src/maintenance/maintenance.service.ts:complexity",
+    "packages/api/src/screens/screens.entity.ts:circular dependency",
+    "packages/api/src/schedule/schedule.entity.ts:circular dependency",
+    "packages/api/src/mashup/entities/mashup-slot.entity.ts:circular dependency",
+    "packages/api/src/logs/logs.entity.ts:circular dependency",
+    "packages/ui/src/components/DeviceLogsCard.vue:complexity",
+    "packages/ui/src/views/MaintenanceView.vue:complexity"
+  ]
+}

@@ -264,6 +264,7 @@ We love contributions! Jump in:
 - Fork, branch, and submit pull requests (PRs)—all PRs welcome!
 - Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) and code style
 - Run all tests before submitting a PR
+- `pnpm fallow:ci` runs in CI and fails on new dead code, duplication, or complexity hotspots; see [docs/agents/fallow.md](docs/agents/fallow.md) for how the baselines work
 - **We use [release-please](https://github.com/googleapis/release-please)!** Use [Conventional Commits](https://www.conventionalcommits.org/) for your commit messages to enable automatic versioning and changelogs.
 
 ### UI responsive support
