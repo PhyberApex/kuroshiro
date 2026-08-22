@@ -503,6 +503,89 @@ describe('deviceDisplayService', () => {
     })
   })
 
+  describe('reset device delivery', () => {
+    function primeNoScreen(device: Record<string, unknown>) {
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      screenRepo.find.mockResolvedValue([])
+      configService.get.mockReturnValue('http://api')
+    }
+
+    function primeCycling(device: Record<string, unknown>) {
+      const activeScreen = { id: 'screen1', order: 1, device, isActive: true, fetchManual: false, externalLink: null, filename: 'file.png', generatedAt: new Date() }
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      screenRepo.find.mockResolvedValue([activeScreen, { ...activeScreen, id: 'screen2', order: 2, isActive: false }])
+      configService.get.mockReturnValue('http://api')
+      fileExists.mockResolvedValue(true)
+    }
+
+    function primeMirror(device: Record<string, unknown>, response: Record<string, unknown>) {
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      configService.get.mockReturnValue('http://api')
+      mockFetch.mockResolvedValueOnce({ json: () => Promise.resolve(response) })
+    }
+
+    function mirroredDevice(mirrorMac: string, resetDevice: boolean) {
+      return { ...baseDevice, deviceModel: OG_PLUS, mirrorEnabled: true, mirrorMac, mirrorApikey: 'mirror-token', resetDevice }
+    }
+
+    it('delivers a pending reset and clears the flag when the device has no screen', async () => {
+      primeNoScreen({ ...baseDevice, deviceModel: OG_PLUS, resetDevice: true })
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.reset_firmware).toBe(true)
+      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ resetDevice: false }))
+    })
+
+    it('delivers a pending reset while cycling screens', async () => {
+      primeCycling({ ...baseDevice, deviceModel: OG_PLUS, resetDevice: true })
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.reset_firmware).toBe(true)
+    })
+
+    it('does not report a reset while cycling screens when none is pending', async () => {
+      primeCycling({ ...baseDevice, deviceModel: OG_PLUS, resetDevice: false })
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.reset_firmware).toBe(false)
+    })
+
+    it('lets the upstream response own reset_firmware when proxying', async () => {
+      primeMirror(mirroredDevice('mac', true), { filename: 'mirror.png', image_url: 'http://example.com/image.jpg', reset_firmware: false })
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.reset_firmware).toBe(false)
+    })
+
+    it('falls back to the locally pending reset when a proxied response omits it', async () => {
+      primeMirror(mirroredDevice('mac', true), { filename: 'mirror.png', image_url: 'http://example.com/image.jpg' })
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.reset_firmware).toBe(true)
+    })
+
+    it('delivers a pending reset on a non-proxy mirrored device', async () => {
+      primeMirror(mirroredDevice('different-mac', true), { filename: 'mirror.png', image_url: 'http://example.com/image.jpg' })
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.reset_firmware).toBe(true)
+    })
+
+    it('does not report a reset on a non-proxy mirrored device when none is pending', async () => {
+      primeMirror(mirroredDevice('different-mac', false), { filename: 'mirror.png', image_url: 'http://example.com/image.jpg' })
+
+      const result = await service.getCurrentImage(headers as any)
+
+      expect(result.reset_firmware).toBe(false)
+    })
+  })
+
   describe('firmware push', () => {
     const targetFirmware = { id: 'fw-1', version: '1.5.6', checksum: 'abc123' }
 
