@@ -4,6 +4,7 @@ import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Screen } from '../../screens/screens.entity'
+import { getErrorMessage } from '../../utils/getErrorMessage'
 import { PluginRendererService } from './plugin-renderer.service'
 
 @Injectable()
@@ -68,7 +69,8 @@ export class PluginRenderCacheService {
       }
     }
     catch (error) {
-      this.logger.error(`Failed to invalidate mashup caches for plugin ${pluginId}: ${error.message}`)
+      const message = getErrorMessage(error)
+      this.logger.error(`Failed to invalidate mashup caches for plugin ${pluginId}: ${message}`)
     }
   }
 }

@@ -250,7 +250,7 @@ export class PluginImporterService {
       }
     })
 
-    return this.buildParsedPlugin(manifest, settings, templates, fallbackName, transformJs)
+    return this.buildParsedPlugin(manifest, settings, templates, fallbackName, transformJs ?? undefined)
   }
 
   private async importFromYaml(yamlPath: string, fallbackName: string): Promise<ParsedPlugin> {
@@ -303,7 +303,7 @@ export class PluginImporterService {
       }
     }
 
-    return this.buildParsedPlugin(manifest, settings, templates, fallbackName, transformJs)
+    return this.buildParsedPlugin(manifest, settings, templates, fallbackName, transformJs ?? undefined)
   }
 
   private buildParsedPlugin(

@@ -80,10 +80,10 @@ describe('pluginSchedulerService', () => {
   })
 
   it('converts refresh interval to cron expression', () => {
-    expect(service.getCronExpression(1)).toBe('*/1 * * * *')
-    expect(service.getCronExpression(15)).toBe('*/15 * * * *')
-    expect(service.getCronExpression(30)).toBe('*/30 * * * *')
-    expect(service.getCronExpression(60)).toBe('0 * * * *')
+    expect((service as any).getCronExpression(1)).toBe('*/1 * * * *')
+    expect((service as any).getCronExpression(15)).toBe('*/15 * * * *')
+    expect((service as any).getCronExpression(30)).toBe('*/30 * * * *')
+    expect((service as any).getCronExpression(60)).toBe('0 * * * *')
   })
 
   it('schedules multiple plugins independently', () => {

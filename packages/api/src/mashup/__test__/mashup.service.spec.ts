@@ -75,7 +75,7 @@ describe('mashupService', () => {
       screenRepo.save.mockResolvedValue(screen)
       screenRepo.update.mockResolvedValue(undefined)
 
-      const config = { id: 'config-1', screen, layout: dto.layout, slots: [] } as MashupConfiguration
+      const config = { id: 'config-1', screen, layout: dto.layout, slots: [] } as unknown as MashupConfiguration
       mashupConfigRepo.create.mockReturnValue(config)
       mashupConfigRepo.save.mockResolvedValue(config)
 

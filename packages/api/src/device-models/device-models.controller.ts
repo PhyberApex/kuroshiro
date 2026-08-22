@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Logger, Param, Post, ServiceUnavailableException, UsePipes, ValidationPipe } from '@nestjs/common'
+import { getErrorMessage } from '../utils/getErrorMessage'
 import { CustomPalettesService } from './custom-palettes.service'
 import { DeviceModelSyncResult, DeviceModelSyncService } from './device-model-sync.service'
 import { DeviceModelsService } from './device-models.service'
@@ -43,7 +44,7 @@ export class DeviceModelsController {
       return await this.syncService.sync()
     }
     catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
+      const message = getErrorMessage(err)
       this.logger.error(`Device model sync failed: ${message}`)
       throw new ServiceUnavailableException(`Could not sync device models from TRMNL: ${message}`)
     }

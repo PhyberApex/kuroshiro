@@ -18,6 +18,7 @@ import { PluginTransformService } from '../plugins/services/plugin-transform.ser
 import { isScheduleEligible } from '../schedule/schedule-eligibility'
 import { Screen } from '../screens/screens.entity'
 import { fileExists } from '../utils/fileExists'
+import { getErrorMessage } from '../utils/getErrorMessage'
 import { convertToPng, downloadImage } from '../utils/imageUtils'
 import { parseHeaderInt } from '../utils/parseHeaderInt'
 import { resolveAppPath } from '../utils/pathHelper'
@@ -159,7 +160,7 @@ export class DeviceDisplayService {
       let refreshRate = device.refreshRate
       let filename = 'error.png'
       let localImageUrl = await this.fallbackImageUrl('error', device)
-      let firmwareUrl = null
+      let firmwareUrl: string | null = null
       let resetFirmware = false
       let mirrorSpecialFunction = specialFunction
       let mirrorAction = specialFunction
@@ -167,17 +168,18 @@ export class DeviceDisplayService {
       try {
         const { response, localImageUrl: localImage } = await this.fetchAndStoreMirrorImage(device, proxy ? headers : undefined)
 
-        refreshRate = proxy ? response.refresh_rate : refreshRate
-        firmwareUrl = proxy ? response.firmware_url : firmwareUrl
-        resetFirmware = proxy ? response.reset_firmware : resetFirmware
+        refreshRate = proxy ? (response.refresh_rate ?? refreshRate) : refreshRate
+        firmwareUrl = proxy ? (response.firmware_url ?? firmwareUrl) : firmwareUrl
+        resetFirmware = proxy ? (response.reset_firmware ?? resetFirmware) : resetFirmware
         mirrorSpecialFunction = proxy ? (response.special_function ?? 'none') : mirrorSpecialFunction
         mirrorAction = proxy ? (response.action ?? mirrorSpecialFunction) : mirrorAction
-        updateFirmware = proxy ? response.update_firmware : updateFirmware
+        updateFirmware = proxy ? (response.update_firmware ?? updateFirmware) : updateFirmware
         localImageUrl = localImage
         filename = response.filename
       }
       catch (err) {
-        this.logger.error(`Failed to process image: ${err.message}`)
+        const message = getErrorMessage(err)
+        this.logger.error(`Failed to process image: ${message}`)
       }
       this.logger.log(`Returning mirrored screen for device ${device.id}`)
       return new Display({
@@ -255,7 +257,11 @@ export class DeviceDisplayService {
       })
     }
     let imgUrl = await this.fallbackImageUrl('error', device)
+    let filename: string
+    let renderedAt: Date | undefined
     if (device.mirrorEnabled) {
+      filename = `mirror_${new Date().toISOString()}`
+      renderedAt = undefined
       this.logger.log(`Mirroring enabled for device ${device.id}, checking for image...`)
       if (await fileExists(resolveAppPath('public', 'screens', 'devices', device.id, 'mirror.png'))) {
         this.logger.log(`Image found returning`)
@@ -268,11 +274,14 @@ export class DeviceDisplayService {
           imgUrl = localImageUrl
         }
         catch (err) {
-          this.logger.error(`Failed to fetch mirror image on demand: ${err.message}`)
+          const message = getErrorMessage(err)
+          this.logger.error(`Failed to fetch mirror image on demand: ${message}`)
         }
       }
     }
     else {
+      if (!activeScreen)
+        throw new NotFoundException('No active screen found for device')
       this.logger.log(`Returning screen ${activeScreen.id} for device ${device.id}`)
       if (await fileExists(this.screenImagePath(device, activeScreen))) {
         imgUrl = this.screenImageUrl(device, activeScreen)
@@ -281,12 +290,14 @@ export class DeviceDisplayService {
         this.logger.log(`Screen image for ${activeScreen.id} missing on disk, generating on demand`)
         imgUrl = await this.generateScreenImage(activeScreen, device)
       }
+      filename = `${activeScreen.filename}_${activeScreen.generatedAt.toISOString()}`
+      renderedAt = activeScreen.generatedAt
     }
     return new DisplayScreen({
-      filename: device.mirrorEnabled ? `mirror_${new Date().toISOString()}` : `${activeScreen.filename}_${activeScreen.generatedAt.toISOString()}`,
+      filename,
       image_url: imgUrl,
       refresh_rate: device.refreshRate,
-      rendered_at: device.mirrorEnabled ? undefined : activeScreen.generatedAt,
+      rendered_at: renderedAt,
     })
   }
 
@@ -296,7 +307,7 @@ export class DeviceDisplayService {
       : { 'access-token': device.mirrorApikey, 'ID': device.mirrorMac }
     this.logger.debug(`Sending headers: ${JSON.stringify(mirrorHeaders)}`)
     const res = await fetch(`https://usetrmnl.com/api/${proxyHeaders ? 'display' : 'current_screen'}`, {
-      headers: mirrorHeaders,
+      headers: mirrorHeaders as Record<string, string>,
     })
     const response: TrmnlScreenResponse = await res.json()
     this.logger.debug(`Got this from TRMNL ${JSON.stringify(response)}`)
@@ -352,7 +363,8 @@ export class DeviceDisplayService {
         }
       }
       catch (err) {
-        this.logger.error(`Failed to render mashup: ${err.message}`)
+        const message = getErrorMessage(err)
+        this.logger.error(`Failed to render mashup: ${message}`)
         imgUrl = await this.fallbackImageUrl('error', device)
       }
     }
@@ -374,7 +386,8 @@ export class DeviceDisplayService {
             imgUrl = await this.renderBodyToScreenPng(viewFull(screenWithPlugin.cachedPluginOutput), screen, device)
           }
           catch (err) {
-            this.logger.error(`Failed to render cached plugin output: ${err.message}`)
+            const message = getErrorMessage(err)
+            this.logger.error(`Failed to render cached plugin output: ${message}`)
             imgUrl = await this.fallbackImageUrl('error', device)
           }
         }
@@ -386,7 +399,8 @@ export class DeviceDisplayService {
               imgUrl = await this.renderBodyToScreenPng(viewFull(renderedHtml), screen, device)
           }
           catch (err) {
-            this.logger.error(`Failed to render plugin: ${err.message}`)
+            const message = getErrorMessage(err)
+            this.logger.error(`Failed to render plugin: ${message}`)
             imgUrl = await this.fallbackImageUrl('error', device)
           }
         }
@@ -409,7 +423,8 @@ export class DeviceDisplayService {
         imgUrl = this.screenImageUrl(device, screen)
       }
       catch (err) {
-        this.logger.error(`Failed to process image: ${err.message}`)
+        const message = getErrorMessage(err)
+        this.logger.error(`Failed to process image: ${message}`)
         imgUrl = await this.fallbackImageUrl('error', device)
       }
       finally {

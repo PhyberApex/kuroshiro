@@ -81,6 +81,9 @@ describe('deviceDisplayService', () => {
       deviceModels as any,
       fallbackScreens as any,
       firmwareService as any,
+      {} as any,
+      {} as any,
+      {} as any,
     )
     vi.resetAllMocks()
     primeMockDeviceModelsService(deviceModels)
@@ -172,7 +175,7 @@ describe('deviceDisplayService', () => {
       expect(html).toContain('class="screen screen--v2 screen--lg screen--density-2x screen--4bit"')
       expect(html).toContain('--screen-w: 1040px;')
       expect(html).toContain('<div class="view view--full"><p>hi</p></div>')
-      const { convertToPng } = await import('../../utils/imageUtils')
+      const { convertToPng } = await import('../../utils/imageUtils.js')
       expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('screen2.png'), { model: V2, palette: GRAY_16 }, expect.any(Object))
       expect(result.image_url).toBe('http://api/screens/devices/1/screen2.png')
       expect(fs.unlink).toHaveBeenCalledWith(expect.stringContaining('tmp-source'))
@@ -195,8 +198,8 @@ describe('deviceDisplayService', () => {
       const device = { ...baseDevice, deviceModel: OG_PLUS }
       const plugin = { id: 'p1', name: 'P', dataSources: [{ name: 'source', method: 'GET', url: 'http://x' }], templates: [{ layout: 'full', liquidMarkup: '{{ v }}' }] }
       primeRotation({ id: 'screen2', type: 'plugin', order: 2, device, plugin, filename: 'x', generatedAt: new Date() }, device)
-      service.pluginDataFetcher = { fetchData: vi.fn().mockResolvedValue({ v: 1 }) } as any
-      service.pluginRenderer = { render: vi.fn().mockResolvedValue('<b>1</b>') } as any
+      ;(service as any).pluginDataFetcher = { fetchData: vi.fn().mockResolvedValue({ v: 1 }) } as any
+      ;(service as any).pluginRenderer = { render: vi.fn().mockResolvedValue('<b>1</b>') } as any
 
       await service.getCurrentImage(headers as any)
 
@@ -208,7 +211,7 @@ describe('deviceDisplayService', () => {
     it('places cached mashup markup directly inside the shell', async () => {
       const device = { ...baseDevice, deviceModel: OG_PLUS }
       primeRotation({ id: 'screen2', type: 'mashup', order: 2, device, cachedPluginOutput: '<div class="mashup mashup--1Lx1R">m</div>', mashupConfiguration: { id: 'c' }, filename: 'x', generatedAt: new Date() }, device)
-      service.mashupRenderer = { renderMashup: vi.fn() } as any
+      ;(service as any).mashupRenderer = { renderMashup: vi.fn() } as any
 
       await service.getCurrentImage(headers as any)
 
@@ -304,7 +307,7 @@ describe('deviceDisplayService', () => {
       json: () => Promise.resolve(mockResponse),
     })
 
-    const { downloadImage, convertToPng } = await import('../../utils/imageUtils')
+    const { downloadImage, convertToPng } = await import('../../utils/imageUtils.js')
 
     vi.mocked(fs.unlink).mockResolvedValueOnce()
     const result = await service.getCurrentImage(testHeaders as any)
@@ -344,7 +347,7 @@ describe('deviceDisplayService', () => {
       json: () => Promise.resolve(mockResponse),
     })
 
-    const { downloadImage, convertToPng } = await import('../../utils/imageUtils')
+    const { downloadImage, convertToPng } = await import('../../utils/imageUtils.js')
 
     vi.mocked(fs.unlink).mockResolvedValueOnce()
     const result = await service.getCurrentImage(testHeaders as any)
@@ -590,7 +593,7 @@ describe('deviceDisplayService', () => {
         json: () => Promise.resolve({ filename: 'remote.png', image_url: 'http://example.com/image.jpg' }),
       })
 
-      const { downloadImage, convertToPng } = await import('../../utils/imageUtils')
+      const { downloadImage, convertToPng } = await import('../../utils/imageUtils.js')
 
       const result = await service.getCurrentImageWithoutProgressing(headers)
       expect(mockFetch).toHaveBeenCalledWith('https://usetrmnl.com/api/current_screen', {
@@ -655,7 +658,7 @@ describe('deviceDisplayService', () => {
       configService.get.mockReturnValue('http://api')
       fileExists.mockResolvedValue(false)
 
-      const { downloadImage, convertToPng } = await import('../../utils/imageUtils')
+      const { downloadImage, convertToPng } = await import('../../utils/imageUtils.js')
 
       const result = await service.getCurrentImageWithoutProgressing(headers)
       expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', expect.any(String), expect.any(Object))
@@ -711,9 +714,9 @@ describe('deviceDisplayService', () => {
   describe('mashup screen rendering', () => {
     beforeEach(() => {
       // Inject services needed for mashup
-      service.pluginDataFetcher = { fetchData: vi.fn() } as any
-      service.pluginRenderer = { render: vi.fn() } as any
-      service.pluginTransformer = { transform: vi.fn() } as any
+      ;(service as any).pluginDataFetcher = { fetchData: vi.fn() } as any
+      ;(service as any).pluginRenderer = { render: vi.fn() } as any
+      ;(service as any).pluginTransformer = { transform: vi.fn() } as any
     })
 
     it('should detect mashup screen and call renderer', async () => {
@@ -759,7 +762,7 @@ describe('deviceDisplayService', () => {
       const mockMashupRenderer = {
         renderMashup: vi.fn().mockResolvedValue('<html>Mashup HTML</html>'),
       }
-      service.mashupRenderer = mockMashupRenderer
+      ;(service as any).mashupRenderer = mockMashupRenderer
 
       const result = await service.getCurrentImage({ ...headers, width: 800, height: 480 } as any)
 
@@ -822,7 +825,7 @@ describe('deviceDisplayService', () => {
       const mockMashupRenderer = {
         renderMashup: vi.fn().mockRejectedValue(new Error('Render failed')),
       }
-      service.mashupRenderer = mockMashupRenderer
+      ;(service as any).mashupRenderer = mockMashupRenderer
 
       const result = await service.getCurrentImage({ ...headers, width: 800, height: 480 } as any)
 

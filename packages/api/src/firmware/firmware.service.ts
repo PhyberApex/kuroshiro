@@ -15,7 +15,7 @@ import { firmwareFilePath, firmwareFileUrl } from './firmware-paths'
 export const MAX_FIRMWARE_UPLOAD_BYTES = 8 * 1024 * 1024
 
 export interface UploadFirmwareInput {
-  version: string
+  version?: string
   label?: string
   compatibleModels?: string[]
 }
@@ -103,6 +103,6 @@ export class FirmwareService {
   }
 
   fileUrl(id: string): string {
-    return firmwareFileUrl(id, this.configService.get<string>('api_url'))
+    return firmwareFileUrl(id, this.configService.get<string>('api_url', 'http://localhost:5173'))
   }
 }
