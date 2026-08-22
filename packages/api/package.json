@@ -19,7 +19,8 @@
     "migration:create": "typeorm-ts-node-commonjs migration:create",
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/config/typeorm.config.ts",
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/config/typeorm.config.ts",
-    "migration:show": "typeorm-ts-node-commonjs migration:show -d src/config/typeorm.config.ts"
+    "migration:show": "typeorm-ts-node-commonjs migration:show -d src/config/typeorm.config.ts",
+    "snapshot:device-models": "node scripts/update_device_model_snapshot.mjs"
   },
   "dependencies": {
     "@nestjs/common": "catalog:",
