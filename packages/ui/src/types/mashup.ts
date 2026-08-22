@@ -1,22 +1,3 @@
-export interface MashupConfiguration {
-  id: string
-  layout: '1Lx1R' | '1Tx1B' | '1Lx2R' | '2Lx1R' | '2Tx1B' | '1Tx2B' | '2x2'
-  slots: MashupSlot[]
-  createdAt: Date
-  updatedAt: Date
-}
-
-export interface MashupSlot {
-  id: string
-  position: string
-  size: string
-  plugin: {
-    id: string
-    name: string
-  }
-  order: number
-}
-
 export interface LayoutConfig {
   value: string
   label: string
