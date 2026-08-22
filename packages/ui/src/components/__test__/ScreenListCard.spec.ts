@@ -302,4 +302,48 @@ describe('screenListCard', () => {
 
     wrapper.unmount()
   })
+
+  describe('schedule column', () => {
+    function mountWithScreens(screens: any[]) {
+      screensStoreMock.screens = screens
+      return mount(ScreenListCard, {
+        props: { deviceId: 'device1' },
+        global: { plugins: [createPinia(), vuetify] },
+      })
+    }
+
+    const baseScreen = { filename: 'file1', externalLink: null, isActive: false, device: 'device1', fetchManual: false, html: '' }
+
+    it('reads as always for a screen with no schedule', () => {
+      const wrapper = mountWithScreens([{ ...baseScreen, id: 'screen1' }])
+      expect(wrapper.find('[data-test-id="screen-schedule-btn-screen1"]').text()).toBe('Always')
+    })
+
+    it('summarises the schedule a screen carries', () => {
+      const wrapper = mountWithScreens([
+        { ...baseScreen, id: 'screen1', schedule: { id: 's1', enabled: true, weekdays: [1, 2, 3, 4, 5], startTime: '07:00:00', endTime: '09:00:00' } },
+      ])
+      expect(wrapper.find('[data-test-id="screen-schedule-btn-screen1"]').text()).toBe('Mon, Tue, Wed, Thu, Fri · 07:00–09:00')
+    })
+
+    it('marks a disabled schedule while still showing its rules', () => {
+      const wrapper = mountWithScreens([
+        { ...baseScreen, id: 'screen1', schedule: { id: 's1', enabled: false, weekdays: [0] } },
+      ])
+      expect(wrapper.find('[data-test-id="screen-schedule-btn-screen1"]').text()).toBe('Disabled · Sun')
+    })
+
+    it('opens the schedule dialog for the screen that was clicked', async () => {
+      const wrapper = mountWithScreens([
+        { ...baseScreen, id: 'screen1' },
+        { ...baseScreen, id: 'screen2', filename: 'file2' },
+      ])
+
+      await wrapper.find('[data-test-id="screen-schedule-btn-screen2"]').trigger('click')
+      await flushPromises()
+
+      const dialog = document.querySelector('[data-test-id="schedule-dialog"]')
+      expect(dialog?.textContent).toContain('file2')
+    })
+  })
 })

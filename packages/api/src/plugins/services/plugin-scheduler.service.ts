@@ -1,38 +1,25 @@
 import type { ScheduledTask } from 'node-cron'
-import type { MashupSlot } from '../../mashup/entities/mashup-slot.entity'
 import type { Plugin } from '../entities/plugin.entity'
 import { Injectable, Logger } from '@nestjs/common'
-import { InjectRepository } from '@nestjs/typeorm'
 import cron from 'node-cron'
-import { Repository } from 'typeorm'
-import { Screen } from '../../screens/screens.entity'
 import { PluginDataFetcherService } from './plugin-data-fetcher.service'
-import { PluginRendererService } from './plugin-renderer.service'
+import { PluginRenderCacheService } from './plugin-render-cache.service'
 
 @Injectable()
 export class PluginSchedulerService {
   private scheduledJobs: Map<string, ScheduledTask> = new Map()
-  private mashupSlotRepository: Repository<MashupSlot>
   private readonly logger = new Logger(PluginSchedulerService.name)
 
   constructor(
     private readonly dataFetcher: PluginDataFetcherService,
-    private readonly renderer: PluginRendererService,
-    @InjectRepository(Screen)
-    private readonly screenRepository: Repository<Screen>,
-  ) {
-    // Lazy injection to avoid circular dependency
-    setTimeout(() => {
-      try {
-        this.mashupSlotRepository = this.screenRepository.manager.getRepository('MashupSlot')
-      }
-      catch {
-        this.logger.debug('MashupSlot repository not available')
-      }
-    }, 0)
-  }
+    private readonly renderCache: PluginRenderCacheService,
+  ) {}
 
   schedulePlugin(plugin: Plugin): void {
+    if (plugin.kind === 'Webhook') {
+      return
+    }
+
     if (!plugin.dataSources || plugin.dataSources.length === 0 || !plugin.templates || plugin.templates.length === 0) {
       return
     }
@@ -70,68 +57,26 @@ export class PluginSchedulerService {
           ),
         )
 
-        const data: Record<string, any> = {}
+        const sourceData: Record<string, any> = {}
         results.forEach((result, index) => {
           const name = plugin.dataSources[index].name
           if (result.status === 'fulfilled') {
-            data[name] = result.value
+            sourceData[name] = result.value
           }
           else {
             this.logger.warn(`Data source "${name}" failed for plugin ${plugin.id}: ${result.reason?.message || result.reason}`)
-            data[name] = { error: true, message: result.reason?.message || String(result.reason) }
+            sourceData[name] = { error: true, message: result.reason?.message || String(result.reason) }
           }
         })
 
-        // Render primary template and cache to all associated screens
-        if (plugin.templates.length > 0) {
-          const rendered = await this.renderer.render(plugin.templates[0].liquidMarkup, { ...templateContext, ...data })
-
-          // Update all screens for this plugin
-          await this.screenRepository.update(
-            { plugin: { id: plugin.id } },
-            {
-              cachedPluginOutput: rendered,
-              generatedAt: new Date(),
-            },
-          )
-
-          // Invalidate mashup caches that use this plugin
-          await this.invalidateMashupCaches(plugin.id)
-        }
+        await this.renderCache.renderAndCache(plugin, { ...templateContext, ...sourceData })
       }
       catch (error) {
-        console.error(`Error executing plugin ${plugin.id}:`, error)
+        this.logger.error(`Error executing plugin ${plugin.id}`, error)
       }
     })
 
     this.scheduledJobs.set(plugin.id, task)
-  }
-
-  async invalidateMashupCaches(pluginId: string): Promise<void> {
-    if (!this.mashupSlotRepository) {
-      return
-    }
-
-    try {
-      const mashupsWithPlugin = await this.mashupSlotRepository.find({
-        where: { plugin: { id: pluginId } },
-        relations: { mashupConfiguration: { screen: true } },
-      })
-
-      for (const slot of mashupsWithPlugin) {
-        await this.screenRepository.update(
-          { id: slot.mashupConfiguration.screen.id },
-          { cachedPluginOutput: null },
-        )
-      }
-
-      if (mashupsWithPlugin.length > 0) {
-        this.logger.log(`Invalidated ${mashupsWithPlugin.length} mashup cache(s) for plugin ${pluginId}`)
-      }
-    }
-    catch (error) {
-      this.logger.error(`Failed to invalidate mashup caches for plugin ${pluginId}: ${error.message}`)
-    }
   }
 
   removeScheduledJob(pluginId: string): void {

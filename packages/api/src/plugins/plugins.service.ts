@@ -1,14 +1,17 @@
 import type { MashupSlot } from '../mashup/entities/mashup-slot.entity'
 import type { AssignPluginToDeviceDto } from './dto/assign-plugin-to-device.dto'
-import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common'
+import type { PluginKindFields } from './plugin-kind-fields'
+import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Screen } from '../screens/screens.entity'
+import generateApikey from '../utils/generateApikey'
 import { DevicePlugin } from './entities/device-plugin.entity'
 import { PluginDataSource } from './entities/plugin-data-source.entity'
 import { PluginField } from './entities/plugin-field.entity'
 import { PluginTemplate } from './entities/plugin-template.entity'
 import { Plugin } from './entities/plugin.entity'
+import { pluginKindFieldViolation } from './plugin-kind-fields'
 import { PluginDataFetcherService } from './services/plugin-data-fetcher.service'
 import { PluginRendererService } from './services/plugin-renderer.service'
 import { PluginSchedulerService } from './services/plugin-scheduler.service'
@@ -57,6 +60,9 @@ export class PluginsService implements OnModuleInit {
     })
 
     for (const plugin of plugins) {
+      if (plugin.kind === 'Webhook') {
+        continue
+      }
       if (plugin.dataSources && plugin.dataSources.length > 0 && plugin.templates && plugin.templates.length > 0) {
         this.scheduler.schedulePlugin(plugin)
         this.logger.log(`Scheduled plugin: ${plugin.name}`)
@@ -160,11 +166,28 @@ export class PluginsService implements OnModuleInit {
       this.validateDataSourceNames(dataSources, fields || [])
     }
 
+    const kind = basicFields.kind || 'Poll'
+
+    this.assertKindFields({
+      kind,
+      dataSources,
+      webhookToken: basicFields.webhookToken,
+      mergeStrategy: basicFields.mergeStrategy,
+      streamLimit: basicFields.streamLimit,
+    })
+
     const pluginToSave = {
       name: basicFields.name,
       description: basicFields.description,
-      kind: basicFields.kind || 'Poll',
+      kind,
       refreshInterval: basicFields.refreshInterval || 15,
+      ...(kind === 'Webhook'
+        ? {
+            webhookToken: generateApikey(),
+            mergeStrategy: basicFields.mergeStrategy,
+            streamLimit: basicFields.streamLimit ?? null,
+          }
+        : {}),
     }
 
     const savedPlugin = await this.pluginRepository.save(pluginToSave)
@@ -241,12 +264,32 @@ export class PluginsService implements OnModuleInit {
     if (!plugin)
       return null
 
-    const { dataSources, templates, fields, ...basicFields } = pluginData as any
+    const { dataSources, templates, fields, webhookToken, webhookPayload, ...basicFields } = pluginData as any
+
+    if ('kind' in basicFields && basicFields.kind !== plugin.kind) {
+      throw new BadRequestException(`A Plugin's Kind is fixed at creation and cannot be changed`)
+    }
 
     if (dataSources !== undefined || fields !== undefined) {
       const finalDataSources = dataSources !== undefined ? dataSources : (plugin.dataSources || [])
       const finalFields = fields !== undefined ? fields : (plugin.fields || [])
       this.validateDataSourceNames(finalDataSources, finalFields)
+    }
+
+    const mergeStrategy = 'mergeStrategy' in basicFields ? basicFields.mergeStrategy : plugin.mergeStrategy
+    const streamLimit = mergeStrategy === 'stream' ? basicFields.streamLimit ?? plugin.streamLimit : basicFields.streamLimit
+
+    this.assertKindFields({
+      kind: plugin.kind,
+      dataSources: dataSources ?? plugin.dataSources,
+      webhookToken: webhookToken === plugin.webhookToken ? undefined : webhookToken,
+      mergeStrategy,
+      streamLimit,
+    })
+
+    if (plugin.kind === 'Webhook') {
+      basicFields.mergeStrategy = mergeStrategy
+      basicFields.streamLimit = streamLimit ?? null
     }
 
     Object.assign(plugin, basicFields)
@@ -351,6 +394,43 @@ export class PluginsService implements OnModuleInit {
       if (field.keyname && seenNames.has(field.keyname)) {
         throw new BadRequestException(`Data source name "${field.keyname}" collides with a plugin field's keyname`)
       }
+    }
+  }
+
+  async clearWebhookPayload(id: string): Promise<Plugin> {
+    const plugin = await this.requireWebhookPlugin(id)
+
+    await this.pluginRepository.update(id, { webhookPayload: null })
+    this.logger.log(`Cleared webhook payload for plugin: ${plugin.name}`)
+
+    return { ...plugin, webhookPayload: null }
+  }
+
+  async regenerateWebhookToken(id: string): Promise<Plugin> {
+    const plugin = await this.requireWebhookPlugin(id)
+    const webhookToken = generateApikey()
+
+    await this.pluginRepository.update(id, { webhookToken })
+    this.logger.log(`Regenerated webhook token for plugin: ${plugin.name}`)
+
+    return { ...plugin, webhookToken }
+  }
+
+  private async requireWebhookPlugin(id: string): Promise<Plugin> {
+    const plugin = await this.pluginRepository.findOneBy({ id })
+    if (!plugin) {
+      throw new NotFoundException(`Plugin ${id} not found`)
+    }
+    if (plugin.kind !== 'Webhook') {
+      throw new BadRequestException(`Plugin "${plugin.name}" is not a Webhook-kind Plugin`)
+    }
+    return plugin
+  }
+
+  private assertKindFields(fields: PluginKindFields): void {
+    const violation = pluginKindFieldViolation(fields)
+    if (violation) {
+      throw new BadRequestException(violation)
     }
   }
 

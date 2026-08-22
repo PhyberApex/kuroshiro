@@ -9,8 +9,8 @@ import type { MigrationInterface, QueryRunner } from 'typeorm'
  * update their template's field references to the namespaced form
  * afterward.
  */
-export class MultiDataSourcePlugins1787090000000 implements MigrationInterface {
-  name = 'MultiDataSourcePlugins1787090000000'
+export class MultiDataSourcePlugins1787110000000 implements MigrationInterface {
+  name = 'MultiDataSourcePlugins1787110000000'
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`ALTER TABLE "plugin_data_source" ADD COLUMN IF NOT EXISTS "name" text`)

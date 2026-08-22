@@ -1,5 +1,5 @@
 import type { Response } from 'express'
-import { Body, Controller, Delete, Get, Param, Patch, Post, Res, UploadedFile, UseInterceptors } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Patch, Post, Res, UploadedFile, UseInterceptors, UsePipes, ValidationPipe } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { diskStorage } from 'multer'
 import { AssignPluginToDeviceDto } from './dto/assign-plugin-to-device.dto'
@@ -38,13 +38,25 @@ export class PluginsController {
   }
 
   @Post()
+  @UsePipes(new ValidationPipe({ transform: true }))
   async create(@Body() createPluginDto: CreatePluginDto) {
     return this.pluginsService.create(createPluginDto)
   }
 
   @Patch(':id')
+  @UsePipes(new ValidationPipe({ transform: true }))
   async update(@Param('id') id: string, @Body() updatePluginDto: UpdatePluginDto) {
     return this.pluginsService.update(id, updatePluginDto)
+  }
+
+  @Delete(':id/webhook-payload')
+  async clearWebhookPayload(@Param('id') id: string) {
+    return this.pluginsService.clearWebhookPayload(id)
+  }
+
+  @Post(':id/webhook-token')
+  async regenerateWebhookToken(@Param('id') id: string) {
+    return this.pluginsService.regenerateWebhookToken(id)
   }
 
   @Delete(':id')

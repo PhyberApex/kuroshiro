@@ -1,3 +1,4 @@
+import type { PluginKind } from '../entities/plugin.entity'
 import { Buffer } from 'node:buffer'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
@@ -67,7 +68,7 @@ interface ParsedDataSource {
 interface ParsedPlugin {
   name: string
   description?: string
-  kind: string
+  kind: PluginKind
   refreshInterval: number
   dataSources: ParsedDataSource[]
   templates: Array<{

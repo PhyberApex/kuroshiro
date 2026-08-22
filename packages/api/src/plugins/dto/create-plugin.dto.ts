@@ -1,4 +1,41 @@
-import { IsBoolean, IsInt, IsOptional, IsString } from 'class-validator'
+import type { ValidationArguments, ValidationOptions, ValidatorConstraintInterface } from 'class-validator'
+import type { MergeStrategy, PluginKind } from '../entities/plugin.entity'
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Min, registerDecorator, ValidatorConstraint } from 'class-validator'
+import { MERGE_STRATEGIES, PLUGIN_KINDS } from '../entities/plugin.entity'
+import { pluginKindFieldViolation } from '../plugin-kind-fields'
+
+@ValidatorConstraint({ name: 'pluginKindFields' })
+class PluginKindFieldsConstraint implements ValidatorConstraintInterface {
+  validate(_value: unknown, args: ValidationArguments): boolean {
+    return pluginKindFieldViolation(this.fieldsOf(args)) === null
+  }
+
+  defaultMessage(args: ValidationArguments): string {
+    return pluginKindFieldViolation(this.fieldsOf(args)) ?? ''
+  }
+
+  private fieldsOf(args: ValidationArguments) {
+    const dto = args.object as CreatePluginDto
+    return {
+      kind: dto.kind,
+      dataSources: dto.dataSources,
+      webhookToken: dto.webhookToken,
+      mergeStrategy: dto.mergeStrategy,
+      streamLimit: dto.streamLimit,
+    }
+  }
+}
+
+function MatchesPluginKind(validationOptions?: ValidationOptions) {
+  return function (object: object, propertyName: string) {
+    registerDecorator({
+      target: object.constructor,
+      propertyName,
+      options: validationOptions,
+      validator: PluginKindFieldsConstraint,
+    })
+  }
+}
 
 export class CreatePluginDto {
   @IsString()
@@ -8,9 +45,9 @@ export class CreatePluginDto {
   @IsString()
   description?: string
 
-  @IsOptional()
-  @IsString()
-  kind?: string
+  @IsIn(PLUGIN_KINDS)
+  @MatchesPluginKind()
+  kind: PluginKind = 'Poll'
 
   @IsOptional()
   @IsInt()
@@ -23,6 +60,19 @@ export class CreatePluginDto {
   @IsOptional()
   @IsInt()
   order?: number
+
+  @IsOptional()
+  @IsString()
+  webhookToken?: string
+
+  @IsOptional()
+  @IsIn(MERGE_STRATEGIES)
+  mergeStrategy?: MergeStrategy
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  streamLimit?: number
 
   @IsOptional()
   dataSources?: any[]
