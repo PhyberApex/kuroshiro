@@ -1,32 +1,23 @@
+import type { Screen } from '../../screens/screens.entity'
+import type { Schedule } from '../schedule.entity'
 import { BadRequestException, NotFoundException } from '@nestjs/common'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { makeSchedule, makeScreen } from '../../test/fixtures'
+import { asRepository, createMockRepository } from '../../test/mockRepository'
 import { ScheduleService } from '../schedule.service'
-
-function createMockRepo() {
-  return {
-    find: vi.fn(),
-    findOne: vi.fn(),
-    create: vi.fn(),
-    save: vi.fn(),
-    remove: vi.fn(),
-  }
-}
 
 describe('scheduleService', () => {
   let service: ScheduleService
-  let scheduleRepo: ReturnType<typeof createMockRepo>
-  let screenRepo: ReturnType<typeof createMockRepo>
+  let scheduleRepo: ReturnType<typeof createMockRepository<Schedule>>
+  let screenRepo: ReturnType<typeof createMockRepository<Screen>>
 
   beforeEach(() => {
-    scheduleRepo = createMockRepo()
-    screenRepo = createMockRepo()
-    service = new ScheduleService(scheduleRepo as any, screenRepo as any)
-    vi.resetAllMocks()
-    scheduleRepo.create.mockImplementation(schedule => schedule)
-    scheduleRepo.save.mockImplementation(schedule => Promise.resolve({ id: 'schedule-1', ...schedule }))
+    scheduleRepo = createMockRepository<Schedule>()
+    screenRepo = createMockRepository<Screen>()
+    service = new ScheduleService(asRepository(scheduleRepo), asRepository(screenRepo))
   })
 
-  const screen = { id: 'screen-1' }
+  const screen = makeScreen({ id: 'screen-1' })
 
   describe('create', () => {
     it('attaches a schedule carrying the requested day and time constraints', async () => {
@@ -77,7 +68,7 @@ describe('scheduleService', () => {
 
     it('refuses a second schedule on an already scheduled screen', async () => {
       screenRepo.findOne.mockResolvedValue(screen)
-      scheduleRepo.findOne.mockResolvedValue({ id: 'schedule-1' })
+      scheduleRepo.findOne.mockResolvedValue(makeSchedule({ id: 'schedule-1' }))
 
       await expect(service.create('screen-1', {})).rejects.toThrow(BadRequestException)
       expect(scheduleRepo.save).not.toHaveBeenCalled()
@@ -119,7 +110,7 @@ describe('scheduleService', () => {
 
   describe('getByScreen', () => {
     it('returns the screen\'s schedule', async () => {
-      const schedule = { id: 'schedule-1', enabled: true }
+      const schedule = makeSchedule({ id: 'schedule-1', enabled: true })
       scheduleRepo.findOne.mockResolvedValue(schedule)
 
       await expect(service.getByScreen('screen-1')).resolves.toBe(schedule)
@@ -134,7 +125,7 @@ describe('scheduleService', () => {
 
   describe('update', () => {
     it('disables a schedule without discarding its day and time rules', async () => {
-      scheduleRepo.findOne.mockResolvedValue({ id: 'schedule-1', enabled: true, weekdays: [1], startTime: '07:00', endTime: '09:00' })
+      scheduleRepo.findOne.mockResolvedValue(makeSchedule({ id: 'schedule-1', enabled: true, weekdays: [1], startTime: '07:00', endTime: '09:00' }))
 
       const result = await service.update('screen-1', { enabled: false })
 
@@ -142,7 +133,7 @@ describe('scheduleService', () => {
     })
 
     it('leaves omitted constraints untouched', async () => {
-      scheduleRepo.findOne.mockResolvedValue({ id: 'schedule-1', enabled: true, weekdays: [1], startDate: '2026-12-01', endDate: '2026-12-25' })
+      scheduleRepo.findOne.mockResolvedValue(makeSchedule({ id: 'schedule-1', enabled: true, weekdays: [1], startDate: '2026-12-01', endDate: '2026-12-25' }))
 
       const result = await service.update('screen-1', { weekdays: [2, 3] })
 
@@ -150,7 +141,7 @@ describe('scheduleService', () => {
     })
 
     it('clears a constraint that is sent as null', async () => {
-      scheduleRepo.findOne.mockResolvedValue({ id: 'schedule-1', enabled: true, startTime: '07:00', endTime: '09:00' })
+      scheduleRepo.findOne.mockResolvedValue(makeSchedule({ id: 'schedule-1', enabled: true, startTime: '07:00', endTime: '09:00' }))
 
       const result = await service.update('screen-1', { startTime: null, endTime: null })
 
@@ -158,7 +149,7 @@ describe('scheduleService', () => {
     })
 
     it('rejects an update that would leave half a time window behind', async () => {
-      scheduleRepo.findOne.mockResolvedValue({ id: 'schedule-1', enabled: true, startTime: '07:00', endTime: '09:00' })
+      scheduleRepo.findOne.mockResolvedValue(makeSchedule({ id: 'schedule-1', enabled: true, startTime: '07:00', endTime: '09:00' }))
 
       await expect(service.update('screen-1', { endTime: null })).rejects.toThrow(BadRequestException)
       expect(scheduleRepo.save).not.toHaveBeenCalled()
@@ -173,7 +164,7 @@ describe('scheduleService', () => {
 
   describe('delete', () => {
     it('removes the schedule so the screen becomes always eligible again', async () => {
-      const schedule = { id: 'schedule-1' }
+      const schedule = makeSchedule({ id: 'schedule-1' })
       scheduleRepo.findOne.mockResolvedValue(schedule)
 
       await service.delete('screen-1')

@@ -7,10 +7,4 @@ export default antfu(
       'ts/no-explicit-any': 'error',
     },
   },
-  {
-    files: ['**/__test__/**', '**/__tests__/**', '**/*.spec.ts'],
-    rules: {
-      'ts/no-explicit-any': 'warn',
-    },
-  },
 )

@@ -1,7 +1,9 @@
+import type { ConfigService } from '@nestjs/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { GRAY_16, V2 } from '../../test/mockDeviceModelsService'
+import { asService } from '../../test/mockService'
 import { FALLBACK_SCREEN_TEMPLATE_VERSION } from '../fallback-screen-templates'
 import { FallbackScreensService } from '../fallback-screens.service'
-import { GRAY_16, V2 } from './mockDeviceModelsService'
 
 const { statMock, renderHtmlToPng } = vi.hoisted(() => ({
   statMock: vi.fn(),
@@ -25,7 +27,7 @@ describe('fallbackScreensService', () => {
 
   beforeEach(() => {
     vi.resetAllMocks()
-    service = new FallbackScreensService({ get: () => 'http://api' } as any)
+    service = new FallbackScreensService(asService<ConfigService>({ get: () => 'http://api' }))
   })
 
   it('generates the placeholder for the target when it does not exist yet', async () => {

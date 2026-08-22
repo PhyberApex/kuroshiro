@@ -1,9 +1,10 @@
 import type { Schedule } from '../schedule.entity'
 import { describe, expect, it } from 'vitest'
+import { makeSchedule } from '../../test/fixtures'
 import { isScheduleEligible } from '../schedule-eligibility'
 
 function schedule(overrides: Partial<Schedule>): Schedule {
-  return { enabled: true, ...overrides } as Schedule
+  return makeSchedule(overrides)
 }
 
 // Moments are written without a zone so they parse as server-local time.
@@ -85,7 +86,12 @@ describe('isScheduleEligible', () => {
     })
 
     it('accepts dates stored as Date objects', () => {
-      const stored = schedule({ startDate: new Date('2026-12-01T00:00:00') as any, endDate: new Date('2026-12-25T00:00:00') as any })
+      const stored = schedule({
+        // @ts-expect-error Postgres can return date columns as Date objects despite the declared string type
+        startDate: new Date('2026-12-01T00:00:00'),
+        // @ts-expect-error Postgres can return date columns as Date objects despite the declared string type
+        endDate: new Date('2026-12-25T00:00:00'),
+      })
       expect(isScheduleEligible(stored, new Date('2026-12-13T12:00:00'))).toBe(true)
       expect(isScheduleEligible(stored, new Date('2026-12-26T12:00:00'))).toBe(false)
     })

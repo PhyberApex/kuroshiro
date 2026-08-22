@@ -1,34 +1,36 @@
-import type { Plugin } from '../entities/plugin.entity'
+import type { MashupSlot } from '../../mashup/entities/mashup-slot.entity'
+import type { Screen } from '../../screens/screens.entity'
 import type { PluginRendererService } from '../services/plugin-renderer.service'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeMashupConfiguration, makeMashupSlot, makePlugin, makePluginTemplate, makeScreen } from '../../test/fixtures'
+import { asRepository, createMockRepository } from '../../test/mockRepository'
+import { asService, injectPrivate } from '../../test/mockService'
 import { PluginRenderCacheService } from '../services/plugin-render-cache.service'
 
 describe('pluginRenderCacheService', () => {
   let service: PluginRenderCacheService
-  let mockRenderer: PluginRendererService
-  let mockScreenRepo: any
-  let mockMashupSlotRepo: any
+  let mockRenderer: { render: ReturnType<typeof vi.fn> }
+  let mockScreenRepo: ReturnType<typeof createMockRepository<Screen>> & { manager: { getRepository: ReturnType<typeof vi.fn> } }
+  let mockMashupSlotRepo: ReturnType<typeof createMockRepository<MashupSlot>>
 
-  const plugin = {
+  const plugin = makePlugin({
     id: 'plugin-1',
-    templates: [{ layout: 'full', liquidMarkup: '{{ data }}' }],
-  } as unknown as Plugin
+    templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '{{ data }}' })],
+  })
 
   beforeEach(() => {
     mockRenderer = {
       render: vi.fn().mockResolvedValue('<div>rendered</div>'),
-    } as any
-
-    mockMashupSlotRepo = {
-      find: vi.fn().mockResolvedValue([]),
     }
 
-    mockScreenRepo = {
-      update: vi.fn(),
+    mockMashupSlotRepo = createMockRepository<MashupSlot>()
+    mockMashupSlotRepo.find.mockResolvedValue([])
+
+    mockScreenRepo = Object.assign(createMockRepository<Screen>(), {
       manager: { getRepository: vi.fn(() => mockMashupSlotRepo) },
-    }
+    })
 
-    service = new PluginRenderCacheService(mockRenderer, mockScreenRepo)
+    service = new PluginRenderCacheService(asService<PluginRendererService>(mockRenderer), asRepository(mockScreenRepo))
   })
 
   it('renders the primary template and caches it to every screen of the plugin', async () => {
@@ -42,18 +44,18 @@ describe('pluginRenderCacheService', () => {
   })
 
   it('does nothing when the plugin has no template', async () => {
-    await service.renderAndCache({ ...plugin, templates: [] } as unknown as Plugin, {})
+    await service.renderAndCache(makePlugin({ ...plugin, templates: [] }), {})
 
     expect(mockRenderer.render).not.toHaveBeenCalled()
     expect(mockScreenRepo.update).not.toHaveBeenCalled()
   })
 
   it('invalidates mashup caches when plugin updates', async () => {
-    mockMashupSlotRepo.find = vi.fn().mockResolvedValue([
-      { id: 'slot-1', mashupConfiguration: { screen: { id: 'screen-1' } } },
-      { id: 'slot-2', mashupConfiguration: { screen: { id: 'screen-2' } } },
+    mockMashupSlotRepo.find.mockResolvedValue([
+      makeMashupSlot({ id: 'slot-1', mashupConfiguration: makeMashupConfiguration({ screen: makeScreen({ id: 'screen-1' }) }) }),
+      makeMashupSlot({ id: 'slot-2', mashupConfiguration: makeMashupConfiguration({ screen: makeScreen({ id: 'screen-2' }) }) }),
     ])
-    ;(service as any).mashupSlotRepository = mockMashupSlotRepo
+    injectPrivate(service, 'mashupSlotRepository', asRepository(mockMashupSlotRepo))
 
     await service.invalidateMashupCaches('plugin-1')
 
@@ -72,7 +74,7 @@ describe('pluginRenderCacheService', () => {
   })
 
   it('does not fail if mashupSlotRepository not available', async () => {
-    ;(service as any).mashupSlotRepository = null
+    injectPrivate(service, 'mashupSlotRepository', null)
 
     await expect(service.invalidateMashupCaches('plugin-1')).resolves.toBeUndefined()
     expect(mockScreenRepo.update).not.toHaveBeenCalled()

@@ -4,7 +4,7 @@ import * as yaml from 'js-yaml'
 import { describe, expect, it } from 'vitest'
 import { PluginImporterService } from '../services/plugin-importer.service'
 
-function buildFlatRecipeArchive(settings: Record<string, any>, files: Record<string, string> = { 'full.liquid': '<div>{{ source.title }}</div>' }): Buffer {
+function buildFlatRecipeArchive(settings: Record<string, unknown>, files: Record<string, string> = { 'full.liquid': '<div>{{ source.title }}</div>' }): Buffer {
   const zip = new AdmZip()
   zip.addFile('settings.yml', Buffer.from(yaml.dump(settings), 'utf8'))
   for (const [name, content] of Object.entries(files)) {

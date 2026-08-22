@@ -6,46 +6,33 @@ import type { UpdateMashupDto } from '../dto/update-mashup.dto'
 import type { MashupConfiguration } from '../entities/mashup-configuration.entity'
 import type { MashupSlot } from '../entities/mashup-slot.entity'
 import { BadRequestException, NotFoundException } from '@nestjs/common'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { makeDevice, makeMashupConfiguration, makeMashupSlot, makePlugin, makeScreen } from '../../test/fixtures'
+import { asRepository, createMockRepository, whereId } from '../../test/mockRepository'
 import { MashupService } from '../mashup.service'
-
-function createMockRepo() {
-  return {
-    find: vi.fn(),
-    findOne: vi.fn(),
-    findOneBy: vi.fn(),
-    create: vi.fn(),
-    save: vi.fn(),
-    update: vi.fn(),
-    remove: vi.fn(),
-    delete: vi.fn(),
-  }
-}
 
 describe('mashupService', () => {
   let service: MashupService
-  let screenRepo: ReturnType<typeof createMockRepo>
-  let deviceRepo: ReturnType<typeof createMockRepo>
-  let mashupConfigRepo: ReturnType<typeof createMockRepo>
-  let mashupSlotRepo: ReturnType<typeof createMockRepo>
-  let pluginRepo: ReturnType<typeof createMockRepo>
+  let screenRepo: ReturnType<typeof createMockRepository<Screen>>
+  let deviceRepo: ReturnType<typeof createMockRepository<Device>>
+  let mashupConfigRepo: ReturnType<typeof createMockRepository<MashupConfiguration>>
+  let mashupSlotRepo: ReturnType<typeof createMockRepository<MashupSlot>>
+  let pluginRepo: ReturnType<typeof createMockRepository<Plugin>>
 
   beforeEach(() => {
-    screenRepo = createMockRepo()
-    deviceRepo = createMockRepo()
-    mashupConfigRepo = createMockRepo()
-    mashupSlotRepo = createMockRepo()
-    pluginRepo = createMockRepo()
+    screenRepo = createMockRepository<Screen>()
+    deviceRepo = createMockRepository<Device>()
+    mashupConfigRepo = createMockRepository<MashupConfiguration>()
+    mashupSlotRepo = createMockRepository<MashupSlot>()
+    pluginRepo = createMockRepository<Plugin>()
 
     service = new MashupService(
-      screenRepo as any,
-      deviceRepo as any,
-      mashupConfigRepo as any,
-      mashupSlotRepo as any,
-      pluginRepo as any,
+      asRepository(screenRepo),
+      asRepository(deviceRepo),
+      asRepository(mashupConfigRepo),
+      asRepository(mashupSlotRepo),
+      asRepository(pluginRepo),
     )
-
-    vi.resetAllMocks()
   })
 
   describe('create', () => {
@@ -57,29 +44,28 @@ describe('mashupService', () => {
         pluginIds: ['plugin-1', 'plugin-2', 'plugin-3', 'plugin-4'],
       }
 
-      const device = { id: 'device-1' } as Device
+      const device = makeDevice({ id: 'device-1' })
       const plugins = [
-        { id: 'plugin-1' } as Plugin,
-        { id: 'plugin-2' } as Plugin,
-        { id: 'plugin-3' } as Plugin,
-        { id: 'plugin-4' } as Plugin,
+        makePlugin({ id: 'plugin-1' }),
+        makePlugin({ id: 'plugin-2' }),
+        makePlugin({ id: 'plugin-3' }),
+        makePlugin({ id: 'plugin-4' }),
       ]
 
       deviceRepo.findOne.mockResolvedValue(device)
-      pluginRepo.findOne.mockImplementation(({ where }) => {
-        return Promise.resolve(plugins.find(p => p.id === where.id))
-      })
+      pluginRepo.findOne.mockImplementation(async options =>
+        plugins.find(p => p.id === whereId(options)) ?? null)
 
-      const screen = { id: 'screen-1', type: 'mashup', filename: dto.filename, device, order: 1, isActive: false } as Screen
+      const screen = makeScreen({ id: 'screen-1', type: 'mashup', filename: dto.filename, device, order: 1, isActive: false })
       screenRepo.create.mockReturnValue(screen)
       screenRepo.save.mockResolvedValue(screen)
-      screenRepo.update.mockResolvedValue(undefined)
+      screenRepo.update.mockResolvedValue({ raw: [], generatedMaps: [] })
 
-      const config = { id: 'config-1', screen, layout: dto.layout, slots: [] } as unknown as MashupConfiguration
+      const config = makeMashupConfiguration({ id: 'config-1', screen, layout: dto.layout, slots: [] })
       mashupConfigRepo.create.mockReturnValue(config)
       mashupConfigRepo.save.mockResolvedValue(config)
 
-      const slot = { id: 'slot-1' } as MashupSlot
+      const slot = makeMashupSlot({ id: 'slot-1' })
       mashupSlotRepo.create.mockReturnValue(slot)
       mashupSlotRepo.save.mockResolvedValue(slot)
 
@@ -115,7 +101,7 @@ describe('mashupService', () => {
         pluginIds: ['p1', 'p2'], // only 2 plugins, but 2x2 needs 4
       }
 
-      const device = { id: 'device-1' } as Device
+      const device = makeDevice({ id: 'device-1' })
       deviceRepo.findOne.mockResolvedValue(device)
 
       await expect(service.create(dto)).rejects.toThrow(BadRequestException)
@@ -130,13 +116,14 @@ describe('mashupService', () => {
         pluginIds: ['p1', 'p2', 'p3', 'nonexistent'],
       }
 
-      const device = { id: 'device-1' } as Device
+      const device = makeDevice({ id: 'device-1' })
       deviceRepo.findOne.mockResolvedValue(device)
 
-      pluginRepo.findOne.mockImplementation(({ where }) => {
-        if (where.id === 'nonexistent')
-          return Promise.resolve(null)
-        return Promise.resolve({ id: where.id } as Plugin)
+      pluginRepo.findOne.mockImplementation(async (options) => {
+        const id = whereId(options)
+        if (id === 'nonexistent')
+          return null
+        return makePlugin({ id })
       })
 
       await expect(service.create(dto)).rejects.toThrow(NotFoundException)
@@ -151,7 +138,7 @@ describe('mashupService', () => {
         pluginIds: ['p1', 'p2', 'p3', 'p1'], // duplicate p1
       }
 
-      const device = { id: 'device-1' } as Device
+      const device = makeDevice({ id: 'device-1' })
       deviceRepo.findOne.mockResolvedValue(device)
 
       await expect(service.create(dto)).rejects.toThrow(BadRequestException)
@@ -167,22 +154,20 @@ describe('mashupService', () => {
         pluginIds: ['p1', 'p2'],
       }
 
-      const screen = { id: 'screen-1', type: 'mashup', filename: 'Old Name' } as Screen
+      const screen = makeScreen({ id: 'screen-1', type: 'mashup', filename: 'Old Name' })
       screenRepo.findOne.mockResolvedValue(screen)
-      screenRepo.save.mockResolvedValue({ ...screen, filename: dto.filename })
+      screenRepo.save.mockResolvedValue({ ...screen, filename: dto.filename ?? screen.filename })
 
-      const oldSlots = [{ id: 'old-slot-1' }, { id: 'old-slot-2' }] as MashupSlot[]
-      const config = { id: 'config-1', screen, layout: '2x2', slots: oldSlots } as MashupConfiguration
+      const oldSlots = [makeMashupSlot({ id: 'old-slot-1' }), makeMashupSlot({ id: 'old-slot-2' })]
+      const config = makeMashupConfiguration({ id: 'config-1', screen, layout: '2x2', slots: oldSlots })
       mashupConfigRepo.findOne.mockResolvedValue(config)
-      mashupConfigRepo.save.mockResolvedValue({ ...config, layout: dto.layout })
+      mashupConfigRepo.save.mockResolvedValue({ ...config, layout: dto.layout ?? config.layout })
 
-      mashupSlotRepo.remove.mockResolvedValue(undefined)
+      mashupSlotRepo.remove.mockResolvedValue([])
 
-      pluginRepo.findOne.mockImplementation(({ where }) => {
-        return Promise.resolve({ id: where.id } as Plugin)
-      })
+      pluginRepo.findOne.mockImplementation(async options => makePlugin({ id: whereId(options) }))
 
-      const slot = { id: 'slot-1' } as MashupSlot
+      const slot = makeMashupSlot({ id: 'slot-1' })
       mashupSlotRepo.create.mockReturnValue(slot)
       mashupSlotRepo.save.mockResolvedValue(slot)
 
@@ -202,14 +187,14 @@ describe('mashupService', () => {
 
   describe('delete', () => {
     it('should delete a mashup and its configuration', async () => {
-      const screen = { id: 'screen-1', type: 'mashup' } as Screen
+      const screen = makeScreen({ id: 'screen-1', type: 'mashup' })
       screenRepo.findOne.mockResolvedValue(screen)
 
-      const config = { id: 'config-1', screen } as MashupConfiguration
+      const config = makeMashupConfiguration({ id: 'config-1', screen })
       mashupConfigRepo.findOne.mockResolvedValue(config)
 
-      mashupConfigRepo.remove.mockResolvedValue(undefined)
-      screenRepo.remove.mockResolvedValue(undefined)
+      mashupConfigRepo.remove.mockResolvedValue(config)
+      screenRepo.remove.mockResolvedValue(screen)
 
       await expect(service.delete('screen-1')).resolves.toBeUndefined()
       expect(mashupConfigRepo.remove).toHaveBeenCalledWith(config)
@@ -225,14 +210,14 @@ describe('mashupService', () => {
 
   describe('getConfiguration', () => {
     it('should return mashup configuration with slots and plugins', async () => {
-      const config = {
+      const config = makeMashupConfiguration({
         id: 'config-1',
         layout: '2x2',
         slots: [
-          { id: 'slot-1', plugin: { id: 'p1', name: 'Plugin 1' } },
-          { id: 'slot-2', plugin: { id: 'p2', name: 'Plugin 2' } },
+          makeMashupSlot({ id: 'slot-1', plugin: makePlugin({ id: 'p1', name: 'Plugin 1' }) }),
+          makeMashupSlot({ id: 'slot-2', plugin: makePlugin({ id: 'p2', name: 'Plugin 2' }) }),
         ],
-      } as MashupConfiguration
+      })
 
       mashupConfigRepo.findOne.mockResolvedValue(config)
 

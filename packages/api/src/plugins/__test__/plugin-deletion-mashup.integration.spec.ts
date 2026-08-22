@@ -1,11 +1,12 @@
 import type { TestingModule } from '@nestjs/testing'
-import type { Repository } from 'typeorm'
 import { BadRequestException } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { getRepositoryToken } from '@nestjs/typeorm'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MashupSlot } from '../../mashup/entities/mashup-slot.entity'
 import { Screen } from '../../screens/screens.entity'
+import { makeMashupConfiguration, makeMashupSlot, makePlugin, makeScreen } from '../../test/fixtures'
+import { createMockRepository } from '../../test/mockRepository'
 import { DevicePlugin } from '../entities/device-plugin.entity'
 import { PluginDataSource } from '../entities/plugin-data-source.entity'
 import { PluginField } from '../entities/plugin-field.entity'
@@ -19,41 +20,31 @@ import { PluginTransformService } from '../services/plugin-transform.service'
 
 describe('plugin Deletion with Mashup Warning Integration', () => {
   let pluginsService: PluginsService
-  let pluginRepo: Repository<Plugin>
-  let devicePluginRepo: Repository<DevicePlugin>
-  let mashupSlotRepo: Repository<MashupSlot>
+  let pluginRepo: ReturnType<typeof createMockRepository<Plugin>> & { manager: { getRepository: (entity: string) => unknown } }
+  let devicePluginRepo: ReturnType<typeof createMockRepository<DevicePlugin>>
+  let mashupSlotRepo: ReturnType<typeof createMockRepository<MashupSlot>>
 
   beforeEach(async () => {
-    const mockPlugin = {
-      id: 'plugin-1',
-      name: 'Weather Plugin',
-    }
+    const mockPlugin = makePlugin({ id: 'plugin-1', name: 'Weather Plugin' })
 
     const mockScheduler = {
       removeScheduledJob: vi.fn(),
     }
 
+    mashupSlotRepo = createMockRepository<MashupSlot>()
+
     pluginRepo = {
-      findOne: vi.fn().mockResolvedValue(mockPlugin),
-      findOneBy: vi.fn().mockResolvedValue(mockPlugin),
-      remove: vi.fn().mockResolvedValue(undefined),
+      ...createMockRepository<Plugin>(),
       manager: {
-        getRepository: vi.fn((entity: string) => {
-          if (entity === 'MashupSlot')
-            return mashupSlotRepo
-          return null
-        }),
+        getRepository: (entity: string) => entity === 'MashupSlot' ? mashupSlotRepo : null,
       },
-    } as any
+    }
+    pluginRepo.findOne.mockResolvedValue(mockPlugin)
+    pluginRepo.findOneBy.mockResolvedValue(mockPlugin)
+    pluginRepo.remove.mockResolvedValue(mockPlugin)
 
-    devicePluginRepo = {
-      find: vi.fn().mockResolvedValue([]),
-      remove: vi.fn().mockResolvedValue(undefined),
-    } as any
-
-    mashupSlotRepo = {
-      find: vi.fn(),
-    } as any
+    devicePluginRepo = createMockRepository<DevicePlugin>()
+    devicePluginRepo.find.mockResolvedValue([])
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -112,32 +103,26 @@ describe('plugin Deletion with Mashup Warning Integration', () => {
   })
 
   it.skip('should throw error when deleting plugin used in mashups without force flag', async () => {
-    mashupSlotRepo.find = vi.fn().mockResolvedValue([
-      {
+    mashupSlotRepo.find.mockResolvedValue([
+      makeMashupSlot({
         id: 'slot-1',
-        mashupConfiguration: {
-          screen: {
-            id: 'screen-1',
-            filename: 'Dashboard',
-          } as Screen,
-        },
-      },
+        mashupConfiguration: makeMashupConfiguration({
+          screen: makeScreen({ id: 'screen-1', filename: 'Dashboard' }),
+        }),
+      }),
     ])
 
     await expect(pluginsService.remove('plugin-1', false)).rejects.toThrow(BadRequestException)
   })
 
   it.skip('should allow deletion with force flag even when used in mashups', async () => {
-    mashupSlotRepo.find = vi.fn().mockResolvedValue([
-      {
+    mashupSlotRepo.find.mockResolvedValue([
+      makeMashupSlot({
         id: 'slot-1',
-        mashupConfiguration: {
-          screen: {
-            id: 'screen-1',
-            filename: 'Dashboard',
-          } as Screen,
-        },
-      },
+        mashupConfiguration: makeMashupConfiguration({
+          screen: makeScreen({ id: 'screen-1', filename: 'Dashboard' }),
+        }),
+      }),
     ])
 
     const result = await pluginsService.remove('plugin-1', true)
@@ -147,25 +132,19 @@ describe('plugin Deletion with Mashup Warning Integration', () => {
   })
 
   it('should return mashup usage information when checking plugin', async () => {
-    mashupSlotRepo.find = vi.fn().mockResolvedValue([
-      {
+    mashupSlotRepo.find.mockResolvedValue([
+      makeMashupSlot({
         id: 'slot-1',
-        mashupConfiguration: {
-          screen: {
-            id: 'screen-1',
-            filename: 'Dashboard',
-          } as Screen,
-        },
-      },
-      {
+        mashupConfiguration: makeMashupConfiguration({
+          screen: makeScreen({ id: 'screen-1', filename: 'Dashboard' }),
+        }),
+      }),
+      makeMashupSlot({
         id: 'slot-2',
-        mashupConfiguration: {
-          screen: {
-            id: 'screen-2',
-            filename: 'Weather Screen',
-          } as Screen,
-        },
-      },
+        mashupConfiguration: makeMashupConfiguration({
+          screen: makeScreen({ id: 'screen-2', filename: 'Weather Screen' }),
+        }),
+      }),
     ])
 
     const usage = await pluginsService.checkPluginUsage('plugin-1')
@@ -178,7 +157,7 @@ describe('plugin Deletion with Mashup Warning Integration', () => {
   })
 
   it.skip('should delete plugin when not used in any mashups', async () => {
-    mashupSlotRepo.find = vi.fn().mockResolvedValue([])
+    mashupSlotRepo.find.mockResolvedValue([])
 
     const result = await pluginsService.remove('plugin-1', false)
 

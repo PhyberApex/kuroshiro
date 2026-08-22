@@ -1,5 +1,5 @@
-import type { Screen } from '../../screens/screens.entity'
 import { describe, expect, it } from 'vitest'
+import { makeScreen } from '../../test/fixtures'
 import { MashupConfiguration } from '../entities/mashup-configuration.entity'
 import { MashupSlot } from '../entities/mashup-slot.entity'
 
@@ -25,7 +25,7 @@ describe('mashupConfiguration entity', () => {
 
   it('should have screen relationship', () => {
     const config = new MashupConfiguration()
-    const mockScreen = { id: 'screen-1' } as Screen
+    const mockScreen = makeScreen({ id: 'screen-1' })
 
     config.screen = mockScreen
 

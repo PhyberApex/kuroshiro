@@ -1,7 +1,11 @@
+import type { ConfigService } from '@nestjs/config'
+import type { PluginRendererService } from '../services/plugin-renderer.service'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { jsonResponse, stubFetch } from '../../test/fetch'
+import { asService } from '../../test/mockService'
 import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service'
 
-globalThis.fetch = vi.fn()
+const mockFetch = stubFetch()
 
 describe('pluginDataFetcherService', () => {
   let service: PluginDataFetcherService
@@ -9,21 +13,18 @@ describe('pluginDataFetcherService', () => {
   const mockConfigService = { get: vi.fn().mockReturnValue(false) }
 
   beforeEach(() => {
-    service = new PluginDataFetcherService(mockRenderer as any, mockConfigService as any)
+    service = new PluginDataFetcherService(asService<PluginRendererService>(mockRenderer), asService<ConfigService>(mockConfigService))
     vi.clearAllMocks()
     mockConfigService.get.mockReturnValue(false)
   })
 
   it('fetches data from a GET endpoint', async () => {
     const mockData = { temperature: 25, condition: 'sunny' }
-    ;(globalThis.fetch as any).mockResolvedValue({
-      ok: true,
-      json: async () => mockData,
-    })
+    mockFetch.mockResolvedValue(jsonResponse(mockData))
 
     const result = await service.fetchData('GET', 'https://api.weather.com/data')
 
-    expect(globalThis.fetch).toHaveBeenCalledWith('https://api.weather.com/data', {
+    expect(mockFetch).toHaveBeenCalledWith('https://api.weather.com/data', {
       method: 'GET',
       headers: {},
     })
@@ -33,14 +34,11 @@ describe('pluginDataFetcherService', () => {
   it('fetches data from a POST endpoint with body', async () => {
     const mockData = { success: true }
     const body = { location: 'Tokyo', units: 'metric' }
-    ;(globalThis.fetch as any).mockResolvedValue({
-      ok: true,
-      json: async () => mockData,
-    })
+    mockFetch.mockResolvedValue(jsonResponse(mockData))
 
     const result = await service.fetchData('POST', 'https://api.example.com/webhook', {}, body)
 
-    expect(globalThis.fetch).toHaveBeenCalledWith('https://api.example.com/webhook', {
+    expect(mockFetch).toHaveBeenCalledWith('https://api.example.com/webhook', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -51,25 +49,18 @@ describe('pluginDataFetcherService', () => {
   it('includes custom headers in request', async () => {
     const mockData = { data: 'test' }
     const headers = { 'Authorization': 'Bearer token123', 'X-Custom': 'value' }
-    ;(globalThis.fetch as any).mockResolvedValue({
-      ok: true,
-      json: async () => mockData,
-    })
+    mockFetch.mockResolvedValue(jsonResponse(mockData))
 
     await service.fetchData('GET', 'https://api.example.com', headers)
 
-    expect(globalThis.fetch).toHaveBeenCalledWith('https://api.example.com', {
+    expect(mockFetch).toHaveBeenCalledWith('https://api.example.com', {
       method: 'GET',
       headers,
     })
   })
 
   it('throws error when fetch fails', async () => {
-    ;(globalThis.fetch as any).mockResolvedValue({
-      ok: false,
-      status: 404,
-      statusText: 'Not Found',
-    })
+    mockFetch.mockResolvedValue(jsonResponse(null, { ok: false, status: 404 }))
 
     await expect(
       service.fetchData('GET', 'https://api.example.com/notfound'),
@@ -77,7 +68,7 @@ describe('pluginDataFetcherService', () => {
   })
 
   it('throws error when network fails', async () => {
-    ;(globalThis.fetch as any).mockRejectedValue(new Error('Network error'))
+    mockFetch.mockRejectedValue(new Error('Network error'))
 
     await expect(
       service.fetchData('GET', 'https://api.example.com'),
@@ -90,10 +81,7 @@ describe('pluginDataFetcherService', () => {
       array: [1, 2, 3],
       string: 'test',
     }
-    ;(globalThis.fetch as any).mockResolvedValue({
-      ok: true,
-      json: async () => complexData,
-    })
+    mockFetch.mockResolvedValue(jsonResponse(complexData))
 
     const result = await service.fetchData('GET', 'https://api.example.com')
     expect(result).toEqual(complexData)

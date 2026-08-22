@@ -1,7 +1,12 @@
-import type { MockDeviceModelsService, MockFallbackScreensService } from '../../device-models/__test__/mockDeviceModelsService'
+import type { DeviceModelsService } from '../../device-models/device-models.service'
+import type { FallbackScreensService } from '../../device-models/fallback-screens.service'
 import type { Device } from '../devices.entity'
+import type { SetupRequestHeadersDto } from '../dto/setup-request-headers.dto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createMockDeviceModelsService, createMockFallbackScreensService, OG_PLUS, primeMockDeviceModelsService, primeMockFallbackScreensService, V2 } from '../../device-models/__test__/mockDeviceModelsService'
+import { makeDevice } from '../../test/fixtures'
+import { createMockDeviceModelsService, createMockFallbackScreensService, OG_PLUS, primeMockDeviceModelsService, primeMockFallbackScreensService, V2 } from '../../test/mockDeviceModelsService'
+import { asRepository, createMockRepository } from '../../test/mockRepository'
+import { asService } from '../../test/mockService'
 import { DeviceSetupService } from '../setup.service'
 
 vi.mock('../../utils/generateApikey', () => ({
@@ -11,38 +16,30 @@ vi.mock('../../utils/generateFriendlyName', () => ({
   default: vi.fn(() => 'mocked-friendly-id'),
 }))
 
-function createMockRepo() {
-  return {
-    findOneBy: vi.fn(),
-    create: vi.fn(),
-    save: vi.fn(),
-  }
-}
-
 describe('deviceSetupService', () => {
   let service: DeviceSetupService
-  let deviceRepo: ReturnType<typeof createMockRepo>
-  let deviceModels: MockDeviceModelsService
-  let fallbackScreens: MockFallbackScreensService
+  let deviceRepo: ReturnType<typeof createMockRepository<Device>>
+  let deviceModels: ReturnType<typeof createMockDeviceModelsService>
+  let fallbackScreens: ReturnType<typeof createMockFallbackScreensService>
 
   beforeEach(() => {
-    deviceRepo = createMockRepo()
+    deviceRepo = createMockRepository<Device>()
     deviceModels = createMockDeviceModelsService()
     fallbackScreens = createMockFallbackScreensService()
     service = new DeviceSetupService(
-      deviceRepo as any,
-      deviceModels as any,
-      fallbackScreens as any,
+      asRepository(deviceRepo),
+      asService<DeviceModelsService>(deviceModels),
+      asService<FallbackScreensService>(fallbackScreens),
     )
     vi.resetAllMocks()
     primeMockDeviceModelsService(deviceModels)
     primeMockFallbackScreensService(fallbackScreens)
   })
 
-  const headers = { id: 'mac' }
+  const headers: SetupRequestHeadersDto = { id: 'mac' }
 
   it('returns existing credentials if device exists', async () => {
-    const device = { apikey: 'existing-key', friendlyId: 'existing-id' } as Device
+    const device = makeDevice({ apikey: 'existing-key', friendlyId: 'existing-id' })
     deviceRepo.findOneBy.mockResolvedValue(device)
     const result = await service.setupDevice(headers)
     expect(result.api_key).toBe('existing-key')
@@ -53,7 +50,7 @@ describe('deviceSetupService', () => {
   })
 
   it('creates new device and returns new credentials if device does not exist', async () => {
-    const newDevice = { id: 'new', mac: 'mac', friendlyId: 'mocked-friendly-id', apikey: 'mocked-api-key' }
+    const newDevice = makeDevice({ id: 'new', mac: 'mac', friendlyId: 'mocked-friendly-id', apikey: 'mocked-api-key', name: 'mocked-friendly-id' })
     deviceRepo.findOneBy.mockResolvedValue(null)
     deviceRepo.create.mockReturnValue(newDevice)
     deviceRepo.save.mockResolvedValue(newDevice)
@@ -76,7 +73,7 @@ describe('deviceSetupService', () => {
   })
 
   it('serves the welcome image converted for the device render target', async () => {
-    deviceRepo.findOneBy.mockResolvedValue({ apikey: 'key', friendlyId: 'id', deviceModel: V2 } as unknown as Device)
+    deviceRepo.findOneBy.mockResolvedValue(makeDevice({ apikey: 'key', friendlyId: 'id', deviceModel: V2 }))
     deviceModels.renderTargetFor.mockResolvedValue({ model: V2, palette: OG_PLUS })
     fallbackScreens.urlFor.mockResolvedValue('http://api/screens/fallback/v2-gray-16/welcome.png')
 
@@ -87,7 +84,7 @@ describe('deviceSetupService', () => {
   })
 
   it('records the reported firmware version and model, and resolves a model when none is assigned', async () => {
-    const device = { apikey: 'key', friendlyId: 'id', deviceModel: null } as unknown as Device
+    const device = makeDevice({ apikey: 'key', friendlyId: 'id', deviceModel: null })
     deviceRepo.findOneBy.mockResolvedValue(device)
     deviceModels.assignResolvedModel.mockResolvedValue(OG_PLUS)
 
@@ -98,7 +95,7 @@ describe('deviceSetupService', () => {
   })
 
   it('leaves an already assigned model alone', async () => {
-    const device = { apikey: 'key', friendlyId: 'id', deviceModel: OG_PLUS } as unknown as Device
+    const device = makeDevice({ apikey: 'key', friendlyId: 'id', deviceModel: OG_PLUS })
     deviceRepo.findOneBy.mockResolvedValue(device)
 
     await service.setupDevice({ id: 'mac', model: 'x' })

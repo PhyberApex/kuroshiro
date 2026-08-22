@@ -1,10 +1,10 @@
-import type { Plugin } from '../entities/plugin.entity'
 import { describe, expect, it } from 'vitest'
+import { makePlugin } from '../../test/fixtures'
 import { PluginField } from '../entities/plugin-field.entity'
 
 describe('pluginField entity', () => {
   it('creates a field with required fields', () => {
-    const plugin = { id: 'plugin-1' } as Plugin
+    const plugin = makePlugin({ id: 'plugin-1' })
 
     const field = new PluginField()
     field.id = 'field-1'

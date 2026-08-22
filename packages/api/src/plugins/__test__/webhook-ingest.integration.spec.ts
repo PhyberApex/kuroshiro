@@ -1,11 +1,14 @@
 import type { TestingModule } from '@nestjs/testing'
+import type { MashupSlot } from '../../mashup/entities/mashup-slot.entity'
+import type { Screen } from '../../screens/screens.entity'
 import type { Plugin } from '../entities/plugin.entity'
 import { UnprocessableEntityException } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { getRepositoryToken } from '@nestjs/typeorm'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { MashupSlot } from '../../mashup/entities/mashup-slot.entity'
-import { Screen } from '../../screens/screens.entity'
+import { MashupSlot as MashupSlotEntity } from '../../mashup/entities/mashup-slot.entity'
+import { Screen as ScreenEntity } from '../../screens/screens.entity'
+import { makeMashupConfiguration, makeMashupSlot, makePlugin, makePluginTemplate, makeScreen } from '../../test/fixtures'
 import { DevicePlugin } from '../entities/device-plugin.entity'
 import { PluginDataSource } from '../entities/plugin-data-source.entity'
 import { PluginField } from '../entities/plugin-field.entity'
@@ -19,11 +22,12 @@ import { PluginSchedulerService } from '../services/plugin-scheduler.service'
 import { PluginTransformService } from '../services/plugin-transform.service'
 import { WebhookIngestService } from '../services/webhook-ingest.service'
 
-function matches(entity: any, where: Record<string, any>): boolean {
+function matches(entity: unknown, where: Record<string, unknown>): boolean {
+  const record = entity as Record<string, unknown>
   return Object.entries(where).every(([key, value]) => {
     if (value && typeof value === 'object' && 'id' in value)
-      return entity[key]?.id === value.id
-    return entity[key] === value
+      return (record[key] as { id?: unknown } | undefined)?.id === (value as { id: unknown }).id
+    return record[key] === value
   })
 }
 
@@ -31,13 +35,13 @@ describe('webhook ingest integration', () => {
   let ingest: WebhookIngestService
   let pluginsService: PluginsService
   let plugin: Plugin
-  let screens: any[]
-  let mashupSlots: any[]
+  let screens: Screen[]
+  let mashupSlots: MashupSlot[]
 
   const template = { layout: 'full', liquidMarkup: 'readings: {{ readings.size }} status: {{ status }}' }
 
   beforeEach(async () => {
-    plugin = {
+    plugin = makePlugin({
       id: 'plugin-1',
       name: 'Sensor Feed',
       kind: 'Webhook',
@@ -46,34 +50,34 @@ describe('webhook ingest integration', () => {
       mergeStrategy: 'standard',
       streamLimit: null,
       webhookPayload: null,
-      templates: [template],
-    } as unknown as Plugin
+      templates: [makePluginTemplate(template)],
+    })
 
     screens = [
-      { id: 'screen-1', plugin: { id: 'plugin-1' }, cachedPluginOutput: 'stale' },
-      { id: 'mashup-screen-1', plugin: null, cachedPluginOutput: 'stale mashup' },
+      makeScreen({ id: 'screen-1', type: 'plugin', plugin: makePlugin({ id: 'plugin-1' }), cachedPluginOutput: 'stale' }),
+      makeScreen({ id: 'mashup-screen-1', type: 'mashup', cachedPluginOutput: 'stale mashup' }),
     ]
 
     mashupSlots = [
-      { id: 'slot-1', plugin: { id: 'plugin-1' }, mashupConfiguration: { screen: { id: 'mashup-screen-1' } } },
+      makeMashupSlot({ id: 'slot-1', plugin: makePlugin({ id: 'plugin-1' }), mashupConfiguration: makeMashupConfiguration({ screen: makeScreen({ id: 'mashup-screen-1' }) }) }),
     ]
 
     const mashupSlotRepo = {
-      find: vi.fn(async ({ where }: any) => mashupSlots.filter(slot => matches(slot, where))),
+      find: vi.fn(async ({ where }: { where: Record<string, unknown> }) => mashupSlots.filter(slot => matches(slot, where))),
     }
 
     const screenRepo = {
-      update: vi.fn(async (where: any, partial: any) => {
+      update: vi.fn(async (where: Record<string, unknown>, partial: Partial<Screen>) => {
         screens.filter(screen => matches(screen, where)).forEach(screen => Object.assign(screen, partial))
       }),
       manager: { getRepository: (name: string) => (name === 'MashupSlot' ? mashupSlotRepo : null) },
     }
 
     const pluginRepo = {
-      findOne: vi.fn(async ({ where }: any) => (matches(plugin, where) ? plugin : null)),
-      findOneBy: vi.fn(async (where: any) => (matches(plugin, where) ? plugin : null)),
-      save: vi.fn(async (entity: any) => entity),
-      update: vi.fn(async (id: string, partial: any) => {
+      findOne: vi.fn(async ({ where }: { where: Record<string, unknown> }) => (matches(plugin, where) ? plugin : null)),
+      findOneBy: vi.fn(async (where: Record<string, unknown>) => (matches(plugin, where) ? plugin : null)),
+      save: vi.fn(async (entity: Plugin) => entity),
+      update: vi.fn(async (id: string, partial: Partial<Plugin>) => {
         if (id === plugin.id)
           Object.assign(plugin, partial)
       }),
@@ -88,11 +92,11 @@ describe('webhook ingest integration', () => {
         PluginsService,
         { provide: getRepositoryToken(PluginEntity), useValue: pluginRepo },
         { provide: getRepositoryToken(DevicePlugin), useValue: {} },
-        { provide: getRepositoryToken(Screen), useValue: screenRepo },
+        { provide: getRepositoryToken(ScreenEntity), useValue: screenRepo },
         { provide: getRepositoryToken(PluginDataSource), useValue: {} },
         { provide: getRepositoryToken(PluginTemplate), useValue: {} },
         { provide: getRepositoryToken(PluginField), useValue: {} },
-        { provide: getRepositoryToken(MashupSlot), useValue: mashupSlotRepo },
+        { provide: getRepositoryToken(MashupSlotEntity), useValue: mashupSlotRepo },
         { provide: PluginDataFetcherService, useValue: {} },
         { provide: PluginTransformService, useValue: {} },
         { provide: PluginSchedulerService, useValue: { schedulePlugin: vi.fn(), removeScheduledJob: vi.fn() } },

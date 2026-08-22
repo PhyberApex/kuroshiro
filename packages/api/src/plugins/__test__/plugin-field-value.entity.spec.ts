@@ -1,14 +1,12 @@
-import type { Device } from '../../devices/devices.entity'
-import type { PluginField } from '../entities/plugin-field.entity'
-import type { Plugin } from '../entities/plugin.entity'
 import { describe, expect, it } from 'vitest'
+import { makeDevice, makePlugin, makePluginField } from '../../test/fixtures'
 import { PluginFieldValue } from '../entities/plugin-field-value.entity'
 
 describe('pluginFieldValue entity', () => {
   it('creates a field value with required fields', () => {
-    const plugin = { id: 'plugin-1' } as Plugin
-    const field = { id: 'field-1' } as PluginField
-    const device = { id: 'device-1' } as Device
+    const plugin = makePlugin({ id: 'plugin-1' })
+    const field = makePluginField({ id: 'field-1' })
+    const device = makeDevice({ id: 'device-1' })
 
     const fieldValue = new PluginFieldValue()
     fieldValue.id = 'value-1'
@@ -38,10 +36,10 @@ describe('pluginFieldValue entity', () => {
   })
 
   it('allows same field to have different values per device', () => {
-    const plugin = { id: 'plugin-1' } as Plugin
-    const field = { id: 'location' } as PluginField
-    const device1 = { id: 'device-1' } as Device
-    const device2 = { id: 'device-2' } as Device
+    const plugin = makePlugin({ id: 'plugin-1' })
+    const field = makePluginField({ id: 'location' })
+    const device1 = makeDevice({ id: 'device-1' })
+    const device2 = makeDevice({ id: 'device-2' })
 
     const value1 = new PluginFieldValue()
     value1.plugin = plugin

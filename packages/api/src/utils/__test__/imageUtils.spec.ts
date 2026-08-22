@@ -1,11 +1,15 @@
 import type { Logger } from '@nestjs/common'
 import { Buffer } from 'node:buffer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeDeviceModel, makePalette } from '../../test/fixtures'
+import { asService } from '../../test/mockService'
 import { convertToPng, downloadImage, paletteConversion } from '../imageUtils'
+
+type ExecFileCallback = (error: Error | null, stdout: string, stderr: string) => void
 
 const mockExecFile = vi.fn()
 const mockFd = {
-  read: vi.fn().mockImplementation((buf: any) => {
+  read: vi.fn().mockImplementation((buf: Buffer) => {
     buf[0] = 0xFF
     buf[1] = 0xD8
     buf[2] = 0xFF
@@ -23,7 +27,7 @@ const mockFs = vi.hoisted(() => ({
 }))
 
 vi.mock('node:child_process', () => ({
-  execFile: (file: string, args: string[], callback: (error: Error | null, stdout: string, stderr: string) => void) => {
+  execFile: (file: string, args: string[], callback: ExecFileCallback) => {
     mockExecFile(file, args, callback)
   },
 }))
@@ -38,12 +42,12 @@ describe('imageUtils', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockLogger = {
+    mockLogger = asService<Logger>({
       log: vi.fn(),
       error: vi.fn(),
-    } as unknown as Logger
+    })
     mockFs.promises.open.mockResolvedValue(mockFd)
-    mockFd.read.mockImplementation((buf: any) => {
+    mockFd.read.mockImplementation((buf: Buffer) => {
       buf[0] = 0xFF
       buf[1] = 0xD8
       buf[2] = 0xFF
@@ -56,15 +60,15 @@ describe('imageUtils', () => {
     vi.resetAllMocks()
   })
 
-  const OG_PLUS = { name: 'og_plus', width: 800, height: 480, rotation: 0, offsetX: 0, offsetY: 0 } as any
-  const GRAY_4 = { id: 'gray-4', grays: 4, colors: null, frameworkClass: 'screen--2bit' } as any
-  const BW = { id: 'bw', grays: 2, colors: null, frameworkClass: 'screen--1bit' } as any
-  const GRAY_16 = { id: 'gray-16', grays: 16, colors: null, frameworkClass: 'screen--4bit' } as any
-  const COLOR_6A = { id: 'color-6a', grays: 2, colors: ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#000000', '#FFFFFF'], frameworkClass: 'screen--color-6a' } as any
-  const COLOR_24 = { id: 'color-24bit', grays: 2, colors: null, frameworkClass: 'screen--color-full' } as any
+  const OG_PLUS = makeDeviceModel({ name: 'og_plus', width: 800, height: 480, rotation: 0, offsetX: 0, offsetY: 0 })
+  const GRAY_4 = makePalette({ id: 'gray-4', grays: 4, colors: null, frameworkClass: 'screen--2bit' })
+  const BW = makePalette({ id: 'bw', grays: 2, colors: null, frameworkClass: 'screen--1bit' })
+  const GRAY_16 = makePalette({ id: 'gray-16', grays: 16, colors: null, frameworkClass: 'screen--4bit' })
+  const COLOR_6A = makePalette({ id: 'color-6a', grays: 2, colors: ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#000000', '#FFFFFF'], frameworkClass: 'screen--color-6a' })
+  const COLOR_24 = makePalette({ id: 'color-24bit', grays: 2, colors: null, frameworkClass: 'screen--color-full' })
 
   function magickSucceeds() {
-    mockExecFile.mockImplementation((_file: string, _args: string[], callback: any) => {
+    mockExecFile.mockImplementation((_file: string, _args: string[], callback: ExecFileCallback) => {
       callback(null, '', '')
     })
   }
@@ -74,7 +78,7 @@ describe('imageUtils', () => {
       expect(paletteConversion(BW)).toEqual({ kind: 'gray', levels: 2, bitDepth: 1 })
       expect(paletteConversion(GRAY_4)).toEqual({ kind: 'gray', levels: 4, bitDepth: 2 })
       expect(paletteConversion(GRAY_16)).toEqual({ kind: 'gray', levels: 16, bitDepth: 4 })
-      expect(paletteConversion({ id: 'gray-256', grays: 256, colors: null, frameworkClass: 'screen--4bit' } as any)).toEqual({ kind: 'gray', levels: 256, bitDepth: 8 })
+      expect(paletteConversion(makePalette({ id: 'gray-256', grays: 256, colors: null, frameworkClass: 'screen--4bit' }))).toEqual({ kind: 'gray', levels: 256, bitDepth: 8 })
     })
 
     it('maps colour palettes to their colour list and full-colour palettes to untouched colour', () => {
@@ -175,7 +179,7 @@ describe('imageUtils', () => {
     it('fits to the model size, rotates, then shifts the offset back into a full-canvas frame', async () => {
       mockFs.existsSync.mockReturnValue(true)
       magickSucceeds()
-      const kindle = { ...OG_PLUS, name: 'kindle', width: 1400, height: 840, rotation: 90, offsetX: 75, offsetY: 25 }
+      const kindle = makeDeviceModel({ ...OG_PLUS, name: 'kindle', width: 1400, height: 840, rotation: 90, offsetX: 75, offsetY: 25 })
 
       await convertToPng('/input.jpg', '/output.png', { model: kindle, palette: GRAY_4 }, mockLogger)
 
@@ -202,7 +206,7 @@ describe('imageUtils', () => {
     it('keeps the offset frame at the unrotated model size when rotation does not swap dimensions', async () => {
       mockFs.existsSync.mockReturnValue(true)
       magickSucceeds()
-      const shifted = { ...OG_PLUS, name: 'shifted', width: 1400, height: 840, rotation: 180, offsetX: 10, offsetY: 5 }
+      const shifted = makeDeviceModel({ ...OG_PLUS, name: 'shifted', width: 1400, height: 840, rotation: 180, offsetX: 10, offsetY: 5 })
 
       await convertToPng('/input.jpg', '/output.png', { model: shifted, palette: GRAY_4 }, mockLogger)
 
@@ -212,7 +216,7 @@ describe('imageUtils', () => {
 
     it('handles ImageMagick errors during colormap creation', async () => {
       mockFs.existsSync.mockReturnValue(false)
-      mockExecFile.mockImplementation((_file: string, args: string[], callback: any) => {
+      mockExecFile.mockImplementation((_file: string, args: string[], callback: ExecFileCallback) => {
         if (args.some(a => a.includes('colormap'))) {
           callback(new Error('ImageMagick failed'), '', 'ImageMagick error')
         }
@@ -227,7 +231,7 @@ describe('imageUtils', () => {
 
     it('handles ImageMagick errors during conversion', async () => {
       mockFs.existsSync.mockReturnValue(true)
-      mockExecFile.mockImplementation((_file: string, _args: string[], callback: any) => {
+      mockExecFile.mockImplementation((_file: string, _args: string[], callback: ExecFileCallback) => {
         callback(new Error('Conversion failed'), '', 'conversion stderr')
       })
 
@@ -237,7 +241,7 @@ describe('imageUtils', () => {
     })
 
     it('rejects unknown image formats', async () => {
-      mockFd.read.mockImplementation((buf: any) => {
+      mockFd.read.mockImplementation((buf: Buffer) => {
         buf[0] = 0x00
         buf[1] = 0x01
         return Promise.resolve()

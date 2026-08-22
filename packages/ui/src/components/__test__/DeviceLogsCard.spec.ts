@@ -1,9 +1,11 @@
+import type { useLogStore } from '@/stores/logs'
 import type { LogEntry } from '@/types.ts'
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import rop from 'resize-observer-polyfill'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import vuetify from '../../plugins/vuetify'
+import { asStore } from '../../test/mockStore'
 import DeviceLogsCard from '../DeviceLogsCard.vue'
 
 globalThis.ResizeObserver = rop
@@ -20,7 +22,7 @@ globalThis.window.matchMedia = globalThis.window.matchMedia || function () {
 }
 
 // Use a local variable to control the mock return value
-let logStoreMock: any
+let logStoreMock: ReturnType<typeof useLogStore>
 vi.mock('@/stores/logs', () => ({
   useLogStore: () => logStoreMock,
 }))
@@ -33,12 +35,12 @@ vi.mock('@/stores/device', () => ({
 
 describe('deviceLogsCard', () => {
   beforeEach(() => {
-    logStoreMock = {
+    logStoreMock = asStore<ReturnType<typeof useLogStore>>({
       error: '',
       logEntries: [] as LogEntry[],
       loading: false,
       clearLogs: vi.fn(),
-    }
+    })
   })
 
   it('renders without error and shows empty state', () => {

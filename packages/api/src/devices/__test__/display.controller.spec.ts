@@ -1,6 +1,7 @@
 import type { DeviceDisplayService } from '../display.service'
 import { BadRequestException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { asService } from '../../test/mockService'
 import { Display } from '../display'
 import { DisplayController } from '../display.controller'
 
@@ -10,7 +11,7 @@ describe('displayController (unit)', () => {
 
   beforeEach(() => {
     service = { getCurrentImage: vi.fn(), getCurrentImageWithoutProgressing: vi.fn() }
-    controller = new DisplayController(service as unknown as DeviceDisplayService)
+    controller = new DisplayController(asService<DeviceDisplayService>(service))
   })
 
   it('display should return display from service', async () => {
@@ -27,7 +28,7 @@ describe('displayController (unit)', () => {
       update_firmware: false,
     })
     service.getCurrentImage.mockResolvedValue(display)
-    const result = await controller.getCurrentImage(headers as any)
+    const result = await controller.getCurrentImage(headers)
     expect(service.getCurrentImage).toHaveBeenCalledWith(headers)
     expect(result).toBe(display)
   })
@@ -37,7 +38,8 @@ describe('displayController (unit)', () => {
     service.getCurrentImage.mockImplementation(() => {
       throw new BadRequestException('Missing headers')
     })
-    await expect(controller.getCurrentImage({} as any)).rejects.toThrow(BadRequestException)
+    // @ts-expect-error deliberately missing the required id/access-token headers
+    await expect(controller.getCurrentImage({})).rejects.toThrow(BadRequestException)
   })
 
   it('current_screen should return display from service', async () => {
@@ -54,7 +56,7 @@ describe('displayController (unit)', () => {
       update_firmware: false,
     })
     service.getCurrentImageWithoutProgressing.mockResolvedValue(display)
-    const result = await controller.getCurrentImageWithoutProgressing(headers as any)
+    const result = await controller.getCurrentImageWithoutProgressing(headers)
     expect(service.getCurrentImageWithoutProgressing).toHaveBeenCalledWith(headers)
     expect(result).toBe(display)
   })
@@ -64,6 +66,7 @@ describe('displayController (unit)', () => {
     service.getCurrentImageWithoutProgressing.mockImplementation(() => {
       throw new BadRequestException('Missing headers')
     })
-    await expect(controller.getCurrentImageWithoutProgressing({} as any)).rejects.toThrow(BadRequestException)
+    // @ts-expect-error deliberately missing the required id/access-token headers
+    await expect(controller.getCurrentImageWithoutProgressing({})).rejects.toThrow(BadRequestException)
   })
 })

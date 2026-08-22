@@ -1,6 +1,10 @@
+import type { FirmwareSyncService } from '../firmware-sync.service'
+import type { FirmwareService } from '../firmware.service'
 import buffer from 'node:buffer'
 import { BadRequestException, ServiceUnavailableException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeMulterFile } from '../../test/fs'
+import { asService } from '../../test/mockService'
 import { FirmwareController } from '../firmware.controller'
 
 describe('firmwareController', () => {
@@ -11,7 +15,7 @@ describe('firmwareController', () => {
   beforeEach(() => {
     firmwareService = { findAll: vi.fn(), upload: vi.fn(), delete: vi.fn() }
     syncService = { sync: vi.fn() }
-    controller = new FirmwareController(firmwareService as any, syncService as any)
+    controller = new FirmwareController(asService<FirmwareService>(firmwareService), asService<FirmwareSyncService>(syncService))
   })
 
   it('lists firmware', async () => {
@@ -32,10 +36,11 @@ describe('firmwareController', () => {
   })
 
   describe('upload', () => {
-    const file = { buffer: buffer.Buffer.from('x'), originalname: 'og.bin', mimetype: 'application/octet-stream', size: 1 } as Express.Multer.File
+    const file = makeMulterFile({ buffer: buffer.Buffer.from('x'), originalname: 'og.bin', mimetype: 'application/octet-stream', size: 1 })
 
     it('rejects when no file is provided', async () => {
-      await expect(controller.upload(undefined as any, '1.0.0')).rejects.toThrow(BadRequestException)
+      // @ts-expect-error deliberately omitting the required file
+      await expect(controller.upload(undefined, '1.0.0')).rejects.toThrow(BadRequestException)
       expect(firmwareService.upload).not.toHaveBeenCalled()
     })
 

@@ -357,6 +357,21 @@ async function saveDevice() {
   })
 }
 const nameEditing = ref(false)
+
+defineExpose({
+  selectedModelName,
+  selectedPaletteId,
+  selectedFirmwareId,
+  sleepStartTime,
+  sleepEndTime,
+  pendingSpecialFunction,
+  sleepWindowValid,
+  firmwareOptions,
+  saveDevice,
+  triggerSpecialFunction,
+  triggerReset,
+  triggerFirmwareUpdate,
+})
 </script>
 
 <template>

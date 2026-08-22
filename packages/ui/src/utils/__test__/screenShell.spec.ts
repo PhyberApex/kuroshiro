@@ -1,10 +1,10 @@
-import type { RenderTarget } from '../screenShell'
 import type { DeviceModel, Palette } from '@/types'
 import { describe, expect, it } from 'vitest'
 import { SCREEN_SHELL_FIXTURE_BODY, SCREEN_SHELL_FIXTURE_EXPECTED, SCREEN_SHELL_FIXTURE_MODEL, SCREEN_SHELL_FIXTURE_PALETTE } from '../../../../../test/fixtures/screen-shell.fixture'
+import { asRenderTarget } from '../../test/fixtures'
 import { screenClasses, screenStyle, viewFull, wrapInScreenShell } from '../screenShell'
 
-const fixtureTarget = { model: SCREEN_SHELL_FIXTURE_MODEL, palette: SCREEN_SHELL_FIXTURE_PALETTE } as unknown as RenderTarget
+const fixtureTarget = asRenderTarget({ model: SCREEN_SHELL_FIXTURE_MODEL, palette: SCREEN_SHELL_FIXTURE_PALETTE })
 
 const V2: DeviceModel = {
   name: 'v2',

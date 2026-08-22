@@ -1,9 +1,11 @@
+import type { Mock } from 'vitest'
 import type { Plugin } from '@/types/plugin'
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import rop from 'resize-observer-polyfill'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import vuetify from '../../plugins/vuetify'
+import { jsonResponse, stubFetch } from '../../test/fetch'
 import PluginsOverviewView from '../PluginsOverviewView.vue'
 
 globalThis.ResizeObserver = rop
@@ -27,8 +29,10 @@ vi.mock('vue-router', () => ({
 }))
 
 describe('pluginsOverviewView', () => {
+  let mockFetch: Mock<typeof fetch>
+
   beforeEach(() => {
-    globalThis.fetch = vi.fn()
+    mockFetch = stubFetch()
     mockRouter.push.mockClear()
   })
 
@@ -43,10 +47,7 @@ describe('pluginsOverviewView', () => {
   }
 
   it('renders empty state when no plugins', async () => {
-    ;(globalThis.fetch as any).mockResolvedValue({
-      ok: true,
-      json: async () => [],
-    })
+    mockFetch.mockResolvedValue(jsonResponse([]))
 
     const wrapper = mount(PluginsOverviewView, {
       global: {
@@ -62,10 +63,7 @@ describe('pluginsOverviewView', () => {
   })
 
   it('renders plugin cards when plugins exist', async () => {
-    ;(globalThis.fetch as any).mockResolvedValue({
-      ok: true,
-      json: async () => [mockPlugin],
-    })
+    mockFetch.mockResolvedValue(jsonResponse([mockPlugin]))
 
     const wrapper = mount(PluginsOverviewView, {
       global: {
@@ -80,10 +78,7 @@ describe('pluginsOverviewView', () => {
   })
 
   it('navigates to create plugin on button click', async () => {
-    ;(globalThis.fetch as any).mockResolvedValue({
-      ok: true,
-      json: async () => [],
-    })
+    mockFetch.mockResolvedValue(jsonResponse([]))
 
     const wrapper = mount(PluginsOverviewView, {
       global: {

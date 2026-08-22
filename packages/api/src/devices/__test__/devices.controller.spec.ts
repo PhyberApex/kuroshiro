@@ -3,6 +3,7 @@ import type { CreateDeviceDto } from '../dto/create-device.dto'
 import type { UpdateDeviceDto } from '../dto/update-device.dto'
 import { BadRequestException, NotFoundException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { asService } from '../../test/mockService'
 import { DevicesController } from '../devices.controller'
 
 function createMockService() {
@@ -21,7 +22,7 @@ describe('devicesController', () => {
 
   beforeEach(() => {
     service = createMockService()
-    controller = new DevicesController(service as unknown as DevicesService)
+    controller = new DevicesController(asService<DevicesService>(service))
   })
 
   it('getAll returns all devices', async () => {

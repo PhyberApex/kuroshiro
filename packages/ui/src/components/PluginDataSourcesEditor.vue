@@ -115,6 +115,14 @@ function onModeChange(source: EditableDataSource) {
     source.literalValueJson = ''
   }
 }
+
+defineExpose({
+  dataSources,
+  addDataSource,
+  removeDataSource,
+  syncLiteralValue,
+  onModeChange,
+})
 </script>
 
 <template>

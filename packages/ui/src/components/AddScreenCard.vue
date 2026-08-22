@@ -123,6 +123,8 @@ async function submitAddScreen() {
   }
 }
 const { isDemo } = useDemoInfo()
+
+defineExpose({ filename, externalLink, addScreenInputValid })
 </script>
 
 <template>

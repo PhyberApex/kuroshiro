@@ -2,36 +2,26 @@ import type { Device } from '../../devices/devices.entity'
 import type { Screen } from '../../screens/screens.entity'
 import * as fs from 'node:fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeDevice, makeScreen } from '../../test/fixtures'
+import { makeDirent, makeStats, mockReaddir, mockStat } from '../../test/fs'
+import { asRepository, createMockRepository } from '../../test/mockRepository'
 import { MaintenanceService } from '../maintenance.service'
 
 vi.mock('../../utils/pathHelper', () => ({
   resolveAppPath: vi.fn((...parts: string[]) => `/mock/${parts.join('/')}`),
 }))
 
-function createMockRepo() {
-  return {
-    find: vi.fn(),
-    findOne: vi.fn(),
-    findOneBy: vi.fn(),
-    create: vi.fn(),
-    save: vi.fn(),
-    update: vi.fn(),
-    remove: vi.fn(),
-    delete: vi.fn(),
-  }
-}
-
 describe('maintenanceService', () => {
   let service: MaintenanceService
-  let deviceRepo: ReturnType<typeof createMockRepo>
-  let screenRepo: ReturnType<typeof createMockRepo>
+  let deviceRepo: ReturnType<typeof createMockRepository<Device>>
+  let screenRepo: ReturnType<typeof createMockRepository<Screen>>
 
   beforeEach(() => {
-    deviceRepo = createMockRepo()
-    screenRepo = createMockRepo()
+    deviceRepo = createMockRepository<Device>()
+    screenRepo = createMockRepository<Screen>()
     service = new MaintenanceService(
-      deviceRepo as any,
-      screenRepo as any,
+      asRepository(deviceRepo),
+      asRepository(screenRepo),
     )
     vi.resetAllMocks()
   })
@@ -40,7 +30,9 @@ describe('maintenanceService', () => {
     it('returns empty issues when no devices exist', async () => {
       deviceRepo.find.mockResolvedValue([])
       screenRepo.find.mockResolvedValue([])
-      vi.spyOn(fs.promises, 'stat').mockRejectedValue(new Error('ENOENT'))
+      mockStat(async () => {
+        throw new Error('ENOENT')
+      })
 
       const result = await service.scan()
 
@@ -53,26 +45,26 @@ describe('maintenanceService', () => {
     })
 
     it('detects orphaned screen files', async () => {
-      const device = { id: 'device-1' } as Device
+      const device = makeDevice({ id: 'device-1' })
       deviceRepo.find.mockResolvedValue([device])
       screenRepo.find.mockResolvedValue([])
 
-      vi.spyOn(fs.promises, 'stat').mockImplementation(async (path: any) => {
+      mockStat(async (path) => {
         if (path === '/mock/public/screens/devices')
-          return { isDirectory: () => true } as any
+          return makeStats({ directory: true })
         if (path === '/mock/public/screens/devices/device-1')
-          return { isDirectory: () => true } as any
+          return makeStats({ directory: true })
         if (path === '/mock/public/screens/devices/device-1/orphaned-123.png')
-          return { isDirectory: () => false, size: 1024, mtimeMs: Date.now() } as any
+          return makeStats({ size: 1024, mtimeMs: Date.now() })
         throw new Error('ENOENT')
       })
 
-      vi.spyOn(fs.promises, 'readdir').mockImplementation(async (path: any) => {
+      mockReaddir(async (path) => {
         if (path === '/mock/public/screens/devices')
-          return ['device-1'] as any
+          return ['device-1']
         if (path === '/mock/public/screens/devices/device-1')
-          return ['orphaned-123.png'] as any
-        return [] as any
+          return ['orphaned-123.png']
+        return []
       })
 
       const result = await service.scan()
@@ -86,21 +78,21 @@ describe('maintenanceService', () => {
     })
 
     it('treats retained originals like screen images: orphaned without a screen, kept with one', async () => {
-      const device = { id: 'device-1' } as Device
+      const device = makeDevice({ id: 'device-1' })
       deviceRepo.find.mockResolvedValue([device])
-      screenRepo.find.mockResolvedValue([{ id: 'kept', type: 'file', device } as any])
+      screenRepo.find.mockResolvedValue([makeScreen({ id: 'kept', type: 'file', device })])
 
-      vi.spyOn(fs.promises, 'stat').mockImplementation(async (path: any) => {
+      mockStat(async (path) => {
         if (path === '/mock/public/screens/devices' || path === '/mock/public/screens/devices/device-1')
-          return { isDirectory: () => true } as any
-        return { isDirectory: () => false, size: 10, mtimeMs: Date.now() } as any
+          return makeStats({ directory: true })
+        return makeStats({ size: 10, mtimeMs: Date.now() })
       })
-      vi.spyOn(fs.promises, 'readdir').mockImplementation(async (path: any) => {
+      mockReaddir(async (path) => {
         if (path === '/mock/public/screens/devices')
-          return ['device-1'] as any
+          return ['device-1']
         if (path === '/mock/public/screens/devices/device-1')
-          return ['kept.png', 'kept.original', 'gone.original'] as any
-        return [] as any
+          return ['kept.png', 'kept.original', 'gone.original']
+        return []
       })
 
       const result = await service.scan()
@@ -113,22 +105,22 @@ describe('maintenanceService', () => {
       deviceRepo.find.mockResolvedValue([])
       screenRepo.find.mockResolvedValue([])
 
-      vi.spyOn(fs.promises, 'stat').mockImplementation(async (path: any) => {
+      mockStat(async (path) => {
         if (path === '/mock/public/screens/devices')
-          return { isDirectory: () => true } as any
+          return makeStats({ directory: true })
         if (path === '/mock/public/screens/devices/orphaned-device')
-          return { isDirectory: () => true } as any
+          return makeStats({ directory: true })
         if (path === '/mock/public/screens/devices/orphaned-device/screen.png')
-          return { isDirectory: () => false, size: 2048, mtimeMs: Date.now() } as any
+          return makeStats({ size: 2048, mtimeMs: Date.now() })
         throw new Error('ENOENT')
       })
 
-      vi.spyOn(fs.promises, 'readdir').mockImplementation(async (path: any, _options?: any) => {
+      mockReaddir(async (path) => {
         if (path === '/mock/public/screens/devices')
-          return ['orphaned-device'] as any
+          return ['orphaned-device']
         if (path === '/mock/public/screens/devices/orphaned-device')
-          return [{ name: 'screen.png', isDirectory: () => false }] as any
-        return [] as any
+          return [makeDirent('screen.png', false)]
+        return []
       })
 
       const result = await service.scan()
@@ -142,29 +134,29 @@ describe('maintenanceService', () => {
     })
 
     it('detects broken screens', async () => {
-      const device = { id: 'device-1' } as Device
-      const screen = {
+      const device = makeDevice({ id: 'device-1' })
+      const screen = makeScreen({
         id: 'screen-1',
         device,
         filename: 'missing.png',
         type: 'file',
-      } as Screen
+      })
 
       deviceRepo.find.mockResolvedValue([device])
       screenRepo.find.mockResolvedValue([screen])
 
-      vi.spyOn(fs.promises, 'stat').mockImplementation(async (path: any) => {
+      mockStat(async (path) => {
         if (path === '/mock/public/screens/devices')
-          return { isDirectory: () => true } as any
+          return makeStats({ directory: true })
         if (path === '/mock/public/screens/devices/device-1')
-          return { isDirectory: () => true } as any
+          return makeStats({ directory: true })
         throw new Error('ENOENT')
       })
 
-      vi.spyOn(fs.promises, 'readdir').mockImplementation(async (path: any) => {
+      mockReaddir(async (path) => {
         if (path === '/mock/public/screens/devices')
-          return ['device-1'] as any
-        return [] as any
+          return ['device-1']
+        return []
       })
 
       vi.spyOn(fs.promises, 'access').mockRejectedValue(new Error('ENOENT'))
@@ -181,28 +173,28 @@ describe('maintenanceService', () => {
     })
 
     it('detects temp files older than threshold', async () => {
-      const device = { id: 'device-1' } as Device
+      const device = makeDevice({ id: 'device-1' })
       deviceRepo.find.mockResolvedValue([device])
       screenRepo.find.mockResolvedValue([])
 
       const oldDate = Date.now() - (25 * 60 * 60 * 1000)
 
-      vi.spyOn(fs.promises, 'stat').mockImplementation(async (path: any) => {
+      mockStat(async (path) => {
         if (path === '/mock/public/screens/devices')
-          return { isDirectory: () => true } as any
+          return makeStats({ directory: true })
         if (path === '/mock/public/screens/devices/device-1')
-          return { isDirectory: () => true } as any
+          return makeStats({ directory: true })
         if (path === '/mock/public/screens/devices/device-1/tmp-source')
-          return { isDirectory: () => false, size: 512, mtimeMs: oldDate } as any
+          return makeStats({ size: 512, mtimeMs: oldDate })
         throw new Error('ENOENT')
       })
 
-      vi.spyOn(fs.promises, 'readdir').mockImplementation(async (path: any) => {
+      mockReaddir(async (path) => {
         if (path === '/mock/public/screens/devices')
-          return ['device-1'] as any
+          return ['device-1']
         if (path === '/mock/public/screens/devices/device-1')
-          return ['tmp-source'] as any
-        return [] as any
+          return ['tmp-source']
+        return []
       })
 
       const result = await service.scan()
@@ -216,26 +208,26 @@ describe('maintenanceService', () => {
     })
 
     it('ignores mirror.png files', async () => {
-      const device = { id: 'device-1' } as Device
+      const device = makeDevice({ id: 'device-1' })
       deviceRepo.find.mockResolvedValue([device])
       screenRepo.find.mockResolvedValue([])
 
-      vi.spyOn(fs.promises, 'stat').mockImplementation(async (path: any) => {
+      mockStat(async (path) => {
         if (path === '/mock/public/screens/devices')
-          return { isDirectory: () => true } as any
+          return makeStats({ directory: true })
         if (path === '/mock/public/screens/devices/device-1')
-          return { isDirectory: () => true } as any
+          return makeStats({ directory: true })
         if (path === '/mock/public/screens/devices/device-1/mirror.png')
-          return { isDirectory: () => false, size: 1024, mtimeMs: Date.now() } as any
+          return makeStats({ size: 1024, mtimeMs: Date.now() })
         throw new Error('ENOENT')
       })
 
-      vi.spyOn(fs.promises, 'readdir').mockImplementation(async (path: any) => {
+      mockReaddir(async (path) => {
         if (path === '/mock/public/screens/devices')
-          return ['device-1'] as any
+          return ['device-1']
         if (path === '/mock/public/screens/devices/device-1')
-          return ['mirror.png'] as any
-        return [] as any
+          return ['mirror.png']
+        return []
       })
 
       const result = await service.scan()
@@ -244,33 +236,33 @@ describe('maintenanceService', () => {
     })
 
     it('skips plugin and mashup screens when checking for broken screens', async () => {
-      const device = { id: 'device-1' } as Device
-      const pluginScreen = {
+      const device = makeDevice({ id: 'device-1' })
+      const pluginScreen = makeScreen({
         id: 'screen-1',
         device,
         type: 'plugin',
-      } as Screen
-      const mashupScreen = {
+      })
+      const mashupScreen = makeScreen({
         id: 'screen-2',
         device,
         type: 'mashup',
-      } as Screen
+      })
 
       deviceRepo.find.mockResolvedValue([device])
       screenRepo.find.mockResolvedValue([pluginScreen, mashupScreen])
 
-      vi.spyOn(fs.promises, 'stat').mockImplementation(async (path: any) => {
+      mockStat(async (path) => {
         if (path === '/mock/public/screens/devices')
-          return { isDirectory: () => true } as any
+          return makeStats({ directory: true })
         if (path === '/mock/public/screens/devices/device-1')
-          return { isDirectory: () => true } as any
+          return makeStats({ directory: true })
         throw new Error('ENOENT')
       })
 
-      vi.spyOn(fs.promises, 'readdir').mockImplementation(async (path: any) => {
+      mockReaddir(async (path) => {
         if (path === '/mock/public/screens/devices')
-          return ['device-1'] as any
-        return [] as any
+          return ['device-1']
+        return []
       })
 
       const result = await service.scan()
@@ -282,7 +274,7 @@ describe('maintenanceService', () => {
   describe('cleanup', () => {
     it('deletes orphaned files in non-dry-run mode', async () => {
       const unlinkMock = vi.spyOn(fs.promises, 'unlink').mockResolvedValue(undefined)
-      vi.spyOn(fs.promises, 'stat').mockResolvedValue({ size: 1024 } as any)
+      mockStat(async () => makeStats({ size: 1024 }))
 
       const result = await service.cleanup(
         ['/mock/public/screens/devices/device-1/orphaned.png'],
@@ -300,7 +292,7 @@ describe('maintenanceService', () => {
 
     it('does not delete files in dry-run mode', async () => {
       const unlinkMock = vi.spyOn(fs.promises, 'unlink').mockResolvedValue(undefined)
-      vi.spyOn(fs.promises, 'stat').mockResolvedValue({ size: 1024 } as any)
+      mockStat(async () => makeStats({ size: 1024 }))
 
       const result = await service.cleanup(
         ['/mock/public/screens/devices/device-1/orphaned.png'],
@@ -318,7 +310,7 @@ describe('maintenanceService', () => {
 
     it('protects system files from deletion', async () => {
       const unlinkMock = vi.spyOn(fs.promises, 'unlink').mockResolvedValue(undefined)
-      vi.spyOn(fs.promises, 'stat').mockResolvedValue({ size: 1024 } as any)
+      mockStat(async () => makeStats({ size: 1024 }))
 
       const result = await service.cleanup(
         ['/mock/public/screens/devices/noScreen.png'],
@@ -355,8 +347,8 @@ describe('maintenanceService', () => {
 
     it('deletes orphaned directories recursively', async () => {
       const rmMock = vi.spyOn(fs.promises, 'rm').mockResolvedValue(undefined)
-      vi.spyOn(fs.promises, 'readdir').mockResolvedValue([{ name: 'file.png', isDirectory: () => false }] as any)
-      vi.spyOn(fs.promises, 'stat').mockResolvedValue({ size: 2048 } as any)
+      mockReaddir(async () => [makeDirent('file.png', false)])
+      mockStat(async () => makeStats({ size: 2048 }))
 
       const result = await service.cleanup(
         [],
@@ -389,7 +381,7 @@ describe('maintenanceService', () => {
 
     it('handles deletion errors gracefully', async () => {
       vi.spyOn(fs.promises, 'unlink').mockRejectedValue(new Error('Permission denied'))
-      vi.spyOn(fs.promises, 'stat').mockResolvedValue({ size: 1024 } as any)
+      mockStat(async () => makeStats({ size: 1024 }))
 
       const result = await service.cleanup(
         ['/mock/public/screens/devices/device-1/orphaned.png'],
@@ -408,25 +400,22 @@ describe('maintenanceService', () => {
 
   describe('getStats', () => {
     it('returns stats for devices directory', async () => {
-      vi.spyOn(fs.promises, 'stat').mockImplementation(async (path: any) => {
+      mockStat(async (path) => {
         if (path === '/mock/public/screens/devices')
-          return { isDirectory: () => true } as any
-        return { isDirectory: () => false, size: 1024 } as any
+          return makeStats({ directory: true })
+        return makeStats({ size: 1024 })
       })
 
-      vi.spyOn(fs.promises, 'readdir').mockImplementation(async (path: any, _options?: any) => {
-        if (path === '/mock/public/screens/devices') {
-          return [
-            { name: 'device-1', isDirectory: () => true },
-          ] as any
-        }
+      mockReaddir(async (path) => {
+        if (path === '/mock/public/screens/devices')
+          return [makeDirent('device-1', true)]
         if (path === '/mock/public/screens/devices/device-1') {
           return [
-            { name: 'screen-1.png', isDirectory: () => false },
-            { name: 'screen-2.png', isDirectory: () => false },
-          ] as any
+            makeDirent('screen-1.png', false),
+            makeDirent('screen-2.png', false),
+          ]
         }
-        return [] as any
+        return []
       })
 
       const result = await service.getStats()
@@ -436,7 +425,9 @@ describe('maintenanceService', () => {
     })
 
     it('returns zero stats when directory does not exist', async () => {
-      vi.spyOn(fs.promises, 'stat').mockRejectedValue(new Error('ENOENT'))
+      mockStat(async () => {
+        throw new Error('ENOENT')
+      })
 
       const result = await service.getStats()
 

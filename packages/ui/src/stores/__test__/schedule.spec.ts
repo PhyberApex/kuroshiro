@@ -1,19 +1,19 @@
+import type { Mock } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { jsonResponse, stubFetch } from '../../test/fetch'
 import { useScheduleStore } from '../schedule'
 
-function jsonResponse(body: unknown, ok = true) {
-  return { ok, json: async () => body }
-}
-
 describe('schedule store', () => {
+  let mockFetch: Mock<typeof fetch>
+
   beforeEach(() => {
     setActivePinia(createPinia())
-    globalThis.fetch = vi.fn()
+    mockFetch = stubFetch()
   })
 
   it('creates a schedule on the screen', async () => {
-    ;(globalThis.fetch as any).mockResolvedValue(jsonResponse({ id: 'schedule-1', enabled: true }))
+    mockFetch.mockResolvedValue(jsonResponse({ id: 'schedule-1', enabled: true }))
     const store = useScheduleStore()
 
     const result = await store.create('screen-1', { weekdays: [1, 2] })
@@ -26,7 +26,7 @@ describe('schedule store', () => {
   })
 
   it('updates a schedule on the screen', async () => {
-    ;(globalThis.fetch as any).mockResolvedValue(jsonResponse({ id: 'schedule-1', enabled: false }))
+    mockFetch.mockResolvedValue(jsonResponse({ id: 'schedule-1', enabled: false }))
     const store = useScheduleStore()
 
     const result = await store.update('screen-1', { enabled: false })
@@ -36,7 +36,7 @@ describe('schedule store', () => {
   })
 
   it('deletes a schedule from the screen', async () => {
-    ;(globalThis.fetch as any).mockResolvedValue(jsonResponse(null))
+    mockFetch.mockResolvedValue(jsonResponse(null))
     const store = useScheduleStore()
 
     await store.remove('screen-1')
@@ -45,26 +45,21 @@ describe('schedule store', () => {
   })
 
   it('surfaces the API error message when a save is rejected', async () => {
-    ;(globalThis.fetch as any).mockResolvedValue(jsonResponse({ message: 'Screen already has a schedule' }, false))
+    mockFetch.mockResolvedValue(jsonResponse({ message: 'Screen already has a schedule' }, false))
     const store = useScheduleStore()
 
     await expect(store.create('screen-1', {})).rejects.toThrow('Screen already has a schedule')
   })
 
   it('joins the field-level validation messages the API returns', async () => {
-    ;(globalThis.fetch as any).mockResolvedValue(jsonResponse({ message: ['startTime must be a HH:MM time of day', 'weekdays must be an array'] }, false))
+    mockFetch.mockResolvedValue(jsonResponse({ message: ['startTime must be a HH:MM time of day', 'weekdays must be an array'] }, false))
     const store = useScheduleStore()
 
     await expect(store.update('screen-1', { startTime: 'nope' })).rejects.toThrow('startTime must be a HH:MM time of day, weekdays must be an array')
   })
 
   it('falls back to a generic message when the error body is unreadable', async () => {
-    ;(globalThis.fetch as any).mockResolvedValue({
-      ok: false,
-      json: async () => {
-        throw new Error('not json')
-      },
-    })
+    mockFetch.mockResolvedValue(new Response('not json', { status: 500 }))
     const store = useScheduleStore()
 
     await expect(store.remove('screen-1')).rejects.toThrow('Failed to delete schedule')

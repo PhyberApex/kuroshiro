@@ -1,40 +1,25 @@
-import type { Repository } from 'typeorm'
 import type { Palette } from '../entities/palette.entity'
 import { BadRequestException, NotFoundException } from '@nestjs/common'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { makePalette } from '../../test/fixtures'
+import { asRepository, createMockRepository } from '../../test/mockRepository'
 import { CustomPalettesService } from '../custom-palettes.service'
 import { CUSTOM_PALETTE_FRAMEWORK_CLASSES } from '../entities/palette.entity'
 
-interface MockRepository {
-  create: ReturnType<typeof vi.fn>
-  save: ReturnType<typeof vi.fn>
-  findOneBy: ReturnType<typeof vi.fn>
-  remove: ReturnType<typeof vi.fn>
-}
-
-function createMockRepository(): MockRepository {
-  return {
-    create: vi.fn(entity => entity),
-    save: vi.fn(async entity => entity),
-    findOneBy: vi.fn(),
-    remove: vi.fn(async entity => entity),
-  }
-}
-
-const validDto = { name: 'My Red', frameworkClass: 'screen--color-3bwr', colors: ['#ff0000', '#ffffff', '#000000'] } as const
+const validDto = { name: 'My Red', frameworkClass: 'screen--color-3bwr' as const, colors: ['#ff0000', '#ffffff', '#000000'] }
 
 describe('customPalettesService', () => {
   let service: CustomPalettesService
-  let repo: MockRepository
+  let repo: ReturnType<typeof createMockRepository<Palette>>
 
   beforeEach(() => {
-    repo = createMockRepository()
-    service = new CustomPalettesService(repo as unknown as Repository<Palette>)
+    repo = createMockRepository<Palette>()
+    service = new CustomPalettesService(asRepository(repo))
   })
 
   describe('create', () => {
     it.each(CUSTOM_PALETTE_FRAMEWORK_CLASSES)('creates a custom palette for the %s family', async (frameworkClass) => {
-      const result = await service.create({ ...validDto, frameworkClass } as any)
+      const result = await service.create({ ...validDto, frameworkClass })
       expect(result.kind).toBe('custom')
       expect(result.frameworkClass).toBe(frameworkClass)
       expect(result.colors).toEqual(validDto.colors)
@@ -42,48 +27,50 @@ describe('customPalettesService', () => {
     })
 
     it('generates an opaque id, not derived from name', async () => {
-      const result = await service.create({ ...validDto } as any)
+      const result = await service.create({ ...validDto })
       expect(result.id).not.toContain('My Red')
       expect(result.id).toMatch(/^[0-9a-f-]{36}$/)
     })
 
     it('generates a different id for every call', async () => {
-      const a = await service.create({ ...validDto } as any)
-      const b = await service.create({ ...validDto } as any)
+      const a = await service.create({ ...validDto })
+      const b = await service.create({ ...validDto })
       expect(a.id).not.toBe(b.id)
     })
 
     it('fixes grays at 2 and leaves grayscaleBitDepth unset', async () => {
-      const result = await service.create({ ...validDto } as any)
+      const result = await service.create({ ...validDto })
       expect(result.grays).toBe(2)
       expect(result.grayscaleBitDepth).toBeNull()
     })
 
     it('rejects a non-colour frameworkClass', async () => {
-      await expect(service.create({ ...validDto, frameworkClass: 'screen--1bit' } as any)).rejects.toThrow(BadRequestException)
+      // @ts-expect-error 'screen--1bit' is not a custom-palette frameworkClass
+      await expect(service.create({ ...validDto, frameworkClass: 'screen--1bit' })).rejects.toThrow(BadRequestException)
       expect(repo.save).not.toHaveBeenCalled()
     })
 
     it('rejects an unrecognised frameworkClass', async () => {
-      await expect(service.create({ ...validDto, frameworkClass: 'not-a-real-family' } as any)).rejects.toThrow(BadRequestException)
+      // @ts-expect-error not a real frameworkClass at all
+      await expect(service.create({ ...validDto, frameworkClass: 'not-a-real-family' })).rejects.toThrow(BadRequestException)
     })
 
     it('rejects an empty colors array', async () => {
-      await expect(service.create({ ...validDto, colors: [] } as any)).rejects.toThrow(BadRequestException)
+      await expect(service.create({ ...validDto, colors: [] })).rejects.toThrow(BadRequestException)
     })
 
     it('rejects a malformed colour value', async () => {
-      await expect(service.create({ ...validDto, colors: ['not-a-hex-color'] } as any)).rejects.toThrow(BadRequestException)
+      await expect(service.create({ ...validDto, colors: ['not-a-hex-color'] })).rejects.toThrow(BadRequestException)
     })
 
     it('rejects a missing name', async () => {
-      await expect(service.create({ ...validDto, name: '' } as any)).rejects.toThrow(BadRequestException)
+      await expect(service.create({ ...validDto, name: '' })).rejects.toThrow(BadRequestException)
     })
   })
 
   describe('delete', () => {
     it('hard-deletes an existing custom palette', async () => {
-      const palette = { id: 'abc', kind: 'custom' } as Palette
+      const palette = makePalette({ id: 'abc', kind: 'custom' })
       repo.findOneBy.mockResolvedValue(palette)
       await service.delete('abc')
       expect(repo.remove).toHaveBeenCalledWith(palette)
@@ -96,7 +83,7 @@ describe('customPalettesService', () => {
     })
 
     it('rejects deleting an official palette', async () => {
-      repo.findOneBy.mockResolvedValue({ id: 'bw', kind: 'official' } as Palette)
+      repo.findOneBy.mockResolvedValue(makePalette({ id: 'bw', kind: 'official' }))
       await expect(service.delete('bw')).rejects.toThrow(BadRequestException)
       expect(repo.remove).not.toHaveBeenCalled()
     })

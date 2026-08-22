@@ -1,5 +1,6 @@
 import type { PluginVariable } from '../entities/plugin-variable.entity'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { makePluginVariable } from '../../test/fixtures'
 import { PluginVariableResolverService } from '../services/plugin-variable-resolver.service'
 
 describe('pluginVariableResolverService', () => {
@@ -10,8 +11,8 @@ describe('pluginVariableResolverService', () => {
   })
 
   const variables: PluginVariable[] = [
-    { key: 'API_KEY', value: 'secret-key-123' } as PluginVariable,
-    { key: 'ENDPOINT', value: 'https://api.example.com' } as PluginVariable,
+    makePluginVariable({ key: 'API_KEY', value: 'secret-key-123' }),
+    makePluginVariable({ key: 'ENDPOINT', value: 'https://api.example.com' }),
   ]
 
   describe('resolveVariables', () => {
@@ -53,8 +54,10 @@ describe('pluginVariableResolverService', () => {
     })
 
     it('returns text unchanged if text is null/undefined', () => {
-      expect(service.resolveVariables(null as any, variables)).toBe(null)
-      expect(service.resolveVariables(undefined as any, variables)).toBe(undefined)
+      // @ts-expect-error deliberately passing null to prove it's returned unchanged
+      expect(service.resolveVariables(null, variables)).toBe(null)
+      // @ts-expect-error deliberately passing undefined to prove it's returned unchanged
+      expect(service.resolveVariables(undefined, variables)).toBe(undefined)
     })
 
     it('resolves env vars when no plugin variables match', () => {
@@ -64,7 +67,7 @@ describe('pluginVariableResolverService', () => {
         // eslint-disable-next-line no-template-curly-in-string
         const text = 'Env: ${TEST_KUROSHIRO_VAR}'
         const variables: PluginVariable[] = [
-          { key: 'OTHER_VAR', value: 'other' } as PluginVariable,
+          makePluginVariable({ key: 'OTHER_VAR', value: 'other' }),
         ]
         const result = service.resolveVariables(text, variables)
         expect(result).toBe('Env: test-value')

@@ -17,7 +17,7 @@ function mountEditor(dataSources: EditableDataSource[]) {
 describe('pluginDataSourcesEditor', () => {
   it('adds a new data source defaulting to fetch mode', async () => {
     const wrapper = mountEditor([])
-    const vm = wrapper.vm as any
+    const vm = wrapper.vm
 
     vm.addDataSource()
     await wrapper.vm.$nextTick()
@@ -31,7 +31,7 @@ describe('pluginDataSourcesEditor', () => {
   it('clears fetch fields when switching a source to literal mode', async () => {
     const source: EditableDataSource = { name: 'weather', mode: 'fetch', method: 'GET', url: 'https://api.example.com', headers: { A: 'b' }, headersJson: '{"A":"b"}' }
     const wrapper = mountEditor([source])
-    const vm = wrapper.vm as any
+    const vm = wrapper.vm
 
     vm.dataSources[0].mode = 'literal'
     vm.onModeChange(vm.dataSources[0])
@@ -46,7 +46,7 @@ describe('pluginDataSourcesEditor', () => {
   it('restores a default method and clears the literal value when switching a source back to fetch mode', async () => {
     const source: EditableDataSource = { name: 'title', mode: 'literal', literalValue: { text: 'Hi' }, literalValueJson: '{"text":"Hi"}' }
     const wrapper = mountEditor([source])
-    const vm = wrapper.vm as any
+    const vm = wrapper.vm
 
     vm.dataSources[0].mode = 'fetch'
     vm.onModeChange(vm.dataSources[0])
@@ -60,7 +60,7 @@ describe('pluginDataSourcesEditor', () => {
   it('parses literalValueJson into literalValue on sync', () => {
     const source: EditableDataSource = { name: 'title', mode: 'literal', literalValueJson: '' }
     const wrapper = mountEditor([source])
-    const vm = wrapper.vm as any
+    const vm = wrapper.vm
 
     vm.dataSources[0].literalValueJson = '{"text":"Hello"}'
     vm.syncLiteralValue(vm.dataSources[0])
@@ -71,7 +71,7 @@ describe('pluginDataSourcesEditor', () => {
   it('keeps the last valid literalValue while the JSON is being typed and invalid', () => {
     const source: EditableDataSource = { name: 'title', mode: 'literal', literalValue: { text: 'Hello' }, literalValueJson: '{"text":"Hello"}' }
     const wrapper = mountEditor([source])
-    const vm = wrapper.vm as any
+    const vm = wrapper.vm
 
     vm.dataSources[0].literalValueJson = '{"text": incomplete'
     vm.syncLiteralValue(vm.dataSources[0])
@@ -84,7 +84,7 @@ describe('pluginDataSourcesEditor', () => {
       { name: 'one', mode: 'fetch' },
       { name: 'two', mode: 'fetch' },
     ])
-    const vm = wrapper.vm as any
+    const vm = wrapper.vm
 
     vm.removeDataSource(0)
     await wrapper.vm.$nextTick()

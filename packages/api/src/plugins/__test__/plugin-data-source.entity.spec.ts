@@ -1,10 +1,10 @@
-import type { Plugin } from '../entities/plugin.entity'
 import { describe, expect, it } from 'vitest'
+import { makePlugin } from '../../test/fixtures'
 import { PluginDataSource } from '../entities/plugin-data-source.entity'
 
 describe('pluginDataSource entity', () => {
   it('creates a data source with required fields', () => {
-    const plugin = { id: 'plugin-1' } as Plugin
+    const plugin = makePlugin({ id: 'plugin-1' })
 
     const dataSource = new PluginDataSource()
     dataSource.id = 'ds-1'
@@ -21,7 +21,7 @@ describe('pluginDataSource entity', () => {
   })
 
   it('belongs to a Plugin via a many-to-one relation, so several can share one plugin', () => {
-    const plugin = { id: 'plugin-1' } as Plugin
+    const plugin = makePlugin({ id: 'plugin-1' })
 
     const weather = new PluginDataSource()
     weather.name = 'weather'

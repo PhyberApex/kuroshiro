@@ -1,9 +1,11 @@
 import type { ConfigService } from '@nestjs/config'
 import type { CreateScreenDto } from '../dto/create-screen.dto'
-import type { Screen } from '../screens.entity'
 import type { ScreensService } from '../screens.service'
 import buffer from 'node:buffer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { makeScreen } from '../../test/fixtures'
+import { makeMulterFile } from '../../test/fs'
+import { asService } from '../../test/mockService'
 import { ScreensController } from '../screens.controller'
 
 function createMockService() {
@@ -25,11 +27,11 @@ describe('screensController (unit)', () => {
   beforeEach(() => {
     service = createMockService()
     configService = { get: vi.fn() }
-    controller = new ScreensController(service as unknown as ScreensService, configService as unknown as ConfigService)
+    controller = new ScreensController(asService<ScreensService>(service), asService<ConfigService>(configService))
   })
 
   it('getAll returns all screens', async () => {
-    const screens = [{ id: '1' } as Screen]
+    const screens = [makeScreen({ id: '1' })]
     service.getAll.mockResolvedValue(screens)
     const result = await controller.getAll()
     expect(result).toBe(screens)
@@ -37,8 +39,8 @@ describe('screensController (unit)', () => {
 
   it('add creates a screen', async () => {
     const dto: CreateScreenDto = { filename: 'file', deviceId: 'dev', fetchManual: false }
-    const file = { buffer: buffer.Buffer.from('data') } as Express.Multer.File
-    const screen = { id: '1', filename: 'file' } as Screen
+    const file = makeMulterFile({ buffer: buffer.Buffer.from('data') })
+    const screen = makeScreen({ id: '1', filename: 'file' })
     service.add.mockResolvedValue(screen)
     configService.get.mockReturnValue(false)
     const result = await controller.add(dto, file)
@@ -47,7 +49,7 @@ describe('screensController (unit)', () => {
   })
 
   it('getByDevice returns screens for a device', async () => {
-    const screens = [{ id: '1' } as Screen]
+    const screens = [makeScreen({ id: '1' })]
     service.getByDevice.mockResolvedValue(screens)
     const result = await controller.getByDevice('dev')
     expect(service.getByDevice).toHaveBeenCalledWith('dev')
@@ -67,7 +69,7 @@ describe('screensController (unit)', () => {
   })
 
   it('reorder calls service with device id and screen ids', async () => {
-    const screens = [{ id: '2' } as Screen, { id: '1' } as Screen]
+    const screens = [makeScreen({ id: '2' }), makeScreen({ id: '1' })]
     service.reorder.mockResolvedValue(screens)
     const result = await controller.reorder('dev', { screenIds: ['2', '1'] })
     expect(service.reorder).toHaveBeenCalledWith('dev', ['2', '1'])
