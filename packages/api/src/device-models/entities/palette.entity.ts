@@ -1,7 +1,6 @@
 import { Column, Entity, PrimaryColumn } from 'typeorm'
 
-export const PALETTE_KINDS = ['official', 'custom'] as const
-export type PaletteKind = typeof PALETTE_KINDS[number]
+export type PaletteKind = 'official' | 'custom'
 
 export const CUSTOM_PALETTE_FRAMEWORK_CLASSES = [
   'screen--color-3bwr',
