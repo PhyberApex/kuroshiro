@@ -7,7 +7,7 @@
 | Command | What it does |
 | --- | --- |
 | `pnpm fallow` | Full local report (dead code + dupes + health), no gating |
-| `pnpm fallow:ci` | What CI runs: each analysis compared against its baseline, fails on any **new** finding |
+| `pnpm fallow:ci` | What CI and the `pre-commit` hook run: each analysis compared against its baseline, fails on any **new** finding |
 | `pnpm fallow:baseline` | Re-saves the three baselines in `.fallow-baselines/` from the current tree |
 | `npx fallow dead-code --trace <file>:<export>` | Explain why an export is (un)used before deleting it |
 | `npx fallow explain <issue-type>` | Explain a finding category |
