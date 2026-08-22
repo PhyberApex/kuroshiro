@@ -845,7 +845,7 @@ describe('pluginsService', () => {
     it('update accepts a body that omits kind entirely, and leaves kind and other unset fields untouched', async () => {
       const stored = { ...basePlugin }
       pluginRepo.findOne.mockResolvedValue(stored)
-      pluginRepo.save.mockImplementation(async (plugin: any) => plugin)
+      pluginRepo.save.mockImplementation(plugin => Promise.resolve(makePlugin(plugin)))
 
       const result = await service.update('1', transform({ description: 'test only' }))
 
@@ -860,7 +860,7 @@ describe('pluginsService', () => {
     })
 
     it('update accepts a webhook-kind body that omits mergeStrategy entirely, and leaves it untouched', async () => {
-      const stored = {
+      const stored = makePlugin({
         id: '1',
         name: 'Sensor Feed',
         kind: 'Webhook',
@@ -868,9 +868,9 @@ describe('pluginsService', () => {
         webhookToken: 'token-abc',
         mergeStrategy: 'stream',
         streamLimit: 20,
-      } as unknown as Plugin
+      })
       pluginRepo.findOne.mockResolvedValue(stored)
-      pluginRepo.save.mockImplementation(async (plugin: any) => plugin)
+      pluginRepo.save.mockImplementation(plugin => Promise.resolve(makePlugin(plugin)))
 
       const result = await service.update('1', transform({ description: 'test only' }))
 
