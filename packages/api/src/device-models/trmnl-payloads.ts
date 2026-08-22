@@ -38,7 +38,7 @@ export type DeviceModelAttributes = Omit<DeviceModel, 'deprecated' | 'syncedAt'>
 export type PaletteAttributes = Omit<Palette, 'deprecated' | 'syncedAt'>
 
 const ID_PATTERN = /^[\w.-]+$/
-const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i
+export const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i
 const CSS_CLASS_PATTERN = /^[\w-]+$/
 const MODEL_NUMERIC_FIELDS = ['width', 'height', 'colors', 'bit_depth', 'scale_factor', 'rotation', 'offset_x', 'offset_y'] as const
 
@@ -106,6 +106,7 @@ export function toPaletteAttributes(payload: TrmnlPalettePayload): PaletteAttrib
   return {
     id: payload.id,
     name: payload.name,
+    kind: 'official',
     grays: payload.grays,
     colors: payload.colors ?? null,
     frameworkClass: payload.framework_class,

@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { TRMNL_MODELS_SNAPSHOT, TRMNL_PALETTES_SNAPSHOT } from './data/trmnl-snapshot'
 import { DeviceModel } from './entities/device-model.entity'
-import { Palette } from './entities/palette.entity'
+import { CUSTOM_PALETTE_FRAMEWORK_CLASSES, Palette } from './entities/palette.entity'
 import { FALLBACK_MODEL_NAME, FIRMWARE_MODEL_NAMES } from './firmware-model-names'
 import { toDeviceModelAttributes, toPaletteAttributes, TrmnlModelPayload } from './trmnl-payloads'
 
@@ -77,6 +77,22 @@ export class DeviceModelsService {
 
   async defaultPaletteFor(model: DeviceModel): Promise<Palette | null> {
     return pickRichest(await this.allowedPalettesFor(model))
+  }
+
+  /**
+   * The colour families a custom palette may target on this model: whichever
+   * of the 5 custom-eligible colour families are already represented among
+   * its curated official palettes. Deliberately ignores `DeviceModel.colors`/
+   * `bitDepth` — those reflect native grayscale depth only, not colour-family
+   * support.
+   */
+  async compatibleFamiliesFor(model: DeviceModel): Promise<Set<string>> {
+    const palettes = await this.allowedPalettesFor(model)
+    return new Set(
+      palettes
+        .filter(p => p.kind === 'official' && (CUSTOM_PALETTE_FRAMEWORK_CLASSES as readonly string[]).includes(p.frameworkClass))
+        .map(p => p.frameworkClass),
+    )
   }
 
   /**
