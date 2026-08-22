@@ -302,7 +302,7 @@ async function saveDevice() {
   if (!device.value)
     return
   device.value.refreshRate = newRefreshRate.value
-  await deviceStore.updateDevice(device.value.id, {
+  const succeeded = await deviceStore.updateDevice(device.value.id, {
     name: device.value.name,
     refreshRate: device.value.refreshRate,
     resetDevice: device.value.resetDevice,
@@ -313,6 +313,10 @@ async function saveDevice() {
     ...(selectedModelName.value ? { deviceModelName: selectedModelName.value } : {}),
     ...(selectedPaletteId.value ? { paletteId: selectedPaletteId.value } : {}),
   })
+  if (succeeded && device.value) {
+    device.value.specialFunction = 'none'
+    device.value.resetDevice = false
+  }
 }
 const nameEditing = ref(false)
 </script>

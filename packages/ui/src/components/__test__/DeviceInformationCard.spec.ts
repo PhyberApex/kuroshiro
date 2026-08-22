@@ -152,6 +152,26 @@ describe('deviceInformationCard', () => {
     expect(updateDevice).toHaveBeenCalledWith('device1', expect.objectContaining({ deviceModelName: 'v2', paletteId: 'gray-16' }))
   })
 
+  it('resets specialFunction and resetDevice locally after a successful save, so they are not resent on the next save', async () => {
+    mockDevice.current = baseDevice({ specialFunction: 'identify', resetDevice: true, refreshRate: 300 })
+    updateDevice.mockResolvedValue(true)
+    const wrapper = mountCard()
+    const vm = wrapper.vm as any
+    await vm.saveDevice()
+    expect(vm.device.specialFunction).toBe('none')
+    expect(vm.device.resetDevice).toBe(false)
+  })
+
+  it('leaves specialFunction and resetDevice untouched when the save fails', async () => {
+    mockDevice.current = baseDevice({ specialFunction: 'identify', resetDevice: true, refreshRate: 300 })
+    updateDevice.mockResolvedValue(false)
+    const wrapper = mountCard()
+    const vm = wrapper.vm as any
+    await vm.saveDevice()
+    expect(vm.device.specialFunction).toBe('identify')
+    expect(vm.device.resetDevice).toBe(true)
+  })
+
   it('drops a palette the newly selected model does not support', async () => {
     mockDevice.current = baseDevice({ deviceModel: V2, palette: GRAY_16, refreshRate: 300 })
     const wrapper = mountCard()
