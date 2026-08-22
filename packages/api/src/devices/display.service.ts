@@ -27,6 +27,7 @@ import { resolveAppPath } from '../utils/pathHelper'
 import { Device } from './devices.entity'
 import { Display } from './display'
 import { DisplayScreen } from './displayScreen'
+import { isDeviceAsleep, secondsUntilSleepEnd } from './sleep-mode'
 
 interface TrmnlScreenResponse {
   action?: string
@@ -113,6 +114,11 @@ export class DeviceDisplayService {
     await this.deviceRepository.save(device)
     this.logger.log(`Device info updated for MAC: ${headers.id}`)
     if (!device.mirrorEnabled) {
+      const now = new Date()
+      if (isDeviceAsleep(device, now)) {
+        this.logger.log(`Device ${device.id} is asleep. Holding rotation.`)
+        return this.buildSleepResponse(device, now, specialFunction, pushedFirmwareUrl, resetDevice, pushedUpdateFirmware)
+      }
       this.logger.log(`Device ${device.id} is not mirrored. Cycling screens.`)
       const screens = await this.screenRepository.find({
         where: { device: { id: device.id } },
@@ -241,6 +247,45 @@ export class DeviceDisplayService {
     return null
   }
 
+  /**
+   * The Active Screen does not advance while a Device is asleep (ADR-0012):
+   * `refresh_rate` is the seconds until `sleepEndTime` so the Device wakes
+   * exactly on schedule, and the served image is either the dedicated Sleep
+   * fallback screen or whatever was already showing.
+   */
+  private async buildSleepResponse(device: Device, now: Date, specialFunction: string, firmwareUrl: string, resetDevice: boolean, updateFirmware: boolean): Promise<Display> {
+    const refreshRate = secondsUntilSleepEnd(device.sleepEndTime!, now)
+    const { filename, imgUrl } = device.sleepScreenEnabled
+      ? { filename: 'sleep.png', imgUrl: await this.fallbackImageUrl('sleep', device) }
+      : await this.resolveFrozenImage(device)
+    return new Display({
+      action: specialFunction,
+      filename,
+      firmware_url: firmwareUrl,
+      image_url: imgUrl,
+      refresh_rate: refreshRate,
+      reset_firmware: resetDevice,
+      special_function: specialFunction,
+      temperature_profile: 'default',
+      update_firmware: updateFirmware,
+    })
+  }
+
+  /**
+   * "Last content" for a sleeping Device with the dedicated Sleep screen
+   * turned off: whatever the current Active Screen already has on disk, or
+   * the plain no-screen fallback for a Device that never had one.
+   */
+  private async resolveFrozenImage(device: Device): Promise<{ filename: string, imgUrl: string }> {
+    const activeScreen = await this.screenRepository.findOneBy({ device: { id: device.id }, isActive: true })
+    if (!activeScreen)
+      return { filename: 'noScreen.png', imgUrl: await this.fallbackImageUrl('noScreen', device) }
+    const imgUrl = await fileExists(this.screenImagePath(device, activeScreen))
+      ? this.screenImageUrl(device, activeScreen)
+      : await this.generateScreenImage(activeScreen, device)
+    return { filename: `${activeScreen.filename}_${activeScreen.generatedAt.toISOString()}`, imgUrl }
+  }
+
   async getCurrentImageWithoutProgressing(headers: Pick<DisplayRequestHeadersDto, 'id' | 'access-token'>): Promise<DisplayScreen> {
     this.logger.log(`Current Screen request for MAC: ${headers.id}`)
     this.logger.debug(`Headers: ${JSON.stringify(headers)}`)
@@ -253,13 +298,27 @@ export class DeviceDisplayService {
       this.logger.warn(`Invalid API key for device: ${headers.id}`)
       throw new UnauthorizedException('Invalid API key')
     }
+    const now = new Date()
+    const asleep = !device.mirrorEnabled && isDeviceAsleep(device, now)
+    const refreshRate = asleep ? secondsUntilSleepEnd(device.sleepEndTime!, now) : device.refreshRate
+
+    if (asleep && device.sleepScreenEnabled) {
+      this.logger.log(`Device ${device.id} is asleep. Returning the dedicated sleep screen.`)
+      return new DisplayScreen({
+        filename: 'sleep.png',
+        image_url: await this.fallbackImageUrl('sleep', device),
+        refresh_rate: refreshRate,
+        rendered_at: now,
+      })
+    }
+
     const activeScreen = await this.screenRepository.findOneBy({ device: { id: device.id }, isActive: true })
     if (!activeScreen && !device.mirrorEnabled) {
       this.logger.log('No screen found returning default no screen image')
       return new DisplayScreen({
         filename: 'noScreen.png',
         image_url: await this.fallbackImageUrl('noScreen', device),
-        refresh_rate: device.refreshRate,
+        refresh_rate: refreshRate,
         rendered_at: new Date(),
       })
     }
@@ -303,7 +362,7 @@ export class DeviceDisplayService {
     return new DisplayScreen({
       filename,
       image_url: imgUrl,
-      refresh_rate: device.refreshRate,
+      refresh_rate: refreshRate,
       rendered_at: renderedAt,
     })
   }
@@ -517,7 +576,7 @@ export class DeviceDisplayService {
     return `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${screen.id}.png`
   }
 
-  private async fallbackImageUrl(kind: 'noScreen' | 'error', device: Device): Promise<string> {
+  private async fallbackImageUrl(kind: 'noScreen' | 'error' | 'sleep', device: Device): Promise<string> {
     return this.fallbackScreens.urlFor(kind, await this.deviceModels.renderTargetFor(device))
   }
 }

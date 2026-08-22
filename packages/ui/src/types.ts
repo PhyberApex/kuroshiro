@@ -77,6 +77,10 @@ export interface Device {
   mirrorMac: string
   mirrorApikey: string
   specialFunction: string
+  sleepModeEnabled: boolean
+  sleepStartTime?: number | null
+  sleepEndTime?: number | null
+  sleepScreenEnabled: boolean
   resetDevice: boolean
   updateFirmware: boolean
   targetFirmware?: Firmware | null

@@ -87,6 +87,8 @@ function baseDevice(overrides: Partial<Device> = {}): Device {
     mirrorMac: '',
     mirrorApikey: '',
     specialFunction: '',
+    sleepModeEnabled: false,
+    sleepScreenEnabled: false,
     resetDevice: false,
     updateFirmware: false,
     lastSeen: '',
@@ -241,6 +243,61 @@ describe('deviceInformationCard', () => {
       await wrapper.find('.v-expansion-panel-title').trigger('click')
       await wrapper.vm.$nextTick()
       expect(wrapper.text()).toContain('Update pending')
+    })
+  })
+
+  describe('sleep mode section', () => {
+    it('pre-fills the configured sleep window as time inputs', () => {
+      mockDevice.current = baseDevice({ deviceModel: OG_PLUS, sleepModeEnabled: true, sleepStartTime: 22 * 3600, sleepEndTime: 6 * 3600 })
+      const wrapper = mountCard()
+      const vm = wrapper.vm as any
+      expect(vm.sleepStartTime).toBe('22:00')
+      expect(vm.sleepEndTime).toBe('06:00')
+    })
+
+    it('leaves the time inputs empty when no window is configured', () => {
+      mockDevice.current = baseDevice({ deviceModel: OG_PLUS })
+      const wrapper = mountCard()
+      const vm = wrapper.vm as any
+      expect(vm.sleepStartTime).toBe('')
+      expect(vm.sleepEndTime).toBe('')
+    })
+
+    it('sends the sleep window converted back to seconds-since-midnight when saving', async () => {
+      mockDevice.current = baseDevice({ deviceModel: OG_PLUS, refreshRate: 300, sleepModeEnabled: true, sleepScreenEnabled: true })
+      const wrapper = mountCard()
+      const vm = wrapper.vm as any
+      vm.sleepStartTime = '22:00'
+      vm.sleepEndTime = '06:00'
+      await vm.saveDevice()
+      expect(updateDevice).toHaveBeenCalledWith('device1', expect.objectContaining({
+        sleepModeEnabled: true,
+        sleepScreenEnabled: true,
+        sleepStartTime: 22 * 3600,
+        sleepEndTime: 6 * 3600,
+      }))
+    })
+
+    it('rejects enabling sleep mode without a full window and does not save', async () => {
+      mockDevice.current = baseDevice({ deviceModel: OG_PLUS, refreshRate: 300, sleepModeEnabled: true })
+      const wrapper = mountCard()
+      const vm = wrapper.vm as any
+      vm.sleepStartTime = ''
+      vm.sleepEndTime = ''
+      expect(vm.sleepWindowValid).toBe(false)
+      await vm.saveDevice()
+      expect(updateDevice).not.toHaveBeenCalled()
+    })
+
+    it('flags a sleep window that crosses midnight', async () => {
+      mockDevice.current = baseDevice({ deviceModel: OG_PLUS })
+      const wrapper = mountCard()
+      await wrapper.find('.v-expansion-panel-title').trigger('click')
+      const vm = wrapper.vm as any
+      vm.sleepStartTime = '22:00'
+      vm.sleepEndTime = '06:00'
+      await wrapper.vm.$nextTick()
+      expect(wrapper.find('[data-test-id="sleep-window-midnight-hint"]').exists()).toBe(true)
     })
   })
 })
