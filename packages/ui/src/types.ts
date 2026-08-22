@@ -39,6 +39,24 @@ export interface DeviceModelSyncResult {
   syncedAt: string
 }
 
+export interface Firmware {
+  id: string
+  version: string
+  kind: 'official-synced' | 'custom'
+  checksum: string
+  compatibleModels: string[]
+  deprecated: boolean
+  label?: string | null
+  syncedAt?: string | null
+  uploadedAt?: string | null
+}
+
+export interface FirmwareSyncResult {
+  inserted: boolean
+  version: string
+  syncedAt?: string
+}
+
 export interface Device {
   id: string
   name: string
@@ -61,6 +79,7 @@ export interface Device {
   specialFunction: string
   resetDevice: boolean
   updateFirmware: boolean
+  targetFirmware?: Firmware | null
   lastSeen: string
 }
 

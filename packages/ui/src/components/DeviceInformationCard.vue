@@ -32,6 +32,7 @@ import { useRouter } from 'vue-router'
 import { VBtn, VCard, VCardText, VCardTitle, VChip, VCol, VDivider, VExpansionPanel, VExpansionPanels, VExpansionPanelText, VExpansionPanelTitle, VIcon, VNumberInput, VRow, VSelect, VSwitch, VTextField, VTooltip } from 'vuetify/components'
 import { useDeviceStore } from '@/stores/device'
 import { useDeviceModelsStore } from '@/stores/deviceModels'
+import { useFirmwareStore } from '@/stores/firmware'
 import { DEFAULT_RENDER_SIZE } from '@/utils/deviceRenderSize'
 import { formatDate } from '@/utils/formatDate'
 import { isValidMac } from '@/utils/getRandomMac'
@@ -41,18 +42,48 @@ const props = defineProps<{ deviceId: string }>()
 
 const deviceStore = useDeviceStore()
 const deviceModelsStore = useDeviceModelsStore()
+const firmwareStore = useFirmwareStore()
 
 const device = computed(() => deviceStore.getById(props.deviceId))
 
-onMounted(() => deviceModelsStore.ensureLoaded())
+onMounted(() => {
+  deviceModelsStore.ensureLoaded()
+  firmwareStore.ensureLoaded()
+})
 
 const selectedModelName = ref<string | null>(null)
 const selectedPaletteId = ref<string | null>(null)
+const selectedFirmwareId = ref<string | null>(null)
 
 watch(device, (current) => {
   selectedModelName.value = current?.deviceModel?.name ?? null
   selectedPaletteId.value = current?.palette?.id ?? null
+  selectedFirmwareId.value = current?.targetFirmware?.id ?? null
 }, { immediate: true })
+
+const firmwareOptions = computed(() => {
+  const assigned = device.value?.targetFirmware
+  const compatible = firmwareStore.compatibleWith(device.value?.deviceModel?.name)
+  const firmwareList = assigned && !compatible.some(fw => fw.id === assigned.id) ? [assigned, ...compatible] : compatible
+  return firmwareList.map(fw => ({
+    title: `${fw.version}${fw.label ? ` — ${fw.label}` : ''} (${fw.kind === 'official-synced' ? 'official' : 'custom'})${fw.deprecated ? ' — deprecated' : ''}`,
+    value: fw.id,
+  }))
+})
+
+const firmwareUpdating = ref(false)
+
+async function triggerFirmwareUpdate() {
+  if (!device.value || !selectedFirmwareId.value)
+    return
+  firmwareUpdating.value = true
+  try {
+    await deviceStore.updateDevice(device.value.id, { targetFirmwareId: selectedFirmwareId.value, updateFirmware: true })
+  }
+  finally {
+    firmwareUpdating.value = false
+  }
+}
 
 const selectedModel = computed(() => deviceModelsStore.getByName(selectedModelName.value))
 
@@ -397,9 +428,6 @@ const nameEditing = ref(false)
                 <VCol cols="12" sm="4" md="4" lg="4">
                   <VSwitch v-model="device.resetDevice" color="secondary" density="compact" label="Reset device" />
                 </VCol>
-                <VCol cols="12" sm="4" md="4" lg="4">
-                  <VSwitch v-model="device.updateFirmware" color="secondary" density="compact" label="Automatic updates" disabled />
-                </VCol>
               </VRow>
               <VRow class="mb-2" density="comfortable">
                 <VCol cols="12" sm="6" md="4">
@@ -426,6 +454,36 @@ const nameEditing = ref(false)
                 <VCol v-if="device.deviceModel?.deprecated" cols="12" sm="12" md="4" class="d-flex align-center">
                   <VChip color="warning" size="small" variant="tonal">
                     Assigned model no longer exists upstream
+                  </VChip>
+                </VCol>
+              </VRow>
+              <VRow class="mb-2" density="comfortable">
+                <VCol cols="12" sm="8" md="6">
+                  <VSelect
+                    v-model="selectedFirmwareId"
+                    :items="firmwareOptions"
+                    density="compact"
+                    label="Target firmware"
+                    placeholder="None"
+                    persistent-placeholder
+                    data-test-id="device-firmware-select"
+                  />
+                </VCol>
+                <VCol cols="12" sm="4" md="6" class="d-flex align-center ga-3">
+                  <span class="text-caption text-medium-emphasis">Reported: {{ device.fwVersion || 'N/A' }}</span>
+                  <VBtn
+                    size="small"
+                    color="secondary"
+                    variant="tonal"
+                    :loading="firmwareUpdating"
+                    :disabled="!selectedFirmwareId"
+                    data-test-id="device-firmware-update-btn"
+                    @click="triggerFirmwareUpdate"
+                  >
+                    Update now
+                  </VBtn>
+                  <VChip v-if="device.updateFirmware" color="info" size="small" variant="tonal">
+                    Update pending
                   </VChip>
                 </VCol>
               </VRow>

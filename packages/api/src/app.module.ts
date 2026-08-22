@@ -11,6 +11,8 @@ import { DeviceModel } from './device-models/entities/device-model.entity'
 import { Palette } from './device-models/entities/palette.entity'
 import { Device } from './devices/devices.entity'
 import { DevicesModule } from './devices/devices.module'
+import { Firmware } from './firmware/entities/firmware.entity'
+import { FirmwareModule } from './firmware/firmware.module'
 import { LogEntry } from './logs/logs.entity'
 import { LogsModule } from './logs/logs.module'
 import { MaintenanceModule } from './maintenance/maintenance.module'
@@ -49,7 +51,7 @@ const conf = config()
       username: conf.database.user,
       password: conf.database.password,
       database: conf.database.database,
-      entities: [Device, DeviceModel, Palette, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, PluginVariable, MashupConfiguration, MashupSlot, Schedule],
+      entities: [Device, DeviceModel, Palette, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, PluginVariable, MashupConfiguration, MashupSlot, Schedule, Firmware],
       migrations: (() => {
         const dir = path.join(process.cwd(), 'dist', 'src', 'migrations')
         if (!fs.existsSync(dir))
@@ -67,6 +69,7 @@ const conf = config()
     ScreensModule,
     LogsModule,
     DeviceModelsModule,
+    FirmwareModule,
     DevicesModule,
     PluginsModule,
     MashupModule,

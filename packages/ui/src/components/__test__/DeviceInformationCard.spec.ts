@@ -52,6 +52,17 @@ vi.mock('@/stores/deviceModels', () => ({
   }),
 }))
 
+const OFFICIAL_FW = { id: 'fw-1', version: '1.5.6', kind: 'official-synced' as const, compatibleModels: ['og_plus'], checksum: 'x', deprecated: false }
+const CUSTOM_FW = { id: 'fw-2', version: '1.0.0', kind: 'custom' as const, compatibleModels: ['v2'], checksum: 'y', deprecated: false }
+
+vi.mock('@/stores/firmware', () => ({
+  useFirmwareStore: () => ({
+    ensureLoaded: vi.fn(),
+    firmware: [OFFICIAL_FW, CUSTOM_FW],
+    compatibleWith: (modelName: string | null | undefined) => [OFFICIAL_FW, CUSTOM_FW].filter(fw => !fw.deprecated && fw.compatibleModels.includes(modelName ?? '')),
+  }),
+}))
+
 globalThis.ResizeObserver = rop
 
 globalThis.window.matchMedia = globalThis.window.matchMedia || function () {
@@ -151,5 +162,48 @@ describe('deviceInformationCard', () => {
     await vm.saveDevice()
     expect(updateDevice).toHaveBeenCalledWith('device1', expect.objectContaining({ deviceModelName: 'og_plus' }))
     expect(updateDevice.mock.calls[0][1]).not.toHaveProperty('paletteId')
+  })
+
+  describe('firmware section', () => {
+    it('pre-selects the device\'s currently assigned target firmware', () => {
+      mockDevice.current = baseDevice({ deviceModel: OG_PLUS, targetFirmware: OFFICIAL_FW })
+      const wrapper = mountCard()
+      const vm = wrapper.vm as any
+      expect(vm.selectedFirmwareId).toBe('fw-1')
+    })
+
+    it('does nothing when triggered without a selected firmware', async () => {
+      mockDevice.current = baseDevice({ deviceModel: OG_PLUS })
+      const wrapper = mountCard()
+      const vm = wrapper.vm as any
+      await vm.triggerFirmwareUpdate()
+      expect(updateDevice).not.toHaveBeenCalled()
+    })
+
+    it('assigns the firmware and flips the update flag in a single call', async () => {
+      mockDevice.current = baseDevice({ deviceModel: OG_PLUS })
+      const wrapper = mountCard()
+      const vm = wrapper.vm as any
+      vm.selectedFirmwareId = 'fw-1'
+      await vm.triggerFirmwareUpdate()
+      expect(updateDevice).toHaveBeenCalledWith('device1', { targetFirmwareId: 'fw-1', updateFirmware: true })
+    })
+
+    it('keeps a deprecated assigned firmware selectable so a stale target is still visible', () => {
+      const deprecatedFw = { ...OFFICIAL_FW, deprecated: true }
+      mockDevice.current = baseDevice({ deviceModel: OG_PLUS, targetFirmware: deprecatedFw })
+      const wrapper = mountCard()
+      const vm = wrapper.vm as any
+      expect(vm.selectedFirmwareId).toBe('fw-1')
+      expect(vm.firmwareOptions.some((opt: any) => opt.value === 'fw-1')).toBe(true)
+    })
+
+    it('shows an update pending chip while the flag is set', async () => {
+      mockDevice.current = baseDevice({ deviceModel: OG_PLUS, updateFirmware: true, targetFirmware: OFFICIAL_FW })
+      const wrapper = mountCard()
+      await wrapper.find('.v-expansion-panel-title').trigger('click')
+      await wrapper.vm.$nextTick()
+      expect(wrapper.text()).toContain('Update pending')
+    })
   })
 })
