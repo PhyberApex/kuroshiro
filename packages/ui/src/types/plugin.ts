@@ -32,7 +32,7 @@ export interface PluginDataSource {
   method: string
   url: string
   headers?: Record<string, string>
-  body?: Record<string, any>
+  body?: Record<string, unknown>
   transformJs?: string
   order: number
 }
@@ -60,4 +60,44 @@ export interface PluginFieldValue {
   id: string
   value: string
   deviceId?: string
+}
+
+export interface CreatePluginDataSourcePayload {
+  name: string
+  method?: string
+  url: string
+  headers?: Record<string, string>
+  body?: Record<string, unknown>
+  transformJs?: string
+  order?: number
+}
+
+export interface CreatePluginTemplatePayload {
+  layout?: string
+  liquidMarkup: string
+}
+
+export interface CreatePluginFieldPayload {
+  keyname: string
+  fieldType?: string
+  name: string
+  description?: string
+  defaultValue?: string
+  required?: boolean
+  order?: number
+}
+
+export interface CreatePluginPayload {
+  name: string
+  description?: string
+  kind?: string
+  refreshInterval?: number
+  isActive?: boolean
+  order?: number
+  mergeStrategy?: string
+  streamLimit?: number
+  sourceRecipeId?: string
+  dataSources?: CreatePluginDataSourcePayload[]
+  templates?: CreatePluginTemplatePayload[]
+  fields?: CreatePluginFieldPayload[]
 }

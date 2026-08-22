@@ -3,6 +3,7 @@ import { mdiUpload } from '@mdi/js'
 import { ref } from 'vue'
 import { VAlert, VBtn, VCard, VCardActions, VCardText, VCardTitle, VDialog, VDivider, VFileInput, VSelect, VTab, VTabs, VTextField, VWindow, VWindowItem } from 'vuetify/components'
 import { useDeviceStore } from '../stores/device'
+import { errorMessage } from '../utils/errorMessage'
 
 defineProps<{
   modelValue: boolean
@@ -105,8 +106,8 @@ async function importPlugin() {
     emit('imported')
     close()
   }
-  catch (err: any) {
-    error.value = err.message || 'Failed to import plugin'
+  catch (err) {
+    error.value = errorMessage(err, 'Failed to import plugin')
   }
   finally {
     loading.value = false

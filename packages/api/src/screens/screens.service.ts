@@ -31,7 +31,7 @@ export class ScreensService {
     return this.screensRepository.find()
   }
 
-  async add(body: CreateScreenDto, file?: any): Promise<Screen> {
+  async add(body: CreateScreenDto, file?: Express.Multer.File): Promise<Screen> {
     this.logger.log(`Adding screen to device ${body.deviceId}`)
     if (body.externalLink && file)
       throw new BadRequestException('Can\'t upload a file to an external image')

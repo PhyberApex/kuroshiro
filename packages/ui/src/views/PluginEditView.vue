@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { Plugin } from '../types/plugin'
+import type { CreatePluginDataSourcePayload, Plugin } from '../types/plugin'
+import type { EditableDataSource } from '@/components/PluginDataSourcesEditor.vue'
 import type { RenderTarget } from '@/utils/screenShell'
 import { mdiArrowLeft, mdiContentSave, mdiEye } from '@mdi/js'
 import { computed, onMounted, ref } from 'vue'
@@ -8,6 +9,7 @@ import { VAlert, VBtn, VCard, VCardActions, VCardText, VCardTitle, VCol, VContai
 import PluginDataSourcesEditor from '@/components/PluginDataSourcesEditor.vue'
 import RenderTargetPicker from '@/components/RenderTargetPicker.vue'
 import ScreenFrame from '@/components/ScreenFrame.vue'
+import { errorMessage } from '@/utils/errorMessage'
 import { DEFAULT_MODEL, DEFAULT_PALETTE } from '@/utils/renderTarget'
 import { viewFull } from '@/utils/screenShell'
 import { usePluginsStore } from '../stores/plugins'
@@ -19,7 +21,9 @@ const props = defineProps<{
 const router = useRouter()
 const pluginsStore = usePluginsStore()
 
-const plugin = ref<Plugin | null>(null)
+type EditablePlugin = Omit<Plugin, 'dataSources'> & { dataSources?: EditableDataSource[] }
+
+const plugin = ref<EditablePlugin | null>(null)
 const formRef = ref<null | typeof VForm>(null)
 
 const nameRules = [
@@ -64,12 +68,12 @@ onMounted(async () => {
     if (!res.ok)
       throw new Error('Failed to fetch plugin')
     plugin.value = await res.json()
-    if (plugin.value && !plugin.value.dataSources) {
-      plugin.value.dataSources = []
+    if (plugin.value) {
+      plugin.value.dataSources = (plugin.value.dataSources ?? []).map(source => ({
+        ...source,
+        headersJson: source.headers ? JSON.stringify(source.headers, null, 2) : '',
+      }))
     }
-    plugin.value?.dataSources?.forEach((source: any) => {
-      source.headersJson = source.headers ? JSON.stringify(source.headers, null, 2) : ''
-    })
     // Initialize field values from plugin fields
     if (plugin.value?.fields) {
       plugin.value.fields.forEach((field) => {
@@ -88,7 +92,7 @@ const saveError = ref('')
 const previewLoading = ref(false)
 const previewHtml = ref('')
 const previewTarget = ref<RenderTarget>({ model: DEFAULT_MODEL, palette: DEFAULT_PALETTE })
-const previewData = ref<any>(null)
+const previewData = ref<Record<string, unknown> | null>(null)
 const previewError = ref('')
 const showPreview = ref(false)
 const previewTab = ref('rendered')
@@ -104,16 +108,21 @@ async function savePlugin() {
     // in the editor may carry stale or colliding order values.
     const payload = {
       ...plugin.value,
-      dataSources: (plugin.value.dataSources || []).map((source, index) => ({
-        ...source,
+      dataSources: (plugin.value.dataSources || []).map((source, index): CreatePluginDataSourcePayload => ({
+        name: source.name ?? '',
+        method: source.method,
+        url: source.url ?? '',
+        headers: source.headers,
+        body: source.body,
+        transformJs: source.transformJs,
         order: index,
       })),
     }
     await pluginsStore.updatePlugin(props.id, payload)
     router.push({ name: 'pluginsOverview' })
   }
-  catch (err: any) {
-    saveError.value = err.message || 'Failed to save plugin. Check console for details.'
+  catch (err) {
+    saveError.value = errorMessage(err, 'Failed to save plugin. Check console for details.')
   }
   finally {
     loading.value = false
@@ -168,9 +177,9 @@ async function previewPlugin() {
     previewError.value = ''
     showPreview.value = true
   }
-  catch (err: any) {
+  catch (err) {
     console.error('Preview error:', err)
-    previewError.value = err.message || 'Failed to generate preview. Check console for details.'
+    previewError.value = errorMessage(err, 'Failed to generate preview. Check console for details.')
   }
   finally {
     previewLoading.value = false

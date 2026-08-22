@@ -3,7 +3,7 @@ import type { PluginDataSource } from '@/types/plugin'
 import { mdiDelete, mdiPlus } from '@mdi/js'
 import { VAlert, VBtn, VExpansionPanel, VExpansionPanels, VExpansionPanelText, VExpansionPanelTitle, VSelect, VTextarea, VTextField } from 'vuetify/components'
 
-type EditableDataSource = Partial<PluginDataSource> & { headersJson?: string }
+export type EditableDataSource = Partial<PluginDataSource> & { headersJson?: string }
 
 const dataSources = defineModel<EditableDataSource[]>({ required: true })
 

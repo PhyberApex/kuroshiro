@@ -117,6 +117,23 @@ describe('pluginVariableResolverService', () => {
       expect(result.data).toBe(null)
     })
 
+    it('resolves variables inside array values without mangling the array into an object', () => {
+      const obj = {
+        tags: ['{{ API_KEY }}', 'static', 5],
+      }
+      const result = service.resolveInObject(obj, variables)
+      expect(Array.isArray(result.tags)).toBe(true)
+      expect(result.tags).toEqual(['secret-key-123', 'static', 5])
+    })
+
+    it('resolves variables inside objects nested within arrays', () => {
+      const obj = {
+        headers: [{ token: '{{ API_KEY }}' }],
+      }
+      const result = service.resolveInObject(obj, variables)
+      expect(result.headers).toEqual([{ token: 'secret-key-123' }])
+    })
+
     it('handles mixed types in object', () => {
       const obj = {
         // eslint-disable-next-line no-template-curly-in-string

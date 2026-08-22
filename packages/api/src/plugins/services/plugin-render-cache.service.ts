@@ -28,12 +28,12 @@ export class PluginRenderCacheService {
     }, 0)
   }
 
-  async renderAndCache(plugin: Plugin, data: any): Promise<void> {
+  async renderAndCache(plugin: Plugin, data: object | null): Promise<void> {
     if (!plugin.templates || plugin.templates.length === 0) {
       return
     }
 
-    const rendered = await this.renderer.render(plugin.templates[0].liquidMarkup, data)
+    const rendered = await this.renderer.render(plugin.templates[0].liquidMarkup, data ?? {})
 
     await this.screenRepository.update(
       { plugin: { id: plugin.id } },

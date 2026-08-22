@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 export const useMashupStore = defineStore('mashup', () => {
-  const layouts = ref<any | null>(null)
+  const layouts = ref<Record<string, unknown> | null>(null)
 
   async function fetchLayouts() {
     const res = await fetch('/api/mashup/layouts')

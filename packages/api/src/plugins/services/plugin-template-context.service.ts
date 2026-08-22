@@ -2,6 +2,15 @@ import type { DeviceSensor } from '../../device-sensors/entities/device-sensor.e
 import type { Plugin } from '../entities/plugin.entity'
 import { Injectable } from '@nestjs/common'
 
+export interface PluginTemplateContext {
+  trmnl: {
+    system: { timestamp_utc: number }
+    plugin_settings: { instance_name: string, strategy: 'polling', dark_mode: 'no' | 'yes', no_screen_padding: 'no' | 'yes' }
+    user: { id: string, locale: string }
+  }
+  sensors: Record<string, { value: number, unit: string }>
+}
+
 /**
  * Base Liquid template context: the `trmnl` system object plus an implicit
  * `sensors` object keyed by kind (ADR-0018) for whichever kinds the rendering
@@ -10,7 +19,7 @@ import { Injectable } from '@nestjs/common'
  */
 @Injectable()
 export class PluginTemplateContextService {
-  build(plugin: Plugin, sensors: DeviceSensor[]): Record<string, any> {
+  build(plugin: Plugin, sensors: DeviceSensor[]): PluginTemplateContext {
     return {
       trmnl: {
         system: {

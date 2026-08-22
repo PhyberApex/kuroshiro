@@ -45,7 +45,7 @@ export class CustomPalettesService {
   private assertValid(dto: CreateCustomPaletteDto): void {
     if (!dto.name?.trim())
       throw new BadRequestException('name is required')
-    if (!CUSTOM_PALETTE_FRAMEWORK_CLASSES.includes(dto.frameworkClass as any))
+    if (!CUSTOM_PALETTE_FRAMEWORK_CLASSES.includes(dto.frameworkClass))
       throw new BadRequestException(`frameworkClass must be one of: ${CUSTOM_PALETTE_FRAMEWORK_CLASSES.join(', ')}`)
     if (!Array.isArray(dto.colors) || dto.colors.length === 0 || dto.colors.some(c => !HEX_COLOR_PATTERN.test(c)))
       throw new BadRequestException('colors must be a non-empty array of #RRGGBB hex values')

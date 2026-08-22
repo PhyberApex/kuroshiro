@@ -12,27 +12,27 @@ export class PluginRendererService {
 
   private registerCustomFilters() {
     // Date formatting filters
-    this.liquid.registerFilter('date_short', (date: any) => {
-      const d = new Date(date)
+    this.liquid.registerFilter('date_short', (date: unknown) => {
+      const d = new Date(date as string | number | Date)
       return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     })
 
-    this.liquid.registerFilter('date_long', (date: any) => {
-      const d = new Date(date)
+    this.liquid.registerFilter('date_long', (date: unknown) => {
+      const d = new Date(date as string | number | Date)
       return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
     })
 
-    this.liquid.registerFilter('time_short', (date: any) => {
-      const d = new Date(date)
+    this.liquid.registerFilter('time_short', (date: unknown) => {
+      const d = new Date(date as string | number | Date)
       return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
     })
 
     // Number formatting
-    this.liquid.registerFilter('number_with_delimiter', (num: any) => {
+    this.liquid.registerFilter('number_with_delimiter', (num: unknown) => {
       return Number(num).toLocaleString('en-US')
     })
 
-    this.liquid.registerFilter('round', (num: any, precision = 0) => {
+    this.liquid.registerFilter('round', (num: unknown, precision = 0) => {
       return Number(num).toFixed(precision)
     })
 
@@ -51,7 +51,7 @@ export class PluginRendererService {
     })
 
     // Array helpers
-    this.liquid.registerFilter('shuffle', (arr: any[]) => {
+    this.liquid.registerFilter('shuffle', (arr: unknown[]) => {
       const shuffled = [...arr]
       for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -60,32 +60,32 @@ export class PluginRendererService {
       return shuffled
     })
 
-    this.liquid.registerFilter('sample', (arr: any[], count = 1) => {
+    this.liquid.registerFilter('sample', (arr: unknown[], count = 1) => {
       const shuffled = [...arr].sort(() => Math.random() - 0.5)
       return count === 1 ? shuffled[0] : shuffled.slice(0, count)
     })
 
     // Boolean helpers
-    this.liquid.registerFilter('yesno', (value: any, yes = 'Yes', no = 'No') => {
+    this.liquid.registerFilter('yesno', (value: unknown, yes = 'Yes', no = 'No') => {
       return value ? yes : no
     })
 
     // JSON serialization (used by TRMNL plugins)
-    this.liquid.registerFilter('json', (value: any) => {
+    this.liquid.registerFilter('json', (value: unknown) => {
       return JSON.stringify(value)
     })
 
     // URL encoding
-    this.liquid.registerFilter('url_encode', (value: any) => {
+    this.liquid.registerFilter('url_encode', (value: unknown) => {
       return encodeURIComponent(String(value))
     })
 
-    this.liquid.registerFilter('url_decode', (value: any) => {
+    this.liquid.registerFilter('url_decode', (value: unknown) => {
       return decodeURIComponent(String(value))
     })
   }
 
-  async render(template: string, data: Record<string, any>): Promise<string> {
+  async render(template: string, data: object): Promise<string> {
     return this.liquid.parseAndRender(template, data)
   }
 }

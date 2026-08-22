@@ -11,7 +11,10 @@ export type PluginKind = typeof PLUGIN_KINDS[number]
 export const MERGE_STRATEGIES = ['standard', 'deep_merge', 'stream'] as const
 export type MergeStrategy = typeof MERGE_STRATEGIES[number]
 
-export type WebhookPayload = Record<string, any> | any[] | null
+// A plain object, array, or null — modeled shallowly (rather than as a fully
+// recursive JSON type) because TypeORM's DeepPartial mapping over a
+// self-referential union here blows past TS's recursion limit (TS2589).
+export type WebhookPayload = Record<string, unknown> | unknown[] | null
 
 @Entity()
 export class Plugin {
@@ -69,4 +72,10 @@ export class Plugin {
 
   @OneToMany('PluginVariable', 'plugin')
   variables: PluginVariable[]
+}
+
+export type DevicePluginView = Plugin & {
+  _devicePluginId: string
+  _isActive: boolean
+  _order: number
 }

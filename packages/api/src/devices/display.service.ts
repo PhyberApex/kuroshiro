@@ -368,12 +368,15 @@ export class DeviceDisplayService {
   }
 
   private async fetchAndStoreMirrorImage(device: Device, proxyHeaders?: DisplayRequestHeadersDto): Promise<{ response: TrmnlScreenResponse, localImageUrl: string }> {
+    if (!device.mirrorMac || !device.mirrorApikey) {
+      throw new Error(`Device ${device.id} has mirroring enabled but is missing a mirror MAC or API key`)
+    }
     const mirrorHeaders = proxyHeaders
       ? { ...proxyHeaders, 'ID': device.mirrorMac, 'access-token': device.mirrorApikey }
       : { 'access-token': device.mirrorApikey, 'ID': device.mirrorMac }
     this.logger.debug(`Sending headers: ${JSON.stringify(mirrorHeaders)}`)
     const res = await fetch(`https://usetrmnl.com/api/${proxyHeaders ? 'display' : 'current_screen'}`, {
-      headers: mirrorHeaders as Record<string, string>,
+      headers: mirrorHeaders,
     })
     const response: TrmnlScreenResponse = await res.json()
     this.logger.debug(`Got this from TRMNL ${JSON.stringify(response)}`)
@@ -515,7 +518,7 @@ export class DeviceDisplayService {
     this.logger.log(`No cache, rendering plugin ${plugin.id} on-demand for screen ${screen.id}`)
 
     const sensors = await this.deviceSensors.findForDevice(device.id)
-    const templateContext: any = this.pluginTemplateContext.build(plugin, sensors)
+    const templateContext = this.pluginTemplateContext.build(plugin, sensors)
 
     // Fetch all of the plugin's data sources in parallel; a source that fails
     // gets an error marker instead of aborting the whole render (ADR-0005)
@@ -530,7 +533,7 @@ export class DeviceDisplayService {
       }),
     )
 
-    const data: Record<string, any> = {}
+    const data: Record<string, unknown> = {}
     results.forEach((result, index) => {
       const name = plugin.dataSources[index].name
       if (result.status === 'fulfilled') {

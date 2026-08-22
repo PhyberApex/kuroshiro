@@ -1,6 +1,10 @@
 import type { MergeStrategy, PluginKind } from '../entities/plugin.entity'
-import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator'
+import { Type } from 'class-transformer'
+import { IsArray, IsBoolean, IsIn, IsInt, IsOptional, IsString, Min, ValidateNested } from 'class-validator'
 import { MERGE_STRATEGIES, PLUGIN_KINDS } from '../entities/plugin.entity'
+import { PluginDataSourceDto } from './plugin-data-source.dto'
+import { PluginFieldDto } from './plugin-field.dto'
+import { PluginTemplateDto } from './plugin-template.dto'
 
 export class UpdatePluginDto {
   @IsOptional()
@@ -41,11 +45,20 @@ export class UpdatePluginDto {
   streamLimit?: number
 
   @IsOptional()
-  dataSources?: any[]
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PluginDataSourceDto)
+  dataSources?: PluginDataSourceDto[]
 
   @IsOptional()
-  templates?: any[]
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PluginTemplateDto)
+  templates?: PluginTemplateDto[]
 
   @IsOptional()
-  fields?: any[]
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PluginFieldDto)
+  fields?: PluginFieldDto[]
 }

@@ -37,7 +37,7 @@ describe('screensController (unit)', () => {
 
   it('add creates a screen', async () => {
     const dto: CreateScreenDto = { filename: 'file', deviceId: 'dev', fetchManual: false }
-    const file = { buffer: buffer.Buffer.from('data') }
+    const file = { buffer: buffer.Buffer.from('data') } as Express.Multer.File
     const screen = { id: '1', filename: 'file' } as Screen
     service.add.mockResolvedValue(screen)
     configService.get.mockReturnValue(false)

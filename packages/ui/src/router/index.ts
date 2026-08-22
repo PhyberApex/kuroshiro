@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useDeviceStore } from '../stores/device'
 import { usePluginsStore } from '../stores/plugins'
+import { routeParam } from '../utils/routeParam'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -22,7 +23,7 @@ const router = createRouter({
       beforeEnter: async (to) => {
         const store = useDeviceStore()
         await store.fetchDevices()
-        if (!store.getById(to.params.id as string))
+        if (!store.getById(routeParam(to.params.id)))
           return { name: 'overview' }
       },
     },
@@ -62,10 +63,11 @@ const router = createRouter({
       beforeEnter: async (to) => {
         const deviceStore = useDeviceStore()
         const pluginsStore = usePluginsStore()
+        const deviceId = routeParam(to.params.deviceId)
         await deviceStore.fetchDevices()
-        if (!deviceStore.getById(to.params.deviceId as string))
+        if (!deviceId || !deviceStore.getById(deviceId))
           return { name: 'overview' }
-        await pluginsStore.fetchPluginsForDevice(to.params.deviceId as string)
+        await pluginsStore.fetchPluginsForDevice(deviceId)
       },
     },
     {

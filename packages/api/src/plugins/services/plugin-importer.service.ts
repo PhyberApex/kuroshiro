@@ -1,17 +1,27 @@
+import type { JsonObject } from '../../utils/json'
 import type { PluginKind } from '../entities/plugin.entity'
 import { Buffer } from 'node:buffer'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import { Injectable, Logger } from '@nestjs/common'
+import { BadRequestException, Injectable, Logger } from '@nestjs/common'
 import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
+import { isPlainObject } from '../../utils/json'
 import { resolveAppPath } from '../../utils/pathHelper'
 
+function parseYamlObject<T>(content: string, invalidMessage: string): T {
+  const parsed: unknown = yaml.load(content)
+  if (!isPlainObject(parsed)) {
+    throw new BadRequestException(invalidMessage)
+  }
+  return parsed as T
+}
+
 interface TerminusManifest {
-  name: string
+  name?: string
   description?: string
   custom_fields?: CustomField[]
-  variables?: Record<string, any>
+  variables?: JsonObject
 }
 
 interface CustomField {
@@ -28,7 +38,7 @@ interface DataSourceEntry {
   endpoint?: string
   method?: string
   headers?: Record<string, string>
-  body?: Record<string, any>
+  body?: JsonObject
   transform_js?: string
 }
 
@@ -36,7 +46,7 @@ interface TerminusSettings {
   // Standard fields
   name?: string
   refresh_interval?: number
-  custom_fields?: CustomField[] | Record<string, any>
+  custom_fields?: CustomField[] | JsonObject
 
   // Kuroshiro's own multi-source round-trip format (issue #776)
   data_sources?: DataSourceEntry[]
@@ -47,7 +57,7 @@ interface TerminusSettings {
   endpoint?: string
   method?: string
   headers?: Record<string, string>
-  body?: Record<string, any>
+  body?: JsonObject
 
   // Actual Terminus format
   polling_url?: string
@@ -69,7 +79,7 @@ interface ParsedDataSource {
   method: string
   url: string
   headers?: Record<string, string>
-  body?: Record<string, any>
+  body?: JsonObject
   transformJs?: string | null
 }
 
@@ -209,8 +219,8 @@ export class PluginImporterService {
     const manifestContent = manifestEntry.getData().toString('utf8')
     const settingsContent = settingsEntry.getData().toString('utf8')
 
-    const manifest = yaml.load(manifestContent) as TerminusManifest
-    const settings = yaml.load(settingsContent) as TerminusSettings
+    const manifest = parseYamlObject<TerminusManifest>(manifestContent, 'Invalid manifest.yml')
+    const settings = parseYamlObject<TerminusSettings>(settingsContent, 'Invalid settings.yml')
 
     // Extract transform.js if it exists (used to process API data)
     const transformEntry = zipEntries.find(entry =>
@@ -306,7 +316,7 @@ export class PluginImporterService {
     }
 
     const settingsContent = settingsEntry.getData().toString('utf8')
-    const recipeSettings = yaml.load(settingsContent) as RecipeSettings
+    const recipeSettings = parseYamlObject<RecipeSettings>(settingsContent, 'Invalid settings.yml')
 
     if (recipeSettings.oauth_enabled) {
       throw new Error('OAuth recipes aren\'t supported yet')
@@ -356,7 +366,7 @@ export class PluginImporterService {
 
   private async importFromYaml(yamlPath: string, fallbackName: string): Promise<ParsedPlugin> {
     const content = await fs.promises.readFile(yamlPath, 'utf8')
-    const manifest = yaml.load(content) as TerminusManifest
+    const manifest = parseYamlObject<TerminusManifest>(content, 'Invalid manifest.yml')
 
     const dirName = path.dirname(yamlPath)
     const settingsPath = path.join(dirName, 'src', 'settings.yml')
@@ -366,7 +376,7 @@ export class PluginImporterService {
     }
 
     const settingsContent = await fs.promises.readFile(settingsPath, 'utf8')
-    const settings = yaml.load(settingsContent) as TerminusSettings
+    const settings = parseYamlObject<TerminusSettings>(settingsContent, 'Invalid settings.yml')
 
     const srcDir = path.join(dirName, 'src')
     const templates: Array<{ layout: string, liquidMarkup: string }> = []

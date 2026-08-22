@@ -4,6 +4,8 @@ import { FileInterceptor } from '@nestjs/platform-express'
 import { diskStorage } from 'multer'
 import { AssignPluginToDeviceDto } from './dto/assign-plugin-to-device.dto'
 import { CreatePluginDto } from './dto/create-plugin.dto'
+import { PreviewPluginDto } from './dto/preview-plugin.dto'
+import { UpdateDeviceAssignmentDto } from './dto/update-device-assignment.dto'
 import { UpdatePluginDto } from './dto/update-plugin.dto'
 import { PluginsService } from './plugins.service'
 import { PluginExporterService } from './services/plugin-exporter.service'
@@ -18,7 +20,8 @@ export class PluginsController {
   ) {}
 
   @Post('preview')
-  async preview(@Body() previewData: { sources: Array<{ name: string, url: string, method: string, headers?: Record<string, string>, body?: any, transformJs?: string }>, template: string, fieldValues?: Record<string, string> }) {
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async preview(@Body() previewData: PreviewPluginDto) {
     return this.pluginsService.preview(previewData.sources, previewData.template, previewData.fieldValues)
   }
 
@@ -38,13 +41,13 @@ export class PluginsController {
   }
 
   @Post()
-  @UsePipes(new ValidationPipe({ transform: true }))
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   async create(@Body() createPluginDto: CreatePluginDto) {
     return this.pluginsService.create(createPluginDto)
   }
 
   @Patch(':id')
-  @UsePipes(new ValidationPipe({ transform: true }))
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   async update(@Param('id') id: string, @Body() updatePluginDto: UpdatePluginDto) {
     return this.pluginsService.update(id, updatePluginDto)
   }
@@ -153,7 +156,8 @@ export class PluginsController {
   }
 
   @Patch('device-assignment/:devicePluginId')
-  async updateDeviceAssignment(@Param('devicePluginId') devicePluginId: string, @Body() updates: any) {
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  async updateDeviceAssignment(@Param('devicePluginId') devicePluginId: string, @Body() updates: UpdateDeviceAssignmentDto) {
     return this.pluginsService.updateDeviceAssignment(devicePluginId, updates)
   }
 }

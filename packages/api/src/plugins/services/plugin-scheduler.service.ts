@@ -33,7 +33,7 @@ export class PluginSchedulerService {
         // This cache entry is shared across every Screen/Device the Plugin is
         // assigned to (renderAndCache below writes it to all of them), so
         // there is no single Device to scope sensors to here.
-        const templateContext: any = this.pluginTemplateContext.build(plugin, [])
+        const templateContext = this.pluginTemplateContext.build(plugin, [])
 
         // Fetch all of the plugin's data sources in parallel; a source that fails
         // gets an error marker instead of aborting the whole render (ADR-0005)
@@ -43,7 +43,7 @@ export class PluginSchedulerService {
           ),
         )
 
-        const sourceData: Record<string, any> = {}
+        const sourceData: Record<string, unknown> = {}
         results.forEach((result, index) => {
           const name = plugin.dataSources[index].name
           if (result.status === 'fulfilled') {
