@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.12.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.11.0...kuroshiro-v0.12.0) (2026-08-22)
+
+
+### Features
+
+* **device-models:** support admin-created custom colour palettes ([#811](https://github.com/PhyberApex/kuroshiro/issues/811)) ([c05e5e2](https://github.com/PhyberApex/kuroshiro/commit/c05e5e2a0f138f6a8876989b1ba1151dc8c0f39c))
+* **devices:** add per-Device Sleep Mode with night window and dedicated sleep screen ([#822](https://github.com/PhyberApex/kuroshiro/issues/822)) ([686bbad](https://github.com/PhyberApex/kuroshiro/commit/686bbada2e6e993d7b564b9c3f5ae26dda6a55ec))
+* **devices:** ingest Qwiic sensor readings into Plugin templates ([#823](https://github.com/PhyberApex/kuroshiro/issues/823)) ([be62047](https://github.com/PhyberApex/kuroshiro/commit/be620478e2c9a921790d87c625c1138759827e50)), closes [#801](https://github.com/PhyberApex/kuroshiro/issues/801)
+* **display:** acknowledge Special Functions with action and fire them once ([#804](https://github.com/PhyberApex/kuroshiro/issues/804)) ([677ea62](https://github.com/PhyberApex/kuroshiro/commit/677ea6295d83a8582ab1ba26df263503fa3c0344))
+* **firmware:** custom OTA hosting and official-release sync ([#799](https://github.com/PhyberApex/kuroshiro/issues/799)) ([#813](https://github.com/PhyberApex/kuroshiro/issues/813)) ([82c6c13](https://github.com/PhyberApex/kuroshiro/commit/82c6c1313dacb5323946fd27241375be324861ce))
+* gate Screen Rotation on per-Screen day/time Schedules ([#809](https://github.com/PhyberApex/kuroshiro/issues/809)) ([eb67856](https://github.com/PhyberApex/kuroshiro/commit/eb67856d662bb2110ec9a6bb71f875c305de1518))
+* **plugins:** add literal Data Source mode and static Recipe import ([#821](https://github.com/PhyberApex/kuroshiro/issues/821)) ([#827](https://github.com/PhyberApex/kuroshiro/issues/827)) ([b3402d5](https://github.com/PhyberApex/kuroshiro/commit/b3402d5ee1b74b631a595a96e0a8164117cfab43))
+* **plugins:** import TRMNL Recipes as Poll plugins ([#812](https://github.com/PhyberApex/kuroshiro/issues/812)) ([96bc066](https://github.com/PhyberApex/kuroshiro/commit/96bc0665a63b1bb78ea474be673c91dec7c68875)), closes [#796](https://github.com/PhyberApex/kuroshiro/issues/796)
+* **plugins:** support multiple named data sources per Poll plugin ([#810](https://github.com/PhyberApex/kuroshiro/issues/810)) ([1155fff](https://github.com/PhyberApex/kuroshiro/commit/1155fff0b7b4f2fff19c0abc84e3707c89916c6f)), closes [#776](https://github.com/PhyberApex/kuroshiro/issues/776)
+* **plugins:** Webhook Plugin Kind with persisted payload store and fixed Merge Strategy ([#808](https://github.com/PhyberApex/kuroshiro/issues/808)) ([3cfa1d4](https://github.com/PhyberApex/kuroshiro/commit/3cfa1d43844dae5ef067766d98aaa5459616daf7))
+
+
+### Bug Fixes
+
+* **api:** add type-check script and fix accumulated tsc errors ([#818](https://github.com/PhyberApex/kuroshiro/issues/818)) ([ac404c6](https://github.com/PhyberApex/kuroshiro/commit/ac404c6530a3635da7a9f6ff6325de45edbaf0fb)), closes [#815](https://github.com/PhyberApex/kuroshiro/issues/815)
+* **devices:** forward resetDevice on the cycling and mirror paths ([#825](https://github.com/PhyberApex/kuroshiro/issues/825)) ([81310fe](https://github.com/PhyberApex/kuroshiro/commit/81310fe7ff0984ac1a30c7b19d215d5f79721bb1))
+* **plugins:** stop PATCH /plugins/:id from rejecting bodies that omit kind ([#829](https://github.com/PhyberApex/kuroshiro/issues/829)) ([a971211](https://github.com/PhyberApex/kuroshiro/commit/a9712110a350b23cf46a5e7d0d55692957ab634b)), closes [#828](https://github.com/PhyberApex/kuroshiro/issues/828)
+* **types:** remove any/unsafe casts from production source, enforce ts/no-explicit-any ([#826](https://github.com/PhyberApex/kuroshiro/issues/826)) ([17f1999](https://github.com/PhyberApex/kuroshiro/commit/17f1999e551d1f0e79b3bfb8a81e4e5395823029))
+* **ui:** trigger Special Function and Reset as isolated one-shot actions ([#819](https://github.com/PhyberApex/kuroshiro/issues/819)) ([1f72f3c](https://github.com/PhyberApex/kuroshiro/commit/1f72f3ce356e7c456fa35fad32d433346c10fac6)), closes [#805](https://github.com/PhyberApex/kuroshiro/issues/805)
+
 ## [0.11.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.10.2...kuroshiro-v0.11.0) (2026-08-19)
 
 
