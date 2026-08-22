@@ -33,11 +33,36 @@ Kuroshiro is for anyone who wants to experiment, self-host, and shape their own 
 ## ✨ Features at a Glance
 
 - **Auto Provisioning**: Devices set up themselves—like magic!
-- **Device Management**: Rename, reset, tweak refresh rates, and more.
-- **Live Device Insights**: WiFi, battery, firmware, and real-time previews.
+- **Device Management**: Rename, reset, tweak refresh rates, and trigger one-shot Special Functions (identify, sleep, add Wi-Fi, rewind).
+- **Multi-Size Device Support**: Every panel size and colour depth TRMNL sells, synced daily from the official model list, plus admin-created custom colour palettes.
+- **Live Device Insights**: WiFi, battery, firmware version, Qwiic sensor readings (CO₂, humidity, pressure, temperature), and real-time previews.
 - **Mirroring**: See what's on your official TRMNL server, right here.
-- **Screens Galore**: Add screens via link or upload, cache them, or fetch fresh every time.
+- **Screens Galore**: Add screens via link or upload, cache them, or fetch fresh every time—then gate any of them to a day/time Schedule.
+- **Plugins**: Poll external APIs (with multiple named Data Sources per plugin) or accept pushed Webhooks, render them with Liquid, or import a Recipe straight from trmnl.com.
+- **Firmware Management**: Official releases sync automatically, or push a custom OTA build, with per-Device-Model compatibility checks so you can't flash the wrong binary.
 - **Virtual Device**: Test without hardware—because why not?
+
+---
+
+## ⚖️ Kuroshiro vs. the rest of the TRMNL ecosystem
+
+Kuroshiro isn't the only way to run a TRMNL: the device also works with the official [trmnl.com](https://trmnl.com/) cloud, and with [Terminus](https://github.com/usetrmnl/terminus)—the other open-source, self-hosted BYOS. Here's how they line up today:
+
+| | **Kuroshiro** | [**Terminus**](https://github.com/usetrmnl/terminus) | **Official TRMNL Cloud** |
+|---|---|---|---|
+| Hosting | Self-hosted, one Docker image (NestJS + Vue) + your own Postgres | Self-hosted (Docker/K8s/Raspberry Pi), Ruby/Hanami + Postgres + Redis/Sidekiq | Managed SaaS, closed source |
+| Cost | Free, MIT-licensed | Free, MIT-licensed | Free tier + paid "Developer Edition" for custom plugins; device sold separately |
+| Accounts | Single admin, no login | Multi-user accounts with email verification | Cloud account required |
+| Device models & palettes | Full official catalog synced daily, plus admin-created custom colour Palettes | Device models & palettes supported | Defines the catalog—sells the hardware |
+| Plugins | `Poll` (multiple named Data Sources, each fetched or a literal value) & `Webhook` (3 merge strategies) | "Extensions"/Exchanges, single- or multi-source polling | 1,000+ native, community & private plugins |
+| Recipe import | Imports any trmnl.com Recipe, including serverless-transform ones Terminus's importer rejects | Imports via its Extension Gallery | Native—it's the source catalog |
+| Screen scheduling | Per-Screen day/time Schedule gates rotation eligibility | Playlist model: weekday/date windows, skip-if-stale TTL, device-grouped playlists | Playlist Scheduler, group scheduling by time of day |
+| Mashups | 7 layouts | Supported | 8 layouts |
+| Firmware | Official sync + custom OTA upload, hard-blocked unless the Firmware is compatible with the Device's model | Official sync + custom upload, no model-compatibility link | Manages its own hardware directly |
+| Sensors | Device-attached Qwiic sensors (CO₂/humidity/pressure/temperature), exposed to Plugin templates | Device-attached *and* server-attached (Raspberry Pi) sensors | — |
+| Sleep Mode | Not yet—on the [roadmap](#-roadmap--planned-features) | Supported | Supported |
+
+The short version: Kuroshiro trades Terminus's multi-user accounts and device-grouped playlists for a simpler single-admin, single-container deployment, while going further than either self-hosted option on per-Device-Model firmware safety and mixed fetch/literal Data Sources within one Plugin. See [`docs/adr`](./docs/adr) for the design decisions (and prior-art comparisons) behind each of these.
 
 ---
 
@@ -91,18 +116,21 @@ We're constantly working to make Kuroshiro even better! Here's what's on our roa
 ### 🔥 High Priority
 - [ ] **Device Logs Viewer** - View logs directly from your TRMNL devices for better debugging and monitoring
 - [x] **Refresh Rate UI Controls** - Adjust device refresh rates directly from the web interface
-- [ ] **Screen Management** - Switch active screens and reorder them directly in the UI
+- [x] **Screen Reordering** - Drag-and-drop screens into the order you want them to play
+- [ ] **Sleep Mode** - Per-Device night window that pauses rotation and lets the Device sleep through it instead of polling on its usual cadence
 
 ### 🎯 Medium Priority  
-- [ ] **Liquid Template Syntax** - Add Liquid templating support for dynamic HTML screens
-- [ ] **Maintenance Dashboard** - Clean up unused images and manage disk space efficiently
-- [ ] **Recipes Support** - Pre-built screen templates and configurations you can easily apply
+- [x] **Liquid Template Syntax** - Plugins render with Liquid, including Data Sources and Mashups; HTML Screens are still raw HTML
+- [x] **Maintenance Dashboard** - Clean up unused images, manage disk space, and manage Firmware
+- [x] **Recipes Support** - Import any TRMNL Recipe from trmnl.com straight into a Poll Plugin
 - [x] **Screen Mashups** - Combine multiple plugin screens into custom layouts (7 layouts supported!)
+- [x] **Screen Playlists** - Gate any Screen to a recurring day/time Schedule so rotation skips it outside that window
 
 ### 🔮 Future Enhancements
 - [x] **System Logs Viewer** - Internal system logging and monitoring capabilities  
 - [ ] **Smart Image Caching** - Intelligent caching algorithms to optimize storage and performance
-- [ ] **Screen Playlists** - Create playlists that cycle through multiple screens automatically
+- [ ] **Device Grouping** - Share one Schedule/rotation across multiple Devices
+- [ ] **Server-Attached Sensors** - Sensor data from a self-hosted Raspberry Pi, independent of what a Device itself reports
 
 > **Want to contribute?** Pick a feature from the roadmap and help us build it! Check out our [contribution guidelines](#-contribute--make-kuroshiro-even-better) below.
 
@@ -206,6 +234,26 @@ Combine multiple plugin outputs into a single screen using one of 7 available la
 - **2×2** - Four equal panels in a 2×2 grid
 
 Mashups use the official TRMNL CSS framework for consistent styling. If a plugin fails to render, an error placeholder is shown instead—allowing the rest of the mashup to display successfully (partial rendering).
+
+#### Screen Schedules
+Attach a Schedule to any Screen (including a Mashup) to gate when it's eligible to become the active one: a weekday selection, a daily time-of-day window (which can cross midnight), an optional active date range, and its own enabled/disabled toggle. Rotation simply skips Screens that aren't currently eligible—no gaps, no reordering. A Screen with no Schedule is always eligible.
+
+---
+
+## 🔌 Plugins
+
+Plugins pull outside data into a [Liquid](https://shopify.github.io/liquid/)-rendered template, in one of two ways:
+
+- **Poll**: Kuroshiro fetches on a shared `refreshInterval`. A Poll Plugin can hold multiple named **Data Sources**—each its own HTTP request (method, URL, headers, body, optional JS transform) or a literal, hand-entered JSON value—fetched in parallel and exposed to the template under its own name. If one source fails, the rest still render.
+- **Webhook**: an external system `POST`s JSON to the Plugin's own token-secured URL, and Kuroshiro renders on arrival. Choose how each POST combines with what's already stored—replace outright (`standard`), recursively merge objects (`deep_merge`), or append to an array up to a configurable limit (`stream`).
+
+Don't want to build a Plugin from scratch? Paste a Recipe's id or [trmnl.com/recipes](https://trmnl.com/recipes) URL and Kuroshiro imports it as a ready-to-use Poll Plugin. For OG devices with a Qwiic sensor add-on attached, CO₂, humidity, pressure and temperature readings are parsed straight off the device's poll and exposed to every template as `sensors.*`—no extra setup required.
+
+---
+
+## 🔧 Firmware & Device Models
+
+Kuroshiro tracks the official TRMNL model list and the latest official firmware automatically (synced daily, with a bundled snapshot as offline fallback), or you can upload a custom `.bin` build of your own. Every Firmware carries a SHA-256 checksum and an optional set of compatible Device Models, so assigning one to a Device is blocked outright if it doesn't match that Device's hardware—no accidental bricking. Pushes are always explicit: pick a Firmware for a Device under *Maintenance*, and it's served on that Device's next poll. Custom colour Palettes (admin-created, within one of TRMNL's fixed colour families) sit alongside the official ones synced from TRMNL, so you're not limited to whatever's officially curated for a given Device Model.
 
 ---
 
