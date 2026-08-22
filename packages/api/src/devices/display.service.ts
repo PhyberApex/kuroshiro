@@ -154,7 +154,7 @@ export class DeviceDisplayService {
         firmware_url: pushedFirmwareUrl,
         image_url: imgUrl,
         refresh_rate: device.refreshRate,
-        reset_firmware: false,
+        reset_firmware: resetDevice,
         special_function: specialFunction,
         temperature_profile: 'default',
         update_firmware: pushedUpdateFirmware,
@@ -174,7 +174,7 @@ export class DeviceDisplayService {
       let filename = 'error.png'
       let localImageUrl = await this.fallbackImageUrl('error', device)
       let firmwareUrl: string | null = null
-      let resetFirmware = false
+      let resetFirmware = resetDevice
       let mirrorSpecialFunction = specialFunction
       let mirrorAction = specialFunction
       let updateFirmware = false
