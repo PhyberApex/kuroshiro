@@ -15,6 +15,7 @@ interface MockRepository {
   create: ReturnType<typeof vi.fn>
   save: ReturnType<typeof vi.fn>
   remove: ReturnType<typeof vi.fn>
+  update: ReturnType<typeof vi.fn>
   maximum?: ReturnType<typeof vi.fn>
 }
 
@@ -26,6 +27,7 @@ function createMockRepository(): MockRepository {
     create: vi.fn(),
     save: vi.fn(),
     remove: vi.fn(),
+    update: vi.fn(),
     maximum: vi.fn(),
   }
 }
@@ -561,5 +563,114 @@ describe('pluginsService', () => {
       {},
       expect.objectContaining({ api_key: 'secret-123' }),
     )
+  })
+
+  describe('webhook-kind plugins', () => {
+    const webhookPlugin = {
+      id: '1',
+      name: 'Sensor Feed',
+      kind: 'Webhook',
+      refreshInterval: 15,
+      webhookToken: 'token-abc',
+      mergeStrategy: 'stream',
+      streamLimit: 20,
+    } as unknown as Plugin
+
+    it('create issues a webhook token and never schedules the plugin', async () => {
+      pluginRepo.save.mockImplementation(async (plugin: any) => ({ ...plugin, id: '1' }))
+      pluginRepo.findOne.mockResolvedValue(webhookPlugin)
+
+      await service.create({ name: 'Sensor Feed', kind: 'Webhook', mergeStrategy: 'standard' } as any)
+
+      expect(pluginRepo.save).toHaveBeenCalledWith(expect.objectContaining({
+        kind: 'Webhook',
+        mergeStrategy: 'standard',
+        webhookToken: expect.any(String),
+      }))
+      expect(mockScheduler.schedulePlugin).not.toHaveBeenCalled()
+    })
+
+    it('create rejects a data source on a webhook-kind plugin', async () => {
+      await expect(service.create({
+        name: 'Sensor Feed',
+        kind: 'Webhook',
+        mergeStrategy: 'standard',
+        dataSource: { url: 'https://api.example.com' },
+      } as any)).rejects.toThrow('A Webhook-kind Plugin cannot have a Data Source')
+    })
+
+    it('update rejects a change of kind', async () => {
+      pluginRepo.findOne.mockResolvedValue({ ...webhookPlugin })
+
+      await expect(service.update('1', { kind: 'Poll' } as any)).rejects.toThrow(
+        'A Plugin\'s Kind is fixed at creation and cannot be changed',
+      )
+    })
+
+    it('update rejects a nulled kind', async () => {
+      pluginRepo.findOne.mockResolvedValue({ ...webhookPlugin })
+
+      await expect(service.update('1', { kind: null } as any)).rejects.toThrow(
+        'A Plugin\'s Kind is fixed at creation and cannot be changed',
+      )
+    })
+
+    it('update rejects an explicit stream limit alongside a non-stream merge strategy', async () => {
+      pluginRepo.findOne.mockResolvedValue({ ...webhookPlugin })
+
+      await expect(service.update('1', { mergeStrategy: 'deep_merge', streamLimit: 20 } as any)).rejects.toThrow(
+        'A Stream Limit is only valid for the stream Merge Strategy',
+      )
+    })
+
+    it('update accepts an unchanged kind', async () => {
+      const stored = { ...webhookPlugin }
+      pluginRepo.findOne.mockResolvedValue(stored)
+      pluginRepo.save.mockImplementation(async (plugin: any) => plugin)
+
+      await expect(service.update('1', { kind: 'Webhook', name: 'Renamed' } as any)).resolves.toMatchObject({ name: 'Renamed' })
+    })
+
+    it('update rejects a merge strategy on a poll-kind plugin', async () => {
+      pluginRepo.findOne.mockResolvedValue({ ...basePlugin })
+
+      await expect(service.update('1', { mergeStrategy: 'stream' } as any)).rejects.toThrow(
+        'A Poll-kind Plugin cannot have a Merge Strategy',
+      )
+    })
+
+    it('update drops the stream limit when the merge strategy moves off stream', async () => {
+      const stored = { ...webhookPlugin }
+      pluginRepo.findOne.mockResolvedValue(stored)
+      pluginRepo.save.mockImplementation(async (plugin: any) => plugin)
+
+      const updated = await service.update('1', { mergeStrategy: 'deep_merge' } as any)
+
+      expect(updated).toMatchObject({ mergeStrategy: 'deep_merge', streamLimit: null })
+    })
+
+    it('update rejects a directly supplied webhook token', async () => {
+      pluginRepo.findOne.mockResolvedValue({ ...webhookPlugin })
+
+      await expect(service.update('1', { webhookToken: 'stolen' } as any)).rejects.toThrow(
+        'The Webhook Token is issued by Kuroshiro and cannot be set directly',
+      )
+    })
+
+    it('regenerateWebhookToken issues a new token', async () => {
+      pluginRepo.findOneBy.mockResolvedValue({ ...webhookPlugin })
+
+      const result = await service.regenerateWebhookToken('1')
+
+      expect(result.webhookToken).not.toBe('token-abc')
+      expect(pluginRepo.update).toHaveBeenCalledWith('1', { webhookToken: result.webhookToken })
+    })
+
+    it('clearWebhookPayload rejects a poll-kind plugin', async () => {
+      pluginRepo.findOneBy.mockResolvedValue({ ...basePlugin })
+
+      await expect(service.clearWebhookPayload('1')).rejects.toThrow('is not a Webhook-kind Plugin')
+      expect(pluginRepo.update).not.toHaveBeenCalled()
+    })
   })
 })

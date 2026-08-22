@@ -1,6 +1,6 @@
 import type { Plugin } from '../entities/plugin.entity'
 import type { PluginDataFetcherService } from '../services/plugin-data-fetcher.service'
-import type { PluginRendererService } from '../services/plugin-renderer.service'
+import type { PluginRenderCacheService } from '../services/plugin-render-cache.service'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PluginSchedulerService } from '../services/plugin-scheduler.service'
 
@@ -16,24 +16,18 @@ vi.mock('node-cron', () => ({
 describe('pluginSchedulerService', () => {
   let service: PluginSchedulerService
   let mockDataFetcher: PluginDataFetcherService
-  let mockRenderer: PluginRendererService
-  let mockScreenRepo: any
+  let mockRenderCache: PluginRenderCacheService
 
   beforeEach(() => {
     mockDataFetcher = {
       fetchData: vi.fn(),
     } as any
 
-    mockRenderer = {
-      render: vi.fn(),
+    mockRenderCache = {
+      renderAndCache: vi.fn(),
     } as any
 
-    mockScreenRepo = {
-      update: vi.fn(),
-      find: vi.fn(),
-    }
-
-    service = new PluginSchedulerService(mockDataFetcher, mockRenderer, mockScreenRepo)
+    service = new PluginSchedulerService(mockDataFetcher, mockRenderCache)
   })
 
   it('schedules a plugin with refresh interval', () => {
@@ -154,46 +148,16 @@ describe('pluginSchedulerService', () => {
     expect(service.hasScheduledJob('plugin-1')).toBe(false)
   })
 
-  it('invalidates mashup caches when plugin updates', async () => {
-    const mockMashupSlotRepo = {
-      find: vi.fn().mockResolvedValue([
-        {
-          id: 'slot-1',
-          mashupConfiguration: {
-            screen: { id: 'screen-1' },
-          },
-        },
-        {
-          id: 'slot-2',
-          mashupConfiguration: {
-            screen: { id: 'screen-2' },
-          },
-        },
-      ]),
-    }
+  it('does not schedule Webhook-kind plugins', () => {
+    const plugin = {
+      id: 'plugin-1',
+      kind: 'Webhook',
+      refreshInterval: 15,
+      templates: [{ layout: 'full', liquidMarkup: 'Test' }],
+    } as unknown as Plugin
 
-    service.mashupSlotRepository = mockMashupSlotRepo
+    service.schedulePlugin(plugin)
 
-    await service.invalidateMashupCaches('plugin-1')
-
-    expect(mockMashupSlotRepo.find).toHaveBeenCalledWith({
-      where: { plugin: { id: 'plugin-1' } },
-      relations: { mashupConfiguration: { screen: true } },
-    })
-    expect(mockScreenRepo.update).toHaveBeenCalledWith(
-      { id: 'screen-1' },
-      { cachedPluginOutput: null },
-    )
-    expect(mockScreenRepo.update).toHaveBeenCalledWith(
-      { id: 'screen-2' },
-      { cachedPluginOutput: null },
-    )
-  })
-
-  it('does not fail if mashupSlotRepository not available', async () => {
-    service.mashupSlotRepository = null
-
-    await expect(service.invalidateMashupCaches('plugin-1')).resolves.toBeUndefined()
-    expect(mockScreenRepo.update).not.toHaveBeenCalled()
+    expect(service.hasScheduledJob('plugin-1')).toBe(false)
   })
 })

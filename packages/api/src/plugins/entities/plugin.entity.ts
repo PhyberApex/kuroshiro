@@ -3,7 +3,15 @@ import type { PluginDataSource } from './plugin-data-source.entity'
 import type { PluginField } from './plugin-field.entity'
 import type { PluginTemplate } from './plugin-template.entity'
 import type { PluginVariable } from './plugin-variable.entity'
-import { Column, CreateDateColumn, Entity, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { Column, CreateDateColumn, Entity, Index, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+
+export const PLUGIN_KINDS = ['Poll', 'Webhook'] as const
+export type PluginKind = typeof PLUGIN_KINDS[number]
+
+export const MERGE_STRATEGIES = ['standard', 'deep_merge', 'stream'] as const
+export type MergeStrategy = typeof MERGE_STRATEGIES[number]
+
+export type WebhookPayload = Record<string, any> | any[] | null
 
 @Entity()
 export class Plugin {
@@ -17,10 +25,23 @@ export class Plugin {
   description?: string
 
   @Column('text', { default: 'Poll' })
-  kind: string = 'Poll'
+  kind: PluginKind = 'Poll'
 
   @Column('int', { default: 15 })
   refreshInterval: number = 15
+
+  @Index({ unique: true })
+  @Column('text', { nullable: true })
+  webhookToken?: string | null
+
+  @Column('text', { nullable: true })
+  mergeStrategy?: MergeStrategy | null
+
+  @Column('int', { nullable: true })
+  streamLimit?: number | null
+
+  @Column('jsonb', { nullable: true })
+  webhookPayload?: WebhookPayload
 
   @CreateDateColumn()
   createdAt: Date
