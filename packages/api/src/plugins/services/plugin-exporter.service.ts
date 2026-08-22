@@ -27,13 +27,19 @@ export class PluginExporterService {
     const manifestYaml = yaml.dump(manifest)
     zip.addFile('.trmnlp.yml', Buffer.from(manifestYaml, 'utf8'))
 
-    if (plugin.dataSource) {
+    if (plugin.dataSources && plugin.dataSources.length > 0) {
       const settings = {
         refresh_interval: plugin.refreshInterval,
-        endpoint: plugin.dataSource.url,
-        method: plugin.dataSource.method,
-        headers: plugin.dataSource.headers || {},
-        body: plugin.dataSource.body || {},
+        data_sources: [...plugin.dataSources]
+          .sort((a, b) => a.order - b.order)
+          .map(source => ({
+            name: source.name,
+            endpoint: source.url,
+            method: source.method,
+            headers: source.headers || {},
+            body: source.body || {},
+            ...(source.transformJs ? { transform_js: source.transformJs } : {}),
+          })),
       }
 
       const settingsYaml = yaml.dump(settings)

@@ -45,8 +45,8 @@ export class MashupRendererService {
   private async renderSlot(slot: MashupSlot, _device: Device): Promise<string> {
     const plugin = slot.plugin
 
-    if (!plugin.dataSource || !plugin.templates || plugin.templates.length === 0) {
-      throw new Error('Plugin missing data source or templates')
+    if (!plugin.dataSources || plugin.dataSources.length === 0 || !plugin.templates || plugin.templates.length === 0) {
+      throw new Error('Plugin missing data sources or templates')
     }
 
     // Build template context
@@ -68,25 +68,31 @@ export class MashupRendererService {
       },
     }
 
-    // Fetch data
-    let data = await this.pluginDataFetcher.fetchData(
-      plugin.dataSource.method,
-      plugin.dataSource.url,
-      plugin.dataSource.headers,
-      plugin.dataSource.body,
-      templateContext,
+    // Fetch all of the plugin's data sources in parallel; a source that fails
+    // gets an error marker instead of aborting the whole render (ADR-0005)
+    const results = await Promise.allSettled(
+      plugin.dataSources.map(async (source) => {
+        let rawData = await this.pluginDataFetcher.fetchData(source.method, source.url, source.headers, source.body, templateContext)
+        if (source.transformJs) {
+          rawData = this.pluginTransformer.transform(source.transformJs, rawData)
+        }
+        return rawData
+      }),
     )
 
-    // Apply transform if exists
-    if (plugin.dataSource.transformJs) {
-      data = this.pluginTransformer.transform(plugin.dataSource.transformJs, data)
-    }
+    const data: Record<string, any> = {}
+    results.forEach((result, index) => {
+      const name = plugin.dataSources[index].name
+      data[name] = result.status === 'fulfilled'
+        ? result.value
+        : { error: true, message: result.reason?.message || String(result.reason) }
+    })
 
     // Find template (prefer 'full' layout for now, could support size variants later)
     const template = plugin.templates.find(t => t.layout === 'full') || plugin.templates[0]
 
     // Render unwrapped plugin content
-    return await this.pluginRenderer.render(template.liquidMarkup, data)
+    return await this.pluginRenderer.render(template.liquidMarkup, { ...templateContext, ...data })
   }
 
   private buildMashupHtml(layout: string, slotHtmls: Array<{ slot: MashupSlot, html: string }>): string {

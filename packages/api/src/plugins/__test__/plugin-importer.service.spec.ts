@@ -41,7 +41,7 @@ describe('pluginImporterService', () => {
 
     await fs.promises.unlink(tempZipPath)
 
-    expect(result.dataSource.body).toEqual({})
+    expect(result.dataSources[0].body).toEqual({})
   })
 
   it('handles custom_fields from settings instead of manifest', async () => {
@@ -102,7 +102,7 @@ describe('pluginImporterService', () => {
 
     await fs.promises.unlink(tempZipPath)
 
-    expect(result.dataSource.headers).toEqual({})
+    expect(result.dataSources[0].headers).toEqual({})
   })
 
   it('throws error when ZIP has no templates', async () => {
@@ -168,8 +168,8 @@ describe('pluginImporterService', () => {
       expect(result.description).toBe('Test Description')
       expect(result.kind).toBe('Poll')
       expect(result.refreshInterval).toBe(30)
-      expect(result.dataSource.url).toBe('https://api.example.com/data')
-      expect(result.dataSource.method).toBe('GET')
+      expect(result.dataSources[0].url).toBe('https://api.example.com/data')
+      expect(result.dataSources[0].method).toBe('GET')
       expect(result.templates).toHaveLength(1)
       expect(result.templates[0].layout).toBe('full')
       expect(result.templates[0].liquidMarkup).toBe(template)
@@ -230,10 +230,10 @@ describe('pluginImporterService', () => {
 
       expect(result.name).toBe('Terminus Plugin')
       expect(result.refreshInterval).toBe(45)
-      expect(result.dataSource.url).toBe('https://terminus.com/api')
-      expect(result.dataSource.method).toBe('POST')
-      expect(result.dataSource.headers['X-API-Key']).toBe('key')
-      expect(result.dataSource.body.query).toBe('data')
+      expect(result.dataSources[0].url).toBe('https://terminus.com/api')
+      expect(result.dataSources[0].method).toBe('POST')
+      expect(result.dataSources[0].headers['X-API-Key']).toBe('key')
+      expect(result.dataSources[0].body.query).toBe('data')
 
       fs.unlinkSync(tmpPath)
     })
@@ -258,7 +258,7 @@ describe('pluginImporterService', () => {
 
       const result = await service.importFromFile(tmpPath)
 
-      expect(result.dataSource.transformJs).toBe('module.exports = (data) => data')
+      expect(result.dataSources[0].transformJs).toBe('module.exports = (data) => data')
 
       fs.unlinkSync(tmpPath)
     })
@@ -319,6 +319,100 @@ describe('pluginImporterService', () => {
       fs.writeFileSync(tmpPath, 'not a valid format')
 
       await expect(service.importFromFile(tmpPath)).rejects.toThrow('Unsupported file format')
+
+      fs.unlinkSync(tmpPath)
+    })
+
+    it('parses a "data_sources" array into multiple named data sources', async () => {
+      const zip = new AdmZip()
+
+      const manifest = { name: 'Multi Source Plugin' }
+      const settings = {
+        refresh_interval: 20,
+        data_sources: [
+          { name: 'weather', endpoint: 'https://api.example.com/weather', method: 'get', headers: { 'X-Key': 'a' } },
+          { name: 'air_quality', endpoint: 'https://api.example.com/air', method: 'GET', transform_js: 'module.exports = (d) => d' },
+        ],
+      }
+
+      zip.addFile('.trmnlp.yml', Buffer.from(yaml.dump(manifest), 'utf8'))
+      zip.addFile('src/settings.yml', Buffer.from(yaml.dump(settings), 'utf8'))
+      zip.addFile('src/full.liquid', Buffer.from('{{ weather.temp }} {{ air_quality.aqi }}', 'utf8'))
+
+      const tmpPath = path.join(__dirname, 'test-multi-source.zip')
+      zip.writeZip(tmpPath)
+
+      const result = await service.importFromFile(tmpPath)
+
+      fs.unlinkSync(tmpPath)
+
+      expect(result.dataSources).toHaveLength(2)
+      expect(result.dataSources[0]).toMatchObject({ name: 'weather', url: 'https://api.example.com/weather', method: 'GET', headers: { 'X-Key': 'a' } })
+      expect(result.dataSources[1]).toMatchObject({ name: 'air_quality', url: 'https://api.example.com/air', method: 'GET', transformJs: 'module.exports = (d) => d' })
+    })
+
+    it('defaults an unnamed entry in a "data_sources" array to source_N', async () => {
+      const zip = new AdmZip()
+
+      const manifest = { name: 'Unnamed Sources' }
+      const settings = {
+        data_sources: [
+          { endpoint: 'https://api.example.com/one' },
+          { endpoint: 'https://api.example.com/two' },
+        ],
+      }
+
+      zip.addFile('.trmnlp.yml', Buffer.from(yaml.dump(manifest), 'utf8'))
+      zip.addFile('src/settings.yml', Buffer.from(yaml.dump(settings), 'utf8'))
+      zip.addFile('src/full.liquid', Buffer.from('Test', 'utf8'))
+
+      const tmpPath = path.join(__dirname, 'test-unnamed-sources.zip')
+      zip.writeZip(tmpPath)
+
+      const result = await service.importFromFile(tmpPath)
+
+      fs.unlinkSync(tmpPath)
+
+      expect(result.dataSources[0].name).toBe('source_1')
+      expect(result.dataSources[1].name).toBe('source_2')
+    })
+
+    it('throws if a "data_sources" entry is missing an endpoint', async () => {
+      const zip = new AdmZip()
+
+      const manifest = { name: 'Broken Source' }
+      const settings = {
+        data_sources: [{ name: 'weather' }],
+      }
+
+      zip.addFile('.trmnlp.yml', Buffer.from(yaml.dump(manifest), 'utf8'))
+      zip.addFile('src/settings.yml', Buffer.from(yaml.dump(settings), 'utf8'))
+      zip.addFile('src/full.liquid', Buffer.from('Test', 'utf8'))
+
+      const tmpPath = path.join(__dirname, 'test-broken-source.zip')
+      zip.writeZip(tmpPath)
+
+      await expect(service.importFromFile(tmpPath)).rejects.toThrow('missing an "endpoint"')
+
+      fs.unlinkSync(tmpPath)
+    })
+
+    it('rejects a legacy singular "data_source" key instead of silently coercing it', async () => {
+      const zip = new AdmZip()
+
+      const manifest = { name: 'Stale Export' }
+      const settings = {
+        data_source: { endpoint: 'https://api.example.com', method: 'GET' },
+      }
+
+      zip.addFile('.trmnlp.yml', Buffer.from(yaml.dump(manifest), 'utf8'))
+      zip.addFile('src/settings.yml', Buffer.from(yaml.dump(settings), 'utf8'))
+      zip.addFile('src/full.liquid', Buffer.from('Test', 'utf8'))
+
+      const tmpPath = path.join(__dirname, 'test-legacy-data-source.zip')
+      zip.writeZip(tmpPath)
+
+      await expect(service.importFromFile(tmpPath)).rejects.toThrow('legacy single-data-source format')
 
       fs.unlinkSync(tmpPath)
     })

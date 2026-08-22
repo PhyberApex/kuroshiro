@@ -113,23 +113,18 @@ describe('pluginsController', () => {
 
   it('preview returns preview data', async () => {
     const previewData = {
-      url: 'https://api.example.com',
-      method: 'GET',
-      template: '<div>{{ data }}</div>',
+      sources: [{ name: 'source', url: 'https://api.example.com', method: 'GET' }],
+      template: '<div>{{ source }}</div>',
     }
-    const previewResult = { html: '<div>test</div>', data: { test: true } }
+    const previewResult = { html: '<div>test</div>', data: { source: { test: true } } }
     ;(mockService.preview as any).mockResolvedValue(previewResult)
 
-    const result = await controller.preview(previewData)
+    const result = await controller.preview(previewData as any)
 
     expect(result).toBe(previewResult)
     expect(mockService.preview).toHaveBeenCalledWith(
-      previewData.url,
-      previewData.method,
-      undefined,
-      undefined,
+      previewData.sources,
       previewData.template,
-      undefined,
       undefined,
     )
   })
@@ -138,7 +133,7 @@ describe('pluginsController', () => {
     const file = { path: '/tmp/plugin.zip' } as Express.Multer.File
     const parsedPlugin = {
       name: 'Imported Plugin',
-      dataSource: { url: 'https://api.com', method: 'GET', headers: {}, body: {} },
+      dataSources: [{ name: 'source', url: 'https://api.com', method: 'GET', headers: {}, body: {} }],
     }
     const createdPlugin = { id: 'plugin-1', name: 'Imported Plugin' }
     ;(mockImporter.importFromFile as any).mockResolvedValue(parsedPlugin)
@@ -157,13 +152,14 @@ describe('pluginsController', () => {
     const file = { path: '/tmp/plugin.zip' } as Express.Multer.File
     const parsedPlugin = {
       name: 'Imported Plugin',
-      dataSource: {
+      dataSources: [{
+        name: 'source',
         url: 'https://api.com',
         method: 'GET',
         headers: {},
         body: {},
         transformJs: 'module.exports = (d) => d',
-      },
+      }],
     }
     const createdPlugin = { id: 'plugin-1', name: 'Imported Plugin' }
     ;(mockImporter.importFromFile as any).mockResolvedValue(parsedPlugin)
@@ -188,7 +184,7 @@ describe('pluginsController', () => {
     const body = { githubUrl: 'https://github.com/user/plugin' }
     const parsedPlugin = {
       name: 'GitHub Plugin',
-      dataSource: { url: 'https://api.com', method: 'GET', headers: {}, body: {} },
+      dataSources: [{ name: 'source', url: 'https://api.com', method: 'GET', headers: {}, body: {} }],
     }
     const createdPlugin = { id: 'plugin-2', name: 'GitHub Plugin' }
     ;(mockImporter.importFromGithubUrl as any).mockResolvedValue(parsedPlugin)
@@ -206,7 +202,7 @@ describe('pluginsController', () => {
     const body = { githubUrl: 'https://github.com/user/plugin', deviceId: 'device-1' }
     const parsedPlugin = {
       name: 'GitHub Plugin',
-      dataSource: { url: 'https://api.com', method: 'GET', headers: {}, body: {} },
+      dataSources: [{ name: 'source', url: 'https://api.com', method: 'GET', headers: {}, body: {} }],
     }
     const createdPlugin = { id: 'plugin-2', name: 'GitHub Plugin' }
     ;(mockImporter.importFromGithubUrl as any).mockResolvedValue(parsedPlugin)

@@ -18,7 +18,7 @@ class PluginKindFieldsConstraint implements ValidatorConstraintInterface {
     const dto = args.object as CreatePluginDto
     return {
       kind: dto.kind,
-      dataSource: dto.dataSource,
+      dataSources: dto.dataSources,
       webhookToken: dto.webhookToken,
       mergeStrategy: dto.mergeStrategy,
       streamLimit: dto.streamLimit,
@@ -75,7 +75,7 @@ export class CreatePluginDto {
   streamLimit?: number
 
   @IsOptional()
-  dataSource?: any
+  dataSources?: any[]
 
   @IsOptional()
   templates?: any[]

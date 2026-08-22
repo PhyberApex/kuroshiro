@@ -1,5 +1,17 @@
 import { Column, Entity, PrimaryColumn } from 'typeorm'
 
+export const PALETTE_KINDS = ['official', 'custom'] as const
+export type PaletteKind = typeof PALETTE_KINDS[number]
+
+export const CUSTOM_PALETTE_FRAMEWORK_CLASSES = [
+  'screen--color-3bwr',
+  'screen--color-3bwy',
+  'screen--color-4bwry',
+  'screen--color-6a',
+  'screen--color-7a',
+] as const
+export type CustomPaletteFrameworkClass = typeof CUSTOM_PALETTE_FRAMEWORK_CLASSES[number]
+
 @Entity()
 export class Palette {
   @PrimaryColumn('text')
@@ -7,6 +19,9 @@ export class Palette {
 
   @Column('text')
   name: string
+
+  @Column('text', { default: 'official' })
+  kind: PaletteKind = 'official'
 
   @Column('int')
   grays: number

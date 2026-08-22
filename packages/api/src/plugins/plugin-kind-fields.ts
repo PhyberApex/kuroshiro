@@ -2,7 +2,7 @@ import type { MergeStrategy, PluginKind } from './entities/plugin.entity'
 
 export interface PluginKindFields {
   kind: PluginKind
-  dataSource?: unknown
+  dataSources?: unknown
   webhookToken?: unknown
   mergeStrategy?: MergeStrategy | null
   streamLimit?: number | null
@@ -12,12 +12,16 @@ function isPresent(value: unknown): boolean {
   return value !== undefined && value !== null
 }
 
+function hasDataSources(value: unknown): boolean {
+  return Array.isArray(value) && value.length > 0
+}
+
 /**
  * Poll and Webhook Plugins have disjoint required fields; a Plugin carrying a
  * field from the Kind it isn't is rejected rather than silently ignored.
  */
 export function pluginKindFieldViolation(fields: PluginKindFields): string | null {
-  const { kind, dataSource, webhookToken, mergeStrategy, streamLimit } = fields
+  const { kind, dataSources, webhookToken, mergeStrategy, streamLimit } = fields
 
   if (isPresent(webhookToken)) {
     return 'The Webhook Token is issued by Kuroshiro and cannot be set directly'
@@ -33,8 +37,8 @@ export function pluginKindFieldViolation(fields: PluginKindFields): string | nul
     return null
   }
 
-  if (isPresent(dataSource)) {
-    return 'A Webhook-kind Plugin cannot have a Data Source'
+  if (hasDataSources(dataSources)) {
+    return 'A Webhook-kind Plugin cannot have Data Sources'
   }
   if (!isPresent(mergeStrategy)) {
     return 'A Webhook-kind Plugin requires a Merge Strategy'

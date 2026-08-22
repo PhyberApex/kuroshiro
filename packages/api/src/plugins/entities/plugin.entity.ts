@@ -3,7 +3,7 @@ import type { PluginDataSource } from './plugin-data-source.entity'
 import type { PluginField } from './plugin-field.entity'
 import type { PluginTemplate } from './plugin-template.entity'
 import type { PluginVariable } from './plugin-variable.entity'
-import { Column, CreateDateColumn, Entity, Index, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { Column, CreateDateColumn, Entity, Index, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 
 export const PLUGIN_KINDS = ['Poll', 'Webhook'] as const
 export type PluginKind = typeof PLUGIN_KINDS[number]
@@ -52,8 +52,8 @@ export class Plugin {
   @OneToMany('DevicePlugin', 'plugin')
   deviceAssignments?: DevicePlugin[]
 
-  @OneToOne('PluginDataSource', 'plugin')
-  dataSource?: PluginDataSource
+  @OneToMany('PluginDataSource', 'plugin')
+  dataSources: PluginDataSource[]
 
   @OneToMany('PluginTemplate', 'plugin')
   templates: PluginTemplate[]

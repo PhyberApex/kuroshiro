@@ -2,17 +2,19 @@ import type { MockDeviceModelsService } from './mockDeviceModelsService'
 import { ServiceUnavailableException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DeviceModelsController } from '../device-models.controller'
-import { BW, createMockDeviceModelsService, OG_PLUS } from './mockDeviceModelsService'
+import { BW, createMockDeviceModelsService, CUSTOM_RED_3BWR, OG_PLUS } from './mockDeviceModelsService'
 
 describe('deviceModelsController', () => {
   let controller: DeviceModelsController
   let deviceModels: MockDeviceModelsService
   let syncService: { sync: ReturnType<typeof vi.fn> }
+  let customPalettesService: { create: ReturnType<typeof vi.fn>, delete: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     deviceModels = createMockDeviceModelsService()
     syncService = { sync: vi.fn() }
-    controller = new DeviceModelsController(deviceModels as any, syncService as any)
+    customPalettesService = { create: vi.fn(), delete: vi.fn() }
+    controller = new DeviceModelsController(deviceModels as any, syncService as any, customPalettesService as any)
   })
 
   it('lists device models', async () => {
@@ -34,5 +36,18 @@ describe('deviceModelsController', () => {
   it('maps a failed sync to 503', async () => {
     syncService.sync.mockRejectedValue(new Error('TRMNL models request failed: 502 Bad Gateway'))
     await expect(controller.sync()).rejects.toThrow(ServiceUnavailableException)
+  })
+
+  it('delegates palette creation to CustomPalettesService', async () => {
+    const dto = { name: 'My Red', frameworkClass: 'screen--color-3bwr', colors: ['#ff0000'] } as any
+    customPalettesService.create.mockResolvedValue(CUSTOM_RED_3BWR)
+    await expect(controller.createPalette(dto)).resolves.toBe(CUSTOM_RED_3BWR)
+    expect(customPalettesService.create).toHaveBeenCalledWith(dto)
+  })
+
+  it('delegates palette deletion to CustomPalettesService', async () => {
+    customPalettesService.delete.mockResolvedValue(undefined)
+    await controller.deletePalette(CUSTOM_RED_3BWR.id)
+    expect(customPalettesService.delete).toHaveBeenCalledWith(CUSTOM_RED_3BWR.id)
   })
 })

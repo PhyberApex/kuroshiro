@@ -1,4 +1,6 @@
 import type { Repository } from 'typeorm'
+import type { DeviceModel } from '../device-models/entities/device-model.entity'
+import type { Palette } from '../device-models/entities/palette.entity'
 import type { UpdateDeviceDto } from './dto/update-device.dto'
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
@@ -70,12 +72,24 @@ export class DevicesService {
       if (!device.deviceModel)
         throw new BadRequestException('Cannot set a palette on a device with no assigned device model')
       const palette = await this.deviceModels.findPalette(paletteId)
-      if (!palette || !device.deviceModel.paletteIds.includes(paletteId))
+      if (!palette || !(await this.paletteSupportedBy(palette, device.deviceModel)))
         throw new BadRequestException(`Palette ${paletteId} is not supported by device model ${device.deviceModel.name}`)
       device.palette = palette
     }
     if (device.deviceModel && !device.palette)
       device.palette = await this.deviceModels.defaultPaletteFor(device.deviceModel)
+  }
+
+  /**
+   * Official palettes are validated against the model's curated `paletteIds`;
+   * custom palettes have no per-model list, so compatibility is derived from
+   * whether the palette's colour family is already represented on the model.
+   */
+  private async paletteSupportedBy(palette: Palette, model: DeviceModel): Promise<boolean> {
+    if (palette.kind === 'official')
+      return model.paletteIds.includes(palette.id)
+    const compatibleFamilies = await this.deviceModels.compatibleFamiliesFor(model)
+    return compatibleFamilies.has(palette.frameworkClass)
   }
 
   private async applyFirmwareChanges(device: Device, targetFirmwareId?: string): Promise<void> {

@@ -6,7 +6,7 @@ export interface Plugin {
   refreshInterval: number
   createdAt: Date
   updatedAt: Date
-  dataSource?: PluginDataSource
+  dataSources?: PluginDataSource[]
   templates?: PluginTemplate[]
   fields?: PluginField[]
   deviceAssignments?: DeviceAssignment[]
@@ -28,11 +28,13 @@ export interface DeviceAssignment {
 
 export interface PluginDataSource {
   id: string
+  name: string
   method: string
   url: string
   headers?: Record<string, string>
   body?: Record<string, any>
   transformJs?: string
+  order: number
 }
 
 export interface PluginTemplate {

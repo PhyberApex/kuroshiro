@@ -20,17 +20,21 @@ describe('create-plugin dto', () => {
     expect(dto.refreshInterval).toBe(30)
   })
 
-  it('includes optional dataSource', () => {
+  it('includes optional dataSources array', () => {
     const dto = new CreatePluginDto()
-    dto.dataSource = {
-      url: 'https://api.example.com',
-      method: 'GET',
-      headers: {},
-      body: {},
-    }
+    dto.dataSources = [
+      {
+        name: 'weather',
+        url: 'https://api.example.com',
+        method: 'GET',
+        headers: {},
+        body: {},
+      },
+    ]
 
-    expect(dto.dataSource).toBeDefined()
-    expect(dto.dataSource?.url).toBe('https://api.example.com')
+    expect(dto.dataSources).toHaveLength(1)
+    expect(dto.dataSources?.[0].name).toBe('weather')
+    expect(dto.dataSources?.[0].url).toBe('https://api.example.com')
   })
 
   it('includes optional templates array', () => {
@@ -92,9 +96,9 @@ describe('create-plugin dto', () => {
 
   describe('webhook-kind field restrictions', () => {
     it('rejects a Data Source', async () => {
-      const payload = { name: 'Webhook Plugin', kind: 'Webhook', mergeStrategy: 'standard', dataSource: { url: 'https://api.example.com' } }
+      const payload = { name: 'Webhook Plugin', kind: 'Webhook', mergeStrategy: 'standard', dataSources: [{ name: 'source', url: 'https://api.example.com' }] }
 
-      await expect(violations(payload)).resolves.toContain('A Webhook-kind Plugin cannot have a Data Source')
+      await expect(violations(payload)).resolves.toContain('A Webhook-kind Plugin cannot have Data Sources')
     })
 
     it('requires a Merge Strategy', async () => {

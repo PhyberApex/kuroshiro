@@ -104,6 +104,21 @@ describe('deviceModelSyncService', () => {
       expect(result.syncedAt).toBeInstanceOf(Date)
     })
 
+    it('never upserts or deprecates a kind: custom palette, regardless of what upstream reports', async () => {
+      mockFetch.mockImplementation(async (url: string) =>
+        url.endsWith('/palettes') ? jsonResponse([paletteA]) : jsonResponse([modelA]))
+      paletteRepo.find.mockResolvedValue([{ id: 'bw' }])
+      modelRepo.find.mockResolvedValue([{ name: 'og_plus' }])
+
+      await service.sync()
+
+      expect(paletteRepo.find).toHaveBeenCalledWith({ select: { id: true }, where: { deprecated: false, kind: 'official' } })
+      expect(paletteRepo.upsert).toHaveBeenCalledWith(
+        [expect.objectContaining({ id: 'bw', kind: 'official' })],
+        ['id'],
+      )
+    })
+
     it('does not deprecate anything when the live list matches', async () => {
       mockFetch.mockImplementation(async (url: string) =>
         url.endsWith('/palettes') ? jsonResponse([paletteA]) : jsonResponse([modelA]))

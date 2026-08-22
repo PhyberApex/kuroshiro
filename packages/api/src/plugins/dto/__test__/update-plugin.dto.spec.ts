@@ -18,17 +18,21 @@ describe('update-plugin dto', () => {
     expect(dto.refreshInterval).toBeUndefined()
   })
 
-  it('updates dataSource', () => {
+  it('updates dataSources array', () => {
     const dto = new UpdatePluginDto()
-    dto.dataSource = {
-      url: 'https://new-api.example.com',
-      method: 'POST',
-      headers: { Authorization: 'Bearer token' },
-      body: { key: 'value' },
-    }
+    dto.dataSources = [
+      {
+        name: 'weather',
+        url: 'https://new-api.example.com',
+        method: 'POST',
+        headers: { Authorization: 'Bearer token' },
+        body: { key: 'value' },
+      },
+    ]
 
-    expect(dto.dataSource?.url).toBe('https://new-api.example.com')
-    expect(dto.dataSource?.method).toBe('POST')
+    expect(dto.dataSources).toHaveLength(1)
+    expect(dto.dataSources?.[0].url).toBe('https://new-api.example.com')
+    expect(dto.dataSources?.[0].method).toBe('POST')
   })
 
   it('updates templates', () => {

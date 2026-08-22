@@ -131,8 +131,9 @@ export class DeviceModelSyncService implements OnApplicationBootstrap {
     return missing.length
   }
 
+  /** Scoped to `kind: 'official'` so a sync run never deprecates an admin-created custom palette. */
   private async deprecateMissingPalettes(presentIds: string[]): Promise<number> {
-    const active = await this.paletteRepository.find({ select: { id: true }, where: { deprecated: false } })
+    const active = await this.paletteRepository.find({ select: { id: true }, where: { deprecated: false, kind: 'official' } })
     const missing = active.map(p => p.id).filter(id => !presentIds.includes(id))
     if (missing.length > 0)
       await this.paletteRepository.update({ id: In(missing) }, { deprecated: true })
