@@ -1,10 +1,13 @@
+import type { DeviceSensor } from '../../device-sensors/entities/device-sensor.entity'
 import type { Device } from '../../devices/devices.entity'
 import type { MashupConfiguration } from '../entities/mashup-configuration.entity'
 import type { MashupSlot } from '../entities/mashup-slot.entity'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { DeviceSensorsService } from '../../device-sensors/device-sensors.service'
 import { PluginDataFetcherService } from '../../plugins/services/plugin-data-fetcher.service'
 import { PluginRendererService } from '../../plugins/services/plugin-renderer.service'
+import { PluginTemplateContextService } from '../../plugins/services/plugin-template-context.service'
 import { PluginTransformService } from '../../plugins/services/plugin-transform.service'
 import { getErrorMessage } from '../../utils/getErrorMessage'
 
@@ -17,17 +20,20 @@ export class MashupRendererService {
     private readonly pluginRenderer: PluginRendererService,
     private readonly pluginTransformer: PluginTransformService,
     private readonly configService: ConfigService,
+    private readonly deviceSensors: DeviceSensorsService,
+    private readonly pluginTemplateContext: PluginTemplateContextService,
   ) {}
 
   async renderMashup(mashupConfig: MashupConfiguration, device: Device): Promise<string> {
     this.logger.log(`Rendering mashup ${mashupConfig.id} for device ${device.id}`)
 
     const slotHtmls: Array<{ slot: MashupSlot, html: string }> = []
+    const sensors = await this.deviceSensors.findForDevice(device.id)
 
     // Render each slot (with error handling for partial renders)
     for (const slot of mashupConfig.slots) {
       try {
-        const html = await this.renderSlot(slot, device)
+        const html = await this.renderSlot(slot, sensors)
         slotHtmls.push({ slot, html })
       }
       catch (err) {
@@ -44,31 +50,14 @@ export class MashupRendererService {
     return this.buildMashupHtml(mashupConfig.layout, slotHtmls)
   }
 
-  private async renderSlot(slot: MashupSlot, _device: Device): Promise<string> {
+  private async renderSlot(slot: MashupSlot, sensors: DeviceSensor[]): Promise<string> {
     const plugin = slot.plugin
 
     if (!plugin.dataSources || plugin.dataSources.length === 0 || !plugin.templates || plugin.templates.length === 0) {
       throw new Error('Plugin missing data sources or templates')
     }
 
-    // Build template context
-    const templateContext: any = {
-      trmnl: {
-        system: {
-          timestamp_utc: Math.floor(Date.now() / 1000),
-        },
-        plugin_settings: {
-          instance_name: plugin.name,
-          strategy: 'polling',
-          dark_mode: 'no',
-          no_screen_padding: 'no',
-        },
-        user: {
-          id: 'kuroshiro-user',
-          locale: 'en',
-        },
-      },
-    }
+    const templateContext: any = this.pluginTemplateContext.build(plugin, sensors)
 
     // Fetch all of the plugin's data sources in parallel; a source that fails
     // gets an error marker instead of aborting the whole render (ADR-0005)

@@ -11,9 +11,11 @@ import { DeviceModelsService } from '../device-models/device-models.service'
 import { FallbackScreensService } from '../device-models/fallback-screens.service'
 import { renderHtmlToPng } from '../device-models/render-html-to-png'
 import { viewFull, wrapInScreenShell } from '../device-models/screen-shell'
+import { DeviceSensorsService } from '../device-sensors/device-sensors.service'
 import { FirmwareService } from '../firmware/firmware.service'
 import { PluginDataFetcherService } from '../plugins/services/plugin-data-fetcher.service'
 import { PluginRendererService } from '../plugins/services/plugin-renderer.service'
+import { PluginTemplateContextService } from '../plugins/services/plugin-template-context.service'
 import { PluginTransformService } from '../plugins/services/plugin-transform.service'
 import { isScheduleEligible } from '../schedule/schedule-eligibility'
 import { Screen } from '../screens/screens.entity'
@@ -54,6 +56,8 @@ export class DeviceDisplayService {
     private pluginDataFetcher: PluginDataFetcherService,
     private pluginRenderer: PluginRendererService,
     private pluginTransformer: PluginTransformService,
+    private deviceSensors: DeviceSensorsService,
+    private pluginTemplateContext: PluginTemplateContextService,
   ) {
     // Lazy injection to avoid circular dependency
     setTimeout(async () => {
@@ -65,6 +69,8 @@ export class DeviceDisplayService {
           this.pluginRenderer,
           this.pluginTransformer,
           this.configService,
+          this.deviceSensors,
+          this.pluginTemplateContext,
         )
       }
       catch {
@@ -95,6 +101,7 @@ export class DeviceDisplayService {
     device.reportedModel = headers.model ?? device.reportedModel
     if (!device.deviceModel)
       await this.deviceModels.assignResolvedModel(device)
+    await this.deviceSensors.syncFromHeader(device, headers.sensors)
     // Handling reset
     const resetDevice = device.resetDevice
     device.resetDevice = false
@@ -394,7 +401,7 @@ export class DeviceDisplayService {
         // Fallback: fetch and render on-demand
         else if (plugin.dataSources && plugin.dataSources.length > 0 && plugin.templates && plugin.templates.length > 0) {
           try {
-            const renderedHtml = await this.renderPluginHtml(plugin, screen)
+            const renderedHtml = await this.renderPluginHtml(plugin, screen, device)
             if (renderedHtml)
               imgUrl = await this.renderBodyToScreenPng(viewFull(renderedHtml), screen, device)
           }
@@ -445,29 +452,11 @@ export class DeviceDisplayService {
       : await this.fallbackImageUrl('error', device)
   }
 
-  private async renderPluginHtml(plugin: Plugin, screen: Screen): Promise<string | null> {
+  private async renderPluginHtml(plugin: Plugin, screen: Screen, device: Device): Promise<string | null> {
     this.logger.log(`No cache, rendering plugin ${plugin.id} on-demand for screen ${screen.id}`)
 
-    // Build template context with trmnl system variables
-    const templateContext: any = {
-      trmnl: {
-        system: {
-          timestamp_utc: Math.floor(Date.now() / 1000),
-        },
-        plugin_settings: {
-          instance_name: plugin.name,
-          strategy: 'polling',
-          dark_mode: 'no',
-          no_screen_padding: 'no',
-        },
-        user: {
-          id: 'kuroshiro-user',
-          locale: 'en',
-        },
-      },
-    }
-
-    // TODO: Add plugin field values to context when we have device-specific values
+    const sensors = await this.deviceSensors.findForDevice(device.id)
+    const templateContext: any = this.pluginTemplateContext.build(plugin, sensors)
 
     // Fetch all of the plugin's data sources in parallel; a source that fails
     // gets an error marker instead of aborting the whole render (ADR-0005)

@@ -4,6 +4,7 @@ import { Injectable, Logger } from '@nestjs/common'
 import cron from 'node-cron'
 import { PluginDataFetcherService } from './plugin-data-fetcher.service'
 import { PluginRenderCacheService } from './plugin-render-cache.service'
+import { PluginTemplateContextService } from './plugin-template-context.service'
 
 @Injectable()
 export class PluginSchedulerService {
@@ -13,6 +14,7 @@ export class PluginSchedulerService {
   constructor(
     private readonly dataFetcher: PluginDataFetcherService,
     private readonly renderCache: PluginRenderCacheService,
+    private readonly pluginTemplateContext: PluginTemplateContextService,
   ) {}
 
   schedulePlugin(plugin: Plugin): void {
@@ -28,26 +30,10 @@ export class PluginSchedulerService {
 
     const task = cron.schedule(cronExpression, async () => {
       try {
-        // Build template context with trmnl system variables
-        const templateContext: any = {
-          trmnl: {
-            system: {
-              timestamp_utc: Math.floor(Date.now() / 1000),
-            },
-            plugin_settings: {
-              instance_name: plugin.name,
-              strategy: 'polling',
-              dark_mode: 'no',
-              no_screen_padding: 'no',
-            },
-            user: {
-              id: 'kuroshiro-user',
-              locale: 'en',
-            },
-          },
-        }
-
-        // TODO: Add plugin field values to context when we have device-specific values
+        // This cache entry is shared across every Screen/Device the Plugin is
+        // assigned to (renderAndCache below writes it to all of them), so
+        // there is no single Device to scope sensors to here.
+        const templateContext: any = this.pluginTemplateContext.build(plugin, [])
 
         // Fetch all of the plugin's data sources in parallel; a source that fails
         // gets an error marker instead of aborting the whole render (ADR-0005)

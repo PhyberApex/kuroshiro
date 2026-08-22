@@ -1,4 +1,5 @@
 import type { ConfigService } from '@nestjs/config'
+import type { MockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService'
 import type { Device } from '../../devices/devices.entity'
 import type { Plugin } from '../../plugins/entities/plugin.entity'
 import type { PluginDataFetcherService } from '../../plugins/services/plugin-data-fetcher.service'
@@ -7,6 +8,8 @@ import type { PluginTransformService } from '../../plugins/services/plugin-trans
 import type { MashupConfiguration } from '../entities/mashup-configuration.entity'
 import type { MashupSlot } from '../entities/mashup-slot.entity'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createMockDeviceSensorsService, primeMockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService'
+import { PluginTemplateContextService } from '../../plugins/services/plugin-template-context.service'
 import { MashupRendererService } from '../services/mashup-renderer.service'
 
 describe('mashupRendererService', () => {
@@ -15,6 +18,7 @@ describe('mashupRendererService', () => {
   let pluginRenderer: PluginRendererService
   let pluginTransformer: PluginTransformService
   let configService: ConfigService
+  let deviceSensors: MockDeviceSensorsService
 
   beforeEach(() => {
     pluginDataFetcher = {
@@ -33,14 +37,20 @@ describe('mashupRendererService', () => {
       get: vi.fn().mockReturnValue('http://api'),
     } as any
 
+    deviceSensors = createMockDeviceSensorsService()
+    primeMockDeviceSensorsService(deviceSensors)
+
     service = new MashupRendererService(
       pluginDataFetcher,
       pluginRenderer,
       pluginTransformer,
       configService,
+      deviceSensors as any,
+      new PluginTemplateContextService(),
     )
 
     vi.resetAllMocks()
+    primeMockDeviceSensorsService(deviceSensors)
   })
 
   it('should render mashup with all plugins successful', async () => {

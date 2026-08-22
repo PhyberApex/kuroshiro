@@ -38,4 +38,8 @@ export class DisplayRequestHeadersDto {
   @IsOptional()
   @IsString()
   model?: string
+
+  @IsOptional()
+  @IsString()
+  sensors?: string
 }
