@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/fallow/schema.json",
+  "workspaces": {
+    "patterns": ["packages/*"]
+  },
+  // pg is TypeORM's postgres driver, loaded reflectively at runtime; jiti is what ESLint uses to load packages/ui/eslint.config.ts
+  "ignoreDependencies": ["pg", "jiti"],
+  "overrides": [
+    {
+      // Wire-format response classes for the TRMNL firmware: fields are populated via Object.assign and read by the device, never by our code
+      "files": ["packages/api/src/devices/display.ts", "packages/api/src/devices/displayScreen.ts"],
+      "rules": { "unused-class-members": "off" }
+    }
+  ],
+  "duplicates": {
+    // Migrations are immutable history and the TRMNL snapshot is generated data; neither is a refactoring target
+    "ignore": ["packages/api/src/migrations/**", "packages/api/src/device-models/data/trmnl-snapshot.ts"]
+  },
+  "health": {
+    "ignore": ["**/__test__/**", "**/*.spec.ts", "packages/api/src/migrations/**", "packages/api/src/device-models/data/trmnl-snapshot.ts"]
+  }
+}

@@ -23,11 +23,15 @@
     "lint:fix": "pnpm run -r lint:fix",
     "type-check": "pnpm run -r type-check",
     "build": "pnpm run -r type-check",
+    "fallow": "fallow",
+    "fallow:ci": "fallow dead-code --baseline .fallow-baselines/dead-code.baseline.json --fail-on-issues && fallow dupes --baseline .fallow-baselines/dupes.baseline.json --fail-on-issues && fallow health --baseline .fallow-baselines/health.baseline.json --fail-on-issues",
+    "fallow:baseline": "node scripts/fallow-baseline.mjs",
     "prepare": "husky"
   },
   "devDependencies": {
     "concurrently": "10.0.5",
     "dotenv-cli": "^11.0.0",
+    "fallow": "3.17.0",
     "husky": "9.1.7",
     "lint-staged": "17.3.0",
     "wait-on": "9.1.0"
