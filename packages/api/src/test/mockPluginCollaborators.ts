@@ -9,12 +9,16 @@ import { vi } from 'vitest'
  * every render/schedule/preview path now goes through.
  */
 export function createMockPluginDataFetcherService() {
-  const fetchData = vi.fn()
-  const fetchOrLiteral = vi.fn((source: FetchableDataSource, templateContext?: object) =>
-    source.mode === 'literal'
-      ? Promise.resolve(source.literalValue ?? null)
-      : fetchData(source.method || 'GET', source.url || '', source.headers, source.body, templateContext))
-  return { fetchData, fetchOrLiteral }
+  const mock = {
+    fetchData: vi.fn(),
+    fetchOrLiteral: vi.fn((source: FetchableDataSource, templateContext?: object) =>
+      source.mode === 'literal'
+        ? Promise.resolve(source.literalValue ?? null)
+        // Looked up off `mock` (not captured as a local) so a spec that reassigns
+        // `mockDataFetcher.fetchData = vi.fn()...` after construction is still honored.
+        : mock.fetchData(source.method || 'GET', source.url || '', source.headers, source.body, templateContext)),
+  }
+  return mock
 }
 
 export type MockPluginDataFetcherService = ReturnType<typeof createMockPluginDataFetcherService>

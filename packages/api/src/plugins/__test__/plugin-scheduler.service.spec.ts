@@ -223,16 +223,15 @@ describe('pluginSchedulerService', () => {
     })
 
     it('schedules a plugin with only literal-mode data sources and renders its stored value without calling the data fetcher', async () => {
-      const plugin = {
+      const plugin = makePlugin({
         id: 'plugin-1',
         name: 'Literal Only',
         refreshInterval: 15,
-        isActive: true,
         dataSources: [
-          { name: 'source', mode: 'literal', literalValue: { title: 'Hello' } },
+          makePluginDataSource({ name: 'source', mode: 'literal', literalValue: { title: 'Hello' } }),
         ],
-        templates: [{ layout: 'full', liquidMarkup: '{{ source.title }}' }],
-      } as unknown as Plugin
+        templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '{{ source.title }}' })],
+      })
 
       mockRenderCache.renderAndCache = vi.fn().mockResolvedValue(undefined)
 
@@ -249,17 +248,16 @@ describe('pluginSchedulerService', () => {
     })
 
     it('renders a mixed plugin with one fetch and one literal source, without fetching the literal one', async () => {
-      const plugin = {
+      const plugin = makePlugin({
         id: 'plugin-1',
         name: 'Mixed',
         refreshInterval: 15,
-        isActive: true,
         dataSources: [
-          { name: 'weather', mode: 'fetch', url: 'https://api.example.com/weather', method: 'GET' },
-          { name: 'title', mode: 'literal', literalValue: 'Static Title' },
+          makePluginDataSource({ name: 'weather', mode: 'fetch', url: 'https://api.example.com/weather', method: 'GET' }),
+          makePluginDataSource({ name: 'title', mode: 'literal', literalValue: 'Static Title' }),
         ],
-        templates: [{ layout: 'full', liquidMarkup: '{{ title }} {{ weather.temp }}' }],
-      } as unknown as Plugin
+        templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '{{ title }} {{ weather.temp }}' })],
+      })
 
       mockDataFetcher.fetchData = vi.fn().mockResolvedValue({ temp: 25 })
       mockRenderCache.renderAndCache = vi.fn().mockResolvedValue(undefined)
@@ -275,17 +273,16 @@ describe('pluginSchedulerService', () => {
     })
 
     it('gives a failing fetch-mode source an error marker while a literal-mode source alongside it still renders normally', async () => {
-      const plugin = {
+      const plugin = makePlugin({
         id: 'plugin-1',
         name: 'Mixed Partial Failure',
         refreshInterval: 15,
-        isActive: true,
         dataSources: [
-          { name: 'weather', mode: 'fetch', url: 'https://api.example.com/weather', method: 'GET' },
-          { name: 'title', mode: 'literal', literalValue: 'Static Title' },
+          makePluginDataSource({ name: 'weather', mode: 'fetch', url: 'https://api.example.com/weather', method: 'GET' }),
+          makePluginDataSource({ name: 'title', mode: 'literal', literalValue: 'Static Title' }),
         ],
-        templates: [{ layout: 'full', liquidMarkup: '{{ title }}' }],
-      } as unknown as Plugin
+        templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '{{ title }}' })],
+      })
 
       mockDataFetcher.fetchData = vi.fn().mockRejectedValue(new Error('API timeout'))
       mockRenderCache.renderAndCache = vi.fn().mockResolvedValue(undefined)

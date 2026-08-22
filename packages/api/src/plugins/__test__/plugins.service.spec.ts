@@ -255,6 +255,7 @@ describe('pluginsService', () => {
       dataSources: [
         {
           name: 'weather',
+          mode: 'fetch' as const,
           url: 'https://api.example.com',
           method: 'GET',
           headers: {},
@@ -294,18 +295,19 @@ describe('pluginsService', () => {
   it('create builds a literal-mode data source with its literalValue and no fetch fields', async () => {
     const pluginData = {
       name: 'Static Plugin',
+      kind: 'Poll' as const,
       dataSources: [
-        { name: 'title', mode: 'literal', literalValue: { text: 'Hello' } },
+        { name: 'title', mode: 'literal' as const, literalValue: { text: 'Hello' } },
       ],
     }
 
-    const savedPlugin = { ...basePlugin, id: '2' } as Plugin
+    const savedPlugin = { ...basePlugin, id: '2' }
     pluginRepo.save.mockResolvedValue(savedPlugin)
-    dataSourceRepo.create.mockReturnValue({})
-    dataSourceRepo.save.mockResolvedValue({})
+    dataSourceRepo.create.mockReturnValue(makePluginDataSource())
+    dataSourceRepo.save.mockResolvedValue(makePluginDataSource())
     pluginRepo.findOne.mockResolvedValue(savedPlugin)
 
-    await service.create(pluginData as any)
+    await service.create(pluginData)
 
     expect(dataSourceRepo.create).toHaveBeenCalledWith(expect.objectContaining({
       name: 'title',
@@ -318,29 +320,31 @@ describe('pluginsService', () => {
   it('create tolerates a literal-mode data source carrying method "GET", the entity column\'s non-nullable default rather than a real fetch field', async () => {
     const pluginData = {
       name: 'Round-tripped Static Plugin',
+      kind: 'Poll' as const,
       dataSources: [
-        { name: 'title', mode: 'literal', literalValue: { text: 'Hello' }, method: 'GET' },
+        { name: 'title', mode: 'literal' as const, literalValue: { text: 'Hello' }, method: 'GET' },
       ],
     }
 
-    const savedPlugin = { ...basePlugin, id: '2' } as Plugin
+    const savedPlugin = { ...basePlugin, id: '2' }
     pluginRepo.save.mockResolvedValue(savedPlugin)
-    dataSourceRepo.create.mockReturnValue({})
-    dataSourceRepo.save.mockResolvedValue({})
+    dataSourceRepo.create.mockReturnValue(makePluginDataSource())
+    dataSourceRepo.save.mockResolvedValue(makePluginDataSource())
     pluginRepo.findOne.mockResolvedValue(savedPlugin)
 
-    await expect(service.create(pluginData as any)).resolves.toBe(savedPlugin)
+    await expect(service.create(pluginData)).resolves.toBe(savedPlugin)
   })
 
   it('create rejects a literal-mode data source that also carries a URL', async () => {
     const pluginData = {
       name: 'Bad Static Plugin',
+      kind: 'Poll' as const,
       dataSources: [
-        { name: 'title', mode: 'literal', literalValue: { text: 'Hello' }, url: 'https://api.example.com' },
+        { name: 'title', mode: 'literal' as const, literalValue: { text: 'Hello' }, url: 'https://api.example.com' },
       ],
     }
 
-    await expect(service.create(pluginData as any)).rejects.toThrow('A literal-mode Data Source cannot have a URL')
+    await expect(service.create(pluginData)).rejects.toThrow('A literal-mode Data Source cannot have a URL')
     expect(pluginRepo.save).not.toHaveBeenCalled()
   })
 
@@ -420,7 +424,7 @@ describe('pluginsService', () => {
     pluginRepo.save.mockResolvedValue(pluginWithoutDataSources)
 
     await service.update('1', {
-      dataSources: [{ name: 'weather', url: 'https://new-api.com', method: 'GET', headers: {}, body: {} }],
+      dataSources: [{ name: 'weather', mode: 'fetch', url: 'https://new-api.com', method: 'GET', headers: {}, body: {} }],
     })
 
     expect(dataSourceRepo.create).toHaveBeenCalled()
@@ -439,7 +443,7 @@ describe('pluginsService', () => {
     pluginRepo.save.mockResolvedValue(pluginWithDataSources)
 
     const result = await service.update('1', {
-      dataSources: [{ name: 'weather', url: 'https://new-api.com', method: 'GET' }],
+      dataSources: [{ name: 'weather', mode: 'fetch', url: 'https://new-api.com', method: 'GET' }],
     })
 
     expect(dataSourceRepo.remove).toHaveBeenCalledWith(oldDataSources)
@@ -452,7 +456,7 @@ describe('pluginsService', () => {
     pluginRepo.findOne.mockResolvedValue({ ...basePlugin, dataSources: [], fields: [] })
 
     await expect(service.update('1', {
-      dataSources: [{ name: 'trmnl', url: 'https://api.com', method: 'GET' }],
+      dataSources: [{ name: 'trmnl', mode: 'fetch', url: 'https://api.com', method: 'GET' }],
     })).rejects.toThrow('reserved')
 
     expect(dataSourceRepo.save).not.toHaveBeenCalled()
@@ -463,8 +467,8 @@ describe('pluginsService', () => {
 
     await expect(service.update('1', {
       dataSources: [
-        { name: 'weather', url: 'https://api.com/1', method: 'GET' },
-        { name: 'weather', url: 'https://api.com/2', method: 'GET' },
+        { name: 'weather', mode: 'fetch', url: 'https://api.com/1', method: 'GET' },
+        { name: 'weather', mode: 'fetch', url: 'https://api.com/2', method: 'GET' },
       ],
     })).rejects.toThrow('more than one data source')
   })
@@ -477,7 +481,7 @@ describe('pluginsService', () => {
     })
 
     await expect(service.update('1', {
-      dataSources: [{ name: 'weather', url: 'https://api.com', method: 'GET' }],
+      dataSources: [{ name: 'weather', mode: 'fetch', url: 'https://api.com', method: 'GET' }],
     })).rejects.toThrow('collides')
   })
 
@@ -541,7 +545,7 @@ describe('pluginsService', () => {
     pluginRepo.save.mockResolvedValue(pluginWithDataSource)
 
     await service.update('1', {
-      dataSources: [{ name: 'weather', url: 'https://new-api.com', method: 'GET' }],
+      dataSources: [{ name: 'weather', mode: 'fetch', url: 'https://new-api.com', method: 'GET' }],
     })
 
     expect(mockScheduler.removeScheduledJob).toHaveBeenCalledWith('1')
@@ -564,7 +568,7 @@ describe('pluginsService', () => {
     await service.create({
       name: 'Plugin',
       kind: 'Poll',
-      dataSources: [{ name: 'weather', url: 'https://api.com', method: 'GET', headers: {}, body: {} }],
+      dataSources: [{ name: 'weather', mode: 'fetch', url: 'https://api.com', method: 'GET', headers: {}, body: {} }],
       templates: [{ layout: 'full', liquidMarkup: 'Template' }],
     })
 
@@ -608,7 +612,7 @@ describe('pluginsService', () => {
     await expect(service.create({
       name: 'Plugin',
       kind: 'Poll',
-      dataSources: [{ name: 'trmnl', url: 'https://api.com', method: 'GET' }],
+      dataSources: [{ name: 'trmnl', mode: 'fetch', url: 'https://api.com', method: 'GET' }],
     })).rejects.toThrow('reserved')
 
     expect(pluginRepo.save).not.toHaveBeenCalled()
@@ -620,7 +624,7 @@ describe('pluginsService', () => {
     await expect(service.create({
       name: 'Plugin',
       kind: 'Poll',
-      dataSources: [{ name: 'weather', url: 'https://api.com', method: 'GET' }],
+      dataSources: [{ name: 'weather', mode: 'fetch', url: 'https://api.com', method: 'GET' }],
       fields: [{ keyname: 'weather', fieldType: 'string', name: 'Weather' }],
     })).rejects.toThrow('collides')
   })
@@ -750,7 +754,7 @@ describe('pluginsService', () => {
         name: 'Sensor Feed',
         kind: 'Webhook',
         mergeStrategy: 'standard',
-        dataSources: [{ name: 'source', url: 'https://api.example.com' }],
+        dataSources: [{ name: 'source', mode: 'fetch', url: 'https://api.example.com' }],
       })).rejects.toThrow('A Webhook-kind Plugin cannot have Data Sources')
     })
 
