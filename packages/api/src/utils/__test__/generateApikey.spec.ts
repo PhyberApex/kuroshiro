@@ -25,6 +25,6 @@ describe('randomUrlSafeToken', () => {
     const token = randomUrlSafeToken(10)
 
     expect(token).toHaveLength(10)
-    expect(token).toMatch(/^[A-Za-z0-9_-]+$/)
+    expect(token).toMatch(/^[\w-]+$/i)
   })
 })
