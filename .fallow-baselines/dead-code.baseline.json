@@ -11,15 +11,8 @@
   "unused_exports": [],
   "unused_types": [],
   "private_type_leaks": [],
-  "unused_dependencies": [
-    "packages/api/package.json:fs-extra"
-  ],
-  "unused_dev_dependencies": [
-    "packages/api/package.json:supertest",
-    "packages/api/package.json:tsconfig-paths",
-    "packages/ui/package.json:@vue/eslint-config-typescript",
-    "packages/ui/package.json:start-server-and-test"
-  ],
+  "unused_dependencies": [],
+  "unused_dev_dependencies": [],
   "circular_dependencies": [
     "packages/api/src/devices/devices.entity.ts->packages/api/src/logs/logs.entity.ts",
     "packages/api/src/devices/devices.entity.ts->packages/api/src/screens/screens.entity.ts",
