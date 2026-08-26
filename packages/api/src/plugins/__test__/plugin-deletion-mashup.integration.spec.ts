@@ -13,10 +13,9 @@ import { PluginField } from '../entities/plugin-field.entity'
 import { PluginTemplate } from '../entities/plugin-template.entity'
 import { Plugin } from '../entities/plugin.entity'
 import { PluginsService } from '../plugins.service'
-import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service'
+import { PluginDataResolverService } from '../services/plugin-data-resolver.service'
 import { PluginRendererService } from '../services/plugin-renderer.service'
 import { PluginSchedulerService } from '../services/plugin-scheduler.service'
-import { PluginTransformService } from '../services/plugin-transform.service'
 
 describe('plugin Deletion with Mashup Warning Integration', () => {
   let pluginsService: PluginsService
@@ -78,7 +77,7 @@ describe('plugin Deletion with Mashup Warning Integration', () => {
           useValue: mashupSlotRepo,
         },
         {
-          provide: PluginDataFetcherService,
+          provide: PluginDataResolverService,
           useValue: {},
         },
         {
@@ -88,10 +87,6 @@ describe('plugin Deletion with Mashup Warning Integration', () => {
         {
           provide: PluginSchedulerService,
           useValue: mockScheduler,
-        },
-        {
-          provide: PluginTransformService,
-          useValue: {},
         },
       ],
     }).compile()

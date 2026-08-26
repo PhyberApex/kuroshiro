@@ -15,11 +15,10 @@ import { PluginField } from '../entities/plugin-field.entity'
 import { PluginTemplate } from '../entities/plugin-template.entity'
 import { Plugin as PluginEntity } from '../entities/plugin.entity'
 import { PluginsService } from '../plugins.service'
-import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service'
+import { PluginDataResolverService } from '../services/plugin-data-resolver.service'
 import { PluginRenderCacheService } from '../services/plugin-render-cache.service'
 import { PluginRendererService } from '../services/plugin-renderer.service'
 import { PluginSchedulerService } from '../services/plugin-scheduler.service'
-import { PluginTransformService } from '../services/plugin-transform.service'
 import { WebhookIngestService } from '../services/webhook-ingest.service'
 
 function matches(entity: unknown, where: Record<string, unknown>): boolean {
@@ -97,8 +96,7 @@ describe('webhook ingest integration', () => {
         { provide: getRepositoryToken(PluginTemplate), useValue: {} },
         { provide: getRepositoryToken(PluginField), useValue: {} },
         { provide: getRepositoryToken(MashupSlotEntity), useValue: mashupSlotRepo },
-        { provide: PluginDataFetcherService, useValue: {} },
-        { provide: PluginTransformService, useValue: {} },
+        { provide: PluginDataResolverService, useValue: {} },
         { provide: PluginSchedulerService, useValue: { schedulePlugin: vi.fn(), removeScheduledJob: vi.fn() } },
       ],
     }).compile()

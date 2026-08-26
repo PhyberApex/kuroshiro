@@ -17,6 +17,7 @@ import { asRepository, createMockRepository } from '../../test/mockRepository'
 import { asService, injectPrivate } from '../../test/mockService'
 import { UpdatePluginDto } from '../dto/update-plugin.dto'
 import { PluginsService } from '../plugins.service'
+import { PluginDataResolverService } from '../services/plugin-data-resolver.service'
 
 describe('pluginsService', () => {
   let service: PluginsService
@@ -55,10 +56,9 @@ describe('pluginsService', () => {
       asRepository(dataSourceRepo),
       asRepository(templateRepo),
       asRepository(fieldRepo),
-      asService<PluginDataFetcherService>(mockDataFetcher),
+      new PluginDataResolverService(asService<PluginDataFetcherService>(mockDataFetcher), asService<PluginTransformService>(mockTransformer)),
       asService<PluginRendererService>(mockRenderer),
       asService<PluginSchedulerService>(mockScheduler),
-      asService<PluginTransformService>(mockTransformer),
     )
   })
 
