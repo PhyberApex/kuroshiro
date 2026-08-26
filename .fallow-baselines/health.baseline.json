@@ -39,10 +39,7 @@
       }
     },
     "packages/api/src/mashup/mashup.service.ts": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
+      "complexity_moderate": {
         "count": 1
       },
       "crap_moderate": {
@@ -158,7 +155,6 @@
     "packages/api/src/devices/display.service.ts:complexity",
     "packages/ui/src/stores/deviceModels.ts:high impact",
     "packages/api/src/mashup/entities/mashup-configuration.entity.ts:circular dependency",
-    "packages/api/src/mashup/mashup.service.ts:complexity",
     "packages/ui/src/components/DeviceInformationCard.vue:complexity",
     "packages/ui/src/views/PluginEditView.vue:complexity",
     "packages/api/src/devices/devices.entity.ts:circular dependency",

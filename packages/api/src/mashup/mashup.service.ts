@@ -1,3 +1,4 @@
+import type { SlotConfig } from './constants/layouts'
 import type { CreateMashupDto } from './dto/create-mashup.dto'
 import type { UpdateMashupDto } from './dto/update-mashup.dto'
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common'
@@ -41,35 +42,10 @@ export class MashupService {
       throw new NotFoundException('Device not found')
     }
 
-    // 2. Validate layout → plugin count match
-    const layoutConfig = MASHUP_LAYOUT_CONFIG[dto.layout]
-    if (!layoutConfig) {
-      throw new BadRequestException(`Invalid layout: ${dto.layout}`)
-    }
+    // 2. Validate layout, plugins and resolve them
+    const { layoutConfig, plugins } = await this.resolveLayoutPlugins(dto.layout, dto.pluginIds)
 
-    if (dto.pluginIds.length !== layoutConfig.length) {
-      throw new BadRequestException(
-        `${dto.layout} requires ${layoutConfig.length} plugins, but ${dto.pluginIds.length} were provided`,
-      )
-    }
-
-    // 3. Validate unique plugins (no duplicates)
-    const uniqueIds = new Set(dto.pluginIds)
-    if (uniqueIds.size !== dto.pluginIds.length) {
-      throw new BadRequestException('Cannot use the same plugin multiple times')
-    }
-
-    // 4. Validate all plugins exist
-    const plugins: Plugin[] = []
-    for (const pluginId of dto.pluginIds) {
-      const plugin = await this.pluginRepository.findOne({ where: { id: pluginId } })
-      if (!plugin) {
-        throw new NotFoundException(`Plugin ${pluginId} not found`)
-      }
-      plugins.push(plugin)
-    }
-
-    // 5. Create Screen entity
+    // 3. Create Screen entity
     const maxOrder = device.screens?.length ? Math.max(...device.screens.map(s => s.order)) : 0
     const screen = this.screenRepository.create({
       filename: dto.filename,
@@ -82,27 +58,17 @@ export class MashupService {
     })
     const savedScreen = await this.screenRepository.save(screen)
 
-    // 6. Create MashupConfiguration
+    // 4. Create MashupConfiguration
     const config = this.mashupConfigRepository.create({
       layout: dto.layout,
       screen: savedScreen,
     })
     const savedConfig = await this.mashupConfigRepository.save(config)
 
-    // 7. Create MashupSlots
-    for (let i = 0; i < dto.pluginIds.length; i++) {
-      const slotConfig = layoutConfig[i]
-      const slot = this.mashupSlotRepository.create({
-        position: slotConfig.position,
-        size: slotConfig.size,
-        order: slotConfig.order,
-        plugin: plugins[i],
-        mashupConfiguration: savedConfig,
-      })
-      await this.mashupSlotRepository.save(slot)
-    }
+    // 5. Create MashupSlots
+    await this.buildSlots(layoutConfig, plugins, savedConfig)
 
-    // 8. Set as active screen
+    // 6. Set as active screen
     await this.screenRepository.update({ device: { id: device.id } }, { isActive: false })
     savedScreen.isActive = true
     await this.screenRepository.save(savedScreen)
@@ -141,31 +107,9 @@ export class MashupService {
       }
 
       const layout = dto.layout || config.layout
-      const layoutConfig = MASHUP_LAYOUT_CONFIG[layout]
 
       if (dto.pluginIds) {
-        // Validate plugin count
-        if (dto.pluginIds.length !== layoutConfig.length) {
-          throw new BadRequestException(
-            `${layout} requires ${layoutConfig.length} plugins`,
-          )
-        }
-
-        // Validate unique plugins
-        const uniqueIds = new Set(dto.pluginIds)
-        if (uniqueIds.size !== dto.pluginIds.length) {
-          throw new BadRequestException('Cannot use the same plugin multiple times')
-        }
-
-        // Validate all plugins exist
-        const plugins: Plugin[] = []
-        for (const pluginId of dto.pluginIds) {
-          const plugin = await this.pluginRepository.findOne({ where: { id: pluginId } })
-          if (!plugin) {
-            throw new NotFoundException(`Plugin ${pluginId} not found`)
-          }
-          plugins.push(plugin)
-        }
+        const { layoutConfig, plugins } = await this.resolveLayoutPlugins(layout, dto.pluginIds)
 
         // Remove old slots
         if (config.slots && config.slots.length > 0) {
@@ -173,17 +117,7 @@ export class MashupService {
         }
 
         // Create new slots
-        for (let i = 0; i < dto.pluginIds.length; i++) {
-          const slotConfig = layoutConfig[i]
-          const slot = this.mashupSlotRepository.create({
-            position: slotConfig.position,
-            size: slotConfig.size,
-            order: slotConfig.order,
-            plugin: plugins[i],
-            mashupConfiguration: config,
-          })
-          await this.mashupSlotRepository.save(slot)
-        }
+        await this.buildSlots(layoutConfig, plugins, config)
       }
 
       // Update layout if changed
@@ -241,5 +175,55 @@ export class MashupService {
 
   getLayouts() {
     return MASHUP_LAYOUT_CONFIG
+  }
+
+  private async resolveLayoutPlugins(
+    layout: string,
+    pluginIds: string[],
+  ): Promise<{ layoutConfig: SlotConfig[], plugins: Plugin[] }> {
+    const layoutConfig = MASHUP_LAYOUT_CONFIG[layout]
+    if (!layoutConfig) {
+      throw new BadRequestException(`Invalid layout: ${layout}`)
+    }
+
+    if (pluginIds.length !== layoutConfig.length) {
+      throw new BadRequestException(
+        `${layout} requires ${layoutConfig.length} plugins, but ${pluginIds.length} were provided`,
+      )
+    }
+
+    const uniqueIds = new Set(pluginIds)
+    if (uniqueIds.size !== pluginIds.length) {
+      throw new BadRequestException('Cannot use the same plugin multiple times')
+    }
+
+    const plugins: Plugin[] = []
+    for (const pluginId of pluginIds) {
+      const plugin = await this.pluginRepository.findOne({ where: { id: pluginId } })
+      if (!plugin) {
+        throw new NotFoundException(`Plugin ${pluginId} not found`)
+      }
+      plugins.push(plugin)
+    }
+
+    return { layoutConfig, plugins }
+  }
+
+  private async buildSlots(
+    layoutConfig: SlotConfig[],
+    plugins: Plugin[],
+    configuration: MashupConfiguration,
+  ): Promise<void> {
+    for (let i = 0; i < layoutConfig.length; i++) {
+      const slotConfig = layoutConfig[i]
+      const slot = this.mashupSlotRepository.create({
+        position: slotConfig.position,
+        size: slotConfig.size,
+        order: slotConfig.order,
+        plugin: plugins[i],
+        mashupConfiguration: configuration,
+      })
+      await this.mashupSlotRepository.save(slot)
+    }
   }
 }
