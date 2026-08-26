@@ -55,10 +55,7 @@
       }
     },
     "packages/api/src/plugins/plugins.service.ts": {
-      "complexity_critical": {
-        "count": 2
-      },
-      "crap_critical": {
+      "crap_moderate": {
         "count": 2
       }
     },
@@ -154,7 +151,6 @@
   "runtime_coverage_findings": [],
   "target_keys": [
     "packages/ui/src/components/ScreenListCard.vue:complexity",
-    "packages/api/src/plugins/plugins.service.ts:complexity",
     "packages/api/src/devices/display.service.ts:complexity",
     "packages/ui/src/stores/deviceModels.ts:high impact",
     "packages/api/src/mashup/entities/mashup-configuration.entity.ts:circular dependency",
