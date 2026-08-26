@@ -1,5 +1,6 @@
+import type { Relation } from 'typeorm'
+import type { Screen } from '../screens/screens.entity'
 import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
-import { Screen } from '../screens/screens.entity'
 
 @Entity()
 export class Schedule {
@@ -24,9 +25,9 @@ export class Schedule {
   @Column({ type: 'date', nullable: true })
   endDate?: string | null
 
-  @OneToOne(() => Screen, screen => screen.schedule, { onDelete: 'CASCADE' })
+  @OneToOne('Screen', (screen: Screen) => screen.schedule, { onDelete: 'CASCADE' })
   @JoinColumn()
-  screen: Screen
+  screen: Relation<Screen>
 
   @CreateDateColumn()
   createdAt: Date

@@ -1,5 +1,6 @@
+import type { Relation } from 'typeorm'
+import type { Device } from '../devices/devices.entity'
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
-import { Device } from '../devices/devices.entity'
 
 @Entity()
 export class LogEntry {
@@ -15,6 +16,6 @@ export class LogEntry {
   @Column({ type: 'int' })
   logId: number
 
-  @ManyToOne(() => Device, { onDelete: 'CASCADE' })
-  device: Device
+  @ManyToOne('Device', { onDelete: 'CASCADE' })
+  device: Relation<Device>
 }

@@ -1,9 +1,10 @@
+import type { Relation } from 'typeorm'
+import type { LogEntry } from '../logs/logs.entity'
+import type { Screen } from '../screens/screens.entity'
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
 import { DeviceModel } from '../device-models/entities/device-model.entity'
 import { Palette } from '../device-models/entities/palette.entity'
 import { Firmware } from '../firmware/entities/firmware.entity'
-import { LogEntry } from '../logs/logs.entity'
-import { Screen } from '../screens/screens.entity'
 
 @Entity()
 export class Device {
@@ -91,9 +92,9 @@ export class Device {
   @Column('timestamptz', { default: new Date() })
   lastSeen: Date
 
-  @OneToMany(() => Screen, screen => screen.device)
-  screens: Screen[]
+  @OneToMany('Screen', (screen: Screen) => screen.device)
+  screens: Relation<Screen[]>
 
-  @OneToMany(() => LogEntry, logEntry => logEntry.device)
-  logs: LogEntry[]
+  @OneToMany('LogEntry', (logEntry: LogEntry) => logEntry.device)
+  logs: Relation<LogEntry[]>
 }

@@ -1,6 +1,7 @@
+import type { Relation } from 'typeorm'
+import type { MashupConfiguration } from './mashup-configuration.entity'
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { Plugin } from '../../plugins/entities/plugin.entity'
-import { MashupConfiguration } from './mashup-configuration.entity'
 
 @Entity()
 export class MashupSlot {
@@ -16,8 +17,8 @@ export class MashupSlot {
   @ManyToOne(() => Plugin, { onDelete: 'CASCADE' })
   plugin: Plugin
 
-  @ManyToOne(() => MashupConfiguration, config => config.slots, { onDelete: 'CASCADE' })
-  mashupConfiguration: MashupConfiguration
+  @ManyToOne('MashupConfiguration', (config: MashupConfiguration) => config.slots, { onDelete: 'CASCADE' })
+  mashupConfiguration: Relation<MashupConfiguration>
 
   @Column('int')
   order: number
