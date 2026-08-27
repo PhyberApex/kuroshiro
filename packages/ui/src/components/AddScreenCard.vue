@@ -5,19 +5,13 @@ import { VBtn, VCard, VCardText, VCardTitle, VCol, VDivider, VFileInput, VForm, 
 import AddMashupCard from '@/components/AddMashupCard.vue'
 import ScreenFrame from '@/components/ScreenFrame.vue'
 import { useDemoInfo } from '@/composeables/useDemoInfo.ts'
-import { useDeviceRenderTarget } from '@/composeables/useDeviceRenderTarget'
-import { useDeviceStore } from '@/stores/device.ts'
-import { useScreensStore } from '@/stores/screens'
+import { useDeviceRenderContext } from '@/composeables/useDeviceRenderContext'
 import exampleHtml from '@/utils/exampleHtml'
 import { viewFull } from '@/utils/screenShell'
 
 const props = defineProps<{ deviceId: string }>()
 
-const screensStore = useScreensStore()
-const deviceStore = useDeviceStore()
-
-const device = computed(() => deviceStore.getById(props.deviceId))
-const renderTarget = useDeviceRenderTarget(device)
+const { device, renderTarget, screensStore } = useDeviceRenderContext(() => props.deviceId)
 
 const externalLink = ref('')
 const fetchManual = ref(false)
