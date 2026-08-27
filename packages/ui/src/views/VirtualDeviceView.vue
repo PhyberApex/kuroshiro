@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { Device } from '@/types'
 import { mdiClipboardArrowRight, mdiSend, mdiSync } from '@mdi/js'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -147,21 +148,33 @@ watch(macInputTab, () => {
   }
 })
 
-watch(mac, () => {
+const deviceHeaderSources: { [K in keyof typeof customHeaders.value]: (device: Device) => string | undefined } = {
+  'battery-voltage': device => device.batteryVoltage,
+  'fw-version': device => device.fwVersion,
+  'refresh-rate': device => device.refreshRate?.toString(),
+  'rssi': device => device.rssi,
+  'user-agent': device => device.userAgent,
+  'width': device => device.width?.toString(),
+  'height': device => device.height?.toString(),
+  'model': device => device.reportedModel ?? undefined,
+}
+
+function applyDeviceHeaders(device: Device) {
+  for (const [key, source] of Object.entries(deviceHeaderSources) as [keyof typeof customHeaders.value, (device: Device) => string | undefined][]) {
+    customHeaders.value[key] = source(device) || customHeaders.value[key]
+  }
+}
+
+function syncHeadersFromSelectedDevice() {
   if (macInputTab.value !== 'device')
     return
   const device = deviceStore.devices.find(d => d.mac === mac.value)
   if (!device)
     return
-  customHeaders.value['battery-voltage'] = device.batteryVoltage || customHeaders.value['battery-voltage']
-  customHeaders.value['fw-version'] = device.fwVersion || customHeaders.value['fw-version']
-  customHeaders.value['refresh-rate'] = device.refreshRate?.toString() || customHeaders.value['refresh-rate']
-  customHeaders.value.rssi = device.rssi || customHeaders.value.rssi
-  customHeaders.value['user-agent'] = device.userAgent || customHeaders.value['user-agent']
-  customHeaders.value.width = device.width?.toString() || customHeaders.value.width
-  customHeaders.value.height = device.height?.toString() || customHeaders.value.height
-  customHeaders.value.model = device.reportedModel || customHeaders.value.model
-})
+  applyDeviceHeaders(device)
+}
+
+watch(mac, syncHeadersFromSelectedDevice)
 </script>
 
 <template>

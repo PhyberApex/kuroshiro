@@ -32,6 +32,52 @@ function onFileChange(files: File | File[]) {
   }
 }
 
+async function postImport(url: string, body: BodyInit, headers?: HeadersInit) {
+  const res = await fetch(url, { method: 'POST', headers, body })
+  if (!res.ok) {
+    const errorData = await res.json()
+    throw new Error(errorData.message || 'Import failed')
+  }
+}
+
+async function importFromFile(deviceId: string) {
+  if (!selectedFile.value) {
+    throw new Error('Please select a file')
+  }
+  const formData = new FormData()
+  formData.append('file', selectedFile.value)
+  formData.append('deviceId', deviceId)
+  await postImport('/api/plugins/import', formData)
+}
+
+async function importFromGithub(deviceId: string) {
+  if (!githubUrl.value) {
+    throw new Error('Please enter a GitHub URL')
+  }
+  await postImport(
+    '/api/plugins/import-github',
+    JSON.stringify({ githubUrl: githubUrl.value, deviceId }),
+    { 'Content-Type': 'application/json' },
+  )
+}
+
+async function importFromRecipe(deviceId: string) {
+  if (!recipeId.value) {
+    throw new Error('Please enter a Recipe id or URL')
+  }
+  await postImport(
+    '/api/plugins/import-recipe',
+    JSON.stringify({ recipeId: recipeId.value, deviceId }),
+    { 'Content-Type': 'application/json' },
+  )
+}
+
+const importBySource = {
+  file: importFromFile,
+  github: importFromGithub,
+  recipe: importFromRecipe,
+}
+
 async function importPlugin() {
   if (!selectedDeviceId.value) {
     error.value = 'Please select a device'
@@ -42,67 +88,7 @@ async function importPlugin() {
   error.value = ''
 
   try {
-    if (importTab.value === 'file') {
-      if (!selectedFile.value) {
-        error.value = 'Please select a file'
-        return
-      }
-
-      const formData = new FormData()
-      formData.append('file', selectedFile.value)
-      formData.append('deviceId', selectedDeviceId.value)
-
-      const res = await fetch('/api/plugins/import', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.message || 'Import failed')
-      }
-    }
-    else if (importTab.value === 'github') {
-      if (!githubUrl.value) {
-        error.value = 'Please enter a GitHub URL'
-        return
-      }
-
-      const res = await fetch('/api/plugins/import-github', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          githubUrl: githubUrl.value,
-          deviceId: selectedDeviceId.value,
-        }),
-      })
-
-      if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.message || 'Import failed')
-      }
-    }
-    else {
-      if (!recipeId.value) {
-        error.value = 'Please enter a Recipe id or URL'
-        return
-      }
-
-      const res = await fetch('/api/plugins/import-recipe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipeId: recipeId.value,
-          deviceId: selectedDeviceId.value,
-        }),
-      })
-
-      if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.message || 'Import failed')
-      }
-    }
-
+    await importBySource[importTab.value as keyof typeof importBySource](selectedDeviceId.value)
     emit('imported')
     close()
   }
@@ -168,6 +154,7 @@ function close() {
           <VWindowItem value="github">
             <VTextField
               v-model="githubUrl"
+              data-test-id="github-url"
               label="GitHub Repository URL"
               placeholder="https://github.com/owner/repo"
               hint="Enter the URL of a GitHub repository containing a Terminus plugin"
@@ -181,6 +168,7 @@ function close() {
           <VWindowItem value="recipe">
             <VTextField
               v-model="recipeId"
+              data-test-id="recipe-id"
               label="TRMNL Recipe id or URL"
               placeholder="150460 or https://trmnl.com/recipes/150460"
               hint="Enter a Recipe's numeric id or its trmnl.com/recipes/... page URL"
@@ -212,6 +200,7 @@ function close() {
         <VBtn
           color="primary"
           variant="tonal"
+          data-test-id="import-submit"
           :loading="loading"
           :disabled="(!selectedFile && !githubUrl && !recipeId) || !selectedDeviceId"
           @click="importPlugin"
