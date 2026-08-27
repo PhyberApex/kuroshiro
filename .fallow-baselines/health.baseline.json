@@ -24,20 +24,6 @@
         "count": 1
       }
     },
-    "packages/api/src/maintenance/maintenance.service.ts": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
     "packages/api/src/mashup/mashup.service.ts": {
       "complexity_moderate": {
         "count": 1
@@ -152,7 +138,6 @@
     "packages/api/src/plugins/plugins.service.ts:complexity",
     "packages/api/src/devices/display.service.ts:complexity",
     "packages/ui/src/components/DeviceInformationCard.vue:complexity",
-    "packages/api/src/maintenance/maintenance.service.ts:complexity",
     "packages/ui/src/components/DeviceLogsCard.vue:complexity",
     "packages/ui/src/views/MaintenanceView.vue:complexity"
   ]
