@@ -1,64 +1,15 @@
-import type { MergeStrategy, PluginKind } from '../entities/plugin.entity'
-import { Type } from 'class-transformer'
-import { IsArray, IsBoolean, IsIn, IsInt, IsOptional, IsString, Min, ValidateNested } from 'class-validator'
-import { MERGE_STRATEGIES, PLUGIN_KINDS } from '../entities/plugin.entity'
-import { PluginDataSourceDto } from './plugin-data-source.dto'
-import { PluginFieldDto } from './plugin-field.dto'
-import { PluginTemplateDto } from './plugin-template.dto'
+import type { PluginKind } from '../entities/plugin.entity'
+import { OmitType, PartialType } from '@nestjs/mapped-types'
+import { IsIn, IsOptional } from 'class-validator'
+import { PLUGIN_KINDS } from '../entities/plugin.entity'
+import { CreatePluginDto } from './create-plugin.dto'
 
-export class UpdatePluginDto {
-  @IsOptional()
-  @IsString()
-  name?: string
-
-  @IsOptional()
-  @IsString()
-  description?: string
-
+// `kind` and `sourceRecipeId` are create-only: `kind` is fixed at creation (enforced by
+// PluginsService.update, see #828) so it's redeclared below without CreatePluginDto's
+// @MatchesPluginKind() constraint, which assumes a full creation-shaped payload and would
+// misfire against a partial update body. `sourceRecipeId` has no update semantics at all.
+export class UpdatePluginDto extends PartialType(OmitType(CreatePluginDto, ['kind', 'sourceRecipeId'] as const)) {
   @IsOptional()
   @IsIn(PLUGIN_KINDS)
   kind?: PluginKind
-
-  @IsOptional()
-  @IsInt()
-  refreshInterval?: number
-
-  @IsOptional()
-  @IsBoolean()
-  isActive?: boolean
-
-  @IsOptional()
-  @IsInt()
-  order?: number
-
-  @IsOptional()
-  @IsString()
-  webhookToken?: string
-
-  @IsOptional()
-  @IsIn(MERGE_STRATEGIES)
-  mergeStrategy?: MergeStrategy
-
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  streamLimit?: number
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => PluginDataSourceDto)
-  dataSources?: PluginDataSourceDto[]
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => PluginTemplateDto)
-  templates?: PluginTemplateDto[]
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => PluginFieldDto)
-  fields?: PluginFieldDto[]
 }
