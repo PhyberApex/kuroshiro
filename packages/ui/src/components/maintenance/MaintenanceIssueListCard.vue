@@ -1,15 +1,15 @@
 <script setup lang="ts" generic="T extends { key: string }">
 import { VBtn, VCard, VCardText, VCardTitle, VCheckbox, VDivider, VList, VListItem } from 'vuetify/components'
 
-defineProps<{
+const props = defineProps<{
   title: string
   items: T[]
 }>()
 
 const selected = defineModel<string[]>('selected', { required: true })
 
-function selectAll(items: T[]) {
-  selected.value = items.map(item => item.key)
+function selectAll() {
+  selected.value = props.items.map(item => item.key)
 }
 </script>
 
@@ -17,7 +17,7 @@ function selectAll(items: T[]) {
   <VCard v-if="items.length > 0" elevation="1" class="mb-4">
     <VCardTitle class="d-flex align-center justify-space-between flex-wrap ga-2">
       {{ title }}
-      <VBtn size="small" variant="text" @click="selectAll(items)">
+      <VBtn size="small" variant="text" @click="selectAll()">
         Select All
       </VBtn>
     </VCardTitle>

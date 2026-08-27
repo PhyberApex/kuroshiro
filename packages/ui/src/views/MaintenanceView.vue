@@ -70,11 +70,15 @@ const showConfirmDialog = ref(false)
 const cleanupInProgress = ref(false)
 const cleanupResult = ref<CleanupResult | null>(null)
 
-const orphanedFileItems = computed(() => maintenanceStore.issues?.orphanedScreenFiles.map(file => ({ ...file, key: file.path })) ?? [])
-const orphanedDirItems = computed(() => maintenanceStore.issues?.orphanedDeviceDirs.map(dir => ({ ...dir, key: dir.path })) ?? [])
-const brokenScreenItems = computed(() => maintenanceStore.issues?.brokenScreens.map(screen => ({ ...screen, key: screen.screenId })) ?? [])
-const tempFileItems = computed(() => maintenanceStore.issues?.tempFiles.map(file => ({ ...file, key: file.path })) ?? [])
-const oldUploadItems = computed(() => maintenanceStore.issues?.oldUploads.map(file => ({ ...file, key: file.path })) ?? [])
+function withKey<T>(items: T[] | undefined, keyOf: (item: T) => string) {
+  return (items ?? []).map(item => ({ ...item, key: keyOf(item) }))
+}
+
+const orphanedFileItems = computed(() => withKey(maintenanceStore.issues?.orphanedScreenFiles, file => file.path))
+const orphanedDirItems = computed(() => withKey(maintenanceStore.issues?.orphanedDeviceDirs, dir => dir.path))
+const brokenScreenItems = computed(() => withKey(maintenanceStore.issues?.brokenScreens, screen => screen.screenId))
+const tempFileItems = computed(() => withKey(maintenanceStore.issues?.tempFiles, file => file.path))
+const oldUploadItems = computed(() => withKey(maintenanceStore.issues?.oldUploads, file => file.path))
 
 const hasNoIssues = computed(() => {
   return orphanedFileItems.value.length === 0
