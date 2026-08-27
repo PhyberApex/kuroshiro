@@ -1,7 +1,10 @@
-import type { DeviceRenderTarget } from './device-models.service'
+export interface ScreenShellTarget {
+  model: { cssClasses: string[], cssVariables: Record<string, string> }
+  palette: { frameworkClass: string }
+}
 
-const TRMNL_FRAMEWORK_CSS = 'https://usetrmnl.com/css/latest/plugins.css'
-const TRMNL_FRAMEWORK_JS = 'https://usetrmnl.com/js/latest/plugins.js'
+export const TRMNL_FRAMEWORK_CSS = 'https://usetrmnl.com/css/latest/plugins.css'
+export const TRMNL_FRAMEWORK_JS = 'https://usetrmnl.com/js/latest/plugins.js'
 
 /**
  * Class list for the `.screen` element the TRMNL framework sizes and scales:
@@ -11,7 +14,7 @@ const TRMNL_FRAMEWORK_JS = 'https://usetrmnl.com/js/latest/plugins.js'
  * `model.rotation`, which is the post-render image rotation for panels whose
  * framebuffer is portrait (landscape-classed models can have `rotation: 90`).
  */
-export function screenClasses({ model, palette }: DeviceRenderTarget): string[] {
+export function screenClasses({ model, palette }: ScreenShellTarget): string[] {
   return ['screen', ...model.cssClasses, palette.frameworkClass]
 }
 
@@ -21,7 +24,7 @@ export function screenClasses({ model, palette }: DeviceRenderTarget): string[] 
  * the loaded plugins.css version — but this also means it overrides any
  * `screen--portrait` swap, since inline styles beat class-based rules.
  */
-export function screenStyle({ model }: DeviceRenderTarget): string {
+export function screenStyle({ model }: ScreenShellTarget): string {
   return Object.entries(model.cssVariables).map(([name, value]) => `${name}: ${value};`).join(' ')
 }
 
@@ -33,7 +36,7 @@ export function viewFull(innerHtml: string): string {
  * Wraps screen body markup (a `.view` or `.mashup` element) in the full HTML
  * document a device's image is rendered from.
  */
-export function wrapInScreenShell(target: DeviceRenderTarget, bodyHtml: string): string {
+export function wrapInScreenShell(target: ScreenShellTarget, bodyHtml: string): string {
   const style = screenStyle(target)
   return `<html>
   <head>

@@ -2,11 +2,11 @@ import type { DeviceRenderTarget } from './device-models.service'
 import * as fs from 'node:fs'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { viewFull, wrapInScreenShell } from 'kuroshiro-shared'
 import { getErrorMessage } from '../utils/getErrorMessage'
 import { resolveAppPath } from '../utils/pathHelper'
 import { FALLBACK_SCREEN_TEMPLATE_VERSION, fallbackScreenBody } from './fallback-screen-templates'
 import { renderHtmlToPng } from './render-html-to-png'
-import { viewFull, wrapInScreenShell } from './screen-shell'
 
 export type FallbackScreenKind = 'noScreen' | 'error' | 'welcome' | 'sleep'
 

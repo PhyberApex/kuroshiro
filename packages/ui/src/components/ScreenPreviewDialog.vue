@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import type { Screen } from '@/types'
 import type { RenderTarget } from '@/utils/screenShell'
+import { viewFull } from 'kuroshiro-shared'
 import { computed } from 'vue'
 import { VAlert, VBtn, VCard, VCardActions, VCardText, VCardTitle, VDialog, VDivider, VSpacer } from 'vuetify/components'
 import ScreenFrame from '@/components/ScreenFrame.vue'
 import { cacheBustedUrl } from '@/utils/cacheBustedUrl'
-import { viewFull } from '@/utils/screenShell'
 
 const props = defineProps<{
   modelValue: boolean

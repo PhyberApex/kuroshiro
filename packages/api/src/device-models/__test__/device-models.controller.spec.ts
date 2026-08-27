@@ -37,7 +37,7 @@ describe('deviceModelsController', () => {
   })
 
   it('returns the sync result', async () => {
-    const result = { models: 1, palettes: 1, deprecatedModels: 0, deprecatedPalettes: 0, syncedAt: new Date() }
+    const result = { models: 1, palettes: 1, deprecatedModels: 0, deprecatedPalettes: 0, syncedAt: new Date().toISOString() }
     syncService.sync.mockResolvedValue(result)
     await expect(controller.sync()).resolves.toBe(result)
   })

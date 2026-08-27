@@ -31,14 +31,6 @@ export interface Palette {
   syncedAt?: string | null
 }
 
-export interface DeviceModelSyncResult {
-  models: number
-  palettes: number
-  deprecatedModels: number
-  deprecatedPalettes: number
-  syncedAt: string
-}
-
 export interface Firmware {
   id: string
   version: string
@@ -49,12 +41,6 @@ export interface Firmware {
   label?: string | null
   syncedAt?: string | null
   uploadedAt?: string | null
-}
-
-export interface FirmwareSyncResult {
-  inserted: boolean
-  version: string
-  syncedAt?: string
 }
 
 export interface Device {
@@ -135,51 +121,6 @@ export interface LogEntry {
   logId: number
   date: Date
   entry: string
-}
-
-export interface OrphanedScreenFile {
-  deviceId: string
-  screenId: string
-  path: string
-  size: number
-}
-
-export interface OrphanedDeviceDir {
-  deviceId: string
-  path: string
-  fileCount: number
-  size: number
-}
-
-export interface BrokenScreen {
-  screenId: string
-  deviceId: string
-  filename: string
-  type: string
-}
-
-export interface TempFile {
-  path: string
-  age: number
-  size: number
-}
-
-export interface MaintenanceIssues {
-  orphanedScreenFiles: OrphanedScreenFile[]
-  orphanedDeviceDirs: OrphanedDeviceDir[]
-  brokenScreens: BrokenScreen[]
-  tempFiles: TempFile[]
-  oldUploads: TempFile[]
-  totalSize: number
-  scannedAt: string
-}
-
-export interface CleanupResult {
-  filesDeleted: number
-  dirsDeleted: number
-  screensDeleted: number
-  bytesFreed: number
-  errors: string[]
 }
 
 export interface MaintenanceStats {

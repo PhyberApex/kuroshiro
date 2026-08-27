@@ -1,8 +1,8 @@
+import type { DataSourceLiteralValue, DataSourceMode } from 'kuroshiro-shared'
 import type { JsonObject } from '../../utils/json'
-import type { DataSourceLiteralValue, DataSourceMode } from '../entities/plugin-data-source.entity'
 import { Type } from 'class-transformer'
 import { IsArray, IsIn, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator'
-import { DATA_SOURCE_MODES } from '../entities/plugin-data-source.entity'
+import { DATA_SOURCE_MODES } from 'kuroshiro-shared'
 
 export class PreviewSourceDto {
   @IsString()

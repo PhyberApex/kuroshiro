@@ -1,4 +1,5 @@
-import type { DeviceModel, DeviceModelSyncResult, Palette } from '../types'
+import type { DeviceModelSyncResult } from 'kuroshiro-shared'
+import type { DeviceModel, Palette } from '../types'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 

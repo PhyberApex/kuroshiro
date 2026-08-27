@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Screen } from '@/types'
+import { viewFull } from 'kuroshiro-shared'
 import { ref } from 'vue'
 import { VAlert, VCard, VCardText, VCardTitle, VChip, VDivider, VOverlay } from 'vuetify/components'
 import ScreenFrame from '@/components/ScreenFrame.vue'
@@ -7,7 +8,6 @@ import ScreenPreviewDialog from '@/components/ScreenPreviewDialog.vue'
 import ScreenScheduleDialog from '@/components/ScreenScheduleDialog.vue'
 import ScreenTable from '@/components/ScreenTable.vue'
 import { useDeviceRenderContext } from '@/composeables/useDeviceRenderContext'
-import { viewFull } from '@/utils/screenShell'
 
 const props = defineProps<{ deviceId: string }>()
 

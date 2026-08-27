@@ -40,3 +40,12 @@ jobs:
           flags: ui
           name: ui-coverage
           fail_ci_if_error: true
+
+      - name: Upload shared coverage to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./packages/shared/coverage/lcov.info
+          flags: shared
+          name: shared-coverage
+          fail_ci_if_error: true

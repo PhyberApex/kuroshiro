@@ -1,3 +1,5 @@
+import type { DataSourceLiteralValue, DataSourceMode } from 'kuroshiro-shared'
+
 export interface Plugin {
   id: string
   name: string
@@ -25,9 +27,6 @@ export interface DeviceAssignment {
     name: string
   }
 }
-
-export type DataSourceMode = 'fetch' | 'literal'
-export type DataSourceLiteralValue = Record<string, unknown> | unknown[] | string | number | boolean | null
 
 export interface PluginDataSource {
   id: string

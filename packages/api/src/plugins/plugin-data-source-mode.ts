@@ -1,4 +1,4 @@
-import type { DataSourceMode } from './entities/plugin-data-source.entity'
+import type { DataSourceMode } from 'kuroshiro-shared'
 
 export interface DataSourceModeFields {
   mode?: DataSourceMode

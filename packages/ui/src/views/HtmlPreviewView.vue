@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import type { RenderTarget } from '@/utils/screenShell'
 import { refDebounced } from '@vueuse/core'
+import { viewFull } from 'kuroshiro-shared'
 import { ref } from 'vue'
 import { VCol, VContainer, VRow, VTextarea } from 'vuetify/components'
 import RenderTargetPicker from '@/components/RenderTargetPicker.vue'
 import ScreenFrame from '@/components/ScreenFrame.vue'
 import exampleHtml from '@/utils/exampleHtml'
 import { DEFAULT_MODEL, DEFAULT_PALETTE } from '@/utils/renderTarget'
-import { viewFull } from '@/utils/screenShell'
 
 const html = ref(exampleHtml)
 const debouncedHtml = refDebounced(html, 300)

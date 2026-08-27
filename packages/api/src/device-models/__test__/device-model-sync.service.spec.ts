@@ -92,7 +92,7 @@ describe('deviceModelSyncService', () => {
       expect(paletteRepo.update).toHaveBeenCalledWith({ id: expect.anything() }, { deprecated: true })
       expect(modelRepo.update).toHaveBeenCalledWith({ name: expect.anything() }, { deprecated: true })
       expect(result).toMatchObject({ models: 1, palettes: 2, deprecatedModels: 1, deprecatedPalettes: 1 })
-      expect(result.syncedAt).toBeInstanceOf(Date)
+      expect(new Date(result.syncedAt).toISOString()).toBe(result.syncedAt)
     })
 
     it('never upserts or deprecates a kind: custom palette, regardless of what upstream reports', async () => {

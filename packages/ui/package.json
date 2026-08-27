@@ -40,6 +40,7 @@
     "eslint": "catalog:",
     "jiti": "catalog:",
     "jsdom": "catalog:",
+    "kuroshiro-shared": "workspace:*",
     "npm-run-all2": "catalog:",
     "puppeteer": "catalog:",
     "resize-observer-polyfill": "catalog:",

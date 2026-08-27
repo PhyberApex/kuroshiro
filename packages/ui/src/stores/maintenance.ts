@@ -1,4 +1,5 @@
-import type { CleanupResult, MaintenanceIssues, MaintenanceStats } from '../types'
+import type { CleanupResult, MaintenanceIssues } from 'kuroshiro-shared'
+import type { MaintenanceStats } from '../types'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
