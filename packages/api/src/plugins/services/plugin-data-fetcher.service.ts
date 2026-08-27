@@ -1,5 +1,5 @@
+import type { DataSourceLiteralValue, DataSourceMode } from 'kuroshiro-shared'
 import type { JsonObject } from '../../utils/json'
-import type { DataSourceLiteralValue, DataSourceMode } from '../entities/plugin-data-source.entity'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { assertPublicUrl } from '../../utils/ssrfGuard'

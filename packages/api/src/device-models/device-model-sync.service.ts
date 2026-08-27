@@ -1,4 +1,5 @@
 import type { OnApplicationBootstrap } from '@nestjs/common'
+import type { DeviceModelSyncResult } from 'kuroshiro-shared'
 import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import cron from 'node-cron'
@@ -7,14 +8,6 @@ import { TRMNL_MODELS_SNAPSHOT, TRMNL_PALETTES_SNAPSHOT } from './data/trmnl-sna
 import { DeviceModel } from './entities/device-model.entity'
 import { Palette } from './entities/palette.entity'
 import { toDeviceModelAttributes, toPaletteAttributes, TRMNL_API_URL, TrmnlModelPayload, TrmnlPalettePayload, validateModelPayload, validatePalettePayload } from './trmnl-payloads'
-
-export interface DeviceModelSyncResult {
-  models: number
-  palettes: number
-  deprecatedModels: number
-  deprecatedPalettes: number
-  syncedAt: Date
-}
 
 const DAILY_AT_4AM = '0 4 * * *'
 const TRMNL_FETCH_TIMEOUT_MS = 15_000
@@ -92,7 +85,7 @@ export class DeviceModelSyncService implements OnApplicationBootstrap {
     const deprecatedModels = await this.deprecateMissingModels(models.map(m => m.name))
 
     this.logger.log(`Synced ${models.length} device models and ${palettes.length} palettes (${deprecatedModels} models, ${deprecatedPalettes} palettes deprecated)`)
-    return { models: models.length, palettes: palettes.length, deprecatedModels, deprecatedPalettes, syncedAt }
+    return { models: models.length, palettes: palettes.length, deprecatedModels, deprecatedPalettes, syncedAt: syncedAt.toISOString() }
   }
 
   /** Drops payload entries that fail validation, logging each so a bad upstream response is visible without failing the whole sync. */

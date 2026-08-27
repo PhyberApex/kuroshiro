@@ -1,4 +1,5 @@
-import type { Firmware, FirmwareSyncResult } from '../types'
+import type { FirmwareSyncResult } from 'kuroshiro-shared'
+import type { Firmware } from '../types'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 

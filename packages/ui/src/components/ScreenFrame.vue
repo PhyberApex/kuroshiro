@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { RenderTarget } from '@/utils/screenShell'
 import { useElementSize } from '@vueuse/core'
+import { wrapInScreenShell } from 'kuroshiro-shared'
 import { computed, ref } from 'vue'
-import { wrapInScreenShell } from '@/utils/screenShell'
 
 const props = defineProps<{ body: string, target: RenderTarget }>()
 

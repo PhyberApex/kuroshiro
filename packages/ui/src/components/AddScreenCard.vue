@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { mdiCodeBlockTags, mdiDownload, mdiEye, mdiGridLarge, mdiLink, mdiStop, mdiUpload } from '@mdi/js'
+import { viewFull } from 'kuroshiro-shared'
 import { computed, ref, useTemplateRef } from 'vue'
 import { VBtn, VCard, VCardText, VCardTitle, VCol, VDivider, VFileInput, VForm, VOverlay, VRow, VSwitch, VTab, VTabs, VTextarea, VTextField, VWindow, VWindowItem } from 'vuetify/components'
 import AddMashupCard from '@/components/AddMashupCard.vue'
@@ -7,7 +8,6 @@ import ScreenFrame from '@/components/ScreenFrame.vue'
 import { useDemoInfo } from '@/composeables/useDemoInfo.ts'
 import { useDeviceRenderContext } from '@/composeables/useDeviceRenderContext'
 import exampleHtml from '@/utils/exampleHtml'
-import { viewFull } from '@/utils/screenShell'
 
 const props = defineProps<{ deviceId: string }>()
 

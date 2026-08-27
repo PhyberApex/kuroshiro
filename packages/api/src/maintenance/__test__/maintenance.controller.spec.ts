@@ -1,4 +1,5 @@
-import type { CleanupResult, MaintenanceIssues, MaintenanceService } from '../maintenance.service'
+import type { CleanupResult, MaintenanceIssues } from 'kuroshiro-shared'
+import type { MaintenanceService } from '../maintenance.service'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { asService } from '../../test/mockService'
 import { MaintenanceController } from '../maintenance.controller'
