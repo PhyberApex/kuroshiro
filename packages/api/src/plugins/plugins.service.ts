@@ -229,14 +229,20 @@ export class PluginsService implements OnModuleInit {
       return
 
     this.logger.debug(`Creating ${dataSources.length} data sources`)
+    const created = await this.createDataSourceEntities(plugin, dataSources)
+    created.forEach(dataSource => this.logger.debug(`Saved data source: ${dataSource.name}`))
+  }
+
+  private async createDataSourceEntities(plugin: Plugin, dataSources: PluginDataSourceDto[]): Promise<PluginDataSource[]> {
+    const created: PluginDataSource[] = []
     for (const [index, sourceData] of dataSources.entries()) {
       const newDataSource = this.dataSourceRepository.create({
         ...this.buildDataSourceFields(sourceData, index),
         plugin,
       })
-      await this.dataSourceRepository.save(newDataSource)
-      this.logger.debug(`Saved data source: ${newDataSource.name}`)
+      created.push(await this.dataSourceRepository.save(newDataSource))
     }
+    return created
   }
 
   private async createTemplates(plugin: Plugin, templates: PluginTemplateDto[] | undefined): Promise<void> {
@@ -365,17 +371,9 @@ export class PluginsService implements OnModuleInit {
       await this.dataSourceRepository.remove(plugin.dataSources)
     }
 
-    const newDataSources: PluginDataSource[] = []
-    if (Array.isArray(dataSources) && dataSources.length > 0) {
-      for (const [index, sourceData] of dataSources.entries()) {
-        const newDataSource = this.dataSourceRepository.create({
-          ...this.buildDataSourceFields(sourceData, index),
-          plugin,
-        })
-        newDataSources.push(await this.dataSourceRepository.save(newDataSource))
-      }
-    }
-    plugin.dataSources = newDataSources
+    plugin.dataSources = Array.isArray(dataSources) && dataSources.length > 0
+      ? await this.createDataSourceEntities(plugin, dataSources)
+      : []
   }
 
   private async replaceTemplates(plugin: Plugin, templates: PluginTemplateDto[] | undefined): Promise<void> {
