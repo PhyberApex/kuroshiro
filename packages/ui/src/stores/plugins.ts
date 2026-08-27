@@ -1,6 +1,7 @@
 import type { CreatePluginPayload, Plugin } from '@/types/plugin'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { apiRequest } from '../utils/apiRequest'
 
 export const usePluginsStore = defineStore('plugins', () => {
   const plugins = ref<Plugin[]>([])
@@ -13,16 +14,11 @@ export const usePluginsStore = defineStore('plugins', () => {
   }
 
   const createPlugin = async (pluginData: CreatePluginPayload) => {
-    const res = await fetch('/api/plugins', {
+    const newPlugin = await apiRequest<Plugin & { device?: { id: string } }>('/api/plugins', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(pluginData),
-    })
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}))
-      throw new Error(errorData.message || 'Failed to create plugin')
-    }
-    const newPlugin = await res.json()
+    }, 'Failed to create plugin')
     if (newPlugin.device?.id) {
       await fetchPluginsForDevice(newPlugin.device.id)
     }
@@ -30,16 +26,11 @@ export const usePluginsStore = defineStore('plugins', () => {
   }
 
   const updatePlugin = async (id: string, pluginData: Partial<CreatePluginPayload>) => {
-    const res = await fetch(`/api/plugins/${id}`, {
+    const updatedPlugin = await apiRequest<Plugin & { device?: { id: string } }>(`/api/plugins/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(pluginData),
-    })
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}))
-      throw new Error(errorData.message || 'Failed to update plugin')
-    }
-    const updatedPlugin = await res.json()
+    }, 'Failed to update plugin')
     if (updatedPlugin.device?.id) {
       await fetchPluginsForDevice(updatedPlugin.device.id)
     }

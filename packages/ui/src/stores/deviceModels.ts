@@ -1,6 +1,7 @@
 import type { DeviceModel, DeviceModelSyncResult, Palette } from '../types'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { apiRequest } from '../utils/apiRequest'
 
 export const useDeviceModelsStore = defineStore('deviceModels', () => {
   const models = ref<DeviceModel[]>([])
@@ -56,12 +57,7 @@ export const useDeviceModelsStore = defineStore('deviceModels', () => {
     syncing.value = true
     error.value = null
     try {
-      const res = await fetch('/api/device-models/sync', { method: 'POST' })
-      if (!res.ok) {
-        const body = await res.json().catch(() => null)
-        throw new Error(body?.message ?? `Sync failed: ${res.statusText}`)
-      }
-      const result: DeviceModelSyncResult = await res.json()
+      const result = await apiRequest<DeviceModelSyncResult>('/api/device-models/sync', { method: 'POST' }, res => `Sync failed: ${res.statusText}`)
       await fetchAll()
       return result
     }

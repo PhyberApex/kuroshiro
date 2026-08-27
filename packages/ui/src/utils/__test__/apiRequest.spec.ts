@@ -1,0 +1,49 @@
+import { describe, expect, it } from 'vitest'
+import { jsonResponse, stubFetch } from '../../test/fetch'
+import { apiRequest } from '../apiRequest'
+
+describe('apiRequest', () => {
+  it('returns the parsed JSON body on success', async () => {
+    const mockFetch = stubFetch()
+    mockFetch.mockResolvedValue(jsonResponse({ id: 'plugin-1' }))
+
+    await expect(apiRequest('/api/plugins', undefined, 'Failed to create plugin')).resolves.toEqual({ id: 'plugin-1' })
+    expect(mockFetch).toHaveBeenCalledWith('/api/plugins', undefined)
+  })
+
+  it('throws the server message from the error body', async () => {
+    const mockFetch = stubFetch()
+    mockFetch.mockResolvedValue(jsonResponse({ message: 'Data source name "trmnl" is reserved' }, false))
+
+    await expect(apiRequest('/api/plugins', undefined, 'Failed to create plugin'))
+      .rejects
+      .toThrow('Data source name "trmnl" is reserved')
+  })
+
+  it('falls back to the given message when the error body has no message', async () => {
+    const mockFetch = stubFetch()
+    mockFetch.mockResolvedValue(jsonResponse({}, false))
+
+    await expect(apiRequest('/api/plugins', undefined, 'Failed to create plugin'))
+      .rejects
+      .toThrow('Failed to create plugin')
+  })
+
+  it('falls back to the given message when the error body is not JSON', async () => {
+    const mockFetch = stubFetch()
+    mockFetch.mockResolvedValue(new Response('not json', { status: 500, statusText: 'Server Error' }))
+
+    await expect(apiRequest('/api/plugins', undefined, 'Failed to create plugin'))
+      .rejects
+      .toThrow('Failed to create plugin')
+  })
+
+  it('computes the fallback message from the response when given a function', async () => {
+    const mockFetch = stubFetch()
+    mockFetch.mockResolvedValue(jsonResponse({}, { ok: false, statusText: 'Service Unavailable' }))
+
+    await expect(apiRequest('/api/device-models/sync', { method: 'POST' }, res => `Sync failed: ${res.statusText}`))
+      .rejects
+      .toThrow('Sync failed: Service Unavailable')
+  })
+})
