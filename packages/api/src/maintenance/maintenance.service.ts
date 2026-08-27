@@ -53,6 +53,11 @@ export interface CleanupResult {
   errors: string[]
 }
 
+interface DeviceDirEntry {
+  deviceId: string
+  devicePath: string
+}
+
 const SYSTEM_FILES = new Set([
   'noScreen.png',
   'error.png',
@@ -78,11 +83,12 @@ export class MaintenanceService {
 
     const devices = await this.deviceRepository.find()
     const screens = await this.screenRepository.find({ relations: { device: true } })
+    const { known: deviceDirs, orphaned: orphanedDirEntries } = await this.listDevicesPathEntries(devices)
 
-    const orphanedScreenFiles = await this.findOrphanedScreenFiles(devices, screens)
-    const orphanedDeviceDirs = await this.findOrphanedDeviceDirs(devices)
+    const orphanedScreenFiles = await this.findOrphanedScreenFiles(deviceDirs, screens)
+    const orphanedDeviceDirs = await this.findOrphanedDeviceDirs(orphanedDirEntries)
     const brokenScreens = await this.findBrokenScreens(screens)
-    const tempFiles = await this.findTempFiles(devices)
+    const tempFiles = await this.findTempFiles(deviceDirs)
     const oldUploads = await this.findOldUploads()
 
     const totalSize = [
@@ -105,31 +111,43 @@ export class MaintenanceService {
     }
   }
 
-  /** The known device directories, paired with the path each lives at under `public/screens/devices`. */
-  private async listDeviceDirs(devices: Device[]): Promise<{ deviceId: string, devicePath: string }[]> {
-    const devicesPath = resolveAppPath('public', 'screens', 'devices')
+  /** The path under which each device's screen directory lives. */
+  private devicesRootPath(): string {
+    return resolveAppPath('public', 'screens', 'devices')
+  }
 
+  /** A single pass over `devicesRootPath()`, split into directories that match a known device and those that don't. */
+  private async listDevicesPathEntries(devices: Device[]): Promise<{ known: DeviceDirEntry[], orphaned: DeviceDirEntry[] }> {
+    const known: DeviceDirEntry[] = []
+    const orphaned: DeviceDirEntry[] = []
+
+    const devicesPath = this.devicesRootPath()
     if (!(await this.directoryExists(devicesPath)))
-      return []
+      return { known, orphaned }
 
     const entries = await fs.promises.readdir(devicesPath)
-    const dirs: { deviceId: string, devicePath: string }[] = []
 
     for (const entry of entries) {
       const devicePath = path.join(devicesPath, entry)
       const stat = await fs.promises.stat(devicePath)
 
-      if (stat.isDirectory() && devices.some(d => d.id === entry))
-        dirs.push({ deviceId: entry, devicePath })
+      if (!stat.isDirectory())
+        continue
+
+      const dir: DeviceDirEntry = { deviceId: entry, devicePath }
+      if (devices.some(d => d.id === entry))
+        known.push(dir)
+      else
+        orphaned.push(dir)
     }
 
-    return dirs
+    return { known, orphaned }
   }
 
-  private async findOrphanedScreenFiles(devices: Device[], screens: Screen[]): Promise<OrphanedScreenFile[]> {
+  private async findOrphanedScreenFiles(deviceDirs: DeviceDirEntry[], screens: Screen[]): Promise<OrphanedScreenFile[]> {
     const orphanedScreenFiles: OrphanedScreenFile[] = []
 
-    for (const { deviceId, devicePath } of await this.listDeviceDirs(devices)) {
+    for (const { deviceId, devicePath } of deviceDirs) {
       const files = await fs.promises.readdir(devicePath)
 
       for (const file of files) {
@@ -156,25 +174,13 @@ export class MaintenanceService {
     return orphanedScreenFiles
   }
 
-  private async findOrphanedDeviceDirs(devices: Device[]): Promise<OrphanedDeviceDir[]> {
+  private async findOrphanedDeviceDirs(orphanedDirEntries: DeviceDirEntry[]): Promise<OrphanedDeviceDir[]> {
     const orphanedDeviceDirs: OrphanedDeviceDir[] = []
 
-    const devicesPath = resolveAppPath('public', 'screens', 'devices')
-    if (!(await this.directoryExists(devicesPath)))
-      return orphanedDeviceDirs
-
-    const entries = await fs.promises.readdir(devicesPath)
-
-    for (const entry of entries) {
-      const devicePath = path.join(devicesPath, entry)
-      const stat = await fs.promises.stat(devicePath)
-
-      if (!stat.isDirectory() || devices.some(d => d.id === entry))
-        continue
-
+    for (const { deviceId, devicePath } of orphanedDirEntries) {
       const { fileCount, size } = await this.getDirectoryStats(devicePath)
       orphanedDeviceDirs.push({
-        deviceId: entry,
+        deviceId,
         path: devicePath,
         fileCount,
         size,
@@ -184,10 +190,10 @@ export class MaintenanceService {
     return orphanedDeviceDirs
   }
 
-  private async findTempFiles(devices: Device[]): Promise<TempFile[]> {
+  private async findTempFiles(deviceDirs: DeviceDirEntry[]): Promise<TempFile[]> {
     const tempFiles: TempFile[] = []
 
-    for (const { devicePath } of await this.listDeviceDirs(devices)) {
+    for (const { devicePath } of deviceDirs) {
       const files = await fs.promises.readdir(devicePath)
 
       for (const file of files) {
@@ -218,7 +224,7 @@ export class MaintenanceService {
     const brokenScreens: BrokenScreen[] = []
 
     for (const screen of screens) {
-      const expectedPath = resolveAppPath('public', 'screens', 'devices', screen.device.id, `${screen.id}.png`)
+      const expectedPath = path.join(this.devicesRootPath(), screen.device.id, `${screen.id}.png`)
 
       if (screen.type !== 'plugin' && screen.type !== 'mashup' && !screen.externalLink && !(await this.fileExists(expectedPath))) {
         brokenScreens.push({
@@ -363,7 +369,7 @@ export class MaintenanceService {
   }
 
   async getStats(): Promise<{ fileCount: number, totalSize: number }> {
-    const devicesPath = resolveAppPath('public', 'screens', 'devices')
+    const devicesPath = this.devicesRootPath()
 
     if (!(await this.directoryExists(devicesPath))) {
       return { fileCount: 0, totalSize: 0 }
