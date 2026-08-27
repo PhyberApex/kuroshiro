@@ -3,6 +3,8 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { apiRequest } from '../utils/apiRequest'
 
+type PluginWithDevice = Plugin & { device?: { id: string } }
+
 export const usePluginsStore = defineStore('plugins', () => {
   const plugins = ref<Plugin[]>([])
 
@@ -14,7 +16,7 @@ export const usePluginsStore = defineStore('plugins', () => {
   }
 
   const createPlugin = async (pluginData: CreatePluginPayload) => {
-    const newPlugin = await apiRequest<Plugin & { device?: { id: string } }>('/api/plugins', {
+    const newPlugin = await apiRequest<PluginWithDevice>('/api/plugins', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(pluginData),
@@ -26,7 +28,7 @@ export const usePluginsStore = defineStore('plugins', () => {
   }
 
   const updatePlugin = async (id: string, pluginData: Partial<CreatePluginPayload>) => {
-    const updatedPlugin = await apiRequest<Plugin & { device?: { id: string } }>(`/api/plugins/${id}`, {
+    const updatedPlugin = await apiRequest<PluginWithDevice>(`/api/plugins/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(pluginData),
