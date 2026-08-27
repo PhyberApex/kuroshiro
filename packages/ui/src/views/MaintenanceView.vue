@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DeviceModelSyncResult, FirmwareSyncResult } from '../types'
+import type { DeviceModelSyncResult, FirmwareSyncResult } from 'kuroshiro-shared'
 import { mdiAlertCircle, mdiCheckCircle, mdiCloudSync, mdiDelete, mdiRefresh, mdiUpload } from '@mdi/js'
 import { computed, onMounted, ref } from 'vue'
 import { VAlert, VBtn, VCard, VCardText, VCardTitle, VCheckbox, VChip, VCol, VContainer, VDialog, VDivider, VFileInput, VList, VListItem, VListItemSubtitle, VListItemTitle, VProgressCircular, VRow, VSelect, VSwitch, VTextField } from 'vuetify/components'

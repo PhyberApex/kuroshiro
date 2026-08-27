@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Screen } from '@/types'
 import { mdiCalendarClock, mdiChevronDown, mdiChevronUp, mdiDelete, mdiDrag, mdiEye, mdiOpenInNew, mdiRefresh } from '@mdi/js'
+import { viewFull } from 'kuroshiro-shared'
 import { ref } from 'vue'
 import { VAlert, VBtn, VCard, VCardActions, VCardText, VCardTitle, VChip, VDialog, VDivider, VIcon, VOverlay, VSpacer, VTable, VTooltip } from 'vuetify/components'
 import ScreenFrame from '@/components/ScreenFrame.vue'
@@ -8,7 +9,6 @@ import ScreenScheduleDialog from '@/components/ScreenScheduleDialog.vue'
 import { useDeviceRenderContext } from '@/composeables/useDeviceRenderContext'
 import { cacheBustedUrl } from '@/utils/cacheBustedUrl'
 import { screenScheduleColor, screenScheduleLabel } from '@/utils/schedule'
-import { viewFull } from '@/utils/screenShell'
 
 const props = defineProps<{ deviceId: string }>()
 

@@ -3,6 +3,7 @@
   "pull-request-header": ":partying_face: Preparing a new release",
   "extra-files": [
     "packages/api/package.json",
+    "packages/shared/package.json",
     "packages/ui/package.json"
   ],
   "packages": {

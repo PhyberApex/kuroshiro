@@ -1,13 +1,7 @@
 /**
- * Cross-package golden fixture for the screen-shell helper duplicated at
- * `packages/api/src/device-models/screen-shell.ts` and
- * `packages/ui/src/utils/screenShell.ts`. Both packages' spec suites assert
- * their implementation against this same input/output pair, so the two
- * copies failing to agree fails a test instead of silently drifting.
- *
- * Deliberately untyped against either package's `DeviceModel`/`Palette`
- * entities (they live in separate TypeORM/Vue type trees) — callers cast to
- * their own `{ model, palette }` render-target shape.
+ * Golden fixture for the screen-shell helpers, asserted against by both this
+ * package's own spec and (indirectly, via the moved functions) every
+ * consumer in `packages/api` and `packages/ui`.
  */
 export const SCREEN_SHELL_FIXTURE_MODEL = {
   name: 'v2',

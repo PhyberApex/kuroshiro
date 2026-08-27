@@ -1,4 +1,5 @@
 import type { OnApplicationBootstrap } from '@nestjs/common'
+import type { FirmwareSyncResult } from 'kuroshiro-shared'
 import buffer from 'node:buffer'
 import * as crypto from 'node:crypto'
 import * as fs from 'node:fs'
@@ -10,12 +11,6 @@ import { Repository } from 'typeorm'
 import { TRMNL_API_URL } from '../device-models/trmnl-payloads'
 import { Firmware } from './entities/firmware.entity'
 import { firmwareFilePath } from './firmware-paths'
-
-export interface FirmwareSyncResult {
-  inserted: boolean
-  version: string
-  syncedAt?: Date
-}
 
 interface TrmnlFirmwarePayload {
   url: string
@@ -87,7 +82,7 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
     })
 
     this.logger.log(`Synced firmware ${payload.version} (${id})`)
-    return { inserted: true, version: payload.version, syncedAt }
+    return { inserted: true, version: payload.version, syncedAt: syncedAt.toISOString() }
   }
 
   private async fetchLatest(): Promise<TrmnlFirmwarePayload> {
