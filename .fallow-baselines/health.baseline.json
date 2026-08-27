@@ -95,11 +95,6 @@
         "count": 1
       }
     },
-    "packages/ui/src/components/ScreenListCard.vue": {
-      "complexity_critical": {
-        "count": 1
-      }
-    },
     "packages/ui/src/components/ScreenScheduleDialog.vue": {
       "crap_high": {
         "count": 1
@@ -126,7 +121,6 @@
     "packages/ui/src/stores/deviceModels.ts:high impact",
     "packages/api/src/devices/display.service.ts:complexity",
     "packages/api/src/plugins/plugins.service.ts:complexity",
-    "packages/ui/src/components/ScreenListCard.vue:complexity",
     "packages/ui/src/components/DeviceInformationCard.vue:complexity"
   ]
 }
