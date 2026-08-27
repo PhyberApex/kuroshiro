@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import type { Screen } from '@/types'
-import { viewFull } from 'kuroshiro-shared'
 import { ref } from 'vue'
-import { VAlert, VCard, VCardText, VCardTitle, VChip, VDivider, VOverlay } from 'vuetify/components'
-import ScreenFrame from '@/components/ScreenFrame.vue'
+import { VAlert, VCard, VCardText, VCardTitle, VChip, VDivider } from 'vuetify/components'
+import ScreenHtmlPreviewOverlay from '@/components/ScreenHtmlPreviewOverlay.vue'
 import ScreenPreviewDialog from '@/components/ScreenPreviewDialog.vue'
 import ScreenScheduleDialog from '@/components/ScreenScheduleDialog.vue'
 import ScreenTable from '@/components/ScreenTable.vue'
@@ -180,9 +179,7 @@ defineExpose({
       :screen="scheduleScreen"
     />
 
-    <VOverlay v-model="showHtmlPreview" class="align-center justify-center">
-      <ScreenFrame v-if="showHtmlPreview" :body="viewFull(overlayHtml)" :target="renderTarget" />
-    </VOverlay>
+    <ScreenHtmlPreviewOverlay v-model="showHtmlPreview" :html="overlayHtml" :render-target="renderTarget" />
 
     <ScreenPreviewDialog
       v-model="showScreenPreview"
