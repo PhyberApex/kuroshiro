@@ -109,7 +109,7 @@ export interface ParsedPlugin {
   refreshInterval: number
   dataSources: ParsedDataSource[]
   templates: Array<{
-    layout: string
+    layout: TemplateLayout
     liquidMarkup: string
   }>
   fields: Array<{
@@ -474,11 +474,15 @@ export class PluginImporterService {
 
     const pluginName = this.resolvePluginName(manifest, settings, fallbackName)
 
+    // Legacy-format rejection must run before the templates check below, matching
+    // the original check order (a plugin with both problems reports the legacy-format
+    // error, not the missing-template one).
+    const dataSources = this.resolveDataSources(settings, transformJs, forcedDataSources)
+
     if (templates.length === 0) {
       throw new Error('At least one .liquid template file is required in src/ directory (e.g., src/full.liquid)')
     }
 
-    const dataSources = this.resolveDataSources(settings, transformJs, forcedDataSources)
     const fields = this.resolveFields(manifest, settings)
 
     return {
