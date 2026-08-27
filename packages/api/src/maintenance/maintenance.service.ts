@@ -76,113 +76,14 @@ export class MaintenanceService {
   async scan(): Promise<MaintenanceIssues> {
     this.logger.log('Starting maintenance scan')
 
-    const orphanedScreenFiles: OrphanedScreenFile[] = []
-    const orphanedDeviceDirs: OrphanedDeviceDir[] = []
-    const brokenScreens: BrokenScreen[] = []
-    const tempFiles: TempFile[] = []
-    const oldUploads: TempFile[] = []
-
     const devices = await this.deviceRepository.find()
     const screens = await this.screenRepository.find({ relations: { device: true } })
 
-    const devicesPath = resolveAppPath('public', 'screens', 'devices')
-
-    if (await this.directoryExists(devicesPath)) {
-      const deviceDirs = await fs.promises.readdir(devicesPath)
-
-      for (const deviceDir of deviceDirs) {
-        const devicePath = path.join(devicesPath, deviceDir)
-        const stat = await fs.promises.stat(devicePath)
-
-        if (!stat.isDirectory())
-          continue
-
-        const device = devices.find(d => d.id === deviceDir)
-
-        if (!device) {
-          const { fileCount, size } = await this.getDirectoryStats(devicePath)
-          orphanedDeviceDirs.push({
-            deviceId: deviceDir,
-            path: devicePath,
-            fileCount,
-            size,
-          })
-          continue
-        }
-
-        const files = await fs.promises.readdir(devicePath)
-
-        for (const file of files) {
-          const filePath = path.join(devicePath, file)
-          const fileStat = await fs.promises.stat(filePath)
-
-          if (fileStat.isDirectory())
-            continue
-
-          if (file === 'mirror.png')
-            continue
-
-          if (this.isTempFile(file)) {
-            const ageHours = (Date.now() - fileStat.mtimeMs) / (1000 * 60 * 60)
-            if (ageHours > TEMP_FILE_THRESHOLD_HOURS) {
-              tempFiles.push({
-                path: filePath,
-                age: ageHours,
-                size: fileStat.size,
-              })
-            }
-            continue
-          }
-
-          const screenId = file.replace(/\.(png|original)$/, '')
-          const screen = screens.find(s => s.id === screenId && s.device.id === deviceDir)
-
-          if (!screen && (file.endsWith('.png') || file.endsWith('.original'))) {
-            orphanedScreenFiles.push({
-              deviceId: deviceDir,
-              screenId,
-              path: filePath,
-              size: fileStat.size,
-            })
-          }
-        }
-      }
-    }
-
-    for (const screen of screens) {
-      const expectedPath = resolveAppPath('public', 'screens', 'devices', screen.device.id, `${screen.id}.png`)
-
-      if (screen.type !== 'plugin' && screen.type !== 'mashup' && !screen.externalLink && !(await this.fileExists(expectedPath))) {
-        brokenScreens.push({
-          screenId: screen.id,
-          deviceId: screen.device.id,
-          filename: screen.filename || 'unknown',
-          type: screen.type,
-        })
-      }
-    }
-
-    const uploadsPath = resolveAppPath('uploads')
-    if (await this.directoryExists(uploadsPath)) {
-      const uploadFiles = await fs.promises.readdir(uploadsPath)
-
-      for (const file of uploadFiles) {
-        const filePath = path.join(uploadsPath, file)
-        const stat = await fs.promises.stat(filePath)
-
-        if (stat.isDirectory())
-          continue
-
-        const ageHours = (Date.now() - stat.mtimeMs) / (1000 * 60 * 60)
-        if (ageHours > TEMP_FILE_THRESHOLD_HOURS) {
-          oldUploads.push({
-            path: filePath,
-            age: ageHours,
-            size: stat.size,
-          })
-        }
-      }
-    }
+    const orphanedScreenFiles = await this.findOrphanedScreenFiles(devices, screens)
+    const orphanedDeviceDirs = await this.findOrphanedDeviceDirs(devices)
+    const brokenScreens = await this.findBrokenScreens(screens)
+    const tempFiles = await this.findTempFiles(devices)
+    const oldUploads = await this.findOldUploads()
 
     const totalSize = [
       ...orphanedScreenFiles.map(f => f.size),
@@ -204,6 +105,163 @@ export class MaintenanceService {
     }
   }
 
+  /** The known device directories, paired with the path each lives at under `public/screens/devices`. */
+  private async listDeviceDirs(devices: Device[]): Promise<{ deviceId: string, devicePath: string }[]> {
+    const devicesPath = resolveAppPath('public', 'screens', 'devices')
+
+    if (!(await this.directoryExists(devicesPath)))
+      return []
+
+    const entries = await fs.promises.readdir(devicesPath)
+    const dirs: { deviceId: string, devicePath: string }[] = []
+
+    for (const entry of entries) {
+      const devicePath = path.join(devicesPath, entry)
+      const stat = await fs.promises.stat(devicePath)
+
+      if (stat.isDirectory() && devices.some(d => d.id === entry))
+        dirs.push({ deviceId: entry, devicePath })
+    }
+
+    return dirs
+  }
+
+  private async findOrphanedScreenFiles(devices: Device[], screens: Screen[]): Promise<OrphanedScreenFile[]> {
+    const orphanedScreenFiles: OrphanedScreenFile[] = []
+
+    for (const { deviceId, devicePath } of await this.listDeviceDirs(devices)) {
+      const files = await fs.promises.readdir(devicePath)
+
+      for (const file of files) {
+        const filePath = path.join(devicePath, file)
+        const fileStat = await fs.promises.stat(filePath)
+
+        if (fileStat.isDirectory() || file === 'mirror.png' || this.isTempFile(file))
+          continue
+
+        const screenId = file.replace(/\.(png|original)$/, '')
+        const screen = screens.find(s => s.id === screenId && s.device.id === deviceId)
+
+        if (!screen && (file.endsWith('.png') || file.endsWith('.original'))) {
+          orphanedScreenFiles.push({
+            deviceId,
+            screenId,
+            path: filePath,
+            size: fileStat.size,
+          })
+        }
+      }
+    }
+
+    return orphanedScreenFiles
+  }
+
+  private async findOrphanedDeviceDirs(devices: Device[]): Promise<OrphanedDeviceDir[]> {
+    const orphanedDeviceDirs: OrphanedDeviceDir[] = []
+
+    const devicesPath = resolveAppPath('public', 'screens', 'devices')
+    if (!(await this.directoryExists(devicesPath)))
+      return orphanedDeviceDirs
+
+    const entries = await fs.promises.readdir(devicesPath)
+
+    for (const entry of entries) {
+      const devicePath = path.join(devicesPath, entry)
+      const stat = await fs.promises.stat(devicePath)
+
+      if (!stat.isDirectory() || devices.some(d => d.id === entry))
+        continue
+
+      const { fileCount, size } = await this.getDirectoryStats(devicePath)
+      orphanedDeviceDirs.push({
+        deviceId: entry,
+        path: devicePath,
+        fileCount,
+        size,
+      })
+    }
+
+    return orphanedDeviceDirs
+  }
+
+  private async findTempFiles(devices: Device[]): Promise<TempFile[]> {
+    const tempFiles: TempFile[] = []
+
+    for (const { devicePath } of await this.listDeviceDirs(devices)) {
+      const files = await fs.promises.readdir(devicePath)
+
+      for (const file of files) {
+        if (!this.isTempFile(file))
+          continue
+
+        const filePath = path.join(devicePath, file)
+        const fileStat = await fs.promises.stat(filePath)
+
+        if (fileStat.isDirectory())
+          continue
+
+        const ageHours = (Date.now() - fileStat.mtimeMs) / (1000 * 60 * 60)
+        if (ageHours > TEMP_FILE_THRESHOLD_HOURS) {
+          tempFiles.push({
+            path: filePath,
+            age: ageHours,
+            size: fileStat.size,
+          })
+        }
+      }
+    }
+
+    return tempFiles
+  }
+
+  private async findBrokenScreens(screens: Screen[]): Promise<BrokenScreen[]> {
+    const brokenScreens: BrokenScreen[] = []
+
+    for (const screen of screens) {
+      const expectedPath = resolveAppPath('public', 'screens', 'devices', screen.device.id, `${screen.id}.png`)
+
+      if (screen.type !== 'plugin' && screen.type !== 'mashup' && !screen.externalLink && !(await this.fileExists(expectedPath))) {
+        brokenScreens.push({
+          screenId: screen.id,
+          deviceId: screen.device.id,
+          filename: screen.filename || 'unknown',
+          type: screen.type,
+        })
+      }
+    }
+
+    return brokenScreens
+  }
+
+  private async findOldUploads(): Promise<TempFile[]> {
+    const oldUploads: TempFile[] = []
+
+    const uploadsPath = resolveAppPath('uploads')
+    if (!(await this.directoryExists(uploadsPath)))
+      return oldUploads
+
+    const uploadFiles = await fs.promises.readdir(uploadsPath)
+
+    for (const file of uploadFiles) {
+      const filePath = path.join(uploadsPath, file)
+      const stat = await fs.promises.stat(filePath)
+
+      if (stat.isDirectory())
+        continue
+
+      const ageHours = (Date.now() - stat.mtimeMs) / (1000 * 60 * 60)
+      if (ageHours > TEMP_FILE_THRESHOLD_HOURS) {
+        oldUploads.push({
+          path: filePath,
+          age: ageHours,
+          size: stat.size,
+        })
+      }
+    }
+
+    return oldUploads
+  }
+
   async cleanup(
     orphanedFiles: string[],
     orphanedDirs: string[],
@@ -222,23 +280,54 @@ export class MaintenanceService {
       errors: [],
     }
 
-    for (const filePath of orphanedFiles) {
+    await this.deleteFiles(orphanedFiles, result, dryRun, { protectSystemFiles: true, logLabel: 'orphaned file' })
+    await this.deleteFiles([...tempFiles, ...oldUploads], result, dryRun, { protectSystemFiles: false, logLabel: 'temp file' })
+    await this.deleteDirs(orphanedDirs, result, dryRun)
+
+    for (const screenId of brokenScreens) {
+      try {
+        if (!dryRun) {
+          await this.screenRepository.delete(screenId)
+          this.logger.log(`Deleted broken screen: ${screenId}`)
+        }
+        result.screensDeleted++
+      }
+      catch (err) {
+        const message = getErrorMessage(err)
+        result.errors.push(`Failed to delete screen ${screenId}: ${message}`)
+      }
+    }
+
+    this.logger.log(`Cleanup complete. Deleted ${result.filesDeleted} files, ${result.dirsDeleted} dirs, ${result.screensDeleted} screens. Freed ${result.bytesFreed} bytes`)
+
+    return result
+  }
+
+  private async deleteFiles(
+    paths: string[],
+    result: CleanupResult,
+    dryRun: boolean,
+    options: { protectSystemFiles: boolean, logLabel: string },
+  ): Promise<void> {
+    for (const filePath of paths) {
       if (!this.isPathSafe(filePath)) {
         result.errors.push(`Unsafe path: ${filePath}`)
         continue
       }
 
-      const filename = path.basename(filePath)
-      if (SYSTEM_FILES.has(filename)) {
-        result.errors.push(`Protected system file: ${filename}`)
-        continue
+      if (options.protectSystemFiles) {
+        const filename = path.basename(filePath)
+        if (SYSTEM_FILES.has(filename)) {
+          result.errors.push(`Protected system file: ${filename}`)
+          continue
+        }
       }
 
       try {
         const stat = await fs.promises.stat(filePath)
         if (!dryRun) {
           await fs.promises.unlink(filePath)
-          this.logger.log(`Deleted orphaned file: ${filePath}`)
+          this.logger.log(`Deleted ${options.logLabel}: ${filePath}`)
         }
         result.filesDeleted++
         result.bytesFreed += stat.size
@@ -248,29 +337,10 @@ export class MaintenanceService {
         result.errors.push(`Failed to delete ${filePath}: ${message}`)
       }
     }
+  }
 
-    for (const filePath of [...tempFiles, ...oldUploads]) {
-      if (!this.isPathSafe(filePath)) {
-        result.errors.push(`Unsafe path: ${filePath}`)
-        continue
-      }
-
-      try {
-        const stat = await fs.promises.stat(filePath)
-        if (!dryRun) {
-          await fs.promises.unlink(filePath)
-          this.logger.log(`Deleted temp file: ${filePath}`)
-        }
-        result.filesDeleted++
-        result.bytesFreed += stat.size
-      }
-      catch (err) {
-        const message = getErrorMessage(err)
-        result.errors.push(`Failed to delete ${filePath}: ${message}`)
-      }
-    }
-
-    for (const dirPath of orphanedDirs) {
+  private async deleteDirs(paths: string[], result: CleanupResult, dryRun: boolean): Promise<void> {
+    for (const dirPath of paths) {
       if (!this.isPathSafe(dirPath)) {
         result.errors.push(`Unsafe path: ${dirPath}`)
         continue
@@ -290,24 +360,6 @@ export class MaintenanceService {
         result.errors.push(`Failed to delete ${dirPath}: ${message}`)
       }
     }
-
-    for (const screenId of brokenScreens) {
-      try {
-        if (!dryRun) {
-          await this.screenRepository.delete(screenId)
-          this.logger.log(`Deleted broken screen: ${screenId}`)
-        }
-        result.screensDeleted++
-      }
-      catch (err) {
-        const message = getErrorMessage(err)
-        result.errors.push(`Failed to delete screen ${screenId}: ${message}`)
-      }
-    }
-
-    this.logger.log(`Cleanup complete. Deleted ${result.filesDeleted} files, ${result.dirsDeleted} dirs, ${result.screensDeleted} screens. Freed ${result.bytesFreed} bytes`)
-
-    return result
   }
 
   async getStats(): Promise<{ fileCount: number, totalSize: number }> {
