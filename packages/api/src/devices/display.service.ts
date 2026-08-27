@@ -341,10 +341,18 @@ export class DeviceDisplayService {
     const activeScreen = await this.screenRepository.findOneBy({ device: { id: device.id }, isActive: true })
     if (!activeScreen)
       return { filename: 'noScreen.png', imgUrl: await this.fallbackImageUrl('noScreen', device) }
-    const imgUrl = await fileExists(this.screenImagePath(device, activeScreen))
-      ? this.screenImageUrl(device, activeScreen)
-      : await this.generateScreenImage(activeScreen, device)
-    return { filename: `${activeScreen.filename}_${activeScreen.generatedAt.toISOString()}`, imgUrl }
+    return await this.resolveScreenImageFile(device, activeScreen)
+  }
+
+  /**
+   * The stored image for a Screen, generating it on demand if nothing is
+   * cached on disk yet.
+   */
+  private async resolveScreenImageFile(device: Device, screen: Screen): Promise<{ filename: string, imgUrl: string }> {
+    const imgUrl = await fileExists(this.screenImagePath(device, screen))
+      ? this.screenImageUrl(device, screen)
+      : await this.generateScreenImage(screen, device)
+    return { filename: `${screen.filename}_${screen.generatedAt.toISOString()}`, imgUrl }
   }
 
   async getCurrentImageWithoutProgressing(headers: Pick<DisplayRequestHeadersDto, 'id' | 'access-token'>): Promise<DisplayScreen> {
@@ -415,14 +423,8 @@ export class DeviceDisplayService {
     if (!activeScreen)
       throw new NotFoundException('No active screen found for device')
     this.logger.log(`Returning screen ${activeScreen.id} for device ${device.id}`)
-    const imgUrl = await fileExists(this.screenImagePath(device, activeScreen))
-      ? this.screenImageUrl(device, activeScreen)
-      : await this.generateScreenImage(activeScreen, device)
-    return {
-      filename: `${activeScreen.filename}_${activeScreen.generatedAt.toISOString()}`,
-      imgUrl,
-      renderedAt: activeScreen.generatedAt,
-    }
+    const { filename, imgUrl } = await this.resolveScreenImageFile(device, activeScreen)
+    return { filename, imgUrl, renderedAt: activeScreen.generatedAt }
   }
 
   private async fetchAndStoreMirrorImage(device: Device, proxyHeaders?: DisplayRequestHeadersDto): Promise<{ response: TrmnlScreenResponse, localImageUrl: string }> {
