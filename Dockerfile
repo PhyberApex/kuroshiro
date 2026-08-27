@@ -2,6 +2,7 @@
 FROM node:24-alpine AS ui-build
 WORKDIR /app
 COPY packages/ui ./packages/ui
+COPY packages/shared ./packages/shared
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 RUN corepack enable && pnpm install --frozen-lockfile
 RUN pnpm --filter ./packages/ui build
@@ -11,6 +12,7 @@ RUN pnpm --filter ./packages/ui build
 FROM node:24-alpine AS api-build
 WORKDIR /app
 COPY packages/api ./packages/api
+COPY packages/shared ./packages/shared
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 # Copy built ui static files from previous stage
 RUN corepack enable && pnpm install --frozen-lockfile

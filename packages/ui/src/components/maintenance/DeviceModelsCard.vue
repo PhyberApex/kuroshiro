@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DeviceModelSyncResult } from '@/types'
+import type { DeviceModelSyncResult } from 'kuroshiro-shared'
 import { mdiAlertCircle, mdiCheckCircle, mdiCloudSync } from '@mdi/js'
 import { VAlert, VBtn, VCard, VCardText, VCardTitle, VDivider } from 'vuetify/components'
 import { formatDate } from '@/utils/formatDate'

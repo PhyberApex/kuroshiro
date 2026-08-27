@@ -1,8 +1,8 @@
 import type { ValidationArguments, ValidationOptions, ValidatorConstraintInterface } from 'class-validator'
+import type { DataSourceLiteralValue, DataSourceMode } from 'kuroshiro-shared'
 import type { JsonObject } from '../../utils/json'
-import type { DataSourceLiteralValue, DataSourceMode } from '../entities/plugin-data-source.entity'
 import { IsIn, IsInt, IsObject, IsOptional, IsString, registerDecorator, ValidatorConstraint } from 'class-validator'
-import { DATA_SOURCE_MODES } from '../entities/plugin-data-source.entity'
+import { DATA_SOURCE_MODES } from 'kuroshiro-shared'
 import { dataSourceModeViolation } from '../plugin-data-source-mode'
 
 @ValidatorConstraint({ name: 'dataSourceModeFields' })

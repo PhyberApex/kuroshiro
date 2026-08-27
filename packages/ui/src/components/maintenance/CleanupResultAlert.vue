@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CleanupResult } from '@/types'
+import type { CleanupResult } from 'kuroshiro-shared'
 import { mdiCheckCircle } from '@mdi/js'
 import { VAlert } from 'vuetify/components'
 import { formatBytes } from '@/utils/maintenanceFormat'

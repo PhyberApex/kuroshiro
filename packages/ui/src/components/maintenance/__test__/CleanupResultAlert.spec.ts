@@ -1,4 +1,4 @@
-import type { CleanupResult } from '@/types'
+import type { CleanupResult } from 'kuroshiro-shared'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import vuetify from '@/plugins/vuetify'

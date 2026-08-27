@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { RenderTarget } from '@/utils/screenShell'
+import { viewFull } from 'kuroshiro-shared'
 import { VAlert, VBtn, VCard, VCardActions, VCardText, VCardTitle, VDialog, VDivider, VSpacer, VTab, VTabs, VWindow, VWindowItem } from 'vuetify/components'
 import RenderTargetPicker from '@/components/RenderTargetPicker.vue'
 import ScreenFrame from '@/components/ScreenFrame.vue'
-import { viewFull } from '@/utils/screenShell'
 
 defineProps<{
   html: string

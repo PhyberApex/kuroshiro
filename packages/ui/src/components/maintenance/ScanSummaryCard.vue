@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { MaintenanceIssues } from '@/types'
+import type { MaintenanceIssues } from 'kuroshiro-shared'
 import { VCard, VCardText, VCardTitle, VChip, VCol, VDivider, VRow } from 'vuetify/components'
 import { formatBytes } from '@/utils/maintenanceFormat'
 

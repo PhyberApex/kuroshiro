@@ -11,4 +11,5 @@ export default defineConfig({
   minify: true,
   target: 'es2022',
   external: ['node_modules'],
+  noExternal: ['kuroshiro-shared'],
 })

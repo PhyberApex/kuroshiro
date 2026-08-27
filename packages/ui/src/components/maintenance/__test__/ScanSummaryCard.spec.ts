@@ -1,4 +1,4 @@
-import type { MaintenanceIssues } from '@/types'
+import type { MaintenanceIssues } from 'kuroshiro-shared'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import vuetify from '@/plugins/vuetify'

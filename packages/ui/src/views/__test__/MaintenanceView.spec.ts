@@ -1,7 +1,7 @@
+import type { MaintenanceIssues } from 'kuroshiro-shared'
 import type { useDeviceModelsStore } from '@/stores/deviceModels'
 import type { useFirmwareStore } from '@/stores/firmware'
 import type { useMaintenanceStore } from '@/stores/maintenance'
-import type { MaintenanceIssues } from '@/types'
 import { flushPromises, mount } from '@vue/test-utils'
 import rop from 'resize-observer-polyfill'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
