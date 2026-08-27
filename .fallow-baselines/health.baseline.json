@@ -50,17 +50,6 @@
         "count": 1
       }
     },
-    "packages/api/src/plugins/services/plugin-importer.service.ts": {
-      "complexity_high": {
-        "count": 2
-      },
-      "crap_high": {
-        "count": 2
-      },
-      "crap_moderate": {
-        "count": 2
-      }
-    },
     "packages/api/src/screens/screens.service.ts": {
       "complexity_high": {
         "count": 1
@@ -124,8 +113,8 @@
   "runtime_coverage_findings": [],
   "target_keys": [
     "packages/ui/src/stores/deviceModels.ts:high impact",
-    "packages/api/src/plugins/plugins.service.ts:complexity",
     "packages/api/src/devices/display.service.ts:complexity",
+    "packages/api/src/plugins/plugins.service.ts:complexity",
     "packages/ui/src/components/DeviceInformationCard.vue:complexity",
     "packages/ui/src/components/DeviceLogsCard.vue:complexity"
   ]

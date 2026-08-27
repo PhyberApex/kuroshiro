@@ -4,7 +4,20 @@ import * as path from 'node:path'
 import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { PluginImporterService } from '../services/plugin-importer.service'
+import { layoutFromTemplateFilename, PluginImporterService } from '../services/plugin-importer.service'
+
+describe('layoutFromTemplateFilename', () => {
+  it('detects half_horizontal, half_vertical, and quadrant by substring', () => {
+    expect(layoutFromTemplateFilename('half_horizontal')).toBe('half_horizontal')
+    expect(layoutFromTemplateFilename('my-half_vertical-template')).toBe('half_vertical')
+    expect(layoutFromTemplateFilename('quadrant')).toBe('quadrant')
+  })
+
+  it('defaults to full when no known substring matches', () => {
+    expect(layoutFromTemplateFilename('full')).toBe('full')
+    expect(layoutFromTemplateFilename('anything-else')).toBe('full')
+  })
+})
 
 describe('pluginImporterService', () => {
   let service: PluginImporterService
