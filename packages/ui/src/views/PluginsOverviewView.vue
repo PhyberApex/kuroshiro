@@ -4,7 +4,7 @@ import { mdiPlus, mdiSync, mdiUpload } from '@mdi/js'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { VBtn, VCard, VCardText, VCardTitle, VCol, VContainer, VDivider, VIconBtn, VRow, VTooltip } from 'vuetify/components'
-import PluginCard from '../components/PluginCard.vue'
+import PluginCardGrid from '../components/PluginCardGrid.vue'
 import PluginImportDialog from '../components/PluginImportDialog.vue'
 
 const router = useRouter()
@@ -82,17 +82,12 @@ function onPluginImported() {
           </VCardTitle>
           <VDivider />
           <VCardText>
-            <VRow v-if="plugins.length">
-              <VCol
-                v-for="plugin in plugins"
-                :key="plugin.id"
-                cols="12"
-                md="6"
-                lg="4"
-              >
-                <PluginCard :plugin="plugin" @assignments-changed="fetchAllPlugins" @deleted="fetchAllPlugins" />
-              </VCol>
-            </VRow>
+            <PluginCardGrid
+              v-if="plugins.length"
+              :plugins="plugins"
+              @assignments-changed="fetchAllPlugins"
+              @deleted="fetchAllPlugins"
+            />
             <div v-else class="text-center py-12">
               <div class="text-h5 mb-2">
                 No plugins yet

@@ -10,9 +10,7 @@
     "packages/api/src/devices/display.service.ts:532-540|packages/api/src/mashup/services/mashup-renderer.service.ts:70-78",
     "packages/ui/src/stores/plugins.ts:18-23|packages/ui/src/stores/plugins.ts:35-40",
     "packages/api/src/plugins/services/plugin-importer.service.ts:253-261|packages/api/src/plugins/services/plugin-importer.service.ts:436-444",
-    "packages/api/src/test/fixtures.ts:88-107|packages/api/src/test/mockDeviceModelsService.ts:5-24",
-    "packages/ui/src/views/PluginsOverviewView.vue:79-93|packages/ui/src/views/PluginsView.vue:72-86",
-    "packages/ui/src/components/AddScreenCard.vue:14-20|packages/ui/src/components/ScreenListCard.vue:15-20"
+    "packages/api/src/test/fixtures.ts:88-107|packages/api/src/test/mockDeviceModelsService.ts:5-24"
   ],
   "clone_fingerprints": [
     "dup:d32ddf4a:2",
@@ -25,23 +23,19 @@
     "dup:3219d03d:2",
     "dup:a7daa5d0:2",
     "dup:78a90f7a:2",
-    "dup:5304ed0c:2",
-    "dup:61dc4236:2",
-    "dup:a4f7ef05:2"
+    "dup:5304ed0c:2"
   ],
   "normalized_clone_fingerprints": [
     "dup:a3006799:2",
     "dup:c61b2099:2",
-    "dup:c77b3abb6f87acd9-6:2",
-    "dup:c77b3abb6f87acd9-1:2",
     "dup:c77b3abb6f87acd9-5:2",
-    "dup:c77b3abb6f87acd9-9:2",
-    "dup:f2fdd24f:2",
-    "dup:c77b3abb6f87acd9-8:2",
-    "dup:c77b3abb6f87acd9-3:2",
-    "dup:c77b3abb6f87acd9-7:2",
-    "dup:c77b3abb6f87acd9-2:2",
+    "dup:c77b3abb6f87acd9-1:2",
     "dup:c77b3abb6f87acd9-4:2",
-    "dup:88ad7b32:2"
+    "dup:c77b3abb6f87acd9-8:2",
+    "dup:f2fdd24f:2",
+    "dup:c77b3abb6f87acd9-7:2",
+    "dup:c77b3abb6f87acd9-3:2",
+    "dup:c77b3abb6f87acd9-6:2",
+    "dup:c77b3abb6f87acd9-2:2"
   ]
 }

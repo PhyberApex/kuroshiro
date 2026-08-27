@@ -88,5 +88,6 @@ export const useScreensStore = defineStore('screens', () => {
     screens.value = await res.json()
   }
 
+  // fallow-ignore-next-line unused-store-member -- addScreen/addScreenFile/addScreenHtml/deleteScreen/updateExternalScreen are called through the screensStore destructured from the useDeviceRenderContext composable, which fallow can't trace through
   return { screens, currentScreen, fetchScreensForDevice, addScreen, addScreenFile, addScreenHtml, deleteScreen, updateExternalScreen, reorderScreens, fetchCurrentScreenForDevice }
 })
