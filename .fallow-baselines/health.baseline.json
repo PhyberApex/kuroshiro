@@ -74,11 +74,6 @@
         "count": 1
       }
     },
-    "packages/ui/src/components/DeviceLogsCard.vue": {
-      "complexity_critical": {
-        "count": 1
-      }
-    },
     "packages/ui/src/components/PluginCard.vue": {
       "complexity_moderate": {
         "count": 1
@@ -117,7 +112,6 @@
   "target_keys": [
     "packages/ui/src/stores/deviceModels.ts:high impact",
     "packages/api/src/devices/display.service.ts:complexity",
-    "packages/api/src/plugins/plugins.service.ts:complexity",
-    "packages/ui/src/components/DeviceLogsCard.vue:complexity"
+    "packages/api/src/plugins/plugins.service.ts:complexity"
   ]
 }
