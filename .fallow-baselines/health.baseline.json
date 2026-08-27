@@ -39,10 +39,7 @@
       }
     },
     "packages/api/src/mashup/mashup.service.ts": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
+      "complexity_moderate": {
         "count": 1
       },
       "crap_moderate": {
@@ -150,7 +147,6 @@
     "packages/ui/src/stores/deviceModels.ts:high impact",
     "packages/ui/src/components/ScreenListCard.vue:complexity",
     "packages/api/src/devices/display.service.ts:complexity",
-    "packages/api/src/mashup/mashup.service.ts:complexity",
     "packages/ui/src/components/DeviceInformationCard.vue:complexity",
     "packages/api/src/maintenance/maintenance.service.ts:complexity",
     "packages/ui/src/components/DeviceLogsCard.vue:complexity",
