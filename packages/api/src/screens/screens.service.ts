@@ -33,15 +33,35 @@ export class ScreensService {
 
   async add(body: CreateScreenDto, file?: Express.Multer.File): Promise<Screen> {
     this.logger.log(`Adding screen to device ${body.deviceId}`)
+    this.assertValidAddInput(body, file)
+    const device = await this.findDeviceForAdd(body.deviceId)
+    const saved = await this.createScreen(body, device)
+
+    if (body.externalLink && body.fetchManual)
+      await this.fetchExternalImageForScreen(device, saved, body.externalLink)
+    else if (file)
+      await this.saveUploadedFileForScreen(device, saved, file)
+
+    return this.activateScreen(saved, device.id)
+  }
+
+  private assertValidAddInput(body: CreateScreenDto, file?: Express.Multer.File): void {
     if (body.externalLink && file)
       throw new BadRequestException('Can\'t upload a file to an external image')
     if (!body.externalLink && !file && !body.html)
       throw new BadRequestException('Need either external link, file or HTML to add screen')
-    const device = await this.devicesRepository.findOne({ where: { id: body.deviceId }, relations: { screens: true } })
+  }
+
+  private async findDeviceForAdd(deviceId: string): Promise<Device> {
+    const device = await this.devicesRepository.findOne({ where: { id: deviceId }, relations: { screens: true } })
     if (!device) {
-      this.logger.warn(`Device not found: ${body.deviceId}`)
+      this.logger.warn(`Device not found: ${deviceId}`)
       throw new NotFoundException('Device not found')
     }
+    return device
+  }
+
+  private async createScreen(body: CreateScreenDto, device: Device): Promise<Screen> {
     const newScreen = this.screensRepository.create({
       type: body.externalLink ? 'external' : body.html ? 'html' : 'file',
       filename: body.filename,
@@ -54,53 +74,55 @@ export class ScreensService {
       generatedAt: new Date(),
     })
     const saved = await this.screensRepository.save(newScreen)
-    this.logger.log(`Screen created with id: ${saved.id} for device: ${body.deviceId}`)
+    this.logger.log(`Screen created with id: ${saved.id} for device: ${device.id}`)
+    return saved
+  }
 
-    // Fetch initial image right now
-    if (body.externalLink && body.fetchManual) {
-      if (this.configService.get<boolean>('demo_mode'))
-        assertPublicUrl(body.externalLink)
-      const inputPath = this.originalImagePath(device.id, saved.id)
-      const outputPath = this.screenImagePath(device.id, saved.id)
+  private async fetchExternalImageForScreen(device: Device, screen: Screen, externalLink: string): Promise<void> {
+    if (this.configService.get<boolean>('demo_mode'))
+      assertPublicUrl(externalLink)
+    const inputPath = this.originalImagePath(device.id, screen.id)
+    const outputPath = this.screenImagePath(device.id, screen.id)
+    this.logger.debug(`Input path: ${inputPath}`)
+    this.logger.debug(`Planned output path: ${outputPath}`)
+    try {
+      await downloadImage(externalLink, inputPath, this.logger)
+      await convertToPng(inputPath, outputPath, await this.deviceModels.renderTargetFor(device), this.logger)
+      this.logger.log('Download and conversion successful')
+    }
+    catch (err) {
+      const message = getErrorMessage(err)
+      this.logger.error(`Failed to process image: ${message}. Removing screen again.`)
+      await this.screensRepository.remove(screen)
+      throw new InternalServerErrorException('Error processing image')
+    }
+  }
+
+  private async saveUploadedFileForScreen(device: Device, screen: Screen, file: Express.Multer.File): Promise<void> {
+    try {
+      const inputPath = this.originalImagePath(device.id, screen.id)
+      const outputPath = this.screenImagePath(device.id, screen.id)
+      await fs.promises.mkdir(path.dirname(inputPath), { recursive: true })
       this.logger.debug(`Input path: ${inputPath}`)
       this.logger.debug(`Planned output path: ${outputPath}`)
-      try {
-        await downloadImage(body.externalLink, inputPath, this.logger)
-        await convertToPng(inputPath, outputPath, await this.deviceModels.renderTargetFor(device), this.logger)
-        this.logger.log('Download and conversion successful')
-      }
-      catch (err) {
-        const message = getErrorMessage(err)
-        this.logger.error(`Failed to process image: ${message}. Removing screen again.`)
-        await this.screensRepository.remove(saved)
-        throw new InternalServerErrorException('Error processing image')
-      }
+      await fs.promises.writeFile(inputPath, file.buffer)
+      this.logger.log(`Uploaded file saved to ${inputPath}`)
+      await convertToPng(inputPath, outputPath, await this.deviceModels.renderTargetFor(device), this.logger)
+      this.logger.log(`Converted and saved PNG to ${outputPath}`)
     }
+    catch {
+      this.logger.error('Error on uploading file. Removing screen again.')
+      await this.screensRepository.remove(screen)
+      throw new InternalServerErrorException('Error processing image')
+    }
+  }
 
-    // Handle file upload and conversion
-    else if (file) {
-      try {
-        const inputPath = this.originalImagePath(device.id, saved.id)
-        const outputPath = this.screenImagePath(device.id, saved.id)
-        await fs.promises.mkdir(path.dirname(inputPath), { recursive: true })
-        this.logger.debug(`Input path: ${inputPath}`)
-        this.logger.debug(`Planned output path: ${outputPath}`)
-        await fs.promises.writeFile(inputPath, file.buffer)
-        this.logger.log(`Uploaded file saved to ${inputPath}`)
-        await convertToPng(inputPath, outputPath, await this.deviceModels.renderTargetFor(device), this.logger)
-        this.logger.log(`Converted and saved PNG to ${outputPath}`)
-      }
-      catch {
-        this.logger.error('Error on uploading file. Removing screen again.')
-        await this.screensRepository.remove(saved)
-        throw new InternalServerErrorException('Error processing image')
-      }
-    }
-    this.logger.log(`Adding successful setting new active screen to ${saved.id}`)
-    await this.screensRepository.update({ device: { id: device.id } }, { isActive: false })
-    saved.isActive = true
-    await this.screensRepository.save(saved)
-    return saved
+  private async activateScreen(screen: Screen, deviceId: string): Promise<Screen> {
+    this.logger.log(`Adding successful setting new active screen to ${screen.id}`)
+    await this.screensRepository.update({ device: { id: deviceId } }, { isActive: false })
+    screen.isActive = true
+    await this.screensRepository.save(screen)
+    return screen
   }
 
   async getByDevice(deviceId: string): Promise<Screen[]> {
@@ -114,11 +136,7 @@ export class ScreensService {
 
   async delete(id: string): Promise<void> {
     this.logger.log(`Deleting screen ${id}`)
-    const screen = await this.screensRepository.findOne({ where: { id }, relations: { device: true } })
-    if (!screen) {
-      this.logger.warn(`Screen not found: ${id}`)
-      throw new NotFoundException('Screen not found')
-    }
+    const screen = await this.findScreenWithDevice(id)
     const deviceId = screen.device.id
     await this.deleteFileIfExists(this.screenImagePath(deviceId, id))
     await this.deleteFileIfExists(this.originalImagePath(deviceId, id))
@@ -178,11 +196,7 @@ export class ScreensService {
 
   async updateExternalScreen(id: string) {
     this.logger.log(`Refetching screen: ${id}`)
-    const screen = await this.screensRepository.findOne({ where: { id }, relations: { device: true } })
-    if (!screen) {
-      this.logger.warn(`Screen not found: ${id}`)
-      throw new NotFoundException('Screen not found')
-    }
+    const screen = await this.findScreenWithDevice(id)
     if (!screen.externalLink) {
       throw new BadRequestException('This is only allowed for external images')
     }
@@ -240,6 +254,15 @@ export class ScreensService {
     }
     this.logger.log(`Reconverted ${converted} image screen(s) for device ${device.id} as ${target.model.name}/${target.palette.id}`)
     return converted
+  }
+
+  private async findScreenWithDevice(id: string): Promise<Screen> {
+    const screen = await this.screensRepository.findOne({ where: { id }, relations: { device: true } })
+    if (!screen) {
+      this.logger.warn(`Screen not found: ${id}`)
+      throw new NotFoundException('Screen not found')
+    }
+    return screen
   }
 
   private screenImagePath(deviceId: string, screenId: string): string {
