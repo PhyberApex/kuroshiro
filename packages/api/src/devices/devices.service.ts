@@ -62,13 +62,21 @@ export class DevicesService {
   }
 
   private async applyModelChanges(device: Device, deviceModelName?: string, paletteId?: string): Promise<void> {
-    if (deviceModelName !== undefined && deviceModelName !== device.deviceModel?.name) {
-      const model = await this.deviceModels.findByName(deviceModelName)
-      if (!model)
-        throw new BadRequestException(`Unknown device model: ${deviceModelName}`)
-      device.deviceModel = model
-      device.palette = null
-    }
+    await this.applyModelChange(device, deviceModelName)
+    await this.applyPaletteChange(device, paletteId)
+  }
+
+  private async applyModelChange(device: Device, deviceModelName?: string): Promise<void> {
+    if (deviceModelName === undefined || deviceModelName === device.deviceModel?.name)
+      return
+    const model = await this.deviceModels.findByName(deviceModelName)
+    if (!model)
+      throw new BadRequestException(`Unknown device model: ${deviceModelName}`)
+    device.deviceModel = model
+    device.palette = null
+  }
+
+  private async applyPaletteChange(device: Device, paletteId?: string): Promise<void> {
     if (paletteId !== undefined) {
       if (!device.deviceModel)
         throw new BadRequestException('Cannot set a palette on a device with no assigned device model')
@@ -76,6 +84,7 @@ export class DevicesService {
       if (!palette || !(await this.paletteSupportedBy(palette, device.deviceModel)))
         throw new BadRequestException(`Palette ${paletteId} is not supported by device model ${device.deviceModel.name}`)
       device.palette = palette
+      return
     }
     if (device.deviceModel && !device.palette)
       device.palette = await this.deviceModels.defaultPaletteFor(device.deviceModel)

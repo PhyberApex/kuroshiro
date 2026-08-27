@@ -47,18 +47,30 @@ export class PluginDataFetcherService {
     body?: JsonObject,
     templateContext?: object,
   ): Promise<unknown> {
-    let resolvedUrl = url
-
-    // If URL contains Liquid template syntax, render it first
-    if (url.includes('{{') || url.includes('{%')) {
-      this.logger.debug(`Rendering URL template: ${url}`)
-      resolvedUrl = await this.renderer.render(url, templateContext || {})
-      this.logger.debug(`Resolved URL: ${resolvedUrl}`)
-    }
+    const resolvedUrl = await this.resolveUrl(url, templateContext)
 
     if (this.configService.get<boolean>('demo_mode'))
       assertPublicUrl(resolvedUrl)
 
+    const response = await fetch(resolvedUrl, this.buildRequestInit(method, headers, body))
+    return this.parseResponse(response)
+  }
+
+  /**
+   * A URL containing Liquid template syntax is rendered against the template
+   * context before use; a plain URL is returned unchanged so callers never
+   * pay for a render they don't need.
+   */
+  private async resolveUrl(url: string, templateContext?: object): Promise<string> {
+    if (!url.includes('{{') && !url.includes('{%'))
+      return url
+    this.logger.debug(`Rendering URL template: ${url}`)
+    const resolvedUrl = await this.renderer.render(url, templateContext || {})
+    this.logger.debug(`Resolved URL: ${resolvedUrl}`)
+    return resolvedUrl
+  }
+
+  private buildRequestInit(method: string, headers: Record<string, string>, body?: JsonObject): RequestInit {
     const options: RequestInit = {
       method,
       headers: method === 'POST' && body
@@ -70,8 +82,10 @@ export class PluginDataFetcherService {
       options.body = JSON.stringify(body)
     }
 
-    const response = await fetch(resolvedUrl, options)
+    return options
+  }
 
+  private async parseResponse(response: Response): Promise<unknown> {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }

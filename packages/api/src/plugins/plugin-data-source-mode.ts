@@ -31,30 +31,19 @@ export function dataSourceModeViolation(fields: DataSourceModeFields): string | 
     if (isPresent(method) && method !== 'GET') {
       return 'A literal-mode Data Source cannot have a Method'
     }
-    if (isPresent(url)) {
-      return 'A literal-mode Data Source cannot have a URL'
-    }
-    if (isPresent(headers)) {
-      return 'A literal-mode Data Source cannot have Headers'
-    }
-    if (isPresent(body)) {
-      return 'A literal-mode Data Source cannot have a Body'
-    }
-    if (isPresent(transformJs)) {
-      return 'A literal-mode Data Source cannot have a Transform'
-    }
-    if (!isPresent(literalValue)) {
-      return 'A literal-mode Data Source requires a Value'
-    }
-    return null
+    const literalModeViolations: Array<[fieldName: string, isViolation: boolean, message: string]> = [
+      ['url', isPresent(url), 'A literal-mode Data Source cannot have a URL'],
+      ['headers', isPresent(headers), 'A literal-mode Data Source cannot have Headers'],
+      ['body', isPresent(body), 'A literal-mode Data Source cannot have a Body'],
+      ['transformJs', isPresent(transformJs), 'A literal-mode Data Source cannot have a Transform'],
+      ['literalValue', !isPresent(literalValue), 'A literal-mode Data Source requires a Value'],
+    ]
+    return literalModeViolations.find(([, isViolation]) => isViolation)?.[2] ?? null
   }
 
-  if (isPresent(literalValue)) {
-    return 'A fetch-mode Data Source cannot have a Value'
-  }
-  if (!isPresent(url)) {
-    return 'A fetch-mode Data Source requires a URL'
-  }
-
-  return null
+  const fetchModeViolations: Array<[fieldName: string, isViolation: boolean, message: string]> = [
+    ['literalValue', isPresent(literalValue), 'A fetch-mode Data Source cannot have a Value'],
+    ['url', !isPresent(url), 'A fetch-mode Data Source requires a URL'],
+  ]
+  return fetchModeViolations.find(([, isViolation]) => isViolation)?.[2] ?? null
 }

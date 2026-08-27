@@ -1,15 +1,5 @@
 {
   "finding_counts": {
-    "packages/api/src/config/config.ts": {
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "packages/api/src/devices/devices.service.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
     "packages/api/src/devices/display.service.ts": {
       "complexity_critical": {
         "count": 2
@@ -32,22 +22,12 @@
         "count": 1
       }
     },
-    "packages/api/src/plugins/plugin-data-source-mode.ts": {
-      "complexity_moderate": {
-        "count": 1
-      }
-    },
     "packages/api/src/plugins/plugins.service.ts": {
       "complexity_critical": {
         "count": 2
       },
       "crap_critical": {
         "count": 2
-      }
-    },
-    "packages/api/src/plugins/services/plugin-data-fetcher.service.ts": {
-      "crap_moderate": {
-        "count": 1
       }
     },
     "packages/api/src/plugins/services/plugin-importer.service.ts": {
@@ -59,11 +39,6 @@
       },
       "crap_moderate": {
         "count": 2
-      }
-    },
-    "packages/api/src/utils/ssrfGuard.ts": {
-      "crap_moderate": {
-        "count": 1
       }
     },
     "packages/ui/src/components/PluginCard.vue": {
