@@ -1,6 +1,7 @@
+import type { Relation } from 'typeorm'
+import type { Screen } from '../../screens/screens.entity'
+import type { MashupSlot } from './mashup-slot.entity'
 import { Column, CreateDateColumn, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
-import { Screen } from '../../screens/screens.entity'
-import { MashupSlot } from './mashup-slot.entity'
 
 @Entity()
 export class MashupConfiguration {
@@ -10,12 +11,12 @@ export class MashupConfiguration {
   @Column('text')
   layout: string
 
-  @OneToOne(() => Screen, screen => screen.mashupConfiguration, { onDelete: 'CASCADE' })
+  @OneToOne('Screen', (screen: Screen) => screen.mashupConfiguration, { onDelete: 'CASCADE' })
   @JoinColumn()
-  screen: Screen
+  screen: Relation<Screen>
 
-  @OneToMany(() => MashupSlot, slot => slot.mashupConfiguration)
-  slots: MashupSlot[]
+  @OneToMany('MashupSlot', (slot: MashupSlot) => slot.mashupConfiguration)
+  slots: Relation<MashupSlot[]>
 
   @CreateDateColumn()
   createdAt: Date
