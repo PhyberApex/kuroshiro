@@ -14,6 +14,8 @@ function isPresent(value: unknown): boolean {
   return value !== undefined && value !== null
 }
 
+type ModeViolation = [fieldName: string, isViolation: boolean, message: string]
+
 /**
  * fetch and literal Data Sources have disjoint required fields; a Data
  * Source carrying a field from the mode it isn't is rejected rather than
@@ -31,7 +33,7 @@ export function dataSourceModeViolation(fields: DataSourceModeFields): string | 
     if (isPresent(method) && method !== 'GET') {
       return 'A literal-mode Data Source cannot have a Method'
     }
-    const literalModeViolations: Array<[fieldName: string, isViolation: boolean, message: string]> = [
+    const literalModeViolations: ModeViolation[] = [
       ['url', isPresent(url), 'A literal-mode Data Source cannot have a URL'],
       ['headers', isPresent(headers), 'A literal-mode Data Source cannot have Headers'],
       ['body', isPresent(body), 'A literal-mode Data Source cannot have a Body'],
@@ -41,7 +43,7 @@ export function dataSourceModeViolation(fields: DataSourceModeFields): string | 
     return literalModeViolations.find(([, isViolation]) => isViolation)?.[2] ?? null
   }
 
-  const fetchModeViolations: Array<[fieldName: string, isViolation: boolean, message: string]> = [
+  const fetchModeViolations: ModeViolation[] = [
     ['literalValue', isPresent(literalValue), 'A fetch-mode Data Source cannot have a Value'],
     ['url', !isPresent(url), 'A fetch-mode Data Source requires a URL'],
   ]
