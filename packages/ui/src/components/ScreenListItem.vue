@@ -13,7 +13,7 @@ const props = defineProps<{
   isDragOver: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   dragstart: []
   dragover: []
   drop: []
@@ -62,10 +62,10 @@ const previewAriaLabel = computed(() => {
     :draggable="!isReordering"
     :class="{ 'bg-grey-lighten-3': isDragOver }"
     :data-test-id="`screen-row-${screen.id}`"
-    @dragstart="$emit('dragstart')"
-    @dragover.prevent="$emit('dragover')"
-    @drop="$emit('drop')"
-    @dragend="$emit('dragend')"
+    @dragstart="emit('dragstart')"
+    @dragover.prevent="emit('dragover')"
+    @drop="emit('drop')"
+    @dragend="emit('dragend')"
   >
     <td>
       <div class="d-flex align-center">
@@ -79,7 +79,7 @@ const previewAriaLabel = computed(() => {
             :disabled="isReordering || !canMoveUp"
             aria-label="Move screen up"
             :data-test-id="`screen-move-up-${screen.id}`"
-            @click="$emit('moveUp')"
+            @click="emit('moveUp')"
           />
           <VBtn
             size="x-small"
@@ -89,7 +89,7 @@ const previewAriaLabel = computed(() => {
             :disabled="isReordering || !canMoveDown"
             aria-label="Move screen down"
             :data-test-id="`screen-move-down-${screen.id}`"
-            @click="$emit('moveDown')"
+            @click="emit('moveDown')"
           />
         </div>
       </div>
@@ -110,7 +110,7 @@ const previewAriaLabel = computed(() => {
         :prepend-icon="mdiCalendarClock"
         :aria-label="`Edit schedule for ${screen.filename ?? screen.id}`"
         :data-test-id="`screen-schedule-btn-${screen.id}`"
-        @click="$emit('editSchedule')"
+        @click="emit('editSchedule')"
       >
         {{ screenScheduleLabel(screen) }}
       </VBtn>
@@ -132,7 +132,7 @@ const previewAriaLabel = computed(() => {
         class="mr-2"
         :icon="mdiRefresh"
         aria-label="Update cached image"
-        @click="$emit('updateExternalImage')"
+        @click="emit('updateExternalImage')"
       />
       <VBtn
         v-if="!screen.plugin && screen.externalLink"
@@ -153,7 +153,7 @@ const previewAriaLabel = computed(() => {
         variant="tonal"
         color="secondary"
         aria-label="Preview HTML"
-        @click="$emit('previewHtml')"
+        @click="emit('previewHtml')"
       />
       <VBtn
         v-else
@@ -163,7 +163,7 @@ const previewAriaLabel = computed(() => {
         variant="tonal"
         color="secondary"
         :aria-label="previewAriaLabel"
-        @click="$emit('previewScreen')"
+        @click="emit('previewScreen')"
       />
       <VBtn
         v-if="!screen.plugin"
@@ -173,7 +173,7 @@ const previewAriaLabel = computed(() => {
         :icon="mdiDelete"
         aria-label="Delete screen"
         :data-test-id="`screen-delete-btn-${screen.id}`"
-        @click="$emit('delete')"
+        @click="emit('delete')"
       />
       <VTooltip v-else text="Unassign plugin from Manage Plugins page">
         <template #activator="{ props: tooltipProps }">

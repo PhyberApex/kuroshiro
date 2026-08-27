@@ -10,7 +10,7 @@ const props = defineProps<{
   dragOverIndex: number | null
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   dragstart: [index: number]
   dragover: [index: number]
   drop: [index: number]
@@ -53,17 +53,17 @@ function isDragOver(index: number) {
           :can-move-down="index < screens.length - 1"
           :is-reordering="isReordering"
           :is-drag-over="isDragOver(index)"
-          @dragstart="$emit('dragstart', index)"
-          @dragover="$emit('dragover', index)"
-          @drop="$emit('drop', index)"
-          @dragend="$emit('dragend')"
-          @move-up="$emit('moveUp', index)"
-          @move-down="$emit('moveDown', index)"
-          @edit-schedule="$emit('editSchedule', screen)"
-          @update-external-image="$emit('updateExternalImage', screen.id)"
-          @preview-html="$emit('previewHtml', screen.html)"
-          @preview-screen="$emit('previewScreen', screen)"
-          @delete="$emit('delete', screen.id)"
+          @dragstart="emit('dragstart', index)"
+          @dragover="emit('dragover', index)"
+          @drop="emit('drop', index)"
+          @dragend="emit('dragend')"
+          @move-up="emit('moveUp', index)"
+          @move-down="emit('moveDown', index)"
+          @edit-schedule="emit('editSchedule', screen)"
+          @update-external-image="emit('updateExternalImage', screen.id)"
+          @preview-html="emit('previewHtml', screen.html)"
+          @preview-screen="emit('previewScreen', screen)"
+          @delete="emit('delete', screen.id)"
         />
       </tbody>
     </VTable>
