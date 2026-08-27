@@ -183,6 +183,22 @@ describe('mashupService', () => {
 
       await expect(service.update('nonexistent', {})).rejects.toThrow(NotFoundException)
     })
+
+    it('should throw BadRequestException with the unified message if plugin count does not match layout', async () => {
+      const dto: UpdateMashupDto = {
+        layout: '2x2',
+        pluginIds: ['p1', 'p2'], // only 2 plugins, but 2x2 needs 4
+      }
+
+      const screen = makeScreen({ id: 'screen-1', type: 'mashup' })
+      screenRepo.findOne.mockResolvedValue(screen)
+
+      const config = makeMashupConfiguration({ id: 'config-1', screen, layout: '1Lx1R', slots: [] })
+      mashupConfigRepo.findOne.mockResolvedValue(config)
+
+      await expect(service.update('screen-1', dto)).rejects.toThrow(BadRequestException)
+      await expect(service.update('screen-1', dto)).rejects.toThrow('2x2 requires 4 plugins, but 2 were provided')
+    })
   })
 
   describe('delete', () => {
