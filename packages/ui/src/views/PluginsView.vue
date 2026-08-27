@@ -3,7 +3,7 @@ import { mdiDownload, mdiPlus, mdiSync } from '@mdi/js'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { VAlert, VBtn, VCard, VCardText, VCardTitle, VCol, VContainer, VDivider, VIconBtn, VRow } from 'vuetify/components'
-import PluginCard from '../components/PluginCard.vue'
+import PluginCardGrid from '../components/PluginCardGrid.vue'
 import { useDeviceStore } from '../stores/device'
 import { usePluginsStore } from '../stores/plugins'
 
@@ -75,17 +75,13 @@ function createPlugin() {
           </VCardTitle>
           <VDivider />
           <VCardText>
-            <VRow v-if="plugins.length">
-              <VCol
-                v-for="plugin in plugins"
-                :key="plugin.id"
-                cols="12"
-                md="6"
-                lg="4"
-              >
-                <PluginCard :plugin="plugin" :device-id="deviceId" @assignments-changed="update" @deleted="update" />
-              </VCol>
-            </VRow>
+            <PluginCardGrid
+              v-if="plugins.length"
+              :plugins="plugins"
+              :device-id="deviceId"
+              @assignments-changed="update"
+              @deleted="update"
+            />
             <VAlert v-else type="info" variant="tonal" class="text-body-2">
               No plugins yet. Add one with the button above.
             </VAlert>
