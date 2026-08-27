@@ -127,21 +127,18 @@
         "count": 1
       }
     },
+    "packages/ui/src/composeables/usePluginPreview.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
     "packages/ui/src/views/MaintenanceView.vue": {
       "complexity_critical": {
         "count": 1
       }
     },
-    "packages/ui/src/views/PluginCreateView.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
     "packages/ui/src/views/PluginEditView.vue": {
       "complexity_high": {
-        "count": 1
-      },
-      "crap_moderate": {
         "count": 1
       }
     },
@@ -153,13 +150,12 @@
   },
   "runtime_coverage_findings": [],
   "target_keys": [
+    "packages/ui/src/stores/deviceModels.ts:high impact",
     "packages/ui/src/components/ScreenListCard.vue:complexity",
     "packages/api/src/plugins/plugins.service.ts:complexity",
     "packages/api/src/devices/display.service.ts:complexity",
-    "packages/ui/src/stores/deviceModels.ts:high impact",
     "packages/api/src/mashup/mashup.service.ts:complexity",
     "packages/ui/src/components/DeviceInformationCard.vue:complexity",
-    "packages/ui/src/views/PluginEditView.vue:complexity",
     "packages/api/src/maintenance/maintenance.service.ts:complexity",
     "packages/ui/src/components/DeviceLogsCard.vue:complexity",
     "packages/ui/src/views/MaintenanceView.vue:complexity"
