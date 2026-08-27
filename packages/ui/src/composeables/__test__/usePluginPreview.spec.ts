@@ -33,7 +33,12 @@ describe('usePluginPreview', () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
-  it('does nothing when the template markup is empty', async () => {
+  it('still posts an empty template when there are data sources (matches the original per-view guards)', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ html: '', data: null }),
+    } as Response)
+
     const preview = usePluginPreview({
       dataSources: () => [{ name: 'source-1', mode: 'literal', literalValue: 'x' }],
       liquidMarkup: () => '',
@@ -41,7 +46,8 @@ describe('usePluginPreview', () => {
 
     await preview.previewPlugin()
 
-    expect(fetch).not.toHaveBeenCalled()
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]!.body as string)
+    expect(body.template).toBe('')
   })
 
   it('posts the mapped sources and template, then shows the rendered result', async () => {

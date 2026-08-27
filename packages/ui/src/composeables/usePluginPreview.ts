@@ -22,9 +22,10 @@ export function usePluginPreview(options: UsePluginPreviewOptions) {
 
   async function previewPlugin() {
     const sources = options.dataSources() || []
-    const template = options.liquidMarkup()
-    if (sources.length === 0 || !template)
+    if (sources.length === 0)
       return
+
+    const template = options.liquidMarkup() ?? ''
 
     previewLoading.value = true
     try {
