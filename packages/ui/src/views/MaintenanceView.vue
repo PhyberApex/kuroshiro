@@ -1,12 +1,19 @@
 <script setup lang="ts">
-import type { DeviceModelSyncResult, FirmwareSyncResult } from '../types'
-import { mdiAlertCircle, mdiCheckCircle, mdiCloudSync, mdiDelete, mdiRefresh, mdiUpload } from '@mdi/js'
+import type { CleanupResult, DeviceModelSyncResult, FirmwareSyncResult } from '@/types'
+import { mdiAlertCircle, mdiCheckCircle, mdiRefresh } from '@mdi/js'
 import { computed, onMounted, ref } from 'vue'
-import { VAlert, VBtn, VCard, VCardText, VCardTitle, VCheckbox, VChip, VCol, VContainer, VDialog, VDivider, VFileInput, VList, VListItem, VListItemSubtitle, VListItemTitle, VProgressCircular, VRow, VSelect, VSwitch, VTextField } from 'vuetify/components'
-import { useDeviceModelsStore } from '../stores/deviceModels'
-import { useFirmwareStore } from '../stores/firmware'
-import { useMaintenanceStore } from '../stores/maintenance'
-import { formatDate } from '../utils/formatDate'
+import { VAlert, VBtn, VCard, VCardText, VCardTitle, VChip, VCol, VContainer, VDivider, VListItemSubtitle, VListItemTitle, VProgressCircular, VRow } from 'vuetify/components'
+import CleanupActionsCard from '@/components/maintenance/CleanupActionsCard.vue'
+import CleanupConfirmDialog from '@/components/maintenance/CleanupConfirmDialog.vue'
+import CleanupResultAlert from '@/components/maintenance/CleanupResultAlert.vue'
+import DeviceModelsCard from '@/components/maintenance/DeviceModelsCard.vue'
+import FirmwareCard from '@/components/maintenance/FirmwareCard.vue'
+import MaintenanceIssueListCard from '@/components/maintenance/MaintenanceIssueListCard.vue'
+import ScanSummaryCard from '@/components/maintenance/ScanSummaryCard.vue'
+import { useDeviceModelsStore } from '@/stores/deviceModels'
+import { useFirmwareStore } from '@/stores/firmware'
+import { useMaintenanceStore } from '@/stores/maintenance'
+import { formatAge, formatBytes } from '@/utils/maintenanceFormat'
 
 const maintenanceStore = useMaintenanceStore()
 const deviceModelsStore = useDeviceModelsStore()
@@ -39,26 +46,14 @@ async function handleFirmwareSync() {
   firmwareSyncResult.value = await firmwareStore.sync()
 }
 
-const uploadVersion = ref('')
-const uploadLabel = ref('')
-const uploadCompatibleModels = ref<string[]>([])
-const uploadFile = ref<File[]>([])
-
 const deviceModelOptions = computed(() => deviceModelsStore.activeModels.map(model => ({ title: model.label, value: model.name })))
 
-const canUpload = computed(() => !!uploadVersion.value && uploadFile.value.length > 0)
+const firmwareCard = ref<InstanceType<typeof FirmwareCard>>()
 
-async function handleFirmwareUpload() {
-  const file = uploadFile.value[0]
-  if (!file)
-    return
-  const ok = await firmwareStore.upload(file, uploadVersion.value, uploadLabel.value || undefined, uploadCompatibleModels.value.length > 0 ? uploadCompatibleModels.value : undefined)
-  if (ok) {
-    uploadVersion.value = ''
-    uploadLabel.value = ''
-    uploadCompatibleModels.value = []
-    uploadFile.value = []
-  }
+async function handleFirmwareUpload(payload: { file: File, version: string, label?: string, compatibleModels?: string[] }) {
+  const ok = await firmwareStore.upload(payload.file, payload.version, payload.label, payload.compatibleModels)
+  if (ok)
+    firmwareCard.value?.resetUploadForm()
 }
 
 async function handleFirmwareDelete(id: string) {
@@ -73,7 +68,21 @@ const selectedOldUploads = ref<string[]>([])
 const dryRun = ref(true)
 const showConfirmDialog = ref(false)
 const cleanupInProgress = ref(false)
-const cleanupResult = ref<{ filesDeleted: number, dirsDeleted: number, screensDeleted: number, bytesFreed: number, errors: string[] } | null>(null)
+const cleanupResult = ref<CleanupResult | null>(null)
+
+const orphanedFileItems = computed(() => maintenanceStore.issues?.orphanedScreenFiles.map(file => ({ ...file, key: file.path })) ?? [])
+const orphanedDirItems = computed(() => maintenanceStore.issues?.orphanedDeviceDirs.map(dir => ({ ...dir, key: dir.path })) ?? [])
+const brokenScreenItems = computed(() => maintenanceStore.issues?.brokenScreens.map(screen => ({ ...screen, key: screen.screenId })) ?? [])
+const tempFileItems = computed(() => maintenanceStore.issues?.tempFiles.map(file => ({ ...file, key: file.path })) ?? [])
+const oldUploadItems = computed(() => maintenanceStore.issues?.oldUploads.map(file => ({ ...file, key: file.path })) ?? [])
+
+const hasNoIssues = computed(() => {
+  return orphanedFileItems.value.length === 0
+    && orphanedDirItems.value.length === 0
+    && brokenScreenItems.value.length === 0
+    && tempFileItems.value.length === 0
+    && oldUploadItems.value.length === 0
+})
 
 const hasSelection = computed(() => {
   return selectedOrphanedFiles.value.length > 0
@@ -81,6 +90,10 @@ const hasSelection = computed(() => {
     || selectedBrokenScreens.value.length > 0
     || selectedTempFiles.value.length > 0
     || selectedOldUploads.value.length > 0
+})
+
+const selectedCount = computed(() => {
+  return selectedOrphanedFiles.value.length + selectedOrphanedDirs.value.length + selectedBrokenScreens.value.length + selectedTempFiles.value.length + selectedOldUploads.value.length
 })
 
 const totalSelectedSize = computed(() => {
@@ -115,51 +128,17 @@ onMounted(async () => {
 })
 
 async function handleScan() {
-  selectedOrphanedFiles.value = []
-  selectedOrphanedDirs.value = []
-  selectedBrokenScreens.value = []
-  selectedTempFiles.value = []
-  selectedOldUploads.value = []
+  deselectAll()
   cleanupResult.value = null
   await maintenanceStore.scanSystem()
 }
 
-function selectAllOrphanedFiles() {
-  if (!maintenanceStore.issues)
-    return
-  selectedOrphanedFiles.value = maintenanceStore.issues.orphanedScreenFiles.map(f => f.path)
-}
-
-function selectAllOrphanedDirs() {
-  if (!maintenanceStore.issues)
-    return
-  selectedOrphanedDirs.value = maintenanceStore.issues.orphanedDeviceDirs.map(d => d.path)
-}
-
-function selectAllBrokenScreens() {
-  if (!maintenanceStore.issues)
-    return
-  selectedBrokenScreens.value = maintenanceStore.issues.brokenScreens.map(s => s.screenId)
-}
-
-function selectAllTempFiles() {
-  if (!maintenanceStore.issues)
-    return
-  selectedTempFiles.value = maintenanceStore.issues.tempFiles.map(f => f.path)
-}
-
-function selectAllOldUploads() {
-  if (!maintenanceStore.issues)
-    return
-  selectedOldUploads.value = maintenanceStore.issues.oldUploads.map(f => f.path)
-}
-
 function selectAll() {
-  selectAllOrphanedFiles()
-  selectAllOrphanedDirs()
-  selectAllBrokenScreens()
-  selectAllTempFiles()
-  selectAllOldUploads()
+  selectedOrphanedFiles.value = orphanedFileItems.value.map(item => item.key)
+  selectedOrphanedDirs.value = orphanedDirItems.value.map(item => item.key)
+  selectedBrokenScreens.value = brokenScreenItems.value.map(item => item.key)
+  selectedTempFiles.value = tempFileItems.value.map(item => item.key)
+  selectedOldUploads.value = oldUploadItems.value.map(item => item.key)
 }
 
 function deselectAll() {
@@ -168,22 +147,6 @@ function deselectAll() {
   selectedBrokenScreens.value = []
   selectedTempFiles.value = []
   selectedOldUploads.value = []
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0)
-    return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return `${Number.parseFloat((bytes / (k ** i)).toFixed(2))} ${sizes[i]}`
-}
-
-function formatAge(hours: number): string {
-  if (hours < 24)
-    return `${Math.round(hours)}h`
-  const days = Math.floor(hours / 24)
-  return `${days}d`
 }
 
 async function confirmCleanup() {
@@ -242,148 +205,33 @@ async function executeCleanup() {
           </VCardText>
         </VCard>
 
-        <VCard elevation="1" class="mb-4" data-test-id="device-models-card">
-          <VCardTitle class="d-flex align-center justify-space-between flex-wrap ga-2">
-            Device Models
-            <VBtn
-              :prepend-icon="mdiCloudSync"
-              variant="tonal"
-              color="secondary"
-              :loading="deviceModelsStore.syncing"
-              data-test-id="sync-device-models-btn"
-              @click="handleModelSync"
-            >
-              Sync from TRMNL
-            </VBtn>
-          </VCardTitle>
-          <VDivider />
-          <VCardText>
-            <p class="text-body-2 text-medium-emphasis mb-2">
-              Panel sizes, colour depths and rendering settings for supported devices, synced from usetrmnl.com on startup and daily. Models removed upstream are kept and marked deprecated.
-            </p>
-            <div class="text-body-2">
-              {{ deviceModelsStore.activeModels.length }} models, {{ deviceModelsStore.palettes.length }} palettes
-              <span v-if="deviceModelsStore.models.length - deviceModelsStore.activeModels.length > 0">
-                ({{ deviceModelsStore.models.length - deviceModelsStore.activeModels.length }} deprecated)
-              </span>
-              · Last synced: {{ lastModelSync ? formatDate(lastModelSync) : 'never (bundled snapshot)' }}
-            </div>
-            <VAlert v-if="modelError" type="error" variant="tonal" class="mt-3" :icon="mdiAlertCircle">
-              {{ modelError }}
-            </VAlert>
-            <VAlert v-else-if="syncResult" type="success" variant="tonal" class="mt-3" :icon="mdiCheckCircle" closable @click:close="syncResult = null">
-              Synced {{ syncResult.models }} models and {{ syncResult.palettes }} palettes
-              <span v-if="syncResult.deprecatedModels || syncResult.deprecatedPalettes">
-                ({{ syncResult.deprecatedModels }} models, {{ syncResult.deprecatedPalettes }} palettes newly deprecated)
-              </span>
-            </VAlert>
-          </VCardText>
-        </VCard>
+        <DeviceModelsCard
+          :active-model-count="deviceModelsStore.activeModels.length"
+          :deprecated-model-count="deviceModelsStore.models.length - deviceModelsStore.activeModels.length"
+          :palette-count="deviceModelsStore.palettes.length"
+          :last-synced-at="lastModelSync"
+          :syncing="deviceModelsStore.syncing"
+          :error="modelError"
+          :sync-result="syncResult"
+          @sync="handleModelSync"
+          @dismiss-result="syncResult = null"
+        />
 
-        <VCard elevation="1" class="mb-4" data-test-id="firmware-card">
-          <VCardTitle class="d-flex align-center justify-space-between flex-wrap ga-2">
-            Firmware
-            <VBtn
-              :prepend-icon="mdiCloudSync"
-              variant="tonal"
-              color="secondary"
-              :loading="firmwareStore.syncing"
-              data-test-id="sync-firmware-btn"
-              @click="handleFirmwareSync"
-            >
-              Sync from TRMNL
-            </VBtn>
-          </VCardTitle>
-          <VDivider />
-          <VCardText>
-            <p class="text-body-2 text-medium-emphasis mb-2">
-              OTA binaries a Device can be pushed to — official-synced daily from usetrmnl.com, or uploaded directly. A push is always an explicit per-Device action from the Device's own settings.
-            </p>
-            <div class="text-body-2 mb-3">
-              {{ firmwareStore.activeFirmware.length }} firmware
-              <span v-if="firmwareStore.firmware.length - firmwareStore.activeFirmware.length > 0">
-                ({{ firmwareStore.firmware.length - firmwareStore.activeFirmware.length }} deprecated)
-              </span>
-              · Last synced: {{ lastFirmwareSync ? formatDate(lastFirmwareSync) : 'never' }}
-            </div>
-            <VAlert v-if="firmwareError" type="error" variant="tonal" class="mb-3" :icon="mdiAlertCircle">
-              {{ firmwareError }}
-            </VAlert>
-            <VAlert v-else-if="firmwareSyncResult" type="success" variant="tonal" class="mb-3" :icon="mdiCheckCircle" closable @click:close="firmwareSyncResult = null">
-              <span v-if="firmwareSyncResult.inserted">Synced firmware {{ firmwareSyncResult.version }}</span>
-              <span v-else>Already up to date at {{ firmwareSyncResult.version }}</span>
-            </VAlert>
-
-            <VList v-if="firmwareStore.activeFirmware.length > 0" density="compact" class="mb-4">
-              <VListItem v-for="fw in firmwareStore.activeFirmware" :key="fw.id" :data-test-id="`firmware-row-${fw.id}`">
-                <VListItemTitle class="text-body-2">
-                  {{ fw.version }}
-                  <VChip size="x-small" class="ml-2">
-                    {{ fw.kind === 'official-synced' ? 'official' : 'custom' }}
-                  </VChip>
-                  <VChip v-if="fw.label" size="x-small" variant="tonal" class="ml-1">
-                    {{ fw.label }}
-                  </VChip>
-                </VListItemTitle>
-                <VListItemSubtitle class="text-caption">
-                  {{ fw.compatibleModels.length > 0 ? fw.compatibleModels.join(', ') : 'Universal (all models)' }}
-                </VListItemSubtitle>
-                <template v-if="fw.kind === 'custom'" #append>
-                  <VBtn
-                    :icon="mdiDelete"
-                    size="small"
-                    variant="text"
-                    color="error"
-                    :data-test-id="`firmware-delete-${fw.id}`"
-                    @click="handleFirmwareDelete(fw.id)"
-                  />
-                </template>
-              </VListItem>
-            </VList>
-
-            <VDivider class="mb-4" />
-
-            <div class="text-subtitle-2 mb-2">
-              Upload custom firmware
-            </div>
-            <VRow dense>
-              <VCol cols="12" sm="4">
-                <VTextField v-model="uploadVersion" density="compact" label="Version" hide-details data-test-id="firmware-upload-version" />
-              </VCol>
-              <VCol cols="12" sm="4">
-                <VTextField v-model="uploadLabel" density="compact" label="Label (optional)" hide-details />
-              </VCol>
-              <VCol cols="12" sm="4">
-                <VSelect
-                  v-model="uploadCompatibleModels"
-                  :items="deviceModelOptions"
-                  density="compact"
-                  label="Compatible models"
-                  placeholder="Universal"
-                  persistent-placeholder
-                  multiple
-                  hide-details
-                />
-              </VCol>
-              <VCol cols="12" sm="8">
-                <VFileInput v-model="uploadFile" density="compact" label="Binary (.bin)" accept=".bin" hide-details data-test-id="firmware-upload-file" />
-              </VCol>
-              <VCol cols="12" sm="4" class="d-flex align-center">
-                <VBtn
-                  :prepend-icon="mdiUpload"
-                  color="primary"
-                  variant="tonal"
-                  :disabled="!canUpload"
-                  :loading="firmwareStore.uploading"
-                  data-test-id="firmware-upload-btn"
-                  @click="handleFirmwareUpload"
-                >
-                  Upload
-                </VBtn>
-              </VCol>
-            </VRow>
-          </VCardText>
-        </VCard>
+        <FirmwareCard
+          ref="firmwareCard"
+          :active-firmware="firmwareStore.activeFirmware"
+          :total-firmware-count="firmwareStore.firmware.length"
+          :last-synced-at="lastFirmwareSync"
+          :syncing="firmwareStore.syncing"
+          :uploading="firmwareStore.uploading"
+          :error="firmwareError"
+          :sync-result="firmwareSyncResult"
+          :device-model-options="deviceModelOptions"
+          @sync="handleFirmwareSync"
+          @dismiss-result="firmwareSyncResult = null"
+          @delete="handleFirmwareDelete"
+          @upload="handleFirmwareUpload"
+        />
 
         <VAlert
           v-if="maintenanceStore.error"
@@ -395,36 +243,12 @@ async function executeCleanup() {
           {{ maintenanceStore.error }}
         </VAlert>
 
-        <VAlert
+        <CleanupResultAlert
           v-if="cleanupResult"
-          :type="cleanupResult.errors.length > 0 ? 'warning' : 'success'"
-          variant="tonal"
-          class="mb-4"
-          :icon="mdiCheckCircle"
-          closable
-          @click:close="cleanupResult = null"
-        >
-          <div class="text-body-2">
-            <div v-if="dryRun" class="font-weight-bold mb-2">
-              Dry Run Results (no actual changes made)
-            </div>
-            <div v-else class="font-weight-bold mb-2">
-              Cleanup Complete
-            </div>
-            <div>Files deleted: {{ cleanupResult.filesDeleted }}</div>
-            <div>Directories deleted: {{ cleanupResult.dirsDeleted }}</div>
-            <div>Screens deleted: {{ cleanupResult.screensDeleted }}</div>
-            <div>Space freed: {{ formatBytes(cleanupResult.bytesFreed) }}</div>
-            <div v-if="cleanupResult.errors.length > 0" class="mt-2">
-              <div class="font-weight-bold">
-                Errors:
-              </div>
-              <div v-for="(err, i) in cleanupResult.errors" :key="i" class="text-error">
-                {{ err }}
-              </div>
-            </div>
-          </div>
-        </VAlert>
+          :result="cleanupResult"
+          :dry-run="dryRun"
+          @dismiss="cleanupResult = null"
+        />
 
         <VProgressCircular
           v-if="maintenanceStore.loading"
@@ -434,263 +258,70 @@ async function executeCleanup() {
         />
 
         <template v-else-if="maintenanceStore.issues">
-          <VCard elevation="1" class="mb-4">
-            <VCardTitle class="d-flex align-center flex-wrap ga-2">
-              Scan Summary
-              <VChip v-if="maintenanceStore.issues.scannedAt" size="small">
-                {{ new Date(maintenanceStore.issues.scannedAt).toLocaleString() }}
-              </VChip>
-            </VCardTitle>
-            <VDivider />
-            <VCardText>
-              <VRow>
-                <VCol cols="6" md="3">
-                  <div class="text-caption text-medium-emphasis">
-                    Orphaned Files
-                  </div>
-                  <div class="text-h6">
-                    {{ maintenanceStore.issues.orphanedScreenFiles.length }}
-                  </div>
-                </VCol>
-                <VCol cols="6" md="3">
-                  <div class="text-caption text-medium-emphasis">
-                    Orphaned Dirs
-                  </div>
-                  <div class="text-h6">
-                    {{ maintenanceStore.issues.orphanedDeviceDirs.length }}
-                  </div>
-                </VCol>
-                <VCol cols="6" md="3">
-                  <div class="text-caption text-medium-emphasis">
-                    Broken Screens
-                  </div>
-                  <div class="text-h6">
-                    {{ maintenanceStore.issues.brokenScreens.length }}
-                  </div>
-                </VCol>
-                <VCol cols="6" md="3">
-                  <div class="text-caption text-medium-emphasis">
-                    Total Size
-                  </div>
-                  <div class="text-h6">
-                    {{ formatBytes(maintenanceStore.issues.totalSize) }}
-                  </div>
-                </VCol>
-                <VCol cols="6" md="3">
-                  <div class="text-caption text-medium-emphasis">
-                    Temp Files
-                  </div>
-                  <div class="text-h6">
-                    {{ maintenanceStore.issues.tempFiles.length }}
-                  </div>
-                </VCol>
-                <VCol cols="6" md="3">
-                  <div class="text-caption text-medium-emphasis">
-                    Old Uploads
-                  </div>
-                  <div class="text-h6">
-                    {{ maintenanceStore.issues.oldUploads.length }}
-                  </div>
-                </VCol>
-              </VRow>
-            </VCardText>
-          </VCard>
+          <ScanSummaryCard :issues="maintenanceStore.issues" />
 
-          <VCard v-if="maintenanceStore.issues.orphanedScreenFiles.length > 0" elevation="1" class="mb-4">
-            <VCardTitle class="d-flex align-center justify-space-between flex-wrap ga-2">
-              Orphaned Screen Files
-              <VBtn
-                size="small"
-                variant="text"
-                @click="selectAllOrphanedFiles"
-              >
-                Select All
-              </VBtn>
-            </VCardTitle>
-            <VDivider />
-            <VCardText>
-              <VList>
-                <VListItem
-                  v-for="file in maintenanceStore.issues.orphanedScreenFiles"
-                  :key="file.path"
-                >
-                  <template #prepend>
-                    <VCheckbox
-                      v-model="selectedOrphanedFiles"
-                      :value="file.path"
-                      hide-details
-                    />
-                  </template>
-                  <VListItemTitle class="text-body-2">
-                    Device: <span class="font-weight-bold">{{ file.deviceId }}</span> / Screen: <span class="font-weight-bold">{{ file.screenId }}</span>
-                  </VListItemTitle>
-                  <VListItemSubtitle class="text-caption">
-                    {{ file.path }} ({{ formatBytes(file.size) }})
-                  </VListItemSubtitle>
-                </VListItem>
-              </VList>
-            </VCardText>
-          </VCard>
+          <MaintenanceIssueListCard v-model:selected="selectedOrphanedFiles" title="Orphaned Screen Files" :items="orphanedFileItems">
+            <template #default="{ item }">
+              <VListItemTitle class="text-body-2">
+                Device: <span class="font-weight-bold">{{ item.deviceId }}</span> / Screen: <span class="font-weight-bold">{{ item.screenId }}</span>
+              </VListItemTitle>
+              <VListItemSubtitle class="text-caption">
+                {{ item.path }} ({{ formatBytes(item.size) }})
+              </VListItemSubtitle>
+            </template>
+          </MaintenanceIssueListCard>
 
-          <VCard v-if="maintenanceStore.issues.orphanedDeviceDirs.length > 0" elevation="1" class="mb-4">
-            <VCardTitle class="d-flex align-center justify-space-between flex-wrap ga-2">
-              Orphaned Device Directories
-              <VBtn
-                size="small"
-                variant="text"
-                @click="selectAllOrphanedDirs"
-              >
-                Select All
-              </VBtn>
-            </VCardTitle>
-            <VDivider />
-            <VCardText>
-              <VList>
-                <VListItem
-                  v-for="dir in maintenanceStore.issues.orphanedDeviceDirs"
-                  :key="dir.path"
-                >
-                  <template #prepend>
-                    <VCheckbox
-                      v-model="selectedOrphanedDirs"
-                      :value="dir.path"
-                      hide-details
-                    />
-                  </template>
-                  <VListItemTitle class="text-body-2">
-                    Device ID: <span class="font-weight-bold">{{ dir.deviceId }}</span>
-                  </VListItemTitle>
-                  <VListItemSubtitle class="text-caption">
-                    {{ dir.path }} ({{ dir.fileCount }} files, {{ formatBytes(dir.size) }})
-                  </VListItemSubtitle>
-                </VListItem>
-              </VList>
-            </VCardText>
-          </VCard>
+          <MaintenanceIssueListCard v-model:selected="selectedOrphanedDirs" title="Orphaned Device Directories" :items="orphanedDirItems">
+            <template #default="{ item }">
+              <VListItemTitle class="text-body-2">
+                Device ID: <span class="font-weight-bold">{{ item.deviceId }}</span>
+              </VListItemTitle>
+              <VListItemSubtitle class="text-caption">
+                {{ item.path }} ({{ item.fileCount }} files, {{ formatBytes(item.size) }})
+              </VListItemSubtitle>
+            </template>
+          </MaintenanceIssueListCard>
 
-          <VCard v-if="maintenanceStore.issues.brokenScreens.length > 0" elevation="1" class="mb-4">
-            <VCardTitle class="d-flex align-center justify-space-between flex-wrap ga-2">
-              Broken Screens (Missing Files)
-              <VBtn
-                size="small"
-                variant="text"
-                @click="selectAllBrokenScreens"
-              >
-                Select All
-              </VBtn>
-            </VCardTitle>
-            <VDivider />
-            <VCardText>
-              <VList>
-                <VListItem
-                  v-for="screen in maintenanceStore.issues.brokenScreens"
-                  :key="screen.screenId"
-                >
-                  <template #prepend>
-                    <VCheckbox
-                      v-model="selectedBrokenScreens"
-                      :value="screen.screenId"
-                      hide-details
-                    />
-                  </template>
-                  <VListItemTitle class="text-body-2">
-                    {{ screen.filename }} <VChip size="x-small" class="ml-2">
-                      {{ screen.type }}
-                    </VChip>
-                  </VListItemTitle>
-                  <VListItemSubtitle class="text-caption">
-                    Device: {{ screen.deviceId }} / Screen: {{ screen.screenId }}
-                  </VListItemSubtitle>
-                </VListItem>
-              </VList>
-            </VCardText>
-          </VCard>
+          <MaintenanceIssueListCard v-model:selected="selectedBrokenScreens" title="Broken Screens (Missing Files)" :items="brokenScreenItems">
+            <template #default="{ item }">
+              <VListItemTitle class="text-body-2">
+                {{ item.filename }} <VChip size="x-small" class="ml-2">
+                  {{ item.type }}
+                </VChip>
+              </VListItemTitle>
+              <VListItemSubtitle class="text-caption">
+                Device: {{ item.deviceId }} / Screen: {{ item.screenId }}
+              </VListItemSubtitle>
+            </template>
+          </MaintenanceIssueListCard>
 
-          <VCard v-if="maintenanceStore.issues.tempFiles.length > 0" elevation="1" class="mb-4">
-            <VCardTitle class="d-flex align-center justify-space-between flex-wrap ga-2">
-              Temporary Files
-              <VBtn
-                size="small"
-                variant="text"
-                @click="selectAllTempFiles"
-              >
-                Select All
-              </VBtn>
-            </VCardTitle>
-            <VDivider />
-            <VCardText>
-              <VList>
-                <VListItem
-                  v-for="file in maintenanceStore.issues.tempFiles"
-                  :key="file.path"
-                >
-                  <template #prepend>
-                    <VCheckbox
-                      v-model="selectedTempFiles"
-                      :value="file.path"
-                      hide-details
-                    />
-                  </template>
-                  <VListItemTitle class="text-body-2">
-                    {{ file.path.split('/').pop() }} <VChip size="x-small" class="ml-2">
-                      {{ formatAge(file.age) }} old
-                    </VChip>
-                  </VListItemTitle>
-                  <VListItemSubtitle class="text-caption">
-                    {{ file.path }} ({{ formatBytes(file.size) }})
-                  </VListItemSubtitle>
-                </VListItem>
-              </VList>
-            </VCardText>
-          </VCard>
+          <MaintenanceIssueListCard v-model:selected="selectedTempFiles" title="Temporary Files" :items="tempFileItems">
+            <template #default="{ item }">
+              <VListItemTitle class="text-body-2">
+                {{ item.path.split('/').pop() }} <VChip size="x-small" class="ml-2">
+                  {{ formatAge(item.age) }} old
+                </VChip>
+              </VListItemTitle>
+              <VListItemSubtitle class="text-caption">
+                {{ item.path }} ({{ formatBytes(item.size) }})
+              </VListItemSubtitle>
+            </template>
+          </MaintenanceIssueListCard>
 
-          <VCard v-if="maintenanceStore.issues.oldUploads.length > 0" elevation="1" class="mb-4">
-            <VCardTitle class="d-flex align-center justify-space-between flex-wrap ga-2">
-              Old Upload Files
-              <VBtn
-                size="small"
-                variant="text"
-                @click="selectAllOldUploads"
-              >
-                Select All
-              </VBtn>
-            </VCardTitle>
-            <VDivider />
-            <VCardText>
-              <VList>
-                <VListItem
-                  v-for="file in maintenanceStore.issues.oldUploads"
-                  :key="file.path"
-                >
-                  <template #prepend>
-                    <VCheckbox
-                      v-model="selectedOldUploads"
-                      :value="file.path"
-                      hide-details
-                    />
-                  </template>
-                  <VListItemTitle class="text-body-2">
-                    {{ file.path.split('/').pop() }} <VChip size="x-small" class="ml-2">
-                      {{ formatAge(file.age) }} old
-                    </VChip>
-                  </VListItemTitle>
-                  <VListItemSubtitle class="text-caption">
-                    {{ file.path }} ({{ formatBytes(file.size) }})
-                  </VListItemSubtitle>
-                </VListItem>
-              </VList>
-            </VCardText>
-          </VCard>
+          <MaintenanceIssueListCard v-model:selected="selectedOldUploads" title="Old Upload Files" :items="oldUploadItems">
+            <template #default="{ item }">
+              <VListItemTitle class="text-body-2">
+                {{ item.path.split('/').pop() }} <VChip size="x-small" class="ml-2">
+                  {{ formatAge(item.age) }} old
+                </VChip>
+              </VListItemTitle>
+              <VListItemSubtitle class="text-caption">
+                {{ item.path }} ({{ formatBytes(item.size) }})
+              </VListItemSubtitle>
+            </template>
+          </MaintenanceIssueListCard>
 
-          <VCard
-            v-if="maintenanceStore.issues.orphanedScreenFiles.length === 0
-              && maintenanceStore.issues.orphanedDeviceDirs.length === 0
-              && maintenanceStore.issues.brokenScreens.length === 0
-              && maintenanceStore.issues.tempFiles.length === 0
-              && maintenanceStore.issues.oldUploads.length === 0"
-            elevation="1"
-            class="mb-4"
-          >
+          <VCard v-if="hasNoIssues" elevation="1" class="mb-4">
             <VCardText>
               <VAlert type="success" variant="tonal" :icon="mdiCheckCircle">
                 No maintenance issues found. System is clean!
@@ -698,106 +329,28 @@ async function executeCleanup() {
             </VCardText>
           </VCard>
 
-          <VCard v-if="hasSelection" elevation="1" class="mb-4">
-            <VCardTitle>Cleanup Actions</VCardTitle>
-            <VDivider />
-            <VCardText>
-              <div class="mb-4">
-                <div class="text-body-2 mb-2">
-                  <span class="font-weight-bold">Selected items:</span>
-                  {{ selectedOrphanedFiles.length + selectedOrphanedDirs.length + selectedBrokenScreens.length + selectedTempFiles.length + selectedOldUploads.length }}
-                </div>
-                <div class="text-body-2 mb-4">
-                  <span class="font-weight-bold">Space to be freed:</span>
-                  {{ formatBytes(totalSelectedSize) }}
-                </div>
-
-                <VSwitch
-                  v-model="dryRun"
-                  label="Dry Run (simulate without actual deletion)"
-                  color="warning"
-                  hide-details
-                  class="mb-4"
-                />
-
-                <div class="d-flex gap-2">
-                  <VBtn
-                    :prepend-icon="mdiDelete"
-                    color="error"
-                    variant="tonal"
-                    :loading="cleanupInProgress"
-                    @click="confirmCleanup"
-                  >
-                    {{ dryRun ? 'Preview Cleanup' : 'Clean Selected' }}
-                  </VBtn>
-                  <VBtn
-                    variant="text"
-                    @click="selectAll"
-                  >
-                    Select All
-                  </VBtn>
-                  <VBtn
-                    variant="text"
-                    @click="deselectAll"
-                  >
-                    Deselect All
-                  </VBtn>
-                </div>
-              </div>
-            </VCardText>
-          </VCard>
+          <CleanupActionsCard
+            v-if="hasSelection"
+            v-model:dry-run="dryRun"
+            :selected-count="selectedCount"
+            :total-selected-size="totalSelectedSize"
+            :cleanup-in-progress="cleanupInProgress"
+            @confirm-cleanup="confirmCleanup"
+            @select-all="selectAll"
+            @deselect-all="deselectAll"
+          />
         </template>
       </VCol>
     </VRow>
 
-    <VDialog v-model="showConfirmDialog" max-width="500">
-      <VCard>
-        <VCardTitle>Confirm Cleanup</VCardTitle>
-        <VDivider />
-        <VCardText>
-          <VAlert
-            :type="dryRun ? 'info' : 'warning'"
-            variant="tonal"
-            class="mb-4"
-            :icon="dryRun ? mdiCheckCircle : mdiAlertCircle"
-          >
-            <div v-if="dryRun" class="text-body-2">
-              This is a dry run. No files will be deleted.
-            </div>
-            <div v-else class="text-body-2">
-              <div class="font-weight-bold mb-2">
-                Warning: This action cannot be undone!
-              </div>
-              <div>You are about to delete:</div>
-            </div>
-          </VAlert>
-
-          <div class="text-body-2">
-            <div>Files: {{ selectedOrphanedFiles.length + selectedTempFiles.length + selectedOldUploads.length }}</div>
-            <div>Directories: {{ selectedOrphanedDirs.length }}</div>
-            <div>Screens: {{ selectedBrokenScreens.length }}</div>
-            <div class="mt-2 font-weight-bold">
-              Total space: {{ formatBytes(totalSelectedSize) }}
-            </div>
-          </div>
-        </VCardText>
-        <VDivider />
-        <VCardText class="d-flex justify-end gap-2">
-          <VBtn
-            variant="text"
-            @click="showConfirmDialog = false"
-          >
-            Cancel
-          </VBtn>
-          <VBtn
-            :color="dryRun ? 'primary' : 'error'"
-            variant="tonal"
-            @click="executeCleanup"
-          >
-            {{ dryRun ? 'Preview' : 'Confirm Delete' }}
-          </VBtn>
-        </VCardText>
-      </VCard>
-    </VDialog>
+    <CleanupConfirmDialog
+      v-model="showConfirmDialog"
+      :dry-run="dryRun"
+      :file-count="selectedOrphanedFiles.length + selectedTempFiles.length + selectedOldUploads.length"
+      :dir-count="selectedOrphanedDirs.length"
+      :screen-count="selectedBrokenScreens.length"
+      :total-size="totalSelectedSize"
+      @confirm="executeCleanup"
+    />
   </VContainer>
 </template>
