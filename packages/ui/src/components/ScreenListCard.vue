@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import type { Screen } from '@/types'
-import { mdiCalendarClock, mdiChevronDown, mdiChevronUp, mdiDelete, mdiDrag, mdiEye, mdiOpenInNew, mdiRefresh } from '@mdi/js'
 import { ref } from 'vue'
-import { VAlert, VBtn, VCard, VCardActions, VCardText, VCardTitle, VChip, VDialog, VDivider, VIcon, VOverlay, VSpacer, VTable, VTooltip } from 'vuetify/components'
+import { VAlert, VCard, VCardText, VCardTitle, VChip, VDivider, VOverlay } from 'vuetify/components'
 import ScreenFrame from '@/components/ScreenFrame.vue'
+import ScreenPreviewDialog from '@/components/ScreenPreviewDialog.vue'
 import ScreenScheduleDialog from '@/components/ScreenScheduleDialog.vue'
+import ScreenTable from '@/components/ScreenTable.vue'
 import { useDeviceRenderContext } from '@/composeables/useDeviceRenderContext'
-import { cacheBustedUrl } from '@/utils/cacheBustedUrl'
-import { screenScheduleColor, screenScheduleLabel } from '@/utils/schedule'
 import { viewFull } from '@/utils/screenShell'
 
 const props = defineProps<{ deviceId: string }>()
@@ -96,8 +95,8 @@ const selectedPreviewScreen = ref<Screen | null>(null)
 const previewMode = ref<'html' | 'image' | 'plugin' | 'mashup'>('image')
 
 const overlayHtml = ref('')
-function renderPreviewHtml(html: string) {
-  overlayHtml.value = html
+function renderPreviewHtml(html: string | null | undefined) {
+  overlayHtml.value = html ?? ''
   showHtmlPreview.value = true
 }
 
@@ -151,162 +150,24 @@ defineExpose({
         >
           {{ reorderError }}
         </VAlert>
-        <template v-if="screensStore.screens.length">
-          <div class="overflow-x-auto">
-            <VTable density="comfortable" data-test-id="screen-table">
-              <thead>
-                <tr>
-                  <th>Order</th>
-                  <th>Type</th>
-                  <th>Filename</th>
-                  <th>Schedule</th>
-                  <th>Status</th>
-                  <th class="text-right">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="(screen, index) in screensStore.screens"
-                  :key="screen.id"
-                  :draggable="!isReordering"
-                  :class="{ 'bg-grey-lighten-3': dragOverIndex === index && draggingIndex !== null && draggingIndex !== index }"
-                  :data-test-id="`screen-row-${screen.id}`"
-                  @dragstart="onDragStart(index)"
-                  @dragover.prevent="onDragEnter(index)"
-                  @drop="onDrop(index)"
-                  @dragend="onDragEnd"
-                >
-                  <td>
-                    <div class="d-flex align-center">
-                      <VIcon :icon="mdiDrag" class="mr-1 cursor-grab" aria-hidden="true" />
-                      <div class="d-flex flex-column">
-                        <VBtn
-                          size="x-small"
-                          variant="text"
-                          density="compact"
-                          :icon="mdiChevronUp"
-                          :disabled="isReordering || index === 0"
-                          aria-label="Move screen up"
-                          :data-test-id="`screen-move-up-${screen.id}`"
-                          @click="moveScreen(index, -1)"
-                        />
-                        <VBtn
-                          size="x-small"
-                          variant="text"
-                          density="compact"
-                          :icon="mdiChevronDown"
-                          :disabled="isReordering || index === screensStore.screens.length - 1"
-                          aria-label="Move screen down"
-                          :data-test-id="`screen-move-down-${screen.id}`"
-                          @click="moveScreen(index, 1)"
-                        />
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <VChip
-                      :color="screen.type === 'mashup' ? 'orange' : screen.plugin ? 'purple' : screen.externalLink ? 'info' : 'primary'"
-                      size="small"
-                    >
-                      {{ screen.type === 'mashup' ? 'Mashup' : screen.plugin ? 'Plugin' : screen.externalLink ? screen.fetchManual ? 'External (cached)' : 'External' : screen.html ? 'HTML' : 'File' }}
-                    </VChip>
-                  </td>
-                  <td>
-                    <span>{{ screen.plugin ? screen.plugin.name : screen.filename }}</span>
-                  </td>
-                  <td>
-                    <VBtn
-                      size="small"
-                      variant="tonal"
-                      :color="screenScheduleColor(screen)"
-                      :prepend-icon="mdiCalendarClock"
-                      :aria-label="`Edit schedule for ${screen.filename ?? screen.id}`"
-                      :data-test-id="`screen-schedule-btn-${screen.id}`"
-                      @click="editSchedule(screen)"
-                    >
-                      {{ screenScheduleLabel(screen) }}
-                    </VBtn>
-                  </td>
-                  <td>
-                    <VChip v-if="screen.isActive" color="success" size="small">
-                      Active
-                    </VChip>
-                    <VChip v-else color="secondary" size="small">
-                      Queued
-                    </VChip>
-                  </td>
-                  <td class="text-right">
-                    <VBtn
-                      v-if="!screen.plugin && screen.externalLink && screen.fetchManual"
-                      color="warning"
-                      size="small"
-                      variant="tonal"
-                      class="mr-2"
-                      :icon="mdiRefresh"
-                      aria-label="Update cached image"
-                      @click="updateExternalImage(screen.id)"
-                    />
-                    <VBtn
-                      v-if="!screen.plugin && screen.externalLink"
-                      size="small"
-                      class="mr-2"
-                      :href="screen.externalLink"
-                      target="_blank"
-                      variant="tonal"
-                      color="secondary"
-                      :icon="mdiOpenInNew"
-                      aria-label="Open link in new tab"
-                    />
-                    <VBtn
-                      v-else-if="!screen.plugin && screen.html"
-                      size="small"
-                      class="mr-2"
-                      :icon="mdiEye"
-                      variant="tonal"
-                      color="secondary"
-                      aria-label="Preview HTML"
-                      @click="renderPreviewHtml(screen.html)"
-                    />
-                    <VBtn
-                      v-else
-                      size="small"
-                      class="mr-2"
-                      :icon="mdiEye"
-                      variant="tonal"
-                      color="secondary"
-                      :aria-label="screen.type === 'mashup' ? 'Preview mashup' : screen.plugin ? 'Preview plugin output' : 'Preview screen'"
-                      @click="previewScreen(screen)"
-                    />
-                    <VBtn
-                      v-if="!screen.plugin"
-                      size="small"
-                      color="error"
-                      variant="tonal"
-                      :icon="mdiDelete"
-                      aria-label="Delete screen"
-                      :data-test-id="`screen-delete-btn-${screen.id}`"
-                      @click="deleteScreen(screen.id)"
-                    />
-                    <VTooltip v-else text="Unassign plugin from Manage Plugins page">
-                      <template #activator="{ props: tooltipProps }">
-                        <VBtn
-                          size="small"
-                          color="secondary"
-                          variant="tonal"
-                          :icon="mdiDelete"
-                          disabled
-                          v-bind="tooltipProps"
-                        />
-                      </template>
-                    </VTooltip>
-                  </td>
-                </tr>
-              </tbody>
-            </VTable>
-          </div>
-        </template>
+        <ScreenTable
+          v-if="screensStore.screens.length"
+          :screens="screensStore.screens"
+          :is-reordering="isReordering"
+          :dragging-index="draggingIndex"
+          :drag-over-index="dragOverIndex"
+          @dragstart="onDragStart"
+          @dragover="onDragEnter"
+          @drop="onDrop"
+          @dragend="onDragEnd"
+          @move-up="index => moveScreen(index, -1)"
+          @move-down="index => moveScreen(index, 1)"
+          @edit-schedule="editSchedule"
+          @update-external-image="updateExternalImage"
+          @preview-html="renderPreviewHtml"
+          @preview-screen="previewScreen"
+          @delete="deleteScreen"
+        />
         <VAlert v-else type="info" variant="tonal" class="text-body-2" data-test-id="screen-empty-alert">
           No screens yet. Add one in Add Screen above.
         </VAlert>
@@ -323,56 +184,12 @@ defineExpose({
       <ScreenFrame v-if="showHtmlPreview" :body="viewFull(overlayHtml)" :target="renderTarget" />
     </VOverlay>
 
-    <VDialog v-model="showScreenPreview" :max-width="`min(90vw, ${Math.max(900, renderTarget.model.width + 48)}px)`">
-      <VCard v-if="selectedPreviewScreen">
-        <VCardTitle>
-          {{ selectedPreviewScreen.plugin ? `Plugin: ${selectedPreviewScreen.plugin.name}` : selectedPreviewScreen.filename || 'Screen Preview' }}
-        </VCardTitle>
-        <VDivider />
-        <VCardText class="d-flex flex-column align-center pa-4">
-          <!-- Mashup screens: show cached HTML if available, else show message -->
-          <div v-if="previewMode === 'mashup'" class="w-100">
-            <div v-if="selectedPreviewScreen.cachedPluginOutput" class="mb-4">
-              <ScreenFrame :body="selectedPreviewScreen.cachedPluginOutput" :target="renderTarget" />
-            </div>
-            <VAlert v-else type="info" variant="tonal">
-              Mashup output will be generated when a device requests it or when the scheduler runs.
-            </VAlert>
-          </div>
-
-          <!-- Plugin screens: show cached HTML if available, else show message -->
-          <div v-else-if="previewMode === 'plugin'" class="w-100">
-            <div v-if="selectedPreviewScreen.cachedPluginOutput" class="mb-4">
-              <ScreenFrame :body="viewFull(selectedPreviewScreen.cachedPluginOutput)" :target="renderTarget" />
-            </div>
-            <VAlert v-else type="info" variant="tonal">
-              Plugin output will be generated when a device requests it or when the scheduler runs.
-            </VAlert>
-          </div>
-
-          <!-- HTML screens -->
-          <div v-else-if="previewMode === 'html' && selectedPreviewScreen.html" class="w-100">
-            <ScreenFrame :body="viewFull(selectedPreviewScreen.html)" :target="renderTarget" />
-          </div>
-
-          <!-- Image screens -->
-          <div v-else>
-            <img
-              :src="cacheBustedUrl(`/screens/devices/${device?.id}/${selectedPreviewScreen.id}.png`, selectedPreviewScreen.generatedAt)"
-              style="max-width: 100%; height: auto; border: 1px solid #ccc;"
-              alt="Screen preview"
-              @error="($event.target as HTMLImageElement).src = '/screens/error.png'"
-            >
-          </div>
-        </VCardText>
-        <VDivider />
-        <VCardActions>
-          <VSpacer />
-          <VBtn variant="text" @click="showScreenPreview = false">
-            Close
-          </VBtn>
-        </VCardActions>
-      </VCard>
-    </VDialog>
+    <ScreenPreviewDialog
+      v-model="showScreenPreview"
+      :screen="selectedPreviewScreen"
+      :mode="previewMode"
+      :render-target="renderTarget"
+      :device-id="device.id"
+    />
   </template>
 </template>
