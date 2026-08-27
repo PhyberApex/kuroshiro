@@ -123,6 +123,23 @@ export interface LogEntry {
   entry: string
 }
 
+export interface DeviceStatusStamp {
+  wifi_rssi_level: number
+  battery_voltage: number
+  current_fw_version: string
+  free_heap_size: number
+  wakeup_reason: string
+  wifi_status: string
+}
+
+export interface ParsedDeviceLogPayload {
+  log_message?: string
+  log_sourcefile?: string
+  log_codeline?: number
+  device_status_stamp?: DeviceStatusStamp
+  additional_info?: Record<string, string | number | null | undefined>
+}
+
 export interface MaintenanceStats {
   fileCount: number
   totalSize: number
