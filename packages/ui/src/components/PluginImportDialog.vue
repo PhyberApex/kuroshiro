@@ -16,7 +16,7 @@ const emit = defineEmits<{
 
 const deviceStore = useDeviceStore()
 
-const importTab = ref('file')
+const importTab = ref<'file' | 'github' | 'recipe'>('file')
 const selectedFile = ref<File | null>(null)
 const githubUrl = ref('')
 const recipeId = ref('')
@@ -88,7 +88,7 @@ async function importPlugin() {
   error.value = ''
 
   try {
-    await importBySource[importTab.value as keyof typeof importBySource](selectedDeviceId.value)
+    await importBySource[importTab.value](selectedDeviceId.value)
     emit('imported')
     close()
   }
