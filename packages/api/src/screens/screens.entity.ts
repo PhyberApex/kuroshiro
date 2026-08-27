@@ -1,8 +1,9 @@
+import type { Relation } from 'typeorm'
+import type { Device } from '../devices/devices.entity'
+import type { MashupConfiguration } from '../mashup/entities/mashup-configuration.entity'
 import type { Plugin } from '../plugins/entities/plugin.entity'
+import type { Schedule } from '../schedule/schedule.entity'
 import { Column, Entity, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
-import { Device } from '../devices/devices.entity'
-import { MashupConfiguration } from '../mashup/entities/mashup-configuration.entity'
-import { Schedule } from '../schedule/schedule.entity'
 
 @Entity()
 export class Screen {
@@ -36,18 +37,18 @@ export class Screen {
   @Column({ type: 'text', nullable: true })
   cachedPluginOutput?: string | null
 
-  @ManyToOne(() => Device, { onDelete: 'CASCADE' })
-  device: Device
+  @ManyToOne('Device', { onDelete: 'CASCADE' })
+  device: Relation<Device>
 
   @ManyToOne('Plugin', { onDelete: 'CASCADE', nullable: true })
-  plugin?: Plugin
+  plugin?: Relation<Plugin>
 
   @Column({ type: 'uuid', nullable: true })
   devicePluginId?: string | null
 
-  @OneToOne(() => MashupConfiguration, mashupConfig => mashupConfig.screen, { nullable: true })
-  mashupConfiguration?: MashupConfiguration
+  @OneToOne('MashupConfiguration', (mashupConfig: MashupConfiguration) => mashupConfig.screen, { nullable: true })
+  mashupConfiguration?: Relation<MashupConfiguration>
 
-  @OneToOne(() => Schedule, schedule => schedule.screen, { nullable: true })
-  schedule?: Schedule | null
+  @OneToOne('Schedule', (schedule: Schedule) => schedule.screen, { nullable: true })
+  schedule?: Relation<Schedule> | null
 }
