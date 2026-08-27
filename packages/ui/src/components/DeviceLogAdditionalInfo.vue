@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import type { AdditionalInfoMap } from '@/types.ts'
 import { VCol, VRow } from 'vuetify/components'
 
-defineProps<{ info: Record<string, string | number | null | undefined> }>()
+defineProps<{ info: AdditionalInfoMap }>()
 
-function formatValue(value: string | number | null | undefined) {
+function formatValue(value: AdditionalInfoMap[string]) {
   return value || '—'
 }
 </script>

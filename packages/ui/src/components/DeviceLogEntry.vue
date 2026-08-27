@@ -21,7 +21,9 @@ function formatLogTimestamp(date: Date) {
   })
 }
 
-function getLogSeverity(message: string) {
+type LogSeverity = 'error' | 'warning' | 'info' | 'default'
+
+function getLogSeverity(message: string): LogSeverity {
   const lowerMessage = message.toLowerCase()
   if (lowerMessage.includes('error') || lowerMessage.includes('failed'))
     return 'error'
@@ -32,7 +34,7 @@ function getLogSeverity(message: string) {
   return 'default'
 }
 
-function getSeverityColor(severity: string) {
+function getSeverityColor(severity: LogSeverity) {
   switch (severity) {
     case 'error': return 'error'
     case 'warning': return 'warning'
@@ -41,7 +43,7 @@ function getSeverityColor(severity: string) {
   }
 }
 
-function getSeverityIcon(severity: string) {
+function getSeverityIcon(severity: LogSeverity) {
   switch (severity) {
     case 'error': return 'mdi-alert-circle'
     case 'warning': return 'mdi-alert'
@@ -50,16 +52,12 @@ function getSeverityIcon(severity: string) {
   }
 }
 
-function detailsToggleIcon(expanded: boolean) {
-  return expanded ? 'mdi-chevron-up' : 'mdi-chevron-down'
-}
-
-function detailsToggleAriaLabel(expanded: boolean) {
-  return expanded ? 'Hide log details' : 'Show log details'
-}
-
-function detailsToggleLabel(expanded: boolean) {
-  return expanded ? 'Less' : 'Show Details'
+function detailsToggleState(expanded: boolean) {
+  return {
+    icon: expanded ? 'mdi-chevron-up' : 'mdi-chevron-down',
+    ariaLabel: expanded ? 'Hide log details' : 'Show log details',
+    label: expanded ? 'Less' : 'Show Details',
+  }
 }
 
 const message = computed(() => props.parsed?.log_message || props.logEntry.entry)
@@ -105,11 +103,11 @@ const hasDetails = computed(() => !!props.parsed?.device_status_stamp || hasAddi
                 <VBtn
                   size="x-small"
                   variant="text"
-                  :prepend-icon="detailsToggleIcon(expanded)"
-                  :aria-label="detailsToggleAriaLabel(expanded)"
+                  :prepend-icon="detailsToggleState(expanded).icon"
+                  :aria-label="detailsToggleState(expanded).ariaLabel"
                   data-test-id="log-entry-details-toggle"
                 >
-                  {{ detailsToggleLabel(expanded) }}
+                  {{ detailsToggleState(expanded).label }}
                 </VBtn>
               </template>
             </VExpansionPanelTitle>

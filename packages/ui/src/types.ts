@@ -132,12 +132,14 @@ export interface DeviceStatusStamp {
   wifi_status: string
 }
 
+export type AdditionalInfoMap = Record<string, string | number | null | undefined>
+
 export interface ParsedDeviceLogPayload {
   log_message?: string
   log_sourcefile?: string
   log_codeline?: number
   device_status_stamp?: DeviceStatusStamp
-  additional_info?: Record<string, string | number | null | undefined>
+  additional_info?: AdditionalInfoMap
 }
 
 export interface MaintenanceStats {
