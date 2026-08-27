@@ -1,23 +1,5 @@
 <script setup lang="ts">
 import type { Device } from '@/types'
-import {
-  mdiBattery,
-  mdiBattery10,
-  mdiBattery20,
-  mdiBattery30,
-  mdiBattery40,
-  mdiBattery50,
-  mdiBattery60,
-  mdiBattery70,
-  mdiBattery80,
-  mdiBattery90,
-  mdiBatteryOutline,
-  mdiBatteryUnknown,
-  mdiSignalCellular1,
-  mdiSignalCellular2,
-  mdiSignalCellular3,
-  mdiSignalCellularOutline,
-} from '@mdi/js'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { VCard, VCardText, VCardTitle, VDivider, VExpansionPanel, VExpansionPanels, VExpansionPanelText, VExpansionPanelTitle } from 'vuetify/components'
@@ -31,7 +13,6 @@ import DeviceStatusOverview from '@/components/device/DeviceStatusOverview.vue'
 import { useDeviceStore } from '@/stores/device'
 import { useDeviceModelsStore } from '@/stores/deviceModels'
 import { useFirmwareStore } from '@/stores/firmware'
-import { DEFAULT_RENDER_SIZE } from '@/utils/deviceRenderSize'
 import { isValidMac } from '@/utils/getRandomMac'
 import { isDeviceOnline } from '@/utils/isDeviceOnline'
 import { secondsToTimeInput, timeInputToSeconds } from '@/utils/sleepMode'
@@ -150,68 +131,6 @@ watch(selectedModel, (model) => {
     selectedPaletteId.value = null
 })
 
-const modelSummary = computed(() => {
-  const model = device.value?.deviceModel
-  if (!model)
-    return `Not resolved yet — renders as TRMNL OG (${DEFAULT_RENDER_SIZE.width}x${DEFAULT_RENDER_SIZE.height})`
-  return `${model.label} (${model.width}x${model.height})`
-})
-
-const reportedSummary = computed(() => {
-  const current = device.value
-  if (!current)
-    return null
-  const parts = [current.reportedModel, current.width && current.height ? `${current.width}x${current.height}` : null].filter(Boolean)
-  return parts.length > 0 ? parts.join(' · ') : null
-})
-
-const reportMismatch = computed(() => {
-  const current = device.value
-  const model = current?.deviceModel
-  if (!current || !model || !current.width || !current.height)
-    return false
-  return current.width !== model.width || current.height !== model.height
-})
-
-const rssiStrength = computed(() => {
-  if (!device.value || !device.value.rssi)
-    return -1
-  const rssi = Number.parseInt(device.value.rssi)
-  if (Number.isNaN(rssi))
-    return -1
-  if (rssi >= -70)
-    return 3
-  if (rssi >= -80)
-    return 2
-  if (rssi >= -90)
-    return 1
-  return 0
-})
-const rssiColor = computed((): string => {
-  switch (rssiStrength.value) {
-    case 3: return 'success'
-    case 2: return 'warning'
-    case 1: return 'warning'
-    case 0: return 'error'
-    case -1: return 'secondary'
-    default:
-      { const _: never = rssiStrength.value }
-      return ''
-  }
-})
-const rssiIcon = computed((): string => {
-  switch (rssiStrength.value) {
-    case 3: return mdiSignalCellular3
-    case 2: return mdiSignalCellular2
-    case 1: return mdiSignalCellular1
-    case 0: return mdiSignalCellularOutline
-    case -1: return mdiSignalCellularOutline
-    default:
-      { const _: never = rssiStrength.value }
-      return ''
-  }
-})
-
 const router = useRouter()
 
 async function deleteDevice() {
@@ -220,46 +139,6 @@ async function deleteDevice() {
   await deviceStore.deleteDevice(device.value.id)
   await router.push({ name: 'overview' })
 }
-
-const batteryPercentage = computed(() => {
-  if (!device.value?.batteryVoltage)
-    return -1
-  const voltage = Number.parseFloat(device.value.batteryVoltage)
-  if (voltage >= 4.2)
-    return 100
-  if (voltage <= 3.0)
-    return 0
-  return Math.round(((voltage - 3.0) / 0.012))
-})
-
-const batteryColor = computed(() => {
-  if (batteryPercentage.value === -1)
-    return 'secondary'
-  if (batteryPercentage.value <= 10)
-    return 'error'
-  if (batteryPercentage.value <= 20)
-    return 'warning'
-  if (batteryPercentage.value <= 60)
-    return 'warning'
-  return 'success'
-})
-
-const batteryIcon = computed(() => {
-  const iconMap = [
-    { min: 95, icon: mdiBattery },
-    { min: 85, icon: mdiBattery90 },
-    { min: 75, icon: mdiBattery80 },
-    { min: 65, icon: mdiBattery70 },
-    { min: 55, icon: mdiBattery60 },
-    { min: 45, icon: mdiBattery50 },
-    { min: 35, icon: mdiBattery40 },
-    { min: 25, icon: mdiBattery30 },
-    { min: 15, icon: mdiBattery20 },
-    { min: 5, icon: mdiBattery10 },
-    { min: 0, icon: mdiBatteryOutline },
-  ]
-  return iconMap.find(item => batteryPercentage.value >= item.min)?.icon || mdiBatteryUnknown
-})
 
 const macRules = [
   (value: string) => {
@@ -381,17 +260,7 @@ defineExpose({
       </VCardTitle>
       <VDivider />
       <VCardText>
-        <DeviceStatusOverview
-          :device="device"
-          :rssi-color="rssiColor"
-          :rssi-icon="rssiIcon"
-          :battery-color="batteryColor"
-          :battery-icon="batteryIcon"
-          :battery-percentage="batteryPercentage"
-          :model-summary="modelSummary"
-          :reported-summary="reportedSummary"
-          :report-mismatch="reportMismatch"
-        />
+        <DeviceStatusOverview :device="device" />
         <VExpansionPanels class="mt-2" flat>
           <VExpansionPanel>
             <VExpansionPanelTitle>Advanced</VExpansionPanelTitle>
