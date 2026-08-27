@@ -153,16 +153,10 @@
     "packages/ui/src/components/ScreenListCard.vue:complexity",
     "packages/api/src/devices/display.service.ts:complexity",
     "packages/ui/src/stores/deviceModels.ts:high impact",
-    "packages/api/src/mashup/entities/mashup-configuration.entity.ts:circular dependency",
     "packages/api/src/mashup/mashup.service.ts:complexity",
     "packages/ui/src/components/DeviceInformationCard.vue:complexity",
     "packages/ui/src/views/PluginEditView.vue:complexity",
-    "packages/api/src/devices/devices.entity.ts:circular dependency",
     "packages/api/src/maintenance/maintenance.service.ts:complexity",
-    "packages/api/src/screens/screens.entity.ts:circular dependency",
-    "packages/api/src/schedule/schedule.entity.ts:circular dependency",
-    "packages/api/src/mashup/entities/mashup-slot.entity.ts:circular dependency",
-    "packages/api/src/logs/logs.entity.ts:circular dependency",
     "packages/ui/src/components/DeviceLogsCard.vue:complexity",
     "packages/ui/src/views/MaintenanceView.vue:complexity"
   ]
