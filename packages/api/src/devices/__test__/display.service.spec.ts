@@ -4,9 +4,8 @@ import type { FallbackScreensService } from '../../device-models/fallback-screen
 import type { MockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService'
 import type { DeviceSensorsService } from '../../device-sensors/device-sensors.service'
 import type { FirmwareService } from '../../firmware/firmware.service'
-import type { PluginDataFetcherService } from '../../plugins/services/plugin-data-fetcher.service'
+import type { PluginDataResolverService } from '../../plugins/services/plugin-data-resolver.service'
 import type { PluginRendererService } from '../../plugins/services/plugin-renderer.service'
-import type { PluginTransformService } from '../../plugins/services/plugin-transform.service'
 import type { Schedule } from '../../schedule/schedule.entity'
 import type { Screen } from '../../screens/screens.entity'
 import type { MockDeviceModelsService, MockFallbackScreensService } from '../../test/mockDeviceModelsService'
@@ -92,9 +91,8 @@ describe('deviceDisplayService', () => {
       asService<DeviceModelsService>(deviceModels),
       asService<FallbackScreensService>(fallbackScreens),
       asService<FirmwareService>(firmwareService),
-      asService<PluginDataFetcherService>({}),
+      asService<PluginDataResolverService>({}),
       asService<PluginRendererService>({}),
-      asService<PluginTransformService>({}),
       asService<DeviceSensorsService>(deviceSensors),
       new PluginTemplateContextService(),
     )
@@ -242,7 +240,7 @@ describe('deviceDisplayService', () => {
         templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '{{ v }}' })],
       })
       primeRotation({ id: 'screen2', type: 'plugin', order: 2, plugin, filename: 'x' }, device)
-      injectPrivate(service, 'pluginDataFetcher', { fetchOrLiteral: vi.fn().mockResolvedValue({ v: 1 }) })
+      injectPrivate(service, 'pluginDataResolver', { resolveDataSources: vi.fn().mockResolvedValue({ source: { v: 1 } }) })
       injectPrivate(service, 'pluginRenderer', { render: vi.fn().mockResolvedValue('<b>1</b>') })
 
       await service.getCurrentImage(headers)
@@ -831,9 +829,8 @@ describe('deviceDisplayService', () => {
 
   describe('mashup screen rendering', () => {
     beforeEach(() => {
-      injectPrivate(service, 'pluginDataFetcher', { fetchOrLiteral: vi.fn() })
+      injectPrivate(service, 'pluginDataResolver', { resolveDataSources: vi.fn() })
       injectPrivate(service, 'pluginRenderer', { render: vi.fn() })
-      injectPrivate(service, 'pluginTransformer', { transform: vi.fn() })
     })
 
     it('should detect mashup screen and call renderer', async () => {

@@ -11,16 +11,7 @@
       }
     },
     "packages/api/src/devices/display.service.ts": {
-      "complexity_critical": {
-        "count": 2
-      },
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 2
-      },
-      "crap_high": {
+      "crap_moderate": {
         "count": 1
       }
     },
@@ -102,7 +93,6 @@
   },
   "runtime_coverage_findings": [],
   "target_keys": [
-    "packages/api/src/devices/display.service.ts:complexity",
     "packages/api/src/plugins/plugins.service.ts:complexity"
   ]
 }

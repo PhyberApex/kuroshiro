@@ -5,10 +5,9 @@ import type { MashupSlot } from '../entities/mashup-slot.entity'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { DeviceSensorsService } from '../../device-sensors/device-sensors.service'
-import { PluginDataFetcherService } from '../../plugins/services/plugin-data-fetcher.service'
+import { PluginDataResolverService } from '../../plugins/services/plugin-data-resolver.service'
 import { PluginRendererService } from '../../plugins/services/plugin-renderer.service'
 import { PluginTemplateContextService } from '../../plugins/services/plugin-template-context.service'
-import { PluginTransformService } from '../../plugins/services/plugin-transform.service'
 import { getErrorMessage } from '../../utils/getErrorMessage'
 
 @Injectable()
@@ -16,9 +15,8 @@ export class MashupRendererService {
   private readonly logger = new Logger(MashupRendererService.name)
 
   constructor(
-    private readonly pluginDataFetcher: PluginDataFetcherService,
+    private readonly pluginDataResolver: PluginDataResolverService,
     private readonly pluginRenderer: PluginRendererService,
-    private readonly pluginTransformer: PluginTransformService,
     private readonly configService: ConfigService,
     private readonly deviceSensors: DeviceSensorsService,
     private readonly pluginTemplateContext: PluginTemplateContextService,
@@ -58,28 +56,7 @@ export class MashupRendererService {
     }
 
     const templateContext = this.pluginTemplateContext.build(plugin, sensors)
-
-    // Fetch all of the plugin's data sources in parallel; a source that fails
-    // gets an error marker instead of aborting the whole render (ADR-0005).
-    // A literal-mode source has no fetch to make — it contributes its stored
-    // value directly, with no call to the data fetcher at all.
-    const results = await Promise.allSettled(
-      plugin.dataSources.map(async (source) => {
-        let rawData = await this.pluginDataFetcher.fetchOrLiteral(source, templateContext)
-        if (source.transformJs) {
-          rawData = this.pluginTransformer.transform(source.transformJs, rawData)
-        }
-        return rawData
-      }),
-    )
-
-    const data: Record<string, unknown> = {}
-    results.forEach((result, index) => {
-      const name = plugin.dataSources[index].name
-      data[name] = result.status === 'fulfilled'
-        ? result.value
-        : { error: true, message: result.reason?.message || String(result.reason) }
-    })
+    const data = await this.pluginDataResolver.resolveDataSources(plugin, templateContext)
 
     // Find template (prefer 'full' layout for now, could support size variants later)
     const template = plugin.templates.find(t => t.layout === 'full') || plugin.templates[0]
