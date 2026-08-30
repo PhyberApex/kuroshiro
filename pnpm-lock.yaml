@@ -136,8 +136,8 @@ catalogs:
       specifier: 4.0.3
       version: 4.0.3
     puppeteer:
-      specifier: 25.8.0
-      version: 25.8.0
+      specifier: 25.9.0
+      version: 25.9.0
     reflect-metadata:
       specifier: 0.2.2
       version: 0.2.2
@@ -187,8 +187,8 @@ catalogs:
       specifier: 3.3.11
       version: 3.3.11
     vuetify:
-      specifier: 4.1.11
-      version: 4.1.11
+      specifier: 4.1.12
+      version: 4.1.12
 
 importers:
 
@@ -201,8 +201,8 @@ importers:
         specifier: ^11.0.0
         version: 11.0.0
       fallow:
-        specifier: 3.18.0
-        version: 3.18.0
+        specifier: 3.19.0
+        version: 3.19.0
       husky:
         specifier: 9.1.7
         version: 9.1.7
@@ -268,7 +268,7 @@ importers:
         version: 8.23.0
       puppeteer:
         specifier: 'catalog:'
-        version: 25.8.0
+        version: 25.9.0
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
@@ -365,7 +365,7 @@ importers:
         version: 4.0.3(@vue/devtools-api@8.2.1)(typescript@6.0.3)(vue@3.5.41(typescript@6.0.3))
       vite-plugin-vuetify:
         specifier: 'catalog:'
-        version: 2.1.3(supports-color@10.2.2)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))(vue@3.5.41(typescript@6.0.3))(vuetify@4.1.11)
+        version: 2.1.3(supports-color@10.2.2)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))(vue@3.5.41(typescript@6.0.3))(vuetify@4.1.12)
       vue:
         specifier: 'catalog:'
         version: 3.5.41(typescript@6.0.3)
@@ -374,7 +374,7 @@ importers:
         version: 5.2.0(@vue/compiler-sfc@3.5.40)(esbuild@0.27.7)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@6.0.3)(vue@3.5.41(typescript@6.0.3)))(rolldown@1.2.5)(rollup@4.62.3)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))(vue@3.5.41(typescript@6.0.3))(webpack@5.106.2(@swc/core@1.16.1)(esbuild@0.27.7)(lightningcss@1.33.0)(postcss@8.5.26)(uglify-js@3.19.3))
       vuetify:
         specifier: 'catalog:'
-        version: 4.1.11(typescript@6.0.3)(vite-plugin-vuetify@2.1.3)(vue@3.5.41(typescript@6.0.3))
+        version: 4.1.12(typescript@6.0.3)(vite-plugin-vuetify@2.1.3)(vue@3.5.41(typescript@6.0.3))
     devDependencies:
       '@antfu/eslint-config':
         specifier: 'catalog:'
@@ -429,7 +429,7 @@ importers:
         version: 9.0.3
       puppeteer:
         specifier: 'catalog:'
-        version: 25.8.0
+        version: 25.9.0
       resize-observer-polyfill:
         specifier: 'catalog:'
         version: 1.5.1
@@ -1047,43 +1047,43 @@ packages:
       '@noble/hashes':
         optional: true
 
-  '@fallow-cli/darwin-arm64@3.18.0':
-    resolution: {integrity: sha512-eQ16bS0U5OAC+8OadDsedhWQILp8UpqowUIlvMmQ7XHigfD5VLpJXcLcHGkWXGvkNjkHRM46CXNFQaiCXK/miQ==}
+  '@fallow-cli/darwin-arm64@3.19.0':
+    resolution: {integrity: sha512-jMKEAov6FOdKxoBjjn3UWwX2AqLwH+k7WNgw1AH0h/5N7rRUb6zTSInJi7egh35y99xe8BA2XwjYNmTrQRINyw==}
     cpu: [arm64]
     os: [darwin]
 
-  '@fallow-cli/darwin-x64@3.18.0':
-    resolution: {integrity: sha512-QK8Ostp5jSO48CJuei9Gc878ej+UQpmdLqxW5dk1mOQj37ZTNiZ8wamh8GLBVncpl1qakcZ1e0OhjKHj8cI+2w==}
+  '@fallow-cli/darwin-x64@3.19.0':
+    resolution: {integrity: sha512-3z9wemsC3TRdPA6TtbIafLyWUHgOCeWBbileojpOk7OvmrHXo7DtemhxpNK0lMBN3hrIpzpmteFpI+mXiEz8XA==}
     cpu: [x64]
     os: [darwin]
 
-  '@fallow-cli/linux-arm64-gnu@3.18.0':
-    resolution: {integrity: sha512-015DL5529tNJBjkdwo2O+cJP07qkD9gjO0EcHuXn+alBzKoUTm1ip99sDQ5Q/TnzVi86s0fDnBQF8N4EGTUaHw==}
+  '@fallow-cli/linux-arm64-gnu@3.19.0':
+    resolution: {integrity: sha512-I8H7HPQSQvmFI1CK8h10qxbYUyIl3gMFsNv1p2+NdfllLMcv26aQGrWkA3wlV9yA2v8AEH8ReDDAwHME9PEh1A==}
     cpu: [arm64]
     os: [linux]
 
-  '@fallow-cli/linux-arm64-musl@3.18.0':
-    resolution: {integrity: sha512-t/pmJFGqFL445/4tiNJ4zCezYDNQn0Wmc17FdPM/CA9ToVtMODh0TTMYD3KKNBP5+4MbC3Fxjkp6ITgPTzUj6Q==}
+  '@fallow-cli/linux-arm64-musl@3.19.0':
+    resolution: {integrity: sha512-zcEehLVdrVII75MLjO6jq1gbnSrtFVrjq+7u3gH1PjX8laeiIP2xVk3yGW/Qp3kV72k6375Dbqo8EiHxSCvC9A==}
     cpu: [arm64]
     os: [linux]
 
-  '@fallow-cli/linux-x64-gnu@3.18.0':
-    resolution: {integrity: sha512-4hHPWzkxYMgI5vf6W6b+XgeftgB7fSQdDK1Vg6DklwZ8K10wbN2dXvt7MAvq9FrPZhSuxE5SyPe5mJryukqZvA==}
+  '@fallow-cli/linux-x64-gnu@3.19.0':
+    resolution: {integrity: sha512-CkvQz9l4TwVGQkmlFqOJlPVR9bK6UPgyIaz/kuh4f7xfYoxgjQpI1Kv7eyInP8u9m8ZhreVlhX/GsL1zedw40Q==}
     cpu: [x64]
     os: [linux]
 
-  '@fallow-cli/linux-x64-musl@3.18.0':
-    resolution: {integrity: sha512-mgXTHI0tNVnos1bVNqi4BPv7NyFHk1X9JcRRrMR6/wqezb0U3qePzSrbJpsP1LVo93uovXB5B+hby/sztxDfqw==}
+  '@fallow-cli/linux-x64-musl@3.19.0':
+    resolution: {integrity: sha512-EMlGT90rgbpjkp31w8BhbeSOsQxXFShDVy6zeEIPUA85h+HJCAztiDqs+joLB6J1rw4nINfxJKJDT6un+qiajA==}
     cpu: [x64]
     os: [linux]
 
-  '@fallow-cli/win32-arm64-msvc@3.18.0':
-    resolution: {integrity: sha512-b2EHII8eWUlzZnbY0x9MaO6+TDOuKhRHvuyONjAQ3uK/LYMIYo54YdvAKVEW8SYbeuOy9Hyl/dt5rH/+DgmJLw==}
+  '@fallow-cli/win32-arm64-msvc@3.19.0':
+    resolution: {integrity: sha512-Pno7H0ylKb7Bxcqc5IxmGB8eTvplJT383qPW16QvJ8hMTiS88rdrZ8WxM3OludRBIMHQU3/QEMPbLBVr5d1uDA==}
     cpu: [arm64]
     os: [win32]
 
-  '@fallow-cli/win32-x64-msvc@3.18.0':
-    resolution: {integrity: sha512-etBjK9DatwNz+oXfTi3lhtyLsFeb4RUfqFyHh01BQUpLpBBJ570Ea25SryShGbLd8m4ns9HxAcO/VL5alviRyg==}
+  '@fallow-cli/win32-x64-msvc@3.19.0':
+    resolution: {integrity: sha512-N9Hwxylu6kq+mCs1lvAlC02L5wIiOddXh8dnUT5hoC6irwssAX0w3DXwIgC82N1KyX+9KA5n5Cxxgwuh9ptepw==}
     cpu: [x64]
     os: [win32]
 
@@ -3522,13 +3522,13 @@ packages:
   exsolve@1.1.0:
     resolution: {integrity: sha512-D+42+T12DdIlJM3uepa55qGiL3sYdLBOxIl2ifQCzCHz4c7eiolaHsi3BIqEr7JxBzxv2pYZQX9kw16ziMcEmw==}
 
-  fallow-type-aware@3.18.0:
-    resolution: {integrity: sha512-d86JCguQHB6BMpkO/hq5bfUiVOWD8epDNxhhXiDTPewMcF/tpMVOSCq2VPKF7WVaZTi2StAIOqt2a23IQN4FTA==}
+  fallow-type-aware@3.19.0:
+    resolution: {integrity: sha512-/LlmR1qNNcNf8Vv1l3FmwkaenfJLd9PBcE1FCebf4MUWeyy+UTqZfc61139/EwgpuHzBdjOMVpyhgCSEjuHx8Q==}
     engines: {node: '>=20'}
     hasBin: true
 
-  fallow@3.18.0:
-    resolution: {integrity: sha512-9cVAFeByGlqAKcGE4qfICQtzT4zEha0KUF/tLzpaM8DD74sVn08Km2GAyMLktZ7KdSm41AdtmW64/Cny2v1p4A==}
+  fallow@3.19.0:
+    resolution: {integrity: sha512-iM44GldeupBOvJLR2BZSEridMVbsKJpjEfrYjzW7kpBZLRXLRQh/g7RoCseCMlWK+4hDIuQWu+lAmXe9MDllQQ==}
     engines: {node: '>=22'}
     hasBin: true
 
@@ -5055,12 +5055,12 @@ packages:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
 
-  puppeteer-core@25.8.0:
-    resolution: {integrity: sha512-LDOrawV8vfCVk+yLj2ozvajNP4Sv3OV9y3Tpiyy2g2Z+aQlbcozP6KJfI4iSBq7YQER+86ihEtPa5ioiZyWxMQ==}
+  puppeteer-core@25.9.0:
+    resolution: {integrity: sha512-U61rCwSMha62CA/Opy6tCx2Fx+ck7ouiKnbpEApzSoLYMoEu9F71nuFpHL55vmIt33/GYm6eKZVhH2ev0nAIeg==}
     engines: {node: '>=22.12.0'}
 
-  puppeteer@25.8.0:
-    resolution: {integrity: sha512-3gcUJ+Jfodb5zNa/lWLZukBUwYiRIwAc8WRICoqfi+ZYmNWqpsPFyanTU3Gw/lhgII9aotVbAmhT6/NKHWgyUA==}
+  puppeteer@25.9.0:
+    resolution: {integrity: sha512-2JqQszD2pyDTpIvBH1ZCXdrHgENVNdJIeOM6asbwHRgWknFiaLd1gNB91w/B/0hQHNpafkpxa90lPpBaJM87Hw==}
     engines: {node: '>=22.12.0'}
     hasBin: true
 
@@ -6107,8 +6107,8 @@ packages:
       typescript:
         optional: true
 
-  vuetify@4.1.11:
-    resolution: {integrity: sha512-pMzGsjha58Lbg9n/icMXCxcQN9rTczcOdMq3wMU1Qe+cfufl28eX4VUUzLwSsDgmLjTtUGsgZIkyYZFQy+SmIw==}
+  vuetify@4.1.12:
+    resolution: {integrity: sha512-WXGbnuzqUGPZM7nF38C3jiucaLRutHZOICVW0wg1dyXppW11i+su/IT20nK+1o86nsgTdedejeEv53cJUrI30A==}
     peerDependencies:
       typescript: '>=4.7'
       vite-plugin-vuetify: '>=2.1.0'
@@ -6223,8 +6223,8 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
-  ws@8.21.1:
-    resolution: {integrity: sha512-+0NTnW77fFN/DjQi6k/Sq/Yvk4Sgajw7urW8V+asjXnRgDs9gyGkdb7EzgfhA4goXsRIZKE28fzIXBHEzhuiWw==}
+  ws@8.21.3:
+    resolution: {integrity: sha512-201TZ/kPWxoPr/OKWjquZR1SWKXcvxdH+e1xrx89b3YbmzLMFCLfnaG1HFIgWzJOEWZ7MvpK++odZufgYR50Rw==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -6952,28 +6952,28 @@ snapshots:
     optionalDependencies:
       '@noble/hashes': 1.8.0
 
-  '@fallow-cli/darwin-arm64@3.18.0':
+  '@fallow-cli/darwin-arm64@3.19.0':
     optional: true
 
-  '@fallow-cli/darwin-x64@3.18.0':
+  '@fallow-cli/darwin-x64@3.19.0':
     optional: true
 
-  '@fallow-cli/linux-arm64-gnu@3.18.0':
+  '@fallow-cli/linux-arm64-gnu@3.19.0':
     optional: true
 
-  '@fallow-cli/linux-arm64-musl@3.18.0':
+  '@fallow-cli/linux-arm64-musl@3.19.0':
     optional: true
 
-  '@fallow-cli/linux-x64-gnu@3.18.0':
+  '@fallow-cli/linux-x64-gnu@3.19.0':
     optional: true
 
-  '@fallow-cli/linux-x64-musl@3.18.0':
+  '@fallow-cli/linux-x64-musl@3.19.0':
     optional: true
 
-  '@fallow-cli/win32-arm64-msvc@3.18.0':
+  '@fallow-cli/win32-arm64-msvc@3.19.0':
     optional: true
 
-  '@fallow-cli/win32-x64-msvc@3.18.0':
+  '@fallow-cli/win32-x64-msvc@3.19.0':
     optional: true
 
   '@hapi/address@5.1.1':
@@ -8299,11 +8299,11 @@ snapshots:
       typescript: 6.0.3
       vue: 3.5.41(typescript@6.0.3)
 
-  '@vuetify/loader-shared@2.1.2(vue@3.5.41(typescript@6.0.3))(vuetify@4.1.11)':
+  '@vuetify/loader-shared@2.1.2(vue@3.5.41(typescript@6.0.3))(vuetify@4.1.12)':
     dependencies:
       upath: 2.0.1
       vue: 3.5.41(typescript@6.0.3)
-      vuetify: 4.1.11(typescript@6.0.3)(vite-plugin-vuetify@2.1.3)(vue@3.5.41(typescript@6.0.3))
+      vuetify: 4.1.12(typescript@6.0.3)(vite-plugin-vuetify@2.1.3)(vue@3.5.41(typescript@6.0.3))
 
   '@vueuse/core@14.4.0(vue@3.5.41(typescript@6.0.3))':
     dependencies:
@@ -9474,24 +9474,24 @@ snapshots:
 
   exsolve@1.1.0: {}
 
-  fallow-type-aware@3.18.0:
+  fallow-type-aware@3.19.0:
     dependencies:
       typescript: 7.0.2
     optional: true
 
-  fallow@3.18.0:
+  fallow@3.19.0:
     dependencies:
       detect-libc: 2.1.2
     optionalDependencies:
-      '@fallow-cli/darwin-arm64': 3.18.0
-      '@fallow-cli/darwin-x64': 3.18.0
-      '@fallow-cli/linux-arm64-gnu': 3.18.0
-      '@fallow-cli/linux-arm64-musl': 3.18.0
-      '@fallow-cli/linux-x64-gnu': 3.18.0
-      '@fallow-cli/linux-x64-musl': 3.18.0
-      '@fallow-cli/win32-arm64-msvc': 3.18.0
-      '@fallow-cli/win32-x64-msvc': 3.18.0
-      fallow-type-aware: 3.18.0
+      '@fallow-cli/darwin-arm64': 3.19.0
+      '@fallow-cli/darwin-x64': 3.19.0
+      '@fallow-cli/linux-arm64-gnu': 3.19.0
+      '@fallow-cli/linux-arm64-musl': 3.19.0
+      '@fallow-cli/linux-x64-gnu': 3.19.0
+      '@fallow-cli/linux-x64-musl': 3.19.0
+      '@fallow-cli/win32-arm64-msvc': 3.19.0
+      '@fallow-cli/win32-x64-msvc': 3.19.0
+      fallow-type-aware: 3.19.0
 
   fast-deep-equal@3.1.3: {}
 
@@ -11012,27 +11012,27 @@ snapshots:
 
   punycode@2.3.1: {}
 
-  puppeteer-core@25.8.0:
+  puppeteer-core@25.9.0:
     dependencies:
       '@puppeteer/browsers': 3.2.1
       chromium-bidi: 17.0.2(devtools-protocol@0.0.1666840)
       devtools-protocol: 0.0.1666840
       typed-query-selector: 2.12.2
       webdriver-bidi-protocol: 0.4.2
-      ws: 8.21.1
+      ws: 8.21.3
     transitivePeerDependencies:
       - bufferutil
       - proxy-agent
       - utf-8-validate
       - yauzl
 
-  puppeteer@25.8.0:
+  puppeteer@25.9.0:
     dependencies:
       '@puppeteer/browsers': 3.2.1
       chromium-bidi: 17.0.2(devtools-protocol@0.0.1666840)
       devtools-protocol: 0.0.1666840
       lilconfig: 3.1.3
-      puppeteer-core: 25.8.0
+      puppeteer-core: 25.9.0
       typed-query-selector: 2.12.2
     transitivePeerDependencies:
       - bufferutil
@@ -11958,14 +11958,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  vite-plugin-vuetify@2.1.3(supports-color@10.2.2)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))(vue@3.5.41(typescript@6.0.3))(vuetify@4.1.11):
+  vite-plugin-vuetify@2.1.3(supports-color@10.2.2)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))(vue@3.5.41(typescript@6.0.3))(vuetify@4.1.12):
     dependencies:
-      '@vuetify/loader-shared': 2.1.2(vue@3.5.41(typescript@6.0.3))(vuetify@4.1.11)
+      '@vuetify/loader-shared': 2.1.2(vue@3.5.41(typescript@6.0.3))(vuetify@4.1.12)
       debug: 4.4.3(supports-color@10.2.2)
       upath: 2.0.1
       vite: 8.2.2(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0)
       vue: 3.5.41(typescript@6.0.3)
-      vuetify: 4.1.11(typescript@6.0.3)(vite-plugin-vuetify@2.1.3)(vue@3.5.41(typescript@6.0.3))
+      vuetify: 4.1.12(typescript@6.0.3)(vite-plugin-vuetify@2.1.3)(vue@3.5.41(typescript@6.0.3))
     transitivePeerDependencies:
       - supports-color
 
@@ -12129,12 +12129,12 @@ snapshots:
     optionalDependencies:
       typescript: 6.0.3
 
-  vuetify@4.1.11(typescript@6.0.3)(vite-plugin-vuetify@2.1.3)(vue@3.5.41(typescript@6.0.3)):
+  vuetify@4.1.12(typescript@6.0.3)(vite-plugin-vuetify@2.1.3)(vue@3.5.41(typescript@6.0.3)):
     dependencies:
       vue: 3.5.41(typescript@6.0.3)
     optionalDependencies:
       typescript: 6.0.3
-      vite-plugin-vuetify: 2.1.3(supports-color@10.2.2)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))(vue@3.5.41(typescript@6.0.3))(vuetify@4.1.11)
+      vite-plugin-vuetify: 2.1.3(supports-color@10.2.2)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))(vue@3.5.41(typescript@6.0.3))(vuetify@4.1.12)
 
   w3c-xmlserializer@5.0.0:
     dependencies:
@@ -12268,7 +12268,7 @@ snapshots:
 
   wrappy@1.0.2: {}
 
-  ws@8.21.1: {}
+  ws@8.21.3: {}
 
   wsl-utils@0.3.1:
     dependencies:

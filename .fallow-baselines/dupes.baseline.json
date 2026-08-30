@@ -1,32 +1,26 @@
 {
   "clone_groups": [
     "packages/api/src/devices/display.service.ts:290-300|packages/api/src/devices/display.service.ts:84-94",
-    "packages/ui/src/stores/deviceModels.ts:60-70|packages/ui/src/stores/firmware.ts:53-63",
     "packages/api/src/plugins/plugins.service.ts:232-243|packages/api/src/plugins/plugins.service.ts:348-359",
     "packages/api/src/devices/display.service.ts:521-533|packages/api/src/mashup/services/mashup-renderer.service.ts:60-71",
     "packages/api/src/devices/display.service.ts:532-540|packages/api/src/mashup/services/mashup-renderer.service.ts:70-78",
-    "packages/ui/src/stores/plugins.ts:18-23|packages/ui/src/stores/plugins.ts:35-40",
     "packages/api/src/plugins/services/plugin-importer.service.ts:253-261|packages/api/src/plugins/services/plugin-importer.service.ts:436-444",
     "packages/api/src/test/fixtures.ts:88-107|packages/api/src/test/mockDeviceModelsService.ts:5-24"
   ],
   "clone_fingerprints": [
     "dup:04d1333c:2",
-    "dup:b3dbc735:2",
     "dup:e767379f:2",
     "dup:0a6a4764:2",
     "dup:3219d03d:2",
-    "dup:a7daa5d0:2",
     "dup:78a90f7a:2",
     "dup:5304ed0c:2"
   ],
   "normalized_clone_fingerprints": [
     "dup:c61b2099:2",
-    "dup:c77b3abb6f87acd9-4:2",
     "dup:c77b3abb6f87acd9-1:2",
-    "dup:c77b3abb6f87acd9-7:2",
-    "dup:c77b3abb6f87acd9-6:2",
-    "dup:c77b3abb6f87acd9-3:2",
     "dup:c77b3abb6f87acd9-5:2",
+    "dup:c77b3abb6f87acd9-4:2",
+    "dup:c77b3abb6f87acd9-3:2",
     "dup:c77b3abb6f87acd9-2:2"
   ]
 }

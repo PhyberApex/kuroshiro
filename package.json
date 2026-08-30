@@ -31,7 +31,7 @@
   "devDependencies": {
     "concurrently": "10.0.5",
     "dotenv-cli": "^11.0.0",
-    "fallow": "3.18.0",
+    "fallow": "3.19.0",
     "husky": "9.1.7",
     "lint-staged": "17.3.0",
     "wait-on": "9.1.0"
