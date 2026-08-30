@@ -102,7 +102,6 @@
   },
   "runtime_coverage_findings": [],
   "target_keys": [
-    "packages/ui/src/stores/deviceModels.ts:high impact",
     "packages/api/src/devices/display.service.ts:complexity",
     "packages/api/src/plugins/plugins.service.ts:complexity"
   ]
