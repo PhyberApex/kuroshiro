@@ -375,6 +375,7 @@ export class DeviceDisplayService {
   }
 
   private async resolveMirrorScreen(device: Device): Promise<{ filename: string, imgUrl: string, renderedAt: undefined }> {
+    const filename = `mirror_${new Date().toISOString()}`
     this.logger.log(`Mirroring enabled for device ${device.id}, checking for image...`)
     let imgUrl = await this.fallbackImageUrl('error', device)
     if (await fileExists(resolveAppPath('public', 'screens', 'devices', device.id, 'mirror.png'))) {
@@ -392,7 +393,7 @@ export class DeviceDisplayService {
         this.logger.error(`Failed to fetch mirror image on demand: ${message}`)
       }
     }
-    return { filename: `mirror_${new Date().toISOString()}`, imgUrl, renderedAt: undefined }
+    return { filename, imgUrl, renderedAt: undefined }
   }
 
   private async resolveActiveScreenImage(device: Device, activeScreen: Screen | null): Promise<{ filename: string, imgUrl: string, renderedAt: Date }> {
