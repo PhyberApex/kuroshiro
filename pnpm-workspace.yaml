@@ -65,7 +65,7 @@ catalog:
   vitest: 4.1.11
   vm2: ^3.10.5
   vue: 3.5.41
-  vue-router: 5.2.0
+  vue-router: 5.3.0
   vue-tsc: 3.3.11
   vuetify: 4.1.11
 
