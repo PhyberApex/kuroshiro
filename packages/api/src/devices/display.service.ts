@@ -28,6 +28,17 @@ import { Display } from './display'
 import { DisplayScreen } from './displayScreen'
 import { isDeviceAsleep, secondsUntilSleepEnd } from './sleep-mode'
 
+// The fields getCurrentImage's response builders need out of applyHeaderReport,
+// bundled into one object rather than passed positionally — several of them
+// share a type (two booleans, two strings) and a transposed pair would compile
+// cleanly while silently flipping real-device behavior.
+export interface HeaderReport {
+  resetDevice: boolean
+  specialFunction: string
+  firmwareUrl: string
+  updateFirmware: boolean
+}
+
 export interface TrmnlScreenResponse {
   action?: string
   filename: string
@@ -81,11 +92,11 @@ export class DeviceDisplayService {
     this.logger.log(`Display request for MAC: ${headers.id}`)
     this.logger.debug(`Headers: ${JSON.stringify(headers)}`)
     const device = await this.authenticateDevice(headers)
-    const { resetDevice, specialFunction, firmwareUrl, updateFirmware } = await this.applyHeaderReport(device, headers)
+    const report = await this.applyHeaderReport(device, headers)
 
     return device.mirrorEnabled
-      ? this.buildMirrorResponse(device, headers, specialFunction, resetDevice)
-      : this.buildRotationResponse(device, specialFunction, firmwareUrl, resetDevice, updateFirmware)
+      ? this.buildMirrorResponse(device, headers, report)
+      : this.buildRotationResponse(device, report)
   }
 
   /**
@@ -114,7 +125,7 @@ export class DeviceDisplayService {
    * single save. Returns the fields the response builders need, since the
    * Device itself has already moved on (its one-shot flags are cleared).
    */
-  private async applyHeaderReport(device: Device, headers: DisplayRequestHeadersDto): Promise<{ resetDevice: boolean, specialFunction: string, firmwareUrl: string, updateFirmware: boolean }> {
+  private async applyHeaderReport(device: Device, headers: DisplayRequestHeadersDto): Promise<HeaderReport> {
     this.logger.log(`Updating device info for MAC: ${headers.id}`)
     device.batteryVoltage = headers['battery-voltage']
     device.fwVersion = headers['fw-version']
@@ -144,11 +155,11 @@ export class DeviceDisplayService {
    * otherwise advances to the next eligible Screen (or the no-screen
    * fallback) and generates its image.
    */
-  private async buildRotationResponse(device: Device, specialFunction: string, firmwareUrl: string, resetDevice: boolean, updateFirmware: boolean): Promise<Display> {
+  private async buildRotationResponse(device: Device, report: HeaderReport): Promise<Display> {
     const now = new Date()
     if (isDeviceAsleep(device, now)) {
       this.logger.log(`Device ${device.id} is asleep. Holding rotation.`)
-      return this.buildSleepResponse(device, now, specialFunction, firmwareUrl, resetDevice, updateFirmware)
+      return this.buildSleepResponse(device, now, report)
     }
     this.logger.log(`Device ${device.id} is not mirrored. Cycling screens.`)
     const screens = await this.screenRepository.find({
@@ -162,15 +173,15 @@ export class DeviceDisplayService {
     if (!nextScreen) {
       this.logger.log(`No eligible screen for device ${device.id} returning default no screen image`)
       return new Display({
-        action: specialFunction,
+        action: report.specialFunction,
         filename: 'noScreen.png',
-        firmware_url: firmwareUrl,
+        firmware_url: report.firmwareUrl,
         image_url: await this.fallbackImageUrl('noScreen', device),
         refresh_rate: device.refreshRate,
-        reset_firmware: resetDevice,
-        special_function: specialFunction,
+        reset_firmware: report.resetDevice,
+        special_function: report.specialFunction,
         temperature_profile: 'default',
-        update_firmware: updateFirmware,
+        update_firmware: report.updateFirmware,
       })
     }
     nextScreen.isActive = true
@@ -180,15 +191,15 @@ export class DeviceDisplayService {
     const imgUrl = await this.generateScreenImage(nextScreen, device)
 
     return new Display({
-      action: specialFunction,
+      action: report.specialFunction,
       filename: `${nextScreen.filename}_${nextScreen.generatedAt.toISOString()}`,
-      firmware_url: firmwareUrl,
+      firmware_url: report.firmwareUrl,
       image_url: imgUrl,
       refresh_rate: device.refreshRate,
-      reset_firmware: resetDevice,
-      special_function: specialFunction,
+      reset_firmware: report.resetDevice,
+      special_function: report.specialFunction,
       temperature_profile: 'default',
-      update_firmware: updateFirmware,
+      update_firmware: report.updateFirmware,
     })
   }
 
@@ -197,7 +208,7 @@ export class DeviceDisplayService {
    * (matching MACs), otherwise mirrors another Device's `current_screen` and
    * keeps this Device's own reset/special-function/firmware fields as-is.
    */
-  private async buildMirrorResponse(device: Device, headers: DisplayRequestHeadersDto, specialFunction: string, resetDevice: boolean): Promise<Display> {
+  private async buildMirrorResponse(device: Device, headers: DisplayRequestHeadersDto, report: Pick<HeaderReport, 'resetDevice' | 'specialFunction'>): Promise<Display> {
     this.logger.log(`Device ${device.id} is mirrored. Fetching from TRMNL.`)
     let proxy = false
     if (device.mac === device.mirrorMac) {
@@ -211,9 +222,9 @@ export class DeviceDisplayService {
     let filename = 'error.png'
     let localImageUrl = await this.fallbackImageUrl('error', device)
     let firmwareUrl: string | null = null
-    let resetFirmware = resetDevice
-    let mirrorSpecialFunction = specialFunction
-    let mirrorAction = specialFunction
+    let resetFirmware = report.resetDevice
+    let mirrorSpecialFunction = report.specialFunction
+    let mirrorAction = report.specialFunction
     let updateFirmware = false
     try {
       const { response, localImageUrl: localImage } = await this.fetchAndStoreMirrorImage(device, proxy ? headers : undefined)
@@ -291,21 +302,21 @@ export class DeviceDisplayService {
    * exactly on schedule, and the served image is either the dedicated Sleep
    * fallback screen or whatever was already showing.
    */
-  private async buildSleepResponse(device: Device, now: Date, specialFunction: string, firmwareUrl: string, resetDevice: boolean, updateFirmware: boolean): Promise<Display> {
+  private async buildSleepResponse(device: Device, now: Date, report: HeaderReport): Promise<Display> {
     const refreshRate = secondsUntilSleepEnd(device.sleepEndTime!, now)
     const { filename, imgUrl } = device.sleepScreenEnabled
       ? { filename: 'sleep.png', imgUrl: await this.fallbackImageUrl('sleep', device) }
       : await this.resolveFrozenImage(device)
     return new Display({
-      action: specialFunction,
+      action: report.specialFunction,
       filename,
-      firmware_url: firmwareUrl,
+      firmware_url: report.firmwareUrl,
       image_url: imgUrl,
       refresh_rate: refreshRate,
-      reset_firmware: resetDevice,
-      special_function: specialFunction,
+      reset_firmware: report.resetDevice,
+      special_function: report.specialFunction,
       temperature_profile: 'default',
-      update_firmware: updateFirmware,
+      update_firmware: report.updateFirmware,
     })
   }
 
