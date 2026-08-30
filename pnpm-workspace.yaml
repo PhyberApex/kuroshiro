@@ -50,7 +50,7 @@ catalog:
   npm-run-all2: 9.0.3
   pg: 8.23.0
   pinia: 4.0.3
-  puppeteer: 25.8.0
+  puppeteer: 25.9.0
   reflect-metadata: 0.2.2
   resize-observer-polyfill: 1.5.1
   rxjs: 7.8.2
