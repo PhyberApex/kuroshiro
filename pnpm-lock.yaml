@@ -176,7 +176,7 @@ catalogs:
       version: 4.1.11
     vm2:
       specifier: ^3.10.5
-      version: 3.11.7
+      version: 3.11.8
     vue:
       specifier: 3.5.41
       version: 3.5.41
@@ -280,7 +280,7 @@ importers:
         version: 1.1.0(pg@8.23.0)(supports-color@10.2.2)(ts-node@10.9.2(@swc/core@1.16.1)(@types/node@24.13.3)(typescript@6.0.3))
       vm2:
         specifier: 'catalog:'
-        version: 3.11.7
+        version: 3.11.8
     devDependencies:
       '@antfu/eslint-config':
         specifier: 'catalog:'
@@ -6027,8 +6027,8 @@ packages:
       jsdom:
         optional: true
 
-  vm2@3.11.7:
-    resolution: {integrity: sha512-DtUSI2CaVfb3rf17uJgTUGlKiVCIeZ3VLAhFOMMm2JGPoi8EFlBrDfxMt/qpZFFDl3DNbiE0V+VROHQImnbwTQ==}
+  vm2@3.11.8:
+    resolution: {integrity: sha512-fzppkgSU+8m/3A0WfExYzBVLvFapQ31sXvX/WhP7gMbLJalMkHkJO7NPq3IRmYa0UhntY1f1DKpEr06sDFqBEw==}
     engines: {node: '>=6.0'}
     hasBin: true
 
@@ -11925,7 +11925,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vm2@3.11.7:
+  vm2@3.11.8:
     dependencies:
       acorn: 8.18.0
       acorn-walk: 8.3.5
