@@ -1,13 +1,13 @@
-import type { Device } from '../../devices/devices.entity'
-import type { Screen } from '../../screens/screens.entity'
+import type { Device } from '../../devices/devices.entity.js'
+import type { Screen } from '../../screens/screens.entity.js'
 import * as fs from 'node:fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeDevice, makeScreen } from '../../test/fixtures'
-import { makeDirent, makeStats, mockReaddir, mockStat } from '../../test/fs'
-import { asRepository, createMockRepository } from '../../test/mockRepository'
-import { MaintenanceService } from '../maintenance.service'
+import { makeDevice, makeScreen } from '../../test/fixtures.js'
+import { makeDirent, makeStats, mockReaddir, mockStat } from '../../test/fs.js'
+import { asRepository, createMockRepository } from '../../test/mockRepository.js'
+import { MaintenanceService } from '../maintenance.service.js'
 
-vi.mock('../../utils/pathHelper', () => ({
+vi.mock('../../utils/pathHelper.js', () => ({
   resolveAppPath: vi.fn((...parts: string[]) => `/mock/${parts.join('/')}`),
 }))
 

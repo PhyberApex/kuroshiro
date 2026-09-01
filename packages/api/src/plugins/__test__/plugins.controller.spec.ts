@@ -1,12 +1,12 @@
 import type { Response } from 'express'
-import type { PluginsService } from '../plugins.service'
-import type { PluginExporterService } from '../services/plugin-exporter.service'
-import type { PluginImporterService } from '../services/plugin-importer.service'
+import type { PluginsService } from '../plugins.service.js'
+import type { PluginExporterService } from '../services/plugin-exporter.service.js'
+import type { PluginImporterService } from '../services/plugin-importer.service.js'
 import { Buffer } from 'node:buffer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { makePlugin } from '../../test/fixtures'
-import { asService } from '../../test/mockService'
-import { PluginsController } from '../plugins.controller'
+import { makePlugin } from '../../test/fixtures.js'
+import { asService } from '../../test/mockService.js'
+import { PluginsController } from '../plugins.controller.js'
 
 describe('pluginsController', () => {
   let controller: PluginsController

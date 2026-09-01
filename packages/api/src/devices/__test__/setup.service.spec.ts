@@ -1,18 +1,18 @@
-import type { DeviceModelsService } from '../../device-models/device-models.service'
-import type { FallbackScreensService } from '../../device-models/fallback-screens.service'
-import type { Device } from '../devices.entity'
-import type { SetupRequestHeadersDto } from '../dto/setup-request-headers.dto'
+import type { DeviceModelsService } from '../../device-models/device-models.service.js'
+import type { FallbackScreensService } from '../../device-models/fallback-screens.service.js'
+import type { Device } from '../devices.entity.js'
+import type { SetupRequestHeadersDto } from '../dto/setup-request-headers.dto.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeDevice } from '../../test/fixtures'
-import { createMockDeviceModelsService, createMockFallbackScreensService, OG_PLUS, primeMockDeviceModelsService, primeMockFallbackScreensService, V2 } from '../../test/mockDeviceModelsService'
-import { asRepository, createMockRepository } from '../../test/mockRepository'
-import { asService } from '../../test/mockService'
-import { DeviceSetupService } from '../setup.service'
+import { makeDevice } from '../../test/fixtures.js'
+import { createMockDeviceModelsService, createMockFallbackScreensService, OG_PLUS, primeMockDeviceModelsService, primeMockFallbackScreensService, V2 } from '../../test/mockDeviceModelsService.js'
+import { asRepository, createMockRepository } from '../../test/mockRepository.js'
+import { asService } from '../../test/mockService.js'
+import { DeviceSetupService } from '../setup.service.js'
 
-vi.mock('../../utils/generateApikey', () => ({
+vi.mock('../../utils/generateApikey.js', () => ({
   default: vi.fn(() => 'mocked-api-key'),
 }))
-vi.mock('../../utils/generateFriendlyName', () => ({
+vi.mock('../../utils/generateFriendlyName.js', () => ({
   default: vi.fn(() => 'mocked-friendly-id'),
 }))
 

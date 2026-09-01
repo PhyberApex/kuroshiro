@@ -1,8 +1,8 @@
 import { plainToInstance } from 'class-transformer'
 import { validate } from 'class-validator'
 import { describe, expect, it } from 'vitest'
-import { CreateScheduleDto } from '../create-schedule.dto'
-import { UpdateScheduleDto } from '../update-schedule.dto'
+import { CreateScheduleDto } from '../create-schedule.dto.js'
+import { UpdateScheduleDto } from '../update-schedule.dto.js'
 
 async function rejectedFields(dto: object): Promise<string[]> {
   const errors = await validate(dto)

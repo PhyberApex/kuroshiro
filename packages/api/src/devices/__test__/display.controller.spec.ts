@@ -1,9 +1,9 @@
-import type { DeviceDisplayService } from '../display.service'
+import type { DeviceDisplayService } from '../display.service.js'
 import { BadRequestException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { asService } from '../../test/mockService'
-import { Display } from '../display'
-import { DisplayController } from '../display.controller'
+import { asService } from '../../test/mockService.js'
+import { DisplayController } from '../display.controller.js'
+import { Display } from '../display.js'
 
 describe('displayController (unit)', () => {
   let controller: DisplayController

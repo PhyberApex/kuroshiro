@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CreateScreenDto } from '../create-screen.dto'
+import { CreateScreenDto } from '../create-screen.dto.js'
 
 describe('create-screen dto', () => {
   it('creates dto with filename and deviceId', () => {

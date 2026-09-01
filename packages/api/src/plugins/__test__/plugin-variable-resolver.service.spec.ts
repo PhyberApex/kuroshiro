@@ -1,7 +1,7 @@
-import type { PluginVariable } from '../entities/plugin-variable.entity'
+import type { PluginVariable } from '../entities/plugin-variable.entity.js'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { makePluginVariable } from '../../test/fixtures'
-import { PluginVariableResolverService } from '../services/plugin-variable-resolver.service'
+import { makePluginVariable } from '../../test/fixtures.js'
+import { PluginVariableResolverService } from '../services/plugin-variable-resolver.service.js'
 
 describe('pluginVariableResolverService', () => {
   let service: PluginVariableResolverService

@@ -1,10 +1,10 @@
-import type { CreateScheduleDto } from './dto/create-schedule.dto'
-import type { UpdateScheduleDto } from './dto/update-schedule.dto'
+import type { CreateScheduleDto } from './dto/create-schedule.dto.js'
+import type { UpdateScheduleDto } from './dto/update-schedule.dto.js'
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { Screen } from '../screens/screens.entity'
-import { Schedule } from './schedule.entity'
+import { Screen } from '../screens/screens.entity.js'
+import { Schedule } from './schedule.entity.js'
 
 @Injectable()
 export class ScheduleService {

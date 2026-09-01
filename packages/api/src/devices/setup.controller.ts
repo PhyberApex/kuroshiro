@@ -1,6 +1,6 @@
-import type { SetupRequestHeadersDto } from './dto/setup-request-headers.dto'
+import type { SetupRequestHeadersDto } from './dto/setup-request-headers.dto.js'
 import { Controller, Get, Headers, UsePipes, ValidationPipe } from '@nestjs/common'
-import { DeviceSetupService } from './setup.service'
+import { DeviceSetupService } from './setup.service.js'
 import 'dotenv/config'
 
 interface SetupResponse {

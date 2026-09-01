@@ -1,6 +1,6 @@
-import type { TrmnlModelPayload, TrmnlPalettePayload } from '../trmnl-payloads'
+import type { TrmnlModelPayload, TrmnlPalettePayload } from '../trmnl-payloads.js'
 import { describe, expect, it } from 'vitest'
-import { validateModelPayload, validatePalettePayload } from '../trmnl-payloads'
+import { validateModelPayload, validatePalettePayload } from '../trmnl-payloads.js'
 
 function model(overrides: Partial<TrmnlModelPayload> = {}): TrmnlModelPayload {
   return {

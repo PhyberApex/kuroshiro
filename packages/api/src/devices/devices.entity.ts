@@ -1,10 +1,10 @@
 import type { Relation } from 'typeorm'
-import type { LogEntry } from '../logs/logs.entity'
-import type { Screen } from '../screens/screens.entity'
+import type { LogEntry } from '../logs/logs.entity.js'
+import type { Screen } from '../screens/screens.entity.js'
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
-import { DeviceModel } from '../device-models/entities/device-model.entity'
-import { Palette } from '../device-models/entities/palette.entity'
-import { Firmware } from '../firmware/entities/firmware.entity'
+import { DeviceModel } from '../device-models/entities/device-model.entity.js'
+import { Palette } from '../device-models/entities/palette.entity.js'
+import { Firmware } from '../firmware/entities/firmware.entity.js'
 
 @Entity()
 export class Device {

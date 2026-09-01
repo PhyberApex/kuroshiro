@@ -1,11 +1,11 @@
 import type { ExecutionContext } from '@nestjs/common'
-import type { Plugin } from '../entities/plugin.entity'
+import type { Plugin } from '../entities/plugin.entity.js'
 import { UnauthorizedException } from '@nestjs/common'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { makePlugin } from '../../test/fixtures'
-import { asRepository, createMockRepository } from '../../test/mockRepository'
-import { asService } from '../../test/mockService'
-import { WebhookPluginGuard } from '../guards/webhook-plugin.guard'
+import { makePlugin } from '../../test/fixtures.js'
+import { asRepository, createMockRepository } from '../../test/mockRepository.js'
+import { asService } from '../../test/mockService.js'
+import { WebhookPluginGuard } from '../guards/webhook-plugin.guard.js'
 
 describe('webhookPluginGuard', () => {
   let guard: WebhookPluginGuard

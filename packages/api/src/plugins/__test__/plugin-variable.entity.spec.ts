@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PluginVariable } from '../entities/plugin-variable.entity'
+import { PluginVariable } from '../entities/plugin-variable.entity.js'
 
 describe('plugin-variable entity', () => {
   it('creates plugin variable with key and value', () => {

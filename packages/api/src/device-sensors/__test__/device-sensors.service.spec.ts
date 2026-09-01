@@ -1,8 +1,8 @@
-import type { DeviceSensor } from '../entities/device-sensor.entity'
+import type { DeviceSensor } from '../entities/device-sensor.entity.js'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { makeDevice, makeDeviceSensor } from '../../test/fixtures'
-import { asRepository, createMockRepository } from '../../test/mockRepository'
-import { DeviceSensorsService } from '../device-sensors.service'
+import { makeDevice, makeDeviceSensor } from '../../test/fixtures.js'
+import { asRepository, createMockRepository } from '../../test/mockRepository.js'
+import { DeviceSensorsService } from '../device-sensors.service.js'
 
 describe('deviceSensorsService', () => {
   let service: DeviceSensorsService

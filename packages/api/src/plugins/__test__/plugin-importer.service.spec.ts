@@ -4,7 +4,7 @@ import * as path from 'node:path'
 import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { PluginImporterService } from '../services/plugin-importer.service'
+import { PluginImporterService } from '../services/plugin-importer.service.js'
 
 describe('pluginImporterService', () => {
   let service: PluginImporterService
@@ -159,7 +159,7 @@ describe('pluginImporterService', () => {
       zip.addFile('src/settings.yml', Buffer.from(yaml.dump(settings), 'utf8'))
       zip.addFile('src/full.liquid', Buffer.from(template, 'utf8'))
 
-      const tmpPath = path.join(__dirname, 'test-plugin.zip')
+      const tmpPath = path.join(import.meta.dirname, 'test-plugin.zip')
       zip.writeZip(tmpPath)
 
       const result = await service.importFromFile(tmpPath)
@@ -184,7 +184,7 @@ describe('pluginImporterService', () => {
       const zip = new AdmZip()
       zip.addFile('src/settings.yml', Buffer.from('refresh_interval: 30', 'utf8'))
 
-      const tmpPath = path.join(__dirname, 'test-no-manifest.zip')
+      const tmpPath = path.join(import.meta.dirname, 'test-no-manifest.zip')
       zip.writeZip(tmpPath)
 
       await expect(service.importFromFile(tmpPath)).rejects.toThrow('.trmnlp.yml manifest not found')
@@ -196,7 +196,7 @@ describe('pluginImporterService', () => {
       const zip = new AdmZip()
       zip.addFile('.trmnlp.yml', Buffer.from('name: Test', 'utf8'))
 
-      const tmpPath = path.join(__dirname, 'test-no-settings.zip')
+      const tmpPath = path.join(import.meta.dirname, 'test-no-settings.zip')
       zip.writeZip(tmpPath)
 
       await expect(service.importFromFile(tmpPath)).rejects.toThrow('src/settings.yml not found')
@@ -210,7 +210,7 @@ describe('pluginImporterService', () => {
       zip.addFile('src/settings.yml', Buffer.from(yaml.dump({ endpoint: 'https://api.example.com' }), 'utf8'))
       zip.addFile('src/full.liquid', Buffer.from('test', 'utf8'))
 
-      const tmpPath = path.join(__dirname, 'test-scalar-manifest.zip')
+      const tmpPath = path.join(import.meta.dirname, 'test-scalar-manifest.zip')
       zip.writeZip(tmpPath)
 
       await expect(service.importFromFile(tmpPath)).rejects.toThrow('Invalid manifest.yml')
@@ -224,7 +224,7 @@ describe('pluginImporterService', () => {
       zip.addFile('src/settings.yml', Buffer.from(yaml.dump({ endpoint: 'https://api.example.com' }), 'utf8'))
       zip.addFile('src/full.liquid', Buffer.from('test', 'utf8'))
 
-      const tmpPath = path.join(__dirname, 'test-array-manifest.zip')
+      const tmpPath = path.join(import.meta.dirname, 'test-array-manifest.zip')
       zip.writeZip(tmpPath)
 
       await expect(service.importFromFile(tmpPath)).rejects.toThrow('Invalid manifest.yml')
@@ -238,7 +238,7 @@ describe('pluginImporterService', () => {
       zip.addFile('src/settings.yml', Buffer.from(yaml.dump(['not', 'an', 'object']), 'utf8'))
       zip.addFile('src/full.liquid', Buffer.from('test', 'utf8'))
 
-      const tmpPath = path.join(__dirname, 'test-array-settings.zip')
+      const tmpPath = path.join(import.meta.dirname, 'test-array-settings.zip')
       zip.writeZip(tmpPath)
 
       await expect(service.importFromFile(tmpPath)).rejects.toThrow('Invalid settings.yml')
@@ -265,7 +265,7 @@ describe('pluginImporterService', () => {
       zip.addFile('src/settings.yml', Buffer.from(yaml.dump(settings), 'utf8'))
       zip.addFile('src/full.liquid', Buffer.from('Template', 'utf8'))
 
-      const tmpPath = path.join(__dirname, 'test-terminus.zip')
+      const tmpPath = path.join(import.meta.dirname, 'test-terminus.zip')
       zip.writeZip(tmpPath)
 
       const result = await service.importFromFile(tmpPath)
@@ -295,7 +295,7 @@ describe('pluginImporterService', () => {
       zip.addFile('src/full.liquid', Buffer.from('Template', 'utf8'))
       zip.addFile('src/transform.js', Buffer.from('module.exports = (data) => data', 'utf8'))
 
-      const tmpPath = path.join(__dirname, 'test-transform.zip')
+      const tmpPath = path.join(import.meta.dirname, 'test-transform.zip')
       zip.writeZip(tmpPath)
 
       const result = await service.importFromFile(tmpPath)
@@ -318,7 +318,7 @@ describe('pluginImporterService', () => {
       zip.addFile('src/settings.yml', Buffer.from(yaml.dump(settings), 'utf8'))
       zip.addFile('src/full.liquid', Buffer.from('Template', 'utf8'))
 
-      const tmpPath = path.join(__dirname, 'my-cool-plugin.zip')
+      const tmpPath = path.join(import.meta.dirname, 'my-cool-plugin.zip')
       zip.writeZip(tmpPath)
 
       const result = await service.importFromFile(tmpPath)
@@ -343,7 +343,7 @@ describe('pluginImporterService', () => {
       zip.addFile('src/half_horizontal.liquid', Buffer.from('Half H', 'utf8'))
       zip.addFile('src/quadrant.liquid', Buffer.from('Quad', 'utf8'))
 
-      const tmpPath = path.join(__dirname, 'multi-layout.zip')
+      const tmpPath = path.join(import.meta.dirname, 'multi-layout.zip')
       zip.writeZip(tmpPath)
 
       const result = await service.importFromFile(tmpPath)
@@ -357,7 +357,7 @@ describe('pluginImporterService', () => {
     })
 
     it('throws error for unsupported file format', async () => {
-      const tmpPath = path.join(__dirname, 'test.txt')
+      const tmpPath = path.join(import.meta.dirname, 'test.txt')
       fs.writeFileSync(tmpPath, 'not a valid format')
 
       await expect(service.importFromFile(tmpPath)).rejects.toThrow('Unsupported file format')
@@ -381,7 +381,7 @@ describe('pluginImporterService', () => {
       zip.addFile('src/settings.yml', Buffer.from(yaml.dump(settings), 'utf8'))
       zip.addFile('src/full.liquid', Buffer.from('{{ weather.temp }} {{ air_quality.aqi }}', 'utf8'))
 
-      const tmpPath = path.join(__dirname, 'test-multi-source.zip')
+      const tmpPath = path.join(import.meta.dirname, 'test-multi-source.zip')
       zip.writeZip(tmpPath)
 
       const result = await service.importFromFile(tmpPath)
@@ -407,7 +407,7 @@ describe('pluginImporterService', () => {
       zip.addFile('src/settings.yml', Buffer.from(yaml.dump(settings), 'utf8'))
       zip.addFile('src/full.liquid', Buffer.from('{{ title.text }}', 'utf8'))
 
-      const tmpPath = path.join(__dirname, 'test-literal-source.zip')
+      const tmpPath = path.join(import.meta.dirname, 'test-literal-source.zip')
       zip.writeZip(tmpPath)
 
       const result = await service.importFromFile(tmpPath)
@@ -434,7 +434,7 @@ describe('pluginImporterService', () => {
       zip.addFile('src/settings.yml', Buffer.from(yaml.dump(settings), 'utf8'))
       zip.addFile('src/full.liquid', Buffer.from('Test', 'utf8'))
 
-      const tmpPath = path.join(__dirname, 'test-unnamed-sources.zip')
+      const tmpPath = path.join(import.meta.dirname, 'test-unnamed-sources.zip')
       zip.writeZip(tmpPath)
 
       const result = await service.importFromFile(tmpPath)
@@ -457,7 +457,7 @@ describe('pluginImporterService', () => {
       zip.addFile('src/settings.yml', Buffer.from(yaml.dump(settings), 'utf8'))
       zip.addFile('src/full.liquid', Buffer.from('Test', 'utf8'))
 
-      const tmpPath = path.join(__dirname, 'test-broken-source.zip')
+      const tmpPath = path.join(import.meta.dirname, 'test-broken-source.zip')
       zip.writeZip(tmpPath)
 
       await expect(service.importFromFile(tmpPath)).rejects.toThrow('missing an "endpoint"')
@@ -477,7 +477,7 @@ describe('pluginImporterService', () => {
       zip.addFile('src/settings.yml', Buffer.from(yaml.dump(settings), 'utf8'))
       zip.addFile('src/full.liquid', Buffer.from('Test', 'utf8'))
 
-      const tmpPath = path.join(__dirname, 'test-legacy-data-source.zip')
+      const tmpPath = path.join(import.meta.dirname, 'test-legacy-data-source.zip')
       zip.writeZip(tmpPath)
 
       await expect(service.importFromFile(tmpPath)).rejects.toThrow('legacy single-data-source format')

@@ -1,31 +1,31 @@
 import type { ConfigService } from '@nestjs/config'
-import type { DeviceModelsService } from '../../device-models/device-models.service'
-import type { FallbackScreensService } from '../../device-models/fallback-screens.service'
-import type { MockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService'
-import type { DeviceSensorsService } from '../../device-sensors/device-sensors.service'
-import type { FirmwareService } from '../../firmware/firmware.service'
-import type { PluginDataFetcherService } from '../../plugins/services/plugin-data-fetcher.service'
-import type { PluginRendererService } from '../../plugins/services/plugin-renderer.service'
-import type { PluginTransformService } from '../../plugins/services/plugin-transform.service'
-import type { Schedule } from '../../schedule/schedule.entity'
-import type { Screen } from '../../screens/screens.entity'
-import type { MockDeviceModelsService, MockFallbackScreensService } from '../../test/mockDeviceModelsService'
-import type { Device } from '../devices.entity'
-import type { TrmnlScreenResponse } from '../display.service'
-import type { DisplayRequestHeadersDto } from '../dto/display-request-headers.dto'
+import type { DeviceModelsService } from '../../device-models/device-models.service.js'
+import type { FallbackScreensService } from '../../device-models/fallback-screens.service.js'
+import type { MockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService.js'
+import type { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
+import type { FirmwareService } from '../../firmware/firmware.service.js'
+import type { PluginDataFetcherService } from '../../plugins/services/plugin-data-fetcher.service.js'
+import type { PluginRendererService } from '../../plugins/services/plugin-renderer.service.js'
+import type { PluginTransformService } from '../../plugins/services/plugin-transform.service.js'
+import type { Schedule } from '../../schedule/schedule.entity.js'
+import type { Screen } from '../../screens/screens.entity.js'
+import type { MockDeviceModelsService, MockFallbackScreensService } from '../../test/mockDeviceModelsService.js'
+import type { Device } from '../devices.entity.js'
+import type { TrmnlScreenResponse } from '../display.service.js'
+import type { DisplayRequestHeadersDto } from '../dto/display-request-headers.dto.js'
 import { promises as fs } from 'node:fs'
 import { NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createMockDeviceSensorsService, primeMockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService'
-import { PluginTemplateContextService } from '../../plugins/services/plugin-template-context.service'
-import { jsonResponse, stubFetch } from '../../test/fetch'
-import { makeDevice, makeFirmware, makeMashupConfiguration, makeMashupSlot, makePlugin, makePluginDataSource, makePluginTemplate, makeSchedule, makeScreen } from '../../test/fixtures'
-import { createMockDeviceModelsService, createMockFallbackScreensService, GRAY_4, GRAY_16, OG_PLUS, primeMockDeviceModelsService, primeMockFallbackScreensService, V2 } from '../../test/mockDeviceModelsService'
-import { asRepository, createMockRepository } from '../../test/mockRepository'
-import { asService, injectPrivate } from '../../test/mockService'
-import { Display } from '../display'
-import { DeviceDisplayService } from '../display.service'
-import { DisplayScreen } from '../displayScreen'
+import { createMockDeviceSensorsService, primeMockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService.js'
+import { PluginTemplateContextService } from '../../plugins/services/plugin-template-context.service.js'
+import { jsonResponse, stubFetch } from '../../test/fetch.js'
+import { makeDevice, makeFirmware, makeMashupConfiguration, makeMashupSlot, makePlugin, makePluginDataSource, makePluginTemplate, makeSchedule, makeScreen } from '../../test/fixtures.js'
+import { createMockDeviceModelsService, createMockFallbackScreensService, GRAY_4, GRAY_16, OG_PLUS, primeMockDeviceModelsService, primeMockFallbackScreensService, V2 } from '../../test/mockDeviceModelsService.js'
+import { asRepository, createMockRepository } from '../../test/mockRepository.js'
+import { asService, injectPrivate } from '../../test/mockService.js'
+import { Display } from '../display.js'
+import { DeviceDisplayService } from '../display.service.js'
+import { DisplayScreen } from '../displayScreen.js'
 
 const { fileExists, puppeteerPage, puppeteerLaunch } = vi.hoisted(() => ({
   fileExists: vi.fn(),
@@ -37,7 +37,7 @@ const { fileExists, puppeteerPage, puppeteerLaunch } = vi.hoisted(() => ({
   puppeteerLaunch: vi.fn(),
 }))
 
-vi.mock('../../utils/fileExists', () => ({
+vi.mock('../../utils/fileExists.js', () => ({
   fileExists,
 }))
 
@@ -49,7 +49,7 @@ vi.mock('node:fs', () => ({
   },
 }))
 
-vi.mock('../../utils/imageUtils', () => ({
+vi.mock('../../utils/imageUtils.js', () => ({
   downloadImage: vi.fn().mockResolvedValue(undefined),
   convertToPng: vi.fn().mockResolvedValue(undefined),
 }))

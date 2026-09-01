@@ -1,12 +1,12 @@
 import type { DeviceModelSyncResult } from 'kuroshiro-shared'
 import { Body, Controller, Delete, Get, Logger, Param, Post, ServiceUnavailableException, UsePipes, ValidationPipe } from '@nestjs/common'
-import { getErrorMessage } from '../utils/getErrorMessage'
-import { CustomPalettesService } from './custom-palettes.service'
-import { DeviceModelSyncService } from './device-model-sync.service'
-import { DeviceModelsService } from './device-models.service'
-import { CreateCustomPaletteDto } from './dto/create-custom-palette.dto'
-import { DeviceModel } from './entities/device-model.entity'
-import { Palette } from './entities/palette.entity'
+import { getErrorMessage } from '../utils/getErrorMessage.js'
+import { CustomPalettesService } from './custom-palettes.service.js'
+import { DeviceModelSyncService } from './device-model-sync.service.js'
+import { DeviceModelsService } from './device-models.service.js'
+import { CreateCustomPaletteDto } from './dto/create-custom-palette.dto.js'
+import { DeviceModel } from './entities/device-model.entity.js'
+import { Palette } from './entities/palette.entity.js'
 
 @Controller('device-models')
 export class DeviceModelsController {

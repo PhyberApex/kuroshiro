@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { PluginRendererService } from '../services/plugin-renderer.service'
+import { PluginRendererService } from '../services/plugin-renderer.service.js'
 
 describe('pluginRendererService', () => {
   let service: PluginRendererService

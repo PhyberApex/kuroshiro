@@ -1,7 +1,7 @@
-import type { Schedule } from '../schedule.entity'
+import type { Schedule } from '../schedule.entity.js'
 import { describe, expect, it } from 'vitest'
-import { makeSchedule } from '../../test/fixtures'
-import { isScheduleEligible } from '../schedule-eligibility'
+import { makeSchedule } from '../../test/fixtures.js'
+import { isScheduleEligible } from '../schedule-eligibility.js'
 
 function schedule(overrides: Partial<Schedule>): Schedule {
   return makeSchedule(overrides)

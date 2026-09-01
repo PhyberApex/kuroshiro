@@ -1,4 +1,4 @@
-import type { Schedule } from './schedule.entity'
+import type { Schedule } from './schedule.entity.js'
 
 /**
  * All constraints are evaluated against the server process's local timezone —

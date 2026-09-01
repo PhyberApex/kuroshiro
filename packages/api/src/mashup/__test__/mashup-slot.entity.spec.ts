@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { makePlugin } from '../../test/fixtures'
-import { MashupConfiguration } from '../entities/mashup-configuration.entity'
-import { MashupSlot } from '../entities/mashup-slot.entity'
+import { makePlugin } from '../../test/fixtures.js'
+import { MashupConfiguration } from '../entities/mashup-configuration.entity.js'
+import { MashupSlot } from '../entities/mashup-slot.entity.js'
 
 describe('mashupSlot entity', () => {
   it('should create a mashup slot with required fields', () => {

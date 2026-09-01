@@ -1,5 +1,5 @@
-import type { DeviceModel } from './entities/device-model.entity'
-import type { Palette } from './entities/palette.entity'
+import type { DeviceModel } from './entities/device-model.entity.js'
+import type { Palette } from './entities/palette.entity.js'
 
 export const TRMNL_API_URL = 'https://usetrmnl.com/api'
 

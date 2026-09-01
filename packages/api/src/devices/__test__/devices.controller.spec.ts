@@ -1,10 +1,10 @@
-import type { DevicesService } from '../devices.service'
-import type { CreateDeviceDto } from '../dto/create-device.dto'
-import type { UpdateDeviceDto } from '../dto/update-device.dto'
+import type { DevicesService } from '../devices.service.js'
+import type { CreateDeviceDto } from '../dto/create-device.dto.js'
+import type { UpdateDeviceDto } from '../dto/update-device.dto.js'
 import { BadRequestException, NotFoundException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { asService } from '../../test/mockService'
-import { DevicesController } from '../devices.controller'
+import { asService } from '../../test/mockService.js'
+import { DevicesController } from '../devices.controller.js'
 
 function createMockService() {
   return {

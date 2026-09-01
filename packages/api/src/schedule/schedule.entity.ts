@@ -1,5 +1,5 @@
 import type { Relation } from 'typeorm'
-import type { Screen } from '../screens/screens.entity'
+import type { Screen } from '../screens/screens.entity.js'
 import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 
 @Entity()

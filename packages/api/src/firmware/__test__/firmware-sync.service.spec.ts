@@ -1,9 +1,9 @@
-import type { Firmware } from '../entities/firmware.entity'
+import type { Firmware } from '../entities/firmware.entity.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { jsonResponse, stubFetch } from '../../test/fetch'
-import { makeFirmware } from '../../test/fixtures'
-import { asRepository, createMockRepository } from '../../test/mockRepository'
-import { FirmwareSyncService } from '../firmware-sync.service'
+import { jsonResponse, stubFetch } from '../../test/fetch.js'
+import { makeFirmware } from '../../test/fixtures.js'
+import { asRepository, createMockRepository } from '../../test/mockRepository.js'
+import { FirmwareSyncService } from '../firmware-sync.service.js'
 
 const { fsMock, cronMock } = vi.hoisted(() => ({
   fsMock: {

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { PluginTransformService } from '../services/plugin-transform.service'
+import { PluginTransformService } from '../services/plugin-transform.service.js'
 
 describe('pluginTransformService', () => {
   let service: PluginTransformService

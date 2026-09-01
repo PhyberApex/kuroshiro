@@ -1,7 +1,7 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
-import { Device } from '../../devices/devices.entity'
-import { PluginField } from './plugin-field.entity'
-import { Plugin } from './plugin.entity'
+import { Device } from '../../devices/devices.entity.js'
+import { PluginField } from './plugin-field.entity.js'
+import { Plugin } from './plugin.entity.js'
 
 @Entity()
 export class PluginFieldValue {

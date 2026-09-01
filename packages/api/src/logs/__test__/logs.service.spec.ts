@@ -1,11 +1,11 @@
-import type { Device } from '../../devices/devices.entity'
-import type { CreateLogDto } from '../dto/create-log.dto'
-import type { LogEntry } from '../logs.entity'
+import type { Device } from '../../devices/devices.entity.js'
+import type { CreateLogDto } from '../dto/create-log.dto.js'
+import type { LogEntry } from '../logs.entity.js'
 
 import { beforeEach, describe, expect, it } from 'vitest'
-import { makeDevice, makeLogEntry } from '../../test/fixtures'
-import { asRepository, createMockRepository } from '../../test/mockRepository'
-import { LogsService } from '../logs.service'
+import { makeDevice, makeLogEntry } from '../../test/fixtures.js'
+import { asRepository, createMockRepository } from '../../test/mockRepository.js'
+import { LogsService } from '../logs.service.js'
 
 describe('logsService', () => {
   let service: LogsService

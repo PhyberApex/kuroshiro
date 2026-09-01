@@ -1,4 +1,4 @@
-import { resolveAppPath } from '../utils/pathHelper'
+import { resolveAppPath } from '../utils/pathHelper.js'
 
 export function firmwareFilePath(id: string): string {
   return resolveAppPath('public', 'firmware', `${id}.bin`)

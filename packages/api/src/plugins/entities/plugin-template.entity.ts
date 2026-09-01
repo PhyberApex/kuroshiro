@@ -1,5 +1,5 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
-import { Plugin } from './plugin.entity'
+import { Plugin } from './plugin.entity.js'
 
 @Entity()
 export class PluginTemplate {

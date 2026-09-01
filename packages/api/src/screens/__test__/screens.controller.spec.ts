@@ -1,12 +1,12 @@
 import type { ConfigService } from '@nestjs/config'
-import type { CreateScreenDto } from '../dto/create-screen.dto'
-import type { ScreensService } from '../screens.service'
+import type { CreateScreenDto } from '../dto/create-screen.dto.js'
+import type { ScreensService } from '../screens.service.js'
 import buffer from 'node:buffer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeScreen } from '../../test/fixtures'
-import { makeMulterFile } from '../../test/fs'
-import { asService } from '../../test/mockService'
-import { ScreensController } from '../screens.controller'
+import { makeScreen } from '../../test/fixtures.js'
+import { makeMulterFile } from '../../test/fs.js'
+import { asService } from '../../test/mockService.js'
+import { ScreensController } from '../screens.controller.js'
 
 function createMockService() {
   return {

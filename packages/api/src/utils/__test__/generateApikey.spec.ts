@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import generateApiKey from '../generateApikey'
-import randomUrlSafeToken from '../randomUrlSafeToken'
+import generateApiKey from '../generateApikey.js'
+import randomUrlSafeToken from '../randomUrlSafeToken.js'
 
 describe('generateApiKey', () => {
   it('returns a string of length 22', () => {
@@ -25,6 +25,6 @@ describe('randomUrlSafeToken', () => {
     const token = randomUrlSafeToken(10)
 
     expect(token).toHaveLength(10)
-    expect(token).toMatch(/^[\w-]+$/i)
+    expect(token).toMatch(/^[\w-]+$/)
   })
 })

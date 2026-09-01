@@ -1,9 +1,9 @@
 import type { Logger } from '@nestjs/common'
 import { Buffer } from 'node:buffer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeDeviceModel, makePalette } from '../../test/fixtures'
-import { asService } from '../../test/mockService'
-import { convertToPng, downloadImage, paletteConversion } from '../imageUtils'
+import { makeDeviceModel, makePalette } from '../../test/fixtures.js'
+import { asService } from '../../test/mockService.js'
+import { convertToPng, downloadImage, paletteConversion } from '../imageUtils.js'
 
 type ExecFileCallback = (error: Error | null, stdout: string, stderr: string) => void
 

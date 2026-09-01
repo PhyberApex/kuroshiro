@@ -1,7 +1,7 @@
 import type { Relation } from 'typeorm'
-import type { MashupConfiguration } from './mashup-configuration.entity'
+import type { MashupConfiguration } from './mashup-configuration.entity.js'
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
-import { Plugin } from '../../plugins/entities/plugin.entity'
+import { Plugin } from '../../plugins/entities/plugin.entity.js'
 
 @Entity()
 export class MashupSlot {

@@ -1,12 +1,12 @@
 import type { Logger } from '@nestjs/common'
-import type { DeviceRenderTarget } from '../device-models/device-models.service'
-import type { DeviceModel } from '../device-models/entities/device-model.entity'
-import type { Palette } from '../device-models/entities/palette.entity'
+import type { DeviceRenderTarget } from '../device-models/device-models.service.js'
+import type { DeviceModel } from '../device-models/entities/device-model.entity.js'
+import type { Palette } from '../device-models/entities/palette.entity.js'
 import buffer from 'node:buffer'
 import { execFile } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
-import { resolveAppPath } from './pathHelper'
+import { resolveAppPath } from './pathHelper.js'
 
 // Maps magic-byte signatures to the ImageMagick format prefix used when invoking magick.
 // Only raster image formats that make sense on an e-ink display are permitted.

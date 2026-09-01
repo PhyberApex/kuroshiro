@@ -1,7 +1,7 @@
 import { plainToInstance } from 'class-transformer'
 import { validate } from 'class-validator'
 import { describe, expect, it } from 'vitest'
-import { UpdateDeviceDto } from '../update-device.dto'
+import { UpdateDeviceDto } from '../update-device.dto.js'
 
 async function rejectedFields(dto: object): Promise<string[]> {
   const errors = await validate(dto)

@@ -1,4 +1,4 @@
-import type { MergeStrategy, PluginKind } from './entities/plugin.entity'
+import type { MergeStrategy, PluginKind } from './entities/plugin.entity.js'
 
 export interface PluginKindFields {
   kind: PluginKind

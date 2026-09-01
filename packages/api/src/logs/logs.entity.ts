@@ -1,5 +1,5 @@
 import type { Relation } from 'typeorm'
-import type { Device } from '../devices/devices.entity'
+import type { Device } from '../devices/devices.entity.js'
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
 
 @Entity()

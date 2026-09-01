@@ -1,4 +1,4 @@
-import type { FallbackScreenKind } from './fallback-screens.service'
+import type { FallbackScreenKind } from './fallback-screens.service.js'
 
 /**
  * Bump whenever the markup below changes so cached renders regenerate. Baked

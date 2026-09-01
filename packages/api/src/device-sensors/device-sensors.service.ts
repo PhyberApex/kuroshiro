@@ -1,8 +1,8 @@
-import type { Device } from '../devices/devices.entity'
+import type { Device } from '../devices/devices.entity.js'
 import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { DEVICE_SENSOR_KINDS, DeviceSensor, DeviceSensorKind } from './entities/device-sensor.entity'
+import { DEVICE_SENSOR_KINDS, DeviceSensor, DeviceSensorKind } from './entities/device-sensor.entity.js'
 
 interface ParsedSensorRecord {
   kind: DeviceSensorKind

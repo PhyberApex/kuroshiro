@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { makeDeviceSensor, makePlugin } from '../../test/fixtures'
-import { PluginTemplateContextService } from '../services/plugin-template-context.service'
+import { makeDeviceSensor, makePlugin } from '../../test/fixtures.js'
+import { PluginTemplateContextService } from '../services/plugin-template-context.service.js'
 
 describe('pluginTemplateContextService', () => {
   let service: PluginTemplateContextService

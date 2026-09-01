@@ -1,9 +1,9 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { Device } from '../devices/devices.entity'
-import { CreateLogDto } from './dto/create-log.dto'
-import { LogEntry } from './logs.entity'
+import { Device } from '../devices/devices.entity.js'
+import { CreateLogDto } from './dto/create-log.dto.js'
+import { LogEntry } from './logs.entity.js'
 
 @Injectable()
 export class LogsService {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DevicePlugin } from '../entities/device-plugin.entity'
+import { DevicePlugin } from '../entities/device-plugin.entity.js'
 
 describe('device-plugin entity', () => {
   it('creates device plugin with required fields', () => {

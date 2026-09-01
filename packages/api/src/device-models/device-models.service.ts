@@ -1,11 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { TRMNL_MODELS_SNAPSHOT, TRMNL_PALETTES_SNAPSHOT } from './data/trmnl-snapshot'
-import { DeviceModel } from './entities/device-model.entity'
-import { CUSTOM_PALETTE_FRAMEWORK_CLASSES, Palette } from './entities/palette.entity'
-import { FALLBACK_MODEL_NAME, FIRMWARE_MODEL_NAMES } from './firmware-model-names'
-import { toDeviceModelAttributes, toPaletteAttributes, TrmnlModelPayload } from './trmnl-payloads'
+import { TRMNL_MODELS_SNAPSHOT, TRMNL_PALETTES_SNAPSHOT } from './data/trmnl-snapshot.js'
+import { DeviceModel } from './entities/device-model.entity.js'
+import { CUSTOM_PALETTE_FRAMEWORK_CLASSES, Palette } from './entities/palette.entity.js'
+import { FALLBACK_MODEL_NAME, FIRMWARE_MODEL_NAMES } from './firmware-model-names.js'
+import { toDeviceModelAttributes, toPaletteAttributes, TrmnlModelPayload } from './trmnl-payloads.js'
 
 export interface DeviceReport {
   reportedModel?: string | null

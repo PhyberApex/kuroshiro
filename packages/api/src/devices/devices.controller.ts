@@ -12,10 +12,10 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common'
-import { Device } from './devices.entity'
-import { DevicesService } from './devices.service'
-import { CreateDeviceDto } from './dto/create-device.dto'
-import { UpdateDeviceDto } from './dto/update-device.dto'
+import { Device } from './devices.entity.js'
+import { DevicesService } from './devices.service.js'
+import { CreateDeviceDto } from './dto/create-device.dto.js'
+import { UpdateDeviceDto } from './dto/update-device.dto.js'
 
 function isValidMac(mac: string): boolean {
   return /^(?:[0-9A-F]{2}:){5}[0-9A-F]{2}$/i.test(mac)

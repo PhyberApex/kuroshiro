@@ -1,7 +1,7 @@
-import type { WebhookRequest } from './guards/webhook-plugin.guard'
+import type { WebhookRequest } from './guards/webhook-plugin.guard.js'
 import { Body, Controller, Get, Header, Post, Req, UseGuards } from '@nestjs/common'
-import { WebhookPluginGuard } from './guards/webhook-plugin.guard'
-import { WebhookIngestService } from './services/webhook-ingest.service'
+import { WebhookPluginGuard } from './guards/webhook-plugin.guard.js'
+import { WebhookIngestService } from './services/webhook-ingest.service.js'
 
 @Controller('webhook')
 @UseGuards(WebhookPluginGuard)

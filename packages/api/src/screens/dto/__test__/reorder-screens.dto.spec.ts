@@ -1,6 +1,6 @@
 import { validate } from 'class-validator'
 import { describe, expect, it } from 'vitest'
-import { ReorderScreensDto } from '../reorder-screens.dto'
+import { ReorderScreensDto } from '../reorder-screens.dto.js'
 
 describe('reorder-screens dto', () => {
   it('creates dto with screenIds', () => {

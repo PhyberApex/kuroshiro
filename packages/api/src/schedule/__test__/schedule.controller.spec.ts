@@ -1,8 +1,8 @@
-import type { ScheduleService } from '../schedule.service'
+import type { ScheduleService } from '../schedule.service.js'
 import { NotFoundException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { asService } from '../../test/mockService'
-import { ScheduleController } from '../schedule.controller'
+import { asService } from '../../test/mockService.js'
+import { ScheduleController } from '../schedule.controller.js'
 
 describe('scheduleController', () => {
   let controller: ScheduleController

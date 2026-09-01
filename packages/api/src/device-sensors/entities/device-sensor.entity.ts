@@ -1,5 +1,5 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
-import { Device } from '../../devices/devices.entity'
+import { Device } from '../../devices/devices.entity.js'
 
 export const DEVICE_SENSOR_KINDS = ['carbon_dioxide', 'humidity', 'pressure', 'temperature'] as const
 export type DeviceSensorKind = typeof DEVICE_SENSOR_KINDS[number]

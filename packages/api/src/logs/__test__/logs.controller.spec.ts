@@ -1,9 +1,9 @@
-import type { CreateLogDto } from '../dto/create-log.dto'
-import type { LogsService } from '../logs.service'
+import type { CreateLogDto } from '../dto/create-log.dto.js'
+import type { LogsService } from '../logs.service.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeLogEntry } from '../../test/fixtures'
-import { asService } from '../../test/mockService'
-import { LogsController } from '../logs.controller'
+import { makeLogEntry } from '../../test/fixtures.js'
+import { asService } from '../../test/mockService.js'
+import { LogsController } from '../logs.controller.js'
 
 function createMockService() {
   return {

@@ -2,8 +2,8 @@ import { Buffer } from 'node:buffer'
 import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { makePlugin, makePluginDataSource, makePluginField, makePluginTemplate } from '../../test/fixtures'
-import { PluginExporterService } from '../services/plugin-exporter.service'
+import { makePlugin, makePluginDataSource, makePluginField, makePluginTemplate } from '../../test/fixtures.js'
+import { PluginExporterService } from '../services/plugin-exporter.service.js'
 
 interface ExportedManifest {
   name: string

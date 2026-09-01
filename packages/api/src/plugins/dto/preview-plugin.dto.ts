@@ -1,5 +1,5 @@
 import type { DataSourceLiteralValue, DataSourceMode } from 'kuroshiro-shared'
-import type { JsonObject } from '../../utils/json'
+import type { JsonObject } from '../../utils/json.js'
 import { Type } from 'class-transformer'
 import { IsArray, IsIn, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator'
 import { DATA_SOURCE_MODES } from 'kuroshiro-shared'

@@ -1,4 +1,4 @@
-import type { Plugin } from '../entities/plugin.entity'
+import type { Plugin } from '../entities/plugin.entity.js'
 import { Buffer } from 'node:buffer'
 import { Injectable, Logger } from '@nestjs/common'
 import AdmZip from 'adm-zip'

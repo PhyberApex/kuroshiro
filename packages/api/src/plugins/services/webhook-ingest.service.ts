@@ -1,10 +1,10 @@
-import type { WebhookPayload } from '../entities/plugin.entity'
+import type { WebhookPayload } from '../entities/plugin.entity.js'
 import { Injectable, Logger, UnprocessableEntityException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { isPlainObject } from '../../utils/json'
-import { Plugin } from '../entities/plugin.entity'
-import { PluginRenderCacheService } from './plugin-render-cache.service'
+import { isPlainObject } from '../../utils/json.js'
+import { Plugin } from '../entities/plugin.entity.js'
+import { PluginRenderCacheService } from './plugin-render-cache.service.js'
 
 function isWebhookPayload(value: unknown): value is WebhookPayload {
   return value === null || Array.isArray(value) || isPlainObject(value)

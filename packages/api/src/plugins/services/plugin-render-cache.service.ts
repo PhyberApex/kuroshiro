@@ -1,11 +1,11 @@
-import type { MashupSlot } from '../../mashup/entities/mashup-slot.entity'
-import type { Plugin } from '../entities/plugin.entity'
+import type { MashupSlot } from '../../mashup/entities/mashup-slot.entity.js'
+import type { Plugin } from '../entities/plugin.entity.js'
 import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { Screen } from '../../screens/screens.entity'
-import { getErrorMessage } from '../../utils/getErrorMessage'
-import { PluginRendererService } from './plugin-renderer.service'
+import { Screen } from '../../screens/screens.entity.js'
+import { getErrorMessage } from '../../utils/getErrorMessage.js'
+import { PluginRendererService } from './plugin-renderer.service.js'
 
 @Injectable()
 export class PluginRenderCacheService {

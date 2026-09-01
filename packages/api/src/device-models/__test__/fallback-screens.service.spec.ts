@@ -1,9 +1,9 @@
 import type { ConfigService } from '@nestjs/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { GRAY_16, V2 } from '../../test/mockDeviceModelsService'
-import { asService } from '../../test/mockService'
-import { FALLBACK_SCREEN_TEMPLATE_VERSION } from '../fallback-screen-templates'
-import { FallbackScreensService } from '../fallback-screens.service'
+import { GRAY_16, V2 } from '../../test/mockDeviceModelsService.js'
+import { asService } from '../../test/mockService.js'
+import { FALLBACK_SCREEN_TEMPLATE_VERSION } from '../fallback-screen-templates.js'
+import { FallbackScreensService } from '../fallback-screens.service.js'
 
 const { statMock, renderHtmlToPng } = vi.hoisted(() => ({
   statMock: vi.fn(),
@@ -14,9 +14,9 @@ vi.mock('node:fs', () => ({
   promises: { stat: statMock },
 }))
 
-vi.mock('../render-html-to-png', () => ({ renderHtmlToPng }))
+vi.mock('../render-html-to-png.js', () => ({ renderHtmlToPng }))
 
-vi.mock('../../utils/pathHelper', () => ({
+vi.mock('../../utils/pathHelper.js', () => ({
   resolveAppPath: (...segments: string[]) => `/app/${segments.join('/')}`,
 }))
 

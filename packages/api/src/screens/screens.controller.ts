@@ -14,10 +14,10 @@ import {
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { FileInterceptor } from '@nestjs/platform-express'
-import { CreateScreenDto } from './dto/create-screen.dto'
-import { ReorderScreensDto } from './dto/reorder-screens.dto'
-import { Screen } from './screens.entity'
-import { ScreensService } from './screens.service'
+import { CreateScreenDto } from './dto/create-screen.dto.js'
+import { ReorderScreensDto } from './dto/reorder-screens.dto.js'
+import { Screen } from './screens.entity.js'
+import { ScreensService } from './screens.service.js'
 
 @Controller('screens')
 export class ScreensController {

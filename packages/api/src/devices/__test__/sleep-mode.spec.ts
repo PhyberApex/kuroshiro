@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isDeviceAsleep, MIN_SLEEP_REFRESH_RATE, secondsUntilSleepEnd } from '../sleep-mode'
+import { isDeviceAsleep, MIN_SLEEP_REFRESH_RATE, secondsUntilSleepEnd } from '../sleep-mode.js'
 
 function time(hh: number, mm: number, ss = 0): Date {
   return new Date(2026, 0, 1, hh, mm, ss)

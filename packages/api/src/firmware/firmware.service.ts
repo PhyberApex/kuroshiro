@@ -6,9 +6,9 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { fileExists } from '../utils/fileExists'
-import { Firmware } from './entities/firmware.entity'
-import { firmwareFilePath, firmwareFileUrl } from './firmware-paths'
+import { fileExists } from '../utils/fileExists.js'
+import { Firmware } from './entities/firmware.entity.js'
+import { firmwareFilePath, firmwareFileUrl } from './firmware-paths.js'
 
 // ESP32 OTA images from usetrmnl/firmware run well under this; a generous
 // ceiling still catches an obviously-wrong upload without inspecting the binary.

@@ -2,7 +2,7 @@ import type { ValidationError } from 'class-validator'
 import { plainToInstance } from 'class-transformer'
 import { validate } from 'class-validator'
 import { describe, expect, it } from 'vitest'
-import { CreatePluginDto } from '../create-plugin.dto'
+import { CreatePluginDto } from '../create-plugin.dto.js'
 
 function flattenConstraints(errors: ValidationError[]): string[] {
   return errors.flatMap(error => [

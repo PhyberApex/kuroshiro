@@ -1,10 +1,10 @@
-import type { DeviceReport } from '../device-models.service'
-import type { DeviceModel } from '../entities/device-model.entity'
-import type { Palette } from '../entities/palette.entity'
+import type { DeviceReport } from '../device-models.service.js'
+import type { DeviceModel } from '../entities/device-model.entity.js'
+import type { Palette } from '../entities/palette.entity.js'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { BW, GRAY_4, GRAY_16, OG_PLUS, V2 } from '../../test/mockDeviceModelsService'
-import { asRepository, createMockRepository } from '../../test/mockRepository'
-import { DeviceModelsService } from '../device-models.service'
+import { BW, GRAY_4, GRAY_16, OG_PLUS, V2 } from '../../test/mockDeviceModelsService.js'
+import { asRepository, createMockRepository } from '../../test/mockRepository.js'
+import { DeviceModelsService } from '../device-models.service.js'
 
 const SEEED_E1003 = { ...V2, name: 'seeed_e1003', label: 'reTerminal E1003', kind: 'byod' }
 const COLOR_6A = { ...BW, id: 'color-6a', name: 'Color (6 colors)', grays: 2, colors: ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#000000', '#FFFFFF'], frameworkClass: 'screen--color-6a', grayscaleBitDepth: 1 }

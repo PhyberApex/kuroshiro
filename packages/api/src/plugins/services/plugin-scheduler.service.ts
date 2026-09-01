@@ -1,10 +1,10 @@
 import type { ScheduledTask } from 'node-cron'
-import type { Plugin } from '../entities/plugin.entity'
+import type { Plugin } from '../entities/plugin.entity.js'
 import { Injectable, Logger } from '@nestjs/common'
 import cron from 'node-cron'
-import { PluginDataFetcherService } from './plugin-data-fetcher.service'
-import { PluginRenderCacheService } from './plugin-render-cache.service'
-import { PluginTemplateContextService } from './plugin-template-context.service'
+import { PluginDataFetcherService } from './plugin-data-fetcher.service.js'
+import { PluginRenderCacheService } from './plugin-render-cache.service.js'
+import { PluginTemplateContextService } from './plugin-template-context.service.js'
 
 @Injectable()
 export class PluginSchedulerService {

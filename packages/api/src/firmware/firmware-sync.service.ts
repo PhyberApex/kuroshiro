@@ -8,9 +8,9 @@ import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import cron from 'node-cron'
 import { Repository } from 'typeorm'
-import { TRMNL_API_URL } from '../device-models/trmnl-payloads'
-import { Firmware } from './entities/firmware.entity'
-import { firmwareFilePath } from './firmware-paths'
+import { TRMNL_API_URL } from '../device-models/trmnl-payloads.js'
+import { Firmware } from './entities/firmware.entity.js'
+import { firmwareFilePath } from './firmware-paths.js'
 
 interface TrmnlFirmwarePayload {
   url: string

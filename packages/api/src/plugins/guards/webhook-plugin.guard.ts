@@ -1,10 +1,10 @@
 import type { CanActivate, ExecutionContext } from '@nestjs/common'
 import type { Request } from 'express'
 import type { Repository } from 'typeorm'
-import type { Plugin } from '../entities/plugin.entity'
+import type { Plugin } from '../entities/plugin.entity.js'
 import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Plugin as PluginEntity } from '../entities/plugin.entity'
+import { Plugin as PluginEntity } from '../entities/plugin.entity.js'
 
 export interface WebhookRequest extends Request<{ token: string }> {
   plugin: Plugin

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { Plugin } from '../entities/plugin.entity'
+import { Plugin } from '../entities/plugin.entity.js'
 
 describe('plugin entity', () => {
   it('creates a plugin with required fields', () => {
