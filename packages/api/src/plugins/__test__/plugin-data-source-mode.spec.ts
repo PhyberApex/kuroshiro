@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dataSourceModeViolation } from '../plugin-data-source-mode'
+import { dataSourceModeViolation } from '../plugin-data-source-mode.js'
 
 describe('dataSourceModeViolation', () => {
   describe('literal mode', () => {

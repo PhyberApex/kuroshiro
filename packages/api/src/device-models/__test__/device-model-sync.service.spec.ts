@@ -1,12 +1,12 @@
-import type { DeviceModel } from '../entities/device-model.entity'
-import type { Palette } from '../entities/palette.entity'
+import type { DeviceModel } from '../entities/device-model.entity.js'
+import type { Palette } from '../entities/palette.entity.js'
 import { Logger } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { jsonResponse, stubFetch } from '../../test/fetch'
-import { makeDeviceModel, makePalette } from '../../test/fixtures'
-import { asRepository, createMockRepository } from '../../test/mockRepository'
-import { TRMNL_MODELS_SNAPSHOT, TRMNL_PALETTES_SNAPSHOT } from '../data/trmnl-snapshot'
-import { DeviceModelSyncService } from '../device-model-sync.service'
+import { jsonResponse, stubFetch } from '../../test/fetch.js'
+import { makeDeviceModel, makePalette } from '../../test/fixtures.js'
+import { asRepository, createMockRepository } from '../../test/mockRepository.js'
+import { TRMNL_MODELS_SNAPSHOT, TRMNL_PALETTES_SNAPSHOT } from '../data/trmnl-snapshot.js'
+import { DeviceModelSyncService } from '../device-model-sync.service.js'
 
 const mockFetch = stubFetch()
 

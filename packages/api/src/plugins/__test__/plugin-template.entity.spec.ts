@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { makePlugin } from '../../test/fixtures'
-import { PluginTemplate } from '../entities/plugin-template.entity'
+import { makePlugin } from '../../test/fixtures.js'
+import { PluginTemplate } from '../entities/plugin-template.entity.js'
 
 describe('pluginTemplate entity', () => {
   it('creates a template with required fields', () => {

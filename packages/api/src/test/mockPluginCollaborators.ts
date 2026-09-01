@@ -1,5 +1,19 @@
-import type { FetchableDataSource } from '../plugins/services/plugin-data-fetcher.service'
+import type { Mock } from 'vitest'
+import type { FetchableDataSource } from '../plugins/services/plugin-data-fetcher.service.js'
 import { vi } from 'vitest'
+
+export interface MockPluginDataFetcherService {
+  fetchData: Mock
+  fetchOrLiteral: Mock<(source: FetchableDataSource, templateContext?: object) => Promise<unknown>>
+}
+
+export interface MockPluginRendererService {
+  render: Mock
+}
+
+export interface MockPluginTransformService {
+  transform: Mock
+}
 
 /**
  * `fetchOrLiteral` routes to `fetchData` for a fetch-mode source (this mock replicates
@@ -8,7 +22,7 @@ import { vi } from 'vitest'
  * that only configures `fetchData` still works against the `fetchOrLiteral` call sites
  * every render/schedule/preview path now goes through.
  */
-export function createMockPluginDataFetcherService() {
+export function createMockPluginDataFetcherService(): MockPluginDataFetcherService {
   const mock = {
     fetchData: vi.fn(),
     fetchOrLiteral: vi.fn((source: FetchableDataSource, templateContext?: object) =>
@@ -21,16 +35,10 @@ export function createMockPluginDataFetcherService() {
   return mock
 }
 
-export type MockPluginDataFetcherService = ReturnType<typeof createMockPluginDataFetcherService>
-
-export function createMockPluginRendererService() {
+export function createMockPluginRendererService(): MockPluginRendererService {
   return { render: vi.fn() }
 }
 
-export type MockPluginRendererService = ReturnType<typeof createMockPluginRendererService>
-
-export function createMockPluginTransformService() {
+export function createMockPluginTransformService(): MockPluginTransformService {
   return { transform: vi.fn() }
 }
-
-export type MockPluginTransformService = ReturnType<typeof createMockPluginTransformService>

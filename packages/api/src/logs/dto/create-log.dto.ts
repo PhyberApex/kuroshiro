@@ -1,4 +1,4 @@
-import type { JsonObject } from '../../utils/json'
+import type { JsonObject } from '../../utils/json.js'
 import { IsObject } from 'class-validator'
 
 export class CreateLogDto {

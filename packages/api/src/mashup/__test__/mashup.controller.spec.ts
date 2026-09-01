@@ -1,10 +1,10 @@
-import type { CreateMashupDto } from '../dto/create-mashup.dto'
-import type { UpdateMashupDto } from '../dto/update-mashup.dto'
-import type { MashupService } from '../mashup.service'
+import type { CreateMashupDto } from '../dto/create-mashup.dto.js'
+import type { UpdateMashupDto } from '../dto/update-mashup.dto.js'
+import type { MashupService } from '../mashup.service.js'
 import { BadRequestException, NotFoundException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { asService } from '../../test/mockService'
-import { MashupController } from '../mashup.controller'
+import { asService } from '../../test/mockService.js'
+import { MashupController } from '../mashup.controller.js'
 
 describe('mashupController', () => {
   let controller: MashupController

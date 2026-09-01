@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { makeDevice, makePlugin, makePluginField } from '../../test/fixtures'
-import { PluginFieldValue } from '../entities/plugin-field-value.entity'
+import { makeDevice, makePlugin, makePluginField } from '../../test/fixtures.js'
+import { PluginFieldValue } from '../entities/plugin-field-value.entity.js'
 
 describe('pluginFieldValue entity', () => {
   it('creates a field value with required fields', () => {

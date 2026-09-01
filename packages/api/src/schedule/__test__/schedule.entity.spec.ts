@@ -1,6 +1,6 @@
 import { getMetadataArgsStorage } from 'typeorm'
 import { describe, expect, it } from 'vitest'
-import { Schedule } from '../schedule.entity'
+import { Schedule } from '../schedule.entity.js'
 
 describe('schedule entity', () => {
   const screenRelation = getMetadataArgsStorage().relations.find(relation => relation.target === Schedule && relation.propertyName === 'screen')

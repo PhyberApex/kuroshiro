@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { makePlugin } from '../../test/fixtures'
-import { PluginDataSource } from '../entities/plugin-data-source.entity'
+import { makePlugin } from '../../test/fixtures.js'
+import { PluginDataSource } from '../entities/plugin-data-source.entity.js'
 
 describe('pluginDataSource entity', () => {
   it('creates a data source with required fields', () => {

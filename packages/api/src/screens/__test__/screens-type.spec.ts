@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { makeMashupConfiguration } from '../../test/fixtures'
-import { Screen } from '../screens.entity'
+import { makeMashupConfiguration } from '../../test/fixtures.js'
+import { Screen } from '../screens.entity.js'
 
 describe('screen entity with type field', () => {
   it('should have default type of file', () => {

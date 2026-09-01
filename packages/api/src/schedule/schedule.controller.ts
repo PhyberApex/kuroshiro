@@ -1,8 +1,8 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, UsePipes, ValidationPipe } from '@nestjs/common'
-import { CreateScheduleDto } from './dto/create-schedule.dto'
-import { UpdateScheduleDto } from './dto/update-schedule.dto'
-import { Schedule } from './schedule.entity'
-import { ScheduleService } from './schedule.service'
+import { CreateScheduleDto } from './dto/create-schedule.dto.js'
+import { UpdateScheduleDto } from './dto/update-schedule.dto.js'
+import { Schedule } from './schedule.entity.js'
+import { ScheduleService } from './schedule.service.js'
 
 @Controller('screens/:screenId/schedule')
 export class ScheduleController {

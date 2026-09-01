@@ -1,29 +1,29 @@
 import type { ConfigService } from '@nestjs/config'
 import type { MockInstance } from 'vitest'
-import type { DeviceModelsService } from '../../device-models/device-models.service'
-import type { Device } from '../../devices/devices.entity'
-import type { MockDeviceModelsService } from '../../test/mockDeviceModelsService'
-import type { CreateScreenDto } from '../dto/create-screen.dto'
-import type { Screen } from '../screens.entity'
+import type { DeviceModelsService } from '../../device-models/device-models.service.js'
+import type { Device } from '../../devices/devices.entity.js'
+import type { MockDeviceModelsService } from '../../test/mockDeviceModelsService.js'
+import type { CreateScreenDto } from '../dto/create-screen.dto.js'
+import type { Screen } from '../screens.entity.js'
 import buffer from 'node:buffer'
 import * as fs from 'node:fs'
 import { BadRequestException, NotFoundException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeDevice, makeScreen } from '../../test/fixtures'
-import { makeMulterFile } from '../../test/fs'
-import { createMockDeviceModelsService, primeMockDeviceModelsService } from '../../test/mockDeviceModelsService'
-import { asRepository, createMockRepository, createMockTransactionalRepository } from '../../test/mockRepository'
-import { asService } from '../../test/mockService'
-import { ScreensService } from '../screens.service'
+import { makeDevice, makeScreen } from '../../test/fixtures.js'
+import { makeMulterFile } from '../../test/fs.js'
+import { createMockDeviceModelsService, primeMockDeviceModelsService } from '../../test/mockDeviceModelsService.js'
+import { asRepository, createMockRepository, createMockTransactionalRepository } from '../../test/mockRepository.js'
+import { asService } from '../../test/mockService.js'
+import { ScreensService } from '../screens.service.js'
 
 const { fileExistsMock } = vi.hoisted(() => ({ fileExistsMock: vi.fn() }))
 
-vi.mock('../../utils/imageUtils', () => ({
+vi.mock('../../utils/imageUtils.js', () => ({
   downloadImage: vi.fn().mockResolvedValue(undefined),
   convertToPng: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('../../utils/fileExists', () => ({ fileExists: fileExistsMock }))
+vi.mock('../../utils/fileExists.js', () => ({ fileExists: fileExistsMock }))
 
 describe('screensService', () => {
   let service: ScreensService

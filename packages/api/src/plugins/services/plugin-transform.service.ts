@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { VM } from 'vm2'
-import { getErrorMessage } from '../../utils/getErrorMessage'
+import { getErrorMessage } from '../../utils/getErrorMessage.js'
 
 @Injectable()
 export class PluginTransformService {

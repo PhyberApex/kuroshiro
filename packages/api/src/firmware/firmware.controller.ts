@@ -1,10 +1,10 @@
 import type { FirmwareSyncResult } from 'kuroshiro-shared'
 import { BadRequestException, Body, Controller, Delete, Get, Logger, Param, Post, ServiceUnavailableException, UploadedFile, UseInterceptors } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
-import { getErrorMessage } from '../utils/getErrorMessage'
-import { Firmware } from './entities/firmware.entity'
-import { FirmwareSyncService } from './firmware-sync.service'
-import { FirmwareService, MAX_FIRMWARE_UPLOAD_BYTES } from './firmware.service'
+import { getErrorMessage } from '../utils/getErrorMessage.js'
+import { Firmware } from './entities/firmware.entity.js'
+import { FirmwareSyncService } from './firmware-sync.service.js'
+import { FirmwareService, MAX_FIRMWARE_UPLOAD_BYTES } from './firmware.service.js'
 
 @Controller('firmware')
 export class FirmwareController {

@@ -1,7 +1,7 @@
-import type { PluginVariable } from '../entities/plugin-variable.entity'
+import type { PluginVariable } from '../entities/plugin-variable.entity.js'
 import process from 'node:process'
 import { Injectable, Logger } from '@nestjs/common'
-import { isPlainObject } from '../../utils/json'
+import { isPlainObject } from '../../utils/json.js'
 
 @Injectable()
 export class PluginVariableResolverService {

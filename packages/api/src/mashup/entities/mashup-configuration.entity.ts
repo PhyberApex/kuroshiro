@@ -1,6 +1,6 @@
 import type { Relation } from 'typeorm'
-import type { Screen } from '../../screens/screens.entity'
-import type { MashupSlot } from './mashup-slot.entity'
+import type { Screen } from '../../screens/screens.entity.js'
+import type { MashupSlot } from './mashup-slot.entity.js'
 import { Column, CreateDateColumn, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 
 @Entity()

@@ -1,12 +1,12 @@
-import type { SetupRequestHeadersDto } from './dto/setup-request-headers.dto'
+import type { SetupRequestHeadersDto } from './dto/setup-request-headers.dto.js'
 import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { DeviceModelsService } from '../device-models/device-models.service'
-import { FallbackScreensService } from '../device-models/fallback-screens.service'
-import generateApikey from '../utils/generateApikey'
-import generateFriendlyName from '../utils/generateFriendlyName'
-import { Device } from './devices.entity'
+import { DeviceModelsService } from '../device-models/device-models.service.js'
+import { FallbackScreensService } from '../device-models/fallback-screens.service.js'
+import generateApikey from '../utils/generateApikey.js'
+import generateFriendlyName from '../utils/generateFriendlyName.js'
+import { Device } from './devices.entity.js'
 
 interface SetupResponse {
   status: 200

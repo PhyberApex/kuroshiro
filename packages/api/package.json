@@ -1,5 +1,6 @@
 {
   "name": "kuroshiro-api",
+  "type": "module",
   "version": "0.12.0",
   "private": true,
   "packageManager": "pnpm@11.24.0",
@@ -15,11 +16,11 @@
     "lint:fix": "eslint --fix",
     "type-check": "tsc --noEmit -p tsconfig.json",
     "prepare": "puppeteer browsers install chrome",
-    "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/config/typeorm.config.ts",
-    "migration:create": "typeorm-ts-node-commonjs migration:create",
-    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/config/typeorm.config.ts",
-    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/config/typeorm.config.ts",
-    "migration:show": "typeorm-ts-node-commonjs migration:show -d src/config/typeorm.config.ts",
+    "migration:generate": "typeorm-ts-node-esm migration:generate -d src/config/typeorm.config.ts",
+    "migration:create": "typeorm-ts-node-esm migration:create",
+    "migration:run": "typeorm-ts-node-esm migration:run -d src/config/typeorm.config.ts",
+    "migration:revert": "typeorm-ts-node-esm migration:revert -d src/config/typeorm.config.ts",
+    "migration:show": "typeorm-ts-node-esm migration:show -d src/config/typeorm.config.ts",
     "snapshot:device-models": "node scripts/update_device_model_snapshot.mjs"
   },
   "dependencies": {

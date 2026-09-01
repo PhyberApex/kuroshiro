@@ -1,13 +1,13 @@
-import type { MockPluginDataFetcherService } from '../../test/mockPluginCollaborators'
-import type { Plugin } from '../entities/plugin.entity'
-import type { PluginDataFetcherService } from '../services/plugin-data-fetcher.service'
-import type { PluginRenderCacheService } from '../services/plugin-render-cache.service'
+import type { MockPluginDataFetcherService } from '../../test/mockPluginCollaborators.js'
+import type { Plugin } from '../entities/plugin.entity.js'
+import type { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
+import type { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { makePlugin, makePluginDataSource, makePluginTemplate } from '../../test/fixtures'
-import { createMockPluginDataFetcherService } from '../../test/mockPluginCollaborators'
-import { asService, callPrivate } from '../../test/mockService'
-import { PluginSchedulerService } from '../services/plugin-scheduler.service'
-import { PluginTemplateContextService } from '../services/plugin-template-context.service'
+import { makePlugin, makePluginDataSource, makePluginTemplate } from '../../test/fixtures.js'
+import { createMockPluginDataFetcherService } from '../../test/mockPluginCollaborators.js'
+import { asService, callPrivate } from '../../test/mockService.js'
+import { PluginSchedulerService } from '../services/plugin-scheduler.service.js'
+import { PluginTemplateContextService } from '../services/plugin-template-context.service.js'
 
 let capturedCallback: (() => Promise<void>) | undefined
 

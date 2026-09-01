@@ -1,9 +1,9 @@
 import type { Logger } from '@nestjs/common'
-import type { DeviceRenderTarget } from './device-models.service'
+import type { DeviceRenderTarget } from './device-models.service.js'
 import buffer from 'node:buffer'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import { convertToPng } from '../utils/imageUtils'
+import { convertToPng } from '../utils/imageUtils.js'
 
 /**
  * Screenshots an already-shelled HTML document at the render target's native

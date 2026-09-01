@@ -1,9 +1,9 @@
 import type { ConfigService } from '@nestjs/config'
-import type { PluginRendererService } from '../services/plugin-renderer.service'
+import type { PluginRendererService } from '../services/plugin-renderer.service.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { jsonResponse, stubFetch } from '../../test/fetch'
-import { asService } from '../../test/mockService'
-import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service'
+import { jsonResponse, stubFetch } from '../../test/fetch.js'
+import { asService } from '../../test/mockService.js'
+import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
 
 const mockFetch = stubFetch()
 

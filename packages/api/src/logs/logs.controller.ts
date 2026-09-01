@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Headers, Logger, Param, Post, UsePipes, ValidationPipe } from '@nestjs/common'
-import { CreateLogDto } from './dto/create-log.dto'
-import { LogEntry } from './logs.entity'
-import { LogsService } from './logs.service'
+import { CreateLogDto } from './dto/create-log.dto.js'
+import { LogEntry } from './logs.entity.js'
+import { LogsService } from './logs.service.js'
 
 @Controller('log')
 export class LogsController {

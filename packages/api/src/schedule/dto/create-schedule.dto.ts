@@ -1,5 +1,5 @@
 import { ArrayUnique, IsArray, IsBoolean, IsInt, IsOptional, IsString, Matches, Max, Min } from 'class-validator'
-import { CALENDAR_DATE_PATTERN, TIME_OF_DAY_PATTERN } from './schedule-field-patterns'
+import { CALENDAR_DATE_PATTERN, TIME_OF_DAY_PATTERN } from './schedule-field-patterns.js'
 
 export class CreateScheduleDto {
   @IsOptional()

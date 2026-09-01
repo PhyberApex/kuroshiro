@@ -1,8 +1,8 @@
-import type { DeviceSetupService } from '../setup.service'
+import type { DeviceSetupService } from '../setup.service.js'
 import { BadRequestException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { asService } from '../../test/mockService'
-import { SetupController } from '../setup.controller'
+import { asService } from '../../test/mockService.js'
+import { SetupController } from '../setup.controller.js'
 
 describe('setupController (unit)', () => {
   let controller: SetupController

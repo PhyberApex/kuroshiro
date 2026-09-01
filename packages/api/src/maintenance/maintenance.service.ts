@@ -4,10 +4,10 @@ import * as path from 'node:path'
 import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { Device } from '../devices/devices.entity'
-import { Screen } from '../screens/screens.entity'
-import { getErrorMessage } from '../utils/getErrorMessage'
-import { resolveAppPath } from '../utils/pathHelper'
+import { Device } from '../devices/devices.entity.js'
+import { Screen } from '../screens/screens.entity.js'
+import { getErrorMessage } from '../utils/getErrorMessage.js'
+import { resolveAppPath } from '../utils/pathHelper.js'
 
 interface DeviceDirEntry {
   deviceId: string

@@ -1,10 +1,10 @@
-import type { Palette } from '../entities/palette.entity'
+import type { Palette } from '../entities/palette.entity.js'
 import { BadRequestException, NotFoundException } from '@nestjs/common'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { makePalette } from '../../test/fixtures'
-import { asRepository, createMockRepository } from '../../test/mockRepository'
-import { CustomPalettesService } from '../custom-palettes.service'
-import { CUSTOM_PALETTE_FRAMEWORK_CLASSES } from '../entities/palette.entity'
+import { makePalette } from '../../test/fixtures.js'
+import { asRepository, createMockRepository } from '../../test/mockRepository.js'
+import { CustomPalettesService } from '../custom-palettes.service.js'
+import { CUSTOM_PALETTE_FRAMEWORK_CLASSES } from '../entities/palette.entity.js'
 
 const validDto = { name: 'My Red', frameworkClass: 'screen--color-3bwr' as const, colors: ['#ff0000', '#ffffff', '#000000'] }
 

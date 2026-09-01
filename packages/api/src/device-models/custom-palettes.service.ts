@@ -2,9 +2,9 @@ import { randomUUID } from 'node:crypto'
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { CreateCustomPaletteDto } from './dto/create-custom-palette.dto'
-import { CUSTOM_PALETTE_FRAMEWORK_CLASSES, Palette } from './entities/palette.entity'
-import { HEX_COLOR_PATTERN } from './trmnl-payloads'
+import { CreateCustomPaletteDto } from './dto/create-custom-palette.dto.js'
+import { CUSTOM_PALETTE_FRAMEWORK_CLASSES, Palette } from './entities/palette.entity.js'
+import { HEX_COLOR_PATTERN } from './trmnl-payloads.js'
 
 @Injectable()
 export class CustomPalettesService {

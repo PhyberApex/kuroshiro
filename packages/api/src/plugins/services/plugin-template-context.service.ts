@@ -1,5 +1,5 @@
-import type { DeviceSensor } from '../../device-sensors/entities/device-sensor.entity'
-import type { Plugin } from '../entities/plugin.entity'
+import type { DeviceSensor } from '../../device-sensors/entities/device-sensor.entity.js'
+import type { Plugin } from '../entities/plugin.entity.js'
 import { Injectable } from '@nestjs/common'
 
 export interface PluginTemplateContext {

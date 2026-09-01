@@ -1,10 +1,10 @@
-import type { Screen } from '../../screens/screens.entity'
-import type { Schedule } from '../schedule.entity'
+import type { Screen } from '../../screens/screens.entity.js'
+import type { Schedule } from '../schedule.entity.js'
 import { BadRequestException, NotFoundException } from '@nestjs/common'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { makeSchedule, makeScreen } from '../../test/fixtures'
-import { asRepository, createMockRepository } from '../../test/mockRepository'
-import { ScheduleService } from '../schedule.service'
+import { makeSchedule, makeScreen } from '../../test/fixtures.js'
+import { asRepository, createMockRepository } from '../../test/mockRepository.js'
+import { ScheduleService } from '../schedule.service.js'
 
 describe('scheduleService', () => {
   let service: ScheduleService

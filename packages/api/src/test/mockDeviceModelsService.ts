@@ -1,5 +1,6 @@
-import type { DeviceModel } from '../device-models/entities/device-model.entity'
-import type { Palette } from '../device-models/entities/palette.entity'
+import type { Mock } from 'vitest'
+import type { DeviceModel } from '../device-models/entities/device-model.entity.js'
+import type { Palette } from '../device-models/entities/palette.entity.js'
 import { vi } from 'vitest'
 
 export const OG_PLUS: DeviceModel = {
@@ -43,7 +44,20 @@ export const GRAY_4: Palette = { id: 'gray-4', name: '4 Grays (2-bit)', kind: 'o
 export const GRAY_16: Palette = { id: 'gray-16', name: '16 Grays (4-bit)', kind: 'official', grays: 16, colors: null, frameworkClass: 'screen--4bit', grayscaleBitDepth: null, deprecated: false, syncedAt: null }
 export const CUSTOM_RED_3BWR: Palette = { id: 'a1b2c3d4-e5f6-4789-a0b1-c2d3e4f5a6b7', name: 'My Red', kind: 'custom', grays: 2, colors: ['#ff0000', '#ffffff', '#000000'], frameworkClass: 'screen--color-3bwr', grayscaleBitDepth: null, deprecated: false, syncedAt: null }
 
-export function createMockDeviceModelsService() {
+export interface MockDeviceModelsService {
+  findAll: Mock
+  findByName: Mock
+  findAllPalettes: Mock
+  findPalette: Mock
+  allowedPalettesFor: Mock
+  defaultPaletteFor: Mock
+  compatibleFamiliesFor: Mock
+  resolve: Mock
+  assignResolvedModel: Mock
+  renderTargetFor: Mock
+}
+
+export function createMockDeviceModelsService(): MockDeviceModelsService {
   return {
     findAll: vi.fn(),
     findByName: vi.fn(),
@@ -58,8 +72,6 @@ export function createMockDeviceModelsService() {
   }
 }
 
-export type MockDeviceModelsService = ReturnType<typeof createMockDeviceModelsService>
-
 /** Default behaviour after `vi.resetAllMocks()`: everything renders as an OG with 4 grays. */
 export function primeMockDeviceModelsService(mock: MockDeviceModelsService) {
   mock.renderTargetFor.mockResolvedValue({ model: OG_PLUS, palette: GRAY_4 })
@@ -68,11 +80,13 @@ export function primeMockDeviceModelsService(mock: MockDeviceModelsService) {
   mock.assignResolvedModel.mockResolvedValue(null)
 }
 
-export function createMockFallbackScreensService() {
-  return { urlFor: vi.fn() }
+export interface MockFallbackScreensService {
+  urlFor: Mock
 }
 
-export type MockFallbackScreensService = ReturnType<typeof createMockFallbackScreensService>
+export function createMockFallbackScreensService(): MockFallbackScreensService {
+  return { urlFor: vi.fn() }
+}
 
 /** Default behaviour after `vi.resetAllMocks()`: static placeholder URLs under http://api. */
 export function primeMockFallbackScreensService(mock: MockFallbackScreensService) {

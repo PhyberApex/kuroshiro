@@ -1,12 +1,12 @@
-import type { Firmware } from '../entities/firmware.entity'
+import type { Firmware } from '../entities/firmware.entity.js'
 import nodeBuffer from 'node:buffer'
 import * as crypto from 'node:crypto'
 import { BadRequestException, NotFoundException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeFirmware } from '../../test/fixtures'
-import { asRepository, createMockRepository } from '../../test/mockRepository'
-import { asService } from '../../test/mockService'
-import { FirmwareService } from '../firmware.service'
+import { makeFirmware } from '../../test/fixtures.js'
+import { asRepository, createMockRepository } from '../../test/mockRepository.js'
+import { asService } from '../../test/mockService.js'
+import { FirmwareService } from '../firmware.service.js'
 
 const { fsMock, fileExistsMock } = vi.hoisted(() => ({
   fsMock: {
@@ -22,7 +22,7 @@ vi.mock('node:fs', () => ({
   promises: fsMock,
 }))
 
-vi.mock('../../utils/fileExists', () => ({
+vi.mock('../../utils/fileExists.js', () => ({
   fileExists: fileExistsMock,
 }))
 

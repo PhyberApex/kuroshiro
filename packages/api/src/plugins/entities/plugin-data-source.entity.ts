@@ -1,7 +1,7 @@
 import type { DataSourceLiteralValue, DataSourceMode } from 'kuroshiro-shared'
-import type { JsonObject } from '../../utils/json'
+import type { JsonObject } from '../../utils/json.js'
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
-import { Plugin } from './plugin.entity'
+import { Plugin } from './plugin.entity.js'
 
 @Entity()
 export class PluginDataSource {

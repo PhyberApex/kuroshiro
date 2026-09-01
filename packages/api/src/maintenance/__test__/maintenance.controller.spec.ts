@@ -1,8 +1,8 @@
 import type { CleanupResult, MaintenanceIssues } from 'kuroshiro-shared'
-import type { MaintenanceService } from '../maintenance.service'
+import type { MaintenanceService } from '../maintenance.service.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { asService } from '../../test/mockService'
-import { MaintenanceController } from '../maintenance.controller'
+import { asService } from '../../test/mockService.js'
+import { MaintenanceController } from '../maintenance.controller.js'
 
 describe('maintenanceController', () => {
   let controller: MaintenanceController

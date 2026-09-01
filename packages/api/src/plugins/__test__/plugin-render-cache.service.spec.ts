@@ -1,11 +1,11 @@
-import type { MashupSlot } from '../../mashup/entities/mashup-slot.entity'
-import type { Screen } from '../../screens/screens.entity'
-import type { PluginRendererService } from '../services/plugin-renderer.service'
+import type { MashupSlot } from '../../mashup/entities/mashup-slot.entity.js'
+import type { Screen } from '../../screens/screens.entity.js'
+import type { PluginRendererService } from '../services/plugin-renderer.service.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeMashupConfiguration, makeMashupSlot, makePlugin, makePluginTemplate, makeScreen } from '../../test/fixtures'
-import { asRepository, createMockRepository } from '../../test/mockRepository'
-import { asService, injectPrivate } from '../../test/mockService'
-import { PluginRenderCacheService } from '../services/plugin-render-cache.service'
+import { makeMashupConfiguration, makeMashupSlot, makePlugin, makePluginTemplate, makeScreen } from '../../test/fixtures.js'
+import { asRepository, createMockRepository } from '../../test/mockRepository.js'
+import { asService, injectPrivate } from '../../test/mockService.js'
+import { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
 
 describe('pluginRenderCacheService', () => {
   let service: PluginRenderCacheService

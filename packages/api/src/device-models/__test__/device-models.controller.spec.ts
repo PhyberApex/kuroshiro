@@ -1,13 +1,13 @@
-import type { MockDeviceModelsService } from '../../test/mockDeviceModelsService'
-import type { CustomPalettesService } from '../custom-palettes.service'
-import type { DeviceModelSyncService } from '../device-model-sync.service'
-import type { DeviceModelsService } from '../device-models.service'
-import type { CreateCustomPaletteDto } from '../dto/create-custom-palette.dto'
+import type { MockDeviceModelsService } from '../../test/mockDeviceModelsService.js'
+import type { CustomPalettesService } from '../custom-palettes.service.js'
+import type { DeviceModelSyncService } from '../device-model-sync.service.js'
+import type { DeviceModelsService } from '../device-models.service.js'
+import type { CreateCustomPaletteDto } from '../dto/create-custom-palette.dto.js'
 import { ServiceUnavailableException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { BW, createMockDeviceModelsService, CUSTOM_RED_3BWR, OG_PLUS } from '../../test/mockDeviceModelsService'
-import { asService } from '../../test/mockService'
-import { DeviceModelsController } from '../device-models.controller'
+import { BW, createMockDeviceModelsService, CUSTOM_RED_3BWR, OG_PLUS } from '../../test/mockDeviceModelsService.js'
+import { asService } from '../../test/mockService.js'
+import { DeviceModelsController } from '../device-models.controller.js'
 
 describe('deviceModelsController', () => {
   let controller: DeviceModelsController

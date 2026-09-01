@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CreateDeviceDto } from '../create-device.dto'
+import { CreateDeviceDto } from '../create-device.dto.js'
 
 describe('create-device dto', () => {
   it('creates dto with mac and name', () => {

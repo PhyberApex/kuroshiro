@@ -1,8 +1,8 @@
-import type { PluginKind } from '../entities/plugin.entity'
+import type { PluginKind } from '../entities/plugin.entity.js'
 import { OmitType, PartialType } from '@nestjs/mapped-types'
 import { IsIn, IsOptional } from 'class-validator'
-import { PLUGIN_KINDS } from '../entities/plugin.entity'
-import { CreatePluginDto } from './create-plugin.dto'
+import { PLUGIN_KINDS } from '../entities/plugin.entity.js'
+import { CreatePluginDto } from './create-plugin.dto.js'
 
 // `kind` and `sourceRecipeId` are create-only: `kind` is fixed at creation (enforced by
 // PluginsService.update, see #828) so it's redeclared below without CreatePluginDto's

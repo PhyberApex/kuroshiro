@@ -5,10 +5,10 @@ import os from 'node:os'
 import path from 'node:path'
 import { promisify } from 'node:util'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { TRMNL_MODELS_SNAPSHOT } from '../../device-models/data/trmnl-snapshot'
-import { makeDeviceModel, makePalette } from '../../test/fixtures'
-import { asService } from '../../test/mockService'
-import { convertToPng } from '../imageUtils'
+import { TRMNL_MODELS_SNAPSHOT } from '../../device-models/data/trmnl-snapshot.js'
+import { makeDeviceModel, makePalette } from '../../test/fixtures.js'
+import { asService } from '../../test/mockService.js'
+import { convertToPng } from '../imageUtils.js'
 
 const execFileAsync = promisify(execFile)
 

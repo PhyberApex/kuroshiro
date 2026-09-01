@@ -17,7 +17,7 @@ import { describe, expect, it } from 'vitest'
  * option fails CI instead of crashing production.
  */
 
-const SRC_ROOT = join(__dirname, '..')
+const SRC_ROOT = join(import.meta.dirname, '..')
 const STRING_ARRAY_RELATIONS = /\brelations:\s*\[/
 
 function collectSourceFiles(dir: string): string[] {

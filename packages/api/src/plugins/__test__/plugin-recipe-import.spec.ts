@@ -2,7 +2,7 @@ import { Buffer } from 'node:buffer'
 import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
 import { describe, expect, it } from 'vitest'
-import { PluginImporterService } from '../services/plugin-importer.service'
+import { PluginImporterService } from '../services/plugin-importer.service.js'
 
 function buildFlatRecipeArchive(settings: Record<string, unknown>, files: Record<string, string> = { 'full.liquid': '<div>{{ source.title }}</div>' }): Buffer {
   const zip = new AdmZip()

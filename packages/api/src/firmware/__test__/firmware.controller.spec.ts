@@ -1,11 +1,11 @@
-import type { FirmwareSyncService } from '../firmware-sync.service'
-import type { FirmwareService } from '../firmware.service'
+import type { FirmwareSyncService } from '../firmware-sync.service.js'
+import type { FirmwareService } from '../firmware.service.js'
 import buffer from 'node:buffer'
 import { BadRequestException, ServiceUnavailableException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeMulterFile } from '../../test/fs'
-import { asService } from '../../test/mockService'
-import { FirmwareController } from '../firmware.controller'
+import { makeMulterFile } from '../../test/fs.js'
+import { asService } from '../../test/mockService.js'
+import { FirmwareController } from '../firmware.controller.js'
 
 describe('firmwareController', () => {
   let controller: FirmwareController

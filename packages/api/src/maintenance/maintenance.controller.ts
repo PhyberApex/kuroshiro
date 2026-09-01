@@ -1,7 +1,7 @@
 import type { CleanupResult, MaintenanceIssues } from 'kuroshiro-shared'
 import { Body, Controller, Get, Logger, Post, UsePipes, ValidationPipe } from '@nestjs/common'
-import { CleanupDto } from './dto/cleanup.dto'
-import { MaintenanceService } from './maintenance.service'
+import { CleanupDto } from './dto/cleanup.dto.js'
+import { MaintenanceService } from './maintenance.service.js'
 
 @Controller('maintenance')
 export class MaintenanceController {

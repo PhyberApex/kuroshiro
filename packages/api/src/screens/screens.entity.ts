@@ -1,8 +1,8 @@
 import type { Relation } from 'typeorm'
-import type { Device } from '../devices/devices.entity'
-import type { MashupConfiguration } from '../mashup/entities/mashup-configuration.entity'
-import type { Plugin } from '../plugins/entities/plugin.entity'
-import type { Schedule } from '../schedule/schedule.entity'
+import type { Device } from '../devices/devices.entity.js'
+import type { MashupConfiguration } from '../mashup/entities/mashup-configuration.entity.js'
+import type { Plugin } from '../plugins/entities/plugin.entity.js'
+import type { Schedule } from '../schedule/schedule.entity.js'
 import { Column, Entity, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
 
 @Entity()

@@ -1,9 +1,9 @@
-import type { Screen } from '../screens/screens.entity'
-import type { MashupConfiguration } from './entities/mashup-configuration.entity'
+import type { Screen } from '../screens/screens.entity.js'
+import type { MashupConfiguration } from './entities/mashup-configuration.entity.js'
 import { Body, Controller, Delete, Get, Param, Post, Put, UsePipes, ValidationPipe } from '@nestjs/common'
-import { CreateMashupDto } from './dto/create-mashup.dto'
-import { UpdateMashupDto } from './dto/update-mashup.dto'
-import { MashupService } from './mashup.service'
+import { CreateMashupDto } from './dto/create-mashup.dto.js'
+import { UpdateMashupDto } from './dto/update-mashup.dto.js'
+import { MashupService } from './mashup.service.js'
 
 @Controller('mashup')
 export class MashupController {

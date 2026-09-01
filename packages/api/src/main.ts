@@ -1,9 +1,9 @@
 import { Logger } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { DataSource } from 'typeorm'
-import { AppModule } from './app.module'
-import config from './config/config'
-import { LoggingInterceptor } from './interceptors/logging.interceptor'
+import { AppModule } from './app.module.js'
+import config from './config/config.js'
+import { LoggingInterceptor } from './interceptors/logging.interceptor.js'
 import 'reflect-metadata'
 
 async function bootstrap() {

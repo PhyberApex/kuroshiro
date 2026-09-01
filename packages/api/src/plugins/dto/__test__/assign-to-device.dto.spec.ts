@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { AssignPluginToDeviceDto } from '../assign-plugin-to-device.dto'
+import { AssignPluginToDeviceDto } from '../assign-plugin-to-device.dto.js'
 
 describe('assign-plugin-to-device dto', () => {
   it('creates dto with device id', () => {
