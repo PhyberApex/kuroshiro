@@ -25,8 +25,8 @@ catalogs:
       specifier: 11.2.3
       version: 11.2.3
     '@nestjs/mapped-types':
-      specifier: 2.1.1
-      version: 2.1.1
+      specifier: 12.0.0
+      version: 12.0.0
     '@nestjs/platform-express':
       specifier: 11.2.3
       version: 11.2.3
@@ -226,7 +226,7 @@ importers:
         version: 11.2.3(@nestjs/common@11.2.3(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/platform-express@11.2.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/mapped-types':
         specifier: 'catalog:'
-        version: 2.1.1(@nestjs/common@11.2.3(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)
+        version: 12.0.0(@nestjs/common@11.2.3(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)
       '@nestjs/platform-express':
         specifier: 'catalog:'
         version: 11.2.3(@nestjs/common@11.2.3(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@11.2.3)(supports-color@10.2.2)
@@ -1319,10 +1319,11 @@ packages:
       '@nestjs/websockets':
         optional: true
 
-  '@nestjs/mapped-types@2.1.1':
-    resolution: {integrity: sha512-SCCoMEJ6jdeI5h/N+KCVF1+pmg/hmEkNA5nHTS8Gvww7T/LCl4o1gFLinw2iQ60w7slFkszHcGLKGdazVI4F8A==}
+  '@nestjs/mapped-types@12.0.0':
+    resolution: {integrity: sha512-aX7lxZcqXldtnSr0bgT2ZPQvpTpIwBMW1GMX29o4s3q02vmq6JoTYuPW0GwYXa8BiFMRX7WbGZVDA703pNqOMQ==}
+    engines: {node: '>=20.19.0'}
     peerDependencies:
-      '@nestjs/common': ^10.0.0 || ^11.0.0
+      '@nestjs/common': ^10.0.0 || ^11.0.0 || ^12.0.0
       class-transformer: ^0.4.0 || ^0.5.0
       class-validator: ^0.13.0 || ^0.14.0 || ^0.15.0
       reflect-metadata: ^0.1.12 || ^0.2.0
@@ -7212,7 +7213,7 @@ snapshots:
     optionalDependencies:
       '@nestjs/platform-express': 11.2.3(@nestjs/common@11.2.3(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@11.2.3)(supports-color@10.2.2)
 
-  '@nestjs/mapped-types@2.1.1(@nestjs/common@11.2.3(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)':
+  '@nestjs/mapped-types@12.0.0(@nestjs/common@11.2.3(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)':
     dependencies:
       '@nestjs/common': 11.2.3(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2)
       reflect-metadata: 0.2.2
