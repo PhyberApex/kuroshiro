@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.2](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.12.1...kuroshiro-v0.12.2) (2026-09-02)
+
+
+### Bug Fixes
+
+* **ui:** serve the UI correctly under a base path (Home Assistant ingress) ([#915](https://github.com/PhyberApex/kuroshiro/issues/915)) ([f4dbc37](https://github.com/PhyberApex/kuroshiro/commit/f4dbc3776aa42663d57a0e53606d7e7634eab558)), closes [#908](https://github.com/PhyberApex/kuroshiro/issues/908)
+
 ## [0.12.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.12.0...kuroshiro-v0.12.1) (2026-09-02)
 
 
