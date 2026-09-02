@@ -3,18 +3,26 @@ import net from 'node:net'
 const PRIVATE_HOSTNAMES = new Set(['localhost', 'metadata.google.internal'])
 const PRIVATE_HOSTNAME_SUFFIXES = ['.local', '.internal', '.localhost']
 
+// Inclusive [start, end] IPv4 ranges reserved for loopback, private networks,
+// and link-local addressing (RFC 5735 / RFC 3927).
+const PRIVATE_IPV4_RANGES: [start: string, end: string][] = [
+  ['127.0.0.0', '127.255.255.255'],
+  ['10.0.0.0', '10.255.255.255'],
+  ['172.16.0.0', '172.31.255.255'],
+  ['192.168.0.0', '192.168.255.255'],
+  ['169.254.0.0', '169.254.255.255'],
+]
+
+function ipv4ToInt(ip: string): number {
+  return ip.split('.').map(Number).reduce((acc, octet) => acc * 256 + octet, 0)
+}
+
 function isPrivateIpv4(ip: string): boolean {
   const parts = ip.split('.').map(Number)
   if (parts.length !== 4 || parts.some(Number.isNaN))
     return false
-  const [a, b] = parts
-  return (
-    a === 127
-    || a === 10
-    || (a === 172 && b >= 16 && b <= 31)
-    || (a === 192 && b === 168)
-    || (a === 169 && b === 254)
-  )
+  const value = ipv4ToInt(ip)
+  return PRIVATE_IPV4_RANGES.some(([start, end]) => value >= ipv4ToInt(start) && value <= ipv4ToInt(end))
 }
 
 function isPrivateIpv6(ip: string): boolean {
