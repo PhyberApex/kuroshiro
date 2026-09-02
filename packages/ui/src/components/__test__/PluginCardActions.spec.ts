@@ -5,6 +5,7 @@ import { createPinia } from 'pinia'
 import rop from 'resize-observer-polyfill'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import vuetify from '../../plugins/vuetify'
+import { stubVisualViewport } from '../../test/browser'
 import { asStore } from '../../test/mockStore'
 import PluginCardActions from '../PluginCardActions.vue'
 
@@ -21,15 +22,7 @@ globalThis.window.matchMedia = globalThis.window.matchMedia || function () {
   }
 }
 
-Object.defineProperty(globalThis, 'visualViewport', {
-  value: {
-    width: 1024,
-    height: 768,
-    addEventListener: () => {},
-    removeEventListener: () => {},
-  },
-  writable: true,
-})
+globalThis.visualViewport = globalThis.visualViewport || stubVisualViewport()
 
 let pluginsStoreMock: ReturnType<typeof usePluginsStore>
 vi.mock('@/stores/plugins', () => ({
