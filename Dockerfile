@@ -22,8 +22,9 @@ RUN pnpm --filter ./packages/api run build && pnpm --filter ./packages/api run b
 # --no-optional: drops typeorm's optional peer on ts-node (otherwise pulled in because
 #   ts-node is a devDependency elsewhere in the workspace lockfile, dragging in
 #   ts-node/typescript/@swc-core for a CLI path this image never uses) and pg's optional
-#   pg-cloudflare (Cloudflare Workers transport, dead code on plain Node.js). Nothing
-#   else in the runtime tree declares an optionalDependency.
+#   pg-cloudflare (Cloudflare Workers transport, dead code on plain Node.js). typeorm also
+#   marks pg itself optional (one of many DB-driver peers), but pg stays installed since
+#   it's a direct runtime dependency of packages/api independent of that peer flag.
 RUN pnpm --filter ./packages/api deploy --legacy --prod --no-optional --ignore-scripts /prod/api
 
 # Stage 3: Production image
