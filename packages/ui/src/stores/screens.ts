@@ -1,18 +1,19 @@
 import type { CurrentScreen, Screen } from '@/types'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { apiFetch } from '@/utils/apiRequest'
 
 export const useScreensStore = defineStore('screens', () => {
   const screens = ref<Screen[]>([])
   const currentScreen = ref<CurrentScreen | null>(null)
 
   async function fetchScreensForDevice(deviceId: string) {
-    const res = await fetch(`/api/screens/device/${deviceId}`)
+    const res = await apiFetch(`/api/screens/device/${deviceId}`)
     screens.value = await res.json()
   }
 
   async function fetchCurrentScreenForDevice(mac: string, apikey: string) {
-    const res = await fetch(`/api/current_screen`, {
+    const res = await apiFetch(`/api/current_screen`, {
       headers: {
         'id': mac,
         'access-token': apikey,
@@ -22,7 +23,7 @@ export const useScreensStore = defineStore('screens', () => {
   }
 
   async function addScreen(deviceId: string, externalLink: string, fetchManual: boolean, filename: string) {
-    const res = await fetch('/api/screens', {
+    const res = await apiFetch('/api/screens', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ deviceId, filename, externalLink, fetchManual }),
@@ -37,7 +38,7 @@ export const useScreensStore = defineStore('screens', () => {
     formData.append('deviceId', deviceId)
     formData.append('filename', filename)
     formData.append('file', file)
-    const res = await fetch('/api/screens', {
+    const res = await apiFetch('/api/screens', {
       method: 'POST',
       body: formData,
     })
@@ -47,7 +48,7 @@ export const useScreensStore = defineStore('screens', () => {
   }
 
   async function addScreenHtml(deviceId: string, html: string, filename: string) {
-    const res = await fetch('/api/screens', {
+    const res = await apiFetch('/api/screens', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ deviceId, filename, html }),
@@ -58,7 +59,7 @@ export const useScreensStore = defineStore('screens', () => {
   }
 
   async function deleteScreen(deviceId: string, screenId: string) {
-    const res = await fetch(`/api/screens/${screenId}`, {
+    const res = await apiFetch(`/api/screens/${screenId}`, {
       method: 'DELETE',
     })
     if (res.ok) {
@@ -67,7 +68,7 @@ export const useScreensStore = defineStore('screens', () => {
   }
 
   async function updateExternalScreen(deviceId: string, screenId: string) {
-    const res = await fetch(`/api/screens/${screenId}`, {
+    const res = await apiFetch(`/api/screens/${screenId}`, {
       method: 'POST',
     })
     if (res.ok) {
@@ -76,7 +77,7 @@ export const useScreensStore = defineStore('screens', () => {
   }
 
   async function reorderScreens(deviceId: string, screenIds: string[]) {
-    const res = await fetch(`/api/screens/device/${deviceId}/reorder`, {
+    const res = await apiFetch(`/api/screens/device/${deviceId}/reorder`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ screenIds }),

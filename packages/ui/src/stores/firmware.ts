@@ -2,7 +2,7 @@ import type { FirmwareSyncResult } from 'kuroshiro-shared'
 import type { Firmware } from '../types'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { apiRequest } from '../utils/apiRequest'
+import { apiFetch, apiRequest } from '../utils/apiRequest'
 
 export const useFirmwareStore = defineStore('firmware', () => {
   const firmware = ref<Firmware[]>([])
@@ -17,7 +17,7 @@ export const useFirmwareStore = defineStore('firmware', () => {
 
   async function fetchAll() {
     try {
-      const res = await fetch('/api/firmware')
+      const res = await apiFetch('/api/firmware')
       if (!res.ok)
         throw new Error(`${res.status} ${res.statusText}`)
       firmware.value = await res.json()
@@ -75,7 +75,7 @@ export const useFirmwareStore = defineStore('firmware', () => {
         body.append('label', label)
       if (compatibleModels)
         body.append('compatibleModels', JSON.stringify(compatibleModels))
-      const res = await fetch('/api/firmware/upload', { method: 'POST', body })
+      const res = await apiFetch('/api/firmware/upload', { method: 'POST', body })
       if (!res.ok) {
         const errBody = await res.json().catch(() => null)
         throw new Error(errBody?.message ?? `Upload failed: ${res.statusText}`)
@@ -94,7 +94,7 @@ export const useFirmwareStore = defineStore('firmware', () => {
 
   async function remove(id: string): Promise<boolean> {
     try {
-      const res = await fetch(`/api/firmware/${id}`, { method: 'DELETE' })
+      const res = await apiFetch(`/api/firmware/${id}`, { method: 'DELETE' })
       if (!res.ok) {
         const body = await res.json().catch(() => null)
         throw new Error(body?.message ?? `Delete failed: ${res.statusText}`)

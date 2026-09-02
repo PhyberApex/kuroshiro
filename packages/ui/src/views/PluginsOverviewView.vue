@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router'
 import { VBtn, VCard, VCardText, VCardTitle, VCol, VContainer, VDivider, VIconBtn, VRow, VTooltip } from 'vuetify/components'
 import PluginCardGrid from '../components/PluginCardGrid.vue'
 import PluginImportDialog from '../components/PluginImportDialog.vue'
+import { apiFetch } from '../utils/apiRequest'
 
 const router = useRouter()
 
@@ -16,7 +17,7 @@ const showImportDialog = ref(false)
 async function fetchAllPlugins() {
   loading.value = true
   try {
-    const res = await fetch('/api/plugins')
+    const res = await apiFetch('/api/plugins')
     if (!res.ok)
       throw new Error('Failed to fetch plugins')
     plugins.value = await res.json()

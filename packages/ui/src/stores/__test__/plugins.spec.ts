@@ -31,7 +31,7 @@ describe('plugins store', () => {
     const store = usePluginsStore()
     await store.fetchPluginsForDevice('device-1')
 
-    expect(mockFetch).toHaveBeenCalledWith('/api/plugins/device/device-1')
+    expect(mockFetch).toHaveBeenCalledWith('/api/plugins/device/device-1', undefined)
     expect(store.plugins).toEqual(plugins)
   })
 
@@ -78,7 +78,7 @@ describe('plugins store', () => {
     expect(mockFetch).toHaveBeenCalledWith('/api/plugins/plugin-1', {
       method: 'DELETE',
     })
-    expect(mockFetch).toHaveBeenCalledWith('/api/plugins/device/device-1')
+    expect(mockFetch).toHaveBeenCalledWith('/api/plugins/device/device-1', undefined)
   })
 
   it('assignToDevice assigns plugin to device', async () => {

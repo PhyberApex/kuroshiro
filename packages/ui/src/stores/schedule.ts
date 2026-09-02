@@ -1,8 +1,9 @@
 import type { Schedule, ScheduleInput } from '@/types'
 import { defineStore } from 'pinia'
+import { apiFetch } from '@/utils/apiRequest'
 
 async function send(method: string, screenId: string, fallbackError: string, input?: ScheduleInput): Promise<Response> {
-  const res = await fetch(`/api/screens/${screenId}/schedule`, input
+  const res = await apiFetch(`/api/screens/${screenId}/schedule`, input
     ? { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) }
     : { method })
   if (!res.ok)

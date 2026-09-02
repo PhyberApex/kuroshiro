@@ -1,7 +1,7 @@
 import type { CreatePluginPayload, Plugin } from '@/types/plugin'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { apiRequest } from '../utils/apiRequest'
+import { apiFetch, apiRequest } from '../utils/apiRequest'
 
 // The create/update endpoints echo back the device the plugin was assigned to,
 // which is not part of the client-side `Plugin` shape.
@@ -11,7 +11,7 @@ export const usePluginsStore = defineStore('plugins', () => {
   const plugins = ref<Plugin[]>([])
 
   const fetchPluginsForDevice = async (deviceId: string) => {
-    const res = await fetch(`/api/plugins/device/${deviceId}`)
+    const res = await apiFetch(`/api/plugins/device/${deviceId}`)
     if (!res.ok)
       throw new Error('Failed to fetch plugins')
     plugins.value = await res.json()
@@ -42,7 +42,7 @@ export const usePluginsStore = defineStore('plugins', () => {
   }
 
   const deletePlugin = async (id: string, deviceId?: string) => {
-    const res = await fetch(`/api/plugins/${id}`, {
+    const res = await apiFetch(`/api/plugins/${id}`, {
       method: 'DELETE',
     })
     if (!res.ok)
@@ -53,7 +53,7 @@ export const usePluginsStore = defineStore('plugins', () => {
   }
 
   const assignToDevice = async (pluginId: string, deviceId: string, isActive = true, order = 0) => {
-    const res = await fetch(`/api/plugins/${pluginId}/assign`, {
+    const res = await apiFetch(`/api/plugins/${pluginId}/assign`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ deviceId, isActive, order }),
@@ -64,7 +64,7 @@ export const usePluginsStore = defineStore('plugins', () => {
   }
 
   const unassignFromDevice = async (pluginId: string, deviceId: string) => {
-    const res = await fetch(`/api/plugins/${pluginId}/unassign/${deviceId}`, {
+    const res = await apiFetch(`/api/plugins/${pluginId}/unassign/${deviceId}`, {
       method: 'DELETE',
     })
     if (!res.ok)
@@ -72,7 +72,7 @@ export const usePluginsStore = defineStore('plugins', () => {
   }
 
   const updateDeviceAssignment = async (devicePluginId: string, updates: { isActive?: boolean, order?: number }) => {
-    const res = await fetch(`/api/plugins/device-assignment/${devicePluginId}`, {
+    const res = await apiFetch(`/api/plugins/device-assignment/${devicePluginId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),

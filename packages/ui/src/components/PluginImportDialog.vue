@@ -3,6 +3,7 @@ import { mdiUpload } from '@mdi/js'
 import { ref } from 'vue'
 import { VAlert, VBtn, VCard, VCardActions, VCardText, VCardTitle, VDialog, VDivider, VFileInput, VSelect, VTab, VTabs, VTextField, VWindow, VWindowItem } from 'vuetify/components'
 import { useDeviceStore } from '../stores/device'
+import { apiFetch } from '../utils/apiRequest'
 import { errorMessage } from '../utils/errorMessage'
 
 defineProps<{
@@ -52,7 +53,7 @@ async function importPlugin() {
       formData.append('file', selectedFile.value)
       formData.append('deviceId', selectedDeviceId.value)
 
-      const res = await fetch('/api/plugins/import', {
+      const res = await apiFetch('/api/plugins/import', {
         method: 'POST',
         body: formData,
       })
@@ -68,7 +69,7 @@ async function importPlugin() {
         return
       }
 
-      const res = await fetch('/api/plugins/import-github', {
+      const res = await apiFetch('/api/plugins/import-github', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -88,7 +89,7 @@ async function importPlugin() {
         return
       }
 
-      const res = await fetch('/api/plugins/import-recipe', {
+      const res = await apiFetch('/api/plugins/import-recipe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

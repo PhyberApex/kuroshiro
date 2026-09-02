@@ -5,6 +5,7 @@ import { viewFull } from 'kuroshiro-shared'
 import { computed } from 'vue'
 import { VAlert, VBtn, VCard, VCardActions, VCardText, VCardTitle, VDialog, VDivider, VSpacer } from 'vuetify/components'
 import ScreenFrame from '@/components/ScreenFrame.vue'
+import { withBasePath } from '@/utils/basePath'
 import { cacheBustedUrl } from '@/utils/cacheBustedUrl'
 
 const props = defineProps<{
@@ -42,7 +43,7 @@ const cachedOutputMessage = computed(() => props.mode === 'plugin'
 const htmlBody = computed(() => props.mode === 'html' && props.screen?.html ? viewFull(props.screen.html) : null)
 
 const imageSrc = computed(() => props.screen
-  ? cacheBustedUrl(`/screens/devices/${props.deviceId}/${props.screen.id}.png`, props.screen.generatedAt)
+  ? cacheBustedUrl(withBasePath(`/screens/devices/${props.deviceId}/${props.screen.id}.png`), props.screen.generatedAt)
   : '')
 </script>
 
@@ -79,7 +80,7 @@ const imageSrc = computed(() => props.screen
             :src="imageSrc"
             style="max-width: 100%; height: auto; border: 1px solid #ccc;"
             alt="Screen preview"
-            @error="($event.target as HTMLImageElement).src = '/screens/error.png'"
+            @error="($event.target as HTMLImageElement).src = withBasePath('/screens/error.png')"
           >
         </div>
       </VCardText>
