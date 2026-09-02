@@ -6,7 +6,6 @@ COPY packages/shared ./packages/shared
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 RUN corepack enable && pnpm install --frozen-lockfile
 RUN pnpm --filter ./packages/ui build
-RUN pnpm --filter ./packages/ui build
 
 # Stage 2: Build api
 FROM node:24-alpine AS api-build
@@ -14,7 +13,6 @@ WORKDIR /app
 COPY packages/api ./packages/api
 COPY packages/shared ./packages/shared
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
-# Copy built ui static files from previous stage
 RUN corepack enable && pnpm install --frozen-lockfile
 RUN pnpm --filter ./packages/api run build && pnpm --filter ./packages/api run build:migrations
 
@@ -47,9 +45,10 @@ COPY --from=ui-build /app/packages/ui/dist ./public
 COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
 
-# Install only production dependencies
+# The api's workspace devDependencies are bundled into dist at build time and cannot
+# resolve here, since no workspace packages are copied into this stage
 COPY packages/api/package.json ./package.json
-RUN corepack enable && pnpm install --prod --ignore-scripts
+RUN corepack enable && pnpm pkg delete devDependencies && pnpm install --prod --ignore-scripts
 
 # Use tini as the entrypoint
 ENTRYPOINT ["/sbin/tini", "--"]
