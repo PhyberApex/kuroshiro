@@ -17,6 +17,20 @@ function parseYamlObject<T>(content: string, invalidMessage: string): T {
   return parsed as T
 }
 
+export type TemplateLayout = 'full' | 'half_horizontal' | 'half_vertical' | 'quadrant'
+
+// Checked in order against the template filename; the first substring match wins.
+const TEMPLATE_LAYOUTS: Array<[substring: string, layout: TemplateLayout]> = [
+  ['half_horizontal', 'half_horizontal'],
+  ['half_vertical', 'half_vertical'],
+  ['quadrant', 'quadrant'],
+]
+
+export function layoutFromTemplateFilename(filename: string): TemplateLayout {
+  const match = TEMPLATE_LAYOUTS.find(([substring]) => filename.includes(substring))
+  return match ? match[1] : 'full'
+}
+
 interface TerminusManifest {
   name?: string
   description?: string
@@ -251,14 +265,7 @@ export class PluginImporterService {
     const templates = layoutEntries.map((entry) => {
       const filename = path.basename(entry.entryName, '.liquid')
       const content = entry.getData().toString('utf8')
-
-      let layout = 'full'
-      if (filename.includes('half_horizontal'))
-        layout = 'half_horizontal'
-      else if (filename.includes('half_vertical'))
-        layout = 'half_vertical'
-      else if (filename.includes('quadrant'))
-        layout = 'quadrant'
+      const layout = layoutFromTemplateFilename(filename)
 
       // If template uses {% render "main" %} and we have shared.liquid, inline it
       let liquidMarkup = content
@@ -434,14 +441,7 @@ export class PluginImporterService {
         const filePath = path.join(srcDir, file)
         const content = await fs.promises.readFile(filePath, 'utf8')
         const filename = path.basename(file, '.liquid')
-
-        let layout = 'full'
-        if (filename.includes('half_horizontal'))
-          layout = 'half_horizontal'
-        else if (filename.includes('half_vertical'))
-          layout = 'half_vertical'
-        else if (filename.includes('quadrant'))
-          layout = 'quadrant'
+        const layout = layoutFromTemplateFilename(filename)
 
         templates.push({
           layout,
@@ -465,14 +465,7 @@ export class PluginImporterService {
     this.logger.debug(`Parsed settings: ${JSON.stringify(settings)}`)
     this.logger.debug(`Found ${templates.length} templates`)
 
-    // Name can be in manifest, settings, or use filename fallback
-    const pluginName = (manifest.name && manifest.name.trim() !== '')
-      ? manifest.name.trim()
-      : (settings.name && settings.name.trim() !== '')
-          ? settings.name.trim()
-          : fallbackName.replace(/[_-]/g, ' ').replace(/\.trmnlp$/, '')
-
-    const nameSource = manifest.name ? 'manifest' : settings.name ? 'settings' : 'filename'
+    const { name: pluginName, source: nameSource } = this.resolvePluginName(manifest, settings, fallbackName)
     this.logger.log(`Using plugin name: ${pluginName} (from ${nameSource})`)
 
     if (settings.data_source) {
@@ -483,32 +476,8 @@ export class PluginImporterService {
       throw new Error('At least one .liquid template file is required in src/ directory (e.g., src/full.liquid)')
     }
 
-    const hasDataSourcesArray = Array.isArray(settings.data_sources) && settings.data_sources.length > 0
-
-    if (hasDataSourcesArray && transformJs) {
-      this.logger.warn('Ignoring src/transform.js: settings.yml uses the "data_sources" array format, where each entry carries its own "transform_js" instead')
-    }
-
-    const dataSources = forcedDataSources
-      ?? (hasDataSourcesArray
-        ? this.parseDataSourcesArray(settings.data_sources!)
-        : [this.parseLegacySingleDataSource(settings, transformJs)])
-
-    // custom_fields can be in manifest or settings, can be empty object {}, missing, or an array
-    const customFieldsSource = Array.isArray(manifest.custom_fields)
-      ? manifest.custom_fields
-      : Array.isArray(settings.custom_fields)
-        ? settings.custom_fields
-        : []
-    const fields = customFieldsSource.map((field, index) => ({
-      keyname: field.keyname,
-      fieldType: field.field_type,
-      name: field.name,
-      description: field.description,
-      defaultValue: field.default_value,
-      required: !field.optional,
-      order: index + 1,
-    }))
+    const dataSources = forcedDataSources ?? this.resolveDataSources(settings, transformJs)
+    const fields = this.resolveFields(manifest, settings)
 
     return {
       name: pluginName,
@@ -521,73 +490,119 @@ export class PluginImporterService {
     }
   }
 
+  // Name can be in manifest, settings, or use filename fallback
+  private resolvePluginName(
+    manifest: TerminusManifest,
+    settings: TerminusSettings,
+    fallbackName: string,
+  ): { name: string, source: 'manifest' | 'settings' | 'filename' } {
+    const name = (manifest.name && manifest.name.trim() !== '')
+      ? manifest.name.trim()
+      : (settings.name && settings.name.trim() !== '')
+          ? settings.name.trim()
+          : fallbackName.replace(/[_-]/g, ' ').replace(/\.trmnlp$/, '')
+
+    const source = manifest.name ? 'manifest' : settings.name ? 'settings' : 'filename'
+
+    return { name, source }
+  }
+
+  private resolveDataSources(settings: TerminusSettings, transformJs?: string): ParsedDataSource[] {
+    const hasDataSourcesArray = Array.isArray(settings.data_sources) && settings.data_sources.length > 0
+
+    if (hasDataSourcesArray && transformJs) {
+      this.logger.warn('Ignoring src/transform.js: settings.yml uses the "data_sources" array format, where each entry carries its own "transform_js" instead')
+    }
+
+    return hasDataSourcesArray
+      ? this.parseDataSourcesArray(settings.data_sources!)
+      : [this.parseLegacySingleDataSource(settings, transformJs)]
+  }
+
+  // custom_fields can be in manifest or settings, can be empty object {}, missing, or an array
+  private resolveFields(manifest: TerminusManifest, settings: TerminusSettings): ParsedPlugin['fields'] {
+    const customFieldsSource = Array.isArray(manifest.custom_fields)
+      ? manifest.custom_fields
+      : Array.isArray(settings.custom_fields)
+        ? settings.custom_fields
+        : []
+
+    return customFieldsSource.map((field, index) => ({
+      keyname: field.keyname,
+      fieldType: field.field_type,
+      name: field.name,
+      description: field.description,
+      defaultValue: field.default_value,
+      required: !field.optional,
+      order: index + 1,
+    }))
+  }
+
   private parseDataSourcesArray(entries: DataSourceEntry[]): ParsedDataSource[] {
     return entries.map((entry, index) => {
       const name = entry.name && entry.name.trim() !== '' ? entry.name.trim() : `source_${index + 1}`
 
-      if (entry.mode === 'literal') {
-        return {
-          name,
-          mode: 'literal' as const,
-          literalValue: entry.literal_value ?? {},
-        }
-      }
-
-      if (!entry.endpoint || entry.endpoint.trim() === '') {
-        throw new Error(`Data source at index ${index} is missing an "endpoint"`)
-      }
-
-      return {
-        name,
-        mode: 'fetch' as const,
-        method: (entry.method || 'GET').toUpperCase(),
-        url: entry.endpoint.trim(),
-        headers: entry.headers || {},
-        body: entry.body || {},
-        transformJs: entry.transform_js || null,
-      }
+      return entry.mode === 'literal'
+        ? this.parseLiteralEntry(entry, name)
+        : this.parseFetchEntry(entry, name, index)
     })
+  }
+
+  private parseLiteralEntry(entry: DataSourceEntry, name: string): ParsedDataSource {
+    return {
+      name,
+      mode: 'literal',
+      literalValue: entry.literal_value ?? {},
+    }
+  }
+
+  private parseFetchEntry(entry: DataSourceEntry, name: string, index: number): ParsedDataSource {
+    if (!entry.endpoint || entry.endpoint.trim() === '') {
+      throw new Error(`Data source at index ${index} is missing an "endpoint"`)
+    }
+
+    return {
+      name,
+      mode: 'fetch',
+      method: (entry.method || 'GET').toUpperCase(),
+      url: entry.endpoint.trim(),
+      headers: entry.headers || {},
+      body: entry.body || {},
+      transformJs: entry.transform_js || null,
+    }
   }
 
   private parseLegacySingleDataSource(settings: TerminusSettings, transformJs?: string): ParsedDataSource {
     // Support both our previous format (endpoint/method) and Terminus's own format (polling_url/polling_verb)
     const endpoint = settings.endpoint || settings.polling_url
-    const method = settings.method || settings.polling_verb
 
     if (!endpoint || endpoint.trim() === '') {
       throw new Error('Data source endpoint is required in src/settings.yml. Expected format:\npolling_url: https://api.example.com/data\npolling_verb: get')
     }
 
-    // Parse headers if they're a string (Terminus format)
-    let headers = settings.headers || {}
-    if (typeof settings.polling_headers === 'string' && settings.polling_headers.trim()) {
-      try {
-        headers = JSON.parse(settings.polling_headers)
-      }
-      catch {
-        this.logger.warn('Failed to parse polling_headers as JSON, using empty object')
-      }
-    }
-
-    // Parse body if it's a string (Terminus format)
-    let body = settings.body || {}
-    if (typeof settings.polling_body === 'string' && settings.polling_body.trim()) {
-      try {
-        body = JSON.parse(settings.polling_body)
-      }
-      catch {
-        this.logger.warn('Failed to parse polling_body as JSON, using empty object')
-      }
-    }
-
     return {
       name: 'source',
       mode: 'fetch',
-      method: method?.toUpperCase() || 'GET',
+      method: (settings.method || settings.polling_verb)?.toUpperCase() || 'GET',
       url: endpoint.trim(),
-      headers,
-      body,
+      headers: this.parseLegacyJsonField(settings.headers, settings.polling_headers, 'polling_headers'),
+      body: this.parseLegacyJsonField(settings.body, settings.polling_body, 'polling_body'),
       transformJs: transformJs || null,
     }
+  }
+
+  // Terminus ships headers/body as JSON-encoded strings (polling_headers/polling_body);
+  // our own format carries them as plain objects. Falls back to the plain-object value
+  // (or {}) if the string isn't valid JSON.
+  private parseLegacyJsonField<T>(fallback: T | undefined, raw: string | undefined, fieldName: string): T {
+    if (typeof raw === 'string' && raw.trim()) {
+      try {
+        return JSON.parse(raw) as T
+      }
+      catch {
+        this.logger.warn(`Failed to parse ${fieldName} as JSON, using empty object`)
+      }
+    }
+    return (fallback ?? {}) as T
   }
 }
