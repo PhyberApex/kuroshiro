@@ -38,11 +38,8 @@
       }
     },
     "packages/api/src/plugins/plugins.service.ts": {
-      "complexity_critical": {
-        "count": 2
-      },
-      "crap_critical": {
-        "count": 2
+      "crap_moderate": {
+        "count": 1
       }
     },
     "packages/api/src/plugins/services/plugin-data-fetcher.service.ts": {
@@ -103,6 +100,6 @@
   "runtime_coverage_findings": [],
   "target_keys": [
     "packages/api/src/devices/display.service.ts:complexity",
-    "packages/api/src/plugins/plugins.service.ts:complexity"
+    "packages/ui/src/utils/apiRequest.ts:high impact"
   ]
 }
