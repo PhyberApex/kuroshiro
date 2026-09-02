@@ -47,17 +47,6 @@
         "count": 1
       }
     },
-    "packages/api/src/plugins/services/plugin-importer.service.ts": {
-      "complexity_high": {
-        "count": 2
-      },
-      "crap_high": {
-        "count": 2
-      },
-      "crap_moderate": {
-        "count": 2
-      }
-    },
     "packages/api/src/utils/ssrfGuard.ts": {
       "crap_moderate": {
         "count": 1
@@ -99,6 +88,7 @@
   },
   "runtime_coverage_findings": [],
   "target_keys": [
+    "packages/api/src/plugins/plugins.service.ts:complexity",
     "packages/api/src/devices/display.service.ts:complexity",
     "packages/ui/src/utils/apiRequest.ts:high impact"
   ]
