@@ -1,3 +1,4 @@
+import type { FindOptionsRelations } from 'typeorm'
 import type { MashupSlot } from '../mashup/entities/mashup-slot.entity.js'
 import type { AssignPluginToDeviceDto } from './dto/assign-plugin-to-device.dto.js'
 import type { CreatePluginDto } from './dto/create-plugin.dto.js'
@@ -26,6 +27,13 @@ import { PluginDataFetcherService } from './services/plugin-data-fetcher.service
 import { PluginRendererService } from './services/plugin-renderer.service.js'
 import { PluginSchedulerService } from './services/plugin-scheduler.service.js'
 import { PluginTransformService } from './services/plugin-transform.service.js'
+
+type UpdateBasicFields = Omit<UpdatePluginDto, 'dataSources' | 'templates' | 'fields' | 'webhookToken'>
+
+interface MergeFields {
+  mergeStrategy: MergeStrategy | null | undefined
+  streamLimit: number | null | undefined
+}
 
 @Injectable()
 export class PluginsService implements OnModuleInit {
@@ -191,7 +199,7 @@ export class PluginsService implements OnModuleInit {
     await this.createTemplates(savedPlugin, templates)
     await this.createFields(savedPlugin, fields)
 
-    const created = await this.reloadPlugin(savedPlugin.id, 'newly created')
+    const created = await this.reloadPlugin(savedPlugin.id)
     this.scheduleIfReady(created, `Scheduled new plugin: ${created.name}`)
 
     return created
@@ -276,14 +284,15 @@ export class PluginsService implements OnModuleInit {
     }
   }
 
-  private async reloadPlugin(id: string, context: string): Promise<Plugin> {
-    const plugin = await this.pluginRepository.findOne({
-      where: { id },
-      relations: { dataSources: true, templates: true, fields: true },
-    })
+  private async findPluginWithRelations(id: string, relations: FindOptionsRelations<Plugin>): Promise<Plugin | null> {
+    return this.pluginRepository.findOne({ where: { id }, relations })
+  }
+
+  private async reloadPlugin(id: string): Promise<Plugin> {
+    const plugin = await this.findPluginWithRelations(id, { dataSources: true, templates: true, fields: true })
 
     if (!plugin)
-      throw new Error(`Failed to load ${context} plugin: ${id}`)
+      throw new Error(`Failed to load newly created plugin: ${id}`)
 
     return plugin
   }
@@ -344,13 +353,13 @@ export class PluginsService implements OnModuleInit {
   // UpdatePluginDto field an own property equal to `undefined` even when the caller never sent
   // it, so unset fields must be dropped here before they reach the Object.assign in
   // applyBasicFields — otherwise a partial PATCH would blank out every field the caller omitted.
-  private dropUnsetFields<T extends object>(rawFields: T): T {
+  private dropUnsetFields(rawFields: UpdateBasicFields): UpdateBasicFields {
     return Object.fromEntries(
       Object.entries(rawFields).filter(([, value]) => value !== undefined),
-    ) as T
+    ) as UpdateBasicFields
   }
 
-  private assertKindUnchanged(basicFields: { kind?: PluginKind }, plugin: Plugin): void {
+  private assertKindUnchanged(basicFields: UpdateBasicFields, plugin: Plugin): void {
     if (basicFields.kind !== undefined && basicFields.kind !== plugin.kind) {
       throw new BadRequestException(`A Plugin's Kind is fixed at creation and cannot be changed`)
     }
@@ -368,13 +377,13 @@ export class PluginsService implements OnModuleInit {
     }
   }
 
-  private resolveMergeFields(basicFields: { mergeStrategy?: MergeStrategy, streamLimit?: number }, plugin: Plugin): { mergeStrategy: MergeStrategy | null | undefined, streamLimit: number | null | undefined } {
+  private resolveMergeFields(basicFields: UpdateBasicFields, plugin: Plugin): MergeFields {
     const mergeStrategy = basicFields.mergeStrategy !== undefined ? basicFields.mergeStrategy : plugin.mergeStrategy
     const streamLimit = mergeStrategy === 'stream' ? basicFields.streamLimit ?? plugin.streamLimit : basicFields.streamLimit
     return { mergeStrategy, streamLimit }
   }
 
-  private applyBasicFields(plugin: Plugin, basicFields: object, mergeFields: { mergeStrategy: MergeStrategy | null | undefined, streamLimit: number | null | undefined }): void {
+  private applyBasicFields(plugin: Plugin, basicFields: UpdateBasicFields, mergeFields: MergeFields): void {
     Object.assign(plugin, basicFields, plugin.kind === 'Webhook' ? { mergeStrategy: mergeFields.mergeStrategy, streamLimit: mergeFields.streamLimit ?? null } : {})
   }
 
@@ -432,10 +441,7 @@ export class PluginsService implements OnModuleInit {
 
   private async rescheduleAfterUpdate(id: string): Promise<void> {
     this.scheduler.removeScheduledJob(id)
-    const fullPlugin = await this.pluginRepository.findOne({
-      where: { id },
-      relations: { dataSources: true, templates: true },
-    })
+    const fullPlugin = await this.findPluginWithRelations(id, { dataSources: true, templates: true })
     if (fullPlugin) {
       this.scheduleIfReady(fullPlugin, `Rescheduled plugin: ${fullPlugin.name}`)
     }
