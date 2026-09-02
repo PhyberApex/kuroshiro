@@ -31,6 +31,8 @@ export function layoutFromTemplateFilename(filename: string): TemplateLayout {
   return match ? match[1] : 'full'
 }
 
+const KNOWN_TEMPLATE_LAYOUT_NAMES: string[] = ['full', ...TEMPLATE_LAYOUTS.map(([substring]) => substring)]
+
 interface TerminusManifest {
   name?: string
   description?: string
@@ -259,7 +261,7 @@ export class PluginImporterService {
     // Process layout templates (skip shared.liquid, transform.js, etc.)
     const layoutEntries = templateEntries.filter((entry) => {
       const filename = path.basename(entry.entryName, '.liquid')
-      return ['full', 'half_horizontal', 'half_vertical', 'quadrant'].some(layout => filename.includes(layout))
+      return KNOWN_TEMPLATE_LAYOUT_NAMES.some(layout => filename.includes(layout))
     })
 
     const templates = layoutEntries.map((entry) => {
