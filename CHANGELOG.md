@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.12.0...kuroshiro-v0.12.1) (2026-09-02)
+
+
+### Bug Fixes
+
+* **docker:** stop the production stage choking on the workspace devDependency ([#910](https://github.com/PhyberApex/kuroshiro/issues/910)) ([cc3db44](https://github.com/PhyberApex/kuroshiro/commit/cc3db440a83bbb645ff1b6b61261f75113b7ce8d))
+
 ## [0.12.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.11.0...kuroshiro-v0.12.0) (2026-08-28)
 
 
