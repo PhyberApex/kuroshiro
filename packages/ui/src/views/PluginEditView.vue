@@ -9,6 +9,7 @@ import PluginDataSourcesEditor from '@/components/PluginDataSourcesEditor.vue'
 import PluginPreviewDialog from '@/components/PluginPreviewDialog.vue'
 import PluginTemplateEditor from '@/components/PluginTemplateEditor.vue'
 import { usePluginPreview } from '@/composeables/usePluginPreview'
+import { apiFetch } from '@/utils/apiRequest'
 import { errorMessage } from '@/utils/errorMessage'
 import { nameRules, refreshIntervalRules } from '@/utils/pluginRules'
 import { usePluginsStore } from '../stores/plugins'
@@ -35,7 +36,7 @@ const configurableFields = computed(() => {
 
 onMounted(async () => {
   try {
-    const res = await fetch(`/api/plugins/${props.id}`)
+    const res = await apiFetch(`/api/plugins/${props.id}`)
     if (!res.ok)
       throw new Error('Failed to fetch plugin')
     plugin.value = await res.json()

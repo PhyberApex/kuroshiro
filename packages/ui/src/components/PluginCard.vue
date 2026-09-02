@@ -5,6 +5,7 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { VBtn, VCard, VCardActions, VCardText, VCardTitle, VChip, VDialog, VDivider, VSnackbar, VSpacer } from 'vuetify/components'
 import { usePluginsStore } from '../stores/plugins'
+import { withBasePath } from '../utils/basePath'
 import PluginAssignDialog from './PluginAssignDialog.vue'
 
 const props = defineProps<{
@@ -67,7 +68,7 @@ function editPlugin() {
 }
 
 function exportPlugin() {
-  window.location.href = `/api/plugins/${props.plugin.id}/export`
+  window.location.href = withBasePath(`/api/plugins/${props.plugin.id}/export`)
   showExportSnackbar.value = true
 }
 

@@ -2,7 +2,7 @@ import type { DeviceModelSyncResult } from 'kuroshiro-shared'
 import type { DeviceModel, Palette } from '../types'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { apiRequest } from '../utils/apiRequest'
+import { apiFetch, apiRequest } from '../utils/apiRequest'
 
 export const useDeviceModelsStore = defineStore('deviceModels', () => {
   const models = ref<DeviceModel[]>([])
@@ -17,7 +17,7 @@ export const useDeviceModelsStore = defineStore('deviceModels', () => {
 
   async function fetchAll() {
     try {
-      const [modelsRes, palettesRes] = await Promise.all([fetch('/api/device-models'), fetch('/api/device-models/palettes')])
+      const [modelsRes, palettesRes] = await Promise.all([apiFetch('/api/device-models'), apiFetch('/api/device-models/palettes')])
       if (!modelsRes.ok)
         throw new Error(`${modelsRes.status} ${modelsRes.statusText}`)
       if (!palettesRes.ok)

@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { VAlert, VAutocomplete, VBtn, VCard, VCardText, VCardTitle, VCol, VContainer, VDivider, VExpansionPanel, VExpansionPanels, VExpansionPanelText, VExpansionPanelTitle, VForm, VImg, VRow, VTab, VTabs, VTextField, VWindow, VWindowItem } from 'vuetify/components'
 import { useDeviceStore } from '@/stores/device'
+import { apiFetch } from '@/utils/apiRequest'
 import { deviceRenderSize } from '@/utils/deviceRenderSize'
 import { errorMessage } from '@/utils/errorMessage'
 import { getRandomMac, isValidMac } from '@/utils/getRandomMac'
@@ -32,7 +33,7 @@ async function callSetup() {
   error.value = ''
   loadingSetup.value = true
   try {
-    const res = await fetch('/api/setup', {
+    const res = await apiFetch('/api/setup', {
       headers: { id: mac.value, model: customHeaders.value.model },
     })
     if (!res.ok)
@@ -63,7 +64,7 @@ async function callDisplay() {
       if (v)
         headers[k] = v
     }
-    const res = await fetch('/api/display', { headers })
+    const res = await apiFetch('/api/display', { headers })
     if (!res.ok) {
       if (res.status === 400 || res.status === 401) {
         const error = await res.json()

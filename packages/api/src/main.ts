@@ -4,11 +4,14 @@ import { DataSource } from 'typeorm'
 import { AppModule } from './app.module.js'
 import config from './config/config.js'
 import { LoggingInterceptor } from './interceptors/logging.interceptor.js'
+import { ingressBasePathMiddleware } from './middleware/ingress-base-path.middleware.js'
+import { resolveAppPath } from './utils/pathHelper.js'
 import 'reflect-metadata'
 
 async function bootstrap() {
   const logger = new Logger('bootstrap')
   const app = await NestFactory.create(AppModule)
+  app.use(ingressBasePathMiddleware(resolveAppPath('public')))
   const dataSource = app.get(DataSource)
   const pending = dataSource.migrations
   if (pending.length === 0) {

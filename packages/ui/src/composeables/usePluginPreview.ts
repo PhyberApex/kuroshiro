@@ -1,6 +1,7 @@
 import type { PluginDataSource } from '@/types/plugin'
 import type { RenderTarget } from '@/utils/screenShell'
 import { ref } from 'vue'
+import { apiFetch } from '@/utils/apiRequest'
 import { errorMessage } from '@/utils/errorMessage'
 import { DEFAULT_MODEL, DEFAULT_PALETTE } from '@/utils/renderTarget'
 
@@ -29,7 +30,7 @@ export function usePluginPreview(options: UsePluginPreviewOptions) {
 
     previewLoading.value = true
     try {
-      const res = await fetch('/api/plugins/preview', {
+      const res = await apiFetch('/api/plugins/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

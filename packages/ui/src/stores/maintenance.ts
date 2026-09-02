@@ -2,6 +2,7 @@ import type { CleanupResult, MaintenanceIssues } from 'kuroshiro-shared'
 import type { MaintenanceStats } from '../types'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { apiFetch } from '../utils/apiRequest'
 
 export const useMaintenanceStore = defineStore('maintenance', () => {
   const issues = ref<MaintenanceIssues | null>(null)
@@ -12,7 +13,7 @@ export const useMaintenanceStore = defineStore('maintenance', () => {
     loading.value = true
     error.value = null
     try {
-      const res = await fetch('/api/maintenance/scan')
+      const res = await apiFetch('/api/maintenance/scan')
       if (!res.ok)
         throw new Error(`Scan failed: ${res.statusText}`)
       issues.value = await res.json()
@@ -37,7 +38,7 @@ export const useMaintenanceStore = defineStore('maintenance', () => {
     loading.value = true
     error.value = null
     try {
-      const res = await fetch('/api/maintenance/cleanup', {
+      const res = await apiFetch('/api/maintenance/cleanup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -64,7 +65,7 @@ export const useMaintenanceStore = defineStore('maintenance', () => {
 
   async function getStats(): Promise<MaintenanceStats> {
     try {
-      const res = await fetch('/api/maintenance/stats')
+      const res = await apiFetch('/api/maintenance/stats')
       if (!res.ok)
         throw new Error(`Stats fetch failed: ${res.statusText}`)
       return await res.json()

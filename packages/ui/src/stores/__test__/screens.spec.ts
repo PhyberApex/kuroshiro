@@ -34,7 +34,7 @@ describe('screens store', () => {
     const store = useScreensStore()
     await expect(store.reorderScreens('device-1', ['b', 'a'])).rejects.toThrow('Failed to reorder screens')
 
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/screens/device/device-1')
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/screens/device/device-1', undefined)
     expect(store.screens).toEqual(serverScreens)
   })
 })

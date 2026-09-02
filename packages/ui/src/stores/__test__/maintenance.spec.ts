@@ -28,7 +28,7 @@ describe('maintenanceStore', () => {
       const store = useMaintenanceStore()
       await store.scanSystem()
 
-      expect(fetch).toHaveBeenCalledWith('/api/maintenance/scan')
+      expect(fetch).toHaveBeenCalledWith('/api/maintenance/scan', undefined)
       expect(store.issues).toEqual(mockIssues)
       expect(store.loading).toBe(false)
       expect(store.error).toBeNull()
@@ -208,7 +208,7 @@ describe('maintenanceStore', () => {
       const store = useMaintenanceStore()
       const result = await store.getStats()
 
-      expect(fetch).toHaveBeenCalledWith('/api/maintenance/stats')
+      expect(fetch).toHaveBeenCalledWith('/api/maintenance/stats', undefined)
       expect(result).toEqual(mockStats)
     })
 

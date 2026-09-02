@@ -1,10 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useDeviceStore } from '../stores/device'
 import { usePluginsStore } from '../stores/plugins'
+import { getBasePath } from '../utils/basePath'
 import { routeParam } from '../utils/routeParam'
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(getBasePath() || '/'),
   routes: [
     {
       path: '/',

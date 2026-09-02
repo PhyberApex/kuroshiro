@@ -1,6 +1,25 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { jsonResponse, stubFetch } from '../../test/fetch'
-import { apiRequest } from '../apiRequest'
+import { apiFetch, apiRequest } from '../apiRequest'
+
+describe('apiFetch', () => {
+  afterEach(() => {
+    document.head.querySelector('base')?.remove()
+  })
+
+  it('resolves the request against the runtime base path', async () => {
+    const base = document.createElement('base')
+    base.href = '/api/hassio_ingress/some-token/'
+    document.head.appendChild(base)
+
+    const mockFetch = stubFetch()
+    mockFetch.mockResolvedValue(jsonResponse({}))
+
+    await apiFetch('/api/devices')
+
+    expect(mockFetch).toHaveBeenCalledWith('/api/hassio_ingress/some-token/api/devices', undefined)
+  })
+})
 
 describe('apiRequest', () => {
   it('returns the parsed JSON body on success', async () => {

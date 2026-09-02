@@ -1,6 +1,7 @@
 import type { LogEntry } from '../types'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { apiFetch } from '../utils/apiRequest'
 
 function createLogStore(deviceId: string) {
   return () => {
@@ -10,7 +11,7 @@ function createLogStore(deviceId: string) {
 
     const clearLogs = async () => {
       loading.value = true
-      const res = await fetch(`/api/log/device/${deviceId}`, {
+      const res = await apiFetch(`/api/log/device/${deviceId}`, {
         method: 'DELETE',
       })
       if (res.ok) {
@@ -19,7 +20,7 @@ function createLogStore(deviceId: string) {
       loading.value = false
     }
 
-    fetch(`/api/log/device/${deviceId}`).then(async (res) => {
+    apiFetch(`/api/log/device/${deviceId}`).then(async (res) => {
       loading.value = false
       if (res.ok) {
         error.value = ''
