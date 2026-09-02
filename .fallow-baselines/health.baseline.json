@@ -38,11 +38,8 @@
       }
     },
     "packages/api/src/plugins/plugins.service.ts": {
-      "complexity_critical": {
-        "count": 2
-      },
-      "crap_critical": {
-        "count": 2
+      "crap_moderate": {
+        "count": 1
       }
     },
     "packages/api/src/plugins/services/plugin-data-fetcher.service.ts": {
