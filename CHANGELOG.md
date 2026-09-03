@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.3](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.12.2...kuroshiro-v0.12.3) (2026-09-03)
+
+
+### Bug Fixes
+
+* **docker:** deploy pnpm-lock.yaml-pinned node_modules to the production image ([#921](https://github.com/PhyberApex/kuroshiro/issues/921)) ([f17e1b9](https://github.com/PhyberApex/kuroshiro/commit/f17e1b92e2e51e929810efbf526865bbe5baf6e3))
+
 ## [0.12.2](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.12.1...kuroshiro-v0.12.2) (2026-09-02)
 
 
