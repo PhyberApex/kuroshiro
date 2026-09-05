@@ -37,10 +37,12 @@ export class ScreensService {
     const device = await this.findDeviceForAdd(body.deviceId)
     const saved = await this.createScreen(body, device)
 
-    if (body.externalLink && body.fetchManual)
+    // dispatcher: each source type has its own handler, keeps cyclomatic low
+    if (body.externalLink && body.fetchManual) {
       await this.fetchExternalImageForScreen(device, saved, body.externalLink)
-    else if (file)
+    } else if (file) {
       await this.saveUploadedFileForScreen(device, saved, file)
+    }
 
     return this.activateScreen(saved, device.id)
   }
