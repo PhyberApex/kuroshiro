@@ -8,6 +8,7 @@ import type { MockPluginDataFetcherService, MockPluginRendererService, MockPlugi
 import type { MashupConfiguration } from '../entities/mashup-configuration.entity.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMockDeviceSensorsService, primeMockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService.js'
+import { PluginDataResolverService } from '../../plugins/services/plugin-data-resolver.service.js'
 import { PluginTemplateContextService } from '../../plugins/services/plugin-template-context.service.js'
 import { makeDevice, makeMashupConfiguration, makeMashupSlot, makePlugin, makePluginDataSource, makePluginTemplate } from '../../test/fixtures.js'
 import { createMockPluginDataFetcherService, createMockPluginRendererService, createMockPluginTransformService } from '../../test/mockPluginCollaborators.js'
@@ -34,10 +35,14 @@ describe('mashupRendererService', () => {
     deviceSensors = createMockDeviceSensorsService()
     primeMockDeviceSensorsService(deviceSensors)
 
-    service = new MashupRendererService(
+    const pluginDataResolver = new PluginDataResolverService(
       asService<PluginDataFetcherService>(pluginDataFetcher),
-      asService<PluginRendererService>(pluginRenderer),
       asService<PluginTransformService>(pluginTransformer),
+    )
+
+    service = new MashupRendererService(
+      pluginDataResolver,
+      asService<PluginRendererService>(pluginRenderer),
       asService<ConfigService>(configService),
       asService<DeviceSensorsService>(deviceSensors),
       new PluginTemplateContextService(),
