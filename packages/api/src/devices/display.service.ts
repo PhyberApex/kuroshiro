@@ -32,7 +32,7 @@ import { isDeviceAsleep, secondsUntilSleepEnd } from './sleep-mode.js'
 // bundled into one object rather than passed positionally — several of them
 // share a type (two booleans, two strings) and a transposed pair would compile
 // cleanly while silently flipping real-device behavior.
-export interface HeaderReport {
+interface HeaderReport {
   resetDevice: boolean
   specialFunction: string
   firmwareUrl: string

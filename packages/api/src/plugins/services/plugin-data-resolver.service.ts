@@ -1,6 +1,5 @@
 import type { FetchableDataSource } from './plugin-data-fetcher.service.js'
 import { Injectable, Logger } from '@nestjs/common'
-import { getErrorMessage } from '../../utils/getErrorMessage.js'
 import { PluginDataFetcherService } from './plugin-data-fetcher.service.js'
 import { PluginTransformService } from './plugin-transform.service.js'
 
@@ -48,7 +47,7 @@ export class PluginDataResolverService {
         data[name] = result.value
       }
       else {
-        const message = getErrorMessage(result.reason)
+        const message = result.reason?.message || String(result.reason)
         this.logger.warn(`Data source "${name}" failed: ${message}`)
         data[name] = { error: true, message }
       }
