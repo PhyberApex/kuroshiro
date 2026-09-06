@@ -15,7 +15,6 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Screen } from '../screens/screens.entity.js'
 import generateApikey from '../utils/generateApikey.js'
-import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { DevicePlugin } from './entities/device-plugin.entity.js'
 import { PluginDataSource } from './entities/plugin-data-source.entity.js'
 import { PluginField } from './entities/plugin-field.entity.js'
@@ -23,10 +22,9 @@ import { PluginTemplate } from './entities/plugin-template.entity.js'
 import { Plugin } from './entities/plugin.entity.js'
 import { dataSourceModeViolation } from './plugin-data-source-mode.js'
 import { pluginKindFieldViolation } from './plugin-kind-fields.js'
-import { PluginDataFetcherService } from './services/plugin-data-fetcher.service.js'
+import { PluginDataResolverService } from './services/plugin-data-resolver.service.js'
 import { PluginRendererService } from './services/plugin-renderer.service.js'
 import { PluginSchedulerService } from './services/plugin-scheduler.service.js'
-import { PluginTransformService } from './services/plugin-transform.service.js'
 
 type UpdateBasicFields = Omit<UpdatePluginDto, 'dataSources' | 'templates' | 'fields' | 'webhookToken'>
 
@@ -54,10 +52,9 @@ export class PluginsService implements OnModuleInit {
     private readonly templateRepository: Repository<PluginTemplate>,
     @InjectRepository(PluginField)
     private readonly fieldRepository: Repository<PluginField>,
-    private readonly dataFetcher: PluginDataFetcherService,
+    private readonly pluginDataResolver: PluginDataResolverService,
     private readonly renderer: PluginRendererService,
     private readonly scheduler: PluginSchedulerService,
-    private readonly transformer: PluginTransformService,
   ) {
     // Lazy injection to avoid circular dependency with MashupModule
     setTimeout(() => {
@@ -608,30 +605,7 @@ export class PluginsService implements OnModuleInit {
       Object.assign(templateContext, fieldValues)
     }
 
-    const results = await Promise.allSettled(
-      (sources || []).map(async (source) => {
-        let rawData = await this.dataFetcher.fetchOrLiteral(source, templateContext)
-        if (source.transformJs) {
-          this.logger.debug(`Applying transform.js to data source: ${source.name}`)
-          rawData = this.transformer.transform(source.transformJs, rawData)
-        }
-        return rawData
-      }),
-    )
-
-    const data: Record<string, unknown> = {}
-    results.forEach((result, index) => {
-      const name = sources[index].name
-      if (result.status === 'fulfilled') {
-        data[name] = result.value
-      }
-      else {
-        const message = getErrorMessage(result.reason)
-        this.logger.warn(`Data source "${name}" failed during preview: ${message}`)
-        data[name] = { error: true, message }
-      }
-    })
-
+    const data = await this.pluginDataResolver.resolveAll(sources || [], templateContext)
     const templateData: Record<string, unknown> = { ...templateContext, ...data }
 
     const html = template ? await this.renderer.render(template, templateData) : ''
