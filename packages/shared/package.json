@@ -2,7 +2,7 @@
   "name": "kuroshiro-shared",
   "version": "0.12.2",
   "private": true,
-  "packageManager": "pnpm@12.3.1",
+  "packageManager": "pnpm@12.3.3",
   "exports": {
     ".": "./src/index.ts"
   },
