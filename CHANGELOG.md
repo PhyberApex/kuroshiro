@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.12.3](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.12.2...kuroshiro-v0.12.3) (2026-09-11)
+
+
+### Bug Fixes
+
+* **ci:** remove flaky unused pnpm install step from docker publish workflows ([#942](https://github.com/PhyberApex/kuroshiro/issues/942)) ([2e3ca87](https://github.com/PhyberApex/kuroshiro/commit/2e3ca8796c6e861c0a93fa11537d5e77ba1110ef))
+* **docker:** deploy pnpm-lock.yaml-pinned node_modules to the production image ([#921](https://github.com/PhyberApex/kuroshiro/issues/921)) ([f17e1b9](https://github.com/PhyberApex/kuroshiro/commit/f17e1b92e2e51e929810efbf526865bbe5baf6e3))
+
 ## [0.12.2](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.12.1...kuroshiro-v0.12.2) (2026-09-02)
 
 
