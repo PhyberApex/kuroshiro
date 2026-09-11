@@ -15,7 +15,6 @@
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "type-check": "tsc --noEmit -p tsconfig.json",
-    "prepare": "puppeteer browsers install chrome",
     "migration:generate": "typeorm-ts-node-esm migration:generate -d src/config/typeorm.config.ts",
     "migration:create": "typeorm-ts-node-esm migration:create",
     "migration:run": "typeorm-ts-node-esm migration:run -d src/config/typeorm.config.ts",
