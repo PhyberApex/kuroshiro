@@ -32,16 +32,30 @@ const saving = ref(false)
 const hasSchedule = computed(() => Boolean(props.screen.schedule))
 const spansMidnight = computed(() => Boolean(startTime.value && endTime.value && startTime.value > endTime.value))
 
+function scheduleToForm(schedule: Screen['schedule']) {
+  if (!schedule) {
+    return { enabled: true, weekdays: [], startTime: '', endTime: '', startDate: '', endDate: '' }
+  }
+  return {
+    enabled: schedule.enabled,
+    weekdays: schedule.weekdays ? [...schedule.weekdays] : [],
+    startTime: schedule.startTime ? withoutSeconds(schedule.startTime) : '',
+    endTime: schedule.endTime ? withoutSeconds(schedule.endTime) : '',
+    startDate: schedule.startDate ?? '',
+    endDate: schedule.endDate ?? '',
+  }
+}
+
 watch(() => props.modelValue, (open) => {
   if (!open)
     return
-  const schedule = props.screen.schedule
-  enabled.value = schedule?.enabled ?? true
-  weekdays.value = schedule?.weekdays ? [...schedule.weekdays] : []
-  startTime.value = schedule?.startTime ? withoutSeconds(schedule.startTime) : ''
-  endTime.value = schedule?.endTime ? withoutSeconds(schedule.endTime) : ''
-  startDate.value = schedule?.startDate ?? ''
-  endDate.value = schedule?.endDate ?? ''
+  const form = scheduleToForm(props.screen.schedule)
+  enabled.value = form.enabled
+  weekdays.value = form.weekdays
+  startTime.value = form.startTime
+  endTime.value = form.endTime
+  startDate.value = form.startDate
+  endDate.value = form.endDate
   error.value = null
 }, { immediate: true })
 

@@ -36,11 +36,8 @@ vi.mock('@/stores/plugins', () => ({
   usePluginsStore: () => pluginsStoreMock,
 }))
 
-const mockRouter = {
-  push: vi.fn(),
-}
 vi.mock('vue-router', () => ({
-  useRouter: () => mockRouter,
+  useRouter: () => ({ push: vi.fn() }),
 }))
 
 vi.mock('../PluginAssignDialog.vue', () => ({
@@ -57,7 +54,6 @@ describe('pluginCard', () => {
       updateDeviceAssignment: vi.fn(),
       fetchPluginsForDevice: vi.fn(),
     })
-    mockRouter.push.mockClear()
   })
 
   const basePlugin: Plugin = {
@@ -126,60 +122,6 @@ describe('pluginCard', () => {
     expect(wrapper.text()).toContain('Active')
   })
 
-  it('shows edit button and navigates on click', async () => {
-    const wrapper = mount(PluginCard, {
-      props: { plugin: basePlugin },
-      global: {
-        plugins: [createPinia(), vuetify],
-      },
-    })
-
-    const editBtn = wrapper.findAll('button').find(btn => btn.text().includes('Edit'))
-    expect(editBtn).toBeTruthy()
-    await editBtn!.trigger('click')
-
-    expect(mockRouter.push).toHaveBeenCalledWith({
-      name: 'pluginEdit',
-      params: { id: 'plugin-1' },
-    })
-  })
-
-  it('shows assign button when not on device page', () => {
-    const wrapper = mount(PluginCard, {
-      props: { plugin: basePlugin },
-      global: {
-        plugins: [createPinia(), vuetify],
-      },
-    })
-
-    expect(wrapper.text()).toContain('Assign to Devices')
-  })
-
-  it('shows enable/disable button when on device page', () => {
-    const plugin = {
-      ...basePlugin,
-      _isActive: true,
-      _devicePluginId: 'dp-1',
-    }
-    const wrapper = mount(PluginCard, {
-      props: { plugin, deviceId: 'device-1' },
-      global: {
-        plugins: [createPinia(), vuetify],
-      },
-    })
-
-    expect(wrapper.text()).toContain('Disable')
-  })
-
-  it('shows delete button', async () => {
-    const wrapper = mount(PluginCard, {
-      props: { plugin: basePlugin },
-      global: {
-        plugins: [createPinia(), vuetify],
-      },
-    })
-
-    const deleteBtn = wrapper.findAll('button').find(btn => btn.text().includes('Delete'))
-    expect(deleteBtn).toBeTruthy()
-  })
+  // Action-button behavior (edit/assign/toggle/export/delete) lives in PluginCardActions.vue
+  // now and is covered by PluginCardActions.spec.ts.
 })

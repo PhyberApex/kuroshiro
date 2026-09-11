@@ -14,6 +14,8 @@ function isPresent(value: unknown): boolean {
   return value !== undefined && value !== null
 }
 
+type ModeViolationCheck = [fieldName: string, isViolation: boolean, message: string]
+
 /**
  * fetch and literal Data Sources have disjoint required fields; a Data
  * Source carrying a field from the mode it isn't is rejected rather than
@@ -22,39 +24,25 @@ function isPresent(value: unknown): boolean {
 export function dataSourceModeViolation(fields: DataSourceModeFields): string | null {
   const { mode = 'fetch', method, url, headers, body, transformJs, literalValue } = fields
 
-  if (mode === 'literal') {
-    // PluginDataSource.method is a non-nullable column defaulting to 'GET'
-    // (shared with fetch mode, which needs a real default there) — a
-    // literal-mode row loaded back from storage always carries 'GET' even
-    // though nothing ever asked for it, so only a caller-supplied
-    // *non*-default method counts as a real fetch-field violation here.
-    if (isPresent(method) && method !== 'GET') {
-      return 'A literal-mode Data Source cannot have a Method'
-    }
-    if (isPresent(url)) {
-      return 'A literal-mode Data Source cannot have a URL'
-    }
-    if (isPresent(headers)) {
-      return 'A literal-mode Data Source cannot have Headers'
-    }
-    if (isPresent(body)) {
-      return 'A literal-mode Data Source cannot have a Body'
-    }
-    if (isPresent(transformJs)) {
-      return 'A literal-mode Data Source cannot have a Transform'
-    }
-    if (!isPresent(literalValue)) {
-      return 'A literal-mode Data Source requires a Value'
-    }
-    return null
-  }
+  const checks: ModeViolationCheck[] = mode === 'literal'
+    ? [
+        // PluginDataSource.method is a non-nullable column defaulting to
+        // 'GET' (shared with fetch mode, which needs a real default there)
+        // — a literal-mode row loaded back from storage always carries
+        // 'GET' even though nothing ever asked for it, so only a
+        // caller-supplied *non*-default method counts as a real
+        // fetch-field violation here.
+        ['method', isPresent(method) && method !== 'GET', 'A literal-mode Data Source cannot have a Method'],
+        ['url', isPresent(url), 'A literal-mode Data Source cannot have a URL'],
+        ['headers', isPresent(headers), 'A literal-mode Data Source cannot have Headers'],
+        ['body', isPresent(body), 'A literal-mode Data Source cannot have a Body'],
+        ['transformJs', isPresent(transformJs), 'A literal-mode Data Source cannot have a Transform'],
+        ['literalValue', !isPresent(literalValue), 'A literal-mode Data Source requires a Value'],
+      ]
+    : [
+        ['literalValue', isPresent(literalValue), 'A fetch-mode Data Source cannot have a Value'],
+        ['url', !isPresent(url), 'A fetch-mode Data Source requires a URL'],
+      ]
 
-  if (isPresent(literalValue)) {
-    return 'A fetch-mode Data Source cannot have a Value'
-  }
-  if (!isPresent(url)) {
-    return 'A fetch-mode Data Source requires a URL'
-  }
-
-  return null
+  return checks.find(([, isViolation]) => isViolation)?.[2] ?? null
 }

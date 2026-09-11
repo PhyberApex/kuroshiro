@@ -16,6 +16,17 @@ COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 RUN corepack enable && pnpm install --frozen-lockfile
 RUN pnpm --filter ./packages/api run build && pnpm --filter ./packages/api run build:migrations
 
+# Deploy the api's production node_modules, pinned exactly to pnpm-lock.yaml.
+# --legacy: this workspace doesn't inject workspace packages (see the kuroshiro-shared
+#   note below), which pnpm's default deploy implementation requires.
+# --no-optional: drops typeorm's optional peer on ts-node (otherwise pulled in because
+#   ts-node is a devDependency elsewhere in the workspace lockfile, dragging in
+#   ts-node/typescript/@swc-core for a CLI path this image never uses) and pg's optional
+#   pg-cloudflare (Cloudflare Workers transport, dead code on plain Node.js). typeorm also
+#   marks pg itself optional (one of many DB-driver peers), but pg stays installed since
+#   it's a direct runtime dependency of packages/api independent of that peer flag.
+RUN pnpm --filter ./packages/api deploy --legacy --prod --no-optional --ignore-scripts /prod/api
+
 # Stage 3: Production image
 FROM node:24-alpine AS production
 WORKDIR /app
@@ -35,20 +46,18 @@ RUN apk add --no-cache \
     giflib-dev \
     tiff-dev
 
-# Copy api bundle and static files only
-COPY --from=api-build /app/pnpm-workspace.yaml ./
-COPY --from=api-build /app/package.json ./
+# Copy api bundle, its lockfile-pinned runtime node_modules, and static files only.
+# node_modules here comes straight from `pnpm deploy` in api-build, so it is not
+# reinstalled in this stage and cannot drift from pnpm-lock.yaml. The api's workspace
+# devDependencies (e.g. kuroshiro-shared) are bundled into dist at build time and must
+# not be reintroduced here.
+COPY --from=api-build /prod/api/node_modules ./node_modules
 COPY --from=api-build /app/packages/api/dist ./dist
 COPY --from=ui-build /app/packages/ui/dist ./public
 
 # Copy entrypoint
 COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
-
-# The api's workspace devDependencies are bundled into dist at build time and cannot
-# resolve here, since no workspace packages are copied into this stage
-COPY packages/api/package.json ./package.json
-RUN corepack enable && pnpm pkg delete devDependencies && pnpm install --prod --ignore-scripts
 
 # Use tini as the entrypoint
 ENTRYPOINT ["/sbin/tini", "--"]

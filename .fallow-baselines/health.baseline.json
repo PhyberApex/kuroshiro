@@ -1,26 +1,7 @@
 {
   "finding_counts": {
-    "packages/api/src/config/config.ts": {
-      "crap_critical": {
-        "count": 1
-      }
-    },
-    "packages/api/src/devices/devices.service.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
     "packages/api/src/devices/display.service.ts": {
-      "complexity_critical": {
-        "count": 2
-      },
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 2
-      },
-      "crap_high": {
+      "crap_moderate": {
         "count": 1
       }
     },
@@ -32,55 +13,8 @@
         "count": 1
       }
     },
-    "packages/api/src/plugins/plugin-data-source-mode.ts": {
-      "complexity_moderate": {
-        "count": 1
-      }
-    },
     "packages/api/src/plugins/plugins.service.ts": {
-      "complexity_critical": {
-        "count": 2
-      },
-      "crap_critical": {
-        "count": 2
-      }
-    },
-    "packages/api/src/plugins/services/plugin-data-fetcher.service.ts": {
       "crap_moderate": {
-        "count": 1
-      }
-    },
-    "packages/api/src/plugins/services/plugin-importer.service.ts": {
-      "complexity_high": {
-        "count": 2
-      },
-      "crap_high": {
-        "count": 2
-      },
-      "crap_moderate": {
-        "count": 2
-      }
-    },
-    "packages/api/src/utils/ssrfGuard.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "packages/ui/src/components/PluginCard.vue": {
-      "complexity_moderate": {
-        "count": 1
-      }
-    },
-    "packages/ui/src/components/PluginImportDialog.vue": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      }
-    },
-    "packages/ui/src/components/ScreenScheduleDialog.vue": {
-      "crap_high": {
         "count": 1
       }
     },
@@ -93,16 +27,10 @@
       "complexity_high": {
         "count": 1
       }
-    },
-    "packages/ui/src/views/VirtualDeviceView.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
     }
   },
   "runtime_coverage_findings": [],
   "target_keys": [
-    "packages/api/src/devices/display.service.ts:complexity",
-    "packages/api/src/plugins/plugins.service.ts:complexity"
+    "packages/ui/src/utils/apiRequest.ts:high impact"
   ]
 }

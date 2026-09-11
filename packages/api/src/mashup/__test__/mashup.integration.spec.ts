@@ -8,9 +8,8 @@ import { getRepositoryToken } from '@nestjs/typeorm'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Device } from '../../devices/devices.entity.js'
 import { Plugin as PluginEntity } from '../../plugins/entities/plugin.entity.js'
-import { PluginDataFetcherService } from '../../plugins/services/plugin-data-fetcher.service.js'
+import { PluginDataResolverService } from '../../plugins/services/plugin-data-resolver.service.js'
 import { PluginRendererService } from '../../plugins/services/plugin-renderer.service.js'
-import { PluginTransformService } from '../../plugins/services/plugin-transform.service.js'
 import { Screen as ScreenEntity } from '../../screens/screens.entity.js'
 import { makeDevice, makeMashupConfiguration, makeMashupSlot, makePlugin, makePluginTemplate, makeScreen } from '../../test/fixtures.js'
 import { createMockRepository, whereId } from '../../test/mockRepository.js'
@@ -181,11 +180,7 @@ describe('mashup Integration Tests', () => {
           useValue: mockPluginRenderer,
         },
         {
-          provide: PluginDataFetcherService,
-          useValue: {},
-        },
-        {
-          provide: PluginTransformService,
+          provide: PluginDataResolverService,
           useValue: {},
         },
         {
@@ -262,11 +257,7 @@ describe('mashup Integration Tests', () => {
           useValue: mockPluginRenderer,
         },
         {
-          provide: PluginDataFetcherService,
-          useValue: {},
-        },
-        {
-          provide: PluginTransformService,
+          provide: PluginDataResolverService,
           useValue: {},
         },
         {

@@ -12,6 +12,7 @@ import { WebhookPluginGuard } from './guards/webhook-plugin.guard.js'
 import { PluginsController } from './plugins.controller.js'
 import { PluginsService } from './plugins.service.js'
 import { PluginDataFetcherService } from './services/plugin-data-fetcher.service.js'
+import { PluginDataResolverService } from './services/plugin-data-resolver.service.js'
 import { PluginExporterService } from './services/plugin-exporter.service.js'
 import { PluginImporterService } from './services/plugin-importer.service.js'
 import { PluginRenderCacheService } from './services/plugin-render-cache.service.js'
@@ -39,6 +40,7 @@ import { WebhookIngestController } from './webhook-ingest.controller.js'
   providers: [
     PluginsService,
     PluginDataFetcherService,
+    PluginDataResolverService,
     PluginRendererService,
     PluginSchedulerService,
     PluginImporterService,
@@ -49,6 +51,6 @@ import { WebhookIngestController } from './webhook-ingest.controller.js'
     WebhookIngestService,
     WebhookPluginGuard,
   ],
-  exports: [PluginsService, PluginSchedulerService, PluginDataFetcherService, PluginRendererService, PluginTransformService, PluginRenderCacheService, PluginTemplateContextService],
+  exports: [PluginsService, PluginSchedulerService, PluginDataFetcherService, PluginDataResolverService, PluginRendererService, PluginTransformService, PluginRenderCacheService, PluginTemplateContextService],
 })
 export class PluginsModule {}

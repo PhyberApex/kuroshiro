@@ -15,11 +15,10 @@ import { PluginField } from '../entities/plugin-field.entity.js'
 import { PluginTemplate } from '../entities/plugin-template.entity.js'
 import { Plugin as PluginEntity } from '../entities/plugin.entity.js'
 import { PluginsService } from '../plugins.service.js'
-import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
+import { PluginDataResolverService } from '../services/plugin-data-resolver.service.js'
 import { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
 import { PluginRendererService } from '../services/plugin-renderer.service.js'
 import { PluginSchedulerService } from '../services/plugin-scheduler.service.js'
-import { PluginTransformService } from '../services/plugin-transform.service.js'
 import { WebhookIngestService } from '../services/webhook-ingest.service.js'
 
 function matches(entity: unknown, where: Record<string, unknown>): boolean {
@@ -97,8 +96,7 @@ describe('webhook ingest integration', () => {
         { provide: getRepositoryToken(PluginTemplate), useValue: {} },
         { provide: getRepositoryToken(PluginField), useValue: {} },
         { provide: getRepositoryToken(MashupSlotEntity), useValue: mashupSlotRepo },
-        { provide: PluginDataFetcherService, useValue: {} },
-        { provide: PluginTransformService, useValue: {} },
+        { provide: PluginDataResolverService, useValue: {} },
         { provide: PluginSchedulerService, useValue: { schedulePlugin: vi.fn(), removeScheduledJob: vi.fn() } },
       ],
     }).compile()

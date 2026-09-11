@@ -45,7 +45,8 @@ export class DevicesService {
     Object.assign(dbDevice, attributes)
     this.assertSleepWindowConfigured(dbDevice)
     const before = { model: dbDevice.deviceModel?.name, palette: dbDevice.palette?.id }
-    await this.applyModelChanges(dbDevice, deviceModelName, paletteId)
+    await this.applyModelChange(dbDevice, deviceModelName)
+    await this.applyPaletteChange(dbDevice, paletteId)
     await this.applyFirmwareChanges(dbDevice, targetFirmwareId)
     const saved = await this.deviceRepository.save(dbDevice)
     if (before.model !== saved.deviceModel?.name || before.palette !== saved.palette?.id)
@@ -61,14 +62,17 @@ export class DevicesService {
     return true
   }
 
-  private async applyModelChanges(device: Device, deviceModelName?: string, paletteId?: string): Promise<void> {
-    if (deviceModelName !== undefined && deviceModelName !== device.deviceModel?.name) {
-      const model = await this.deviceModels.findByName(deviceModelName)
-      if (!model)
-        throw new BadRequestException(`Unknown device model: ${deviceModelName}`)
-      device.deviceModel = model
-      device.palette = null
-    }
+  private async applyModelChange(device: Device, deviceModelName?: string): Promise<void> {
+    if (deviceModelName === undefined || deviceModelName === device.deviceModel?.name)
+      return
+    const model = await this.deviceModels.findByName(deviceModelName)
+    if (!model)
+      throw new BadRequestException(`Unknown device model: ${deviceModelName}`)
+    device.deviceModel = model
+    device.palette = null
+  }
+
+  private async applyPaletteChange(device: Device, paletteId?: string): Promise<void> {
     if (paletteId !== undefined) {
       if (!device.deviceModel)
         throw new BadRequestException('Cannot set a palette on a device with no assigned device model')
