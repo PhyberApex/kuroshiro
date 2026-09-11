@@ -12,8 +12,7 @@
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "type-check": "vue-tsc --build",
     "lint": "eslint",
-    "lint:fix": "eslint --fix",
-    "prepare": "puppeteer browsers install chrome"
+    "lint:fix": "eslint --fix"
   },
   "dependencies": {
     "@mdi/js": "catalog:",

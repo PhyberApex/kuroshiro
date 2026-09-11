@@ -26,7 +26,7 @@
     "fallow": "fallow",
     "fallow:ci": "fallow dead-code --baseline .fallow-baselines/dead-code.baseline.json --fail-on-issues && fallow dupes --baseline .fallow-baselines/dupes.baseline.json --fail-on-issues && fallow health --baseline .fallow-baselines/health.baseline.json --fail-on-issues",
     "fallow:baseline": "node scripts/fallow-baseline.mjs",
-    "prepare": "husky"
+    "prepare": "husky && puppeteer browsers install chrome"
   },
   "devDependencies": {
     "concurrently": "10.0.5",
@@ -34,6 +34,7 @@
     "fallow": "3.23.0",
     "husky": "9.1.7",
     "lint-staged": "17.5.0",
+    "puppeteer": "catalog:",
     "wait-on": "9.1.0"
   }
 }
