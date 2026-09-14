@@ -1,6 +1,6 @@
 {
   "name": "kuroshiro",
-  "version": "0.12.2",
+  "version": "0.12.3",
   "packageManager": "pnpm@12.3.4",
   "description": "",
   "author": "Janis Walliser",
@@ -31,7 +31,7 @@
   "devDependencies": {
     "concurrently": "10.0.5",
     "dotenv-cli": "^11.0.0",
-    "fallow": "3.25.0",
+    "fallow": "3.23.0",
     "husky": "9.1.7",
     "lint-staged": "17.5.1",
     "puppeteer": "catalog:",
