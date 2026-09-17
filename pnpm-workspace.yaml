@@ -31,7 +31,7 @@ catalog:
   '@types/multer': 2.2.0
   '@types/node': 24.13.4
   '@types/node-cron': ^3.0.11
-  '@vitejs/plugin-vue': 6.0.8
+  '@vitejs/plugin-vue': 6.0.9
   '@vitest/coverage-v8': 5.0.0
   '@vue/test-utils': 2.5.0
   '@vue/tsconfig': 0.9.1
