@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { CreatePluginDataSourcePayload, Plugin } from '../types/plugin'
-import type { EditableDataSource } from '@/components/PluginDataSourcesEditor.vue'
+import type { EditableDataSource } from '@/utils/editableDataSource'
 import { mdiArrowLeft, mdiContentSave, mdiEye } from '@mdi/js'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -10,6 +10,7 @@ import PluginPreviewDialog from '@/components/PluginPreviewDialog.vue'
 import PluginTemplateEditor from '@/components/PluginTemplateEditor.vue'
 import { usePluginPreview } from '@/composeables/usePluginPreview'
 import { apiFetch } from '@/utils/apiRequest'
+import { toEditableDataSource } from '@/utils/editableDataSource'
 import { errorMessage } from '@/utils/errorMessage'
 import { nameRules, refreshIntervalRules } from '@/utils/pluginRules'
 import { usePluginsStore } from '../stores/plugins'
@@ -41,11 +42,7 @@ onMounted(async () => {
       throw new Error('Failed to fetch plugin')
     plugin.value = await res.json()
     if (plugin.value) {
-      plugin.value.dataSources = (plugin.value.dataSources ?? []).map(source => ({
-        ...source,
-        headersJson: source.headers ? JSON.stringify(source.headers, null, 2) : '',
-        literalValueJson: source.literalValue !== undefined ? JSON.stringify(source.literalValue, null, 2) : '',
-      }))
+      plugin.value.dataSources = (plugin.value.dataSources ?? []).map(toEditableDataSource)
     }
     // Initialize field values from plugin fields
     if (plugin.value?.fields) {

@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import type { PluginDataSource } from '@/types/plugin'
+import type { EditableDataSource } from '@/utils/editableDataSource'
 import { mdiDelete, mdiPlus } from '@mdi/js'
 import { VAlert, VBtn, VExpansionPanel, VExpansionPanels, VExpansionPanelText, VExpansionPanelTitle, VSelect, VTextarea, VTextField } from 'vuetify/components'
-
-export type EditableDataSource = Partial<PluginDataSource> & { headersJson?: string, literalValueJson?: string }
+import { parseJsonOrKeep } from '@/utils/editableDataSource'
 
 const dataSources = defineModel<EditableDataSource[]>({ required: true })
 
@@ -66,7 +65,7 @@ const literalValueRules = [
 function addDataSource() {
   dataSources.value = [
     ...dataSources.value,
-    { name: '', mode: 'fetch', method: 'GET', url: '', headers: {}, body: {}, headersJson: '', order: dataSources.value.length },
+    { name: '', mode: 'fetch', method: 'GET', url: '', headers: {}, body: {}, headersJson: '', bodyJson: '', order: dataSources.value.length },
   ]
 }
 
@@ -75,29 +74,15 @@ function removeDataSource(index: number) {
 }
 
 function syncHeaders(source: EditableDataSource) {
-  if (!source.headersJson || !source.headersJson.trim()) {
-    source.headers = {}
-    return
-  }
-  try {
-    source.headers = JSON.parse(source.headersJson)
-  }
-  catch {
-    // Leave the last valid headers in place until the JSON becomes valid again
-  }
+  source.headers = parseJsonOrKeep(source.headersJson, {}, source.headers)
+}
+
+function syncBody(source: EditableDataSource) {
+  source.body = parseJsonOrKeep(source.bodyJson, {}, source.body)
 }
 
 function syncLiteralValue(source: EditableDataSource) {
-  if (!source.literalValueJson || !source.literalValueJson.trim()) {
-    source.literalValue = undefined
-    return
-  }
-  try {
-    source.literalValue = JSON.parse(source.literalValueJson)
-  }
-  catch {
-    // Leave the last valid value in place until the JSON becomes valid again
-  }
+  source.literalValue = parseJsonOrKeep(source.literalValueJson, undefined, source.literalValue)
 }
 
 function onModeChange(source: EditableDataSource) {
@@ -108,6 +93,7 @@ function onModeChange(source: EditableDataSource) {
     source.body = undefined
     source.transformJs = undefined
     source.headersJson = ''
+    source.bodyJson = ''
   }
   else {
     source.method = source.method || 'GET'
@@ -120,6 +106,7 @@ defineExpose({
   dataSources,
   addDataSource,
   removeDataSource,
+  syncBody,
   syncLiteralValue,
   onModeChange,
 })
@@ -193,6 +180,22 @@ defineExpose({
               placeholder="{&quot;Authorization&quot;: &quot;Bearer token&quot;}"
               hint="Optional: Enter valid JSON for custom headers"
               @update:model-value="syncHeaders(source)"
+            />
+            <VTextarea
+              v-model="source.bodyJson"
+              label="Request Body (JSON)"
+              rows="4"
+              placeholder="{&quot;query&quot;: &quot;{ viewer { login } }&quot;}"
+              hint="Optional: JSON body sent with the request"
+              @update:model-value="syncBody(source)"
+            />
+            <VTextarea
+              v-model="source.transformJs"
+              label="Transform (JavaScript)"
+              rows="8"
+              class="text-mono"
+              placeholder="module.exports = function (data) { return data }"
+              hint="Optional: module.exports = function (data) { return … } receives the parsed response; whatever it returns is what your template sees under this source's name"
             />
           </template>
 
