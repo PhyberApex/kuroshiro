@@ -1,6 +1,10 @@
 # Stage 1: Build ui
 FROM node:24-alpine AS ui-build
 WORKDIR /app
+# Chrome is never needed at build time (the production stage uses Alpine's chromium via
+# PUPPETEER_EXECUTABLE_PATH), and puppeteer's download crashes with SIGILL under QEMU on
+# linux/arm64. Skips both the puppeteer postinstall and the root prepare script's install.
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 COPY packages/ui ./packages/ui
 COPY packages/shared ./packages/shared
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
@@ -10,6 +14,7 @@ RUN pnpm --filter ./packages/ui build
 # Stage 2: Build api
 FROM node:24-alpine AS api-build
 WORKDIR /app
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 COPY packages/api ./packages/api
 COPY packages/shared ./packages/shared
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
