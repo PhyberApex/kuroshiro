@@ -1,4 +1,4 @@
-import type { EditableDataSource } from '../PluginDataSourcesEditor.vue'
+import type { EditableDataSource } from '../../utils/editableDataSource'
 import { mount } from '@vue/test-utils'
 import rop from 'resize-observer-polyfill'
 import { describe, expect, it } from 'vitest'

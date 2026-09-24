@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import type { PluginDataSource } from '@/types/plugin'
+import type { EditableDataSource } from '@/utils/editableDataSource'
 import { mdiDelete, mdiPlus } from '@mdi/js'
 import { VAlert, VBtn, VExpansionPanel, VExpansionPanels, VExpansionPanelText, VExpansionPanelTitle, VSelect, VTextarea, VTextField } from 'vuetify/components'
-
-export type EditableDataSource = Partial<PluginDataSource> & { headersJson?: string, bodyJson?: string, literalValueJson?: string }
+import { parseJsonOrKeep } from '@/utils/editableDataSource'
 
 const dataSources = defineModel<EditableDataSource[]>({ required: true })
 
@@ -75,42 +74,15 @@ function removeDataSource(index: number) {
 }
 
 function syncHeaders(source: EditableDataSource) {
-  if (!source.headersJson || !source.headersJson.trim()) {
-    source.headers = {}
-    return
-  }
-  try {
-    source.headers = JSON.parse(source.headersJson)
-  }
-  catch {
-    // Leave the last valid headers in place until the JSON becomes valid again
-  }
+  source.headers = parseJsonOrKeep(source.headersJson, {}, source.headers)
 }
 
 function syncBody(source: EditableDataSource) {
-  if (!source.bodyJson || !source.bodyJson.trim()) {
-    source.body = {}
-    return
-  }
-  try {
-    source.body = JSON.parse(source.bodyJson)
-  }
-  catch {
-    // Leave the last valid body in place until the JSON becomes valid again
-  }
+  source.body = parseJsonOrKeep(source.bodyJson, {}, source.body)
 }
 
 function syncLiteralValue(source: EditableDataSource) {
-  if (!source.literalValueJson || !source.literalValueJson.trim()) {
-    source.literalValue = undefined
-    return
-  }
-  try {
-    source.literalValue = JSON.parse(source.literalValueJson)
-  }
-  catch {
-    // Leave the last valid value in place until the JSON becomes valid again
-  }
+  source.literalValue = parseJsonOrKeep(source.literalValueJson, undefined, source.literalValue)
 }
 
 function onModeChange(source: EditableDataSource) {
