@@ -44,6 +44,7 @@ onMounted(async () => {
       plugin.value.dataSources = (plugin.value.dataSources ?? []).map(source => ({
         ...source,
         headersJson: source.headers ? JSON.stringify(source.headers, null, 2) : '',
+        bodyJson: source.body && Object.keys(source.body).length > 0 ? JSON.stringify(source.body, null, 2) : '',
         literalValueJson: source.literalValue !== undefined ? JSON.stringify(source.literalValue, null, 2) : '',
       }))
     }

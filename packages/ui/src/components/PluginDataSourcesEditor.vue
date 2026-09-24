@@ -3,7 +3,7 @@ import type { PluginDataSource } from '@/types/plugin'
 import { mdiDelete, mdiPlus } from '@mdi/js'
 import { VAlert, VBtn, VExpansionPanel, VExpansionPanels, VExpansionPanelText, VExpansionPanelTitle, VSelect, VTextarea, VTextField } from 'vuetify/components'
 
-export type EditableDataSource = Partial<PluginDataSource> & { headersJson?: string, literalValueJson?: string }
+export type EditableDataSource = Partial<PluginDataSource> & { headersJson?: string, bodyJson?: string, literalValueJson?: string }
 
 const dataSources = defineModel<EditableDataSource[]>({ required: true })
 
@@ -66,7 +66,7 @@ const literalValueRules = [
 function addDataSource() {
   dataSources.value = [
     ...dataSources.value,
-    { name: '', mode: 'fetch', method: 'GET', url: '', headers: {}, body: {}, headersJson: '', order: dataSources.value.length },
+    { name: '', mode: 'fetch', method: 'GET', url: '', headers: {}, body: {}, headersJson: '', bodyJson: '', order: dataSources.value.length },
   ]
 }
 
@@ -84,6 +84,19 @@ function syncHeaders(source: EditableDataSource) {
   }
   catch {
     // Leave the last valid headers in place until the JSON becomes valid again
+  }
+}
+
+function syncBody(source: EditableDataSource) {
+  if (!source.bodyJson || !source.bodyJson.trim()) {
+    source.body = {}
+    return
+  }
+  try {
+    source.body = JSON.parse(source.bodyJson)
+  }
+  catch {
+    // Leave the last valid body in place until the JSON becomes valid again
   }
 }
 
@@ -108,6 +121,7 @@ function onModeChange(source: EditableDataSource) {
     source.body = undefined
     source.transformJs = undefined
     source.headersJson = ''
+    source.bodyJson = ''
   }
   else {
     source.method = source.method || 'GET'
@@ -120,6 +134,7 @@ defineExpose({
   dataSources,
   addDataSource,
   removeDataSource,
+  syncBody,
   syncLiteralValue,
   onModeChange,
 })
@@ -193,6 +208,22 @@ defineExpose({
               placeholder="{&quot;Authorization&quot;: &quot;Bearer token&quot;}"
               hint="Optional: Enter valid JSON for custom headers"
               @update:model-value="syncHeaders(source)"
+            />
+            <VTextarea
+              v-model="source.bodyJson"
+              label="Request Body (JSON)"
+              rows="4"
+              placeholder="{&quot;query&quot;: &quot;{ viewer { login } }&quot;}"
+              hint="Optional: JSON body sent with the request"
+              @update:model-value="syncBody(source)"
+            />
+            <VTextarea
+              v-model="source.transformJs"
+              label="Transform (JavaScript)"
+              rows="8"
+              class="text-mono"
+              placeholder="module.exports = function (data) { return data }"
+              hint="Optional: module.exports = function (data) { return … } receives the parsed response; whatever it returns is what your template sees under this source's name"
             />
           </template>
 

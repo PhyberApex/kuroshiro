@@ -112,6 +112,7 @@ async function createPlugin() {
         url: source.url,
         headers: source.headers,
         body: source.body,
+        transformJs: source.transformJs,
         literalValue: source.literalValue,
         order: index,
       })),
