@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.13.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.12.2...kuroshiro-v0.13.0) (2026-09-24)
+
+
+### Features
+
+* **ui:** expose Request Body and Transform on fetch Data Sources ([#971](https://github.com/PhyberApex/kuroshiro/issues/971)) ([172a509](https://github.com/PhyberApex/kuroshiro/commit/172a5096537dcdf60c4fec18a156acfbf5f49e80))
+
+
+### Bug Fixes
+
+* **ci:** remove flaky unused pnpm install step from docker publish workflows ([#942](https://github.com/PhyberApex/kuroshiro/issues/942)) ([2e3ca87](https://github.com/PhyberApex/kuroshiro/commit/2e3ca8796c6e861c0a93fa11537d5e77ba1110ef))
+* **docker:** deploy pnpm-lock.yaml-pinned node_modules to the production image ([#921](https://github.com/PhyberApex/kuroshiro/issues/921)) ([f17e1b9](https://github.com/PhyberApex/kuroshiro/commit/f17e1b92e2e51e929810efbf526865bbe5baf6e3))
+* **docker:** skip puppeteer Chrome downloads in the image build stages ([#974](https://github.com/PhyberApex/kuroshiro/issues/974)) ([7160a27](https://github.com/PhyberApex/kuroshiro/commit/7160a270bb60e2051522c5964d4c46bfded19c23))
+
 ## [0.12.2](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.12.1...kuroshiro-v0.12.2) (2026-09-02)
 
 
