@@ -240,8 +240,8 @@ catalogs:
       specifier: 6.0.9
       version: 6.0.9
     '@vitest/coverage-v8':
-      specifier: 5.0.0
-      version: 5.0.0
+      specifier: 5.0.1
+      version: 5.0.1
     '@vue/test-utils':
       specifier: 2.5.1
       version: 2.5.1
@@ -330,8 +330,8 @@ catalogs:
       specifier: 2.1.3
       version: 2.1.3
     vitest:
-      specifier: 5.0.0
-      version: 5.0.0
+      specifier: 5.0.1
+      version: 5.0.1
     vm2:
       specifier: ^3.10.5
       version: 3.12.2
@@ -445,7 +445,7 @@ importers:
     devDependencies:
       '@antfu/eslint-config':
         specifier: 'catalog:'
-        version: 9.5.1(@typescript-eslint/typescript-estree@8.69.0(supports-color@10.2.2)(typescript@6.0.3))(@typescript-eslint/utils@8.69.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(@vue/compiler-sfc@3.5.43)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.0)
+        version: 9.5.1(@typescript-eslint/typescript-estree@8.69.0(supports-color@10.2.2)(typescript@6.0.3))(@typescript-eslint/utils@8.69.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(@vue/compiler-sfc@3.5.43)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.1)
       '@nestjs/cli':
         specifier: 'catalog:'
         version: 12.0.0(@swc/core@1.16.2)(@types/node@24.13.6)(fork-ts-checker-webpack-plugin@9.1.0(typescript@6.0.3)(webpack@5.106.2(@swc/core@1.16.2)(esbuild@0.27.7)(lightningcss@1.33.0)(postcss@8.5.26)(uglify-js@3.19.3)))(ts-loader@9.6.2(typescript@6.0.3)(webpack@5.106.2(@swc/core@1.16.2)(esbuild@0.27.7)(lightningcss@1.33.0)(postcss@8.5.26)(uglify-js@3.19.3)))(tsconfig-paths-webpack-plugin@4.2.0)(webpack-node-externals@3.0.0)(webpack@5.106.2(@swc/core@1.16.2)(esbuild@0.27.7)(lightningcss@1.33.0)(postcss@8.5.26)(uglify-js@3.19.3))
@@ -472,7 +472,7 @@ importers:
         version: 24.13.6
       '@vitest/coverage-v8':
         specifier: 'catalog:'
-        version: 5.0.0(vitest@5.0.0)
+        version: 5.0.1(vitest@5.0.1)
       eslint:
         specifier: 'catalog:'
         version: 10.11.0(jiti@2.7.0)(supports-color@10.2.2)
@@ -493,16 +493,16 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 'catalog:'
-        version: 5.0.0(@types/node@24.13.6)(@vitest/coverage-v8@5.0.0)(jsdom@30.0.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@24.13.6)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
+        version: 5.0.1(@types/node@24.13.6)(@vitest/coverage-v8@5.0.1)(jsdom@30.0.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@24.13.6)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
 
   packages/shared:
     devDependencies:
       '@antfu/eslint-config':
         specifier: 'catalog:'
-        version: 9.5.1(@typescript-eslint/typescript-estree@8.69.0(supports-color@10.2.2)(typescript@6.0.3))(@typescript-eslint/utils@8.69.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(@vue/compiler-sfc@3.5.43)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.0)
+        version: 9.5.1(@typescript-eslint/typescript-estree@8.69.0(supports-color@10.2.2)(typescript@6.0.3))(@typescript-eslint/utils@8.69.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(@vue/compiler-sfc@3.5.43)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.1)
       '@vitest/coverage-v8':
         specifier: 'catalog:'
-        version: 5.0.0(vitest@5.0.0)
+        version: 5.0.1(vitest@5.0.1)
       eslint:
         specifier: 'catalog:'
         version: 10.11.0(jiti@2.7.0)(supports-color@10.2.2)
@@ -511,7 +511,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 'catalog:'
-        version: 5.0.0(@types/node@26.4.1)(@vitest/coverage-v8@5.0.0)(jsdom@30.0.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.4.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
+        version: 5.0.1(@types/node@26.4.1)(@vitest/coverage-v8@5.0.1)(jsdom@30.0.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.4.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
 
   packages/ui:
     dependencies:
@@ -539,7 +539,7 @@ importers:
     devDependencies:
       '@antfu/eslint-config':
         specifier: 'catalog:'
-        version: 9.5.1(@typescript-eslint/typescript-estree@8.69.0(supports-color@10.2.2)(typescript@6.0.3))(@typescript-eslint/utils@8.69.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(@vue/compiler-sfc@3.5.43)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.0)
+        version: 9.5.1(@typescript-eslint/typescript-estree@8.69.0(supports-color@10.2.2)(typescript@6.0.3))(@typescript-eslint/utils@8.69.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(@vue/compiler-sfc@3.5.43)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.1)
       '@semantic-release/changelog':
         specifier: 'catalog:'
         version: 7.0.0(semantic-release@25.0.8(supports-color@10.2.2)(typescript@6.0.3))
@@ -566,7 +566,7 @@ importers:
         version: 6.0.9(vite@8.3.0(@types/node@24.13.6)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))(vue@3.5.43(typescript@6.0.3))
       '@vitest/coverage-v8':
         specifier: 'catalog:'
-        version: 5.0.0(vitest@5.0.0)
+        version: 5.0.1(vitest@5.0.1)
       '@vue/test-utils':
         specifier: 'catalog:'
         version: 2.5.1(@vue/compiler-dom@3.5.43)(@vue/server-renderer@3.5.42)(vue@3.5.43(typescript@6.0.3))
@@ -605,7 +605,7 @@ importers:
         version: 8.2.1(supports-color@10.2.2)(vite@8.3.0(@types/node@24.13.6)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))(vue@3.5.43(typescript@6.0.3))
       vitest:
         specifier: 'catalog:'
-        version: 5.0.0(@types/node@24.13.6)(@vitest/coverage-v8@5.0.0)(jsdom@30.1.0(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@24.13.6)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
+        version: 5.0.1(@types/node@24.13.6)(@vitest/coverage-v8@5.0.1)(jsdom@30.1.0(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@24.13.6)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.11(typescript@6.0.3)
@@ -904,30 +904,12 @@ packages:
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
     engines: {node: '>=12'}
 
-  '@csstools/color-helpers@6.1.0':
-    resolution: {integrity: sha512-064IFJdjTfUqnjpCVpMOdbr8FLQBhinbZj6yRv2An2E41O/pLEXqfFRWqGq/SxlE5PEUYTlvWsG2r8MswAVvkg==}
-    engines: {node: '>=20.19.0'}
-
   '@csstools/color-helpers@6.1.1':
     resolution: {integrity: sha512-gLNsunvwf3mCi5u5o46/Z/JcJMnhbHSaZ69rkgPzNM3J4s8hWwpPUQB6/tt0EDFyCiWzxANlx+2LJwpYj4zS1w==}
     engines: {node: '>=20.19.0'}
 
-  '@csstools/css-calc@3.3.0':
-    resolution: {integrity: sha512-c5ihYsPkdG6JCkU2zTMm4+k6r7RXuGxtWYhu5DHMIiF1FHzrfmHL5so11AoFpUv/tu61xfcmT4AmKoFfMPoqdQ==}
-    engines: {node: '>=20.19.0'}
-    peerDependencies:
-      '@csstools/css-parser-algorithms': ^4.0.0
-      '@csstools/css-tokenizer': ^4.0.0
-
   '@csstools/css-calc@3.4.0':
     resolution: {integrity: sha512-XQKj5B7QiZcHiegCOCAzcAOJdhGgWOHbbu62h5e5mkHnn8lWcfiJhllkqWmxu5zWR9jucPHuo1iTB56P033hcg==}
-    engines: {node: '>=20.19.0'}
-    peerDependencies:
-      '@csstools/css-parser-algorithms': ^4.0.0
-      '@csstools/css-tokenizer': ^4.0.0
-
-  '@csstools/css-color-parser@4.1.10':
-    resolution: {integrity: sha512-UZhQLIUyJaaMepqehrCODwCg2KW25vFvLWBmqYFaPclYvvxzj/sG8LBOhBFCp11i9uE7t1EyS+RAoV9tztPFyw==}
     engines: {node: '>=20.19.0'}
     peerDependencies:
       '@csstools/css-parser-algorithms': ^4.0.0
@@ -953,18 +935,6 @@ packages:
     peerDependenciesMeta:
       css-tree:
         optional: true
-
-  '@csstools/css-syntax-patches-for-csstree@1.1.7':
-    resolution: {integrity: sha512-fQ+05118eQS1cofO3aJpB5efgpBZMvIzwr/sbC8kDLVA5XLG8q1kJV5yzrUAI1f7lvhPnm8fgIjzFB8/O/5Dig==}
-    peerDependencies:
-      css-tree: ^3.2.1
-    peerDependenciesMeta:
-      css-tree:
-        optional: true
-
-  '@csstools/css-tokenizer@4.0.0':
-    resolution: {integrity: sha512-QxULHAm7cNu72w97JUNCBFODFaXpbDg+dP8b/oWFAZ2MTRppA3U00Y2L1HqaS4J6yBqxwa/Y3nMBaxVKbB/NsA==}
-    engines: {node: '>=20.19.0'}
 
   '@csstools/css-tokenizer@4.0.1':
     resolution: {integrity: sha512-bPlN9S9O1A0euCpEWE4qnvB5YDuyYVsUTrxSgmAM1Is0j4tICHoVyOVAXfWMP/kS9ZrjvyIXWV2PmomiAXXqOw==}
@@ -2646,11 +2616,11 @@ packages:
       vite: ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
       vue: ^3.2.25
 
-  '@vitest/coverage-v8@5.0.0':
-    resolution: {integrity: sha512-toMg6PZGCIa/lQNCDoASrfb1ly4hsUKXFtFYC9kD4t78o5Y6LyNJU7AENt8eHPr3quYdxaxK7hj2mnbFfUk9NA==}
+  '@vitest/coverage-v8@5.0.1':
+    resolution: {integrity: sha512-FRC8ACiudC3dI6MTplzRSYWHDRnIv2IPfbzs4FdoJNsMal/35sWV8hwIfV8ZcqzSPy+uXHeMVONt9CEqtOU17w==}
     peerDependencies:
-      '@vitest/browser': 5.0.0
-      vitest: 5.0.0
+      '@vitest/browser': 5.0.1
+      vitest: 5.0.1
     peerDependenciesMeta:
       '@vitest/browser':
         optional: true
@@ -2679,8 +2649,8 @@ packages:
     resolution: {integrity: sha512-1EOLRfsTMnyAr3+kEAsP4o9dhaDlGPpD7H5iLBBeq//YpNB1VIahkPhB+eRp9N2Dkfw8oySROjE3yf9XDeaIkQ==}
     engines: {node: '>=22'}
 
-  '@vitest/mocker@5.0.0':
-    resolution: {integrity: sha512-66PGTMIiVJP3t4a5yxU9qPtf7MdTBs8jmToMvy+HVflB3Yy13WJZTtPePdvU+wjRV02SKK5doLbSA6o9pwOmiA==}
+  '@vitest/mocker@5.0.1':
+    resolution: {integrity: sha512-6K1DoBNAPGvuOcSsGA4D6x+5zEEff/KmOOP3uetT2TrGpVfI+HRHRnJJfKi5ib/g1vx8IYHQD8s0pbJz8WQI7Q==}
     peerDependencies:
       msw: ^2.4.9
       vite: ^6.0.0 || ^7.0.0 || ^8.0.0
@@ -2690,8 +2660,8 @@ packages:
       vite:
         optional: true
 
-  '@vitest/spy@5.0.0':
-    resolution: {integrity: sha512-uy+luWBAPw9XfthoHi5AkfHUnuPYEESjl0p/r+meoBnU8bxg5GDQ3Ey8MjcJ6sqahkL4PFyrvfMJJBw7LbU06g==}
+  '@vitest/spy@5.0.1':
+    resolution: {integrity: sha512-rbto/mF/SGERxEgYOek7Xm6B9b+y+mVoo+f4b2LymYO8zM1b7uB5nHuhVMTP2hxdzgxvGiZYGxGIaMvL5y180Q==}
 
   '@volar/language-core@2.4.28':
     resolution: {integrity: sha512-w4qhIJ8ZSitgLAkVay6AbcnC7gP3glYM3fYwKV3srj8m494E3xtrCv6E+bWviiK/8hs6e6t1ij1s2Endql7vzQ==}
@@ -3135,9 +3105,6 @@ packages:
 
   before-after-hook@4.0.0:
     resolution: {integrity: sha512-q6tR3RPqIB1pMiTRMFcZwuG5T8vwp+vUvEG0vuI6B+Rikh5BfPp2fQ82c925FOs+b0lcFQ8CFrL+KbilfZFhOQ==}
-
-  bidi-js@1.0.3:
-    resolution: {integrity: sha512-RKshQI1R3YQ+n9YJz2QQ147P66ELpa1FQEg20Dk8oW9t2KgLbpDLLp9aGZ7y8WHSshDknG0bknqGw5/tyCs5tw==}
 
   bidi-js@1.1.0:
     resolution: {integrity: sha512-fX1Onk0tdVPC7obPWB5EbJ1z7NVhLq4m2xZLq2YXBkxzMXIGRpNMU88n0EPgWseKl12J7zXs7qrDxPK4sRs2fg==}
@@ -6281,10 +6248,6 @@ packages:
     resolution: {integrity: sha512-AdzuGcAkzhbha3GgCSoUBx2P0quwym6qdFNCQz/fDGZc8w9XJ741wHUbt2kTmfPz+ZIOMkySFkiY7RXmiDDC8w==}
     engines: {node: '>=22.19.0'}
 
-  undici@8.9.0:
-    resolution: {integrity: sha512-aWZpUj7XoGonMClx4gdDRfgBjqeA+F473aDmROQQbM9n6PRfK/u1q/a0X4wMTgcHfT8H6fpbt98PFuDUwFg2YA==}
-    engines: {node: '>=22.19.0'}
-
   unicode-emoji-modifier-base@1.0.0:
     resolution: {integrity: sha512-yLSH4py7oFH3oG/9K+XWrz1pSi3dfUrWEnInbxMfArOfc1+33BlGPQtLsOYwvdMy11AwUBetYuaRxSPqgkq+8g==}
     engines: {node: '>=4'}
@@ -6495,20 +6458,20 @@ packages:
       yaml:
         optional: true
 
-  vitest@5.0.0:
-    resolution: {integrity: sha512-gpsMNoRhMjMktVxPtstOH4/PJuPyovVaMDr4oDilXaGH1EcqM2OE96SoHT2VIQ6fTGtTjqmHDrEu2X9RQiXf8Q==}
+  vitest@5.0.1:
+    resolution: {integrity: sha512-iA95lQbKEkvrtTkdAgnWbXfbipWiiWe/hDl2P5tMi6WFwD76G0NxXAGp/M9EOcYupeGJRr6wppMc7CoA41TQjg==}
     engines: {node: ^22.12.0 || ^24.0.0 || >=26.0.0}
     hasBin: true
     peerDependencies:
       '@edge-runtime/vm': '*'
       '@opentelemetry/api': ^1.9.0
       '@types/node': ^22.0.0 || >=24.0.0
-      '@vitest/browser-playwright': 5.0.0
-      '@vitest/browser-preview': 5.0.0
+      '@vitest/browser-playwright': 5.0.1
+      '@vitest/browser-preview': 5.0.1
       '@vitest/browser-webdriverio': ^5.0.0-beta.5 || >=5.0.0
-      '@vitest/coverage-istanbul': 5.0.0
-      '@vitest/coverage-v8': 5.0.0
-      '@vitest/ui': 5.0.0
+      '@vitest/coverage-istanbul': 5.0.1
+      '@vitest/coverage-v8': 5.0.1
+      '@vitest/ui': 5.0.1
       happy-dom: '*'
       jsdom: '*'
       vite: ^6.4.0 || ^7.0.0 || ^8.0.0
@@ -6651,10 +6614,6 @@ packages:
   whatwg-url@16.0.1:
     resolution: {integrity: sha512-1to4zXBxmXHV3IiSSEInrreIlu02vUOvrhxJJH5vcxYTBDAx51cqZiKdyTxlecdKNSjj8EcxGBxNf6Vg+945gw==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
-
-  whatwg-url@17.1.0:
-    resolution: {integrity: sha512-3GeworPmc2ZfEEHP7lEbUfBX/L75wdEsi0rLNhXcXxnoN5jyq0SL5gCy06SGW2cyTIZdTvWIDQNQoza++vKeaw==}
-    engines: {node: ^22.14.0 || >=24.0.0}
 
   whatwg-url@17.1.2:
     resolution: {integrity: sha512-TEZA+Zqxin7Jjsm2cjRohCmen5awh+hT6Zi3VZdqZlNRk7zvOI/9WpBFg/DWlA56bWnzwm6DuB8NS0EsxQH9uQ==}
@@ -6827,7 +6786,7 @@ snapshots:
     transitivePeerDependencies:
       - chokidar
 
-  '@antfu/eslint-config@9.5.1(@typescript-eslint/typescript-estree@8.69.0(supports-color@10.2.2)(typescript@6.0.3))(@typescript-eslint/utils@8.69.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(@vue/compiler-sfc@3.5.43)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.0)':
+  '@antfu/eslint-config@9.5.1(@typescript-eslint/typescript-estree@8.69.0(supports-color@10.2.2)(typescript@6.0.3))(@typescript-eslint/utils@8.69.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(@vue/compiler-sfc@3.5.43)(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.1)':
     dependencies:
       '@antfu/install-pkg': 2.0.1
       '@clack/prompts': 1.7.0
@@ -6837,7 +6796,7 @@ snapshots:
       '@stylistic/eslint-plugin': 5.10.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))
       '@typescript-eslint/eslint-plugin': 8.69.0(@typescript-eslint/parser@8.69.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
       '@typescript-eslint/parser': 8.69.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
-      '@vitest/eslint-plugin': 1.6.27(@typescript-eslint/eslint-plugin@8.69.0(@typescript-eslint/parser@8.69.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.0)
+      '@vitest/eslint-plugin': 1.6.27(@typescript-eslint/eslint-plugin@8.69.0(@typescript-eslint/parser@8.69.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.1)
       ansis: 4.3.1
       cac: 7.0.0
       eslint: 10.11.0(jiti@2.7.0)(supports-color@10.2.2)
@@ -6884,11 +6843,11 @@ snapshots:
 
   '@asamuzakjp/css-color@6.0.5':
     dependencies:
-      '@csstools/css-calc': 3.3.0(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)
-      '@csstools/css-color-parser': 4.1.10(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)
-      '@csstools/css-parser-algorithms': 4.0.0(@csstools/css-tokenizer@4.0.0)
-      '@csstools/css-tokenizer': 4.0.0
-      lru-cache: 11.5.2
+      '@csstools/css-calc': 3.4.0(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.1))(@csstools/css-tokenizer@4.0.1)
+      '@csstools/css-color-parser': 4.2.3(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.1))(@csstools/css-tokenizer@4.0.1)
+      '@csstools/css-parser-algorithms': 4.0.0(@csstools/css-tokenizer@4.0.1)
+      '@csstools/css-tokenizer': 4.0.1
+      lru-cache: 11.5.3
     optional: true
 
   '@asamuzakjp/css-color@7.0.1':
@@ -6901,10 +6860,10 @@ snapshots:
 
   '@asamuzakjp/dom-selector@8.3.0':
     dependencies:
-      bidi-js: 1.0.3
+      bidi-js: 1.1.0
       css-tree: 3.2.1
       is-potential-custom-element-name: 1.0.1
-      lru-cache: 11.5.2
+      lru-cache: 11.5.3
     optional: true
 
   '@asamuzakjp/dom-selector@9.2.1':
@@ -7144,29 +7103,12 @@ snapshots:
     dependencies:
       '@jridgewell/trace-mapping': 0.3.9
 
-  '@csstools/color-helpers@6.1.0':
-    optional: true
-
   '@csstools/color-helpers@6.1.1': {}
-
-  '@csstools/css-calc@3.3.0(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)':
-    dependencies:
-      '@csstools/css-parser-algorithms': 4.0.0(@csstools/css-tokenizer@4.0.0)
-      '@csstools/css-tokenizer': 4.0.0
-    optional: true
 
   '@csstools/css-calc@3.4.0(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.1))(@csstools/css-tokenizer@4.0.1)':
     dependencies:
       '@csstools/css-parser-algorithms': 4.0.0(@csstools/css-tokenizer@4.0.1)
       '@csstools/css-tokenizer': 4.0.1
-
-  '@csstools/css-color-parser@4.1.10(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)':
-    dependencies:
-      '@csstools/color-helpers': 6.1.0
-      '@csstools/css-calc': 3.3.0(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0))(@csstools/css-tokenizer@4.0.0)
-      '@csstools/css-parser-algorithms': 4.0.0(@csstools/css-tokenizer@4.0.0)
-      '@csstools/css-tokenizer': 4.0.0
-    optional: true
 
   '@csstools/css-color-parser@4.2.3(@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.1))(@csstools/css-tokenizer@4.0.1)':
     dependencies:
@@ -7175,11 +7117,6 @@ snapshots:
       '@csstools/css-parser-algorithms': 4.0.0(@csstools/css-tokenizer@4.0.1)
       '@csstools/css-tokenizer': 4.0.1
 
-  '@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.0)':
-    dependencies:
-      '@csstools/css-tokenizer': 4.0.0
-    optional: true
-
   '@csstools/css-parser-algorithms@4.0.0(@csstools/css-tokenizer@4.0.1)':
     dependencies:
       '@csstools/css-tokenizer': 4.0.1
@@ -7187,14 +7124,6 @@ snapshots:
   '@csstools/css-syntax-patches-for-csstree@1.1.14(css-tree@3.2.1)':
     optionalDependencies:
       css-tree: 3.2.1
-
-  '@csstools/css-syntax-patches-for-csstree@1.1.7(css-tree@3.2.1)':
-    optionalDependencies:
-      css-tree: 3.2.1
-    optional: true
-
-  '@csstools/css-tokenizer@4.0.0':
-    optional: true
 
   '@csstools/css-tokenizer@4.0.1': {}
 
@@ -8566,7 +8495,7 @@ snapshots:
       vite: 8.3.0(@types/node@24.13.6)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0)
       vue: 3.5.43(typescript@6.0.3)
 
-  '@vitest/coverage-v8@5.0.0(vitest@5.0.0)':
+  '@vitest/coverage-v8@5.0.1(vitest@5.0.1)':
     dependencies:
       '@bcoe/v8-coverage': 1.0.2
       '@vitest/istanbul-lib-coverage': 1.0.1
@@ -8576,9 +8505,9 @@ snapshots:
       obug: 2.1.4
       std-env: 4.2.0
       tinyrainbow: 3.1.1
-      vitest: 5.0.0(@types/node@24.13.6)(@vitest/coverage-v8@5.0.0)(jsdom@30.0.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@24.13.6)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
+      vitest: 5.0.1(@types/node@24.13.6)(@vitest/coverage-v8@5.0.1)(jsdom@30.0.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@24.13.6)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
 
-  '@vitest/eslint-plugin@1.6.27(@typescript-eslint/eslint-plugin@8.69.0(@typescript-eslint/parser@8.69.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.0)':
+  '@vitest/eslint-plugin@1.6.27(@typescript-eslint/eslint-plugin@8.69.0(@typescript-eslint/parser@8.69.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.1)':
     dependencies:
       '@typescript-eslint/scope-manager': 8.66.0
       '@typescript-eslint/utils': 8.66.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
@@ -8586,7 +8515,7 @@ snapshots:
     optionalDependencies:
       '@typescript-eslint/eslint-plugin': 8.69.0(@typescript-eslint/parser@8.69.0(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(eslint@10.11.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)
       typescript: 6.0.3
-      vitest: 5.0.0(@types/node@24.13.6)(@vitest/coverage-v8@5.0.0)(jsdom@30.0.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@24.13.6)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
+      vitest: 5.0.1(@types/node@24.13.6)(@vitest/coverage-v8@5.0.1)(jsdom@30.0.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@24.13.6)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
     transitivePeerDependencies:
       - supports-color
 
@@ -8596,25 +8525,25 @@ snapshots:
     dependencies:
       '@vitest/istanbul-lib-coverage': 1.0.1
 
-  '@vitest/mocker@5.0.0(vite@8.3.0(@types/node@24.13.6)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))':
+  '@vitest/mocker@5.0.1(vite@8.3.0(@types/node@24.13.6)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
-      '@vitest/spy': 5.0.0
+      '@vitest/spy': 5.0.1
       estree-walker: 3.0.3
       magic-string: 1.2.3
     optionalDependencies:
       vite: 8.3.0(@types/node@24.13.6)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0)
 
-  '@vitest/mocker@5.0.0(vite@8.3.0(@types/node@26.4.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))':
+  '@vitest/mocker@5.0.1(vite@8.3.0(@types/node@26.4.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
-      '@vitest/spy': 5.0.0
+      '@vitest/spy': 5.0.1
       estree-walker: 3.0.3
       magic-string: 1.2.3
     optionalDependencies:
       vite: 8.3.0(@types/node@26.4.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0)
 
-  '@vitest/spy@5.0.0': {}
+  '@vitest/spy@5.0.1': {}
 
   '@volar/language-core@2.4.28':
     dependencies:
@@ -9125,11 +9054,6 @@ snapshots:
   baseline-browser-mapping@2.11.4: {}
 
   before-after-hook@4.0.0: {}
-
-  bidi-js@1.0.3:
-    dependencies:
-      require-from-string: 2.0.2
-    optional: true
 
   bidi-js@1.1.0:
     dependencies:
@@ -10566,23 +10490,23 @@ snapshots:
       '@asamuzakjp/css-color': 6.0.5
       '@asamuzakjp/dom-selector': 8.3.0
       '@bramus/specificity': 2.4.2
-      '@csstools/css-syntax-patches-for-csstree': 1.1.7(css-tree@3.2.1)
+      '@csstools/css-syntax-patches-for-csstree': 1.1.14(css-tree@3.2.1)
       '@exodus/bytes': 1.15.1(@noble/hashes@1.8.0)
       css-tree: 3.2.1
       data-urls: 7.0.0(@noble/hashes@1.8.0)
       decimal.js: 10.6.0
       html-encoding-sniffer: 6.0.0(@noble/hashes@1.8.0)
       is-potential-custom-element-name: 1.0.1
-      lru-cache: 11.5.2
+      lru-cache: 11.5.3
       parse5: 8.0.1
       saxes: 6.0.0
       symbol-tree: 3.2.4
       tough-cookie: 6.0.2
-      undici: 8.9.0
+      undici: 8.11.0
       w3c-xmlserializer: 5.0.0
       webidl-conversions: 8.0.1
       whatwg-mimetype: 5.0.0
-      whatwg-url: 17.1.0(@noble/hashes@1.8.0)
+      whatwg-url: 17.1.2(@noble/hashes@1.8.0)
       xml-name-validator: 5.0.0
     transitivePeerDependencies:
       - '@noble/hashes'
@@ -12487,9 +12411,6 @@ snapshots:
 
   undici@8.11.0: {}
 
-  undici@8.9.0:
-    optional: true
-
   unicode-emoji-modifier-base@1.0.0: {}
 
   unicorn-magic@0.1.0: {}
@@ -12677,10 +12598,10 @@ snapshots:
       terser: 5.49.0
       yaml: 2.9.0
 
-  vitest@5.0.0(@types/node@24.13.6)(@vitest/coverage-v8@5.0.0)(jsdom@30.0.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@24.13.6)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0)):
+  vitest@5.0.1(@types/node@24.13.6)(@vitest/coverage-v8@5.0.1)(jsdom@30.0.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@24.13.6)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0)):
     dependencies:
       '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.0(vite@8.3.0(@types/node@24.13.6)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
+      '@vitest/mocker': 5.0.1(vite@8.3.0(@types/node@24.13.6)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
       chai: 6.2.2
       es-module-lexer: 2.3.2
       expect-type: 1.4.0
@@ -12695,15 +12616,15 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 24.13.6
-      '@vitest/coverage-v8': 5.0.0(vitest@5.0.0)
+      '@vitest/coverage-v8': 5.0.1(vitest@5.0.1)
       jsdom: 30.0.1(@noble/hashes@1.8.0)
     transitivePeerDependencies:
       - msw
 
-  vitest@5.0.0(@types/node@24.13.6)(@vitest/coverage-v8@5.0.0)(jsdom@30.1.0(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@24.13.6)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0)):
+  vitest@5.0.1(@types/node@24.13.6)(@vitest/coverage-v8@5.0.1)(jsdom@30.1.0(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@24.13.6)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0)):
     dependencies:
       '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.0(vite@8.3.0(@types/node@24.13.6)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
+      '@vitest/mocker': 5.0.1(vite@8.3.0(@types/node@24.13.6)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
       chai: 6.2.2
       es-module-lexer: 2.3.2
       expect-type: 1.4.0
@@ -12718,15 +12639,15 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 24.13.6
-      '@vitest/coverage-v8': 5.0.0(vitest@5.0.0)
+      '@vitest/coverage-v8': 5.0.1(vitest@5.0.1)
       jsdom: 30.1.0(@noble/hashes@1.8.0)
     transitivePeerDependencies:
       - msw
 
-  vitest@5.0.0(@types/node@26.4.1)(@vitest/coverage-v8@5.0.0)(jsdom@30.0.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.4.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0)):
+  vitest@5.0.1(@types/node@26.4.1)(@vitest/coverage-v8@5.0.1)(jsdom@30.0.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.4.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0)):
     dependencies:
       '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.0(vite@8.3.0(@types/node@26.4.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
+      '@vitest/mocker': 5.0.1(vite@8.3.0(@types/node@26.4.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
       chai: 6.2.2
       es-module-lexer: 2.3.2
       expect-type: 1.4.0
@@ -12741,7 +12662,7 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 26.4.1
-      '@vitest/coverage-v8': 5.0.0(vitest@5.0.0)
+      '@vitest/coverage-v8': 5.0.1(vitest@5.0.1)
       jsdom: 30.0.1(@noble/hashes@1.8.0)
     transitivePeerDependencies:
       - msw
@@ -12956,15 +12877,6 @@ snapshots:
       webidl-conversions: 8.0.1
     transitivePeerDependencies:
       - '@noble/hashes'
-
-  whatwg-url@17.1.0(@noble/hashes@1.8.0):
-    dependencies:
-      '@exodus/bytes': 1.15.1(@noble/hashes@1.8.0)
-      tr46: 6.0.0
-      webidl-conversions: 8.0.1
-    transitivePeerDependencies:
-      - '@noble/hashes'
-    optional: true
 
   whatwg-url@17.1.2(@noble/hashes@1.8.0):
     dependencies:
