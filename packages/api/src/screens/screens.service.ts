@@ -37,10 +37,7 @@ export class ScreensService {
     const device = await this.findDeviceForAdd(body.deviceId)
     const saved = await this.createScreen(body, device)
 
-    if (body.externalLink && body.fetchManual)
-      await this.fetchExternalImageForScreen(device, saved, body.externalLink)
-    else if (file)
-      await this.saveUploadedFileForScreen(device, saved, file)
+    await this.processScreenSource(body, file, device, saved)
 
     return this.activateScreen(saved, device.id)
   }
@@ -76,6 +73,20 @@ export class ScreensService {
     const saved = await this.screensRepository.save(newScreen)
     this.logger.log(`Screen created with id: ${saved.id} for device: ${device.id}`)
     return saved
+  }
+
+  private async processScreenSource(
+    body: CreateScreenDto,
+    file: Express.Multer.File | undefined,
+    device: Device,
+    screen: Screen,
+  ): Promise<void> {
+    if (body.externalLink && body.fetchManual) {
+      await this.fetchExternalImageForScreen(device, screen, body.externalLink)
+    }
+    else if (file) {
+      await this.saveUploadedFileForScreen(device, screen, file)
+    }
   }
 
   private async fetchExternalImageForScreen(device: Device, screen: Screen, externalLink: string): Promise<void> {
