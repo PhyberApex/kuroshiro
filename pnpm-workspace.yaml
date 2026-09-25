@@ -9,9 +9,9 @@ allowBuilds:
 catalog:
   '@antfu/eslint-config': 9.5.1
   '@mdi/js': 7.4.47
-  '@nestjs/cli': 12.0.3
+  '@nestjs/cli': 12.0.5
   '@nestjs/common': 12.0.4
-  '@nestjs/config': 12.0.0
+  '@nestjs/config': 12.0.1
   '@nestjs/core': 12.0.4
   '@nestjs/mapped-types': 12.0.0
   '@nestjs/platform-express': 12.0.4
