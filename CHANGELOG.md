@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.14.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.13.0...kuroshiro-v0.14.0) (2026-09-26)
+
+
+### Features
+
+* **config:** add whole-server configuration export and import ([#993](https://github.com/PhyberApex/kuroshiro/issues/993)) ([a169997](https://github.com/PhyberApex/kuroshiro/commit/a169997646e0bf18641e8743b4ce0702e39224e0))
+* **plugins:** add plugin duplication ([#986](https://github.com/PhyberApex/kuroshiro/issues/986)) ([b4918cc](https://github.com/PhyberApex/kuroshiro/commit/b4918ccdf53c8c02a11a25e3561dfaec4ebfb05d))
+* **ui:** assign existing plugins from the device page ([#1000](https://github.com/PhyberApex/kuroshiro/issues/1000)) ([42bf19b](https://github.com/PhyberApex/kuroshiro/commit/42bf19b2fc8d02616e710c06d9d76f73c9ae6508)), closes [#992](https://github.com/PhyberApex/kuroshiro/issues/992)
+
+
+### Bug Fixes
+
+* **plugins:** eager-load deviceAssignments in findAll and guard against duplicate assignments ([#990](https://github.com/PhyberApex/kuroshiro/issues/990)) ([35bc72c](https://github.com/PhyberApex/kuroshiro/commit/35bc72c57997384c4e3f5ed22dad43dff23f2c4e)), closes [#976](https://github.com/PhyberApex/kuroshiro/issues/976)
+* **plugins:** invalidate Screen render cache on Plugin update ([#987](https://github.com/PhyberApex/kuroshiro/issues/987)) ([3472bb4](https://github.com/PhyberApex/kuroshiro/commit/3472bb43fc2b434d019fc29f5f7017eacf957bf2))
+* **screens:** unassign linked plugin when deleting a plugin-backed screen ([#999](https://github.com/PhyberApex/kuroshiro/issues/999)) ([e13b866](https://github.com/PhyberApex/kuroshiro/commit/e13b866787b4178d65aa57adf8a974aff437bd04))
+* **ui:** show all plugins in the mashup slot picker ([#1001](https://github.com/PhyberApex/kuroshiro/issues/1001)) ([d4831cf](https://github.com/PhyberApex/kuroshiro/commit/d4831cf9d0b6655b411b195d2a1efe25a8674570))
+
 ## [0.13.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.12.2...kuroshiro-v0.13.0) (2026-09-24)
 
 
