@@ -1,5 +1,5 @@
 import type { Screen } from '../../screens/screens.entity.js'
-import type { MockPluginDataFetcherService, MockPluginRendererService, MockPluginTransformService } from '../../test/mockPluginCollaborators.js'
+import type { MockPluginDataFetcherService, MockPluginRenderCacheService, MockPluginRendererService, MockPluginTransformService } from '../../test/mockPluginCollaborators.js'
 import type { DevicePlugin } from '../entities/device-plugin.entity.js'
 import type { PluginDataSource } from '../entities/plugin-data-source.entity.js'
 import type { PluginField } from '../entities/plugin-field.entity.js'
@@ -13,7 +13,7 @@ import type { PluginTransformService } from '../services/plugin-transform.servic
 import { plainToInstance } from 'class-transformer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeDevicePlugin, makePlugin, makePluginDataSource, makePluginField, makePluginTemplate, makeScreen } from '../../test/fixtures.js'
-import { createMockPluginDataFetcherService, createMockPluginRendererService, createMockPluginTransformService } from '../../test/mockPluginCollaborators.js'
+import { createMockPluginDataFetcherService, createMockPluginRenderCacheService, createMockPluginRendererService, createMockPluginTransformService } from '../../test/mockPluginCollaborators.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
 import { asService, injectPrivate } from '../../test/mockService.js'
 import { UpdatePluginDto } from '../dto/update-plugin.dto.js'
@@ -32,7 +32,7 @@ describe('pluginsService', () => {
   let mockRenderer: MockPluginRendererService
   let mockScheduler: { schedulePlugin: ReturnType<typeof vi.fn>, removeScheduledJob: ReturnType<typeof vi.fn>, hasScheduledJob: ReturnType<typeof vi.fn> }
   let mockTransformer: MockPluginTransformService
-  let mockRenderCache: { invalidateMashupCaches: ReturnType<typeof vi.fn> }
+  let mockRenderCache: MockPluginRenderCacheService
 
   beforeEach(() => {
     pluginRepo = createMockRepository<Plugin>()
@@ -50,9 +50,7 @@ describe('pluginsService', () => {
       hasScheduledJob: vi.fn(),
     }
     mockTransformer = createMockPluginTransformService()
-    mockRenderCache = {
-      invalidateMashupCaches: vi.fn(),
-    }
+    mockRenderCache = createMockPluginRenderCacheService()
 
     service = new PluginsService(
       asRepository(pluginRepo),

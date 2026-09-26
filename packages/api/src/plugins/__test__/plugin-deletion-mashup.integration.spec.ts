@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MashupSlot } from '../../mashup/entities/mashup-slot.entity.js'
 import { Screen } from '../../screens/screens.entity.js'
 import { makeMashupConfiguration, makeMashupSlot, makePlugin, makeScreen } from '../../test/fixtures.js'
+import { createMockPluginRenderCacheService } from '../../test/mockPluginCollaborators.js'
 import { createMockRepository } from '../../test/mockRepository.js'
 import { DevicePlugin } from '../entities/device-plugin.entity.js'
 import { PluginDataSource } from '../entities/plugin-data-source.entity.js'
@@ -91,7 +92,7 @@ describe('plugin Deletion with Mashup Warning Integration', () => {
         },
         {
           provide: PluginRenderCacheService,
-          useValue: { invalidateMashupCaches: vi.fn() },
+          useValue: createMockPluginRenderCacheService(),
         },
       ],
     }).compile()
