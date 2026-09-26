@@ -22,8 +22,6 @@ type AddScreenTab = 'link' | 'file' | 'html' | 'mashup' | 'plugin'
 
 const addScreenTab = ref<AddScreenTab>('link')
 
-const tabHasOwnSubmit = computed(() => addScreenTab.value === 'mashup' || addScreenTab.value === 'plugin')
-
 const filename = ref('')
 
 const filenameRules = [
@@ -55,20 +53,19 @@ const renderHtmlValid = computed(() => {
   return renderHtml.value !== ''
 })
 
-const tabInputValid: Record<AddScreenTab, () => boolean> = {
+const sharedSubmitTabs: Partial<Record<AddScreenTab, () => boolean>> = {
   link: () => !!externalLink.value && linkValid.value,
   file: () => !!fileInput.value,
   html: () => renderHtmlValid.value,
-  mashup: () => true,
-  plugin: () => true,
 }
+
+const tabHasOwnSubmit = computed(() => !(addScreenTab.value in sharedSubmitTabs))
 
 const addScreenInputValid = computed(() => {
   if (!device.value)
     return false
-  if (tabHasOwnSubmit.value)
-    return true
-  return !!filename.value && tabInputValid[addScreenTab.value]()
+  const inputValid = sharedSubmitTabs[addScreenTab.value]
+  return inputValid ? !!filename.value && inputValid() : true
 })
 
 const addScreenIcon = computed(() => {

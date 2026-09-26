@@ -33,7 +33,14 @@ async function loadPlugins() {
   allPlugins.value = await pluginsStore.fetchAllPlugins()
 }
 
-onMounted(loadPlugins)
+onMounted(async () => {
+  try {
+    await loadPlugins()
+  }
+  catch (err) {
+    error.value = errorMessage(err, 'Failed to load plugins')
+  }
+})
 
 async function assignPlugin() {
   if (!selectedPluginId.value)
@@ -65,7 +72,7 @@ defineExpose({ availablePlugins, selectedPluginId })
         {{ error }}
       </VAlert>
 
-      <VAlert v-if="!availablePlugins.length" type="info" variant="tonal" class="mb-4" data-test-id="plugin-empty-state">
+      <VAlert v-if="!availablePlugins.length && !error" type="info" variant="tonal" class="mb-4" data-test-id="plugin-empty-state">
         Every existing plugin is already on this device, or none exist yet.
       </VAlert>
 

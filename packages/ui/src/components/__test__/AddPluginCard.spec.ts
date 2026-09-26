@@ -117,6 +117,17 @@ describe('addPluginCard', () => {
     expect(wrapper.vm.selectedPluginId).toBe('')
   })
 
+  it('shows a load failure instead of the empty state', async () => {
+    pluginsStoreMock.fetchAllPlugins = vi.fn(async () => {
+      throw new Error('offline')
+    })
+    const wrapper = mountCard()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('offline')
+    expect(wrapper.find('[data-test-id="plugin-empty-state"]').exists()).toBe(false)
+  })
+
   it('surfaces an assignment failure', async () => {
     allPlugins = [makePlugin('free')]
     pluginsStoreMock.assignToDevice = vi.fn(async () => {
