@@ -6,6 +6,8 @@ body:
     attributes:
       value: |
         Thanks for suggesting a feature! Let’s make this project better.
+
+        Heads up: issues may be triaged or answered by an AI agent, with a human maintainer reviewing.
   - type: textarea
     id: motivation
     attributes:
