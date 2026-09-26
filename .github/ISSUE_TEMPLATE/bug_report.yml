@@ -6,6 +6,8 @@ body:
     attributes:
       value: |
         Thanks for reporting a bug! Please fill out this form as completely as possible.
+
+        Heads up: issues may be triaged or answered by an AI agent, with a human maintainer reviewing.
   - type: textarea
     id: description
     attributes:

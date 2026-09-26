@@ -20,6 +20,12 @@
 
 ---
 
+## 🤖 AI Disclaimer
+
+> **Heads up!** Kuroshiro is developed with substantial help from AI coding agents. Issues and pull requests may be triaged, commented on, or authored by an AI agent, with a human maintainer reviewing before anything is merged.
+
+---
+
 ## 🌟 Why Kuroshiro?
 
 Kuroshiro is for anyone who wants to experiment, self-host, and shape their own TRMNL experience:
