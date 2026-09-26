@@ -99,18 +99,15 @@ describe('plugins store', () => {
     expect(result).toEqual(duplicated)
   })
 
-  it('deletePlugin deletes a plugin and refetches for device', async () => {
-    mockFetch
-      .mockResolvedValueOnce(jsonResponse(null))
-      .mockResolvedValueOnce(jsonResponse([]))
+  it('deletePlugin deletes a plugin', async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse(null))
 
     const store = usePluginsStore()
-    await store.deletePlugin('plugin-1', 'device-1')
+    await store.deletePlugin('plugin-1')
 
     expect(mockFetch).toHaveBeenCalledWith('/api/plugins/plugin-1', {
       method: 'DELETE',
     })
-    expect(mockFetch).toHaveBeenCalledWith('/api/plugins/device/device-1', undefined)
   })
 
   it('assignToDevice assigns plugin to device', async () => {
@@ -137,21 +134,6 @@ describe('plugins store', () => {
     expect(mockFetch).toHaveBeenCalledWith('/api/plugins/plugin-1/unassign/device-1', {
       method: 'DELETE',
     })
-  })
-
-  it('updateDeviceAssignment updates device assignment', async () => {
-    const updated = { id: 'dp-1', isActive: false }
-    mockFetch.mockResolvedValue(jsonResponse(updated))
-
-    const store = usePluginsStore()
-    const result = await store.updateDeviceAssignment('dp-1', { isActive: false })
-
-    expect(mockFetch).toHaveBeenCalledWith('/api/plugins/device-assignment/dp-1', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isActive: false }),
-    })
-    expect(result).toEqual(updated)
   })
 
   it('throws error when fetch fails', async () => {

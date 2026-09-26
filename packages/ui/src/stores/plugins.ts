@@ -54,15 +54,12 @@ export const usePluginsStore = defineStore('plugins', () => {
     }, 'Failed to duplicate plugin')
   }
 
-  const deletePlugin = async (id: string, deviceId?: string) => {
+  const deletePlugin = async (id: string) => {
     const res = await apiFetch(`/api/plugins/${id}`, {
       method: 'DELETE',
     })
     if (!res.ok)
       throw new Error('Failed to delete plugin')
-    if (deviceId) {
-      await fetchPluginsForDevice(deviceId)
-    }
   }
 
   const assignToDevice = async (pluginId: string, deviceId: string, isActive = true, order = 0) => {
@@ -84,17 +81,6 @@ export const usePluginsStore = defineStore('plugins', () => {
       throw new Error('Failed to unassign plugin')
   }
 
-  const updateDeviceAssignment = async (devicePluginId: string, updates: { isActive?: boolean, order?: number }) => {
-    const res = await apiFetch(`/api/plugins/device-assignment/${devicePluginId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates),
-    })
-    if (!res.ok)
-      throw new Error('Failed to update assignment')
-    return await res.json()
-  }
-
   return {
     plugins,
     fetchPluginsForDevice,
@@ -105,6 +91,5 @@ export const usePluginsStore = defineStore('plugins', () => {
     deletePlugin,
     assignToDevice,
     unassignFromDevice,
-    updateDeviceAssignment,
   }
 })

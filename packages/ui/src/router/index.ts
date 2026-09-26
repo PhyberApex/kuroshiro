@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useDeviceStore } from '../stores/device'
-import { usePluginsStore } from '../stores/plugins'
 import { getBasePath } from '../utils/basePath'
 import { routeParam } from '../utils/routeParam'
 
@@ -55,21 +54,6 @@ const router = createRouter({
       path: '/plugins',
       name: 'pluginsOverview',
       component: () => import('../views/PluginsOverviewView.vue'),
-    },
-    {
-      path: '/devices/:deviceId/plugins',
-      name: 'plugins',
-      component: () => import('../views/PluginsView.vue'),
-      props: true,
-      beforeEnter: async (to) => {
-        const deviceStore = useDeviceStore()
-        const pluginsStore = usePluginsStore()
-        const deviceId = routeParam(to.params.deviceId)
-        await deviceStore.fetchDevices()
-        if (!deviceId || !deviceStore.getById(deviceId))
-          return { name: 'overview' }
-        await pluginsStore.fetchPluginsForDevice(deviceId)
-      },
     },
     {
       path: '/plugins/create',

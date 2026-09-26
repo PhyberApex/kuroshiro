@@ -35,15 +35,6 @@ describe('pluginCardGrid', () => {
     expect(wrapper.text()).toContain('Calendar')
   })
 
-  it('passes the optional deviceId through to each card', () => {
-    const wrapper = mount(PluginCardGrid, {
-      props: { plugins, deviceId: 'device1' },
-      global: { plugins: [createPinia(), vuetify] },
-    })
-
-    expect(wrapper.findComponent({ name: 'PluginCard' }).props('deviceId')).toBe('device1')
-  })
-
   it('re-emits assignments-changed, duplicated and deleted from a card', async () => {
     const wrapper = mount(PluginCardGrid, {
       props: { plugins },

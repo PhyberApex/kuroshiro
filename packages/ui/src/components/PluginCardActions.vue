@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Plugin } from '../types/plugin'
-import { mdiAccountMultiple, mdiContentCopy, mdiDelete, mdiDownload, mdiPencil, mdiPower } from '@mdi/js'
+import { mdiAccountMultiple, mdiContentCopy, mdiDelete, mdiDownload, mdiPencil } from '@mdi/js'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { VBtn, VCard, VCardActions, VCardText, VCardTitle, VDialog, VDivider, VSnackbar, VSpacer } from 'vuetify/components'
@@ -10,7 +10,6 @@ import PluginAssignDialog from './PluginAssignDialog.vue'
 
 const props = defineProps<{
   plugin: Plugin
-  deviceId?: string
 }>()
 
 const emit = defineEmits<{
@@ -33,7 +32,7 @@ const loadingDelete = ref(false)
 async function confirmDelete() {
   loadingDelete.value = true
   try {
-    await pluginsStore.deletePlugin(props.plugin.id, props.deviceId)
+    await pluginsStore.deletePlugin(props.plugin.id)
     showDeleteDialog.value = false
     emit('deleted')
   }
@@ -44,22 +43,6 @@ async function confirmDelete() {
 
 function deletePlugin() {
   showDeleteDialog.value = true
-}
-
-const loadingToggle = ref(false)
-async function toggleActive() {
-  loadingToggle.value = true
-  try {
-    if (props.deviceId && props.plugin._devicePluginId) {
-      await pluginsStore.updateDeviceAssignment(props.plugin._devicePluginId, {
-        isActive: !props.plugin._isActive,
-      })
-      await pluginsStore.fetchPluginsForDevice(props.deviceId)
-    }
-  }
-  finally {
-    loadingToggle.value = false
-  }
 }
 
 function editPlugin() {
@@ -112,7 +95,6 @@ function onAssigned() {
       Edit
     </VBtn>
     <VBtn
-      v-if="!deviceId"
       variant="tonal"
       size="small"
       :prepend-icon="mdiAccountMultiple"
@@ -128,17 +110,6 @@ function onAssigned() {
       @click="duplicatePlugin"
     >
       Duplicate
-    </VBtn>
-    <VBtn
-      v-if="deviceId"
-      variant="tonal"
-      size="small"
-      :prepend-icon="mdiPower"
-      :color="plugin._isActive ? 'default' : 'success'"
-      :loading="loadingToggle"
-      @click="toggleActive"
-    >
-      {{ plugin._isActive ? 'Disable' : 'Enable' }}
     </VBtn>
     <VBtn
       variant="tonal"

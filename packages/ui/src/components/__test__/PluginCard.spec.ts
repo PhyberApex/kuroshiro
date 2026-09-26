@@ -51,8 +51,6 @@ describe('pluginCard', () => {
   beforeEach(() => {
     pluginsStoreMock = asStore<ReturnType<typeof usePluginsStore>>({
       deletePlugin: vi.fn(),
-      updateDeviceAssignment: vi.fn(),
-      fetchPluginsForDevice: vi.fn(),
     })
   })
 
@@ -90,7 +88,7 @@ describe('pluginCard', () => {
     expect(wrapper.text()).toContain('No description')
   })
 
-  it('shows assigned device count when not on device page', () => {
+  it('shows assigned device count', () => {
     const deviceAssignment = (id: string): DeviceAssignment => ({ id, isActive: true, order: 0, device: { id, name: `Device ${id}` } })
     const plugin = {
       ...basePlugin,
@@ -104,22 +102,6 @@ describe('pluginCard', () => {
     })
 
     expect(wrapper.text()).toContain('2 devices')
-  })
-
-  it('shows active status when on device page', () => {
-    const plugin = {
-      ...basePlugin,
-      _isActive: true,
-      _devicePluginId: 'dp-1',
-    }
-    const wrapper = mount(PluginCard, {
-      props: { plugin, deviceId: 'device-1' },
-      global: {
-        plugins: [createPinia(), vuetify],
-      },
-    })
-
-    expect(wrapper.text()).toContain('Active')
   })
 
   // Action-button behavior (edit/assign/toggle/export/delete) lives in PluginCardActions.vue
