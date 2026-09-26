@@ -8,6 +8,17 @@ import { PluginImporterService } from '../../plugins/services/plugin-importer.se
 import { CONFIG_SCHEMA_VERSION } from '../schema-version.js'
 import { ConfigurationImportService } from '../services/configuration-import.service.js'
 
+const { fsMock } = vi.hoisted(() => ({
+  fsMock: {
+    mkdir: vi.fn().mockResolvedValue(undefined),
+    writeFile: vi.fn().mockResolvedValue(undefined),
+  },
+}))
+
+vi.mock('node:fs', () => ({
+  promises: fsMock,
+}))
+
 const ENTITY_NAMES = [
   'Palette',
   'Firmware',
@@ -97,6 +108,7 @@ function buildArchive(options: {
   palettes?: unknown[]
   firmware?: unknown[]
   pluginFolders?: Record<string, PluginFolder>
+  screenImages?: Record<string, string>
 } = {}): Buffer {
   const zip = new AdmZip()
 
@@ -125,6 +137,10 @@ function buildArchive(options: {
     for (const [layout, content] of Object.entries(folder.templates)) {
       zip.addFile(`plugins/${pluginId}/src/${layout}.liquid`, Buffer.from(content))
     }
+  }
+
+  for (const [screenId, content] of Object.entries(options.screenImages ?? {})) {
+    zip.addFile(`screens/${screenId}/${screenId}.png`, Buffer.from(content))
   }
 
   return zip.toBuffer()
@@ -158,6 +174,9 @@ describe('configurationImportService', () => {
   let service: ConfigurationImportService
 
   beforeEach(() => {
+    fsMock.mkdir.mockReset().mockResolvedValue(undefined)
+    fsMock.writeFile.mockReset().mockResolvedValue(undefined)
+
     const fake = createFakeManager()
     manager = fake.manager
     backing = fake.backing
@@ -341,5 +360,31 @@ describe('configurationImportService', () => {
     expect(deviceRows[0].deviceModel).toBeNull()
     expect(deviceRows[0].palette).toBeNull()
     expect(deviceRows[0].targetFirmware).toBeNull()
+  })
+
+  it('restores a file-type Screen\'s image from the archive onto disk', async () => {
+    const buffer = buildArchive({
+      devices: [makeDeviceEntry()],
+      screens: [{
+        id: 'screen-1',
+        deviceId: 'device-1',
+        type: 'file',
+        order: 1,
+        filename: 'sunset.png',
+        externalLink: null,
+        html: null,
+        fetchManual: false,
+        pluginId: null,
+        devicePluginId: null,
+        schedule: null,
+        mashupConfiguration: null,
+      }],
+      screenImages: { 'screen-1': 'png-bytes' },
+    })
+
+    await service.importFromZip(buffer)
+
+    expect(fsMock.mkdir).toHaveBeenCalledWith(expect.stringContaining('device-1'), { recursive: true })
+    expect(fsMock.writeFile).toHaveBeenCalledWith(expect.stringContaining('screen-1.png'), Buffer.from('png-bytes'))
   })
 })

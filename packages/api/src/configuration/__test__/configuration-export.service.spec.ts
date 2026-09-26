@@ -5,8 +5,9 @@ import type { DevicePlugin } from '../../plugins/entities/device-plugin.entity.j
 import type { PluginFieldValue } from '../../plugins/entities/plugin-field-value.entity.js'
 import type { Plugin } from '../../plugins/entities/plugin.entity.js'
 import type { Screen } from '../../screens/screens.entity.js'
+import { Buffer } from 'node:buffer'
 import AdmZip from 'adm-zip'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PluginExporterService } from '../../plugins/services/plugin-exporter.service.js'
 import {
   makeDevice,
@@ -22,6 +23,24 @@ import {
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
 import { CONFIG_SCHEMA_VERSION } from '../schema-version.js'
 import { ConfigurationExportService } from '../services/configuration-export.service.js'
+
+const { existsSyncMock, readFileSyncMock, realFs } = vi.hoisted(() => ({
+  existsSyncMock: vi.fn(),
+  readFileSyncMock: vi.fn(),
+  realFs: {} as { existsSync: typeof import('node:fs').existsSync, readFileSync: typeof import('node:fs').readFileSync },
+}))
+
+// Delegates to the real `node:fs` by default (so `getApiVersion`'s package.json read keeps working,
+// and so a fake screen-image path naturally reports missing, same as before this file mocked `node:fs`
+// at all). Tests that need a screen image "on disk" override one call at a time with `mockReturnValueOnce`.
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs')>()
+  realFs.existsSync = actual.existsSync
+  realFs.readFileSync = actual.readFileSync
+  existsSyncMock.mockImplementation((...args: Parameters<typeof actual.existsSync>) => realFs.existsSync(...args))
+  readFileSyncMock.mockImplementation((...args: Parameters<typeof actual.readFileSync>) => realFs.readFileSync(...args))
+  return { ...actual, existsSync: existsSyncMock, readFileSync: readFileSyncMock }
+})
 
 describe('configurationExportService', () => {
   let pluginRepo: ReturnType<typeof createMockRepository<Plugin>>
@@ -158,5 +177,33 @@ describe('configurationExportService', () => {
 
     expect(assignmentsJson).toHaveLength(1)
     expect(assignmentsJson[0].fieldValues).toEqual([{ id: 'fv-1', fieldId: 'field-1', value: 'hello' }])
+  })
+
+  it('includes a file-type Screen\'s rendered image when it exists on disk', async () => {
+    // Call order within exportToZip: buildManifest's getApiVersion() reads package.json first
+    // (delegated to the real fs), then addScreenImage reads this Screen's image second.
+    existsSyncMock.mockReturnValueOnce(true)
+    readFileSyncMock.mockImplementationOnce((...args: Parameters<typeof realFs.readFileSync>) => realFs.readFileSync(...args))
+    readFileSyncMock.mockReturnValueOnce(Buffer.from('png-bytes'))
+    const device = makeDevice({ id: 'device-1' })
+    const screen = makeScreen({ id: 'screen-1', device, type: 'file', filename: 'sunset.png' })
+    screenRepo.find.mockResolvedValue([screen])
+
+    const buffer = await service.exportToZip()
+    const zip = new AdmZip(buffer)
+
+    expect(zip.getEntry('screens/screen-1/sunset.png')?.getData().toString('utf8')).toBe('png-bytes')
+  })
+
+  it('omits the image for a file-type Screen when nothing is on disk, and for non-file Screen types', async () => {
+    const device = makeDevice({ id: 'device-1' })
+    const fileScreen = makeScreen({ id: 'screen-1', device, type: 'file' })
+    const htmlScreen = makeScreen({ id: 'screen-2', device, type: 'html' })
+    screenRepo.find.mockResolvedValue([fileScreen, htmlScreen])
+
+    const buffer = await service.exportToZip()
+    const zip = new AdmZip(buffer)
+
+    expect(zip.getEntries().some(entry => entry.entryName.startsWith('screens/'))).toBe(false)
   })
 })
