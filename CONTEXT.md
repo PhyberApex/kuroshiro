@@ -48,6 +48,10 @@ _Avoid_: Playlist, playlist item, recurrence rule
 Which strategy a Plugin uses to get data into its template — `Poll` (Kuroshiro fetches from a Data Source on a schedule) or `Webhook` (an external system pushes data by POSTing to the Plugin's Webhook URL, rendered synchronously on arrival).
 _Avoid_: Plugin type, strategy
 
+**Plugin Assignment**:
+A Plugin attached to one Device's Rotation, always paired 1:1 with a plugin-type Screen on that Device. Creating the assignment creates the Screen, and deleting either one removes both. The Plugin itself and its Mashup slots are unaffected. A Plugin has at most one Assignment per Device.
+_Avoid_: DevicePlugin (the entity name), install
+
 **Webhook Token**:
 A dedicated, regenerable secret embedded in a Webhook-kind Plugin's ingest URL — distinct from the Plugin's `id`, so the Plugin's admin URL leaking doesn't grant write access.
 _Avoid_: Plugin ID, API key (reserve "API key" for Device auth)

@@ -2,6 +2,7 @@ import type { ConfigService } from '@nestjs/config'
 import type { MockInstance } from 'vitest'
 import type { DeviceModelsService } from '../../device-models/device-models.service.js'
 import type { Device } from '../../devices/devices.entity.js'
+import type { DevicePlugin } from '../../plugins/entities/device-plugin.entity.js'
 import type { MockDeviceModelsService } from '../../test/mockDeviceModelsService.js'
 import type { CreateScreenDto } from '../dto/create-screen.dto.js'
 import type { Screen } from '../screens.entity.js'
@@ -29,6 +30,7 @@ describe('screensService', () => {
   let service: ScreensService
   let screensRepo: ReturnType<typeof createMockTransactionalRepository<Screen>>
   let devicesRepo: ReturnType<typeof createMockRepository<Device>>
+  let devicePluginsRepo: ReturnType<typeof createMockRepository<DevicePlugin>>
   let unlinkMock: MockInstance<typeof fs.promises.unlink>
   let deviceModels: MockDeviceModelsService
   const mockConfigService = { get: vi.fn().mockReturnValue(false) }
@@ -36,10 +38,12 @@ describe('screensService', () => {
   beforeEach(() => {
     screensRepo = createMockTransactionalRepository<Screen>()
     devicesRepo = createMockRepository<Device>()
+    devicePluginsRepo = createMockRepository<DevicePlugin>()
     deviceModels = createMockDeviceModelsService()
     service = new ScreensService(
       asRepository(screensRepo),
       asRepository(devicesRepo),
+      asRepository(devicePluginsRepo),
       asService<ConfigService>(mockConfigService),
       asService<DeviceModelsService>(deviceModels),
     )
@@ -129,6 +133,27 @@ describe('screensService', () => {
     expect(screensRepo.save).toHaveBeenCalled()
     expect(unlinkMock).toHaveBeenCalledWith(expect.stringContaining('public/screens/devices/dev/1.png'))
     expect(unlinkMock).toHaveBeenCalledWith(expect.stringContaining('public/screens/devices/dev/1.original'))
+    expect(devicePluginsRepo.delete).not.toHaveBeenCalled()
+  })
+
+  it('delete also removes the linked DevicePlugin when the screen has a devicePluginId', async () => {
+    const device = makeDevice({ id: 'dev' })
+    const screen = makeScreen({ id: '1', device, type: 'plugin', devicePluginId: 'dp-1' })
+    screensRepo.findOne.mockResolvedValue(screen)
+    screensRepo.find.mockResolvedValue([])
+    await expect(service.delete('1')).resolves.toBeUndefined()
+    expect(screensRepo.delete).toHaveBeenCalledWith('1')
+    expect(devicePluginsRepo.delete).toHaveBeenCalledWith('dp-1')
+  })
+
+  it('delete succeeds when the linked DevicePlugin no longer exists', async () => {
+    const device = makeDevice({ id: 'dev' })
+    const screen = makeScreen({ id: '1', device, type: 'plugin', devicePluginId: 'orphaned' })
+    screensRepo.findOne.mockResolvedValue(screen)
+    screensRepo.find.mockResolvedValue([])
+    devicePluginsRepo.delete.mockResolvedValue({ affected: 0, raw: [] })
+    await expect(service.delete('1')).resolves.toBeUndefined()
+    expect(devicePluginsRepo.delete).toHaveBeenCalledWith('orphaned')
   })
 
   it('updateExternalScreen refetches into the retained original and converts it', async () => {

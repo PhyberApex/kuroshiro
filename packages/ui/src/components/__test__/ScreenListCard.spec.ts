@@ -75,6 +75,36 @@ describe('screenListCard', () => {
     expect(wrapper.find('[data-test-id="screen-delete-btn-screen2"]').exists()).toBe(true)
   })
 
+  it('renders an enabled delete button for a plugin-backed screen with an unassign tooltip', () => {
+    screensStoreMock.screens = [
+      { id: 'screen1', filename: null, externalLink: null, isActive: true, device: 'device1', fetchManual: false, html: '', devicePluginId: 'dp-1', plugin: { id: 'plugin-1', name: 'My Plugin' } },
+    ]
+    const wrapper = mount(ScreenListCard, {
+      props: { deviceId: 'device1' },
+      global: {
+        plugins: [createPinia(), vuetify],
+      },
+    })
+    const deleteBtn = wrapper.find('[data-test-id="screen-delete-btn-screen1"]')
+    expect(deleteBtn.exists()).toBe(true)
+    expect(deleteBtn.attributes('disabled')).toBeUndefined()
+    expect(deleteBtn.attributes('aria-label')).toBe('Unassign plugin')
+  })
+
+  it('deletes a plugin-backed screen through the normal delete flow when clicked', async () => {
+    screensStoreMock.screens = [
+      { id: 'screen1', filename: null, externalLink: null, isActive: true, device: 'device1', fetchManual: false, html: '', devicePluginId: 'dp-1', plugin: { id: 'plugin-1', name: 'My Plugin' } },
+    ]
+    const wrapper = mount(ScreenListCard, {
+      props: { deviceId: 'device1' },
+      global: {
+        plugins: [createPinia(), vuetify],
+      },
+    })
+    await wrapper.find('[data-test-id="screen-delete-btn-screen1"]').trigger('click')
+    expect(screensStoreMock.deleteScreen).toHaveBeenCalledWith('device1', 'screen1')
+  })
+
   it('shows orange Mashup chip for mashup screens', () => {
     screensStoreMock.screens = [
       {
