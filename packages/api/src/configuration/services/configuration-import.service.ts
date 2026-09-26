@@ -260,6 +260,7 @@ export class ConfigurationImportService {
   private async upsertDevice(repos: TransactionRepos, entry: DeviceManifestEntry, counts: ImportCounts, warnings: string[]): Promise<string> {
     let device = await repos.device.findOneBy({ id: entry.id })
     let wasCreated = !device
+    let reattachedByMac = false
 
     // Re-attach to hardware that already registered under a different id (ADR-0021).
     if (!device) {
@@ -267,6 +268,7 @@ export class ConfigurationImportService {
       if (macMatch) {
         device = macMatch
         wasCreated = false
+        reattachedByMac = true
       }
     }
 
@@ -277,7 +279,12 @@ export class ConfigurationImportService {
     device.name = entry.name
     device.friendlyId = entry.friendlyId
     device.mac = entry.mac
-    device.apikey = entry.apikey
+    // Hardware re-attached by mac already holds its own live apikey (minted by DeviceSetupService);
+    // overwriting it with the archived value would desync the DB from what the physical device sends,
+    // breaking its next /display poll. Only a brand-new or exact-id-match row takes the archived apikey.
+    if (!reattachedByMac) {
+      device.apikey = entry.apikey
+    }
     device.refreshRate = entry.refreshRate
     device.deviceModel = await this.resolveDeviceModel(repos.deviceModel, entry.deviceModelName, warnings)
     device.palette = await this.resolvePalette(repos.palette, entry.paletteId, warnings)

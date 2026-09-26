@@ -254,7 +254,7 @@ describe('configurationImportService', () => {
     expect(backing.get('Screen')!.size).toBe(1)
   })
 
-  it('re-attaches to an existing Device by mac instead of creating a duplicate, remapping Screen references onto it', async () => {
+  it('re-attaches to an existing Device by mac instead of creating a duplicate, remapping Screen references onto it, and keeps the existing apikey so the hardware stays authenticated', async () => {
     backing.get('Device')!.set('existing-device-1', {
       id: 'existing-device-1',
       name: 'Old Name',
@@ -289,7 +289,7 @@ describe('configurationImportService', () => {
     const deviceRows = [...backing.get('Device')!.values()]
     expect(deviceRows).toHaveLength(1)
     expect(deviceRows[0].id).toBe('existing-device-1')
-    expect(deviceRows[0].apikey).toBe('new-key')
+    expect(deviceRows[0].apikey).toBe('old-key')
     expect(summary.updated.devices).toBe(1)
 
     const screenRows = [...backing.get('Screen')!.values()]
