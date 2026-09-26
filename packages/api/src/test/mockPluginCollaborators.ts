@@ -15,6 +15,10 @@ export interface MockPluginTransformService {
   transform: Mock
 }
 
+export interface MockPluginRenderCacheService {
+  invalidateMashupCaches: Mock
+}
+
 /**
  * `fetchOrLiteral` routes to `fetchData` for a fetch-mode source (this mock replicates
  * that routing, matching `PluginDataFetcherService.fetchOrLiteral`'s real implementation)
@@ -41,4 +45,8 @@ export function createMockPluginRendererService(): MockPluginRendererService {
 
 export function createMockPluginTransformService(): MockPluginTransformService {
   return { transform: vi.fn() }
+}
+
+export function createMockPluginRenderCacheService(): MockPluginRenderCacheService {
+  return { invalidateMashupCaches: vi.fn() }
 }
