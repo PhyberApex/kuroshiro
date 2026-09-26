@@ -18,8 +18,9 @@ export class ConfigurationController {
 
     res.setHeader('Content-Type', 'application/zip')
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
-    // Surfaced so the UI can warn before the download starts, and so a script hitting
-    // this endpoint directly can't miss that the archive holds plaintext credentials.
+    // The UI shows its own static warning before triggering this download; this header
+    // is so a script hitting the endpoint directly can't miss that the archive holds
+    // plaintext credentials.
     res.setHeader('X-Kuroshiro-Contains-Secrets', 'true')
     res.send(zipBuffer)
   }
