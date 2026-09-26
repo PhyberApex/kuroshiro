@@ -41,7 +41,7 @@ export class Screen {
   device: Relation<Device>
 
   @ManyToOne('Plugin', { onDelete: 'CASCADE', nullable: true })
-  plugin?: Relation<Plugin>
+  plugin?: Relation<Plugin> | null
 
   @Column({ type: 'uuid', nullable: true })
   devicePluginId?: string | null

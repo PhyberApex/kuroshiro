@@ -1,4 +1,5 @@
 import type { MaintenanceIssues } from 'kuroshiro-shared'
+import type { useConfigurationStore } from '@/stores/configuration'
 import type { useDeviceModelsStore } from '@/stores/deviceModels'
 import type { useFirmwareStore } from '@/stores/firmware'
 import type { useMaintenanceStore } from '@/stores/maintenance'
@@ -26,6 +27,7 @@ const ISSUES: MaintenanceIssues = {
 let maintenanceStoreMock: ReturnType<typeof useMaintenanceStore>
 let deviceModelsStoreMock: ReturnType<typeof useDeviceModelsStore>
 let firmwareStoreMock: ReturnType<typeof useFirmwareStore>
+let configurationStoreMock: ReturnType<typeof useConfigurationStore>
 
 vi.mock('@/stores/maintenance', () => ({
   useMaintenanceStore: () => maintenanceStoreMock,
@@ -35,6 +37,9 @@ vi.mock('@/stores/deviceModels', () => ({
 }))
 vi.mock('@/stores/firmware', () => ({
   useFirmwareStore: () => firmwareStoreMock,
+}))
+vi.mock('@/stores/configuration', () => ({
+  useConfigurationStore: () => configurationStoreMock,
 }))
 
 function mountView() {
@@ -83,6 +88,13 @@ describe('maintenanceView', () => {
       sync: vi.fn().mockResolvedValue({ inserted: true, version: '1.0.0' }),
       upload: vi.fn().mockResolvedValue(true),
       remove: vi.fn().mockResolvedValue(true),
+    })
+    configurationStoreMock = asStore<ReturnType<typeof useConfigurationStore>>({
+      importing: false,
+      error: null,
+      importSummary: null,
+      importArchive: vi.fn().mockResolvedValue(true),
+      reset: vi.fn(),
     })
   })
 

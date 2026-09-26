@@ -6,6 +6,7 @@ import { ConfigModule } from '@nestjs/config'
 import { ServeStaticModule } from '@nestjs/serve-static'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import config from './config/config.js'
+import { ConfigurationModule } from './configuration/configuration.module.js'
 import { DeviceModelsModule } from './device-models/device-models.module.js'
 import { DeviceModel } from './device-models/entities/device-model.entity.js'
 import { Palette } from './device-models/entities/palette.entity.js'
@@ -76,6 +77,7 @@ const conf = config()
     MashupModule,
     ScheduleModule,
     MaintenanceModule,
+    ConfigurationModule,
   ],
 })
 export class AppModule {}

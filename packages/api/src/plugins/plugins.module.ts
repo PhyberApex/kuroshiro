@@ -53,6 +53,6 @@ import { WebhookIngestController } from './webhook-ingest.controller.js'
     WebhookIngestService,
     WebhookPluginGuard,
   ],
-  exports: [PluginsService, PluginSchedulerService, PluginDataFetcherService, PluginDataResolverService, PluginRendererService, PluginTransformService, PluginRenderCacheService, PluginTemplateContextService],
+  exports: [PluginsService, PluginSchedulerService, PluginDataFetcherService, PluginDataResolverService, PluginRendererService, PluginTransformService, PluginRenderCacheService, PluginTemplateContextService, PluginImporterService, PluginExporterService],
 })
 export class PluginsModule {}

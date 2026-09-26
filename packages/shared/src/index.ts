@@ -1,3 +1,4 @@
+export * from './configuration'
 export * from './data-source'
 export * from './maintenance'
 export * from './screen-shell'
