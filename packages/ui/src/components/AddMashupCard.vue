@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { Plugin } from '@/types/plugin'
 import { computed, onMounted, ref } from 'vue'
 import { VAlert, VBtn, VCard, VCardText, VCardTitle, VDivider, VSelect, VTextField } from 'vuetify/components'
 import { useMashupStore } from '@/stores/mashup'
@@ -12,6 +13,7 @@ const props = defineProps<{ deviceId: string }>()
 const mashupStore = useMashupStore()
 const pluginsStore = usePluginsStore()
 const screensStore = useScreensStore()
+const allPlugins = ref<Plugin[]>([])
 const filename = ref('')
 const selectedLayout = ref<string>('')
 const selectedPlugins = ref<string[]>([])
@@ -32,14 +34,14 @@ const isValid = computed(() => {
 })
 
 const availablePlugins = computed(() => {
-  return pluginsStore.plugins.map(p => ({
+  return allPlugins.value.map(p => ({
     title: p.name,
     value: p.id,
   }))
 })
 
 onMounted(async () => {
-  await pluginsStore.fetchPluginsForDevice(props.deviceId)
+  allPlugins.value = await pluginsStore.fetchAllPlugins()
 })
 
 function updateSlotCount() {
@@ -71,6 +73,8 @@ async function createMashup() {
     loading.value = false
   }
 }
+
+defineExpose({ availablePlugins })
 </script>
 
 <template>
@@ -115,7 +119,7 @@ async function createMashup() {
       </div>
 
       <VAlert v-if="!availablePlugins.length" type="info" variant="tonal" class="mb-4">
-        No plugins available. Create or assign plugins to this device first.
+        No plugins available. Create a plugin first.
       </VAlert>
 
       <VBtn
