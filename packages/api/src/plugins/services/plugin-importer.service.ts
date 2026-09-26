@@ -95,7 +95,7 @@ interface RecipeSettings extends TerminusSettings {
   static_data?: JsonObject | null
 }
 
-interface ParsedDataSource {
+export interface ParsedDataSource {
   name: string
   mode: 'fetch' | 'literal'
   method?: string
@@ -209,7 +209,8 @@ export class PluginImporterService {
     return this.parseZip(zip, fallbackName)
   }
 
-  private parseZip(zip: AdmZip, fallbackName: string, forcedDataSources?: ParsedDataSource[]): ParsedPlugin {
+  /** Parses a `.trmnlp` zip already in memory (e.g. a `plugins/<id>/` folder extracted from a Configuration Archive) through the same manifest/settings/template mapping `importFromFile` uses, without a round trip through disk. */
+  parseZip(zip: AdmZip, fallbackName: string, forcedDataSources?: ParsedDataSource[]): ParsedPlugin {
     const zipEntries = zip.getEntries()
 
     this.logger.debug(`ZIP contains ${zipEntries.length} entries:`)

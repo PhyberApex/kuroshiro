@@ -6,6 +6,7 @@ import { VAlert, VBtn, VCard, VCardText, VCardTitle, VChip, VCol, VContainer, VD
 import CleanupActionsCard from '@/components/maintenance/CleanupActionsCard.vue'
 import CleanupConfirmDialog from '@/components/maintenance/CleanupConfirmDialog.vue'
 import CleanupResultAlert from '@/components/maintenance/CleanupResultAlert.vue'
+import ConfigurationCard from '@/components/maintenance/ConfigurationCard.vue'
 import DeviceModelsCard from '@/components/maintenance/DeviceModelsCard.vue'
 import FirmwareCard from '@/components/maintenance/FirmwareCard.vue'
 import MaintenanceIssueListCard from '@/components/maintenance/MaintenanceIssueListCard.vue'
@@ -208,6 +209,8 @@ async function executeCleanup() {
             </p>
           </VCardText>
         </VCard>
+
+        <ConfigurationCard />
 
         <DeviceModelsCard
           :active-model-count="deviceModelsStore.activeModels.length"

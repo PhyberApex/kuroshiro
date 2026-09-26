@@ -76,6 +76,18 @@ _Avoid_: Data Source Kind (collides with Plugin Kind), Data Source type, static/
 A pre-built, TRMNL-vetted Plugin template published at trmnl.com/recipes, importable into Kuroshiro by pasting its id or page URL. A Recipe exists only as an import source — the result of importing one is a normal Poll-kind Plugin, indistinguishable from a hand-built one, carrying only its source Recipe's id as inert metadata (no ongoing link, no auto-updates).
 _Avoid_: Extension, Exchange (Terminus's terms), Plugin (the imported result — see above)
 
+**Configuration Archive**:
+A single zip holding every piece of admin-built configuration on a Kuroshiro instance — Plugins (as nested `.trmnlp` folders plus a manifest for what `.trmnlp` can't carry), Devices, Screens with their Order and Schedule, Mashups, Plugin assignments with their field values, custom Palettes and custom Firmware metadata — stamped with the Kuroshiro version and an archive `schemaVersion`. Produced by Configuration Export, consumed by Configuration Import. Every record keeps its `id`, which is the identity Configuration Import upserts on. Contains secrets (Data Source headers, Device API keys) in plaintext; the export surfaces warn about this rather than redacting. Excludes runtime state: Webhook Payloads, Sensor readings, rendered images, logs, Device telemetry, and anything `official`/`official-synced`.
+_Avoid_: Backup (reserve for `pg_dump`-level disaster recovery, which this does not replace), dump, snapshot, `.trmnlp` (that is one Plugin's export, which the archive nests but is not)
+
+**Configuration Export**:
+The read-only action that produces a Configuration Archive from the running instance's current state (`GET /api/config/export`) — every Plugin via the existing per-Plugin exporter, plus the top-level manifests Configuration Import reads back. Always includes secrets as-is; the UI surfaces the credentials warning before the download starts, not only after.
+_Avoid_: Dump, snapshot (see Configuration Archive)
+
+**Configuration Import**:
+Restoring a Configuration Archive onto an instance: an upsert of every record by its exported `id`, so re-importing the same archive is idempotent. Devices additionally re-attach by `mac` when an existing row has it. Refuses an archive whose `schemaVersion` differs from the running instance's. Designed for a fresh instance; merging onto an instance that already holds unrelated content is not defined.
+_Avoid_: Restore (bare, in prose — reserve for the ADR's "restore targets a fresh instance" framing), sync
+
 **Special Function**:
 A one-shot command an admin triggers on a Device — `identify`, `sleep`, `add_wifi` or `rewind`, with `none` meaning nothing pending — that reaches the Device on its next `/display` poll. (`restart_playlist` and `send_to_me` are accepted by the API and offered in the UI, but marked unavailable: no Device Kuroshiro targets acts on them.) That response carries the value twice — as `special_function`, and echoed back as `action`, which is the field firmware waits for before actually performing the behaviour — and the Device's stored value is cleared to `none` in the same poll, so the command fires exactly once instead of re-asserting on every poll. On a proxied Device (mirroring a Device with an identical MAC) both fields come from TRMNL's own `/display` response instead of the local value.
 _Avoid_: Special function toggle, device action, command

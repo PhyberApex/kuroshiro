@@ -4,12 +4,18 @@ import { Injectable, Logger } from '@nestjs/common'
 import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
 
+export interface PluginExportEntry {
+  path: string
+  content: Buffer
+}
+
 @Injectable()
 export class PluginExporterService {
   private readonly logger = new Logger(PluginExporterService.name)
 
-  async exportToZip(plugin: Plugin): Promise<Buffer> {
-    const zip = new AdmZip()
+  /** The `.trmnlp` file entries for a Plugin, in the shape `exportToZip` writes to a zip — exposed so a whole-server Configuration Export can nest them under `plugins/<id>/` without re-deriving the format. */
+  buildEntries(plugin: Plugin): PluginExportEntry[] {
+    const entries: PluginExportEntry[] = []
 
     const manifest = {
       name: plugin.name,
@@ -24,8 +30,7 @@ export class PluginExporterService {
       })),
     }
 
-    const manifestYaml = yaml.dump(manifest)
-    zip.addFile('.trmnlp.yml', Buffer.from(manifestYaml, 'utf8'))
+    entries.push({ path: '.trmnlp.yml', content: Buffer.from(yaml.dump(manifest), 'utf8') })
 
     if (plugin.dataSources && plugin.dataSources.length > 0) {
       const settings = {
@@ -48,17 +53,23 @@ export class PluginExporterService {
               }),
       }
 
-      const settingsYaml = yaml.dump(settings)
-      zip.addFile('src/settings.yml', Buffer.from(settingsYaml, 'utf8'))
+      entries.push({ path: 'src/settings.yml', content: Buffer.from(yaml.dump(settings), 'utf8') })
     }
 
     if (plugin.templates && plugin.templates.length > 0) {
       for (const template of plugin.templates) {
-        const filename = `src/${template.layout}.liquid`
-        zip.addFile(filename, Buffer.from(template.liquidMarkup, 'utf8'))
+        entries.push({ path: `src/${template.layout}.liquid`, content: Buffer.from(template.liquidMarkup, 'utf8') })
       }
     }
 
+    return entries
+  }
+
+  async exportToZip(plugin: Plugin): Promise<Buffer> {
+    const zip = new AdmZip()
+    for (const entry of this.buildEntries(plugin)) {
+      zip.addFile(entry.path, entry.content)
+    }
     return zip.toBuffer()
   }
 }
