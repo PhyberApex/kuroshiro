@@ -14,6 +14,7 @@ import { PluginTemplate } from '../entities/plugin-template.entity.js'
 import { Plugin } from '../entities/plugin.entity.js'
 import { PluginsService } from '../plugins.service.js'
 import { PluginDataResolverService } from '../services/plugin-data-resolver.service.js'
+import { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
 import { PluginRendererService } from '../services/plugin-renderer.service.js'
 import { PluginSchedulerService } from '../services/plugin-scheduler.service.js'
 
@@ -87,6 +88,10 @@ describe('plugin Deletion with Mashup Warning Integration', () => {
         {
           provide: PluginSchedulerService,
           useValue: mockScheduler,
+        },
+        {
+          provide: PluginRenderCacheService,
+          useValue: { invalidateMashupCaches: vi.fn() },
         },
       ],
     }).compile()

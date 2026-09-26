@@ -23,6 +23,7 @@ import { Plugin } from './entities/plugin.entity.js'
 import { dataSourceModeViolation } from './plugin-data-source-mode.js'
 import { pluginKindFieldViolation } from './plugin-kind-fields.js'
 import { PluginDataResolverService } from './services/plugin-data-resolver.service.js'
+import { PluginRenderCacheService } from './services/plugin-render-cache.service.js'
 import { PluginRendererService } from './services/plugin-renderer.service.js'
 import { PluginSchedulerService } from './services/plugin-scheduler.service.js'
 
@@ -55,6 +56,7 @@ export class PluginsService implements OnModuleInit {
     private readonly pluginDataResolver: PluginDataResolverService,
     private readonly renderer: PluginRendererService,
     private readonly scheduler: PluginSchedulerService,
+    private readonly renderCache: PluginRenderCacheService,
   ) {
     // Lazy injection to avoid circular dependency with MashupModule
     setTimeout(() => {
@@ -339,6 +341,8 @@ export class PluginsService implements OnModuleInit {
 
     const updated = await this.pluginRepository.save(plugin)
 
+    await this.invalidateRenderCaches(id)
+
     if (dataSources !== undefined || templates) {
       await this.rescheduleAfterUpdate(id)
     }
@@ -434,6 +438,11 @@ export class PluginsService implements OnModuleInit {
       this.logger.debug(`Updating ${fields.length} fields`)
       await this.persistFields(plugin, fields)
     }
+  }
+
+  private async invalidateRenderCaches(pluginId: string): Promise<void> {
+    await this.screenRepository.update({ plugin: { id: pluginId } }, { cachedPluginOutput: null })
+    await this.renderCache.invalidateMashupCaches(pluginId)
   }
 
   private async rescheduleAfterUpdate(id: string): Promise<void> {

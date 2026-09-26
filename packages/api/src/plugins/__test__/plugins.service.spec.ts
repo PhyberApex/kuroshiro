@@ -6,6 +6,7 @@ import type { PluginField } from '../entities/plugin-field.entity.js'
 import type { PluginTemplate } from '../entities/plugin-template.entity.js'
 import type { Plugin } from '../entities/plugin.entity.js'
 import type { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
+import type { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
 import type { PluginRendererService } from '../services/plugin-renderer.service.js'
 import type { PluginSchedulerService } from '../services/plugin-scheduler.service.js'
 import type { PluginTransformService } from '../services/plugin-transform.service.js'
@@ -31,6 +32,7 @@ describe('pluginsService', () => {
   let mockRenderer: MockPluginRendererService
   let mockScheduler: { schedulePlugin: ReturnType<typeof vi.fn>, removeScheduledJob: ReturnType<typeof vi.fn>, hasScheduledJob: ReturnType<typeof vi.fn> }
   let mockTransformer: MockPluginTransformService
+  let mockRenderCache: { invalidateMashupCaches: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     pluginRepo = createMockRepository<Plugin>()
@@ -48,6 +50,9 @@ describe('pluginsService', () => {
       hasScheduledJob: vi.fn(),
     }
     mockTransformer = createMockPluginTransformService()
+    mockRenderCache = {
+      invalidateMashupCaches: vi.fn(),
+    }
 
     service = new PluginsService(
       asRepository(pluginRepo),
@@ -59,6 +64,7 @@ describe('pluginsService', () => {
       new PluginDataResolverService(asService<PluginDataFetcherService>(mockDataFetcher), asService<PluginTransformService>(mockTransformer)),
       asService<PluginRendererService>(mockRenderer),
       asService<PluginSchedulerService>(mockScheduler),
+      asService<PluginRenderCacheService>(mockRenderCache),
     )
   })
 
@@ -149,6 +155,40 @@ describe('pluginsService', () => {
     pluginRepo.findOne.mockResolvedValue(null)
     const result = await service.update('1', { name: 'Updated' })
     expect(result).toBeNull()
+  })
+
+  it('update clears the cached render output on every Screen assigned the plugin', async () => {
+    pluginRepo.findOne.mockResolvedValue(basePlugin)
+    pluginRepo.save.mockResolvedValue(basePlugin)
+
+    await service.update('1', { name: 'Updated Weather' })
+
+    expect(screenRepo.update).toHaveBeenCalledWith(
+      { plugin: { id: '1' } },
+      { cachedPluginOutput: null },
+    )
+  })
+
+  it('update invalidates mashup caches referencing the plugin', async () => {
+    pluginRepo.findOne.mockResolvedValue(basePlugin)
+    pluginRepo.save.mockResolvedValue(basePlugin)
+
+    await service.update('1', { name: 'Updated Weather' })
+
+    expect(mockRenderCache.invalidateMashupCaches).toHaveBeenCalledWith('1')
+  })
+
+  it('update clears the cache even when only a cosmetic field like name changes', async () => {
+    pluginRepo.findOne.mockResolvedValue(basePlugin)
+    pluginRepo.save.mockResolvedValue({ ...basePlugin, name: 'Renamed' })
+
+    await service.update('1', { name: 'Renamed' })
+
+    expect(screenRepo.update).toHaveBeenCalledWith(
+      { plugin: { id: '1' } },
+      { cachedPluginOutput: null },
+    )
+    expect(mockRenderCache.invalidateMashupCaches).toHaveBeenCalledWith('1')
   })
 
   it('remove deletes a plugin and returns true', async () => {
