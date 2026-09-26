@@ -35,6 +35,25 @@ describe('plugins store', () => {
     expect(store.plugins).toEqual(plugins)
   })
 
+  it('fetchAllPlugins returns every plugin without touching the device list', async () => {
+    const plugins = [mockPlugin]
+    mockFetch.mockResolvedValue(jsonResponse(plugins))
+
+    const store = usePluginsStore()
+    const result = await store.fetchAllPlugins()
+
+    expect(mockFetch).toHaveBeenCalledWith('/api/plugins', undefined)
+    expect(result).toEqual(plugins)
+    expect(store.plugins).toEqual([])
+  })
+
+  it('fetchAllPlugins throws on a failed response', async () => {
+    mockFetch.mockResolvedValue(jsonResponse({}, false))
+
+    const store = usePluginsStore()
+    await expect(store.fetchAllPlugins()).rejects.toThrow('Failed to fetch plugins')
+  })
+
   it('createPlugin creates a new plugin', async () => {
     const newPlugin = { ...mockPlugin, device: { id: 'device-1' } }
     mockFetch

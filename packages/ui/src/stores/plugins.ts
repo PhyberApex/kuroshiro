@@ -17,6 +17,13 @@ export const usePluginsStore = defineStore('plugins', () => {
     plugins.value = await res.json()
   }
 
+  const fetchAllPlugins = async () => {
+    const res = await apiFetch('/api/plugins')
+    if (!res.ok)
+      throw new Error('Failed to fetch plugins')
+    return await res.json() as Plugin[]
+  }
+
   const createPlugin = async (pluginData: CreatePluginPayload) => {
     const newPlugin = await apiRequest<PluginWithDevice>('/api/plugins', {
       method: 'POST',
@@ -91,6 +98,7 @@ export const usePluginsStore = defineStore('plugins', () => {
   return {
     plugins,
     fetchPluginsForDevice,
+    fetchAllPlugins,
     createPlugin,
     updatePlugin,
     duplicatePlugin,

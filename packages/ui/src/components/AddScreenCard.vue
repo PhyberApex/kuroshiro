@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { mdiCodeBlockTags, mdiDownload, mdiEye, mdiGridLarge, mdiLink, mdiStop, mdiUpload } from '@mdi/js'
+import { mdiCodeBlockTags, mdiDownload, mdiEye, mdiGridLarge, mdiLink, mdiPuzzle, mdiStop, mdiUpload } from '@mdi/js'
 import { viewFull } from 'kuroshiro-shared'
 import { computed, ref, useTemplateRef } from 'vue'
 import { VBtn, VCard, VCardText, VCardTitle, VCol, VDivider, VFileInput, VForm, VOverlay, VRow, VSwitch, VTab, VTabs, VTextarea, VTextField, VWindow, VWindowItem } from 'vuetify/components'
 import AddMashupCard from '@/components/AddMashupCard.vue'
+import AddPluginCard from '@/components/AddPluginCard.vue'
 import ScreenFrame from '@/components/ScreenFrame.vue'
 import { useDemoInfo } from '@/composeables/useDemoInfo.ts'
 import { useDeviceRenderContext } from '@/composeables/useDeviceRenderContext'
@@ -17,7 +18,11 @@ const externalLink = ref('')
 const fetchManual = ref(false)
 const fileInput = ref<File | null>(null)
 
-const addScreenTab = ref<'link' | 'file' | 'html' | 'mashup'>('link')
+type AddScreenTab = 'link' | 'file' | 'html' | 'mashup' | 'plugin'
+
+const addScreenTab = ref<AddScreenTab>('link')
+
+const tabHasOwnSubmit = computed(() => addScreenTab.value === 'mashup' || addScreenTab.value === 'plugin')
 
 const filename = ref('')
 
@@ -50,25 +55,20 @@ const renderHtmlValid = computed(() => {
   return renderHtml.value !== ''
 })
 
+const tabInputValid: Record<AddScreenTab, () => boolean> = {
+  link: () => !!externalLink.value && linkValid.value,
+  file: () => !!fileInput.value,
+  html: () => renderHtmlValid.value,
+  mashup: () => true,
+  plugin: () => true,
+}
+
 const addScreenInputValid = computed(() => {
   if (!device.value)
     return false
-  if (addScreenTab.value === 'mashup')
+  if (tabHasOwnSubmit.value)
     return true
-  if (!filename.value)
-    return false
-  // Check for link selected
-  switch (addScreenTab.value) {
-    case 'link':
-      return !!externalLink.value && linkValid.value
-    case 'file':
-      return !!fileInput.value
-    case 'html':
-      return renderHtmlValid.value
-    default:
-      { const _: never = addScreenTab.value }
-      return false
-  }
+  return !!filename.value && tabInputValid[addScreenTab.value]()
 })
 
 const addScreenIcon = computed(() => {
@@ -81,6 +81,8 @@ const addScreenIcon = computed(() => {
       return mdiCodeBlockTags
     case 'mashup':
       return mdiGridLarge
+    case 'plugin':
+      return mdiPuzzle
     default:
       return mdiStop
   }
@@ -141,6 +143,9 @@ defineExpose({ filename, externalLink, addScreenInputValid })
           <VTab value="mashup" data-test-id="tab-mashup">
             Mashup
           </VTab>
+          <VTab value="plugin" data-test-id="tab-plugin">
+            Plugin
+          </VTab>
         </VTabs>
         <VWindow v-model="addScreenTab">
           <VWindowItem value="link">
@@ -174,8 +179,11 @@ defineExpose({ filename, externalLink, addScreenInputValid })
           <VWindowItem value="mashup">
             <AddMashupCard :device-id="deviceId" />
           </VWindowItem>
+          <VWindowItem value="plugin">
+            <AddPluginCard :device-id="deviceId" />
+          </VWindowItem>
         </VWindow>
-        <template v-if="addScreenTab !== 'mashup'">
+        <template v-if="!tabHasOwnSubmit">
           <p v-if="addScreenInfo" class="text-body-2 text-medium-emphasis mt-3 mb-0">
             {{ addScreenInfo }}
           </p>

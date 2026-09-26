@@ -125,10 +125,9 @@ async function createPlugin() {
     }
     const newPlugin = await pluginsStore.createPlugin(payload)
 
-    // If coming from device page, auto-assign to that device
     if (deviceId.value) {
       await pluginsStore.assignToDevice(newPlugin.id, deviceId.value)
-      router.push({ name: 'plugins', params: { deviceId: deviceId.value } })
+      router.push({ name: 'device', params: { id: deviceId.value } })
     }
     else {
       router.push({ name: 'pluginsOverview' })
