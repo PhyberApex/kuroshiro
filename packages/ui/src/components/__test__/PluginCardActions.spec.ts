@@ -55,7 +55,7 @@ const basePlugin: Plugin = {
   updatedAt: new Date(),
 }
 
-function mountActions(props: { plugin: Plugin, deviceId?: string }) {
+function mountActions(props: { plugin: Plugin }) {
   return mount(PluginCardActions, {
     props,
     global: { plugins: [createPinia(), vuetify] },
@@ -73,8 +73,6 @@ describe('pluginCardActions', () => {
     pluginsStoreMock = asStore<ReturnType<typeof usePluginsStore>>({
       deletePlugin: vi.fn().mockResolvedValue(undefined),
       duplicatePlugin: vi.fn().mockResolvedValue({ ...basePlugin, id: 'plugin-2', name: 'Test Plugin (copy)' }),
-      updateDeviceAssignment: vi.fn().mockResolvedValue(undefined),
-      fetchPluginsForDevice: vi.fn().mockResolvedValue(undefined),
     })
     mockRouter.push.mockClear()
   })
@@ -87,7 +85,7 @@ describe('pluginCardActions', () => {
     expect(mockRouter.push).toHaveBeenCalledWith({ name: 'pluginEdit', params: { id: 'plugin-1' } })
   })
 
-  it('opens the assign dialog when not on a device page', async () => {
+  it('opens the assign dialog', async () => {
     const wrapper = mountActions({ plugin: basePlugin })
 
     await findButton(wrapper, 'Assign to Devices')!.trigger('click')
@@ -102,35 +100,6 @@ describe('pluginCardActions', () => {
     await flushPromises()
 
     expect(wrapper.emitted('assignmentsChanged')).toHaveLength(1)
-  })
-
-  it('toggles an active assignment off and refreshes the device plugin list', async () => {
-    const plugin = { ...basePlugin, _isActive: true, _devicePluginId: 'dp-1' }
-    const wrapper = mountActions({ plugin, deviceId: 'device-1' })
-
-    await findButton(wrapper, 'Disable')!.trigger('click')
-
-    expect(pluginsStoreMock.updateDeviceAssignment).toHaveBeenCalledWith('dp-1', { isActive: false })
-    expect(pluginsStoreMock.fetchPluginsForDevice).toHaveBeenCalledWith('device-1')
-  })
-
-  it('toggles an inactive assignment on', async () => {
-    const plugin = { ...basePlugin, _isActive: false, _devicePluginId: 'dp-1' }
-    const wrapper = mountActions({ plugin, deviceId: 'device-1' })
-
-    await findButton(wrapper, 'Enable')!.trigger('click')
-
-    expect(pluginsStoreMock.updateDeviceAssignment).toHaveBeenCalledWith('dp-1', { isActive: true })
-  })
-
-  it('does not toggle when there is no device-plugin assignment yet', async () => {
-    const plugin = { ...basePlugin, _isActive: false }
-    const wrapper = mountActions({ plugin, deviceId: 'device-1' })
-
-    await findButton(wrapper, 'Enable')!.trigger('click')
-
-    expect(pluginsStoreMock.updateDeviceAssignment).not.toHaveBeenCalled()
-    expect(pluginsStoreMock.fetchPluginsForDevice).not.toHaveBeenCalled()
   })
 
   it('duplicates the plugin immediately, with no confirmation dialog', async () => {
@@ -176,7 +145,7 @@ describe('pluginCardActions', () => {
     confirmBtn.click()
     await flushPromises()
 
-    expect(pluginsStoreMock.deletePlugin).toHaveBeenCalledWith('plugin-1', undefined)
+    expect(pluginsStoreMock.deletePlugin).toHaveBeenCalledWith('plugin-1')
     expect(wrapper.emitted('deleted')).toHaveLength(1)
   })
 
@@ -199,16 +168,5 @@ describe('pluginCardActions', () => {
 
     expect(pluginsStoreMock.deletePlugin).not.toHaveBeenCalled()
     expect(document.querySelector('.v-overlay--active')).toBeNull()
-  })
-
-  it('passes the deviceId through to deletePlugin so devices can scope the delete', async () => {
-    const wrapper = mountActions({ plugin: basePlugin, deviceId: 'device-1' })
-
-    await findButton(wrapper, 'Delete')!.trigger('click')
-    const confirmBtn = Array.from(document.querySelectorAll('button')).find(btn => btn.textContent?.trim() === 'Delete' && btn.closest('.v-overlay')) as HTMLElement
-    confirmBtn.click()
-    await flushPromises()
-
-    expect(pluginsStoreMock.deletePlugin).toHaveBeenCalledWith('plugin-1', 'device-1')
   })
 })

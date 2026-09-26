@@ -12,10 +12,6 @@ export interface Plugin {
   templates?: PluginTemplate[]
   fields?: PluginField[]
   deviceAssignments?: DeviceAssignment[]
-  // Used when fetching by device
-  _devicePluginId?: string
-  _isActive?: boolean
-  _order?: number
 }
 
 export interface DeviceAssignment {

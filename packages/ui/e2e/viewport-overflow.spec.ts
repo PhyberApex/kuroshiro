@@ -19,7 +19,6 @@ const DEVICE_ID = 'e2e-device-1'
 const ROUTES: { name: string, path: string }[] = [
   { name: 'Overview', path: '/' },
   { name: 'Device Details', path: `/devices/${DEVICE_ID}` },
-  { name: 'Device Plugins', path: `/devices/${DEVICE_ID}/plugins` },
   { name: 'Plugins Overview', path: '/plugins' },
   { name: 'Plugin Create', path: '/plugins/create' },
   { name: 'Maintenance', path: '/maintenance' },
@@ -63,7 +62,6 @@ const API_FIXTURES: Record<string, unknown> = {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   }],
-  [`/api/plugins/device/${DEVICE_ID}`]: [],
   [`/api/screens/device/${DEVICE_ID}`]: [],
   '/api/current_screen': {
     filename: 'placeholder.png',
