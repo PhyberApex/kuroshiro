@@ -55,9 +55,6 @@ const previewAriaLabel = computed(() => {
     return 'Preview mashup'
   return screen.plugin ? 'Preview plugin output' : 'Preview screen'
 })
-
-const deleteAriaLabel = computed(() => props.screen.plugin ? 'Unassign plugin' : 'Delete screen')
-const deleteTooltip = computed(() => props.screen.plugin ? 'Unassign plugin from this device' : 'Delete screen')
 </script>
 
 <template>
@@ -168,14 +165,24 @@ const deleteTooltip = computed(() => props.screen.plugin ? 'Unassign plugin from
         :aria-label="previewAriaLabel"
         @click="emit('previewScreen')"
       />
-      <VTooltip :text="deleteTooltip">
+      <VBtn
+        v-if="!screen.plugin"
+        size="small"
+        color="error"
+        variant="tonal"
+        :icon="mdiDelete"
+        aria-label="Delete screen"
+        :data-test-id="`screen-delete-btn-${screen.id}`"
+        @click="emit('delete')"
+      />
+      <VTooltip v-else text="Unassign plugin from this device">
         <template #activator="{ props: tooltipProps }">
           <VBtn
             size="small"
             color="error"
             variant="tonal"
             :icon="mdiDelete"
-            :aria-label="deleteAriaLabel"
+            aria-label="Unassign plugin"
             :data-test-id="`screen-delete-btn-${screen.id}`"
             v-bind="tooltipProps"
             @click="emit('delete')"
