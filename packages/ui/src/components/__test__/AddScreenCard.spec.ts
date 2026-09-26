@@ -51,6 +51,7 @@ describe('addScreenCard', () => {
     expect(wrapper.find('[data-test-id="tab-link"]').exists()).toBe(true)
     expect(wrapper.find('[data-test-id="tab-file"]').exists()).toBe(true)
     expect(wrapper.find('[data-test-id="tab-html"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test-id="tab-plugin"]').exists()).toBe(true)
     expect(wrapper.find('[data-test-id="add-screen-btn"]').text()).toContain('Add Screen')
   })
 
