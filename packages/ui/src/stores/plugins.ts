@@ -1,22 +1,8 @@
 import type { CreatePluginPayload, Plugin } from '@/types/plugin'
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
 import { apiFetch, apiRequest } from '../utils/apiRequest'
 
-// The create/update endpoints echo back the device the plugin was assigned to,
-// which is not part of the client-side `Plugin` shape.
-type PluginWithDevice = Plugin & { device?: { id: string } }
-
 export const usePluginsStore = defineStore('plugins', () => {
-  const plugins = ref<Plugin[]>([])
-
-  const fetchPluginsForDevice = async (deviceId: string) => {
-    const res = await apiFetch(`/api/plugins/device/${deviceId}`)
-    if (!res.ok)
-      throw new Error('Failed to fetch plugins')
-    plugins.value = await res.json()
-  }
-
   const fetchAllPlugins = async () => {
     const res = await apiFetch('/api/plugins')
     if (!res.ok)
@@ -25,27 +11,19 @@ export const usePluginsStore = defineStore('plugins', () => {
   }
 
   const createPlugin = async (pluginData: CreatePluginPayload) => {
-    const newPlugin = await apiRequest<PluginWithDevice>('/api/plugins', {
+    return apiRequest<Plugin>('/api/plugins', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(pluginData),
     }, 'Failed to create plugin')
-    if (newPlugin.device?.id) {
-      await fetchPluginsForDevice(newPlugin.device.id)
-    }
-    return newPlugin
   }
 
   const updatePlugin = async (id: string, pluginData: Partial<CreatePluginPayload>) => {
-    const updatedPlugin = await apiRequest<PluginWithDevice>(`/api/plugins/${id}`, {
+    return apiRequest<Plugin>(`/api/plugins/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(pluginData),
     }, 'Failed to update plugin')
-    if (updatedPlugin.device?.id) {
-      await fetchPluginsForDevice(updatedPlugin.device.id)
-    }
-    return updatedPlugin
   }
 
   const duplicatePlugin = async (id: string) => {
@@ -82,8 +60,6 @@ export const usePluginsStore = defineStore('plugins', () => {
   }
 
   return {
-    plugins,
-    fetchPluginsForDevice,
     fetchAllPlugins,
     createPlugin,
     updatePlugin,
