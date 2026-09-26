@@ -92,7 +92,7 @@ export class PluginsService implements OnModuleInit {
 
   async findAll(): Promise<Plugin[]> {
     return this.pluginRepository.find({
-      relations: { dataSources: true, templates: true, fields: true },
+      relations: { dataSources: true, templates: true, fields: true, deviceAssignments: { device: true } },
       order: { name: 'ASC' },
     })
   }
@@ -120,6 +120,13 @@ export class PluginsService implements OnModuleInit {
   }
 
   async assignToDevice(pluginId: string, assignData: AssignPluginToDeviceDto): Promise<DevicePlugin> {
+    const existing = await this.devicePluginRepository.findOne({
+      where: { plugin: { id: pluginId }, device: { id: assignData.deviceId } },
+    })
+    if (existing) {
+      return existing
+    }
+
     const devicePlugin = this.devicePluginRepository.create({
       plugin: { id: pluginId },
       device: { id: assignData.deviceId },
