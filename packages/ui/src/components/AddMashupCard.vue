@@ -41,7 +41,12 @@ const availablePlugins = computed(() => {
 })
 
 onMounted(async () => {
-  allPlugins.value = await pluginsStore.fetchAllPlugins()
+  try {
+    allPlugins.value = await pluginsStore.fetchAllPlugins()
+  }
+  catch (err) {
+    error.value = errorMessage(err, 'Failed to load plugins')
+  }
 })
 
 function updateSlotCount() {
@@ -118,7 +123,7 @@ defineExpose({ availablePlugins })
         </div>
       </div>
 
-      <VAlert v-if="!availablePlugins.length" type="info" variant="tonal" class="mb-4">
+      <VAlert v-if="!availablePlugins.length && !error" type="info" variant="tonal" class="mb-4">
         No plugins available. Create a plugin first.
       </VAlert>
 

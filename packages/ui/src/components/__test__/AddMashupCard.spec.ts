@@ -107,4 +107,15 @@ describe('addMashupCard', () => {
     expect(wrapper.text()).toContain('No plugins available')
     expect(wrapper.text()).not.toContain('assign plugins to this device')
   })
+
+  it('shows a load failure instead of the empty state', async () => {
+    pluginsStoreMock.fetchAllPlugins = vi.fn(async () => {
+      throw new Error('offline')
+    })
+    const wrapper = mountCard()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('offline')
+    expect(wrapper.text()).not.toContain('No plugins available')
+  })
 })
