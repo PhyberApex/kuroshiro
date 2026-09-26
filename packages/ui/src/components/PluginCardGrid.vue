@@ -10,6 +10,7 @@ defineProps<{
 
 const emit = defineEmits<{
   assignmentsChanged: []
+  duplicated: []
   deleted: []
 }>()
 </script>
@@ -23,7 +24,7 @@ const emit = defineEmits<{
       md="6"
       lg="4"
     >
-      <PluginCard :plugin="plugin" :device-id="deviceId" @assignments-changed="emit('assignmentsChanged')" @deleted="emit('deleted')" />
+      <PluginCard :plugin="plugin" :device-id="deviceId" @assignments-changed="emit('assignmentsChanged')" @duplicated="emit('duplicated')" @deleted="emit('deleted')" />
     </VCol>
   </VRow>
 </template>

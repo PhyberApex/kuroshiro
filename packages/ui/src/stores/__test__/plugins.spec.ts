@@ -67,6 +67,19 @@ describe('plugins store', () => {
     expect(result).toEqual(updatedPlugin)
   })
 
+  it('duplicatePlugin duplicates a plugin', async () => {
+    const duplicated = { ...mockPlugin, id: 'plugin-2', name: 'Test Plugin (copy)' }
+    mockFetch.mockResolvedValue(jsonResponse(duplicated))
+
+    const store = usePluginsStore()
+    const result = await store.duplicatePlugin('plugin-1')
+
+    expect(mockFetch).toHaveBeenCalledWith('/api/plugins/plugin-1/duplicate', {
+      method: 'POST',
+    })
+    expect(result).toEqual(duplicated)
+  })
+
   it('deletePlugin deletes a plugin and refetches for device', async () => {
     mockFetch
       .mockResolvedValueOnce(jsonResponse(null))

@@ -4,6 +4,7 @@ import type { DevicePlugin } from '../entities/device-plugin.entity.js'
 import type { PluginDataSource } from '../entities/plugin-data-source.entity.js'
 import type { PluginField } from '../entities/plugin-field.entity.js'
 import type { PluginTemplate } from '../entities/plugin-template.entity.js'
+import type { PluginVariable } from '../entities/plugin-variable.entity.js'
 import type { Plugin } from '../entities/plugin.entity.js'
 import type { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
 import type { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
@@ -12,7 +13,7 @@ import type { PluginSchedulerService } from '../services/plugin-scheduler.servic
 import type { PluginTransformService } from '../services/plugin-transform.service.js'
 import { plainToInstance } from 'class-transformer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeDevicePlugin, makePlugin, makePluginDataSource, makePluginField, makePluginTemplate, makeScreen } from '../../test/fixtures.js'
+import { makeDevicePlugin, makePlugin, makePluginDataSource, makePluginField, makePluginTemplate, makePluginVariable, makeScreen } from '../../test/fixtures.js'
 import { createMockPluginDataFetcherService, createMockPluginRenderCacheService, createMockPluginRendererService, createMockPluginTransformService } from '../../test/mockPluginCollaborators.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
 import { asService, injectPrivate } from '../../test/mockService.js'
@@ -28,6 +29,7 @@ describe('pluginsService', () => {
   let dataSourceRepo: ReturnType<typeof createMockRepository<PluginDataSource>>
   let templateRepo: ReturnType<typeof createMockRepository<PluginTemplate>>
   let fieldRepo: ReturnType<typeof createMockRepository<PluginField>>
+  let variableRepo: ReturnType<typeof createMockRepository<PluginVariable>>
   let mockDataFetcher: MockPluginDataFetcherService
   let mockRenderer: MockPluginRendererService
   let mockScheduler: { schedulePlugin: ReturnType<typeof vi.fn>, removeScheduledJob: ReturnType<typeof vi.fn>, hasScheduledJob: ReturnType<typeof vi.fn> }
@@ -41,6 +43,7 @@ describe('pluginsService', () => {
     dataSourceRepo = createMockRepository<PluginDataSource>()
     templateRepo = createMockRepository<PluginTemplate>()
     fieldRepo = createMockRepository<PluginField>()
+    variableRepo = createMockRepository<PluginVariable>()
 
     mockDataFetcher = createMockPluginDataFetcherService()
     mockRenderer = createMockPluginRendererService()
@@ -59,6 +62,7 @@ describe('pluginsService', () => {
       asRepository(dataSourceRepo),
       asRepository(templateRepo),
       asRepository(fieldRepo),
+      asRepository(variableRepo),
       new PluginDataResolverService(asService<PluginDataFetcherService>(mockDataFetcher), asService<PluginTransformService>(mockTransformer)),
       asService<PluginRendererService>(mockRenderer),
       asService<PluginSchedulerService>(mockScheduler),
@@ -926,6 +930,99 @@ describe('pluginsService', () => {
       await expect(service.update('1', transform({ kind: 'Webhook' }))).rejects.toThrow(
         'A Plugin\'s Kind is fixed at creation and cannot be changed',
       )
+    })
+  })
+
+  describe('duplicate', () => {
+    const sourceDataSources = [
+      makePluginDataSource({ id: 'ds-1', name: 'weather', mode: 'fetch', url: 'https://api.com', method: 'GET', headers: { Authorization: 'Bearer x' }, body: {}, order: 0 }),
+      makePluginDataSource({ id: 'ds-2', name: 'note', mode: 'literal', url: undefined, method: 'GET', literalValue: 'hello', order: 1 }),
+    ]
+    const sourceTemplates = [makePluginTemplate({ id: 't-1', layout: 'full', liquidMarkup: '<div>{{ weather }}</div>' })]
+    const sourceFields = [makePluginField({ id: 'f-1', keyname: 'unit', name: 'Unit', defaultValue: 'C', order: 0 })]
+    const sourceVariables = [makePluginVariable({ id: 'var-1', key: 'API_KEY', value: 'secret', isSecret: true })]
+
+    const sourcePlugin: Plugin = makePlugin({
+      id: 'source-1',
+      name: 'Weather Plugin',
+      description: 'Shows weather',
+      kind: 'Poll',
+      refreshInterval: 30,
+      dataSources: sourceDataSources,
+      templates: sourceTemplates,
+      fields: sourceFields,
+      variables: sourceVariables,
+      deviceAssignments: [makeDevicePlugin({ id: 'dp-1' })],
+    })
+
+    function mockCreatePipeline(createdId: string) {
+      pluginRepo.save.mockImplementation(async plugin => ({ ...plugin, id: createdId }))
+      dataSourceRepo.create.mockImplementation(input => input as PluginDataSource)
+      dataSourceRepo.save.mockImplementation(async input => input as PluginDataSource)
+      templateRepo.create.mockImplementation(input => input as PluginTemplate)
+      templateRepo.save.mockImplementation(async input => input as PluginTemplate)
+      fieldRepo.create.mockImplementation(input => input as PluginField)
+      fieldRepo.save.mockImplementation(async input => input as PluginField)
+      variableRepo.create.mockImplementation(input => input as PluginVariable)
+      variableRepo.save.mockImplementation(async input => input as PluginVariable)
+    }
+
+    it('clones data sources, templates, fields and variables under a new id and "(copy)" name', async () => {
+      mockCreatePipeline('new-id')
+      pluginRepo.findOne
+        .mockResolvedValueOnce(sourcePlugin) // load source with relations
+        .mockResolvedValueOnce(makePlugin({ id: 'new-id', dataSources: sourceDataSources, templates: sourceTemplates, fields: sourceFields })) // reload after create()
+        .mockResolvedValueOnce(makePlugin({ id: 'new-id', dataSources: sourceDataSources, templates: sourceTemplates, fields: sourceFields, variables: sourceVariables })) // final reload with variables
+
+      const result = await service.duplicate('source-1')
+
+      expect(result.id).toBe('new-id')
+      expect(pluginRepo.save).toHaveBeenCalledWith(expect.objectContaining({ name: 'Weather Plugin (copy)' }))
+      expect(dataSourceRepo.create).toHaveBeenCalledTimes(2)
+      expect(templateRepo.create).toHaveBeenCalledTimes(1)
+      expect(fieldRepo.create).toHaveBeenCalledTimes(1)
+      expect(variableRepo.create).toHaveBeenCalledWith(expect.objectContaining({ key: 'API_KEY', value: 'secret', isSecret: true }))
+      expect(result.dataSources).toEqual(sourceDataSources)
+      expect(result.templates).toEqual(sourceTemplates)
+      expect(result.fields).toEqual(sourceFields)
+      expect(result.variables).toEqual(sourceVariables)
+    })
+
+    it('does not carry over device assignments, webhook payload, or the source webhook token', async () => {
+      const webhookSource = makePlugin({
+        id: 'source-2',
+        name: 'Sensor Feed',
+        kind: 'Webhook',
+        webhookToken: 'source-token',
+        webhookPayload: { reading: 1 },
+        mergeStrategy: 'standard',
+        deviceAssignments: [makeDevicePlugin({ id: 'dp-2' })],
+        variables: [],
+      })
+      mockCreatePipeline('new-id-2')
+      pluginRepo.findOne
+        .mockResolvedValueOnce(webhookSource)
+        .mockResolvedValueOnce(makePlugin({ id: 'new-id-2', kind: 'Webhook' }))
+        .mockResolvedValueOnce(makePlugin({ id: 'new-id-2', kind: 'Webhook', variables: [] }))
+
+      const result = await service.duplicate('source-2')
+
+      expect(result.id).toBe('new-id-2')
+      expect(pluginRepo.save).toHaveBeenCalledWith(expect.objectContaining({
+        kind: 'Webhook',
+        webhookToken: expect.any(String),
+      }))
+      const savedArg = pluginRepo.save.mock.calls[0][0]
+      expect(savedArg.webhookToken).not.toBe('source-token')
+      expect(savedArg).not.toHaveProperty('webhookPayload')
+      expect(savedArg).not.toHaveProperty('deviceAssignments')
+    })
+
+    it('throws NotFoundException when the source plugin does not exist', async () => {
+      pluginRepo.findOne.mockResolvedValueOnce(null)
+
+      await expect(service.duplicate('missing')).rejects.toThrow('not found')
+      expect(pluginRepo.save).not.toHaveBeenCalled()
     })
   })
 })

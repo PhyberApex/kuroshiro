@@ -19,6 +19,7 @@ import { DevicePlugin } from './entities/device-plugin.entity.js'
 import { PluginDataSource } from './entities/plugin-data-source.entity.js'
 import { PluginField } from './entities/plugin-field.entity.js'
 import { PluginTemplate } from './entities/plugin-template.entity.js'
+import { PluginVariable } from './entities/plugin-variable.entity.js'
 import { Plugin } from './entities/plugin.entity.js'
 import { dataSourceModeViolation } from './plugin-data-source-mode.js'
 import { pluginKindFieldViolation } from './plugin-kind-fields.js'
@@ -53,6 +54,8 @@ export class PluginsService implements OnModuleInit {
     private readonly templateRepository: Repository<PluginTemplate>,
     @InjectRepository(PluginField)
     private readonly fieldRepository: Repository<PluginField>,
+    @InjectRepository(PluginVariable)
+    private readonly variableRepository: Repository<PluginVariable>,
     private readonly pluginDataResolver: PluginDataResolverService,
     private readonly renderer: PluginRendererService,
     private readonly scheduler: PluginSchedulerService,
@@ -202,6 +205,77 @@ export class PluginsService implements OnModuleInit {
     this.scheduleIfReady(created, `Scheduled new plugin: ${created.name}`)
 
     return created
+  }
+
+  async duplicate(id: string): Promise<Plugin> {
+    const source = await this.pluginRepository.findOne({
+      where: { id },
+      relations: { dataSources: true, templates: true, fields: true, variables: true },
+    })
+    if (!source) {
+      throw new NotFoundException(`Plugin ${id} not found`)
+    }
+
+    const duplicate = await this.create(this.buildDuplicateDto(source))
+
+    if (source.variables && source.variables.length > 0) {
+      await this.cloneVariables(duplicate.id, source.variables)
+    }
+
+    const reloaded = await this.findPluginWithRelations(duplicate.id, { dataSources: true, templates: true, fields: true, variables: true })
+    if (!reloaded) {
+      throw new Error(`Failed to load newly duplicated plugin: ${duplicate.id}`)
+    }
+
+    return reloaded
+  }
+
+  private buildDuplicateDto(source: Plugin): CreatePluginDto {
+    return {
+      name: `${source.name} (copy)`,
+      description: source.description,
+      kind: source.kind,
+      refreshInterval: source.refreshInterval,
+      mergeStrategy: source.mergeStrategy ?? undefined,
+      streamLimit: source.streamLimit ?? undefined,
+      sourceRecipeId: source.sourceRecipeId,
+      dataSources: (source.dataSources || []).map(ds => ({
+        name: ds.name,
+        mode: ds.mode,
+        method: ds.method,
+        url: ds.url ?? undefined,
+        headers: ds.headers,
+        body: ds.body,
+        transformJs: ds.transformJs,
+        literalValue: ds.literalValue,
+        order: ds.order,
+      })),
+      templates: (source.templates || []).map(t => ({
+        layout: t.layout,
+        liquidMarkup: t.liquidMarkup,
+      })),
+      fields: (source.fields || []).map(f => ({
+        keyname: f.keyname,
+        fieldType: f.fieldType,
+        name: f.name,
+        description: f.description,
+        defaultValue: f.defaultValue,
+        required: f.required,
+        order: f.order,
+      })),
+    }
+  }
+
+  private async cloneVariables(pluginId: string, variables: PluginVariable[]): Promise<void> {
+    for (const variable of variables) {
+      const clone = this.variableRepository.create({
+        key: variable.key,
+        value: variable.value,
+        isSecret: variable.isSecret,
+        plugin: { id: pluginId } as Plugin,
+      })
+      await this.variableRepository.save(clone)
+    }
   }
 
   private validateNewChildren(dataSources: PluginDataSourceDto[] | undefined, fields: PluginFieldDto[] | undefined): void {
