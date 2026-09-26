@@ -44,7 +44,7 @@ describe('pluginCardGrid', () => {
     expect(wrapper.findComponent({ name: 'PluginCard' }).props('deviceId')).toBe('device1')
   })
 
-  it('re-emits assignments-changed and deleted from a card', async () => {
+  it('re-emits assignments-changed, duplicated and deleted from a card', async () => {
     const wrapper = mount(PluginCardGrid, {
       props: { plugins },
       global: { plugins: [createPinia(), vuetify] },
@@ -52,10 +52,12 @@ describe('pluginCardGrid', () => {
 
     const card = wrapper.findComponent({ name: 'PluginCard' })
     card.vm.$emit('assignmentsChanged')
+    card.vm.$emit('duplicated')
     card.vm.$emit('deleted')
     await wrapper.vm.$nextTick()
 
     expect(wrapper.emitted('assignmentsChanged')).toHaveLength(1)
+    expect(wrapper.emitted('duplicated')).toHaveLength(1)
     expect(wrapper.emitted('deleted')).toHaveLength(1)
   })
 })

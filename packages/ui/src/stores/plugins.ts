@@ -41,6 +41,12 @@ export const usePluginsStore = defineStore('plugins', () => {
     return updatedPlugin
   }
 
+  const duplicatePlugin = async (id: string) => {
+    return apiRequest<Plugin>(`/api/plugins/${id}/duplicate`, {
+      method: 'POST',
+    }, 'Failed to duplicate plugin')
+  }
+
   const deletePlugin = async (id: string, deviceId?: string) => {
     const res = await apiFetch(`/api/plugins/${id}`, {
       method: 'DELETE',
@@ -87,6 +93,7 @@ export const usePluginsStore = defineStore('plugins', () => {
     fetchPluginsForDevice,
     createPlugin,
     updatePlugin,
+    duplicatePlugin,
     deletePlugin,
     assignToDevice,
     unassignFromDevice,

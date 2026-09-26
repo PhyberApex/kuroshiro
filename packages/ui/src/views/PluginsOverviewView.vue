@@ -87,6 +87,7 @@ function onPluginImported() {
               v-if="plugins.length"
               :plugins="plugins"
               @assignments-changed="fetchAllPlugins"
+              @duplicated="fetchAllPlugins"
               @deleted="fetchAllPlugins"
             />
             <div v-else class="text-center py-12">

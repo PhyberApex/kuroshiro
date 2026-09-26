@@ -52,6 +52,11 @@ export class PluginsController {
     return this.pluginsService.update(id, updatePluginDto)
   }
 
+  @Post(':id/duplicate')
+  async duplicate(@Param('id') id: string) {
+    return this.pluginsService.duplicate(id)
+  }
+
   @Delete(':id/webhook-payload')
   async clearWebhookPayload(@Param('id') id: string) {
     return this.pluginsService.clearWebhookPayload(id)

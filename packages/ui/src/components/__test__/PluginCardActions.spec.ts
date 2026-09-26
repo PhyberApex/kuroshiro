@@ -72,6 +72,7 @@ describe('pluginCardActions', () => {
     document.body.innerHTML = ''
     pluginsStoreMock = asStore<ReturnType<typeof usePluginsStore>>({
       deletePlugin: vi.fn().mockResolvedValue(undefined),
+      duplicatePlugin: vi.fn().mockResolvedValue({ ...basePlugin, id: 'plugin-2', name: 'Test Plugin (copy)' }),
       updateDeviceAssignment: vi.fn().mockResolvedValue(undefined),
       fetchPluginsForDevice: vi.fn().mockResolvedValue(undefined),
     })
@@ -130,6 +131,25 @@ describe('pluginCardActions', () => {
 
     expect(pluginsStoreMock.updateDeviceAssignment).not.toHaveBeenCalled()
     expect(pluginsStoreMock.fetchPluginsForDevice).not.toHaveBeenCalled()
+  })
+
+  it('duplicates the plugin immediately, with no confirmation dialog', async () => {
+    const wrapper = mountActions({ plugin: basePlugin })
+
+    await findButton(wrapper, 'Duplicate')!.trigger('click')
+
+    expect(pluginsStoreMock.duplicatePlugin).toHaveBeenCalledWith('plugin-1')
+    expect(wrapper.emitted('duplicated')).toHaveLength(1)
+  })
+
+  it('shows an error snackbar when duplication fails', async () => {
+    pluginsStoreMock.duplicatePlugin = vi.fn().mockRejectedValue(new Error('boom'))
+    const wrapper = mountActions({ plugin: basePlugin })
+
+    await findButton(wrapper, 'Duplicate')!.trigger('click')
+
+    expect(document.body.textContent).toContain('Failed to duplicate plugin')
+    expect(wrapper.emitted('duplicated')).toBeUndefined()
   })
 
   it('shows a snackbar and triggers a browser download on export', async () => {

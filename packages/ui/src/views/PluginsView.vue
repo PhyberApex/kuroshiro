@@ -80,6 +80,7 @@ function createPlugin() {
               :plugins="plugins"
               :device-id="deviceId"
               @assignments-changed="update"
+              @duplicated="update"
               @deleted="update"
             />
             <VAlert v-else type="info" variant="tonal" class="text-body-2">
