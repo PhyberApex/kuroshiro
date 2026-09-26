@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Plugin } from '../types/plugin'
-import { mdiAccountMultiple, mdiDelete, mdiDownload, mdiPencil, mdiPower } from '@mdi/js'
+import { mdiAccountMultiple, mdiContentCopy, mdiDelete, mdiDownload, mdiPencil, mdiPower } from '@mdi/js'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { VBtn, VCard, VCardActions, VCardText, VCardTitle, VDialog, VDivider, VSnackbar, VSpacer } from 'vuetify/components'
@@ -15,6 +15,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   assignmentsChanged: []
+  duplicated: []
   deleted: []
 }>()
 
@@ -24,6 +25,7 @@ const pluginsStore = usePluginsStore()
 const showAssignDialog = ref(false)
 const showDeleteDialog = ref(false)
 const showExportSnackbar = ref(false)
+const showDuplicateErrorSnackbar = ref(false)
 
 const assignedCount = computed(() => props.plugin.deviceAssignments?.length || 0)
 
@@ -64,6 +66,21 @@ function editPlugin() {
   router.push({ name: 'pluginEdit', params: { id: props.plugin.id } })
 }
 
+const loadingDuplicate = ref(false)
+async function duplicatePlugin() {
+  loadingDuplicate.value = true
+  try {
+    await pluginsStore.duplicatePlugin(props.plugin.id)
+    emit('duplicated')
+  }
+  catch {
+    showDuplicateErrorSnackbar.value = true
+  }
+  finally {
+    loadingDuplicate.value = false
+  }
+}
+
 function exportPlugin() {
   window.location.href = withBasePath(`/api/plugins/${props.plugin.id}/export`)
   showExportSnackbar.value = true
@@ -82,6 +99,9 @@ function onAssigned() {
   <VSnackbar v-model="showExportSnackbar" :timeout="3000" color="success">
     Downloading plugin export...
   </VSnackbar>
+  <VSnackbar v-model="showDuplicateErrorSnackbar" :timeout="3000" color="error">
+    Failed to duplicate plugin
+  </VSnackbar>
   <VCardActions class="d-flex ga-2 flex-wrap">
     <VBtn
       variant="tonal"
@@ -99,6 +119,15 @@ function onAssigned() {
       @click="openAssignDialog"
     >
       Assign to Devices
+    </VBtn>
+    <VBtn
+      variant="tonal"
+      size="small"
+      :prepend-icon="mdiContentCopy"
+      :loading="loadingDuplicate"
+      @click="duplicatePlugin"
+    >
+      Duplicate
     </VBtn>
     <VBtn
       v-if="deviceId"

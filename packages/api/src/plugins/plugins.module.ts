@@ -7,6 +7,7 @@ import { PluginDataSource } from './entities/plugin-data-source.entity.js'
 import { PluginFieldValue } from './entities/plugin-field-value.entity.js'
 import { PluginField } from './entities/plugin-field.entity.js'
 import { PluginTemplate } from './entities/plugin-template.entity.js'
+import { PluginVariable } from './entities/plugin-variable.entity.js'
 import { Plugin } from './entities/plugin.entity.js'
 import { WebhookPluginGuard } from './guards/webhook-plugin.guard.js'
 import { PluginsController } from './plugins.controller.js'
@@ -33,6 +34,7 @@ import { WebhookIngestController } from './webhook-ingest.controller.js'
       PluginTemplate,
       PluginField,
       PluginFieldValue,
+      PluginVariable,
       Screen,
     ]),
   ],

@@ -16,6 +16,7 @@ describe('pluginsController', () => {
     findByDevice: ReturnType<typeof vi.fn>
     create: ReturnType<typeof vi.fn>
     update: ReturnType<typeof vi.fn>
+    duplicate: ReturnType<typeof vi.fn>
     remove: ReturnType<typeof vi.fn>
     assignToDevice: ReturnType<typeof vi.fn>
     unassignFromDevice: ReturnType<typeof vi.fn>
@@ -36,6 +37,7 @@ describe('pluginsController', () => {
       findByDevice: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      duplicate: vi.fn(),
       remove: vi.fn(),
       assignToDevice: vi.fn(),
       unassignFromDevice: vi.fn(),
@@ -116,6 +118,16 @@ describe('pluginsController', () => {
 
     expect(mockService.update).toHaveBeenCalledWith('1', updateDto)
     expect(result).toBe(updated)
+  })
+
+  it('duplicate duplicates a plugin', async () => {
+    const duplicated = { ...basePlugin, id: '2', name: 'Weather Plugin (copy)' }
+    mockService.duplicate.mockResolvedValue(duplicated)
+
+    const result = await controller.duplicate('1')
+
+    expect(mockService.duplicate).toHaveBeenCalledWith('1')
+    expect(result).toBe(duplicated)
   })
 
   it('remove deletes a plugin', async () => {
