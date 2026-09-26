@@ -83,7 +83,7 @@ describe('pluginsService', () => {
     pluginRepo.find.mockResolvedValue(plugins)
     const result = await service.findAll()
     expect(pluginRepo.find).toHaveBeenCalledWith({
-      relations: { dataSources: true, templates: true, fields: true },
+      relations: { dataSources: true, templates: true, fields: true, deviceAssignments: { device: true } },
       order: { name: 'ASC' },
     })
     expect(result).toBe(plugins)
@@ -392,6 +392,7 @@ describe('pluginsService', () => {
 
   it('assignToDevice creates device plugin and screen', async () => {
     const devicePlugin = makeDevicePlugin({ id: 'dp-1', isActive: true, order: 0 })
+    devicePluginRepo.findOne.mockResolvedValue(null)
     devicePluginRepo.create.mockReturnValue(devicePlugin)
     devicePluginRepo.save.mockResolvedValue(devicePlugin)
     screenRepo.maximum.mockResolvedValue(5)
@@ -404,11 +405,34 @@ describe('pluginsService', () => {
       order: 1,
     })
 
+    expect(devicePluginRepo.findOne).toHaveBeenCalledWith({
+      where: { plugin: { id: 'plugin-1' }, device: { id: 'device-1' } },
+    })
     expect(devicePluginRepo.create).toHaveBeenCalled()
     expect(devicePluginRepo.save).toHaveBeenCalled()
     expect(screenRepo.create).toHaveBeenCalledWith(expect.objectContaining({ type: 'plugin' }))
     expect(screenRepo.save).toHaveBeenCalled()
     expect(result).toBe(devicePlugin)
+  })
+
+  it('assignToDevice returns the existing assignment without creating a duplicate when already assigned', async () => {
+    const existingDevicePlugin = makeDevicePlugin({ id: 'dp-1', isActive: true, order: 0 })
+    devicePluginRepo.findOne.mockResolvedValue(existingDevicePlugin)
+
+    const result = await service.assignToDevice('plugin-1', {
+      deviceId: 'device-1',
+      isActive: true,
+      order: 1,
+    })
+
+    expect(devicePluginRepo.findOne).toHaveBeenCalledWith({
+      where: { plugin: { id: 'plugin-1' }, device: { id: 'device-1' } },
+    })
+    expect(devicePluginRepo.create).not.toHaveBeenCalled()
+    expect(devicePluginRepo.save).not.toHaveBeenCalled()
+    expect(screenRepo.create).not.toHaveBeenCalled()
+    expect(screenRepo.save).not.toHaveBeenCalled()
+    expect(result).toBe(existingDevicePlugin)
   })
 
   it('unassignFromDevice removes device plugin and screen', async () => {
