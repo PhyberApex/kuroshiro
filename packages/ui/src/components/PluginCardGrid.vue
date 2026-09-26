@@ -5,7 +5,6 @@ import PluginCard from './PluginCard.vue'
 
 defineProps<{
   plugins: Plugin[]
-  deviceId?: string
 }>()
 
 const emit = defineEmits<{
@@ -24,7 +23,7 @@ const emit = defineEmits<{
       md="6"
       lg="4"
     >
-      <PluginCard :plugin="plugin" :device-id="deviceId" @assignments-changed="emit('assignmentsChanged')" @duplicated="emit('duplicated')" @deleted="emit('deleted')" />
+      <PluginCard :plugin="plugin" @assignments-changed="emit('assignmentsChanged')" @duplicated="emit('duplicated')" @deleted="emit('deleted')" />
     </VCol>
   </VRow>
 </template>

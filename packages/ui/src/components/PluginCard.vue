@@ -7,7 +7,6 @@ import PluginCardActions from './PluginCardActions.vue'
 
 const props = defineProps<{
   plugin: Plugin
-  deviceId?: string
 }>()
 
 const emit = defineEmits<{
@@ -25,20 +24,12 @@ const assignedCount = computed(() => props.plugin.deviceAssignments?.length || 0
       <span>{{ plugin.name }}</span>
       <div class="d-flex ga-2">
         <VChip
-          v-if="!deviceId && assignedCount > 0"
+          v-if="assignedCount > 0"
           :prepend-icon="mdiAccountMultiple"
           size="small"
           variant="tonal"
         >
           {{ assignedCount }} device{{ assignedCount !== 1 ? 's' : '' }}
-        </VChip>
-        <VChip
-          v-if="deviceId"
-          :color="plugin._isActive ? 'success' : 'default'"
-          size="small"
-          variant="tonal"
-        >
-          {{ plugin._isActive ? 'Active' : 'Inactive' }}
         </VChip>
       </div>
     </VCardTitle>
@@ -53,7 +44,6 @@ const assignedCount = computed(() => props.plugin.deviceAssignments?.length || 0
     </VCardText>
     <PluginCardActions
       :plugin="plugin"
-      :device-id="deviceId"
       @assignments-changed="emit('assignmentsChanged')"
       @duplicated="emit('duplicated')"
       @deleted="emit('deleted')"
