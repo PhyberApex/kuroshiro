@@ -54,7 +54,7 @@ async function confirmImport() {
     <VDivider />
     <VCardText>
       <p class="text-body-2 text-medium-emphasis">
-        A single archive of every Plugin, Device, Screen, Schedule, Mashup, custom Palette and custom Firmware on this server — for backup, review, or moving to another instance.
+        A single archive of every Plugin, Device, Screen, Schedule, Mashup, custom Palette and custom Firmware on this server — to review, diff, or move to another instance.
       </p>
       <VAlert type="warning" variant="tonal" class="mt-2" :icon="mdiAlertCircle">
         The archive contains Data Source headers and Device API keys in plaintext. Store it as carefully as you would a database backup.
