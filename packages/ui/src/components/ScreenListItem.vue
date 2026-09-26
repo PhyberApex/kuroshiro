@@ -175,15 +175,17 @@ const previewAriaLabel = computed(() => {
         :data-test-id="`screen-delete-btn-${screen.id}`"
         @click="emit('delete')"
       />
-      <VTooltip v-else text="Unassign plugin from Manage Plugins page">
+      <VTooltip v-else text="Unassign plugin from this device">
         <template #activator="{ props: tooltipProps }">
           <VBtn
             size="small"
-            color="secondary"
+            color="error"
             variant="tonal"
             :icon="mdiDelete"
-            disabled
+            aria-label="Unassign plugin"
+            :data-test-id="`screen-delete-btn-${screen.id}`"
             v-bind="tooltipProps"
+            @click="emit('delete')"
           />
         </template>
       </VTooltip>

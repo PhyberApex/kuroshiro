@@ -6,6 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { EntityManager, Repository } from 'typeorm'
 import { DeviceModelsService } from '../device-models/device-models.service.js'
 import { Device } from '../devices/devices.entity.js'
+import { DevicePlugin } from '../plugins/entities/device-plugin.entity.js'
 import { fileExists } from '../utils/fileExists.js'
 import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { convertToPng, downloadImage } from '../utils/imageUtils.js'
@@ -22,6 +23,8 @@ export class ScreensService {
     private screensRepository: Repository<Screen>,
     @InjectRepository(Device)
     private devicesRepository: Repository<Device>,
+    @InjectRepository(DevicePlugin)
+    private devicePluginsRepository: Repository<DevicePlugin>,
     private readonly configService: ConfigService,
     private readonly deviceModels: DeviceModelsService,
   ) {}
@@ -141,6 +144,8 @@ export class ScreensService {
     await this.deleteFileIfExists(this.screenImagePath(deviceId, id))
     await this.deleteFileIfExists(this.originalImagePath(deviceId, id))
     await this.screensRepository.delete(id)
+    if (screen.devicePluginId)
+      await this.devicePluginsRepository.delete(screen.devicePluginId)
     this.logger.log(`Screen deleted: ${id}`)
     // Reindex order for remaining screens, closing the gap left by the deleted screen
     const screens = await this.screensRepository.find({ where: { device: { id: deviceId } }, order: { order: 'ASC' } })
