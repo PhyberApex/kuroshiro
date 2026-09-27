@@ -34,8 +34,22 @@ services:
       KUROSHIRO_DB_USER: ${KUROSHIRO_DB_USER}
       KUROSHIRO_DB_PASSWORD: ${KUROSHIRO_DB_PASSWORD}
       KUROSHIRO_DB_DB: ${KUROSHIRO_DB_DB}
+      KUROSHIRO_APPRISE_URL: ${KUROSHIRO_APPRISE_URL}
+      KUROSHIRO_APPRISE_KEY: ${KUROSHIRO_APPRISE_KEY}
+      KUROSHIRO_ALERT_LOW_BATTERY_PERCENT: ${KUROSHIRO_ALERT_LOW_BATTERY_PERCENT}
+      KUROSHIRO_ALERT_OFFLINE_MULTIPLIER: ${KUROSHIRO_ALERT_OFFLINE_MULTIPLIER}
 #    volumes:
 #      - kuroshiro_data:/app/public/screens/devices
+# Uncomment to enable Alert notifications (see the "Alerts" section of the README)
+# and point KUROSHIRO_APPRISE_URL above at http://apprise-api:8000.
+#  apprise-api:
+#    image: caronc/apprise:latest
+#    restart: always
+#    ports:
+#      - '8000:8000'
+#    volumes:
+#      - apprise_data:/config
 volumes:
   postgres_data:
   kuroshiro_data:
+  apprise_data:

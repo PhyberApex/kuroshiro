@@ -46,6 +46,7 @@ Kuroshiro is for anyone who wants to experiment, self-host, and shape their own 
 - **Screens Galore**: Add screens via link or upload, cache them, or fetch fresh every time—then gate any of them to a day/time Schedule.
 - **Plugins**: Poll external APIs (with multiple named Data Sources per plugin) or accept pushed Webhooks, render them with Liquid, or import a Recipe straight from trmnl.com.
 - **Firmware Management**: Official releases sync automatically, or push a custom OTA build, with per-Device-Model compatibility checks so you can't flash the wrong binary.
+- **Alerts**: A periodic sweep watches for low battery and offline Devices and notifies you via an [Apprise](https://github.com/caronc/apprise-api) sidecar—supporting dozens of notification channels.
 - **Virtual Device**: Test without hardware—because why not?
 
 ---
@@ -261,6 +262,23 @@ Don't want to build a Plugin from scratch? Paste a Recipe's id or [trmnl.com/rec
 ## 🔧 Firmware & Device Models
 
 Kuroshiro tracks the official TRMNL model list and the latest official firmware automatically (synced daily, with a bundled snapshot as offline fallback), or you can upload a custom `.bin` build of your own. Every Firmware carries a SHA-256 checksum and an optional set of compatible Device Models, so assigning one to a Device is blocked outright if it doesn't match that Device's hardware—no accidental bricking. Pushes are always explicit: pick a Firmware for a Device under *Maintenance*, and it's served on that Device's next poll. Custom colour Palettes (admin-created, within one of TRMNL's fixed colour families) sit alongside the official ones synced from TRMNL, so you're not limited to whatever's officially curated for a given Device Model. To refresh the bundled fallback snapshot from the live TRMNL API, run `pnpm --filter kuroshiro-api snapshot:device-models`.
+
+---
+
+## 🔔 Alerts
+
+A background sweep runs every 5 minutes (and once on startup) and checks two conditions for every Device: **low battery** (derived percentage below a threshold) and **offline** (no poll within a multiple of the Device's refresh rate — skipped entirely while the Device is asleep under Sleep Mode, and for a grace period after it wakes). Each condition opens an Alert the first time it's seen and resolves it the first time it clears; low battery has a 5-point hysteresis so it won't flap right at the threshold.
+
+Delivery goes through the [`apprise-api`](https://github.com/caronc/apprise-api) sidecar rather than bundling Apprise into the Kuroshiro image — see [ADR-0022](docs/adr/0022-alerts-decided-by-sweep-delivered-via-apprise-sidecar.md). Alerts are persisted (and retried) whether or not delivery is configured; only the notification step is skipped without an Apprise URL. Configure it with these environment variables:
+
+| Variable | Default | Description |
+|---|---|---|
+| `KUROSHIRO_APPRISE_URL` | *(unset)* | Base URL of an `apprise-api` instance. Leave unset to disable notifications entirely — Alerts still open/resolve, they just aren't delivered anywhere. |
+| `KUROSHIRO_APPRISE_KEY` | `kuroshiro` | The Apprise config key notifications are POSTed to (`{url}/notify/{key}`). |
+| `KUROSHIRO_ALERT_LOW_BATTERY_PERCENT` | `20` | Derived battery percentage below which a Device is considered low. |
+| `KUROSHIRO_ALERT_OFFLINE_MULTIPLIER` | `3` | A Device is offline once it hasn't polled for longer than its `refreshRate` times this multiplier. |
+
+To run the sidecar alongside Kuroshiro, uncomment the `apprise-api` service in [`docker-compose.yml`](./docker-compose.yml) and point `KUROSHIRO_APPRISE_URL` at it (e.g. `http://apprise-api:8000`), then configure your notification channels in its own persisted config under the `kuroshiro` key (or whatever `KUROSHIRO_APPRISE_KEY` is set to).
 
 ---
 

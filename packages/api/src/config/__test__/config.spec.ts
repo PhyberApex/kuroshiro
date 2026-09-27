@@ -1,5 +1,5 @@
 import process from 'node:process'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import config from '../config.js'
 
 const ENV_KEYS = [
@@ -11,6 +11,10 @@ const ENV_KEYS = [
   'KUROSHIRO_DB_DB',
   'KUROSHIRO_DB_USER',
   'KUROSHIRO_DB_PASSWORD',
+  'KUROSHIRO_APPRISE_URL',
+  'KUROSHIRO_APPRISE_KEY',
+  'KUROSHIRO_ALERT_LOW_BATTERY_PERCENT',
+  'KUROSHIRO_ALERT_OFFLINE_MULTIPLIER',
 ] as const
 
 describe('config', () => {
@@ -42,6 +46,12 @@ describe('config', () => {
         user: 'root',
         password: 'root',
       },
+      alerts: {
+        appriseUrl: undefined,
+        appriseKey: 'kuroshiro',
+        lowBatteryPercent: 20,
+        offlineMultiplier: 3,
+      },
     })
   })
 
@@ -54,6 +64,10 @@ describe('config', () => {
     process.env.KUROSHIRO_DB_DB = 'kuroshiro'
     process.env.KUROSHIRO_DB_USER = 'kuroshiro_user'
     process.env.KUROSHIRO_DB_PASSWORD = 'secret'
+    process.env.KUROSHIRO_APPRISE_URL = 'http://apprise:8000'
+    process.env.KUROSHIRO_APPRISE_KEY = 'my-key'
+    process.env.KUROSHIRO_ALERT_LOW_BATTERY_PERCENT = '15'
+    process.env.KUROSHIRO_ALERT_OFFLINE_MULTIPLIER = '5'
 
     expect(config()).toEqual({
       port: 8080,
@@ -65,6 +79,12 @@ describe('config', () => {
         database: 'kuroshiro',
         user: 'kuroshiro_user',
         password: 'secret',
+      },
+      alerts: {
+        appriseUrl: 'http://apprise:8000',
+        appriseKey: 'my-key',
+        lowBatteryPercent: 15,
+        offlineMultiplier: 5,
       },
     })
   })
@@ -87,5 +107,30 @@ describe('config', () => {
 
     process.env.KUROSHIRO_DEMO_MODE = 'true'
     expect(config().demo_mode).toBe(true)
+  })
+
+  it('has no Apprise URL configured by default, meaning notifications are off', () => {
+    expect(config().alerts.appriseUrl).toBeUndefined()
+  })
+
+  it('defaults the Apprise config key to "kuroshiro"', () => {
+    expect(config().alerts.appriseKey).toBe('kuroshiro')
+  })
+
+  it('falls back to defaults and logs a warning when the alert thresholds are non-numeric', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    process.env.KUROSHIRO_ALERT_LOW_BATTERY_PERCENT = 'not-a-number'
+    process.env.KUROSHIRO_ALERT_OFFLINE_MULTIPLIER = 'also-not-a-number'
+
+    expect(config().alerts).toEqual({
+      appriseUrl: undefined,
+      appriseKey: 'kuroshiro',
+      lowBatteryPercent: 20,
+      offlineMultiplier: 3,
+    })
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('KUROSHIRO_ALERT_LOW_BATTERY_PERCENT'))
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('KUROSHIRO_ALERT_OFFLINE_MULTIPLIER'))
+
+    warnSpy.mockRestore()
   })
 })
