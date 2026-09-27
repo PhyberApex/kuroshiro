@@ -66,7 +66,7 @@ Kuroshiro isn't the only way to run a TRMNL: the device also works with the offi
 | Mashups | 7 layouts | Supported | 8 layouts |
 | Firmware | Official sync + custom OTA upload, hard-blocked unless the Firmware is compatible with the Device's model | Official sync + custom upload, no model-compatibility link | Manages its own hardware directly |
 | Sensors | Device-attached Qwiic sensors (CO₂/humidity/pressure/temperature), exposed to Plugin templates | Device-attached *and* server-attached (Raspberry Pi) sensors | — |
-| Sleep Mode | Not yet—on the [roadmap](#-roadmap--planned-features) | Supported | Supported |
+| Sleep Mode | Per-Device night window that parks the Device until the window ends, with an optional dedicated sleep Screen | Supported | Supported |
 
 The short version: Kuroshiro trades Terminus's multi-user accounts and device-grouped playlists for a simpler single-admin, single-container deployment, while going further than either self-hosted option on per-Device-Model firmware safety and mixed fetch/literal Data Sources within one Plugin. See [`docs/adr`](./docs/adr) for the design decisions (and prior-art comparisons) behind each of these.
 
@@ -123,7 +123,7 @@ We're constantly working to make Kuroshiro even better! Here's what's on our roa
 - [ ] **Device Logs Viewer** - View logs directly from your TRMNL devices for better debugging and monitoring
 - [x] **Refresh Rate UI Controls** - Adjust device refresh rates directly from the web interface
 - [x] **Screen Reordering** - Drag-and-drop screens into the order you want them to play
-- [ ] **Sleep Mode** - Per-Device night window that pauses rotation and lets the Device sleep through it instead of polling on its usual cadence
+- [x] **Sleep Mode** - Per-Device night window that pauses rotation and lets the Device sleep through it instead of polling on its usual cadence
 
 ### 🎯 Medium Priority  
 - [x] **Liquid Template Syntax** - Plugins render with Liquid, including Data Sources and Mashups; HTML Screens are still raw HTML
