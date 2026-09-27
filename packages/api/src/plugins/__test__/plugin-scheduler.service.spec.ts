@@ -1,11 +1,13 @@
-import type { MockPluginDataFetcherService } from '../../test/mockPluginCollaborators.js'
+import type { MockPluginDataFetcherService, MockPluginTransformService } from '../../test/mockPluginCollaborators.js'
 import type { Plugin } from '../entities/plugin.entity.js'
 import type { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
 import type { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
+import type { PluginTransformService } from '../services/plugin-transform.service.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makePlugin, makePluginDataSource, makePluginTemplate } from '../../test/fixtures.js'
-import { createMockPluginDataFetcherService } from '../../test/mockPluginCollaborators.js'
+import { createMockPluginDataFetcherService, createMockPluginTransformService } from '../../test/mockPluginCollaborators.js'
 import { asService, callPrivate } from '../../test/mockService.js'
+import { PluginDataResolverService } from '../services/plugin-data-resolver.service.js'
 import { PluginSchedulerService } from '../services/plugin-scheduler.service.js'
 import { PluginTemplateContextService } from '../services/plugin-template-context.service.js'
 
@@ -26,19 +28,26 @@ vi.mock('node-cron', () => ({
 describe('pluginSchedulerService', () => {
   let service: PluginSchedulerService
   let mockDataFetcher: MockPluginDataFetcherService
+  let mockTransformer: MockPluginTransformService
   let mockRenderCache: { renderAndCache: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     capturedCallback = undefined
 
     mockDataFetcher = createMockPluginDataFetcherService()
+    mockTransformer = createMockPluginTransformService()
 
     mockRenderCache = {
       renderAndCache: vi.fn(),
     }
 
-    service = new PluginSchedulerService(
+    const pluginDataResolver = new PluginDataResolverService(
       asService<PluginDataFetcherService>(mockDataFetcher),
+      asService<PluginTransformService>(mockTransformer),
+    )
+
+    service = new PluginSchedulerService(
+      pluginDataResolver,
       asService<PluginRenderCacheService>(mockRenderCache),
       new PluginTemplateContextService(),
     )
@@ -325,6 +334,73 @@ describe('pluginSchedulerService', () => {
         expect.objectContaining({
           weather: { temp: 25 },
           air_quality: { error: true, message: 'API timeout' },
+        }),
+      )
+    })
+
+    it('applies a data source\'s transformJs to the fetched value before rendering', async () => {
+      const plugin = makePlugin({
+        id: 'plugin-1',
+        name: 'Transformed',
+        refreshInterval: 15,
+        dataSources: [
+          makePluginDataSource({
+            name: 'gh',
+            mode: 'fetch',
+            url: 'https://api.example.com/gh',
+            method: 'GET',
+            transformJs: 'return { totalShort: "3.5k" }',
+          }),
+        ],
+        templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '{{ gh.totalShort }}' })],
+      })
+
+      mockDataFetcher.fetchData.mockResolvedValue({ raw: 'graphql body' })
+      mockTransformer.transform.mockReturnValue({ totalShort: '3.5k' })
+      mockRenderCache.renderAndCache.mockResolvedValue(undefined)
+
+      service.schedulePlugin(plugin)
+      await capturedCallback!()
+
+      expect(mockTransformer.transform).toHaveBeenCalledWith('return { totalShort: "3.5k" }', { raw: 'graphql body' })
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(
+        plugin,
+        expect.objectContaining({ gh: { totalShort: '3.5k' } }),
+      )
+    })
+
+    it('gives a source an error marker when its transformJs throws, while a sibling source still renders', async () => {
+      const plugin = makePlugin({
+        id: 'plugin-1',
+        name: 'Transform Failure',
+        refreshInterval: 15,
+        dataSources: [
+          makePluginDataSource({
+            name: 'gh',
+            mode: 'fetch',
+            url: 'https://api.example.com/gh',
+            method: 'GET',
+            transformJs: 'throw new Error("bad transform")',
+          }),
+          makePluginDataSource({ name: 'title', mode: 'literal', literalValue: 'Static Title' }),
+        ],
+        templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '{{ title }}' })],
+      })
+
+      mockDataFetcher.fetchData.mockResolvedValue({ raw: 'graphql body' })
+      mockTransformer.transform.mockImplementation(() => {
+        throw new Error('bad transform')
+      })
+      mockRenderCache.renderAndCache.mockResolvedValue(undefined)
+
+      service.schedulePlugin(plugin)
+      await capturedCallback!()
+
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(
+        plugin,
+        expect.objectContaining({
+          gh: { error: true, message: 'bad transform' },
+          title: 'Static Title',
         }),
       )
     })
