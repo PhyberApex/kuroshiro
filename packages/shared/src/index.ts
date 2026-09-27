@@ -1,3 +1,4 @@
+export * from './battery'
 export * from './configuration'
 export * from './data-source'
 export * from './maintenance'

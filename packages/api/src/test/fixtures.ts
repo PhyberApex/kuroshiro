@@ -1,3 +1,4 @@
+import type { Alert } from '../alerts/entities/alert.entity.js'
 import type { DeviceModel } from '../device-models/entities/device-model.entity.js'
 import type { Palette } from '../device-models/entities/palette.entity.js'
 import type { DeviceSensor } from '../device-sensors/entities/device-sensor.entity.js'
@@ -214,6 +215,20 @@ export function makeSchedule(overrides: Partial<Schedule> = {}): Schedule {
     screen: makeScreen(),
     createdAt: FIXED_DATE,
     updatedAt: FIXED_DATE,
+    ...overrides,
+  }
+}
+
+export function makeAlert(overrides: Partial<Alert> = {}): Alert {
+  return {
+    id: 'alert-1',
+    kind: 'device-low-battery',
+    device: makeDevice(),
+    openedAt: FIXED_DATE,
+    resolvedAt: null,
+    notifiedAt: null,
+    resolutionNotifiedAt: null,
+    details: null,
     ...overrides,
   }
 }

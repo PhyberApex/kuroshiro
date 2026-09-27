@@ -5,6 +5,8 @@ import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { ServeStaticModule } from '@nestjs/serve-static'
 import { TypeOrmModule } from '@nestjs/typeorm'
+import { AlertsModule } from './alerts/alerts.module.js'
+import { Alert } from './alerts/entities/alert.entity.js'
 import config from './config/config.js'
 import { ConfigurationModule } from './configuration/configuration.module.js'
 import { DeviceModelsModule } from './device-models/device-models.module.js'
@@ -53,7 +55,7 @@ const conf = config()
       username: conf.database.user,
       password: conf.database.password,
       database: conf.database.database,
-      entities: [Device, DeviceModel, Palette, DeviceSensor, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, PluginVariable, MashupConfiguration, MashupSlot, Schedule, Firmware],
+      entities: [Device, DeviceModel, Palette, DeviceSensor, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, PluginVariable, MashupConfiguration, MashupSlot, Schedule, Firmware, Alert],
       migrations: (() => {
         const dir = path.join(process.cwd(), 'dist', 'src', 'migrations')
         if (!fs.existsSync(dir))
@@ -78,6 +80,7 @@ const conf = config()
     ScheduleModule,
     MaintenanceModule,
     ConfigurationModule,
+    AlertsModule,
   ],
 })
 export class AppModule {}

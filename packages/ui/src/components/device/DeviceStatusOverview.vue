@@ -24,6 +24,7 @@ import {
   mdiSignalCellularOutline,
 } from '@mdi/js'
 import { useClipboard } from '@vueuse/core'
+import { batteryPercentFromVoltage } from 'kuroshiro-shared'
 import { computed, ref } from 'vue'
 import { VCol, VDivider, VIcon, VRow, VTextField, VTooltip } from 'vuetify/components'
 import { DEFAULT_RENDER_SIZE } from '@/utils/deviceRenderSize'
@@ -96,16 +97,7 @@ const rssiIcon = computed((): string => {
   }
 })
 
-const batteryPercentage = computed(() => {
-  if (!props.device.batteryVoltage)
-    return -1
-  const voltage = Number.parseFloat(props.device.batteryVoltage)
-  if (voltage >= 4.2)
-    return 100
-  if (voltage <= 3.0)
-    return 0
-  return Math.round(((voltage - 3.0) / 0.012))
-})
+const batteryPercentage = computed(() => batteryPercentFromVoltage(props.device.batteryVoltage) ?? -1)
 
 const batteryColor = computed(() => {
   if (batteryPercentage.value === -1)
