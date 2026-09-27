@@ -74,6 +74,21 @@ describe('offlineRule', () => {
     expect(offlineRule.evaluate(device, context(), false).active).toBe(true)
   })
 
+  it('ignores stale sleepStartTime/sleepEndTime left over from a disabled Sleep Mode', () => {
+    // Disabling sleepModeEnabled doesn't clear the window fields (see
+    // update-device.dto.ts), so a genuinely-offline Device that used to have
+    // Sleep Mode configured must not have its staleness measured from that
+    // stale window instead of its real (very stale) lastSeen.
+    const device = makeDevice({
+      refreshRate: 300,
+      sleepModeEnabled: false,
+      sleepStartTime: 22 * 3600,
+      sleepEndTime: 11 * 3600 + 55 * 60, // would "end" 5 minutes before "now" if Sleep Mode were still on
+      lastSeen: new Date(NOW.getTime() - 100_000_000), // long offline
+    })
+    expect(offlineRule.evaluate(device, context(), false).active).toBe(true)
+  })
+
   it('measures staleness from yesterday\'s window end when the window ended before midnight relative to "now"', () => {
     // "now" is 00:30 — the sleep window (22:00-06:00) is still active, so this
     // exercises the "window end" lookup needing to reach back a day when NOW

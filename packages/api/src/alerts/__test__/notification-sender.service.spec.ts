@@ -33,6 +33,7 @@ describe('notificationSenderService', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: 'Kuroshiro: low battery', body: 'body text', type: 'warning' }),
+      signal: expect.any(AbortSignal),
     })
   })
 
@@ -52,5 +53,17 @@ describe('notificationSenderService', () => {
     const sent = await service.send({ title: 't', body: 'b', type: 'warning' })
 
     expect(sent).toBe(false)
+  })
+
+  it('returns false instead of hanging forever when the sidecar never responds', async () => {
+    mockFetch.mockImplementation(async () => {
+      throw new DOMException('The operation was aborted due to timeout', 'TimeoutError')
+    })
+    const service = new NotificationSenderService(makeConfigService({ appriseUrl: 'http://apprise:8000' }))
+
+    const sent = await service.send({ title: 't', body: 'b', type: 'warning' })
+
+    expect(sent).toBe(false)
+    expect(mockFetch).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ signal: expect.any(AbortSignal) }))
   })
 })

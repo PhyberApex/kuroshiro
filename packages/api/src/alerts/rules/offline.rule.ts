@@ -6,11 +6,14 @@ const MS_PER_SECOND = 1000
 
 /**
  * The most recent moment (at or before `now`) the Device's Sleep Mode window
- * ended, even if that occurrence was yesterday's. `undefined` when no window
- * is configured.
+ * ended, even if that occurrence was yesterday's. `undefined` when Sleep
+ * Mode isn't enabled or no window is configured — a Device that previously
+ * used Sleep Mode and had it disabled can still carry stale
+ * `sleepStartTime`/`sleepEndTime` values (disabling doesn't clear them), so
+ * this must gate on `sleepModeEnabled` too, not just the times being set.
  */
 function lastSleepWindowEnd(device: Device, now: Date): Date | undefined {
-  if (device.sleepEndTime == null)
+  if (!device.sleepModeEnabled || device.sleepEndTime == null)
     return undefined
   const candidate = new Date(now)
   candidate.setHours(0, 0, 0, 0)
