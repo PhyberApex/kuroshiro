@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.15.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.14.0...kuroshiro-v0.15.0) (2026-09-27)
+
+
+### Features
+
+* **alerts:** add periodic Alert Sweep for low-battery and offline Devices ([#1010](https://github.com/PhyberApex/kuroshiro/issues/1010)) ([be85696](https://github.com/PhyberApex/kuroshiro/commit/be85696c83d42120af917222bdc2b91c094e312e))
+
+
+### Bug Fixes
+
+* **api:** route scheduled Poll renders through PluginDataResolverService ([#1011](https://github.com/PhyberApex/kuroshiro/issues/1011)) ([9fd7238](https://github.com/PhyberApex/kuroshiro/commit/9fd72381577d0acc4348cb5f03e4966634e8cca0)), closes [#1009](https://github.com/PhyberApex/kuroshiro/issues/1009)
+
 ## [0.14.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.13.0...kuroshiro-v0.14.0) (2026-09-26)
 
 
