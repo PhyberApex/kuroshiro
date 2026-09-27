@@ -2,7 +2,7 @@ import type { ScheduledTask } from 'node-cron'
 import type { Plugin } from '../entities/plugin.entity.js'
 import { Injectable, Logger } from '@nestjs/common'
 import cron from 'node-cron'
-import { PluginDataFetcherService } from './plugin-data-fetcher.service.js'
+import { PluginDataResolverService } from './plugin-data-resolver.service.js'
 import { PluginRenderCacheService } from './plugin-render-cache.service.js'
 import { PluginTemplateContextService } from './plugin-template-context.service.js'
 
@@ -12,7 +12,7 @@ export class PluginSchedulerService {
   private readonly logger = new Logger(PluginSchedulerService.name)
 
   constructor(
-    private readonly dataFetcher: PluginDataFetcherService,
+    private readonly pluginDataResolver: PluginDataResolverService,
     private readonly renderCache: PluginRenderCacheService,
     private readonly pluginTemplateContext: PluginTemplateContextService,
   ) {}
@@ -35,25 +35,7 @@ export class PluginSchedulerService {
         // there is no single Device to scope sensors to here.
         const templateContext = this.pluginTemplateContext.build(plugin, [])
 
-        // Fetch all of the plugin's data sources in parallel; a source that fails
-        // gets an error marker instead of aborting the whole render (ADR-0005).
-        // A literal-mode source has no fetch to make — it contributes its
-        // stored value directly, with no call to the data fetcher at all.
-        const results = await Promise.allSettled(
-          plugin.dataSources.map(source => this.dataFetcher.fetchOrLiteral(source, templateContext)),
-        )
-
-        const sourceData: Record<string, unknown> = {}
-        results.forEach((result, index) => {
-          const name = plugin.dataSources[index].name
-          if (result.status === 'fulfilled') {
-            sourceData[name] = result.value
-          }
-          else {
-            this.logger.warn(`Data source "${name}" failed for plugin ${plugin.id}: ${result.reason?.message || result.reason}`)
-            sourceData[name] = { error: true, message: result.reason?.message || String(result.reason) }
-          }
-        })
+        const sourceData = await this.pluginDataResolver.resolveAll(plugin.dataSources, templateContext)
 
         await this.renderCache.renderAndCache(plugin, { ...templateContext, ...sourceData })
       }

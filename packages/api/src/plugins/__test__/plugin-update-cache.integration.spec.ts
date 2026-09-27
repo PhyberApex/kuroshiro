@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MashupSlot as MashupSlotEntity } from '../../mashup/entities/mashup-slot.entity.js'
 import { Screen as ScreenEntity } from '../../screens/screens.entity.js'
 import { makeMashupConfiguration, makeMashupSlot, makePlugin, makePluginDataSource, makePluginTemplate, makeScreen } from '../../test/fixtures.js'
-import { createMockPluginDataFetcherService } from '../../test/mockPluginCollaborators.js'
+import { createMockPluginDataFetcherService, createMockPluginTransformService } from '../../test/mockPluginCollaborators.js'
 import { DevicePlugin } from '../entities/device-plugin.entity.js'
 import { PluginDataSource } from '../entities/plugin-data-source.entity.js'
 import { PluginField } from '../entities/plugin-field.entity.js'
@@ -22,6 +22,7 @@ import { PluginRenderCacheService } from '../services/plugin-render-cache.servic
 import { PluginRendererService } from '../services/plugin-renderer.service.js'
 import { PluginSchedulerService } from '../services/plugin-scheduler.service.js'
 import { PluginTemplateContextService } from '../services/plugin-template-context.service.js'
+import { PluginTransformService } from '../services/plugin-transform.service.js'
 
 let capturedCallback: (() => Promise<void>) | undefined
 
@@ -104,10 +105,12 @@ describe('plugin update cache invalidation integration', () => {
       providers: [
         PluginsService,
         PluginSchedulerService,
+        PluginDataResolverService,
         PluginRenderCacheService,
         PluginRendererService,
         PluginTemplateContextService,
         { provide: PluginDataFetcherService, useValue: mockDataFetcher },
+        { provide: PluginTransformService, useValue: createMockPluginTransformService() },
         { provide: getRepositoryToken(PluginEntity), useValue: pluginRepo },
         { provide: getRepositoryToken(DevicePlugin), useValue: {} },
         { provide: getRepositoryToken(ScreenEntity), useValue: screenRepo },
@@ -116,7 +119,6 @@ describe('plugin update cache invalidation integration', () => {
         { provide: getRepositoryToken(PluginField), useValue: {} },
         { provide: getRepositoryToken(PluginVariable), useValue: {} },
         { provide: getRepositoryToken(MashupSlotEntity), useValue: mashupSlotRepo },
-        { provide: PluginDataResolverService, useValue: {} },
       ],
     }).compile()
 
