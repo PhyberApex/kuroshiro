@@ -111,3 +111,19 @@ _Avoid_: Firmware type, firmware source
 **Sensor**:
 A Device's current reading for one Qwiic sensor add-on kind — `carbon_dioxide`, `humidity`, `pressure`, or `temperature` — parsed from the `SENSORS` header official OG firmware sends on every `/display` poll. At most one Sensor per Device per kind: each poll's header is the authoritative full snapshot, so a kind missing from a poll is deleted rather than left stale, and a kind present is upserted with its `value`/`unit`. Exposed to Plugin Liquid templates as an implicit `sensors` object keyed by kind (e.g. `sensors.temperature.value`), present only when the Device currently has that reading — no Plugin opt-in required. Device-attached only; a physically separate concept from server-attached (Raspberry Pi) sensors, which Kuroshiro does not support.
 _Avoid_: Telemetry (too broad), Extension, Exchange (Terminus's terms — not adopted here)
+
+**Alert Rule**:
+A named condition Kuroshiro watches for on a subject — in v1 always a Device — such as low battery or the Device being offline. The set of Alert Rules is fixed in code; an admin tunes their thresholds instance-wide, never per Device.
+_Avoid_: Alarm, trigger, check, monitor
+
+**Alert**:
+One Alert Rule being true for one subject right now — created the first time an Alert Sweep sees the condition hold, resolved the first time a Sweep sees it no longer hold. An Alert is stateful (active or resolved); at most one active Alert per Rule per subject.
+_Avoid_: Incident, event, alarm
+
+**Alert Sweep**:
+The periodic job that evaluates every Alert Rule against Kuroshiro's persisted state and opens or resolves Alerts accordingly. The only place Alerts are decided — no Rule is evaluated inline in a Device poll or any other request path.
+_Avoid_: Poll (reserved for what a Device does), scan, check
+
+**Notification**:
+The message pushed to an admin's channels when an Alert is opened or resolved, delivered via Apprise. Fire-and-forget: a Notification carries no state of its own beyond whether the Alert it belongs to has been announced.
+_Avoid_: Alert (as a name for the message), push, message
