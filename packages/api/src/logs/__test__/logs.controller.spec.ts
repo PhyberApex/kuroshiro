@@ -1,5 +1,6 @@
 import type { CreateLogDto } from '../dto/create-log.dto.js'
 import type { LogsService } from '../logs.service.js'
+import { HTTP_CODE_METADATA } from '@nestjs/common/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeLogEntry } from '../../test/fixtures.js'
 import { asService } from '../../test/mockService.js'
@@ -27,6 +28,10 @@ describe('logsController (unit)', () => {
     const dto: CreateLogDto = { logs: [{ id: 1 }] }
     await controller.consumeLog(deviceHeader, dto)
     expect(service.addLogToDevice).toHaveBeenCalledWith(deviceHeader.id, dto)
+  })
+
+  it('consumeLog answers 204 No Content', () => {
+    expect(Reflect.getMetadata(HTTP_CODE_METADATA, LogsController.prototype.consumeLog)).toBe(204)
   })
 
   it('getLogsByDevice returns logs for a device', async () => {
