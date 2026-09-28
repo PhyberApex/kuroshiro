@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.15.0...kuroshiro-v0.15.1) (2026-09-28)
+
+
+### Bug Fixes
+
+* **api:** accept current TRMNL firmware log payload format ([#1017](https://github.com/PhyberApex/kuroshiro/issues/1017)) ([4083522](https://github.com/PhyberApex/kuroshiro/commit/408352299d6a0a0e458deb01a527ec7bae161ab0))
+
 ## [0.15.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.14.0...kuroshiro-v0.15.0) (2026-09-27)
 
 
