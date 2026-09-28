@@ -9,8 +9,8 @@ import { LogEntry } from './logs.entity.js'
 const MIN_PLAUSIBLE_UNIX_SECONDS = Date.UTC(2020, 0, 1) / 1000
 const MAX_FUTURE_SKEW_SECONDS = 24 * 60 * 60
 
-function entriesOf(logs: CreateLogDto): JsonObject[] {
-  return logs.logs ?? logs.log?.logs_array ?? []
+function entriesOf(dto: CreateLogDto): JsonObject[] {
+  return dto.logs ?? dto.log?.logs_array ?? []
 }
 
 function extractLogId(entry: JsonObject): number | undefined {
