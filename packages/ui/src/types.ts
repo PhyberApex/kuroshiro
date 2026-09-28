@@ -123,23 +123,26 @@ export interface LogEntry {
   entry: string
 }
 
-export interface DeviceStatusStamp {
-  wifi_rssi_level: number
-  battery_voltage: number
-  current_fw_version: string
-  free_heap_size: number
-  wakeup_reason: string
-  wifi_status: string
+export type LogSeverity = 'error' | 'warning' | 'info' | 'default'
+
+export interface NormalizedLogStatus {
+  wifiRssi?: number
+  wifiStatus?: string
+  batteryVoltage?: number
+  firmwareVersion?: string
+  freeHeapSize?: number
+  wakeReason?: string
 }
 
 export type AdditionalInfoMap = Record<string, string | number | null | undefined>
 
-export interface ParsedDeviceLogPayload {
-  log_message?: string
-  log_sourcefile?: string
-  log_codeline?: number
-  device_status_stamp?: DeviceStatusStamp
-  additional_info?: AdditionalInfoMap
+export interface NormalizedLogEntry {
+  message: string
+  sourceFile?: string
+  sourceLine?: number
+  severity: LogSeverity
+  status?: NormalizedLogStatus
+  extras: AdditionalInfoMap
 }
 
 export interface MaintenanceStats {

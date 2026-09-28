@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { ParsedDeviceLogPayload } from '@/types.ts'
 import { mdiDelete } from '@mdi/js'
 import { computed } from 'vue'
 import { VAlert, VBtn, VCard, VCardText, VCardTitle, VChip, VDivider, VList, VSpacer } from 'vuetify/components'
 import { useDeviceStore } from '@/stores/device.ts'
 import { useLogStore } from '@/stores/logs.ts'
+import { parseLogEntry } from '@/utils/parseLogEntry.ts'
 import DeviceLogEntry from './DeviceLogEntry.vue'
 
 const props = defineProps<{ deviceId: string }>()
@@ -12,15 +12,6 @@ const props = defineProps<{ deviceId: string }>()
 const deviceStore = useDeviceStore()
 const device = computed(() => deviceStore.getById(props.deviceId))
 const logsStore = useLogStore(props.deviceId)
-
-function parseLogEntry(entryString: string): ParsedDeviceLogPayload | null {
-  try {
-    return JSON.parse(entryString)
-  }
-  catch {
-    return null
-  }
-}
 
 const parsedLogEntries = computed(() =>
   logsStore.logEntries.map(logEntry => ({

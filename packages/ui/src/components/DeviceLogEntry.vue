@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { LogEntry, ParsedDeviceLogPayload } from '@/types.ts'
+import type { LogEntry, LogSeverity, NormalizedLogEntry } from '@/types.ts'
 import { computed } from 'vue'
 import { VAvatar, VBtn, VCard, VCardText, VChip, VExpansionPanel, VExpansionPanels, VExpansionPanelText, VExpansionPanelTitle, VIcon, VListItem, VListItemSubtitle, VListItemTitle } from 'vuetify/components'
 import DeviceLogAdditionalInfo from './DeviceLogAdditionalInfo.vue'
@@ -7,7 +7,7 @@ import DeviceLogStatusPanel from './DeviceLogStatusPanel.vue'
 
 const props = defineProps<{
   logEntry: LogEntry
-  parsed: ParsedDeviceLogPayload | null
+  parsed: NormalizedLogEntry
 }>()
 
 function formatLogTimestamp(date: Date) {
@@ -19,19 +19,6 @@ function formatLogTimestamp(date: Date) {
     minute: '2-digit',
     second: '2-digit',
   })
-}
-
-type LogSeverity = 'error' | 'warning' | 'info' | 'default'
-
-function getLogSeverity(message: string): LogSeverity {
-  const lowerMessage = message.toLowerCase()
-  if (lowerMessage.includes('error') || lowerMessage.includes('failed'))
-    return 'error'
-  if (lowerMessage.includes('warning') || lowerMessage.includes('warn'))
-    return 'warning'
-  if (lowerMessage.includes('info'))
-    return 'info'
-  return 'default'
 }
 
 function getSeverityColor(severity: LogSeverity) {
@@ -60,12 +47,10 @@ function detailsToggleState(expanded: boolean) {
   }
 }
 
-const message = computed(() => props.parsed?.log_message || props.logEntry.entry)
-const severity = computed(() => getLogSeverity(props.parsed?.log_message || ''))
-const hasAdditionalInfo = computed(() =>
-  !!props.parsed?.additional_info && Object.keys(props.parsed.additional_info).length > 0,
-)
-const hasDetails = computed(() => !!props.parsed?.device_status_stamp || hasAdditionalInfo.value)
+const message = computed(() => props.parsed.message || props.logEntry.entry)
+const severity = computed(() => props.parsed.severity)
+const hasAdditionalInfo = computed(() => Object.keys(props.parsed.extras).length > 0)
+const hasDetails = computed(() => !!props.parsed.status || hasAdditionalInfo.value)
 </script>
 
 <template>
@@ -87,12 +72,12 @@ const hasDetails = computed(() => !!props.parsed?.device_status_stamp || hasAddi
             {{ formatLogTimestamp(logEntry.date) }}
           </VChip>
           <VChip
-            v-if="parsed?.log_sourcefile"
+            v-if="parsed.sourceFile"
             size="x-small"
             prepend-icon="mdi-file-code"
             variant="text"
           >
-            {{ parsed.log_sourcefile }}:{{ parsed.log_codeline }}
+            {{ parsed.sourceFile }}:{{ parsed.sourceLine }}
           </VChip>
         </div>
 
@@ -114,8 +99,8 @@ const hasDetails = computed(() => !!props.parsed?.device_status_stamp || hasAddi
             <VExpansionPanelText class="pa-0 mt-2">
               <VCard variant="tonal" class="mb-2">
                 <VCardText class="pa-3">
-                  <DeviceLogStatusPanel v-if="parsed?.device_status_stamp" :status="parsed.device_status_stamp" />
-                  <DeviceLogAdditionalInfo v-if="hasAdditionalInfo" :info="parsed?.additional_info ?? {}" />
+                  <DeviceLogStatusPanel v-if="parsed.status" :status="parsed.status" />
+                  <DeviceLogAdditionalInfo v-if="hasAdditionalInfo" :info="parsed.extras" />
                 </VCardText>
               </VCard>
             </VExpansionPanelText>

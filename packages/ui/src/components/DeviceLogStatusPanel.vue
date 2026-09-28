@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { DeviceStatusStamp } from '@/types.ts'
+import type { NormalizedLogStatus } from '@/types.ts'
 import { computed } from 'vue'
 import { VCol, VRow } from 'vuetify/components'
 
-const props = defineProps<{ status: DeviceStatusStamp }>()
+const props = defineProps<{ status: NormalizedLogStatus }>()
 
-const freeHeapKb = computed(() => (props.status.free_heap_size / 1024).toFixed(1))
+const freeHeapKb = computed(() => props.status.freeHeapSize !== undefined ? (props.status.freeHeapSize / 1024).toFixed(1) : undefined)
 </script>
 
 <template>
@@ -19,7 +19,7 @@ const freeHeapKb = computed(() => (props.status.free_heap_size / 1024).toFixed(1
           WiFi RSSI
         </div>
         <div class="text-body-2">
-          {{ status.wifi_rssi_level }} dBm
+          {{ status.wifiRssi }} dBm
         </div>
       </VCol>
       <VCol cols="6" sm="4">
@@ -27,7 +27,7 @@ const freeHeapKb = computed(() => (props.status.free_heap_size / 1024).toFixed(1
           Battery
         </div>
         <div class="text-body-2">
-          {{ status.battery_voltage }} V
+          {{ status.batteryVoltage }} V
         </div>
       </VCol>
       <VCol cols="6" sm="4">
@@ -35,7 +35,7 @@ const freeHeapKb = computed(() => (props.status.free_heap_size / 1024).toFixed(1
           Firmware
         </div>
         <div class="text-body-2">
-          {{ status.current_fw_version }}
+          {{ status.firmwareVersion }}
         </div>
       </VCol>
       <VCol cols="6" sm="4">
@@ -51,7 +51,7 @@ const freeHeapKb = computed(() => (props.status.free_heap_size / 1024).toFixed(1
           Wakeup Reason
         </div>
         <div class="text-body-2">
-          {{ status.wakeup_reason }}
+          {{ status.wakeReason }}
         </div>
       </VCol>
       <VCol cols="6" sm="4">
@@ -59,7 +59,7 @@ const freeHeapKb = computed(() => (props.status.free_heap_size / 1024).toFixed(1
           WiFi Status
         </div>
         <div class="text-body-2">
-          {{ status.wifi_status }}
+          {{ status.wifiStatus }}
         </div>
       </VCol>
     </VRow>
