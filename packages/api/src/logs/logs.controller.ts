@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Headers, Logger, Param, Post, UsePipes, ValidationPipe } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Headers, HttpCode, Logger, Param, Post, UsePipes, ValidationPipe } from '@nestjs/common'
 import { CreateLogDto } from './dto/create-log.dto.js'
 import { LogEntry } from './logs.entity.js'
 import { LogsService } from './logs.service.js'
@@ -9,6 +9,7 @@ export class LogsController {
   constructor(private readonly logsService: LogsService) {}
 
   @Post()
+  @HttpCode(204)
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async consumeLog(@Headers() headers: { id: string }, @Body() body: CreateLogDto) {
     this.logger.debug(`Got log ${JSON.stringify(body)}`)

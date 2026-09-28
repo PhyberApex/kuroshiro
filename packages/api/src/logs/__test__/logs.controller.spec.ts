@@ -24,7 +24,7 @@ describe('logsController (unit)', () => {
 
   it('consumeLog calls the service', async () => {
     const deviceHeader = { id: '2d:34:e2:27:5b:46' }
-    const dto: CreateLogDto = { log: { logs_array: [{ log_id: 1 }] } }
+    const dto: CreateLogDto = { logs: [{ id: 1 }] }
     await controller.consumeLog(deviceHeader, dto)
     expect(service.addLogToDevice).toHaveBeenCalledWith(deviceHeader.id, dto)
   })

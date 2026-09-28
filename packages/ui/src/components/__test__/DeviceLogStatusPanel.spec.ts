@@ -1,16 +1,16 @@
-import type { DeviceStatusStamp } from '@/types.ts'
+import type { NormalizedLogStatus } from '@/types.ts'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import vuetify from '../../plugins/vuetify'
 import DeviceLogStatusPanel from '../DeviceLogStatusPanel.vue'
 
-const status: DeviceStatusStamp = {
-  wifi_rssi_level: -55,
-  battery_voltage: 3.7,
-  current_fw_version: '1.2.3',
-  free_heap_size: 20480,
-  wakeup_reason: 'timer',
-  wifi_status: 'connected',
+const status: NormalizedLogStatus = {
+  wifiRssi: -55,
+  batteryVoltage: 3.7,
+  firmwareVersion: '1.2.3',
+  freeHeapSize: 20480,
+  wakeReason: 'timer',
+  wifiStatus: 'connected',
 }
 
 describe('deviceLogStatusPanel', () => {
