@@ -4,6 +4,7 @@ import { VCol, VContainer, VRow } from 'vuetify/components'
 import AddScreenCard from '@/components/AddScreenCard.vue'
 import DeviceInformationCard from '@/components/DeviceInformationCard.vue'
 import DeviceLogsCard from '@/components/DeviceLogsCard.vue'
+import DeviceSensorsCard from '@/components/DeviceSensorsCard.vue'
 import ScreenListCard from '@/components/ScreenListCard.vue'
 import ScreenPreviewCard from '@/components/ScreenPreviewCard.vue'
 import { useDeviceStore } from '@/stores/device'
@@ -38,6 +39,7 @@ onMounted(() => {
         <VRow>
           <VCol cols="12" sm="12" md="7">
             <DeviceInformationCard :device-id="props.id" />
+            <DeviceSensorsCard :device-id="props.id" />
             <ScreenPreviewCard :device-id="props.id" />
           </VCol>
           <VCol cols="12" sm="12" md="5">
