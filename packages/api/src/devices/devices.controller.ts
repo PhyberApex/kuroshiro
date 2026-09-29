@@ -1,3 +1,4 @@
+import type { SensorReading } from 'kuroshiro-shared'
 import {
   BadRequestException,
   Body,
@@ -12,6 +13,7 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common'
+import { DeviceSensorsService } from '../device-sensors/device-sensors.service.js'
 import { Device } from './devices.entity.js'
 import { DevicesService } from './devices.service.js'
 import { CreateDeviceDto } from './dto/create-device.dto.js'
@@ -25,7 +27,10 @@ function isValidMac(mac: string): boolean {
 export class DevicesController {
   private readonly logger = new Logger(DevicesController.name)
 
-  constructor(private readonly devicesService: DevicesService) {}
+  constructor(
+    private readonly devicesService: DevicesService,
+    private readonly deviceSensorsService: DeviceSensorsService,
+  ) {}
 
   @Get()
   async getAll(): Promise<Device[]> {
@@ -59,5 +64,16 @@ export class DevicesController {
       throw new NotFoundException('Device not found')
     }
     await this.devicesService.update(id, newDevice)
+  }
+
+  @Get(':id/sensors')
+  async getSensors(@Param('id') id: string): Promise<SensorReading[]> {
+    const device = await this.devicesService.findById(id)
+    if (!device) {
+      this.logger.warn(`Device not found: ${id}`)
+      throw new NotFoundException('Device not found')
+    }
+    const readings = await this.deviceSensorsService.findForDevice(id)
+    return readings.map(({ kind, value, unit }) => ({ kind, value, unit }))
   }
 }
