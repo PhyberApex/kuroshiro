@@ -1,8 +1,9 @@
 import type { Device } from '../devices/devices.entity.js'
 import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
+import { DEVICE_SENSOR_KINDS, DeviceSensorKind } from 'kuroshiro-shared'
 import { Repository } from 'typeorm'
-import { DEVICE_SENSOR_KINDS, DeviceSensor, DeviceSensorKind } from './entities/device-sensor.entity.js'
+import { DeviceSensor } from './entities/device-sensor.entity.js'
 
 interface ParsedSensorRecord {
   kind: DeviceSensorKind

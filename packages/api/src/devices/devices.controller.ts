@@ -1,3 +1,4 @@
+import type { SensorReading } from 'kuroshiro-shared'
 import {
   BadRequestException,
   Body,
@@ -16,7 +17,6 @@ import { DeviceSensorsService } from '../device-sensors/device-sensors.service.j
 import { Device } from './devices.entity.js'
 import { DevicesService } from './devices.service.js'
 import { CreateDeviceDto } from './dto/create-device.dto.js'
-import { SensorReadingDto } from './dto/sensor-reading.dto.js'
 import { UpdateDeviceDto } from './dto/update-device.dto.js'
 
 function isValidMac(mac: string): boolean {
@@ -67,7 +67,7 @@ export class DevicesController {
   }
 
   @Get(':id/sensors')
-  async getSensors(@Param('id') id: string): Promise<SensorReadingDto[]> {
+  async getSensors(@Param('id') id: string): Promise<SensorReading[]> {
     const device = await this.devicesService.findById(id)
     if (!device) {
       this.logger.warn(`Device not found: ${id}`)

@@ -1,5 +1,5 @@
+import type { SensorReading } from 'kuroshiro-shared'
 import type { useDeviceSensorsStore } from '@/stores/deviceSensors'
-import type { SensorReading } from '@/types.ts'
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import rop from 'resize-observer-polyfill'

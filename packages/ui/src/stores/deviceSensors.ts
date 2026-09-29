@@ -1,4 +1,4 @@
-import type { SensorReading } from '../types'
+import type { SensorReading } from 'kuroshiro-shared'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { apiFetch } from '../utils/apiRequest'

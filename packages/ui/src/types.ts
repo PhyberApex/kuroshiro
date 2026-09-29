@@ -117,14 +117,6 @@ export interface CurrentScreen {
   rendered_at: string
 }
 
-export type DeviceSensorKind = 'carbon_dioxide' | 'humidity' | 'pressure' | 'temperature'
-
-export interface SensorReading {
-  kind: DeviceSensorKind
-  value: number
-  unit: string
-}
-
 export interface LogEntry {
   logId: number
   date: Date

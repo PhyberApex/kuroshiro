@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DeviceSensorKind } from '@/types'
+import type { DeviceSensorKind } from 'kuroshiro-shared'
 import { computed } from 'vue'
 import { VCard, VCardText, VCardTitle, VDivider, VList, VListItem, VListItemTitle } from 'vuetify/components'
 import { useDeviceStore } from '@/stores/device'
