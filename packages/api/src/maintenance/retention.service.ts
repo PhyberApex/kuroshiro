@@ -1,6 +1,6 @@
 import type { OnApplicationBootstrap } from '@nestjs/common'
-import type { RetentionLastRun, RetentionRunResult, RetentionStatus } from 'kuroshiro-shared'
-import type { Repository } from 'typeorm'
+import type { RetentionAges, RetentionLastRun, RetentionRunResult, RetentionStatus } from 'kuroshiro-shared'
+import type { FindOptionsWhere, ObjectLiteral, Repository } from 'typeorm'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
@@ -12,17 +12,16 @@ import { getErrorMessage } from '../utils/getErrorMessage.js'
 
 const DAILY_AT_4AM = '0 4 * * *'
 
-interface RetentionConfig {
-  alertRetentionDays: number
-  deviceLogRetentionDays: number
-}
-
 /**
  * Prunes resolved Alerts and Device Log entries older than their configured
  * retention age. A dry run reports the counts a real run would delete without
  * deleting anything or updating `lastRun`. `lastRun` is in-memory only (lost
  * on restart) and is updated by both the scheduled job and a manual trigger,
  * which share this same `run` operation.
+ *
+ * Unlike the Device Model/Firmware syncs this schedule is modelled on, there's
+ * no immediate run on boot: those syncs are idempotent upserts, but this job
+ * deletes rows, so every restart silently pruning data would be surprising.
  */
 @Injectable()
 export class RetentionService implements OnApplicationBootstrap {
@@ -55,8 +54,8 @@ export class RetentionService implements OnApplicationBootstrap {
     const ages = this.getAges()
 
     const [alertsPruned, deviceLogsPruned] = await Promise.all([
-      this.pruneAlerts(ages.alertRetentionDays, dryRun),
-      this.pruneDeviceLogs(ages.deviceLogRetentionDays, dryRun),
+      this.pruneTable(this.alertRepository, 'resolvedAt', 'resolved Alerts', ages.alertRetentionDays, dryRun),
+      this.pruneTable(this.logEntryRepository, 'date', 'Device Log entries', ages.deviceLogRetentionDays, dryRun),
     ])
 
     const result: RetentionRunResult = { alertsPruned, deviceLogsPruned }
@@ -68,40 +67,33 @@ export class RetentionService implements OnApplicationBootstrap {
     return result
   }
 
-  private getAges(): RetentionConfig {
-    return this.configService.get<RetentionConfig>('retention')!
+  private getAges(): RetentionAges {
+    return this.configService.get<RetentionAges>('retention')!
   }
 
-  private async pruneAlerts(retentionDays: number, dryRun: boolean): Promise<number> {
+  /** Shared by both tables: same age guard, same dry-run-counts-vs-deletes shape, same isolated failure handling. */
+  private async pruneTable<T extends ObjectLiteral>(
+    repository: Repository<T>,
+    ageField: keyof T & string,
+    label: string,
+    retentionDays: number,
+    dryRun: boolean,
+  ): Promise<number> {
     if (retentionDays <= 0)
       return 0
 
-    const where = { resolvedAt: LessThan(this.cutoff(retentionDays)) }
+    // TypeORM's FindOptionsWhere can't be built from a generic `keyof T` key without losing
+    // its per-entity column typing — the same boundary cast as the `update()` calls in
+    // alert-sweep.service.ts.
+    const where = { [ageField]: LessThan(this.cutoff(retentionDays)) } as FindOptionsWhere<T>
     try {
       if (dryRun)
-        return await this.alertRepository.count({ where })
-      const result = await this.alertRepository.delete(where)
+        return await repository.count({ where })
+      const result = await repository.delete(where)
       return result.affected ?? 0
     }
     catch (err) {
-      this.logger.error(`Failed to prune resolved Alerts: ${getErrorMessage(err)}`)
-      return 0
-    }
-  }
-
-  private async pruneDeviceLogs(retentionDays: number, dryRun: boolean): Promise<number> {
-    if (retentionDays <= 0)
-      return 0
-
-    const where = { date: LessThan(this.cutoff(retentionDays)) }
-    try {
-      if (dryRun)
-        return await this.logEntryRepository.count({ where })
-      const result = await this.logEntryRepository.delete(where)
-      return result.affected ?? 0
-    }
-    catch (err) {
-      this.logger.error(`Failed to prune Device Log entries: ${getErrorMessage(err)}`)
+      this.logger.error(`Failed to prune ${label}: ${getErrorMessage(err)}`)
       return 0
     }
   }

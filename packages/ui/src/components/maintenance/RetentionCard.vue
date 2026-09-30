@@ -32,7 +32,7 @@ function formatAge(days: number): string {
         data-test-id="run-retention-btn"
         @click="$emit('run')"
       >
-        Run Retention Now
+        Preview Retention Run
       </VBtn>
     </VCardTitle>
     <VDivider />
