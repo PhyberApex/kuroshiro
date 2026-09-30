@@ -7,8 +7,12 @@ WORKDIR /app
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 COPY packages/ui ./packages/ui
 COPY packages/shared ./packages/shared
+# pnpm's frozen install refuses a lockfile naming a workspace project whose manifest is
+# absent from the build context, so every manifest is present and --filter keeps the
+# install to this stage's own dependency subtree.
+COPY packages/api/package.json ./packages/api/package.json
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
-RUN corepack enable && pnpm install --frozen-lockfile
+RUN corepack enable && pnpm install --frozen-lockfile --filter kuroshiro-ui...
 RUN pnpm --filter ./packages/ui build
 
 # Stage 2: Build api
@@ -17,8 +21,9 @@ WORKDIR /app
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 COPY packages/api ./packages/api
 COPY packages/shared ./packages/shared
+COPY packages/ui/package.json ./packages/ui/package.json
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
-RUN corepack enable && pnpm install --frozen-lockfile
+RUN corepack enable && pnpm install --frozen-lockfile --filter kuroshiro-api...
 RUN pnpm --filter ./packages/api run build && pnpm --filter ./packages/api run build:migrations
 
 # Deploy the api's production node_modules, pinned exactly to pnpm-lock.yaml.

@@ -3,6 +3,8 @@ import process from 'node:process'
 const DEFAULT_LOW_BATTERY_PERCENT = 20
 const DEFAULT_OFFLINE_MULTIPLIER = 3
 const DEFAULT_FETCH_FAILURE_THRESHOLD = 3
+const DEFAULT_ALERT_RETENTION_DAYS = 90
+const DEFAULT_DEVICE_LOG_RETENTION_DAYS = 30
 
 /** Falls back to `defaultValue` (with a logged warning) for an unset or non-numeric env var. */
 function parseIntEnv(name: string, defaultValue: number): number {
@@ -34,5 +36,9 @@ export default () => ({
     lowBatteryPercent: parseIntEnv('KUROSHIRO_ALERT_LOW_BATTERY_PERCENT', DEFAULT_LOW_BATTERY_PERCENT),
     offlineMultiplier: parseIntEnv('KUROSHIRO_ALERT_OFFLINE_MULTIPLIER', DEFAULT_OFFLINE_MULTIPLIER),
     fetchFailureThreshold: parseIntEnv('KUROSHIRO_ALERT_FETCH_FAILURES', DEFAULT_FETCH_FAILURE_THRESHOLD),
+  },
+  retention: {
+    alertRetentionDays: parseIntEnv('KUROSHIRO_ALERT_RETENTION_DAYS', DEFAULT_ALERT_RETENTION_DAYS),
+    deviceLogRetentionDays: parseIntEnv('KUROSHIRO_DEVICE_LOG_RETENTION_DAYS', DEFAULT_DEVICE_LOG_RETENTION_DAYS),
   },
 })

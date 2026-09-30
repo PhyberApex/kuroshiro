@@ -61,10 +61,13 @@ describe('maintenanceView', () => {
       issues: ISSUES,
       loading: false,
       error: null,
+      retentionStatus: { ages: { alertRetentionDays: 90, deviceLogRetentionDays: 30 }, lastRun: null },
       scanSystem: vi.fn().mockResolvedValue(undefined),
       cleanupIssues: vi.fn().mockResolvedValue({ filesDeleted: 1, dirsDeleted: 0, screensDeleted: 0, bytesFreed: 1024, errors: [] }),
       getStats: vi.fn(),
       clearIssues: vi.fn(),
+      loadRetentionStatus: vi.fn().mockResolvedValue(undefined),
+      runRetention: vi.fn().mockResolvedValue({ alertsPruned: 2, deviceLogsPruned: 5 }),
     })
     deviceModelsStoreMock = asStore<ReturnType<typeof useDeviceModelsStore>>({
       models: [],
@@ -114,13 +117,14 @@ describe('maintenanceView', () => {
     })
   })
 
-  it('scans the system, loads device models, firmware, and Alerts on mount', async () => {
+  it('scans the system, loads device models, firmware, Alerts, and retention status on mount', async () => {
     mountView()
     await flushPromises()
     expect(maintenanceStoreMock.scanSystem).toHaveBeenCalled()
     expect(deviceModelsStoreMock.ensureLoaded).toHaveBeenCalled()
     expect(firmwareStoreMock.ensureLoaded).toHaveBeenCalled()
     expect(alertsStoreMock.ensureLoaded).toHaveBeenCalled()
+    expect(maintenanceStoreMock.loadRetentionStatus).toHaveBeenCalled()
   })
 
   it('shows the scanned issues in the summary and orphaned files list', async () => {
@@ -155,6 +159,22 @@ describe('maintenanceView', () => {
 
     expect(maintenanceStoreMock.cleanupIssues).toHaveBeenCalledWith(['/orphaned/s1.png'], [], [], [], [], false)
     expect(maintenanceStoreMock.scanSystem).toHaveBeenCalledTimes(2)
+  })
+
+  it('previews a Retention run via dry run, then confirms the real run', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    await wrapper.find('[data-test-id="run-retention-btn"]').trigger('click')
+    await flushPromises()
+
+    expect(maintenanceStoreMock.runRetention).toHaveBeenNthCalledWith(1, true)
+
+    const confirmBtn = [...document.querySelectorAll('button')].find(b => b.textContent?.trim() === 'Confirm Delete') as HTMLElement
+    confirmBtn.click()
+    await flushPromises()
+
+    expect(maintenanceStoreMock.runRetention).toHaveBeenNthCalledWith(2, false)
   })
 
   it('sends a test Notification and shows the result from the Alerts card', async () => {
