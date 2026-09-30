@@ -1,3 +1,4 @@
+import type { AlertSummary } from 'kuroshiro-shared'
 import type { Device, DeviceModel } from '@/types'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
@@ -43,11 +44,24 @@ function baseDevice(overrides: Partial<Device> = {}): Device {
   }
 }
 
-function mountOverview(device: Partial<Device> = {}) {
+function mountOverview(device: Partial<Device> = {}, alerts: AlertSummary[] = []) {
   return mount(DeviceStatusOverview, {
-    props: { device: baseDevice(device) },
+    props: { device: baseDevice(device), alerts },
     global: { plugins: [vuetify] },
   })
+}
+
+function makeAlert(overrides: Partial<AlertSummary> = {}): AlertSummary {
+  return {
+    id: 'alert-1',
+    kind: 'device-offline',
+    deviceId: 'device1',
+    deviceName: 'Test Device',
+    openedAt: '2026-01-01T00:00:00.000Z',
+    resolvedAt: null,
+    details: null,
+    ...overrides,
+  }
 }
 
 describe('deviceStatusOverview', () => {
@@ -96,5 +110,26 @@ describe('deviceStatusOverview', () => {
 
     await wrapper.find('[aria-label="API key appended action"]').trigger('click')
     expect(apikeyInput.attributes('type')).toBe('text')
+  })
+
+  describe('alert chips', () => {
+    it('renders no chips when there are no active Alerts', () => {
+      const wrapper = mountOverview()
+      expect(wrapper.find('[data-test-id="alert-chip"]').exists()).toBe(false)
+    })
+
+    it('renders one chip per active Alert with the Rule label', () => {
+      const wrapper = mountOverview({}, [makeAlert({ id: 'a1', kind: 'device-offline' }), makeAlert({ id: 'a2', kind: 'device-low-battery' })])
+      const chips = wrapper.findAll('[data-test-id="alert-chip"]')
+      expect(chips).toHaveLength(2)
+      expect(chips[0]?.text()).toContain('Offline')
+      expect(chips[1]?.text()).toContain('Low battery')
+    })
+
+    it('carries the openedAt timestamp for the tooltip', () => {
+      const wrapper = mountOverview({}, [makeAlert({ openedAt: '2026-03-01T12:00:00.000Z' })])
+      const chip = wrapper.find('[data-test-id="alert-chip"]')
+      expect(chip.attributes('aria-label')).toContain('12:00:00 UTC')
+    })
   })
 })

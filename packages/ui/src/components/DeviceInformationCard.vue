@@ -10,6 +10,7 @@ import DeviceMirroringSection from '@/components/device/DeviceMirroringSection.v
 import DeviceModelPaletteSection from '@/components/device/DeviceModelPaletteSection.vue'
 import DeviceSleepModeSection from '@/components/device/DeviceSleepModeSection.vue'
 import DeviceStatusOverview from '@/components/device/DeviceStatusOverview.vue'
+import { useAlertsStore } from '@/stores/alerts'
 import { useDeviceStore } from '@/stores/device'
 import { useDeviceModelsStore } from '@/stores/deviceModels'
 import { useFirmwareStore } from '@/stores/firmware'
@@ -22,12 +23,15 @@ const props = defineProps<{ deviceId: string }>()
 const deviceStore = useDeviceStore()
 const deviceModelsStore = useDeviceModelsStore()
 const firmwareStore = useFirmwareStore()
+const alertsStore = useAlertsStore()
 
 const device = computed(() => deviceStore.getById(props.deviceId))
+const deviceAlerts = computed(() => alertsStore.activeForDevice(props.deviceId))
 
 onMounted(() => {
   deviceModelsStore.ensureLoaded()
   firmwareStore.ensureLoaded()
+  alertsStore.ensureLoaded()
 })
 
 const selectedModelName = ref<string | null>(null)
@@ -260,7 +264,7 @@ defineExpose({
       </VCardTitle>
       <VDivider />
       <VCardText>
-        <DeviceStatusOverview :device="device" />
+        <DeviceStatusOverview :device="device" :alerts="deviceAlerts" />
         <VExpansionPanels class="mt-2" flat>
           <VExpansionPanel>
             <VExpansionPanelTitle>Advanced</VExpansionPanelTitle>

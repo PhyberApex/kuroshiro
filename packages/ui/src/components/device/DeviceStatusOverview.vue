@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { AlertSummary } from 'kuroshiro-shared'
 import type { Device } from '@/types'
 import {
   mdiAlert,
@@ -24,14 +25,15 @@ import {
   mdiSignalCellularOutline,
 } from '@mdi/js'
 import { useClipboard } from '@vueuse/core'
-import { batteryPercentFromVoltage } from 'kuroshiro-shared'
+import { ALERT_KIND_LABELS, batteryPercentFromVoltage } from 'kuroshiro-shared'
 import { computed, ref } from 'vue'
-import { VCol, VDivider, VIcon, VRow, VTextField, VTooltip } from 'vuetify/components'
+import { VChip, VCol, VDivider, VIcon, VRow, VTextField, VTooltip } from 'vuetify/components'
 import { DEFAULT_RENDER_SIZE } from '@/utils/deviceRenderSize'
 import { formatDate } from '@/utils/formatDate'
 
 const props = defineProps<{
   device: Device
+  alerts: AlertSummary[]
 }>()
 
 const { copy: copyToClipboard, copied: macCopied } = useClipboard()
@@ -178,6 +180,22 @@ const batteryIcon = computed(() => {
       <div class="text-truncate">
         {{ device.userAgent || 'N/A' }}
       </div>
+    </VCol>
+    <VCol v-if="alerts.length > 0" cols="12">
+      <VChip
+        v-for="alert in alerts"
+        :key="alert.id"
+        data-test-id="alert-chip"
+        color="warning"
+        size="small"
+        class="mr-1"
+        :aria-label="`${ALERT_KIND_LABELS[alert.kind]} — opened ${formatDate(alert.openedAt)}`"
+      >
+        {{ ALERT_KIND_LABELS[alert.kind] }}
+        <VTooltip activator="parent" location="top">
+          Opened {{ formatDate(alert.openedAt) }}
+        </VTooltip>
+      </VChip>
     </VCol>
   </VRow>
   <VDivider class="my-2" />

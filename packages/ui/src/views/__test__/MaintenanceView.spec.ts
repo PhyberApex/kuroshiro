@@ -1,4 +1,5 @@
 import type { MaintenanceIssues } from 'kuroshiro-shared'
+import type { useAlertsStore } from '@/stores/alerts'
 import type { useConfigurationStore } from '@/stores/configuration'
 import type { useDeviceModelsStore } from '@/stores/deviceModels'
 import type { useFirmwareStore } from '@/stores/firmware'
@@ -28,6 +29,7 @@ let maintenanceStoreMock: ReturnType<typeof useMaintenanceStore>
 let deviceModelsStoreMock: ReturnType<typeof useDeviceModelsStore>
 let firmwareStoreMock: ReturnType<typeof useFirmwareStore>
 let configurationStoreMock: ReturnType<typeof useConfigurationStore>
+let alertsStoreMock: ReturnType<typeof useAlertsStore>
 
 vi.mock('@/stores/maintenance', () => ({
   useMaintenanceStore: () => maintenanceStoreMock,
@@ -40,6 +42,9 @@ vi.mock('@/stores/firmware', () => ({
 }))
 vi.mock('@/stores/configuration', () => ({
   useConfigurationStore: () => configurationStoreMock,
+}))
+vi.mock('@/stores/alerts', () => ({
+  useAlertsStore: () => alertsStoreMock,
 }))
 
 function mountView() {
@@ -96,14 +101,26 @@ describe('maintenanceView', () => {
       importArchive: vi.fn().mockResolvedValue(true),
       reset: vi.fn(),
     })
+    alertsStoreMock = asStore<ReturnType<typeof useAlertsStore>>({
+      active: [],
+      resolved: [],
+      loaded: true,
+      error: null,
+      sendingTestNotification: false,
+      fetchAll: vi.fn(),
+      ensureLoaded: vi.fn().mockResolvedValue(undefined),
+      activeForDevice: vi.fn(() => []),
+      sendTestNotification: vi.fn().mockResolvedValue({ ok: true, message: 'Test notification sent successfully.' }),
+    })
   })
 
-  it('scans the system, loads device models and firmware on mount', async () => {
+  it('scans the system, loads device models, firmware, and Alerts on mount', async () => {
     mountView()
     await flushPromises()
     expect(maintenanceStoreMock.scanSystem).toHaveBeenCalled()
     expect(deviceModelsStoreMock.ensureLoaded).toHaveBeenCalled()
     expect(firmwareStoreMock.ensureLoaded).toHaveBeenCalled()
+    expect(alertsStoreMock.ensureLoaded).toHaveBeenCalled()
   })
 
   it('shows the scanned issues in the summary and orphaned files list', async () => {
@@ -138,5 +155,16 @@ describe('maintenanceView', () => {
 
     expect(maintenanceStoreMock.cleanupIssues).toHaveBeenCalledWith(['/orphaned/s1.png'], [], [], [], [], false)
     expect(maintenanceStoreMock.scanSystem).toHaveBeenCalledTimes(2)
+  })
+
+  it('sends a test Notification and shows the result from the Alerts card', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    await wrapper.find('[data-test-id="send-test-notification-btn"]').trigger('click')
+    await flushPromises()
+
+    expect(alertsStoreMock.sendTestNotification).toHaveBeenCalled()
+    expect(wrapper.text()).toContain('Test notification sent successfully.')
   })
 })

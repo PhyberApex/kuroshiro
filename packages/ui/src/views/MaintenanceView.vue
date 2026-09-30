@@ -3,6 +3,7 @@ import type { CleanupResult, DeviceModelSyncResult, FirmwareSyncResult } from 'k
 import { mdiAlertCircle, mdiCheckCircle, mdiRefresh } from '@mdi/js'
 import { computed, onMounted, ref } from 'vue'
 import { VAlert, VBtn, VCard, VCardText, VCardTitle, VChip, VCol, VContainer, VDivider, VListItemSubtitle, VListItemTitle, VProgressCircular, VRow } from 'vuetify/components'
+import AlertsCard from '@/components/maintenance/AlertsCard.vue'
 import CleanupActionsCard from '@/components/maintenance/CleanupActionsCard.vue'
 import CleanupConfirmDialog from '@/components/maintenance/CleanupConfirmDialog.vue'
 import CleanupResultAlert from '@/components/maintenance/CleanupResultAlert.vue'
@@ -11,6 +12,7 @@ import DeviceModelsCard from '@/components/maintenance/DeviceModelsCard.vue'
 import FirmwareCard from '@/components/maintenance/FirmwareCard.vue'
 import MaintenanceIssueListCard from '@/components/maintenance/MaintenanceIssueListCard.vue'
 import ScanSummaryCard from '@/components/maintenance/ScanSummaryCard.vue'
+import { useAlertsStore } from '@/stores/alerts'
 import { useDeviceModelsStore } from '@/stores/deviceModels'
 import { useFirmwareStore } from '@/stores/firmware'
 import { useMaintenanceStore } from '@/stores/maintenance'
@@ -19,6 +21,13 @@ import { formatAge, formatBytes } from '@/utils/maintenanceFormat'
 const maintenanceStore = useMaintenanceStore()
 const deviceModelsStore = useDeviceModelsStore()
 const firmwareStore = useFirmwareStore()
+const alertsStore = useAlertsStore()
+
+const testNotificationResult = ref<{ ok: boolean, message: string } | null>(null)
+
+async function handleSendTestNotification() {
+  testNotificationResult.value = await alertsStore.sendTestNotification()
+}
 
 const syncResult = ref<DeviceModelSyncResult | null>(null)
 
@@ -129,7 +138,7 @@ const totalSelectedSize = computed(() => {
 })
 
 onMounted(async () => {
-  await Promise.all([maintenanceStore.scanSystem(), deviceModelsStore.ensureLoaded(), firmwareStore.ensureLoaded()])
+  await Promise.all([maintenanceStore.scanSystem(), deviceModelsStore.ensureLoaded(), firmwareStore.ensureLoaded(), alertsStore.ensureLoaded()])
 })
 
 async function handleScan() {
@@ -238,6 +247,16 @@ async function executeCleanup() {
           @dismiss-result="firmwareSyncResult = null"
           @delete="handleFirmwareDelete"
           @upload="handleFirmwareUpload"
+        />
+
+        <AlertsCard
+          :active="alertsStore.active"
+          :resolved="alertsStore.resolved"
+          :error="alertsStore.error"
+          :sending-test-notification="alertsStore.sendingTestNotification"
+          :test-notification-result="testNotificationResult"
+          @send-test-notification="handleSendTestNotification"
+          @dismiss-test-notification-result="testNotificationResult = null"
         />
 
         <VAlert
