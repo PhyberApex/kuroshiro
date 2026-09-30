@@ -145,6 +145,28 @@ describe('configurationExportService', () => {
     expect(pluginsJson.find((p: { id: string }) => p.id === 'plugin-2').sourceRecipeSnapshot).toBeNull()
   })
 
+  it('redacts Data Source header values in the Recipe Snapshot, but not keys or other fields, when redact is set', async () => {
+    const snapshot = {
+      name: 'Daily Weather',
+      kind: 'Poll',
+      refreshInterval: 30,
+      dataSources: [{ name: 'source', mode: 'fetch', url: 'https://api.example.com', headers: { Authorization: 'Bearer real-token' }, body: {} }],
+      templates: [],
+      fields: [],
+      sourceRecipeId: '150460',
+    }
+    const plugin = makePlugin({ id: 'plugin-1', sourceRecipeId: '150460', sourceRecipeSnapshot: snapshot })
+    pluginRepo.find.mockResolvedValue([plugin])
+
+    const buffer = await service.exportToZip({ redact: true })
+    const zip = new AdmZip(buffer)
+    const pluginsJson = JSON.parse(zip.getEntry('plugins.json')!.getData().toString('utf8'))
+    const entry = pluginsJson.find((p: { id: string }) => p.id === 'plugin-1')
+
+    expect(entry.sourceRecipeSnapshot.dataSources[0].headers).toEqual({ Authorization: CONFIGURATION_REDACTION_SENTINEL })
+    expect(entry.sourceRecipeSnapshot.dataSources[0].url).toBe('https://api.example.com')
+  })
+
   it('redacts Data Source header values but not keys, url, or body, in the nested .trmnlp settings.yml, when redact is set', async () => {
     const plugin = makePlugin({
       id: 'plugin-1',

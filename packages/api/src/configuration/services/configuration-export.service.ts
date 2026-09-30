@@ -131,7 +131,7 @@ export class ConfigurationExportService {
       streamLimit: plugin.streamLimit ?? null,
       webhookToken: this.redactWebhookToken(plugin.webhookToken, redact),
       sourceRecipeId: plugin.sourceRecipeId ?? null,
-      sourceRecipeSnapshot: (plugin.sourceRecipeSnapshot as ParsedPlugin | null | undefined) ?? null,
+      sourceRecipeSnapshot: this.redactSnapshotHeaders(plugin.sourceRecipeSnapshot as ParsedPlugin | null | undefined, redact),
       dataSources: (plugin.dataSources || []).map(ds => ({ id: ds.id, name: ds.name })),
       templates: (plugin.templates || []).map(template => ({ id: template.id, layout: template.layout })),
       fields: (plugin.fields || []).map(field => ({ id: field.id, keyname: field.keyname })),
@@ -141,6 +141,23 @@ export class ConfigurationExportService {
 
   private redactWebhookToken(webhookToken: string | null | undefined, redact: boolean): string | null {
     return redact && webhookToken ? CONFIGURATION_REDACTION_SENTINEL : (webhookToken ?? null)
+  }
+
+  /** A Recipe Snapshot can carry a Data Source's header values as they stood at import time — redact them the same way `withRedactedHeaders` does for the live Plugin, so a Redacted Archive doesn't leak recipe-time secrets through the snapshot (ADR-0028, ADR-0030). */
+  private redactSnapshotHeaders(snapshot: ParsedPlugin | null | undefined, redact: boolean): ParsedPlugin | null {
+    if (!snapshot) {
+      return null
+    }
+    if (!redact) {
+      return snapshot
+    }
+    return {
+      ...snapshot,
+      dataSources: snapshot.dataSources.map(ds => ({
+        ...ds,
+        headers: ds.headers && Object.fromEntries(Object.keys(ds.headers).map(key => [key, CONFIGURATION_REDACTION_SENTINEL])),
+      })),
+    }
   }
 
   private buildVariableEntry(variable: PluginVariable, redact: boolean): PluginManifestVariable {
