@@ -118,6 +118,13 @@ describe('deviceStatusOverview', () => {
       expect(wrapper.find('[data-test-id="alert-chip"]').exists()).toBe(false)
     })
 
+    it('renders a single chip when there is one active Alert', () => {
+      const wrapper = mountOverview({}, [makeAlert({ id: 'a1', kind: 'device-low-battery' })])
+      const chips = wrapper.findAll('[data-test-id="alert-chip"]')
+      expect(chips).toHaveLength(1)
+      expect(chips[0]?.text()).toContain('Low battery')
+    })
+
     it('renders one chip per active Alert with the Rule label', () => {
       const wrapper = mountOverview({}, [makeAlert({ id: 'a1', kind: 'device-offline' }), makeAlert({ id: 'a2', kind: 'device-low-battery' })])
       const chips = wrapper.findAll('[data-test-id="alert-chip"]')

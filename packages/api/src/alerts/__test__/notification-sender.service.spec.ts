@@ -15,6 +15,18 @@ describe('notificationSenderService', () => {
     mockFetch.mockReset()
   })
 
+  describe('isConfigured', () => {
+    it('is false when no Apprise URL is configured', () => {
+      const service = new NotificationSenderService(makeConfigService())
+      expect(service.isConfigured()).toBe(false)
+    })
+
+    it('is true when an Apprise URL is configured', () => {
+      const service = new NotificationSenderService(makeConfigService({ appriseUrl: 'http://apprise:8000' }))
+      expect(service.isConfigured()).toBe(true)
+    })
+  })
+
   it('is a no-op and makes no HTTP call when no Apprise URL is configured', async () => {
     const service = new NotificationSenderService(makeConfigService())
     const sent = await service.send({ title: 't', body: 'b', type: 'warning' })

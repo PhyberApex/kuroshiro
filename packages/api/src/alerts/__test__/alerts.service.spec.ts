@@ -1,4 +1,3 @@
-import type { ConfigService } from '@nestjs/config'
 import type { FindOperator } from 'typeorm'
 import type { Alert } from '../entities/alert.entity.js'
 import type { NotificationSenderService } from '../notification-sender.service.js'
@@ -8,23 +7,16 @@ import { makeAlert, makeDevice } from '../../test/fixtures.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
 import { AlertsService } from '../alerts.service.js'
 
-function makeConfigService(overrides: Partial<{ appriseUrl?: string }> = {}): ConfigService {
-  const alerts = { appriseKey: 'kuroshiro', ...overrides }
-  return { get: (key: string) => (key === 'alerts' ? alerts : undefined) } as unknown as ConfigService
-}
-
 describe('alertsService', () => {
   let alertRepo: ReturnType<typeof createMockRepository<Alert>>
-  let sender: { send: ReturnType<typeof vi.fn> }
-  let configService: ConfigService
+  let sender: { send: ReturnType<typeof vi.fn>, isConfigured: ReturnType<typeof vi.fn> }
   let service: AlertsService
 
   beforeEach(() => {
     alertRepo = createMockRepository<Alert>()
     alertRepo.find.mockResolvedValue([])
-    sender = { send: vi.fn() }
-    configService = makeConfigService({ appriseUrl: 'http://apprise:8000' })
-    service = new AlertsService(asRepository(alertRepo), sender as unknown as NotificationSenderService, configService)
+    sender = { send: vi.fn(), isConfigured: vi.fn().mockReturnValue(true) }
+    service = new AlertsService(asRepository(alertRepo), sender as unknown as NotificationSenderService)
   })
 
   describe('list', () => {
@@ -110,14 +102,14 @@ describe('alertsService', () => {
 
     it('throws a 4xx when Apprise is not configured', async () => {
       sender.send.mockResolvedValue(false)
-      configService = makeConfigService({ appriseUrl: undefined })
-      service = new AlertsService(asRepository(alertRepo), sender as unknown as NotificationSenderService, configService)
+      sender.isConfigured.mockReturnValue(false)
 
       await expect(service.sendTestNotification()).rejects.toBeInstanceOf(BadRequestException)
     })
 
     it('throws a 5xx when Apprise is configured but delivery failed', async () => {
       sender.send.mockResolvedValue(false)
+      sender.isConfigured.mockReturnValue(true)
 
       await expect(service.sendTestNotification()).rejects.toBeInstanceOf(ServiceUnavailableException)
     })

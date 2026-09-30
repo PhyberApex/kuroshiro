@@ -2,6 +2,7 @@ import type { AlertSummary } from 'kuroshiro-shared'
 import { mount } from '@vue/test-utils'
 import rop from 'resize-observer-polyfill'
 import { describe, expect, it } from 'vitest'
+import { createMemoryHistory, createRouter } from 'vue-router'
 import vuetify from '@/plugins/vuetify'
 import AlertsCard from '../AlertsCard.vue'
 
@@ -9,6 +10,11 @@ globalThis.ResizeObserver = rop
 
 const ACTIVE_ALERT: AlertSummary = { id: 'alert-1', kind: 'device-offline', deviceId: 'device-1', deviceName: 'Living Room', openedAt: '2026-01-10T00:00:00.000Z', resolvedAt: null, details: null }
 const RESOLVED_ALERT: AlertSummary = { id: 'alert-2', kind: 'device-low-battery', deviceId: 'device-2', deviceName: 'Kitchen', openedAt: '2026-01-01T00:00:00.000Z', resolvedAt: '2026-01-02T00:00:00.000Z', details: null }
+
+const router = createRouter({
+  history: createMemoryHistory(),
+  routes: [{ path: '/devices/:id', name: 'device', component: { template: '<div />' } }],
+})
 
 function mountCard(props: Partial<InstanceType<typeof AlertsCard>['$props']> = {}) {
   return mount(AlertsCard, {
@@ -20,7 +26,7 @@ function mountCard(props: Partial<InstanceType<typeof AlertsCard>['$props']> = {
       testNotificationResult: null,
       ...props,
     },
-    global: { plugins: [vuetify] },
+    global: { plugins: [vuetify, router] },
   })
 }
 
@@ -45,6 +51,13 @@ describe('alertsCard', () => {
     expect(wrapper.find('[data-test-id="no-resolved-alerts"]').exists()).toBe(false)
     expect(wrapper.text()).toContain('Low battery')
     expect(wrapper.text()).toContain('Kitchen')
+  })
+
+  it('links only the Device name to that Device, not the whole row', () => {
+    const wrapper = mountCard({ active: [ACTIVE_ALERT] })
+    const link = wrapper.find('[data-test-id="active-alerts-list"] a')
+    expect(link.text()).toBe('Living Room')
+    expect(link.attributes('href')).toBe('/devices/device-1')
   })
 
   it('emits sendTestNotification when the button is clicked', async () => {

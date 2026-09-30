@@ -2,6 +2,7 @@
 import type { AlertSummary } from 'kuroshiro-shared'
 import { mdiAlertCircle, mdiBellRing, mdiCheckCircle } from '@mdi/js'
 import { ALERT_KIND_LABELS } from 'kuroshiro-shared'
+import { RouterLink } from 'vue-router'
 import { VAlert, VBtn, VCard, VCardText, VCardTitle, VDivider, VList, VListItem, VListItemSubtitle, VListItemTitle } from 'vuetify/components'
 import { formatDate } from '@/utils/formatDate'
 
@@ -56,13 +57,12 @@ defineEmits<{
         Active
       </div>
       <VList v-if="active.length > 0" data-test-id="active-alerts-list">
-        <VListItem
-          v-for="alert in active"
-          :key="alert.id"
-          :to="{ name: 'device', params: { id: alert.deviceId } }"
-          link
-        >
-          <VListItemTitle>{{ ALERT_KIND_LABELS[alert.kind] }} — {{ alert.deviceName }}</VListItemTitle>
+        <VListItem v-for="alert in active" :key="alert.id">
+          <VListItemTitle>
+            {{ ALERT_KIND_LABELS[alert.kind] }} — <RouterLink :to="{ name: 'device', params: { id: alert.deviceId } }">
+              {{ alert.deviceName }}
+            </RouterLink>
+          </VListItemTitle>
           <VListItemSubtitle>Opened {{ formatDate(alert.openedAt) }}</VListItemSubtitle>
         </VListItem>
       </VList>
@@ -76,13 +76,12 @@ defineEmits<{
         Recently resolved
       </div>
       <VList v-if="resolved.length > 0" data-test-id="resolved-alerts-list">
-        <VListItem
-          v-for="alert in resolved"
-          :key="alert.id"
-          :to="{ name: 'device', params: { id: alert.deviceId } }"
-          link
-        >
-          <VListItemTitle>{{ ALERT_KIND_LABELS[alert.kind] }} — {{ alert.deviceName }}</VListItemTitle>
+        <VListItem v-for="alert in resolved" :key="alert.id">
+          <VListItemTitle>
+            {{ ALERT_KIND_LABELS[alert.kind] }} — <RouterLink :to="{ name: 'device', params: { id: alert.deviceId } }">
+              {{ alert.deviceName }}
+            </RouterLink>
+          </VListItemTitle>
           <VListItemSubtitle>Opened {{ formatDate(alert.openedAt) }} · Resolved {{ alert.resolvedAt ? formatDate(alert.resolvedAt) : 'N/A' }}</VListItemSubtitle>
         </VListItem>
       </VList>

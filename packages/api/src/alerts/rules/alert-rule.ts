@@ -1,5 +1,5 @@
+import type { AlertKind } from 'kuroshiro-shared'
 import type { Device } from '../../devices/devices.entity.js'
-import type { AlertKind } from '../entities/alert.entity.js'
 
 export interface AlertRuleContext {
   now: Date

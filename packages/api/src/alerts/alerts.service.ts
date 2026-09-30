@@ -1,7 +1,6 @@
 import type { AlertsList, AlertSummary } from 'kuroshiro-shared'
 import type { Repository } from 'typeorm'
 import { BadRequestException, Injectable, ServiceUnavailableException } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
 import { IsNull, MoreThan } from 'typeorm'
 import { Alert } from './entities/alert.entity.js'
@@ -35,7 +34,6 @@ export class AlertsService {
     @InjectRepository(Alert)
     private readonly alertRepository: Repository<Alert>,
     private readonly sender: NotificationSenderService,
-    private readonly configService: ConfigService,
   ) {}
 
   /** Active Alerts (uncapped) plus resolved Alerts since `resolvedSince` (an ISO timestamp, default 7 days ago), capped at 50 — both newest first. */
@@ -73,8 +71,7 @@ export class AlertsService {
     if (sent)
       return { message: 'Test notification sent successfully.' }
 
-    const alertsConfig = this.configService.get<{ appriseUrl?: string }>('alerts')
-    if (!alertsConfig?.appriseUrl)
+    if (!this.sender.isConfigured())
       throw new BadRequestException('Apprise is not configured — set KUROSHIRO_APPRISE_URL to enable notifications.')
 
     throw new ServiceUnavailableException('Test notification failed to send. Check the Apprise sidecar and its logs.')
