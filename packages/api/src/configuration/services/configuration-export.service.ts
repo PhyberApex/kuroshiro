@@ -1,4 +1,5 @@
 import type { MashupConfiguration } from '../../mashup/entities/mashup-configuration.entity.js'
+import type { ParsedPlugin } from '../../plugins/services/plugin-importer.service.js'
 import type { Schedule } from '../../schedule/schedule.entity.js'
 import type {
   AssignmentFieldValueManifestEntry,
@@ -130,6 +131,7 @@ export class ConfigurationExportService {
       streamLimit: plugin.streamLimit ?? null,
       webhookToken: this.redactWebhookToken(plugin.webhookToken, redact),
       sourceRecipeId: plugin.sourceRecipeId ?? null,
+      sourceRecipeSnapshot: (plugin.sourceRecipeSnapshot as ParsedPlugin | null | undefined) ?? null,
       dataSources: (plugin.dataSources || []).map(ds => ({ id: ds.id, name: ds.name })),
       templates: (plugin.templates || []).map(template => ({ id: template.id, layout: template.layout })),
       fields: (plugin.fields || []).map(field => ({ id: field.id, keyname: field.keyname })),

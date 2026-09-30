@@ -119,6 +119,8 @@ export class PluginsController {
       ...parsedPlugin,
       isActive: false,
       order: 1,
+      // Only a Recipe import sets sourceRecipeId — File and GitHub imports never do.
+      sourceRecipeSnapshot: parsedPlugin.sourceRecipeId ? { ...parsedPlugin } : undefined,
     }
 
     const plugin = await this.pluginsService.create(createDto)

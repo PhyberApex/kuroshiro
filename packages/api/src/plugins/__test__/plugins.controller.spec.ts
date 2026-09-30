@@ -271,6 +271,41 @@ describe('pluginsController', () => {
     expect(result._hasTransform).toBe(false)
   })
 
+  it('importFromRecipe sets sourceRecipeSnapshot to the importer\'s parsed output', async () => {
+    const body = { recipeId: '150460' }
+    const parsedPlugin = {
+      name: 'Daily Weather',
+      kind: 'Poll',
+      refreshInterval: 30,
+      dataSources: [{ name: 'source', url: 'https://api.com', method: 'GET', headers: {}, body: {} }],
+      templates: [{ layout: 'full', liquidMarkup: 'Hello' }],
+      fields: [],
+      sourceRecipeId: '150460',
+    }
+    mockImporter.importFromRecipe.mockResolvedValue(parsedPlugin)
+    mockService.create.mockResolvedValue({ id: 'plugin-3', name: 'Daily Weather' })
+
+    await controller.importFromRecipe(body)
+
+    expect(mockService.create).toHaveBeenCalledWith(expect.objectContaining({ sourceRecipeSnapshot: parsedPlugin }))
+  })
+
+  it('importPlugin (file) and importFromGithub never set sourceRecipeSnapshot', async () => {
+    const parsedPlugin = {
+      name: 'Plain Plugin',
+      dataSources: [{ name: 'source', url: 'https://api.com', method: 'GET', headers: {}, body: {} }],
+    }
+    mockImporter.importFromFile.mockResolvedValue(parsedPlugin)
+    mockImporter.importFromGithubUrl.mockResolvedValue(parsedPlugin)
+    mockService.create.mockResolvedValue({ id: 'plugin-x', name: 'Plain Plugin' })
+
+    await controller.importPlugin({ path: '/tmp/plugin.zip' } as Express.Multer.File)
+    await controller.importFromGithub({ githubUrl: 'https://github.com/user/plugin' })
+
+    expect(mockService.create).toHaveBeenNthCalledWith(1, expect.objectContaining({ sourceRecipeSnapshot: undefined }))
+    expect(mockService.create).toHaveBeenNthCalledWith(2, expect.objectContaining({ sourceRecipeSnapshot: undefined }))
+  })
+
   it('importFromRecipe imports from a Recipe id with device assignment', async () => {
     const body = { recipeId: '150460', deviceId: 'device-1' }
     const parsedPlugin = {

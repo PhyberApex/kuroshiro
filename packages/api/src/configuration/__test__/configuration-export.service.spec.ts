@@ -131,6 +131,20 @@ describe('configurationExportService', () => {
     expect(pluginsJson[0].templates).toEqual([{ id: 'tpl-1', layout: 'full' }])
   })
 
+  it('writes the Recipe Snapshot into the Plugin manifest entry, and null when the Plugin has none', async () => {
+    const snapshot = { name: 'Daily Weather', kind: 'Poll', refreshInterval: 30, dataSources: [], templates: [], fields: [], sourceRecipeId: '150460' }
+    const importedPlugin = makePlugin({ id: 'plugin-1', sourceRecipeId: '150460', sourceRecipeSnapshot: snapshot })
+    const handBuiltPlugin = makePlugin({ id: 'plugin-2' })
+    pluginRepo.find.mockResolvedValue([importedPlugin, handBuiltPlugin])
+
+    const buffer = await service.exportToZip()
+    const zip = new AdmZip(buffer)
+    const pluginsJson = JSON.parse(zip.getEntry('plugins.json')!.getData().toString('utf8'))
+
+    expect(pluginsJson.find((p: { id: string }) => p.id === 'plugin-1').sourceRecipeSnapshot).toEqual(snapshot)
+    expect(pluginsJson.find((p: { id: string }) => p.id === 'plugin-2').sourceRecipeSnapshot).toBeNull()
+  })
+
   it('redacts Data Source header values but not keys, url, or body, in the nested .trmnlp settings.yml, when redact is set', async () => {
     const plugin = makePlugin({
       id: 'plugin-1',

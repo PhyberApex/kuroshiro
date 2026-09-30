@@ -140,6 +140,17 @@ describe('pluginsService', () => {
     expect(pluginRepo.save).toHaveBeenCalledWith(expect.objectContaining({ sourceRecipeId: '150460' }))
   })
 
+  it('create persists the source Recipe snapshot when provided', async () => {
+    const snapshot = { name: 'Daily Weather', kind: 'Poll', refreshInterval: 30, dataSources: [], templates: [], fields: [] }
+    const pluginData = { name: 'Daily Weather', kind: 'Poll' as const, sourceRecipeId: '150460', sourceRecipeSnapshot: snapshot }
+    pluginRepo.save.mockResolvedValue(basePlugin)
+    pluginRepo.findOne.mockResolvedValue(basePlugin)
+
+    await service.create(pluginData)
+
+    expect(pluginRepo.save).toHaveBeenCalledWith(expect.objectContaining({ sourceRecipeSnapshot: snapshot }))
+  })
+
   it('update updates and saves an existing plugin', async () => {
     pluginRepo.findOne.mockResolvedValue(basePlugin)
     const updated = { ...basePlugin, name: 'Updated Weather' }
@@ -1010,6 +1021,28 @@ describe('pluginsService', () => {
       expect(result.templates).toEqual(sourceTemplates)
       expect(result.fields).toEqual(sourceFields)
       expect(result.variables).toEqual(sourceVariables)
+    })
+
+    it('copies the source Recipe id and snapshot when duplicating an imported plugin', async () => {
+      const snapshot = { name: 'Weather Plugin', kind: 'Poll', refreshInterval: 30, dataSources: [], templates: [], fields: [] }
+      const importedSource = makePlugin({
+        ...sourcePlugin,
+        id: 'source-3',
+        sourceRecipeId: '150460',
+        sourceRecipeSnapshot: snapshot,
+      })
+      mockCreatePipeline('new-id-3')
+      pluginRepo.findOne
+        .mockResolvedValueOnce(importedSource)
+        .mockResolvedValueOnce(makePlugin({ id: 'new-id-3' }))
+        .mockResolvedValueOnce(makePlugin({ id: 'new-id-3', variables: [] }))
+
+      await service.duplicate('source-3')
+
+      expect(pluginRepo.save).toHaveBeenCalledWith(expect.objectContaining({
+        sourceRecipeId: '150460',
+        sourceRecipeSnapshot: snapshot,
+      }))
     })
 
     it('does not carry over device assignments, webhook payload, or the source webhook token', async () => {
