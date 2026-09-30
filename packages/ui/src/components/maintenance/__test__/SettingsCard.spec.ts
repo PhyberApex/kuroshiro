@@ -34,6 +34,17 @@ describe('settingsCard', () => {
     expect(wrapper.text()).toContain('Falls back to the built-in default (20)')
   })
 
+  it('carries the shared validation bounds as native min/max attributes', () => {
+    const wrapper = mountCard()
+    const lowBattery = wrapper.find('[data-test-id="setting-lowBatteryPercent-input"] input')
+    expect(lowBattery.attributes('min')).toBe('1')
+    expect(lowBattery.attributes('max')).toBe('100')
+
+    const offlineMultiplier = wrapper.find('[data-test-id="setting-offlineMultiplier-input"] input')
+    expect(offlineMultiplier.attributes('min')).toBe('2')
+    expect(offlineMultiplier.attributes('max')).toBeUndefined()
+  })
+
   it('names the environment variable as the fallback source when the env var is set', () => {
     const settings: InstanceSettingsResponse = {
       ...UNOVERRIDDEN,

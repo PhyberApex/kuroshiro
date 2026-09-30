@@ -207,6 +207,16 @@ describe('configurationImportService', () => {
     expect(manager.transaction).not.toHaveBeenCalled()
   })
 
+  it('rejects a pre-Instance-Settings (schemaVersion 1) archive with the existing mismatch message', async () => {
+    const buffer = buildArchive({
+      manifest: { kuroshiroVersion: '0.16.0', schemaVersion: 1, exportedAt: new Date().toISOString(), containsSecrets: true },
+      settings: null,
+    })
+
+    await expect(service.importFromZip(buffer)).rejects.toThrow(new RegExp(`1.*${CONFIG_SCHEMA_VERSION}`))
+    expect(manager.transaction).not.toHaveBeenCalled()
+  })
+
   it('imports every entity on a fresh instance, then makes no changes on a second import of the same archive', async () => {
     const buffer = buildArchive({
       plugins: [{

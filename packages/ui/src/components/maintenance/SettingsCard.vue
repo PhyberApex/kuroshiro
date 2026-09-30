@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { InstanceSettingsResponse, SettingKey } from 'kuroshiro-shared'
 import { mdiAlertCircle, mdiCheck, mdiRestore } from '@mdi/js'
-import { SETTING_ENV_VARS } from 'kuroshiro-shared'
+import { SETTING_BOUNDS, SETTING_ENV_VARS } from 'kuroshiro-shared'
 import { reactive, watch } from 'vue'
 import { VAlert, VBtn, VCard, VCardText, VCardTitle, VCol, VDivider, VRow, VTextField } from 'vuetify/components'
 
@@ -93,6 +93,8 @@ function reset(key: SettingKey) {
             persistent-placeholder
             :hint="hint(field.key)"
             persistent-hint
+            :min="SETTING_BOUNDS[field.key].min"
+            :max="SETTING_BOUNDS[field.key].max"
             :data-test-id="`setting-${field.key}-input`"
           />
         </VCol>

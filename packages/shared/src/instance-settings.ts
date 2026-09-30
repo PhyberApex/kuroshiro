@@ -9,6 +9,20 @@ export const SETTING_ENV_VARS: Record<SettingKey, string> = {
   fetchFailureThreshold: 'KUROSHIRO_ALERT_FETCH_FAILURES',
 }
 
+export interface SettingBounds {
+  min: number
+  max?: number
+}
+
+// Validated on save; environment-variable parsing itself stays as lenient as it was before Instance Settings.
+// Shared so the UI's number fields carry the same min/max as the API's DTO decorators (ADR-0020) rather than
+// hand-copying them and risking drift.
+export const SETTING_BOUNDS: Record<SettingKey, SettingBounds> = {
+  lowBatteryPercent: { min: 1, max: 100 },
+  offlineMultiplier: { min: 2 },
+  fetchFailureThreshold: { min: 1 },
+}
+
 export type FallbackSource = 'env' | 'default'
 
 export interface InstanceSettingValue {

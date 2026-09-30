@@ -1,17 +1,5 @@
-import type { SettingKey } from 'kuroshiro-shared'
 import { IsInt, IsOptional, Max, Min } from 'class-validator'
-
-interface SettingBounds {
-  min: number
-  max?: number
-}
-
-// API-only (ADR-0020): validated on save, but environment-variable parsing itself stays as lenient as it was before Instance Settings.
-const SETTING_BOUNDS: Record<SettingKey, SettingBounds> = {
-  lowBatteryPercent: { min: 1, max: 100 },
-  offlineMultiplier: { min: 2 },
-  fetchFailureThreshold: { min: 1 },
-}
+import { SETTING_BOUNDS } from 'kuroshiro-shared'
 
 export class UpdateInstanceSettingsDto {
   @IsOptional()
