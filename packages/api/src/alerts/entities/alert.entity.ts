@@ -1,8 +1,7 @@
+import type { AlertKind } from 'kuroshiro-shared'
 import type { Relation } from 'typeorm'
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { Device } from '../../devices/devices.entity.js'
-
-export type AlertKind = 'device-low-battery' | 'device-offline'
 
 @Entity()
 export class Alert {

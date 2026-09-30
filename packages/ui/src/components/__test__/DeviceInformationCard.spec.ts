@@ -63,6 +63,13 @@ vi.mock('@/stores/firmware', () => ({
   }),
 }))
 
+vi.mock('@/stores/alerts', () => ({
+  useAlertsStore: () => ({
+    ensureLoaded: vi.fn(),
+    activeForDevice: vi.fn(() => []),
+  }),
+}))
+
 globalThis.ResizeObserver = rop
 
 globalThis.window.matchMedia = globalThis.window.matchMedia || function () {

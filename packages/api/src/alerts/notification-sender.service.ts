@@ -20,6 +20,11 @@ export class NotificationSenderService {
 
   constructor(private readonly configService: ConfigService) {}
 
+  /** Whether an Apprise URL is configured — lets a caller distinguish "not configured" from "delivery failed" without duplicating this service's config shape. */
+  isConfigured(): boolean {
+    return !!this.configService.get<{ appriseUrl?: string }>('alerts')?.appriseUrl
+  }
+
   async send(payload: NotificationContent): Promise<boolean> {
     const alerts = this.configService.get<{ appriseUrl?: string, appriseKey: string }>('alerts')
     if (!alerts?.appriseUrl)

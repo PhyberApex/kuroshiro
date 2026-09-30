@@ -280,6 +280,8 @@ Delivery goes through the [`apprise-api`](https://github.com/caronc/apprise-api)
 
 To run the sidecar alongside Kuroshiro, uncomment the `apprise-api` service in [`docker-compose.yml`](./docker-compose.yml) and point `KUROSHIRO_APPRISE_URL` at it (e.g. `http://apprise-api:8000`), then configure your notification channels in its own persisted config under the `kuroshiro` key (or whatever `KUROSHIRO_APPRISE_KEY` is set to).
 
+The Maintenance page's Alerts card shows every active Alert plus anything resolved in the last 7 days, with a **Send test Notification** button that exercises the real delivery path (a synthetic success Notification, not a real Alert) so you can confirm Apprise is wired up correctly without waiting for a real condition to fire.
+
 ---
 
 ## 🤝 Contribute & Make Kuroshiro Even Better!
