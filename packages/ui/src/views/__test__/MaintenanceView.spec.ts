@@ -4,6 +4,7 @@ import type { useConfigurationStore } from '@/stores/configuration'
 import type { useDeviceModelsStore } from '@/stores/deviceModels'
 import type { useFirmwareStore } from '@/stores/firmware'
 import type { useMaintenanceStore } from '@/stores/maintenance'
+import type { useSettingsStore } from '@/stores/settings'
 import { flushPromises, mount } from '@vue/test-utils'
 import rop from 'resize-observer-polyfill'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -30,6 +31,7 @@ let deviceModelsStoreMock: ReturnType<typeof useDeviceModelsStore>
 let firmwareStoreMock: ReturnType<typeof useFirmwareStore>
 let configurationStoreMock: ReturnType<typeof useConfigurationStore>
 let alertsStoreMock: ReturnType<typeof useAlertsStore>
+let settingsStoreMock: ReturnType<typeof useSettingsStore>
 
 vi.mock('@/stores/maintenance', () => ({
   useMaintenanceStore: () => maintenanceStoreMock,
@@ -45,6 +47,9 @@ vi.mock('@/stores/configuration', () => ({
 }))
 vi.mock('@/stores/alerts', () => ({
   useAlertsStore: () => alertsStoreMock,
+}))
+vi.mock('@/stores/settings', () => ({
+  useSettingsStore: () => settingsStoreMock,
 }))
 
 function mountView() {
@@ -115,9 +120,22 @@ describe('maintenanceView', () => {
       activeForDevice: vi.fn(() => []),
       sendTestNotification: vi.fn().mockResolvedValue({ ok: true, message: 'Test notification sent successfully.' }),
     })
+    settingsStoreMock = asStore<ReturnType<typeof useSettingsStore>>({
+      settings: {
+        lowBatteryPercent: { override: null, value: 20, fallbackSource: 'default', fallbackValue: 20 },
+        offlineMultiplier: { override: null, value: 3, fallbackSource: 'default', fallbackValue: 3 },
+        fetchFailureThreshold: { override: null, value: 3, fallbackSource: 'default', fallbackValue: 3 },
+      },
+      loaded: true,
+      error: null,
+      saving: false,
+      fetchAll: vi.fn(),
+      ensureLoaded: vi.fn().mockResolvedValue(undefined),
+      update: vi.fn().mockResolvedValue({ ok: true }),
+    })
   })
 
-  it('scans the system, loads device models, firmware, Alerts, and retention status on mount', async () => {
+  it('scans the system, loads device models, firmware, Alerts, retention status, and Settings on mount', async () => {
     mountView()
     await flushPromises()
     expect(maintenanceStoreMock.scanSystem).toHaveBeenCalled()
@@ -125,6 +143,7 @@ describe('maintenanceView', () => {
     expect(firmwareStoreMock.ensureLoaded).toHaveBeenCalled()
     expect(alertsStoreMock.ensureLoaded).toHaveBeenCalled()
     expect(maintenanceStoreMock.loadRetentionStatus).toHaveBeenCalled()
+    expect(settingsStoreMock.ensureLoaded).toHaveBeenCalled()
   })
 
   it('shows the scanned issues in the summary and orphaned files list', async () => {
@@ -186,5 +205,25 @@ describe('maintenanceView', () => {
 
     expect(alertsStoreMock.sendTestNotification).toHaveBeenCalled()
     expect(wrapper.text()).toContain('Test notification sent successfully.')
+  })
+
+  it('saves an edited Setting through the Settings card', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    await wrapper.find('[data-test-id="setting-lowBatteryPercent-input"] input').setValue('45')
+    await wrapper.find('[data-test-id="setting-lowBatteryPercent-save-btn"]').trigger('click')
+
+    expect(settingsStoreMock.update).toHaveBeenCalledWith({ lowBatteryPercent: 45 })
+  })
+
+  it('resets a Setting through the Settings card', async () => {
+    settingsStoreMock.settings!.lowBatteryPercent = { override: 45, value: 45, fallbackSource: 'default', fallbackValue: 20 }
+    const wrapper = mountView()
+    await flushPromises()
+
+    await wrapper.find('[data-test-id="setting-lowBatteryPercent-reset-btn"]').trigger('click')
+
+    expect(settingsStoreMock.update).toHaveBeenCalledWith({ lowBatteryPercent: null })
   })
 })

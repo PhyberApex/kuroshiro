@@ -1,12 +1,13 @@
-import type { ConfigService } from '@nestjs/config'
 import type { FindManyOptions } from 'typeorm'
 import type { Device } from '../../devices/devices.entity.js'
 import type { PluginDataSource } from '../../plugins/entities/plugin-data-source.entity.js'
+import type { InstanceSettingsService } from '../../settings/instance-settings.service.js'
 import type { Alert } from '../entities/alert.entity.js'
 import type { NotificationSenderService } from '../notification-sender.service.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeAlert, makeDevice, makePluginDataSource } from '../../test/fixtures.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
+import { asService } from '../../test/mockService.js'
 import { AlertSweepService } from '../alert-sweep.service.js'
 
 const { cronMock } = vi.hoisted(() => ({ cronMock: { schedule: vi.fn() } }))
@@ -17,9 +18,9 @@ function whereKind(options?: FindManyOptions<Alert>): string | undefined {
   return (options?.where as { kind?: string } | undefined)?.kind
 }
 
-function makeConfigService(overrides: Partial<{ appriseUrl?: string, appriseKey: string, lowBatteryPercent: number, offlineMultiplier: number, fetchFailureThreshold: number }> = {}): ConfigService {
-  const alerts = { appriseKey: 'kuroshiro', lowBatteryPercent: 20, offlineMultiplier: 3, fetchFailureThreshold: 3, ...overrides }
-  return { get: (key: string) => (key === 'alerts' ? alerts : undefined) } as unknown as ConfigService
+function makeSettingsService(overrides: Partial<{ lowBatteryPercent: number, offlineMultiplier: number, fetchFailureThreshold: number }> = {}): InstanceSettingsService {
+  const thresholds = { lowBatteryPercent: 20, offlineMultiplier: 3, fetchFailureThreshold: 3, ...overrides }
+  return asService<InstanceSettingsService>({ resolveThresholds: vi.fn().mockResolvedValue(thresholds) })
 }
 
 describe('alertSweepService', () => {
@@ -37,7 +38,7 @@ describe('alertSweepService', () => {
     alertRepo.find.mockResolvedValue([])
     dataSourceRepo.find.mockResolvedValue([])
     sender = { send: vi.fn().mockResolvedValue(false) }
-    service = new AlertSweepService(asRepository(alertRepo), asRepository(deviceRepo), asRepository(dataSourceRepo), sender as unknown as NotificationSenderService, makeConfigService())
+    service = new AlertSweepService(asRepository(alertRepo), asRepository(deviceRepo), asRepository(dataSourceRepo), sender as unknown as NotificationSenderService, makeSettingsService())
   })
 
   describe('onApplicationBootstrap', () => {

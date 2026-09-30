@@ -6,6 +6,7 @@ import type {
   ConfigurationManifest,
   DeviceManifestEntry,
   FirmwareManifestEntry,
+  InstanceSettingsManifestEntry,
   PaletteManifestEntry,
   PluginManifestDataSource,
   PluginManifestEntry,
@@ -21,6 +22,7 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
+import { SETTING_KEYS } from 'kuroshiro-shared'
 import { DeviceModel } from '../../device-models/entities/device-model.entity.js'
 import { Palette } from '../../device-models/entities/palette.entity.js'
 import { Device } from '../../devices/devices.entity.js'
@@ -37,6 +39,7 @@ import { Plugin } from '../../plugins/entities/plugin.entity.js'
 import { PluginImporterService } from '../../plugins/services/plugin-importer.service.js'
 import { Schedule } from '../../schedule/schedule.entity.js'
 import { Screen } from '../../screens/screens.entity.js'
+import { INSTANCE_SETTINGS_ID, InstanceSettings } from '../../settings/entities/instance-settings.entity.js'
 import { resolveAppPath } from '../../utils/pathHelper.js'
 import { CONFIG_SCHEMA_VERSION } from '../schema-version.js'
 import { CONFIG_ARCHIVE_FILES } from '../types.js'
@@ -62,6 +65,7 @@ interface TransactionRepos {
   schedule: Repository<Schedule>
   mashupConfig: Repository<MashupConfiguration>
   mashupSlot: Repository<MashupSlot>
+  instanceSettings: Repository<InstanceSettings>
 }
 
 @Injectable()
@@ -86,6 +90,7 @@ export class ConfigurationImportService {
     const assignmentEntries = this.readJson<AssignmentManifestEntry[]>(zip, CONFIG_ARCHIVE_FILES.assignments)
     const paletteEntries = this.readJson<PaletteManifestEntry[]>(zip, CONFIG_ARCHIVE_FILES.palettes)
     const firmwareEntries = this.readJson<FirmwareManifestEntry[]>(zip, CONFIG_ARCHIVE_FILES.firmware)
+    const settingsEntry = this.readJson<InstanceSettingsManifestEntry>(zip, CONFIG_ARCHIVE_FILES.settings)
 
     const counts: ImportCounts = { created: {}, updated: {} }
     const warnings: string[] = []
@@ -123,6 +128,8 @@ export class ConfigurationImportService {
       for (const entry of screenEntries) {
         await this.withEntryContext(`Screen ${entry.id}`, () => this.upsertScreen(repos, zip, entry, deviceIdRemap, counts))
       }
+
+      await this.withEntryContext('Instance Settings', () => this.replaceInstanceSettings(repos.instanceSettings, settingsEntry))
     })
 
     return { created: counts.created, updated: counts.updated, warnings }
@@ -145,7 +152,17 @@ export class ConfigurationImportService {
       schedule: manager.getRepository(Schedule),
       mashupConfig: manager.getRepository(MashupConfiguration),
       mashupSlot: manager.getRepository(MashupSlot),
+      instanceSettings: manager.getRepository(InstanceSettings),
     }
+  }
+
+  /** Replaces the whole Instance Settings row from the archive (ADR-0027): a Setting absent from `entry` is cleared on the target. */
+  private async replaceInstanceSettings(repo: Repository<InstanceSettings>, entry: InstanceSettingsManifestEntry): Promise<void> {
+    const existing = await repo.findOneBy({ id: INSTANCE_SETTINGS_ID })
+    const row = existing ?? repo.create({ id: INSTANCE_SETTINGS_ID })
+    for (const key of SETTING_KEYS)
+      row[key] = entry[key] ?? null
+    await repo.save(row)
   }
 
   /** Runs one entity's upsert, and if it throws, labels the error with the entity so a failed import's response says which entry broke the transaction (ADR-0021). Passes a `BadRequestException` through unchanged since those already carry their own specific message. */

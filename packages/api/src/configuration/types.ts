@@ -1,3 +1,4 @@
+import type { SettingKey } from 'kuroshiro-shared'
 import type { MergeStrategy, PluginKind } from '../plugins/entities/plugin.entity.js'
 import type { Screen } from '../screens/screens.entity.js'
 
@@ -9,6 +10,7 @@ export const CONFIG_ARCHIVE_FILES = {
   assignments: 'assignments.json',
   palettes: 'palettes.json',
   firmware: 'firmware.json',
+  settings: 'settings.json',
 } as const
 
 export interface ConfigurationManifest {
@@ -139,6 +141,9 @@ export interface PaletteManifestEntry {
   grayscaleBitDepth: number | null
   deprecated: boolean
 }
+
+// Only the overridden Instance Settings (ADR-0027) — fallback values are never exported.
+export type InstanceSettingsManifestEntry = Partial<Record<SettingKey, number>>
 
 export interface FirmwareManifestEntry {
   id: string

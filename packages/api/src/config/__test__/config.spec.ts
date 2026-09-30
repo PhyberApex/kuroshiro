@@ -53,8 +53,11 @@ describe('config', () => {
         appriseUrl: undefined,
         appriseKey: 'kuroshiro',
         lowBatteryPercent: 20,
+        lowBatteryPercentSource: 'default',
         offlineMultiplier: 3,
+        offlineMultiplierSource: 'default',
         fetchFailureThreshold: 3,
+        fetchFailureThresholdSource: 'default',
       },
       retention: {
         alertRetentionDays: 90,
@@ -95,8 +98,11 @@ describe('config', () => {
         appriseUrl: 'http://apprise:8000',
         appriseKey: 'my-key',
         lowBatteryPercent: 15,
+        lowBatteryPercentSource: 'env',
         offlineMultiplier: 5,
+        offlineMultiplierSource: 'env',
         fetchFailureThreshold: 4,
+        fetchFailureThresholdSource: 'env',
       },
       retention: {
         alertRetentionDays: 120,
@@ -143,8 +149,11 @@ describe('config', () => {
       appriseUrl: undefined,
       appriseKey: 'kuroshiro',
       lowBatteryPercent: 20,
+      lowBatteryPercentSource: 'default',
       offlineMultiplier: 3,
+      offlineMultiplierSource: 'default',
       fetchFailureThreshold: 3,
+      fetchFailureThresholdSource: 'default',
     })
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('KUROSHIRO_ALERT_LOW_BATTERY_PERCENT'))
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('KUROSHIRO_ALERT_OFFLINE_MULTIPLIER'))

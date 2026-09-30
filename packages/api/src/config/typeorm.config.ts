@@ -18,6 +18,7 @@ import { PluginVariable } from '../plugins/entities/plugin-variable.entity.js'
 import { Plugin } from '../plugins/entities/plugin.entity.js'
 import { Schedule } from '../schedule/schedule.entity.js'
 import { Screen } from '../screens/screens.entity.js'
+import { InstanceSettings } from '../settings/entities/instance-settings.entity.js'
 
 const AppDataSource = new DataSource({
   type: 'postgres',
@@ -26,7 +27,7 @@ const AppDataSource = new DataSource({
   username: process.env.KUROSHIRO_DB_USER || 'root',
   password: process.env.KUROSHIRO_DB_PASSWORD || 'root',
   database: process.env.KUROSHIRO_DB_DB || 'test',
-  entities: [Device, DeviceModel, Palette, DeviceSensor, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, PluginVariable, MashupConfiguration, MashupSlot, Schedule, Firmware, Alert],
+  entities: [Device, DeviceModel, Palette, DeviceSensor, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, PluginVariable, MashupConfiguration, MashupSlot, Schedule, Firmware, Alert, InstanceSettings],
   migrations: ['dist/src/migrations/*.js'],
   migrationsTableName: 'migrations',
   synchronize: false,

@@ -15,3 +15,14 @@ export async function apiRequest<T>(input: string, init: RequestInit | undefined
   }
   return res.json()
 }
+
+/** A failed response's `message`, joining class-validator's array-of-strings shape into one line — `fallback` when the body has no message or isn't JSON. */
+export async function failureMessage(res: Response, fallback: string): Promise<string> {
+  try {
+    const body = await res.json()
+    return Array.isArray(body.message) ? body.message.join(', ') : body.message || fallback
+  }
+  catch {
+    return fallback
+  }
+}
