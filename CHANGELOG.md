@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.17.0...kuroshiro-v0.17.1) (2026-09-30)
+
+
+### Bug Fixes
+
+* **api:** serve GET /metrics from its controller instead of the app shell ([#1052](https://github.com/PhyberApex/kuroshiro/issues/1052)) ([a9ee234](https://github.com/PhyberApex/kuroshiro/commit/a9ee234e4fd0bbd2d7d70bab24ee195c5ef7fda4))
+
 ## [0.17.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.16.0...kuroshiro-v0.17.0) (2026-09-30)
 
 
