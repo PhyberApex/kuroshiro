@@ -81,8 +81,20 @@ The number of consecutive scheduled renders on which a `fetch`-mode Data Source'
 _Avoid_: Error count, failure counter, fetch status, last error (bare — the streak carries the last error message, but the message alone is not the streak)
 
 **Recipe**:
-A pre-built, TRMNL-vetted Plugin template published at trmnl.com/recipes, importable into Kuroshiro by pasting its id or page URL. A Recipe exists only as an import source — the result of importing one is a normal Poll-kind Plugin, indistinguishable from a hand-built one, carrying only its source Recipe's id as inert metadata (no ongoing link, no auto-updates).
+A pre-built, TRMNL-vetted Plugin template published at trmnl.com/recipes, importable into Kuroshiro by pasting its id or page URL. A Recipe exists only as an import source — the result of importing one is a normal Poll-kind Plugin, indistinguishable from a hand-built one, carrying its source Recipe's id and a Recipe Snapshot. Nothing updates automatically; an admin runs a Recipe Update Check by hand.
 _Avoid_: Extension, Exchange (Terminus's terms), Plugin (the imported result — see above)
+
+**Recipe Snapshot**:
+The copy of a Recipe, as the importer parsed it, that an imported Plugin keeps alongside its source Recipe id. The base a Recipe Update Check diffs against, replaced wholesale every time an update is applied. A Plugin imported before snapshots existed has none.
+_Avoid_: Baseline (as a noun — the snapshot is the baseline, but the term is the Snapshot), import copy, upstream copy, version
+
+**Recipe Update Check**:
+The on-demand action on an imported Plugin that re-downloads its source Recipe, diffs it against the Recipe Snapshot and the Plugin's current state, and shows the resulting Update Items for the admin to apply, apply in part, or dismiss. Never runs on its own and never changes anything without the admin having seen the diff.
+_Avoid_: Sync, upgrade, pull, auto-update, refresh (collides with the render/refresh cycle)
+
+**Update Item**:
+One unit a Recipe Update Check can show and apply on its own: the Plugin's name, description or refresh interval, one template (by layout), one Data Source (by name, transform included) or one field definition (by keyname). Each is `added`, `changed` or `removed` relative to the Recipe Snapshot, and a `conflict` when both the Recipe and the local Plugin changed it. Anything that exists only locally is not an Update Item.
+_Avoid_: Diff entry, change, hunk (that is a line-level thing inside a template's diff)
 
 **Configuration Archive**:
 A single zip holding every piece of admin-built configuration on a Kuroshiro instance — Plugins (as nested `.trmnlp` folders plus a manifest for what `.trmnlp` can't carry), Devices, Screens with their Order and Schedule, Mashups, Plugin assignments with their field values, custom Palettes, custom Firmware metadata and the overridden Instance Settings — stamped with the Kuroshiro version and an archive `schemaVersion`. Produced by Configuration Export, consumed by Configuration Import. Every record keeps its `id`, which is the identity Configuration Import upserts on. Contains secrets (Data Source headers, Device API keys, secret Plugin Variables, Webhook Tokens) in plaintext and the export surfaces warn about this, unless it is a Redacted Archive. Excludes runtime state: Webhook Payloads, Sensor readings, rendered images for `plugin`/`mashup`-type Screens, logs, Device telemetry, and anything `official`/`official-synced` — except a `file`-type Screen's converted image, which for that Screen type is the actual admin-supplied content, not a regenerable cache.
