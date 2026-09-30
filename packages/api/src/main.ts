@@ -24,7 +24,7 @@ async function bootstrap() {
   else {
     logger.log(`[Migrations] No migrations to be run`)
   }
-  app.setGlobalPrefix('api')
+  app.setGlobalPrefix('api', { exclude: ['metrics'] })
   app.useGlobalInterceptors(new LoggingInterceptor())
   await app.listen(config().port)
 }

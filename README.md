@@ -285,6 +285,21 @@ The Maintenance page's Alerts card shows every active Alert plus anything resolv
 
 ---
 
+## 📈 Prometheus Metrics
+
+`GET /metrics` answers in the Prometheus text exposition format, read from the database at scrape time — Kuroshiro keeps no history of its own, so point an external Prometheus at it for charts and long-term retention (see [ADR-0026](docs/adr/0026-metrics-are-scrape-time-reads-with-no-history-of-their-own.md)).
+
+| Metric | Type | Labels | Description |
+|---|---|---|---|
+| `kuroshiro_device_battery_volts` | gauge | `device`, `friendly_id` | Last reported battery voltage. Omitted for a Device with no or non-numeric reading. |
+| `kuroshiro_device_rssi_dbm` | gauge | `device`, `friendly_id` | Last reported Wi-Fi signal strength. Omitted for a Device with no or non-numeric reading. |
+| `kuroshiro_device_last_seen_timestamp_seconds` | gauge | `device`, `friendly_id` | The Device's `lastSeen` as a Unix timestamp (compute `time() - x` for staleness). |
+| `kuroshiro_alerts_active` | gauge | `kind` | Count of currently active Alerts per `AlertKind` — every known kind is emitted, 0 included, so a series never vanishes. |
+
+`device` is the Device's `name` and `friendly_id` its `friendlyId`; the MAC address is never used as a label. Like the Device-facing routes (`/display`, `/current_screen`), `/metrics` sits outside the `/api` prefix and has no authentication of its own — if you want it private, keep it off your reverse proxy.
+
+---
+
 ## 🤝 Contribute & Make Kuroshiro Even Better!
 
 We love contributions! Jump in:
