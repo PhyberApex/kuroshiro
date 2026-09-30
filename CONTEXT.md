@@ -125,7 +125,7 @@ A per-Device night window (`sleepStartTime`–`sleepEndTime`, time-of-day, may c
 _Avoid_: Sleep (bare, in prose — ambiguous with the Special Function of the same name), Night Mode, Do Not Disturb
 
 **Firmware**:
-A versioned OTA binary a Device can be pushed to — either `official-synced` (mirrored automatically from `usetrmnl.com/api/firmware/latest`) or `custom` (uploaded directly by an admin). Carries a SHA-256 checksum, verified again at serve-time, and an optional set of compatible Device Models (empty means universal) enforced whenever a Firmware is assigned to a Device. A Device references at most one Firmware as its target for the next push, cleared once served — the same explicit, admin-driven assignment Device Model already uses, never inferred by comparing version numbers. Applies only to non-mirrored Devices.
+A versioned OTA binary a Device can be pushed to — either `official-synced` (mirrored automatically from `usetrmnl.com/api/firmware/latest`) or `custom` (uploaded directly by an admin). Carries a SHA-256 checksum, verified again at serve-time, and an optional set of compatible Device Models (empty means universal) enforced whenever a Firmware is assigned to a Device. A Device references at most one Firmware as its target for the next push, cleared once served — the same explicit, admin-driven assignment Device Model already uses, never inferred by comparing version numbers; with Firmware Auto-Update on, a newly synced `official-synced` Firmware is assigned the same way on the admin's behalf. Applies only to non-mirrored Devices.
 _Avoid_: Update, OTA package, release, firmware version (bare — reserve for the `version` field)
 
 **Firmware Kind**:
@@ -157,5 +157,9 @@ A Notification an admin sends on demand from the Maintenance page to confirm the
 _Avoid_: Ping, health check, dry run
 
 **Instance Settings**:
-The one set of admin-tunable values that apply to the whole Kuroshiro instance rather than to any single Device, Plugin or Screen — today the Alert Rule thresholds. Each Setting is either overridden (an admin saved a value, which wins) or not (the matching environment variable, else the built-in default, applies); clearing an override returns the Setting to that fallback.
+The one set of admin-tunable values that apply to the whole Kuroshiro instance rather than to any single Device, Plugin or Screen — today the Alert Rule thresholds and Firmware Auto-Update. Each Setting is either overridden (an admin saved a value, which wins) or not (the matching environment variable, else the built-in default, applies); clearing an override returns the Setting to that fallback.
 _Avoid_: Global settings, preferences, options, Configuration (reserved for the Configuration Archive), config (reserved for environment variables)
+
+**Firmware Auto-Update**:
+A boolean Instance Setting, off by default and with no environment-variable fallback, that makes each newly synced `official-synced` Firmware the target of every eligible Device — not mirrored, no push already pending, Device Model within the Firmware's compatible set — as if an admin had assigned it. A default policy, not an override: a pending admin assignment is never replaced, `custom` Firmware is never auto-assigned, and turning the toggle on does not catch Devices up until the next official Firmware lands.
+_Avoid_: Auto-OTA, global firmware toggle, automatic updates (bare), version check
