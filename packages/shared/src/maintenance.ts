@@ -42,3 +42,22 @@ export interface CleanupResult {
   bytesFreed: number
   errors: string[]
 }
+
+export interface RetentionAges {
+  alertRetentionDays: number
+  deviceLogRetentionDays: number
+}
+
+export interface RetentionRunResult {
+  alertsPruned: number
+  deviceLogsPruned: number
+}
+
+export interface RetentionLastRun extends RetentionRunResult {
+  ranAt: string
+}
+
+export interface RetentionStatus {
+  ages: RetentionAges
+  lastRun: RetentionLastRun | null
+}

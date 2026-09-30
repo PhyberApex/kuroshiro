@@ -16,6 +16,8 @@ const ENV_KEYS = [
   'KUROSHIRO_ALERT_LOW_BATTERY_PERCENT',
   'KUROSHIRO_ALERT_OFFLINE_MULTIPLIER',
   'KUROSHIRO_ALERT_FETCH_FAILURES',
+  'KUROSHIRO_ALERT_RETENTION_DAYS',
+  'KUROSHIRO_DEVICE_LOG_RETENTION_DAYS',
 ] as const
 
 describe('config', () => {
@@ -54,6 +56,10 @@ describe('config', () => {
         offlineMultiplier: 3,
         fetchFailureThreshold: 3,
       },
+      retention: {
+        alertRetentionDays: 90,
+        deviceLogRetentionDays: 30,
+      },
     })
   })
 
@@ -71,6 +77,8 @@ describe('config', () => {
     process.env.KUROSHIRO_ALERT_LOW_BATTERY_PERCENT = '15'
     process.env.KUROSHIRO_ALERT_OFFLINE_MULTIPLIER = '5'
     process.env.KUROSHIRO_ALERT_FETCH_FAILURES = '4'
+    process.env.KUROSHIRO_ALERT_RETENTION_DAYS = '120'
+    process.env.KUROSHIRO_DEVICE_LOG_RETENTION_DAYS = '14'
 
     expect(config()).toEqual({
       port: 8080,
@@ -89,6 +97,10 @@ describe('config', () => {
         lowBatteryPercent: 15,
         offlineMultiplier: 5,
         fetchFailureThreshold: 4,
+      },
+      retention: {
+        alertRetentionDays: 120,
+        deviceLogRetentionDays: 14,
       },
     })
   })
@@ -137,6 +149,38 @@ describe('config', () => {
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('KUROSHIRO_ALERT_LOW_BATTERY_PERCENT'))
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('KUROSHIRO_ALERT_OFFLINE_MULTIPLIER'))
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('KUROSHIRO_ALERT_FETCH_FAILURES'))
+
+    warnSpy.mockRestore()
+  })
+
+  it('defaults retention to 90 days for Alerts and 30 days for Device Logs', () => {
+    expect(config().retention).toEqual({
+      alertRetentionDays: 90,
+      deviceLogRetentionDays: 30,
+    })
+  })
+
+  it('allows retention ages to be set to 0 to disable pruning', () => {
+    process.env.KUROSHIRO_ALERT_RETENTION_DAYS = '0'
+    process.env.KUROSHIRO_DEVICE_LOG_RETENTION_DAYS = '0'
+
+    expect(config().retention).toEqual({
+      alertRetentionDays: 0,
+      deviceLogRetentionDays: 0,
+    })
+  })
+
+  it('falls back to defaults and logs a warning when the retention ages are non-numeric', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    process.env.KUROSHIRO_ALERT_RETENTION_DAYS = 'not-a-number'
+    process.env.KUROSHIRO_DEVICE_LOG_RETENTION_DAYS = 'also-not-a-number'
+
+    expect(config().retention).toEqual({
+      alertRetentionDays: 90,
+      deviceLogRetentionDays: 30,
+    })
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('KUROSHIRO_ALERT_RETENTION_DAYS'))
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('KUROSHIRO_DEVICE_LOG_RETENTION_DAYS'))
 
     warnSpy.mockRestore()
   })

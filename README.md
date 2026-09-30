@@ -278,10 +278,14 @@ Delivery goes through the [`apprise-api`](https://github.com/caronc/apprise-api)
 | `KUROSHIRO_ALERT_LOW_BATTERY_PERCENT` | `20` | Derived battery percentage below which a Device is considered low. |
 | `KUROSHIRO_ALERT_OFFLINE_MULTIPLIER` | `3` | A Device is offline once it hasn't polled for longer than its `refreshRate` times this multiplier. |
 | `KUROSHIRO_ALERT_FETCH_FAILURES` | `3` | Consecutive scheduled-render failures a `fetch`-mode Data Source needs before its Alert opens. |
+| `KUROSHIRO_ALERT_RETENTION_DAYS` | `90` | Age (in days) after which a resolved Alert is pruned by the daily Retention job. `0` disables Alert pruning. |
+| `KUROSHIRO_DEVICE_LOG_RETENTION_DAYS` | `30` | Age (in days) after which a Device Log entry is pruned by the daily Retention job. `0` disables Device Log pruning. |
 
 To run the sidecar alongside Kuroshiro, uncomment the `apprise-api` service in [`docker-compose.yml`](./docker-compose.yml) and point `KUROSHIRO_APPRISE_URL` at it (e.g. `http://apprise-api:8000`), then configure your notification channels in its own persisted config under the `kuroshiro` key (or whatever `KUROSHIRO_APPRISE_KEY` is set to).
 
 The Maintenance page's Alerts card shows every active Alert plus anything resolved in the last 7 days, with a **Send test Notification** button that exercises the real delivery path (a synthetic success Notification, not a real Alert) so you can confirm Apprise is wired up correctly without waiting for a real condition to fire.
+
+A daily Retention job (same 4am schedule as the Device Model and Firmware syncs) prunes resolved Alerts and Device Log entries older than `KUROSHIRO_ALERT_RETENTION_DAYS`/`KUROSHIRO_DEVICE_LOG_RETENTION_DAYS` respectively; active Alerts are never touched regardless of age. The Maintenance page's Retention card shows the configured ages and the last run's time and counts (lost on restart — it isn't persisted), and lets you trigger a run on demand, previewing the counts via a dry run before you confirm.
 
 ---
 

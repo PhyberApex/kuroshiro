@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CleanupResult, DeviceModelSyncResult, FirmwareSyncResult } from 'kuroshiro-shared'
+import type { CleanupResult, DeviceModelSyncResult, FirmwareSyncResult, RetentionRunResult } from 'kuroshiro-shared'
 import { mdiAlertCircle, mdiCheckCircle, mdiRefresh } from '@mdi/js'
 import { computed, onMounted, ref } from 'vue'
 import { VAlert, VBtn, VCard, VCardText, VCardTitle, VChip, VCol, VContainer, VDivider, VListItemSubtitle, VListItemTitle, VProgressCircular, VRow } from 'vuetify/components'
@@ -11,6 +11,8 @@ import ConfigurationCard from '@/components/maintenance/ConfigurationCard.vue'
 import DeviceModelsCard from '@/components/maintenance/DeviceModelsCard.vue'
 import FirmwareCard from '@/components/maintenance/FirmwareCard.vue'
 import MaintenanceIssueListCard from '@/components/maintenance/MaintenanceIssueListCard.vue'
+import RetentionCard from '@/components/maintenance/RetentionCard.vue'
+import RetentionConfirmDialog from '@/components/maintenance/RetentionConfirmDialog.vue'
 import ScanSummaryCard from '@/components/maintenance/ScanSummaryCard.vue'
 import { useAlertsStore } from '@/stores/alerts'
 import { useDeviceModelsStore } from '@/stores/deviceModels'
@@ -137,8 +139,44 @@ const totalSelectedSize = computed(() => {
   return size
 })
 
+const retentionRunning = ref(false)
+const retentionError = ref<string | null>(null)
+const retentionPreview = ref<RetentionRunResult | null>(null)
+const showRetentionConfirmDialog = ref(false)
+const retentionConfirming = ref(false)
+
+async function handleRetentionPreview() {
+  retentionRunning.value = true
+  retentionError.value = null
+  try {
+    retentionPreview.value = await maintenanceStore.runRetention(true)
+    showRetentionConfirmDialog.value = true
+  }
+  catch (err) {
+    retentionError.value = err instanceof Error ? err.message : 'Failed to preview retention'
+  }
+  finally {
+    retentionRunning.value = false
+  }
+}
+
+async function handleRetentionConfirm() {
+  retentionConfirming.value = true
+  try {
+    await maintenanceStore.runRetention(false)
+    showRetentionConfirmDialog.value = false
+    retentionPreview.value = null
+  }
+  catch (err) {
+    retentionError.value = err instanceof Error ? err.message : 'Failed to run retention'
+  }
+  finally {
+    retentionConfirming.value = false
+  }
+}
+
 onMounted(async () => {
-  await Promise.all([maintenanceStore.scanSystem(), deviceModelsStore.ensureLoaded(), firmwareStore.ensureLoaded(), alertsStore.ensureLoaded()])
+  await Promise.all([maintenanceStore.scanSystem(), deviceModelsStore.ensureLoaded(), firmwareStore.ensureLoaded(), alertsStore.ensureLoaded(), maintenanceStore.loadRetentionStatus()])
 })
 
 async function handleScan() {
@@ -259,6 +297,13 @@ async function executeCleanup() {
           @dismiss-test-notification-result="testNotificationResult = null"
         />
 
+        <RetentionCard
+          :status="maintenanceStore.retentionStatus"
+          :running="retentionRunning"
+          :error="retentionError"
+          @run="handleRetentionPreview"
+        />
+
         <VAlert
           v-if="maintenanceStore.error"
           type="error"
@@ -377,6 +422,13 @@ async function executeCleanup() {
       :screen-count="selectedBrokenScreens.length"
       :total-size="totalSelectedSize"
       @confirm="executeCleanup"
+    />
+
+    <RetentionConfirmDialog
+      v-model="showRetentionConfirmDialog"
+      :preview="retentionPreview"
+      :confirming="retentionConfirming"
+      @confirm="handleRetentionConfirm"
     />
   </VContainer>
 </template>
