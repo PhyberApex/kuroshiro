@@ -12,6 +12,7 @@ import { Plugin } from './entities/plugin.entity.js'
 import { WebhookPluginGuard } from './guards/webhook-plugin.guard.js'
 import { PluginsController } from './plugins.controller.js'
 import { PluginsService } from './plugins.service.js'
+import { DataSourceFetchOutcomeService } from './services/data-source-fetch-outcome.service.js'
 import { PluginDataFetcherService } from './services/plugin-data-fetcher.service.js'
 import { PluginDataResolverService } from './services/plugin-data-resolver.service.js'
 import { PluginExporterService } from './services/plugin-exporter.service.js'
@@ -41,6 +42,7 @@ import { WebhookIngestController } from './webhook-ingest.controller.js'
   controllers: [PluginsController, WebhookIngestController],
   providers: [
     PluginsService,
+    DataSourceFetchOutcomeService,
     PluginDataFetcherService,
     PluginDataResolverService,
     PluginRendererService,

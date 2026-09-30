@@ -3,7 +3,7 @@ import { makeDevice } from '../../../test/fixtures.js'
 import { lowBatteryRule } from '../low-battery.rule.js'
 
 const NOW = new Date('2026-01-01T12:00:00.000Z')
-const context = { now: NOW, lowBatteryPercent: 20, offlineMultiplier: 3 }
+const context = { now: NOW, lowBatteryPercent: 20, offlineMultiplier: 3, fetchFailureThreshold: 3 }
 
 describe('lowBatteryRule', () => {
   it('opens when the derived percentage is below the threshold', () => {

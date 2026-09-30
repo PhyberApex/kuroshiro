@@ -2,6 +2,7 @@ import type { ScheduledTask } from 'node-cron'
 import type { Plugin } from '../entities/plugin.entity.js'
 import { Injectable, Logger } from '@nestjs/common'
 import cron from 'node-cron'
+import { DataSourceFetchOutcomeService } from './data-source-fetch-outcome.service.js'
 import { PluginDataResolverService } from './plugin-data-resolver.service.js'
 import { PluginRenderCacheService } from './plugin-render-cache.service.js'
 import { PluginTemplateContextService } from './plugin-template-context.service.js'
@@ -15,6 +16,7 @@ export class PluginSchedulerService {
     private readonly pluginDataResolver: PluginDataResolverService,
     private readonly renderCache: PluginRenderCacheService,
     private readonly pluginTemplateContext: PluginTemplateContextService,
+    private readonly fetchOutcome: DataSourceFetchOutcomeService,
   ) {}
 
   schedulePlugin(plugin: Plugin): void {
@@ -36,6 +38,10 @@ export class PluginSchedulerService {
         const templateContext = this.pluginTemplateContext.build(plugin, [])
 
         const sourceData = await this.pluginDataResolver.resolveAll(plugin.dataSources, templateContext)
+
+        // Recorded before the render so a render failure below can never
+        // lose the fetch outcome the scheduler tick just observed (ADR-0025).
+        await this.fetchOutcome.recordOutcomes(plugin.dataSources, sourceData)
 
         await this.renderCache.renderAndCache(plugin, { ...templateContext, ...sourceData })
       }

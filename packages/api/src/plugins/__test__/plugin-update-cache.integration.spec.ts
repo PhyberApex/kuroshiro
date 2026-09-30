@@ -16,6 +16,7 @@ import { PluginTemplate } from '../entities/plugin-template.entity.js'
 import { PluginVariable } from '../entities/plugin-variable.entity.js'
 import { Plugin as PluginEntity } from '../entities/plugin.entity.js'
 import { PluginsService } from '../plugins.service.js'
+import { DataSourceFetchOutcomeService } from '../services/data-source-fetch-outcome.service.js'
 import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
 import { PluginDataResolverService } from '../services/plugin-data-resolver.service.js'
 import { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
@@ -105,6 +106,7 @@ describe('plugin update cache invalidation integration', () => {
       providers: [
         PluginsService,
         PluginSchedulerService,
+        DataSourceFetchOutcomeService,
         PluginDataResolverService,
         PluginRenderCacheService,
         PluginRendererService,
@@ -114,7 +116,7 @@ describe('plugin update cache invalidation integration', () => {
         { provide: getRepositoryToken(PluginEntity), useValue: pluginRepo },
         { provide: getRepositoryToken(DevicePlugin), useValue: {} },
         { provide: getRepositoryToken(ScreenEntity), useValue: screenRepo },
-        { provide: getRepositoryToken(PluginDataSource), useValue: {} },
+        { provide: getRepositoryToken(PluginDataSource), useValue: { update: vi.fn() } },
         { provide: getRepositoryToken(PluginTemplate), useValue: templateRepo },
         { provide: getRepositoryToken(PluginField), useValue: {} },
         { provide: getRepositoryToken(PluginVariable), useValue: {} },

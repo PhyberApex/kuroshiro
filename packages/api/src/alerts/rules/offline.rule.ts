@@ -1,6 +1,7 @@
 import type { Device } from '../../devices/devices.entity.js'
 import type { AlertRule } from './alert-rule.js'
 import { isDeviceAsleep } from '../../devices/sleep-mode.js'
+import { deviceSubjectFields } from './alert-rule.js'
 
 const MS_PER_SECOND = 1000
 
@@ -35,8 +36,10 @@ function effectiveLastSeen(device: Device, now: Date): Date {
 
 export const offlineRule: AlertRule = {
   kind: 'device-offline',
+  ...deviceSubjectFields(),
 
-  evaluate(device, context, hasActiveAlert) {
+  evaluate(subject, context, hasActiveAlert) {
+    const device = subject as Device
     if (isDeviceAsleep(device, context.now))
       return { skip: true, active: hasActiveAlert }
 
@@ -46,7 +49,8 @@ export const offlineRule: AlertRule = {
     return { active: staleMs > thresholdMs, details: { lastSeen: device.lastSeen.toISOString() } }
   },
 
-  openedNotification(device, details) {
+  openedNotification(subject, details) {
+    const device = subject as Device
     return {
       title: `Kuroshiro: ${device.name} is offline`,
       body: `${device.name} (${device.mac}) was last seen ${details.lastSeen}.`,
@@ -54,7 +58,8 @@ export const offlineRule: AlertRule = {
     }
   },
 
-  resolvedNotification(device, details) {
+  resolvedNotification(subject, details) {
+    const device = subject as Device
     return {
       title: `Kuroshiro: ${device.name} back online`,
       body: `${device.name} (${device.mac}) was last seen ${details.lastSeen}.`,
