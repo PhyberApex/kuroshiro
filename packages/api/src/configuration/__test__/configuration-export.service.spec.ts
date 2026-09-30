@@ -8,6 +8,7 @@ import type { Screen } from '../../screens/screens.entity.js'
 import type { InstanceSettings } from '../../settings/entities/instance-settings.entity.js'
 import { Buffer } from 'node:buffer'
 import AdmZip from 'adm-zip'
+import { CONFIGURATION_REDACTION_SENTINEL } from 'kuroshiro-shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PluginExporterService } from '../../plugins/services/plugin-exporter.service.js'
 import {
@@ -18,6 +19,7 @@ import {
   makePlugin,
   makePluginDataSource,
   makePluginTemplate,
+  makePluginVariable,
   makeSchedule,
   makeScreen,
 } from '../../test/fixtures.js'
@@ -93,8 +95,18 @@ describe('configurationExportService', () => {
 
     expect(manifest.schemaVersion).toBe(CONFIG_SCHEMA_VERSION)
     expect(manifest.containsSecrets).toBe(true)
+    expect(manifest.redacted).toBeUndefined()
     expect(typeof manifest.kuroshiroVersion).toBe('string')
     expect(typeof manifest.exportedAt).toBe('string')
+  })
+
+  it('writes containsSecrets: false and redacted: true when the redact option is set', async () => {
+    const buffer = await service.exportToZip({ redact: true })
+    const zip = new AdmZip(buffer)
+    const manifest = JSON.parse(zip.getEntry('manifest.json')!.getData().toString('utf8'))
+
+    expect(manifest.containsSecrets).toBe(false)
+    expect(manifest.redacted).toBe(true)
   })
 
   it('nests each Plugin as a .trmnlp folder, reusing the per-Plugin exporter, and records its ids in plugins.json', async () => {
@@ -117,6 +129,104 @@ describe('configurationExportService', () => {
     expect(pluginsJson[0].id).toBe('plugin-1')
     expect(pluginsJson[0].dataSources).toEqual([{ id: 'ds-1', name: 'source' }])
     expect(pluginsJson[0].templates).toEqual([{ id: 'tpl-1', layout: 'full' }])
+  })
+
+  it('redacts Data Source header values but not keys, url, or body, in the nested .trmnlp settings.yml, when redact is set', async () => {
+    const plugin = makePlugin({
+      id: 'plugin-1',
+      dataSources: [makePluginDataSource({
+        id: 'ds-1',
+        name: 'source',
+        url: 'https://example.com/data?key=super-secret',
+        headers: { 'Authorization': 'Bearer real-token', 'X-Custom': 'real-value' },
+        body: { apiKey: 'real-body-secret' },
+      })],
+      templates: [makePluginTemplate({ id: 'tpl-1', layout: 'full' })],
+    })
+    pluginRepo.find.mockResolvedValue([plugin])
+
+    const buffer = await service.exportToZip({ redact: true })
+    const zip = new AdmZip(buffer)
+    const settings = zip.getEntry('plugins/plugin-1/src/settings.yml')!.getData().toString('utf8')
+
+    expect(settings).toContain(`Authorization: ${CONFIGURATION_REDACTION_SENTINEL}`)
+    expect(settings).toContain(`X-Custom: ${CONFIGURATION_REDACTION_SENTINEL}`)
+    expect(settings).not.toContain('real-token')
+    expect(settings).not.toContain('real-value')
+    expect(settings).toContain('key=super-secret')
+    expect(settings).toContain('real-body-secret')
+  })
+
+  it('does not redact headers in the nested .trmnlp settings.yml without the redact option', async () => {
+    const plugin = makePlugin({
+      id: 'plugin-1',
+      dataSources: [makePluginDataSource({ id: 'ds-1', name: 'source', headers: { Authorization: 'Bearer real-token' } })],
+      templates: [makePluginTemplate({ id: 'tpl-1', layout: 'full' })],
+    })
+    pluginRepo.find.mockResolvedValue([plugin])
+
+    const buffer = await service.exportToZip()
+    const zip = new AdmZip(buffer)
+    const settings = zip.getEntry('plugins/plugin-1/src/settings.yml')!.getData().toString('utf8')
+
+    expect(settings).toContain('Bearer real-token')
+  })
+
+  it('redacts isSecret Plugin Variable values and a set webhookToken in plugins.json, leaving non-secret values and an unset webhookToken alone', async () => {
+    const plugin = makePlugin({
+      id: 'plugin-1',
+      kind: 'Webhook',
+      webhookToken: 'real-webhook-token',
+      variables: [
+        makePluginVariable({ id: 'var-1', key: 'SECRET_KEY', value: 'real-secret', isSecret: true }),
+        makePluginVariable({ id: 'var-2', key: 'PUBLIC_KEY', value: 'not-secret', isSecret: false }),
+      ],
+    })
+    const pluginNoToken = makePlugin({ id: 'plugin-2', webhookToken: null })
+    pluginRepo.find.mockResolvedValue([plugin, pluginNoToken])
+
+    const buffer = await service.exportToZip({ redact: true })
+    const zip = new AdmZip(buffer)
+    const pluginsJson = JSON.parse(zip.getEntry('plugins.json')!.getData().toString('utf8'))
+
+    const entry = pluginsJson.find((p: { id: string }) => p.id === 'plugin-1')
+    expect(entry.webhookToken).toBe(CONFIGURATION_REDACTION_SENTINEL)
+    expect(entry.variables).toEqual([
+      { id: 'var-1', key: 'SECRET_KEY', value: CONFIGURATION_REDACTION_SENTINEL, isSecret: true },
+      { id: 'var-2', key: 'PUBLIC_KEY', value: 'not-secret', isSecret: false },
+    ])
+
+    const entryNoToken = pluginsJson.find((p: { id: string }) => p.id === 'plugin-2')
+    expect(entryNoToken.webhookToken).toBeNull()
+  })
+
+  it('redacts Device apikey and a set mirrorApikey in devices.json, when redact is set', async () => {
+    const device = makeDevice({ id: 'device-1', apikey: 'real-apikey', mirrorApikey: 'real-mirror-key' })
+    const deviceNoMirror = makeDevice({ id: 'device-2', apikey: 'real-apikey-2' })
+    deviceRepo.find.mockResolvedValue([device, deviceNoMirror])
+
+    const buffer = await service.exportToZip({ redact: true })
+    const zip = new AdmZip(buffer)
+    const devicesJson = JSON.parse(zip.getEntry('devices.json')!.getData().toString('utf8'))
+
+    const entry = devicesJson.find((d: { id: string }) => d.id === 'device-1')
+    expect(entry.apikey).toBe(CONFIGURATION_REDACTION_SENTINEL)
+    expect(entry.mirrorApikey).toBe(CONFIGURATION_REDACTION_SENTINEL)
+
+    const entryNoMirror = devicesJson.find((d: { id: string }) => d.id === 'device-2')
+    expect(entryNoMirror.apikey).toBe(CONFIGURATION_REDACTION_SENTINEL)
+    expect(entryNoMirror.mirrorApikey).toBeNull()
+  })
+
+  it('does not send secrets when redact is not set (default unredacted behavior)', async () => {
+    const device = makeDevice({ id: 'device-1', apikey: 'real-apikey' })
+    deviceRepo.find.mockResolvedValue([device])
+
+    const buffer = await service.exportToZip()
+    const zip = new AdmZip(buffer)
+    const devicesJson = JSON.parse(zip.getEntry('devices.json')!.getData().toString('utf8'))
+
+    expect(devicesJson[0].apikey).toBe('real-apikey')
   })
 
   it('only includes custom Palettes and custom Firmware, never official ones', async () => {

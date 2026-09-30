@@ -9,6 +9,7 @@ import type {
   MashupConfigurationManifestEntry,
   PaletteManifestEntry,
   PluginManifestEntry,
+  PluginManifestVariable,
   ScheduleManifestEntry,
   ScreenManifestEntry,
 } from '../types.js'
@@ -17,13 +18,14 @@ import { existsSync, readFileSync } from 'node:fs'
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import AdmZip from 'adm-zip'
-import { SETTING_KEYS } from 'kuroshiro-shared'
+import { CONFIGURATION_REDACTION_SENTINEL, SETTING_KEYS } from 'kuroshiro-shared'
 import { Repository } from 'typeorm'
 import { Palette } from '../../device-models/entities/palette.entity.js'
 import { Device } from '../../devices/devices.entity.js'
 import { Firmware } from '../../firmware/entities/firmware.entity.js'
 import { DevicePlugin } from '../../plugins/entities/device-plugin.entity.js'
 import { PluginFieldValue } from '../../plugins/entities/plugin-field-value.entity.js'
+import { PluginVariable } from '../../plugins/entities/plugin-variable.entity.js'
 import { Plugin } from '../../plugins/entities/plugin.entity.js'
 import { PluginExporterService } from '../../plugins/services/plugin-exporter.service.js'
 import { Screen } from '../../screens/screens.entity.js'
@@ -55,7 +57,8 @@ export class ConfigurationExportService {
     private readonly pluginExporter: PluginExporterService,
   ) {}
 
-  async exportToZip(): Promise<Buffer> {
+  async exportToZip(options: { redact?: boolean } = {}): Promise<Buffer> {
+    const redact = options.redact ?? false
     const zip = new AdmZip()
 
     const [plugins, devices, screens, assignments, fieldValues, palettes, firmware, instanceSettings] = await Promise.all([
@@ -69,16 +72,16 @@ export class ConfigurationExportService {
       this.instanceSettingsRepository.findOneBy({ id: INSTANCE_SETTINGS_ID }),
     ])
 
-    this.addJson(zip, CONFIG_ARCHIVE_FILES.manifest, this.buildManifest())
+    this.addJson(zip, CONFIG_ARCHIVE_FILES.manifest, this.buildManifest(redact))
 
     for (const plugin of plugins) {
-      for (const entry of this.pluginExporter.buildEntries(plugin)) {
+      for (const entry of this.pluginExporter.buildEntries(redact ? this.withRedactedHeaders(plugin) : plugin)) {
         zip.addFile(`plugins/${plugin.id}/${entry.path}`, entry.content)
       }
     }
-    this.addJson(zip, CONFIG_ARCHIVE_FILES.plugins, plugins.map(plugin => this.buildPluginEntry(plugin)))
+    this.addJson(zip, CONFIG_ARCHIVE_FILES.plugins, plugins.map(plugin => this.buildPluginEntry(plugin, redact)))
 
-    this.addJson(zip, CONFIG_ARCHIVE_FILES.devices, devices.map(device => this.buildDeviceEntry(device)))
+    this.addJson(zip, CONFIG_ARCHIVE_FILES.devices, devices.map(device => this.buildDeviceEntry(device, redact)))
 
     const screenEntries: ScreenManifestEntry[] = []
     for (const screen of screens) {
@@ -98,51 +101,76 @@ export class ConfigurationExportService {
     return zip.toBuffer()
   }
 
-  private buildManifest() {
+  private buildManifest(redact: boolean) {
     return {
       kuroshiroVersion: getApiVersion(),
       schemaVersion: CONFIG_SCHEMA_VERSION,
       exportedAt: new Date().toISOString(),
-      containsSecrets: true as const,
+      containsSecrets: !redact,
+      ...(redact ? { redacted: true as const } : {}),
     }
   }
 
-  private buildPluginEntry(plugin: Plugin): PluginManifestEntry {
+  /** A shallow clone whose Data Source header *values* are replaced by the Redaction Sentinel, for `buildEntries` to write into the archive's nested `.trmnlp` — the standalone per-Plugin export/import never sees this clone (ADR-0028). */
+  private withRedactedHeaders(plugin: Plugin): Plugin {
+    return {
+      ...plugin,
+      dataSources: (plugin.dataSources || []).map(ds => ({
+        ...ds,
+        headers: ds.headers && Object.fromEntries(Object.keys(ds.headers).map(key => [key, CONFIGURATION_REDACTION_SENTINEL])),
+      })),
+    }
+  }
+
+  private buildPluginEntry(plugin: Plugin, redact: boolean): PluginManifestEntry {
     return {
       id: plugin.id,
       kind: plugin.kind,
       mergeStrategy: plugin.mergeStrategy ?? null,
       streamLimit: plugin.streamLimit ?? null,
-      webhookToken: plugin.webhookToken ?? null,
+      webhookToken: this.redactWebhookToken(plugin.webhookToken, redact),
       sourceRecipeId: plugin.sourceRecipeId ?? null,
       dataSources: (plugin.dataSources || []).map(ds => ({ id: ds.id, name: ds.name })),
       templates: (plugin.templates || []).map(template => ({ id: template.id, layout: template.layout })),
       fields: (plugin.fields || []).map(field => ({ id: field.id, keyname: field.keyname })),
-      variables: (plugin.variables || []).map(variable => ({ id: variable.id, key: variable.key, value: variable.value, isSecret: variable.isSecret })),
+      variables: (plugin.variables || []).map(variable => this.buildVariableEntry(variable, redact)),
     }
   }
 
-  private buildDeviceEntry(device: Device): DeviceManifestEntry {
+  private redactWebhookToken(webhookToken: string | null | undefined, redact: boolean): string | null {
+    return redact && webhookToken ? CONFIGURATION_REDACTION_SENTINEL : (webhookToken ?? null)
+  }
+
+  private buildVariableEntry(variable: PluginVariable, redact: boolean): PluginManifestVariable {
+    return {
+      id: variable.id,
+      key: variable.key,
+      value: redact && variable.isSecret ? CONFIGURATION_REDACTION_SENTINEL : variable.value,
+      isSecret: variable.isSecret,
+    }
+  }
+
+  private buildDeviceEntry(device: Device, redact: boolean): DeviceManifestEntry {
     return {
       id: device.id,
       name: device.name,
       friendlyId: device.friendlyId,
       mac: device.mac,
-      apikey: device.apikey,
+      apikey: redact ? CONFIGURATION_REDACTION_SENTINEL : device.apikey,
       refreshRate: device.refreshRate,
       deviceModelName: device.deviceModel?.name ?? null,
       paletteId: device.palette?.id ?? null,
-      ...this.buildDeviceMirrorFields(device),
+      ...this.buildDeviceMirrorFields(device, redact),
       ...this.buildDeviceSleepFields(device),
       targetFirmwareId: device.targetFirmware?.id ?? null,
     }
   }
 
-  private buildDeviceMirrorFields(device: Device): Pick<DeviceManifestEntry, 'mirrorEnabled' | 'mirrorMac' | 'mirrorApikey'> {
+  private buildDeviceMirrorFields(device: Device, redact: boolean): Pick<DeviceManifestEntry, 'mirrorEnabled' | 'mirrorMac' | 'mirrorApikey'> {
     return {
       mirrorEnabled: device.mirrorEnabled ?? null,
       mirrorMac: device.mirrorMac ?? null,
-      mirrorApikey: device.mirrorApikey ?? null,
+      mirrorApikey: redact && device.mirrorApikey ? CONFIGURATION_REDACTION_SENTINEL : (device.mirrorApikey ?? null),
     }
   }
 

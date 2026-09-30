@@ -17,7 +17,8 @@ export interface ConfigurationManifest {
   kuroshiroVersion: string
   schemaVersion: number
   exportedAt: string
-  containsSecrets: true
+  containsSecrets: boolean
+  redacted?: true
 }
 
 export interface PluginManifestDataSource {

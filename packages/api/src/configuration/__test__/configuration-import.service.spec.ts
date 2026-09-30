@@ -3,6 +3,7 @@ import type { Plugin } from '../../plugins/entities/plugin.entity.js'
 import { Buffer } from 'node:buffer'
 import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
+import { CONFIGURATION_REDACTION_SENTINEL } from 'kuroshiro-shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PluginImporterService } from '../../plugins/services/plugin-importer.service.js'
 import { CONFIG_SCHEMA_VERSION } from '../schema-version.js'
@@ -402,6 +403,255 @@ describe('configurationImportService', () => {
 
     const settingsRows = [...backing.get('InstanceSettings')!.values()]
     expect(settingsRows).toEqual([{ id: 1, lowBatteryPercent: 15, offlineMultiplier: null, fetchFailureThreshold: null }])
+  })
+
+  it('keeps a Data Source\'s existing header value when the archive holds the sentinel and a value exists, with no warning', async () => {
+    backing.get('Plugin')!.set('plugin-1', { id: 'plugin-1', name: 'Test Plugin', kind: 'Poll', refreshInterval: 15 })
+    backing.get('PluginDataSource')!.set('ds-1', { id: 'ds-1', name: 'source', headers: { Authorization: 'Bearer real-token' } })
+
+    const buffer = buildArchive({
+      plugins: [{
+        id: 'plugin-1',
+        kind: 'Poll',
+        mergeStrategy: null,
+        streamLimit: null,
+        webhookToken: null,
+        sourceRecipeId: null,
+        dataSources: [{ id: 'ds-1', name: 'source' }],
+        templates: [{ id: 'tpl-1', layout: 'full' }],
+        fields: [],
+        variables: [],
+      }],
+      pluginFolders: {
+        'plugin-1': {
+          manifest: { name: 'Test Plugin', description: '', custom_fields: [] },
+          settings: { refresh_interval: 15, data_sources: [{ name: 'source', endpoint: 'https://api.example.com', method: 'GET', headers: { Authorization: CONFIGURATION_REDACTION_SENTINEL }, body: {} }] },
+          templates: { full: 'Hello' },
+        },
+      },
+    })
+
+    const summary = await service.importFromZip(buffer)
+
+    const dataSource = [...backing.get('PluginDataSource')!.values()].find(row => row.id === 'ds-1')
+    expect(dataSource!.headers).toEqual({ Authorization: 'Bearer real-token' })
+    expect(summary.warnings).toEqual([])
+  })
+
+  it('drops a header and warns when the archive holds the sentinel with no existing value to keep, leaving other headers untouched', async () => {
+    const buffer = buildArchive({
+      plugins: [{
+        id: 'plugin-1',
+        kind: 'Poll',
+        mergeStrategy: null,
+        streamLimit: null,
+        webhookToken: null,
+        sourceRecipeId: null,
+        dataSources: [{ id: 'ds-1', name: 'source' }],
+        templates: [{ id: 'tpl-1', layout: 'full' }],
+        fields: [],
+        variables: [],
+      }],
+      pluginFolders: {
+        'plugin-1': {
+          manifest: { name: 'Test Plugin', description: '', custom_fields: [] },
+          settings: { refresh_interval: 15, data_sources: [{ name: 'source', endpoint: 'https://api.example.com', method: 'GET', headers: { 'Authorization': CONFIGURATION_REDACTION_SENTINEL, 'X-Keep': 'plain' }, body: {} }] },
+          templates: { full: 'Hello' },
+        },
+      },
+    })
+
+    const summary = await service.importFromZip(buffer)
+
+    const dataSource = [...backing.get('PluginDataSource')!.values()][0]
+    expect(dataSource.headers).toEqual({ 'X-Keep': 'plain' })
+    expect(summary.warnings.some(w => w.includes('Authorization'))).toBe(true)
+  })
+
+  it('keeps a Data Source\'s existing header when its current value is legitimately empty, with no warning', async () => {
+    backing.get('Plugin')!.set('plugin-1', { id: 'plugin-1', name: 'Test Plugin', kind: 'Poll', refreshInterval: 15 })
+    backing.get('PluginDataSource')!.set('ds-1', { id: 'ds-1', name: 'source', headers: { 'X-Empty': '' } })
+
+    const buffer = buildArchive({
+      plugins: [{
+        id: 'plugin-1',
+        kind: 'Poll',
+        mergeStrategy: null,
+        streamLimit: null,
+        webhookToken: null,
+        sourceRecipeId: null,
+        dataSources: [{ id: 'ds-1', name: 'source' }],
+        templates: [{ id: 'tpl-1', layout: 'full' }],
+        fields: [],
+        variables: [],
+      }],
+      pluginFolders: {
+        'plugin-1': {
+          manifest: { name: 'Test Plugin', description: '', custom_fields: [] },
+          settings: { refresh_interval: 15, data_sources: [{ name: 'source', endpoint: 'https://api.example.com', method: 'GET', headers: { 'X-Empty': CONFIGURATION_REDACTION_SENTINEL }, body: {} }] },
+          templates: { full: 'Hello' },
+        },
+      },
+    })
+
+    const summary = await service.importFromZip(buffer)
+
+    const dataSource = [...backing.get('PluginDataSource')!.values()].find(row => row.id === 'ds-1')
+    expect(dataSource!.headers).toEqual({ 'X-Empty': '' })
+    expect(summary.warnings).toEqual([])
+  })
+
+  it('keeps an existing Plugin Variable value when the archive holds the sentinel — including a legitimately empty one — and falls back to empty with a warning for one that has never had a value', async () => {
+    backing.get('Plugin')!.set('plugin-1', { id: 'plugin-1', name: 'Test Plugin', kind: 'Poll', refreshInterval: 15 })
+    backing.get('PluginVariable')!.set('var-1', { id: 'var-1', key: 'SECRET', value: 'real-secret', isSecret: true })
+    backing.get('PluginVariable')!.set('var-3', { id: 'var-3', key: 'EMPTY_SECRET', value: '', isSecret: true })
+
+    const buffer = buildArchive({
+      plugins: [{
+        id: 'plugin-1',
+        kind: 'Poll',
+        mergeStrategy: null,
+        streamLimit: null,
+        webhookToken: null,
+        sourceRecipeId: null,
+        dataSources: [],
+        templates: [{ id: 'tpl-1', layout: 'full' }],
+        fields: [],
+        variables: [
+          { id: 'var-1', key: 'SECRET', value: CONFIGURATION_REDACTION_SENTINEL, isSecret: true },
+          { id: 'var-2', key: 'NEW_SECRET', value: CONFIGURATION_REDACTION_SENTINEL, isSecret: true },
+          { id: 'var-3', key: 'EMPTY_SECRET', value: CONFIGURATION_REDACTION_SENTINEL, isSecret: true },
+        ],
+      }],
+      pluginFolders: {
+        'plugin-1': { manifest: { name: 'Test Plugin', custom_fields: [] }, templates: { full: 'Hello' } },
+      },
+    })
+
+    const summary = await service.importFromZip(buffer)
+
+    const variables = [...backing.get('PluginVariable')!.values()]
+    expect(variables.find(v => v.id === 'var-1')!.value).toBe('real-secret')
+    expect(variables.find(v => v.id === 'var-2')!.value).toBe('')
+    expect(variables.find(v => v.id === 'var-3')!.value).toBe('')
+    expect(summary.warnings).toEqual([expect.stringContaining('NEW_SECRET')])
+  })
+
+  it('keeps an existing Device\'s mirrorApikey when the archive holds the sentinel, with no warning', async () => {
+    backing.get('Device')!.set('device-1', {
+      id: 'device-1',
+      name: 'Old',
+      friendlyId: 'OLD1',
+      mac: 'AA:BB:CC:DD:EE:FF',
+      apikey: 'key1',
+      refreshRate: 300,
+      sleepModeEnabled: false,
+      sleepScreenEnabled: false,
+      mirrorApikey: 'real-mirror-key',
+    })
+
+    const buffer = buildArchive({ devices: [makeDeviceEntry({ mirrorApikey: CONFIGURATION_REDACTION_SENTINEL })] })
+
+    const summary = await service.importFromZip(buffer)
+
+    const device = [...backing.get('Device')!.values()][0]
+    expect(device.mirrorApikey).toBe('real-mirror-key')
+    expect(summary.warnings).toEqual([])
+  })
+
+  it('unsets a brand-new Device\'s mirrorApikey with a warning when the archive holds the sentinel', async () => {
+    const buffer = buildArchive({ devices: [makeDeviceEntry({ mirrorApikey: CONFIGURATION_REDACTION_SENTINEL })] })
+
+    const summary = await service.importFromZip(buffer)
+
+    const device = [...backing.get('Device')!.values()][0]
+    expect(device.mirrorApikey).toBeUndefined()
+    expect(summary.warnings.some(w => w.includes('mirrorApikey'))).toBe(true)
+  })
+
+  it('keeps an existing Device\'s apikey with no warning when the archive holds the sentinel and the row exists by id', async () => {
+    backing.get('Device')!.set('device-1', {
+      id: 'device-1',
+      name: 'Old',
+      friendlyId: 'OLD1',
+      mac: 'AA:BB:CC:DD:EE:FF',
+      apikey: 'existing-key',
+      refreshRate: 300,
+      sleepModeEnabled: false,
+      sleepScreenEnabled: false,
+    })
+
+    const buffer = buildArchive({ devices: [makeDeviceEntry({ apikey: CONFIGURATION_REDACTION_SENTINEL })] })
+
+    const summary = await service.importFromZip(buffer)
+
+    const device = [...backing.get('Device')!.values()][0]
+    expect(device.apikey).toBe('existing-key')
+    expect(summary.warnings).toEqual([])
+  })
+
+  it('generates a fresh apikey with a warning for a brand-new Device when the archive holds the sentinel', async () => {
+    const buffer = buildArchive({ devices: [makeDeviceEntry({ apikey: CONFIGURATION_REDACTION_SENTINEL })] })
+
+    const summary = await service.importFromZip(buffer)
+
+    const device = [...backing.get('Device')!.values()][0]
+    expect(device.apikey).not.toBe(CONFIGURATION_REDACTION_SENTINEL)
+    expect(typeof device.apikey).toBe('string')
+    expect((device.apikey as string).length).toBeGreaterThan(0)
+    expect(summary.warnings.some(w => w.includes('apikey'))).toBe(true)
+  })
+
+  it('keeps an existing Plugin\'s webhookToken with no warning when the archive holds the sentinel', async () => {
+    backing.get('Plugin')!.set('plugin-1', { id: 'plugin-1', name: 'Existing', kind: 'Webhook', webhookToken: 'real-token', refreshInterval: 15 })
+
+    const buffer = buildArchive({
+      plugins: [{
+        id: 'plugin-1',
+        kind: 'Webhook',
+        mergeStrategy: 'standard',
+        streamLimit: null,
+        webhookToken: CONFIGURATION_REDACTION_SENTINEL,
+        sourceRecipeId: null,
+        dataSources: [],
+        templates: [{ id: 'tpl-1', layout: 'full' }],
+        fields: [],
+        variables: [],
+      }],
+      pluginFolders: { 'plugin-1': { manifest: { name: 'Existing', custom_fields: [] }, templates: { full: 'Hello' } } },
+    })
+
+    const summary = await service.importFromZip(buffer)
+
+    const plugin = [...backing.get('Plugin')!.values()][0]
+    expect(plugin.webhookToken).toBe('real-token')
+    expect(summary.warnings).toEqual([])
+  })
+
+  it('generates a fresh webhookToken with a warning for a brand-new Plugin when the archive holds the sentinel', async () => {
+    const buffer = buildArchive({
+      plugins: [{
+        id: 'plugin-1',
+        kind: 'Webhook',
+        mergeStrategy: 'standard',
+        streamLimit: null,
+        webhookToken: CONFIGURATION_REDACTION_SENTINEL,
+        sourceRecipeId: null,
+        dataSources: [],
+        templates: [{ id: 'tpl-1', layout: 'full' }],
+        fields: [],
+        variables: [],
+      }],
+      pluginFolders: { 'plugin-1': { manifest: { name: 'Test', custom_fields: [] }, templates: { full: 'Hello' } } },
+    })
+
+    const summary = await service.importFromZip(buffer)
+
+    const plugin = [...backing.get('Plugin')!.values()][0]
+    expect(plugin.webhookToken).not.toBe(CONFIGURATION_REDACTION_SENTINEL)
+    expect(typeof plugin.webhookToken).toBe('string')
+    expect((plugin.webhookToken as string).length).toBeGreaterThan(0)
+    expect(summary.warnings.some(w => w.includes('webhookToken'))).toBe(true)
   })
 
   it('restores a file-type Screen\'s image from the archive onto disk', async () => {
