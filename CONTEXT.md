@@ -85,7 +85,7 @@ A pre-built, TRMNL-vetted Plugin template published at trmnl.com/recipes, import
 _Avoid_: Extension, Exchange (Terminus's terms), Plugin (the imported result — see above)
 
 **Configuration Archive**:
-A single zip holding every piece of admin-built configuration on a Kuroshiro instance — Plugins (as nested `.trmnlp` folders plus a manifest for what `.trmnlp` can't carry), Devices, Screens with their Order and Schedule, Mashups, Plugin assignments with their field values, custom Palettes and custom Firmware metadata — stamped with the Kuroshiro version and an archive `schemaVersion`. Produced by Configuration Export, consumed by Configuration Import. Every record keeps its `id`, which is the identity Configuration Import upserts on. Contains secrets (Data Source headers, Device API keys) in plaintext; the export surfaces warn about this rather than redacting. Excludes runtime state: Webhook Payloads, Sensor readings, rendered images for `plugin`/`mashup`-type Screens, logs, Device telemetry, and anything `official`/`official-synced` — except a `file`-type Screen's converted image, which for that Screen type is the actual admin-supplied content, not a regenerable cache.
+A single zip holding every piece of admin-built configuration on a Kuroshiro instance — Plugins (as nested `.trmnlp` folders plus a manifest for what `.trmnlp` can't carry), Devices, Screens with their Order and Schedule, Mashups, Plugin assignments with their field values, custom Palettes, custom Firmware metadata and the overridden Instance Settings — stamped with the Kuroshiro version and an archive `schemaVersion`. Produced by Configuration Export, consumed by Configuration Import. Every record keeps its `id`, which is the identity Configuration Import upserts on. Contains secrets (Data Source headers, Device API keys) in plaintext; the export surfaces warn about this rather than redacting. Excludes runtime state: Webhook Payloads, Sensor readings, rendered images for `plugin`/`mashup`-type Screens, logs, Device telemetry, and anything `official`/`official-synced` — except a `file`-type Screen's converted image, which for that Screen type is the actual admin-supplied content, not a regenerable cache.
 _Avoid_: Backup (reserve for `pg_dump`-level disaster recovery, which this does not replace), dump, snapshot, `.trmnlp` (that is one Plugin's export, which the archive nests but is not)
 
 **Configuration Export**:
@@ -117,7 +117,7 @@ A Device's current reading for one Qwiic sensor add-on kind — `carbon_dioxide`
 _Avoid_: Telemetry (too broad), Extension, Exchange (Terminus's terms — not adopted here)
 
 **Alert Rule**:
-A named condition Kuroshiro watches for on a subject — a Device (low battery, offline) or a `fetch`-mode Data Source (its Fetch Failure Streak reaching the threshold). The set of Alert Rules is fixed in code; an admin tunes their thresholds instance-wide, never per subject.
+A named condition Kuroshiro watches for on a subject — a Device (low battery, offline) or a `fetch`-mode Data Source (its Fetch Failure Streak reaching the threshold). The set of Alert Rules is fixed in code; an admin tunes their thresholds instance-wide through Instance Settings, never per subject.
 _Avoid_: Alarm, trigger, check, monitor
 
 **Alert**:
@@ -135,3 +135,7 @@ _Avoid_: Alert (as a name for the message), push, message
 **Test Notification**:
 A Notification an admin sends on demand from the Maintenance page to confirm the Apprise sidecar delivers. It travels the exact path a real Notification does but belongs to no Alert and leaves no record.
 _Avoid_: Ping, health check, dry run
+
+**Instance Settings**:
+The one set of admin-tunable values that apply to the whole Kuroshiro instance rather than to any single Device, Plugin or Screen — today the Alert Rule thresholds. Each Setting is either overridden (an admin saved a value, which wins) or not (the matching environment variable, else the built-in default, applies); clearing an override returns the Setting to that fallback.
+_Avoid_: Global settings, preferences, options, Configuration (reserved for the Configuration Archive), config (reserved for environment variables)
