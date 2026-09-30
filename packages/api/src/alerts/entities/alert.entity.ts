@@ -2,6 +2,7 @@ import type { AlertKind } from 'kuroshiro-shared'
 import type { Relation } from 'typeorm'
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { Device } from '../../devices/devices.entity.js'
+import { PluginDataSource } from '../../plugins/entities/plugin-data-source.entity.js'
 
 @Entity()
 export class Alert {
@@ -14,6 +15,10 @@ export class Alert {
   @ManyToOne(() => Device, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'deviceId' })
   device?: Relation<Device> | null
+
+  @ManyToOne(() => PluginDataSource, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'dataSourceId' })
+  dataSource?: Relation<PluginDataSource> | null
 
   @Column('timestamptz')
   openedAt: Date

@@ -145,6 +145,7 @@ export function makePluginDataSource(overrides: Partial<PluginDataSource> = {}):
     method: 'GET',
     url: 'https://example.com/data',
     order: 0,
+    fetchFailureStreak: 0,
     plugin: makePlugin(),
     ...overrides,
   }
