@@ -22,7 +22,7 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
-import { CONFIGURATION_REDACTION_SENTINEL, SETTING_KEYS } from 'kuroshiro-shared'
+import { BOOLEAN_SETTING_KEYS, CONFIGURATION_REDACTION_SENTINEL, SETTING_KEYS } from 'kuroshiro-shared'
 import { DeviceModel } from '../../device-models/entities/device-model.entity.js'
 import { Palette } from '../../device-models/entities/palette.entity.js'
 import { Device } from '../../devices/devices.entity.js'
@@ -162,6 +162,8 @@ export class ConfigurationImportService {
     const existing = await repo.findOneBy({ id: INSTANCE_SETTINGS_ID })
     const row = existing ?? repo.create({ id: INSTANCE_SETTINGS_ID })
     for (const key of SETTING_KEYS)
+      row[key] = entry[key] ?? null
+    for (const key of BOOLEAN_SETTING_KEYS)
       row[key] = entry[key] ?? null
     await repo.save(row)
   }

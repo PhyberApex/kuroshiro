@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, Max, Min } from 'class-validator'
+import { IsBoolean, IsInt, IsOptional, Max, Min } from 'class-validator'
 import { SETTING_BOUNDS } from 'kuroshiro-shared'
 
 export class UpdateInstanceSettingsDto {
@@ -17,4 +17,8 @@ export class UpdateInstanceSettingsDto {
   @IsInt()
   @Min(SETTING_BOUNDS.fetchFailureThreshold.min)
   fetchFailureThreshold?: number | null
+
+  @IsOptional()
+  @IsBoolean()
+  firmwareAutoUpdate?: boolean | null
 }

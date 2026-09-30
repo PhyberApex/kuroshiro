@@ -14,13 +14,23 @@ describe('updateInstanceSettingsDto', () => {
   })
 
   it('accepts null for every Setting, clearing its override', async () => {
-    const dto = plainToInstance(UpdateInstanceSettingsDto, { lowBatteryPercent: null, offlineMultiplier: null, fetchFailureThreshold: null })
+    const dto = plainToInstance(UpdateInstanceSettingsDto, { lowBatteryPercent: null, offlineMultiplier: null, fetchFailureThreshold: null, firmwareAutoUpdate: null })
     await expect(rejectedFields(dto)).resolves.toEqual([])
   })
 
   it('accepts an in-range integer for every Setting', async () => {
     const dto = plainToInstance(UpdateInstanceSettingsDto, { lowBatteryPercent: 50, offlineMultiplier: 4, fetchFailureThreshold: 5 })
     await expect(rejectedFields(dto)).resolves.toEqual([])
+  })
+
+  it('accepts true or false for firmwareAutoUpdate', async () => {
+    await expect(rejectedFields(plainToInstance(UpdateInstanceSettingsDto, { firmwareAutoUpdate: true }))).resolves.toEqual([])
+    await expect(rejectedFields(plainToInstance(UpdateInstanceSettingsDto, { firmwareAutoUpdate: false }))).resolves.toEqual([])
+  })
+
+  it('rejects a non-boolean firmwareAutoUpdate', async () => {
+    await expect(rejectedFields(plainToInstance(UpdateInstanceSettingsDto, { firmwareAutoUpdate: 'yes' }))).resolves.toEqual(['firmwareAutoUpdate'])
+    await expect(rejectedFields(plainToInstance(UpdateInstanceSettingsDto, { firmwareAutoUpdate: 1 }))).resolves.toEqual(['firmwareAutoUpdate'])
   })
 
   it('rejects a non-integer value', async () => {

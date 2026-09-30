@@ -1,4 +1,4 @@
-import type { SettingKey } from 'kuroshiro-shared'
+import type { BooleanSettingKey, SettingKey } from 'kuroshiro-shared'
 import type { MergeStrategy, PluginKind } from '../plugins/entities/plugin.entity.js'
 import type { Screen } from '../screens/screens.entity.js'
 
@@ -144,7 +144,7 @@ export interface PaletteManifestEntry {
 }
 
 // Only the overridden Instance Settings (ADR-0027) — fallback values are never exported.
-export type InstanceSettingsManifestEntry = Partial<Record<SettingKey, number>>
+export type InstanceSettingsManifestEntry = Partial<Record<SettingKey, number>> & Partial<Record<BooleanSettingKey, boolean>>
 
 export interface FirmwareManifestEntry {
   id: string

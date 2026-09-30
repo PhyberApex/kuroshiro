@@ -3,7 +3,7 @@ import type { Repository } from 'typeorm'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
-import { SETTING_KEYS } from 'kuroshiro-shared'
+import { BOOLEAN_SETTING_KEYS, SETTING_KEYS } from 'kuroshiro-shared'
 import { INSTANCE_SETTINGS_ID, InstanceSettings } from './entities/instance-settings.entity.js'
 
 interface AlertsEnvConfig {
@@ -53,6 +53,12 @@ export class InstanceSettingsService {
     return result
   }
 
+  /** Whether the Firmware Auto-Update policy (ADR-0029) is on — `FirmwareSyncService` reads this after every insert; the Setting has no environment-variable fallback, only the built-in default of `false`. */
+  async resolveFirmwareAutoUpdate(): Promise<boolean> {
+    const row = await this.loadRow()
+    return row?.firmwareAutoUpdate ?? false
+  }
+
   async get(): Promise<InstanceSettingsResponse> {
     const row = await this.loadRow()
     const alertsConfig = this.alertsConfig()
@@ -67,6 +73,15 @@ export class InstanceSettingsService {
         fallbackValue,
       }
     }
+    for (const key of BOOLEAN_SETTING_KEYS) {
+      const override = row?.[key] ?? null
+      response[key] = {
+        override,
+        value: override ?? false,
+        fallbackSource: 'default',
+        fallbackValue: false,
+      }
+    }
     return response
   }
 
@@ -75,6 +90,10 @@ export class InstanceSettingsService {
     const existing = await this.loadRow()
     const row = existing ?? this.repository.create({ id: INSTANCE_SETTINGS_ID })
     for (const key of SETTING_KEYS) {
+      if (key in input)
+        row[key] = input[key] ?? null
+    }
+    for (const key of BOOLEAN_SETTING_KEYS) {
       if (key in input)
         row[key] = input[key] ?? null
     }

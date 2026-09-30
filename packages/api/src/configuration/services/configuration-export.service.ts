@@ -18,7 +18,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import AdmZip from 'adm-zip'
-import { CONFIGURATION_REDACTION_SENTINEL, SETTING_KEYS } from 'kuroshiro-shared'
+import { BOOLEAN_SETTING_KEYS, CONFIGURATION_REDACTION_SENTINEL, SETTING_KEYS } from 'kuroshiro-shared'
 import { Repository } from 'typeorm'
 import { Palette } from '../../device-models/entities/palette.entity.js'
 import { Device } from '../../devices/devices.entity.js'
@@ -271,6 +271,11 @@ export class ConfigurationExportService {
     if (!instanceSettings)
       return entry
     for (const key of SETTING_KEYS) {
+      const value = instanceSettings[key]
+      if (value != null)
+        entry[key] = value
+    }
+    for (const key of BOOLEAN_SETTING_KEYS) {
       const value = instanceSettings[key]
       if (value != null)
         entry[key] = value

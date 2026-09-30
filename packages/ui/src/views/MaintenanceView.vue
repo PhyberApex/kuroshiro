@@ -36,6 +36,14 @@ async function handleResetSetting(key: SettingKey) {
   await settingsStore.update({ [key]: null })
 }
 
+async function handleSaveFirmwareAutoUpdate(value: boolean) {
+  await settingsStore.update({ firmwareAutoUpdate: value })
+}
+
+async function handleResetFirmwareAutoUpdate() {
+  await settingsStore.update({ firmwareAutoUpdate: null })
+}
+
 const testNotificationResult = ref<{ ok: boolean, message: string } | null>(null)
 
 async function handleSendTestNotification() {
@@ -321,6 +329,8 @@ async function executeCleanup() {
           :saving="settingsStore.saving"
           @save="handleSaveSetting"
           @reset="handleResetSetting"
+          @save-firmware-auto-update="handleSaveFirmwareAutoUpdate"
+          @reset-firmware-auto-update="handleResetFirmwareAutoUpdate"
         />
 
         <VAlert

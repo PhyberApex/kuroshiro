@@ -10,6 +10,7 @@ import cron from 'node-cron'
 import { Repository } from 'typeorm'
 import { TRMNL_API_URL } from '../device-models/trmnl-payloads.js'
 import { Firmware } from './entities/firmware.entity.js'
+import { FirmwareAutoUpdateService } from './firmware-auto-update.service.js'
 import { firmwareFilePath } from './firmware-paths.js'
 
 interface TrmnlFirmwarePayload {
@@ -32,6 +33,7 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
   constructor(
     @InjectRepository(Firmware)
     private readonly firmwareRepository: Repository<Firmware>,
+    private readonly autoUpdateService: FirmwareAutoUpdateService,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -69,9 +71,7 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
     await fs.promises.mkdir(path.dirname(filePath), { recursive: true })
     await fs.promises.writeFile(filePath, binary)
 
-    if (newest)
-      await this.firmwareRepository.update({ kind: 'official-synced', deprecated: false }, { deprecated: true })
-    await this.firmwareRepository.insert({
+    const newFirmware = this.firmwareRepository.create({
       id,
       version: payload.version,
       kind: 'official-synced',
@@ -81,8 +81,14 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
       syncedAt,
     })
 
+    if (newest)
+      await this.firmwareRepository.update({ kind: 'official-synced', deprecated: false }, { deprecated: true })
+    await this.firmwareRepository.insert(newFirmware)
+
+    const assignedCount = await this.autoUpdateService.applyPolicy(newFirmware)
+
     this.logger.log(`Synced firmware ${payload.version} (${id})`)
-    return { inserted: true, version: payload.version, syncedAt: syncedAt.toISOString() }
+    return { inserted: true, version: payload.version, syncedAt: syncedAt.toISOString(), assignedCount }
   }
 
   private async fetchLatest(): Promise<TrmnlFirmwarePayload> {
