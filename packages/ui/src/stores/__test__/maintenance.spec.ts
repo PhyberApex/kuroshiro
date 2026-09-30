@@ -233,6 +233,76 @@ describe('maintenanceStore', () => {
     })
   })
 
+  describe('loadRetentionStatus', () => {
+    it('fetches and stores the retention status', async () => {
+      const mockStatus = {
+        ages: { alertRetentionDays: 90, deviceLogRetentionDays: 30 },
+        lastRun: null,
+      }
+
+      mockFetch.mockResolvedValueOnce(jsonResponse(mockStatus))
+
+      const store = useMaintenanceStore()
+      await store.loadRetentionStatus()
+
+      expect(fetch).toHaveBeenCalledWith('/api/maintenance/retention', undefined)
+      expect(store.retentionStatus).toEqual(mockStatus)
+    })
+
+    it('handles retention status fetch errors', async () => {
+      mockFetch.mockResolvedValueOnce(new Response(null, { status: 500, statusText: 'Internal Server Error' }))
+
+      const store = useMaintenanceStore()
+
+      await expect(store.loadRetentionStatus()).rejects.toThrow('Retention status fetch failed: Internal Server Error')
+      expect(store.error).toBe('Retention status fetch failed: Internal Server Error')
+    })
+  })
+
+  describe('runRetention', () => {
+    it('sends the dryRun flag and returns the counts without reloading status', async () => {
+      const mockResult = { alertsPruned: 5, deviceLogsPruned: 9 }
+      mockFetch.mockResolvedValueOnce(jsonResponse(mockResult))
+
+      const store = useMaintenanceStore()
+      const result = await store.runRetention(true)
+
+      expect(fetch).toHaveBeenCalledWith('/api/maintenance/retention/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dryRun: true }),
+      })
+      expect(result).toEqual(mockResult)
+      expect(fetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('reloads the retention status after a real run', async () => {
+      const mockResult = { alertsPruned: 2, deviceLogsPruned: 4 }
+      const mockStatus = {
+        ages: { alertRetentionDays: 90, deviceLogRetentionDays: 30 },
+        lastRun: { alertsPruned: 2, deviceLogsPruned: 4, ranAt: '2026-04-24T12:00:00Z' },
+      }
+      mockFetch.mockResolvedValueOnce(jsonResponse(mockResult))
+      mockFetch.mockResolvedValueOnce(jsonResponse(mockStatus))
+
+      const store = useMaintenanceStore()
+      const result = await store.runRetention(false)
+
+      expect(result).toEqual(mockResult)
+      expect(fetch).toHaveBeenNthCalledWith(2, '/api/maintenance/retention', undefined)
+      expect(store.retentionStatus).toEqual(mockStatus)
+    })
+
+    it('handles retention run errors', async () => {
+      mockFetch.mockResolvedValueOnce(new Response(null, { status: 500, statusText: 'Forbidden' }))
+
+      const store = useMaintenanceStore()
+
+      await expect(store.runRetention(false)).rejects.toThrow('Retention run failed: Forbidden')
+      expect(store.error).toBe('Retention run failed: Forbidden')
+    })
+  })
+
   describe('clearIssues', () => {
     it('clears issues and error', async () => {
       const mockIssues = {

@@ -1,4 +1,4 @@
-import type { CleanupResult, MaintenanceIssues } from 'kuroshiro-shared'
+import type { CleanupResult, MaintenanceIssues, RetentionRunResult, RetentionStatus } from 'kuroshiro-shared'
 import type { MaintenanceStats } from '../types'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
@@ -8,6 +8,7 @@ export const useMaintenanceStore = defineStore('maintenance', () => {
   const issues = ref<MaintenanceIssues | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const retentionStatus = ref<RetentionStatus | null>(null)
 
   async function scanSystem() {
     loading.value = true
@@ -81,13 +82,51 @@ export const useMaintenanceStore = defineStore('maintenance', () => {
     error.value = null
   }
 
+  async function loadRetentionStatus() {
+    error.value = null
+    try {
+      const res = await apiFetch('/api/maintenance/retention')
+      if (!res.ok)
+        throw new Error(`Retention status fetch failed: ${res.statusText}`)
+      retentionStatus.value = await res.json()
+    }
+    catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to load retention status'
+      throw err
+    }
+  }
+
+  async function runRetention(dryRun: boolean): Promise<RetentionRunResult> {
+    error.value = null
+    try {
+      const res = await apiFetch('/api/maintenance/retention/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dryRun }),
+      })
+      if (!res.ok)
+        throw new Error(`Retention run failed: ${res.statusText}`)
+      const result: RetentionRunResult = await res.json()
+      if (!dryRun)
+        await loadRetentionStatus()
+      return result
+    }
+    catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to run retention'
+      throw err
+    }
+  }
+
   return {
     issues,
     loading,
     error,
+    retentionStatus,
     scanSystem,
     cleanupIssues,
     getStats,
     clearIssues,
+    loadRetentionStatus,
+    runRetention,
   }
 })
