@@ -4,12 +4,13 @@ import path from 'node:path'
 
 /**
  * A request is treated as the app shell (and gets index.html) unless it targets
- * our own API or names a file by extension (assets, favicons, screen images, ...),
- * which are left to the static file server / API controllers that follow this
- * middleware in the stack.
+ * our own API, the Prometheus scrape route (which lives outside the /api prefix)
+ * or names a file by extension (assets, favicons, screen images, ...), which are
+ * left to the static file server / API controllers that follow this middleware
+ * in the stack.
  */
 function isAppShellRoute(requestPath: string): boolean {
-  if (requestPath.startsWith('/api/'))
+  if (requestPath.startsWith('/api/') || requestPath === '/metrics')
     return false
   const lastSegment = requestPath.slice(requestPath.lastIndexOf('/') + 1)
   return requestPath === '/index.html' || !lastSegment.includes('.')

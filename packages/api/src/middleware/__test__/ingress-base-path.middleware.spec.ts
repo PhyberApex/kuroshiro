@@ -97,6 +97,18 @@ describe('ingressBasePathMiddleware', () => {
     expect(res.send).not.toHaveBeenCalled()
   })
 
+  it('passes the Prometheus scrape route through to its controller', () => {
+    const middleware = ingressBasePathMiddleware(publicDir)
+    const req = makeRequest({ path: '/metrics' })
+    const res = makeResponse()
+    const next = vi.fn()
+
+    middleware(req, res, next)
+
+    expect(next).toHaveBeenCalledOnce()
+    expect(res.send).not.toHaveBeenCalled()
+  })
+
   it('passes requests for files with an extension through to the static server', () => {
     const middleware = ingressBasePathMiddleware(publicDir)
     const req = makeRequest({ path: '/assets/index-abc123.js' })
