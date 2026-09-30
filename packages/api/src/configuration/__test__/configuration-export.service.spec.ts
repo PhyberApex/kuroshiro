@@ -5,6 +5,7 @@ import type { DevicePlugin } from '../../plugins/entities/device-plugin.entity.j
 import type { PluginFieldValue } from '../../plugins/entities/plugin-field-value.entity.js'
 import type { Plugin } from '../../plugins/entities/plugin.entity.js'
 import type { Screen } from '../../screens/screens.entity.js'
+import type { InstanceSettings } from '../../settings/entities/instance-settings.entity.js'
 import { Buffer } from 'node:buffer'
 import AdmZip from 'adm-zip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -50,6 +51,7 @@ describe('configurationExportService', () => {
   let fieldValueRepo: ReturnType<typeof createMockRepository<PluginFieldValue>>
   let paletteRepo: ReturnType<typeof createMockRepository<Palette>>
   let firmwareRepo: ReturnType<typeof createMockRepository<Firmware>>
+  let instanceSettingsRepo: ReturnType<typeof createMockRepository<InstanceSettings>>
   let service: ConfigurationExportService
 
   beforeEach(() => {
@@ -60,6 +62,7 @@ describe('configurationExportService', () => {
     fieldValueRepo = createMockRepository()
     paletteRepo = createMockRepository()
     firmwareRepo = createMockRepository()
+    instanceSettingsRepo = createMockRepository()
 
     pluginRepo.find.mockResolvedValue([])
     deviceRepo.find.mockResolvedValue([])
@@ -68,6 +71,7 @@ describe('configurationExportService', () => {
     fieldValueRepo.find.mockResolvedValue([])
     paletteRepo.find.mockResolvedValue([])
     firmwareRepo.find.mockResolvedValue([])
+    instanceSettingsRepo.findOneBy.mockResolvedValue(null)
 
     service = new ConfigurationExportService(
       asRepository(pluginRepo),
@@ -77,6 +81,7 @@ describe('configurationExportService', () => {
       asRepository(fieldValueRepo),
       asRepository(paletteRepo),
       asRepository(firmwareRepo),
+      asRepository(instanceSettingsRepo),
       new PluginExporterService(),
     )
   })
@@ -193,6 +198,24 @@ describe('configurationExportService', () => {
     const zip = new AdmZip(buffer)
 
     expect(zip.getEntry('screens/screen-1/sunset.png')?.getData().toString('utf8')).toBe('png-bytes')
+  })
+
+  it('writes an empty settings.json when no Instance Settings row exists', async () => {
+    const buffer = await service.exportToZip()
+    const zip = new AdmZip(buffer)
+    const settingsJson = JSON.parse(zip.getEntry('settings.json')!.getData().toString('utf8'))
+
+    expect(settingsJson).toEqual({})
+  })
+
+  it('writes only the overridden Settings to settings.json, omitting an unset one', async () => {
+    instanceSettingsRepo.findOneBy.mockResolvedValue({ id: 1, lowBatteryPercent: 15, offlineMultiplier: null, fetchFailureThreshold: 5 })
+
+    const buffer = await service.exportToZip()
+    const zip = new AdmZip(buffer)
+    const settingsJson = JSON.parse(zip.getEntry('settings.json')!.getData().toString('utf8'))
+
+    expect(settingsJson).toEqual({ lowBatteryPercent: 15, fetchFailureThreshold: 5 })
   })
 
   it('omits the image for a file-type Screen when nothing is on disk, and for non-file Screen types', async () => {

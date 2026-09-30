@@ -16,6 +16,7 @@ import { Plugin } from '../plugins/entities/plugin.entity.js'
 import { PluginsModule } from '../plugins/plugins.module.js'
 import { Schedule } from '../schedule/schedule.entity.js'
 import { Screen } from '../screens/screens.entity.js'
+import { InstanceSettings } from '../settings/entities/instance-settings.entity.js'
 import { ConfigurationController } from './configuration.controller.js'
 import { ConfigurationExportService } from './services/configuration-export.service.js'
 import { ConfigurationImportService } from './services/configuration-import.service.js'
@@ -38,6 +39,7 @@ import { ConfigurationImportService } from './services/configuration-import.serv
       Schedule,
       MashupConfiguration,
       MashupSlot,
+      InstanceSettings,
     ]),
     PluginsModule,
   ],

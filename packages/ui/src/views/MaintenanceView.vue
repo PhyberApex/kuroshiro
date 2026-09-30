@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CleanupResult, DeviceModelSyncResult, FirmwareSyncResult, RetentionRunResult } from 'kuroshiro-shared'
+import type { CleanupResult, DeviceModelSyncResult, FirmwareSyncResult, RetentionRunResult, SettingKey } from 'kuroshiro-shared'
 import { mdiAlertCircle, mdiCheckCircle, mdiRefresh } from '@mdi/js'
 import { computed, onMounted, ref } from 'vue'
 import { VAlert, VBtn, VCard, VCardText, VCardTitle, VChip, VCol, VContainer, VDivider, VListItemSubtitle, VListItemTitle, VProgressCircular, VRow } from 'vuetify/components'
@@ -14,16 +14,27 @@ import MaintenanceIssueListCard from '@/components/maintenance/MaintenanceIssueL
 import RetentionCard from '@/components/maintenance/RetentionCard.vue'
 import RetentionConfirmDialog from '@/components/maintenance/RetentionConfirmDialog.vue'
 import ScanSummaryCard from '@/components/maintenance/ScanSummaryCard.vue'
+import SettingsCard from '@/components/maintenance/SettingsCard.vue'
 import { useAlertsStore } from '@/stores/alerts'
 import { useDeviceModelsStore } from '@/stores/deviceModels'
 import { useFirmwareStore } from '@/stores/firmware'
 import { useMaintenanceStore } from '@/stores/maintenance'
+import { useSettingsStore } from '@/stores/settings'
 import { formatAge, formatBytes } from '@/utils/maintenanceFormat'
 
 const maintenanceStore = useMaintenanceStore()
 const deviceModelsStore = useDeviceModelsStore()
 const firmwareStore = useFirmwareStore()
 const alertsStore = useAlertsStore()
+const settingsStore = useSettingsStore()
+
+async function handleSaveSetting(key: SettingKey, value: number) {
+  await settingsStore.update({ [key]: value })
+}
+
+async function handleResetSetting(key: SettingKey) {
+  await settingsStore.update({ [key]: null })
+}
 
 const testNotificationResult = ref<{ ok: boolean, message: string } | null>(null)
 
@@ -176,7 +187,7 @@ async function handleRetentionConfirm() {
 }
 
 onMounted(async () => {
-  await Promise.all([maintenanceStore.scanSystem(), deviceModelsStore.ensureLoaded(), firmwareStore.ensureLoaded(), alertsStore.ensureLoaded(), maintenanceStore.loadRetentionStatus()])
+  await Promise.all([maintenanceStore.scanSystem(), deviceModelsStore.ensureLoaded(), firmwareStore.ensureLoaded(), alertsStore.ensureLoaded(), maintenanceStore.loadRetentionStatus(), settingsStore.ensureLoaded()])
 })
 
 async function handleScan() {
@@ -302,6 +313,14 @@ async function executeCleanup() {
           :running="retentionRunning"
           :error="retentionError"
           @run="handleRetentionPreview"
+        />
+
+        <SettingsCard
+          :settings="settingsStore.settings"
+          :error="settingsStore.error"
+          :saving="settingsStore.saving"
+          @save="handleSaveSetting"
+          @reset="handleResetSetting"
         />
 
         <VAlert

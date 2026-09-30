@@ -35,6 +35,7 @@ const ENTITY_NAMES = [
   'Schedule',
   'MashupConfiguration',
   'MashupSlot',
+  'InstanceSettings',
 ] as const
 
 /**
@@ -107,6 +108,7 @@ function buildArchive(options: {
   assignments?: unknown[]
   palettes?: unknown[]
   firmware?: unknown[]
+  settings?: Record<string, number> | null
   pluginFolders?: Record<string, PluginFolder>
   screenImages?: Record<string, string>
 } = {}): Buffer {
@@ -128,6 +130,9 @@ function buildArchive(options: {
   zip.addFile('assignments.json', Buffer.from(JSON.stringify(options.assignments ?? [])))
   zip.addFile('palettes.json', Buffer.from(JSON.stringify(options.palettes ?? [])))
   zip.addFile('firmware.json', Buffer.from(JSON.stringify(options.firmware ?? [])))
+  if (options.settings !== null) {
+    zip.addFile('settings.json', Buffer.from(JSON.stringify(options.settings ?? {})))
+  }
 
   for (const [pluginId, folder] of Object.entries(options.pluginFolders ?? {})) {
     zip.addFile(`plugins/${pluginId}/.trmnlp.yml`, Buffer.from(yaml.dump(folder.manifest)))
@@ -199,6 +204,16 @@ describe('configurationImportService', () => {
     await expect(service.importFromZip(buffer)).rejects.toThrow(
       new RegExp(`${CONFIG_SCHEMA_VERSION + 1}.*${CONFIG_SCHEMA_VERSION}`),
     )
+    expect(manager.transaction).not.toHaveBeenCalled()
+  })
+
+  it('rejects a pre-Instance-Settings (schemaVersion 1) archive with the existing mismatch message', async () => {
+    const buffer = buildArchive({
+      manifest: { kuroshiroVersion: '0.16.0', schemaVersion: 1, exportedAt: new Date().toISOString(), containsSecrets: true },
+      settings: null,
+    })
+
+    await expect(service.importFromZip(buffer)).rejects.toThrow(new RegExp(`1.*${CONFIG_SCHEMA_VERSION}`))
     expect(manager.transaction).not.toHaveBeenCalled()
   })
 
@@ -360,6 +375,33 @@ describe('configurationImportService', () => {
     expect(deviceRows[0].deviceModel).toBeNull()
     expect(deviceRows[0].palette).toBeNull()
     expect(deviceRows[0].targetFirmware).toBeNull()
+  })
+
+  it('rejects an archive with no settings.json', async () => {
+    const buffer = buildArchive({ settings: null })
+
+    await expect(service.importFromZip(buffer)).rejects.toThrow(/settings\.json/)
+  })
+
+  it('imports overridden Settings onto a fresh instance and is idempotent on a second import', async () => {
+    const buffer = buildArchive({ settings: { lowBatteryPercent: 15, fetchFailureThreshold: 5 } })
+
+    await service.importFromZip(buffer)
+    const settingsRows = [...backing.get('InstanceSettings')!.values()]
+    expect(settingsRows).toEqual([{ id: 1, lowBatteryPercent: 15, offlineMultiplier: null, fetchFailureThreshold: 5 }])
+
+    await service.importFromZip(buffer)
+    expect([...backing.get('InstanceSettings')!.values()]).toEqual([{ id: 1, lowBatteryPercent: 15, offlineMultiplier: null, fetchFailureThreshold: 5 }])
+  })
+
+  it('clears an existing override for a Setting absent from the archive', async () => {
+    backing.get('InstanceSettings')!.set(1 as unknown as string, { id: 1 as unknown as string, lowBatteryPercent: 15, offlineMultiplier: 5, fetchFailureThreshold: 5 })
+
+    const buffer = buildArchive({ settings: { lowBatteryPercent: 15 } })
+    await service.importFromZip(buffer)
+
+    const settingsRows = [...backing.get('InstanceSettings')!.values()]
+    expect(settingsRows).toEqual([{ id: 1, lowBatteryPercent: 15, offlineMultiplier: null, fetchFailureThreshold: null }])
   })
 
   it('restores a file-type Screen\'s image from the archive onto disk', async () => {

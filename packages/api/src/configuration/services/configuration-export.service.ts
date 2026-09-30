@@ -5,6 +5,7 @@ import type {
   AssignmentManifestEntry,
   DeviceManifestEntry,
   FirmwareManifestEntry,
+  InstanceSettingsManifestEntry,
   MashupConfigurationManifestEntry,
   PaletteManifestEntry,
   PluginManifestEntry,
@@ -16,6 +17,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import AdmZip from 'adm-zip'
+import { SETTING_KEYS } from 'kuroshiro-shared'
 import { Repository } from 'typeorm'
 import { Palette } from '../../device-models/entities/palette.entity.js'
 import { Device } from '../../devices/devices.entity.js'
@@ -25,6 +27,7 @@ import { PluginFieldValue } from '../../plugins/entities/plugin-field-value.enti
 import { Plugin } from '../../plugins/entities/plugin.entity.js'
 import { PluginExporterService } from '../../plugins/services/plugin-exporter.service.js'
 import { Screen } from '../../screens/screens.entity.js'
+import { INSTANCE_SETTINGS_ID, InstanceSettings } from '../../settings/entities/instance-settings.entity.js'
 import { resolveAppPath } from '../../utils/pathHelper.js'
 import { getApiVersion } from '../get-api-version.js'
 import { CONFIG_SCHEMA_VERSION } from '../schema-version.js'
@@ -47,13 +50,15 @@ export class ConfigurationExportService {
     private readonly paletteRepository: Repository<Palette>,
     @InjectRepository(Firmware)
     private readonly firmwareRepository: Repository<Firmware>,
+    @InjectRepository(InstanceSettings)
+    private readonly instanceSettingsRepository: Repository<InstanceSettings>,
     private readonly pluginExporter: PluginExporterService,
   ) {}
 
   async exportToZip(): Promise<Buffer> {
     const zip = new AdmZip()
 
-    const [plugins, devices, screens, assignments, fieldValues, palettes, firmware] = await Promise.all([
+    const [plugins, devices, screens, assignments, fieldValues, palettes, firmware, instanceSettings] = await Promise.all([
       this.pluginRepository.find({ relations: { dataSources: true, templates: true, fields: true, variables: true } }),
       this.deviceRepository.find(),
       this.screenRepository.find({ relations: { device: true, plugin: true, schedule: true, mashupConfiguration: { slots: { plugin: true } } } }),
@@ -61,6 +66,7 @@ export class ConfigurationExportService {
       this.fieldValueRepository.find({ relations: { field: true, plugin: true, device: true } }),
       this.paletteRepository.find({ where: { kind: 'custom' } }),
       this.firmwareRepository.find({ where: { kind: 'custom' } }),
+      this.instanceSettingsRepository.findOneBy({ id: INSTANCE_SETTINGS_ID }),
     ])
 
     this.addJson(zip, CONFIG_ARCHIVE_FILES.manifest, this.buildManifest())
@@ -86,6 +92,8 @@ export class ConfigurationExportService {
     this.addJson(zip, CONFIG_ARCHIVE_FILES.palettes, palettes.map(palette => this.buildPaletteEntry(palette)))
 
     this.addJson(zip, CONFIG_ARCHIVE_FILES.firmware, firmware.map(fw => this.buildFirmwareEntry(fw)))
+
+    this.addJson(zip, CONFIG_ARCHIVE_FILES.settings, this.buildSettingsEntry(instanceSettings))
 
     return zip.toBuffer()
   }
@@ -227,6 +235,19 @@ export class ConfigurationExportService {
       grayscaleBitDepth: palette.grayscaleBitDepth ?? null,
       deprecated: palette.deprecated,
     }
+  }
+
+  /** Only the overridden Settings (ADR-0027) — fallback values (env/built-in default) are never exported. */
+  private buildSettingsEntry(instanceSettings: InstanceSettings | null): InstanceSettingsManifestEntry {
+    const entry: InstanceSettingsManifestEntry = {}
+    if (!instanceSettings)
+      return entry
+    for (const key of SETTING_KEYS) {
+      const value = instanceSettings[key]
+      if (value != null)
+        entry[key] = value
+    }
+    return entry
   }
 
   private buildFirmwareEntry(firmware: Firmware): FirmwareManifestEntry {

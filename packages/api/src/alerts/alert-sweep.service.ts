@@ -1,8 +1,8 @@
 import type { OnApplicationBootstrap } from '@nestjs/common'
 import type { Repository } from 'typeorm'
+import type { InstanceSettingsService } from '../settings/instance-settings.service.js'
 import type { AlertRule, AlertRuleContext, SweepSubjects } from './rules/alert-rule.js'
 import { Injectable, Logger } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
 import cron from 'node-cron'
 import { IsNull, Not } from 'typeorm'
@@ -13,12 +13,6 @@ import { NotificationSenderService } from './notification-sender.service.js'
 import { ALERT_RULES } from './rules/index.js'
 
 const EVERY_FIVE_MINUTES = '*/5 * * * *'
-
-interface AlertsConfig {
-  lowBatteryPercent: number
-  offlineMultiplier: number
-  fetchFailureThreshold: number
-}
 
 /**
  * Evaluates every Alert Rule against persisted state on a schedule — the
@@ -41,7 +35,7 @@ export class AlertSweepService implements OnApplicationBootstrap {
     @InjectRepository(PluginDataSource)
     private readonly dataSourceRepository: Repository<PluginDataSource>,
     private readonly sender: NotificationSenderService,
-    private readonly configService: ConfigService,
+    private readonly settingsService: InstanceSettingsService,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -60,12 +54,10 @@ export class AlertSweepService implements OnApplicationBootstrap {
   }
 
   private async runSweep(): Promise<void> {
-    const alertsConfig = this.configService.get<AlertsConfig>('alerts')!
+    const thresholds = await this.settingsService.resolveThresholds()
     const context: AlertRuleContext = {
       now: new Date(),
-      lowBatteryPercent: alertsConfig.lowBatteryPercent,
-      offlineMultiplier: alertsConfig.offlineMultiplier,
-      fetchFailureThreshold: alertsConfig.fetchFailureThreshold,
+      ...thresholds,
     }
 
     const [devices, dataSources] = await Promise.all([

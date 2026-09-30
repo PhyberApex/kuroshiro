@@ -36,6 +36,8 @@ import { Schedule } from './schedule/schedule.entity.js'
 import { ScheduleModule } from './schedule/schedule.module.js'
 import { Screen } from './screens/screens.entity.js'
 import { ScreensModule } from './screens/screens.module.js'
+import { InstanceSettings } from './settings/entities/instance-settings.entity.js'
+import { SettingsModule } from './settings/settings.module.js'
 import { resolveAppPath } from './utils/pathHelper.js'
 
 const conf = config()
@@ -56,7 +58,7 @@ const conf = config()
       username: conf.database.user,
       password: conf.database.password,
       database: conf.database.database,
-      entities: [Device, DeviceModel, Palette, DeviceSensor, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, PluginVariable, MashupConfiguration, MashupSlot, Schedule, Firmware, Alert],
+      entities: [Device, DeviceModel, Palette, DeviceSensor, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, PluginVariable, MashupConfiguration, MashupSlot, Schedule, Firmware, Alert, InstanceSettings],
       migrations: (() => {
         const dir = path.join(process.cwd(), 'dist', 'src', 'migrations')
         if (!fs.existsSync(dir))
@@ -81,6 +83,7 @@ const conf = config()
     ScheduleModule,
     MaintenanceModule,
     ConfigurationModule,
+    SettingsModule,
     AlertsModule,
     MetricsModule,
   ],
