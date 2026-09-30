@@ -76,6 +76,10 @@ _Avoid_: Extension, Exchange (Terminus's terms — not adopted here)
 Which of the two ways a Data Source gets its value — `fetch` (performs an HTTP request; carries `method`/`url`/`headers`/`body`/transform) or `literal` (holds an admin-typed fixed JSON value directly; carries none of the fetch fields). Fixed on the Data Source when it's created, editable like any other Data Source field thereafter — not write-once. Distinct from Plugin Kind, a different axis: Plugin Kind picks how a whole Plugin receives data (`Poll` vs `Webhook`); Data Source Mode picks, per Data Source, how one named value within a `Poll`-kind Plugin is obtained. A `Poll`-kind Plugin may freely mix `fetch`- and `literal`-mode Data Sources.
 _Avoid_: Data Source Kind (collides with Plugin Kind), Data Source type, static/dynamic (Terminus's `strategy` values — those describe a whole Plugin/Recipe in Terminus, not a single Data Source, so reusing them here would be misleading)
 
+**Fetch Failure Streak**:
+The number of consecutive scheduled renders on which a `fetch`-mode Data Source's request failed, kept on the Data Source itself and reset to zero by the next successful scheduled fetch. Only scheduled renders count — editor previews, Mashup slot renders and on-demand Device renders never move it — and a `literal`-mode Data Source has none. The subject state the Data Source fetch-failure Alert Rule reads.
+_Avoid_: Error count, failure counter, fetch status, last error (bare — the streak carries the last error message, but the message alone is not the streak)
+
 **Recipe**:
 A pre-built, TRMNL-vetted Plugin template published at trmnl.com/recipes, importable into Kuroshiro by pasting its id or page URL. A Recipe exists only as an import source — the result of importing one is a normal Poll-kind Plugin, indistinguishable from a hand-built one, carrying only its source Recipe's id as inert metadata (no ongoing link, no auto-updates).
 _Avoid_: Extension, Exchange (Terminus's terms), Plugin (the imported result — see above)
@@ -113,7 +117,7 @@ A Device's current reading for one Qwiic sensor add-on kind — `carbon_dioxide`
 _Avoid_: Telemetry (too broad), Extension, Exchange (Terminus's terms — not adopted here)
 
 **Alert Rule**:
-A named condition Kuroshiro watches for on a subject — in v1 always a Device — such as low battery or the Device being offline. The set of Alert Rules is fixed in code; an admin tunes their thresholds instance-wide, never per Device.
+A named condition Kuroshiro watches for on a subject — a Device (low battery, offline) or a `fetch`-mode Data Source (its Fetch Failure Streak reaching the threshold). The set of Alert Rules is fixed in code; an admin tunes their thresholds instance-wide, never per subject.
 _Avoid_: Alarm, trigger, check, monitor
 
 **Alert**:
