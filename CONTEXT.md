@@ -131,3 +131,7 @@ _Avoid_: Poll (reserved for what a Device does), scan, check
 **Notification**:
 The message pushed to an admin's channels when an Alert is opened or resolved, delivered via Apprise. Fire-and-forget: a Notification carries no state of its own beyond whether the Alert it belongs to has been announced.
 _Avoid_: Alert (as a name for the message), push, message
+
+**Test Notification**:
+A Notification an admin sends on demand from the Maintenance page to confirm the Apprise sidecar delivers. It travels the exact path a real Notification does but belongs to no Alert and leaves no record.
+_Avoid_: Ping, health check, dry run
