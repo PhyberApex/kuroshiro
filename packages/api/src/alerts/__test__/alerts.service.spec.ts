@@ -3,7 +3,7 @@ import type { Alert } from '../entities/alert.entity.js'
 import type { NotificationSenderService } from '../notification-sender.service.js'
 import { BadRequestException, ServiceUnavailableException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeAlert, makeDevice } from '../../test/fixtures.js'
+import { makeAlert, makeDevice, makePluginDataSource } from '../../test/fixtures.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
 import { AlertsService } from '../alerts.service.js'
 
@@ -51,6 +51,34 @@ describe('alertsService', () => {
 
     it('drops Alerts whose Device relation is missing (cascade-deleted)', async () => {
       const orphan = makeAlert({ id: 'alert-orphan', device: undefined })
+      alertRepo.find.mockResolvedValueOnce([orphan]).mockResolvedValueOnce([])
+
+      const result = await service.list()
+
+      expect(result.active).toEqual([])
+    })
+
+    it('renders a Data-Source-subject Alert as "Plugin name / Data Source name"', async () => {
+      const dataSource = makePluginDataSource({ id: 'ds-1', name: 'Weather API', plugin: { id: 'plugin-1', name: 'Weather Dashboard' } as never })
+      const active = makeAlert({ id: 'alert-active', kind: 'data-source-fetch-failing', device: undefined, dataSource, details: { streak: 3, lastError: 'timeout' } })
+      alertRepo.find.mockResolvedValueOnce([active]).mockResolvedValueOnce([])
+
+      const result = await service.list()
+
+      expect(result.active).toEqual([{
+        id: 'alert-active',
+        kind: 'data-source-fetch-failing',
+        dataSourceId: 'ds-1',
+        dataSourceName: 'Weather API',
+        pluginName: 'Weather Dashboard',
+        openedAt: active.openedAt.toISOString(),
+        resolvedAt: null,
+        details: { streak: 3, lastError: 'timeout' },
+      }])
+    })
+
+    it('drops Alerts whose Data Source relation is missing (cascade-deleted)', async () => {
+      const orphan = makeAlert({ id: 'alert-orphan', kind: 'data-source-fetch-failing', device: undefined, dataSource: undefined })
       alertRepo.find.mockResolvedValueOnce([orphan]).mockResolvedValueOnce([])
 
       const result = await service.list()

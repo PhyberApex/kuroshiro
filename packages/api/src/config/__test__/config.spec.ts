@@ -15,6 +15,7 @@ const ENV_KEYS = [
   'KUROSHIRO_APPRISE_KEY',
   'KUROSHIRO_ALERT_LOW_BATTERY_PERCENT',
   'KUROSHIRO_ALERT_OFFLINE_MULTIPLIER',
+  'KUROSHIRO_ALERT_FETCH_FAILURES',
 ] as const
 
 describe('config', () => {
@@ -51,6 +52,7 @@ describe('config', () => {
         appriseKey: 'kuroshiro',
         lowBatteryPercent: 20,
         offlineMultiplier: 3,
+        fetchFailureThreshold: 3,
       },
     })
   })
@@ -68,6 +70,7 @@ describe('config', () => {
     process.env.KUROSHIRO_APPRISE_KEY = 'my-key'
     process.env.KUROSHIRO_ALERT_LOW_BATTERY_PERCENT = '15'
     process.env.KUROSHIRO_ALERT_OFFLINE_MULTIPLIER = '5'
+    process.env.KUROSHIRO_ALERT_FETCH_FAILURES = '4'
 
     expect(config()).toEqual({
       port: 8080,
@@ -85,6 +88,7 @@ describe('config', () => {
         appriseKey: 'my-key',
         lowBatteryPercent: 15,
         offlineMultiplier: 5,
+        fetchFailureThreshold: 4,
       },
     })
   })
@@ -121,15 +125,18 @@ describe('config', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     process.env.KUROSHIRO_ALERT_LOW_BATTERY_PERCENT = 'not-a-number'
     process.env.KUROSHIRO_ALERT_OFFLINE_MULTIPLIER = 'also-not-a-number'
+    process.env.KUROSHIRO_ALERT_FETCH_FAILURES = 'still-not-a-number'
 
     expect(config().alerts).toEqual({
       appriseUrl: undefined,
       appriseKey: 'kuroshiro',
       lowBatteryPercent: 20,
       offlineMultiplier: 3,
+      fetchFailureThreshold: 3,
     })
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('KUROSHIRO_ALERT_LOW_BATTERY_PERCENT'))
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('KUROSHIRO_ALERT_OFFLINE_MULTIPLIER'))
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('KUROSHIRO_ALERT_FETCH_FAILURES'))
 
     warnSpy.mockRestore()
   })

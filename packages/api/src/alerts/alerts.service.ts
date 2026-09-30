@@ -9,15 +9,19 @@ import { NotificationSenderService } from './notification-sender.service.js'
 const DEFAULT_RESOLVED_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
 const RESOLVED_ALERTS_LIMIT = 50
 
-/** `undefined` for an Alert whose Device relation is missing — cascade-deleted, or deleted between the query and the join. */
+/** `undefined` for an Alert whose subject relation (Device or Data Source) is missing — cascade-deleted, or deleted between the query and the join. */
 function toSummary(alert: Alert): AlertSummary | undefined {
-  if (!alert.device)
+  const subject = alert.device
+    ? { deviceId: alert.device.id, deviceName: alert.device.name }
+    : alert.dataSource
+      ? { dataSourceId: alert.dataSource.id, dataSourceName: alert.dataSource.name, pluginName: alert.dataSource.plugin.name }
+      : undefined
+  if (!subject)
     return undefined
   return {
     id: alert.id,
     kind: alert.kind,
-    deviceId: alert.device.id,
-    deviceName: alert.device.name,
+    ...subject,
     openedAt: alert.openedAt.toISOString(),
     resolvedAt: alert.resolvedAt ? alert.resolvedAt.toISOString() : null,
     details: alert.details ?? null,
@@ -43,12 +47,12 @@ export class AlertsService {
     const [active, resolved] = await Promise.all([
       this.alertRepository.find({
         where: { resolvedAt: IsNull() },
-        relations: { device: true },
+        relations: { device: true, dataSource: { plugin: true } },
         order: { openedAt: 'DESC' },
       }),
       this.alertRepository.find({
         where: { resolvedAt: MoreThan(cutoff) },
-        relations: { device: true },
+        relations: { device: true, dataSource: { plugin: true } },
         order: { resolvedAt: 'DESC' },
         take: RESOLVED_ALERTS_LIMIT,
       }),

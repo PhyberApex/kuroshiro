@@ -11,7 +11,7 @@ function localTime(hh: number, mm: number, ss = 0): Date {
 const NOW = localTime(12, 0)
 
 function context(offlineMultiplier = 3) {
-  return { now: NOW, lowBatteryPercent: 20, offlineMultiplier }
+  return { now: NOW, lowBatteryPercent: 20, offlineMultiplier, fetchFailureThreshold: 3 }
 }
 
 describe('offlineRule', () => {

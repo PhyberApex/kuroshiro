@@ -35,6 +35,18 @@ export class PluginDataSource {
   @Column('int', { default: 0 })
   order: number = 0
 
+  // Fetch Failure Streak (ADR-0025): written only by the scheduler tick, for
+  // `fetch`-mode sources only. Runtime state — excluded from `.trmnlp`
+  // export and the Configuration Archive, like every other runtime value.
+  @Column('int', { default: 0 })
+  fetchFailureStreak: number = 0
+
+  @Column('timestamptz', { nullable: true })
+  lastFetchAttemptAt?: Date | null
+
+  @Column('text', { nullable: true })
+  lastFetchError?: string | null
+
   @ManyToOne(() => Plugin, plugin => plugin.dataSources, { onDelete: 'CASCADE' })
   plugin: Plugin
 }

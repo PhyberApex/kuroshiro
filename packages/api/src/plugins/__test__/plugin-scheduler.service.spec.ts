@@ -1,5 +1,6 @@
 import type { MockPluginDataFetcherService, MockPluginTransformService } from '../../test/mockPluginCollaborators.js'
 import type { Plugin } from '../entities/plugin.entity.js'
+import type { DataSourceFetchOutcomeService } from '../services/data-source-fetch-outcome.service.js'
 import type { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
 import type { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
 import type { PluginTransformService } from '../services/plugin-transform.service.js'
@@ -30,6 +31,7 @@ describe('pluginSchedulerService', () => {
   let mockDataFetcher: MockPluginDataFetcherService
   let mockTransformer: MockPluginTransformService
   let mockRenderCache: { renderAndCache: ReturnType<typeof vi.fn> }
+  let mockFetchOutcome: { recordOutcomes: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     capturedCallback = undefined
@@ -39,6 +41,9 @@ describe('pluginSchedulerService', () => {
 
     mockRenderCache = {
       renderAndCache: vi.fn(),
+    }
+    mockFetchOutcome = {
+      recordOutcomes: vi.fn().mockResolvedValue(undefined),
     }
 
     const pluginDataResolver = new PluginDataResolverService(
@@ -50,6 +55,7 @@ describe('pluginSchedulerService', () => {
       pluginDataResolver,
       asService<PluginRenderCacheService>(mockRenderCache),
       new PluginTemplateContextService(),
+      asService<DataSourceFetchOutcomeService>(mockFetchOutcome),
     )
   })
 
@@ -403,6 +409,48 @@ describe('pluginSchedulerService', () => {
           title: 'Static Title',
         }),
       )
+    })
+
+    it('records each data source\'s fetch outcome before rendering', async () => {
+      const dataSources = [
+        makePluginDataSource({ id: 'ds-1', name: 'weather', mode: 'fetch', url: 'https://api.example.com/weather', method: 'GET' }),
+      ]
+      const plugin = makePlugin({
+        id: 'plugin-1',
+        refreshInterval: 15,
+        dataSources,
+        templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '{{ weather }}' })],
+      })
+
+      mockDataFetcher.fetchData.mockResolvedValue({ temp: 25 })
+      mockRenderCache.renderAndCache.mockResolvedValue(undefined)
+
+      service.schedulePlugin(plugin)
+      await capturedCallback!()
+
+      expect(mockFetchOutcome.recordOutcomes).toHaveBeenCalledWith(dataSources, expect.objectContaining({ weather: { temp: 25 } }))
+      expect(mockFetchOutcome.recordOutcomes.mock.invocationCallOrder[0])
+        .toBeLessThan(mockRenderCache.renderAndCache.mock.invocationCallOrder[0])
+    })
+
+    it('still records the fetch outcome when the render itself throws', async () => {
+      const dataSources = [
+        makePluginDataSource({ id: 'ds-1', name: 'weather', mode: 'fetch', url: 'https://api.example.com/weather', method: 'GET' }),
+      ]
+      const plugin = makePlugin({
+        id: 'plugin-1',
+        refreshInterval: 15,
+        dataSources,
+        templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '{{ weather }}' })],
+      })
+
+      mockDataFetcher.fetchData.mockResolvedValue({ temp: 25 })
+      mockRenderCache.renderAndCache.mockRejectedValue(new Error('render blew up'))
+
+      service.schedulePlugin(plugin)
+      await capturedCallback!()
+
+      expect(mockFetchOutcome.recordOutcomes).toHaveBeenCalledWith(dataSources, expect.objectContaining({ weather: { temp: 25 } }))
     })
   })
 })
