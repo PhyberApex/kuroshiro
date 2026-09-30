@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.17.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.16.0...kuroshiro-v0.17.0) (2026-09-30)
+
+
+### Features
+
+* **maintenance:** add daily Retention job for resolved Alerts and Device Logs ([#1042](https://github.com/PhyberApex/kuroshiro/issues/1042)) ([c2bd592](https://github.com/PhyberApex/kuroshiro/commit/c2bd59250cd2c5e9d63c2d702ffe91d025d59931))
+
+
+### Bug Fixes
+
+* **docker:** satisfy pnpm 12's frozen-lockfile importer check in the build stages ([#1044](https://github.com/PhyberApex/kuroshiro/issues/1044)) ([98cc7c2](https://github.com/PhyberApex/kuroshiro/commit/98cc7c2ab32c003a94b4a439496bb459fcd6010d))
+
 ## [0.16.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.15.1...kuroshiro-v0.16.0) (2026-09-30)
 
 
