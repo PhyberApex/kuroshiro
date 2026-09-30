@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.16.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.15.1...kuroshiro-v0.16.0) (2026-09-30)
+
+
+### Features
+
+* **alerts:** add Data Source fetch-failing Alert Rule ([#1038](https://github.com/PhyberApex/kuroshiro/issues/1038)) ([9f923c7](https://github.com/PhyberApex/kuroshiro/commit/9f923c76ebe1f5e19cc15f3a5ad418e0c02fda62))
+* **alerts:** add read-only Alerts surface and test-notification action ([#1037](https://github.com/PhyberApex/kuroshiro/issues/1037)) ([584ced5](https://github.com/PhyberApex/kuroshiro/commit/584ced521736e30ffad6fad9cdebbdce1d95bd21))
+* **api:** expose Device battery/RSSI/last-seen and active Alerts on GET /metrics ([#1039](https://github.com/PhyberApex/kuroshiro/issues/1039)) ([93ac5af](https://github.com/PhyberApex/kuroshiro/commit/93ac5af0f7d6dbfb8fe862316f9720d1734d96ae)), closes [#1034](https://github.com/PhyberApex/kuroshiro/issues/1034)
+* **devices:** add sensor readings endpoint and Device Details card ([#1031](https://github.com/PhyberApex/kuroshiro/issues/1031)) ([52bdd41](https://github.com/PhyberApex/kuroshiro/commit/52bdd410571ee0ea31e9c68ff277455b9e33cf4a))
+
 ## [0.15.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.15.0...kuroshiro-v0.15.1) (2026-09-28)
 
 
