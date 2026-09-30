@@ -23,6 +23,7 @@ import { MaintenanceModule } from './maintenance/maintenance.module.js'
 import { MashupConfiguration } from './mashup/entities/mashup-configuration.entity.js'
 import { MashupSlot } from './mashup/entities/mashup-slot.entity.js'
 import { MashupModule } from './mashup/mashup.module.js'
+import { MetricsModule } from './metrics/metrics.module.js'
 import { DevicePlugin } from './plugins/entities/device-plugin.entity.js'
 import { PluginDataSource } from './plugins/entities/plugin-data-source.entity.js'
 import { PluginFieldValue } from './plugins/entities/plugin-field-value.entity.js'
@@ -81,6 +82,7 @@ const conf = config()
     MaintenanceModule,
     ConfigurationModule,
     AlertsModule,
+    MetricsModule,
   ],
 })
 export class AppModule {}
