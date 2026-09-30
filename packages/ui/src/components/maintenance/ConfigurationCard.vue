@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { mdiAlertCircle, mdiDownload, mdiUpload } from '@mdi/js'
 import { ref } from 'vue'
-import { VAlert, VBtn, VCard, VCardActions, VCardText, VCardTitle, VDialog, VDivider, VFileInput, VList, VListItem, VSnackbar } from 'vuetify/components'
+import { VAlert, VBtn, VCard, VCardActions, VCardText, VCardTitle, VCheckbox, VDialog, VDivider, VFileInput, VList, VListItem, VSnackbar } from 'vuetify/components'
 import { useConfigurationStore } from '@/stores/configuration'
 import { withBasePath } from '@/utils/basePath'
 
@@ -10,9 +10,10 @@ const configurationStore = useConfigurationStore()
 const showExportSnackbar = ref(false)
 const showImportDialog = ref(false)
 const importFile = ref<File[]>([])
+const redactSecrets = ref(false)
 
 function exportConfiguration() {
-  window.location.href = withBasePath('/api/config/export')
+  window.location.href = withBasePath(redactSecrets.value ? '/api/config/export?redact=true' : '/api/config/export')
   showExportSnackbar.value = true
 }
 
@@ -56,8 +57,18 @@ async function confirmImport() {
       <p class="text-body-2 text-medium-emphasis">
         A single archive of every Plugin, Device, Screen, Schedule, Mashup, custom Palette and custom Firmware on this server — to review, diff, or move to another instance.
       </p>
-      <VAlert type="warning" variant="tonal" class="mt-2" :icon="mdiAlertCircle">
+      <VCheckbox
+        v-model="redactSecrets"
+        label="Redact secrets"
+        density="compact"
+        hide-details
+        data-test-id="export-redact-checkbox"
+      />
+      <VAlert v-if="!redactSecrets" type="warning" variant="tonal" class="mt-2" :icon="mdiAlertCircle" data-test-id="export-plaintext-warning">
         The archive contains Data Source headers and Device API keys in plaintext. Store it as carefully as you would a database backup.
+      </VAlert>
+      <VAlert v-else type="info" variant="tonal" class="mt-2" :icon="mdiAlertCircle" data-test-id="export-redacted-warning">
+        Data Source header values, Device API keys and mirror API keys, secret Plugin Variables and Webhook Tokens are replaced with a placeholder. Data Source URLs and bodies are still exported as-is, so a key embedded there is not redacted. Restoring this archive onto a fresh instance will need those secrets re-entered.
       </VAlert>
     </VCardText>
 

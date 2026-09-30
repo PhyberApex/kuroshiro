@@ -164,7 +164,8 @@ describe('maintenanceView', () => {
     const wrapper = mountView()
     await flushPromises()
 
-    await wrapper.find('input[type="checkbox"]').setValue(true)
+    const orphanedFileListItem = wrapper.findAll('.v-list-item').find(item => item.text().includes('Screen: s1'))
+    await orphanedFileListItem!.find('input[type="checkbox"]').setValue(true)
     const dryRunSwitch = wrapper.find('.v-switch input[type="checkbox"]')
     await dryRunSwitch.setValue(false)
 

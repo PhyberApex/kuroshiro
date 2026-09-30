@@ -63,6 +63,27 @@ describe('configurationCard', () => {
     Object.defineProperty(window, 'location', { value: originalLocation, writable: true })
   })
 
+  it('shows the plaintext warning by default, and downloads the redacted export once the checkbox is checked', async () => {
+    const originalLocation = window.location
+    Object.defineProperty(window, 'location', { value: { ...originalLocation, href: '' }, writable: true })
+
+    const wrapper = mountCard()
+
+    expect(document.querySelector('[data-test-id="export-plaintext-warning"]')).toBeTruthy()
+    expect(document.querySelector('[data-test-id="export-redacted-warning"]')).toBeFalsy()
+
+    await wrapper.find('[data-test-id="export-redact-checkbox"] input').setValue(true)
+
+    expect(document.querySelector('[data-test-id="export-plaintext-warning"]')).toBeFalsy()
+    expect(document.querySelector('[data-test-id="export-redacted-warning"]')).toBeTruthy()
+
+    await wrapper.find('[data-test-id="export-config-btn"]').trigger('click')
+
+    expect(window.location.href).toBe('/api/config/export?redact=true')
+
+    Object.defineProperty(window, 'location', { value: originalLocation, writable: true })
+  })
+
   it('imports the selected archive and shows the resulting summary', async () => {
     const mockFetch = stubFetch()
     mockFetch.mockResolvedValue(jsonResponse({ created: { devices: 2 }, updated: { plugins: 1 }, warnings: ['Palette "missing" was not found'] }))

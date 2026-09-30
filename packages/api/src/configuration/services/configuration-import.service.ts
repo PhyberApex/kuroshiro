@@ -22,7 +22,7 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
-import { SETTING_KEYS } from 'kuroshiro-shared'
+import { CONFIGURATION_REDACTION_SENTINEL, SETTING_KEYS } from 'kuroshiro-shared'
 import { DeviceModel } from '../../device-models/entities/device-model.entity.js'
 import { Palette } from '../../device-models/entities/palette.entity.js'
 import { Device } from '../../devices/devices.entity.js'
@@ -40,6 +40,7 @@ import { PluginImporterService } from '../../plugins/services/plugin-importer.se
 import { Schedule } from '../../schedule/schedule.entity.js'
 import { Screen } from '../../screens/screens.entity.js'
 import { INSTANCE_SETTINGS_ID, InstanceSettings } from '../../settings/entities/instance-settings.entity.js'
+import generateApikey from '../../utils/generateApikey.js'
 import { resolveAppPath } from '../../utils/pathHelper.js'
 import { CONFIG_SCHEMA_VERSION } from '../schema-version.js'
 import { CONFIG_ARCHIVE_FILES } from '../types.js'
@@ -110,7 +111,7 @@ export class ConfigurationImportService {
       // Firmware, Plugins, then Devices (which may reference either), then
       // DevicePlugins/Screens (which reference Devices and Plugins).
       for (const entry of pluginEntries) {
-        await this.withEntryContext(`Plugin ${entry.id}`, () => this.upsertPlugin(repos, zip, entry, counts))
+        await this.withEntryContext(`Plugin ${entry.id}`, () => this.upsertPlugin(repos, zip, entry, counts, warnings))
       }
 
       const deviceIdRemap = new Map<string, string>()
@@ -300,14 +301,14 @@ export class ConfigurationImportService {
     // overwriting it with the archived value would desync the DB from what the physical device sends,
     // breaking its next /display poll. Only a brand-new or exact-id-match row takes the archived apikey.
     if (!reattachedByMac) {
-      device.apikey = entry.apikey
+      device.apikey = this.resolveDeviceApikey(entry, device, wasCreated, warnings)
     }
     device.refreshRate = entry.refreshRate
     device.deviceModel = await this.resolveDeviceModel(repos.deviceModel, entry.deviceModelName, warnings)
     device.palette = await this.resolvePalette(repos.palette, entry.paletteId, warnings)
     device.mirrorEnabled = entry.mirrorEnabled ?? undefined
     device.mirrorMac = entry.mirrorMac ?? undefined
-    device.mirrorApikey = entry.mirrorApikey ?? undefined
+    device.mirrorApikey = this.resolveMirrorApikey(entry, device, warnings)
     device.sleepModeEnabled = entry.sleepModeEnabled
     device.sleepStartTime = entry.sleepStartTime
     device.sleepEndTime = entry.sleepEndTime
@@ -317,6 +318,43 @@ export class ConfigurationImportService {
     const saved = await repos.device.save(device)
     this.bump(counts, 'devices', wasCreated)
     return saved.id
+  }
+
+  /** Shared recovery for a single redacted scalar field (ADR-0028): keeps `keptValue` when `keep` is true, otherwise warns and falls back. Not used for headers, which resolve per-key against a map rather than a single value. */
+  private resolveRedactedField<T>(keep: boolean, keptValue: T, fallback: () => T, warningMessage: string, warnings: string[]): T {
+    if (keep) {
+      return keptValue
+    }
+    warnings.push(warningMessage)
+    return fallback()
+  }
+
+  /** A redacted apikey keeps the target row's value when one exists; a brand-new Device gets a freshly minted one, as auto-registration would (ADR-0028). */
+  private resolveDeviceApikey(entry: DeviceManifestEntry, device: Device, wasCreated: boolean, warnings: string[]): string {
+    if (entry.apikey !== CONFIGURATION_REDACTION_SENTINEL) {
+      return entry.apikey
+    }
+    return this.resolveRedactedField(
+      !wasCreated,
+      device.apikey,
+      () => generateApikey(),
+      `Device ${entry.id}: apikey was redacted and no existing value to keep; a new apikey was generated, so the hardware must re-pair`,
+      warnings,
+    )
+  }
+
+  /** A redacted mirrorApikey keeps the target row's value when one is set, otherwise falls back to unset (ADR-0028). */
+  private resolveMirrorApikey(entry: DeviceManifestEntry, device: Device, warnings: string[]): string | undefined {
+    if (entry.mirrorApikey !== CONFIGURATION_REDACTION_SENTINEL) {
+      return entry.mirrorApikey ?? undefined
+    }
+    return this.resolveRedactedField(
+      Boolean(device.mirrorApikey),
+      device.mirrorApikey,
+      () => undefined,
+      `Device ${entry.id}: mirrorApikey was redacted and no existing value to keep; left unset`,
+      warnings,
+    )
   }
 
   /**
@@ -350,9 +388,12 @@ export class ConfigurationImportService {
     return { zip: sub, hasSettings }
   }
 
-  private async upsertPlugin(repos: TransactionRepos, zip: AdmZip, entry: PluginManifestEntry, counts: ImportCounts): Promise<void> {
-    if (entry.webhookToken) {
-      const conflict = await repos.plugin.findOneBy({ webhookToken: entry.webhookToken })
+  private async upsertPlugin(repos: TransactionRepos, zip: AdmZip, entry: PluginManifestEntry, counts: ImportCounts, warnings: string[]): Promise<void> {
+    const existing = await repos.plugin.findOneBy({ id: entry.id })
+    const webhookToken = this.resolveWebhookToken(entry, existing, warnings)
+
+    if (webhookToken) {
+      const conflict = await repos.plugin.findOneBy({ webhookToken })
       if (conflict && conflict.id !== entry.id) {
         throw new BadRequestException(`Plugin ${entry.id}: webhookToken is already in use by a different Plugin (${conflict.id})`)
       }
@@ -361,13 +402,12 @@ export class ConfigurationImportService {
     const { zip: subZip, hasSettings } = this.extractPluginZip(zip, entry.id)
     const parsed = this.pluginImporter.parseZip(subZip, entry.id, hasSettings ? undefined : [])
 
-    const existing = await repos.plugin.findOneBy({ id: entry.id })
     const plugin = existing ?? repos.plugin.create({ id: entry.id })
     plugin.name = parsed.name
     plugin.description = parsed.description
     plugin.kind = entry.kind
     plugin.refreshInterval = parsed.refreshInterval
-    plugin.webhookToken = entry.webhookToken
+    plugin.webhookToken = webhookToken
     plugin.mergeStrategy = entry.mergeStrategy
     plugin.streamLimit = entry.streamLimit
     plugin.sourceRecipeId = entry.sourceRecipeId ?? parsed.sourceRecipeId ?? undefined
@@ -375,13 +415,27 @@ export class ConfigurationImportService {
     const saved = await repos.plugin.save(plugin)
     this.bump(counts, 'plugins', !existing)
 
-    await this.upsertPluginDataSources(repos.dataSource, saved, parsed.dataSources, entry.dataSources, counts)
+    await this.upsertPluginDataSources(repos.dataSource, saved, parsed.dataSources, entry.dataSources, counts, warnings)
     await this.upsertPluginTemplates(repos.template, saved, parsed.templates, entry.templates, counts)
     await this.upsertPluginFields(repos.field, saved, parsed.fields, entry.fields, counts)
-    await this.upsertPluginVariables(repos.variable, saved, entry.variables, counts)
+    await this.upsertPluginVariables(repos.variable, saved, entry.variables, counts, warnings)
   }
 
-  private async upsertPluginDataSources(repo: Repository<PluginDataSource>, plugin: Plugin, parsedSources: ParsedDataSource[], manifestEntries: PluginManifestDataSource[], counts: ImportCounts): Promise<void> {
+  /** A redacted webhookToken keeps the target Plugin's value when one is set, otherwise a fresh one is minted and the external sender must be updated (ADR-0028). */
+  private resolveWebhookToken(entry: PluginManifestEntry, existing: Plugin | null, warnings: string[]): string | null {
+    if (entry.webhookToken !== CONFIGURATION_REDACTION_SENTINEL) {
+      return entry.webhookToken
+    }
+    return this.resolveRedactedField(
+      Boolean(existing?.webhookToken),
+      existing?.webhookToken ?? null,
+      () => generateApikey(),
+      `Plugin ${entry.id}: webhookToken was redacted and no existing value to keep; a new webhookToken was generated, so the external sender must be updated`,
+      warnings,
+    )
+  }
+
+  private async upsertPluginDataSources(repo: Repository<PluginDataSource>, plugin: Plugin, parsedSources: ParsedDataSource[], manifestEntries: PluginManifestDataSource[], counts: ImportCounts, warnings: string[]): Promise<void> {
     const idByName = new Map(manifestEntries.map(e => [e.name, e.id]))
 
     for (const [index, parsedSource] of parsedSources.entries()) {
@@ -392,7 +446,7 @@ export class ConfigurationImportService {
       dataSource.mode = parsedSource.mode
       dataSource.method = parsedSource.method ?? 'GET'
       dataSource.url = parsedSource.url ?? null
-      dataSource.headers = parsedSource.headers
+      dataSource.headers = this.resolveHeaders(plugin, parsedSource, existing, warnings)
       dataSource.body = parsedSource.body
       dataSource.transformJs = parsedSource.transformJs ?? null
       dataSource.literalValue = parsedSource.literalValue ?? null
@@ -401,6 +455,27 @@ export class ConfigurationImportService {
       await repo.save(dataSource)
       this.bump(counts, 'dataSources', !existing)
     }
+  }
+
+  /** A redacted header value keeps the target Data Source's current value for that header name when set, otherwise the header is dropped (ADR-0028). */
+  private resolveHeaders(plugin: Plugin, parsedSource: ParsedDataSource, existing: PluginDataSource | null, warnings: string[]): Record<string, string> | undefined {
+    if (!parsedSource.headers) {
+      return parsedSource.headers
+    }
+    const existingHeaders = existing?.headers ?? {}
+    const resolved: Record<string, string> = {}
+    for (const [key, value] of Object.entries(parsedSource.headers)) {
+      if (value !== CONFIGURATION_REDACTION_SENTINEL) {
+        resolved[key] = value
+        continue
+      }
+      if (Object.hasOwn(existingHeaders, key)) {
+        resolved[key] = existingHeaders[key]
+        continue
+      }
+      warnings.push(`Plugin ${plugin.id} Data Source "${parsedSource.name}": header "${key}" was redacted and no existing value to keep; dropped`)
+    }
+    return resolved
   }
 
   private async upsertPluginTemplates(repo: Repository<PluginTemplate>, plugin: Plugin, parsedTemplates: ParsedPlugin['templates'], manifestEntries: PluginManifestTemplate[], counts: ImportCounts): Promise<void> {
@@ -438,17 +513,31 @@ export class ConfigurationImportService {
     }
   }
 
-  private async upsertPluginVariables(repo: Repository<PluginVariable>, plugin: Plugin, manifestVariables: PluginManifestEntry['variables'], counts: ImportCounts): Promise<void> {
+  private async upsertPluginVariables(repo: Repository<PluginVariable>, plugin: Plugin, manifestVariables: PluginManifestEntry['variables'], counts: ImportCounts, warnings: string[]): Promise<void> {
     for (const entry of manifestVariables) {
       const existing = await repo.findOneBy({ id: entry.id })
       const variable = existing ?? repo.create({ id: entry.id })
       variable.key = entry.key
-      variable.value = entry.value
+      variable.value = this.resolveVariableValue(plugin, entry, existing, warnings)
       variable.isSecret = entry.isSecret
       variable.plugin = plugin
       await repo.save(variable)
       this.bump(counts, 'variables', !existing)
     }
+  }
+
+  /** A redacted Variable value keeps the target row's value when the row exists (even an empty one), otherwise falls back to empty (ADR-0028). */
+  private resolveVariableValue(plugin: Plugin, entry: PluginManifestEntry['variables'][number], existing: PluginVariable | null, warnings: string[]): string {
+    if (entry.value !== CONFIGURATION_REDACTION_SENTINEL) {
+      return entry.value
+    }
+    return this.resolveRedactedField(
+      existing !== null,
+      existing?.value ?? '',
+      () => '',
+      `Plugin ${plugin.id} Variable "${entry.key}": value was redacted and no existing value to keep; left empty`,
+      warnings,
+    )
   }
 
   private async upsertAssignment(repos: TransactionRepos, entry: AssignmentManifestEntry, deviceIdRemap: Map<string, string>, counts: ImportCounts): Promise<void> {

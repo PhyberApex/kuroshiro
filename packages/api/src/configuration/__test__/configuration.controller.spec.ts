@@ -21,7 +21,7 @@ describe('configurationController', () => {
     )
   })
 
-  it('exportConfiguration streams a zip with the secrets-warning header', async () => {
+  it('exportConfiguration streams a zip with the secrets-warning header by default', async () => {
     const zipBuffer = Buffer.from('zip-content')
     mockExportService.exportToZip.mockResolvedValue(zipBuffer)
 
@@ -30,12 +30,28 @@ describe('configurationController', () => {
       send: vi.fn(),
     })
 
-    await controller.exportConfiguration(res)
+    await controller.exportConfiguration(undefined, res)
 
-    expect(mockExportService.exportToZip).toHaveBeenCalled()
+    expect(mockExportService.exportToZip).toHaveBeenCalledWith({ redact: false })
     expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'application/zip')
     expect(res.setHeader).toHaveBeenCalledWith('Content-Disposition', expect.stringContaining('attachment; filename="kuroshiro-config-'))
     expect(res.setHeader).toHaveBeenCalledWith('X-Kuroshiro-Contains-Secrets', 'true')
+    expect(res.send).toHaveBeenCalledWith(zipBuffer)
+  })
+
+  it('exportConfiguration passes redact through and omits the secrets-warning header when redact=true', async () => {
+    const zipBuffer = Buffer.from('zip-content')
+    mockExportService.exportToZip.mockResolvedValue(zipBuffer)
+
+    const res = asService<Response>({
+      setHeader: vi.fn(),
+      send: vi.fn(),
+    })
+
+    await controller.exportConfiguration('true', res)
+
+    expect(mockExportService.exportToZip).toHaveBeenCalledWith({ redact: true })
+    expect(res.setHeader).not.toHaveBeenCalledWith('X-Kuroshiro-Contains-Secrets', 'true')
     expect(res.send).toHaveBeenCalledWith(zipBuffer)
   })
 
