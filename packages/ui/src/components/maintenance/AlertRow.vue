@@ -13,9 +13,12 @@ defineProps<{
 
 <template>
   <VListItemTitle>
-    {{ ALERT_KIND_LABELS[alert.kind] }} — <RouterLink :to="{ name: 'device', params: { id: alert.deviceId } }">
+    {{ ALERT_KIND_LABELS[alert.kind] }} — <RouterLink v-if="alert.deviceId" :to="{ name: 'device', params: { id: alert.deviceId } }">
       {{ alert.deviceName }}
     </RouterLink>
+    <template v-else>
+      {{ alert.pluginName }} / {{ alert.dataSourceName }}
+    </template>
   </VListItemTitle>
   <VListItemSubtitle>
     Opened {{ formatDate(alert.openedAt) }}<template v-if="showResolved">

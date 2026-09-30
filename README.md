@@ -46,7 +46,7 @@ Kuroshiro is for anyone who wants to experiment, self-host, and shape their own 
 - **Screens Galore**: Add screens via link or upload, cache them, or fetch fresh every time—then gate any of them to a day/time Schedule.
 - **Plugins**: Poll external APIs (with multiple named Data Sources per plugin) or accept pushed Webhooks, render them with Liquid, or import a Recipe straight from trmnl.com.
 - **Firmware Management**: Official releases sync automatically, or push a custom OTA build, with per-Device-Model compatibility checks so you can't flash the wrong binary.
-- **Alerts**: A periodic sweep watches for low battery and offline Devices and notifies you via an [Apprise](https://github.com/caronc/apprise-api) sidecar—supporting dozens of notification channels.
+- **Alerts**: A periodic sweep watches for low battery Devices, offline Devices, and failing Data Source fetches, and notifies you via an [Apprise](https://github.com/caronc/apprise-api) sidecar—supporting dozens of notification channels.
 - **Virtual Device**: Test without hardware—because why not?
 
 ---
@@ -267,7 +267,7 @@ Kuroshiro tracks the official TRMNL model list and the latest official firmware 
 
 ## 🔔 Alerts
 
-A background sweep runs every 5 minutes (and once on startup) and checks two conditions for every Device: **low battery** (derived percentage below a threshold) and **offline** (no poll within a multiple of the Device's refresh rate — skipped entirely while the Device is asleep under Sleep Mode, and for a grace period after it wakes). Each condition opens an Alert the first time it's seen and resolves it the first time it clears; low battery has a 5-point hysteresis so it won't flap right at the threshold.
+A background sweep runs every 5 minutes (and once on startup) and checks three conditions: **low battery** and **offline** for every Device (offline is skipped entirely while the Device is asleep under Sleep Mode, and for a grace period after it wakes), and **Data Source fetch failing** for every `fetch`-mode Data Source of a Poll Plugin — opens once its consecutive scheduled-render failures (its Fetch Failure Streak) reach a threshold, resolves on the next successful scheduled fetch. Each condition opens an Alert the first time it's seen and resolves it the first time it clears; low battery has a 5-point hysteresis so it won't flap right at the threshold, and the fetch-failing Rule stays active until the streak drops back to zero. See [ADR-0025](docs/adr/0025-fetch-failure-alerts-scoped-to-data-source-with-streak-on-entity.md) for why the Alert is scoped to the Data Source rather than its Plugin.
 
 Delivery goes through the [`apprise-api`](https://github.com/caronc/apprise-api) sidecar rather than bundling Apprise into the Kuroshiro image — see [ADR-0022](docs/adr/0022-alerts-decided-by-sweep-delivered-via-apprise-sidecar.md). Alerts are persisted (and retried) whether or not delivery is configured; only the notification step is skipped without an Apprise URL. Configure it with these environment variables:
 
@@ -277,6 +277,7 @@ Delivery goes through the [`apprise-api`](https://github.com/caronc/apprise-api)
 | `KUROSHIRO_APPRISE_KEY` | `kuroshiro` | The Apprise config key notifications are POSTed to (`{url}/notify/{key}`). |
 | `KUROSHIRO_ALERT_LOW_BATTERY_PERCENT` | `20` | Derived battery percentage below which a Device is considered low. |
 | `KUROSHIRO_ALERT_OFFLINE_MULTIPLIER` | `3` | A Device is offline once it hasn't polled for longer than its `refreshRate` times this multiplier. |
+| `KUROSHIRO_ALERT_FETCH_FAILURES` | `3` | Consecutive scheduled-render failures a `fetch`-mode Data Source needs before its Alert opens. |
 
 To run the sidecar alongside Kuroshiro, uncomment the `apprise-api` service in [`docker-compose.yml`](./docker-compose.yml) and point `KUROSHIRO_APPRISE_URL` at it (e.g. `http://apprise-api:8000`), then configure your notification channels in its own persisted config under the `kuroshiro` key (or whatever `KUROSHIRO_APPRISE_KEY` is set to).
 
