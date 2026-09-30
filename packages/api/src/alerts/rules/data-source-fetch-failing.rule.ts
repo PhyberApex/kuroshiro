@@ -13,9 +13,11 @@ export const dataSourceFetchFailingRule: AlertRule = {
     const source = subject as PluginDataSource
     // A literal-mode source never carries a streak (ADR-0025) — if it still
     // has an active Alert (e.g. it was switched from fetch mode), that Alert
-    // resolves rather than being left dangling.
+    // resolves rather than being left dangling. Details are still populated
+    // (streak 0) so resolving doesn't blank out the Alert's last-recorded
+    // details with an empty object.
     if (source.mode === 'literal')
-      return { active: false }
+      return { active: false, details: { streak: 0, lastError: null } }
 
     const active = hasActiveAlert ? source.fetchFailureStreak > 0 : source.fetchFailureStreak >= context.fetchFailureThreshold
     return { active, details: { streak: source.fetchFailureStreak, lastError: source.lastFetchError ?? null } }

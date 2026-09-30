@@ -13,13 +13,16 @@ describe('dataSourceFetchOutcomeService', () => {
     service = new DataSourceFetchOutcomeService(asRepository(dataSourceRepo))
   })
 
-  it('increments the streak and records the message for a source that resolved to an error marker', async () => {
+  it('increments the streak at the database and records the message for a source that resolved to an error marker', async () => {
+    // fetchFailureStreak is deliberately stale here — the scheduler's cron
+    // closure never refreshes it tick over tick, so the increment must not
+    // be computed from this value (see the service's doc comment).
     const source = makePluginDataSource({ id: 'ds-1', name: 'weather', mode: 'fetch', fetchFailureStreak: 2 })
 
     await service.recordOutcomes([source], { weather: { error: true, message: 'API timeout' } })
 
+    expect(dataSourceRepo.increment).toHaveBeenCalledWith({ id: 'ds-1' }, 'fetchFailureStreak', 1)
     expect(dataSourceRepo.update).toHaveBeenCalledWith('ds-1', {
-      fetchFailureStreak: 3,
       lastFetchAttemptAt: expect.any(Date),
       lastFetchError: 'API timeout',
     })
@@ -30,6 +33,7 @@ describe('dataSourceFetchOutcomeService', () => {
 
     await service.recordOutcomes([source], { weather: { temp: 25 } })
 
+    expect(dataSourceRepo.increment).not.toHaveBeenCalled()
     expect(dataSourceRepo.update).toHaveBeenCalledWith('ds-1', {
       fetchFailureStreak: 0,
       lastFetchAttemptAt: expect.any(Date),
@@ -42,6 +46,7 @@ describe('dataSourceFetchOutcomeService', () => {
 
     await service.recordOutcomes([source], { title: 'Static Title' })
 
+    expect(dataSourceRepo.increment).not.toHaveBeenCalled()
     expect(dataSourceRepo.update).not.toHaveBeenCalled()
   })
 
@@ -56,13 +61,25 @@ describe('dataSourceFetchOutcomeService', () => {
       title: 'Static Title',
     })
 
+    expect(dataSourceRepo.increment).toHaveBeenCalledTimes(1)
+    expect(dataSourceRepo.increment).toHaveBeenCalledWith({ id: 'ds-1' }, 'fetchFailureStreak', 1)
     expect(dataSourceRepo.update).toHaveBeenCalledTimes(2)
-    expect(dataSourceRepo.update).toHaveBeenCalledWith('ds-1', expect.objectContaining({ fetchFailureStreak: 1 }))
+    expect(dataSourceRepo.update).toHaveBeenCalledWith('ds-1', expect.objectContaining({ lastFetchError: 'timeout' }))
     expect(dataSourceRepo.update).toHaveBeenCalledWith('ds-2', expect.objectContaining({ fetchFailureStreak: 0 }))
   })
 
   it('is a no-op given no data sources', async () => {
     await service.recordOutcomes([], {})
+    expect(dataSourceRepo.increment).not.toHaveBeenCalled()
     expect(dataSourceRepo.update).not.toHaveBeenCalled()
+  })
+
+  it('never derives the increment from the (possibly stale) in-memory streak value', async () => {
+    const source = makePluginDataSource({ id: 'ds-1', name: 'weather', mode: 'fetch', fetchFailureStreak: 999 })
+
+    await service.recordOutcomes([source], { weather: { error: true, message: 'still failing' } })
+
+    // Always +1 at the database, regardless of what the stale in-memory copy says.
+    expect(dataSourceRepo.increment).toHaveBeenCalledWith({ id: 'ds-1' }, 'fetchFailureStreak', 1)
   })
 })

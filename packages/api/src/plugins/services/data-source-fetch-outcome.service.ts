@@ -22,6 +22,16 @@ export class DataSourceFetchOutcomeService {
     private readonly dataSourceRepository: Repository<PluginDataSource>,
   ) {}
 
+  /**
+   * `dataSources` comes from the scheduler's cron closure, captured once at
+   * schedule time (`PluginSchedulerService.schedulePlugin`) — every later
+   * tick reuses that same in-memory snapshot, so `source.fetchFailureStreak`
+   * is stale from the second tick onward. The failure branch therefore must
+   * not compute `source.fetchFailureStreak + 1` in application code; it
+   * increments the persisted column atomically at the database, which is
+   * correct regardless of what the stale in-memory copy says and immune to
+   * two overlapping ticks racing each other.
+   */
   async recordOutcomes(dataSources: PluginDataSource[], resolved: Record<string, unknown>): Promise<void> {
     const now = new Date()
     for (const source of dataSources) {
@@ -29,11 +39,13 @@ export class DataSourceFetchOutcomeService {
         continue
 
       const value = resolved[source.name]
-      const fields = isErrorMarker(value)
-        ? { fetchFailureStreak: source.fetchFailureStreak + 1, lastFetchAttemptAt: now, lastFetchError: value.message }
-        : { fetchFailureStreak: 0, lastFetchAttemptAt: now, lastFetchError: null }
-
-      await this.dataSourceRepository.update(source.id, fields)
+      if (isErrorMarker(value)) {
+        await this.dataSourceRepository.increment({ id: source.id }, 'fetchFailureStreak', 1)
+        await this.dataSourceRepository.update(source.id, { lastFetchAttemptAt: now, lastFetchError: value.message })
+      }
+      else {
+        await this.dataSourceRepository.update(source.id, { fetchFailureStreak: 0, lastFetchAttemptAt: now, lastFetchError: null })
+      }
     }
   }
 }

@@ -34,9 +34,11 @@ describe('dataSourceFetchFailingRule', () => {
     expect(dataSourceFetchFailingRule.evaluate(source, context, false).active).toBe(false)
   })
 
-  it('resolves a stale active alert once its source is switched to literal mode', () => {
+  it('resolves a stale active alert once its source is switched to literal mode, without blanking its details', () => {
     const source = makePluginDataSource({ mode: 'literal', fetchFailureStreak: 0 })
-    expect(dataSourceFetchFailingRule.evaluate(source, context, true).active).toBe(false)
+    const evaluation = dataSourceFetchFailingRule.evaluate(source, context, true)
+    expect(evaluation.active).toBe(false)
+    expect(evaluation.details).toEqual({ streak: 0, lastError: null })
   })
 
   it('carries the streak and last error in details', () => {

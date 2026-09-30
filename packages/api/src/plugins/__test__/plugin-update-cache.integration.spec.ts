@@ -116,7 +116,7 @@ describe('plugin update cache invalidation integration', () => {
         { provide: getRepositoryToken(PluginEntity), useValue: pluginRepo },
         { provide: getRepositoryToken(DevicePlugin), useValue: {} },
         { provide: getRepositoryToken(ScreenEntity), useValue: screenRepo },
-        { provide: getRepositoryToken(PluginDataSource), useValue: { update: vi.fn() } },
+        { provide: getRepositoryToken(PluginDataSource), useValue: { update: vi.fn(), increment: vi.fn() } },
         { provide: getRepositoryToken(PluginTemplate), useValue: templateRepo },
         { provide: getRepositoryToken(PluginField), useValue: {} },
         { provide: getRepositoryToken(PluginVariable), useValue: {} },

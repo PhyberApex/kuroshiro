@@ -68,10 +68,11 @@ export class AlertSweepService implements OnApplicationBootstrap {
       fetchFailureThreshold: alertsConfig.fetchFailureThreshold,
     }
 
-    const subjects: SweepSubjects = {
-      devices: await this.deviceRepository.find(),
-      dataSources: await this.dataSourceRepository.find({ relations: { plugin: true } }),
-    }
+    const [devices, dataSources] = await Promise.all([
+      this.deviceRepository.find(),
+      this.dataSourceRepository.find({ relations: { plugin: true } }),
+    ])
+    const subjects: SweepSubjects = { devices, dataSources }
 
     for (const rule of ALERT_RULES)
       await this.sweepRule(rule, subjects, context)

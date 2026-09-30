@@ -17,6 +17,7 @@ export interface MockRepository<T extends ObjectLiteral> {
   create: Mock<(entityLike?: DeepPartial<T>) => T>
   save: Mock<(entity: T, options?: SaveOptions) => Promise<T>>
   update: Mock<(criteria: FindOptionsWhere<T> | string | string[], partialEntity: QueryDeepPartialEntity<T>) => Promise<UpdateResult>>
+  increment: Mock<(conditions: FindOptionsWhere<T>, propertyPath: string, value: number | string) => Promise<UpdateResult>>
   delete: Mock<(criteria: FindOptionsWhere<T> | string | string[]) => Promise<DeleteResult>>
   remove: Mock<(entity: T | T[], options?: RemoveOptions) => Promise<T | T[]>>
   insert: Mock<(entity: QueryDeepPartialEntity<T>) => Promise<InsertResult>>
@@ -34,6 +35,7 @@ export function createMockRepository<T extends ObjectLiteral>(): MockRepository<
     create: vi.fn((input?: unknown) => input),
     save: vi.fn(async (input: unknown) => input),
     update: vi.fn(),
+    increment: vi.fn(),
     delete: vi.fn(),
     remove: vi.fn(async (input: unknown) => input),
     insert: vi.fn(),
