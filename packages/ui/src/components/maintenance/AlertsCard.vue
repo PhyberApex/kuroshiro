@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import type { AlertSummary } from 'kuroshiro-shared'
 import { mdiAlertCircle, mdiBellRing, mdiCheckCircle } from '@mdi/js'
-import { ALERT_KIND_LABELS } from 'kuroshiro-shared'
-import { RouterLink } from 'vue-router'
-import { VAlert, VBtn, VCard, VCardText, VCardTitle, VDivider, VList, VListItem, VListItemSubtitle, VListItemTitle } from 'vuetify/components'
-import { formatDate } from '@/utils/formatDate'
+import { VAlert, VBtn, VCard, VCardText, VCardTitle, VDivider, VList, VListItem } from 'vuetify/components'
+import AlertRow from './AlertRow.vue'
 
 defineProps<{
   active: AlertSummary[]
@@ -58,12 +56,7 @@ defineEmits<{
       </div>
       <VList v-if="active.length > 0" data-test-id="active-alerts-list">
         <VListItem v-for="alert in active" :key="alert.id">
-          <VListItemTitle>
-            {{ ALERT_KIND_LABELS[alert.kind] }} — <RouterLink :to="{ name: 'device', params: { id: alert.deviceId } }">
-              {{ alert.deviceName }}
-            </RouterLink>
-          </VListItemTitle>
-          <VListItemSubtitle>Opened {{ formatDate(alert.openedAt) }}</VListItemSubtitle>
+          <AlertRow :alert="alert" :show-resolved="false" />
         </VListItem>
       </VList>
       <p v-else class="text-body-2 text-medium-emphasis" data-test-id="no-active-alerts">
@@ -77,12 +70,7 @@ defineEmits<{
       </div>
       <VList v-if="resolved.length > 0" data-test-id="resolved-alerts-list">
         <VListItem v-for="alert in resolved" :key="alert.id">
-          <VListItemTitle>
-            {{ ALERT_KIND_LABELS[alert.kind] }} — <RouterLink :to="{ name: 'device', params: { id: alert.deviceId } }">
-              {{ alert.deviceName }}
-            </RouterLink>
-          </VListItemTitle>
-          <VListItemSubtitle>Opened {{ formatDate(alert.openedAt) }} · Resolved {{ alert.resolvedAt ? formatDate(alert.resolvedAt) : 'N/A' }}</VListItemSubtitle>
+          <AlertRow :alert="alert" :show-resolved="true" />
         </VListItem>
       </VList>
       <p v-else class="text-body-2 text-medium-emphasis" data-test-id="no-resolved-alerts">
