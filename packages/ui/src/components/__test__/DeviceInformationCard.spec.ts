@@ -170,6 +170,13 @@ describe('deviceInformationCard', () => {
     expect(updateDevice.mock.calls[0][1]).not.toHaveProperty('resetDevice')
   })
 
+  it('keeps the stored refresh rate when saving a device that was already loaded on mount', async () => {
+    mockDevice.current = baseDevice({ refreshRate: 900 })
+    const wrapper = mountCard()
+    await wrapper.vm.saveDevice()
+    expect(updateDevice).toHaveBeenCalledWith('device1', expect.objectContaining({ refreshRate: 900 }))
+  })
+
   it('drops a palette the newly selected model does not support', async () => {
     mockDevice.current = baseDevice({ deviceModel: V2, palette: GRAY_16, refreshRate: 300 })
     const wrapper = mountCard()
