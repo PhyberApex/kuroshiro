@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { AssignmentsMissingRequiredField, NormalizedDataSource, NormalizedField, NormalizedTemplate, UpdateItem } from '../types/recipeUpdate'
 import { VAlert, VCheckbox, VChip, VExpansionPanel, VExpansionPanelText, VExpansionPanelTitle } from 'vuetify/components'
+import { updateItemKey } from '../types/recipeUpdate'
 import RecipeUpdateLineDiff from './RecipeUpdateLineDiff.vue'
 import RecipeUpdatePropertyTable from './RecipeUpdatePropertyTable.vue'
 
@@ -15,10 +16,6 @@ defineEmits<{
 }>()
 
 const FIELD_PROPERTIES = ['fieldType', 'name', 'description', 'defaultValue', 'required', 'order'] as const
-
-function itemKey(item: UpdateItem): string {
-  return `${item.itemType}:${item.key}`
-}
 
 function kindColor(kind: UpdateItem['kind']): string {
   if (kind === 'added')
@@ -70,7 +67,7 @@ function transformJsOf(value: unknown): string {
             :model-value="selected"
             hide-details
             density="compact"
-            :data-test-id="`item-checkbox-${itemKey(item)}`"
+            :data-test-id="`item-checkbox-${updateItemKey(item)}`"
             @update:model-value="$emit('toggle')"
           />
           <span>{{ item.key }}</span>

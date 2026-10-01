@@ -39,6 +39,11 @@ export interface UpdateItem {
   snapshot?: unknown
 }
 
+/** The selection-set key for an Update Item — unique within a preview's `items`. */
+export function updateItemKey(item: UpdateItem): string {
+  return `${item.itemType}:${item.key}`
+}
+
 export interface AssignmentsMissingRequiredField {
   key: string
   assignments: Array<{ deviceId: string, deviceName: string }>

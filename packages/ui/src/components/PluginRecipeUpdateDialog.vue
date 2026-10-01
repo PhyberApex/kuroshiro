@@ -4,6 +4,7 @@ import type { RecipeUpdatePreview, UpdateItem, UpdateItemType } from '../types/r
 import { computed, ref, watch } from 'vue'
 import { VAlert, VBtn, VCard, VCardActions, VCardText, VCardTitle, VDialog, VDivider, VExpansionPanels, VSpacer } from 'vuetify/components'
 import { RecipeUpdateConflictError, usePluginsStore } from '../stores/plugins'
+import { updateItemKey } from '../types/recipeUpdate'
 import { errorMessage } from '../utils/errorMessage'
 import RecipeUpdateItemPanel from './RecipeUpdateItemPanel.vue'
 
@@ -44,26 +45,22 @@ watch(() => props.modelValue, (open) => {
   resetSelection()
 }, { immediate: true })
 
-function itemKey(item: UpdateItem): string {
-  return `${item.itemType}:${item.key}`
-}
-
 function resetSelection() {
   const preview = currentPreview.value
   if (!preview || preview.mode === 'two-way') {
     selected.value = new Set()
     return
   }
-  selected.value = new Set(preview.items.filter(item => !item.conflict).map(itemKey))
+  selected.value = new Set(preview.items.filter(item => !item.conflict).map(updateItemKey))
 }
 
 function isSelected(item: UpdateItem): boolean {
-  return selected.value.has(itemKey(item))
+  return selected.value.has(updateItemKey(item))
 }
 
 function toggle(item: UpdateItem) {
   const next = new Set(selected.value)
-  const key = itemKey(item)
+  const key = updateItemKey(item)
   if (next.has(key))
     next.delete(key)
   else
@@ -85,7 +82,7 @@ const hasSelection = computed(() => selected.value.size > 0)
 const canSaveBaseline = computed(() => currentPreview.value?.mode === 'two-way')
 const showApplyButton = computed(() => !currentError.value && !applyConflict.value && currentPreview.value !== null && (currentPreview.value.items.length > 0 || canSaveBaseline.value))
 const applyButtonLabel = computed(() => hasSelection.value ? 'Apply selected' : 'Save baseline')
-const showTwoWayBanner = computed(() => currentPreview.value?.mode === 'two-way' && (currentPreview.value?.items.length ?? 0) > 0)
+const showTwoWayBanner = computed(() => currentPreview.value?.mode === 'two-way')
 
 function missingAssignmentsFor(item: UpdateItem) {
   if (item.itemType !== 'field')
@@ -102,7 +99,7 @@ async function apply() {
   applyConflict.value = false
   try {
     const apply = preview.items
-      .filter(item => selected.value.has(itemKey(item)))
+      .filter(item => selected.value.has(updateItemKey(item)))
       .map(item => ({ itemType: item.itemType, key: item.key }))
 
     await pluginsStore.applyRecipeUpdate(props.plugin.id, { contentHash: preview.contentHash, apply })
@@ -178,7 +175,7 @@ function close() {
             <VExpansionPanels variant="accordion">
               <RecipeUpdateItemPanel
                 v-for="item in section.items"
-                :key="itemKey(item)"
+                :key="updateItemKey(item)"
                 :item="item"
                 :selected="isSelected(item)"
                 :missing-assignment="missingAssignmentsFor(item)"
