@@ -246,6 +246,7 @@ export class PluginsService implements OnModuleInit {
       mergeStrategy: source.mergeStrategy ?? undefined,
       streamLimit: source.streamLimit ?? undefined,
       sourceRecipeId: source.sourceRecipeId,
+      sourceRecipeSnapshot: source.sourceRecipeSnapshot,
       dataSources: (source.dataSources || []).map(ds => ({
         name: ds.name,
         mode: ds.mode,
@@ -299,6 +300,7 @@ export class PluginsService implements OnModuleInit {
       kind,
       refreshInterval: basicFields.refreshInterval || 15,
       sourceRecipeId: basicFields.sourceRecipeId,
+      sourceRecipeSnapshot: basicFields.sourceRecipeSnapshot,
       ...(kind === 'Webhook'
         ? {
             webhookToken: generateApikey(),

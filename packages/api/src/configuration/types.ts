@@ -1,5 +1,6 @@
 import type { BooleanSettingKey, SettingKey } from 'kuroshiro-shared'
 import type { MergeStrategy, PluginKind } from '../plugins/entities/plugin.entity.js'
+import type { ParsedPlugin } from '../plugins/services/plugin-importer.service.js'
 import type { Screen } from '../screens/screens.entity.js'
 
 export const CONFIG_ARCHIVE_FILES = {
@@ -53,6 +54,7 @@ export interface PluginManifestEntry {
   streamLimit: number | null
   webhookToken: string | null
   sourceRecipeId: string | null
+  sourceRecipeSnapshot: ParsedPlugin | null
   dataSources: PluginManifestDataSource[]
   templates: PluginManifestTemplate[]
   fields: PluginManifestField[]

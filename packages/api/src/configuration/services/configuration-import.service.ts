@@ -413,6 +413,7 @@ export class ConfigurationImportService {
     plugin.mergeStrategy = entry.mergeStrategy
     plugin.streamLimit = entry.streamLimit
     plugin.sourceRecipeId = entry.sourceRecipeId ?? parsed.sourceRecipeId ?? undefined
+    plugin.sourceRecipeSnapshot = entry.sourceRecipeSnapshot ? { ...entry.sourceRecipeSnapshot } : null
 
     const saved = await repos.plugin.save(plugin)
     this.bump(counts, 'plugins', !existing)

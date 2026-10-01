@@ -270,6 +270,56 @@ describe('configurationImportService', () => {
     expect(backing.get('Screen')!.size).toBe(1)
   })
 
+  it('restores the Recipe Snapshot from the manifest entry, and falls back to null when an archive predates it', async () => {
+    const snapshot = { name: 'Daily Weather', kind: 'Poll', refreshInterval: 30, dataSources: [], templates: [], fields: [], sourceRecipeId: '150460' }
+    const pluginFolders = {
+      'plugin-1': {
+        manifest: { name: 'Test Plugin', description: '', custom_fields: [] },
+        settings: { refresh_interval: 15, data_sources: [{ name: 'source', endpoint: 'https://api.example.com', method: 'GET', headers: {}, body: {} }] },
+        templates: { full: 'Hello' },
+      },
+    }
+
+    const withSnapshot = buildArchive({
+      plugins: [{
+        id: 'plugin-1',
+        kind: 'Poll',
+        mergeStrategy: null,
+        streamLimit: null,
+        webhookToken: null,
+        sourceRecipeId: '150460',
+        sourceRecipeSnapshot: snapshot,
+        dataSources: [{ id: 'ds-1', name: 'source' }],
+        templates: [{ id: 'tpl-1', layout: 'full' }],
+        fields: [],
+        variables: [],
+      }],
+      pluginFolders,
+    })
+
+    await service.importFromZip(withSnapshot)
+    expect(backing.get('Plugin')!.get('plugin-1')!.sourceRecipeSnapshot).toEqual(snapshot)
+
+    const withoutSnapshotField = buildArchive({
+      plugins: [{
+        id: 'plugin-2',
+        kind: 'Poll',
+        mergeStrategy: null,
+        streamLimit: null,
+        webhookToken: null,
+        sourceRecipeId: null,
+        dataSources: [{ id: 'ds-2', name: 'source' }],
+        templates: [{ id: 'tpl-2', layout: 'full' }],
+        fields: [],
+        variables: [],
+      }],
+      pluginFolders: { 'plugin-2': pluginFolders['plugin-1'] },
+    })
+
+    await service.importFromZip(withoutSnapshotField)
+    expect(backing.get('Plugin')!.get('plugin-2')!.sourceRecipeSnapshot).toBeNull()
+  })
+
   it('re-attaches to an existing Device by mac instead of creating a duplicate, remapping Screen references onto it, and keeps the existing apikey so the hardware stays authenticated', async () => {
     backing.get('Device')!.set('existing-device-1', {
       id: 'existing-device-1',

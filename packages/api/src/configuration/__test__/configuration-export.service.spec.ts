@@ -131,6 +131,54 @@ describe('configurationExportService', () => {
     expect(pluginsJson[0].templates).toEqual([{ id: 'tpl-1', layout: 'full' }])
   })
 
+  it('writes the Recipe Snapshot into the Plugin manifest entry, and null when the Plugin has none', async () => {
+    const snapshot = { name: 'Daily Weather', kind: 'Poll', refreshInterval: 30, dataSources: [], templates: [], fields: [], sourceRecipeId: '150460' }
+    const importedPlugin = makePlugin({ id: 'plugin-1', sourceRecipeId: '150460', sourceRecipeSnapshot: snapshot })
+    const handBuiltPlugin = makePlugin({ id: 'plugin-2' })
+    pluginRepo.find.mockResolvedValue([importedPlugin, handBuiltPlugin])
+
+    const buffer = await service.exportToZip()
+    const zip = new AdmZip(buffer)
+    const pluginsJson = JSON.parse(zip.getEntry('plugins.json')!.getData().toString('utf8'))
+
+    expect(pluginsJson.find((p: { id: string }) => p.id === 'plugin-1').sourceRecipeSnapshot).toEqual(snapshot)
+    expect(pluginsJson.find((p: { id: string }) => p.id === 'plugin-2').sourceRecipeSnapshot).toBeNull()
+  })
+
+  it('redacts Data Source header values in the Recipe Snapshot, but not keys or other fields, when redact is set', async () => {
+    const snapshot = {
+      name: 'Daily Weather',
+      kind: 'Poll',
+      refreshInterval: 30,
+      dataSources: [{ name: 'source', mode: 'fetch', url: 'https://api.example.com', headers: { Authorization: 'Bearer real-token' }, body: {} }],
+      templates: [],
+      fields: [],
+      sourceRecipeId: '150460',
+    }
+    const plugin = makePlugin({ id: 'plugin-1', sourceRecipeId: '150460', sourceRecipeSnapshot: snapshot })
+    pluginRepo.find.mockResolvedValue([plugin])
+
+    const buffer = await service.exportToZip({ redact: true })
+    const zip = new AdmZip(buffer)
+    const pluginsJson = JSON.parse(zip.getEntry('plugins.json')!.getData().toString('utf8'))
+    const entry = pluginsJson.find((p: { id: string }) => p.id === 'plugin-1')
+
+    expect(entry.sourceRecipeSnapshot.dataSources[0].headers).toEqual({ Authorization: CONFIGURATION_REDACTION_SENTINEL })
+    expect(entry.sourceRecipeSnapshot.dataSources[0].url).toBe('https://api.example.com')
+  })
+
+  it('redacts a Recipe Snapshot with no dataSources field without throwing, when redact is set', async () => {
+    const plugin = makePlugin({ id: 'plugin-1', sourceRecipeId: '150460', sourceRecipeSnapshot: { name: 'Daily Weather' } })
+    pluginRepo.find.mockResolvedValue([plugin])
+
+    const buffer = await service.exportToZip({ redact: true })
+    const zip = new AdmZip(buffer)
+    const pluginsJson = JSON.parse(zip.getEntry('plugins.json')!.getData().toString('utf8'))
+    const entry = pluginsJson.find((p: { id: string }) => p.id === 'plugin-1')
+
+    expect(entry.sourceRecipeSnapshot).toEqual({ name: 'Daily Weather', dataSources: [] })
+  })
+
   it('redacts Data Source header values but not keys, url, or body, in the nested .trmnlp settings.yml, when redact is set', async () => {
     const plugin = makePlugin({
       id: 'plugin-1',

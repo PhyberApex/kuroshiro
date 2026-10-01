@@ -16,6 +16,11 @@ export type MergeStrategy = typeof MERGE_STRATEGIES[number]
 // self-referential union here blows past TS's recursion limit (TS2589).
 export type WebhookPayload = Record<string, unknown> | unknown[] | null
 
+// The Recipe importer's ParsedPlugin output, modeled shallowly like
+// WebhookPayload above for the same DeepPartial recursion reason — its Data
+// Sources carry a recursive JsonValue-typed body/literalValue.
+export type RecipeSnapshot = Record<string, unknown> | null
+
 @Entity()
 export class Plugin {
   @PrimaryGeneratedColumn('uuid')
@@ -51,6 +56,12 @@ export class Plugin {
   // doesn't need a backfill migration (ADR-0011).
   @Column('text', { nullable: true })
   sourceRecipeId?: string
+
+  // The Recipe importer's parsed output at import time — the base a future
+  // Recipe Update Check (issue #1028, ADR-0030) diffs against. Only Recipe
+  // import sets it; a Plugin imported before this column existed has null.
+  @Column('jsonb', { nullable: true })
+  sourceRecipeSnapshot?: RecipeSnapshot
 
   @CreateDateColumn()
   createdAt: Date

@@ -1,7 +1,7 @@
 import type { ValidationArguments, ValidationOptions, ValidatorConstraintInterface } from 'class-validator'
-import type { MergeStrategy, PluginKind } from '../entities/plugin.entity.js'
+import type { MergeStrategy, PluginKind, RecipeSnapshot } from '../entities/plugin.entity.js'
 import { Type } from 'class-transformer'
-import { IsArray, IsBoolean, IsIn, IsInt, IsOptional, IsString, Min, registerDecorator, ValidateNested, ValidatorConstraint } from 'class-validator'
+import { IsArray, IsBoolean, IsIn, IsInt, IsObject, IsOptional, IsString, Min, registerDecorator, ValidateNested, ValidatorConstraint } from 'class-validator'
 import { MERGE_STRATEGIES, PLUGIN_KINDS } from '../entities/plugin.entity.js'
 import { pluginKindFieldViolation } from '../plugin-kind-fields.js'
 import { PluginDataSourceDto } from './plugin-data-source.dto.js'
@@ -81,6 +81,10 @@ export class CreatePluginDto {
   @IsOptional()
   @IsString()
   sourceRecipeId?: string
+
+  @IsOptional()
+  @IsObject()
+  sourceRecipeSnapshot?: RecipeSnapshot
 
   @IsOptional()
   @IsArray()

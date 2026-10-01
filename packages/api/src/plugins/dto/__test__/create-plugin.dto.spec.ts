@@ -28,6 +28,21 @@ describe('create-plugin dto', () => {
     expect(dto.refreshInterval).toBe(30)
   })
 
+  it('accepts a sourceRecipeSnapshot object', async () => {
+    const snapshot = { name: 'Daily Weather', kind: 'Poll', refreshInterval: 30, dataSources: [], templates: [], fields: [] }
+
+    await expect(violations({ name: 'Plugin', sourceRecipeSnapshot: snapshot })).resolves.toEqual([])
+
+    const dto = plainToInstance(CreatePluginDto, { name: 'Plugin', sourceRecipeSnapshot: snapshot })
+    expect(dto.sourceRecipeSnapshot).toEqual(snapshot)
+  })
+
+  it('rejects a non-object sourceRecipeSnapshot', async () => {
+    await expect(violations({ name: 'Plugin', sourceRecipeSnapshot: 'not-an-object' })).resolves.toContain(
+      'sourceRecipeSnapshot must be an object',
+    )
+  })
+
   it('includes optional dataSources array', () => {
     const dto = new CreatePluginDto()
     dto.dataSources = [

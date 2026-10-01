@@ -93,4 +93,17 @@ describe('update-plugin dto', () => {
       )
     })
   })
+
+  describe('create-only fields', () => {
+    it('rejects an attempt to change sourceRecipeSnapshot or sourceRecipeId through the update, matching the mass-assignment guard on the route', async () => {
+      const errors = await validate(plainToInstance(UpdatePluginDto, {
+        sourceRecipeId: 'other-recipe',
+        sourceRecipeSnapshot: { name: 'Smuggled' },
+      }), { whitelist: true, forbidNonWhitelisted: true })
+      const messages = flattenConstraints(errors)
+
+      expect(messages.some(message => message.includes('sourceRecipeId') && message.includes('should not exist'))).toBe(true)
+      expect(messages.some(message => message.includes('sourceRecipeSnapshot') && message.includes('should not exist'))).toBe(true)
+    })
+  })
 })
