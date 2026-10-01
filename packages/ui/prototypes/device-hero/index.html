@@ -1,0 +1,1352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTOTYPE: Kuroshiro Device details</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@700&family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body, h1, h2, h3, p, ul, ol, figure, dl, dd, fieldset { margin: 0; padding: 0; }
+ul, ol { list-style: none; }
+fieldset { border: 0; min-width: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { background: none; border: 0; padding: 0; cursor: pointer; text-align: inherit; }
+a { color: inherit; }
+svg { display: block; }
+
+html { --font-b: "Archivo", system-ui, sans-serif; --font-m: "JetBrains Mono", monospace; --paper: #fff; scrollbar-color: var(--mid) transparent; }
+html.light { --bg: #fff; --fg: #121212; --mid: #666; --rule: #d9d9d9; --wash: #f1f1f1; --seal: #c4242f; color-scheme: light; }
+html.dark { --bg: #121212; --fg: #f4f4f4; --mid: #9c9c9c; --rule: #363636; --wash: #1f1f1f; --seal: #e5484d; color-scheme: dark; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-b); font-size: 14px; line-height: 1.45; font-variant-numeric: tabular-nums; caret-color: var(--fg); accent-color: var(--fg); }
+::selection { background: var(--fg); color: var(--bg); }
+:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; border-radius: 3px; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.icon { width: 16px; height: 16px; fill: currentColor; flex: none; }
+.mono { font-family: var(--font-m); font-size: 13px; }
+.mid { color: var(--mid); }
+.small { font-size: 13px; }
+
+/* ───────── approved shell (Masthead) and shared page parts ───────── */
+h1 { font-stretch: 68%; font-weight: 800; font-size: 48px; line-height: 0.95; letter-spacing: -0.015em; text-wrap: balance; }
+.head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px 24px; flex-wrap: wrap; }
+.head .actions, .h2 .actions { display: flex; gap: 8px; }
+.h2 { font-stretch: 75%; font-weight: 700; font-size: 22px; line-height: 1.1; padding-bottom: 8px; border-bottom: 2px solid var(--fg); margin-top: 40px; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+h3 { font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.lede { margin: 16px 0 0; max-width: 62ch; color: var(--mid); }
+.seal { flex: none; color: var(--fg); }
+.seal.red { color: var(--seal); }
+.lock { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.word { font-stretch: 68%; font-weight: 800; font-size: 22px; line-height: 1; letter-spacing: -0.015em; }
+
+.btn { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; padding: 7px 12px; border: 1px solid var(--fg); border-radius: 3px; text-decoration: none; white-space: nowrap; }
+.btn:hover { background: var(--wash); }
+.btn:active { translate: 0 1px; }
+.btn.primary { background: var(--fg); color: var(--bg); }
+.btn.primary:hover { background: var(--mid); border-color: var(--mid); }
+.btn.quiet { border-color: transparent; padding-inline: 0; text-decoration: underline; text-underline-offset: 3px; font-weight: 500; }
+.btn.quiet:hover { background: none; color: var(--mid); }
+.btn:disabled { color: var(--mid); border-color: var(--rule); cursor: default; background: none; }
+.btn.quiet:disabled { border-color: transparent; text-decoration: none; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+a.text { text-underline-offset: 3px; }
+a.text:hover { color: var(--mid); }
+
+.bar { display: flex; align-items: stretch; gap: 28px; height: 52px; padding: 0 24px; border-bottom: 1px solid var(--rule); position: sticky; top: 0; background: var(--bg); z-index: 2; }
+.bar nav { display: flex; gap: 22px; align-items: stretch; }
+.bar nav a { display: flex; align-items: center; text-decoration: none; color: var(--mid); font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+.bar nav a:hover { color: var(--fg); }
+.bar nav a[aria-current] { color: var(--fg); font-weight: 600; border-bottom-color: var(--fg); }
+.bar nav i { width: 1px; background: var(--rule); margin: 14px 0; }
+.alertlink { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; text-decoration: none; white-space: nowrap; margin-left: auto; }
+.alertlink::before { content: ""; width: 8px; height: 8px; background: var(--fg); flex: none; }
+.alertlink:hover { text-decoration: underline; text-underline-offset: 3px; }
+.col { max-width: 968px; margin: 0 auto; padding: 44px 24px 140px; }
+.btabs { display: none; }
+
+.tabs { display: flex; gap: 20px; margin-top: 24px; border-bottom: 1px solid var(--rule); overflow-x: auto; scrollbar-width: none; }
+.tabs a { padding: 8px 0; text-decoration: none; color: var(--mid); font-weight: 500; border-bottom: 2px solid transparent; white-space: nowrap; }
+.tabs a:hover { color: var(--fg); }
+.tabs a[aria-current] { color: var(--fg); font-weight: 600; border-bottom-color: var(--fg); }
+
+.fault { color: var(--seal); font-weight: 500; }
+.fault::before { content: ""; display: inline-block; width: 8px; height: 8px; background: var(--seal); margin-right: 6px; }
+.rows > li { border-bottom: 1px solid var(--rule); }
+.stub { margin-top: 32px; padding-top: 12px; border-top: 1px dashed var(--rule); color: var(--mid); font-size: 13px; max-width: 62ch; }
+
+.plate { position: relative; display: block; background: var(--paper); aspect-ratio: 800 / 480; border-radius: 2px; outline: 1px solid var(--rule); }
+.plate svg:not(.seal) { width: 100%; height: 100%; }
+.plate.big { outline: 2px solid var(--fg); }
+.plate .seal { position: absolute; top: -14px; right: -14px; rotate: 4deg; }
+.plate.dim svg:not(.seal) { opacity: 0.45; }
+
+.drow { display: grid; grid-template-columns: 168px minmax(0, 1fr); gap: 20px; align-items: center; padding: 14px 0; text-decoration: none; }
+.drow:hover .dname { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 2px; }
+.dname { font-stretch: 75%; font-weight: 700; font-size: 26px; line-height: 1.1; display: block; }
+.dfacts { display: block; margin-top: 6px; color: var(--mid); }
+
+/* ───────── controls ───────── */
+.sw { position: relative; flex: none; width: 30px; height: 16px; border: 1px solid var(--fg); border-radius: 3px; }
+.sw::before { content: ""; position: absolute; inset: -12px -8px; }
+.sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; background: var(--fg); border-radius: 1px; }
+.sw[aria-checked="true"] { background: var(--fg); }
+.sw[aria-checked="true"]::after { background: var(--bg); left: 16px; }
+.in { padding: 6px 8px; border: 1px solid var(--mid); border-radius: 3px; background: var(--bg); font-family: var(--font-m); font-size: 13px; min-width: 0; }
+.in:hover { border-color: var(--fg); }
+.in:disabled { color: var(--mid); border-color: var(--rule); }
+.in.wide { width: 100%; }
+.in.time { width: 62px; text-align: center; }
+select.in { padding-right: 4px; }
+textarea.in { width: 100%; min-height: 168px; resize: vertical; line-height: 1.6; font-size: 12.5px; }
+.days { display: flex; gap: 4px; }
+.day { width: 30px; height: 30px; border: 1px solid var(--rule); border-radius: 3px; text-align: center; font-family: var(--font-m); font-size: 12px; color: var(--mid); }
+.day:hover { border-color: var(--fg); color: var(--fg); }
+.day[aria-pressed="true"] { background: var(--fg); border-color: var(--fg); color: var(--bg); font-weight: 500; }
+.win { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; }
+.win label { display: inline-flex; align-items: center; gap: 8px; }
+details.more { margin-top: 12px; }
+details.more summary { cursor: pointer; font-weight: 500; text-decoration: underline; text-underline-offset: 3px; list-style: none; }
+details.more summary::-webkit-details-marker { display: none; }
+details.more summary:hover { color: var(--mid); }
+.field { display: grid; gap: 4px; margin-bottom: 14px; }
+.field > span { font-weight: 500; }
+.field small { color: var(--mid); font-size: 13px; }
+
+/* ───────── facts: one strip (B, C) or a column (A) ───────── */
+.facts { display: flex; flex-wrap: wrap; gap: 12px 0; margin-top: 20px; }
+.facts div { padding: 0 20px; border-left: 1px solid var(--rule); }
+.facts div:first-child { padding-left: 0; border-left: 0; }
+.facts dt { font-size: 12px; color: var(--mid); }
+.facts dd { font-family: var(--font-m); font-size: 13px; margin-top: 2px; }
+.factcol div { display: flex; justify-content: space-between; gap: 16px; padding: 7px 0; border-bottom: 1px solid var(--rule); }
+.factcol dt { color: var(--mid); }
+.factcol dd { font-family: var(--font-m); font-size: 13px; text-align: right; }
+
+/* ───────── screen state, shared by every variant ───────── */
+.sched { display: inline-flex; gap: 10px; align-items: baseline; font-family: var(--font-m); font-size: 12px; }
+.dots { letter-spacing: 0.2em; color: var(--rule); }
+.dots b { color: var(--fg); font-weight: 500; }
+.off .sched > span { text-decoration: line-through; color: var(--mid); }
+.off .dots b { color: var(--mid); }
+.st { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mid); white-space: nowrap; }
+.st.active { color: var(--fg); font-weight: 600; }
+.st.next { color: var(--fg); font-weight: 500; }
+.name { font-weight: 600; }
+.kind { color: var(--mid); font-size: 13px; }
+.grip { color: var(--mid); cursor: grab; }
+.nudge { display: none; }
+[draggable].over { box-shadow: 0 -2px 0 var(--fg); }
+
+.detail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px 40px; align-items: start; }
+.detail.with-preview { grid-template-columns: 300px minmax(0, 1fr) minmax(0, 1fr); gap: 24px 32px; }
+.detail .why { grid-column: 1 / -1; max-width: 70ch; }
+.detail section > p + p, .detail section > p + .btnrow, .detail section > ul + .btnrow { margin-top: 12px; }
+.slots li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--rule); }
+.slots li:first-child { border-top: 1px solid var(--rule); }
+
+/* ───────── A. Plate: the panel's face first, the Rotation as rows beneath ───────── */
+.vA-top { display: grid; grid-template-columns: minmax(0, 580px) minmax(0, 1fr); gap: 44px; align-items: start; margin-top: 30px; }
+.title2 { font-stretch: 75%; font-weight: 700; font-size: 30px; line-height: 1.05; }
+.vA-side > p { margin-top: 8px; color: var(--mid); }
+.vA-side > p b { color: var(--fg); font-weight: 600; }
+.vA-side .factcol { margin-top: 20px; border-top: 2px solid var(--fg); }
+.vA-side .btn { margin-top: 16px; }
+.srow { position: relative; display: grid; grid-template-columns: 16px 18px 72px minmax(0, 1fr) 232px 150px 16px; gap: 14px; align-items: center; padding: 8px 0; }
+.srow .plate { width: 72px; }
+.ord { font-family: var(--font-m); font-size: 13px; color: var(--mid); }
+.is-active .ord { color: var(--fg); }
+.srow .open::after { content: ""; position: absolute; inset: 0; }
+.srow .open:focus-visible { outline: 0; }
+.srow:has(.open:focus-visible) { outline: 2px solid var(--fg); outline-offset: 2px; border-radius: 3px; }
+.srow:hover .name { text-decoration: underline; text-underline-offset: 3px; }
+.srow .grip, .srow .sw, .srow .nudge { position: relative; z-index: 1; }
+.srow .schedcell { display: flex; align-items: center; gap: 10px; }
+.srow .slot { display: flex; width: 30px; flex: none; }
+.srow .chev { color: var(--mid); }
+li.is-open .chev { rotate: 180deg; color: var(--fg); }
+.dimmed .name { color: var(--mid); }
+.vA-detail { padding: 8px 0 28px 48px; }
+
+/* ───────── B. Rotation: the Order as one strip, the chosen Screen enlarged in its place ───────── */
+.strip { display: flex; gap: 14px; align-items: flex-start; margin-top: 16px; padding: 18px 16px 0 2px; border-bottom: 1px solid var(--rule); overflow-x: auto; scrollbar-width: thin; }
+.fr { flex: 1 1 88px; min-width: 88px; }
+.fr.sel { flex: 0 0 43%; }
+.fr > button { display: grid; gap: 4px; width: 100%; padding-bottom: 12px; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.fr.sel > button { border-bottom-color: var(--fg); }
+.fr .plate { margin: 4px 0 6px; }
+.fr.sel .plate, .fr.is-active .plate { outline: 2px solid var(--fg); }
+.fr:not(.sel) .plate .seal { top: -8px; right: -8px; }
+.fr:not(.sel):hover .name { text-decoration: underline; text-underline-offset: 3px; }
+.fr .name { font-size: 13px; line-height: 1.25; overflow-wrap: anywhere; }
+.fr.sel .name { font-stretch: 75%; font-weight: 700; font-size: 24px; line-height: 1.05; }
+.fr .st { font-size: 12px; white-space: normal; }
+.fr.sel .st { font-size: 13px; }
+.fr.panel .ord { color: var(--fg); }
+.vB-detail { margin-top: 24px; }
+.vB-detail .h2 { margin-top: 0; border: 0; padding: 0; margin-bottom: 16px; align-items: baseline; }
+
+/* ───────── C. Ledger: the Order as a list on the left, the chosen Screen worked on at the right ───────── */
+.vC { display: grid; grid-template-columns: 328px minmax(0, 1fr); gap: 44px; align-items: start; margin-top: 28px; }
+.vC .h2 { margin-top: 0; }
+.lrow { position: relative; display: grid; grid-template-columns: 16px 16px 56px minmax(0, 1fr); gap: 10px; align-items: center; padding: 8px; margin: 0 -8px; border-radius: 3px; }
+.lrow .plate { width: 56px; }
+.lrow .open { display: block; }
+.lrow .open::after { content: ""; position: absolute; inset: 0; }
+.lrow .open:focus-visible { outline: 0; }
+.lrow:has(.open:focus-visible) { outline: 2px solid var(--fg); outline-offset: -2px; }
+.lrow .grip, .lrow .nudge { position: relative; z-index: 1; }
+.lrow:hover { background: var(--wash); }
+li.sel .lrow { background: var(--wash); }
+.lrow .line2 { display: flex; align-items: center; gap: 8px; margin-top: 1px; font-size: 12px; color: var(--mid); }
+.lrow .line2 .st { font-size: 12px; }
+.vC .panelrow { display: block; padding: 10px 8px; margin: 0 -8px; border-radius: 3px; text-decoration: none; font-weight: 500; }
+.vC .panelrow:hover { background: var(--wash); }
+.vC .panelrow.sel { background: var(--wash); font-weight: 600; }
+.vC-pane .title2 { margin-top: 18px; display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.vC-pane .title2 .kind { font-stretch: 100%; font-weight: 400; }
+.vC-pane > p { margin-top: 6px; color: var(--mid); max-width: 60ch; }
+.vC-pane > p b { color: var(--fg); font-weight: 600; }
+.vC-pane .detail { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--rule); }
+.vC-pane .detail .why { display: none; }
+
+/* ───────── empty Device ───────── */
+.empty { margin-top: 40px; padding-top: 16px; border-top: 2px solid var(--fg); max-width: 62ch; }
+.empty p { margin-top: 8px; color: var(--mid); }
+.empty .btn { margin-top: 16px; }
+
+/* ───────── Settings and Logs ───────── */
+.set { display: grid; grid-template-columns: 200px minmax(0, 1fr) auto; gap: 6px 16px; align-items: center; padding: 10px 0; min-height: 50px; }
+.set > b { font-weight: 500; }
+.set .ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.set .note { color: var(--mid); font-size: 13px; }
+.set .wait { font-weight: 500; }
+.sect-note { margin-top: 10px; color: var(--mid); max-width: 70ch; }
+details.tucked { border-top: 1px solid var(--rule); }
+details.tucked:first-of-type { margin-top: 48px; }
+details.tucked:last-of-type { border-bottom: 1px solid var(--rule); }
+details.tucked > summary { padding: 12px 0; font-weight: 600; cursor: pointer; }
+details.tucked > :not(summary) { margin-bottom: 16px; }
+details.tucked > p { color: var(--mid); max-width: 70ch; }
+.frow { display: grid; grid-template-columns: 120px minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 8px 0; }
+
+.logbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+.seg { display: inline-flex; border: 1px solid var(--fg); border-radius: 3px; overflow: hidden; }
+.seg button { padding: 6px 12px; font-size: 13px; font-weight: 500; }
+.seg button + button { border-left: 1px solid var(--fg); }
+.seg button:hover { background: var(--wash); }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); font-weight: 600; }
+.logs { margin-top: 12px; border-top: 2px solid var(--fg); font-family: var(--font-m); font-size: 12.5px; }
+.logs summary { display: grid; grid-template-columns: 132px 44px minmax(0, 1fr); gap: 12px; padding: 8px 0; cursor: pointer; list-style: none; }
+.logs summary::-webkit-details-marker { display: none; }
+.logs summary:hover .msg { text-decoration: underline; text-underline-offset: 3px; }
+.logs time, .logs .lvl { color: var(--mid); }
+.logs .warn .lvl, .logs .error .lvl { color: var(--fg); font-weight: 500; }
+.logs dl { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 2px 12px; padding: 0 0 12px 0; color: var(--mid); }
+.logs dl dd { color: var(--fg); overflow-wrap: anywhere; }
+
+/* ───────── Add Screen ───────── */
+.add { display: grid; grid-template-columns: 272px minmax(0, 1fr); gap: 44px; align-items: start; margin-top: 4px; }
+.pick { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 2px 10px; padding: 11px 0; cursor: pointer; }
+.pick input { margin: 3px 0 0; grid-row: 1 / 3; align-self: start; }
+.pick b { font-weight: 600; }
+.pick span { color: var(--mid); font-size: 13px; grid-column: 2; }
+.pick:has(input:disabled) { cursor: default; }
+.pick:has(input:disabled) b { color: var(--mid); font-weight: 500; }
+.add .form { padding-top: 12px; max-width: 520px; }
+.add .form .foot { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--rule); }
+.layouts { display: flex; gap: 8px; flex-wrap: wrap; }
+.layouts label { display: grid; justify-items: center; gap: 6px; padding: 10px 10px 8px; border: 1px solid var(--rule); border-radius: 3px; cursor: pointer; font-size: 12px; color: var(--mid); }
+.layouts label:has(:checked) { border-color: var(--fg); color: var(--fg); font-weight: 600; outline: 1px solid var(--fg); }
+.layouts svg { width: 60px; height: 36px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+.drop { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 16px; border: 1px dashed var(--mid); border-radius: 3px; color: var(--mid); }
+.live { position: relative; overflow: hidden; }
+.live iframe { position: absolute; inset: 0 auto auto 0; width: 800px; height: 480px; border: 0; transform-origin: 0 0; background: #fff; }
+
+/* ───────── confirm ───────── */
+dialog { border: 2px solid var(--fg); border-radius: 3px; padding: 24px; max-width: min(440px, calc(100vw - 32px)); background: var(--bg); color: var(--fg); }
+dialog::backdrop { background: rgb(0 0 0 / 0.45); }
+dialog h2 { font-stretch: 75%; font-weight: 700; font-size: 24px; line-height: 1.1; }
+dialog p { margin-top: 10px; color: var(--mid); }
+dialog .btnrow { margin-top: 20px; justify-content: flex-end; }
+
+@media (max-width: 820px) {
+  h1 { font-size: 38px; }
+  .bar { padding: 0 16px; height: 48px; }
+  .bar nav { display: none; }
+  .col { padding: 24px 16px 200px; }
+  .btabs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; position: fixed; left: 0; right: 0; bottom: 0; z-index: 2; background: var(--bg); border-top: 1px solid var(--rule); padding-bottom: env(safe-area-inset-bottom); }
+  .btabs a { padding: 15px 4px 17px; text-align: center; text-decoration: none; font-weight: 500; color: var(--mid); border-top: 2px solid transparent; margin-top: -1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .btabs a[aria-current] { color: var(--fg); font-weight: 700; border-top-color: var(--fg); }
+  .drow { grid-template-columns: 112px minmax(0, 1fr); gap: 14px; }
+  .dname { font-size: 22px; }
+  .plate.big .seal { right: -8px; }
+  .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+  .facts div { padding: 0; border: 0; }
+  .facts .wide { grid-column: 1 / -1; }
+  .grip { display: none; }
+  .nudge { display: grid; gap: 2px; color: var(--mid); }
+  .nudge button { padding: 5px 4px; }
+  .nudge button:disabled { color: var(--rule); }
+
+  .detail, .detail.with-preview { grid-template-columns: 1fr; }
+  .vA-top { grid-template-columns: 1fr; gap: 20px; margin-top: 24px; }
+  .title2 { font-size: 26px; }
+  .srow { grid-template-columns: 24px 64px minmax(0, 1fr) 16px; gap: 4px 12px; }
+  .srow .ord { display: none; }
+  .srow .nudge { grid-row: 1 / 4; }
+  .srow .plate { width: 64px; grid-row: 1 / 4; align-self: start; margin-top: 3px; }
+  .srow .schedcell, .srow .st { grid-column: 3; }
+  .srow .chev { grid-column: 4; grid-row: 1; }
+  .vA-detail { padding-left: 0; }
+  .vA-detail .detail > .plate { max-width: 300px; }
+
+  .strip { margin-inline: -16px; padding-inline: 16px; scroll-snap-type: x proximity; }
+  .fr { flex: 0 0 96px; scroll-snap-align: center; }
+  .fr.sel { flex: 0 0 74%; }
+
+  .vC { grid-template-columns: 1fr; gap: 32px; margin-top: 24px; }
+  .vC-pane { order: -1; }
+  .lrow { grid-template-columns: 24px 56px minmax(0, 1fr); }
+  .lrow .ord { display: none; }
+
+  .set { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .set .btn { justify-self: start; }
+  .set .note:empty { display: none; }
+  .frow { grid-template-columns: minmax(0, 1fr) auto; }
+  .frow .note { grid-column: 1; grid-row: 2; }
+  .logs summary { grid-template-columns: 64px 40px minmax(0, 1fr); }
+  .logs time span { display: none; }
+  .logs dl { grid-template-columns: 1fr; }
+  .logs dl dd { margin-bottom: 6px; }
+  .add { grid-template-columns: 1fr; gap: 16px; }
+}
+
+/* ───────── prototype switcher, not part of any variant ───────── */
+.proto-bar { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 10; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px; padding: 6px; border-radius: 22px; background: #1f3fff; color: #fff; font: 600 13px/1 system-ui, sans-serif; box-shadow: 0 6px 24px rgb(0 0 0 / 0.35); white-space: nowrap; max-width: calc(100vw - 16px); }
+.proto-bar button { height: 32px; min-width: 32px; padding: 0 10px; border-radius: 999px; text-align: center; }
+.proto-bar button:hover, .proto-bar button:focus-visible { background: rgb(255 255 255 / 0.22); outline: none; }
+.proto-bar .label { padding: 0 6px; min-width: 104px; text-align: center; }
+.proto-bar .sep { width: 1px; height: 18px; background: rgb(255 255 255 / 0.4); margin: 0 2px; }
+@media (max-width: 820px) { .proto-bar { bottom: 64px; } }
+</style>
+</head>
+<body>
+<!--
+PROTOTYPE, throwaway. Wayfinder ticket "Device details hero screen" (#1081), map "Admin UI rebuild from zero" (#1074).
+Three variants of a Device's Screens view, switchable via ?variant=a|b|c, inside the approved Masthead shell and Hanko identity.
+The Settings view, the Logs view and "Add Screen" are shared by all three. Also ?theme=light|dark, ?devices=1|3, ?alert=0|1 and
+?scene=day|sleep|none|empty. Keys: arrows switch variant, t theme, d Devices, a Alert, s scene, p simulates one Device poll.
+All data is synthetic and nothing is saved. The fallback screens on the plate are placeholders; their own ticket draws them.
+
+A Plate    the Current Screen large, the Device's facts in a column beside it, the Screens in Order as rows that open in place.
+B Rotation the Order drawn as one strip left to right; the chosen Screen is enlarged in its place and edited below.
+C Ledger   the Order as a list on the left; the chosen Screen is shown large and edited on the right.
+-->
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <pattern id="d50" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="2" height="2" fill="#0a0a0a"/><rect x="2" y="2" width="2" height="2" fill="#0a0a0a"/></pattern>
+    <pattern id="d25" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="2" height="2" fill="#0a0a0a"/></pattern>
+    <pattern id="dh" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="2" fill="#0a0a0a"/></pattern>
+
+    <symbol id="s-calendar" viewBox="0 0 800 480">
+      <g fill="#0a0a0a" font-family="Helvetica, Arial, sans-serif">
+        <text x="40" y="84" font-size="30" font-weight="700">Thursday</text>
+        <text x="30" y="262" font-size="190" font-weight="700">1</text>
+        <text x="40" y="318" font-size="30">October 2026</text>
+        <rect x="290" y="40" width="2" height="350"/>
+        <g font-size="26">
+          <text x="324" y="84" font-weight="700">08:30</text><text x="420" y="84">Dentist, Dr. Okafor</text>
+          <text x="324" y="140" font-weight="700">12:00</text><text x="420" y="140">Lunch with Mirela</text>
+          <text x="324" y="196" font-weight="700">15:15</text><text x="420" y="196">School pickup</text>
+          <text x="324" y="252" font-weight="700">19:00</text><text x="420" y="252">Climbing gym</text>
+        </g>
+        <rect x="324" y="290" width="436" height="2" fill="url(#d50)"/>
+        <text x="324" y="340" font-size="22" font-weight="700">Tomorrow</text>
+        <text x="324" y="376" font-size="22">Recycling out, 07:00</text>
+        <rect y="420" width="800" height="2"/>
+        <text x="40" y="460" font-size="22" font-weight="700">Calendar</text>
+        <text x="760" y="460" font-size="22" text-anchor="end">Kitchen</text>
+      </g>
+    </symbol>
+
+    <symbol id="s-weather" viewBox="0 0 800 480">
+      <g fill="#0a0a0a" font-family="Helvetica, Arial, sans-serif">
+        <text x="34" y="220" font-size="200" font-weight="700">14°</text>
+        <text x="40" y="290" font-size="34" font-weight="700">Rain from 15:00</text>
+        <text x="40" y="334" font-size="24">High 16°, low 9°, wind 18 km/h</text>
+        <g>
+          <rect x="440" y="250" width="32" height="90" fill="url(#d25)"/>
+          <rect x="484" y="230" width="32" height="110" fill="url(#d25)"/>
+          <rect x="528" y="200" width="32" height="140" fill="url(#d50)"/>
+          <rect x="572" y="150" width="32" height="190" fill="url(#d50)"/>
+          <rect x="616" y="90" width="32" height="250"/>
+          <rect x="660" y="60" width="32" height="280"/>
+          <rect x="704" y="120" width="32" height="220"/>
+          <rect x="440" y="340" width="296" height="2"/>
+        </g>
+        <g font-size="18" text-anchor="middle"><text x="456" y="370">09</text><text x="544" y="370">13</text><text x="632" y="370">17</text><text x="720" y="370">21</text></g>
+        <rect y="420" width="800" height="2"/>
+        <text x="40" y="460" font-size="22" font-weight="700">Weather</text>
+        <text x="760" y="460" font-size="22" text-anchor="end">Lindenplatz</text>
+      </g>
+    </symbol>
+
+    <symbol id="s-photo" viewBox="0 0 800 480">
+      <rect width="800" height="480" fill="url(#d25)"/>
+      <rect width="800" height="150" fill="#fff"/>
+      <circle cx="610" cy="110" r="46" fill="#fff" stroke="#0a0a0a" stroke-width="3"/>
+      <path d="M0 250 L140 150 L260 220 L420 120 L600 230 L800 170 L800 330 L0 330Z" fill="url(#d50)"/>
+      <path d="M0 300 L220 240 L460 300 L800 250 L800 480 L0 480Z" fill="#0a0a0a"/>
+      <rect y="350" width="800" height="130" fill="url(#dh)"/>
+      <path d="M300 380 L460 380 L430 410 L325 410Z" fill="#fff" stroke="#0a0a0a" stroke-width="3"/>
+      <rect x="376" y="300" width="4" height="80" fill="#fff"/>
+      <path d="M382 306 L430 370 L382 370Z" fill="#fff"/>
+    </symbol>
+
+    <symbol id="s-trains" viewBox="0 0 800 480">
+      <g fill="#0a0a0a" font-family="Helvetica, Arial, sans-serif">
+        <text x="40" y="76" font-size="32" font-weight="700">Departures, Lindenplatz</text>
+        <rect x="40" y="100" width="720" height="3"/>
+        <g font-size="28">
+          <text x="40" y="156" font-weight="700">07:48</text><text x="160" y="156">S3</text><text x="240" y="156">Hauptbahnhof</text><text x="760" y="156" text-anchor="end">on time</text>
+          <text x="40" y="216" font-weight="700">07:55</text><text x="160" y="216">U2</text><text x="240" y="216">Messe Nord</text><text x="760" y="216" text-anchor="end">+4 min</text>
+          <text x="40" y="276" font-weight="700">08:03</text><text x="160" y="276">S3</text><text x="240" y="276">Flughafen</text><text x="760" y="276" text-anchor="end">on time</text>
+        </g>
+        <rect y="420" width="800" height="2"/>
+        <text x="40" y="460" font-size="22" font-weight="700">Train departures</text>
+      </g>
+    </symbol>
+
+    <symbol id="s-mashup" viewBox="0 0 800 480">
+      <g fill="#0a0a0a" font-family="Helvetica, Arial, sans-serif">
+        <text x="34" y="190" font-size="150" font-weight="700">14°</text>
+        <text x="40" y="250" font-size="26" font-weight="700">Rain from 15:00</text>
+        <rect x="40" y="290" width="320" height="80" fill="url(#d50)"/>
+        <rect x="399" y="0" width="2" height="420"/>
+        <text x="440" y="76" font-size="28" font-weight="700">Saturday</text>
+        <g font-size="24">
+          <text x="440" y="136" font-weight="700">10:00</text><text x="530" y="136">Market</text>
+          <text x="440" y="186" font-weight="700">14:30</text><text x="530" y="186">Football, pitch 2</text>
+        </g>
+        <rect y="420" width="800" height="2"/>
+        <text x="40" y="460" font-size="22" font-weight="700">Weekend board</text>
+      </g>
+    </symbol>
+
+    <symbol id="s-bins" viewBox="0 0 800 480">
+      <g fill="#0a0a0a" font-family="Helvetica, Arial, sans-serif">
+        <text x="40" y="84" font-size="30" font-weight="700">Next collection</text>
+        <text x="36" y="230" font-size="120" font-weight="700">Paper</text>
+        <text x="40" y="300" font-size="34">Monday 5 October, out by 07:00</text>
+        <rect x="40" y="340" width="720" height="2" fill="url(#d50)"/>
+        <text x="40" y="386" font-size="24">Then: Residual waste, Thursday 8 October</text>
+        <rect y="420" width="800" height="2"/>
+        <text x="40" y="460" font-size="22" font-weight="700">Bin day</text>
+      </g>
+    </symbol>
+
+    <symbol id="s-tide" viewBox="0 0 800 480">
+      <g fill="#0a0a0a" font-family="Helvetica, Arial, sans-serif">
+        <text x="40" y="76" font-size="32" font-weight="700">Tides, Lindenhafen</text>
+        <path d="M40 260 C120 120 200 120 280 260 S440 400 520 260 S680 120 760 260 L760 380 L40 380Z" fill="url(#d25)"/>
+        <path d="M40 260 C120 120 200 120 280 260 S440 400 520 260 S680 120 760 260" fill="none" stroke="#0a0a0a" stroke-width="4"/>
+        <g font-size="24"><text x="120" y="130" font-weight="700">05:12 high</text><text x="350" y="410">11:31 low</text><text x="590" y="130" font-weight="700">17:40 high</text></g>
+        <rect y="420" width="800" height="2"/>
+        <text x="40" y="460" font-size="22" font-weight="700">Tide table</text>
+      </g>
+    </symbol>
+
+    <symbol id="s-note" viewBox="0 0 800 480">
+      <g fill="#0a0a0a" font-family="Helvetica, Arial, sans-serif">
+        <text x="40" y="200" font-size="84" font-weight="700">Back at six.</text>
+        <text x="40" y="270" font-size="34">Soup is in the fridge.</text>
+        <rect y="420" width="800" height="2"/>
+        <text x="40" y="460" font-size="22" font-weight="700">Note</text>
+      </g>
+    </symbol>
+
+    <symbol id="s-welcome" viewBox="0 0 800 480">
+      <g fill="#0a0a0a">
+        <use href="#seal" x="64" y="64" width="112" height="112" style="--bg:#fff"/>
+        <text x="204" y="156" font-family="Archivo, sans-serif" font-weight="800" font-size="104" style="font-stretch:68%">Kuroshiro</text>
+        <rect x="64" y="216" width="672" height="4"/>
+        <text x="64" y="290" font-family="Archivo, sans-serif" font-weight="500" font-size="30">This Device is connected. Add a Screen to start.</text>
+        <g font-family="'JetBrains Mono', monospace" font-size="26"><text x="64" y="400">ID 4F2A1C</text><text x="736" y="400" text-anchor="end">Firmware 1.6.8</text></g>
+      </g>
+    </symbol>
+
+    <symbol id="s-noscreen" viewBox="0 0 800 480">
+      <g fill="#0a0a0a">
+        <use href="#seal" x="64" y="64" width="112" height="112" style="--bg:#fff"/>
+        <text x="204" y="156" font-family="Archivo, sans-serif" font-weight="800" font-size="104" style="font-stretch:68%">Kuroshiro</text>
+        <rect x="64" y="216" width="672" height="4"/>
+        <text x="64" y="290" font-family="Archivo, sans-serif" font-weight="500" font-size="30">No Screen to show right now.</text>
+        <g font-family="'JetBrains Mono', monospace" font-size="26"><text x="64" y="400">ID 4F2A1C</text></g>
+      </g>
+    </symbol>
+
+    <symbol id="s-sleep" viewBox="0 0 800 480">
+      <g fill="#0a0a0a">
+        <use href="#seal" x="64" y="64" width="112" height="112" style="--bg:#fff"/>
+        <text x="204" y="156" font-family="Archivo, sans-serif" font-weight="800" font-size="104" style="font-stretch:68%">Kuroshiro</text>
+        <rect x="64" y="216" width="672" height="4"/>
+        <text x="64" y="290" font-family="Archivo, sans-serif" font-weight="500" font-size="30">Sleeping until 06:00.</text>
+        <g font-family="'JetBrains Mono', monospace" font-size="26"><text x="64" y="400">ID 4F2A1C</text></g>
+      </g>
+    </symbol>
+
+    <symbol id="seal" viewBox="0 0 64 64">
+      <rect width="64" height="64" rx="5"/>
+      <g fill="var(--bg)" font-family="'Zen Kaku Gothic New', sans-serif" font-weight="700" font-size="38" text-anchor="middle">
+        <text transform="translate(32 29.5) scale(1.3 0.72)">黒</text>
+        <text transform="translate(32 58) scale(1.3 0.72)">白</text>
+      </g>
+    </symbol>
+    <symbol id="i-grip" viewBox="0 0 16 16"><circle cx="5.5" cy="3" r="1.3"/><circle cx="10.5" cy="3" r="1.3"/><circle cx="5.5" cy="8" r="1.3"/><circle cx="10.5" cy="8" r="1.3"/><circle cx="5.5" cy="13" r="1.3"/><circle cx="10.5" cy="13" r="1.3"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 16 16"><path d="M3.2 5.4 8 10.2l4.8-4.8 1.1 1.1L8 12.4 2.1 6.5z"/></symbol>
+    <symbol id="i-up" viewBox="0 0 16 16"><path d="M8 3.2 2.6 8.6l1.1 1.1L8 5.4l4.3 4.3 1.1-1.1z"/></symbol>
+    <symbol id="i-down" viewBox="0 0 16 16"><path d="M8 12.8 2.6 7.4l1.1-1.1L8 10.6l4.3-4.3 1.1 1.1z"/></symbol>
+  </defs>
+</svg>
+
+<div id="app"></div>
+<dialog id="confirm"></dialog>
+
+<div class="proto-bar" role="toolbar" aria-label="Prototype switcher">
+  <button data-step="-1" aria-label="Previous variant">←</button>
+  <span class="label" data-label></span>
+  <button data-step="1" aria-label="Next variant">→</button>
+  <span class="sep"></span>
+  <button data-cycle="theme"></button>
+  <button data-cycle="devices"></button>
+  <button data-cycle="alert"></button>
+  <button data-cycle="scene"></button>
+  <button data-cycle="poll">Poll</button>
+</div>
+
+<script>
+const variants = [
+  { key: 'a', name: 'Plate' },
+  { key: 'b', name: 'Rotation' },
+  { key: 'c', name: 'Ledger' },
+]
+
+const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+const workdays = [1, 1, 1, 1, 1, 0, 0]
+
+const library = {
+  weather: { name: 'Weather', kind: 'Plugin', img: 'weather', schedule: null, rendered: '07:30' },
+  calendar: { name: 'Calendar', kind: 'Plugin', img: 'calendar', schedule: { on: true, days: workdays, from: '06:00', to: '09:00' }, rendered: '07:42' },
+  photo: { name: 'Harbour photo', kind: 'File', img: 'photo', schedule: null, file: 'harbour.png · 800 × 480 · uploaded 12 September' },
+  trains: { name: 'Train departures', kind: 'Plugin', img: 'trains', schedule: { on: false, days: workdays, from: '06:30', to: '08:30' }, rendered: 'yesterday 08:15' },
+  mashup: { name: 'Weekend board', kind: 'Mashup', img: 'mashup', schedule: { on: true, days: [0, 0, 0, 0, 0, 1, 1], from: null, to: null }, layout: 'Two columns', slots: [['Left', 'Weather'], ['Right', 'Calendar']] },
+  bins: { name: 'Bin day', kind: 'Plugin', img: 'bins', schedule: null, signal: 'skip', rendered: '06:00' },
+  tide: { name: 'Tide table', kind: 'External link', img: 'tide', schedule: null, url: 'https://tides.example/lindenhafen.png' },
+  note: { name: 'Fridge note', kind: 'HTML', img: 'note', schedule: null },
+}
+
+const scenes = {
+  day: { label: 'Thu 07:46', clock: { day: 3, time: '07:46' }, seen: '4 min ago', lastPoll: '07:42', nextPoll: '07:57', order: ['weather', 'calendar', 'photo', 'trains', 'mashup', 'bins'], current: 'calendar' },
+  sleep: { label: 'Sleep Mode, 23:40', clock: { day: 3, time: '23:40' }, seen: '40 min ago', lastPoll: '23:00', nextPoll: '06:00', order: ['weather', 'calendar', 'photo', 'trains', 'mashup', 'bins'], current: 'photo', sleeping: true },
+  none: { label: 'No Screen eligible', clock: { day: 3, time: '12:10' }, seen: '9 min ago', lastPoll: '12:01', nextPoll: '12:16', order: ['calendar', 'trains', 'mashup', 'bins'], current: null },
+  empty: { label: 'No Screens', clock: { day: 3, time: '07:46' }, seen: '4 min ago', lastPoll: '07:42', nextPoll: '07:57', order: [], current: null },
+}
+
+const plugins = [
+  { id: 'weather', name: 'Weather', kind: 'Poll' },
+  { id: 'calendar', name: 'Calendar', kind: 'Poll' },
+  { id: 'trains', name: 'Train departures', kind: 'Poll' },
+  { id: 'bins', name: 'Bin day', kind: 'Poll' },
+  { id: 'tide', name: 'Tide table', kind: 'Poll' },
+  { id: 'note', name: 'Doorbell note', kind: 'Webhook' },
+]
+
+const addKinds = [
+  { id: 'plugin', name: 'Plugin', gist: 'One of your Plugins, rendered for this Device' },
+  { id: 'mashup', name: 'Mashup', gist: 'Several Plugins sharing one Screen in a layout' },
+  { id: 'link', name: 'External link', gist: 'An image fetched from a URL' },
+  { id: 'file', name: 'File', gist: 'A PNG, JPEG or BMP you upload' },
+  { id: 'html', name: 'HTML', gist: 'Markup you write here, with a live preview' },
+]
+
+const logEntries = [
+  { t: '07:42:10', lvl: 'info', msg: 'display poll, served Calendar (Order 2)', src: 'src/bl_main.cpp:412', extra: 'battery 3.42 V · rssi −61 dBm · wake reason timer' },
+  { t: '07:27:08', lvl: 'info', msg: 'display poll, served Weather (Order 1)', src: 'src/bl_main.cpp:412', extra: 'battery 3.42 V · rssi −60 dBm · wake reason timer' },
+  { t: '07:12:07', lvl: 'warn', msg: 'battery 3.42 V, below the low-battery threshold', src: 'src/battery.cpp:88', extra: 'battery 3.42 V · rssi −63 dBm' },
+  { t: '06:57:05', lvl: 'info', msg: 'woke from Sleep Mode', src: 'src/bl_main.cpp:230', extra: 'slept 25 200 s · wake reason timer' },
+  { t: '23:00:01', lvl: 'info', msg: 'Sleep Mode until 06:00, refresh_rate 25 200 s', src: 'src/bl_main.cpp:455', extra: 'battery 3.48 V · rssi −59 dBm', day: 'Wed' },
+  { t: '21:14:40', lvl: 'error', msg: 'image download failed, HTTP 502, retrying at the next poll', src: 'src/display.cpp:171', extra: 'url /api/display · attempt 1 · free heap 141 kB', day: 'Wed' },
+]
+
+const params = new URLSearchParams(location.search)
+const pick = (key, allowed, fallback) => allowed.includes(params.get(key)) ? params.get(key) : fallback
+const state = {
+  variant: pick('variant', ['a', 'b', 'c'], 'a'),
+  theme: pick('theme', ['light', 'dark'], matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+  count: Number(pick('devices', ['1', '3'], '1')),
+  alert: pick('alert', ['0', '1'], '1') === '1',
+  scene: pick('scene', Object.keys(scenes), 'day'),
+  sel: {},
+  addKind: 'plugin',
+  logLevel: 'all',
+  drag: null,
+  devices: [],
+}
+
+function buildDevices() {
+  const scene = scenes[state.scene]
+  const base = { seen: scene.seen, lastPoll: scene.lastPoll, nextPoll: scene.nextPoll, screens: structuredClone(library), pending: null, firmwarePending: false, mirroring: false }
+  state.sel = {}
+  state.devices = [
+    { ...structuredClone(base), id: 'kitchen', name: 'Kitchen', battery: '18 %', signal: '−61 dBm', order: [...scene.order], current: scene.current, sleeping: Boolean(scene.sleeping), sleep: { on: true, from: '23:00', to: '06:00', screen: true }, sensors: [['Temperature', '21.4 °C'], ['Humidity', '48 %'], ['CO₂', '612 ppm']] },
+    { ...structuredClone(base), id: 'hallway', name: 'Hallway', battery: '76 %', signal: '−58 dBm', order: ['weather', 'tide'], current: 'weather', sleeping: false, sleep: { on: false, from: '23:00', to: '06:00', screen: true }, sensors: [] },
+    { ...structuredClone(base), id: 'study', name: 'Study', battery: '54 %', signal: '−72 dBm', order: ['photo', 'mashup'], current: 'photo', sleeping: false, sleep: { on: true, from: '22:00', to: '07:00', screen: false }, sensors: [] },
+  ]
+}
+
+const clock = () => scenes[state.scene].clock
+const devices = () => state.devices.slice(0, state.count)
+const hasAlert = d => state.alert && d.id === 'kitchen'
+const cap = s => s[0].toUpperCase() + s.slice(1)
+const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
+const icon = id => `<svg class="icon" aria-hidden="true"><use href="#${id}"/></svg>`
+const seal = (size, red = false) => `<svg class="seal ${red ? 'red' : ''}" width="${size}" height="${size}" aria-hidden="true"><use href="#seal" fill="currentColor"/></svg>`
+const current = on => on ? 'aria-current="page"' : ''
+const act = (name, id, extra = '') => `data-act="${name}" data-id="${id}" data-fk="${name}-${id}${extra}"`
+const picture = (img, label) => `<svg ${label ? `role="img" aria-label="${label}"` : 'aria-hidden="true"'}><use href="#s-${img}"/></svg>`
+
+/* ── Rotation: who is eligible, who is next, and why not ── */
+
+const minutes = t => t.split(':').map(Number).reduce((h, m) => h * 60 + m)
+
+function eligibility(s) {
+  if (s.signal === 'skip')
+    return { ok: false, key: 'skip', label: 'Skipping' }
+  if (!s.schedule)
+    return { ok: true }
+  if (!s.schedule.on)
+    return { ok: false, key: 'off', label: 'Schedule off' }
+  if (!s.schedule.days[clock().day])
+    return { ok: false, key: 'out', label: 'Not today' }
+  if (s.schedule.from) {
+    const [now, from, to] = [clock().time, s.schedule.from, s.schedule.to].map(minutes)
+    const inside = from <= to ? now >= from && now < to : now >= from || now < to
+    if (!inside)
+      return { ok: false, key: 'out', label: 'Not at this hour' }
+  }
+  return { ok: true }
+}
+
+function nextId(d) {
+  const start = d.order.indexOf(d.current) + 1
+  const around = [...d.order.slice(start), ...d.order.slice(0, start)]
+  return around.find(id => id !== d.current && eligibility(d.screens[id]).ok) ?? null
+}
+
+function statusOf(d, id) {
+  if (id === d.current)
+    return { key: 'active', label: d.sleeping ? 'Active Screen, paused' : 'Active Screen' }
+  const verdict = eligibility(d.screens[id])
+  if (!verdict.ok)
+    return verdict
+  if (id === nextId(d))
+    return { key: 'next', label: d.sleeping ? 'Up next at 06:00' : 'Up next' }
+  return { key: '', label: '' }
+}
+
+function why(d, id) {
+  const next = nextId(d)
+  return {
+    active: d.sleeping ? `On hold while ${d.name} is in Sleep Mode.` : `On the panel since the ${d.lastPoll} poll.`,
+    next: `Shows at the next poll, around ${d.nextPoll}.`,
+    off: 'Its Schedule is switched off, so Rotation passes over it. The days and hours are kept.',
+    out: 'Outside its Schedule right now, so Rotation passes over it.',
+    skip: 'Skipping: this Screen\'s own content asked to be left out of Rotation for now. It returns by itself when the content changes.',
+    '': `Eligible. Its turn comes after ${next ? d.screens[next].name : 'the Active Screen'}.`,
+  }[statusOf(d, id).key]
+}
+
+const panelImage = d => d.sleeping && d.sleep.screen ? 'sleep' : d.current ? d.screens[d.current].img : d.order.length ? 'noscreen' : 'welcome'
+
+function panelStory(d) {
+  const next = nextId(d)
+  const nextName = next ? d.screens[next].name : null
+  if (d.sleeping)
+    return { title: 'Sleep Mode', line: `${d.name} sleeps until ${d.sleep.to} and shows the sleep screen. Rotation resumes with <b>${nextName ?? d.screens[d.current].name}</b>.` }
+  if (!d.order.length)
+    return { title: 'No Screens yet', line: `${d.name} shows the welcome screen until you add one.` }
+  if (!d.current)
+    return { title: 'No Screen is eligible', line: `Every Screen here is outside its Schedule, switched off or skipping, so ${d.name} shows the no-screen fallback. ${nextName ? `<b>${nextName}</b> shows at the next poll, around ${d.nextPoll}.` : 'Open a Screen to change its Schedule.'}` }
+  return {
+    title: d.screens[d.current].name,
+    line: `The Current Screen. Order ${d.order.indexOf(d.current) + 1} of ${d.order.length}, on the panel since the ${d.lastPoll} poll.`,
+    next: nextName ? `Up next: <b>${nextName}</b>, at the poll around ${d.nextPoll}.` : 'No other Screen is eligible, so it stays on.',
+  }
+}
+
+const sealed = d => Boolean(d.current) && !d.sleeping
+
+function facts(d, split) {
+  const sleepValue = !d.sleep.on ? 'Off' : d.sleeping ? `in its window until ${d.sleep.to}` : `${d.sleep.from}–${d.sleep.to}`
+  const sensors = !d.sensors.length ? [] : split ? d.sensors : [['Sensors', d.sensors.map(s => s[1]).join(' · ')]]
+  return [
+    ['Last seen', d.seen],
+    [hasAlert(d) ? 'Alert: battery low' : 'Battery', d.battery, hasAlert(d)],
+    ['Signal', d.signal],
+    ['Sleep Mode', sleepValue],
+    ...sensors,
+    ...(d.pending ? [['Special Function', `${d.pending} at the next poll`]] : []),
+    ...(d.firmwarePending ? [['Firmware', `1.6.9 at the next poll`]] : []),
+  ].map(([k, v, fault]) => `<div ${k === 'Sensors' ? 'class="wide"' : ''}><dt>${k}</dt><dd ${fault ? 'class="fault"' : ''}>${v}</dd></div>`).join('')
+}
+
+/* ── pieces every variant draws a Screen with ── */
+
+function schedText(s) {
+  const sc = s.schedule
+  if (!sc)
+    return 'Always shown'
+  const dots = sc.days.map((on, n) => on ? `<b>${'MTWTFSS'[n]}</b>` : '·').join('')
+  return `<span class="dots">${dots}</span><span>${sc.from ? `${sc.from}–${sc.to}` : 'all day'}</span>`
+}
+
+const timeInput = (value, label, attrs = '') => `<input class="in time" inputmode="numeric" pattern="[0-2][0-9]:[0-5][0-9]" maxlength="5" value="${value}" aria-label="${label}" ${attrs}>`
+
+const schedSwitch = (id, s) => s.schedule
+  ? `<button class="sw" role="switch" aria-checked="${s.schedule.on}" aria-label="Schedule for ${s.name}" ${act('sched-toggle', id)}></button>`
+  : ''
+
+const stateMark = (d, id) => {
+  const st = statusOf(d, id)
+  return `<span class="st ${st.key}">${st.key === 'active' ? seal(14, true) : ''}${st.label}</span>`
+}
+
+const nudge = (d, id) => {
+  const i = d.order.indexOf(id)
+  const s = d.screens[id]
+  return `<span class="nudge">
+    <button aria-label="Move ${s.name} earlier in the Order" ${act('move-up', id)} ${i === 0 ? 'disabled' : ''}>${icon('i-up')}</button>
+    <button aria-label="Move ${s.name} later in the Order" ${act('move-down', id)} ${i === d.order.length - 1 ? 'disabled' : ''}>${icon('i-down')}</button>
+  </span>`
+}
+
+function scheduleEditor(id, s) {
+  const sc = s.schedule
+  if (!sc)
+    return `<h3>Schedule</h3><p class="mid">Always shown. A Schedule limits this Screen to certain days and hours.</p><div class="btnrow"><button class="btn" ${act('sched-add', id)}>Add a Schedule</button></div>`
+  return `
+    <h3><span>Schedule <span class="kind">${sc.on ? 'on' : 'off, days and hours kept'}</span></span>${schedSwitch(id, s)}</h3>
+    <div class="days" role="group" aria-label="Days">${sc.days.map((on, n) => `<button class="day" aria-pressed="${Boolean(on)}" aria-label="${weekdays[n]}" data-act="day" data-id="${id}" data-n="${n}" data-fk="day-${id}-${n}">${'MTWTFSS'[n]}</button>`).join('')}</div>
+    <div class="win">
+      ${sc.from ? `<label>From ${timeInput(sc.from, 'From', `data-change="from" data-id="${id}"`)}</label><label>to ${timeInput(sc.to, 'To', `data-change="to" data-id="${id}"`)}</label>` : ''}
+      <label><input type="checkbox" ${sc.from ? '' : 'checked'} data-change="allday" data-id="${id}" data-fk="allday-${id}"> All day</label>
+    </div>
+    <details class="more"><summary>Only between two dates</summary>
+      <div class="win"><label>From <input class="in" type="date"></label><label>to <input class="in" type="date"></label></div>
+    </details>
+    <p class="mid small" style="margin-top:12px">Hours are in the server's timezone, Europe/Berlin.</p>
+    <div class="btnrow"><button class="btn quiet" ${act('sched-remove', id)}>Remove Schedule</button></div>`
+}
+
+function sourceBlock(d, id, s) {
+  const plugin = plugins.find(p => p.name === s.name)
+  return {
+    'Plugin': () => `<p>Rendered from the Plugin <a class="text" href="#/plugins">${s.name}</a>${s.rendered ? `, last at ${s.rendered}` : ''}.</p>${s.signal ? '<p class="mid">Render Signal: skip.</p>' : ''}${plugin?.kind === 'Webhook' ? '<p class="mid">Re-renders whenever its Webhook URL receives data.</p>' : ''}`,
+    'Mashup': () => `<p>Layout: ${s.layout}.</p><ul class="slots">${s.slots.map(([slot, name]) => `<li><span><span class="mid">${slot}</span> ${name}</span><button class="btn quiet" style="padding-block:0">Change</button></li>`).join('')}</ul><div class="btnrow"><button class="btn">Change layout</button></div>`,
+    'File': () => `<p class="mono">${s.file ?? 'upload.png · 800 × 480'}</p><div class="btnrow"><button class="btn">Replace file</button></div>`,
+    'External link': () => `<label class="field"><span>URL</span><input class="in wide" value="${s.url ?? ''}"></label><p class="mid">Fetched once and cached.</p><div class="btnrow"><button class="btn">Refresh image</button></div>`,
+    'HTML': () => `<p class="mid">Rendered from markup written here.</p><div class="btnrow"><button class="btn">Edit HTML</button></div>`,
+  }[s.kind]()
+}
+
+function detail(d, id, { preview = false, moves = ['Move up', 'Move down'] } = {}) {
+  const s = d.screens[id]
+  const i = d.order.indexOf(id)
+  const isPlugin = s.kind === 'Plugin'
+  return `
+    <div class="detail ${preview ? 'with-preview' : ''}">
+      <p class="why">${why(d, id)}</p>
+      ${preview ? `<span class="plate">${picture(s.img, `Preview of ${s.name}`)}</span>` : ''}
+      <section>${scheduleEditor(id, s)}</section>
+      <section>
+        <h3>${s.kind}</h3>
+        ${sourceBlock(d, id, s)}
+        <div class="btnrow" style="margin-top:20px">
+          <button class="btn quiet">Rename</button>
+          <button class="btn quiet" ${act('move-up', id, '-d')} ${i === 0 ? 'disabled' : ''}>${moves[0]}</button>
+          <button class="btn quiet" ${act('move-down', id, '-d')} ${i === d.order.length - 1 ? 'disabled' : ''}>${moves[1]}</button>
+          <button class="btn" ${act('delete', id)}>${isPlugin ? 'Unassign Plugin' : 'Delete Screen'}</button>
+        </div>
+      </section>
+    </div>`
+}
+
+const emptyBlock = d => `
+  <div class="empty">
+    <h2 class="title2">Add ${d.name}'s first Screen</h2>
+    <p>A Screen is one thing the Device shows: a Plugin, a Mashup, an image from a link or a file, or HTML you write. With more than one, ${d.name} steps through them in Order, one per poll.</p>
+    <a class="btn primary" href="#/devices/${d.id}/add">Add Screen</a>
+  </div>`
+
+const classes = (d, id) => {
+  const st = statusOf(d, id)
+  return [st.key === 'active' ? 'is-active' : '', ['off', 'out', 'skip'].includes(st.key) ? 'dimmed' : '', st.key === 'off' ? 'off' : ''].join(' ')
+}
+
+/* ── A. Plate ── */
+
+function variantA(d) {
+  const story = panelStory(d)
+  const open = state.sel[d.id] ?? null
+  const rows = d.order.map((id, i) => {
+    const s = d.screens[id]
+    const dim = classes(d, id).includes('dimmed')
+    return `
+      <li class="${classes(d, id)} ${open === id ? 'is-open' : ''}" draggable="true" data-drag="${id}">
+        <div class="srow">
+          <span class="grip" aria-hidden="true">${icon('i-grip')}</span>
+          ${nudge(d, id)}
+          <span class="ord">${i + 1}</span>
+          <span class="plate ${dim ? 'dim' : ''}">${picture(s.img)}</span>
+          <span><button class="open name" aria-expanded="${open === id}" ${act('sel', id)}>${s.name}</button> <span class="kind">${s.kind}</span></span>
+          <span class="schedcell"><span class="slot">${schedSwitch(id, s)}</span><span class="sched">${schedText(s)}</span></span>
+          ${stateMark(d, id)}
+          <span class="chev" aria-hidden="true">${icon('i-chev')}</span>
+        </div>
+        ${open === id ? `<div class="vA-detail">${detail(d, id, { preview: true })}</div>` : ''}
+      </li>`
+  }).join('')
+  return `
+    <div class="vA-top">
+      <span class="plate big">${picture(panelImage(d), `On ${d.name}'s panel: ${story.title}`)}${sealed(d) ? seal(48, true) : ''}</span>
+      <div class="vA-side">
+        <h2 class="title2">${story.title}</h2>
+        <p>${story.line}</p>
+        ${story.next ? `<p>${story.next}</p>` : ''}
+        <dl class="factcol">${facts(d, true)}</dl>
+      </div>
+    </div>
+    ${d.order.length ? `<h2 class="h2">Screens in Order</h2><ol class="rows">${rows}</ol>` : emptyBlock(d)}`
+}
+
+/* ── B. Rotation ── */
+
+function variantB(d) {
+  const story = panelStory(d)
+  const showsFallback = !sealed(d)
+  const chosen = state.sel[d.id] === undefined ? (showsFallback ? null : d.current) : state.sel[d.id]
+  const panel = showsFallback
+    ? `<li class="fr panel ${chosen === null ? 'sel' : ''}"><button ${act('sel', '')}>
+        <span class="ord">On the panel</span>
+        <span class="plate">${picture(panelImage(d), `On ${d.name}'s panel: ${story.title}`)}</span>
+        <span class="name">${story.title}</span>
+      </button></li>`
+    : ''
+  const frames = d.order.map((id, i) => {
+    const s = d.screens[id]
+    const isSel = chosen === id
+    const isActive = id === d.current
+    const dim = classes(d, id).includes('dimmed')
+    return `
+      <li class="fr ${classes(d, id)} ${isSel ? 'sel' : ''}" draggable="true" data-drag="${id}">
+        <button aria-pressed="${isSel}" ${act('sel', id)}>
+          <span class="ord">${i + 1}</span>
+          <span class="plate ${dim && !isSel ? 'dim' : ''}">${picture(s.img, isSel ? `${s.name}` : '')}${isActive ? seal(isSel ? 44 : 20, true) : ''}</span>
+          <span class="name">${s.name}</span>
+          ${stateMark(d, id)}
+        </button>
+      </li>`
+  }).join('')
+  const below = chosen
+    ? `<div class="vB-detail">
+        <h2 class="h2"><span>${d.screens[chosen].name}</span><span class="sched ${statusOf(d, chosen).key === 'off' ? 'off' : ''}">${schedText(d.screens[chosen])}</span></h2>
+        ${detail(d, chosen, { moves: ['Move earlier', 'Move later'] })}
+      </div>`
+    : `<div class="vB-detail"><p class="mid" style="max-width:70ch">${story.line}</p></div>`
+  return `
+    <dl class="facts">${facts(d, false)}</dl>
+    ${d.order.length ? `<ol class="strip" aria-label="Screens in Order">${panel}${frames}</ol>${below}` : `<ol class="strip">${panel}</ol>${emptyBlock(d)}`}`
+}
+
+/* ── C. Ledger ── */
+
+function variantC(d) {
+  const story = panelStory(d)
+  const showsFallback = !sealed(d)
+  const chosen = state.sel[d.id] === undefined ? (showsFallback ? null : d.current) : state.sel[d.id]
+  const rows = d.order.map((id, i) => {
+    const s = d.screens[id]
+    const st = statusOf(d, id)
+    const dim = classes(d, id).includes('dimmed')
+    return `
+      <li class="${classes(d, id)} ${chosen === id ? 'sel' : ''}" draggable="true" data-drag="${id}">
+        <div class="lrow">
+          <span class="grip" aria-hidden="true">${icon('i-grip')}</span>
+          ${nudge(d, id)}
+          <span class="ord">${i + 1}</span>
+          <span class="plate ${dim ? 'dim' : ''}">${picture(s.img)}</span>
+          <span>
+            <button class="open name" aria-pressed="${chosen === id}" ${act('sel', id)}>${s.name}</button>
+            <span class="line2">${st.label ? stateMark(d, id) : `<span class="sched">${schedText(s)}</span>`}</span>
+          </span>
+        </div>
+      </li>`
+  }).join('')
+  const pane = chosen
+    ? `<span class="plate big">${picture(d.screens[chosen].img, d.screens[chosen].name)}${chosen === d.current ? seal(48, true) : ''}</span>
+       <h2 class="title2"><span>${d.screens[chosen].name}</span><span class="kind">${d.screens[chosen].kind} · Order ${d.order.indexOf(chosen) + 1} of ${d.order.length}</span></h2>
+       <p>${chosen === d.current && !d.sleeping ? `${story.line} ${story.next}` : why(d, chosen)}</p>
+       ${detail(d, chosen)}`
+    : `<span class="plate big">${picture(panelImage(d), `On ${d.name}'s panel: ${story.title}`)}</span>
+       <h2 class="title2">${story.title}</h2>
+       <p>${story.line}</p>
+       ${d.order.length ? '' : `<p style="margin-top:16px"><a class="btn primary" href="#/devices/${d.id}/add">Add Screen</a></p>`}`
+  return `
+    <dl class="facts">${facts(d, false)}</dl>
+    <div class="vC">
+      <div>
+        <h2 class="h2">Screens in Order</h2>
+        ${showsFallback ? `<a class="panelrow ${chosen === null ? 'sel' : ''}" href="#" ${act('sel', '')}>On the panel: ${story.title}</a>` : ''}
+        ${d.order.length ? `<ol class="rows">${rows}</ol>` : `<p class="mid" style="padding:12px 0">A Screen is one thing the Device shows. With more than one, ${d.name} steps through them in Order, one per poll.</p>`}
+      </div>
+      <div class="vC-pane">${pane}</div>
+    </div>`
+}
+
+/* ── Settings, Logs and Add Screen: one design, shared by every variant ── */
+
+const set = (label, control, note = '') => `<li class="set"><b>${label}</b><span class="ctl">${control}</span><span class="note">${note}</span></li>`
+const sw = (on, label, name, id) => `<button class="sw" role="switch" aria-checked="${on}" aria-label="${label}" ${act(name, id)}></button>`
+const options = (list, chosen) => list.map(o => `<option ${o === chosen ? 'selected' : ''}>${o}</option>`).join('')
+
+function settingsView(d) {
+  const mirrored = d.mirroring
+  return `
+    <p class="lede">Changes save as you make them.</p>
+    <h2 class="h2" style="margin-top:28px">Display</h2>
+    <ul class="rows">
+      ${set('Name', `<input class="in" value="${d.name}" aria-label="Name" style="font-family:var(--font-b);font-size:14px">`)}
+      ${set('Device Model', `<select class="in" aria-label="Device Model">${options(['TRMNL OG · 800 × 480', 'TRMNL X · 1872 × 1404'], 'TRMNL OG · 800 × 480')}</select>`, 'The Device reports TRMNL OG')}
+      ${set('Palette', `<select class="in" aria-label="Palette">${options(['2-bit greyscale', '1-bit black and white', 'Warm paper · custom'], '2-bit greyscale')}</select>`)}
+      ${set('Refresh rate', `every <input class="in" type="number" min="1" value="15" aria-label="Refresh rate" style="width:64px"> <select class="in" aria-label="Unit">${options(['minutes', 'hours'], 'minutes')}</select>`)}
+    </ul>
+
+    <h2 class="h2">Sleep Mode</h2>
+    <ul class="rows">
+      ${set('Sleep Mode', `${sw(d.sleep.on && !mirrored, 'Sleep Mode', 'sleep-toggle', d.id)}<span>${mirrored ? 'Off while mirroring' : d.sleep.on ? 'On' : 'Off'}</span>`, d.sleeping ? `In its window until ${d.sleep.to}` : '')}
+      ${d.sleep.on && !mirrored ? set('Window', `${timeInput(d.sleep.from, 'Sleep Mode from')} to ${timeInput(d.sleep.to, 'Sleep Mode to')}`, 'Server timezone, Europe/Berlin') : ''}
+      ${d.sleep.on && !mirrored ? set('While asleep', `${sw(d.sleep.screen, 'Show the sleep screen', 'sleep-screen', d.id)}<span>${d.sleep.screen ? 'Show the sleep screen' : 'Keep the last Screen on the panel'}</span>`) : ''}
+    </ul>
+
+    <h2 class="h2">Firmware</h2>
+    <ul class="rows">
+      ${set('Reported version', '<span class="mono">1.6.8</span>')}
+      ${mirrored
+        ? set('Target Firmware', '<span>Off while mirroring</span>')
+        : `<li class="set"><b>Target Firmware</b><span class="ctl"><select class="in" aria-label="Target Firmware">${options(['None', '1.6.9 · official-synced', '1.7.0-rc2 · custom'], '1.6.9 · official-synced')}</select>${d.firmwarePending ? `<span class="wait">Goes out at the next poll, around ${d.nextPoll}</span>` : ''}</span><button class="btn" ${act('firmware', d.id)} ${d.firmwarePending ? 'disabled' : ''}>Update now</button></li>`}
+    </ul>
+    <p class="sect-note">The <a class="text" href="#/instance">Firmware library</a> lives under Instance. Firmware Auto-Update is off.</p>
+
+    <h2 class="h2">Mirroring</h2>
+    <ul class="rows">
+      ${set('Mirroring', `${sw(mirrored, 'Mirroring', 'mirror-toggle', d.id)}<span>${mirrored ? 'On' : 'Off'}</span>`)}
+      ${mirrored ? set('Mirror MAC address', '<input class="in" placeholder="A4:CF:12:00:00:00" aria-label="Mirror MAC address">', `The same MAC as ${d.name} proxies its own TRMNL account`) : ''}
+      ${mirrored ? set('Mirror API key', '<input class="in" type="password" aria-label="Mirror API key">') : ''}
+    </ul>
+    <p class="sect-note">${d.name} shows what a Device on a TRMNL account shows instead of its own Screens. While it is on, Sleep Mode and Firmware are off for ${d.name}.</p>
+
+    <details class="tucked"><summary>Identity and credentials</summary>
+      <ul class="rows">
+        ${set('Friendly id', '<span class="mono">4F2A1C</span>')}
+        <li class="set"><b>MAC address</b><span class="ctl mono">A4:CF:12:4F:2A:1C</span><button class="btn quiet">Copy</button></li>
+        <li class="set"><b>API key</b><span class="ctl mono">••••••••••••a91e</span><button class="btn quiet">Reveal</button></li>
+      </ul>
+    </details>
+    <details class="tucked" ${d.pending ? 'open' : ''}><summary>Special Functions</summary>
+      <p>A one-shot command that reaches ${d.name} at its next poll and fires once. The <span class="mono">sleep</span> Special Function is separate from Sleep Mode.</p>
+      <ul class="rows">
+        ${['identify', 'sleep', 'add_wifi', 'rewind'].map(fn => `<li class="frow"><span class="mono">${fn}</span><span class="note ${d.pending === fn ? 'wait' : 'mid'}">${d.pending === fn ? `Pending, reaches ${d.name} around ${d.nextPoll}` : ''}</span><button class="btn" data-act="special" data-id="${d.id}" data-fn="${fn}" data-fk="special-${fn}" ${d.pending ? 'disabled' : ''}>Trigger</button></li>`).join('')}
+      </ul>
+    </details>
+    <details class="tucked"><summary>Reset or delete ${d.name}</summary>
+      <p>Reset tells ${d.name} to forget its Wi-Fi and server at its next poll, so it has to be set up again. Its Screens stay here. Delete removes ${d.name}, its ${d.order.length} Screens and their Schedules from this server.</p>
+      <div class="btnrow"><button class="btn" ${act('reset', d.id)}>Reset ${d.name}</button><button class="btn" ${act('delete-device', d.id)}>Delete ${d.name}</button></div>
+    </details>`
+}
+
+function logsView(d) {
+  const shown = logEntries.filter(e => state.logLevel === 'all' || e.lvl !== 'info')
+  return `
+    <div class="logbar">
+      <div class="seg" role="group" aria-label="Level">
+        <button aria-pressed="${state.logLevel === 'all'}" ${act('log-level', 'all')}>All</button>
+        <button aria-pressed="${state.logLevel === 'problems'}" ${act('log-level', 'problems')}>Warnings and errors</button>
+      </div>
+      <button class="btn" ${act('clear-logs', d.id)}>Clear Logs</button>
+    </div>
+    <ol class="logs rows">
+      ${shown.map(e => `<li class="${e.lvl}"><details><summary><time><span>${e.day ?? 'Thu'} </span>${e.t}</time><span class="lvl">${e.lvl}</span><span class="msg">${e.msg}</span></summary><dl><dt>Source</dt><dd>${e.src}</dd><dt>Device status</dt><dd>${e.extra}</dd></dl></details></li>`).join('')}
+    </ol>
+    <div class="btnrow" style="margin-top:16px"><button class="btn quiet">Older entries</button></div>`
+}
+
+const layoutIcon = d => `<svg viewBox="0 0 60 36" aria-hidden="true"><rect x="1" y="1" width="58" height="34"/><path d="${d}"/></svg>`
+
+function addForm(d) {
+  const assigned = d.order.map(id => d.screens[id].name)
+  const name = placeholder => `<label class="field"><span>Name</span><input class="in wide" placeholder="${placeholder}" style="font-family:var(--font-b);font-size:14px"></label>`
+  return {
+    plugin: () => `
+      <fieldset><legend class="vh">Plugin</legend><ul class="rows">${plugins.map((p, i) => {
+        const taken = assigned.includes(p.name)
+        const first = plugins.findIndex(x => !assigned.includes(x.name)) === i
+        return `<li><label class="pick"><input type="radio" name="plugin" ${taken ? 'disabled' : ''} ${first ? 'checked' : ''}><b>${p.name}</b><span>${taken ? `Already on ${d.name}` : `${p.kind} Plugin`}</span></label></li>`
+      }).join('')}</ul></fieldset>
+      <p class="mid" style="margin-top:12px">No Plugin for it yet? <a class="text" href="#/plugins">Import a Recipe or build one</a> under Plugins.</p>`,
+    mashup: () => `
+      ${name('Weekend board')}
+      <div class="field"><span>Layout</span><div class="layouts">
+        ${[['Two columns', 'M30 1V35'], ['Two rows', 'M1 18H59'], ['One and two', 'M30 1V35M30 18H59'], ['Four quarters', 'M30 1V35M1 18H59']].map(([label, path], i) => `<label><input class="vh" type="radio" name="layout" ${i === 0 ? 'checked' : ''}>${layoutIcon(path)}${label}</label>`).join('')}
+      </div></div>
+      <label class="field"><span>Left</span><select class="in wide">${options(plugins.map(p => p.name), 'Weather')}</select></label>
+      <label class="field"><span>Right</span><select class="in wide">${options(plugins.map(p => p.name), 'Calendar')}</select></label>`,
+    link: () => `
+      ${name('Tide table')}
+      <label class="field"><span>Image URL</span><input class="in wide" type="url" placeholder="https://example.com/image.png"></label>
+      <fieldset><legend class="vh">Fetching</legend>
+        <label class="pick"><input type="radio" name="fetch" checked><b>Fetch once and cache</b><span>Kuroshiro converts the image for this Device. Refresh it by hand when it changes.</span></label>
+        <label class="pick"><input type="radio" name="fetch"><b>Fetch on every poll</b><span>The Device downloads the URL itself, unconverted.</span></label>
+      </fieldset>`,
+    file: () => `
+      ${name('Harbour photo')}
+      <div class="field"><span>Image</span><div class="drop"><span>PNG, JPEG or BMP. Converted to ${d.name}'s Device Model and Palette.</span><button class="btn">Choose file</button></div></div>`,
+    html: () => `
+      ${name('Fridge note')}
+      <label class="field"><span>HTML</span><textarea class="in" spellcheck="false" data-live>&lt;div style="padding:40px;font:700 84px Helvetica"&gt;
+  Back at six.
+  &lt;p style="font:34px Helvetica"&gt;Soup is in the fridge.&lt;/p&gt;
+&lt;/div&gt;</textarea></label>
+      <div class="field"><span>Preview <small>as ${d.name} renders it, TRMNL OG · 2-bit greyscale</small></span><span class="plate big live"><iframe title="Preview" sandbox></iframe></span></div>`,
+  }[state.addKind]()
+}
+
+const addView = d => `
+  <h2 class="h2" style="margin-top:28px">Add Screen</h2>
+  <div class="add">
+    <fieldset><legend class="vh">Kind of Screen</legend><ul class="rows">
+      ${addKinds.map(k => `<li><label class="pick"><input type="radio" name="kind" value="${k.id}" ${k.id === state.addKind ? 'checked' : ''} data-change="kind" data-fk="kind-${k.id}"><b>${k.name}</b><span>${k.gist}</span></label></li>`).join('')}
+    </ul></fieldset>
+    <div class="form">
+      ${addForm(d)}
+      <div class="foot btnrow"><button class="btn primary" ${act('add', d.id)}>Add Screen</button><a class="btn quiet" href="#/devices/${d.id}">Cancel</a><span class="mid small">Joins the end of the Order, always shown until you give it a Schedule.</span></div>
+    </div>
+  </div>`
+
+/* ── pages and the shell ── */
+
+function devicePage(d, view) {
+  const tab = view === 'add' ? 'screens' : view
+  const body = view === 'screens'
+    ? { a: variantA, b: variantB, c: variantC }[state.variant](d)
+    : { settings: settingsView, logs: logsView, add: addView }[view](d)
+  return {
+    section: 'devices', deviceId: d.id, title: d.name,
+    sub: ['screens', 'settings', 'logs'].map(v => ({ label: cap(v), href: `#/devices/${d.id}/${v}`, current: v === tab })),
+    actions: view === 'screens' && d.order.length ? `<a class="btn primary" href="#/devices/${d.id}/add">Add Screen</a>` : '',
+    body,
+  }
+}
+
+const devicesPage = () => ({
+  section: 'devices', title: 'Devices',
+  actions: '<a class="btn" href="#/connect">Connect a Device</a>',
+  body: `<ul class="rows" style="margin-top:20px">${devices().map(d => `
+    <li><a class="drow" href="#/devices/${d.id}">
+      <span class="plate">${picture(panelImage(d))}</span>
+      <span><span class="dname">${d.name}</span><span class="dfacts">${hasAlert(d) ? '<span class="fault">Alert: battery low</span> · ' : ''}Last seen ${d.seen} · Battery ${d.battery} · ${panelStory(d).title}</span></span>
+    </a></li>`).join('')}</ul>`,
+})
+
+const stubPage = (section, title) => ({ section, title, body: `<p class="stub">Stub. This page was approved as a frame in the App shell and navigation prototype and is specced later. This prototype is about a Device.</p>` })
+
+function resolve() {
+  const [a, b, c] = (location.hash.replace(/^#/, '') || '/').split('/').filter(Boolean)
+  const list = devices()
+  if (a === 'devices' && list.some(d => d.id === b))
+    return devicePage(list.find(d => d.id === b), ['screens', 'settings', 'logs', 'add'].includes(c) ? c : 'screens')
+  if (a === 'plugins')
+    return stubPage('plugins', 'Plugins')
+  if (a === 'instance')
+    return stubPage('instance', 'Instance')
+  if (a === 'alerts')
+    return stubPage('alerts', 'Alerts')
+  if (a === 'connect')
+    return stubPage('connect', 'Connect a Device')
+  return list.length === 1 ? devicePage(list[0], 'screens') : devicesPage()
+}
+
+function shell(page) {
+  const list = devices()
+  return `
+    <header class="bar">
+      <a class="lock" href="#/">${seal(26)}<span class="word">Kuroshiro</span></a>
+      <nav aria-label="Sections">
+        ${list.map(d => `<a href="#/devices/${d.id}" ${current(page.deviceId === d.id)}>${d.name}</a>`).join('')}
+        <a href="#/connect" ${current(page.section === 'connect')}>Connect a Device</a>
+        <i></i>
+        <a href="#/plugins" ${current(page.section === 'plugins')}>Plugins</a>
+        <a href="#/instance" ${current(page.section === 'instance')}>Instance</a>
+      </nav>
+      ${state.alert ? '<a class="alertlink" href="#/alerts">1 Alert firing</a>' : ''}
+    </header>
+    <main class="col">
+      <div class="head"><h1>${page.title}</h1><div class="actions">${page.actions ?? ''}</div></div>
+      ${page.sub ? `<nav class="tabs" aria-label="${page.title} views">${page.sub.map(s => `<a href="${s.href}" ${current(s.current)}>${s.label}</a>`).join('')}</nav>` : ''}
+      ${page.body}
+    </main>
+    <nav class="btabs" aria-label="Sections">
+      <a href="#/" ${current(['devices', 'connect'].includes(page.section))}>${list.length === 1 ? list[0].name : 'Devices'}</a>
+      <a href="#/plugins" ${current(page.section === 'plugins')}>Plugins</a>
+      <a href="#/instance" ${current(page.section === 'instance')}>Instance</a>
+    </nav>`
+}
+
+/* ── prototype plumbing ── */
+
+function render() {
+  const variant = variants.find(v => v.key === state.variant)
+  const page = resolve()
+  const focusKey = document.activeElement?.dataset?.fk
+  document.documentElement.className = state.theme
+  document.querySelector('#app').innerHTML = shell(page)
+  document.title = `PROTOTYPE: ${page.title} · ${variant.name}`
+  document.querySelector('[data-label]').textContent = `${variant.key.toUpperCase()} — ${variant.name}`
+  document.querySelector('[data-cycle="theme"]').textContent = state.theme === 'light' ? 'Light' : 'Dark'
+  document.querySelector('[data-cycle="devices"]').textContent = `${state.count} Device${state.count > 1 ? 's' : ''}`
+  document.querySelector('[data-cycle="alert"]').textContent = state.alert ? 'Alert firing' : 'No Alert'
+  document.querySelector('[data-cycle="scene"]').textContent = scenes[state.scene].label
+  if (focusKey)
+    document.querySelector(`[data-fk="${focusKey}"]`)?.focus()
+  syncLive()
+  const strip = document.querySelector('.strip')
+  const chosenFrame = strip?.querySelector('.fr.sel')
+  if (chosenFrame && strip.scrollWidth > strip.clientWidth)
+    strip.scrollLeft = chosenFrame.offsetLeft - (strip.clientWidth - chosenFrame.offsetWidth) / 2
+  const query = new URLSearchParams({ variant: state.variant, theme: state.theme, devices: state.count, alert: state.alert ? 1 : 0, scene: state.scene })
+  history.replaceState(null, '', `?${query}${location.hash}`)
+}
+
+function syncLive() {
+  const source = document.querySelector('[data-live]')
+  const frame = document.querySelector('.live iframe')
+  if (!source || !frame)
+    return
+  frame.style.transform = `scale(${frame.parentElement.clientWidth / 800})`
+  frame.srcdoc = `<body style="margin:0;background:#fff;color:#0a0a0a">${source.value}`
+}
+
+const routeDevice = () => {
+  const id = location.hash.split('/')[2]
+  return devices().find(d => d.id === id) ?? devices()[0]
+}
+
+function move(d, id, delta) {
+  const from = d.order.indexOf(id)
+  const to = from + delta
+  if (to < 0 || to >= d.order.length)
+    return
+  d.order.splice(to, 0, ...d.order.splice(from, 1))
+}
+
+function confirmThen({ title, text, action }, run) {
+  const dialog = document.querySelector('#confirm')
+  dialog.innerHTML = `<h2>${title}</h2><p>${text}</p><div class="btnrow"><button class="btn" value="cancel" autofocus>Cancel</button><button class="btn primary" value="go">${action}</button></div>`
+  dialog.onclick = (e) => {
+    const value = e.target.closest('button')?.value
+    if (!value)
+      return
+    dialog.close()
+    if (value === 'go') {
+      run()
+      render()
+    }
+  }
+  dialog.showModal()
+}
+
+function removeScreen(d, id) {
+  if (d.current === id)
+    d.current = nextId(d)
+  d.order = d.order.filter(x => x !== id)
+  state.sel[d.id] = undefined
+}
+
+const actions = {
+  'sel': (d, id) => {
+    const target = id || null
+    state.sel[d.id] = state.variant === 'a' && state.sel[d.id] === target ? null : target
+  },
+  'sched-toggle': (d, id) => { d.screens[id].schedule.on = !d.screens[id].schedule.on },
+  'sched-add': (d, id) => { d.screens[id].schedule = { on: true, days: [1, 1, 1, 1, 1, 1, 1], from: null, to: null } },
+  'sched-remove': (d, id) => { d.screens[id].schedule = null },
+  'day': (d, id, el) => {
+    const days = d.screens[id].schedule.days
+    days[el.dataset.n] = days[el.dataset.n] ? 0 : 1
+  },
+  'move-up': (d, id) => move(d, id, -1),
+  'move-down': (d, id) => move(d, id, 1),
+  'delete': (d, id) => {
+    const s = d.screens[id]
+    const copy = s.kind === 'Plugin'
+      ? { title: `Unassign ${s.name} from ${d.name}?`, text: `${d.name} stops showing ${s.name}, and this Screen's Schedule is removed with it. The Plugin itself stays, with its template, Data Sources and Mashup slots.`, action: 'Unassign Plugin' }
+      : { title: `Delete ${s.name}?`, text: `The Screen and its Schedule are removed from ${d.name}. ${s.kind === 'File' ? 'The uploaded image is deleted with it.' : s.kind === 'Mashup' ? 'The Mashup is deleted with it; its Plugins stay.' : 'This cannot be undone.'}`, action: 'Delete Screen' }
+    confirmThen(copy, () => removeScreen(d, id))
+    return false
+  },
+  'sleep-toggle': (d) => { d.sleep.on = !d.sleep.on },
+  'sleep-screen': (d) => { d.sleep.screen = !d.sleep.screen },
+  'mirror-toggle': (d) => { d.mirroring = !d.mirroring },
+  'firmware': (d) => { d.firmwarePending = true },
+  'special': (d, id, el) => { d.pending = el.dataset.fn },
+  'reset': (d) => {
+    confirmThen({ title: `Reset ${d.name}?`, text: `At its next poll ${d.name} forgets its Wi-Fi and this server, and has to be set up again by hand. Its Screens and Schedules stay here.`, action: `Reset ${d.name}` }, () => {})
+    return false
+  },
+  'delete-device': (d) => {
+    confirmThen({ title: `Delete ${d.name}?`, text: `${d.name}, its ${d.order.length} Screens, their Schedules and its Device Logs are removed from this server. Your Plugins stay.`, action: `Delete ${d.name}` }, () => {})
+    return false
+  },
+  'clear-logs': (d) => {
+    confirmThen({ title: `Clear ${d.name}'s Logs?`, text: `All ${logEntries.length} entries are removed. New ones arrive with the next poll.`, action: 'Clear Logs' }, () => {})
+    return false
+  },
+  'log-level': (d, id) => { state.logLevel = id },
+  'add': (d) => {
+    const added = { plugin: plugins.map(p => p.id).find(id => library[id] && !d.order.includes(id)) ?? 'tide', mashup: 'mashup', link: 'tide', file: 'photo', html: 'note' }[state.addKind]
+    if (!d.order.includes(added))
+      d.order.push(added)
+    state.sel[d.id] = state.variant === 'a' ? null : added
+    location.hash = `#/devices/${d.id}`
+  },
+}
+
+const cycles = {
+  theme: () => { state.theme = state.theme === 'light' ? 'dark' : 'light' },
+  devices: () => { state.count = state.count === 1 ? 3 : 1 },
+  alert: () => { state.alert = !state.alert },
+  scene: () => {
+    const keys = Object.keys(scenes)
+    state.scene = keys[(keys.indexOf(state.scene) + 1) % keys.length]
+    buildDevices()
+  },
+  poll: () => {
+    const d = routeDevice()
+    if (d.sleeping)
+      return
+    d.current = nextId(d) ?? d.current
+    d.seen = 'just now'
+    d.lastPoll = d.nextPoll
+    d.pending = null
+    d.firmwarePending = false
+    state.sel[d.id] = state.variant === 'a' ? state.sel[d.id] : undefined
+  },
+}
+
+function step(delta) {
+  const index = variants.findIndex(v => v.key === state.variant)
+  state.variant = variants[(index + delta + variants.length) % variants.length].key
+  state.sel = {}
+  render()
+}
+
+function cycle(name) {
+  cycles[name]()
+  render()
+}
+
+const app = document.querySelector('#app')
+document.querySelectorAll('[data-step]').forEach(b => b.addEventListener('click', () => step(Number(b.dataset.step))))
+document.querySelectorAll('[data-cycle]').forEach(b => b.addEventListener('click', () => cycle(b.dataset.cycle)))
+
+app.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-act]')
+  if (!el)
+    return
+  e.preventDefault()
+  if (actions[el.dataset.act](routeDevice(), el.dataset.id, el) !== false)
+    render()
+})
+
+app.addEventListener('change', (e) => {
+  const el = e.target.closest('[data-change]')
+  if (!el)
+    return
+  const schedule = routeDevice().screens[el.dataset.id]?.schedule
+  const changes = {
+    kind: () => { state.addKind = el.value },
+    from: () => { schedule.from = el.value },
+    to: () => { schedule.to = el.value },
+    allday: () => { [schedule.from, schedule.to] = el.checked ? [null, null] : ['06:00', '09:00'] },
+  }
+  changes[el.dataset.change]()
+  render()
+})
+
+app.addEventListener('input', (e) => {
+  if (e.target.matches('[data-live]'))
+    syncLive()
+})
+
+app.addEventListener('dragstart', (e) => {
+  const item = e.target.closest('[data-drag]')
+  if (!item)
+    return
+  state.drag = item.dataset.drag
+  e.dataTransfer.effectAllowed = 'move'
+})
+app.addEventListener('dragover', (e) => {
+  const item = e.target.closest('[data-drag]')
+  if (!item || !state.drag)
+    return
+  e.preventDefault()
+  app.querySelectorAll('.over').forEach(el => el.classList.remove('over'))
+  if (item.dataset.drag !== state.drag)
+    item.classList.add('over')
+})
+app.addEventListener('drop', (e) => {
+  const item = e.target.closest('[data-drag]')
+  if (!item || !state.drag)
+    return
+  e.preventDefault()
+  const d = routeDevice()
+  const from = d.order.indexOf(state.drag)
+  const to = d.order.indexOf(item.dataset.drag)
+  d.order.splice(to, 0, ...d.order.splice(from, 1))
+  state.drag = null
+  render()
+})
+app.addEventListener('dragend', () => {
+  state.drag = null
+  app.querySelectorAll('.over').forEach(el => el.classList.remove('over'))
+})
+
+addEventListener('hashchange', () => {
+  render()
+  scrollTo(0, 0)
+})
+addEventListener('resize', syncLive)
+document.addEventListener('keydown', (e) => {
+  if (e.target.closest('input, textarea, select, [contenteditable]') || e.metaKey || e.ctrlKey || e.altKey || document.querySelector('dialog[open]'))
+    return
+  const keys = { ArrowLeft: () => step(-1), ArrowRight: () => step(1), t: () => cycle('theme'), d: () => cycle('devices'), a: () => cycle('alert'), s: () => cycle('scene'), p: () => cycle('poll') }
+  keys[e.key]?.()
+})
+
+buildDevices()
+render()
+</script>
+</body>
+</html>
