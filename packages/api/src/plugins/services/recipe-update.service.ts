@@ -105,15 +105,7 @@ export class RecipeUpdateService {
   ) {}
 
   async checkForUpdate(pluginId: string): Promise<RecipeUpdatePreview> {
-    const plugin = await this.loadPluginWithSourceRecipe(pluginId)
-    const upstream = await this.fetchUpstream(plugin.sourceRecipeId!)
-    const contentHash = computeRecipeContentHash(upstream)
-
-    const { mode, items } = diffRecipeUpdate(
-      this.snapshotOf(plugin),
-      toComparablePlugin(plugin),
-      parsedToComparable(upstream),
-    )
+    const { plugin, contentHash, mode, items } = await this.prepareDiff(pluginId)
 
     return {
       contentHash,
@@ -124,15 +116,13 @@ export class RecipeUpdateService {
   }
 
   async applyUpdate(pluginId: string, dto: ApplyRecipeUpdateDto): Promise<Plugin> {
-    const plugin = await this.loadPluginWithSourceRecipe(pluginId)
-    const upstream = await this.fetchUpstream(plugin.sourceRecipeId!)
-    const contentHash = computeRecipeContentHash(upstream)
+    const { plugin, upstream, contentHash, items } = await this.prepareDiff(pluginId)
 
     if (contentHash !== dto.contentHash) {
       throw new ConflictException('The Recipe changed since the check ran; run the check again.')
     }
 
-    const selected = this.resolveSelectedItems(plugin, upstream, dto.apply)
+    const selected = this.resolveSelectedItems(items, dto.apply)
     const { basicFieldUpdates, reschedule } = await this.applySelectedItems(plugin, selected)
 
     await this.pluginRepository.update(pluginId, {
@@ -150,12 +140,23 @@ export class RecipeUpdateService {
     return this.reload(pluginId)
   }
 
-  private resolveSelectedItems(plugin: Plugin, upstream: ParsedPlugin, apply: ApplyRecipeUpdateDto['apply']): UpdateItem[] {
-    const { items } = diffRecipeUpdate(this.snapshotOf(plugin), toComparablePlugin(plugin), parsedToComparable(upstream))
-    const itemIndex = new Map(items.map(item => [`${item.itemType}:${item.key}`, item]))
+  private async prepareDiff(pluginId: string): Promise<{ plugin: Plugin, upstream: ParsedPlugin, contentHash: string, mode: RecipeUpdateMode, items: UpdateItem[] }> {
+    const plugin = await this.loadPluginWithSourceRecipe(pluginId)
+    const upstream = await this.fetchUpstream(plugin.sourceRecipeId!)
+    const contentHash = computeRecipeContentHash(upstream)
+    const { mode, items } = diffRecipeUpdate(this.snapshotOf(plugin), toComparablePlugin(plugin), parsedToComparable(upstream))
+    return { plugin, upstream, contentHash, mode, items }
+  }
+
+  private itemKey(itemType: string, key: string): string {
+    return `${itemType}:${key}`
+  }
+
+  private resolveSelectedItems(items: UpdateItem[], apply: ApplyRecipeUpdateDto['apply']): UpdateItem[] {
+    const itemIndex = new Map(items.map(item => [this.itemKey(item.itemType, item.key), item]))
 
     return apply.map((selection) => {
-      const item = itemIndex.get(`${selection.itemType}:${selection.key}`)
+      const item = itemIndex.get(this.itemKey(selection.itemType, selection.key))
       if (!item) {
         throw new BadRequestException(`No pending Recipe update for ${selection.itemType} "${selection.key}"`)
       }
