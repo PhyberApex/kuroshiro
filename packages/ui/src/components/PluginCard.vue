@@ -13,6 +13,7 @@ const emit = defineEmits<{
   assignmentsChanged: []
   duplicated: []
   deleted: []
+  recipeUpdated: []
 }>()
 
 const assignedCount = computed(() => props.plugin.deviceAssignments?.length || 0)
@@ -47,6 +48,7 @@ const assignedCount = computed(() => props.plugin.deviceAssignments?.length || 0
       @assignments-changed="emit('assignmentsChanged')"
       @duplicated="emit('duplicated')"
       @deleted="emit('deleted')"
+      @recipe-updated="emit('recipeUpdated')"
     />
   </VCard>
 </template>

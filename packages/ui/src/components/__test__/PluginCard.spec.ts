@@ -47,6 +47,13 @@ vi.mock('../PluginAssignDialog.vue', () => ({
   },
 }))
 
+vi.mock('../PluginRecipeUpdateDialog.vue', () => ({
+  default: {
+    name: 'PluginRecipeUpdateDialog',
+    template: '<div></div>',
+  },
+}))
+
 describe('pluginCard', () => {
   beforeEach(() => {
     pluginsStoreMock = asStore<ReturnType<typeof usePluginsStore>>({
@@ -102,6 +109,20 @@ describe('pluginCard', () => {
     })
 
     expect(wrapper.text()).toContain('2 devices')
+  })
+
+  it('forwards the recipeUpdated event from PluginCardActions', async () => {
+    const wrapper = mount(PluginCard, {
+      props: { plugin: basePlugin },
+      global: {
+        plugins: [createPinia(), vuetify],
+      },
+    })
+
+    wrapper.findComponent({ name: 'PluginCardActions' }).vm.$emit('recipeUpdated')
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.emitted('recipeUpdated')).toHaveLength(1)
   })
 
   // Action-button behavior (edit/assign/toggle/export/delete) lives in PluginCardActions.vue

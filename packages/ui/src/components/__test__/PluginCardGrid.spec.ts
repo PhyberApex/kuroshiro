@@ -35,7 +35,7 @@ describe('pluginCardGrid', () => {
     expect(wrapper.text()).toContain('Calendar')
   })
 
-  it('re-emits assignments-changed, duplicated and deleted from a card', async () => {
+  it('re-emits assignments-changed, duplicated, deleted and recipeUpdated from a card', async () => {
     const wrapper = mount(PluginCardGrid, {
       props: { plugins },
       global: { plugins: [createPinia(), vuetify] },
@@ -45,10 +45,12 @@ describe('pluginCardGrid', () => {
     card.vm.$emit('assignmentsChanged')
     card.vm.$emit('duplicated')
     card.vm.$emit('deleted')
+    card.vm.$emit('recipeUpdated')
     await wrapper.vm.$nextTick()
 
     expect(wrapper.emitted('assignmentsChanged')).toHaveLength(1)
     expect(wrapper.emitted('duplicated')).toHaveLength(1)
     expect(wrapper.emitted('deleted')).toHaveLength(1)
+    expect(wrapper.emitted('recipeUpdated')).toHaveLength(1)
   })
 })

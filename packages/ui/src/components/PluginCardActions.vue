@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import type { Plugin } from '../types/plugin'
-import { mdiAccountMultiple, mdiContentCopy, mdiDelete, mdiDownload, mdiPencil } from '@mdi/js'
+import type { RecipeUpdatePreview } from '../types/recipeUpdate'
+import { mdiAccountMultiple, mdiCloudSync, mdiContentCopy, mdiDelete, mdiDownload, mdiPencil } from '@mdi/js'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { VBtn, VCard, VCardActions, VCardText, VCardTitle, VDialog, VDivider, VSnackbar, VSpacer } from 'vuetify/components'
 import { usePluginsStore } from '../stores/plugins'
 import { withBasePath } from '../utils/basePath'
+import { errorMessage } from '../utils/errorMessage'
 import PluginAssignDialog from './PluginAssignDialog.vue'
+import PluginRecipeUpdateDialog from './PluginRecipeUpdateDialog.vue'
 
 const props = defineProps<{
   plugin: Plugin
@@ -16,6 +19,7 @@ const emit = defineEmits<{
   assignmentsChanged: []
   duplicated: []
   deleted: []
+  recipeUpdated: []
 }>()
 
 const router = useRouter()
@@ -25,6 +29,12 @@ const showAssignDialog = ref(false)
 const showDeleteDialog = ref(false)
 const showExportSnackbar = ref(false)
 const showDuplicateErrorSnackbar = ref(false)
+const showRecipeUpdateSnackbar = ref(false)
+
+const checkingForUpdate = ref(false)
+const showRecipeUpdateDialog = ref(false)
+const recipeUpdatePreview = ref<RecipeUpdatePreview | null>(null)
+const recipeUpdateError = ref<string | null>(null)
 
 const assignedCount = computed(() => props.plugin.deviceAssignments?.length || 0)
 
@@ -76,6 +86,27 @@ function openAssignDialog() {
 function onAssigned() {
   emit('assignmentsChanged')
 }
+
+async function checkForUpdates() {
+  checkingForUpdate.value = true
+  try {
+    recipeUpdatePreview.value = await pluginsStore.checkRecipeUpdate(props.plugin.id)
+    recipeUpdateError.value = null
+  }
+  catch (err) {
+    recipeUpdatePreview.value = null
+    recipeUpdateError.value = errorMessage(err, 'Failed to check for Recipe updates')
+  }
+  finally {
+    checkingForUpdate.value = false
+    showRecipeUpdateDialog.value = true
+  }
+}
+
+function onRecipeUpdateApplied() {
+  showRecipeUpdateSnackbar.value = true
+  emit('recipeUpdated')
+}
 </script>
 
 <template>
@@ -84,6 +115,9 @@ function onAssigned() {
   </VSnackbar>
   <VSnackbar v-model="showDuplicateErrorSnackbar" :timeout="3000" color="error">
     Failed to duplicate plugin
+  </VSnackbar>
+  <VSnackbar v-model="showRecipeUpdateSnackbar" :timeout="3000" color="success">
+    Recipe update applied
   </VSnackbar>
   <VCardActions class="d-flex ga-2 flex-wrap">
     <VBtn
@@ -101,6 +135,16 @@ function onAssigned() {
       @click="openAssignDialog"
     >
       Assign to Devices
+    </VBtn>
+    <VBtn
+      v-if="plugin.sourceRecipeId"
+      variant="tonal"
+      size="small"
+      :prepend-icon="mdiCloudSync"
+      :loading="checkingForUpdate"
+      @click="checkForUpdates"
+    >
+      Check for Updates
     </VBtn>
     <VBtn
       variant="tonal"
@@ -136,6 +180,14 @@ function onAssigned() {
     v-model="showAssignDialog"
     :plugin="plugin"
     @assigned="onAssigned"
+  />
+
+  <PluginRecipeUpdateDialog
+    v-model="showRecipeUpdateDialog"
+    :plugin="plugin"
+    :preview="recipeUpdatePreview"
+    :error="recipeUpdateError"
+    @applied="onRecipeUpdateApplied"
   />
 
   <VDialog v-model="showDeleteDialog" max-width="500">

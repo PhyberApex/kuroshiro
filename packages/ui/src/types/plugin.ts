@@ -12,6 +12,7 @@ export interface Plugin {
   templates?: PluginTemplate[]
   fields?: PluginField[]
   deviceAssignments?: DeviceAssignment[]
+  sourceRecipeId?: string
   sourceRecipeSnapshot?: Record<string, unknown> | null
 }
 

@@ -17,6 +17,7 @@
   "dependencies": {
     "@mdi/js": "catalog:",
     "@vueuse/core": "catalog:",
+    "diff": "catalog:",
     "pinia": "catalog:",
     "vite-plugin-vuetify": "catalog:",
     "vue": "catalog:",

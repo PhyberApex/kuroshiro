@@ -260,6 +260,9 @@ catalogs:
     class-validator:
       specifier: 0.15.1
       version: 0.15.1
+    diff:
+      specifier: 9.0.0
+      version: 9.0.0
     dotenv:
       specifier: 18.0.4
       version: 18.0.4
@@ -521,6 +524,9 @@ importers:
       '@vueuse/core':
         specifier: 'catalog:'
         version: 15.0.0(vue@3.5.43(typescript@6.0.3))
+      diff:
+        specifier: 'catalog:'
+        version: 9.0.0
       pinia:
         specifier: 'catalog:'
         version: 4.0.3(@vue/devtools-api@8.2.1)(typescript@6.0.3)(vue@3.5.43(typescript@6.0.3))
@@ -3567,6 +3573,10 @@ packages:
 
   diff@4.0.4:
     resolution: {integrity: sha512-X07nttJQkwkfKfvTPG/KSnE2OMdcUCao6+eXF3wmnIQRn2aPAHH3VxDbDOdegkd6JbPsXqShpvEOHfAT+nCNwQ==}
+    engines: {node: '>=0.3.1'}
+
+  diff@9.0.0:
+    resolution: {integrity: sha512-svtcdpS8CgJyqAjEQIXdb3OjhFVVYjzGAPO8WGCmRbrml64SPw/jJD4GoE98aR7r25A0XcgrK3F02yw9R/vhQw==}
     engines: {node: '>=0.3.1'}
 
   dir-glob@3.0.1:
@@ -9484,6 +9494,8 @@ snapshots:
   diff-sequences@29.6.3: {}
 
   diff@4.0.4: {}
+
+  diff@9.0.0: {}
 
   dir-glob@3.0.1:
     dependencies:

@@ -87,6 +87,7 @@ function onPluginImported() {
               @assignments-changed="fetchAllPlugins"
               @duplicated="fetchAllPlugins"
               @deleted="fetchAllPlugins"
+              @recipe-updated="fetchAllPlugins"
             />
             <div v-else class="text-center py-12">
               <div class="text-h5 mb-2">
