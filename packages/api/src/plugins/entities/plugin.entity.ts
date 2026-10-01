@@ -30,7 +30,7 @@ export class Plugin {
   name: string
 
   @Column('text', { nullable: true })
-  description?: string
+  description?: string | null
 
   @Column('text', { default: 'Poll' })
   kind: PluginKind = 'Poll'

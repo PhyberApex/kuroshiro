@@ -2,6 +2,7 @@ import type { Response } from 'express'
 import type { PluginsService } from '../plugins.service.js'
 import type { PluginExporterService } from '../services/plugin-exporter.service.js'
 import type { PluginImporterService } from '../services/plugin-importer.service.js'
+import type { RecipeUpdateService } from '../services/recipe-update.service.js'
 import { Buffer } from 'node:buffer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makePlugin } from '../../test/fixtures.js'
@@ -29,6 +30,10 @@ describe('pluginsController', () => {
     importFromRecipe: ReturnType<typeof vi.fn>
   }
   let mockExporter: { exportToZip: ReturnType<typeof vi.fn> }
+  let mockRecipeUpdateService: {
+    checkForUpdate: ReturnType<typeof vi.fn>
+    applyUpdate: ReturnType<typeof vi.fn>
+  }
 
   beforeEach(() => {
     mockService = {
@@ -55,10 +60,16 @@ describe('pluginsController', () => {
       exportToZip: vi.fn(),
     }
 
+    mockRecipeUpdateService = {
+      checkForUpdate: vi.fn(),
+      applyUpdate: vi.fn(),
+    }
+
     controller = new PluginsController(
       asService<PluginsService>(mockService),
       asService<PluginImporterService>(mockImporter),
       asService<PluginExporterService>(mockExporter),
+      asService<RecipeUpdateService>(mockRecipeUpdateService),
     )
   })
 
@@ -128,6 +139,26 @@ describe('pluginsController', () => {
 
     expect(mockService.duplicate).toHaveBeenCalledWith('1')
     expect(result).toBe(duplicated)
+  })
+
+  it('checkRecipeUpdate delegates to the recipe update service', async () => {
+    const preview = { contentHash: 'abc', mode: 'three-way' as const, items: [], assignmentsMissingRequiredField: [] }
+    mockRecipeUpdateService.checkForUpdate.mockResolvedValue(preview)
+
+    const result = await controller.checkRecipeUpdate('1')
+
+    expect(mockRecipeUpdateService.checkForUpdate).toHaveBeenCalledWith('1')
+    expect(result).toBe(preview)
+  })
+
+  it('applyRecipeUpdate delegates to the recipe update service', async () => {
+    const applyDto = { contentHash: 'abc', apply: [{ itemType: 'name' as const, key: 'name' }] }
+    mockRecipeUpdateService.applyUpdate.mockResolvedValue(basePlugin)
+
+    const result = await controller.applyRecipeUpdate('1', applyDto)
+
+    expect(mockRecipeUpdateService.applyUpdate).toHaveBeenCalledWith('1', applyDto)
+    expect(result).toBe(basePlugin)
   })
 
   it('remove deletes a plugin', async () => {
