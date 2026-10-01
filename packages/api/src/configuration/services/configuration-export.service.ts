@@ -153,7 +153,7 @@ export class ConfigurationExportService {
     }
     return {
       ...snapshot,
-      dataSources: snapshot.dataSources.map(ds => ({
+      dataSources: (snapshot.dataSources || []).map(ds => ({
         ...ds,
         headers: ds.headers && Object.fromEntries(Object.keys(ds.headers).map(key => [key, CONFIGURATION_REDACTION_SENTINEL])),
       })),

@@ -167,6 +167,18 @@ describe('configurationExportService', () => {
     expect(entry.sourceRecipeSnapshot.dataSources[0].url).toBe('https://api.example.com')
   })
 
+  it('redacts a Recipe Snapshot with no dataSources field without throwing, when redact is set', async () => {
+    const plugin = makePlugin({ id: 'plugin-1', sourceRecipeId: '150460', sourceRecipeSnapshot: { name: 'Daily Weather' } })
+    pluginRepo.find.mockResolvedValue([plugin])
+
+    const buffer = await service.exportToZip({ redact: true })
+    const zip = new AdmZip(buffer)
+    const pluginsJson = JSON.parse(zip.getEntry('plugins.json')!.getData().toString('utf8'))
+    const entry = pluginsJson.find((p: { id: string }) => p.id === 'plugin-1')
+
+    expect(entry.sourceRecipeSnapshot).toEqual({ name: 'Daily Weather', dataSources: [] })
+  })
+
   it('redacts Data Source header values but not keys, url, or body, in the nested .trmnlp settings.yml, when redact is set', async () => {
     const plugin = makePlugin({
       id: 'plugin-1',
