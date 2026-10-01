@@ -1,3 +1,5 @@
+import type { DataSourceLiteralValue, DataSourceMode } from 'kuroshiro-shared'
+
 export type UpdateItemKind = 'added' | 'changed' | 'removed'
 
 export type UpdateItemType = 'name' | 'description' | 'refreshInterval' | 'template' | 'dataSource' | 'field'
@@ -5,13 +7,13 @@ export type UpdateItemType = 'name' | 'description' | 'refreshInterval' | 'templ
 export type RecipeUpdateMode = 'two-way' | 'three-way'
 
 export interface NormalizedDataSource {
-  mode: 'fetch' | 'literal'
+  mode: DataSourceMode
   method?: string
   url?: string | null
   headers?: Record<string, string>
   body?: Record<string, unknown>
   transformJs?: string | null
-  literalValue?: Record<string, unknown> | unknown[] | string | number | boolean | null
+  literalValue?: DataSourceLiteralValue
 }
 
 export interface NormalizedTemplate {

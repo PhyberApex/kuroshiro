@@ -35,7 +35,7 @@ function propertyRowsFor(item: UpdateItem): Array<{ label: string, before: unkno
     const local = item.local as NormalizedDataSource | undefined
     const upstream = item.upstream as NormalizedDataSource | undefined
     const mode = local?.mode ?? upstream?.mode
-    const keys = mode === 'literal' ? (['mode', 'literalValue'] as const) : (['mode', 'method', 'url', 'headers'] as const)
+    const keys = mode === 'literal' ? (['mode', 'literalValue'] as const) : (['mode', 'method', 'url', 'headers', 'body'] as const)
     return keys.map(key => ({ label: key, before: local?.[key], after: upstream?.[key] }))
   }
   return [{ label: 'value', before: item.local, after: item.upstream }]
