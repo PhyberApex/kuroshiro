@@ -16,10 +16,10 @@ export class PluginField {
   name: string
 
   @Column('text', { nullable: true })
-  description?: string
+  description?: string | null
 
   @Column('text', { nullable: true })
-  defaultValue?: string
+  defaultValue?: string | null
 
   @Column('boolean', { default: false })
   required: boolean = false

@@ -2,6 +2,7 @@ import type { Response } from 'express'
 import { Body, Controller, Delete, Get, Param, Patch, Post, Res, UploadedFile, UseInterceptors, UsePipes, ValidationPipe } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { diskStorage } from 'multer'
+import { ApplyRecipeUpdateDto } from './dto/apply-recipe-update.dto.js'
 import { AssignPluginToDeviceDto } from './dto/assign-plugin-to-device.dto.js'
 import { CreatePluginDto } from './dto/create-plugin.dto.js'
 import { PreviewPluginDto } from './dto/preview-plugin.dto.js'
@@ -10,6 +11,7 @@ import { UpdatePluginDto } from './dto/update-plugin.dto.js'
 import { PluginsService } from './plugins.service.js'
 import { PluginExporterService } from './services/plugin-exporter.service.js'
 import { ParsedPlugin, PluginImporterService } from './services/plugin-importer.service.js'
+import { RecipeUpdateService } from './services/recipe-update.service.js'
 
 @Controller('plugins')
 export class PluginsController {
@@ -17,6 +19,7 @@ export class PluginsController {
     private readonly pluginsService: PluginsService,
     private readonly importerService: PluginImporterService,
     private readonly exporterService: PluginExporterService,
+    private readonly recipeUpdateService: RecipeUpdateService,
   ) {}
 
   @Post('preview')
@@ -55,6 +58,17 @@ export class PluginsController {
   @Post(':id/duplicate')
   async duplicate(@Param('id') id: string) {
     return this.pluginsService.duplicate(id)
+  }
+
+  @Get(':id/recipe-update')
+  async checkRecipeUpdate(@Param('id') id: string) {
+    return this.recipeUpdateService.checkForUpdate(id)
+  }
+
+  @Post(':id/recipe-update/apply')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  async applyRecipeUpdate(@Param('id') id: string, @Body() applyDto: ApplyRecipeUpdateDto) {
+    return this.recipeUpdateService.applyUpdate(id, applyDto)
   }
 
   @Delete(':id/webhook-payload')

@@ -22,6 +22,7 @@ import { PluginRendererService } from './services/plugin-renderer.service.js'
 import { PluginSchedulerService } from './services/plugin-scheduler.service.js'
 import { PluginTemplateContextService } from './services/plugin-template-context.service.js'
 import { PluginTransformService } from './services/plugin-transform.service.js'
+import { RecipeUpdateService } from './services/recipe-update.service.js'
 import { WebhookIngestService } from './services/webhook-ingest.service.js'
 import { WebhookIngestController } from './webhook-ingest.controller.js'
 
@@ -52,6 +53,7 @@ import { WebhookIngestController } from './webhook-ingest.controller.js'
     PluginTransformService,
     PluginRenderCacheService,
     PluginTemplateContextService,
+    RecipeUpdateService,
     WebhookIngestService,
     WebhookPluginGuard,
   ],

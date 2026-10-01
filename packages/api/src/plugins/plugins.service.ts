@@ -240,7 +240,7 @@ export class PluginsService implements OnModuleInit {
   private buildDuplicateDto(source: Plugin): CreatePluginDto {
     return {
       name: `${source.name} (copy)`,
-      description: source.description,
+      description: source.description ?? undefined,
       kind: source.kind,
       refreshInterval: source.refreshInterval,
       mergeStrategy: source.mergeStrategy ?? undefined,
@@ -266,8 +266,8 @@ export class PluginsService implements OnModuleInit {
         keyname: f.keyname,
         fieldType: f.fieldType,
         name: f.name,
-        description: f.description,
-        defaultValue: f.defaultValue,
+        description: f.description ?? undefined,
+        defaultValue: f.defaultValue ?? undefined,
         required: f.required,
         order: f.order,
       })),
@@ -523,12 +523,16 @@ export class PluginsService implements OnModuleInit {
     }
   }
 
-  private async invalidateRenderCaches(pluginId: string): Promise<void> {
+  // Public: also called directly by RecipeUpdateService, whose Recipe Update
+  // apply mutates data sources/templates/fields itself (ADR-0030's whole-item
+  // apply semantics don't fit this method's wipe-and-recreate `update()` path)
+  // but still needs the same cache invalidation and rescheduling afterward.
+  async invalidateRenderCaches(pluginId: string): Promise<void> {
     await this.screenRepository.update({ plugin: { id: pluginId } }, { cachedPluginOutput: null })
     await this.renderCache.invalidateMashupCaches(pluginId)
   }
 
-  private async rescheduleAfterUpdate(id: string): Promise<void> {
+  async rescheduleAfterUpdate(id: string): Promise<void> {
     this.scheduler.removeScheduledJob(id)
     const fullPlugin = await this.findPluginWithRelations(id, { dataSources: true, templates: true })
     if (fullPlugin) {
