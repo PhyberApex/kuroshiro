@@ -213,7 +213,7 @@ watch(() => device.value?.refreshRate, () => {
     refreshRateNumber.value = device.value?.refreshRate || 0
     refreshRateUnit.value = 'seconds'
   }
-})
+}, { immediate: true })
 
 async function saveDevice() {
   if (!device.value || !sleepWindowValid.value)
