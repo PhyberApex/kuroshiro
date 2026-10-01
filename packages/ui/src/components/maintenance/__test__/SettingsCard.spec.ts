@@ -11,6 +11,7 @@ const UNOVERRIDDEN: InstanceSettingsResponse = {
   lowBatteryPercent: { override: null, value: 20, fallbackSource: 'default', fallbackValue: 20 },
   offlineMultiplier: { override: null, value: 3, fallbackSource: 'default', fallbackValue: 3 },
   fetchFailureThreshold: { override: null, value: 3, fallbackSource: 'default', fallbackValue: 3 },
+  firmwareAutoUpdate: { override: null, value: false, fallbackSource: 'default', fallbackValue: false },
 }
 
 function mountCard(props: Partial<InstanceType<typeof SettingsCard>['$props']> = {}) {
@@ -107,5 +108,48 @@ describe('settingsCard', () => {
     const wrapper = mountCard({ error: 'Failed to load Settings: Internal Server Error' })
     expect(wrapper.text()).toContain('Failed to load Settings: Internal Server Error')
     expect(wrapper.find('[data-test-id="setting-lowBatteryPercent-input"]').exists()).toBe(true)
+  })
+
+  it('shows Firmware Auto-Update off and names the built-in default as its fallback when unoverridden', () => {
+    const wrapper = mountCard()
+    const toggle = wrapper.find('[data-test-id="setting-firmwareAutoUpdate-input"] input')
+    expect((toggle.element as HTMLInputElement).checked).toBe(false)
+    expect(wrapper.text()).toContain('Falls back to the built-in default (off)')
+    expect(wrapper.find('[data-test-id="setting-firmwareAutoUpdate-reset-btn"]').exists()).toBe(false)
+  })
+
+  it('states that Firmware Auto-Update only applies to official Firmware and takes effect on the next sync', () => {
+    const wrapper = mountCard()
+    expect(wrapper.text()).toContain('Only applies to official Firmware')
+    expect(wrapper.text()).toContain('takes effect when the next official Firmware is synced')
+  })
+
+  it('reflects an overridden Firmware Auto-Update as checked and offers a reset button', () => {
+    const settings: InstanceSettingsResponse = {
+      ...UNOVERRIDDEN,
+      firmwareAutoUpdate: { override: true, value: true, fallbackSource: 'default', fallbackValue: false },
+    }
+    const wrapper = mountCard({ settings })
+    const toggle = wrapper.find('[data-test-id="setting-firmwareAutoUpdate-input"] input')
+    expect((toggle.element as HTMLInputElement).checked).toBe(true)
+    expect(wrapper.find('[data-test-id="setting-firmwareAutoUpdate-reset-btn"]').exists()).toBe(true)
+  })
+
+  it('emits saveFirmwareAutoUpdate when the toggle is flipped', async () => {
+    const wrapper = mountCard()
+    await wrapper.find('[data-test-id="setting-firmwareAutoUpdate-input"] input').setValue(true)
+
+    expect(wrapper.emitted('saveFirmwareAutoUpdate')).toEqual([[true]])
+  })
+
+  it('emits resetFirmwareAutoUpdate when the reset button is clicked', async () => {
+    const settings: InstanceSettingsResponse = {
+      ...UNOVERRIDDEN,
+      firmwareAutoUpdate: { override: true, value: true, fallbackSource: 'default', fallbackValue: false },
+    }
+    const wrapper = mountCard({ settings })
+    await wrapper.find('[data-test-id="setting-firmwareAutoUpdate-reset-btn"]').trigger('click')
+
+    expect(wrapper.emitted('resetFirmwareAutoUpdate')).toEqual([[]])
   })
 })

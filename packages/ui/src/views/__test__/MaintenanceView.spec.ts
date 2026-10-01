@@ -125,6 +125,7 @@ describe('maintenanceView', () => {
         lowBatteryPercent: { override: null, value: 20, fallbackSource: 'default', fallbackValue: 20 },
         offlineMultiplier: { override: null, value: 3, fallbackSource: 'default', fallbackValue: 3 },
         fetchFailureThreshold: { override: null, value: 3, fallbackSource: 'default', fallbackValue: 3 },
+        firmwareAutoUpdate: { override: null, value: false, fallbackSource: 'default', fallbackValue: false },
       },
       loaded: true,
       error: null,
@@ -166,7 +167,7 @@ describe('maintenanceView', () => {
 
     const orphanedFileListItem = wrapper.findAll('.v-list-item').find(item => item.text().includes('Screen: s1'))
     await orphanedFileListItem!.find('input[type="checkbox"]').setValue(true)
-    const dryRunSwitch = wrapper.find('.v-switch input[type="checkbox"]')
+    const dryRunSwitch = wrapper.findAll('.v-switch').find(el => el.text().includes('Dry Run'))!.find('input[type="checkbox"]')
     await dryRunSwitch.setValue(false)
 
     const previewBtn = wrapper.findAll('button').find(b => b.text().includes('Clean Selected'))
@@ -226,5 +227,24 @@ describe('maintenanceView', () => {
     await wrapper.find('[data-test-id="setting-lowBatteryPercent-reset-btn"]').trigger('click')
 
     expect(settingsStoreMock.update).toHaveBeenCalledWith({ lowBatteryPercent: null })
+  })
+
+  it('toggles Firmware Auto-Update through the Settings card', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    await wrapper.find('[data-test-id="setting-firmwareAutoUpdate-input"] input').setValue(true)
+
+    expect(settingsStoreMock.update).toHaveBeenCalledWith({ firmwareAutoUpdate: true })
+  })
+
+  it('resets Firmware Auto-Update through the Settings card', async () => {
+    settingsStoreMock.settings!.firmwareAutoUpdate = { override: true, value: true, fallbackSource: 'default', fallbackValue: false }
+    const wrapper = mountView()
+    await flushPromises()
+
+    await wrapper.find('[data-test-id="setting-firmwareAutoUpdate-reset-btn"]').trigger('click')
+
+    expect(settingsStoreMock.update).toHaveBeenCalledWith({ firmwareAutoUpdate: null })
   })
 })

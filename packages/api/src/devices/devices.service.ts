@@ -5,6 +5,7 @@ import type { UpdateDeviceDto } from './dto/update-device.dto.js'
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { DeviceModelsService } from '../device-models/device-models.service.js'
+import { isFirmwareCompatible } from '../firmware/firmware-compatibility.js'
 import { FirmwareService } from '../firmware/firmware.service.js'
 import { ScreensService } from '../screens/screens.service.js'
 import generateApikey from '../utils/generateApikey.js'
@@ -103,7 +104,7 @@ export class DevicesService {
     const firmware = await this.firmwareService.findById(targetFirmwareId)
     if (!firmware)
       throw new BadRequestException(`Unknown firmware: ${targetFirmwareId}`)
-    if (firmware.compatibleModels.length > 0 && !firmware.compatibleModels.includes(device.deviceModel?.name ?? ''))
+    if (!isFirmwareCompatible(firmware, device.deviceModel?.name))
       throw new BadRequestException(`Firmware ${targetFirmwareId} is not compatible with device model ${device.deviceModel?.name ?? 'unknown'}`)
     device.targetFirmware = firmware
   }

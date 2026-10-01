@@ -3,7 +3,7 @@ import type { InstanceSettingsResponse, SettingKey } from 'kuroshiro-shared'
 import { mdiAlertCircle, mdiCheck, mdiRestore } from '@mdi/js'
 import { SETTING_BOUNDS, SETTING_ENV_VARS } from 'kuroshiro-shared'
 import { reactive, watch } from 'vue'
-import { VAlert, VBtn, VCard, VCardText, VCardTitle, VCol, VDivider, VRow, VTextField } from 'vuetify/components'
+import { VAlert, VBtn, VCard, VCardText, VCardTitle, VCol, VDivider, VRow, VSwitch, VTextField } from 'vuetify/components'
 
 const props = defineProps<{
   settings: InstanceSettingsResponse | null
@@ -14,6 +14,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   save: [key: SettingKey, value: number]
   reset: [key: SettingKey]
+  saveFirmwareAutoUpdate: [value: boolean]
+  resetFirmwareAutoUpdate: []
 }>()
 
 const FIELDS: { key: SettingKey, label: string }[] = [
@@ -63,6 +65,12 @@ function save(key: SettingKey) {
 
 function reset(key: SettingKey) {
   emit('reset', key)
+}
+
+const firmwareAutoUpdateHint = 'Falls back to the built-in default (off)'
+
+function toggleFirmwareAutoUpdate(value: boolean | null) {
+  emit('saveFirmwareAutoUpdate', value ?? false)
 }
 </script>
 
@@ -119,6 +127,45 @@ function reset(key: SettingKey) {
             :loading="saving"
             :data-test-id="`setting-${field.key}-reset-btn`"
             @click="reset(field.key)"
+          >
+            Reset
+          </VBtn>
+        </VCol>
+      </VRow>
+
+      <VDivider class="my-4" />
+
+      <div class="text-subtitle-2 mb-1">
+        Firmware
+      </div>
+      <p class="text-body-2 text-medium-emphasis mb-3">
+        Only applies to official Firmware, and takes effect when the next official Firmware is synced.
+      </p>
+
+      <VRow density="comfortable" class="align-center">
+        <VCol cols="12" sm="6">
+          <VSwitch
+            :model-value="settings?.firmwareAutoUpdate.value ?? false"
+            label="Firmware Auto-Update"
+            density="compact"
+            hide-details
+            :loading="saving"
+            data-test-id="setting-firmwareAutoUpdate-input"
+            @update:model-value="toggleFirmwareAutoUpdate"
+          />
+          <p class="text-caption text-medium-emphasis">
+            {{ firmwareAutoUpdateHint }}
+          </p>
+        </VCol>
+        <VCol cols="12" sm="6" class="d-flex ga-2">
+          <VBtn
+            v-if="settings?.firmwareAutoUpdate.override != null"
+            size="small"
+            variant="text"
+            :prepend-icon="mdiRestore"
+            :loading="saving"
+            data-test-id="setting-firmwareAutoUpdate-reset-btn"
+            @click="$emit('resetFirmwareAutoUpdate')"
           >
             Reset
           </VBtn>

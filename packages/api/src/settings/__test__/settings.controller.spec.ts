@@ -23,6 +23,7 @@ describe('settingsController', () => {
         lowBatteryPercent: { override: null, value: 20, fallbackSource: 'default', fallbackValue: 20 },
         offlineMultiplier: { override: null, value: 3, fallbackSource: 'default', fallbackValue: 3 },
         fetchFailureThreshold: { override: null, value: 3, fallbackSource: 'default', fallbackValue: 3 },
+        firmwareAutoUpdate: { override: null, value: false, fallbackSource: 'default', fallbackValue: false },
       }
       vi.mocked(service.get).mockResolvedValue(response)
 

@@ -2,6 +2,11 @@
 export const SETTING_KEYS = ['lowBatteryPercent', 'offlineMultiplier', 'fetchFailureThreshold'] as const
 export type SettingKey = typeof SETTING_KEYS[number]
 
+// Firmware Auto-Update (ADR-0029) is the first boolean Setting; unlike the numeric
+// thresholds it has no environment-variable fallback, only the built-in default.
+export const BOOLEAN_SETTING_KEYS = ['firmwareAutoUpdate'] as const
+export type BooleanSettingKey = typeof BOOLEAN_SETTING_KEYS[number]
+
 // The environment variable each Setting falls back to when it has no saved override.
 export const SETTING_ENV_VARS: Record<SettingKey, string> = {
   lowBatteryPercent: 'KUROSHIRO_ALERT_LOW_BATTERY_PERCENT',
@@ -25,13 +30,13 @@ export const SETTING_BOUNDS: Record<SettingKey, SettingBounds> = {
 
 export type FallbackSource = 'env' | 'default'
 
-export interface InstanceSettingValue {
-  override: number | null
-  value: number
+export interface InstanceSettingValue<T = number> {
+  override: T | null
+  value: T
   fallbackSource: FallbackSource
-  fallbackValue: number
+  fallbackValue: T
 }
 
-export type InstanceSettingsResponse = Record<SettingKey, InstanceSettingValue>
+export interface InstanceSettingsResponse extends Record<SettingKey, InstanceSettingValue>, Record<BooleanSettingKey, InstanceSettingValue<boolean>> {}
 
-export type UpdateInstanceSettingsInput = Partial<Record<SettingKey, number | null>>
+export type UpdateInstanceSettingsInput = Partial<Record<SettingKey, number | null>> & Partial<Record<BooleanSettingKey, boolean | null>>

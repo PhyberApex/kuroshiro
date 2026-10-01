@@ -16,4 +16,7 @@ export class InstanceSettings {
 
   @Column('int', { nullable: true })
   fetchFailureThreshold?: number | null
+
+  @Column('boolean', { nullable: true })
+  firmwareAutoUpdate?: boolean | null
 }

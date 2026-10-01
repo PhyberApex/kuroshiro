@@ -48,12 +48,29 @@ describe('instanceSettingsService', () => {
     })
   })
 
+  describe('resolveFirmwareAutoUpdate', () => {
+    it('resolves to false when no row exists', async () => {
+      await expect(service.resolveFirmwareAutoUpdate()).resolves.toBe(false)
+    })
+
+    it('resolves to false when the row has no override', async () => {
+      repo.findOneBy.mockResolvedValue({ id: 1, lowBatteryPercent: null, offlineMultiplier: null, fetchFailureThreshold: null, firmwareAutoUpdate: null })
+      await expect(service.resolveFirmwareAutoUpdate()).resolves.toBe(false)
+    })
+
+    it('resolves to the saved override', async () => {
+      repo.findOneBy.mockResolvedValue({ id: 1, lowBatteryPercent: null, offlineMultiplier: null, fetchFailureThreshold: null, firmwareAutoUpdate: true })
+      await expect(service.resolveFirmwareAutoUpdate()).resolves.toBe(true)
+    })
+  })
+
   describe('get', () => {
     it('reports every Setting unoverridden as falling back to the built-in default when no row exists', async () => {
       await expect(service.get()).resolves.toEqual({
         lowBatteryPercent: { override: null, value: 20, fallbackSource: 'default', fallbackValue: 20 },
         offlineMultiplier: { override: null, value: 3, fallbackSource: 'default', fallbackValue: 3 },
         fetchFailureThreshold: { override: null, value: 3, fallbackSource: 'default', fallbackValue: 3 },
+        firmwareAutoUpdate: { override: null, value: false, fallbackSource: 'default', fallbackValue: false },
       })
     })
 
@@ -70,6 +87,13 @@ describe('instanceSettingsService', () => {
 
       const result = await service.get()
       expect(result.lowBatteryPercent).toEqual({ override: 45, value: 45, fallbackSource: 'default', fallbackValue: 20 })
+    })
+
+    it('reports an overridden firmwareAutoUpdate with a default fallback source', async () => {
+      repo.findOneBy.mockResolvedValue({ id: 1, lowBatteryPercent: null, offlineMultiplier: null, fetchFailureThreshold: null, firmwareAutoUpdate: true })
+
+      const result = await service.get()
+      expect(result.firmwareAutoUpdate).toEqual({ override: true, value: true, fallbackSource: 'default', fallbackValue: false })
     })
   })
 
@@ -101,6 +125,20 @@ describe('instanceSettingsService', () => {
     it('does not touch the repository for a Setting never saved', async () => {
       await service.update({})
       expect(repo.save).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }))
+    })
+
+    it('saves a firmwareAutoUpdate override', async () => {
+      await service.update({ firmwareAutoUpdate: true })
+      expect(repo.save).toHaveBeenCalledWith(expect.objectContaining({ firmwareAutoUpdate: true }))
+    })
+
+    it('clears a firmwareAutoUpdate override back to its default when given null', async () => {
+      repo.findOneBy.mockResolvedValue({ id: 1, lowBatteryPercent: null, offlineMultiplier: null, fetchFailureThreshold: null, firmwareAutoUpdate: true })
+
+      const result = await service.update({ firmwareAutoUpdate: null })
+
+      expect(repo.save).toHaveBeenCalledWith(expect.objectContaining({ firmwareAutoUpdate: null }))
+      expect(result.firmwareAutoUpdate).toEqual({ override: null, value: false, fallbackSource: 'default', fallbackValue: false })
     })
   })
 })
