@@ -77,6 +77,26 @@ describe('pluginsOverviewView', () => {
     expect(wrapper.text()).toContain('Test Plugin')
   })
 
+  it('refetches plugins when the card grid emits recipeUpdated', async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse([mockPlugin]))
+
+    const wrapper = mount(PluginsOverviewView, {
+      global: {
+        plugins: [createPinia(), vuetify],
+      },
+    })
+
+    await wrapper.vm.$nextTick()
+    await new Promise(resolve => setTimeout(resolve, 10))
+    mockFetch.mockClear()
+    mockFetch.mockResolvedValueOnce(jsonResponse([mockPlugin]))
+
+    wrapper.findComponent({ name: 'PluginCardGrid' }).vm.$emit('recipeUpdated')
+    await wrapper.vm.$nextTick()
+
+    expect(mockFetch).toHaveBeenCalledWith('/api/plugins', undefined)
+  })
+
   it('navigates to create plugin on button click', async () => {
     mockFetch.mockResolvedValue(jsonResponse([]))
 

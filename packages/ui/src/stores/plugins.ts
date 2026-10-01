@@ -1,6 +1,10 @@
 import type { CreatePluginPayload, Plugin } from '@/types/plugin'
+import type { ApplyRecipeUpdatePayload, RecipeUpdatePreview } from '@/types/recipeUpdate'
 import { defineStore } from 'pinia'
-import { apiFetch, apiRequest } from '../utils/apiRequest'
+import { apiFetch, apiRequest, failureMessage } from '../utils/apiRequest'
+
+/** Thrown by `applyRecipeUpdate` on a 409 — the Recipe moved since the preview ran, so the dialog should offer "Check again" rather than show a generic error. */
+export class RecipeUpdateConflictError extends Error {}
 
 export const usePluginsStore = defineStore('plugins', () => {
   const fetchAllPlugins = async () => {
@@ -59,6 +63,25 @@ export const usePluginsStore = defineStore('plugins', () => {
       throw new Error('Failed to unassign plugin')
   }
 
+  const checkRecipeUpdate = async (pluginId: string) => {
+    return apiRequest<RecipeUpdatePreview>(`/api/plugins/${pluginId}/recipe-update`, undefined, 'Failed to check for Recipe updates')
+  }
+
+  const applyRecipeUpdate = async (pluginId: string, payload: ApplyRecipeUpdatePayload) => {
+    const res = await apiFetch(`/api/plugins/${pluginId}/recipe-update/apply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (res.status === 409) {
+      throw new RecipeUpdateConflictError(await failureMessage(res, 'The Recipe changed since you previewed.'))
+    }
+    if (!res.ok) {
+      throw new Error(await failureMessage(res, 'Failed to apply Recipe update'))
+    }
+    return res.json() as Promise<Plugin>
+  }
+
   return {
     fetchAllPlugins,
     createPlugin,
@@ -67,5 +90,7 @@ export const usePluginsStore = defineStore('plugins', () => {
     deletePlugin,
     assignToDevice,
     unassignFromDevice,
+    checkRecipeUpdate,
+    applyRecipeUpdate,
   }
 })

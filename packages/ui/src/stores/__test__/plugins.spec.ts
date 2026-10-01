@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { jsonResponse, stubFetch } from '../../test/fetch'
-import { usePluginsStore } from '../plugins'
+import { RecipeUpdateConflictError, usePluginsStore } from '../plugins'
 
 describe('plugins store', () => {
   let mockFetch: ReturnType<typeof stubFetch>
@@ -135,5 +135,59 @@ describe('plugins store', () => {
     const store = usePluginsStore()
 
     await expect(store.updatePlugin('plugin-1', { name: 'Updated' })).rejects.toThrow('used by more than one data source')
+  })
+
+  it('checkRecipeUpdate returns the preview', async () => {
+    const preview = { contentHash: 'hash-1', mode: 'three-way', items: [], assignmentsMissingRequiredField: [] }
+    mockFetch.mockResolvedValue(jsonResponse(preview))
+
+    const store = usePluginsStore()
+    const result = await store.checkRecipeUpdate('plugin-1')
+
+    expect(mockFetch).toHaveBeenCalledWith('/api/plugins/plugin-1/recipe-update', undefined)
+    expect(result).toEqual(preview)
+  })
+
+  it('checkRecipeUpdate surfaces the server\'s error message on failure', async () => {
+    mockFetch.mockResolvedValue(jsonResponse({ message: 'Plugin plugin-1 was not imported from a Recipe' }, false))
+
+    const store = usePluginsStore()
+
+    await expect(store.checkRecipeUpdate('plugin-1')).rejects.toThrow('Plugin plugin-1 was not imported from a Recipe')
+  })
+
+  it('applyRecipeUpdate applies the selected items', async () => {
+    const updated = { ...mockPlugin, name: 'Upstream Name' }
+    mockFetch.mockResolvedValue(jsonResponse(updated))
+
+    const store = usePluginsStore()
+    const result = await store.applyRecipeUpdate('plugin-1', { contentHash: 'hash-1', apply: [{ itemType: 'name', key: 'name' }] })
+
+    expect(mockFetch).toHaveBeenCalledWith('/api/plugins/plugin-1/recipe-update/apply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contentHash: 'hash-1', apply: [{ itemType: 'name', key: 'name' }] }),
+    })
+    expect(result).toEqual(updated)
+  })
+
+  it('applyRecipeUpdate throws a RecipeUpdateConflictError on a stale contentHash', async () => {
+    mockFetch.mockResolvedValue(jsonResponse({ message: 'The Recipe changed since the check ran; run the check again.' }, { ok: false, status: 409 }))
+
+    const store = usePluginsStore()
+
+    await expect(store.applyRecipeUpdate('plugin-1', { contentHash: 'stale', apply: [] }))
+      .rejects
+      .toThrow(RecipeUpdateConflictError)
+  })
+
+  it('applyRecipeUpdate surfaces the server\'s error message on other failures', async () => {
+    mockFetch.mockResolvedValue(jsonResponse({ message: 'No pending Recipe update for field "does-not-exist"' }, false))
+
+    const store = usePluginsStore()
+
+    await expect(store.applyRecipeUpdate('plugin-1', { contentHash: 'hash-1', apply: [] }))
+      .rejects
+      .toThrow('No pending Recipe update for field "does-not-exist"')
   })
 })
