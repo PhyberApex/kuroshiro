@@ -391,4 +391,4 @@ interface UpdateScreenInput {
 
 #### A3 · `PATCH /api/plugins/device-assignment/:devicePluginId` · remove; `GET /api/plugins/device/:deviceId` · remove
 
-`plugins.controller.ts:179-183` and `:41-44`. A Plugin Assignment's own enable flag and order, and the per-Device list, which no screen reads (`devices.md remove`, `plugins.md remove`). With them the `isActive` and `order` columns of `DevicePlugin` (`api/plugins/entities/device-plugin.entity.ts:10-14`) become dead; a migration can drop them. Neither endpoint is called by the old UI.
+`plugins.controller.ts:179-183` and `:41-44`. A Plugin Assignment's own enable flag and order, and the per-Device list, which no screen reads (`devices.md remove`, `plugins.md remove`). With them the `isActive` and `order` columns of `DevicePlugin` (`api/plugins/entities/device-plugin.entity.ts:10-14`) become dead. Dropping them is a follow-up, not part of this reshaping: the Configuration Archive writes both (`api/configuration/services/configuration-export.service.ts:268-269`, `api/configuration/types.ts:133`), so dropping them changes the archive's schema and its `schemaVersion`. Neither endpoint is called by the old UI.
