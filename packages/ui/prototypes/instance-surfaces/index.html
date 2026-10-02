@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTOTYPE: Kuroshiro Instance surfaces</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+<link rel="stylesheet" href="surfaces.css">
+<link rel="stylesheet" href="plugins.css">
+<link rel="stylesheet" href="instance.css">
+</head>
+<body>
+<!--
+PROTOTYPE, throwaway. Wayfinder ticket "Spec: the Instance surfaces and the Alerts page" (#1094), map "Admin UI rebuild from zero" (#1074).
+One design, no variants: this ticket is not a taste gate. It draws the six Instance pages on the Instance template approved in #1080
+and the Alerts page behind the shell's indicator, on the tokens and components locked in #1091 and the page patterns of #1092 and #1093.
+
+?theme=light|dark  ?devices=0|1|3  ?alert=0|1  ?load=ok|loading|failed  ?notify=on|off  ?scan=findings|clean|scanning  ?demo=0|1
+Keys: t theme, d Devices, a Alert, l load, n Notifications, s the storage scan, m demo mode.
+All data is synthetic and nothing is saved.
+-->
+<div id="sprite"></div>
+<div id="sprite2"></div>
+<div id="app"></div>
+<dialog id="confirm" class="dialog"></dialog>
+
+<div class="proto-bar" role="toolbar" aria-label="Prototype switcher">
+  <button data-cycle="theme"></button>
+  <button data-cycle="devices"></button>
+  <button data-cycle="alert"></button>
+  <button data-cycle="load"></button>
+  <button data-cycle="notify"></button>
+  <button data-cycle="scan"></button>
+  <button data-cycle="demo"></button>
+</div>
+
+<script src="art.js"></script>
+<script>
+document.querySelector('#sprite').innerHTML = sprite
+document.querySelector('#sprite2').innerHTML = `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="i-more" viewBox="0 0 16 16"><path d="M2.5 7h2v2h-2zM7 7h2v2H7zM11.5 7h2v2h-2z"/></symbol></defs></svg>`
+
+const SERVER = 'http://kuroshiro.local:3000'
+const VERSION = '0.18.0'
+
+const allDevices = [
+  { id: 'kitchen', name: 'Kitchen', model: 'og_plus', palette: 'gray-4', fw: '1.7.0', every: 15, mac: 'A4:CF:12:8B:03:1E', volts: '4.02', rssi: '-58' },
+  { id: 'hallway', name: 'Hallway', model: 'og_plus', palette: 'gray-4', fw: '1.6.9', every: 30, mac: 'A4:CF:12:8B:77:C0', volts: '3.17', rssi: '-71', pending: '1.7.0' },
+  { id: 'study', name: 'Study', model: 'seeed_e1002', palette: 'study-panel', fw: '1.7.0', every: 60, mac: '58:8C:81:A2:19:4D', volts: '3.88', rssi: '-64', pending: '1.7.1-rc2' },
+]
+const allModels = [
+  { name: 'og_plus', label: 'TRMNL OG', size: '800 × 480', palettes: ['bw', 'gray-4'] },
+  { name: 'og_png', label: 'TRMNL OG (1-bit)', size: '800 × 480', palettes: ['bw'] },
+  { name: 'v2', label: 'TRMNL X', size: '1872 × 1404', palettes: ['bw', 'gray-4', 'gray-16'] },
+  { name: 'seeed_e1002', label: 'Seeed reTerminal E1002', size: '800 × 480', palettes: ['bw', 'color-6a'] },
+  { name: 'kindle_pw_7', label: 'Kindle Paperwhite 7', size: '1236 × 1648', palettes: ['bw', 'gray-4', 'gray-16'] },
+  { name: 'inkplate_10', label: 'Inkplate 10', size: '1200 × 825', palettes: ['bw', 'gray-4'] },
+  { name: 'kobo_aura', label: 'Kobo Aura', size: '758 × 1024', palettes: ['bw', 'gray-16'], gone: true },
+]
+const families = [
+  { id: '3bwr', name: 'Black, white and red' },
+  { id: '3bwy', name: 'Black, white and yellow' },
+  { id: '4bwry', name: 'Black, white, red and yellow' },
+  { id: '6a', name: 'Six colours' },
+  { id: '7a', name: 'Seven colours' },
+]
+const greys = n => Array.from({ length: Math.min(n, 8) }, (_, i) => `hsl(0 0% ${Math.round(i / (Math.min(n, 8) - 1) * 100)}%)`)
+const officialPalettes = [
+  { id: 'bw', name: 'Black & White (1-bit)', colors: greys(2) },
+  { id: 'gray-4', name: '4 Grays (2-bit)', colors: greys(4) },
+  { id: 'gray-16', name: '16 Grays (4-bit)', colors: greys(8) },
+  { id: 'color-3bwr', name: 'Color (3 colors)', colors: ['#000', '#f00', '#fff'] },
+  { id: 'color-4bwry', name: 'Color (4 colors)', colors: ['#000', '#f00', '#fff', '#ff0'] },
+  { id: 'color-6a', name: 'Color (6 colors)', colors: ['#000', '#fff', '#f00', '#0f0', '#00f', '#ff0'] },
+]
+const customPalettes = [
+  { id: 'study-panel', name: 'Study panel, measured', family: '6a', colors: ['#16141c', '#e6e6e0', '#9e2a22', '#3a6a3c', '#27407e', '#d8c13a'] },
+  { id: 'soft-red', name: 'Soft red', family: '3bwr', colors: ['#111111', '#b53a30', '#f2f0ea'] },
+]
+const firmware = [
+  { id: 'f170', version: '1.7.0', kind: 'official', fits: ['og_png', 'og_plus'], when: 'Synced 30 September' },
+  { id: 'f171', version: '1.7.1-rc2', kind: 'custom', label: 'Release candidate, battery fix', fits: ['og_plus'], when: 'Uploaded yesterday' },
+  { id: 'fx', version: '2.0.3', kind: 'custom', label: 'TRMNL X build', fits: ['v2'], when: 'Uploaded 12 September', nofile: true },
+]
+const earlier = [
+  { version: '1.6.9', when: 'Synced 2 September' },
+  { version: '1.6.8', when: 'Synced 11 August' },
+]
+const findings = [
+  { id: 'files', name: 'Images no Screen uses', count: 6, size: '412 kB', lost: 'Six image files left behind by Screens that were deleted or replaced.', items: [['devices/3f9a…c1/8e41.png', '64 kB'], ['devices/3f9a…c1/8e41.original', '188 kB'], ['devices/3f9a…c1/b20d.png', '41 kB'], ['devices/71bc…0e/55aa.png', '38 kB'], ['devices/71bc…0e/55aa.original', '52 kB'], ['devices/71bc…0e/9c02.png', '29 kB']] },
+  { id: 'dirs', name: 'Folders of deleted Devices', count: 1, size: '1.3 MB', lost: 'The image folder of a Device that is no longer registered.', items: [['devices/0d44…9b/', '1.3 MB · 14 files']] },
+  { id: 'temp', name: 'Temporary files older than a day', count: 3, size: '96 kB', lost: 'Three leftovers of renders that did not finish.', items: [['devices/3f9a…c1/tmp-4471', '40 kB'], ['devices/3f9a…c1/tmp-4472', '40 kB'], ['devices/71bc…0e/b1-source', '16 kB']] },
+  { id: 'uploads', name: 'Uploads older than a day', count: 2, size: '2.2 MB', lost: 'Two uploaded files that were never turned into a Screen.', items: [['uploads/5b1f0a', '1.4 MB'], ['uploads/aa93e2', '0.8 MB']] },
+  { id: 'screens', name: 'Screens whose image is missing', count: 1, size: '', lost: 'The Screen “Holiday photo” on Kitchen and its Schedule. Its image is already gone, so Kitchen skips it today.', screens: true, items: [['Holiday photo, a File Screen on Kitchen', 'Order 4 of 6']] },
+]
+
+const params = new URLSearchParams(location.search)
+const pick = (key, allowed, fallback) => allowed.includes(params.get(key)) ? params.get(key) : fallback
+const state = {
+  theme: pick('theme', ['light', 'dark'], matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+  appearance: 'system',
+  count: Number(pick('devices', ['0', '1', '3'], '1')),
+  alert: pick('alert', ['0', '1'], '1') === '1',
+  load: pick('load', ['ok', 'loading', 'failed'], 'ok'),
+  notify: pick('notify', ['on', 'off'], 'on'),
+  scan: pick('scan', ['findings', 'clean', 'scanning'], 'findings'),
+  demo: pick('demo', ['0', '1'], '0') === '1',
+  settings: {
+    lowBatteryPercent: { override: null, fallback: 20, source: 'default' },
+    offlineMultiplier: { override: 4, fallback: 3, source: 'default' },
+    fetchFailureThreshold: { override: null, fallback: 3, source: 'default' },
+    alertRetentionDays: { override: null, fallback: 90, source: 'default' },
+    deviceLogRetentionDays: { override: null, fallback: 14, source: 'env' },
+  },
+  invalid: {}, saved: null, test: null, autoUpdate: false,
+  sync: { firmware: null, models: null }, tucked: {}, menu: null, fits: 'some',
+  paletteForm: null, archive: 'idle', picked: { files: true, dirs: true, temp: true, uploads: true, screens: false }, openFinding: null, cleaned: false, retention: null,
+  sim: { device: 'kitchen', polled: false, setup: false },
+}
+
+const envs = { lowBatteryPercent: 'KUROSHIRO_ALERT_LOW_BATTERY_PERCENT', offlineMultiplier: 'KUROSHIRO_ALERT_OFFLINE_MULTIPLIER', fetchFailureThreshold: 'KUROSHIRO_ALERT_FETCH_FAILURES', alertRetentionDays: 'KUROSHIRO_ALERT_RETENTION_DAYS', deviceLogRetentionDays: 'KUROSHIRO_DEVICE_LOG_RETENTION_DAYS' }
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
+const icon = id => `<svg class="icon" aria-hidden="true"><use href="#${id}"/></svg>`
+const seal = size => `<svg class="seal" width="${size}" height="${size}" aria-hidden="true"><use href="#seal"/></svg>`
+const current = on => on ? 'aria-current="page"' : ''
+const act = (name, id = '', extra = '') => `data-act="${name}" data-id="${id}" data-fk="${name}-${id}${extra}"`
+const picture = (img, label) => `<svg ${label ? `role="img" aria-label="${esc(label)}"` : 'aria-hidden="true"'}><use href="#s-${img}"/></svg>`
+const busy = '<i class="busy" aria-hidden="true"></i>'
+const status = key => state.saved === key ? `<span class="status" role="status">${icon('i-check')}Saved</span>` : ''
+const list = names => names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`
+const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
+const cap = s => s[0].toUpperCase() + s.slice(1)
+const devices = () => allDevices.slice(0, state.count)
+const model = name => allModels.find(m => m.name === name)
+const value = key => state.settings[key].override ?? state.settings[key].fallback
+const swatches = colors => `<span class="swatches" aria-hidden="true">${colors.map(c => `<i style="background:${c}"></i>`).join('')}</span>`
+const tucked = (key, title, body, open = false) => {
+  const isOpen = state.tucked[key] ?? open
+  return `<div class="tucked" id="${key}" data-state="${isOpen ? 'open' : 'closed'}"><button aria-expanded="${isOpen}" ${act('tuck', key)}><span>${title}</span>${icon('i-chev')}</button>${isOpen ? `<div>${body}</div>` : ''}</div>`
+}
+const set = (label, control, note = '', hint = '', cls = '') => `<li class="set ${cls}"><b>${label}</b><span class="ctl">${control}</span><span class="note">${note}</span>${hint ? `<span class="hint">${hint}</span>` : ''}</li>`
+const failedNotice = (what, reason) => `<div class="notice" role="alert"><p><b>${what}</b> ${reason}</p><button class="btn" ${act('retry')}>Try again</button></div>`
+const ghosts = widths => `<ul class="rows" aria-busy="true">${widths.map(w => `<li><div class="lrow"><span class="ghost" style="width:${w}%"></span><span class="ghost" style="width:${w + 25}%"></span><span></span></div></li>`).join('')}</ul>`
+
+const alerts = () => !state.alert ? [] : [
+  { kind: 'a Data Source keeps failing', subject: 'Train departures · <span class="mono small">departures</span>', href: '#/plugins/trains?source=departures', why: '5 fetches failed in a row. The last answer: <span class="mono">503 Service Unavailable</span>', when: 'since 08:10' },
+  ...(state.count === 3 ? [{ kind: 'battery low', subject: 'Hallway', href: '#/devices/hallway', why: 'Battery at 14 %, below 20 %', when: 'since yesterday, 21:35' }] : []),
+]
+const resolved = () => [
+  ...(state.count ? [{ kind: 'Offline', subject: 'Kitchen', href: '#/devices/kitchen', why: 'No poll for 1 h 5 min', when: 'Wednesday 02:10, for 1 h 30 min' }] : []),
+  { kind: 'A Data Source kept failing', subject: 'Weather · <span class="mono small">forecast</span>', href: '#/plugins/weather?source=forecast', why: '3 fetches failed in a row: <span class="mono">getaddrinfo ENOTFOUND api.open-meteo.com</span>', when: 'Monday 14:45, for 45 min' },
+  ...(state.count === 3 ? [{ kind: 'Battery low', subject: 'Study', href: '#/devices/study', why: 'Battery at 17 %', when: 'Sunday 09:20, for 6 h' }] : []),
+]
+
+/* ── the Instance frame ── */
+
+const pages = [
+  { id: 'settings', name: 'Instance Settings' },
+  { id: 'firmware', name: 'Firmware' },
+  { id: 'models', name: 'Device Models and Palettes' },
+  { id: 'archive', name: 'Configuration Archive' },
+  { id: 'housekeeping', name: 'Housekeeping' },
+  { id: 'simulator', name: 'Device Simulator' },
+]
+const foot = () => `<div class="ifoot"><div class="seg" role="radiogroup" aria-label="Appearance">${['system', 'light', 'dark'].map(a => `<button role="radio" aria-checked="${state.appearance === a}" ${act('appearance', a)}>${cap(a)}</button>`).join('')}</div><span>Kuroshiro <span class="mono">${VERSION}</span></span></div>`
+const frame = (id, { actions = '', pre = '', body, name }) => ({
+  section: 'instance', title: 'Instance',
+  body: `<div class="inst">
+    <nav class="ilist" aria-label="Instance pages"><ul>${pages.map(p => `<li><a href="#/instance/${p.id}" ${current(p.id === id)}>${p.name}</a></li>`).join('')}</ul>${foot()}</nav>
+    <div class="ipage">${pre}<div class="ihead"><h2 class="title-sm">${name ?? pages.find(p => p.id === id).name}</h2><div class="actions">${actions}</div></div>${body}${foot()}</div>
+  </div>`,
+})
+const waiting = (id, what, widths = [30, 22, 36]) => frame(id, { body: `<p class="loadline" role="status" style="margin-top:var(--space-4)">${busy}Loading ${what}</p>${ghosts(widths)}` })
+const failed = (what, reason = 'The server answered 500.') => state.load === 'failed' ? failedNotice(`Could not load ${what}.`, reason) : ''
+
+/* ── Instance Settings ── */
+
+function numberSetting(key, label, control, hint, range) {
+  const s = state.settings[key]
+  const bad = state.invalid[key]
+  const note = state.saved === key ? status(key)
+    : s.override != null ? `Set here · <button class="btn quiet" ${act('reset', key)}>Reset to ${s.fallback}</button>`
+      : s.source === 'env' ? `From <code>${envs[key]}</code>` : 'Built-in default'
+  const input = `<input class="in num" type="number" inputmode="numeric" value="${bad ?? value(key)}" aria-label="${label}" ${bad != null ? 'aria-invalid="true"' : ''} data-setting="${key}" data-fk="setting-${key}">`
+  return set(label, `<span class="unit">${control(input)}</span>`, note, bad != null ? `<span class="message" role="alert" style="color:var(--color-ink)">${icon('i-problem')}<span>${range}</span></span>` : hint)
+}
+
+function settingsPage() {
+  if (state.load === 'loading')
+    return waiting('settings', 'the Instance Settings', [30, 26, 34, 22])
+  const one = devices()[0]
+  const example = one && state.count === 1 ? `${one.name} polls every ${one.every} minutes, so that is ${one.every * value('offlineMultiplier')} minutes without a poll.` : `For a Device polling every 15 minutes that is ${15 * value('offlineMultiplier')} minutes without a poll.`
+  const testNote = { sending: `<span class="status" role="status">${busy}Sending, up to 15 seconds</span>`, sent: `<span class="status" role="status">${icon('i-check')}Sent. Look for it in your channels.</span>`, failed: `<span class="status failed" role="alert">${icon('i-problem')}Not sent</span>` }[state.test] ?? ''
+  return frame('settings', {
+    body: `
+      ${failed('the Instance Settings')}
+      <p class="saves">Values for this whole Instance. Changes save as you make them.</p>
+      <h3 class="title-sm section" id="alert-rules">Alert Rules <span class="actions"><a class="link" href="#/alerts">Alerts</a></span></h3>
+      <ul>
+        ${numberSetting('lowBatteryPercent', 'Battery low', i => `below ${i} %`, `Fires when a Device's battery is below ${value('lowBatteryPercent')} %, and resolves once it is back at ${value('lowBatteryPercent') + 5} %.`, 'Enter a whole number from 1 to 100.')}
+        ${numberSetting('offlineMultiplier', 'Offline', i => `after ${i} missed polls`, `Fires when a Device has not polled for ${value('offlineMultiplier')} times its refresh rate. ${example} Sleep Mode's window does not count.`, 'Enter a whole number, 2 or more.')}
+        ${numberSetting('fetchFailureThreshold', 'Fetch Failure Streak', i => `of ${i} failed fetches`, `An Alert fires when the streak reaches ${value('fetchFailureThreshold')}. A Plugin that fetches every 15 minutes gets there after ${15 * value('fetchFailureThreshold')} minutes.`, 'Enter a whole number, 1 or more.')}
+      </ul>
+      <p class="sect-note">A change applies at the next Alert Sweep, within 5 minutes.</p>
+
+      <h3 class="title-sm section" id="notifications">Notifications</h3>
+      ${state.notify === 'on'
+        ? `<ul>${set('Apprise', `<code>http://apprise:8000</code>`, 'From <code>KUROSHIRO_APPRISE_URL</code>', 'Each Alert is announced there when it fires and again when it resolves. Which channels it reaches is set in Apprise.')}
+            ${set('Test Notification', `<button class="btn" ${state.test === 'sending' ? 'disabled aria-busy="true"' : ''} ${act('test')}>Send a Test Notification</button>`, testNote, state.test === 'failed' ? `<span style="color:var(--color-ink)">Apprise did not accept it. Check that the Apprise sidecar is running, and its logs.</span>` : 'Travels the same way as a real Notification and belongs to no Alert.')}</ul>`
+        : `<p class="sect-note" style="color:var(--color-ink)"><b>Notifications are off.</b> Alerts still fire and show here; nothing is sent anywhere.</p><p class="sect-note">To turn them on, run an Apprise sidecar, set <code>KUROSHIRO_APPRISE_URL</code> to its address and restart Kuroshiro. Alerts that fired while Notifications were off are announced then.</p>`}
+
+      <h3 class="title-sm section" id="retention">Retention <span class="actions"><a class="link" href="#/instance/housekeeping">Housekeeping</a></span></h3>
+      <ul>
+        ${numberSetting('alertRetentionDays', 'Resolved Alerts', i => `kept for ${i} days`, value('alertRetentionDays') === 0 ? 'Resolved Alerts are kept for good.' : 'A firing Alert is never removed.', 'Enter a whole number of days, or 0 to keep them for good.')}
+        ${numberSetting('deviceLogRetentionDays', 'Device Log entries', i => `kept for ${i} days`, value('deviceLogRetentionDays') === 0 ? 'Device Log entries are kept until you clear a Device\'s Logs.' : '0 keeps them until you clear a Device\'s Logs.', 'Enter a whole number of days, or 0 to keep them for good.')}
+      </ul>
+      <p class="sect-note">Retention runs every day at 04:00, server time. A change applies at the next run.</p>
+
+      <h3 class="title-sm section" id="fixed">Set where Kuroshiro is started</h3>
+      <p class="sect-note">Read from the environment at start. To change one, change the variable and restart Kuroshiro.</p>
+      <ul class="envs">
+        <li><b>Server URL</b><span><code>${SERVER}</code><small>The address every Device is given for its images and Firmware. <code>KUROSHIRO_API_URL</code></small></span></li>
+        <li><b>Timezone</b><span>Europe/Berlin<small>Schedules, Sleep Mode and the 04:00 jobs run on this clock. <code>TZ</code></small></span></li>
+        <li><b>Metrics</b><span><code>${SERVER}/metrics</code><small>For Prometheus: battery, signal and last seen per Device, firing Alerts per kind. Anyone who can reach this server can read it.</small></span></li>
+        <li><b>Demo mode</b><span>${state.demo ? 'On' : 'Off'}<small>${state.demo ? 'Image uploads are refused and Kuroshiro only fetches public addresses.' : 'While on, image uploads are refused.'} <code>KUROSHIRO_DEMO_MODE</code></small></span></li>
+      </ul>
+      <p class="sect-note">Firmware Auto-Update is an Instance Setting too. It is switched on the <a class="link" href="#/instance/firmware">Firmware</a> page.</p>`,
+  })
+}
+
+/* ── Firmware ── */
+
+const fitsText = f => f.fits.length ? `Fits ${list(f.fits.map(n => model(n)?.label ?? n))}` : 'Fits every Device Model'
+function firmwareUse(f) {
+  const pending = devices().filter(d => d.pending === f.version)
+  const on = devices().filter(d => d.fw === f.version)
+  return [pending.length ? `<b>Goes out to ${list(pending.map(d => d.name))} at the next poll</b>` : '', on.length ? `Running on ${list(on.map(d => d.name))}` : ''].filter(Boolean).join(' · ')
+}
+const firmwareRow = f => `
+  <li><div class="lrow">
+    <span class="lname mono">${f.version}</span>
+    <span class="what"><span>${f.kind === 'official' ? 'Official' : `Custom · ${esc(f.label)}`} · ${fitsText(f)}</span>${f.nofile ? `<span class="problem">${icon('i-problem')}Its file is missing, so it cannot be pushed. Delete it and upload it again.</span>` : ''}${firmwareUse(f) ? `<span>${firmwareUse(f)}</span>` : ''}</span>
+    <span class="end">${f.when}${f.kind === 'custom' ? `<button class="btn" ${act('delete-firmware', f.id)}>Delete</button>` : ''}</span>
+  </div></li>`
+
+function firmwarePage() {
+  if (state.load === 'loading')
+    return waiting('firmware', 'the Firmware')
+  const sync = state.sync.firmware
+  const eligible = devices().filter(d => d.model === 'og_plus' && !d.pending)
+  const line = {
+    running: `<p class="result" role="status">${busy}<span>Asking TRMNL for the newest official Firmware</span></p>`,
+    same: `<p class="result" role="status">${icon('i-check')}<span>Nothing new. 1.7.0 is still TRMNL's newest official Firmware.</span></p>`,
+    new: `<p class="result" role="status">${icon('i-check')}<span>Synced 1.7.1. ${state.autoUpdate && eligible.length ? `Firmware Auto-Update made it the target of ${list(eligible.map(d => d.name))}; it goes out at ${eligible.length > 1 ? 'their' : 'its'} next poll.` : 'No Device is given it until you choose it as that Device\'s target.'}</span></p>`,
+    failed: `<div class="notice" role="alert"><p><b>Could not sync from TRMNL.</b> usetrmnl.com did not answer within 15 seconds.</p><button class="btn" ${act('sync', 'firmware')}>Try again</button></div>`,
+  }[sync] ?? ''
+  const rows = state.count === 0 && params.get('fw') === 'none' ? [] : firmware
+  return frame('firmware', {
+    actions: `<a class="btn" href="#/instance/firmware/upload">Upload Firmware</a><button class="btn primary" ${sync === 'running' ? 'disabled aria-busy="true"' : ''} ${act('sync', 'firmware')}>Sync from TRMNL</button>`,
+    body: `
+      ${failed('the Firmware')}
+      <p class="lede">Every Firmware a Device can be pushed to. Which one a Device gets is chosen in that Device's Settings.</p>
+      ${line}
+      <ul style="margin-top:var(--space-4)">${set('Firmware Auto-Update', `<button class="sw" role="switch" aria-checked="${state.autoUpdate}" aria-label="Firmware Auto-Update" ${act('auto')}></button><span>${state.autoUpdate ? 'On' : 'Off'}</span>`, status('auto'), state.autoUpdate
+        ? 'Each new official Firmware becomes the target of every Device it fits, except a mirrored Device and one with a push already pending. It starts with the next official Firmware; Devices are not caught up to 1.7.0 now.'
+        : 'A Device only updates when you press “Update now” in its Settings. While on, each new official Firmware is pushed to every Device it fits.')}</ul>
+      ${rows.length ? `
+        <h3 class="title-sm section">Available Firmware <span class="actions soft small">Checked TRMNL today at 04:00</span></h3>
+        <ul class="rows">${rows.map(firmwareRow).join('')}</ul>
+        <div style="margin-top:var(--space-6)">${tucked('earlier', `Earlier official Firmware (${earlier.length})`, `<p>Replaced by 1.7.0 and no longer offered as a target. A Device that already targets one keeps it.</p><ul class="rows">${earlier.map(f => `<li><div class="lrow"><span class="lname mono">${f.version}</span><span class="what">Official · Fits TRMNL OG (1-bit) and TRMNL OG</span><span class="end">${f.when}</span></div></li>`).join('')}</ul>`)}</div>
+        <p class="sect-note">Kuroshiro asks TRMNL for the newest official Firmware when it starts and every day at 04:00, server time. TRMNL publishes one for the TRMNL OG only; any other Device Model needs an upload.</p>`
+        : `<div class="empty section"><h3 class="title-sm">No Firmware yet</h3><p>Kuroshiro fetches the official Firmware from TRMNL when it starts and every day at 04:00. This Instance has not reached TRMNL yet.</p><div class="btnrow"><button class="btn primary" ${act('sync', 'firmware')}>Sync from TRMNL</button><a class="btn" href="#/instance/firmware/upload">Upload Firmware</a></div></div>`}`,
+  })
+}
+
+function uploadPage() {
+  const offered = allModels.filter(m => !m.gone)
+  return frame('firmware', {
+    name: 'Upload Firmware',
+    pre: `<a class="back" href="#/instance/firmware">${icon('i-chev')}Firmware</a>`,
+    body: `
+      <div class="form" style="margin-top:var(--space-4)">
+        <div class="field"><span class="label">Firmware file</span><div class="drop"><span>Drop a .bin here, up to 8 MB.</span><button class="btn">${icon('i-upload')}Choose file</button></div></div>
+        <label class="field"><span class="label">Version</span><input class="in mono" style="width:12rem" placeholder="1.7.1-rc2"><span class="hint">As the Firmware reports it. A Device shows this as its version once it runs it.</span></label>
+        <label class="field"><span class="label">Label <span class="soft" style="font-weight:var(--weight-regular)">optional</span></span><input class="in wide text" placeholder="Release candidate, battery fix"><span class="hint">Told apart by this in a Device's Settings. Without one the file's name is used.</span></label>
+        <div class="field"><span class="label">Fits</span>
+          <div role="radiogroup" aria-label="Fits">
+            <button class="pick" role="radio" aria-checked="${state.fits === 'some'}" ${act('fits', 'some')}><span class="dot"></span><b>Only these Device Models</b><span>It is offered to, and can be pushed to, Devices of these Device Models only.</span></button>
+            ${state.fits === 'some' ? `<div class="checks" style="padding:0 0 var(--space-3) calc(16px + var(--space-3))">${offered.map((m, i) => `<label class="check"><input type="checkbox" ${i === 0 ? 'checked' : ''}>${m.label}</label>`).join('')}</div>` : ''}
+            <button class="pick" role="radio" aria-checked="${state.fits === 'all'}" ${act('fits', 'all')}><span class="dot"></span><b>Every Device Model</b><span>Nothing stops it from being pushed to a Device it was not built for.</span></button>
+          </div>
+        </div>
+        <p class="message">${icon('i-problem')}<span>Kuroshiro cannot tell whether a file is working Firmware. A Device pushed a wrong one may not start again.</span></p>
+        <div class="foot btnrow"><button class="btn primary" ${act('upload')}>Upload Firmware</button><a class="btn quiet" href="#/instance/firmware">Cancel</a><span class="soft small">Version, label and Device Models cannot be changed afterwards.</span></div>
+      </div>`,
+  })
+}
+
+/* ── Device Models and Palettes ── */
+
+const usedBy = (key, id) => devices().filter(d => d[key] === id).map(d => d.name)
+const modelRow = m => `
+  <li><div class="lrow wide">
+    <span class="lname">${m.label}</span>
+    <span class="what"><span><span class="mono">${m.size}</span> · ${m.palettes.map(id => officialPalettes.find(p => p.id === id).name).join(', ')}</span>${m.gone ? `<span class="problem">${icon('i-problem')}TRMNL no longer lists this Device Model.</span>` : ''}</span>
+    <span class="end">${usedBy('model', m.name).length ? list(usedBy('model', m.name)) : ''}</span>
+  </div></li>`
+
+function paletteForm(p) {
+  const colors = p?.colors ?? ['#000000', '#ffffff', '#c0392b']
+  const family = p?.family ?? '3bwr'
+  return `<div class="inplace"><div class="form">
+    <label class="field"><span class="label">Name</span><input class="in wide text" value="${esc(p?.name ?? '')}" placeholder="Hallway panel, measured" data-fk="palette-name"></label>
+    <label class="field"><span class="label">Palette Family</span><select class="in" style="width:100%">${families.map(f => `<option ${f.id === family ? 'selected' : ''}>${f.name} · ${f.id}</option>`).join('')}</select><span class="hint">The inks the panel has. It decides which Device Models can use this Palette${p ? ', and cannot be changed while a Device uses it' : ''}.</span></label>
+    <div class="field"><span class="label">Colours</span>
+      <ul class="colours">${colors.map((c, i) => `<li><i style="background:${c}"></i><input class="in mono" value="${c}" aria-label="Colour ${i + 1}"><button class="btn icon-only" aria-label="Remove colour ${i + 1}">${icon('i-close')}</button></li>`).join('')}</ul>
+      <span><button class="btn">${icon('i-plus')}Add a colour</button></span>
+      <span class="hint">One per ink, as <span class="mono">#RRGGBB</span>: the colour the panel really shows, not the ideal one. An image is reduced to exactly these.</span>
+    </div>
+    <div class="foot btnrow"><button class="btn primary" ${act('save-palette', p?.id ?? 'new')}>${p ? 'Save Palette' : 'Add Palette'}</button><button class="btn quiet" ${act('palette-form', '')}>Cancel</button>${p && usedBy('palette', p.id).length ? `<span class="soft small">Saving converts ${list(usedBy('palette', p.id))}'s stored images again.</span>` : ''}</div>
+  </div></div>`
+}
+const paletteRow = (p, custom) => `
+  <li><div class="lrow wide">
+    <span class="lname">${esc(p.name)}</span>
+    <span class="what">${swatches(p.colors)}${custom ? `${families.find(f => f.id === p.family).name}` : `<span class="mono" style="display:inline">${p.id}</span>`}</span>
+    <span class="end">${usedBy('palette', p.id).length ? list(usedBy('palette', p.id)) : ''}${custom ? `<button class="btn" ${act('palette-form', p.id)}>Edit</button><button class="btn" ${act('delete-palette', p.id)}>Delete</button>` : ''}</span>
+  </div></li>${custom && state.paletteForm === p.id ? `<li>${paletteForm(p)}</li>` : ''}`
+
+function modelsPage() {
+  if (state.load === 'loading')
+    return waiting('models', 'the Device Models and Palettes', [34, 28, 40])
+  const sync = state.sync.models
+  const used = allModels.filter(m => usedBy('model', m.name).length)
+  const rest = allModels.filter(m => !used.includes(m))
+  const line = {
+    running: `<p class="result" role="status">${busy}<span>Asking TRMNL for its Device Models and Palettes</span></p>`,
+    same: `<p class="result" role="status">${icon('i-check')}<span>Synced: 38 Device Models and 11 Palettes. 1 Device Model is no longer listed by TRMNL and stays usable.</span></p>`,
+    failed: `<div class="notice" role="alert"><p><b>Could not sync from TRMNL.</b> usetrmnl.com did not answer within 15 seconds. What you see is from today, 04:00.</p><button class="btn" ${act('sync', 'models')}>Try again</button></div>`,
+  }[sync] ?? ''
+  const customs = customPalettes.filter(p => !state.tucked[`gone-${p.id}`])
+  return frame('models', {
+    actions: `<button class="btn" ${sync === 'running' ? 'disabled aria-busy="true"' : ''} ${act('sync', 'models')}>Sync from TRMNL</button>`,
+    body: `
+      ${failed('the Device Models and Palettes')}
+      <p class="lede">What Kuroshiro knows about panels. A Device Model sets an image's size, a Palette the greys or colours it is reduced to. Which ones a Device uses is chosen in that Device's Settings.</p>
+      ${line}
+      <h3 class="title-sm section">Custom Palettes <span class="actions"><button class="btn" ${act('palette-form', 'new')}>${icon('i-plus')}Add a custom Palette</button></span></h3>
+      ${state.paletteForm === 'new' ? paletteForm() : ''}
+      ${customs.length ? `<ul class="rows">${customs.map(p => paletteRow(p, true)).join('')}</ul>` : state.paletteForm === 'new' ? '' : `<p class="sect-note">None yet. A colour panel rarely shows the exact red or yellow TRMNL's Palette assumes. A custom Palette holds the colours your panel really shows, so images are reduced to those.</p>`}
+
+      <h3 class="title-sm section">Device Models <span class="actions soft small">${allModels.length + 31} from TRMNL, checked today at 04:00</span></h3>
+      ${used.length ? `<ul class="rows">${used.map(modelRow).join('')}</ul>` : `<p class="sect-note">No Device uses one yet. A Device is given its Device Model from what it reports at its first poll.</p>`}
+      <div style="margin-top:var(--space-6)">
+        ${tucked('models', used.length ? `The other ${allModels.length + 31 - used.length} Device Models` : `All ${allModels.length + 31} Device Models`, `<label class="searchbox" style="max-width:22rem">${icon('i-search')}<input class="in" type="search" placeholder="Find a Device Model" aria-label="Find a Device Model"></label><ul class="rows" style="margin-top:var(--space-3)">${rest.map(modelRow).join('')}</ul><p style="margin-top:var(--space-3)">And 31 more.</p>`)}
+        ${tucked('palettes', `TRMNL's Palettes (11)`, `<p>Synced from TRMNL and not editable. Each Device Model lists the ones it supports.</p><ul class="rows">${officialPalettes.map(p => paletteRow(p, false)).join('')}</ul><p style="margin-top:var(--space-3)">And 5 more.</p>`)}
+      </div>
+      <p class="sect-note">Kuroshiro syncs both from TRMNL when it starts and every day at 04:00, server time. Without a connection it uses the list it was shipped with.</p>`,
+  })
+}
+
+/* ── Configuration Archive ── */
+
+function importBlock() {
+  const drop = `<div class="drop dropzone"><span>Drop a Configuration Archive here: the .zip a Configuration Export made.</span><button class="btn" ${act('archive', 'checking')}>${icon('i-upload')}Choose file</button></div>`
+  if (state.archive === 'checking')
+    return `<p class="result" role="status">${busy}<span>Reading kuroshiro-config-2026-09-28.zip</span></p>`
+  if (state.archive === 'refused')
+    return `<div class="notice" role="alert"><p><b>This archive cannot be imported.</b> It was made with archive version 1, and this Kuroshiro reads version 2. Export it again from an Instance running Kuroshiro ${VERSION}.</p><button class="btn" ${act('archive', 'idle')}>Choose another file</button></div>`
+  const warnings = [
+    'Hallway\'s API key was redacted. Hallway gets a new one and has to be set up again.',
+    'The Webhook Token of Doorbell note was redacted. It gets a new Webhook URL; whatever posts to it needs the new one.',
+    'A header of Train departures · <span class="mono">departures</span> was redacted and is left out. Enter it on the Plugin\'s page.',
+    'Firmware 2.0.3 comes without its file. Upload it again before pushing it.',
+  ]
+  if (state.archive === 'checked')
+    return `
+      <dl class="sum">
+        <div><dt>Archive</dt><dd><span class="mono small">kuroshiro-config-2026-09-28.zip</span><br>A Redacted Archive from Kuroshiro 0.17.1, exported Monday 28 September, 21:14.</dd></div>
+        <div><dt>Adds</dt><dd>1 Device (Hallway), 4 Plugins, 9 Screens with their Schedules, 1 Mashup, 1 custom Palette, 1 custom Firmware</dd></div>
+        <div><dt>Overwrites</dt><dd>1 Device (Kitchen), 6 Plugins and 5 Screens that are already here under the same id. What you changed on them since the export is lost.</dd></div>
+        <div><dt>Replaces</dt><dd>The Instance Settings, with the 2 the archive holds. The others go back to their fallback.</dd></div>
+        <div><dt>Leaves</dt><dd>Everything here that is not in the archive. An import deletes nothing.</dd></div>
+        <div><dt>Mind</dt><dd><ul>${warnings.map(w => `<li>${icon('i-problem')}<span>${w}</span></li>`).join('')}</ul></dd></div>
+      </dl>
+      <div class="btnrow" style="margin-top:var(--space-4)"><button class="btn primary" ${act('archive', 'done')}>Import Configuration Archive</button><button class="btn quiet" ${act('archive', 'idle')}>Cancel</button><span class="soft small">Nothing has changed yet.</span></div>`
+  if (state.archive === 'done')
+    return `
+      <p class="result" role="status">${icon('i-check')}<span><b>Imported.</b> Added 17 records and overwrote 12. The Instance Settings were replaced.</span></p>
+      <dl class="sum"><div><dt>To do now</dt><dd><ul>${warnings.map(w => `<li>${icon('i-problem')}<span>${w}</span></li>`).join('')}</ul></dd></div></dl>
+      <div class="btnrow" style="margin-top:var(--space-4)"><a class="btn" href="#/devices">Devices</a><a class="btn" href="#/plugins">Plugins</a><button class="btn quiet" ${act('archive', 'idle')}>Import another</button></div>`
+  return drop
+}
+
+function archivePage() {
+  return frame('archive', {
+    body: `
+      <p class="lede">One .zip holding what you built on this Instance: Devices, Screens with their Schedules, Mashups, Plugins with their Field Values, custom Palettes and the Instance Settings you set.</p>
+      <h3 class="title-sm section">Configuration Export</h3>
+      <div class="choice"><div><b>With its secrets</b><p>The archive to restore from. Devices keep their API keys, so they go on polling a restored Instance without being set up again.</p><p class="problem">${icon('i-problem')}<span>Holds every Device API key, mirror API key, Webhook Token, Data Source header and password Field Value as written. Keep it like a password.</span></p></div><button class="btn primary" ${act('export', 'full')}>${state.saved === 'export-full' ? 'Download started' : 'Export'}</button></div>
+      <div class="choice"><div><b>Redacted Archive</b><p>The same with every secret replaced by a placeholder. Safe to share or to keep in a repository. Restored onto a fresh Instance, each Device and Webhook sender has to be set up again.</p></div><button class="btn" ${act('export', 'redacted')}>${state.saved === 'export-redacted' ? 'Download started' : 'Export redacted'}</button></div>
+      <p class="sect-note">Not in either: rendered images, Webhook Payloads, Sensor readings, Device Logs, Alerts, the files of custom Firmware and anything synced from TRMNL. A File Screen's image is included.</p>
+
+      <h3 class="title-sm section">Configuration Import</h3>
+      <p class="sect-note">Made for a fresh Instance${state.count ? `. This one already has ${plural(state.count, 'Device')}, so read what an import would change before you confirm it` : ', like this one'}. Kuroshiro reads the archive first and changes nothing until you confirm.</p>
+      ${importBlock()}`,
+  })
+}
+
+/* ── Housekeeping ── */
+
+function storageBlock() {
+  if (state.scan === 'scanning')
+    return `<p class="result" role="status">${busy}<span>Checking stored files</span></p>`
+  if (state.scan === 'clean' || state.cleaned)
+    return `<p class="result" role="status">${icon('i-check')}<span>${state.cleaned ? '<b>Cleaned up.</b> Removed 12 files and 1 folder, 4.0 MB. ' : ''}Nothing to clean up. Screen images take 18.4 MB in 212 files.</span></p>`
+  const chosen = findings.filter(f => state.picked[f.id])
+  return `
+    <p class="sect-note">Screen images take 22.4 MB in 224 files. Checked just now.</p>
+    <ul class="rows" style="margin-top:var(--space-3)">${findings.map(f => `
+      <li><div class="urow find ${state.openFinding === f.id ? 'is-open' : ''}">
+        <input type="checkbox" ${state.picked[f.id] ? 'checked' : ''} aria-label="${f.name}" data-change="pick" data-id="${f.id}" data-fk="pick-${f.id}">
+        <button class="open" aria-expanded="${state.openFinding === f.id}" ${act('open-finding', f.id)}>${f.name}</button>
+        <span class="verb">${f.screens ? plural(f.count, 'Screen') : plural(f.count, f.id === 'dirs' ? 'folder' : 'file')}</span>
+        <span class="size">${f.size}</span>
+        <svg class="icon chev" aria-hidden="true"><use href="#i-chev"/></svg>
+      </div>${state.openFinding === f.id ? `<div class="udetail"><p>${f.lost}</p><ul class="paths ${f.screens ? 'plain' : ''}">${f.items.map(([a, b]) => `<li><span>${a}</span><span>${b}</span></li>`).join('')}</ul></div>` : ''}</li>`).join('')}</ul>
+    <div class="cleanbar"><span class="soft small">${state.picked.screens ? 'Cleaning up deletes 1 Screen.' : 'A Screen whose image is missing is left alone unless you tick it.'}</span><button class="btn primary" ${chosen.length ? '' : 'disabled'} ${act('cleanup')}>Clean up ${plural(chosen.length, 'group')}</button></div>`
+}
+
+function housekeepingPage() {
+  if (state.load === 'loading')
+    return waiting('housekeeping', 'Housekeeping')
+  const a = value('alertRetentionDays')
+  const l = value('deviceLogRetentionDays')
+  const ages = [a ? `resolved Alerts older than ${a} days` : '', l ? `Device Log entries older than ${l} days` : ''].filter(Boolean)
+  const kept = [a ? '' : 'Resolved Alerts', l ? '' : 'Device Log entries'].filter(Boolean)
+  return frame('housekeeping', {
+    body: `
+      ${failed('Housekeeping')}
+      <p class="lede">What Kuroshiro keeps that nothing needs any more, and what removes it.</p>
+      <h3 class="title-sm section">Stored files <span class="actions"><button class="btn" ${state.scan === 'scanning' ? 'disabled aria-busy="true"' : ''} ${act('rescan')}>Check again</button></span></h3>
+      ${storageBlock()}
+
+      <h3 class="title-sm section" id="retention">Retention <span class="actions"><a class="link" href="#/instance/settings">Change the ages</a></span></h3>
+      <p class="sect-note" style="color:var(--color-ink)">${ages.length ? `Every day at 04:00, server time, Retention deletes ${ages.join(' and ')}.` : 'Retention is off: both ages are 0.'} ${kept.length && ages.length ? `${kept[0]} are kept for good.` : ''}</p>
+      <p class="sect-note">Last Retention Run today at 04:00: removed 3 resolved Alerts and 1,284 Device Log entries.</p>
+      ${state.retention === 'running' ? `<p class="result" role="status">${busy}<span>Counting what is old enough</span></p>` : state.retention === 'done' ? `<p class="result" role="status">${icon('i-check')}<span><b>Retention Run finished.</b> Removed 212 Device Log entries and no resolved Alerts.</span></p>` : state.retention === 'none' ? `<p class="result" role="status">${icon('i-check')}<span>Nothing is old enough to remove.</span></p>` : ''}
+      <div class="btnrow" style="margin-top:var(--space-4)"><button class="btn" ${ages.length ? '' : 'disabled'} ${act('retention')}>Run Retention now</button></div>`,
+  })
+}
+
+/* ── Device Simulator ── */
+
+function simulatorPage() {
+  const all = devices()
+  const d = all.find(x => x.id === state.sim.device)
+  const fresh = !d
+  const pendingText = d?.pending ? `the Firmware push of ${d.pending}` : null
+  const answer = `{
+  "status": 0,
+  "image_url": "${SERVER}/screens/devices/${d ? '3f9a…c1' : '0b7e…52'}/${d ? 'a41c' : 'welcome'}.png",
+  "filename": "${d ? 'a41c-1759393320' : 'welcome'}",
+  "refresh_rate": ${d ? d.every * 60 : 900},
+  "update_firmware": ${Boolean(d?.pending)},${d?.pending ? `\n  "firmware_url": "${SERVER}/firmware/f170.bin",` : ''}
+  "reset_firmware": false,
+  "special_function": "none"
+}`
+  const reports = [['Battery voltage', d?.volts ?? '4.10', 'Battery-Voltage'], ['Signal, dBm', d?.rssi ?? '-60', 'RSSI'], ['Firmware version', d?.fw ?? '1.7.0', 'FW-Version'], ['Model', d ? 'og' : 'og', 'Model'], ['Width', '800', 'Width'], ['Height', '480', 'Height']]
+  return frame('simulator', {
+    body: `
+      <p class="lede">Makes the two calls a Device's firmware makes, from this browser, and shows what the server answers. For finding out why a Device shows what it shows, without walking to it.</p>
+      <div class="sim">
+        <div>
+          ${state.sim.polled
+            ? `<span class="plate hero">${picture(d ? 'weather' : 'welcome', d ? 'The image this poll was given: Weather' : 'The image this poll was given: the welcome Fallback Screen')}</span>
+               <dl class="facts"><div><dt>Shows</dt><dd>${d ? 'Weather, Order 2 of 6' : 'welcome Fallback Screen'}</dd></div><div><dt>Polls again in</dt><dd>${d ? d.every : 15} min</dd></div><div><dt>Firmware</dt><dd>${d?.pending ? `told to update to ${d.pending}` : 'no update'}</dd></div><div><dt>Special Function</dt><dd>none pending</dd></div></dl>
+               <div style="margin-top:var(--space-4)">${tucked('raw', 'The answer as the Device gets it', `<div class="codeblock"><pre>${esc(answer)}</pre><button class="btn" ${act('copy', 'answer')}>${state.saved === 'copy-answer' ? 'Copied' : 'Copy'}</button></div>`, true)}</div>`
+            : `<span class="plate blank">Nothing polled yet</span>${state.sim.setup ? `<p class="result" role="status">${icon('i-check')}<span>${fresh ? '<b>Setup registered a Device.</b> It is called LKJ4X2 until you name it, and has its API key.' : `Setup answered with ${d.name}'s API key and friendly id. Nothing changed.`}</span></p>` : ''}`}
+        </div>
+        <div class="side">
+          <label class="field"><span class="label">Poll as</span><select class="in" style="width:100%" data-sim="device" data-fk="sim-device">${all.map(x => `<option value="${x.id}" ${x.id === state.sim.device ? 'selected' : ''}>${x.name}</option>`).join('')}<option value="new" ${fresh ? 'selected' : ''}>A Device that is not registered</option></select></label>
+          ${fresh ? `<label class="field"><span class="label">MAC address</span><span class="btnrow"><input class="in mono" style="width:11.5rem" value="DE:AD:BE:EF:20:26" aria-label="MAC address"><button class="btn">Make one up</button></span><span class="hint">Calling setup with a MAC address nobody registered creates a Device. It stays until you delete it.</span></label>` : ''}
+          <div>${tucked('reports', 'What it reports', `<p>${d ? `Filled with what ${d.name} last reported, so a poll leaves its facts as they are. Change one to see what the server does with it.` : 'What the simulated Device tells the server about itself.'}</p><div class="reports">${reports.map(([label, v, header]) => `<label class="field"><span class="label">${label}</span><input class="in mono" value="${v}"><span class="hint mono">${header}</span></label>`).join('')}</div>`)}</div>
+          <p class="warn">${d
+            ? `<b>A poll here is a real poll.</b> It moves ${d.name}'s Rotation on by one Screen, counts as ${d.name} having been seen, and takes ${pendingText ? `<b>${pendingText}</b>, which then never reaches the Device.` : `any pending Special Function, Device Reset or Firmware push, which then never reaches the Device.`}`
+            : `<b>Setup here is a real setup.</b> It registers a Device with this MAC address, and a poll gives it the welcome Fallback Screen.`}</p>
+          <div class="btnrow"><button class="btn primary" ${fresh && !state.sim.setup ? 'disabled' : ''} ${act('poll')}>Poll${d ? ` as ${d.name}` : ''}</button><button class="btn" ${act('setup')}>Call setup</button></div>
+        </div>
+      </div>`,
+  })
+}
+
+/* ── the Alerts page ── */
+
+function alertsPage() {
+  const base = { section: 'alerts', title: 'Alerts' }
+  if (state.load === 'loading')
+    return { ...base, body: `<p class="loadline" role="status" style="margin-top:var(--space-6)">${busy}Loading Alerts</p><ul class="rows alist" aria-busy="true">${[30, 24].map(w => `<li><div class="alrow"><span class="ghost" style="width:70%"></span><span class="ghost" style="width:${w + 30}%"></span><span class="ghost" style="width:${w + 40}%"></span><span></span></div></li>`).join('')}</ul>` }
+  const firing = alerts()
+  const past = resolved()
+  const rules = `<p class="rules">Every 5 minutes Kuroshiro checks each Device for a battery below ${value('lowBatteryPercent')} % and for ${value('offlineMultiplier')} missed polls, and each Data Source for a Fetch Failure Streak of ${value('fetchFailureThreshold')}. An Alert resolves by itself once its cause is gone; there is nothing to dismiss. <a class="link" href="#/instance/settings">Change the Alert Rules</a></p>
+    <p class="rules">${state.notify === 'on' ? 'Each Alert is announced through Apprise when it fires and when it resolves.' : '<b style="color:var(--color-ink);font-weight:var(--weight-medium)">Notifications are off</b>, so an Alert only shows here, on its Device and on its Plugin.'} <a class="link" href="#/instance/settings">Notifications</a></p>`
+  return {
+    ...base,
+    body: `
+      ${state.load === 'failed' ? failedNotice('Could not load the Alerts.', 'The server answered 500. What you see is from 07:42.') : ''}
+      ${firing.length
+        ? `<ul class="rows alist" style="margin-top:var(--space-6)">${firing.map(a => `<li><div class="alrow"><span class="kind fault">Alert: ${a.kind}</span><span><a href="${a.href}">${a.subject}</a></span><span class="why">${a.why}</span><span class="when">${a.when}</span></div></li>`).join('')}</ul>`
+        : `<p class="quiet-state" style="margin-top:var(--space-6)">${icon('i-check')}No Alert is firing.</p>`}
+      ${rules}
+      <h2 class="plain">Resolved in the last 7 days <small>${past.length ? 'newest first' : ''}</small></h2>
+      ${past.length
+        ? `<ul class="rows alist">${past.map(a => `<li><div class="alrow past"><span class="kind">${a.kind}</span><span><a href="${a.href}">${a.subject}</a></span><span class="why">${a.why}</span><span class="when">${a.when}</span></div></li>`).join('')}</ul>`
+        : `<p class="rules" style="margin-top:var(--space-2);padding-top:var(--space-3);border-top:var(--rule-heavy)">Nothing resolved in the last 7 days.</p>`}`,
+  }
+}
+
+const stubPage = (section, title) => ({ section, title, body: `<p class="lede">Stub. This page belongs to another spec; this prototype is about the Instance surfaces and the Alerts page.</p>` })
+
+function resolve() {
+  const [a, b, c] = (location.hash.replace(/^#/, '').split('?')[0] || '/instance').split('/').filter(Boolean)
+  if (a === 'alerts')
+    return alertsPage()
+  if (a === 'devices' || a === 'connect')
+    return stubPage('devices', allDevices.find(d => d.id === b)?.name ?? 'Devices')
+  if (a === 'plugins')
+    return stubPage('plugins', 'Plugins')
+  if (b === 'firmware')
+    return c === 'upload' ? uploadPage() : firmwarePage()
+  return ({ models: modelsPage, archive: archivePage, housekeeping: housekeepingPage, simulator: simulatorPage }[b] ?? settingsPage)()
+}
+
+function shell(page) {
+  const all = devices()
+  const firingCount = alerts().length
+  const deviceNav = `${all.map(d => `<a href="#/devices/${d.id}">${d.name}</a>`).join('')}<a href="#/connect">Connect a Device</a>`
+  return `
+    <header class="bar">
+      <a class="lockup" href="#/">${seal(26)}<span class="wordmark">Kuroshiro</span></a>
+      <nav aria-label="Sections">${deviceNav}<i></i><a href="#/plugins" ${current(page.section === 'plugins')}>Plugins</a><a href="#/instance" ${current(page.section === 'instance')}>Instance</a></nav>
+      ${firingCount ? `<a class="alertlink" href="#/alerts" ${current(page.section === 'alerts')}>${firingCount} Alert${firingCount > 1 ? 's' : ''} firing</a>` : ''}
+    </header>
+    ${state.demo ? `<p class="demo">This is the Kuroshiro demo. Image uploads are off, and anyone can change what you see here.</p>` : ''}
+    <main class="col">
+      <div class="head"><h1 class="title-lg">${page.title}</h1><div class="actions">${page.actions ?? ''}</div></div>
+      ${page.body}
+    </main>
+    <nav class="btabs" aria-label="Sections">
+      <a href="#/devices">${all.length === 1 ? all[0].name : all.length ? 'Devices' : 'Connect'}</a>
+      <a href="#/plugins" ${current(page.section === 'plugins')}>Plugins</a>
+      <a href="#/instance" ${current(page.section === 'instance')}>Instance</a>
+    </nav>`
+}
+
+/* ── prototype plumbing ── */
+
+function render() {
+  const page = resolve()
+  const active = document.activeElement
+  const focusKey = active?.dataset?.fk
+  document.documentElement.dataset.theme = state.theme
+  document.querySelector('#app').innerHTML = shell(page)
+  document.title = `PROTOTYPE: ${page.title}`
+  const label = { theme: cap(state.theme), devices: plural(state.count, 'Device'), alert: state.alert ? 'Alert firing' : 'No Alert', load: { ok: 'Loaded', loading: 'Loading', failed: 'Load failed' }[state.load], notify: `Notifications ${state.notify}`, scan: `Scan: ${state.scan}`, demo: state.demo ? 'Demo mode' : 'No demo' }
+  Object.entries(label).forEach(([key, text]) => { document.querySelector(`[data-cycle="${key}"]`).textContent = text })
+  if (focusKey)
+    document.querySelector(`[data-fk="${focusKey}"]`)?.focus()
+  const query = new URLSearchParams({ theme: state.theme, devices: state.count, alert: state.alert ? 1 : 0, load: state.load, notify: state.notify, scan: state.scan, demo: state.demo ? 1 : 0 })
+  history.replaceState(null, '', `?${query}${location.hash}`)
+}
+
+let savedTimer
+function flash(key) {
+  state.saved = key
+  clearTimeout(savedTimer)
+  savedTimer = setTimeout(() => {
+    state.saved = null
+    render()
+  }, 2000)
+}
+const later = (ms, change) => setTimeout(() => {
+  change()
+  render()
+}, ms)
+
+function confirmThen({ title, text, lost, kept, action, safe = 'Cancel' }, run = () => {}) {
+  const dialog = document.querySelector('#confirm')
+  dialog.innerHTML = `<h2 class="title-md">${title}</h2>${text ? `<p>${text}</p>` : ''}<ul>${lost ? `<li><span>Lost</span><span>${lost}</span></li>` : ''}${kept ? `<li><span>Stays</span><span>${kept}</span></li>` : ''}</ul><div class="btnrow"><button class="btn" value="cancel" autofocus>${safe}</button>${action ? `<button class="btn primary" value="go">${action}</button>` : ''}</div>`
+  dialog.onclick = (e) => {
+    const value = e.target.closest('button')?.value
+    if (!value)
+      return
+    dialog.close()
+    if (value === 'go') {
+      run()
+      render()
+    }
+  }
+  dialog.showModal()
+}
+
+const ranges = { lowBatteryPercent: [1, 100], offlineMultiplier: [2, Infinity], fetchFailureThreshold: [1, Infinity], alertRetentionDays: [0, Infinity], deviceLogRetentionDays: [0, Infinity] }
+
+const actions = {
+  'tuck': (id) => { state.tucked[id] = !(state.tucked[id] ?? (id === 'raw')) },
+  'retry': () => { state.load = 'ok' },
+  'appearance': (id) => {
+    state.appearance = id
+    if (id !== 'system')
+      state.theme = id
+  },
+  'reset': (id) => {
+    state.settings[id].override = null
+    delete state.invalid[id]
+    flash(id)
+  },
+  'test': () => {
+    state.test = 'sending'
+    later(900, () => { state.test = params.get('test') === 'failed' ? 'failed' : 'sent' })
+  },
+  'auto': () => {
+    state.autoUpdate = !state.autoUpdate
+    flash('auto')
+  },
+  'sync': (id) => {
+    const outcome = params.get('sync') ?? 'same'
+    state.sync[id] = 'running'
+    later(900, () => { state.sync[id] = id === 'models' && outcome === 'new' ? 'same' : outcome })
+  },
+  'fits': (id) => { state.fits = id },
+  'upload': () => { location.hash = '#/instance/firmware' },
+  'delete-firmware': (id) => {
+    const f = firmware.find(x => x.id === id)
+    const targets = devices().filter(d => d.pending === f.version).map(d => d.name)
+    confirmThen({
+      title: `Delete Firmware ${f.version}?`,
+      text: targets.length ? `${list(targets)} has it as its target Firmware, with a push pending. Deleting cancels that push.` : '',
+      lost: `Firmware ${f.version} (${f.label}) and its file.${targets.length ? ` The pending push to ${list(targets)}.` : ''}`,
+      kept: targets.length ? `${list(targets)} goes on running the Firmware it has, with no target.` : 'Every Device goes on running the Firmware it has. No Device has this one as its target.',
+      action: 'Delete Firmware',
+    }, () => { firmware.splice(firmware.indexOf(f), 1) })
+    return false
+  },
+  'palette-form': (id) => { state.paletteForm = state.paletteForm === id ? null : id || null },
+  'save-palette': () => { state.paletteForm = null },
+  'delete-palette': (id) => {
+    const p = customPalettes.find(x => x.id === id)
+    const on = usedBy('palette', id)
+    confirmThen({
+      title: `Delete the Palette ${p.name}?`,
+      lost: `The custom Palette and its ${p.colors.length} colours.`,
+      kept: on.length ? `${list(on)}, which goes back to its Device Model's richest Palette, Color (6 colors). Its stored images are converted again.` : 'Everything else. No Device uses it.',
+      action: 'Delete Palette',
+    }, () => { state.tucked[`gone-${id}`] = true })
+    return false
+  },
+  'export': id => flash(`export-${id}`),
+  'archive': (id) => {
+    state.archive = id
+    if (id === 'checking')
+      later(900, () => { state.archive = params.get('archive') === 'refused' ? 'refused' : 'checked' })
+  },
+  'open-finding': (id) => { state.openFinding = state.openFinding === id ? null : id },
+  'rescan': () => {
+    const before = state.scan
+    state.scan = 'scanning'
+    state.cleaned = false
+    later(900, () => { state.scan = before === 'scanning' ? 'findings' : before })
+  },
+  'cleanup': () => {
+    const chosen = findings.filter(f => state.picked[f.id])
+    confirmThen({
+      title: `Clean up ${plural(chosen.length, 'group')}?`,
+      lost: chosen.map(f => f.screens ? 'The Screen “Holiday photo” on Kitchen and its Schedule.' : `${f.name}: ${plural(f.count, f.id === 'dirs' ? 'folder' : 'file')}, ${f.size}.`).join(' '),
+      kept: `Every Screen that has its image, and every Device.${state.picked.screens ? '' : ' The Screen “Holiday photo”, which Kitchen keeps skipping.'}`,
+      action: 'Clean up',
+    }, () => { state.cleaned = true })
+    return false
+  },
+  'retention': () => {
+    state.retention = 'running'
+    render()
+    setTimeout(() => {
+      state.retention = null
+      render()
+      if (params.get('retention') === 'none') {
+        state.retention = 'none'
+        return render()
+      }
+      confirmThen({
+        title: 'Run Retention now?',
+        lost: `212 Device Log entries older than ${value('deviceLogRetentionDays')} days. No resolved Alert is old enough.`,
+        kept: 'Firing Alerts, and everything newer than the ages.',
+        action: 'Run Retention',
+      }, () => { state.retention = 'done' })
+    }, 700)
+    return false
+  },
+  'setup': () => { Object.assign(state.sim, { setup: true, polled: false }) },
+  'poll': () => { state.sim.polled = true },
+  'copy': id => flash(`copy-${id}`),
+}
+
+const cycleThrough = (all, value) => all[(all.indexOf(value) + 1) % all.length]
+const cycles = {
+  theme: () => { state.theme = state.theme === 'light' ? 'dark' : 'light' },
+  devices: () => {
+    state.count = cycleThrough([1, 3, 0], state.count)
+    state.sim = { device: state.count ? 'kitchen' : 'new', polled: false, setup: false }
+  },
+  alert: () => { state.alert = !state.alert },
+  load: () => { state.load = cycleThrough(['ok', 'loading', 'failed'], state.load) },
+  notify: () => { state.notify = state.notify === 'on' ? 'off' : 'on' },
+  scan: () => {
+    state.scan = cycleThrough(['findings', 'clean', 'scanning'], state.scan)
+    state.cleaned = false
+  },
+  demo: () => { state.demo = !state.demo },
+}
+function cycle(name) {
+  cycles[name]()
+  render()
+}
+
+const app = document.querySelector('#app')
+document.querySelectorAll('[data-cycle]').forEach(b => b.addEventListener('click', () => cycle(b.dataset.cycle)))
+
+app.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-act]')
+  if (!el)
+    return
+  e.preventDefault()
+  if (actions[el.dataset.act](el.dataset.id, el) !== false)
+    render()
+})
+
+app.addEventListener('change', (e) => {
+  const el = e.target
+  if (el.dataset.change === 'pick')
+    state.picked[el.dataset.id] = el.checked
+  if (el.dataset.sim === 'device')
+    state.sim = { device: el.value, polled: false, setup: false }
+  if (el.dataset.setting) {
+    const key = el.dataset.setting
+    const n = Number(el.value)
+    const [min, max] = ranges[key]
+    if (el.value === '' || !Number.isInteger(n) || n < min || n > max) {
+      state.invalid[key] = el.value
+    }
+    else {
+      delete state.invalid[key]
+      state.settings[key].override = n
+      flash(key)
+    }
+  }
+  render()
+})
+
+addEventListener('hashchange', () => {
+  Object.assign(state, { menu: null, paletteForm: null, openFinding: null })
+  render()
+  scrollTo(0, 0)
+})
+document.addEventListener('keydown', (e) => {
+  if (e.target.closest('input, textarea, select, [contenteditable]') || e.metaKey || e.ctrlKey || e.altKey || document.querySelector('dialog[open]'))
+    return
+  const keys = { t: 'theme', d: 'devices', a: 'alert', l: 'load', n: 'notify', s: 'scan', m: 'demo' }
+  if (keys[e.key])
+    cycle(keys[e.key])
+})
+
+if (!state.count)
+  state.sim.device = 'new'
+render()
+</script>
+</body>
+</html>
