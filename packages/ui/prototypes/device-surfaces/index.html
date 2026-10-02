@@ -1,0 +1,1130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTOTYPE: Kuroshiro Device surfaces</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+<link rel="stylesheet" href="surfaces.css">
+</head>
+<body>
+<!--
+PROTOTYPE, throwaway. Wayfinder ticket "Spec: the Device surfaces" (#1092), map "Admin UI rebuild from zero" (#1074).
+One design, no variants: this ticket is not a taste gate. It draws what the approved Device hero screen (#1081) left open,
+on the tokens and components locked in #1091: every kind of opened Screen and the flows behind Rename, Change layout,
+slot Change, Replace file, Edit HTML and the date range; a mirrored Device; Logs with search and paging; a Device with many
+Screens; the bar past four Devices; the Devices list; Connect a Device; loading and failed states.
+
+?theme=light|dark  ?devices=0|1|3|7  ?alert=0|1  ?plugins=1|0
+?scene=day|sleep|none|empty|mirror|proxied|mirrorfail|offline|many|loading|failed
+Keys: t theme, d Devices, a Alert, s scene, g Plugins, p simulates one Device poll.
+All data is synthetic and nothing is saved.
+-->
+<div id="sprite"></div>
+<div id="app"></div>
+<dialog id="confirm" class="dialog"></dialog>
+
+<div class="proto-bar" role="toolbar" aria-label="Prototype switcher">
+  <button data-cycle="theme"></button>
+  <button data-cycle="devices"></button>
+  <button data-cycle="alert"></button>
+  <button data-cycle="scene"></button>
+  <button data-cycle="plugins"></button>
+  <span class="sep"></span>
+  <button data-cycle="poll">Poll</button>
+</div>
+
+<script src="art.js"></script>
+<script>
+document.querySelector('#sprite').innerHTML = sprite
+
+const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+const workdays = [1, 1, 1, 1, 1, 0, 0]
+const SERVER_TZ = 'Europe/Berlin'
+const MANY = 8
+
+/* The seven Mashup layouts of the API (`1Lx1R` …), named for an admin, each with its slots in slot order. */
+const layouts = {
+  '1Lx1R': { name: 'Left and right', path: 'M30 1V35', slots: ['Left', 'Right'] },
+  '1Tx1B': { name: 'Top and bottom', path: 'M1 18H59', slots: ['Top', 'Bottom'] },
+  '1Lx2R': { name: 'One left, two right', path: 'M30 1V35M30 18H59', slots: ['Left', 'Top right', 'Bottom right'] },
+  '2Lx1R': { name: 'Two left, one right', path: 'M30 1V35M1 18H30', slots: ['Top left', 'Bottom left', 'Right'] },
+  '2Tx1B': { name: 'Two top, one bottom', path: 'M1 18H59M30 1V18', slots: ['Top left', 'Top right', 'Bottom'] },
+  '1Tx2B': { name: 'One top, two bottom', path: 'M1 18H59M30 18V35', slots: ['Top', 'Bottom left', 'Bottom right'] },
+  '2x2': { name: 'Four quarters', path: 'M30 1V35M1 18H59', slots: ['Top left', 'Top right', 'Bottom left', 'Bottom right'] },
+}
+
+const allPlugins = [
+  { id: 'weather', name: 'Weather', kind: 'Poll' },
+  { id: 'calendar', name: 'Calendar', kind: 'Poll' },
+  { id: 'trains', name: 'Train departures', kind: 'Poll' },
+  { id: 'bins', name: 'Bin day', kind: 'Poll' },
+  { id: 'tidep', name: 'Tide table', kind: 'Poll' },
+  { id: 'moon', name: 'Moon phase', kind: 'Poll' },
+  { id: 'pollen', name: 'Pollen count', kind: 'Poll', needs: true },
+  { id: 'doorbell', name: 'Doorbell note', kind: 'Webhook' },
+  { id: 'parcel', name: 'Parcel tracker', kind: 'Webhook' },
+  { id: 'word', name: 'Word of the day', kind: 'Poll' },
+]
+
+const library = {
+  weather: { name: 'Weather', kind: 'Plugin', img: 'weather', schedule: null, rendered: '07:30' },
+  calendar: { name: 'Calendar', kind: 'Plugin', img: 'calendar', schedule: { on: true, days: workdays, from: '06:00', to: '09:00' }, rendered: '07:42' },
+  photo: { name: 'Harbour photo', kind: 'File', img: 'photo', schedule: null, file: 'harbour.png', fileFacts: '1600 × 960 · 412 kB · uploaded 12 September' },
+  trains: { name: 'Train departures', kind: 'Plugin', img: 'trains', schedule: { on: false, days: workdays, from: '06:30', to: '08:30' }, rendered: 'yesterday 08:15' },
+  mashup: { name: 'Weekend board', kind: 'Mashup', img: 'mashup', schedule: { on: true, days: [0, 0, 0, 0, 0, 1, 1], from: null, to: null }, layout: '1Lx1R', slots: ['weather', 'calendar'], rendered: 'Sunday 21:00' },
+  bins: { name: 'Bin day', kind: 'Plugin', img: 'bins', schedule: null, signal: 'skip', rendered: '06:00' },
+  tide: { name: 'Tide table', kind: 'External link', img: 'tide', schedule: null, url: 'https://tides.example/lindenhafen.png', cached: true, rendered: '12 September 09:14' },
+  note: { name: 'Fridge note', kind: 'HTML', img: 'note', schedule: { on: true, days: [1, 1, 1, 1, 1, 1, 1], from: '16:00', to: '19:00', dates: ['2026-10-01', '2026-10-09'] }, html: '<div style="padding:40px;font:700 84px Helvetica">\n  Back at six.\n  <p style="font:34px Helvetica">Soup is in the fridge.</p>\n</div>' },
+  moon: { name: 'Moon phase', kind: 'Plugin', img: 'tide', schedule: null, signal: 'hold', rendered: 'Tuesday 22:10' },
+  word: { name: 'Word of the day', kind: 'Plugin', img: 'note', schedule: null, rendered: '00:05' },
+  pollen: { name: 'Pollen count', kind: 'Plugin', img: 'bins', schedule: { on: true, days: [1, 1, 1, 1, 1, 1, 1], from: '06:00', to: '10:00', dates: ['2026-03-01', '2026-08-31'] }, rendered: null },
+  parcel: { name: 'Parcel tracker', kind: 'Plugin', img: 'trains', schedule: null, rendered: 'yesterday 17:20' },
+  doorbell: { name: 'Doorbell note', kind: 'Plugin', img: 'note', schedule: null, rendered: 'Monday 18:03' },
+  photo2: { name: 'Alps in March', kind: 'File', img: 'photo2', schedule: { on: true, days: [0, 0, 0, 0, 0, 1, 1], from: null, to: null }, file: 'alps.jpg', fileFacts: '2400 × 1440 · 1.1 MB · uploaded 3 March' },
+}
+
+const base6 = ['weather', 'calendar', 'photo', 'trains', 'mashup', 'bins']
+const scenes = {
+  day: { label: 'Thu 07:46', day: 3, time: '07:46', seen: '4 min ago', lastPoll: '07:42', nextPoll: '07:57', order: base6, current: 'calendar' },
+  sleep: { label: 'Sleep Mode, 23:40', day: 3, time: '23:40', seen: '40 min ago', lastPoll: '23:00', nextPoll: '06:00', order: base6, current: 'photo', sleeping: true },
+  none: { label: 'No Screen to show', day: 3, time: '12:10', seen: '9 min ago', lastPoll: '12:01', nextPoll: '12:16', order: ['calendar', 'trains', 'mashup', 'bins'], current: null },
+  empty: { label: 'No Screens', day: 3, time: '07:46', seen: '4 min ago', lastPoll: '07:42', nextPoll: '07:57', order: [], current: null },
+  mirror: { label: 'Mirroring', day: 3, time: '07:46', seen: '4 min ago', lastPoll: '07:42', nextPoll: '07:57', order: base6, current: null, mirroring: 'on' },
+  proxied: { label: 'Proxied Device', day: 3, time: '07:46', seen: '4 min ago', lastPoll: '07:42', nextPoll: '07:57', order: base6, current: null, mirroring: 'proxied' },
+  mirrorfail: { label: 'Mirroring failed', day: 3, time: '07:46', seen: '4 min ago', lastPoll: '07:42', nextPoll: '07:57', order: base6, current: null, mirroring: 'failed' },
+  offline: { label: 'Offline', day: 3, time: '07:46', seen: '3 h ago', lastPoll: '04:41', nextPoll: null, order: base6, current: 'weather', offline: true },
+  many: { label: '14 Screens', day: 3, time: '07:46', seen: '4 min ago', lastPoll: '07:42', nextPoll: '07:57', order: [...base6, 'tide', 'note', 'moon', 'word', 'pollen', 'parcel', 'doorbell', 'photo2'], current: 'calendar' },
+  loading: { label: 'Loading', day: 3, time: '07:46', seen: '4 min ago', lastPoll: '07:42', nextPoll: '07:57', order: base6, current: 'calendar', load: 'loading' },
+  failed: { label: 'Load failed', day: 3, time: '07:46', seen: '4 min ago', lastPoll: '07:42', nextPoll: '07:57', order: base6, current: 'calendar', load: 'failed' },
+}
+
+const logSeed = [
+  ['07:42:10', 'info', 'display poll, served Calendar (Order 2)', 'src/bl_main.cpp:412', 'battery 3.42 V · rssi −61 dBm · wake reason timer'],
+  ['07:27:08', 'info', 'display poll, served Weather (Order 1)', 'src/bl_main.cpp:412', 'battery 3.42 V · rssi −60 dBm · wake reason timer'],
+  ['07:12:07', 'warning', 'battery 3.42 V, below the low-battery threshold', 'src/battery.cpp:88', 'battery 3.42 V · rssi −63 dBm'],
+  ['06:57:05', 'info', 'woke from Sleep Mode', 'src/bl_main.cpp:230', 'slept 25 200 s · wake reason timer'],
+  ['06:00:02', 'info', 'display poll, served Weather (Order 1)', 'src/bl_main.cpp:412', 'battery 3.43 V · rssi −60 dBm · wake reason timer'],
+]
+const logOlder = [
+  ['23:00:01', 'info', 'Sleep Mode until 06:00, refresh_rate 25 200 s', 'src/bl_main.cpp:455', 'battery 3.48 V · rssi −59 dBm'],
+  ['21:14:40', 'error', 'image download failed, HTTP 502, retrying at the next poll', 'src/display.cpp:171', 'url /api/display · attempt 1 · free heap 141 kB'],
+  ['20:59:38', 'info', 'display poll, served Harbour photo (Order 3)', 'src/bl_main.cpp:412', 'battery 3.49 V · rssi −58 dBm · wake reason timer'],
+  ['20:44:37', 'warning', 'wifi reconnect took 9 s', 'src/wifi.cpp:204', 'rssi −74 dBm · attempt 3'],
+  ['20:29:35', 'debug', 'heap after render 141 kB', 'src/display.cpp:98', 'free heap 141 kB'],
+]
+/* 132 entries: today, yesterday, then two older days of quiet polls with the odd problem. */
+const logEntries = [
+  ...logSeed.map(e => [...e, 'Today']),
+  ...logOlder.map(e => [...e, 'Yesterday, Wednesday 30 September']),
+  ...Array.from({ length: 122 }, (_, n) => {
+    const day = n < 60 ? 'Tuesday 29 September' : 'Monday 28 September'
+    const minute = 23 * 60 + 45 - (n % 60) * 15
+    const t = `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}:0${n % 7}`
+    return n % 23 === 7
+      ? [t, 'error', 'image download failed, HTTP 502, retrying at the next poll', 'src/display.cpp:171', 'url /api/display · attempt 1', day]
+      : n % 17 === 3
+        ? [t, 'warning', 'wifi reconnect took 7 s', 'src/wifi.cpp:204', 'rssi −72 dBm · attempt 2', day]
+        : [t, 'info', `display poll, served ${['Weather', 'Calendar', 'Harbour photo'][n % 3]} (Order ${n % 3 + 1})`, 'src/bl_main.cpp:412', 'battery 3.5 V · rssi −60 dBm · wake reason timer', day]
+  }),
+].map(([t, lvl, msg, src, extra, day], id) => ({ id, t, lvl, msg, src, extra, day }))
+const LOG_PAGE = 50
+
+const params = new URLSearchParams(location.search)
+const pick = (key, allowed, fallback) => allowed.includes(params.get(key)) ? params.get(key) : fallback
+const state = {
+  theme: pick('theme', ['light', 'dark'], matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+  count: Number(pick('devices', ['0', '1', '3', '7'], '1')),
+  alert: pick('alert', ['0', '1'], '1') === '1',
+  scene: pick('scene', Object.keys(scenes), 'day'),
+  plugins: pick('plugins', ['0', '1'], '1') === '1',
+  open: {},
+  flow: null,
+  addKind: 'plugin',
+  addLayout: '1Lx1R',
+  pluginQuery: '',
+  log: { level: 'all', q: '', shown: LOG_PAGE, open: null, fresh: 3 },
+  tucked: {},
+  saved: null,
+  arrived: false,
+  devices: [],
+}
+
+function buildDevices() {
+  const scene = scenes[state.scene]
+  const base = { seen: '6 min ago', lastPoll: '07:40', nextPoll: '07:55', screens: structuredClone(library), pending: null, resetPending: false, firmwarePending: false, mirroring: null, sleeping: false, offline: false, load: null, model: 'TRMNL OG', sensors: [] }
+  const extra = (id, name, battery, order, current) => ({ ...structuredClone(base), id, name, battery, signal: '−64 dBm', order, current, sleep: { on: false, from: '23:00', to: '06:00', screen: 'fallback' } })
+  state.open = {}
+  state.flow = null
+  state.devices = [
+    { ...structuredClone(base), id: 'kitchen', name: 'Kitchen', battery: '18 %', signal: '−61 dBm', seen: scene.seen, lastPoll: scene.lastPoll, nextPoll: scene.nextPoll, order: [...scene.order], current: scene.current, sleeping: Boolean(scene.sleeping), mirroring: scene.mirroring ?? null, offline: Boolean(scene.offline), load: scene.load ?? null, sleep: { on: true, from: '23:00', to: '06:00', screen: 'fallback', image: false }, sensors: [['Temperature', '21.4 °C'], ['Humidity', '48 %'], ['CO₂', '612 ppm']] },
+    { ...structuredClone(base), id: 'hallway', name: 'Hallway', battery: '76 %', signal: '−58 dBm', order: ['weather', 'tide'], current: 'weather', sleep: { on: false, from: '23:00', to: '06:00', screen: 'fallback' }, mismatch: true },
+    { ...structuredClone(base), id: 'study', name: 'Study', battery: '54 %', signal: '−72 dBm', order: ['photo', 'mashup', 'note'], current: 'photo', sleep: { on: true, from: '22:00', to: '07:00', screen: 'keep' } },
+    extra('bedroom', 'Bedroom', '91 %', ['photo2', 'word'], 'photo2'),
+    extra('workshop', 'Workshop', '63 %', ['trains', 'parcel'], 'parcel'),
+    extra('office', 'Office above the garage', '40 %', ['calendar', 'weather', 'doorbell'], 'calendar'),
+    extra('porch', 'Porch', '57 %', [], null),
+  ]
+}
+
+const scene = () => scenes[state.scene]
+const devices = () => state.devices.slice(0, state.count)
+const plugins = () => state.plugins ? allPlugins : []
+const lowBattery = d => state.alert && d.id === 'kitchen'
+const alertCount = () => devices().reduce((n, d) => n + (lowBattery(d) ? 1 : 0) + (d.offline ? 1 : 0), 0)
+const cap = s => s[0].toUpperCase() + s.slice(1)
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
+const icon = id => `<svg class="icon" aria-hidden="true"><use href="#${id}"/></svg>`
+const seal = (size, { red = false, small = false, cls = '' } = {}) => `<svg class="seal ${red ? 'red' : ''} ${cls}" width="${size}" height="${size}" aria-hidden="true"><use href="#${small ? 'seal-small' : 'seal'}"/></svg>`
+const current = on => on ? 'aria-current="page"' : ''
+const act = (name, id = '', extra = '') => `data-act="${name}" data-id="${id}" data-fk="${name}-${id}${extra}"`
+const picture = (img, label) => `<svg ${label ? `role="img" aria-label="${esc(label)}"` : 'aria-hidden="true"'}><use href="#s-${img}"/></svg>`
+const busy = '<i class="busy" aria-hidden="true"></i>'
+const options = (list, chosen) => list.map(o => `<option ${o === chosen ? 'selected' : ''}>${esc(o)}</option>`).join('')
+const status = key => state.saved === key ? `<span class="status" role="status">${icon('i-check')}Saved</span>` : ''
+const possessive = name => `${name}'s`
+
+/* ── Rotation: which Screen State a Screen carries, and the sentence behind it ── */
+
+const minutes = t => t.split(':').map(Number).reduce((h, m) => h * 60 + m)
+const TODAY = '2026-10-01'
+const prettyDate = iso => new Date(`${iso}T12:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })
+
+/* Precedence when more than one reason applies: the admin's own Schedule before the content's Render Signal. */
+function verdict(s) {
+  const sc = s.schedule
+  if (sc && !sc.on)
+    return { key: 'off', label: 'Schedule off' }
+  if (sc?.dates && (TODAY < sc.dates[0] || TODAY > sc.dates[1]))
+    return { key: 'dates', label: 'Not today' }
+  if (sc && !sc.days[scene().day])
+    return { key: 'day', label: 'Not today' }
+  if (sc?.from) {
+    const [now, from, to] = [scene().time, sc.from, sc.to].map(minutes)
+    const inside = from <= to ? now >= from && now <= to : now >= from || now <= to
+    if (!inside)
+      return { key: 'hour', label: 'Not at this hour' }
+  }
+  if (s.signal === 'skip')
+    return { key: 'skip', label: 'Skipping' }
+  return null
+}
+
+function nextId(d) {
+  if (d.mirroring)
+    return null
+  const start = d.order.indexOf(d.current) + 1
+  const around = [...d.order.slice(start), ...d.order.slice(0, start)]
+  return around.find(id => id !== d.current && !verdict(d.screens[id])) ?? null
+}
+
+function stateOf(d, id) {
+  if (d.mirroring)
+    return { key: '', label: '' }
+  const hold = d.screens[id].signal === 'hold' ? ' <small>· holding image</small>' : ''
+  if (id === d.current)
+    return { key: 'active', label: `${d.sleeping ? 'Active Screen, paused' : 'Active Screen'}${hold}` }
+  const passed = verdict(d.screens[id])
+  if (passed)
+    return passed
+  if (id === nextId(d))
+    return { key: 'next', label: `${d.sleeping ? `Up next at ${d.sleep.to}` : 'Up next'}${hold}` }
+  return { key: '', label: hold ? 'Holding image' : '' }
+}
+
+function why(d, id) {
+  const s = d.screens[id]
+  const next = nextId(d)
+  const sc = s.schedule
+  if (d.mirroring)
+    return `Kept while Mirroring is on. It takes its place in Rotation again when Mirroring is switched off.`
+  return {
+    active: d.sleeping ? `On hold while ${d.name} is in Sleep Mode.` : d.offline ? `The last Screen ${d.name} was given, at the ${d.lastPoll} poll.` : `On the Device since the ${d.lastPoll} poll.`,
+    next: d.offline ? `Shows when ${d.name} calls in again.` : `Shows at the next poll, around ${d.nextPoll}.`,
+    off: 'Its Schedule is switched off, so Rotation passes over it. The days and hours are kept.',
+    dates: `Its Schedule only runs from ${sc?.dates ? `${prettyDate(sc.dates[0])} to ${prettyDate(sc.dates[1])}` : ''}, so Rotation passes over it.`,
+    day: `Its Schedule leaves out ${weekdays[scene().day]}s, so Rotation passes over it today.`,
+    hour: `Its Schedule runs ${sc?.from}–${sc?.to} and it is ${scene().time}, so Rotation passes over it.`,
+    skip: 'Skipping: this Screen\'s own content asked to be left out of Rotation for now. It returns by itself when the content changes.',
+    '': `Waiting its turn. It comes after ${next ? d.screens[next].name : 'the Active Screen'}.`,
+  }[stateOf(d, id).key]
+}
+
+const whyAlso = (d, id) => {
+  const s = d.screens[id]
+  const lines = []
+  if (s.signal === 'skip' && verdict(s)?.key !== 'skip')
+    lines.push('It is also skipping: its own content asked to be left out of Rotation.')
+  if (s.signal === 'hold')
+    lines.push('Holding image: its own content asked to keep the previous image, so nothing new is rendered for it.')
+  return lines
+}
+
+/* ── the Current Screen: what the plate shows and the sentences beside it ── */
+
+function story(d) {
+  const next = nextId(d)
+  const nextName = next ? d.screens[next].name : null
+  const whenNext = d.nextPoll ? `at the poll around ${d.nextPoll}` : `when ${d.name} calls in again`
+  if (d.mirroring === 'failed')
+    return { img: 'error', title: 'Mirroring failed', lines: [`Kuroshiro could not fetch the image from TRMNL at the ${d.lastPoll} poll, so ${d.name} shows the error Fallback Screen. It tries again at the next poll, around ${d.nextPoll}.`, `Check the mirror MAC address and API key in <a class="link" href="#/devices/${d.id}/settings">Settings</a>.`] }
+  if (d.mirroring)
+    return { img: 'mirror', title: 'Mirrored from TRMNL', lines: [`The Current Screen is the image of ${d.mirroring === 'proxied' ? 'this same Device on TRMNL\'s server' : 'the TRMNL Device <span class="mono">A4:CF:12:9B:01:7E</span>'}, fetched at the ${d.lastPoll} poll.`, d.mirroring === 'proxied' ? `${d.name} is a Proxied Device: TRMNL answers its polls and decides its refresh rate and Firmware.` : `${possessive(d.name)} own Screens are kept but not shown.`] }
+  if (d.sleeping && d.sleep.screen === 'fallback')
+    return { img: 'sleep', title: `Asleep until ${d.sleep.to}`, lines: [`Sleep Mode is in its window, so ${d.name} shows the sleep Fallback Screen.`, `Rotation resumes at ${d.sleep.to} with <b>${nextName ?? d.screens[d.current]?.name}</b>.`] }
+  if (d.sleeping)
+    return { img: d.screens[d.current].img, title: d.screens[d.current].name, lines: [`Sleep Mode is in its window until ${d.sleep.to} and keeps this image on the Device.`, `Rotation resumes at ${d.sleep.to} with <b>${nextName ?? d.screens[d.current].name}</b>.`] }
+  if (!d.order.length)
+    return { img: 'noscreen', title: 'No Screens yet', lines: [`${d.name} shows the no-screen Fallback Screen until you add one.`] }
+  if (!d.current)
+    return { img: 'noscreen', title: 'No Screen to show', lines: [`Rotation passes over every Screen here right now, so ${d.name} shows the no-screen Fallback Screen.`, nextName ? `<b>${nextName}</b> shows ${whenNext}.` : 'Open a Screen below to see why.'] }
+  return {
+    img: d.screens[d.current].img,
+    title: d.screens[d.current].name,
+    sealed: !d.offline,
+    lines: [
+      d.offline ? `The last image ${d.name} was given: Order ${d.order.indexOf(d.current) + 1} of ${d.order.length}, at the ${d.lastPoll} poll. It has not called in since.` : `The Current Screen. Order ${d.order.indexOf(d.current) + 1} of ${d.order.length}, on the Device since the ${d.lastPoll} poll.`,
+      nextName ? `Up next: <b>${nextName}</b>, ${whenNext}.` : 'No other Screen can be shown right now, so it stays on.',
+    ],
+  }
+}
+
+function facts(d) {
+  const sleepValue = d.mirroring ? 'Off while Mirroring' : !d.sleep.on ? 'Off' : d.sleeping ? `in its window until ${d.sleep.to}` : `${d.sleep.from}–${d.sleep.to}`
+  const rows = [
+    d.offline ? { k: 'Alert: offline', v: `last seen ${d.seen}`, fault: true } : { k: 'Last seen', v: d.seen },
+    lowBattery(d) ? { k: 'Alert: battery low', v: d.battery, fault: true } : { k: 'Battery', v: d.battery },
+    { k: 'Signal', v: d.signal },
+    { k: 'Sleep Mode', v: sleepValue },
+    ...d.sensors.map(([k, v]) => ({ k, v })),
+    ...(d.mismatch ? [{ k: 'Device Model', v: `<a href="#/devices/${d.id}/settings">reports another size</a>` }] : []),
+    ...(d.pending ? [{ k: 'Special Function', v: `${busy}${d.pending} at the next poll`, pending: true }] : []),
+    ...(d.resetPending ? [{ k: 'Device Reset', v: `${busy}at the next poll`, pending: true }] : []),
+    ...(d.firmwarePending ? [{ k: 'Firmware', v: `${busy}1.6.9 at the next poll`, pending: true }] : []),
+  ]
+  return rows.map(r => `<div class="${r.fault ? 'fault' : ''} ${r.pending ? 'pending' : ''}"><dt>${r.k}</dt><dd>${r.v}</dd></div>`).join('')
+}
+
+/* ── a Screen row and what opens under it ── */
+
+function schedText(s) {
+  const sc = s.schedule
+  if (!sc)
+    return 'Always shown'
+  const dots = sc.days.map((on, n) => on ? `<b>${'MTWTFSS'[n]}</b>` : '·').join('')
+  return `<span class="dots">${dots}</span><span>${sc.from ? `${sc.from}–${sc.to}` : 'all day'}</span>`
+}
+
+const timeInput = (value, label, attrs = '') => `<input class="in time" inputmode="numeric" pattern="[0-2][0-9]:[0-5][0-9]" maxlength="5" value="${value}" aria-label="${label}" ${attrs}>`
+const schedSwitch = (id, s) => s.schedule ? `<button class="sw" role="switch" aria-checked="${s.schedule.on}" aria-label="Schedule for ${esc(s.name)}" ${act('sched-toggle', id)}></button>` : ''
+
+function scheduleEditor(id, s) {
+  const sc = s.schedule
+  if (!sc)
+    return `<h3>Schedule</h3><p class="soft">Always shown. A Schedule limits this Screen to certain days and hours.</p><div class="btnrow"><button class="btn" ${act('sched-add', id)}>Add a Schedule</button></div>`
+  const crosses = sc.from && minutes(sc.to) < minutes(sc.from)
+  return `
+    <h3><span>Schedule<small>${sc.on ? 'on' : 'off, days and hours kept'}</small></span>${schedSwitch(id, s)}</h3>
+    <div class="days" role="group" aria-label="Days">${sc.days.map((on, n) => `<button class="day" aria-pressed="${Boolean(on)}" aria-label="${weekdays[n]}" data-act="day" data-id="${id}" data-n="${n}" data-fk="day-${id}-${n}">${'MTWTFSS'[n]}</button>`).join('')}</div>
+    <div class="win">
+      ${sc.from ? `<label>From ${timeInput(sc.from, 'From', `data-change="from" data-id="${id}" data-fk="from-${id}"`)}</label><label>to ${timeInput(sc.to, 'To', `data-change="to" data-id="${id}" data-fk="to-${id}"`)}</label>` : ''}
+      <label class="check"><input type="checkbox" ${sc.from ? '' : 'checked'} data-change="allday" data-id="${id}" data-fk="allday-${id}"> All day</label>
+    </div>
+    ${crosses ? '<p class="soft small">This window crosses midnight.</p>' : ''}
+    <label class="check"><input type="checkbox" ${sc.dates ? 'checked' : ''} data-change="dates" data-id="${id}" data-fk="dates-${id}"> Only between two dates</label>
+    ${sc.dates ? `<div class="win"><label>From <input class="in" type="date" value="${sc.dates[0]}" aria-label="First day" data-change="date0" data-id="${id}" data-fk="date0-${id}"></label><label>to <input class="in" type="date" value="${sc.dates[1]}" aria-label="Last day" data-change="date1" data-id="${id}" data-fk="date1-${id}"></label></div>
+      <p class="soft small">Both days count. ${sc.dates[1] < TODAY ? 'The last day has passed, so this Screen no longer shows.' : ''}</p>` : ''}
+    <p class="soft small">Hours and dates are in the server's timezone, ${SERVER_TZ}. ${status(`sched-${id}`)}</p>
+    <div class="btnrow"><button class="btn quiet" ${act('sched-remove', id)}>Remove Schedule</button></div>`
+}
+
+const layoutIcon = key => `<svg viewBox="0 0 60 36" aria-hidden="true"><rect x="1" y="1" width="58" height="34"/><path d="${layouts[key].path}"/></svg>`
+const layoutPicker = (chosen, actName, id) => `<div class="layouts" role="radiogroup" aria-label="Layout">${Object.entries(layouts).map(([key, l]) => `<button role="radio" aria-checked="${key === chosen}" data-act="${actName}" data-id="${id}" data-layout="${key}" data-fk="${actName}-${key}">${layoutIcon(key)}${l.name}</button>`).join('')}</div>`
+const pluginName = id => allPlugins.find(p => p.id === id)?.name ?? ''
+const slotSelect = (label, chosen, taken, attrs) => `<select class="in" aria-label="${label}" ${attrs}>${chosen ? '' : '<option selected disabled>Choose</option>'}${allPlugins.map(p => `<option value="${p.id}" ${p.id === chosen ? 'selected' : ''} ${taken.includes(p.id) && p.id !== chosen ? 'disabled' : ''}>${p.name}</option>`).join('')}</select>`
+
+function sourceBlock(d, id, s) {
+  const flow = state.flow?.id === id ? state.flow : null
+  const plugin = allPlugins.find(p => p.name === s.name)
+  return {
+    'Plugin': () => `
+      <p>Rendered from the Plugin <a class="link" href="#/plugins">${s.name}</a>${s.rendered ? `, last ${s.rendered.includes(' ') ? `on ${s.rendered}` : `at ${s.rendered}`}` : ''}.</p>
+      ${plugin?.kind === 'Webhook' ? '<p class="soft">It renders again whenever its Webhook URL receives data.</p>' : ''}
+      ${plugin?.needs ? `<p class="message">${icon('i-problem')}<span>A required Plugin Field is empty. <a class="link" href="#/plugins">Fill it in on the Plugin</a>.</span></p>` : ''}
+      <p class="soft small">Its name, template and Data Sources are edited on the Plugin and apply to every Device it is assigned to.</p>`,
+    'Mashup': () => flow?.kind === 'layout'
+      ? `<div class="inset">
+          <p class="label">Change layout</p>
+          ${layoutPicker(flow.layout, 'layout-pick', id)}
+          <ul class="slots">${layouts[flow.layout].slots.map((slot, n) => `<li><span class="soft">${slot}</span>${slotSelect(slot, flow.slots[n], flow.slots, `data-change="flow-slot" data-n="${n}" data-fk="flow-slot-${n}"`)}</li>`).join('')}</ul>
+          ${s.slots.length > layouts[flow.layout].slots.length ? `<p class="soft small">${s.slots.slice(layouts[flow.layout].slots.length).map(pluginName).join(' and ')} no longer has a slot. The Plugin itself stays.</p>` : ''}
+          <div class="btnrow"><button class="btn primary" ${act('layout-save', id)} ${flow.slots.slice(0, layouts[flow.layout].slots.length).every(Boolean) ? '' : 'disabled'}>Save layout</button><button class="btn quiet" ${act('flow-cancel', id)}>Cancel</button></div>
+        </div>`
+      : `<div class="win">${layoutIcon(s.layout).replace('<svg', '<svg width="60" height="36" style="fill:none;stroke:currentColor;stroke-width:1.5"')}<span>${layouts[s.layout].name}</span></div>
+        <ul class="slots">${layouts[s.layout].slots.map((slot, n) => `<li><span class="soft">${slot}</span>${slotSelect(slot, s.slots[n], s.slots, `data-change="slot" data-id="${id}" data-n="${n}" data-fk="slot-${id}-${n}"`)}</li>`).join('')}</ul>
+        <div class="btnrow"><button class="btn" ${act('layout-open', id)}>Change layout</button>${status(`slot-${id}`)}</div>`,
+    'File': () => flow?.kind === 'replace'
+      ? `<div class="inset">
+          <p class="label">Replace file</p>
+          ${flow.chosen
+            ? `<div class="compare"><figure><span class="plate">${picture(s.img)}</span><figcaption>Now</figcaption></figure><figure><span class="plate">${picture('photo2')}</span><figcaption>New: alps.jpg</figcaption></figure></div>
+               <p class="soft small">The current image is deleted. The Screen keeps its name, its Order and its Schedule.</p>
+               <div class="btnrow"><button class="btn primary" ${act('replace-save', id)}>Replace image</button><button class="btn quiet" ${act('flow-cancel', id)}>Keep the current image</button></div>`
+            : `<div class="drop"><span>Drop an image here. PNG, JPEG, BMP, GIF, TIFF or WebP.</span><button class="btn" ${act('replace-choose', id)}>${icon('i-upload')}Choose file</button></div>
+               <div class="btnrow"><button class="btn quiet" ${act('flow-cancel', id)}>Cancel</button></div>`}
+        </div>`
+      : `<p class="mono">${s.file}</p><p class="soft small">${s.fileFacts}. Converted for ${d.model}, 2-bit greyscale.</p>
+        <div class="btnrow"><button class="btn" ${act('replace-open', id)}>Replace file</button></div>`,
+    'External link': () => `
+      <label class="field" style="max-width:none"><span class="label">Image URL</span><input class="in wide" type="url" value="${s.url}" data-change="touch" data-key="url-${id}" data-fk="url-${id}"></label>
+      <div role="radiogroup" aria-label="Fetching">
+        <button class="pick" role="radio" aria-checked="${s.cached}" ${act('fetch-mode', id, '-cached')} data-mode="cached"><span class="dot"></span><b>Fetch once and keep</b><span>Kuroshiro keeps the converted image until you refresh it.</span></button>
+        <button class="pick" role="radio" aria-checked="${!s.cached}" ${act('fetch-mode', id, '-live')} data-mode="live"><span class="dot"></span><b>Fetch on every poll</b><span>Kuroshiro downloads and converts it each time this Screen's turn comes.</span></button>
+      </div>
+      ${s.cached ? `<div class="btnrow"><button class="btn" ${act('refresh-image', id)}>Refresh image</button><span class="soft small">Fetched ${s.rendered}</span></div>` : ''}
+      ${status(`url-${id}`)}${status(`fetch-${id}`)}`,
+    'HTML': () => `<p>Rendered from HTML written here, on every poll.</p>
+      <div class="btnrow"><a class="btn" href="#/devices/${d.id}/edit/${id}">Edit HTML</a></div>`,
+  }[s.kind]()
+}
+
+function detail(d, id) {
+  const s = d.screens[id]
+  const i = d.order.indexOf(id)
+  const isPlugin = s.kind === 'Plugin'
+  const never = isPlugin && !s.rendered
+  const caption = never ? 'Not rendered yet. It renders when its turn first comes.' : s.kind === 'HTML' ? `As ${d.name} renders it` : s.kind === 'File' ? 'The converted image' : `Rendered ${s.rendered ?? ''}`
+  return `
+    <div class="detail">
+      <p class="why">${why(d, id)}</p>
+      ${whyAlso(d, id).map(line => `<p class="why">${line}</p>`).join('')}
+      <figure><span class="plate ${never ? 'rendering' : ''}">${never ? '' : picture(s.img, `${s.name}, as rendered for ${d.name}`)}</span><figcaption>${caption}</figcaption></figure>
+      <section>${scheduleEditor(id, s)}</section>
+      <section>
+        <h3>${s.kind}</h3>
+        ${sourceBlock(d, id, s)}
+        <div class="btnrow acts">
+          ${isPlugin ? '' : `<button class="btn quiet" ${act('rename-open', id)}>Rename</button>`}
+          <button class="btn quiet" ${act('move-up', id, '-d')} ${i === 0 ? 'disabled' : ''}>Move up</button>
+          <button class="btn quiet" ${act('move-down', id, '-d')} ${i === d.order.length - 1 ? 'disabled' : ''}>Move down</button>
+          ${d.order.length > MANY ? `<button class="btn quiet" ${act('move-top', id)} ${i === 0 ? 'disabled' : ''}>Move to top</button><button class="btn quiet" ${act('move-end', id)} ${i === d.order.length - 1 ? 'disabled' : ''}>Move to end</button>` : ''}
+          <button class="btn" ${act('delete', id)}>${isPlugin ? 'Unassign Plugin' : 'Delete Screen'}</button>
+        </div>
+      </section>
+    </div>`
+}
+
+function screenRow(d, id, i) {
+  const s = d.screens[id]
+  const st = stateOf(d, id)
+  const open = state.open[d.id] === id
+  const dim = ['off', 'dates', 'day', 'hour', 'skip'].includes(st.key)
+  const renaming = state.flow?.id === id && state.flow.kind === 'rename'
+  const never = s.kind === 'Plugin' && !s.rendered
+  return `
+    <li draggable="true" data-drag="${id}">
+      <div class="srow ${st.key === 'active' ? 'is-active' : ''} ${dim ? 'dimmed' : ''} ${open ? 'is-open' : ''}">
+        <span class="grip" aria-hidden="true">${icon('i-grip')}</span>
+        <span class="nudge">
+          <button aria-label="Move ${esc(s.name)} earlier in the Order" ${act('move-up', id)} ${i === 0 ? 'disabled' : ''}>${icon('i-up')}</button>
+          <button aria-label="Move ${esc(s.name)} later in the Order" ${act('move-down', id)} ${i === d.order.length - 1 ? 'disabled' : ''}>${icon('i-down')}</button>
+        </span>
+        <span class="ord">${i + 1}</span>
+        <span class="plate thumb ${dim ? 'dim' : ''} ${never ? 'rendering' : ''}">${never ? '' : picture(s.img)}</span>
+        ${renaming
+          ? `<span class="inline-edit"><input class="in" value="${esc(s.name)}" aria-label="Name" data-rename="${id}" data-fk="rename-input"><button class="btn primary" ${act('rename-save', id)}>Save</button><button class="btn quiet" ${act('flow-cancel', id)}>Cancel</button></span>`
+          : `<span><button class="open name" aria-expanded="${open}" ${act('open', id)}>${s.name}</button> <span class="kind">${s.kind}</span></span>`}
+        <span class="schedcell"><span class="slot">${schedSwitch(id, s)}</span><span class="sched ${st.key === 'off' ? 'off' : ''}">${schedText(s)}</span></span>
+        <span class="st ${st.key === 'active' ? 'active' : st.key === 'next' ? 'next' : ''}">${st.key === 'active' ? seal(14, { red: true, small: true }) : ''}${st.label}</span>
+        <span class="chev" aria-hidden="true">${icon('i-chev')}</span>
+      </div>
+      ${open ? detail(d, id) : ''}
+    </li>`
+}
+
+/* ── a Device's Screens view ── */
+
+const loadingBody = d => `
+  <div class="hero" aria-busy="true">
+    <span class="plate hero rendering"></span>
+    <div class="story">
+      <p class="loadline" role="status">${busy}Loading ${possessive(d.name)} Screens</p>
+      <div class="facts" style="margin-top:var(--space-5)">${[60, 40, 52, 46].map(w => `<div><span class="ghost" style="width:${w}%"></span></div>`).join('')}</div>
+    </div>
+  </div>
+  <h2 class="title-sm section">Screens in Order</h2>
+  <ol class="rows">${[38, 30, 44].map(w => `<li><div class="srow"><span></span><span></span><span class="plate thumb rendering"></span><span class="ghost" style="width:${w}%"></span></div></li>`).join('')}</ol>`
+
+const failedNotice = (what, reason) => `<div class="notice" role="alert"><p><b>${what}</b> ${reason}</p><button class="btn" ${act('retry')}>Try again</button></div>`
+
+function screensView(d) {
+  if (d.load === 'loading')
+    return loadingBody(d)
+  const tale = story(d)
+  const heading = `<h2 class="title-sm section"><span>Screens in Order${d.order.length > MANY ? `<span class="count">${d.order.length}</span>` : ''}</span><span class="actions">${status(`order-${d.id}`)}</span></h2>`
+  const rows = d.order.length
+    ? `${heading}
+       ${d.mirroring ? `<div class="notice inline"><p>Rotation is paused while Mirroring is on. These Screens are kept and can still be edited; they return when you switch Mirroring off in <a class="link" href="#/devices/${d.id}/settings">Settings</a>.</p></div>` : ''}
+       <ol class="rows ${d.mirroring ? 'paused' : ''}">${d.order.map((id, i) => screenRow(d, id, i)).join('')}</ol>`
+    : `<div class="empty section">
+        <h2 class="title-md">Add ${possessive(d.name)} first Screen</h2>
+        <p>A Screen is one thing the Device shows: a Plugin, a Mashup, an image from a link or a file, or HTML you write. With more than one, ${d.name} steps through them in Order, one per poll.</p>
+        <a class="btn primary" href="#/devices/${d.id}/add">Add Screen</a>
+      </div>`
+  return `
+    ${d.load === 'failed' ? failedNotice(`Could not load ${possessive(d.name)} Screens.`, 'The server answered 500. What you see is from 07:42.') : ''}
+    <div class="hero">
+      <span class="plate hero">${picture(tale.img, `On ${d.name}: ${tale.title}`)}${tale.sealed ? seal(48, { red: true, cls: state.stamp ? 'stamp' : '' }) : ''}</span>
+      <div class="story">
+        <h2 class="title-md">${tale.title}</h2>
+        ${tale.lines.map(line => `<p>${line}</p>`).join('')}
+        <dl class="facts">${facts(d)}</dl>
+      </div>
+    </div>
+    ${rows}`
+}
+
+/* ── Add Screen and Edit HTML ── */
+
+const nameField = (placeholder, value = '') => `<label class="field"><span class="label">Name</span><input class="in wide text" placeholder="${placeholder}" value="${esc(value)}"></label>`
+const htmlPreview = d => `<div class="field"><span class="label">Preview <span class="soft small">as ${d.name} renders it: ${d.model}, 2-bit greyscale</span></span><span class="plate hero live"><iframe title="Preview" sandbox></iframe></span></div>`
+
+function addForm(d) {
+  const assigned = d.order.map(id => d.screens[id]).filter(s => s.kind === 'Plugin').map(s => s.name)
+  const query = state.pluginQuery.toLowerCase()
+  const matching = plugins().filter(p => p.name.toLowerCase().includes(query))
+  const firstFree = matching.find(p => !assigned.includes(p.name))
+  return {
+    plugin: () => !plugins().length
+      ? `<div class="empty"><h3 class="title-sm">No Plugins yet</h3><p>A Plugin fetches data and renders it with a template. Import one as a Recipe from TRMNL, or build your own. Either way it is assigned to ${d.name} when you save it.</p><div class="btnrow"><a class="btn primary" href="#/plugins">Import a Recipe</a><a class="btn" href="#/plugins">Build a Plugin</a></div></div>`
+      : `${plugins().length > MANY ? `<label class="searchbox">${icon('i-search')}<input class="in" type="search" placeholder="Find a Plugin" aria-label="Find a Plugin" value="${esc(state.pluginQuery)}" data-input="plugin-query" data-fk="plugin-query"></label>` : ''}
+        <div class="plist" role="radiogroup" aria-label="Plugin">${matching.length ? matching.map((p) => {
+          const taken = assigned.includes(p.name)
+          return `<button class="pick" role="radio" aria-checked="${p === firstFree}" ${taken ? 'aria-disabled="true"' : ''}><span class="dot"></span><b>${p.name}</b><span>${taken ? `Already on ${d.name}` : `${p.kind} Plugin${p.needs ? ' · a required Plugin Field is empty' : ''}`}</span></button>`
+        }).join('') : `<p class="soft" style="padding:var(--space-3) 0">No Plugin is called “${esc(state.pluginQuery)}”.</p>`}</div>
+        <p class="soft">No Plugin for it yet? <a class="link" href="#/plugins">Import a Recipe or build one</a>; it is assigned to ${d.name} when you save it.</p>`,
+    mashup: () => `
+      ${nameField('Weekend board')}
+      <div class="field"><span class="label">Layout</span>${layoutPicker(state.addLayout, 'add-layout', '')}</div>
+      <div class="field"><span class="label">Plugins</span><ul class="slots">${layouts[state.addLayout].slots.map((slot, n) => `<li><span class="soft">${slot}</span>${slotSelect(slot, ['weather', 'calendar'][n], ['weather', 'calendar'], '')}</li>`).join('')}</ul><span class="hint">Any Plugin can fill a slot, whether or not it is assigned to ${d.name}. A Plugin fills one slot at most.</span></div>`,
+    link: () => `
+      ${nameField('Tide table')}
+      <label class="field"><span class="label">Image URL</span><input class="in wide" type="url" placeholder="https://example.com/image.png"></label>
+      <div role="radiogroup" aria-label="Fetching">
+        <button class="pick" role="radio" aria-checked="true"><span class="dot"></span><b>Fetch once and keep</b><span>Kuroshiro fetches and converts the image now and keeps it until you refresh it.</span></button>
+        <button class="pick" role="radio" aria-checked="false"><span class="dot"></span><b>Fetch on every poll</b><span>Kuroshiro downloads and converts it each time this Screen's turn comes.</span></button>
+      </div>`,
+    file: () => `
+      ${nameField('Harbour photo')}
+      <div class="field"><span class="label">Image</span><div class="drop"><span>Drop an image here. PNG, JPEG, BMP, GIF, TIFF or WebP. It is converted for ${d.model}, 2-bit greyscale.</span><button class="btn">${icon('i-upload')}Choose file</button></div></div>`,
+    html: () => `
+      ${nameField('Fridge note')}
+      <label class="field"><span class="label">HTML</span><textarea class="in" spellcheck="false" data-live>${esc(library.note.html)}</textarea></label>
+      ${htmlPreview(d)}`,
+  }[state.addKind]()
+}
+
+const addKinds = [
+  { id: 'plugin', name: 'Plugin', gist: 'One of your Plugins, rendered for this Device' },
+  { id: 'mashup', name: 'Mashup', gist: 'Several Plugins sharing one Screen in a layout' },
+  { id: 'link', name: 'External link', gist: 'An image fetched from a URL' },
+  { id: 'file', name: 'File', gist: 'An image you upload' },
+  { id: 'html', name: 'HTML', gist: 'Markup you write here, with a live preview' },
+]
+
+const backLink = d => `<a class="back" href="#/devices/${d.id}">${icon('i-chev')}${possessive(d.name)} Screens</a>`
+
+const addView = d => `
+  ${backLink(d)}
+  <h2 class="title-sm section" style="margin-top:var(--space-4)">Add Screen</h2>
+  <div class="add">
+    <div class="picks" role="radiogroup" aria-label="Kind of Screen">
+      ${addKinds.map(k => `<button class="pick" role="radio" aria-checked="${k.id === state.addKind}" ${act('add-kind', k.id)}><span class="dot"></span><b>${k.name}</b><span>${k.gist}</span></button>`).join('')}
+    </div>
+    <div class="form">
+      ${addForm(d)}
+      ${state.addKind === 'plugin' && !plugins().length ? '' : `<div class="foot btnrow"><button class="btn primary" ${act('add', d.id)}>${state.addKind === 'plugin' ? 'Assign Plugin' : 'Add Screen'}</button><a class="btn quiet" href="#/devices/${d.id}">Cancel</a><span class="soft small">Joins the end of the Order, always shown until you give it a Schedule.</span></div>`}
+    </div>
+  </div>`
+
+const editHtmlView = (d, id) => `
+  ${backLink(d)}
+  <h2 class="title-sm section" style="margin-top:var(--space-4)">Edit ${d.screens[id].name}</h2>
+  <div class="editor">
+    <label class="field" style="max-width:none"><span class="label">HTML</span><textarea class="in" spellcheck="false" data-live data-fk="html-edit">${esc(d.screens[id].html ?? library.note.html)}</textarea></label>
+    ${htmlPreview(d)}
+  </div>
+  <div class="form" style="max-width:none"><div class="foot btnrow"><a class="btn primary" href="#/devices/${d.id}">Save HTML</a><a class="btn quiet" href="#/devices/${d.id}">Cancel</a><span class="soft small">${d.name} shows the change when this Screen's turn next comes.</span></div></div>`
+
+/* ── Settings ── */
+
+const set = (label, control, note = '', hint = '') => `<li class="set"><b>${label}</b><span class="ctl">${control}</span><span class="note">${note}</span>${hint ? `<span class="hint">${hint}</span>` : ''}</li>`
+const sw = (on, label, name, id, disabled = false) => `<button class="sw" role="switch" aria-checked="${on}" aria-label="${label}" ${act(name, id)} ${disabled ? 'disabled' : ''}></button>`
+const touch = key => `data-change="touch" data-key="${key}" data-fk="${key}"`
+const tucked = (key, title, body, open = false) => {
+  const isOpen = state.tucked[key] ?? open
+  return `<div class="tucked" data-state="${isOpen ? 'open' : 'closed'}"><button aria-expanded="${isOpen}" ${act('tuck', key)}><span>${title}</span>${icon('i-chev')}</button>${isOpen ? `<div>${body}</div>` : ''}</div>`
+}
+
+function settingsView(d) {
+  const mirrored = Boolean(d.mirroring)
+  const proxied = d.mirroring === 'proxied'
+  const fns = [['identify', 'Shows the Device\'s identification screen once'], ['sleep', 'Puts the Device to sleep until its button is pressed'], ['add_wifi', 'Opens Wi-Fi setup so another network can be added'], ['rewind', 'Shows the previous Screen again']]
+  return `
+    <p class="lede">Changes save as you make them.</p>
+    <h2 class="title-sm section" style="margin-top:var(--space-8)">Display</h2>
+    <ul class="rows">
+      ${set('Name', `<input class="in text" value="${esc(d.name)}" aria-label="Name" ${touch('name')}>`, status('name'))}
+      ${set('Device Model', `<select class="in" aria-label="Device Model" ${touch('model')}>${options(['TRMNL OG · 800 × 480', 'TRMNL X · 1872 × 1404', 'Kindle Paperwhite 6 · 1448 × 1072'], 'TRMNL OG · 800 × 480')}</select>`, status('model') || (d.mismatch ? '' : `${d.name} reports TRMNL OG`), d.mismatch ? `<span class="message">${icon('i-problem')}<span>${d.name} reports 1872 × 1404, which is not this Device Model's size. Images are rendered for the Device Model chosen here.</span></span>` : '')}
+      ${set('Palette', `<select class="in" aria-label="Palette" ${touch('palette')}>${options(['2-bit greyscale', '1-bit black and white', 'Warm paper · custom'], '2-bit greyscale')}</select>`, status('palette'), 'Changing the Device Model or the Palette converts this Device\'s stored images again.')}
+      ${set('Refresh rate', proxied ? '<span>Set by TRMNL</span>' : `every <input class="in" type="number" min="1" value="15" aria-label="Refresh rate" style="width:4.5rem" ${touch('rate')}> <select class="in" aria-label="Unit" ${touch('rate')}>${options(['minutes', 'hours'], 'minutes')}</select>`, status('rate'), proxied ? `${d.name} is a Proxied Device, so TRMNL's answer decides how often it polls.` : `How often ${d.name} polls, and so how often Rotation moves on. It also sets when ${d.name} counts as offline.`)}
+    </ul>
+
+    <h2 class="title-sm section">Sleep Mode</h2>
+    <ul class="rows">
+      ${set('Sleep Mode', `<span class="swline">${sw(d.sleep.on && !mirrored, 'Sleep Mode', 'sleep-toggle', d.id, mirrored)}<span>${mirrored ? 'Off while Mirroring' : d.sleep.on ? 'On' : 'Off'}</span></span>`, status('sleep') || (d.sleeping ? `In its window until ${d.sleep.to}` : ''))}
+      ${d.sleep.on && !mirrored ? set('Window', `${timeInput(d.sleep.from, 'Sleep Mode from', touch('sleep-from'))} to ${timeInput(d.sleep.to, 'Sleep Mode to', touch('sleep-to'))}`, status('sleep-from') || status('sleep-to') || `Server timezone, ${SERVER_TZ}`, minutes(d.sleep.to) < minutes(d.sleep.from) ? 'This window crosses midnight.' : '') : ''}
+      ${d.sleep.on && !mirrored ? `<li class="set top"><b>While asleep</b><span class="ctl" style="display:block" role="radiogroup" aria-label="While asleep">
+          <button class="pick" role="radio" aria-checked="${d.sleep.screen === 'fallback'}" ${act('sleep-screen', 'fallback')}><span class="dot"></span><b>Show the sleep Fallback Screen</b><span>“Asleep until ${d.sleep.to}”, or your own image.</span></button>
+          <button class="pick" role="radio" aria-checked="${d.sleep.screen === 'keep'}" ${act('sleep-screen', 'keep')} style="border-bottom:0"><span class="dot"></span><b>Keep the Current Screen</b><span>Whatever ${d.name} showed last stays on.</span></button>
+        </span><span class="note">${status('sleep-screen')}</span></li>` : ''}
+      ${d.sleep.on && !mirrored && d.sleep.screen === 'fallback' ? set('Sleep image', d.sleep.image
+        ? `<span class="sleepimg"><span class="plate">${picture('photo2')}</span><span class="btnrow"><button class="btn" ${act('sleep-image', 'on')}>Replace</button><button class="btn quiet" ${act('sleep-image', 'off')}>Remove</button></span></span>`
+        : `<button class="btn" ${act('sleep-image', 'on')}>${icon('i-upload')}Upload an image</button>`, status('sleep-image'), d.sleep.image ? `Shown instead of the sleep Fallback Screen.` : `Optional. Without one, ${d.name} shows the sleep Fallback Screen.`) : ''}
+    </ul>
+
+    <h2 class="title-sm section">Firmware</h2>
+    <ul class="rows">
+      ${set('Reported version', '<span class="mono">1.6.8</span>')}
+      ${mirrored
+        ? set('Target Firmware', `<span>${proxied ? 'Set by TRMNL' : 'Off while Mirroring'}</span>`)
+        : `<li class="set"><b>Target Firmware</b><span class="ctl"><select class="in" aria-label="Target Firmware" ${touch('firmware')}>${options(['None', '1.6.9 · official', '1.7.0-rc2 · custom · Kitchen test build'], '1.6.9 · official')}</select>${d.firmwarePending ? `<span class="status">${busy}Goes out at the next poll, around ${d.nextPoll}</span>` : status('firmware')}</span><button class="btn" ${act('firmware', d.id)} ${d.firmwarePending ? 'disabled' : ''}>Update now</button><span class="hint">Only Firmware that fits ${d.model} is listed.</span></li>`}
+    </ul>
+    <p class="sect-note">The <a class="link" href="#/instance">Firmware library</a> lives under Instance. Firmware Auto-Update is off, so ${d.name} only updates when you press “Update now”.</p>
+
+    <h2 class="title-sm section">Mirroring</h2>
+    <ul class="rows">
+      ${set('Mirroring', `<span class="swline">${sw(mirrored, 'Mirroring', 'mirror-toggle', d.id)}<span>${mirrored ? 'On' : 'Off'}</span></span>`, status('mirror'))}
+      ${mirrored ? set('Mirror MAC address', `<input class="in" value="${proxied ? 'A4:CF:12:4F:2A:1C' : 'A4:CF:12:9B:01:7E'}" placeholder="A4:CF:12:00:00:00" aria-label="Mirror MAC address" ${touch('mirror-mac')}>${proxied ? '' : `<button class="btn quiet" ${act('mirror-own', d.id)}>Use ${possessive(d.name)} own</button>`}`, status('mirror-mac'), proxied ? `This is ${possessive(d.name)} own MAC address, which makes it a Proxied Device: its whole poll is forwarded and TRMNL answers it.` : 'The MAC address of the Device on TRMNL\'s server whose image is shown.') : ''}
+      ${mirrored ? set('Mirror API key', '<input class="in" type="password" value="xxxxxxxxxxxxxxxx" aria-label="Mirror API key" ' + touch('mirror-key') + '>', status('mirror-key'), 'That Device\'s API key on TRMNL.') : ''}
+    </ul>
+    <p class="sect-note">${d.name} shows the image of a Device on TRMNL's own server instead of its own Screens. While it is on, Rotation, Sleep Mode and Firmware pushes do not apply to ${d.name}; its Screens are kept.</p>
+
+    <div class="tuckedwrap">
+    ${tucked('identity', 'Identity and credentials', `
+      <ul class="rows">
+        ${set('Friendly id', '<span class="mono">4F2A1C</span>')}
+        ${set('MAC address', `<span class="copy"><code>A4:CF:12:4F:2A:1C</code><button class="btn" ${act('copy', 'mac')}>${state.saved === 'copy-mac' ? 'Copied' : 'Copy'}</button></span>`)}
+        ${set('API key', `<span class="copy"><code>${state.tucked.reveal ? 'kq3ZpT8w1vYcN5hLx0a91e' : '••••••••••••••••••a91e'}</code><button class="btn" ${act('tuck', 'reveal')}>${state.tucked.reveal ? 'Hide' : 'Reveal'}</button><button class="btn" ${act('copy', 'key')}>${state.saved === 'copy-key' ? 'Copied' : 'Copy'}</button></span>`)}
+      </ul>`)}
+    ${tucked('special', 'Special Functions', `
+      <p>A one-shot command that reaches ${d.name} at its next poll and fires once. The <span class="mono">sleep</span> Special Function is separate from Sleep Mode.</p>
+      ${proxied ? `<p class="message" style="margin-top:var(--space-3)">${icon('i-problem')}<span>${d.name} is a Proxied Device. TRMNL answers its polls, so a Special Function triggered here never reaches it.</span></p>` : ''}
+      <ul class="rows">
+        ${fns.map(([fn, what]) => `<li class="frow"><span class="mono">${fn}</span><span class="what">${d.pending === fn ? `<span class="status">${busy}Pending, reaches ${d.name} around ${d.nextPoll}</span>` : what}</span><button class="btn" data-act="special" data-id="${d.id}" data-fn="${fn}" data-fk="special-${fn}" ${d.pending || proxied ? 'disabled' : ''}>Trigger</button></li>`).join('')}
+      </ul>`, Boolean(d.pending))}
+    ${tucked('danger', `Reset or delete ${d.name}`, `
+      <p>A Device Reset makes ${d.name} erase its Wi-Fi credentials and this server's URL at its next poll, so someone has to set it up by hand again. Nothing here is lost. Deleting removes ${d.name}, its ${d.order.length} Screens, their Schedules and its Device Log from this Instance.</p>
+      ${proxied ? `<p class="message" style="margin-top:var(--space-3)">${icon('i-problem')}<span>${d.name} is a Proxied Device, so a Device Reset triggered here never reaches it.</span></p>` : ''}
+      <div class="btnrow" style="margin-top:var(--space-4)"><button class="btn" ${act('reset', d.id)} ${d.resetPending || proxied ? 'disabled' : ''}>Device Reset</button><button class="btn" ${act('delete-device', d.id)}>Delete ${d.name}</button>${d.resetPending ? `<span class="status">${busy}Device Reset pending, reaches ${d.name} around ${d.nextPoll}</span>` : ''}</div>`)}
+    </div>`
+}
+
+/* ── Logs ── */
+
+function logsView(d) {
+  const { level, q, shown, open, fresh } = state.log
+  const query = q.trim().toLowerCase()
+  const matching = logEntries.filter(e => (level === 'all' || ['warning', 'error'].includes(e.lvl)) && (!query || e.msg.toLowerCase().includes(query)))
+  const visible = matching.slice(0, shown)
+  const mark = msg => query ? esc(msg).replace(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'), '<mark>$1</mark>') : esc(msg)
+  const filtered = level !== 'all' || query
+  const list = visible.map((e, i) => `
+    ${i === 0 || visible[i - 1].day !== e.day ? `<li class="dayline">${e.day}</li>` : ''}
+    <li class="${e.lvl} ${open === e.id ? 'is-open' : ''}">
+      <button aria-expanded="${open === e.id}" ${act('log-open', e.id)}><time>${e.t}</time><span class="lvl">${e.lvl}</span><span class="msg">${mark(e.msg)}</span>${icon('i-chev')}</button>
+      ${open === e.id ? `<dl><dt>Source</dt><dd>${e.src}</dd><dt>Device status</dt><dd>${e.extra}</dd><dt>Firmware</dt><dd>1.6.8</dd></dl>` : ''}
+    </li>`).join('')
+  return `
+    <div class="logbar">
+      <div class="seg" role="radiogroup" aria-label="Level">
+        <button role="radio" aria-checked="${level === 'all'}" ${act('log-level', 'all')}>All</button>
+        <button role="radio" aria-checked="${level === 'problems'}" ${act('log-level', 'problems')}>Warnings and errors</button>
+      </div>
+      <label class="searchbox">${icon('i-search')}<input class="in" type="search" placeholder="Search messages" aria-label="Search messages" value="${esc(q)}" data-input="log-q" data-fk="log-q"></label>
+      <button class="btn" ${act('clear-logs', d.id)} ${logEntries.length ? '' : 'disabled'}>Clear Logs</button>
+    </div>
+    <div class="logmeta"><span role="status">${matching.length ? `Showing ${visible.length} of ${matching.length}${filtered ? ' that match' : ''}, newest first` : ''}</span>${fresh && !filtered ? `<button class="btn quiet" ${act('log-fresh')}>${fresh} new entries</button>` : ''}</div>
+    ${matching.length
+      ? `<ol class="logs rows">${list}</ol>
+         <div class="logfoot">${visible.length < matching.length ? `<button class="btn" ${act('log-older')}>Older entries</button>` : '<span class="soft small">That is the whole Device Log.</span>'}<span class="soft small">Entries older than 30 days are removed by <a class="link" href="#/instance">Retention</a>.</span></div>`
+      : `<div class="empty" style="margin-top:var(--space-6)"><h3 class="title-sm">${filtered ? 'No entry matches' : 'No Device Log entries yet'}</h3><p>${filtered ? `Nothing in ${possessive(d.name)} Device Log matches${query ? ` “${esc(q)}”` : ''}${level !== 'all' ? ' among warnings and errors' : ''}.` : `${d.name} sends an entry when something goes wrong on its side. They appear here after its next poll.`}</p>${filtered ? `<button class="btn" ${act('log-reset')}>Show all entries</button>` : ''}</div>`}`
+}
+
+/* ── pages ── */
+
+function devicePage(d, view, arg) {
+  const tab = ['add', 'edit'].includes(view) ? 'screens' : view
+  const body = { screens: screensView, settings: settingsView, logs: logsView, add: addView, edit: () => editHtmlView(d, arg) }[view](d)
+  return {
+    section: 'devices', deviceId: d.id, title: d.name,
+    sub: ['screens', 'settings', 'logs'].map(v => ({ label: cap(v), href: `#/devices/${d.id}${v === 'screens' ? '' : `/${v}`}`, current: v === tab })),
+    actions: view === 'screens' && d.order.length && d.load !== 'loading' ? `<a class="btn primary" href="#/devices/${d.id}/add">Add Screen</a>` : '',
+    body,
+  }
+}
+
+const showing = (d) => {
+  const tale = story(d)
+  return d.current && !d.mirroring && !d.sleeping ? `Showing <b>${tale.title}</b>` : `<b>${tale.title}</b>`
+}
+
+const devicesPage = () => ({
+  section: 'devices', title: 'Devices',
+  actions: '<a class="btn" href="#/connect">Connect a Device</a>',
+  body: `<ul class="rows" style="margin-top:var(--space-5)">${devices().map((d) => {
+    const tale = story(d)
+    return `
+    <li><a class="drow" href="#/devices/${d.id}">
+      <span class="plate">${picture(tale.img)}</span>
+      <span>
+        <span class="dname title-md">${d.name}</span>
+        <span class="dshow">${showing(d)}</span>
+        <span class="dfacts">${d.offline ? '<span class="fault">Alert: offline</span> · ' : ''}${lowBattery(d) ? '<span class="fault">Alert: battery low</span> · ' : ''}Last seen ${d.seen} · Battery ${d.battery}</span>
+      </span>
+      ${icon('i-chev')}
+    </a></li>`
+  }).join('')}</ul>`,
+})
+
+const connectPage = () => {
+  const first = state.count === 0
+  return {
+    section: 'connect', title: first ? 'Connect your Device' : 'Connect a Device',
+    body: `
+      <p class="lede">Enter this server URL on the Device's Wi-Fi setup page. The Device shows up here the moment it calls in.</p>
+      <div class="url"><code>http://kuroshiro.local:3000</code><button class="btn primary" ${act('copy', 'url')}>${state.saved === 'copy-url' ? 'Copied' : 'Copy URL'}</button></div>
+      ${state.arrived
+        ? `<div class="arrived"><span class="plate thumb">${picture('welcome')}</span><div><p class="label">A Device called in</p><p class="mono soft">4F2A1C · Firmware 1.6.9 · TRMNL OG</p><div class="win"><label>Name <input class="in text" value="Kitchen" aria-label="Name"></label><a class="btn primary" href="#/devices/kitchen">Open Kitchen</a></div></div></div>
+           <p class="waiting soft" style="font-weight:var(--weight-regular)">${busy}Still listening, in case there is another one</p>`
+        : `<p class="waiting" role="status">${busy}Waiting for a Device to call in</p><p class="soft small" style="margin-top:var(--space-1)">Prototype: press <b>p</b> to let one call in.</p>`}
+      <ol class="steps">
+        <li><span><b>Put the Device into Wi-Fi setup.</b> <span class="soft">A new Device starts there. Otherwise hold its button for five seconds.</span></span></li>
+        <li><span><b>Join its Wi-Fi network from your phone or laptop.</b> <span class="soft">It is called TRMNL. The setup page opens by itself.</span></span></li>
+        <li><span><b>Enter your Wi-Fi and the server URL above.</b> <span class="soft">The URL goes into the custom server field. The Device restarts and calls in.</span></span></li>
+      </ol>
+      ${first ? `<p class="also">Moving from another Instance? <a class="link" href="#/instance">Import a Configuration Archive</a> to bring its Devices, Screens and Plugins along.</p>` : ''}
+      <div class="tuckedwrap narrow" style="margin-top:var(--space-8)">
+      ${tucked('byhand', 'Register a Device by hand', `
+        <p>For a Device that cannot call the setup address itself, or to try Kuroshiro with the Device Simulator. A Device registered here appears at once and waits for its first poll.</p>
+        <div class="form" style="padding-top:var(--space-4)">
+          <label class="field"><span class="label">Name</span><input class="in wide text" placeholder="Kitchen"></label>
+          <label class="field"><span class="label">MAC address</span><span class="win"><input class="in" placeholder="A4:CF:12:00:00:00" value="${state.tucked.mac ?? ''}" style="width:13rem"><button class="btn quiet" ${act('random-mac')}>Make one up</button></span><span class="hint">Six pairs of hex digits. Make one up only for a Device that has no real one.</span></label>
+          <div class="btnrow"><button class="btn">Register Device</button></div>
+        </div>`)}
+      </div>`,
+  }
+}
+
+const stubPage = (section, title) => ({ section, title, body: `<p class="lede">Stub. This page belongs to another spec ticket; this prototype is about the Device surfaces.</p>` })
+const missingPage = () => ({ section: 'devices', title: 'No Device here', body: `<div class="empty section"><p>There is no Device at this address. It may have been deleted.</p><a class="btn" href="#/devices">All Devices</a></div>` })
+
+function resolve() {
+  const [a, b, c, e] = (location.hash.replace(/^#/, '') || '/').split('/').filter(Boolean)
+  const list = devices()
+  if (a === 'devices' && b) {
+    const d = list.find(x => x.id === b)
+    if (!d)
+      return missingPage()
+    if (c === 'edit' && d.screens[e])
+      return devicePage(d, 'edit', e)
+    return devicePage(d, ['settings', 'logs', 'add'].includes(c) ? c : 'screens')
+  }
+  if (a === 'devices' && list.length)
+    return devicesPage()
+  if (a === 'plugins')
+    return stubPage('plugins', 'Plugins')
+  if (a === 'instance')
+    return stubPage('instance', 'Instance')
+  if (a === 'alerts')
+    return stubPage('alerts', 'Alerts')
+  if (a === 'connect' || !list.length)
+    return connectPage()
+  return list.length === 1 ? devicePage(list[0], 'screens') : devicesPage()
+}
+
+/* The bar names the Devices while there are four or fewer; from five it carries one "Devices" entry. */
+const BAR_NAMES = 4
+function shell(page) {
+  const list = devices()
+  const firing = alertCount()
+  const short = name => name.length > 16 ? `${name.slice(0, 15)}…` : name
+  const deviceNav = !list.length
+    ? `<a href="#/connect" ${current(true)}>Connect a Device</a>`
+    : list.length > BAR_NAMES
+      ? `<a href="#/devices" ${current(['devices', 'connect'].includes(page.section))}>Devices</a>`
+      : `${list.map(d => `<a href="#/devices/${d.id}" title="${esc(d.name)}" ${current(page.deviceId === d.id)}>${short(d.name)}</a>`).join('')}<a href="#/connect" ${current(page.section === 'connect')}>Connect a Device</a>`
+  return `
+    <header class="bar">
+      <a class="lockup" href="#/">${seal(26)}<span class="wordmark">Kuroshiro</span></a>
+      <nav aria-label="Sections">${deviceNav}<i></i><a href="#/plugins" ${current(page.section === 'plugins')}>Plugins</a><a href="#/instance" ${current(page.section === 'instance')}>Instance</a></nav>
+      ${firing ? `<a class="alertlink" href="#/alerts">${firing} Alert${firing > 1 ? 's' : ''} firing</a>` : ''}
+    </header>
+    <main class="col">
+      ${page.deviceId && list.length > BAR_NAMES ? `<a class="back" href="#/devices" style="margin:0 0 var(--space-3)">${icon('i-chev')}Devices</a>` : ''}
+      <div class="head"><h1 class="title-lg">${page.title}</h1><div class="actions">${page.actions ?? ''}</div></div>
+      ${page.sub ? `<nav class="tabs" aria-label="${esc(page.title)} views">${page.sub.map(s => `<a href="${s.href}" ${current(s.current)}>${s.label}</a>`).join('')}</nav>` : ''}
+      ${page.body}
+    </main>
+    <nav class="btabs" aria-label="Sections">
+      <a href="${page.deviceId || page.section === 'connect' ? '#/devices' : '#/'}" ${current(['devices', 'connect'].includes(page.section))}>${list.length === 1 ? list[0].name : list.length ? 'Devices' : 'Connect'}</a>
+      <a href="#/plugins" ${current(page.section === 'plugins')}>Plugins</a>
+      <a href="#/instance" ${current(page.section === 'instance')}>Instance</a>
+    </nav>`
+}
+
+/* ── prototype plumbing ── */
+
+function render() {
+  const page = resolve()
+  const active = document.activeElement
+  const focusKey = active?.dataset?.fk
+  const caret = active?.selectionStart
+  document.documentElement.dataset.theme = state.theme
+  document.querySelector('#app').innerHTML = shell(page)
+  document.title = `PROTOTYPE: ${page.title}`
+  const label = { theme: cap(state.theme), devices: `${state.count} Device${state.count === 1 ? '' : 's'}`, alert: state.alert ? 'Alert firing' : 'No Alert', scene: scene().label, plugins: state.plugins ? '10 Plugins' : 'No Plugins' }
+  Object.entries(label).forEach(([key, text]) => { document.querySelector(`[data-cycle="${key}"]`).textContent = text })
+  if (focusKey) {
+    const el = document.querySelector(`[data-fk="${focusKey}"]`)
+    el?.focus()
+    if (el && caret != null && el.setSelectionRange && ['text', 'search', 'url'].includes(el.type))
+      el.setSelectionRange(caret, caret)
+  }
+  syncLive()
+  state.stamp = false
+  const query = new URLSearchParams({ theme: state.theme, devices: state.count, alert: state.alert ? 1 : 0, scene: state.scene, plugins: state.plugins ? 1 : 0 })
+  history.replaceState(null, '', `?${query}${location.hash}`)
+}
+
+function syncLive() {
+  const source = document.querySelector('[data-live]')
+  const frame = document.querySelector('.live iframe')
+  if (!source || !frame)
+    return
+  frame.style.transform = `scale(${frame.parentElement.clientWidth / 800})`
+  frame.srcdoc = `<body style="margin:0;background:#fff;color:#0a0a0a">${source.value}`
+}
+
+let savedTimer
+function flash(key) {
+  state.saved = key
+  clearTimeout(savedTimer)
+  savedTimer = setTimeout(() => {
+    state.saved = null
+    render()
+  }, 2000)
+}
+
+const routeDevice = () => devices().find(d => d.id === location.hash.split('/')[2]) ?? devices()[0]
+
+function move(d, id, to) {
+  const from = d.order.indexOf(id)
+  if (to < 0 || to >= d.order.length || to === from)
+    return
+  d.order.splice(to, 0, ...d.order.splice(from, 1))
+  flash(`order-${d.id}`)
+}
+
+function confirmThen({ title, text, lost, kept, action }, run) {
+  const dialog = document.querySelector('#confirm')
+  dialog.innerHTML = `<h2 class="title-md">${title}</h2>${text ? `<p>${text}</p>` : ''}<ul>${lost ? `<li><span>Lost</span><span>${lost}</span></li>` : ''}${kept ? `<li><span>Stays</span><span>${kept}</span></li>` : ''}</ul><div class="btnrow"><button class="btn" value="cancel" autofocus>Cancel</button><button class="btn primary" value="go">${action}</button></div>`
+  dialog.onclick = (e) => {
+    const value = e.target.closest('button')?.value
+    if (!value)
+      return
+    dialog.close()
+    if (value === 'go') {
+      run()
+      render()
+    }
+  }
+  dialog.showModal()
+}
+
+function removeScreen(d, id) {
+  if (d.current === id)
+    d.current = null
+  d.order = d.order.filter(x => x !== id)
+  state.open[d.id] = null
+}
+
+const touchSchedule = id => flash(`sched-${id}`)
+
+const actions = {
+  'open': (d, id) => {
+    state.open[d.id] = state.open[d.id] === id ? null : id
+    state.flow = null
+  },
+  'sched-toggle': (d, id) => { d.screens[id].schedule.on = !d.screens[id].schedule.on },
+  'sched-add': (d, id) => {
+    d.screens[id].schedule = { on: true, days: [1, 1, 1, 1, 1, 1, 1], from: null, to: null }
+    touchSchedule(id)
+  },
+  'sched-remove': (d, id) => {
+    const s = d.screens[id]
+    confirmThen({ title: `Remove ${possessive(s.name)} Schedule?`, lost: 'Its days, hours and dates.', kept: `${s.name} itself, which is then always shown.`, text: 'To keep the days and hours and only stop showing it, switch the Schedule off instead.', action: 'Remove Schedule' }, () => { s.schedule = null })
+    return false
+  },
+  'day': (d, id, el) => {
+    const days = d.screens[id].schedule.days
+    days[el.dataset.n] = days[el.dataset.n] ? 0 : 1
+    touchSchedule(id)
+  },
+  'move-up': (d, id) => move(d, id, d.order.indexOf(id) - 1),
+  'move-down': (d, id) => move(d, id, d.order.indexOf(id) + 1),
+  'move-top': (d, id) => move(d, id, 0),
+  'move-end': (d, id) => move(d, id, d.order.length - 1),
+  'rename-open': (d, id) => { state.flow = { id, kind: 'rename' } },
+  'rename-save': (d, id) => {
+    d.screens[id].name = document.querySelector(`[data-rename="${id}"]`).value.trim() || d.screens[id].name
+    state.flow = null
+  },
+  'flow-cancel': () => { state.flow = null },
+  'layout-open': (d, id) => { state.flow = { id, kind: 'layout', layout: d.screens[id].layout, slots: [...d.screens[id].slots] } },
+  'layout-pick': (d, id, el) => { state.flow.layout = el.dataset.layout },
+  'layout-save': (d, id) => {
+    const { layout, slots } = state.flow
+    Object.assign(d.screens[id], { layout, slots: slots.slice(0, layouts[layout].slots.length) })
+    state.flow = null
+    flash(`slot-${id}`)
+  },
+  'replace-open': (d, id) => { state.flow = { id, kind: 'replace', chosen: false } },
+  'replace-choose': () => { state.flow.chosen = true },
+  'replace-save': (d, id) => {
+    Object.assign(d.screens[id], { img: 'photo2', file: 'alps.jpg', fileFacts: '2400 × 1440 · 1.1 MB · uploaded just now' })
+    state.flow = null
+  },
+  'fetch-mode': (d, id, el) => {
+    d.screens[id].cached = el.dataset.mode === 'cached'
+    flash(`fetch-${id}`)
+  },
+  'refresh-image': (d, id) => { d.screens[id].rendered = 'just now' },
+  'delete': (d, id) => {
+    const s = d.screens[id]
+    const copy = s.kind === 'Plugin'
+      ? { title: `Unassign ${s.name} from ${d.name}?`, lost: `This Screen on ${d.name} and its Schedule.`, kept: `The Plugin ${s.name}, with its template, its Data Sources and its place in any Mashup.`, action: 'Unassign Plugin' }
+      : { title: `Delete ${s.name}?`, lost: { 'File': 'The Screen, its Schedule and the uploaded image.', 'Mashup': 'The Screen, its Schedule and the Mashup\'s layout.', 'HTML': 'The Screen, its Schedule and the HTML written for it.', 'External link': 'The Screen, its Schedule and the link.' }[s.kind], kept: s.kind === 'Mashup' ? 'The Plugins in its slots.' : `${possessive(d.name)} other Screens, which move up in the Order.`, action: 'Delete Screen' }
+    confirmThen(copy, () => removeScreen(d, id))
+    return false
+  },
+  'add-kind': (d, id) => { state.addKind = id },
+  'add-layout': (d, id, el) => { state.addLayout = el.dataset.layout },
+  'add': (d) => {
+    const added = { plugin: ['tide', 'moon', 'word', 'parcel'].find(id => !d.order.includes(id)) ?? 'doorbell', mashup: 'mashup', link: 'tide', file: 'photo2', html: 'note' }[state.addKind]
+    if (!d.order.includes(added))
+      d.order.push(added)
+    state.open[d.id] = added
+    location.hash = `#/devices/${d.id}`
+  },
+  'sleep-toggle': (d) => {
+    d.sleep.on = !d.sleep.on
+    flash('sleep')
+  },
+  'sleep-screen': (d, id) => {
+    d.sleep.screen = id
+    flash('sleep-screen')
+  },
+  'sleep-image': (d, id) => {
+    d.sleep.image = id === 'on'
+    flash('sleep-image')
+  },
+  'mirror-toggle': (d) => {
+    d.mirroring = d.mirroring ? null : 'on'
+    d.current = d.mirroring ? null : d.order[0] ?? null
+    flash('mirror')
+  },
+  'mirror-own': (d) => {
+    d.mirroring = 'proxied'
+    flash('mirror-mac')
+  },
+  'firmware': (d) => { d.firmwarePending = true },
+  'special': (d, id, el) => { d.pending = el.dataset.fn },
+  'tuck': (d, id) => { state.tucked[id] = !(state.tucked[id] ?? (id === 'special' && Boolean(d?.pending))) },
+  'copy': (d, id) => flash(`copy-${id}`),
+  'random-mac': () => { state.tucked.mac = Array.from({ length: 6 }, () => Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase()).join(':') },
+  'reset': (d) => {
+    confirmThen({ title: `Reset ${d.name}?`, text: `At its next poll, around ${d.nextPoll}, ${d.name} erases what it has stored and restarts into Wi-Fi setup. You need to be at the Device afterwards and enter the Wi-Fi and this server's URL again.`, lost: `On the Device: its Wi-Fi credentials, its API key and this server's URL.`, kept: `Everything here: ${d.name}, its Screens, Schedules and Device Log. It gets the same API key back.`, action: 'Device Reset' }, () => { d.resetPending = true })
+    return false
+  },
+  'delete-device': (d) => {
+    confirmThen({ title: `Delete ${d.name}?`, lost: `${d.name}, its ${d.order.length} Screens with their Schedules and uploaded images, and its Device Log.`, kept: 'Your Plugins. The Device itself keeps working until it next polls and is then registered again as a new Device.', action: `Delete ${d.name}` }, () => {
+      state.devices = state.devices.filter(x => x.id !== d.id)
+      state.count = Math.max(0, state.count - 1)
+      location.hash = '#/'
+    })
+    return false
+  },
+  'clear-logs': (d) => {
+    confirmThen({ title: `Clear ${possessive(d.name)} Logs?`, lost: `All ${logEntries.length} entries of ${possessive(d.name)} Device Log.`, kept: 'Nothing else changes. New entries arrive with the next poll.', action: 'Clear Logs' }, () => {
+      logEntries.length = 0
+      state.log.fresh = 0
+    })
+    return false
+  },
+  'log-level': (d, id) => Object.assign(state.log, { level: id, shown: LOG_PAGE }),
+  'log-open': (d, id) => { state.log.open = state.log.open === Number(id) ? null : Number(id) },
+  'log-older': () => { state.log.shown += LOG_PAGE },
+  'log-fresh': () => { state.log.fresh = 0 },
+  'log-reset': () => Object.assign(state.log, { level: 'all', q: '', shown: LOG_PAGE }),
+  'retry': (d) => { d.load = null },
+}
+
+const cycleThrough = (list, value) => list[(list.indexOf(value) + 1) % list.length]
+const cycles = {
+  theme: () => { state.theme = state.theme === 'light' ? 'dark' : 'light' },
+  devices: () => {
+    state.count = cycleThrough([1, 3, 7, 0], state.count)
+    state.arrived = false
+    buildDevices()
+  },
+  alert: () => { state.alert = !state.alert },
+  plugins: () => { state.plugins = !state.plugins },
+  scene: () => {
+    state.scene = cycleThrough(Object.keys(scenes), state.scene)
+    buildDevices()
+  },
+  poll: () => {
+    if (state.count === 0 || resolve().section === 'connect') {
+      state.arrived = true
+      return
+    }
+    const d = routeDevice()
+    if (d.sleeping || d.mirroring)
+      return
+    const next = nextId(d)
+    state.stamp = Boolean(next) && next !== d.current
+    Object.assign(d, { current: next ?? d.current, seen: 'just now', lastPoll: d.nextPoll ?? scene().time, offline: false, pending: null, resetPending: false, firmwarePending: false })
+  },
+}
+
+function cycle(name) {
+  cycles[name]()
+  render()
+}
+
+const app = document.querySelector('#app')
+document.querySelectorAll('[data-cycle]').forEach(b => b.addEventListener('click', () => cycle(b.dataset.cycle)))
+
+app.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-act]')
+  if (!el || el.getAttribute('aria-disabled') === 'true')
+    return
+  e.preventDefault()
+  if (actions[el.dataset.act](routeDevice(), el.dataset.id, el) !== false)
+    render()
+})
+
+app.addEventListener('change', (e) => {
+  const el = e.target.closest('[data-change]')
+  if (!el)
+    return
+  const d = routeDevice()
+  const s = d?.screens[el.dataset.id]
+  const changes = {
+    from: () => { s.schedule.from = el.value },
+    to: () => { s.schedule.to = el.value },
+    allday: () => { [s.schedule.from, s.schedule.to] = el.checked ? [null, null] : ['06:00', '09:00'] },
+    dates: () => { s.schedule.dates = el.checked ? [TODAY, '2026-10-08'] : null },
+    date0: () => { s.schedule.dates[0] = el.value },
+    date1: () => { s.schedule.dates[1] = el.value },
+    slot: () => {
+      s.slots[el.dataset.n] = el.value
+      flash(`slot-${el.dataset.id}`)
+    },
+    'flow-slot': () => { state.flow.slots[el.dataset.n] = el.value },
+    touch: () => flash(el.dataset.key),
+  }
+  changes[el.dataset.change]()
+  if (['from', 'to', 'allday', 'dates', 'date0', 'date1'].includes(el.dataset.change))
+    touchSchedule(el.dataset.id)
+  render()
+})
+
+app.addEventListener('input', (e) => {
+  if (e.target.matches('[data-live]'))
+    return syncLive()
+  const key = e.target.dataset.input
+  if (key === 'log-q')
+    Object.assign(state.log, { q: e.target.value, shown: LOG_PAGE })
+  if (key === 'plugin-query')
+    state.pluginQuery = e.target.value
+  if (key)
+    render()
+})
+
+app.addEventListener('keydown', (e) => {
+  if (!e.target.matches('[data-rename]'))
+    return
+  if (e.key === 'Enter')
+    actions['rename-save'](routeDevice(), e.target.dataset.rename)
+  if (e.key === 'Escape')
+    state.flow = null
+  if (['Enter', 'Escape'].includes(e.key))
+    render()
+})
+
+let dragged = null
+app.addEventListener('dragstart', (e) => {
+  const item = e.target.closest('[data-drag]')
+  if (!item)
+    return
+  dragged = item.dataset.drag
+  e.dataTransfer.effectAllowed = 'move'
+  requestAnimationFrame(() => item.classList.add('lifted'))
+})
+app.addEventListener('dragover', (e) => {
+  const item = e.target.closest('[data-drag]')
+  if (!item || !dragged)
+    return
+  e.preventDefault()
+  const order = routeDevice().order
+  app.querySelectorAll('.drop-before, .drop-after').forEach(el => el.classList.remove('drop-before', 'drop-after'))
+  if (item.dataset.drag !== dragged)
+    item.classList.add(order.indexOf(item.dataset.drag) < order.indexOf(dragged) ? 'drop-before' : 'drop-after')
+})
+app.addEventListener('drop', (e) => {
+  const item = e.target.closest('[data-drag]')
+  if (!item || !dragged)
+    return
+  e.preventDefault()
+  const d = routeDevice()
+  move(d, dragged, d.order.indexOf(item.dataset.drag))
+  dragged = null
+  render()
+})
+app.addEventListener('dragend', () => {
+  dragged = null
+  app.querySelectorAll('.lifted, .drop-before, .drop-after').forEach(el => el.classList.remove('lifted', 'drop-before', 'drop-after'))
+})
+
+addEventListener('hashchange', () => {
+  state.flow = null
+  render()
+  scrollTo(0, 0)
+})
+addEventListener('resize', syncLive)
+document.addEventListener('keydown', (e) => {
+  if (e.target.closest('input, textarea, select, [contenteditable]') || e.metaKey || e.ctrlKey || e.altKey || document.querySelector('dialog[open]'))
+    return
+  const keys = { t: 'theme', d: 'devices', a: 'alert', s: 'scene', g: 'plugins', p: 'poll' }
+  if (keys[e.key])
+    cycle(keys[e.key])
+})
+
+buildDevices()
+render()
+</script>
+</body>
+</html>
