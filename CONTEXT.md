@@ -5,7 +5,7 @@ Self-hosted BYOS (Bring Your Own Server) backend for TRMNL e-ink display devices
 ## Language
 
 **Device**:
-A physical TRMNL e-ink display unit registered against this server, identified by its MAC address and API key.
+A TRMNL e-ink display unit, or anything speaking its firmware's protocol, registered against this server and identified by its MAC address and API key. Usually physical hardware, but a Device registered by hand or through the Device Simulator is a Device like any other.
 _Avoid_: Display (reserve "Display" for the API response type returned to the device)
 
 **Device Model**:
@@ -29,12 +29,12 @@ An integer position (1..N, sequential, no gaps) that determines a Screen's place
 _Avoid_: Position, index, sequence number
 
 **Active Screen**:
-The one Screen per Device currently being shown (`isActive: true`). Not a fixed pointer — advances dynamically to the next eligible Screen by `order` each time the Device polls for its display, wrapping back to `order: 1` after the last screen. If no Screen on the Device can currently be shown (every Screen has a Schedule and none match, or every eligible Screen raises a `skip` Render Signal), there is no Active Screen — the Device gets the same fallback image as a Device with zero Screens at all.
+The one Screen per Device currently being shown (`isActive: true`). Not a fixed pointer — advances dynamically to the next eligible Screen by `order` each time the Device polls for its display, wrapping back to `order: 1` after the last screen. If no Screen on the Device can currently be shown (every Screen has a Schedule and none match, or every eligible Screen raises a `skip` Render Signal), there is no Active Screen — the Device gets the same no-screen Fallback Screen as a Device with zero Screens at all.
 _Avoid_: Selected screen
 
 **Current Screen**:
-The specific feature/endpoint (`/current_screen`) that returns the Active Screen's image without advancing the rotation — used for previewing what a Device shows right now, distinct from the polling endpoint (`/display`) a Device itself calls, which always advances.
-_Avoid_: Active screen (see above — related but not the same concept)
+What a Device is showing right now, as far as the server knows — the Active Screen's image, a Fallback Screen, or on a mirrored Device the mirrored image. Read through `/current_screen`, which never advances the Rotation, unlike the `/display` poll a Device itself makes.
+_Avoid_: Active Screen (the Screen whose turn it is — the Current Screen is the image, and may not come from a Screen at all), on the panel (say "on the Device"), preview
 
 **Rotation**:
 The cycle through a Device's Screens in `order`, one step per `/display` poll — skipping any Screen currently ineligible per its Schedule, if it has one, and any Screen whose render raises a `skip` Render Signal.
@@ -45,16 +45,24 @@ A set of day/time constraints (weekday selection, daily time-of-day window — m
 _Avoid_: Playlist, playlist item, recurrence rule
 
 **Render Signal**:
-What a Screen's rendered page declares about itself by setting one of TRMNL's two JS flags — `skip` (`window.TRMNL_SKIP_DISPLAY`: leave this Screen out of Rotation for now) or `hold` (`window.TRMNL_SKIP_SCREEN_GENERATION`: keep showing this Screen's previous image instead of generating a new one); `skip` wins when both are set. Read at the page's `load` event during a `/display` poll, so only Screens that render through Chrome can raise one — `plugin`, raw `html` and Mashup, a Mashup signalling as a whole whichever slot set the flag. A `skip` Screen never becomes the Active Screen; a `hold` Screen does, and shows its stored image (the no-screen fallback if it has none yet). The verdict is remembered on a `plugin` or Mashup Screen until its cached output changes, while a raw `html` Screen is evaluated on every poll. Distinct from Schedule, which an admin sets on the Screen: a Render Signal is raised by the content itself.
+What a Screen's rendered page declares about itself by setting one of TRMNL's two JS flags — `skip` (`window.TRMNL_SKIP_DISPLAY`: leave this Screen out of Rotation for now) or `hold` (`window.TRMNL_SKIP_SCREEN_GENERATION`: keep showing this Screen's previous image instead of generating a new one); `skip` wins when both are set. Read at the page's `load` event during a `/display` poll, so only Screens that render through Chrome can raise one — `plugin`, raw `html` and Mashup, a Mashup signalling as a whole whichever slot set the flag. A `skip` Screen never becomes the Active Screen; a `hold` Screen does, and shows its stored image (the no-screen Fallback Screen if it has none yet). The verdict is remembered on a `plugin` or Mashup Screen until its cached output changes, while a raw `html` Screen is evaluated on every poll. Distinct from Schedule, which an admin sets on the Screen: a Render Signal is raised by the content itself.
 _Avoid_: Skip flag, skip logic, conditional skip, `TRMNL_SKIP_*` (bare, in prose — reserve for the flag names), skip-if-stale (a separate, unbuilt admin-set TTL)
+
+**Screen State**:
+The one reason a Screen is or is not showing right now, derived on every read and never stored — `Active Screen`, `Up next` (the Screen Rotation turns to on the next poll), `Schedule off` (its Schedule is disabled), `Not today` (its Schedule's weekdays or date range exclude today), `Not at this hour` (today matches but the time-of-day window does not) or `Skipping` (it raised a `skip` Render Signal). A Screen that is none of these waits its turn in Order and carries no state. While Sleep Mode is in its window the Active Screen reads "Active Screen, paused" — a qualifier, not a further state — and "Always shown" describes a Screen with no Schedule, not a state.
+_Avoid_: Queued, status, inactive, disabled (a Schedule is disabled, a Screen is not)
+
+**Fallback Screen**:
+One of four built-in images a Device shows when it has no Screen's image to show — welcome (in the setup response, before the Device's first poll), no-screen (registered, but zero Screens or none that can currently be shown), error (the Screen's or the mirrored image could not be produced) and sleep (Sleep Mode in its window with the sleep screen on). Rendered per Device Model and Palette; not a Screen — it has no Order, no Schedule, belongs to no Device and cannot be edited.
+_Avoid_: Fallback image, placeholder, default screen, system screen, `noScreen` (bare, in prose — reserve for the kind's code name)
 
 **Plugin Kind**:
 Which strategy a Plugin uses to get data into its template — `Poll` (Kuroshiro fetches from a Data Source on a schedule) or `Webhook` (an external system pushes data by POSTing to the Plugin's Webhook URL, rendered synchronously on arrival).
 _Avoid_: Plugin type, strategy
 
 **Plugin Assignment**:
-A Plugin attached to one Device's Rotation, always paired 1:1 with a plugin-type Screen on that Device. Creating the assignment creates the Screen, and deleting either one removes both. The Plugin itself and its Mashup slots are unaffected. A Plugin has at most one Assignment per Device.
-_Avoid_: DevicePlugin (the entity name), install
+A Plugin attached to one Device's Rotation, always paired 1:1 with a plugin-type Screen on that Device. Creating the assignment creates the Screen, and deleting either one removes both. The Plugin itself and its Mashup slots are unaffected, so an admin unassigns a Plugin Assignment, where every other Screen is deleted along with its content. A Plugin has at most one Assignment per Device.
+_Avoid_: DevicePlugin (the entity name), install, uninstall, remove, detach
 
 **Plugin Field**:
 One named input a Plugin declares for the admin to fill in — a key, a label, a type (single-line text, multi-line text, number, on/off, password, or a select with its options), an optional default and whether it is required. Part of the Plugin: it arrives with a Recipe or `.trmnlp` import, or the admin authors it on the Plugin. A type Kuroshiro has no control for is treated as single-line text; the `author_bio` type is a read-only credit, never an input.
@@ -129,12 +137,24 @@ Restoring a Configuration Archive onto an instance: an upsert of every record by
 _Avoid_: Restore (bare, in prose — reserve for the ADR's "restore targets a fresh instance" framing), sync
 
 **Special Function**:
-A one-shot command an admin triggers on a Device — `identify`, `sleep`, `add_wifi` or `rewind`, with `none` meaning nothing pending — that reaches the Device on its next `/display` poll. (`restart_playlist` and `send_to_me` are accepted by the API and offered in the UI, but marked unavailable: no Device Kuroshiro targets acts on them.) That response carries the value twice — as `special_function`, and echoed back as `action`, which is the field firmware waits for before actually performing the behaviour — and the Device's stored value is cleared to `none` in the same poll, so the command fires exactly once instead of re-asserting on every poll. On a proxied Device (mirroring a Device with an identical MAC) both fields come from TRMNL's own `/display` response instead of the local value.
+A one-shot command an admin triggers on a Device — `identify`, `sleep`, `add_wifi` or `rewind`, with `none` meaning nothing pending — that reaches the Device on its next `/display` poll. (`restart_playlist` and `send_to_me` are accepted by the API and offered in the UI, but marked unavailable: no Device Kuroshiro targets acts on them.) That response carries the value twice — as `special_function`, and echoed back as `action`, which is the field firmware waits for before actually performing the behaviour — and the Device's stored value is cleared to `none` in the same poll, so the command fires exactly once instead of re-asserting on every poll. On a Proxied Device both fields come from TRMNL's own `/display` response instead of the local value.
 _Avoid_: Special function toggle, device action, command
 
+**Device Reset**:
+A one-shot command an admin triggers on a Device, delivered on its next `/display` poll, that makes the Device erase its Wi-Fi credentials and everything else it has stored — API key and server URL included — and restart into Wi-Fi setup. Nothing on the server is lost and the Device gets its same API key back, but it does not return until someone sets it up by hand again. Separate from Special Function, and dropped on a Proxied Device, where TRMNL's answer decides.
+_Avoid_: Reset (bare), factory reset, reboot, restart, `reset_firmware` (bare, in prose — reserve for the response field)
+
 **Sleep Mode**:
-A per-Device night window (`sleepStartTime`–`sleepEndTime`, time-of-day, may cross midnight, evaluated in the server's timezone) gated by an independent `sleepModeEnabled` toggle, mirroring Schedule's enabled/window split. While active, the Device's Active Screen stops advancing, and `/display` returns a `refresh_rate` computed as seconds-until-`sleepEndTime` so the Device wakes exactly when the window ends rather than on its usual cadence. A second toggle, `sleepScreenEnabled`, chooses between showing a dedicated `sleep` fallback screen (a new kind on the same mechanism as `noScreen`/`error`/`welcome`) or freezing whatever content was already showing. Applies only to non-mirrored Devices, and is entirely independent of the `sleep` Special Function — a separate, one-shot command an admin triggers by hand, sharing nothing but a name.
+A per-Device night window (`sleepStartTime`–`sleepEndTime`, time-of-day, may cross midnight, evaluated in the server's timezone) gated by an independent `sleepModeEnabled` toggle, mirroring Schedule's enabled/window split. While active, the Device's Active Screen stops advancing, and `/display` returns a `refresh_rate` computed as seconds-until-`sleepEndTime` so the Device wakes exactly when the window ends rather than on its usual cadence. A second toggle, `sleepScreenEnabled`, chooses between showing the sleep Fallback Screen or freezing whatever content was already showing. Applies only to non-mirrored Devices, and is entirely independent of the `sleep` Special Function — a separate, one-shot command an admin triggers by hand, sharing nothing but a name.
 _Avoid_: Sleep (bare, in prose — ambiguous with the Special Function of the same name), Night Mode, Do Not Disturb
+
+**Mirroring**:
+A per-Device setting that makes the Device show the image of a Device on TRMNL's own server — named by a mirror MAC and mirror API key — instead of its own Rotation. A Device with Mirroring on is a mirrored Device: its Screens are kept, but Rotation, Sleep Mode and Firmware pushes do not apply to it.
+_Avoid_: Mirror mode, sync, mirror (as a name for grouping Devices)
+
+**Proxied Device**:
+A mirrored Device whose mirror MAC is its own, so its whole poll is forwarded and TRMNL answers it — refresh rate, Firmware, Special Functions and Device Reset all come from TRMNL, and those triggered in Kuroshiro never reach the Device. Not a setting of its own: it follows from the two MACs being equal.
+_Avoid_: Proxy mode, proxy mirror, passthrough
 
 **Firmware**:
 A versioned OTA binary a Device can be pushed to — either `official-synced` (mirrored automatically from `usetrmnl.com/api/firmware/latest`) or `custom` (uploaded directly by an admin). Carries a SHA-256 checksum, verified again at serve-time, and an optional set of compatible Device Models (empty means universal) enforced whenever a Firmware is assigned to a Device. A Device references at most one Firmware as its target for the next push, cleared once served — the same explicit, admin-driven assignment Device Model already uses, never inferred by comparing version numbers; with Firmware Auto-Update on, a newly synced `official-synced` Firmware is assigned the same way on the admin's behalf. Applies only to non-mirrored Devices.
@@ -148,6 +168,14 @@ _Avoid_: Firmware type, firmware source
 A Device's current reading for one Qwiic sensor add-on kind — `carbon_dioxide`, `humidity`, `pressure`, or `temperature` — parsed from the `SENSORS` header official OG firmware sends on every `/display` poll. At most one Sensor per Device per kind: each poll's header is the authoritative full snapshot, so a kind missing from a poll is deleted rather than left stale, and a kind present is upserted with its `value`/`unit`. Exposed to Plugin Liquid templates as an implicit `sensors` object keyed by kind (e.g. `sensors.temperature.value`), present only when the Device currently has that reading — no Plugin opt-in required. Device-attached only; a physically separate concept from server-attached (Raspberry Pi) sensors, which Kuroshiro does not support.
 _Avoid_: Telemetry (too broad), Extension, Exchange (Terminus's terms — not adopted here)
 
+**Device Log**:
+The record of what one Device's firmware has reported about itself to the server, kept per Device as Device Log entries until an admin clears it or Retention prunes it. Labelled "Logs" where the Device is already the context.
+_Avoid_: System logs, server logs (Kuroshiro's own process output, which is not stored), events
+
+**Device Simulator**:
+The troubleshooting tool that makes the firmware's setup and `/display` calls from the browser. Its calls are real: setup with an unknown MAC registers a Device, and a poll advances that Device's Rotation, overwrites what it last reported and consumes a pending Special Function, Device Reset or Firmware push.
+_Avoid_: Virtual Device (it is a tool, not a kind of Device), emulator, test device
+
 **Alert Rule**:
 A named condition Kuroshiro watches for on a subject — a Device (low battery, offline) or a `fetch`-mode Data Source (its Fetch Failure Streak reaching the threshold). The set of Alert Rules is fixed in code; an admin tunes their thresholds instance-wide through Instance Settings, never per subject.
 _Avoid_: Alarm, trigger, check, monitor
@@ -156,9 +184,17 @@ _Avoid_: Alarm, trigger, check, monitor
 One Alert Rule being true for one subject right now — created the first time an Alert Sweep sees the condition hold, resolved the first time a Sweep sees it no longer hold. An Alert is stateful (active or resolved); at most one active Alert per Rule per subject.
 _Avoid_: Incident, event, alarm
 
+**Offline**:
+A Device for which the offline Alert is active, and on no other basis. A Device that is not offline carries no label of its own — only when it was last seen, as a fact.
+_Avoid_: Online (as a state or indicator), down, disconnected, unreachable
+
 **Alert Sweep**:
 The periodic job that evaluates every Alert Rule against Kuroshiro's persisted state and opens or resolves Alerts accordingly. The only place Alerts are decided — no Rule is evaluated inline in a Device poll or any other request path.
 _Avoid_: Poll (reserved for what a Device does), scan, check
+
+**Retention**:
+The daily job that deletes resolved Alerts and Device Log entries older than their configured retention age. Active Alerts are never pruned. One execution, scheduled or triggered from the Maintenance page, is a Retention Run.
+_Avoid_: Cleanup (reserved for the Maintenance page's file cleanup), purge, garbage collection
 
 **Notification**:
 The message pushed to an admin's channels when an Alert is opened or resolved, delivered via Apprise. Fire-and-forget: a Notification carries no state of its own beyond whether the Alert it belongs to has been announced.
@@ -168,9 +204,13 @@ _Avoid_: Alert (as a name for the message), push, message
 A Notification an admin sends on demand from the Maintenance page to confirm the Apprise sidecar delivers. It travels the exact path a real Notification does but belongs to no Alert and leaves no record.
 _Avoid_: Ping, health check, dry run
 
+**Instance**:
+One running Kuroshiro server together with its database and stored files — the whole that Devices, Plugins and Instance Settings belong to.
+_Avoid_: Installation, deployment, site, server (bare, as a name for the whole — fine for the machine or URL a Device connects to)
+
 **Instance Settings**:
 The one set of admin-tunable values that apply to the whole Kuroshiro instance rather than to any single Device, Plugin or Screen — today the Alert Rule thresholds and Firmware Auto-Update. Each Setting is either overridden (an admin saved a value, which wins) or not (the matching environment variable, else the built-in default, applies); clearing an override returns the Setting to that fallback.
-_Avoid_: Global settings, preferences, options, Configuration (reserved for the Configuration Archive), config (reserved for environment variables)
+_Avoid_: Global settings, preferences, options, Settings (bare — that names one Device's Settings view), Configuration (reserved for the Configuration Archive), config (reserved for environment variables)
 
 **Firmware Auto-Update**:
 A boolean Instance Setting, off by default and with no environment-variable fallback, that makes each newly synced `official-synced` Firmware the target of every eligible Device — not mirrored, no push already pending, Device Model within the Firmware's compatible set — as if an admin had assigned it. A default policy, not an override: a pending admin assignment is never replaced, `custom` Firmware is never auto-assigned, and turning the toggle on does not catch Devices up until the next official Firmware lands.
