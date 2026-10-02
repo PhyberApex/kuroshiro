@@ -11,7 +11,20 @@ Paths are relative to the repo root. `api/` means `packages/api/src/`, `shared/`
 
 ## Summary
 
-PLACEHOLDER-SUMMARY
+**Counts.** 9 endpoints to add, 42 to change (moves and renames included), 10 to remove, 6 kept as they are (1.7). Besides the endpoints: two pieces of internal bookkeeping every Device read rests on (1.1) and eight rendering changes a screen states as fact (R1–R8, 1.4).
+
+**Headline findings**
+
+1. **The Device plate cannot be drawn from what the server stores.** `/display` records nothing about what it served (a Screen, which Fallback Screen and why, the mirrored image) or the refresh rate it handed out, and `lastSeen` cannot say "never polled": it is `NOT NULL` with a fixed literal default, so a Device registered by hand goes offline at the next Alert Sweep. A small last-served record on the Device and a nullable `lastSeen` (1.1) are the foundation of every Device read; neither changes what a Device receives.
+2. **Every Device, Screen and Plugin read is a raw entity.** The Plugins list ships each assigned Device's API key and mirror API key. The recommendation is read models in `packages/shared`, built by one mapper per resource and typed into the controllers (section 3, option A), which supersedes the part of ADR-0020 that rejected a shared wire contract. `packages/shared` already holds ten response types (alerts, settings, maintenance, sync results), contrary to the test-strategy ticket's premise.
+3. **There is no global validation or error handling.** Route-by-route pipes disagree, one route has none, failures answer `null` or `{ success: false }` with 200, and the importers' plain errors reach the UI as reasonless 500s. One envelope with a stable `code` (2.1) is the first slice.
+4. **Screen State must be the server's work**: Schedules run in the server's timezone, which the browser does not share (1.2).
+5. **The Plugin save is the largest single change** (P4): one transaction, Data Sources matched by id so streaks and Alerts survive, every Template by size, real validation, a reschedule that keeps the interval as entered. It rewrites the same code as #1101 and should land with it.
+6. **Found on the way** (4.9): a Mashup `PUT` with only a layout keeps the old slots; the cleanup endpoint's path check accepts absolute paths outside the storage folder (a security fix to file now); a Configuration Import writes images inside its transaction and leaves them behind when it fails; Housekeeping's copy says a Screen with a missing image is skipped, while the code serves it the error Fallback Screen.
+
+**Conventions** (section 2): one `ApiError` envelope with a stable `code`, `fields` for validation and `details` for data, and one meaning per status code; read models with `camelCase` derived fields beside stored ones, `…At` ISO strings and `null` for absence; no secret outside the one read that reveals it; whole lists everywhere except Device Logs, which page by keyset cursor; a partial `PATCH` that answers the whole read as saved; Instance facts from one read (`GET /api/instance`); root-relative image paths; explicit upload limits.
+
+**Open calls**, each a recommendation (section 4): keep `identify` as the default Special Function (ADR-0017 chose it); `CONTEXT.md` gives on `targetFirmware`, the code and ADR-0014 keep it; name the field `renderSignal: 'skip' | 'hold' | null`; leave TRMNL's framework at "latest" for now and triage pinning separately; accept the Sensors gap in scheduled renders and file the cache-miss inconsistency it exposes; `{% render %}` beyond `"main"` is a new capability and out of scope; allow four borderline new capabilities only with the maintainer's yes (Palette update, archive check, image preview, clearing a target Firmware with no push pending).
 
 ## How to read the endpoint list
 
