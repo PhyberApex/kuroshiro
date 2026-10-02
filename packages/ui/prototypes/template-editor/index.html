@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTOTYPE: Kuroshiro Plugin template editor</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+<link rel="stylesheet" href="surfaces.css">
+<link rel="stylesheet" href="plugins.css">
+<link rel="stylesheet" href="editor.css">
+</head>
+<body>
+<!--
+PROTOTYPE, throwaway. Wayfinder ticket "The Plugin template editor" (#1095), map "Admin UI rebuild from zero" (#1074).
+One design, no variants: this ticket is not a taste gate. A working editor (CodeMirror 6) and a working live preview
+(liquidjs in the browser, drawn in an iframe with TRMNL's framework, which needs the network) inside the Plugin page of #1093.
+
+#/plugins/weather  a Poll Plugin with two templates   #/plugins/sourdough  just built, the starter template
+#/plugins/doorbell  a Webhook-kind Plugin             #/devices/kitchen/html  a Screen's HTML in the same editor
+?theme=light|dark  ?devices=0|1|3  ?data=ok|failed|fetching|down  ?sched=0|1  ?wide=0|1
+Keys (outside a field): t theme, d Devices, f the preview's data, r the scheduled render, w the full window.
+All data is synthetic and nothing is saved. The vendor bundle is built from vendor/entry.js (see vendor/README.md).
+-->
+<div id="sprite"></div>
+<div id="app"></div>
+
+<div class="proto-bar" role="toolbar" aria-label="Prototype switcher">
+  <button data-cycle="theme"></button>
+  <button data-cycle="devices"></button>
+  <button data-cycle="data"></button>
+  <button data-cycle="sched"></button>
+</div>
+
+<script src="art.js"></script>
+<script src="vendor/editor.bundle.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
