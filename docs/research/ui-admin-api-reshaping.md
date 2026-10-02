@@ -1144,3 +1144,96 @@ Every repair found in the four request lists, the ticket's comments and this rea
 - **The Target Firmware select's "None"** (`devices.md`) against #1086: 4.7.
 - **The Retention ages and the version** are asked for in two places each: 1.7.
 - **A Template that cannot be parsed blocks the save** (`template-editor.md`), but nothing checks Templates on import. A Recipe or file whose Template does not parse is imported, and then the Plugin cannot be saved until that Template is fixed. That is acceptable (the editor shows the problem and where), but P8–P10 should not refuse such an import: refusing would make a Recipe that works on TRMNL's own Liquid impossible to bring in and fix.
+
+## 5. A dependency sketch for slicing
+
+### 5.1 The foundation: before any screen of `packages/ui-next`
+
+Every page has the app shell, and the shell already needs three reads: the bar names the Devices, the bar carries the Alert indicator, and every page carries the demo line and shows server-timezone times. So the foundation is:
+
+| Slice | Entries | Why first |
+|---|---|---|
+| **0a · Error envelope** | 2.1: global `ValidationPipe`, exception filter, `ApiError`, `ApiErrorCode` | Every later slice answers in it and adds its codes to it. Changes no shape on success, so it can land before anything else without breaking the old UI. |
+| **0b · Shared wire types** | 3: `packages/shared/src/api/`, the mapper convention, the ADR | The place every read type of every later slice lands; `ui-next`'s API client and fixture builders import from here from the first screen on. |
+| **0c · Instance facts** | I1 (and 2.8's limits, which I1 states) | The demo line, the timezone beside every Schedule and Sleep Mode time, Connect a Device's server URL. |
+| **0d · Device bookkeeping** | 1.1 preamble: `lastSeen` nullable (migration, offline rule), the last-served record written by `/display` | `currentScreen` and `nextPollAt` on every Device read derive from it. Internal; the Device's answer is unchanged. |
+| **0e · Devices list** | D1 | The bar, the Devices list, Connect a Device's polling. |
+| **0f · Alerts list** | AL1 (`deviceId`, `pluginId`, `pluginId` on fetch Alerts; the `details` fix can follow in the Instance group) | The bar's indicator and every red fact. Additive, so the old UI keeps working. |
+
+### 5.2 Per surface group
+
+**Devices** (needs 0a–0f):
+
+1. **Screen State and the Screen read**: the server-side derivation (1.2) and S7. Everything on the Screens view reads it. `renderSignal` reads `null` until #1069 lands; nothing waits for it.
+2. D2 (and D7 folded in).
+3. **Adding never changes the Active Screen; deleting closes the gap**: S1, M1, A1, S6, A2, M4, S8. One slice: they share the rule and the reindex.
+4. **Editing a Screen**: S2, S4, S3, S5.
+5. M2 and M3 (layouts to `packages/shared`).
+6. S10.
+7. D3 and D4.
+8. **Device Logs**: D8 and D9, with the ingest-time `level` and `message` columns and their backfill.
+9. D10, when #1064 is built.
+
+Cross-group needs: the Settings page's Palette select needs DM1's widened `paletteIds`; its Target Firmware select needs F1; Add Screen's Plugin kind and the Mashup slot selects need P1.
+
+**Plugins** (needs 0a–0f and Devices step 1, because `PluginDetail.assignments[].state` is the same Screen State):
+
+1. P1 and P2, with the new stored facts of 1.3 (`lastFetchSucceededAt`, `payloadReceivedAt`, `lastScheduledRender`, `snapshotTakenAt`).
+2. **P4**, together with #1101 (both rewrite the same save). Its Template parse rule needs R8; P4 can land first with every other rule and gain the parse refusal in the editor's slice.
+3. P3 (the starter template), P5, P6 (#1101's copy of Field Values), P11, P12.
+4. P7 and the importer reading the kind back; P8, P9, P10.
+5. P13 and P14.
+6. R3 (a Webhook-kind Plugin renders without a payload). R4, R6 and R7 are separate (4.9).
+
+**Template editor** (needs Plugins steps 1 and 2):
+
+1. **R8**: the Liquid engine and the filters to `packages/shared`, the server's renderer switched to it.
+2. **R2**: one function builds the render context for every path; then P15 on top of it, and `POST /api/plugins/preview` removed.
+3. R1 (Templates by size, in P4 and in every render) and R5 (the failed scheduled render stored, read through P2).
+4. P4's parse refusal (`template-invalid`).
+
+**Instance and Alerts** (needs 0a–0c; otherwise independent of the Devices and Plugins groups, and its parts independent of each other):
+
+- I2 with #1062.
+- Firmware: F1–F4 with the `SyncRun` record (shared with DM1 and DM6).
+- Device Models and Palettes: DM1–DM6.
+- Configuration Archive: C3, then C2 on top of it (C2 is C3 rolled back); C1 rides #1101.
+- Housekeeping: H1, H2, H3; H4's persisted last run.
+- Alerts: AL1's `details` fix (frozen at resolve, typed per kind).
+
+### 5.3 What breaks the old `packages/ui`
+
+The map lets the old UI break. Every change below breaks a screen of it; nothing else in section 1 does, because the old UI does not call it or the change is additive. Since the old UI is the only UI a release ships until the cutover, a release cut between the first of these and the cutover ships a UI with broken screens; holding releases, or landing these changes in one train shortly before the cutover, avoids it.
+
+| Change | Old UI screen that breaks |
+|---|---|
+| D1 (no `apikey`, renamed fields such as `lastSeen` → `lastSeenAt`) | the Overview and Device details, whose Current Screen calls `/api/current_screen` with the Device's API key (`ui/stores/screens.ts:15-23`) |
+| D4 (telemetry, `mac` and `friendlyId` refused) | Device details' "Update", if it sends the whole Device |
+| D7, D8, D9 (moved or removed) | the Sensors card, the Logs view |
+| S1 (`kind` required, `filename` → `name`), S5 (renamed), S7, S8 (moved), S10 (answers `ScreenRead`) | Add Screen, refresh, the Screen list, reordering, the Schedule dialog (`ui/stores/schedule.ts:16-20` reads the answer as a Schedule) |
+| M1 (`filename` → `name`) | Add Mashup |
+| A1 (only `deviceId`), A2 (renamed) | the assign dialog, unassigning |
+| P1, P2 (new shapes), P3 (narrowed create), P5 (204), P8–P10 (`PluginImportResult`), P13 (renamed field), the removal of `POST /api/plugins/preview` | the Plugins page, the create wizard, the edit form and its preview, the import dialog, the Recipe Update dialog |
+| F1, DM1, DM2 (wrapped in an object), F2, DM6 (renamed fields) | the Firmware and Device Models cards, every Device Model and Palette select |
+| C3 (structured warnings) | the import summary, which would print objects |
+| H1, H2, H3 | the Maintenance storage card and cleanup |
+| 0a's `forbidNonWhitelisted` everywhere | any old call that sends a field the DTO does not declare |
+
+Not breaking: 0a's envelope (it keeps `message`), I1 (new), I2, AL1 (additive), AL2, C1, D5, H4, H5, and the Device-facing endpoints.
+
+## 6. Not verified
+
+Read, not run. These were inferred rather than read, or could not be checked:
+
+- **Plugin Fields after `PATCH /api/plugins/:id`.** `replaceFields` removes the old rows and saves new ones without reassigning `plugin.fields` (`plugins.service.ts:513-524`), and the final `pluginRepository.save(plugin)` (`:425`) still holds the removed objects. From TypeORM's one-to-many handling this would orphan the new rows (their `pluginId` set to `NULL`). The tests mock the repositories, and nothing was run against Postgres. The old UI never sends `fields`, so no user has hit it through the UI.
+- **The timezone name with `TZ` unset.** Expected to be `UTC` in the Docker image; not run.
+- **The Webhook POST body limit.** Assumed to be Express's JSON parser default (100 kB), since `main.ts` configures none; not measured.
+- **Versioned TRMNL framework URLs** (4.4): whether `usetrmnl.com` serves `plugins.css` and `plugins.js` under a version path was not checked.
+- **Liquid errors.** That `liquidjs` reports a parse error's line, and whether `{% render "other" %}` fails at parse or only at render (4.6), was not tried.
+- **`class-transformer`'s `exposeUnsetFields`** (2.5) was not checked against the installed version.
+- **multer's size-limit error** is assumed to reach the filter as Nest's 413 `PayloadTooLargeException`.
+- **`settings.yml`'s `strategy: webhook`.** The importer reads `strategy` and accepts `polling` (`plugin-importer.service.ts:347`); that TRMNL writes `webhook` for a webhook Recipe is taken from `plugins.md`'s refusal table, not from a TRMNL archive.
+- **`upNext` at a future time.** Evaluating Rotation's choice at `nextPollAt` assumes Schedules and remembered verdicts do not change before the poll; a Schedule window that opens in between makes the read's guess wrong until the next refresh. Acceptable for a sentence that says "around {hh:mm}", but not checked against the prototype's expectations.
+- **The Postgres `time` columns** are assumed to come back as `HH:MM:SS` strings (S10); not run.
+- **Old UI breakage** (5.3) is read from its stores and components, not run; whether Device details' "Update" sends telemetry fields was not traced through `ui/components/DeviceInformationCard.vue`.
+- **"About fifteen" mappers** (section 3) is a count of the read types in section 1, not of code written.
