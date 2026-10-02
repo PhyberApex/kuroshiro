@@ -686,3 +686,246 @@ These change what the server renders, not what an endpoint answers. They are lis
 - **R6 · A transform that throws is a failed fetch** (`plugins.md change 15`): today the raw data passes through silently (`api/plugins/services/plugin-transform.service.ts:49-53`).
 - **R7 · A failed Mashup slot is drawn as `plugins.md` specs** (`plugins.md change 14`), in place of `error.png` (`mashup-renderer.service.ts:78-81`).
 - **R8 · The Liquid engine and Kuroshiro's filters move to `packages/shared`** (`template-editor.md add 2`). Today they live in `api/plugins/services/plugin-renderer.service.ts:1-91`, a `new Liquid()` (`:9`) with thirteen filters. It is the one runtime dependency this adds to `packages/shared` (`liquidjs`, which the API already depends on); see section 3.
+
+### 1.5 Alerts
+
+#### AL1 · `GET /api/alerts` · change
+
+- **Today:** `api/alerts/alerts.controller.ts:12-16`, `api/alerts/alerts.service.ts:44-65`: active Alerts uncapped and resolved ones since `resolvedSince` (default 7 days, at most 50), newest first, as `AlertsList` (`shared/alerts.ts:12-28`). The only filter is `resolvedSince` (`api/alerts/dto/list-alerts-query.dto.ts`). A fetch Alert carries `pluginName` and no Plugin id (`alerts.service.ts:17`). `details` is overwritten on every Alert Sweep while the Alert fires (`api/alerts/alert-sweep.service.ts:121`) and again at resolve (`:132`), so a resolved fetch Alert reads a streak of 0 and no error (`api/alerts/rules/data-source-fetch-failing.rule.ts`: a recovered source evaluates to `{ streak: 0, lastError: null }`).
+- **Serves:** the Alerts page (firing and "Resolved in the last 7 days"); the bar's indicator; the Devices list rows and a Device's facts ("Alert: battery low", "Alert: offline"); the Plugins list and Plugin page ("Alert: a Data Source keeps failing"); `devices.md change 7`, `plugins.md add 4`, `instance.md add 7`, `change 14`.
+- **Request:** query `deviceId?`, `pluginId?`, `resolvedSince?` (as today).
+- **Response:** `AlertsList`, with `AlertSummary` extended, not reshaped:
+
+```ts
+interface AlertSummary {                            // shared/alerts.ts:12, today's fields kept
+  id: string
+  kind: AlertKind
+  deviceId?: string
+  deviceName?: string
+  dataSourceId?: string
+  dataSourceName?: string
+  pluginId?: string                                 // new, beside pluginName
+  pluginName?: string
+  openedAt: string
+  resolvedAt: string | null
+  details: AlertDetails
+}
+type AlertDetails =                                 // typed per kind; today Record<string, unknown> | null
+  | { percent: number }                             // device-low-battery
+  | { lastSeen: string }                            // device-offline
+  | { streak: number, lastError: string | null }    // data-source-fetch-failing
+```
+
+- **Rules:** `details` is the cause **while the Alert fired**: the Sweep updates it while the Alert is active and leaves it alone at resolve. The resolved row's "why" (`instance.md`: "Battery at 17 %", "No poll for 1 h 5 min", "3 fetches failed in a row: {error}") is then the last firing value, with the duration from `resolvedAt`. `pluginId` filters fetch Alerts by the Data Source's Plugin; `deviceId` filters Device Alerts. The fields stay optional rather than `null` because the old UI reads this shared type as it is (section 3).
+
+#### AL2 · `POST /api/alerts/test-notification` · keep
+
+`alerts.controller.ts:18-23`, `alerts.service.ts:68-82`: 200 `{ message }`, 400 when Apprise is not configured, 503 when it does not accept. Gains codes `notifications-off` and `notification-failed`. Serves "Send a Test Notification" under Instance Settings.
+
+### 1.6 Instance
+
+#### I1 · `GET /api/instance` · add
+
+- **Today:** none. `KUROSHIRO_API_URL` and demo mode are read in `api/config/config.ts:36-37` and never exposed; the old UI guesses demo mode from its own address (`ui/composeables/useDemoInfo.ts:4`). The timezone is the process's (`schedule-eligibility.ts:3-5`). The API reads its own version for the archive (`api/configuration/get-api-version.ts`). Apprise is `alerts.appriseUrl` and `alerts.appriseKey` (`config.ts:46-47`), posted to as `{url}/notify/{key}` (`api/alerts/notification-sender.service.ts`).
+- **Serves:** `devices.md add 8` (server URL, timezone, demo mode; the Retention ages go to I2, see below); `instance.md add 1` (Notifications set up, the Apprise address, the server's version); the demo line on every page; "Server timezone, {Europe/Berlin}" beside every Schedule and Sleep Mode time; Connect a Device's server URL and its `localhost` warning; "Set where Kuroshiro is started".
+- **Response:**
+
+```ts
+interface InstanceFacts {
+  version: string                                   // the API package's version
+  serverUrl: string                                 // KUROSHIRO_API_URL as configured
+  serverUrlIsLoopback: boolean                      // localhost, 127.0.0.0/8 or ::1
+  timezone: string                                  // IANA name the process runs in
+  demoMode: boolean
+  notifications: { configured: boolean, appriseUrl: string | null }   // user and password stripped from the URL
+  limits: { imageUploadBytes: number, firmwareUploadBytes: number, archiveUploadBytes: number,
+            pluginImportBytes: number, webhookBodyBytes: number }
+}
+```
+
+- **Rules:** read once per page load; nothing here changes without a restart. `appriseKey` is never returned. `timezone` is `Intl.DateTimeFormat().resolvedOptions().timeZone`, which names the zone the Schedules and Sleep Mode are evaluated in; what it reads with `TZ` unset (`instance.md` left this open) is listed in section 6.
+
+#### I2 · `GET` and `PATCH /api/settings` · keep (+ #1062)
+
+`api/settings/settings.controller.ts:10-19`; already shared types (`shared/instance-settings.ts:33-42`), already answers the whole resolved set on every `PATCH`, which is the "save as changed" answer section 2 asks for everywhere. #1062 adds the two Retention ages as Settings; that is where they live (`instance.md add 10`), so `devices.md add 8`'s "and the Retention ages" is served here rather than by I1. Gains error codes only.
+
+#### F1 · `GET /api/firmware` · change
+
+- **Today:** `api/firmware/firmware.controller.ts:18-21`: the entities, newest first (`api/firmware/firmware.service.ts` `findAll`). The time of the last check is read off the newest official row's `syncedAt`, which only moves when a new Firmware is inserted (`api/firmware/firmware-sync.service.ts:60-63`).
+- **Serves:** the Firmware page; `instance.md add 5`, `add 9`; the Target Firmware select in a Device's Settings.
+- **Response:**
+
+```ts
+interface SyncRun { ranAt: string, ok: boolean, error: string | null }
+interface FirmwareRead {
+  id: string
+  version: string
+  kind: 'official-synced' | 'custom'
+  label: string | null
+  compatibleModels: string[]                        // empty: every Device Model
+  deprecated: boolean
+  syncedAt: string | null
+  uploadedAt: string | null
+  filePresent: boolean
+  targetOf: Array<{ id: string, name: string, pushPending: boolean }>
+  runningOn: Array<{ id: string, name: string }>    // Devices reporting this version
+}
+interface FirmwareList { lastSync: SyncRun | null, firmware: FirmwareRead[] }
+```
+
+- **Rules:** `lastSync` is a stored record of every sync run, successful or not, by the daily job and by F2 alike, kept per kind (Firmware, Device Models) in a small table of its own. `filePresent` checks the binary on disk (`firmware.service.ts` `verifyChecksum` already does, at serve time).
+
+#### F2 · `POST /api/firmware/sync` · change
+
+- **Today:** `firmware.controller.ts:23-33` answers `FirmwareSyncResult` (`shared/sync.ts:9-15`) with `assignedCount` only, and no `syncedAt` when nothing was new; a failure is 503 with the reason.
+- **Serves:** "Sync from TRMNL" on the Firmware page and its four outcomes; `instance.md add 6`.
+- **Response:** `{ ranAt: string, inserted: boolean, version: string, assigned: Array<{ id: string, name: string }> }`; 502 `upstream-unreachable` with the reason (503 says Kuroshiro is unavailable, but here TRMNL is).
+
+#### F3 · `POST /api/firmware/upload` · change
+
+- **Today:** `firmware.controller.ts:35-50`, `firmware.service.ts:50-76`: requires a version and a `.bin`, enforces 8 MB through multer (`firmware.controller.ts:36`) and again in the service (`firmware.service.ts:53-54`); stores any version, duplicates included, and any `compatibleModels` strings.
+- **Serves:** Upload Firmware; `instance.md change 3`.
+- **Response:** 201 `FirmwareRead`. **Rules:** a version that exists answers 409 `firmware-version-taken`; a Device Model name the Instance does not know answers 400 `device-model-unknown`; a file over the limit answers 413 `upload-too-large` with `details.limitBytes`; a non-`.bin` answers 400 (as today).
+
+#### F4 · `DELETE /api/firmware/:id` · change
+
+- **Today:** `firmware.service.ts:78-87` removes the row and file. The Device's `targetFirmware` foreign key is `ON DELETE SET NULL` (`devices.entity.ts:88-90`) while `updateFirmware` stays `true`, so the Device reads "update pending" for good, `/display` never serves anything (`display.service.ts:271`), and Firmware Auto-Update skips the Device from then on because it only considers `updateFirmware: false` (`api/firmware/firmware-auto-update.service.ts:29`).
+- **Serves:** "Delete Firmware {version}?" ("Deleting cancels that push"); `instance.md change 1`.
+- **Response:** 204; 404; 400 `firmware-not-custom`. **Rules:** in one transaction, every Device targeting it loses the target and any pending push.
+
+#### DM1 · `GET /api/device-models` · change
+
+- **Today:** `api/device-models/device-models.controller.ts:21-24`: the entities. Which Palettes a model supports is its curated `paletteIds`; custom Palettes are compatible by family, a rule only the Device PATCH applies (`devices.service.ts:94-99`), so the old UI never offers them (capability inventory #19).
+- **Serves:** Device Models and Palettes; the Device Model and Palette selects in a Device's Settings (`devices.md change 4`); "Another Device Model" in the template preview, which needs `cssClasses` and `cssVariables` for the shared screen shell (`shared/screen-shell.ts:1-4`); `instance.md add 9`.
+- **Response:** `{ lastSync: SyncRun | null, models: DeviceModelRead[] }`, where `DeviceModelRead` is the entity's fields (`api/device-models/entities/device-model.entity.ts`) with `syncedAt` as a string, `paletteIds` widened to every compatible Palette (custom ones by family, through `DeviceModelsService.compatibleFamiliesFor`, `api/device-models/device-models.service.ts:89`) and `usedBy: Array<{ id, name }>`.
+
+#### DM2 · `GET /api/device-models/palettes` · change
+
+`device-models.controller.ts:26-29`. Answers `PaletteRead[]`: the entity's fields (`api/device-models/entities/palette.entity.ts`) plus `usedBy: Array<{ id, name }>`. Serves the custom Palettes section ("the Devices that use it", "cannot be changed while a Device uses it") and TRMNL's Palettes.
+
+#### DM3 · `POST /api/device-models/palettes` · change
+
+- **Today:** `device-models.controller.ts:31-35`, `api/device-models/custom-palettes.service.ts:20-34`: validates name, family and colours; does not check the name; the pipe has no `whitelist`.
+- **Serves:** "Add a custom Palette"; `instance.md change 5`.
+- **Response:** 201 `PaletteRead`. **Rules:** a name already used by a custom Palette, compared case-insensitively, answers 409 `palette-name-taken`.
+
+#### DM4 · `PATCH /api/device-models/palettes/:id` · add (see 4.7: a new capability by the map's rule)
+
+- **Today:** none; only create and delete (`device-models.controller.ts`). ADR-0014 (custom Palettes) calls custom Palettes freely editable.
+- **Serves:** the custom Palette form's "Save Palette"; `instance.md add 4`, `change 4`.
+- **Request:** `{ name?: string, frameworkClass?: CustomPaletteFrameworkClass, colors?: string[] }`. **Response:** 200 `PaletteRead`.
+- **Rules:** official Palettes answer 400 `palette-not-custom`; a family change while a Device uses the Palette answers 409 `palette-in-use`; after the commit, the stored images of every Device using it are converted again (`api/screens/screens.service.ts:235-262`, `reconvertImageScreens`).
+
+#### DM5 · `DELETE /api/device-models/palettes/:id` · change
+
+- **Today:** `custom-palettes.service.ts:36-43` removes the row; Devices using it fall to `palette = NULL` through the foreign key (`devices.entity.ts:54-56`) and render with the model's default from then on (`device-models.service.ts:139-143`), but their stored File and kept External link images stay converted for the deleted Palette.
+- **Serves:** "Delete the Palette {name}?" ("goes back to its Device Model's richest Palette … Its stored images are converted again"); `instance.md change 4`.
+- **Response:** 204. **Rules:** each Device using it is given its Device Model's default Palette (`defaultPaletteFor`, `device-models.service.ts:78`) and its images are converted again.
+
+#### DM6 · `POST /api/device-models/sync` · change
+
+`device-models.controller.ts:42-52`. Answers `DeviceModelSyncResult` (`shared/sync.ts:1-7`) with `syncedAt` renamed `ranAt`, records a `SyncRun` either way, and fails with 502 `upstream-unreachable`. Serves "Sync from TRMNL" on Device Models and Palettes.
+
+#### C1 · `GET /api/config/export` · keep
+
+`api/configuration/configuration.controller.ts:14-29`. Field Values move to the Plugin entry and password Field Values are redacted in a Redacted Archive: #1101 (`instance.md change 8`). Errors in the envelope.
+
+#### C2 · `POST /api/config/import/check` · add (see 4.7)
+
+- **Today:** none. `instance.md` builds its import page on reading the archive first, and falls back to a plain confirmation if this ticket declines it.
+- **Serves:** `instance.md add 2`, `add 3`; Configuration Import step 3, "What it would do".
+- **Request:** `multipart/form-data` with `file`.
+- **Response:**
+
+```ts
+interface Ref { id: string, name: string }
+type ImportWarning =
+  | { kind: 'device-apikey-redacted', device: Ref }
+  | { kind: 'webhook-token-redacted', plugin: Ref }
+  | { kind: 'header-redacted', plugin: Ref, dataSource: string, header: string }
+  | { kind: 'mirror-apikey-redacted', device: Ref }
+  | { kind: 'field-value-redacted', plugin: Ref, keyname: string, label: string }
+  | { kind: 'firmware-file-missing', firmware: { id: string, version: string } }
+  | { kind: 'device-model-unknown', device: Ref, deviceModel: string }
+  | { kind: 'palette-unknown', device: Ref, paletteId: string }
+  | { kind: 'firmware-unknown', device: Ref, firmwareId: string }
+  | { kind: 'previous-version-values-dropped', plugin: Ref }          // #1101's previous-version warning
+interface ImportCheck {
+  archive: { kuroshiroVersion: string, exportedAt: string, schemaVersion: number, redacted: boolean }
+  adds: Record<string, number>                      // by kind, the importer's own count keys
+  overwrites: Record<string, number>
+  devices: { added: Ref[], overwritten: Ref[] }
+  settings: { overridden: number }
+  warnings: ImportWarning[]
+}
+```
+
+- **Rules:** runs **the same import** as C3 inside its transaction and rolls it back at the end, so the check and the import cannot disagree. The import is already one transaction (`api/configuration/services/configuration-import.service.ts:99`), with one exception the check must skip: it writes File Screen images to disk inside that transaction (`configuration-import.service.ts:650-651`), which a rollback does not undo. Refusals as C3.
+
+#### C3 · `POST /api/config/import` · change
+
+- **Today:** `configuration.controller.ts:31-38` answers `ConfigurationImportSummary` (`shared/configuration.ts:1-5`) whose `warnings` are sentences (`configuration-import.service.ts:253`, `:264`, `:275`, `:330`, `:479`). `new AdmZip(buffer)` (`:83`) throws a plain error for a file that is not a zip, so the UI gets a 500. The import never hands the Poll Plugins it brought to the scheduler (nothing in `configuration-import.service.ts` calls it), so they do not fetch until a restart or a save. No size limit.
+- **Serves:** Configuration Import step 4 and "Refused"; `instance.md add 3`, `change 6`, `change 7`.
+- **Response:** `{ created: Record<string, number>, updated: Record<string, number>, warnings: ImportWarning[] }`.
+- **Rules:** not a zip, or unreadable entries: 400 `archive-not-zip`; no manifest: 400 `archive-not-configuration`; another `schemaVersion`: 400 `archive-schema-version` with `details: { archive, expected }`; a record the database refuses: 422 `archive-record-refused` with the entity named (`configuration-import.service.ts:171-181` already labels it); over the limit: 413. After the commit, every imported Poll-kind Plugin is scheduled.
+
+#### H1 · `GET /api/maintenance/scan` · change
+
+- **Today:** `api/maintenance/maintenance.controller.ts:17-21`, `api/maintenance/maintenance.service.ts:37-69`: `MaintenanceIssues` (`shared/maintenance.ts:1-36`) with **absolute** paths (`maintenance.service.ts:110`, `:123`, `:140`, `:159`, `:168`) and Screens by id. An HTML Screen that has not been rendered yet is listed as a Screen whose image is missing (`maintenance.service.ts:185` excludes `plugin`, `mashup` and external links, not `html`).
+- **Serves:** Housekeeping, "Stored files"; `instance.md add 8`, `change 10`, `remove` (`GET /api/maintenance/stats` goes once the check carries the totals).
+- **Response:**
+
+```ts
+type StorageFinding =
+  | { id: string, group: 'unusedImage' | 'tempFile' | 'oldUpload', path: string /* below the storage folder */, bytes: number }
+  | { id: string, group: 'deletedDeviceFolder', path: string, bytes: number, files: number }
+  | { id: string, group: 'missingImage', screen: { id: string, name: string, kind: ScreenKind, deviceId: string, deviceName: string, order: number } }
+interface StorageCheck {
+  checkedAt: string
+  screenImages: { files: number, bytes: number }
+  findings: StorageFinding[]
+}
+```
+
+- **Rules:** a finding's `id` is stable across scans (derived from its group and its relative path, or its Screen's id), so the cleanup (H2) can name findings instead of paths. `html` Screens are not `missingImage`: they render on demand.
+
+#### H2 · `POST /api/maintenance/cleanup` · change
+
+- **Today:** `maintenance.controller.ts:23-35` takes paths and Screen ids plus `dryRun`; `maintenance.service.ts:227-266` deletes whatever it is sent, guarded only by `isPathSafe` (`:389-393`: no `..`, and the path contains `public/screens/devices` or `uploads` anywhere). A Screen is deleted with a bare `screenRepository.delete` (`:249-253`): no file cleanup, no Plugin Assignment, no gap closed.
+- **Serves:** "Clean up {n} groups"; `instance.md change 9`, `remove` (`dryRun`).
+- **Request:** `{ findingIds: string[] }`. **Response:** `{ removed: { files: number, folders: number, screens: number, bytes: number }, failed: Array<{ findingId: string, reason: string }> }`.
+- **Rules:** the server scans again and acts only on ids present in that scan; a stale id is reported in `failed` as no longer found. A Screen goes through S6's delete. `dryRun` leaves.
+
+#### H3 · `GET /api/maintenance/stats` · remove
+
+`maintenance.controller.ts:37-41`. `StorageCheck.screenImages` carries the totals (`instance.md remove`). The old UI fetches it and renders it nowhere (capability inventory #88).
+
+#### H4 · `GET /api/maintenance/retention` · keep; H5 · `POST /api/maintenance/retention/run` · keep
+
+`maintenance.controller.ts:43-54`. H5's `dryRun` stays: "Run Retention now" first asks what a run would remove ("Counting what is old enough"). The one change is that the last Retention Run survives a restart (`instance.md change 11`); today it is a field of the service (`api/maintenance/retention.service.ts:29`). After #1062, H4's `ages` are the resolved Settings.
+
+### 1.7 Tallies and reconciliations
+
+| Group | add | change | remove | keep |
+|---|---|---|---|---|
+| Devices (D1–D10) | 2 (D2, D10) | 5 (D1, D3, D4, D8, D9) | 1 (D7) | 1 (D5) |
+| Screens, Schedules (S1–S10) | 3 (S2, S3, S4) | 6 (S1, S5, S6, S7, S8, S10) | 2 (S9, S10's `GET`) | 0 |
+| Mashups (M1–M4) | 0 | 2 (M1, M2) | 3 (M3's two, M4) | 0 |
+| Plugin Assignments (A1–A3) | 0 | 2 (A1, A2) | 2 (A3's two) | 0 |
+| Plugins (P1–P15) | 1 (P15) | 14 (P1–P14) | 1 (`POST /api/plugins/preview`) | 0 |
+| Alerts (AL1–AL2) | 0 | 1 | 0 | 1 |
+| Instance (I1–I2, F1–F4, DM1–DM6, C1–C3, H1–H5) | 3 (I1, DM4, C2) | 12 (F1–F4, DM1–DM3, DM5, DM6, C3, H1, H2) | 1 (H3) | 5 (I2, C1, H4, H5, and the Device-facing set) |
+| **Total** | **9** | **42** | **10** | |
+
+D6 is a request served without an endpoint and is not counted; R1–R8 are rendering changes, not endpoints.
+
+Where the four request lists ask for the same thing, one entry serves them all:
+
+- **"Adding never changes the Active Screen"** is asked by `devices.md change 1` for Screens, Mashups and assignments and again by `plugins.md change 12` for assignments. S1, M1 and A1 share one rule; `plugins.md`'s "must check that the Device exists" is folded into A1.
+- **The Alert list filtered** is asked for one Device (`devices.md change 7`) and for one Plugin (`instance.md change 14`, from `plugins.md`): AL1 takes both parameters.
+- **The Plugin's id on a fetch Alert** (`plugins.md add 4`) and **the cause kept after it resolves** (`instance.md add 7`) are both AL1.
+- **The last scheduled render**: `plugins.md add 2` asks for its time and error, `template-editor.md add 3` adds Liquid's line. The editor's version wins because it is the superset.
+- **The starter template**: `plugins.md add 5` asks for "a starter template that shows the name"; `template-editor.md` fixes the markup. The editor's markup wins: it is the binding text and it reads the name from `trmnl`, so a rename reaches the Device without editing the Template.
+- **Saving keeps the firing fetch Alert** (`instance.md change 15`) is the same change as matching Data Sources by id (`plugins.md change 2`): P4.
+- **The Retention ages**: `devices.md add 8` puts them among the Instance facts, `instance.md add 10` makes them Instance Settings (#1062). They live in I2 only. A value that can be changed belongs with the other Settings and their fallback sources; the facts in I1 are fixed until a restart.
+- **The version**: `instance.md` puts "Kuroshiro {version}" under the Instance list as "the UI's own build version", while `instance.md add 1` asks for the server's version, which the archive page needs ("Export it again from an Instance running Kuroshiro {version}"). Both are needed; I1 carries the server's. While UI and API ship from one release they are the same number.
