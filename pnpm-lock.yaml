@@ -374,8 +374,8 @@ importers:
         specifier: 'catalog:'
         version: 25.12.0
       wait-on:
-        specifier: 9.4.0
-        version: 9.4.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
+        specifier: 9.5.0
+        version: 9.5.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
 
   packages/api:
     dependencies:
@@ -6574,8 +6574,8 @@ packages:
     resolution: {integrity: sha512-4Nsy8K5Tr6SPDH9jhKJOHf7ChDrc1zufZTVSF7x72hwuEXBqxqk9G6cK+K2NRUtB3iELRJqjXb4JPDMBjMTl2Q==}
     engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
 
-  wait-on@9.4.0:
-    resolution: {integrity: sha512-70vjt46idCEqR3THCRFOVTcEeAhzHTMwDvhZyixUYAGmLbQ05acRTbs9E/Jk1hrL3oiAn09C+uNTopbzgMt3ng==}
+  wait-on@9.5.0:
+    resolution: {integrity: sha512-/se5HD9T/CbC1RUfIaHTSaTEe8NjVOgcx9Gx5LyO8/eJ0V0apdvXGGOqBf2SctiNXSmtSJGCGomFBN9L7IYqig==}
     engines: {node: '>=20.0.0'}
     hasBin: true
 
@@ -12774,7 +12774,7 @@ snapshots:
     dependencies:
       xml-name-validator: 5.0.0
 
-  wait-on@9.4.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2):
+  wait-on@9.5.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2):
     dependencies:
       axios: 1.20.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
       joi: 18.2.9
