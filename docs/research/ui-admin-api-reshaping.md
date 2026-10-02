@@ -1131,6 +1131,16 @@ Every repair found in the four request lists, the ticket's comments and this rea
 | 30 | `isPathSafe` accepts any path containing `uploads` or `public/screens/devices`, absolute paths outside the storage folder included | `maintenance.service.ts:389-393` | found here | **Separate**, and a security fix: `POST /api/maintenance/cleanup` is unauthenticated and can delete such files today. H2 removes paths from the request entirely. |
 | 31 | A Configuration Import writes File Screen images inside its transaction; a failed import leaves them on disk | `configuration-import.service.ts:650-651` | found here | **Separate** (Housekeeping finds them later); C2 must skip the write. |
 | 32 | The export's file name is the raw Plugin name inside `filename="…"` | `plugins.controller.ts:164` | ticket comment | **Separate**; folded into P7. |
-| 33 | No upload size limits on images, imports or archives | 2.8 | devices.md add-list, instance.md open points | **Separate** hardening; the limits then feed I1. |
+| 33 | No upload size limits on images, imports or archives | 2.8 | devices.md change 6, instance.md open points | **Separate** hardening; the limits then feed I1. |
 | 34 | `CONTEXT.md` says the target Firmware is cleared once served | `display.service.ts:270-280` | ticket comment | **Separate** docs fix (4.2). |
 | 35 | Saving a Plugin with `fields` may leave the recreated Plugin Fields without their Plugin | `plugins.service.ts:513-524`, `:425` (suspected, section 6) | ticket comment | **Separate**, but #1101 rewrites this exact path (fields matched by keyname); hand it to #1101 rather than filing it. |
+
+### 4.10 Where a spec and the code disagree
+
+- **"Its image is already gone, so {Device} skips it today"** (`instance.md`, Housekeeping, "Screens whose image is missing"). The code does not skip such a Screen: at its turn it serves the error Fallback Screen (`display.service.ts:453-455`). The copy should say that, or the Screen should be skipped; the latter is a Rotation change no ticket asks for.
+- **"The next poll's time is the Device's last seen time plus its refresh rate"** (`devices.md`). Wrong while asleep and on a Proxied Device (1.1). `nextPollAt` uses the refresh rate the poll actually served.
+- **"Saved at {hh:mm}. Fetched and rendered again for {Devices}."** (`plugins.md`). P4 answers after the commit and fetches in the background, so the line is ahead of the facts by the time a fetch takes. Either the line says "Fetching and rendering again for {Devices}", or the save waits for the tick and a slow Data Source holds the save bar for up to its timeout. The first is recommended.
+- **The refresh interval "at most 24 hours"** (`plugins.md`) against Recipes that come with a longer one, which `plugins.md` keeps as imported: 4.8.
+- **The Target Firmware select's "None"** (`devices.md`) against #1086: 4.7.
+- **The Retention ages and the version** are asked for in two places each: 1.7.
+- **A Template that cannot be parsed blocks the save** (`template-editor.md`), but nothing checks Templates on import. A Recipe or file whose Template does not parse is imported, and then the Plugin cannot be saved until that Template is fixed. That is acceptable (the editor shows the problem and where), but P8–P10 should not refuse such an import: refusing would make a Recipe that works on TRMNL's own Liquid impossible to bring in and fix.
