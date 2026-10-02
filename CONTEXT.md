@@ -72,6 +72,10 @@ _Avoid_: Custom field, form field (TRMNL's terms), setting, Plugin Configuration
 What the admin entered for one Plugin Field, falling back to the Plugin Field's default when nothing was entered. Belongs to the Plugin, not to a Plugin Assignment: every Device and every Mashup slot showing the Plugin renders with the same Field Values, and showing it with different values means duplicating the Plugin. Available to the Plugin's templates and to its Data Sources' url, headers and body. A password-type Field Value is a secret. A required Plugin Field with neither a Field Value nor a default marks the Plugin as needing values but never stops it saving, being assigned or rendering.
 _Avoid_: Plugin Variable (a removed concept), per-Device value, override, custom field value, config
 
+**Template**:
+The Liquid markup a Plugin is rendered from, one per size: `full` (the Screen on its own), `half_horizontal` (the top or bottom half of a Mashup), `half_vertical` (the left or right half) and `quadrant` (a quarter). A Plugin always has a `full` Template and at most one of each other size. A Mashup slot renders the Template of its own size and falls back to `full` when the Plugin has none. Reads the Plugin's Data Sources or Webhook Payload, its Field Values, the Device's Sensors and `trmnl` as Liquid variables. An HTML Screen's markup is not a Template: it is plain HTML with no Liquid.
+_Avoid_: Layout (a Mashup's arrangement of slots), view, markup, variant
+
 **Webhook Token**:
 A dedicated, regenerable secret embedded in a Webhook-kind Plugin's ingest URL — distinct from the Plugin's `id`, so the Plugin's admin URL leaking doesn't grant write access.
 _Avoid_: Plugin ID, API key (reserve "API key" for Device auth)

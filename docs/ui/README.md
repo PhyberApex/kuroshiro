@@ -6,7 +6,7 @@ The design spec for the admin UI rebuilt from zero in `packages/ui-next`. It is 
 |---|---|
 | Devices: the Screens view, an opened Screen, Add Screen, Settings, Logs, the Devices list, Connect a Device | [devices.md](./devices.md) |
 | Plugins: the list, Add a Plugin, the Plugin page, the Recipe Update Check | [plugins.md](./plugins.md) |
-| The Plugin template editor | not written yet |
+| The Plugin template editor: the Template section of the Plugin page, its live preview and data, and the code editor in its Liquid, HTML, JSON and JavaScript modes | [template-editor.md](./template-editor.md) |
 | Instance: Instance Settings, Firmware, Device Models and Palettes, Configuration Archive, Housekeeping, the Device Simulator; and the Alerts page | [instance.md](./instance.md) |
 
 ## What is settled elsewhere
