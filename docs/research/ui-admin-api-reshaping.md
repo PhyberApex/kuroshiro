@@ -160,7 +160,7 @@ interface UpdateDeviceInput {
 
 #### D6 · `GET /api/devices/:id/palettes` · not added
 
-`devices.md change 4` asks that "the Palettes offered for a Device include compatible custom Palettes". This needs no Device endpoint: the Device Model read (I14) carries each model's compatible Palette ids, custom ones included, computed with the rule the PATCH already enforces (`devices.service.ts:94-99`, `api/device-models/device-models.service.ts:89`).
+`devices.md change 4` asks that "the Palettes offered for a Device include compatible custom Palettes". This needs no Device endpoint: the Device Model read (DM1) carries each model's compatible Palette ids, custom ones included, computed with the rule the PATCH already enforces (`devices.service.ts:94-99`, `api/device-models/device-models.service.ts:89`).
 
 #### D7 · `GET /api/devices/:id/sensors` · remove
 
@@ -914,8 +914,8 @@ interface StorageCheck {
 | Plugin Assignments (A1–A3) | 0 | 2 (A1, A2) | 2 (A3's two) | 0 |
 | Plugins (P1–P15) | 1 (P15) | 14 (P1–P14) | 1 (`POST /api/plugins/preview`) | 0 |
 | Alerts (AL1–AL2) | 0 | 1 | 0 | 1 |
-| Instance (I1–I2, F1–F4, DM1–DM6, C1–C3, H1–H5) | 3 (I1, DM4, C2) | 12 (F1–F4, DM1–DM3, DM5, DM6, C3, H1, H2) | 1 (H3) | 5 (I2, C1, H4, H5, and the Device-facing set) |
-| **Total** | **9** | **42** | **10** | |
+| Instance (I1–I2, F1–F4, DM1–DM6, C1–C3, H1–H5) | 3 (I1, DM4, C2) | 12 (F1–F4, DM1–DM3, DM5, DM6, C3, H1, H2) | 1 (H3) | 4 (I2, C1, H4, H5) |
+| **Total** | **9** | **42** | **10** | **6** |
 
 D6 is a request served without an endpoint and is not counted; R1–R8 are rendering changes, not endpoints.
 
