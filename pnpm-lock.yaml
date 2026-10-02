@@ -374,8 +374,8 @@ importers:
         specifier: 'catalog:'
         version: 25.12.0
       wait-on:
-        specifier: 9.1.0
-        version: 9.1.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
+        specifier: 9.4.0
+        version: 9.4.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
 
   packages/api:
     dependencies:
@@ -3096,8 +3096,8 @@ packages:
   asynckit@0.4.0:
     resolution: {integrity: sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==}
 
-  axios@1.18.1:
-    resolution: {integrity: sha512-3nTvFlvpn9Zu/RkHUqtc7/+al4UpRW5az71ap5zccp6e8RAYEzhMTecX8Dz1wWDYrPpUoB1HAQEGEAEvUr7S9g==}
+  axios@1.20.0:
+    resolution: {integrity: sha512-r8aOh8j9cGKpgQAqpzrUHnSIc6a59Y3Xf/cv8sy1DrHCkZHzQGEuoq1tARk6qSyDdtQGSDgpb9kFlruzPvrgwg==}
 
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
@@ -4441,8 +4441,8 @@ packages:
     resolution: {integrity: sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ==}
     hasBin: true
 
-  joi@18.2.3:
-    resolution: {integrity: sha512-N5A3KTWQpPWT4ExxxPlUx7WmykGXRzhNidWhV41d6Abu9YfI2NyWCJuxdPnslJCPWtbRpSVOWSnSS6GakLM/Rg==}
+  joi@18.2.9:
+    resolution: {integrity: sha512-2mD929bUVKUhOLQQEVhlf6EZ0Mlo0DeRb5MO7cViR9AXLtBauuccEtB1py9Ocxpo/P7ucnh442iY/iOwrh3IQw==}
     engines: {node: '>= 20'}
 
   joycon@3.1.1:
@@ -6574,8 +6574,8 @@ packages:
     resolution: {integrity: sha512-4Nsy8K5Tr6SPDH9jhKJOHf7ChDrc1zufZTVSF7x72hwuEXBqxqk9G6cK+K2NRUtB3iELRJqjXb4JPDMBjMTl2Q==}
     engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
 
-  wait-on@9.1.0:
-    resolution: {integrity: sha512-PymrLXHLBM1Ju/Xspb2ADUhbPSMvbnuNvy/mN2hWtpbJ3da0h3Ky1LqwKPG5QSVR57liyO0iUpfipYl/s5qNvA==}
+  wait-on@9.4.0:
+    resolution: {integrity: sha512-70vjt46idCEqR3THCRFOVTcEeAhzHTMwDvhZyixUYAGmLbQ05acRTbs9E/Jk1hrL3oiAn09C+uNTopbzgMt3ng==}
     engines: {node: '>=20.0.0'}
     hasBin: true
 
@@ -9063,7 +9063,7 @@ snapshots:
 
   asynckit@0.4.0: {}
 
-  axios@1.18.1(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2):
+  axios@1.20.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2):
     dependencies:
       follow-redirects: 1.16.0(debug@4.4.3(supports-color@10.2.2))
       form-data: 4.0.6
@@ -10475,7 +10475,7 @@ snapshots:
 
   jiti@2.7.0: {}
 
-  joi@18.2.3:
+  joi@18.2.9:
     dependencies:
       '@hapi/address': 5.1.1
       '@hapi/formula': 3.0.2
@@ -12774,12 +12774,11 @@ snapshots:
     dependencies:
       xml-name-validator: 5.0.0
 
-  wait-on@9.1.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2):
+  wait-on@9.4.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2):
     dependencies:
-      axios: 1.18.1(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
-      joi: 18.2.3
+      axios: 1.20.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
+      joi: 18.2.9
       lodash: 4.18.1
-      minimist: 1.2.8
       rxjs: 7.8.2
     transitivePeerDependencies:
       - debug
