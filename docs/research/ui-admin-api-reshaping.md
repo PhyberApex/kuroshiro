@@ -392,3 +392,297 @@ interface UpdateScreenInput {
 #### A3 · `PATCH /api/plugins/device-assignment/:devicePluginId` · remove; `GET /api/plugins/device/:deviceId` · remove
 
 `plugins.controller.ts:179-183` and `:41-44`. A Plugin Assignment's own enable flag and order, and the per-Device list, which no screen reads (`devices.md remove`, `plugins.md remove`). With them the `isActive` and `order` columns of `DevicePlugin` (`api/plugins/entities/device-plugin.entity.ts:10-14`) become dead. Dropping them is a follow-up, not part of this reshaping: the Configuration Archive writes both (`api/configuration/services/configuration-export.service.ts:268-269`, `api/configuration/types.ts:133`), so dropping them changes the archive's schema and its `schemaVersion`. Neither endpoint is called by the old UI.
+
+### 1.3 Plugins
+
+[#1101](https://github.com/PhyberApex/kuroshiro/issues/1101) (`ready-for-agent`) already decides how Field Values are saved and read: on the Plugin, in the same save, keyed by keyname; Plugin Fields matched by keyname; a password Field Value write-only; select options kept by the importers and exporter; a "needs values" flag on reads; duplicate copies Field Values. The shapes below include those fields so the read is complete, but the behaviour is #1101's and is not repeated as a separate item.
+
+```ts
+// shared/api/plugins.ts
+type PluginKind = 'Poll' | 'Webhook'
+type MergeStrategy = 'standard' | 'deep_merge' | 'stream'
+type DataSourceMode = 'fetch' | 'literal'          // already shared/data-source.ts:1-2
+
+interface PluginPlace { screenId: string, name: string, deviceId: string, deviceName: string }   // a Mashup holding the Plugin
+
+interface PluginSummary {
+  id: string
+  name: string
+  kind: PluginKind
+  sourceRecipeId: string | null
+  devices: Array<{ id: string, name: string }>      // assigned, by name
+  mashups: PluginPlace[]
+  worstFetchFailureStreak: number                   // 0 for a Webhook-kind Plugin
+  fetchAlertFiring: boolean
+  needsValues: boolean                              // #1101
+  webhookPayloadStored: boolean | null              // null for a Poll-kind Plugin
+}
+
+interface DataSourceRead {
+  id: string
+  name: string
+  mode: DataSourceMode
+  method: 'GET' | 'POST' | null                     // null for literal
+  url: string | null
+  headers: Record<string, string> | null
+  body: Record<string, unknown> | null
+  transformJs: string | null
+  literalValue: DataSourceLiteralValue | null       // shared/data-source.ts:7
+  fetchFailureStreak: number
+  lastFetchAttemptAt: string | null
+  lastFetchSucceededAt: string | null
+  lastFetchError: string | null
+  alertFiring: boolean
+}
+
+interface PluginFieldRead {
+  id: string
+  keyname: string
+  label: string                                     // the stored `name`
+  type: string                                      // `fieldType`; unknown types pass through (#1101)
+  helpText: string | null                           // the stored `description`
+  default: string | null
+  required: boolean
+  order: number
+  options: string[] | null                          // #1101
+}
+
+type FieldValueRead = { secret: false, value: string | null } | { secret: true, set: boolean }
+
+interface PluginDetail {
+  id: string
+  name: string
+  description: string | null
+  kind: PluginKind
+  createdAt: string
+  updatedAt: string
+  refreshInterval: number | null                    // null for Webhook
+  templates: Array<{ size: TemplateSize, liquidMarkup: string }>   // always one `full`
+  dataSources: DataSourceRead[]                     // [] for Webhook
+  fields: PluginFieldRead[]
+  fieldValues: Record<string, FieldValueRead>       // by keyname, #1101
+  needsValues: boolean
+  webhook: { token: string, url: string, mergeStrategy: MergeStrategy, streamLimit: number | null,
+             payload: unknown, payloadReceivedAt: string | null } | null
+  recipe: { id: string, name: string | null, importedAt: string, snapshotTakenAt: string | null } | null
+  assignments: Array<{ deviceId: string, deviceName: string, screenId: string, order: number,
+                       screenCount: number, state: ScreenState | null }>
+  mashups: PluginPlace[]
+  lastScheduledRender: { at: string, error: { message: string, line: number | null, size: TemplateSize } | null } | null
+}
+```
+
+New stored facts these reads need, none of which exists today:
+
+| Field | Stored as | Written by |
+|---|---|---|
+| `DataSourceRead.lastFetchSucceededAt` | column on `PluginDataSource` beside the streak columns (`api/plugins/entities/plugin-data-source.entity.ts:41-48`) | the success branch of `DataSourceFetchOutcomeService.recordOutcomes` (`api/plugins/services/data-source-fetch-outcome.service.ts:330-331`) |
+| `webhook.payloadReceivedAt` | column on `Plugin` | `WebhookIngestService.ingest` (`api/plugins/services/webhook-ingest.service.ts:73`); cleared by P11 |
+| `lastScheduledRender` | three columns on `Plugin`: time, message, line (and size) | the scheduler tick (`api/plugins/services/plugin-scheduler.service.ts:33-51`), which today only logs a failure (`:48-50`) |
+| `recipe.snapshotTakenAt` | column on `Plugin` | Recipe import and Recipe Update apply |
+
+`webhook.url` is `{KUROSHIRO_API_URL}/api/webhook/{token}`, the address a sender outside uses (`api/plugins/webhook-ingest.controller.ts:6`, global prefix `api/main.ts:27`). `recipe.name` is the snapshot's `name`, `null` for a Plugin imported before snapshots existed (`api/plugins/entities/plugin.entity.ts:60-64`).
+
+#### P1 · `GET /api/plugins` · change
+
+- **Today:** `plugins.controller.ts:31-34`, `plugins.service.ts:93-98`: every Plugin entity with Data Sources, Templates, Fields and `deviceAssignments.device`, so every template, the Webhook Payload, the Recipe Snapshot and each assigned Device whole, `apikey` and `mirrorApikey` included.
+- **Serves:** `plugins.md add 1`, the Plugins list (row, state, filter "With a problem", search); Add Screen's Plugin radio row ("Already on {Device}", "a required Plugin Field is empty"); Add a Plugin's "You already have {Plugin} from this Recipe" (by `sourceRecipeId`); the Mashup slot selects.
+- **Response:** `PluginSummary[]`, by name case-insensitively.
+- **Rules:** no template, Data Source, payload, snapshot or Device secret.
+
+#### P2 · `GET /api/plugins/:id` · change
+
+- **Today:** `plugins.controller.ts:36-39`, `plugins.service.ts:100-105`: the same raw entity; an unknown id answers `null` with 200.
+- **Serves:** `plugins.md add 2`, `add 3`, `add 6` (help text and options), `change 10`; `template-editor.md add 3` (the last scheduled render's time, message and line); the Plugin page in full; the 30-second refresh of streaks, payload, assignments and Alerts.
+- **Response:** `PluginDetail`; 404 `plugin-not-found`.
+- **Rules:** password Field Values report only `set` (#1101). The Webhook Token is returned, because the page reveals and copies the Webhook URL (`plugins.md`, Webhook).
+
+#### P3 · `POST /api/plugins` · change
+
+- **Today:** `plugins.controller.ts:46-50` accepts the whole Plugin (`api/plugins/dto/create-plugin.dto.ts:44-106`, including the dead `isActive` and `order`); `name` may be empty (`@IsString()` only, `:45-46`); nothing writes a starter template, so a Plugin built with a name only has no Template and is never scheduled (`plugins.service.ts:382-384`).
+- **Serves:** Build a Poll Plugin, Build a Webhook Plugin (`plugins.md`, Add a Plugin); `plugins.md add 5`; `template-editor.md add 4`; "Carrying a Device".
+- **Request:**
+
+```ts
+type CreatePluginInput =
+  | { kind: 'Poll', name: string, deviceId?: string }
+  | { kind: 'Webhook', name: string, mergeStrategy: MergeStrategy, streamLimit?: number, deviceId?: string }
+```
+
+- **Response:** 201 `PluginDetail`.
+- **Rules:** `name` non-empty after trim; `streamLimit` an integer ≥ 1, required with `stream` and refused otherwise (`api/plugins/plugin-kind-fields.ts:196-227`, unchanged). The Plugin gets one `full` Template, the starter of `template-editor.md` ("The starter template"), and `refreshInterval` 15. With `deviceId` it is assigned in the same transaction under A1's rules. The full creation shape stays reachable inside the server for duplicate and import; the public endpoint takes only this.
+
+#### P4 · `PATCH /api/plugins/:id` · change
+
+- **Today:** `plugins.service.ts:393-434`, no transaction:
+  - deletes and recreates every Data Source on any save that carries them (`:474-481`), which resets each Fetch Failure Streak and cascade-deletes a firing fetch Alert (the Alert's `dataSource` is `onDelete: 'CASCADE'`, `api/alerts/entities/alert.entity.ts:102-104`);
+  - writes only the first Template and ignores the rest (`:496-511`);
+  - deletes and recreates every Plugin Field (`:513-524`);
+  - accepts `mergeStrategy` and `streamLimit`, fixed at creation by `CONTEXT.md` (`api/plugins/dto/update-plugin.dto.ts:12` only omits `kind` and the Recipe fields);
+  - answers the entity it saved, without assignments and with the Plugin Fields as they were before the save (`:425`, `:433`); an unknown id answers `null` with 200 (`:398-399`);
+  - reschedules only when Data Sources or Templates were sent (`:429-431`), so a change of `refreshInterval` alone keeps the old timer.
+- **Serves:** "Save Plugin" (`plugins.md`, "What is saved together"); `plugins.md change 1`, `2`, `3`, `4`, `9`, `10`; `template-editor.md change 1`, `2`, `6`; `instance.md change 15`; #1101's Field Values.
+- **Request:**
+
+```ts
+interface UpdatePluginInput {
+  name?: string
+  description?: string | null
+  refreshInterval?: number                          // Poll only; integer, 1 to 1440
+  templates?: Array<{ size: TemplateSize, liquidMarkup: string }>   // the whole set
+  dataSources?: Array<{ id?: string } & DataSourceInput>            // the whole set
+  fields?: PluginFieldInput[]                       // the whole set, matched by keyname (#1101)
+  fieldValues?: Record<string, string | null>       // #1101; an omitted password keeps its value
+}
+interface DataSourceInput {
+  name: string
+  mode: DataSourceMode
+  method?: 'GET' | 'POST'
+  url?: string                                      // http or https
+  headers?: Record<string, string>
+  body?: Record<string, unknown>
+  transformJs?: string | null
+  literalValue?: DataSourceLiteralValue
+}
+```
+
+- **Response:** 200 `PluginDetail`, read again after the commit.
+- **Rules:**
+  - **One transaction.** Either everything is saved or nothing is.
+  - **Data Sources are matched by `id`.** One with an `id` of this Plugin is updated in place and keeps its Fetch Failure Streak, its last fetch facts and its firing Alert; one without an `id` is created; one left out is deleted, its Alert with it (ADR-0025). An `id` of another Plugin answers 400.
+  - **Templates by size.** Sizes are unique and `full` is present, else 400 `template-full-missing`. Each Template must be non-empty and parse with the shared Liquid engine (`template-editor.md add 2`), else 400 `template-invalid` with `details: { size, line, message }`. Sizes left out are deleted.
+  - **Validation:** `name` non-empty; `method` `GET` or `POST` (today any string, `api/plugins/dto/plugin-data-source.dto.ts:51-53`); the existing name rules (`plugins.service.ts:577-599`); `refreshInterval` an integer from 1 to 1440 (today any integer, `create-plugin.dto.ts:56-58`). `kind`, `mergeStrategy`, `streamLimit` and `webhookToken` are not in the DTO, so the global pipe answers 400.
+  - **After the commit:** invalidate the cached output (`plugins.service.ts:530-533`, as today) and with it the remembered Render Signals (#1069); reschedule whenever `refreshInterval`, Data Sources or Templates changed; then run one scheduler tick at once, in the background. #1101 already requires that for a Field Value change; `plugins.md` ("the server then fetches and renders the Plugin again for every Device it is on") asks it for every save. It is the scheduler's own tick, so it moves the Fetch Failure Streak like any other (ADR-0025). The answer does not wait for it.
+  - **The refresh interval is kept as entered** (`plugins.md change 4`): the scheduler runs a Plugin every `refreshInterval` minutes from when it was scheduled, instead of the cron expression that floors 60 minutes and more to whole hours and runs `*/N` unevenly when N does not divide the hour (`plugin-scheduler.service.ts:68-74`).
+  - **A Poll-kind Plugin without Data Sources is scheduled and rendered** (`plugins.md change 5`): with `trmnl` and its Field Values only. Today it is never scheduled (`plugins.service.ts:86`, `plugin-scheduler.service.ts:27-29`) and never rendered on demand (`display.service.ts:534`).
+
+#### P5 · `DELETE /api/plugins/:id` · change
+
+- **Today:** `plugins.controller.ts:84-88`, `plugins.service.ts:656-677`: answers `{ success: false }` with 200 for an unknown id; a Plugin in a Mashup slot answers 400 with the Mashups' names in a sentence.
+- **Serves:** "Delete Plugin" and "{Plugin} cannot be deleted yet" (`plugins.md`, "Duplicate, export, delete"); `plugins.md change 10`, `change 11`.
+- **Response:** 204; 404 `plugin-not-found`; 409 `plugin-in-mashup` with `details: { mashups: PluginPlace[] }`.
+- **Rules:** deleting the Plugin's Screens closes the gaps in each Device's Order (today the Screens cascade away with no reindex: `api/screens/screens.entity.ts:43-44`).
+
+#### P6 · `POST /api/plugins/:id/duplicate` · change
+
+- **Today:** `plugins.service.ts:217-238`: copies Data Sources, Templates, Fields and the Recipe id and Snapshot, clones Plugin Variables, not Field Values.
+- **Serves:** "Duplicate" (`plugins.md`); `plugins.md change 13` (that part is #1101's).
+- **Response:** 201 `PluginDetail`. **Rules:** named "{Plugin} (copy)"; no assignments; an empty Webhook Payload and its own Webhook Token; stays tied to the Recipe (`plugins.md`: "A copy of a Recipe's Plugin stays tied to that Recipe").
+
+#### P7 · `GET /api/plugins/:id/export` · change
+
+- **Today:** `plugins.controller.ts:154-166`, `api/plugins/services/plugin-exporter.service.ts:115-164`: `.trmnlp.yml` and `src/settings.yml` without the Plugin Kind, Merge Strategy or Stream Limit; `src/settings.yml` is written only when there are Data Sources (`:133`), so a Webhook-kind Plugin comes back as a Poll-kind one. The file name is the raw Plugin name inside `filename="…"` (`plugins.controller.ts:164`), which a `"` in the name breaks.
+- **Serves:** "Export" (`plugins.md`); `plugins.md add 7`.
+- **Response:** 200 `application/zip`; 404 in the error envelope.
+- **Rules:** `src/settings.yml` is always written and carries `strategy: polling | webhook` (the key TRMNL's own Recipes use, which the importer already reads for Recipes, `api/plugins/services/plugin-importer.service.ts:347`), plus `merge_strategy` and `stream_limit` for a Webhook-kind Plugin. Every Template is written by size (as today). The file name is sanitised and also sent as RFC 6266 `filename*`. The importer (P8) reads the three keys back, so the round trip keeps the kind.
+
+#### P8 · `POST /api/plugins/import` · change
+
+- **Today:** `plugins.controller.ts:90-109`: multer writes the upload to `./uploads` with no size limit; a missing file throws a plain `Error`; `.yml`/`.yaml` is accepted (`plugin-importer.service.ts:140-147`) and looks for `src/settings.yml` beside it. Almost every refusal is a plain `Error` (`plugin-importer.service.ts:146`, `:178`, `:235`, `:240`, `:308`, `:319`, `:332`, `:339`, `:347`, `:370`, `:421`, `:475`, `:479`, `:564`, `:583`) and reaches the UI as a 500 with no reason. With `deviceId` the new Plugin is assigned **as the Active Screen** (`plugins.controller.ts:143-145`). The answer is the Plugin plus `_hasTransform` (`:148-151`).
+- **Serves:** Add a Plugin, File (`plugins.md`); `plugins.md add 8`, `change 16`; the "Lines shown once" after an import.
+- **Request:** `multipart/form-data` with `file` (a `.zip`) and optional `deviceId`.
+- **Response:**
+
+```ts
+interface PluginImportResult {
+  plugin: PluginDetail
+  origin: { type: 'recipe', id: string, name: string } | { type: 'file', fileName: string } | { type: 'github', repository: string }
+  hasTransform: boolean
+}
+```
+
+- **Rules:** a file that is not a `.zip` answers 400 `import-not-zip`; a `.zip` without a `.trmnlp.yml` or a `.liquid` Template answers 422 `import-no-plugin`; the legacy single-source format answers 422 `import-legacy-format`. The upload is held in memory, so nothing is left in `./uploads`. With `deviceId` the Plugin is assigned under A1's rules (never the Active Screen; 404 for an unknown Device). An import without a `full` Template makes its first Template `full` (`template-editor.md change 2`).
+
+#### P9 · `POST /api/plugins/import-github` · change
+
+- **Today:** `plugins.controller.ts:111-119`: the body is an inline type, not validated; a missing URL throws a plain `Error`; GitHub failures are plain `Error`s (`plugin-importer.service.ts:178`, `:203`).
+- **Serves:** Add a Plugin, GitHub; its three refusals.
+- **Request:** `{ githubUrl: string, deviceId?: string }`. **Response:** `PluginImportResult`.
+- **Rules:** a URL that is not `https://github.com/{owner}/{repo}` answers 400 `github-url-invalid`; a repository GitHub does not have, or not publicly, 422 `github-repo-not-found`; one without a Plugin at the root of `main`, 422 `import-no-plugin`; GitHub not answering, 502 `upstream-unreachable`.
+
+#### P10 · `POST /api/plugins/import-recipe` · change
+
+- **Today:** `plugins.controller.ts:121-129`: unvalidated inline body, plain `Error`s for every refusal (`plugin-importer.service.ts:308`, `:319`, `:332`, `:339`, `:347`, `:370`).
+- **Serves:** Add a Plugin, Recipe, with its refusal table (`plugins.md`).
+- **Request:** `{ recipe: string /* id or trmnl.com address */, deviceId?: string }`. **Response:** `PluginImportResult`.
+- **Rules (one code per row of the spec's table):** `recipe-id-invalid` 400; `recipe-not-found` 422 (TRMNL answers 404); `recipe-oauth` 422; `recipe-strategy-unsupported` 422 (webhook or any strategy but polling and static); `recipe-static-transform` 422 (`:370`); `upstream-unreachable` 502 (TRMNL not answering or answering 5xx). Sets `recipe.snapshotTakenAt`.
+
+#### P11 · `DELETE /api/plugins/:id/webhook-payload` · change
+
+- **Today:** `plugins.controller.ts:74-77`, `plugins.service.ts:601-608`: clears the column and answers the stale Plugin entity with `webhookPayload: null`; the cached output on its Screens stays (`plugins.md change 8`).
+- **Serves:** "Clear Webhook Payload" ("The Plugin is rendered again at once").
+- **Response:** 200 `PluginDetail`. **Rules:** clears `payloadReceivedAt` too, then renders the Plugin with no payload (R3) and writes the cached output, as a POST would. 400 `plugin-not-webhook` for a Poll-kind Plugin (exists, `plugins.service.ts:625-627`).
+
+#### P12 · `POST /api/plugins/:id/webhook-token` · change
+
+`plugins.controller.ts:79-82`, `plugins.service.ts:610-618`. Answers 200 `PluginDetail` instead of the stale entity with the new token. Serves "Regenerate the Webhook Token" ("Afterwards the new URL is shown revealed").
+
+#### P13 · `GET /api/plugins/:id/recipe-update` · change
+
+- **Today:** `plugins.controller.ts:63-66`, `api/plugins/services/recipe-update.service.ts:35-45`, `:107-116`: `{ contentHash, mode, items, assignmentsMissingRequiredField }`, the last per Plugin Assignment. A failed download answers 502 whatever the cause, any other importer error 400 (`recipe-update.service.ts:227-234`).
+- **Serves:** the Recipe Update Check page; `plugins.md change 17`.
+- **Response:**
+
+```ts
+interface RecipeUpdatePreview {
+  contentHash: string
+  mode: 'two-way' | 'three-way'                     // two-way: no Recipe Snapshot
+  recipe: { id: string, name: string }
+  snapshotTakenAt: string | null
+  items: UpdateItem[]                               // as today, recipe-update-diff.ts:78-86
+  requiredFieldsLeftEmpty: Array<{ keyname: string, label: string }>   // per Plugin, ADR-0032
+}
+```
+
+- **Rules:** `recipe-not-found` 422 ("TRMNL no longer has the Recipe {id}") told apart from `upstream-unreachable` 502 ("trmnl.com did not answer"); 404 `plugin-not-from-recipe` (exists, `:215`).
+
+#### P14 · `POST /api/plugins/:id/recipe-update/apply` · change
+
+`plugins.controller.ts:68-72`. Request unchanged (`{ contentHash, apply: [{ itemType, key }] }`, `api/plugins/dto/apply-recipe-update.dto.ts:14-22`; `apply: []` is "Skip all" and "Apply nothing and save the Recipe Snapshot"). Answers `PluginDetail`, sets `recipe.snapshotTakenAt`, keeps the 409 `recipe-changed` when the hash moved (`recipe-update.service.ts:121-123`), and runs the same post-commit steps as P4.
+
+#### P15 · `POST /api/plugins/:id/preview-data` · add (replaces `POST /api/plugins/preview`)
+
+- **Today:** `POST /api/plugins/preview` (`plugins.controller.ts:25-29`, `plugins.service.ts:679-709`) takes `{ sources, template?, fieldValues? }`, fetches, renders with the server's Liquid and answers `{ html, data }`. It takes no Device (so no Sensors), uses `instance_name: 'Preview'`, does nothing for a Webhook-kind Plugin, and a Liquid error escapes as a 500.
+- **Serves:** `template-editor.md add 1`: the preview's data and "Data", fetched once and held; "Fetch again".
+- **Request:**
+
+```ts
+interface PreviewDataInput {
+  deviceId: string | null                           // null: no Device, so no Sensors
+  name?: string                                     // the unsaved name, for trmnl.plugin_settings.instance_name
+  dataSources?: Array<{ id?: string } & DataSourceInput>   // the unsaved set; Poll only
+  fieldValues?: Record<string, string | null>       // the unsaved values; an omitted password uses the stored one
+}
+```
+
+- **Response:**
+
+```ts
+type PreviewOrigin = 'fieldValue' | 'dataSource' | 'webhookPayload' | 'sensors' | 'trmnl'
+interface PreviewData {
+  context: Record<string, unknown>                  // exactly what the server's render would pass to Liquid
+  names: Array<{ name: string, origin: PreviewOrigin, error: string | null }>   // the "Data" rows, in the spec's order
+  fetchedAt: string
+  webhookPayloadReceivedAt: string | null
+}
+```
+
+- **Rules:**
+  - Builds the context with the same function every render uses (R2), so the preview and the Device read the same names. A Data Source that fails carries its error marker `{ error: true, message }` (as `api/plugins/services/plugin-data-resolver.service.ts:384-388`) and its `names` row the message.
+  - A password Field Value is `"••••••••"` in `context`; the stored secret is still substituted where a Data Source's URL, headers or body name it.
+  - Renders nothing. Moves no Fetch Failure Streak and fires no Alert (ADR-0025: only the scheduler tick records outcomes, `data-source-fetch-outcome.service.ts:294-301`).
+  - Demo mode keeps the public-address rule for fetches (`api/plugins/services/plugin-data-fetcher.service.ts:52`).
+  - 404 `plugin-not-found`, 404 `device-not-found`.
+
+### 1.4 Rendering behaviour the Plugin and editor screens depend on (no endpoint)
+
+These change what the server renders, not what an endpoint answers. They are listed because a screen's copy states them as facts.
+
+- **R1 · A render picks a Template by size, never by position** (`template-editor.md change 3`, `change 4`). Today the scheduler and a Webhook render use `templates[0]` (`api/plugins/services/plugin-render-cache.service.ts:111`), the on-demand render looks for `full` (`display.service.ts:582`), and a Mashup slot prefers `full` (`api/mashup/services/mashup-renderer.service.ts:62`). After: a Screen on its own, the scheduler and a Webhook render use `full`; a Mashup slot uses its own size and falls back to `full`. The slot's size is stored as `view--half_vertical` and so on (`api/mashup/constants/layouts.ts:13`); the Template's as `half_vertical`.
+- **R2 · Every render sees the same context** (`template-editor.md change 5`): `trmnl`, the Field Values (#1101), the Device's `sensors` where there is a Device, and the data. Today a Webhook render passes only the merged payload (`webhook-ingest.service.ts:74`), with no `trmnl`.
+- **R3 · A Webhook-kind Plugin renders without a payload** (`plugins.md change 7`, `change 8`): before the first POST and after a clear, its Template renders with `trmnl` and its Field Values. Today nothing is rendered until the first POST, and clearing leaves the old output on its Screens.
+- **R4 · A Webhook-kind Plugin renders in a Mashup slot** (`plugins.md change 6`). Today every slot throws "Plugin missing data sources or templates" for it (`mashup-renderer.service.ts:54-55`).
+- **R5 · A scheduled render that fails is stored**, with Liquid's message and line (`template-editor.md add 3`); it fills `lastScheduledRender` (P2).
+- **R6 · A transform that throws is a failed fetch** (`plugins.md change 15`): today the raw data passes through silently (`api/plugins/services/plugin-transform.service.ts:442-447`).
+- **R7 · A failed Mashup slot is drawn as `plugins.md` specs** (`plugins.md change 14`), in place of `error.png` (`mashup-renderer.service.ts:78-81`).
+- **R8 · The Liquid engine and Kuroshiro's filters move to `packages/shared`** (`template-editor.md add 2`). Today they live in `api/plugins/services/plugin-renderer.service.ts:197-284`, a `new Liquid()` with fourteen filters. It is the one runtime dependency this adds to `packages/shared` (`liquidjs`, which the API already depends on); see section 3.
