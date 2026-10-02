@@ -929,3 +929,87 @@ Where the four request lists ask for the same thing, one entry serves them all:
 - **Saving keeps the firing fetch Alert** (`instance.md change 15`) is the same change as matching Data Sources by id (`plugins.md change 2`): P4.
 - **The Retention ages**: `devices.md add 8` puts them among the Instance facts, `instance.md add 10` makes them Instance Settings (#1062). They live in I2 only. A value that can be changed belongs with the other Settings and their fallback sources; the facts in I1 are fixed until a restart.
 - **The version**: `instance.md` puts "Kuroshiro {version}" under the Instance list as "the UI's own build version", while `instance.md add 1` asks for the server's version, which the archive page needs ("Export it again from an Instance running Kuroshiro {version}"). Both are needed; I1 carries the server's. While UI and API ship from one release they are the same number.
+
+## 2. Cross-cutting conventions
+
+Each is a recommendation; the reason follows it.
+
+### 2.1 One error envelope, and status codes that mean one thing each
+
+**Today.** `main.ts` registers no global pipe and no exception filter (`api/main.ts:27-28`), so every route brings its own `ValidationPipe` with its own options: `whitelist` and `forbidNonWhitelisted` on some (`devices.controller.ts:41`), `transform` without `whitelist` on others (`plugins.controller.ts:26`, `device-models.controller.ts:32`), `transform` and `whitelist` without `forbidNonWhitelisted` on `PATCH /api/plugins/:id` (`plugins.controller.ts:53`), and none at all on `POST /api/plugins/:id/assign` (`plugins.controller.ts:168-171`). Nest's default body is `{ statusCode, message, error }`, with `message` a string or, from `class-validator`, an array. Several endpoints answer a failure as success: `null` with 200 for an unknown Plugin (`plugins.service.ts:100-105`, `:398-399`), `{ success: false }` with 200 for a delete or unassign that found nothing (`plugins.controller.ts:84-88`, `:173-177`). The importers throw plain `Error`s, which Nest turns into 500 "Internal server error" with the reason dropped (P8–P10). The export builds its own 404 body (`plugins.controller.ts:157-159`).
+
+**Recommendation.** Every non-2xx answer of the admin API has this body:
+
+```ts
+// shared/api/errors.ts
+interface ApiError {
+  statusCode: number
+  code: ApiErrorCode                                // stable, kebab-case; the UI words the refusal from it
+  message: string                                   // one English sentence; for logs and as a fallback
+  fields?: Array<{ path: string, message: string }> // validation failures only, e.g. path 'dataSources.2.url'
+  details?: Record<string, unknown>                 // structured data the UI needs, e.g. { mashups: [...] }, { limitBytes }
+}
+type ApiErrorCode = 'validation' | 'device-not-found' | 'device-mac-taken' | 'plugin-in-mashup' | /* … every code in section 1 */ 'internal'
+```
+
+- A global `ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true })` in `main.ts`, whose exception factory produces `code: 'validation'` with `fields`. The per-route pipes go. `forbidNonWhitelisted` everywhere is what turns "fixed at creation" (Merge Strategy, Stream Limit, Plugin Kind, a Device's MAC) into a refusal instead of a silent drop.
+- A global exception filter maps an `HttpException` to the envelope (a service throws it with its `code`), a Postgres unique violation that slipped through to 409 `conflict`, and anything else to 500 `internal` with a generic message, logged with its stack. A 500 then always means a bug.
+- `ApiErrorCode` is a union in `packages/shared`, so the UI's wording table is checked for completeness at compile time.
+
+| Status | Means | Examples |
+|---|---|---|
+| 400 | The request is malformed or a value is invalid | `validation`, `import-not-zip`, `template-invalid`, `order-not-a-permutation` |
+| 403 | Not allowed on this Instance | `demo-mode` |
+| 404 | The record in the path, or one the body names, does not exist | `device-not-found`, `plugin-not-found` |
+| 409 | The request conflicts with the current state | `device-mac-taken`, `plugin-in-mashup`, `firmware-version-taken`, `recipe-changed`, `firmware-push-mirrored` |
+| 413 | The upload is over its limit; `details.limitBytes` says the limit | `upload-too-large` |
+| 422 | Well-formed, but what it points at cannot be used | `image-fetch-failed`, `import-no-plugin`, `recipe-oauth`, `recipe-not-found` |
+| 502 | A service Kuroshiro depends on did not answer usefully | `upstream-unreachable` (TRMNL, GitHub) |
+| 503 | Kuroshiro's own sidecar did not accept | `notification-failed` (Apprise) |
+
+**Why.** The UI's shared patterns promise "the server's reason when it gave one" on every failed load and "Not saved. {reason}" on every refused save (`README.md`, "A failed load", "Saving"); the specs word dozens of refusals individually (the Recipe import table, the archive's "Refused" table, "{Plugin} cannot be deleted yet" naming Mashups). Parsing English sentences for that is the drift this rebuild is trying to end. Keeping a `message` key means the old UI's `apiRequest`, which reads `body.message` (`ui/utils/apiRequest.ts`), keeps showing something.
+
+Success statuses: 201 with the read for a create, 204 with no body for a delete, 200 with the read otherwise.
+
+### 2.2 Read models, not entities; derived fields beside stored ones
+
+- An admin endpoint answers a read model from `packages/shared` (section 3), built by one mapping function per resource in the API, never a TypeORM entity. Today every Device, Screen and Plugin read is the entity (D1, S7, P1), which is how API keys reach the Plugins list.
+- **Names.** `camelCase`. Times end in `At` and are ISO 8601 strings (`lastSeenAt`, `renderedAt`, `payloadReceivedAt`). Booleans read as statements (`isMirrored`, `filePresent`, `needsValues`, `fetchAlertFiring`). Derived fields sit beside stored ones with no marker: no `_` prefix, as today's `_hasTransform` (`plugins.controller.ts:150`) and `_devicePluginId` (`api/plugins/entities/plugin.entity.ts:88-92`) have. A stored column that the glossary names differently is renamed on the read (`filename` → `name`, `description` → `helpText` on a Plugin Field, `fwVersion` → `firmwareVersion`), so the UI speaks `CONTEXT.md`.
+- **Absent is `null`.** Every key is always present; "nothing" is `null`, never a missing key, so a fixture builder has to decide every field. The one exception is `AlertSummary`, which is already shared and read by the old UI (AL1).
+- **Related records are references.** A related record appears as `{ id, name }` (plus what the screen needs, like `pushPending`), never whole.
+
+### 2.3 Secrets
+
+| Secret | Where it may appear | Everywhere else |
+|---|---|---|
+| Device `apikey` | `DeviceDetail` only (D2): Settings reveals and copies it; the Device Simulator polls with it | absent |
+| `mirrorApikey` | never | `mirror.apikeySet: boolean` |
+| Webhook Token | `PluginDetail.webhook` (P2, P12): the page reveals and copies the URL | absent from `PluginSummary` |
+| Password Field Value | never (#1101) | `{ secret: true, set: boolean }`; dots in preview data (P15) |
+| `KUROSHIRO_APPRISE_KEY`, user and password in the Apprise URL | never | stripped (I1) |
+
+Data Source headers are returned on `PluginDetail` as written, because the page edits them; the spec steers secrets into password Field Values instead (`plugins.md`, Data Sources, Headers hint).
+
+### 2.4 Lists are whole; Device Logs page by cursor
+
+Every list endpoint answers the whole list, as the specs ask ("The list is whole at any length" for Devices and Plugins; the Plugins list's search filters by name in the browser). The one paged read is D8: keyset pagination by `(date, id)` with an opaque cursor, `limit` 50 by default and at most 200, the level filter and the search applied in SQL, and the counts `total` and `matching` on every page. Keyset rather than offset because new entries arrive at the top while the admin pages down, which would shift an offset page by the number that arrived.
+
+### 2.5 "Save as changed": partial PATCH, full answer
+
+- A `PATCH` body carries only the fields that changed. A key that is absent leaves its field alone; `null` clears a nullable field. Today `class-transformer` gives every declared DTO field an own `undefined` property, which `plugins.service.ts:436-444` has to strip by hand; the global pipe should set `transformOptions: { exposeUnsetFields: false }` so no service needs to.
+- Every `PATCH` answers 200 with the **whole** read model as saved (`DeviceDetail`, `ScreenRead`, `PluginDetail`, `PaletteRead`, `InstanceSettingsResponse`). `PATCH /api/settings` already does (`api/settings/instance-settings.service.ts:89-101`). The UI replaces its copy with the answer, so a value the server normalised (an upper-cased MAC, a Palette reset by a model change, `devices.service.ts:73-75`) shows at once, and "Saved" means what it says.
+- Collections inside the Plugin form are whole sets, matched by `id` (Data Sources), keyname (Plugin Fields, #1101) or size (Templates). Concurrent edits are last-write-wins; one admin per Instance does not justify ETags.
+
+### 2.6 Instance facts, demo mode and time
+
+- The Instance address, the server's timezone, demo mode, the version, whether Notifications are set up and the upload limits come from one read, I1, loaded with the app shell. The UI never infers any of them, retiring the hostname guess (`ui/composeables/useDemoInfo.ts:4`).
+- Demo mode is enforced by the server (403 `demo-mode`) and told to the UI; the UI's disabled controls are a courtesy.
+- **Time.** Instants are ISO strings the browser shows in its own timezone, as `README.md` ("Time") asks. A Schedule's and Sleep Mode's hours are server-timezone wall-clock values and stay `HH:MM` (and dates `YYYY-MM-DD`), shown with I1's `timezone`. Anything the server works out in its own timezone (Screen State, `upNext`, `sleep.inWindow`, `sleep.endsAt`, `nextPollAt`) is computed on the server and sent as a state or an instant, so the browser never evaluates a Schedule.
+
+### 2.7 Image addresses are root-relative
+
+Admin reads give an image as a root-relative path with a cache-busting version (`/screens/devices/{deviceId}/{screenId}.png?v={ms}`), which the UI prefixes with its base path (`ui/utils/basePath.ts`). Today the Device-facing answers build absolute URLs from `KUROSHIRO_API_URL` (`display.service.ts:612-614`, `api/device-models/fallback-screens.service.ts:33`), which is right for a Device and wrong for a browser that reaches the admin UI under another address or a Home Assistant ingress prefix (`api/middleware/ingress-base-path.middleware.ts`). The Device-facing answers keep their absolute URLs.
+
+### 2.8 Upload limits are set and stated
+
+Only Firmware uploads have a limit today (`firmware.controller.ts:36`, 8 MB). Image uploads (`screens.controller.ts:33`), Plugin imports (`plugins.controller.ts:91-101`) and archives (`configuration.controller.ts:32`) have none, and a Webhook POST falls under the JSON body parser's default, which nothing configures. **Recommendation:** an explicit limit on each, answered with 413 `upload-too-large` and `details.limitBytes`, and listed in I1 so the UI can state it before the upload ("Drop a .bin here, up to 8 MB.").
