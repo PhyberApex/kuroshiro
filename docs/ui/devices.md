@@ -503,7 +503,6 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 
 **Left undecided**
 
-- **The error Fallback Screen has one wording, "Mirroring failed".** A Screen whose render failed serves the same image, so the Device then says the wrong thing. It needs a second wording on the Device; this spec only words the admin's side.
 - **Cancelling a pending Device Reset.** The API would allow it today. It is a new capability, like [Cancel a pending Firmware push](https://github.com/PhyberApex/kuroshiro/issues/1086), and is not specced.
 - **A new Device starts with a pending `identify` Special Function** (the column's default), so its first Screens view shows that fact. Whether the default should be `none` is the API ticket's call.
 - **When "no Screen can be shown" ends.** The column says to open a Screen; it does not say when the next one returns, which the server would have to work out from every Schedule.
