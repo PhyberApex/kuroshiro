@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTOTYPE: Kuroshiro tokens and components</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+</head>
+<body>
+<!--
+PROTOTYPE, throwaway. Wayfinder ticket "Design tokens and component inventory" (#1091), map "Admin UI rebuild from zero" (#1074).
+One sheet: the locked token set (tokens.css) and every component the three approved prototypes use, in every state (components.css).
+?theme=light|dark forces a theme; without it the sheet follows the system. Key t toggles. States are pinned with data-force.
+-->
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <pattern id="d50" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="2" height="2" fill="#0a0a0a"/><rect x="2" y="2" width="2" height="2" fill="#0a0a0a"/></pattern>
+    <symbol id="s-calendar" viewBox="0 0 800 480">
+      <g fill="#0a0a0a" font-family="Helvetica, Arial, sans-serif">
+        <text x="40" y="84" font-size="30" font-weight="700">Thursday</text>
+        <text x="30" y="262" font-size="190" font-weight="700">1</text>
+        <text x="40" y="318" font-size="30">October 2026</text>
+        <rect x="290" y="40" width="2" height="350"/>
+        <g font-size="26">
+          <text x="324" y="84" font-weight="700">08:30</text><text x="420" y="84">Dentist, Dr. Okafor</text>
+          <text x="324" y="140" font-weight="700">12:00</text><text x="420" y="140">Lunch with Mirela</text>
+          <text x="324" y="196" font-weight="700">15:15</text><text x="420" y="196">School pickup</text>
+          <text x="324" y="252" font-weight="700">19:00</text><text x="420" y="252">Climbing gym</text>
+        </g>
+        <rect x="324" y="290" width="436" height="2" fill="url(#d50)"/>
+        <text x="324" y="340" font-size="22" font-weight="700">Tomorrow</text>
+        <text x="324" y="376" font-size="22">Recycling out, 07:00</text>
+        <rect y="420" width="800" height="2"/>
+        <text x="40" y="460" font-size="22" font-weight="700">Calendar</text>
+        <text x="760" y="460" font-size="22" text-anchor="end">Kitchen</text>
+      </g>
+    </symbol>
+
+    <symbol id="seal" viewBox="0 0 64 64">
+      <rect width="64" height="64" rx="5"/>
+      <path style="fill: var(--seal-paper, var(--color-paper))" d="M13.77 31.8Q12.98 31.33 11.65 30.77Q10.31 30.21 9.18 29.94Q10.36 29.42 11.7 28.57Q13.03 27.72 14.22 26.82Q15.4 25.92 16.14 25.23H9.82V22.66H29.09V21.35H13.08V18.97H29.09V17.57H15.01V7.28H49.04V17.57H34.87V18.97H50.87V21.35H34.87V22.66H54.23V25.23H47.96Q49.78 26.3 51.56 27.58Q53.34 28.87 54.48 29.88Q53.79 30.07 52.82 30.39Q51.86 30.7 50.99 31.06Q50.13 31.42 49.59 31.69Q48.89 30.95 47.73 29.99Q46.57 29.03 45.29 28.08Q44 27.12 42.82 26.44L45.98 25.23H16.54L21.13 26.68Q19.7 28.05 17.7 29.47Q15.7 30.9 13.77 31.8ZM35.8 31.55Q35.56 30.76 35.14 29.81Q34.72 28.87 34.27 27.94Q33.83 27.01 33.33 26.33L38.62 25.53Q39.11 26.16 39.66 27.08Q40.2 28 40.65 28.97Q41.09 29.94 41.34 30.76Q40.3 30.84 38.59 31.07Q36.89 31.31 35.8 31.55ZM25.38 31.69Q25.28 30.92 25.01 29.95Q24.74 28.98 24.42 28.04Q24.1 27.09 23.7 26.41L29.09 25.81Q29.53 26.46 29.93 27.39Q30.32 28.32 30.62 29.31Q30.91 30.29 31.06 31.09Q29.97 31.14 28.25 31.31Q26.52 31.47 25.38 31.69ZM20.59 11.31H29.09V9.66H20.59ZM34.87 11.31H43.31V9.66H34.87ZM20.59 15.19H29.09V13.58H20.59ZM34.87 15.19H43.31V13.58H34.87ZM14.22 58.96V39.59H25.33Q25.87 38.93 26.47 38.05Q27.06 37.18 27.58 36.33Q28.1 35.48 28.34 34.88L35.66 35.26Q35.26 35.87 34.69 36.65Q34.12 37.43 33.51 38.21Q32.89 38.98 32.35 39.59H49.98V58.96ZM20.49 56.03H43.71V50.56H20.49ZM20.49 47.69H43.71V42.51H20.49Z"/>
+    </symbol>
+    <symbol id="seal-small" viewBox="0 0 16 16">
+      <rect width="16" height="16" rx="1.25"/>
+      <path style="fill: var(--seal-paper, var(--color-paper))" fill-rule="evenodd" d="M6 2h2v2H6zM3 4h10v10H3zM5 6v2h6V6zM5 10v2h6v-2z"/>
+    </symbol>
+
+    <symbol id="i-grip" viewBox="0 0 16 16"><path d="M5 3h2v2H5zM9 3h2v2H9zM5 7h2v2H5zM9 7h2v2H9zM5 11h2v2H5zM9 11h2v2H9z"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 16 16"><path d="M3.2 5.4 8 10.2l4.8-4.8 1.1 1.1L8 12.4 2.1 6.5z"/></symbol>
+    <symbol id="i-up" viewBox="0 0 16 16"><path d="M8 3.2 2.6 8.6l1.1 1.1L8 5.4l4.3 4.3 1.1-1.1z"/></symbol>
+    <symbol id="i-down" viewBox="0 0 16 16"><path d="M8 12.8 2.6 7.4l1.1-1.1L8 10.6l4.3-4.3 1.1 1.1z"/></symbol>
+    <symbol id="i-close" viewBox="0 0 16 16"><path d="M3.6 2.5 8 6.9l4.4-4.4 1.1 1.1L9.1 8l4.4 4.4-1.1 1.1L8 9.1l-4.4 4.4-1.1-1.1L6.9 8 2.5 3.6z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 16 16"><path d="M6.2 10.6 12.9 3.9 14 5l-7.8 7.8L2 8.6l1.1-1.1z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 16 16"><path d="M7.2 2.5h1.6v4.7h4.7v1.6H8.8v4.7H7.2V8.8H2.5V7.2h4.7z"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M5 1.5h9.5V11H13V3H5zM1.5 5H11v9.5H1.5zM3 6.5V13h6.5V6.5z"/></symbol>
+    <symbol id="i-external" viewBox="0 0 16 16"><path d="M2.5 3.5H7V5H4v7h7V9h1.5v4.5h-10zM9 2.5h4.5V7H12V5.06L7.53 9.53 6.47 8.47 10.94 4H9z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M7 2.25a4.75 4.75 0 1 0 0 9.5 4.75 4.75 0 0 0 0-9.5zm0 1.5a3.25 3.25 0 1 1 0 6.5 3.25 3.25 0 0 1 0-6.5zM10.9 9.8l3.4 3.4-1.1 1.1-3.4-3.4z"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 16 16"><path d="M8 2 3.6 6.4l1.1 1.1 2.5-2.5V11h1.6V5l2.5 2.5 1.1-1.1zM2.5 12.5h11V14h-11z"/></symbol>
+    <symbol id="i-problem" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M2 2h12v12H2zM7.2 4.5v4.6h1.6V4.5zM7.2 10.2v1.6h1.6v-1.6z"/></symbol>
+  </defs>
+</svg>
+
+<main class="sheet">
+  <header>
+    <a class="lockup" href="#top" id="top">
+      <svg class="seal red" width="40" height="40" role="img" aria-label="Kuroshiro seal"><use href="#seal"/></svg>
+      <span class="wordmark">Kuroshiro</span>
+    </a>
+    <h1 class="title-lg">Tokens and components</h1>
+    <p class="lede">The values and parts the new admin UI is built from, in the Hanko identity: ink and paper, one vermilion seal, a condensed heavy grotesque. Everything on this sheet reads its values from <code>tokens.css</code>.</p>
+  </header>
+
+  <section aria-labelledby="h-colour">
+    <h2 class="title-sm section" id="h-colour">Colour</h2>
+    <p class="lede">Seven colours per theme. Vermilion is rationed to the Active Screen's seal and a firing Alert; an error, a destructive action and the shell's Alert indicator are all ink.</p>
+    <div class="scroll">
+      <table class="tokens">
+        <thead><tr><th>Token</th><th><span class="vh">Sample</span></th><th>Light</th><th>Dark</th><th>On paper</th><th>Used for</th></tr></thead>
+        <tbody>
+          <tr><td><code class="name">--color-paper</code></td><td><div class="chip" style="background: var(--color-paper)"></div></td><td class="mono">#ffffff</td><td class="mono">#121212</td><td class="mono"></td><td>The page ground</td></tr>
+          <tr><td><code class="name">--color-ink</code></td><td><div class="chip" style="background: var(--color-ink)"></div></td><td class="mono">#121212</td><td class="mono">#f4f4f4</td><td class="mono">18.7 / 17.0</td><td>Text, heavy rules, the primary action, focus</td></tr>
+          <tr><td><code class="name">--color-ink-hover</code></td><td><div class="chip" style="background: var(--color-ink-hover)"></div></td><td class="mono">#3d3d3d</td><td class="mono">#cfcfcf</td><td class="mono">10.9 / 12.0</td><td>Hover on anything solid ink</td></tr>
+          <tr><td><code class="name">--color-ink-soft</code></td><td><div class="chip" style="background: var(--color-ink-soft)"></div></td><td class="mono">#666666</td><td class="mono">#9c9c9c</td><td class="mono">5.7 / 6.8</td><td>Secondary text, the border of a control</td></tr>
+          <tr><td><code class="name">--color-line</code></td><td><div class="chip" style="background: var(--color-line)"></div></td><td class="mono">#d9d9d9</td><td class="mono">#363636</td><td class="mono">1.4 / 1.6</td><td>Dividers, a disabled control's border</td></tr>
+          <tr><td><code class="name">--color-wash</code></td><td><div class="chip" style="background: var(--color-wash)"></div></td><td class="mono">#f1f1f1</td><td class="mono">#1f1f1f</td><td class="mono"></td><td>Hover ground, a disabled field</td></tr>
+          <tr><td><code class="name">--color-seal</code></td><td><div class="chip" style="background: var(--color-seal)"></div></td><td class="mono">#c4242f</td><td class="mono">#e5484d</td><td class="mono">5.8 / 4.8</td><td>The Active Screen's seal, a firing Alert</td></tr>
+          <tr><td><code class="name">--color-plate</code></td><td><div class="chip" style="background: var(--color-plate)"></div></td><td class="mono">#ffffff</td><td class="mono">#ffffff</td><td class="mono"></td><td>The ground of a Screen image, in both themes</td></tr>
+          <tr><td><code class="name">--color-scrim</code></td><td><div class="chip" style="background: var(--color-scrim)"></div></td><td class="mono">#121212 45%</td><td class="mono">#000000 70%</td><td class="mono"></td><td>Behind a confirmation</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-type">
+    <h2 class="title-sm section" id="h-type">Type</h2>
+    <p class="lede">Archivo, one variable file with a width axis, carries titles and text. JetBrains Mono carries values and identifiers. Both are self-hosted; the seal's characters are an outline, so no Japanese font ships.</p>
+    <div class="specimens">
+      <div><p class="title-lg">Kitchen</p><div><code class="name">title-lg</code><code>48 / 0.95, width 68, weight 800. 38 on phone</code><code>A page's title</code></div></div>
+      <div><p class="title-md">Calendar</p><div><code class="name">title-md</code><code>30 / 1.1, width 75, weight 700. 26 on phone</code><code>The subject beside the plate, a Device in a list</code></div></div>
+      <div><p class="title-sm">Screens in Order</p><div><code class="name">title-sm</code><code>22 / 1.1, width 75, weight 700</code><code>A section, a confirmation, the wordmark</code></div></div>
+      <div><p>The Current Screen. Order 1 of 5, on the panel since the 07:31 poll. <b style="font-weight: var(--weight-semibold)">Weather</b> is up next.</p><div><code class="name">text-md</code><code>14 / 1.45, weight 400, 500, 600</code><code>Everything that is read</code></div></div>
+      <div><p class="small soft">Its Schedule is switched off, so Rotation passes over it. The days and hours are kept.</p><div><code class="name">text-sm</code><code>13 / 1.45</code><code>Buttons, hints, a Screen's kind and state</code></div></div>
+      <div><p class="mono">07:31 · −61 dBm · 4F2A1C · http://kuroshiro.lan:3000</p><div><code class="name">mono, text-sm</code><code>13, weight 400 and 500</code><code>Values, identifiers, what the admin types</code></div></div>
+      <div><p class="mono" style="font-size: var(--text-xs)">Mon–Fri 06:00–09:00</p><div><code class="name">mono, text-xs</code><code>12</code><code>Schedule summaries, weekday toggles, captions</code></div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-space">
+    <h2 class="title-sm section" id="h-space">Space, radius, rules, motion</h2>
+    <p class="lede">A 4 px step. No shadows anywhere: a layer above the page is drawn with an ink border.</p>
+    <div class="ruler">
+      <figure><i style="width: var(--space-1)"></i><figcaption>1 · 4</figcaption></figure>
+      <figure><i style="width: var(--space-2)"></i><figcaption>2 · 8</figcaption></figure>
+      <figure><i style="width: var(--space-3)"></i><figcaption>3 · 12</figcaption></figure>
+      <figure><i style="width: var(--space-4)"></i><figcaption>4 · 16</figcaption></figure>
+      <figure><i style="width: var(--space-5)"></i><figcaption>5 · 20</figcaption></figure>
+      <figure><i style="width: var(--space-6)"></i><figcaption>6 · 24</figcaption></figure>
+      <figure><i style="width: var(--space-8)"></i><figcaption>8 · 32</figcaption></figure>
+      <figure><i style="width: var(--space-10)"></i><figcaption>10 · 40</figcaption></figure>
+      <figure><i style="width: var(--space-12)"></i><figcaption>12 · 48</figcaption></figure>
+      <figure><i style="width: var(--space-16)"></i><figcaption>16 · 64</figcaption></figure>
+    </div>
+    <div class="samples">
+      <figure><div class="box" style="border-radius: var(--radius)"></div><figcaption>radius 3 · controls</figcaption></figure>
+      <figure><div class="box" style="border-radius: var(--radius-plate)"></div><figcaption>radius-plate 2</figcaption></figure>
+      <figure><div class="box" style="border-radius: var(--radius-inner)"></div><figcaption>radius-inner 1</figcaption></figure>
+      <figure><div style="width: 120px; border-top: var(--rule)"></div><figcaption>rule · 1 line</figcaption></figure>
+      <figure><div style="width: 120px; border-top: var(--rule-control)"></div><figcaption>rule-control · 1 ink-soft</figcaption></figure>
+      <figure><div style="width: 120px; border-top: var(--rule-heavy)"></div><figcaption>rule-heavy · 2 ink</figcaption></figure>
+      <figure><button class="btn" data-force="focus">Focus</button><figcaption>focus · 2 ink, offset 2</figcaption></figure>
+    </div>
+    <table class="tokens">
+      <thead><tr><th>Token</th><th>Value</th><th>Used for</th></tr></thead>
+      <tbody>
+        <tr><td><code class="name">--duration-quick</code></td><td class="mono">120 ms</td><td>Hover, press, a switch</td></tr>
+        <tr><td><code class="name">--duration-move</code></td><td class="mono">200 ms</td><td>A row opening, a confirmation appearing, the seal landing</td></tr>
+        <tr><td><code class="name">--ease-out</code></td><td class="mono">cubic-bezier(0.16, 1, 0.3, 1)</td><td>The only curve. Reduced motion sets both durations to nothing</td></tr>
+        <tr><td><code class="name">--control-height</code></td><td class="mono">32, 44 on touch</td><td>Buttons, inputs, selects</td></tr>
+        <tr><td><code class="name">--bar-height</code></td><td class="mono">52, 48 on phone</td><td>The Masthead</td></tr>
+        <tr><td><code class="name">--column</code></td><td class="mono">920, gutter 24, 16 on phone</td><td>The page column</td></tr>
+        <tr><td><code class="name">--plate-hero</code></td><td class="mono">576</td><td>The plate on a Device's Screens view</td></tr>
+        <tr><td><code class="name">phone</code></td><td class="mono">below 820</td><td>The one breakpoint</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section aria-labelledby="h-seal">
+    <h2 class="title-sm section" id="h-seal">The seal</h2>
+    <p class="lede">From 20 px up the seal holds 黒白. Below that it switches to a second drawing on a 16 px grid: 白 alone, cut from the square, so the ground is the black and the character is the white.</p>
+    <div class="samples">
+      <figure><svg class="seal red" width="64" height="64" aria-hidden="true"><use href="#seal"/></svg><figcaption>64</figcaption></figure>
+      <figure><svg class="seal red" width="40" height="40" aria-hidden="true"><use href="#seal"/></svg><figcaption>40</figcaption></figure>
+      <figure><svg class="seal" width="28" height="28" aria-hidden="true"><use href="#seal"/></svg><figcaption>28 · the bar</figcaption></figure>
+      <figure><svg class="seal red" width="20" height="20" aria-hidden="true"><use href="#seal"/></svg><figcaption>20 · smallest</figcaption></figure>
+      <figure><svg class="seal red" width="24" height="24" aria-hidden="true"><use href="#seal-small"/></svg><figcaption>24 · small drawing</figcaption></figure>
+      <figure><svg class="seal red" width="16" height="16" aria-hidden="true"><use href="#seal-small"/></svg><figcaption>16 · favicon, row</figcaption></figure>
+      <figure><svg class="seal" width="16" height="16" aria-hidden="true"><use href="#seal-small"/></svg><figcaption>16 · ink</figcaption></figure>
+      <figure><svg class="seal red" width="12" height="12" aria-hidden="true"><use href="#seal-small"/></svg><figcaption>12</figcaption></figure>
+      <figure><svg class="seal red" width="16" height="16" aria-hidden="true"><use href="#seal"/></svg><figcaption>16 · full seal, for comparison</figcaption></figure>
+      <figure><div class="tab"><svg class="seal red" width="16" height="16" aria-hidden="true"><use href="#seal-small"/></svg>Kitchen · Kuroshiro</div><figcaption>in a browser tab</figcaption></figure>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-icons">
+    <h2 class="title-sm section" id="h-icons">Icons</h2>
+    <p class="lede">Twelve, drawn on a 16 px grid as solid shapes with square ends. An icon is only ever a control's handle; anything that needs explaining is a word.</p>
+    <div class="samples">
+      <figure><svg class="icon" aria-hidden="true"><use href="#i-grip"/></svg><figcaption>grip</figcaption></figure>
+      <figure><svg class="icon" aria-hidden="true"><use href="#i-chev"/></svg><figcaption>chevron</figcaption></figure>
+      <figure><svg class="icon" aria-hidden="true"><use href="#i-up"/></svg><figcaption>up</figcaption></figure>
+      <figure><svg class="icon" aria-hidden="true"><use href="#i-down"/></svg><figcaption>down</figcaption></figure>
+      <figure><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg><figcaption>close</figcaption></figure>
+      <figure><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><figcaption>check</figcaption></figure>
+      <figure><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><figcaption>plus</figcaption></figure>
+      <figure><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg><figcaption>copy</figcaption></figure>
+      <figure><svg class="icon" aria-hidden="true"><use href="#i-external"/></svg><figcaption>external</figcaption></figure>
+      <figure><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><figcaption>search</figcaption></figure>
+      <figure><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg><figcaption>upload</figcaption></figure>
+      <figure><svg class="icon" aria-hidden="true"><use href="#i-problem"/></svg><figcaption>problem</figcaption></figure>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-comp">
+    <h2 class="title-sm section" id="h-comp">Components</h2>
+    <p class="lede">Each row names the part, what backs it in Reka UI, and shows its states. Loading is one mark everywhere: an ink square that blinks. An error is ink, never red.</p>
+
+    <div class="comp">
+      <div><h3>Button, primary</h3><p>One per page at most.</p><code>native button · Primitive as-child for links</code></div>
+      <div class="states">
+        <figure><button class="btn primary">Add Screen</button><figcaption>default</figcaption></figure>
+        <figure><button class="btn primary" data-force="hover">Add Screen</button><figcaption>hover</figcaption></figure>
+        <figure><button class="btn primary" data-force="focus">Add Screen</button><figcaption>focus</figcaption></figure>
+        <figure><button class="btn primary" data-force="active">Add Screen</button><figcaption>active</figcaption></figure>
+        <figure><button class="btn primary" disabled>Add Screen</button><figcaption>disabled</figcaption></figure>
+        <figure><button class="btn primary" aria-busy="true"><i class="busy"></i>Adding</button><figcaption>loading</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="comp">
+      <div><h3>Button</h3><p>Every other action, including destructive ones.</p><code>native button</code></div>
+      <div class="states">
+        <figure><button class="btn">Update now</button><figcaption>default</figcaption></figure>
+        <figure><button class="btn" data-force="hover">Update now</button><figcaption>hover</figcaption></figure>
+        <figure><button class="btn" data-force="focus">Update now</button><figcaption>focus</figcaption></figure>
+        <figure><button class="btn" data-force="active">Update now</button><figcaption>active</figcaption></figure>
+        <figure><button class="btn" disabled>Update now</button><figcaption>disabled</figcaption></figure>
+        <figure><button class="btn" aria-busy="true"><i class="busy"></i>Sending</button><figcaption>loading</figcaption></figure>
+        <figure><button class="btn">Delete Screen</button><figcaption>destructive</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="comp">
+      <div><h3>Button, quiet</h3><p>A step back or a minor action beside a button.</p><code>native button</code></div>
+      <div class="states">
+        <figure><button class="btn quiet">Remove Schedule</button><figcaption>default</figcaption></figure>
+        <figure><button class="btn quiet" data-force="hover">Remove Schedule</button><figcaption>hover</figcaption></figure>
+        <figure><button class="btn quiet" data-force="focus">Remove Schedule</button><figcaption>focus</figcaption></figure>
+        <figure><button class="btn quiet" disabled>Remove Schedule</button><figcaption>disabled</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="comp">
+      <div><h3>Icon button</h3><p>Always carries a name and a tooltip.</p><code>native button · TooltipRoot</code></div>
+      <div class="states">
+        <figure><button class="btn icon-only" aria-label="Move earlier"><svg class="icon" aria-hidden="true"><use href="#i-up"/></svg></button><figcaption>default</figcaption></figure>
+        <figure><button class="btn icon-only" aria-label="Move earlier" data-force="hover"><svg class="icon" aria-hidden="true"><use href="#i-up"/></svg></button><figcaption>hover</figcaption></figure>
+        <figure><button class="btn icon-only" aria-label="Move earlier" data-force="focus"><svg class="icon" aria-hidden="true"><use href="#i-up"/></svg></button><figcaption>focus</figcaption></figure>
+        <figure><button class="btn icon-only" aria-label="Move earlier" disabled><svg class="icon" aria-hidden="true"><use href="#i-up"/></svg></button><figcaption>disabled</figcaption></figure>
+        <figure><span class="tooltip" role="tooltip">Move earlier</span><figcaption>tooltip</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="comp">
+      <div><h3>Switch</h3><p>Saves as it is changed.</p><code>SwitchRoot · SwitchThumb</code></div>
+      <div class="states">
+        <figure><button class="sw" role="switch" aria-checked="false" aria-label="Schedule"></button><figcaption>off</figcaption></figure>
+        <figure><button class="sw" role="switch" aria-checked="true" aria-label="Schedule"></button><figcaption>on</figcaption></figure>
+        <figure><button class="sw" role="switch" aria-checked="false" aria-label="Schedule" data-force="hover"></button><figcaption>hover, off</figcaption></figure>
+        <figure><button class="sw" role="switch" aria-checked="true" aria-label="Schedule" data-force="hover"></button><figcaption>hover, on</figcaption></figure>
+        <figure><button class="sw" role="switch" aria-checked="true" aria-label="Schedule" data-force="focus"></button><figcaption>focus</figcaption></figure>
+        <figure><button class="sw" role="switch" aria-checked="false" aria-label="Schedule" disabled></button><figcaption>disabled, off</figcaption></figure>
+        <figure><button class="sw" role="switch" aria-checked="true" aria-label="Schedule" disabled></button><figcaption>disabled, on</figcaption></figure>
+        <figure><span class="swline"><button class="sw" role="switch" aria-checked="true" aria-busy="true" aria-label="Sleep Mode"></button><span class="status"><i class="busy"></i>Saving</span></span><figcaption>saving</figcaption></figure>
+        <figure><span class="swline"><button class="sw" role="switch" aria-checked="false" aria-label="Sleep Mode"></button><span class="status failed"><svg class="icon" aria-hidden="true"><use href="#i-problem"/></svg>Not saved. <button class="btn quiet" style="min-height: 0">Try again</button></span></span><figcaption>error</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="comp">
+      <div><h3>Weekday toggle</h3><p>Seven, Monday first.</p><code>ToggleGroupRoot multiple · ToggleGroupItem</code></div>
+      <div class="states">
+        <figure><div class="days" role="group" aria-label="Days"><button class="day" aria-pressed="true">M</button><button class="day" aria-pressed="true">T</button><button class="day" aria-pressed="true">W</button><button class="day" aria-pressed="true">T</button><button class="day" aria-pressed="true">F</button><button class="day" aria-pressed="false">S</button><button class="day" aria-pressed="false">S</button></div><figcaption>the group</figcaption></figure>
+        <figure><button class="day" aria-pressed="false">S</button><figcaption>off</figcaption></figure>
+        <figure><button class="day" aria-pressed="true">M</button><figcaption>on</figcaption></figure>
+        <figure><button class="day" aria-pressed="false" data-force="hover">S</button><figcaption>hover, off</figcaption></figure>
+        <figure><button class="day" aria-pressed="true" data-force="hover">M</button><figcaption>hover, on</figcaption></figure>
+        <figure><button class="day" aria-pressed="true" data-force="focus">M</button><figcaption>focus</figcaption></figure>
+        <figure><button class="day" aria-pressed="false" disabled>S</button><figcaption>disabled, off</figcaption></figure>
+        <figure><button class="day" aria-pressed="true" disabled>M</button><figcaption>disabled, on</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="comp">
+      <div><h3>Text input</h3><p>Also number, time and date, which stay native.</p><code>native input · Label</code></div>
+      <div class="states">
+        <figure><input class="in" value="Kitchen" aria-label="Name"><figcaption>default</figcaption></figure>
+        <figure><input class="in" placeholder="https://" aria-label="Link"><figcaption>empty</figcaption></figure>
+        <figure><input class="in" value="Kitchen" aria-label="Name" data-force="hover"><figcaption>hover</figcaption></figure>
+        <figure><input class="in" value="Kitchen" aria-label="Name" data-force="focus"><figcaption>focus</figcaption></figure>
+        <figure><input class="in" value="Kitchen" aria-label="Name" disabled><figcaption>disabled</figcaption></figure>
+        <figure><span class="swline"><input class="in time" value="23:00" aria-label="From"><span class="soft">to</span><input class="in time" value="06:00" aria-label="To"></span><figcaption>time, a window</figcaption></figure>
+        <figure><span class="swline"><input class="in" value="Hallway" aria-label="Name"><span class="status"><i class="busy"></i>Saving</span></span><figcaption>saving</figcaption></figure>
+        <figure><span class="swline"><input class="in" value="Hallway" aria-label="Name"><span class="status"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Saved</span></span><figcaption>saved, fades after 2 s</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="comp">
+      <div><h3>Field</h3><p>Label, hint, control, and a message when it is wrong.</p><code>Label · aria-describedby</code></div>
+      <div class="states">
+        <figure><label class="field"><span class="label">Refresh rate</span><input class="in" value="900" inputmode="numeric"><span class="hint">Seconds between two polls.</span></label><figcaption>default</figcaption></figure>
+        <figure><label class="field"><span class="label">Refresh rate</span><input class="in" value="12" inputmode="numeric" aria-invalid="true"><span class="message"><svg class="icon" aria-hidden="true"><use href="#i-problem"/></svg>The shortest refresh rate is 60 seconds.</span></label><figcaption>error</figcaption></figure>
+        <figure><label class="field"><span class="label">HTML</span><textarea class="in" spellcheck="false">&lt;div class="note"&gt;
+  Back at six.
+&lt;/div&gt;</textarea></label><figcaption>textarea</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="comp">
+      <div><h3>Select</h3><p>A long list (Device Model, timezone) gets a search field.</p><code>SelectRoot · ComboboxRoot when searchable</code></div>
+      <div class="states">
+        <figure><button class="in select" aria-expanded="false">TRMNL OG<svg class="icon" aria-hidden="true"><use href="#i-chev"/></svg></button><figcaption>default</figcaption></figure>
+        <figure><button class="in select" aria-expanded="false" data-force="hover">TRMNL OG<svg class="icon" aria-hidden="true"><use href="#i-chev"/></svg></button><figcaption>hover</figcaption></figure>
+        <figure><button class="in select" aria-expanded="false" data-force="focus">TRMNL OG<svg class="icon" aria-hidden="true"><use href="#i-chev"/></svg></button><figcaption>focus</figcaption></figure>
+        <figure><button class="in select" disabled>TRMNL OG<svg class="icon" aria-hidden="true"><use href="#i-chev"/></svg></button><figcaption>disabled</figcaption></figure>
+        <figure><div><button class="in select" aria-expanded="true">2-bit, 4 greys<svg class="icon" aria-hidden="true"><use href="#i-chev"/></svg></button><ul class="listbox" role="listbox" aria-label="Palette"><li role="option" aria-selected="false">1-bit, black and white</li><li role="option" aria-selected="true" data-highlighted>2-bit, 4 greys<svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></li><li role="option" aria-selected="false">4-bit, 16 greys</li><li role="option" aria-selected="false" aria-disabled="true">Colour, 6 inks</li></ul></div><figcaption>open</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="comp">
+      <div><h3>Copy value</h3><p>A value the admin carries elsewhere.</p><code>native button</code></div>
+      <div class="states">
+        <figure><span class="copy"><code>http://kuroshiro.lan:3000</code><button class="btn"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg>Copy</button></span><figcaption>default</figcaption></figure>
+        <figure><span class="copy"><code>http://kuroshiro.lan:3000</code><button class="btn"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Copied</button></span><figcaption>copied</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="comp">
+      <div><h3>Tabs</h3><p>A Device's views. Each is a route, so they are links.</p><code>nav · RouterLink, aria-current</code></div>
+      <div class="states">
+        <figure class="full"><nav class="tabs" aria-label="Kitchen"><a href="#h-comp" aria-current="page">Screens</a><a href="#h-comp" data-force="hover">Settings</a><a href="#h-comp" data-force="focus">Logs</a><a href="#h-comp">Default</a></nav><figcaption>current, hover, focus, default</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="comp">
+      <div><h3>Segmented filter</h3><p>One of a few, always one chosen.</p><code>RadioGroupRoot · RadioGroupItem</code></div>
+      <div class="states">
+        <figure><div class="seg" role="radiogroup" aria-label="Level"><button role="radio" aria-checked="true">All</button><button role="radio" aria-checked="false">Warnings and errors</button></div><figcaption>default</figcaption></figure>
+        <figure><div class="seg" role="radiogroup" aria-label="Level"><button role="radio" aria-checked="true">All</button><button role="radio" aria-checked="false" data-force="hover">Warnings and errors</button></div><figcaption>hover</figcaption></figure>
+        <figure><div class="seg" role="radiogroup" aria-label="Level"><button role="radio" aria-checked="true" data-force="focus">All</button><button role="radio" aria-checked="false">Warnings and errors</button></div><figcaption>focus</figcaption></figure>
+        <figure><div class="seg" role="radiogroup" aria-label="Level"><button role="radio" aria-checked="false" disabled>All</button><button role="radio" aria-checked="false" disabled>Warnings and errors</button></div><figcaption>disabled</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="comp">
+      <div><h3>Radio row</h3><p>A choice that needs a sentence each.</p><code>RadioGroupRoot · RadioGroupItem</code></div>
+      <div class="states">
+        <figure class="full"><div role="radiogroup" aria-label="Kind of Screen" style="max-width: 22rem">
+          <button class="pick" role="radio" aria-checked="true" style="width: 100%"><span class="dot"></span><b>Plugin</b><span>Content a Plugin renders. Checked.</span></button>
+          <button class="pick" role="radio" aria-checked="false" style="width: 100%"><span class="dot"></span><b>Mashup</b><span>Several Plugins on one Screen. Default.</span></button>
+          <button class="pick" role="radio" aria-checked="false" data-force="hover" style="width: 100%"><span class="dot"></span><b>External link</b><span>An image fetched from an address. Hover.</span></button>
+          <button class="pick" role="radio" aria-checked="false" data-force="focus" style="width: 100%"><span class="dot"></span><b>File</b><span>An image you upload. Focus.</span></button>
+          <button class="pick" role="radio" aria-checked="false" aria-disabled="true" style="width: 100%"><span class="dot"></span><b>HTML</b><span>Markup you write. Disabled.</span></button>
+        </div><figcaption>checked, default, hover, focus, disabled</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="comp">
+      <div><h3>File drop</h3><p>A styled native file input.</p><code>native input type=file</code></div>
+      <div class="states">
+        <figure><div class="drop" style="width: 20rem"><span>Drop an image here</span><button class="btn"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>Choose a file</button></div><figcaption>default</figcaption></figure>
+        <figure><div class="drop" data-force="over" style="width: 20rem"><span>Let go to upload</span><button class="btn"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>Choose a file</button></div><figcaption>dragging over</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="comp">
+      <div><h3>Fact rows</h3><p>Label and value. A pending thing and a firing Alert are facts too.</p><code>dl, no primitive</code></div>
+      <div class="states">
+        <figure class="full"><dl class="facts" style="max-width: 18.5rem">
+          <div><dt>Last seen</dt><dd>07:31, 15 min ago</dd></div>
+          <div class="fault"><dt>Alert: battery low</dt><dd>18 %</dd></div>
+          <div><dt>Signal</dt><dd>−61 dBm</dd></div>
+          <div class="pending"><dt>Special Function</dt><dd><i class="busy"></i>Reboot, next poll</dd></div>
+        </dl><figcaption>default, firing Alert, pending</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="comp">
+      <div><h3>Plate</h3><p>A Screen image. Sealed only while it is the Active Screen.</p><code>img, no primitive</code></div>
+      <div class="states">
+        <figure><div class="plate hero" style="width: 17rem; margin: 14px 14px 0 0"><svg role="img" aria-label="Calendar"><use href="#s-calendar"/></svg><svg class="seal red stamp" id="stamp" width="56" height="56" aria-hidden="true"><use href="#seal"/></svg></div><figcaption>the Current Screen</figcaption></figure>
+        <figure><div class="plate" style="width: 9rem"><svg aria-hidden="true"><use href="#s-calendar"/></svg></div><figcaption>preview</figcaption></figure>
+        <figure><div class="plate thumb" style="width: 72px; margin: 6px 6px 0 0"><svg aria-hidden="true"><use href="#s-calendar"/></svg><svg class="seal red" width="16" height="16" aria-hidden="true"><use href="#seal-small"/></svg></div><figcaption>row, active</figcaption></figure>
+        <figure><div class="plate dim" style="width: 72px"><svg aria-hidden="true"><use href="#s-calendar"/></svg></div><figcaption>row, passed over</figcaption></figure>
+        <figure><div class="plate rendering" style="width: 9rem"><span class="note"><i class="busy"></i>Rendering</span></div><figcaption>loading</figcaption></figure>
+        <figure><div class="plate failed" style="width: 9rem"><span class="note"><svg class="icon" aria-hidden="true"><use href="#i-problem"/></svg>No image yet</span></div><figcaption>error</figcaption></figure>
+        <figure><button class="btn" id="restamp">Stamp again</button><figcaption>the one authored motion</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="comp wide">
+      <div><h3>Screen row</h3><p>Opens in place, one at a time.</p><code>AccordionRoot single, collapsible</code></div>
+      <div class="states">
+        <figure class="full"><ul class="rows">
+          <li><div class="srow is-active"><svg class="icon grip" aria-hidden="true"><use href="#i-grip"/></svg><span class="nudge"><svg class="icon" aria-hidden="true"><use href="#i-up"/></svg><svg class="icon" aria-hidden="true"><use href="#i-down"/></svg></span><span class="ord">1</span><div class="plate thumb"><svg aria-hidden="true"><use href="#s-calendar"/></svg><svg class="seal red" width="16" height="16" aria-hidden="true"><use href="#seal-small"/></svg></div><div><span class="name">Calendar</span><span class="kind">Plugin</span></div><div class="schedcell"><span class="soft small">Always shown</span></div><span class="st active">Active Screen</span><svg class="icon chev" aria-hidden="true"><use href="#i-chev"/></svg></div></li>
+          <li><div class="srow" data-force="hover"><svg class="icon grip" aria-hidden="true"><use href="#i-grip"/></svg><span class="nudge"><svg class="icon" aria-hidden="true"><use href="#i-up"/></svg><svg class="icon" aria-hidden="true"><use href="#i-down"/></svg></span><span class="ord">2</span><div class="plate"><svg aria-hidden="true"><use href="#s-calendar"/></svg></div><div><span class="name">Weather</span><span class="kind">Plugin · hover</span></div><div class="schedcell"><button class="sw" role="switch" aria-checked="true" aria-label="Schedule of Weather"></button><span class="sched"><span>06:00–09:00</span><span class="dots"><b>MTWTF</b>SS</span></span></div><span class="st next">Up next</span><svg class="icon chev" aria-hidden="true"><use href="#i-chev"/></svg></div></li>
+          <li><div class="srow dimmed" data-force="focus"><svg class="icon grip" aria-hidden="true"><use href="#i-grip"/></svg><span class="nudge"><svg class="icon" aria-hidden="true"><use href="#i-up"/></svg><svg class="icon" aria-hidden="true"><use href="#i-down"/></svg></span><span class="ord">3</span><div class="plate dim"><svg aria-hidden="true"><use href="#s-calendar"/></svg></div><div><span class="name">Weekend board</span><span class="kind">Mashup · focus</span></div><div class="schedcell"><button class="sw" role="switch" aria-checked="false" aria-label="Schedule of Weekend board"></button><span class="sched off"><span>All day</span><span class="dots">MTWTF<b>SS</b></span></span></div><span class="st">Schedule off</span><svg class="icon chev" aria-hidden="true"><use href="#i-chev"/></svg></div></li>
+          <li><div class="srow dimmed is-open"><svg class="icon grip" aria-hidden="true"><use href="#i-grip"/></svg><span class="nudge"><svg class="icon" aria-hidden="true"><use href="#i-up"/></svg><svg class="icon" aria-hidden="true"><use href="#i-down"/></svg></span><span class="ord">4</span><div class="plate dim"><svg aria-hidden="true"><use href="#s-calendar"/></svg></div><div><span class="name">Train departures</span><span class="kind">Plugin · open</span></div><div class="schedcell"><span class="soft small">Always shown</span></div><span class="st">Skipping</span><svg class="icon chev" aria-hidden="true"><use href="#i-chev"/></svg></div><p class="srow-detail">Skipping: this Screen's own content asked to be left out of Rotation for now. It returns by itself when the content changes.</p></li>
+        </ul><figcaption>Active Screen · hover, Up next · focus, Schedule off · open, Skipping</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="comp">
+      <div><h3>Tucked section</h3><p>Rarely needed things, closed until asked for.</p><code>CollapsibleRoot</code></div>
+      <div class="states">
+        <figure class="full"><div>
+          <div class="tucked" data-state="closed"><button aria-expanded="false"><span>Identity and credentials</span><svg class="icon" aria-hidden="true"><use href="#i-chev"/></svg></button></div>
+          <div class="tucked" data-state="closed"><button aria-expanded="false" data-force="hover"><span>Special Functions</span><svg class="icon" aria-hidden="true"><use href="#i-chev"/></svg></button></div>
+          <div class="tucked" data-state="closed"><button aria-expanded="false" data-force="focus"><span>Mirroring</span><svg class="icon" aria-hidden="true"><use href="#i-chev"/></svg></button></div>
+          <div class="tucked" data-state="open"><button aria-expanded="true"><span>Reset or delete</span><svg class="icon" aria-hidden="true"><use href="#i-chev"/></svg></button><div><p>A Device Reset wipes the Device's Wi-Fi and server URL, so it needs hands on the Device afterwards.</p><div class="btnrow" style="margin-top: var(--space-3)"><button class="btn">Reset Device</button><button class="btn">Delete Device</button></div></div></div>
+        </div><figcaption>closed, hover, focus, open</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="comp">
+      <div><h3>Confirmation</h3><p>Names what is lost and what stays. The safe choice has focus.</p><code>AlertDialogRoot</code></div>
+      <div class="states">
+        <figure class="full"><div class="scrim"><div class="dialog" role="alertdialog" aria-labelledby="dlg-t" aria-describedby="dlg-d"><h3 class="title-sm" id="dlg-t">Delete Weekend board?</h3><p id="dlg-d">The Screen leaves Kitchen's Rotation and its Schedule is lost. The Plugins in its slots stay in your library.</p><div class="btnrow"><button class="btn" data-force="focus">Keep Screen</button><button class="btn primary">Delete Screen</button></div></div></div><figcaption>open, on the scrim</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="comp">
+      <div><h3>Notice</h3><p>A request that failed, where its content would be.</p><code>role=alert, no primitive</code></div>
+      <div class="states">
+        <figure class="full"><div class="notice" role="alert"><p><b>Kitchen's Logs could not be loaded.</b> The Instance did not answer. What you changed before is saved.</p><button class="btn">Try again</button></div><figcaption>failed request</figcaption></figure>
+        <figure class="full"><div class="empty"><h3 class="title-sm">No Screens yet</h3><p>A Screen is one thing Kitchen can show: a Plugin, a Mashup, a link, a file or your own HTML. Kitchen shows the welcome screen until you add one.</p><button class="btn primary">Add Screen</button></div><figcaption>empty state</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="comp wide">
+      <div><h3>The bar</h3><p>The Masthead, and its three tabs on phone.</p><code>nav · RouterLink, aria-current</code></div>
+      <div class="states">
+        <figure class="full"><div class="bar" style="border: var(--rule)"><a class="lockup" href="#top"><svg class="seal" width="28" height="28" aria-hidden="true"><use href="#seal"/></svg><span class="wordmark">Kuroshiro</span></a><nav aria-label="Sections"><a href="#h-comp" aria-current="page">Kitchen</a><a href="#h-comp">Hallway</a><a href="#h-comp">Connect a Device</a><i></i><a href="#h-comp">Plugins</a><a href="#h-comp">Instance</a></nav><a class="alertlink" href="#h-comp">1 Alert firing</a></div><figcaption>desktop, an Alert firing</figcaption></figure>
+        <figure><div class="phone"><nav class="btabs" aria-label="Sections, phone"><a href="#h-comp" aria-current="page">Kitchen</a><a href="#h-comp">Plugins</a><a href="#h-comp">Instance</a></nav></div><figcaption>phone, bottom tabs</figcaption></figure>
+      </div>
+    </div>
+  </section>
+</main>
+
+<button class="btn themebtn" id="theme">Theme</button>
+
+<script>
+const root = document.documentElement
+const forced = new URLSearchParams(location.search).get('theme')
+if (forced)
+  root.dataset.theme = forced
+const isDark = () => getComputedStyle(root).colorScheme === 'dark' || (!root.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches)
+const toggle = () => { root.dataset.theme = isDark() ? 'light' : 'dark' }
+document.getElementById('theme').addEventListener('click', toggle)
+addEventListener('keydown', e => e.key === 't' && !e.target.matches('input, textarea') && toggle())
+
+const stamp = document.getElementById('stamp')
+document.getElementById('restamp').addEventListener('click', () => {
+  stamp.classList.remove('stamp')
+  void stamp.getBoundingClientRect()
+  stamp.classList.add('stamp')
+})
+document.querySelectorAll('.sw:not(:disabled), .day:not(:disabled)').forEach(control =>
+  control.addEventListener('click', () => {
+    const attribute = control.matches('.sw') ? 'aria-checked' : 'aria-pressed'
+    control.setAttribute(attribute, String(control.getAttribute(attribute) !== 'true'))
+  }))
+</script>
+</body>
+</html>
