@@ -1,0 +1,927 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTOTYPE: Kuroshiro Plugins surfaces</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+<link rel="stylesheet" href="surfaces.css">
+<link rel="stylesheet" href="plugins.css">
+</head>
+<body>
+<!--
+PROTOTYPE, throwaway. Wayfinder ticket "Spec: the Plugins surfaces" (#1093), map "Admin UI rebuild from zero" (#1074).
+One design, no variants: this ticket is not a taste gate. It draws the Plugins list, Add a Plugin, the Plugin page around
+its template editor, and the Recipe Update Check, on the tokens and components locked in #1091 and the page patterns of #1092.
+The template editor itself is #1095: the editor and preview drawn here are a stand-in for its place on the page.
+
+?theme=light|dark  ?devices=0|1|3  ?alert=0|1  ?plugins=many|few|none  ?load=ok|loading|failed  ?check=items|same|nosnapshot|running|failed
+Keys: t theme, d Devices, a Alert, g Plugins, l load, c the Recipe Update Check's outcome.
+All data is synthetic and nothing is saved.
+-->
+<div id="sprite"></div>
+<div id="sprite2"></div>
+<div id="app"></div>
+<dialog id="confirm" class="dialog"></dialog>
+
+<div class="proto-bar" role="toolbar" aria-label="Prototype switcher">
+  <button data-cycle="theme"></button>
+  <button data-cycle="devices"></button>
+  <button data-cycle="alert"></button>
+  <button data-cycle="plugins"></button>
+  <button data-cycle="load"></button>
+  <button data-cycle="check"></button>
+</div>
+
+<script src="art.js"></script>
+<script>
+document.querySelector('#sprite').innerHTML = sprite
+
+/* A thirteenth icon, "more", and what a Mashup slot shows on the Device when its Plugin could not be rendered. */
+const failedCell = (x, y, w, h, name, size) => `
+  <g transform="translate(${x} ${y})" fill="#000">
+    <rect x="${size * 1.2}" y="${h / 2 - size * 2.1}" width="${size * 1.1}" height="${size * 1.1}"/>
+    <path transform="translate(${size * 1.2} ${h / 2 - size * 2.1}) scale(${size * 1.1 / 16})" fill="#fff" d="M7.2 4.5v4.6h1.6V4.5zM7.2 10.2v1.6h1.6v-1.6z"/>
+    <text x="${size * 1.2}" y="${h / 2 + size * 0.6}" font-size="${size * 1.7}" ${display}>${name}</text>
+    <text x="${size * 1.2}" y="${h / 2 + size * 1.9}" font-size="${size * 0.8}" ${text}>could not be shown.</text>
+    <text x="${size * 1.2}" y="${h / 2 + size * 3}" font-size="${size * 0.8}" ${text}>Next try at the next poll.</text>
+  </g>`
+document.querySelector('#sprite2').innerHTML = `
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-more" viewBox="0 0 16 16"><path d="M2.5 7h2v2h-2zM7 7h2v2H7zM11.5 7h2v2h-2z"/></symbol>
+  <symbol id="s-cell-half" viewBox="0 0 800 480">
+    <g fill="#0a0a0a" font-family="Helvetica, Arial, sans-serif">
+      <text x="34" y="190" font-size="150" font-weight="700">14°</text>
+      <text x="40" y="250" font-size="26" font-weight="700">Rain from 15:00</text>
+      <rect x="40" y="290" width="320" height="80" fill="url(#d50)"/>
+      <rect x="399" y="0" width="2" height="420"/>
+      <rect y="420" width="800" height="2"/>
+      <text x="40" y="460" font-size="22" font-weight="700">Weekend board</text>
+    </g>
+    ${failedCell(401, 0, 399, 420, 'Calendar', 28)}
+  </symbol>
+  <symbol id="s-cell-quarter" viewBox="0 0 800 480">
+    <g fill="#0a0a0a" font-family="Helvetica, Arial, sans-serif">
+      <text x="30" y="130" font-size="96" font-weight="700">14°</text>
+      <text x="34" y="176" font-size="20" font-weight="700">Rain from 15:00</text>
+      <rect x="399" y="0" width="2" height="420"/><rect x="0" y="209" width="800" height="2"/>
+      <text x="434" y="60" font-size="20" font-weight="700">Saturday</text>
+      <text x="434" y="104" font-size="18"><tspan font-weight="700">10:00</tspan>  Market</text>
+      <text x="434" y="138" font-size="18"><tspan font-weight="700">14:30</tspan>  Football, pitch 2</text>
+      <text x="34" y="262" font-size="20" font-weight="700">Bin day</text>
+      <text x="34" y="320" font-size="44" font-weight="700">Paper</text>
+      <text x="34" y="356" font-size="18">Monday 5 October, out by 07:00</text>
+      <rect y="420" width="800" height="2"/>
+      <text x="40" y="460" font-size="22" font-weight="700">Morning board</text>
+    </g>
+    ${failedCell(401, 211, 399, 209, 'Train departures', 19)}
+  </symbol>
+</defs></svg>`
+
+const SERVER = 'http://kuroshiro.local:3000'
+const MANY = 8
+const THRESHOLD = 3
+
+const weatherTemplate = `<div class="layout layout--col gap--space-between">
+  <div class="grid grid--cols-2">
+    <div class="item">
+      <span class="value value--xxxlarge">{{ forecast.current.temperature | round }}°</span>
+      <span class="label">{{ forecast.current.summary }}</span>
+    </div>
+    <div class="item">
+      {% for hour in forecast.hourly limit: 7 %}
+        <span class="bar" style="height: {{ hour.rain }}%"></span>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+<div class="title_bar">
+  <span class="title">Weather</span>
+  <span class="instance">{{ location }}</span>
+</div>`
+
+/* Field Values belong to the Plugin (ADR-0032); `value: null` on a required Plugin Field with no default means "needs values". */
+const allPlugins = [
+  { id: 'weather', name: 'Weather', kind: 'Poll', every: [15, 'minutes'], recipe: { id: '41120', name: 'Weather', on: '12 September' }, img: 'weather', description: 'Today\'s forecast with the rain of the next hours.',
+    on: { kitchen: 'Order 1 of 6', hallway: 'Order 1 of 2 · Active Screen' }, mashups: [['Weekend board', 'kitchen']],
+    sources: [{ name: 'forecast', mode: 'fetch', method: 'GET', url: 'https://api.open-meteo.example/v1/forecast?q={{ location }}&units={{ units }}', headers: '{}', streak: 0, last: '4 min ago', transform: true }],
+    fields: [
+      { key: 'location', label: 'Location', type: 'text', required: true, value: 'Lindenplatz', help: 'A place name or a postcode.' },
+      { key: 'units', label: 'Units', type: 'select', options: ['metric', 'imperial'], value: 'metric', def: 'metric' },
+      { key: 'show_wind', label: 'Show wind', type: 'switch', value: true },
+    ] },
+  { id: 'calendar', name: 'Calendar', kind: 'Poll', every: [30, 'minutes'], img: 'calendar', description: '',
+    on: { kitchen: 'Order 2 of 6 · Active Screen', study: 'Order 1 of 3' }, mashups: [['Weekend board', 'kitchen']],
+    sources: [
+      { name: 'events', mode: 'fetch', method: 'GET', url: 'https://cal.example/api/v2/events?days=2', headers: '{\n  "Authorization": "Bearer {{ calendar_token }}"\n}', streak: 0, last: '12 min ago' },
+      { name: 'holidays', mode: 'literal', literal: '{\n  "2026-10-03": "Day of German Unity",\n  "2026-12-25": "Christmas Day"\n}' },
+    ],
+    fields: [{ key: 'calendar_token', label: 'Calendar token', type: 'password', required: true, value: 'set', help: 'From the calendar\'s settings, under API access.' }] },
+  { id: 'trains', name: 'Train departures', kind: 'Poll', every: [5, 'minutes'], recipe: { id: '38007', name: 'Departure board', on: '2 August' }, img: 'trains', description: 'The next departures from one stop.',
+    on: { kitchen: 'Order 4 of 6 · Schedule off' }, mashups: [],
+    sources: [
+      { name: 'departures', mode: 'fetch', method: 'POST', url: 'https://api.transit.example/v1/departures', headers: '{\n  "Content-Type": "application/json"\n}', body: '{\n  "stop": "{{ stop_id }}",\n  "limit": 6\n}', streak: 7, last: '3 min ago', error: 'HTTP 503 Service Unavailable', alert: true },
+      { name: 'disruptions', mode: 'fetch', method: 'GET', url: 'https://api.transit.example/v1/disruptions', headers: '{}', streak: 0, last: '3 min ago' },
+    ],
+    fields: [{ key: 'stop_id', label: 'Stop', type: 'text', required: true, value: 'de:08111:6115', help: 'The stop\'s id from the transit operator\'s stop search.' }] },
+  { id: 'bins', name: 'Bin day', kind: 'Poll', every: [6, 'hours'], img: 'bins', description: '',
+    on: { kitchen: 'Order 6 of 6 · Skipping' }, mashups: [],
+    sources: [{ name: 'collections', mode: 'fetch', method: 'GET', url: 'https://waste.example/api/collections/74211', headers: '{}', streak: 1, last: '2 h ago', error: 'The request timed out after 10 s' }],
+    fields: [] },
+  { id: 'pollen', name: 'Pollen count', kind: 'Poll', every: [1, 'hours'], recipe: { id: '52219', name: 'Pollen count', on: 'today' }, img: 'bins', description: 'Today\'s pollen load by plant.',
+    on: {}, mashups: [], fresh: true,
+    sources: [{ name: 'pollen', mode: 'fetch', method: 'GET', url: 'https://pollen.example/v3/{{ region }}?key={{ api_key }}', headers: '{}', streak: 0, last: null }],
+    fields: [
+      { key: 'region', label: 'Region', type: 'text', required: true, value: null, help: 'The region code from pollen.example/regions.' },
+      { key: 'api_key', label: 'API key', type: 'password', required: true, value: null, help: 'A free key from pollen.example.' },
+      { key: 'plants', label: 'Plants', type: 'textarea', value: 'birch\ngrass\nragweed', def: 'birch\ngrass\nragweed', help: 'One per line.' },
+      { key: 'credit', label: '', type: 'author_bio', value: 'Recipe by Mirela Okafor.' },
+    ] },
+  { id: 'doorbell', name: 'Doorbell note', kind: 'Webhook', merge: 'standard', token: 'wh_8c1f02d94a7be6033f9a', img: 'note', description: '',
+    on: { hallway: 'Order 2 of 2' }, mashups: [], received: 'yesterday at 18:03',
+    payload: '{\n  "title": "Back at six.",\n  "body": "Soup is in the fridge.",\n  "from": "Mirela"\n}', fields: [] },
+  { id: 'parcel', name: 'Parcel tracker', kind: 'Webhook', merge: 'stream', limit: 20, token: 'wh_41e7a90c2d5fb8e61b07', img: 'trains', description: '',
+    on: {}, mashups: [], received: null, payload: null, fields: [] },
+  { id: 'moon', name: 'Moon phase', kind: 'Poll', every: [12, 'hours'], img: 'tide', description: '', on: { study: 'Order 3 of 3' }, mashups: [],
+    sources: [{ name: 'moon', mode: 'literal', literal: '{ "cycle": 29.53 }' }], fields: [] },
+  { id: 'tidep', name: 'Tide table', kind: 'Poll', every: [3, 'hours'], recipe: { id: '30418', name: 'Tides', on: '3 March' }, img: 'tide', description: '', on: {}, mashups: [['Harbour board', 'study']],
+    sources: [{ name: 'tides', mode: 'fetch', method: 'GET', url: 'https://tides.example/lindenhafen.json', headers: '{}', streak: 0, last: '1 h ago' }], fields: [] },
+  { id: 'word', name: 'Word of the day', kind: 'Poll', every: [24, 'hours'], img: 'note', description: '', on: {}, mashups: [],
+    sources: [{ name: 'word', mode: 'fetch', method: 'GET', url: 'https://words.example/today.json', headers: '{}', streak: 0, last: '7 h ago' }], fields: [] },
+]
+const templates = {
+  weather: weatherTemplate,
+  list: (source, name) => `<div class="layout layout--col">
+  {% for row in ${source}.items limit: 6 %}
+    <div class="item">
+      <span class="label label--bold">{{ row.time }}</span>
+      <span class="title title--small">{{ row.title }}</span>
+      <span class="label">{{ row.note }}</span>
+    </div>
+  {% endfor %}
+</div>
+<div class="title_bar">
+  <span class="title">${name}</span>
+</div>`,
+  note: name => `<div class="layout layout--col layout--left">
+  <span class="value value--xlarge">{{ title }}</span>
+  <span class="description">{{ body }}</span>
+</div>
+<div class="title_bar">
+  <span class="title">${name}</span>
+  <span class="instance">{{ from }}</span>
+</div>`,
+}
+const templateOf = p => p.id === 'weather' ? templates.weather : p.kind === 'Webhook' ? templates.note(p.name) : templates.list(p.sources[0].name, p.name)
+const FEW = ['weather', 'calendar', 'doorbell', 'bins']
+const allDevices = [{ id: 'kitchen', name: 'Kitchen', model: 'TRMNL OG' }, { id: 'hallway', name: 'Hallway', model: 'TRMNL OG' }, { id: 'study', name: 'Study', model: 'TRMNL X' }]
+
+const updateItems = [
+  { id: 'interval', group: 'Plugin details', what: 'Refresh interval', verb: 'changed', diff: [['-', '15 minutes'], ['+', '30 minutes']] },
+  { id: 't-full', group: 'Templates', what: 'Template <code>full</code>', verb: 'changed', diff: [[' ', '    <div class="item">'], ['-', '      <span class="value value--xxxlarge">{{ forecast.current.temperature | round }}°</span>'], ['+', '      <span class="value value--xxxlarge">{{ forecast.current.temperature | round }}{{ unit_sign }}</span>'], [' ', '      <span class="label">{{ forecast.current.summary }}</span>'], ['…', '6 lines the same'], ['+', '  <span class="label label--small">Feels like {{ forecast.current.feels_like | round }}{{ unit_sign }}</span>'], [' ', '</div>']] },
+  { id: 't-quadrant', group: 'Templates', what: 'Template <code>quadrant</code>', verb: 'added', diff: [['+', '<div class="layout layout--col">'], ['+', '  <span class="value value--xlarge">{{ forecast.current.temperature | round }}{{ unit_sign }}</span>'], ['+', '</div>']] },
+  { id: 'ds-forecast', group: 'Data Sources', what: 'Data Source <code>forecast</code>', verb: 'changed', conflict: true, diff: [['-', 'url: https://api.open-meteo.example/v1/forecast?q={{ location }}'], ['+', 'url: https://api.open-meteo.example/v2/forecast?place={{ location }}&units={{ units }}'], [' ', 'method: GET']], mine: 'url: https://api.open-meteo.example/v1/forecast?q={{ location }}&units={{ units }}' },
+  { id: 'f-units', group: 'Plugin Fields', what: 'Plugin Field <code>units</code>', verb: 'changed', diff: [['-', 'options: metric, imperial'], ['+', 'options: metric, imperial, scientific']] },
+  { id: 'f-key', group: 'Plugin Fields', what: 'Plugin Field <code>api_key</code>', verb: 'removed', diff: [['-', 'api_key · password · required']] },
+]
+
+const params = new URLSearchParams(location.search)
+const pick = (key, allowed, fallback) => allowed.includes(params.get(key)) ? params.get(key) : fallback
+const state = {
+  theme: pick('theme', ['light', 'dark'], matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+  count: Number(pick('devices', ['0', '1', '3'], '1')),
+  alert: pick('alert', ['0', '1'], '1') === '1',
+  plugins: pick('plugins', ['many', 'few', 'none'], 'many'),
+  load: pick('load', ['ok', 'loading', 'failed'], 'ok'),
+  check: pick('check', ['items', 'same', 'nosnapshot', 'running', 'failed'], 'items'),
+  way: 'recipe', merge: 'standard', recipeInput: '', recipeError: null,
+  query: '', onlyProblems: false, menu: null,
+  openSource: {}, openItem: null, picked: Object.fromEntries(updateItems.map(i => [i.id, !i.conflict])),
+  dirty: [], removed: {}, tucked: {}, saved: null, revealed: {}, editField: null, once: {},
+}
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
+const icon = id => `<svg class="icon" aria-hidden="true"><use href="#${id}"/></svg>`
+const seal = (size) => `<svg class="seal" width="${size}" height="${size}" aria-hidden="true"><use href="#seal"/></svg>`
+const current = on => on ? 'aria-current="page"' : ''
+const act = (name, id = '', extra = '') => `data-act="${name}" data-id="${id}" data-fk="${name}-${id}${extra}"`
+const picture = (img, label) => `<svg ${label ? `role="img" aria-label="${esc(label)}"` : 'aria-hidden="true"'}><use href="#s-${img}"/></svg>`
+const busy = '<i class="busy" aria-hidden="true"></i>'
+const status = key => state.saved === key ? `<span class="status" role="status">${icon('i-check')}Saved</span>` : ''
+const possessive = name => `${name}'s`
+const cap = s => s[0].toUpperCase() + s.slice(1)
+const list = (names) => names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`
+const devices = () => allDevices.slice(0, state.count)
+const deviceName = id => allDevices.find(d => d.id === id)?.name
+const plugins = () => state.plugins === 'none' ? [] : state.plugins === 'few' ? allPlugins.filter(p => FEW.includes(p.id)) : allPlugins
+const firing = p => state.alert && (p.sources ?? []).some(s => s.alert)
+const alertCount = () => plugins().filter(firing).length
+const needs = p => p.fields.filter(f => f.required && f.value == null && f.def == null)
+const worst = p => Math.max(0, ...(p.sources ?? []).map(s => s.streak ?? 0))
+const hasProblem = p => firing(p) || worst(p) > 0 || needs(p).length > 0
+const assigned = p => devices().filter(d => p.on[d.id])
+const mashupsOf = p => p.mashups.filter(([, d]) => devices().some(x => x.id === d))
+const every = p => `every ${p.every[0] === 1 ? p.every[1].slice(0, -1) : p.every.join(' ')}`
+const tucked = (key, title, body, open = false) => {
+  const isOpen = state.tucked[key] ?? open
+  return `<div class="tucked" id="${key}" data-state="${isOpen ? 'open' : 'closed'}"><button aria-expanded="${isOpen}" ${act('tuck', key)}><span>${title}</span>${icon('i-chev')}</button>${isOpen ? `<div>${body}</div>` : ''}</div>`
+}
+const set = (label, control, note = '', hint = '', cls = '') => `<li class="set ${cls}"><b>${label}</b><span class="ctl">${control}</span><span class="note">${note}</span>${hint ? `<span class="hint">${hint}</span>` : ''}</li>`
+const failedNotice = (what, reason) => `<div class="notice" role="alert"><p><b>${what}</b> ${reason}</p><button class="btn" ${act('retry')}>Try again</button></div>`
+const touch = (key, label) => `data-change="draft" data-key="${label}" data-fk="${key}"`
+
+/* ── the Plugins list ── */
+
+function where(p) {
+  const names = assigned(p).map(d => d.name)
+  const mash = mashupsOf(p)
+  if (names.length > 2)
+    return `On ${names.length} Devices`
+  if (names.length)
+    return `On ${list(names)}`
+  if (mash.length)
+    return `In a Mashup on ${deviceName(mash[0][1])}`
+  return 'Not on a Device'
+}
+
+function health(p) {
+  if (firing(p))
+    return `<span class="fault">Alert: a Data Source keeps failing</span>`
+  if (worst(p) > 0)
+    return `<span class="problem">${icon('i-problem')}${worst(p) === 1 ? 'The last fetch failed' : `${worst(p)} fetches failed in a row`}</span>`
+  if (needs(p).length)
+    return `<span class="problem">${icon('i-problem')}A required Plugin Field is empty</span>`
+  if (p.kind === 'Webhook' && !p.received)
+    return `<span class="soft">Nothing received yet</span>`
+  return ''
+}
+
+const rowMenu = p => `
+  <span class="menuwrap">
+    <button class="btn icon-only" aria-label="More actions for ${esc(p.name)}" aria-haspopup="menu" aria-expanded="${state.menu === p.id}" ${act('menu', p.id)}>${icon('i-more')}</button>
+    ${state.menu === p.id ? `<div class="menu" role="menu"><button role="menuitem" ${act('duplicate', p.id)}>Duplicate</button><button role="menuitem" ${act('export', p.id)}>Export</button><hr><button role="menuitem" ${act('delete-plugin', p.id)}>Delete Plugin</button></div>` : ''}
+  </span>`
+
+const pluginRow = p => `
+  <li><div class="prow">
+    <span><a class="pname" href="#/plugins/${p.id}">${p.name}</a></span>
+    <span class="kind">${p.kind} Plugin${p.recipe ? ' · from a Recipe' : ''}</span>
+    <span class="where">${where(p)}</span>
+    <span class="health">${health(p)}</span>
+    ${rowMenu(p)}
+  </div></li>`
+
+const listActions = () => `<a class="btn" href="#/plugins/new/poll">Build a Plugin</a><a class="btn primary" href="#/plugins/new/recipe">Import a Recipe</a>`
+
+function pluginsPage() {
+  const all = plugins()
+  const base = { section: 'plugins', title: 'Plugins' }
+  if (state.load === 'loading')
+    return { ...base, body: `<p class="loadline" role="status" style="margin-top:var(--space-6)">${busy}Loading Plugins</p><ul class="rows" style="margin-top:var(--space-4);border-top:var(--rule-heavy)" aria-busy="true">${[34, 26, 40, 30].map(w => `<li><div class="prow"><span class="ghost" style="width:${w + 20}%"></span><span class="ghost" style="width:60%"></span><span class="ghost" style="width:${w + 30}%"></span><span></span></div></li>`).join('')}</ul>` }
+  if (!all.length)
+    return { ...base, body: `${state.load === 'failed' ? failedNotice('Could not load the Plugins.', 'The server answered 500.') : `<div class="empty section"><h2 class="title-md">No Plugins yet</h2><p>A Plugin fetches data and renders it with a template, for a Device to show as a Screen. Import one as a Recipe from TRMNL, or build your own.</p><div class="btnrow"><a class="btn primary" href="#/plugins/new/recipe">Import a Recipe</a><a class="btn" href="#/plugins/new/poll">Build a Plugin</a></div></div>`}` }
+  const problems = all.filter(hasProblem)
+  const q = state.query.toLowerCase()
+  const shown = all.filter(p => p.name.toLowerCase().includes(q) && (!state.onlyProblems || hasProblem(p)))
+  const bar = all.length > MANY || problems.length
+    ? `<div class="listbar">
+        ${all.length > MANY ? `<label class="searchbox">${icon('i-search')}<input class="in" type="search" placeholder="Find a Plugin" aria-label="Find a Plugin" value="${esc(state.query)}" data-input="query" data-fk="query"></label>` : ''}
+        ${problems.length ? `<div class="seg" role="radiogroup" aria-label="Show"><button role="radio" aria-checked="${!state.onlyProblems}" ${act('filter', 'all')}>All</button><button role="radio" aria-checked="${state.onlyProblems}" ${act('filter', 'problems')}>With a problem</button></div>` : ''}
+      </div>` : ''
+  const meta = `<p class="listmeta">${q || state.onlyProblems ? `${shown.length} of ${all.length} Plugins` : `${all.length} Plugin${all.length === 1 ? '' : 's'}, by name`}${problems.length && !state.onlyProblems ? ` · ${problems.length} with a problem` : ''}</p>`
+  const rows = shown.length
+    ? `<ul class="rows">${shown.map(pluginRow).join('')}</ul>`
+    : `<div class="empty" style="border-top:0"><h2 class="title-sm">No Plugin matches</h2><p>${q ? `No Plugin is called “${esc(state.query)}”${state.onlyProblems ? ' among those with a problem' : ''}.` : 'No Plugin has a problem.'}</p><button class="btn" ${act('filter', 'reset')}>Show all Plugins</button></div>`
+  return { ...base, actions: listActions(), body: `${state.load === 'failed' ? failedNotice('Could not load the Plugins.', 'The server answered 500. What you see is from 07:42.') : ''}${bar}${meta}${rows}` }
+}
+
+/* ── Add a Plugin ── */
+
+const ways = [
+  { id: 'recipe', name: 'Recipe', gist: 'A ready-made Plugin from trmnl.com/recipes' },
+  { id: 'file', name: 'File', gist: 'A Plugin exported from Kuroshiro or TRMNL' },
+  { id: 'github', name: 'GitHub', gist: 'A Plugin kept in a public repository' },
+  { id: 'poll', name: 'Build a Poll Plugin', gist: 'Kuroshiro fetches the data on a schedule' },
+  { id: 'webhook', name: 'Build a Webhook Plugin', gist: 'Another system sends the data' },
+]
+const merges = [
+  { id: 'standard', name: 'Replace', gist: 'Each POST replaces the Webhook Payload.' },
+  { id: 'deep_merge', name: 'Deep merge', gist: 'Objects are merged key by key. An array is replaced.' },
+  { id: 'stream', name: 'Stream', gist: 'Top-level arrays are appended to, up to the Stream Limit. Other keys are replaced.' },
+]
+
+function wayForm(carry) {
+  const dup = state.recipeInput.includes('41120')
+  const foot = (button, line) => `<div class="foot btnrow"><button class="btn primary" ${act('create', state.way)}>${button}</button><a class="btn quiet" href="${carry ? `#/devices/${carry.id}` : '#/plugins'}">Cancel</a><span class="soft small">${line}</span></div>`
+  return {
+    recipe: () => `
+      <label class="field"><span class="label">Recipe</span><input class="in wide" placeholder="https://trmnl.com/recipes/41120" value="${esc(state.recipeInput)}" ${state.recipeError ? 'aria-invalid="true"' : ''} data-input="recipe" data-fk="recipe-input"><span class="hint">The address of the Recipe's page on trmnl.com, or only its id.</span></label>
+      ${state.recipeError ? `<p class="message" role="alert">${icon('i-problem')}<span>${state.recipeError}</span></p>` : ''}
+      ${dup && !state.recipeError ? `<p class="message">${icon('i-problem')}<span>You already have <a class="link" href="#/plugins/weather">Weather</a> from this Recipe. Importing makes a second Plugin.</span></p>` : ''}
+      <p><a class="link" href="https://trmnl.com/recipes">Browse Recipes on trmnl.com</a></p>
+      ${foot('Import Recipe', 'Imports as a Poll Plugin you can edit. Nothing updates by itself afterwards.')}`,
+    file: () => `
+      <div class="field"><span class="label">Plugin file</span><div class="drop"><span>Drop a .zip here: a Plugin as Kuroshiro or TRMNL exports it.</span><button class="btn">${icon('i-upload')}Choose file</button></div></div>
+      ${foot('Import Plugin', 'Imports as a Poll Plugin. Field Values are not part of a file, so you enter them afterwards.')}`,
+    github: () => `
+      <label class="field"><span class="label">Repository</span><input class="in wide" type="url" placeholder="https://github.com/owner/repository"><span class="hint">A public repository with the Plugin at its root, on the branch main.</span></label>
+      ${foot('Import Plugin', 'Imports as a Poll Plugin, copied once. Later changes in the repository do not reach it.')}`,
+    poll: () => `
+      <label class="field"><span class="label">Name</span><input class="in wide text" placeholder="Weather"></label>
+      <p class="soft">Kuroshiro fetches its Data Sources on a schedule and renders them with a template. You write both on the Plugin's page, which opens next.</p>
+      ${foot('Create Plugin', 'A Poll Plugin stays a Poll Plugin: the Plugin Kind cannot be changed later.')}`,
+    webhook: () => `
+      <label class="field"><span class="label">Name</span><input class="in wide text" placeholder="Doorbell note"></label>
+      <div class="field"><span class="label">Merge Strategy</span><div role="radiogroup" aria-label="Merge Strategy">${merges.map(m => `<button class="pick" role="radio" aria-checked="${m.id === state.merge}" ${act('merge', m.id)}><span class="dot"></span><b>${m.name} <code class="soft">${m.id}</code></b><span>${m.gist}</span></button>`).join('')}</div></div>
+      ${state.merge === 'stream' ? `<div class="field"><span class="label">Stream Limit</span><span class="inline-num">Keep the newest <input class="in" type="number" min="1" value="20" aria-label="Stream Limit"> entries of each array</span></div>` : ''}
+      <p class="soft">Kuroshiro gives the Plugin a Webhook URL. Whatever is POSTed there becomes its Webhook Payload and is rendered at once.</p>
+      ${foot('Create Plugin', 'The Plugin Kind and the Merge Strategy cannot be changed later.')}`,
+  }[state.way]()
+}
+
+function newPage(way, carryId) {
+  state.way = ways.some(w => w.id === way) ? way : 'recipe'
+  const carry = devices().find(d => d.id === carryId)
+  return {
+    section: 'plugins', title: 'Plugins',
+    body: `
+      <a class="back" href="${carry ? `#/devices/${carry.id}` : '#/plugins'}">${icon('i-chev')}${carry ? `${possessive(carry.name)} Screens` : 'All Plugins'}</a>
+      <h2 class="title-sm section" style="margin-top:var(--space-4)">Add a Plugin</h2>
+      ${carry ? `<p class="carry">It is assigned to ${carry.name} as soon as it exists, at the end of the Order.</p>` : ''}
+      <div class="add">
+        <div class="picks" role="radiogroup" aria-label="Way to add a Plugin">${ways.map(w => `<button class="pick" role="radio" aria-checked="${w.id === state.way}" ${act('way', w.id)}><span class="dot"></span><b>${w.name}</b><span>${w.gist}</span></button>`).join('')}</div>
+        <div class="form">${wayForm(carry)}</div>
+      </div>`,
+  }
+}
+
+/* ── the Plugin page ── */
+
+function sourceHealth(p, s) {
+  if (s.mode === 'literal')
+    return ''
+  if (state.alert && s.alert)
+    return `<span class="fault">Alert: keeps failing</span>`
+  if (s.streak > 0)
+    return `<span class="problem">${icon('i-problem')}${s.streak === 1 ? 'The last fetch failed' : `${s.streak} fetches failed in a row`}</span>`
+  return s.last ? `Fetched ${s.last}` : 'Not fetched yet'
+}
+
+function sourceDetail(p, s) {
+  const key = `${p.id}-${s.name}`
+  const failing = s.streak > 0
+  const story = s.mode === 'literal'
+    ? `<p>A fixed value. Nothing is fetched, so it has no Fetch Failure Streak.</p>`
+    : failing
+      ? `${state.alert && s.alert ? `<p class="fault">Alert: this Data Source keeps failing</p>` : ''}
+         <p>Its Fetch Failure Streak is ${s.streak}: ${s.streak === 1 ? 'the last scheduled fetch failed' : `the last ${s.streak} scheduled fetches failed`}, most recently ${s.last}.</p>
+         <div class="codeblock"><pre>${esc(s.error)}</pre></div>
+         <p>${p.name} still renders. <code>{{ ${s.name} }}</code> carries an error marker instead of data until a fetch succeeds.</p>
+         ${state.alert && s.alert ? '' : `<p>An Alert fires when the streak reaches ${THRESHOLD}.</p>`}`
+      : `<p>${s.last ? `Fetched ${s.last}, at the last scheduled render.` : 'Not fetched yet. The first scheduled render fetches it.'}</p>`
+  return `
+    <div class="dsdetail">
+      <div class="fields">
+        <label class="field"><span class="label">Name</span><input class="in" value="${s.name}" style="width:14rem" ${touch(`ds-name-${key}`, 'Data Sources')}><span class="hint">The template reads it as <code>{{ ${s.name} }}</code>.</span></label>
+        <div class="field"><span class="label">Data Source Mode</span><div class="seg" role="radiogroup" aria-label="Data Source Mode" style="justify-self:start"><button role="radio" aria-checked="${s.mode === 'fetch'}">Fetch</button><button role="radio" aria-checked="${s.mode === 'literal'}">Literal</button></div><span class="hint">${s.mode === 'fetch' ? 'An HTTP request Kuroshiro makes at every scheduled render.' : 'A fixed JSON value you type here.'}</span></div>
+        ${s.mode === 'literal'
+          ? `<label class="field"><span class="label">Value</span><textarea class="in" spellcheck="false" ${touch(`ds-lit-${key}`, 'Data Sources')}>${esc(s.literal)}</textarea><span class="hint">JSON.</span></label>`
+          : `<div class="field"><span class="label">Request</span><span class="urlline"><select class="in" aria-label="Method" ${touch(`ds-method-${key}`, 'Data Sources')}><option ${s.method === 'GET' ? 'selected' : ''}>GET</option><option ${s.method === 'POST' ? 'selected' : ''}>POST</option></select><input class="in wide" aria-label="URL" value="${esc(s.url)}" ${touch(`ds-url-${key}`, 'Data Sources')}></span><span class="hint">The response must be JSON. A Field Value can be used as <code>{{ keyname }}</code> here, in the headers and in the body.</span></div>
+             <label class="field"><span class="label">Headers</span><textarea class="in" spellcheck="false" ${touch(`ds-head-${key}`, 'Data Sources')}>${esc(s.headers)}</textarea><span class="hint">A JSON object. Keep a secret in a password Plugin Field and name it here, not in the header itself.</span></label>
+             ${s.method === 'POST' ? `<label class="field"><span class="label">Body</span><textarea class="in" spellcheck="false" ${touch(`ds-body-${key}`, 'Data Sources')}>${esc(s.body ?? '{}')}</textarea><span class="hint">A JSON object, sent with POST.</span></label>` : ''}
+             ${tucked(`transform-${key}`, s.transform ? 'Transform · JavaScript, 6 lines' : 'Transform · none', `<p>JavaScript that reshapes the response before the template sees it. It runs on this server at every fetch.</p><label class="field" style="max-width:none;margin-top:var(--space-3)"><span class="label vh">Transform</span><textarea class="in" spellcheck="false" ${touch(`ds-tr-${key}`, 'Data Sources')}>${s.transform ? 'function transform(input) {\n  const hours = input.hourly.slice(0, 7)\n  return { current: input.current, hourly: hours }\n}' : ''}</textarea></label>`)}`}
+      </div>
+      <div class="side">
+        ${story}
+        <div class="btnrow"><button class="btn" ${act('remove-source', key)}>Remove Data Source</button></div>
+      </div>
+    </div>`
+}
+
+function sourceRow(p, s) {
+  const key = `${p.id}-${s.name}`
+  const open = state.openSource[p.id] === s.name
+  const gone = state.removed[key]
+  return `
+    <li id="ds-${s.name}">
+      <div class="dsrow ${open ? 'is-open' : ''} ${gone ? 'gone' : ''}">
+        <span><button class="open" aria-expanded="${open}" ${act('open-source', key)} ${gone ? 'disabled' : ''}>${s.name}</button></span>
+        <span class="what">${s.mode === 'literal' ? 'literal · a fixed value' : `${s.method} ${esc(s.url.replace('https://', ''))}`}</span>
+        <span class="health">${gone ? `Removed when you save · <button class="btn quiet" style="min-height:0;position:relative;z-index:1" ${act('restore-source', key)}>Put back</button>` : sourceHealth(p, s)}</span>
+        <span class="chev" aria-hidden="true">${gone ? '' : icon('i-chev')}</span>
+      </div>
+      ${open && !gone ? sourceDetail(p, s) : ''}
+    </li>`
+}
+
+const dataSources = p => `
+  <h2 class="title-sm section" id="data"><span>Data Sources</span><span class="actions"><button class="btn" ${act('add-source', p.id)}>Add a Data Source</button></span></h2>
+  <ul><li class="set"><b>Fetch</b><span class="ctl">every <input class="in" type="number" min="1" value="${p.every[0]}" style="width:4.5rem" aria-label="Refresh interval" ${touch(`every-${p.id}`, 'refresh interval')}><select class="in" aria-label="Unit" ${touch(`every-unit-${p.id}`, 'refresh interval')}><option ${p.every[1] === 'minutes' ? 'selected' : ''}>minutes</option><option ${p.every[1] === 'hours' ? 'selected' : ''}>hours</option></select></span><span class="note"></span><span class="hint">The refresh interval: how often Kuroshiro fetches every Data Source and renders ${p.name} again. A Device shows the newest render at its own next poll.</span></li></ul>
+  ${p.sources.length
+    ? `<ul class="rows" style="border-top:var(--rule)">${p.sources.map(s => sourceRow(p, s)).join('')}</ul>`
+    : `<div class="empty" style="border-top:var(--rule)"><p>No Data Sources. The template renders without data. Add one to fetch JSON from an address, or to keep a fixed value.</p></div>`}`
+
+function webhook(p) {
+  const shown = state.revealed[p.id]
+  const url = `${SERVER}/api/webhook/${shown ? p.token : `${'•'.repeat(16)}${p.token.slice(-4)}`}`
+  const merge = merges.find(m => m.id === p.merge)
+  return `
+    <h2 class="title-sm section" id="data">Webhook</h2>
+    <ul>
+      ${set('Webhook URL', `<span class="copy"><code>${url}</code><button class="btn" ${act('reveal', p.id)}>${shown ? 'Hide' : 'Reveal'}</button><button class="btn" ${act('copy', `url-${p.id}`)}>${state.saved === `copy-url-${p.id}` ? 'Copied' : 'Copy'}</button></span>`, '', `POST a JSON object or array here. It becomes the Webhook Payload and ${p.name} is rendered again at once. The Webhook Token at its end is the only key, so treat the address as a secret.`, 'top')}
+      ${set('Merge Strategy', `<span><b style="font-weight:var(--weight-semibold)">${merge.name}</b> <code class="soft">${p.merge}</code>${p.merge === 'stream' ? ` · Stream Limit ${p.limit}` : ''}</span>`, 'Fixed when the Plugin was created', p.merge === 'stream' ? `Top-level arrays are appended to and keep their newest ${p.limit} entries. Other keys are replaced.` : merge.gist)}
+      ${set('Example', `<div class="codeblock" style="width:100%"><pre>curl -X POST ${SERVER}/api/webhook/${shown ? p.token : '…'} \\\n  -H "Content-Type: application/json" \\\n  -d '{"title": "Back at six."}'</pre><button class="btn" ${act('copy', `curl-${p.id}`)}>${state.saved === `copy-curl-${p.id}` ? 'Copied' : 'Copy'}</button></div>`, '', '', 'top')}
+      ${set('Webhook Payload', p.payload
+        ? `<div style="width:100%"><p class="soft small" style="margin-bottom:var(--space-2)">Received ${p.received}. The template reads its keys directly, for example <code>{{ title }}</code>.</p><div class="codeblock"><pre>${esc(p.payload)}</pre></div><div class="btnrow" style="margin-top:var(--space-3)"><button class="btn" ${act('clear-payload', p.id)}>Clear Webhook Payload</button></div></div>`
+        : `<span class="soft">Nothing received yet. Until the first POST arrives the template renders without data.</span>`, '', '', 'top')}
+    </ul>
+    <p class="sect-note">A sender that should no longer reach ${p.name}? <button class="btn quiet" style="min-height:0" ${act('regenerate', p.id)}>Regenerate the Webhook Token</button></p>`
+}
+
+function fieldControl(p, f) {
+  const key = `fv-${p.id}-${f.key}`
+  const invalid = f.required && f.value == null && f.def == null
+  return {
+    text: () => `<input class="in text w" value="${esc(f.value ?? '')}" placeholder="${esc(f.def ?? '')}" ${invalid ? 'aria-invalid="true"' : ''} ${touch(key, 'Field Values')}>`,
+    textarea: () => `<textarea class="in" style="width:min(22rem,100%)" rows="3" ${touch(key, 'Field Values')}>${esc(f.value ?? '')}</textarea>`,
+    number: () => `<input class="in" type="number" value="${esc(f.value ?? '')}" style="width:7rem" ${touch(key, 'Field Values')}>`,
+    switch: () => `<button class="sw" role="switch" aria-checked="${Boolean(f.value)}" aria-label="${esc(f.label)}" ${act('field-switch', key)}></button><span>${f.value ? 'On' : 'Off'}</span>`,
+    select: () => `<select class="in" ${touch(key, 'Field Values')}>${f.options.map(o => `<option ${o === f.value ? 'selected' : ''}>${o}</option>`).join('')}</select>`,
+    password: () => f.value
+      ? `<span class="mono">${'•'.repeat(12)}</span><button class="btn" ${act('replace-secret', key)}>Replace</button>`
+      : `<input class="in w" type="password" placeholder="Not set" ${invalid ? 'aria-invalid="true"' : ''} ${touch(key, 'Field Values')}>`,
+  }[f.type]()
+}
+
+function fieldValues(p) {
+  if (!p.fields.length)
+    return ''
+  const inputs = p.fields.filter(f => f.type !== 'author_bio')
+  const credit = p.fields.find(f => f.type === 'author_bio')
+  return `
+    <h2 class="title-sm section" id="values">Field Values</h2>
+    <ul>${inputs.map((f) => {
+      const empty = f.required && f.value == null && f.def == null
+      return set(`${f.label}${f.required ? '<span class="req">required</span>' : ''}`, fieldControl(p, f), empty ? `<span class="problem">${icon('i-problem')}Empty</span>` : f.def != null && f.value === f.def ? 'The default' : f.type === 'password' && f.value ? 'Set. A secret is never shown again.' : '', f.help ?? '')
+    }).join('')}</ul>
+    <p class="sect-note">Every Device and every Mashup shows ${p.name} with these values. To show it with other values somewhere, duplicate the Plugin. ${credit ? `<br>${credit.value}` : ''}</p>`
+}
+
+function assignment(p) {
+  const all = devices()
+  if (!all.length)
+    return `<h2 class="title-sm section" id="devices">Devices</h2><div class="empty" style="border-top:0"><p>No Device is connected yet, so there is nothing to assign ${p.name} to.</p><a class="btn" href="#/connect">Connect a Device</a></div>`
+  const mash = mashupsOf(p)
+  return `
+    <h2 class="title-sm section" id="devices">Devices</h2>
+    <ul class="rows">${all.map(d => `
+      <li><div class="arow">
+        <a href="#/devices/${d.id}">${d.name}</a>
+        <span class="how">${p.on[d.id] ? `Assigned · <b>${p.on[d.id]}</b>` : 'Not assigned'}</span>
+        ${p.on[d.id] ? `<button class="btn" ${act('unassign', `${p.id}-${d.id}`)}>Unassign</button>` : `<button class="btn" ${act('assign', `${p.id}-${d.id}`)}>Assign to ${d.name}</button>`}
+      </div></li>`).join('')}
+      ${mash.map(([m, d]) => `<li><div class="arow"><a href="#/devices/${d}">${m}</a><span class="how">A Mashup on ${deviceName(d)}. ${p.name} fills one of its slots.</span><a class="btn quiet" href="#/devices/${d}">Open the Mashup</a></div></li>`).join('')}
+    </ul>
+    <p class="sect-note">Assigning adds ${p.name} to the end of that Device's Order as a Screen, always shown until you give it a Schedule there.</p>`
+}
+
+const recipeSection = p => p.recipe ? `
+  <h2 class="title-sm section" id="recipe"><span>Recipe</span><span class="actions"><a class="btn" href="#/plugins/${p.id}/update">Run a Recipe Update Check</a></span></h2>
+  <p class="sect-lede">Imported from the Recipe <a class="link" href="https://trmnl.com/recipes/${p.recipe.id}">${p.recipe.name} <span class="mono">${p.recipe.id}</span></a> on trmnl.com, ${p.recipe.on === 'today' ? 'today' : `on ${p.recipe.on}`}. Nothing updates by itself: a Recipe Update Check downloads the Recipe again and shows what changed before anything is applied.</p>` : ''
+
+const fieldTypes = { text: 'Single-line text', textarea: 'Multi-line text', number: 'Number', switch: 'On or off', password: 'Password', select: 'Select', author_bio: 'Credit, read-only' }
+function pluginFields(p) {
+  const rows = p.fields.map((f) => {
+    const open = state.editField === `${p.id}-${f.key}`
+    return `<li><div class="pfrow"><span class="grip" aria-hidden="true">${icon('i-grip')}</span><span class="key">${f.key}</span><span>${f.label || '<span class="soft">no label</span>'}${f.required ? ' <span class="soft small">· required</span>' : ''}</span><span class="type">${fieldTypes[f.type]}</span><button class="btn quiet" ${act('edit-field', `${p.id}-${f.key}`)}>${open ? 'Done' : 'Edit'}</button></div>
+      ${open ? `<div class="pfedit">
+        <label class="field"><span class="label">Keyname</span><input class="in wide" value="${f.key}" ${touch(`pf-key-${f.key}`, 'Plugin Fields')}><span class="hint">Templates and Data Sources read <code>{{ ${f.key} }}</code>. Changing it starts the Field Value over.</span></label>
+        <label class="field"><span class="label">Label</span><input class="in wide text" value="${esc(f.label)}" ${touch(`pf-label-${f.key}`, 'Plugin Fields')}></label>
+        <label class="field"><span class="label">Type</span><select class="in wide" ${touch(`pf-type-${f.key}`, 'Plugin Fields')}>${Object.entries(fieldTypes).filter(([k]) => k !== 'author_bio' || f.type === 'author_bio').map(([k, v]) => `<option ${k === f.type ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+        <label class="field"><span class="label">Default</span><input class="in wide text" value="${esc(f.def ?? '')}" placeholder="None" ${touch(`pf-def-${f.key}`, 'Plugin Fields')}></label>
+        ${f.type === 'select' ? `<label class="field full"><span class="label">Options</span><textarea class="in" rows="3" ${touch(`pf-opt-${f.key}`, 'Plugin Fields')}>${f.options.join('\n')}</textarea><span class="hint">One per line.</span></label>` : ''}
+        <label class="field full"><span class="label">Help text</span><input class="in wide text" value="${esc(f.help ?? '')}" ${touch(`pf-help-${f.key}`, 'Plugin Fields')}></label>
+        <div class="full btnrow"><label class="check"><input type="checkbox" ${f.required ? 'checked' : ''} ${touch(`pf-req-${f.key}`, 'Plugin Fields')}> Required</label><button class="btn quiet" ${act('remove-field', f.key)}>Remove Plugin Field</button></div>
+      </div>` : ''}</li>`
+  }).join('')
+  return `
+    <p>A Plugin Field is one input this Plugin asks you to fill in. What you enter is its Field Value, which templates and Data Sources read by the keyname.${p.recipe ? ' These arrived with the Recipe; a Recipe Update Check may offer changes to them.' : ''}</p>
+    ${p.fields.length ? `<ul class="rows">${rows}</ul>` : `<p style="margin-top:var(--space-2)">${p.name} declares none.</p>`}
+    <div class="btnrow" style="margin-top:var(--space-3)"><button class="btn" ${act('add-field', p.id)}>Add a Plugin Field</button></div>`
+}
+
+function problems(p) {
+  const lines = [
+    ...(p.sources ?? []).filter(s => s.streak > 0).map(s => state.alert && s.alert
+      ? `<li><span class="fault">Alert: the Data Source <code>${s.name}</code> keeps failing</span><a href="#/plugins/${p.id}" ${act('jump-source', `${p.id}-${s.name}`)}>See the error</a></li>`
+      : `<li><span class="problem">${icon('i-problem')}The last fetch of the Data Source <code>${s.name}</code> failed.</span><a href="#/plugins/${p.id}" ${act('jump-source', `${p.id}-${s.name}`)}>See the error</a></li>`),
+    ...(needs(p).length ? [`<li><span class="problem">${icon('i-problem')}${needs(p).length === 1 ? `The required Plugin Field ${needs(p)[0].label} is empty` : `${needs(p).length} required Plugin Fields are empty: ${list(needs(p).map(f => f.label))}`}. ${p.name} renders without ${needs(p).length === 1 ? 'it' : 'them'}.</span><a href="#/plugins/${p.id}" ${act('jump', 'values')}>Fill in the Field Values</a></li>`] : []),
+  ]
+  return lines.length ? `<ul class="problems">${lines.join('')}</ul>` : ''
+}
+
+function pluginFacts(p) {
+  const names = assigned(p).map(d => d.name)
+  return `<p class="pfacts">
+    <span>${p.kind} Plugin</span>
+    <span>${p.kind === 'Poll' ? `Fetches ${every(p)}` : p.received ? `Last received ${p.received}` : 'Nothing received yet'}</span>
+    <span>${names.length ? `On ${list(names)}` : 'Not on a Device'}</span>
+    ${p.recipe ? `<span>From the Recipe ${p.recipe.name}</span>` : ''}
+  </p>`
+}
+
+function bench(p) {
+  const d = assigned(p)[0] ?? devices()[0]
+  return `
+    <h2 class="title-sm section" id="template">Template</h2>
+    <div class="editor bench">
+      <label class="field" style="max-width:none"><span class="label vh">Template</span><textarea class="in" spellcheck="false" ${touch(`tpl-${p.id}`, 'template')}>${esc(templateOf(p))}</textarea></label>
+      <div><span class="plate hero">${picture(p.img, `Preview of ${p.name}`)}</span><p class="cap">Preview${d ? ` for ${d.name}: ${d.model}, 2-bit greyscale` : ' for TRMNL OG, 2-bit greyscale'}</p></div>
+    </div>`
+}
+
+function saveBar(p) {
+  if (!state.dirty.length)
+    return ''
+  const what = [...new Set(state.dirty)]
+  return `<div class="savebar" role="region" aria-label="Unsaved changes"><p><b>Unsaved changes</b> to the ${list(what)}. The preview already shows them.</p><div class="btnrow"><button class="btn quiet" ${act('discard', p.id)}>Discard changes</button><button class="btn primary" ${act('save', p.id)}>Save Plugin</button></div></div>`
+}
+
+function pluginPage(p) {
+  const head = `<a class="back" href="#/plugins" style="margin:0 0 var(--space-3)">${icon('i-chev')}All Plugins</a>`
+  if (state.load === 'loading')
+    return { section: 'plugins', title: p.name, pre: head, body: `<p class="loadline" role="status" style="margin-top:var(--space-4)">${busy}Loading ${p.name}</p><h2 class="title-sm section">Template</h2><div class="editor"><span class="ghost" style="height:19rem"></span><span class="plate hero rendering"></span></div>` }
+  const once = state.once[p.id] ?? (p.fresh ? 'imported' : null)
+  const onceLine = {
+    imported: `<p class="once"><span>Imported from the Recipe ${p.recipe?.name}. ${p.sources?.some(s => s.transform) ? 'It brings a transform: JavaScript that runs on this server at every fetch. Read it under Data Sources.' : 'It is not on a Device yet.'}</span><button class="btn quiet" style="min-height:0" ${act('dismiss-once', p.id)}>Dismiss</button></p>`,
+    saved: `<p class="once" role="status"><span>${icon('i-check')}</span><span style="flex:1">Saved at 07:46. Fetched and rendered again${assigned(p).length ? ` for ${list(assigned(p).map(d => d.name))}` : ''}.</span></p>`,
+  }[once] ?? ''
+  return {
+    section: 'plugins', title: p.name, pre: head,
+    body: `
+      ${state.load === 'failed' ? failedNotice(`Could not load ${p.name}.`, 'The server answered 500. What you see is from 07:42.') : ''}
+      ${pluginFacts(p)}
+      ${onceLine}
+      ${problems(p)}
+      ${bench(p)}
+      ${p.kind === 'Poll' ? dataSources(p) : webhook(p)}
+      ${fieldValues(p)}
+      ${assignment(p)}
+      ${recipeSection(p)}
+      <div class="tuckedwrap">
+        ${tucked('fields', `Plugin Fields${p.fields.length ? ` · ${p.fields.length}` : ''}`, pluginFields(p))}
+        ${tucked('details', 'Name and description', `<div class="form" style="padding-top:0"><label class="field"><span class="label">Name</span><input class="in wide text" value="${esc(p.name)}" ${touch(`name-${p.id}`, 'name')}></label><label class="field"><span class="label">Description</span><textarea class="in" style="font-family:var(--font-text);font-size:var(--text-md)" rows="2" placeholder="What this Plugin shows. Only you read it." ${touch(`desc-${p.id}`, 'description')}>${esc(p.description)}</textarea></label></div>`)}
+        ${tucked('danger', `Duplicate, export or delete ${p.name}`, `
+          <p>A duplicate is a second Plugin with the same template, ${p.kind === 'Poll' ? 'Data Sources' : 'Merge Strategy'}, Plugin Fields and Field Values, on no Device${p.kind === 'Webhook' ? ', with its own Webhook URL' : ''}. An export is a .zip with the template, ${p.kind === 'Poll' ? 'the Data Sources as written, headers included, ' : ''}and the Plugin Fields, without Field Values. Deleting removes ${p.name} from this Instance and from ${assigned(p).length ? list(assigned(p).map(d => d.name)) : 'nowhere else'}.</p>
+          <div class="btnrow" style="margin-top:var(--space-3)"><button class="btn" ${act('duplicate', p.id)}>Duplicate</button><button class="btn" ${act('export', p.id)}>Export</button><button class="btn" ${act('delete-plugin', p.id)}>Delete Plugin</button></div>`)}
+      </div>
+      ${saveBar(p)}`,
+  }
+}
+
+/* ── Recipe Update Check ── */
+
+const diffBlock = lines => `<div class="diff">${lines.map(([sign, line]) => `<div class="${sign === '+' ? 'plus' : sign === '-' ? 'minus' : sign === '…' ? 'same' : ''}" data-sign="${sign === '-' ? '−' : sign}"><span>${esc(line)}</span></div>`).join('')}</div>`
+
+function updatePage(p) {
+  const back = `<a class="back" href="#/plugins/${p.id}" style="margin:0 0 var(--space-3)">${icon('i-chev')}${p.name}</a>`
+  const frame = body => ({ section: 'plugins', title: p.name, pre: back, body: `<h2 class="title-sm section" style="margin-top:var(--space-6)">Recipe Update Check</h2>${body}` })
+  const from = `the Recipe ${p.recipe.name} <span class="mono">${p.recipe.id}</span>`
+  const From = `The${from.slice(3)}`
+  if (state.check === 'running')
+    return frame(`<p class="loadline" role="status" style="margin-top:var(--space-5)">${busy}Downloading ${from} from TRMNL and comparing</p>`)
+  if (state.check === 'failed')
+    return frame(failedNotice('Could not download the Recipe.', 'trmnl.com did not answer. Nothing was changed.'))
+  if (state.check === 'same')
+    return frame(`<div class="empty" style="border-top:0"><h3 class="title-md">Nothing to apply</h3><p>${From} has not changed since ${p.name} last took it over, on ${p.recipe.on}. Your own changes to ${p.name} are untouched.</p><a class="btn" href="#/plugins/${p.id}">Back to ${p.name}</a></div>`)
+  const twoWay = state.check === 'nosnapshot'
+  const items = twoWay ? updateItems.filter(i => i.verb !== 'removed').map(i => ({ ...i, conflict: false })) : updateItems
+  const n = items.filter(i => state.picked[i.id]).length
+  const groups = [...new Set(items.map(i => i.group))]
+  return frame(`
+    <p class="sect-lede">${twoWay
+      ? `${p.name} has no Recipe Snapshot, so Kuroshiro cannot tell your changes from the Recipe's. Every difference between ${p.name} and ${from} is listed. Applying one replaces your version.`
+      : `${From} changed in ${items.length} places since ${p.recipe.on}. Choose what ${p.name} takes over. Nothing is applied until you say so.`}</p>
+    ${groups.map(g => `
+      <section class="ugroup"><h3>${g}</h3><ul class="rows">${items.filter(i => i.group === g).map((i) => {
+        const open = state.openItem === i.id
+        return `<li><div class="urow ${open ? 'is-open' : ''}">
+          <input type="checkbox" ${state.picked[i.id] ? 'checked' : ''} aria-label="Apply: ${esc(i.what.replace(/<[^>]+>/g, ''))}" data-change="pick" data-id="${i.id}" data-fk="pick-${i.id}">
+          <span><button class="open" aria-expanded="${open}" ${act('open-item', i.id)}>${i.what}</button></span>
+          <span class="verb">${i.verb}</span>
+          <span class="conf">${i.conflict ? `<span class="problem">${icon('i-problem')}Conflict: you changed this too</span>` : ''}</span>
+          <span class="chev" aria-hidden="true">${icon('i-chev')}</span>
+        </div>
+        ${open ? `<div class="udetail">${i.conflict ? `<p>The Recipe and you both changed this Data Source since the Recipe Snapshot. Applying replaces your version with the Recipe's; headers you added yourself are kept. Yours reads:</p>${diffBlock([[' ', i.mine]])}<p style="margin-top:var(--space-3)">The Recipe's change:</p>` : ''}${diffBlock(i.diff)}</div>` : ''}</li>`
+      }).join('')}</ul></section>`).join('')}
+    <div class="form" style="max-width:none"><div class="foot btnrow">
+      <button class="btn primary" ${act('apply', p.id)} ${n ? '' : 'disabled'}>Apply ${n} Update Item${n === 1 ? '' : 's'}</button>
+      <button class="btn" ${act('skip-all', p.id)}>${twoWay ? 'Apply nothing and save the Recipe Snapshot' : `Skip all ${items.length}`}</button>
+      <a class="btn quiet" href="#/plugins/${p.id}">Cancel</a>
+    </div>
+    <p class="soft small" style="margin-top:var(--space-3);max-width:70ch">Either button makes the Recipe as it is now the Recipe Snapshot, so an Update Item you leave unchecked is not offered again. Cancel records nothing.</p></div>`)
+}
+
+/* ── the other pages ── */
+
+const cellsPage = () => ({ section: 'plugins', title: 'On the Device', body: `<p class="lede">Not a page of the admin UI: what a Mashup slot shows on the Device when its Plugin could not be rendered. It replaces the static <code>error.png</code>.</p><div class="cells"><figure><span class="plate hero">${picture('cell-half', 'A Mashup whose right slot could not be rendered')}</span><figcaption>Left and right, the right slot failed</figcaption></figure><figure><span class="plate hero">${picture('cell-quarter', 'A Mashup whose bottom right slot could not be rendered')}</span><figcaption>Four quarters, the bottom right slot failed</figcaption></figure></div>` })
+const stubPage = (section, title) => ({ section, title, body: `<p class="lede">Stub. This page belongs to another spec; this prototype is about the Plugins surfaces.</p>` })
+const missingPage = () => ({ section: 'plugins', title: 'No Plugin here', body: `<div class="empty section"><p>There is no Plugin at this address. It may have been deleted.</p><a class="btn" href="#/plugins">All Plugins</a></div>` })
+
+function resolve() {
+  const [a, b, c, e] = (location.hash.replace(/^#/, '') || '/plugins').split('/').filter(Boolean)
+  if (a === 'plugins' && b === 'new')
+    return newPage(c, e)
+  if (a === 'plugins' && b) {
+    const p = allPlugins.find(x => x.id === b)
+    if (!p || !plugins().includes(p))
+      return missingPage()
+    return c === 'update' && p.recipe ? updatePage(p) : pluginPage(p)
+  }
+  if (a === 'cells')
+    return cellsPage()
+  if (a === 'devices' || a === 'connect')
+    return stubPage('devices', b ? deviceName(b) ?? 'Devices' : 'Devices')
+  if (a === 'instance')
+    return stubPage('instance', 'Instance')
+  if (a === 'alerts')
+    return stubPage('alerts', 'Alerts')
+  return pluginsPage()
+}
+
+function shell(page) {
+  const all = devices()
+  const firingCount = alertCount()
+  const deviceNav = !all.length
+    ? `<a href="#/connect">Connect a Device</a>`
+    : `${all.map(d => `<a href="#/devices/${d.id}">${d.name}</a>`).join('')}<a href="#/connect">Connect a Device</a>`
+  return `
+    <header class="bar">
+      <a class="lockup" href="#/">${seal(26)}<span class="wordmark">Kuroshiro</span></a>
+      <nav aria-label="Sections">${deviceNav}<i></i><a href="#/plugins" ${current(page.section === 'plugins')}>Plugins</a><a href="#/instance" ${current(page.section === 'instance')}>Instance</a></nav>
+      ${firingCount ? `<a class="alertlink" href="#/alerts">${firingCount} Alert${firingCount > 1 ? 's' : ''} firing</a>` : ''}
+    </header>
+    <main class="col">
+      ${page.pre ?? ''}
+      <div class="head"><h1 class="title-lg">${page.title}</h1><div class="actions">${page.actions ?? ''}</div></div>
+      ${page.body}
+    </main>
+    <nav class="btabs" aria-label="Sections">
+      <a href="#/devices">${all.length === 1 ? all[0].name : all.length ? 'Devices' : 'Connect'}</a>
+      <a href="#/plugins" ${current(page.section === 'plugins')}>Plugins</a>
+      <a href="#/instance" ${current(page.section === 'instance')}>Instance</a>
+    </nav>`
+}
+
+/* ── prototype plumbing ── */
+
+function render() {
+  const page = resolve()
+  const active = document.activeElement
+  const focusKey = active?.dataset?.fk
+  const caret = active?.selectionStart
+  document.documentElement.dataset.theme = state.theme
+  document.querySelector('#app').innerHTML = shell(page)
+  document.title = `PROTOTYPE: ${page.title}`
+  const label = { theme: cap(state.theme), devices: `${state.count} Device${state.count === 1 ? '' : 's'}`, alert: state.alert ? 'Alert firing' : 'No Alert', plugins: { many: '10 Plugins', few: '4 Plugins', none: 'No Plugins' }[state.plugins], load: { ok: 'Loaded', loading: 'Loading', failed: 'Load failed' }[state.load], check: `Check: ${state.check}` }
+  Object.entries(label).forEach(([key, text]) => { document.querySelector(`[data-cycle="${key}"]`).textContent = text })
+  if (focusKey) {
+    const el = document.querySelector(`[data-fk="${focusKey}"]`)
+    el?.focus()
+    if (el && caret != null && el.setSelectionRange && ['text', 'search', 'url', 'textarea'].includes(el.type))
+      el.setSelectionRange(caret, caret)
+  }
+  const query = new URLSearchParams({ theme: state.theme, devices: state.count, alert: state.alert ? 1 : 0, plugins: state.plugins, load: state.load, check: state.check })
+  history.replaceState(null, '', `?${query}${location.hash}`)
+}
+
+let savedTimer
+function flash(key) {
+  state.saved = key
+  clearTimeout(savedTimer)
+  savedTimer = setTimeout(() => {
+    state.saved = null
+    render()
+  }, 2000)
+}
+
+function confirmThen({ title, text, lost, kept, action, safe = 'Cancel' }, run = () => {}) {
+  const dialog = document.querySelector('#confirm')
+  dialog.innerHTML = `<h2 class="title-md">${title}</h2>${text ? `<p>${text}</p>` : ''}<ul>${lost ? `<li><span>Lost</span><span>${lost}</span></li>` : ''}${kept ? `<li><span>Stays</span><span>${kept}</span></li>` : ''}</ul><div class="btnrow"><button class="btn" value="cancel" autofocus>${safe}</button>${action ? `<button class="btn primary" value="go">${action}</button>` : ''}</div>`
+  dialog.onclick = (e) => {
+    const value = e.target.closest('button')?.value
+    if (!value)
+      return
+    dialog.close()
+    if (value === 'go') {
+      run()
+      render()
+    }
+  }
+  dialog.showModal()
+}
+
+const routePlugin = () => allPlugins.find(p => p.id === location.hash.split('/')[2])
+const byId = id => allPlugins.find(p => p.id === id)
+const jumpTo = id => requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: 'start' }))
+
+const actions = {
+  'tuck': (id) => { state.tucked[id] = !(state.tucked[id] ?? false) },
+  'retry': () => { state.load = 'ok' },
+  'menu': (id) => { state.menu = state.menu === id ? null : id },
+  'filter': (id) => {
+    state.onlyProblems = id === 'problems'
+    if (id === 'reset')
+      state.query = ''
+  },
+  'way': (id) => {
+    state.recipeError = null
+    location.hash = `#/plugins/new/${id}${location.hash.split('/')[4] ? `/${location.hash.split('/')[4]}` : ''}`
+  },
+  'merge': (id) => { state.merge = id },
+  'create': (id) => {
+    if (id === 'recipe' && !/\d/.test(state.recipeInput)) {
+      state.recipeError = state.recipeInput ? 'This is not a Recipe address or id. It looks like https://trmnl.com/recipes/41120, or 41120.' : 'Enter a Recipe\'s address or its id.'
+      return
+    }
+    location.hash = id === 'webhook' ? '#/plugins/parcel' : '#/plugins/pollen'
+  },
+  'open-source': (id) => {
+    const p = routePlugin()
+    const name = id.slice(p.id.length + 1)
+    state.openSource[p.id] = state.openSource[p.id] === name ? null : name
+  },
+  'jump-source': (id) => {
+    const p = routePlugin()
+    const name = id.slice(p.id.length + 1)
+    state.openSource[p.id] = name
+    jumpTo(`ds-${name}`)
+  },
+  'jump': id => jumpTo(id),
+  'remove-source': (id) => {
+    state.removed[id] = true
+    state.openSource[routePlugin().id] = null
+    state.dirty.push('Data Sources')
+  },
+  'restore-source': (id) => { delete state.removed[id] },
+  'add-source': () => { state.dirty.push('Data Sources') },
+  'add-field': () => {
+    state.tucked.fields = true
+    state.dirty.push('Plugin Fields')
+  },
+  'edit-field': (id) => { state.editField = state.editField === id ? null : id },
+  'remove-field': () => { state.dirty.push('Plugin Fields') },
+  'field-switch': (id) => {
+    const p = routePlugin()
+    const f = p.fields.find(x => id.endsWith(x.key))
+    f.value = !f.value
+    state.dirty.push('Field Values')
+  },
+  'replace-secret': (id) => {
+    const p = routePlugin()
+    p.fields.find(x => id.endsWith(x.key)).value = null
+    state.dirty.push('Field Values')
+  },
+  'reveal': (id) => { state.revealed[id] = !state.revealed[id] },
+  'copy': id => flash(`copy-${id}`),
+  'dismiss-once': (id) => { state.once[id] = 'none' },
+  'discard': () => {
+    state.dirty = []
+    state.removed = {}
+  },
+  'save': (id) => {
+    state.dirty = []
+    state.removed = {}
+    state.once[id] = 'saved'
+  },
+  'assign': (id) => {
+    const [pid, did] = id.split('-')
+    byId(pid).on[did] = 'Order 7 of 7'
+  },
+  'unassign': (id) => {
+    const [pid, did] = id.split('-')
+    const p = byId(pid)
+    confirmThen({ title: `Unassign ${p.name} from ${deviceName(did)}?`, lost: `This Screen on ${deviceName(did)} and its Schedule.`, kept: `The Plugin ${p.name}, with its template, its ${p.kind === 'Poll' ? 'Data Sources' : 'Webhook URL'} and its place in any Mashup.`, action: 'Unassign Plugin' }, () => { delete p.on[did] })
+    return false
+  },
+  'duplicate': () => {
+    state.menu = null
+    location.hash = '#/plugins/pollen'
+  },
+  'export': (id) => {
+    state.menu = null
+    flash(`export-${id}`)
+  },
+  'delete-plugin': (id) => {
+    const p = byId(id)
+    state.menu = null
+    render()
+    const mash = mashupsOf(p)
+    if (mash.length) {
+      confirmThen({ title: `${p.name} cannot be deleted yet`, text: `It fills a slot in ${mash.length === 1 ? `the Mashup ${mash[0][0]} on ${deviceName(mash[0][1])}` : `${mash.length} Mashups`}. Give that slot another Plugin, or delete the Mashup. Then ${p.name} can be deleted.`, safe: 'Close' })
+      return false
+    }
+    const on = assigned(p).map(d => d.name)
+    confirmThen({ title: `Delete ${p.name}?`, lost: `The Plugin: its template, its ${p.kind === 'Poll' ? 'Data Sources' : 'Webhook URL and Webhook Payload'}, its Plugin Fields and Field Values.${on.length ? ` Its Screen on ${list(on)}, with ${on.length > 1 ? 'their Schedules' : 'its Schedule'}.` : ''}`, kept: on.length ? `The other Screens of ${list(on)}, which move up in the Order.` : 'Everything else. It is on no Device.', action: 'Delete Plugin' }, () => { location.hash = '#/plugins' })
+    return false
+  },
+  'clear-payload': (id) => {
+    const p = byId(id)
+    confirmThen({ title: `Clear ${possessive(p.name)} Webhook Payload?`, lost: `The stored Webhook Payload. ${p.name} renders without data until the next POST.`, kept: 'The Webhook URL, the template and the Merge Strategy.', action: 'Clear Webhook Payload' }, () => { Object.assign(p, { payload: null, received: null }) })
+    return false
+  },
+  'regenerate': (id) => {
+    const p = byId(id)
+    confirmThen({ title: `Regenerate ${possessive(p.name)} Webhook Token?`, text: 'Everything that posts to the current Webhook URL is refused from now on, until you give it the new one.', lost: 'The current Webhook URL.', kept: 'The Webhook Payload, the template and the Merge Strategy.', action: 'Regenerate Webhook Token' }, () => {
+      p.token = 'wh_d27b6a03e91c58f4a6c2'
+      state.revealed[p.id] = true
+    })
+    return false
+  },
+  'open-item': (id) => { state.openItem = state.openItem === id ? null : id },
+  'apply': (id) => {
+    state.once[id] = 'saved'
+    location.hash = `#/plugins/${id}`
+  },
+  'skip-all': (id) => { location.hash = `#/plugins/${id}` },
+}
+
+const cycleThrough = (all, value) => all[(all.indexOf(value) + 1) % all.length]
+const cycles = {
+  theme: () => { state.theme = state.theme === 'light' ? 'dark' : 'light' },
+  devices: () => { state.count = cycleThrough([1, 3, 0], state.count) },
+  alert: () => { state.alert = !state.alert },
+  plugins: () => { state.plugins = cycleThrough(['many', 'few', 'none'], state.plugins) },
+  load: () => { state.load = cycleThrough(['ok', 'loading', 'failed'], state.load) },
+  check: () => { state.check = cycleThrough(['items', 'same', 'nosnapshot', 'running', 'failed'], state.check) },
+}
+function cycle(name) {
+  cycles[name]()
+  render()
+}
+
+const app = document.querySelector('#app')
+document.querySelectorAll('[data-cycle]').forEach(b => b.addEventListener('click', () => cycle(b.dataset.cycle)))
+
+app.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-act]')
+  if (!el) {
+    if (state.menu && !e.target.closest('.menu')) {
+      state.menu = null
+      render()
+    }
+    return
+  }
+  e.preventDefault()
+  if (actions[el.dataset.act](el.dataset.id, el) !== false)
+    render()
+})
+
+app.addEventListener('change', (e) => {
+  const el = e.target.closest('[data-change]')
+  if (!el)
+    return
+  if (el.dataset.change === 'pick')
+    state.picked[el.dataset.id] = el.checked
+  if (el.dataset.change === 'draft')
+    state.dirty.push(el.dataset.key)
+  render()
+})
+
+app.addEventListener('input', (e) => {
+  const key = e.target.dataset.input
+  if (key === 'query')
+    state.query = e.target.value
+  if (key === 'recipe')
+    Object.assign(state, { recipeInput: e.target.value, recipeError: null })
+  if (key)
+    return render()
+  const draft = e.target.closest('[data-change="draft"]')
+  if (draft && !state.dirty.includes(draft.dataset.key)) {
+    state.dirty.push(draft.dataset.key)
+    render()
+  }
+})
+
+addEventListener('hashchange', () => {
+  Object.assign(state, { menu: null, dirty: [], removed: {}, editField: null })
+  render()
+  scrollTo(0, 0)
+})
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && state.menu) {
+    state.menu = null
+    return render()
+  }
+  if (e.target.closest('input, textarea, select, [contenteditable]') || e.metaKey || e.ctrlKey || e.altKey || document.querySelector('dialog[open]'))
+    return
+  const keys = { t: 'theme', d: 'devices', a: 'alert', g: 'plugins', l: 'load', c: 'check' }
+  if (keys[e.key])
+    cycle(keys[e.key])
+})
+
+render()
+</script>
+</body>
+</html>

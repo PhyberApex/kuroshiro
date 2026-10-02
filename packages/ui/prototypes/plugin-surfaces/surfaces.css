@@ -1,0 +1,214 @@
+/*
+PROTOTYPE for wayfinder ticket #1092. Page layouts for the Device surfaces.
+Everything here sits on tokens.css and components.css from #1091, copied unchanged.
+Only what a page arranges lives here; a new component is marked "new component".
+*/
+
+/* ── page frame, approved in #1080 ── */
+.bar { position: sticky; top: 0; z-index: var(--layer-bar); }
+.col { max-width: calc(var(--column) + var(--gutter) * 2); margin: 0 auto; padding: var(--space-10) var(--gutter) 9rem; }
+.head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4) var(--space-6); flex-wrap: wrap; }
+.head .actions { display: flex; gap: var(--space-2); align-items: center; }
+.tabs { margin-top: var(--space-6); }
+.lede { margin-top: var(--space-4); max-width: var(--measure); color: var(--color-ink-soft); }
+.section { margin-top: var(--space-10); }
+.section .count { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: var(--weight-regular); font-stretch: 100%; color: var(--color-ink-soft); margin-left: var(--space-2); }
+.section .actions { display: flex; align-items: center; gap: var(--space-4); font-stretch: 100%; }
+.back { display: inline-flex; align-items: center; gap: var(--space-1); margin-top: var(--space-6); color: var(--color-ink-soft); text-underline-offset: 3px; font-size: var(--text-sm); }
+.back .icon { rotate: 90deg; }
+.back:hover { color: var(--color-ink); }
+p b, li b { font-weight: var(--weight-semibold); }
+.btabs { display: none; }
+.bar nav a.more { gap: var(--space-1); }
+
+/* ── a Device's Screens view: the plate, the column, the rows ── */
+.hero { display: grid; grid-template-columns: minmax(0, var(--plate-hero)) minmax(0, 1fr); gap: var(--space-12); align-items: start; margin-top: var(--space-8); }
+.story > p { margin-top: var(--space-2); color: var(--color-ink-soft); }
+.story > p b { color: var(--color-ink); }
+.story .facts { margin-top: var(--space-5); }
+.facts dd a { text-underline-offset: 3px; }
+.rows { margin: 0; }
+.srow .open::after { content: ""; position: absolute; inset: 0; }
+.srow .open:focus-visible { outline: 0; }
+.srow:has(.open:focus-visible) { outline: var(--focus-ring); outline-offset: var(--focus-offset); border-radius: var(--radius); }
+.srow .grip, .srow .sw, .srow .nudge, .srow .slot { position: relative; z-index: 1; }
+.srow .slot { display: flex; width: 32px; flex: none; }
+.srow .name { display: inline; }
+.srow .st small { font-size: inherit; font-weight: var(--weight-regular); color: var(--color-ink-soft); }
+.rows.paused .srow .name { color: var(--color-ink-soft); }
+.nudge button { padding: 5px 4px; }
+.nudge button:disabled { color: var(--color-line); }
+
+/* new component: the drag state of a Screen row, owed by #1091 */
+.srow .grip { border-radius: var(--radius-inner); }
+li.lifted { background: var(--color-wash); outline: 1px solid var(--color-ink); outline-offset: -1px; }
+li.lifted .grip { cursor: grabbing; color: var(--color-ink); }
+li.drop-before { box-shadow: 0 -2px 0 var(--color-ink); }
+li.drop-after { box-shadow: 0 2px 0 var(--color-ink); }
+
+.detail { display: grid; grid-template-columns: 296px minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-6) var(--space-8); align-items: start; padding: var(--space-2) 0 var(--space-8) calc(16px + 20px + var(--space-3) * 2); }
+.detail .why { grid-column: 1 / -1; max-width: 70ch; }
+.detail .why + .why { margin-top: calc(var(--space-4) * -1); color: var(--color-ink-soft); }
+.detail h3 { font-size: var(--text-md); font-weight: var(--weight-semibold); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); }
+.detail h3 small { font-size: var(--text-sm); font-weight: var(--weight-regular); color: var(--color-ink-soft); margin-left: var(--space-2); }
+.detail section > * + * { margin-top: var(--space-3); }
+.detail section > h3 + * { margin-top: 0; }
+.detail figcaption { margin-top: var(--space-2); font-size: var(--text-sm); color: var(--color-ink-soft); }
+.detail .acts { margin-top: var(--space-6); padding-top: var(--space-4); border-top: var(--rule); }
+.win { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.win label { display: inline-flex; align-items: center; gap: var(--space-2); }
+.check { display: inline-flex; align-items: center; gap: var(--space-2); cursor: pointer; }
+.check input { width: 16px; height: 16px; margin: 0; }
+.slots li { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: var(--space-3); align-items: center; padding: var(--space-1) 0; border-bottom: var(--rule); }
+.slots li:first-child { border-top: var(--rule); }
+.slots .in { width: 100%; font-family: var(--font-text); }
+.inset { padding: var(--space-4); border: var(--rule-control); border-radius: var(--radius); }
+.inset > * + * { margin-top: var(--space-3); }
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+.compare figcaption { margin-top: var(--space-1); }
+
+/* new component: inline edit, the flow behind Rename */
+.inline-edit { display: inline-flex; align-items: center; gap: var(--space-2); position: relative; z-index: 1; }
+.inline-edit .in { font-family: var(--font-text); font-size: var(--text-md); font-weight: var(--weight-semibold); width: 14rem; }
+
+/* layout picker: the radio row of #1091 with a drawing */
+.layouts { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr)); gap: var(--space-2); }
+.inset .layouts { grid-template-columns: repeat(auto-fill, minmax(4rem, 1fr)); gap: var(--space-1); }
+.inset .layouts button { padding: var(--space-2) 2px; }
+.inset .layouts svg { width: 40px; height: 24px; }
+.layouts button { display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-1) var(--space-2); border: var(--rule-control); border-radius: var(--radius); font-size: var(--text-xs); color: var(--color-ink-soft); text-align: center; line-height: 1.2; }
+.layouts button:hover { border-color: var(--color-ink); color: var(--color-ink); background: var(--color-wash); }
+.layouts button[aria-checked="true"] { border-color: var(--color-ink); color: var(--color-ink); font-weight: var(--weight-semibold); box-shadow: inset 0 0 0 1px var(--color-ink); }
+.layouts svg { width: 60px; height: 36px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+
+/* ── Add Screen and Edit HTML ── */
+.add { display: grid; grid-template-columns: 17rem minmax(0, 1fr); gap: var(--space-12); align-items: start; margin-top: var(--space-1); }
+.add .picks .pick { width: 100%; text-align: left; }
+.form { padding-top: var(--space-3); max-width: 34rem; }
+.form > * + * { margin-top: var(--space-4); }
+.form .field { max-width: none; }
+.form .foot { margin-top: var(--space-6); padding-top: var(--space-4); border-top: var(--rule); }
+.form .in.text, .set .in.text { font-family: var(--font-text); font-size: var(--text-md); }
+.plist { max-height: 22rem; overflow-y: auto; border-top: var(--rule); }
+.plist .pick { width: 100%; text-align: left; }
+.searchbox { position: relative; display: block; }
+.searchbox .icon { position: absolute; left: var(--space-2); top: 50%; translate: 0 -50%; color: var(--color-ink-soft); pointer-events: none; }
+.searchbox .in { padding-left: calc(var(--space-2) * 2 + var(--icon)); width: 100%; font-family: var(--font-text); }
+.editor { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-8); align-items: start; margin-top: var(--space-5); }
+.editor textarea.in { min-height: 21rem; font-size: var(--text-xs); }
+.live { position: relative; overflow: hidden; }
+.live iframe { position: absolute; inset: 0 auto auto 0; width: 800px; height: 480px; border: 0; transform-origin: 0 0; background: #fff; }
+
+/* ── Settings ── */
+.set { display: grid; grid-template-columns: 12.5rem minmax(0, 1fr) auto; gap: var(--space-1) var(--space-4); align-items: center; padding: var(--space-2) 0; min-height: 3.25rem; }
+.set > b { font-weight: var(--weight-medium); }
+.set .ctl { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); min-width: 0; }
+.set .note { color: var(--color-ink-soft); font-size: var(--text-sm); text-align: right; max-width: 20rem; }
+.set.top { align-items: start; }
+.set.top > b { padding-top: var(--space-3); }
+.set .hint { grid-column: 2 / -1; color: var(--color-ink-soft); font-size: var(--text-sm); max-width: var(--measure); }
+.sect-note { margin-top: var(--space-3); color: var(--color-ink-soft); max-width: 70ch; }
+.tuckedwrap { margin-top: var(--space-12); }
+.tucked > div { max-width: none; }
+.tucked > div > p { max-width: 70ch; }
+.tucked .rows { margin-top: var(--space-3); }
+.frow { display: grid; grid-template-columns: 9rem minmax(0, 1fr) auto; gap: var(--space-4); align-items: center; padding: var(--space-2) 0; }
+.frow .what { color: var(--color-ink-soft); font-size: var(--text-sm); }
+.sleepimg { display: flex; align-items: center; gap: var(--space-4); }
+.sleepimg .plate { width: 120px; }
+
+/* ── Logs ── */
+.logbar { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-5); }
+.logbar .searchbox { flex: 1 1 14rem; max-width: 22rem; }
+.logbar .btn:last-child { margin-left: auto; }
+.logmeta { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-4); padding-bottom: var(--space-2); border-bottom: var(--rule-heavy); font-size: var(--text-sm); color: var(--color-ink-soft); }
+.logs { font-family: var(--font-mono); font-size: var(--text-xs); }
+.logs .dayline { padding: var(--space-4) 0 var(--space-1); font-family: var(--font-text); font-size: var(--text-sm); font-weight: var(--weight-semibold); border-bottom: var(--rule); }
+.logs li > button { display: grid; grid-template-columns: 5rem 3.25rem minmax(0, 1fr) 16px; gap: var(--space-3); width: 100%; padding: var(--space-2) 0; align-items: baseline; }
+.logs li > button:hover .msg { text-decoration: underline; text-underline-offset: 3px; }
+.logs time, .logs .lvl { color: var(--color-ink-soft); }
+.logs .warn .lvl, .logs .error .lvl { color: var(--color-ink); font-weight: var(--weight-semibold); }
+.logs .error .msg { font-weight: var(--weight-medium); }
+.logs .msg { overflow-wrap: anywhere; }
+.logs .msg mark { background: var(--color-ink); color: var(--color-paper); }
+.logs .icon { color: var(--color-ink-soft); align-self: center; }
+.logs li.is-open .icon { rotate: 180deg; color: var(--color-ink); }
+.logs dl { display: grid; grid-template-columns: 7rem minmax(0, 1fr); gap: 2px var(--space-3); padding: 0 0 var(--space-3) calc(5rem + 3.25rem + var(--space-3) * 2); color: var(--color-ink-soft); }
+.logs dl dd { color: var(--color-ink); overflow-wrap: anywhere; }
+.logfoot { display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-4); }
+
+/* ── Devices list and Connect a Device ── */
+.drow { display: grid; grid-template-columns: 168px minmax(0, 1fr) 16px; gap: var(--space-5); align-items: center; padding: var(--space-3) 0; text-decoration: none; }
+.drow:hover .dname { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 2px; }
+.drow .dname { display: block; }
+.drow .dfacts { display: block; margin-top: var(--space-1); color: var(--color-ink-soft); }
+.drow .dshow { display: block; margin-top: var(--space-1); }
+.drow .icon { rotate: -90deg; color: var(--color-ink-soft); }
+
+/* new component: the server URL, a Copy value at title size */
+.url { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-6); padding: var(--space-5) var(--space-6); border: var(--rule-heavy); border-radius: var(--radius); max-width: 45rem; }
+.url code { font-family: var(--font-mono); font-size: var(--title-md); line-height: 1.1; overflow-wrap: anywhere; }
+.waiting { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-5); font-weight: var(--weight-semibold); }
+.arrived { display: grid; grid-template-columns: 168px minmax(0, 1fr); gap: var(--space-5); align-items: center; margin-top: var(--space-5); padding: var(--space-4) 0; border-top: var(--rule-heavy); border-bottom: var(--rule); max-width: 45rem; }
+.arrived > div > * + * { margin-top: var(--space-2); }
+.steps { margin-top: var(--space-8); max-width: 45rem; counter-reset: step; }
+.steps li { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr); gap: var(--space-3); padding: var(--space-3) 0; border-bottom: var(--rule); counter-increment: step; }
+.steps li:first-child { border-top: var(--rule); }
+.steps li::before { content: counter(step); font-family: var(--font-mono); font-size: var(--text-sm); color: var(--color-ink-soft); }
+.also { margin-top: var(--space-8); max-width: var(--measure); }
+.narrow { max-width: 45rem; }
+
+/* ── loading, failed and missing ── */
+.loadline { display: flex; align-items: center; gap: var(--space-3); color: var(--color-ink-soft); }
+.ghost { height: 0.75rem; background: var(--color-wash); border-radius: var(--radius-inner); }
+.notice { margin-top: var(--space-6); }
+.notice.inline { margin-top: 0; border-top: var(--rule); }
+.status .icon { width: 12px; height: 12px; }
+
+/* ── confirmation, drawn as a native dialog in the prototype ── */
+dialog.dialog { color: var(--color-ink); width: min(27.5rem, calc(100vw - 2rem)); }
+dialog.dialog::backdrop { background: var(--color-scrim); }
+dialog.dialog ul { margin-top: var(--space-3); color: var(--color-ink-soft); display: grid; gap: var(--space-1); }
+dialog.dialog ul li { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr); gap: var(--space-2); }
+dialog.dialog ul li span:first-child { color: var(--color-ink); font-weight: var(--weight-medium); }
+
+@media (max-width: 820px) {
+  .col { padding: var(--space-6) var(--gutter) 12rem; }
+  .bar nav { display: none; }
+  .btabs { display: grid; position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--layer-bar); padding-bottom: env(safe-area-inset-bottom); }
+  .hero { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); margin-top: var(--space-6); }
+  .plate.hero .seal { right: -8px; }
+  .detail { grid-template-columns: minmax(0, 1fr); padding-left: 0; }
+  .detail > figure { max-width: 296px; }
+  .add, .editor { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+  .set { grid-template-columns: minmax(0, 1fr); }
+  .set .note { text-align: left; }
+  .set.top { align-items: start; }
+.set.top > b { padding-top: var(--space-3); }
+.set .hint { grid-column: 1; }
+  .set > .btn { justify-self: start; }
+  .frow { grid-template-columns: minmax(0, 1fr) auto; }
+  .frow .what { grid-column: 1 / -1; grid-row: 2; }
+  .logs li > button { grid-template-columns: 4rem 3.75rem minmax(0, 1fr) 16px; gap: var(--space-2); }
+  .logs time span { display: none; }
+  .logs dl { grid-template-columns: minmax(0, 1fr); padding-left: 0; }
+  .logs dl dd { margin-bottom: var(--space-2); }
+  .logbar .btn:last-child { margin-left: 0; }
+  .drow { grid-template-columns: 112px minmax(0, 1fr); gap: var(--space-3); }
+  .drow .icon { display: none; }
+  .arrived { grid-template-columns: 112px minmax(0, 1fr); }
+  .url { padding: var(--space-4); }
+  .url code { font-size: var(--text-lg); }
+  .srow .slot:empty { display: none; }
+  .compare { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ── prototype switcher, not part of the design ── */
+.proto-bar { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px; padding: 6px; border-radius: 22px; background: #1f3fff; color: #fff; font: 600 13px/1 system-ui, sans-serif; box-shadow: 0 6px 24px rgb(0 0 0 / 0.35); white-space: nowrap; max-width: calc(100vw - 16px); }
+.proto-bar button { height: 32px; min-width: 32px; padding: 0 10px; border-radius: 999px; text-align: center; }
+.proto-bar button:hover, .proto-bar button:focus-visible { background: rgb(255 255 255 / 0.22); outline: none; }
+.proto-bar .sep { width: 1px; height: 18px; background: rgb(255 255 255 / 0.4); margin: 0 2px; }
+@media (max-width: 820px) { .proto-bar { bottom: 68px; } }
+
+/* a radio row is a button in the prototype */
+button.pick { width: 100%; text-align: left; }

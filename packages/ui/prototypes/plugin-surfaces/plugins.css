@@ -1,0 +1,152 @@
+/*
+PROTOTYPE for wayfinder ticket #1093. Page layouts for the Plugins surfaces.
+Sits on tokens.css and components.css from #1091 and on surfaces.css from #1092, all copied unchanged.
+Only what a page arranges lives here; a new component is marked "new component".
+*/
+
+/* ── the Plugins list ── */
+.listbar { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-6); }
+.listbar .searchbox { flex: 1 1 14rem; max-width: 22rem; }
+.listmeta { margin-top: var(--space-4); padding-bottom: var(--space-2); border-bottom: var(--rule-heavy); font-size: var(--text-sm); color: var(--color-ink-soft); }
+.prow { position: relative; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.45fr) var(--control-height); gap: var(--space-4); align-items: center; min-height: 3.25rem; padding: var(--space-2) 0; }
+.prow .pname { font-weight: var(--weight-semibold); text-decoration: none; }
+.prow .pname::after { content: ""; position: absolute; inset: 0; }
+.prow:hover .pname { text-decoration: underline; text-underline-offset: 3px; }
+.prow .pname:focus-visible { outline: 0; }
+.prow:has(.pname:focus-visible) { outline: var(--focus-ring); outline-offset: var(--focus-offset); border-radius: var(--radius); }
+.prow .kind { display: block; color: var(--color-ink-soft); font-size: var(--text-sm); }
+.prow .where { color: var(--color-ink-soft); font-size: var(--text-sm); }
+.prow .health { font-size: var(--text-sm); }
+.prow .menuwrap { position: relative; z-index: 1; }
+.problem { display: inline-flex; align-items: flex-start; gap: var(--space-2); font-weight: var(--weight-medium); }
+.problem .icon { margin-top: 1px; }
+
+/* new component: row menu */
+.menu { position: absolute; right: 0; top: calc(100% + var(--space-1)); z-index: var(--layer-popover); min-width: 11rem; padding: var(--space-1); border: 1px solid var(--color-ink); border-radius: var(--radius); background: var(--color-paper); }
+.menu button { display: flex; align-items: center; width: 100%; min-height: var(--control-height); padding: 0 var(--space-2); border-radius: var(--radius-inner); font-size: var(--text-sm); font-weight: var(--weight-medium); }
+.menu button:hover, .menu button:focus-visible { background: var(--color-ink); color: var(--color-paper); outline: 0; }
+.menu hr { border: 0; border-top: var(--rule); margin: var(--space-1) 0; }
+
+/* ── Add a Plugin ── */
+.carry { margin-top: var(--space-3); color: var(--color-ink-soft); }
+.form .fixed { color: var(--color-ink-soft); font-size: var(--text-sm); }
+.inline-num { display: inline-flex; align-items: center; gap: var(--space-2); }
+.inline-num .in { width: 4.5rem; }
+
+/* ── the Plugin page ── */
+.pfacts { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); margin-top: var(--space-3); color: var(--color-ink-soft); }
+.pfacts > * + *::before { content: "·"; margin-right: var(--space-3); }
+.pfacts a { text-underline-offset: 3px; }
+.pfacts a:hover { color: var(--color-ink); }
+.problems { margin-top: var(--space-4); border-top: var(--rule); }
+.problems li { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-1) var(--space-4); padding: var(--space-2) 0; border-bottom: var(--rule); }
+.problems a { text-underline-offset: 3px; font-weight: var(--weight-medium); white-space: nowrap; }
+.once { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-2) var(--space-4); margin-top: var(--space-4); padding: var(--space-2) var(--space-3); background: var(--color-wash); border-radius: var(--radius); }
+.section .btn { font-stretch: 100%; }
+.sect-lede { margin-top: var(--space-3); max-width: 70ch; color: var(--color-ink-soft); }
+.editor.bench textarea.in { min-height: 19rem; }
+.bench .field { gap: 0; }
+.bench .cap { margin-top: var(--space-2); font-size: var(--text-sm); color: var(--color-ink-soft); }
+code, .code { font-family: var(--font-mono); font-size: 0.92em; }
+
+/* Data Source rows: the Screen row's accordion without a thumbnail */
+.dsrow { position: relative; display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) minmax(0, 15rem) 16px; gap: var(--space-4); align-items: center; min-height: 2.75rem; padding: var(--space-2) 0; }
+.dsrow .open { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: var(--weight-semibold); text-align: left; overflow-wrap: anywhere; }
+.dsrow .open::after { content: ""; position: absolute; inset: 0; }
+.dsrow:hover .open { text-decoration: underline; text-underline-offset: 3px; }
+.dsrow .open:focus-visible { outline: 0; }
+.dsrow:has(.open:focus-visible) { outline: var(--focus-ring); outline-offset: var(--focus-offset); border-radius: var(--radius); }
+.dsrow .what { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dsrow .health { font-size: var(--text-sm); color: var(--color-ink-soft); }
+.dsrow .health .problem { color: var(--color-ink); }
+.dsrow .chev { color: var(--color-ink-soft); }
+.dsrow.is-open .chev { rotate: 180deg; color: var(--color-ink); }
+.dsrow.gone .open, .dsrow.gone .what { text-decoration: line-through; color: var(--color-ink-soft); }
+.dsdetail { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 18rem); gap: var(--space-5) var(--space-10); align-items: start; padding: var(--space-2) 0 var(--space-8); }
+.dsdetail .fields > * + * { margin-top: var(--space-4); }
+.dsdetail .field { max-width: none; }
+.dsdetail .side > * + * { margin-top: var(--space-3); }
+.dsdetail .side p { color: var(--color-ink-soft); }
+.dsdetail .side .fault { display: block; }
+.dsdetail textarea.in { min-height: 4.5rem; font-size: var(--text-xs); }
+.urlline { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-2); }
+
+/* new component: a read-only block of code or data */
+.codeblock { position: relative; border: var(--rule); border-radius: var(--radius); background: var(--color-wash); }
+.codeblock pre { margin: 0; padding: var(--space-3); font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.6; overflow-x: auto; white-space: pre; }
+.codeblock .btn { position: absolute; top: var(--space-2); right: var(--space-2); background: var(--color-paper); }
+
+/* Field Values and assignment rows share the Settings row */
+.set .req { color: var(--color-ink-soft); font-weight: var(--weight-regular); font-size: var(--text-sm); display: block; }
+.set .in.text.w { width: min(22rem, 100%); }
+.arow { display: grid; grid-template-columns: minmax(0, 12.5rem) minmax(0, 1fr) auto; gap: var(--space-4); align-items: center; min-height: 3.25rem; padding: var(--space-2) 0; }
+.arow a { font-weight: var(--weight-medium); text-underline-offset: 3px; }
+.arow .how { color: var(--color-ink-soft); font-size: var(--text-sm); }
+.arow .how b { color: var(--color-ink); font-weight: var(--weight-medium); }
+
+/* Plugin Field authoring */
+.pfrow { display: grid; grid-template-columns: 16px minmax(0, 10rem) minmax(0, 1fr) minmax(0, 9rem) auto; gap: var(--space-3); align-items: center; min-height: 2.75rem; padding: var(--space-2) 0; }
+.pfrow .grip { color: var(--color-ink-soft); }
+.pfrow .key { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: var(--weight-semibold); }
+.pfrow .type { color: var(--color-ink-soft); font-size: var(--text-sm); }
+.pfedit { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); padding: var(--space-2) 0 var(--space-5) calc(16px + var(--space-3)); }
+.pfedit { align-items: start; }
+.pfedit .field { max-width: none; align-content: start; }
+.pfedit .full { grid-column: 1 / -1; }
+
+/* new component: the save bar of a page that is one form */
+.savebar { position: sticky; bottom: 0; z-index: var(--layer-bar); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-6); margin-top: var(--space-10); padding: var(--space-3) 0; border-top: var(--rule-heavy); background: var(--color-paper); }
+.savebar p { color: var(--color-ink-soft); }
+.savebar p b { color: var(--color-ink); }
+.col:has(.savebar) { padding-bottom: var(--space-6); }
+
+/* ── Recipe Update Check ── */
+.ugroup { margin-top: var(--space-8); }
+.ugroup > h3 { font-size: var(--text-md); font-weight: var(--weight-semibold); padding-bottom: var(--space-2); border-bottom: var(--rule); }
+.urow { position: relative; display: grid; grid-template-columns: 16px minmax(0, 1fr) 5rem minmax(0, 17rem) 16px; gap: var(--space-3); align-items: center; min-height: 2.75rem; padding: var(--space-2) 0; }
+.urow input { width: 16px; height: 16px; margin: 0; position: relative; z-index: 1; }
+.urow .open { text-align: left; font-weight: var(--weight-medium); }
+.urow .open::after { content: ""; position: absolute; inset: 0; }
+.urow:hover .open { text-decoration: underline; text-underline-offset: 3px; }
+.urow .verb { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-ink-soft); }
+.urow .conf { font-size: var(--text-sm); }
+.urow .chev { color: var(--color-ink-soft); }
+.urow.is-open .chev { rotate: 180deg; color: var(--color-ink); }
+.udetail { padding: 0 0 var(--space-5) calc(16px + var(--space-3)); }
+.udetail > p { color: var(--color-ink-soft); max-width: 70ch; margin-bottom: var(--space-3); }
+/* new component: a diff, told by sign, weight and strike, never by colour */
+.diff { border: var(--rule); border-radius: var(--radius); font-family: var(--font-mono); font-size: var(--text-xs); line-height: 1.7; overflow-x: auto; }
+.diff div { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr); padding: 0 var(--space-3) 0 0; white-space: pre; }
+.diff div::before { content: attr(data-sign); text-align: center; color: var(--color-ink-soft); }
+.diff .minus { color: var(--color-ink-soft); }
+.diff .minus span { text-decoration: line-through; }
+.diff .plus { background: var(--color-wash); font-weight: var(--weight-semibold); }
+.diff .plus::before { color: var(--color-ink); }
+.diff .same { color: var(--color-ink-soft); border-block: var(--rule); }
+
+/* the on-Device drawings page of the prototype */
+.cells { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-8); margin-top: var(--space-8); }
+.cells figcaption { margin-top: var(--space-2); color: var(--color-ink-soft); font-size: var(--text-sm); }
+
+@media (max-width: 820px) {
+  .prow { grid-template-columns: minmax(0, 1fr) var(--hit-target); gap: 2px var(--space-3); padding: var(--space-3) 0; }
+  .prow > span { grid-column: 1; }
+  .prow .menuwrap { grid-column: 2; grid-row: 1 / 5; align-self: start; }
+  .prow .health:empty { display: none; }
+  .dsrow { grid-template-columns: minmax(0, 1fr) 16px; gap: 2px var(--space-3); }
+  .dsrow > span:not(.chev) { grid-column: 1; }
+  .dsrow .chev { grid-column: 2; grid-row: 1; }
+  .dsdetail, .pfedit, .cells { grid-template-columns: minmax(0, 1fr); }
+  .pfedit { padding-left: 0; }
+  .arow { grid-template-columns: minmax(0, 1fr) auto; }
+  .arow .how { grid-column: 1; grid-row: 2; }
+  .arow .btn { grid-row: 1 / 3; grid-column: 2; }
+  .pfrow { grid-template-columns: minmax(0, 1fr) auto; }
+  .pfrow .grip, .pfrow .type { display: none; }
+  .urow { grid-template-columns: 16px minmax(0, 1fr) 16px; }
+  .urow .verb, .urow .conf { grid-column: 2; }
+  .urow .chev { grid-column: 3; grid-row: 1; }
+  .udetail { padding-left: 0; }
+  .savebar { bottom: calc(3.25rem + env(safe-area-inset-bottom)); }
+  .col:has(.savebar) { padding-bottom: 6rem; }
+}
