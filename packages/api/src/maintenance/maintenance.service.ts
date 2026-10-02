@@ -387,8 +387,10 @@ export class MaintenanceService {
   }
 
   private isPathSafe(filePath: string): boolean {
-    const normalized = path.normalize(filePath)
-    return !normalized.includes('..')
-      && (normalized.includes('public/screens/devices') || normalized.includes('uploads'))
+    const resolved = path.resolve(filePath)
+    return [this.devicesRootPath(), resolveAppPath('uploads')].some((root) => {
+      const relative = path.relative(path.resolve(root), resolved)
+      return relative !== '' && !relative.startsWith('..') && !path.isAbsolute(relative)
+    })
   }
 }
