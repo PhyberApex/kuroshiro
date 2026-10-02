@@ -5,7 +5,7 @@ The design spec for the admin UI rebuilt from zero in `packages/ui-next`. It is 
 | Surface | Spec |
 |---|---|
 | Devices: the Screens view, an opened Screen, Add Screen, Settings, Logs, the Devices list, Connect a Device | [devices.md](./devices.md) |
-| Plugins: the list and the Plugin page | not written yet |
+| Plugins: the list, Add a Plugin, the Plugin page, the Recipe Update Check | [plugins.md](./plugins.md) |
 | The Plugin template editor | not written yet |
 | Instance pages and the Alerts page | not written yet |
 
