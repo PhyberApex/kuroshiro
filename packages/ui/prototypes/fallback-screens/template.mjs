@@ -1,4 +1,4 @@
-// PROTOTYPE for wayfinder ticket #1090 — throwaway, not production code.
+// PROTOTYPE for wayfinder tickets #1090 and #1105 — throwaway, not production code.
 // One Hanko system for the four Fallback Screens, drawn as a self-contained
 // HTML document (fonts inlined, seal outlined, no network) at a Device Model's
 // native pixel size.
@@ -28,10 +28,16 @@ const NOTICES = {
     headline: 'No Screen to show',
     body: 'Add a Screen to this Device, or check the Schedules of the ones it has.',
   }),
-  error: () => ({
-    headline: 'Mirroring failed',
-    body: 'Kuroshiro could not fetch this Device’s image from TRMNL. It tries again at the next refresh.',
-  }),
+  error: ({ cause, screenName }) => cause === 'mirror'
+    ? {
+        headline: 'Mirroring failed',
+        body: 'Kuroshiro could not fetch this Device’s image from TRMNL. Next try at the next poll.',
+      }
+    : {
+        headline: screenName ?? 'A Screen',
+        headlineTail: 'could not be shown',
+        body: `Kuroshiro could not make ${screenName ? 'this' : 'the'} Screen’s image. Next try at the next poll.`,
+      },
   sleep: ({ wakeTime }) => ({
     headline: `Asleep until ${wakeTime}`,
     body: null,
@@ -52,6 +58,9 @@ body.sleep { --ink: #fff; --paper: #000; }
 
 .sheet { height: 100%; padding: calc(48 * var(--u)) calc(56 * var(--u)) calc(44 * var(--u)); display: grid; grid-template-rows: 1fr auto; }
 h1 { font-family: "Kuroshiro Display", sans-serif; font-weight: normal; font-size: calc(88 * var(--u)); line-height: 0.95; letter-spacing: -0.015em; max-width: calc(700 * var(--u)); text-wrap: balance; }
+/* A Screen's name gets one line of its own and is cut there, so a long name never pushes the sheet onto its footer. */
+h1.named span { display: block; }
+h1.named .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .body { margin-top: calc(22 * var(--u)); max-width: calc(600 * var(--u)); font-size: calc(27 * var(--u)); line-height: 1.3; }
 .body .mono { display: block; margin-top: calc(6 * var(--u)); font-size: calc(26 * var(--u)); overflow-wrap: anywhere; }
 
@@ -90,11 +99,13 @@ function welcomeSheet({ friendlyId, instanceUrl }) {
 </main>`
 }
 
-function noticeSheet(kind, { deviceName, instanceUrl, wakeTime }) {
-  const { headline, body } = NOTICES[kind]({ wakeTime })
+function noticeSheet(kind, { deviceName, instanceUrl, wakeTime, cause, screenName }) {
+  const { headline, headlineTail, body } = NOTICES[kind]({ wakeTime, cause, screenName })
   return `<main class="sheet">
   <div>
-    <h1>${escapeHtml(headline)}</h1>
+    ${headlineTail
+      ? `<h1 class="named"><span class="name">${escapeHtml(headline)}</span><span>${escapeHtml(headlineTail)}</span></h1>`
+      : `<h1>${escapeHtml(headline)}</h1>`}
     ${body ? `<p class="body">${escapeHtml(body)}</p>` : ''}
   </div>
   ${footer(`<div>${escapeHtml(deviceName)}</div><div class="mono">${escapeHtml(instanceUrl)}</div>`, SIGNATURE)}
@@ -103,7 +114,7 @@ function noticeSheet(kind, { deviceName, instanceUrl, wakeTime }) {
 
 /**
  * @param {'welcome' | 'noScreen' | 'error' | 'sleep'} kind
- * @param {{ deviceName: string, friendlyId: string, instanceUrl: string, wakeTime: string }} facts
+ * @param {{ deviceName: string, friendlyId: string, instanceUrl: string, wakeTime: string, cause?: 'mirror' | 'render', screenName?: string }} facts
  * @param {{ width: number, height: number }} size the Device Model's render size in pixels
  */
 export function fallbackScreenHtml(kind, facts, size) {
