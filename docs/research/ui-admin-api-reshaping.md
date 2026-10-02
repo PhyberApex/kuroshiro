@@ -150,7 +150,7 @@ interface UpdateDeviceInput {
 - **Rules:**
   - Telemetry the Device reports (`batteryVoltage`, `fwVersion`, `rssi`, `userAgent`), `mac`, `friendlyId` and `host` leave the DTO; with the global `forbidNonWhitelisted` pipe (section 2) sending one answers 400.
   - `updateFirmware: true` is refused with 409 `firmware-push-without-target` when the Device has no target after this request, and 409 `firmware-push-mirrored` when the Device is mirrored (`instance.md change 2`; today both are stored and never served, `display.service.ts:271`).
-  - `targetFirmwareId: null` clears the target and any pending push. Today a target cannot be cleared through the API (`devices.service.ts:101-110` only sets one).
+  - `targetFirmwareId: null` clears the target, for the Target Firmware select's "None". Today a target cannot be cleared (`devices.service.ts:101-110` only sets one, and the old UI only ever assigns and pushes in one step, `ui/components/DeviceInformationCard.vue:83`). While a push is pending, `null` answers 409 `firmware-push-pending`: clearing the target then would cancel the push, which is [Cancel a pending Firmware push](https://github.com/PhyberApex/kuroshiro/issues/1086), an untriaged new capability.
   - A Palette must be supported by the Device Model, custom Palettes by family, as today (`devices.service.ts:94-99`).
   - `restart_playlist` and `send_to_me` stay accepted (`update-device.dto.ts:86`); the spec does not offer them, and dropping them would make something possible today impossible.
 
@@ -997,7 +997,7 @@ Every list endpoint answers the whole list, as the specs ask ("The list is whole
 ### 2.5 "Save as changed": partial PATCH, full answer
 
 - A `PATCH` body carries only the fields that changed. A key that is absent leaves its field alone; `null` clears a nullable field. Today `class-transformer` gives every declared DTO field an own `undefined` property, which `plugins.service.ts:436-444` has to strip by hand; the global pipe should set `transformOptions: { exposeUnsetFields: false }` so no service needs to.
-- Every `PATCH` answers 200 with the **whole** read model as saved (`DeviceDetail`, `ScreenRead`, `PluginDetail`, `PaletteRead`, `InstanceSettingsResponse`). `PATCH /api/settings` already does (`api/settings/instance-settings.service.ts:89-101`). The UI replaces its copy with the answer, so a value the server normalised (an upper-cased MAC, a Palette reset by a model change, `devices.service.ts:73-75`) shows at once, and "Saved" means what it says.
+- Every `PATCH` answers 200 with the **whole** read model as saved (`DeviceDetail`, `ScreenRead`, `PluginDetail`, `PaletteRead`, `InstanceSettingsResponse`). `PATCH /api/settings` already does (`api/settings/instance-settings.service.ts:89-101`). The UI replaces its copy with the answer, so a value the server normalised (an upper-cased MAC, a Palette reset by a model change, `devices.service.ts:72-73`, `:85-86`) shows at once, and "Saved" means what it says.
 - Collections inside the Plugin form are whole sets, matched by `id` (Data Sources), keyname (Plugin Fields, #1101) or size (Templates). Concurrent edits are last-write-wins; one admin per Instance does not justify ETags.
 
 ### 2.6 Instance facts, demo mode and time
