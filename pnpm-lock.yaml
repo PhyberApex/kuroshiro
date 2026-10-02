@@ -195,8 +195,8 @@ catalogs:
       specifier: 12.1.1
       version: 12.1.1
     '@nestjs/typeorm':
-      specifier: 12.0.1
-      version: 12.0.1
+      specifier: 12.0.2
+      version: 12.0.2
     '@semantic-release/changelog':
       specifier: 7.0.0
       version: 7.0.0
@@ -399,7 +399,7 @@ importers:
         version: 12.0.0(@nestjs/common@12.1.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@12.1.1)(express@5.2.1(supports-color@10.2.2))
       '@nestjs/typeorm':
         specifier: 'catalog:'
-        version: 12.0.1(@nestjs/common@12.1.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@12.1.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@1.1.1(pg@8.23.0)(supports-color@10.2.2)(ts-node@10.9.2(@swc/core@1.16.12)(@types/node@24.19.0)(typescript@6.0.3)))
+        version: 12.0.2(@nestjs/common@12.1.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@12.1.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@1.1.1(pg@8.23.0)(supports-color@10.2.2)(ts-node@10.9.2(@swc/core@1.16.12)(@types/node@24.19.0)(typescript@6.0.3)))
       '@types/node-cron':
         specifier: 'catalog:'
         version: 3.0.11
@@ -1591,8 +1591,8 @@ packages:
       '@nestjs/platform-express':
         optional: true
 
-  '@nestjs/typeorm@12.0.1':
-    resolution: {integrity: sha512-7dsdaD/PSiwCAAhv78+ScS3e6lW41BOMZ8LB7/v5p/hovSUc1wUH1DBXhLgqYx0ChXYLzDybBIADN6lvBhiM6w==}
+  '@nestjs/typeorm@12.0.2':
+    resolution: {integrity: sha512-16b8s8mGkQdTH4i+dhhCwYkfuhWpLMdtuK82vOMjwa5ZpKYjFohU2jvbqkEJmx03fVO4HEpb0aw4VQXo+lxdKw==}
     engines: {node: '>=20.19.0'}
     peerDependencies:
       '@nestjs/common': ^10.0.0 || ^11.0.0 || ^12.0.0
@@ -7671,7 +7671,7 @@ snapshots:
     optionalDependencies:
       '@nestjs/platform-express': 12.1.1(@nestjs/common@12.1.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@12.1.1)(supports-color@10.2.2)
 
-  '@nestjs/typeorm@12.0.1(@nestjs/common@12.1.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@12.1.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@1.1.1(pg@8.23.0)(supports-color@10.2.2)(ts-node@10.9.2(@swc/core@1.16.12)(@types/node@24.19.0)(typescript@6.0.3)))':
+  '@nestjs/typeorm@12.0.2(@nestjs/common@12.1.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@12.1.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@1.1.1(pg@8.23.0)(supports-color@10.2.2)(ts-node@10.9.2(@swc/core@1.16.12)(@types/node@24.19.0)(typescript@6.0.3)))':
     dependencies:
       '@nestjs/common': 12.1.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2)
       '@nestjs/core': 12.1.1(@nestjs/common@12.1.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/platform-express@12.1.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
