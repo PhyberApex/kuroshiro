@@ -693,7 +693,7 @@ function htmlPage(screen) {
     <div class="head"><h1 class="title-lg">Edit HTML</h1></div>
     <p class="pfacts"><span>${screen.name}</span><span>An HTML Screen on ${device.name}</span></p>
     <section class="tplsection">${benchMarkup}</section>
-    <div class="btnrow htmlfoot"><button class="btn primary" data-act="save-html">Save Screen</button><a class="btn quiet" href="#/devices/${device.id}/html">Cancel</a><span id="htmlstatus"></span></div>
+    <div class="btnrow htmlfoot"><button class="btn primary" data-act="save-html">Save HTML</button><a class="btn quiet" href="#/devices/${device.id}/html">Cancel</a><span id="htmlstatus"></span></div>
     <p class="protonote">Prototype: the same code editor in its HTML mode, on the page the Device spec calls "Edit HTML". Nothing is Liquid here, so there is no data and nothing to mark. Back to <a href="#/plugins/weather">Weather</a>.</p>`)
   b.editor = makeEditor({ parent: $('#cm'), doc: screen.html, mode: 'html', label: `HTML of ${screen.name}`, onChange: () => schedulePreview(b), onSave: () => actions['save-html']() })
   return b
