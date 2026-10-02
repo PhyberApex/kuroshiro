@@ -345,6 +345,44 @@ describe('maintenanceService', () => {
       expect(result.errors[0]).toContain('Unsafe path')
     })
 
+    it.each([
+      '/home/someone/uploads-backup/data.db',
+      '/var/lib/uploads/keep.txt',
+      '/mock/public/screens/devices-old/device-1/screen.png',
+      '/mock/uploads/../public/index.html',
+      '/mock/uploads',
+    ])('refuses to delete a file outside the storage folders: %s', async (filePath) => {
+      const unlinkMock = vi.spyOn(fs.promises, 'unlink').mockResolvedValue(undefined)
+
+      const result = await service.cleanup([], [], [], [filePath], [], false)
+
+      expect(unlinkMock).not.toHaveBeenCalled()
+      expect(result.errors).toEqual([`Unsafe path: ${filePath}`])
+    })
+
+    it.each([
+      '/home/someone/uploads',
+      '/srv/public/screens/devices',
+      '/mock/public/screens/devices',
+    ])('refuses to delete a directory outside the storage folders: %s', async (dirPath) => {
+      const rmMock = vi.spyOn(fs.promises, 'rm').mockResolvedValue(undefined)
+
+      const result = await service.cleanup([], [dirPath], [], [], [], false)
+
+      expect(rmMock).not.toHaveBeenCalled()
+      expect(result.errors).toEqual([`Unsafe path: ${dirPath}`])
+    })
+
+    it('deletes an old upload inside the uploads folder', async () => {
+      const unlinkMock = vi.spyOn(fs.promises, 'unlink').mockResolvedValue(undefined)
+      mockStat(async () => makeStats({ size: 512 }))
+
+      const result = await service.cleanup([], [], [], [], ['/mock/uploads/old.zip'], false)
+
+      expect(unlinkMock).toHaveBeenCalledWith('/mock/uploads/old.zip')
+      expect(result.errors).toEqual([])
+    })
+
     it('deletes orphaned directories recursively', async () => {
       const rmMock = vi.spyOn(fs.promises, 'rm').mockResolvedValue(undefined)
       mockReaddir(async () => [makeDirent('file.png', false)])
