@@ -35,7 +35,7 @@ The Device-facing endpoints are fixed by the map and are not in the list except 
 Two facts shape every Device read and are not endpoints of their own:
 
 - **What `/display` last served is not stored.** The poll answers with a Screen's image, a Fallback Screen or the mirrored image (`api/devices/display.service.ts:158-204`, `:211-259`, `:305-321`), but nothing records which, why, or when. The only trace is `isActive` on a Screen and `lastSeen` on the Device. The spec's plate needs the kind, the Fallback Screen's reason ("a failed render", "a failed mirror fetch") and the time (`devices.md add 3`), and the error Fallback Screen is served from four places with no record of which (`display.service.ts:223`, `:491`, `:529`, `:542`, `:563`). **Recommendation:** `/display` writes a small "last served" record on the Device in the save it already makes (`display.service.ts:147-148`): `lastServedAt`, `lastServedKind` (`screen | fallback | mirror`), `lastServedScreenId`, `lastServedFallback` (`noScreen | error | sleep`), `lastServedReason` (`noScreens | noneEligible | renderFailed | mirrorFailed | asleep`) and `lastServedRefreshRate`. The response the Device gets does not change. The Device reads below derive the Current Screen from it, never from `/current_screen`, which can fetch from TRMNL as a side effect (`display.service.ts:385-395`).
-- **`lastSeen` cannot say "never polled".** The column is `NOT NULL` (`api/devices/devices.entity.ts:92-93`) and its database default is a fixed literal, `'2026-04-18T22:36:39.653Z'` (`api/migrations/1776551799197-AddPluginSystem.ts:27`), so a Device registered by hand or through `/api/setup` (`api/devices/setup.service.ts:737-740`) carries that date until its first `/display`. **Recommendation:** a migration makes it nullable with no default and sets it to `NULL` where it equals that literal; `/display` keeps writing it (`display.service.ts:147`). The offline Alert Rule skips a Device with `lastSeen = NULL` (`api/alerts/rules/offline.rule.ts:426-434` reads it unconditionally today).
+- **`lastSeen` cannot say "never polled".** The column is `NOT NULL` (`api/devices/devices.entity.ts:92-93`) and its database default is a fixed literal, `'2026-04-18T22:36:39.653Z'` (`api/migrations/1776551799197-AddPluginSystem.ts:27`), so a Device registered by hand or through `/api/setup` (`api/devices/setup.service.ts:56-58`) carries that date until its first `/display`. **Recommendation:** a migration makes it nullable with no default and sets it to `NULL` where it equals that literal; `/display` keeps writing it (`display.service.ts:147`). The offline Alert Rule skips a Device with `lastSeen = NULL` (`api/alerts/rules/offline.rule.ts:41-49` reads it unconditionally today).
 
 ```ts
 // shared/api/devices.ts
@@ -93,7 +93,7 @@ interface DeviceDetail extends DeviceSummary {
 
 Derivation rules that are part of the contract:
 
-- `currentScreen`: `lastSeenAt === null` gives `{ kind: 'fallback', fallback: 'welcome', reason: 'neverPolled' }` (welcome is only ever served by setup, `setup.service.ts:728`). Otherwise it is the last-served record. The image path is the file that poll pointed the Device to, root-relative.
+- `currentScreen`: `lastSeenAt === null` gives `{ kind: 'fallback', fallback: 'welcome', reason: 'neverPolled' }` (welcome is only ever served by setup, `setup.service.ts:47`). Otherwise it is the last-served record. The image path is the file that poll pointed the Device to, root-relative.
 - `nextPollAt` uses the refresh rate **served**, not the configured one. While asleep the served value is the seconds until the window ends (`display.service.ts:306`), and on a Proxied Device it is TRMNL's (`display.service.ts:233`), which Kuroshiro does not otherwise know. This departs from `devices.md`'s "last seen time plus its refresh rate" only where that rule is wrong.
 - `isProxied` and `isMirrored` are derived on every read and never stored, as `CONTEXT.md` defines a Proxied Device.
 - No `offline` field. The spec reads offline from the firing Alert (`devices.md`, "The facts": "An Alert is known from the Alert list filtered to this Device"); a second rule on the read would bring back the drift the capability inventory found between the old UI's online dot and the Alert Rule.
@@ -168,7 +168,7 @@ interface UpdateDeviceInput {
 
 #### D8 · `GET /api/devices/:id/logs` · change (moved from `GET /api/log/device/:deviceId`)
 
-- **Today:** `LogsController.getLogsByDevice` (`api/logs/logs.controller.ts:19-23`) returns every entry, oldest first (`api/logs/logs.service.ts:91-94`). Each entry is the firmware's JSON as one `text` column (`api/logs/logs.entity.ts:10-11`, written by `logs.service.ts:81-86`); the old UI parses it, guessing the level from keywords for the legacy format (`ui/utils/parseLogEntry.ts`).
+- **Today:** `LogsController.getLogsByDevice` (`api/logs/logs.controller.ts:19-23`) returns every entry, oldest first (`api/logs/logs.service.ts:70-73`). Each entry is the firmware's JSON as one `text` column (`api/logs/logs.entity.ts:10-11`, written by `api/logs/logs.service.ts:60-65`); the old UI parses it, guessing the level from keywords for the legacy format (`ui/utils/parseLogEntry.ts`).
 - **Serves:** `devices.md add 7`, the Logs page (filter, search, paging, "{n} new entries", the opened entry).
 - **Request:** query `limit` (1 to 200, default 50), `before` (cursor: entries older than it), `after` (cursor: entries newer than it), `level` (`all | problems`, default `all`; `problems` is `error` and `warning`), `q` (at least 2 characters, matched case-insensitively against the message).
 - **Response:**
@@ -253,7 +253,7 @@ interface ScreenRead {
 
 Derivation rules that are part of the contract:
 
-- **Screen State** is computed on the server, never stored (`CONTEXT.md`, Screen State), with the precedence `devices.md` settles: `active`, `scheduleOff`, `notToday`, `notThisHour`, `skipping`, `upNext`, none. It has to be the server's work: Schedules are evaluated in the server's timezone (`api/schedule/schedule-eligibility.ts:40-43`, ADR-0009), which the browser does not share. The function sits beside `isScheduleEligible` and Rotation's `nextEligibleScreen` (`display.service.ts:288-297`) so the read and the poll cannot disagree.
+- **Screen State** is computed on the server, never stored (`CONTEXT.md`, Screen State), with the precedence `devices.md` settles: `active`, `scheduleOff`, `notToday`, `notThisHour`, `skipping`, `upNext`, none. It has to be the server's work: Schedules are evaluated in the server's timezone (`api/schedule/schedule-eligibility.ts:3-7`, ADR-0009), which the browser does not share. The function sits beside `isScheduleEligible` and Rotation's `nextEligibleScreen` (`display.service.ts:288-297`) so the read and the poll cannot disagree.
 - **`upNext`** is the Screen `nextEligibleScreen` would pick at `nextPollAt` (now, if that has passed or is unknown; `sleep.endsAt` while asleep), passing over a remembered `skip`. When that is the Active Screen itself, no Screen is `upNext` ("No other Screen can be shown right now, so it stays on").
 - **`active`** is the stored `isActive`, even when the Schedule has since closed: the Device shows it until its next poll.
 - **`renderSignal`** is the Render Signal column #1069 adds (open call 4.3 fixes the name). While #1069 is unbuilt it is always `null`.
@@ -326,7 +326,7 @@ interface UpdateScreenInput {
 
 #### S6 · `DELETE /api/screens/:id` · change
 
-- **Today:** `screens.service.ts:140-154` deletes the Screen's files, the row and its Plugin Assignment, and closes the gap in the Order. Because `MashupConfiguration.screen` cascades on delete (`api/mashup/entities/mashup-configuration.entity.ts:279`), it already deletes a Mashup with its slots correctly.
+- **Today:** `screens.service.ts:140-154` deletes the Screen's files, the row and its Plugin Assignment, and closes the gap in the Order. Because `MashupConfiguration.screen` cascades on delete (`api/mashup/entities/mashup-configuration.entity.ts:14`), it already deletes a Mashup with its slots correctly.
 - **Serves:** "Delete Screen" for every kind (`devices.md`); `devices.md change 2` (closing the gap after deleting a Mashup), by routing the Mashup's delete here (M4).
 - **Response:** 204; 404 `screen-not-found`. **Rules:** closes the gap in the Order for every kind. Deleting the Active Screen leaves no Active Screen; the next poll picks from the start (`display.service.ts:289-290`), which is what `devices.md` describes ("leaves the plate as it is until the Device's next poll").
 
@@ -476,7 +476,7 @@ New stored facts these reads need, none of which exists today:
 
 | Field | Stored as | Written by |
 |---|---|---|
-| `DataSourceRead.lastFetchSucceededAt` | column on `PluginDataSource` beside the streak columns (`api/plugins/entities/plugin-data-source.entity.ts:41-48`) | the success branch of `DataSourceFetchOutcomeService.recordOutcomes` (`api/plugins/services/data-source-fetch-outcome.service.ts:330-331`) |
+| `DataSourceRead.lastFetchSucceededAt` | column on `PluginDataSource` beside the streak columns (`api/plugins/entities/plugin-data-source.entity.ts:41-48`) | the success branch of `DataSourceFetchOutcomeService.recordOutcomes` (`api/plugins/services/data-source-fetch-outcome.service.ts:46-47`) |
 | `webhook.payloadReceivedAt` | column on `Plugin` | `WebhookIngestService.ingest` (`api/plugins/services/webhook-ingest.service.ts:73`); cleared by P11 |
 | `lastScheduledRender` | three columns on `Plugin`: time, message, line (and size) | the scheduler tick (`api/plugins/services/plugin-scheduler.service.ts:33-51`), which today only logs a failure (`:48-50`) |
 | `recipe.snapshotTakenAt` | column on `Plugin` | Recipe import and Recipe Update apply |
@@ -510,12 +510,12 @@ type CreatePluginInput =
 ```
 
 - **Response:** 201 `PluginDetail`.
-- **Rules:** `name` non-empty after trim; `streamLimit` an integer ≥ 1, required with `stream` and refused otherwise (`api/plugins/plugin-kind-fields.ts:196-227`, unchanged). The Plugin gets one `full` Template, the starter of `template-editor.md` ("The starter template"), and `refreshInterval` 15. With `deviceId` it is assigned in the same transaction under A1's rules. The full creation shape stays reachable inside the server for duplicate and import; the public endpoint takes only this.
+- **Rules:** `name` non-empty after trim; `streamLimit` an integer ≥ 1, required with `stream` and refused otherwise (`api/plugins/plugin-kind-fields.ts:23-54`, unchanged). The Plugin gets one `full` Template, the starter of `template-editor.md` ("The starter template"), and `refreshInterval` 15. With `deviceId` it is assigned in the same transaction under A1's rules. The full creation shape stays reachable inside the server for duplicate and import; the public endpoint takes only this.
 
 #### P4 · `PATCH /api/plugins/:id` · change
 
 - **Today:** `plugins.service.ts:393-434`, no transaction:
-  - deletes and recreates every Data Source on any save that carries them (`:474-481`), which resets each Fetch Failure Streak and cascade-deletes a firing fetch Alert (the Alert's `dataSource` is `onDelete: 'CASCADE'`, `api/alerts/entities/alert.entity.ts:102-104`);
+  - deletes and recreates every Data Source on any save that carries them (`:474-481`), which resets each Fetch Failure Streak and cascade-deletes a firing fetch Alert (the Alert's `dataSource` is `onDelete: 'CASCADE'`, `api/alerts/entities/alert.entity.ts:19-21`);
   - writes only the first Template and ignores the rest (`:496-511`);
   - deletes and recreates every Plugin Field (`:513-524`);
   - accepts `mergeStrategy` and `streamLimit`, fixed at creation by `CONTEXT.md` (`api/plugins/dto/update-plugin.dto.ts:12` only omits `kind` and the Recipe fields);
@@ -571,7 +571,7 @@ interface DataSourceInput {
 
 #### P7 · `GET /api/plugins/:id/export` · change
 
-- **Today:** `plugins.controller.ts:154-166`, `api/plugins/services/plugin-exporter.service.ts:115-164`: `.trmnlp.yml` and `src/settings.yml` without the Plugin Kind, Merge Strategy or Stream Limit; `src/settings.yml` is written only when there are Data Sources (`:133`), so a Webhook-kind Plugin comes back as a Poll-kind one. The file name is the raw Plugin name inside `filename="…"` (`plugins.controller.ts:164`), which a `"` in the name breaks.
+- **Today:** `plugins.controller.ts:154-166`, `api/plugins/services/plugin-exporter.service.ts:17-66`: `.trmnlp.yml` and `src/settings.yml` without the Plugin Kind, Merge Strategy or Stream Limit; `src/settings.yml` is written only when there are Data Sources (`:35`), so a Webhook-kind Plugin comes back as a Poll-kind one. The file name is the raw Plugin name inside `filename="…"` (`plugins.controller.ts:164`), which a `"` in the name breaks.
 - **Serves:** "Export" (`plugins.md`); `plugins.md add 7`.
 - **Response:** 200 `application/zip`; 404 in the error envelope.
 - **Rules:** `src/settings.yml` is always written and carries `strategy: polling | webhook` (the key TRMNL's own Recipes use, which the importer already reads for Recipes, `api/plugins/services/plugin-importer.service.ts:347`), plus `merge_strategy` and `stream_limit` for a Webhook-kind Plugin. Every Template is written by size (as today). The file name is sanitised and also sent as RFC 6266 `filename*`. The importer (P8) reads the three keys back, so the round trip keeps the kind.
@@ -668,9 +668,9 @@ interface PreviewData {
 ```
 
 - **Rules:**
-  - Builds the context with the same function every render uses (R2), so the preview and the Device read the same names. A Data Source that fails carries its error marker `{ error: true, message }` (as `api/plugins/services/plugin-data-resolver.service.ts:384-388`) and its `names` row the message.
+  - Builds the context with the same function every render uses (R2), so the preview and the Device read the same names. A Data Source that fails carries its error marker `{ error: true, message }` (as `api/plugins/services/plugin-data-resolver.service.ts:52`) and its `names` row the message.
   - A password Field Value is `"••••••••"` in `context`; the stored secret is still substituted where a Data Source's URL, headers or body name it.
-  - Renders nothing. Moves no Fetch Failure Streak and fires no Alert (ADR-0025: only the scheduler tick records outcomes, `data-source-fetch-outcome.service.ts:294-301`).
+  - Renders nothing. Moves no Fetch Failure Streak and fires no Alert (ADR-0025: only the scheduler tick records outcomes, `data-source-fetch-outcome.service.ts:11-16`).
   - Demo mode keeps the public-address rule for fetches (`api/plugins/services/plugin-data-fetcher.service.ts:52`).
   - 404 `plugin-not-found`, 404 `device-not-found`.
 
@@ -678,11 +678,11 @@ interface PreviewData {
 
 These change what the server renders, not what an endpoint answers. They are listed because a screen's copy states them as facts.
 
-- **R1 · A render picks a Template by size, never by position** (`template-editor.md change 3`, `change 4`). Today the scheduler and a Webhook render use `templates[0]` (`api/plugins/services/plugin-render-cache.service.ts:111`), the on-demand render looks for `full` (`display.service.ts:582`), and a Mashup slot prefers `full` (`api/mashup/services/mashup-renderer.service.ts:62`). After: a Screen on its own, the scheduler and a Webhook render use `full`; a Mashup slot uses its own size and falls back to `full`. The slot's size is stored as `view--half_vertical` and so on (`api/mashup/constants/layouts.ts:13`); the Template's as `half_vertical`.
+- **R1 · A render picks a Template by size, never by position** (`template-editor.md change 3`, `change 4`). Today the scheduler and a Webhook render use `templates[0]` (`api/plugins/services/plugin-render-cache.service.ts:36`), the on-demand render looks for `full` (`display.service.ts:582`), and a Mashup slot prefers `full` (`api/mashup/services/mashup-renderer.service.ts:62`). After: a Screen on its own, the scheduler and a Webhook render use `full`; a Mashup slot uses its own size and falls back to `full`. The slot's size is stored as `view--half_vertical` and so on (`api/mashup/constants/layouts.ts:13`); the Template's as `half_vertical`.
 - **R2 · Every render sees the same context** (`template-editor.md change 5`): `trmnl`, the Field Values (#1101), the Device's `sensors` where there is a Device, and the data. Today a Webhook render passes only the merged payload (`webhook-ingest.service.ts:74`), with no `trmnl`.
 - **R3 · A Webhook-kind Plugin renders without a payload** (`plugins.md change 7`, `change 8`): before the first POST and after a clear, its Template renders with `trmnl` and its Field Values. Today nothing is rendered until the first POST, and clearing leaves the old output on its Screens.
 - **R4 · A Webhook-kind Plugin renders in a Mashup slot** (`plugins.md change 6`). Today every slot throws "Plugin missing data sources or templates" for it (`mashup-renderer.service.ts:54-55`).
 - **R5 · A scheduled render that fails is stored**, with Liquid's message and line (`template-editor.md add 3`); it fills `lastScheduledRender` (P2).
-- **R6 · A transform that throws is a failed fetch** (`plugins.md change 15`): today the raw data passes through silently (`api/plugins/services/plugin-transform.service.ts:442-447`).
+- **R6 · A transform that throws is a failed fetch** (`plugins.md change 15`): today the raw data passes through silently (`api/plugins/services/plugin-transform.service.ts:49-53`).
 - **R7 · A failed Mashup slot is drawn as `plugins.md` specs** (`plugins.md change 14`), in place of `error.png` (`mashup-renderer.service.ts:78-81`).
-- **R8 · The Liquid engine and Kuroshiro's filters move to `packages/shared`** (`template-editor.md add 2`). Today they live in `api/plugins/services/plugin-renderer.service.ts:197-284`, a `new Liquid()` with fourteen filters. It is the one runtime dependency this adds to `packages/shared` (`liquidjs`, which the API already depends on); see section 3.
+- **R8 · The Liquid engine and Kuroshiro's filters move to `packages/shared`** (`template-editor.md add 2`). Today they live in `api/plugins/services/plugin-renderer.service.ts:1-91`, a `new Liquid()` (`:9`) with thirteen filters. It is the one runtime dependency this adds to `packages/shared` (`liquidjs`, which the API already depends on); see section 3.
