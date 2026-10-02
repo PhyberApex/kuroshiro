@@ -36,7 +36,7 @@ const NOTICES = {
     : {
         headline: screenName ?? 'A Screen',
         headlineTail: 'could not be shown',
-        body: `Kuroshiro could not make ${screenName ? 'this' : 'the'} Screen’s image. Next try at the next poll.`,
+        body: `Kuroshiro could not make ${screenName ? 'this' : 'the'} Screen’s image. Next try on its next turn in Rotation.`,
       },
   sleep: ({ wakeTime }) => ({
     headline: `Asleep until ${wakeTime}`,
