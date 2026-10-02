@@ -56,6 +56,14 @@ _Avoid_: Plugin type, strategy
 A Plugin attached to one Device's Rotation, always paired 1:1 with a plugin-type Screen on that Device. Creating the assignment creates the Screen, and deleting either one removes both. The Plugin itself and its Mashup slots are unaffected. A Plugin has at most one Assignment per Device.
 _Avoid_: DevicePlugin (the entity name), install
 
+**Plugin Field**:
+One named input a Plugin declares for the admin to fill in — a key, a label, a type (single-line text, multi-line text, number, on/off, password, or a select with its options), an optional default and whether it is required. Part of the Plugin: it arrives with a Recipe or `.trmnlp` import, or the admin authors it on the Plugin. A type Kuroshiro has no control for is treated as single-line text; the `author_bio` type is a read-only credit, never an input.
+_Avoid_: Custom field, form field (TRMNL's terms), setting, Plugin Configuration, variable
+
+**Field Value**:
+What the admin entered for one Plugin Field, falling back to the Plugin Field's default when nothing was entered. Belongs to the Plugin, not to a Plugin Assignment: every Device and every Mashup slot showing the Plugin renders with the same Field Values, and showing it with different values means duplicating the Plugin. Available to the Plugin's templates and to its Data Sources' url, headers and body. A password-type Field Value is a secret. A required Plugin Field with neither a Field Value nor a default marks the Plugin as needing values but never stops it saving, being assigned or rendering.
+_Avoid_: Plugin Variable (a removed concept), per-Device value, override, custom field value, config
+
 **Webhook Token**:
 A dedicated, regenerable secret embedded in a Webhook-kind Plugin's ingest URL — distinct from the Plugin's `id`, so the Plugin's admin URL leaking doesn't grant write access.
 _Avoid_: Plugin ID, API key (reserve "API key" for Device auth)
@@ -97,11 +105,11 @@ The on-demand action on an imported Plugin that re-downloads its source Recipe, 
 _Avoid_: Sync, upgrade, pull, auto-update, refresh (collides with the render/refresh cycle)
 
 **Update Item**:
-One unit a Recipe Update Check can show and apply on its own: the Plugin's name, description or refresh interval, one template (by layout), one Data Source (by name, transform included) or one field definition (by keyname). Each is `added`, `changed` or `removed` relative to the Recipe Snapshot, and a `conflict` when both the Recipe and the local Plugin changed it. Anything that exists only locally is not an Update Item.
+One unit a Recipe Update Check can show and apply on its own: the Plugin's name, description or refresh interval, one template (by layout), one Data Source (by name, transform included) or one Plugin Field (by keyname). Each is `added`, `changed` or `removed` relative to the Recipe Snapshot, and a `conflict` when both the Recipe and the local Plugin changed it. Anything that exists only locally is not an Update Item.
 _Avoid_: Diff entry, change, hunk (that is a line-level thing inside a template's diff)
 
 **Configuration Archive**:
-A single zip holding every piece of admin-built configuration on a Kuroshiro instance — Plugins (as nested `.trmnlp` folders plus a manifest for what `.trmnlp` can't carry), Devices, Screens with their Order and Schedule, Mashups, Plugin assignments with their field values, custom Palettes, custom Firmware metadata and the overridden Instance Settings — stamped with the Kuroshiro version and an archive `schemaVersion`. Produced by Configuration Export, consumed by Configuration Import. Every record keeps its `id`, which is the identity Configuration Import upserts on. Contains secrets (Data Source headers, Device API keys, secret Plugin Variables, Webhook Tokens) in plaintext and the export surfaces warn about this, unless it is a Redacted Archive. Excludes runtime state: Webhook Payloads, Sensor readings, rendered images for `plugin`/`mashup`-type Screens, logs, Device telemetry, and anything `official`/`official-synced` — except a `file`-type Screen's converted image, which for that Screen type is the actual admin-supplied content, not a regenerable cache.
+A single zip holding every piece of admin-built configuration on a Kuroshiro instance — Plugins (as nested `.trmnlp` folders plus a manifest for what `.trmnlp` can't carry), Devices, Screens with their Order and Schedule, Mashups, Plugins with their Field Values, Plugin Assignments, custom Palettes, custom Firmware metadata and the overridden Instance Settings — stamped with the Kuroshiro version and an archive `schemaVersion`. Produced by Configuration Export, consumed by Configuration Import. Every record keeps its `id`, which is the identity Configuration Import upserts on. Contains secrets (Data Source headers, Device API keys, password-type Field Values, Webhook Tokens) in plaintext and the export surfaces warn about this, unless it is a Redacted Archive. Excludes runtime state: Webhook Payloads, Sensor readings, rendered images for `plugin`/`mashup`-type Screens, logs, Device telemetry, and anything `official`/`official-synced` — except a `file`-type Screen's converted image, which for that Screen type is the actual admin-supplied content, not a regenerable cache.
 _Avoid_: Backup (reserve for `pg_dump`-level disaster recovery, which this does not replace), dump, snapshot, `.trmnlp` (that is one Plugin's export, which the archive nests but is not)
 
 **Configuration Export**:
@@ -109,7 +117,7 @@ The read-only action that produces a Configuration Archive from the running inst
 _Avoid_: Dump, snapshot (see Configuration Archive)
 
 **Redacted Archive**:
-A Configuration Archive whose secrets — Data Source header values, Device API keys and mirror API keys, secret Plugin Variables, Webhook Tokens — have each been replaced by the Redaction Sentinel, with the manifest marked `redacted`. Everything else, including header keys and Data Source `url`/`body`, is exported as-is. Safe to share or diff; a degraded source for a fresh-instance restore.
+A Configuration Archive whose secrets — Data Source header values, Device API keys and mirror API keys, password-type Field Values, Webhook Tokens — have each been replaced by the Redaction Sentinel, with the manifest marked `redacted`. Everything else, including header keys and Data Source `url`/`body`, is exported as-is. Safe to share or diff; a degraded source for a fresh-instance restore.
 _Avoid_: Sanitized, scrubbed, anonymized (nothing but credentials is removed)
 
 **Redaction Sentinel**:
