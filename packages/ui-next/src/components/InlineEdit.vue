@@ -10,8 +10,6 @@ const props = defineProps<{
   label: string
   /** Says what is wrong with a value, or nothing when it may be saved. A refused value is not emitted. */
   validate?: (value: string) => string | undefined
-  /** A refusal from outside, such as the server's. It shows like one from `validate`. */
-  error?: string
   /** The save is running: "Save" shows the loading mark and nothing can be changed. */
   saving?: boolean
 }>()
@@ -24,11 +22,14 @@ const emit = defineEmits<{
 /** Whether the input is shown. Whatever starts the editing ("Rename") sets it and gets the focus back when it ends. */
 const editing = defineModel<boolean>('editing', { default: false })
 
+/** A refusal from outside, such as the server's. It shows like one from `validate` and is dropped, like it, once the value is changed. */
+const error = defineModel<string | undefined>('error')
+
 const errorId = useId()
 const input = useTemplateRef('input')
 const draft = ref(props.value)
 const refusal = ref<string>()
-const problem = computed(() => refusal.value ?? props.error)
+const problem = computed(() => refusal.value ?? error.value)
 let trigger: Element | null = null
 
 // Synchronous, so the element that started the editing still has the focus when it is read.
@@ -42,8 +43,9 @@ watch(editing, (isEditing) => {
       input.value?.select()
     })
   }
-  else if (trigger instanceof HTMLElement) {
-    trigger.focus()
+  else {
+    // After the parent has rendered, in case it disabled the trigger while the value was edited.
+    nextTick(() => trigger instanceof HTMLElement && trigger.focus())
   }
 }, { flush: 'sync' })
 
@@ -67,6 +69,7 @@ function save() {
 function onTyped(event: Event) {
   draft.value = (event.target as HTMLInputElement).value
   refusal.value = undefined
+  error.value = undefined
 }
 </script>
 

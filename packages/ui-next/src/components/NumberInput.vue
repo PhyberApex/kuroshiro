@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { commitWhenDone } from './commitWhenDone'
 import TextInput from './TextInput.vue'
 
 defineProps<{
@@ -32,6 +33,9 @@ watch(model, (value) => {
     typed.value = toText(value)
 })
 
+// "60" retyped as "60.0" is a changed text and the same number, so the number is what is compared.
+const { hold, commit } = commitWhenDone(model, value => emit('commit', value))
+
 function onTyped(text: string) {
   typed.value = text
   model.value = toNumber(text)
@@ -46,7 +50,8 @@ function onTyped(text: string) {
     :invalid="invalid"
     :wide="wide"
     @update:model-value="onTyped"
-    @commit="emit('commit', toNumber($event))"
+    @focus="hold"
+    @commit="commit"
   >
     <template #status>
       <slot name="status" />

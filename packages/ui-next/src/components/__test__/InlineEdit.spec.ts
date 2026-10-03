@@ -163,14 +163,19 @@ describe('inline edit', () => {
     await expect.element(input).toBeVisible()
   })
 
-  it('shows a refusal from the server like one of its own', async () => {
+  it('shows a refusal from the server like one of its own, and hands it back once the value is changed', async () => {
+    const onUpdateError = vi.fn()
     const screen = await mount(InlineEdit, {
-      props: { editing: true, value: 'Weather', label: 'Name of Weather', error: 'Another Screen is called Weather.' },
+      props: { 'editing': true, 'value': 'Weather', 'label': 'Name of Weather', 'error': 'Another Screen is called Weather.', 'onUpdate:error': onUpdateError },
     })
     const input = screen.getByRole('textbox', { name: 'Name of Weather' })
 
     await expect.element(input).toHaveAttribute('aria-invalid', 'true')
     await expect.element(input).toHaveAccessibleDescription('Another Screen is called Weather.')
+
+    await input.fill('Forecast')
+
+    expect(onUpdateError).toHaveBeenLastCalledWith(undefined)
   })
 
   it('is 32 px high, and 44 px with 16 px text at a coarse pointer', async () => {

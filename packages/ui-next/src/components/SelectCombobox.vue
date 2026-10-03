@@ -11,6 +11,7 @@ import {
   ComboboxRoot,
   ComboboxTrigger,
 } from 'reka-ui'
+import { useId } from 'vue'
 import Icon from './Icon.vue'
 import { OPTION_LIST_GAP, OPTION_LIST_LAYER } from './selectOption'
 import SelectOptions from './SelectOptions.vue'
@@ -25,6 +26,11 @@ const props = defineProps<{
 }>()
 
 const model = defineModel<T | null>({ default: null })
+
+// An option is named by its label alone and described by its reason, as in the plain list.
+const idPrefix = useId()
+const labelId = (index: number) => `${idPrefix}-label-${index}`
+const reasonId = (index: number) => `${idPrefix}-reason-${index}`
 
 function labelOf(value: T | null | undefined) {
   return props.options.find(option => option.value === value)?.label ?? ''
@@ -65,15 +71,18 @@ function labelOf(value: T | null | undefined) {
             Nothing matches
           </ComboboxEmpty>
           <ComboboxItem
-            v-for="option in options"
+            v-for="(option, index) in options"
             :key="option.value"
             class="option"
             :value="option.value"
             :text-value="option.label"
             :disabled="option.disabled"
+            :aria-disabled="option.disabled || undefined"
+            :aria-labelledby="labelId(index)"
+            :aria-describedby="option.reason ? reasonId(index) : undefined"
           >
-            <span>{{ option.label }}</span>
-            <span v-if="option.reason" class="reason">{{ option.reason }}</span>
+            <span :id="labelId(index)">{{ option.label }}</span>
+            <span v-if="option.reason" :id="reasonId(index)" class="reason">{{ option.reason }}</span>
             <ComboboxItemIndicator><Icon name="check" /></ComboboxItemIndicator>
           </ComboboxItem>
         </SelectOptions>

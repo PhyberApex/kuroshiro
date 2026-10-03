@@ -66,6 +66,16 @@ describe('number input', () => {
     expect(onCommit).toHaveBeenCalledTimes(2)
   })
 
+  it('does not commit the same number written another way', async () => {
+    const onCommit = vi.fn()
+    const screen = await mount(NumberInput, { props: { modelValue: 60, onCommit }, attrs: RATE })
+
+    await screen.getByRole('spinbutton', { name: 'Refresh rate' }).fill('60.0')
+    await userEvent.keyboard('{Enter}')
+
+    expect(onCommit).not.toHaveBeenCalled()
+  })
+
   it('forwards its id, its range and its description, marks an invalid number and can be disabled', async () => {
     const screen = await mount(NumberInput, {
       props: { modelValue: 12, invalid: true, disabled: true },

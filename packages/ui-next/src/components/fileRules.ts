@@ -3,8 +3,9 @@ const MEGABYTE = 1024 * KILOBYTE
 
 /** A size as the admin reads it: "640 KB", "10 MB", "12.4 MB". */
 export function formatBytes(bytes: number) {
-  return bytes < MEGABYTE
-    ? `${Math.max(1, Math.round(bytes / KILOBYTE))} KB`
+  const kilobytes = Math.max(1, Math.round(bytes / KILOBYTE))
+  return kilobytes < KILOBYTE
+    ? `${kilobytes} KB`
     : `${Number((bytes / MEGABYTE).toFixed(1))} MB`
 }
 

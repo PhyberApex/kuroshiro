@@ -97,7 +97,7 @@ Primitives live flat in `src/components/`, named as the component inventory name
 
 A gallery file is rows of specimens: `SpecimenRow` (an optional `title`) holding one `Specimen` per state, whose `caption` is the state's name. Both are in `src/gallery/`.
 
-A state that needs a pointer or a key press is held still for the gallery in one of two ways:
+A state that needs a pointer or a key press is shown in the gallery in one of three ways:
 
 - **Hover and active**: for each such state its gallery shows, the component's own CSS answers `[data-force~='hover']` or `[data-force~='active']` beside `:hover` or `:active`, and the gallery sets `data-force="hover"` on it. The focus ring belongs to the page, so `data-force="focus"` works on any element with no CSS in the component.
 - **A state held in script** (an open tooltip, "Copied"): the component takes a prop for it, documented as being for the gallery (`tooltipOpen`, `copied`).
@@ -109,7 +109,8 @@ A state that needs a pointer or a key press is held still for the gallery in one
 - **The frame of a typed-in control** is the `.control` class of `src/styles/controls.css`, not a component: an `input`, a `textarea` and a select's `button` all wear it. It carries the border, hover, disabled, `aria-invalid` (the doubled ink border) and the 16 px text on touch. `.control.prose` sets the value in the text face instead of mono.
 - **Every control** takes `v-model`, `disabled` and `invalid`, and passes any other attribute (`id`, `aria-label`, `aria-describedby`, `placeholder`, `min`) to its native control, wherever that sits in its markup.
 - **`Field`** hands its control what it needs through its slot: `<Field v-slot="{ control }" label="Refresh rate" :error="error"><NumberInput v-model="rate" v-bind="control" /></Field>`. An error takes the hint's place.
-- **`FieldError`** is the message with the problem icon, inside a live region that is rendered before the message is. Use it for any error line that has to be announced.
+- **`FieldError`** is the message with the problem icon, inside a live region that is rendered before the message is. It is a part, not a primitive of the inventory: `Field`, `FileDrop` and `InlineEdit` show it, and their galleries and specs are where it is seen and tested.
+- **`InlineEdit`** is the exception to the rule above: it is a value with an editing mode, not a form control, so it takes `value`, `v-model:editing`, `validate` and `v-model:error`, and emits `save`.
 - **"commit"** is what save as changed listens to: `TextInput`, `NumberInput`, `TimeInput` and `DateInput` emit it on blur and on Enter, `Textarea` on blur, and only for a value that differs from the one held on focus or committed last. `commitWhenDone` holds that rule. The `#status` slot beside each is the place of the save state.
 
 Three things Reka UI does not do for you:

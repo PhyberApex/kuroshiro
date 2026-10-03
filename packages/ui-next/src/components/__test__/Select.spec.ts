@@ -249,6 +249,22 @@ describe('select', () => {
       expect(onChosen).not.toHaveBeenCalled()
     })
 
+    it('shows why an option is disabled and does not let it be chosen', async () => {
+      const onUpdate = vi.fn()
+      const screen = await mount(Select, {
+        props: { 'options': PALETTES, 'modelValue': 'bw', 'filter': true, 'onUpdate:modelValue': onUpdate },
+        attrs: { 'aria-label': 'Palette' },
+      })
+      await screen.getByRole('combobox', { name: 'Palette' }).click()
+      const disabled = screen.getByRole('option', { name: 'Colour, 6 inks', exact: true })
+
+      await expect.element(disabled).toHaveAttribute('aria-disabled', 'true')
+      await expect.element(disabled).toHaveAccessibleDescription('Not on TRMNL OG')
+      await disabled.click({ force: true })
+
+      expect(onUpdate).not.toHaveBeenCalled()
+    })
+
     it('can be made a combobox for a short list, and a plain list for a long one', async () => {
       const short = await mount(Select, { props: { options: PALETTES, modelValue: 'bw', filter: true }, attrs: { 'aria-label': 'Palette' } })
       expect(short.getByRole('combobox', { name: 'Palette' }).element().localName).toBe('input')

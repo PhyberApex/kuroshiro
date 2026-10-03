@@ -8,6 +8,7 @@ describe('file rules', () => {
   it.for([
     [1, '1 KB'],
     [640 * 1024, '640 KB'],
+    [MEGABYTE - 1, '1 MB'],
     [MEGABYTE, '1 MB'],
     [10 * MEGABYTE, '10 MB'],
     [13_002_342, '12.4 MB'],
