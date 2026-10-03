@@ -1,7 +1,8 @@
 import type { Response } from 'express'
 import { Body, Controller, Delete, Get, Param, Patch, Post, Res, UploadedFile, UseInterceptors } from '@nestjs/common'
-import { FileInterceptor } from '@nestjs/platform-express'
 import { diskStorage } from 'multer'
+import { LimitedFileInterceptor } from '../uploads/limited-file-interceptor.js'
+import { UPLOAD_LIMITS } from '../uploads/upload-limits.js'
 import { ApplyRecipeUpdateDto } from './dto/apply-recipe-update.dto.js'
 import { CreatePluginDto } from './dto/create-plugin.dto.js'
 import { PreviewPluginDto } from './dto/preview-plugin.dto.js'
@@ -80,7 +81,7 @@ export class PluginsController {
 
   @Post('import')
   @UseInterceptors(
-    FileInterceptor('file', {
+    LimitedFileInterceptor('file', UPLOAD_LIMITS.pluginImportBytes, {
       storage: diskStorage({
         destination: './uploads',
         filename: (req, file, cb) => {

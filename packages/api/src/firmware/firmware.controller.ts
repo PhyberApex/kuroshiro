@@ -1,10 +1,11 @@
 import type { FirmwareSyncResult } from 'kuroshiro-shared'
 import { BadRequestException, Body, Controller, Delete, Get, Logger, Param, Post, ServiceUnavailableException, UploadedFile, UseInterceptors } from '@nestjs/common'
-import { FileInterceptor } from '@nestjs/platform-express'
+import { LimitedFileInterceptor } from '../uploads/limited-file-interceptor.js'
+import { UPLOAD_LIMITS } from '../uploads/upload-limits.js'
 import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { Firmware } from './entities/firmware.entity.js'
 import { FirmwareSyncService } from './firmware-sync.service.js'
-import { FirmwareService, MAX_FIRMWARE_UPLOAD_BYTES } from './firmware.service.js'
+import { FirmwareService } from './firmware.service.js'
 
 @Controller('firmware')
 export class FirmwareController {
@@ -33,7 +34,7 @@ export class FirmwareController {
   }
 
   @Post('upload')
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_FIRMWARE_UPLOAD_BYTES } }))
+  @UseInterceptors(LimitedFileInterceptor('file', UPLOAD_LIMITS.firmwareUploadBytes))
   async upload(
     @UploadedFile() file: Express.Multer.File,
     @Body('version') version?: string,
