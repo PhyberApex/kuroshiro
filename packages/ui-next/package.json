@@ -17,6 +17,8 @@
     "lint:fix": "eslint --fix"
   },
   "dependencies": {
+    "@atlaskit/pragmatic-drag-and-drop": "catalog:",
+    "@atlaskit/pragmatic-drag-and-drop-auto-scroll": "catalog:",
     "@fontsource-variable/archivo": "catalog:",
     "@fontsource-variable/jetbrains-mono": "catalog:",
     "reka-ui": "catalog:",

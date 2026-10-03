@@ -32,7 +32,18 @@ export function chromiumProject(test: ProjectTestOptions & { name: string }): Te
     plugins: [mockServiceWorker()],
     // Pre-bundled up front: a dependency Vite discovers mid-run reloads the page and fails the spec that was running.
     optimizeDeps: {
-      include: ['vue', 'vue-router', 'reka-ui', 'vitest-browser-vue', 'msw', 'msw/browser', 'axe-core'],
+      include: [
+        'vue',
+        'vue-router',
+        'reka-ui',
+        'vitest-browser-vue',
+        'msw',
+        'msw/browser',
+        'axe-core',
+        '@atlaskit/pragmatic-drag-and-drop/combine',
+        '@atlaskit/pragmatic-drag-and-drop/element/adapter',
+        '@atlaskit/pragmatic-drag-and-drop-auto-scroll/element',
+      ],
     },
     test: {
       setupFiles: ['src/testing/setup.ts'],
