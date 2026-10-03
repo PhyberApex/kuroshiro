@@ -100,8 +100,8 @@ function escapeHtml(value: string): string {
 }
 
 interface Notice {
-  /** A Screen's name: set on its own headline line and cut there, so a long name never pushes the sheet onto its footer. */
-  name?: string
+  /** Set on a headline line of its own and cut there, so a long name never pushes the sheet onto its footer. */
+  screenName?: string
   headline: string
   body?: string
 }
@@ -116,7 +116,7 @@ function errorNotice(request: Extract<FallbackScreenRequest, { kind: 'error' }>,
   const screenName = request.cause === 'render' && facts ? request.screenName : null
   return screenName
     ? {
-        name: screenName,
+        screenName,
         headline: 'could not be shown',
         body: 'Kuroshiro could not make this Screen’s image. Next try on its next turn in Rotation.',
       }
@@ -157,10 +157,10 @@ function welcomeSheet(facts: FallbackScreenFacts | null): string {
 }
 
 function noticeSheet(request: Exclude<FallbackScreenRequest, { kind: 'welcome' }>, facts: FallbackScreenFacts | null): string {
-  const { name, headline, body } = notice(request, facts)
+  const { screenName, headline, body } = notice(request, facts)
   return `<main class="sheet">
   <div>
-    <h1>${name ? `<span class="name">${escapeHtml(name)}</span><span>${headline}</span>` : headline}</h1>
+    <h1>${screenName ? `<span class="name">${escapeHtml(screenName)}</span><span>${headline}</span>` : headline}</h1>
     ${body ? `<p class="body">${body}</p>` : ''}
   </div>
   ${footer(facts ? `<div>${escapeHtml(facts.deviceName)}</div><div class="mono">${escapeHtml(facts.instanceUrl)}</div>` : '', SIGNATURE)}

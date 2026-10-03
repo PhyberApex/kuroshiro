@@ -233,7 +233,18 @@ describe('deviceDisplayService', () => {
 
     it('serves the error Fallback Screen naming the Screen when its render fails', async () => {
       const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS })
-      primeRotation({ id: 'screen2', type: 'plugin', order: 2, plugin: makePlugin({ id: 'p1' }), cachedPluginOutput: '<span>cached</span>', filename: 'Weather' }, device)
+      primeRotation({ id: 'screen2', type: 'html', order: 2, html: '<p>hi</p>', filename: 'Weather' }, device)
+      puppeteerPage.setContent.mockRejectedValue(new Error('Chrome crashed'))
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.image_url).toBe('http://api/screens/error.png')
+      expect(fallbackScreens.urlFor).toHaveBeenCalledWith({ kind: 'error', cause: 'render', screenName: 'Weather' }, device, { model: OG_PLUS, palette: GRAY_4 })
+    })
+
+    it('names a plugin-type Screen that could not be rendered after its Plugin', async () => {
+      const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS })
+      primeRotation({ id: 'screen2', type: 'plugin', order: 2, plugin: makePlugin({ id: 'p1', name: 'Weather' }), cachedPluginOutput: '<span>cached</span>', filename: null }, device)
       puppeteerPage.setContent.mockRejectedValue(new Error('Chrome crashed'))
 
       const result = await service.getCurrentImage(headers)

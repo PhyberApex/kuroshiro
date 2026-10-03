@@ -15,6 +15,8 @@ const SIZES: FallbackScreenSize[] = [
   { width: 64, height: 32 },
 ]
 
+const isSealOnly = ({ width, height }: FallbackScreenSize) => Math.min(width, height) < 200
+
 const REQUESTS: Array<[string, FallbackScreenRequest]> = [
   ['welcome', { kind: 'welcome' }],
   ['no-screen', { kind: 'noScreen' }],
@@ -66,7 +68,6 @@ describe('fallback screens in a browser', () => {
       const root = document.documentElement
       const lineCount = (element: Element) => Math.round(element.getBoundingClientRect().height / Number.parseFloat(getComputedStyle(element).lineHeight))
       const upperBlock = document.querySelector('.sheet > div')
-      const footer = document.querySelector('footer')
       const name = document.querySelector('h1 .name')
       const headline = document.querySelector('h1')
       return {
@@ -79,7 +80,7 @@ describe('fallback screens in a browser', () => {
             return box.left < 0 || box.top < 0 || box.right > panel.width + 0.5 || box.bottom > panel.height + 0.5
           })
           .map(element => element.tagName),
-        clearOfFooter: !upperBlock || !footer || upperBlock.scrollHeight <= upperBlock.clientHeight,
+        clearOfFooter: !upperBlock || upperBlock.scrollHeight <= upperBlock.clientHeight,
         facesLoaded: Array.from(document.fonts).every(face => face.status === 'loaded'),
         name: name ? { lines: lineCount(name), cut: name.scrollWidth > name.clientWidth } : null,
         headlineLines: headline ? lineCount(headline) : null,
@@ -88,7 +89,7 @@ describe('fallback screens in a browser', () => {
   }
 
   describe.each(SIZES)('at $width×$height', (size) => {
-    const sealOnly = size.width === 64
+    const sealOnly = isSealOnly(size)
 
     it.each(REQUESTS)('%s fits the panel and fetches nothing', async (_, request) => {
       const layout = await layOut(request, size)
@@ -106,7 +107,7 @@ describe('fallback screens in a browser', () => {
     })
   })
 
-  it.each(SIZES.filter(size => size.width !== 64))('keeps a 60-character Screen name on one line with an ellipsis at $width×$height', async (size) => {
+  it.each(SIZES.filter(size => !isSealOnly(size)))('keeps a 60-character Screen name on one line with an ellipsis at $width×$height', async (size) => {
     const layout = await layOut({ kind: 'error', cause: 'render', screenName: SIXTY_CHARACTER_NAME }, size)
 
     expect(layout.name).toEqual({ lines: 1, cut: true })

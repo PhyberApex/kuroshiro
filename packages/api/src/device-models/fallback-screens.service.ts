@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto'
 import * as fs from 'node:fs'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { toClockTime } from '../devices/sleep-mode.js'
 import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { resolveAppPath } from '../utils/pathHelper.js'
 import { FALLBACK_SCREEN_TEMPLATE_VERSION, fallbackScreenHtml } from './fallback-screen-templates.js'
@@ -15,11 +16,6 @@ export interface FallbackScreenDevice {
   friendlyId: string
   /** Seconds since midnight in the server's timezone. */
   sleepEndTime?: number | null
-}
-
-function timeOfDay(secondsSinceMidnight: number): string {
-  const twoDigits = (value: number) => String(value).padStart(2, '0')
-  return `${twoDigits(Math.floor(secondsSinceMidnight / 3600))}:${twoDigits(Math.floor((secondsSinceMidnight % 3600) / 60))}`
 }
 
 /**
@@ -58,7 +54,7 @@ export class FallbackScreensService {
       deviceName: device.name,
       friendlyId: device.friendlyId,
       instanceUrl: this.apiUrl(),
-      wakeTime: device.sleepEndTime == null ? null : timeOfDay(device.sleepEndTime),
+      wakeTime: device.sleepEndTime == null ? null : toClockTime(device.sleepEndTime),
     }
   }
 

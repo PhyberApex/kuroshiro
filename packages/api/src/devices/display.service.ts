@@ -497,7 +497,15 @@ export class DeviceDisplayService {
 
     return typeof outcome === 'string'
       ? { imgUrl: outcome, served: servedScreen(screen.id) }
-      : { imgUrl: await this.fallbackImageUrl({ kind: 'error', cause: 'render', screenName: screen.filename ?? null }, device), served: servedFallback('error', 'renderFailed', screen.id) }
+      : { imgUrl: await this.fallbackImageUrl({ kind: 'error', cause: 'render', screenName: await this.nameOf(screen) }, device), served: servedFallback('error', 'renderFailed', screen.id) }
+  }
+
+  /** A plugin-type Screen goes by its Plugin's name; every other Screen carries its own. */
+  private async nameOf(screen: Screen): Promise<string | null> {
+    if (screen.type !== 'plugin')
+      return screen.filename ?? null
+    const withPlugin = await this.screenRepository.findOne({ where: { id: screen.id }, relations: { plugin: true } })
+    return withPlugin?.plugin?.name ?? screen.filename ?? null
   }
 
   private async renderMashupScreen(screen: Screen, device: Device): Promise<RenderOutcome> {
@@ -555,8 +563,18 @@ export class DeviceDisplayService {
       return await this.renderPluginScreen(screenWithPlugin, screen, device)
 
     return screen.html
-      ? await this.renderBodyToScreenPng(viewFull(screen.html), screen, device)
+      ? await this.renderHtmlScreen(screen.html, screen, device)
       : null
+  }
+
+  private async renderHtmlScreen(html: string, screen: Screen, device: Device): Promise<RenderOutcome> {
+    try {
+      return await this.renderBodyToScreenPng(viewFull(html), screen, device)
+    }
+    catch (err) {
+      this.logger.error(`Failed to render HTML screen: ${getErrorMessage(err)}`)
+      return RENDER_FAILED
+    }
   }
 
   private async renderPluginScreen(screenWithPlugin: Screen, screen: Screen, device: Device): Promise<RenderOutcome> {
