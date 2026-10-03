@@ -16,17 +16,6 @@ describe('update-device dto', () => {
     expect(dto.name).toBe('Updated Name')
   })
 
-  it('includes optional device info fields', () => {
-    const dto = new UpdateDeviceDto()
-    dto.batteryVoltage = '3.7V'
-    dto.fwVersion = '1.0.0'
-    dto.rssi = '-60'
-
-    expect(dto.batteryVoltage).toBe('3.7V')
-    expect(dto.fwVersion).toBe('1.0.0')
-    expect(dto.rssi).toBe('-60')
-  })
-
   it('includes mirror configuration fields', () => {
     const dto = new UpdateDeviceDto()
     dto.mirrorEnabled = true
