@@ -1,6 +1,7 @@
 export * from './api/alerts'
 export * from './api/configuration'
 export * from './api/device-models'
+export * from './api/devices'
 export * from './api/errors'
 export * from './api/firmware'
 export * from './api/instance'

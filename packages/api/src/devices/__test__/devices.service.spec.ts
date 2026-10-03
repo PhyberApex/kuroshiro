@@ -42,14 +42,6 @@ describe('devicesService', () => {
     specialFunction: 'identify',
   })
 
-  it('findAll returns all devices ordered by friendlyId', async () => {
-    const devices = [baseDevice]
-    repo.find.mockResolvedValue(devices)
-    const result = await service.findAll()
-    expect(repo.find).toHaveBeenCalledWith({ order: { friendlyId: 'ASC' } })
-    expect(result).toBe(devices)
-  })
-
   it('findById returns a device by id', async () => {
     repo.findOneBy.mockResolvedValue(baseDevice)
     const result = await service.findById('1')

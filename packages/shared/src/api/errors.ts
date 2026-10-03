@@ -13,6 +13,7 @@ export const API_ERROR_CODES = [
   'bad-gateway',
   'service-unavailable',
   'internal',
+  'device-not-found',
 ] as const
 
 export type ApiErrorCode = typeof API_ERROR_CODES[number]

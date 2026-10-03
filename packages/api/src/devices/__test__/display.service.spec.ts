@@ -22,6 +22,7 @@ import { createMockDeviceModelsService, createMockFallbackScreensService, GRAY_4
 import { createPluginTemplateContextService } from '../../test/mockPluginCollaborators.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
 import { asService, injectPrivate } from '../../test/mockService.js'
+import { downloadImage } from '../../utils/imageUtils.js'
 import { Display } from '../display.js'
 import { DeviceDisplayService } from '../display.service.js'
 import { DisplayScreen } from '../displayScreen.js'
@@ -1249,6 +1250,193 @@ describe('deviceDisplayService', () => {
         expect(result.image_url).toBe('http://api/screens/devices/1/screen1.png')
         expect(result.refresh_rate).toBe(7 * 3600)
       })
+    })
+  })
+
+  describe('the last-served record', () => {
+    const POLLED_AT = new Date('2026-08-22T12:00:00')
+    const ASLEEP_AT = new Date('2026-08-22T23:00:00')
+    const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS, specialFunction: 'none' })
+    const mirrored = makeDevice({ ...device, mirrorEnabled: true, mirrorMac: 'other-mac', mirrorApikey: 'mirror-token' })
+    const sleeper = makeDevice({ ...device, sleepModeEnabled: true, sleepStartTime: 22 * 3600, sleepEndTime: 6 * 3600 })
+    const shown = makeScreen({ id: 'screen1', order: 1, device, isActive: true, filename: 'Calendar' })
+    const next = makeScreen({ id: 'screen2', order: 2, device, filename: 'Weather' })
+    const nextFilename = 'Weather_2026-01-01T00:00:00.000Z'
+
+    const answerBase = { action: 'none', firmware_url: '', refresh_rate: 60, reset_firmware: false, special_function: 'none', temperature_profile: 'default', update_firmware: false }
+    const recordBase = { lastServedAt: POLLED_AT, lastServedScreenId: null, lastServedFallback: null, lastServedReason: null, lastServedRefreshRate: 60 }
+    const errorAnswer = { ...answerBase, filename: nextFilename, image_url: 'http://api/screens/error.png' }
+    const renderFailedRecord = { ...recordBase, lastServedKind: 'fallback', lastServedFallback: 'error', lastServedReason: 'renderFailed', lastServedScreenId: 'screen2', lastServedImagePath: '/screens/error.png' }
+
+    function primeNext(overrides: Partial<Screen>) {
+      const screen = makeScreen({ ...next, ...overrides })
+      deviceRepo.findOneBy.mockResolvedValue(makeDevice(device))
+      screenRepo.find.mockResolvedValue([makeScreen(shown), screen])
+      screenRepo.findOne.mockResolvedValue(screen)
+    }
+
+    interface ServedCase {
+      name: string
+      at?: Date
+      prime: () => void
+      answer: Record<string, unknown>
+      record: Record<string, unknown>
+    }
+
+    const cases: ServedCase[] = [
+      {
+        name: 'a Screen',
+        prime: () => {
+          primeNext({})
+          fileExists.mockResolvedValue(true)
+        },
+        answer: { ...answerBase, filename: nextFilename, image_url: 'http://api/screens/devices/1/screen2.png' },
+        record: { ...recordBase, lastServedKind: 'screen', lastServedScreenId: 'screen2', lastServedImagePath: '/screens/devices/1/screen2.png' },
+      },
+      {
+        name: 'the no-screen Fallback Screen, without Screens',
+        prime: () => {
+          deviceRepo.findOneBy.mockResolvedValue(makeDevice(device))
+          screenRepo.find.mockResolvedValue([])
+        },
+        answer: { ...answerBase, filename: 'noScreen.png', image_url: 'http://api/screens/noScreen.png' },
+        record: { ...recordBase, lastServedKind: 'fallback', lastServedFallback: 'noScreen', lastServedReason: 'noScreens', lastServedImagePath: '/screens/noScreen.png' },
+      },
+      {
+        name: 'the no-screen Fallback Screen, with every Screen passed over',
+        prime: () => {
+          deviceRepo.findOneBy.mockResolvedValue(makeDevice(device))
+          screenRepo.find.mockResolvedValue([makeScreen({ ...next, schedule: makeSchedule({ enabled: false }) })])
+        },
+        answer: { ...answerBase, filename: 'noScreen.png', image_url: 'http://api/screens/noScreen.png' },
+        record: { ...recordBase, lastServedKind: 'fallback', lastServedFallback: 'noScreen', lastServedReason: 'noneEligible', lastServedImagePath: '/screens/noScreen.png' },
+      },
+      {
+        name: 'the error Fallback Screen, for a File Screen whose image is missing',
+        prime: () => {
+          primeNext({})
+          fileExists.mockResolvedValue(false)
+        },
+        answer: errorAnswer,
+        record: renderFailedRecord,
+      },
+      {
+        name: 'the error Fallback Screen, for a Mashup that failed to render',
+        prime: () => {
+          primeNext({ type: 'mashup', mashupConfiguration: makeMashupConfiguration({ id: 'config-1', slots: [] }) })
+          injectPrivate(service, 'mashupRenderer', { renderMashup: vi.fn().mockRejectedValue(new Error('Render failed')) })
+        },
+        answer: errorAnswer,
+        record: renderFailedRecord,
+      },
+      {
+        name: 'the error Fallback Screen, for a Plugin whose cached output failed to render',
+        prime: () => {
+          primeNext({ type: 'plugin', plugin: makePlugin({ id: 'p1' }), cachedPluginOutput: '<span>cached</span>' })
+          puppeteerPage.setContent.mockRejectedValue(new Error('Render failed'))
+        },
+        answer: errorAnswer,
+        record: renderFailedRecord,
+      },
+      {
+        name: 'the error Fallback Screen, for a Plugin that failed to render on demand',
+        prime: () => {
+          primeNext({ type: 'plugin', plugin: makePlugin({ id: 'p1', dataSources: [makePluginDataSource()], templates: [makePluginTemplate()] }) })
+          injectPrivate(service, 'pluginDataResolver', { resolveAll: vi.fn().mockRejectedValue(new Error('Fetch failed')) })
+        },
+        answer: errorAnswer,
+        record: renderFailedRecord,
+      },
+      {
+        name: 'the error Fallback Screen, for an External link that could not be fetched',
+        prime: () => {
+          primeNext({ externalLink: 'http://example.com/image.jpg', fetchManual: false })
+          vi.mocked(downloadImage).mockRejectedValue(new Error('Unreachable'))
+        },
+        answer: errorAnswer,
+        record: renderFailedRecord,
+      },
+      {
+        name: 'the mirrored image',
+        prime: () => {
+          deviceRepo.findOneBy.mockResolvedValue(makeDevice(mirrored))
+          mockFetch.mockResolvedValueOnce(jsonResponse({ filename: 'trmnl-image', image_url: 'http://example.com/image.jpg', refresh_rate: 30 }))
+        },
+        answer: { ...answerBase, firmware_url: null, filename: 'trmnl-image', image_url: 'http://api/screens/devices/1/mirror.png' },
+        record: { ...recordBase, lastServedKind: 'mirror', lastServedImagePath: '/screens/devices/1/mirror.png' },
+      },
+      {
+        name: 'the mirrored image on a Proxied Device, at the refresh rate TRMNL gave',
+        prime: () => {
+          deviceRepo.findOneBy.mockResolvedValue(makeDevice({ ...mirrored, mirrorMac: 'mac' }))
+          mockFetch.mockResolvedValueOnce(jsonResponse({ filename: 'trmnl-image', image_url: 'http://example.com/image.jpg', refresh_rate: 1800 }))
+        },
+        answer: { ...answerBase, firmware_url: null, filename: 'trmnl-image', image_url: 'http://api/screens/devices/1/mirror.png', refresh_rate: 1800 },
+        record: { ...recordBase, lastServedKind: 'mirror', lastServedImagePath: '/screens/devices/1/mirror.png', lastServedRefreshRate: 1800 },
+      },
+      {
+        name: 'the error Fallback Screen, for a failed mirror fetch',
+        prime: () => {
+          deviceRepo.findOneBy.mockResolvedValue(makeDevice(mirrored))
+          mockFetch.mockRejectedValueOnce(new Error('TRMNL unreachable'))
+        },
+        answer: { ...answerBase, firmware_url: null, filename: 'error.png', image_url: 'http://api/screens/error.png' },
+        record: { ...recordBase, lastServedKind: 'fallback', lastServedFallback: 'error', lastServedReason: 'mirrorFailed', lastServedImagePath: '/screens/error.png' },
+      },
+      {
+        name: 'the sleep Fallback Screen while asleep, until the window ends',
+        at: ASLEEP_AT,
+        prime: () => deviceRepo.findOneBy.mockResolvedValue(makeDevice({ ...sleeper, sleepScreenEnabled: true })),
+        answer: { ...answerBase, filename: 'sleep.png', image_url: 'http://api/screens/sleep.png', refresh_rate: 7 * 3600 },
+        record: { ...recordBase, lastServedAt: ASLEEP_AT, lastServedKind: 'fallback', lastServedFallback: 'sleep', lastServedReason: 'asleep', lastServedImagePath: '/screens/sleep.png', lastServedRefreshRate: 7 * 3600 },
+      },
+      {
+        name: 'the Active Screen kept while asleep',
+        at: ASLEEP_AT,
+        prime: () => {
+          deviceRepo.findOneBy.mockResolvedValue(makeDevice(sleeper))
+          screenRepo.findOneBy.mockResolvedValue(makeScreen(shown))
+          fileExists.mockResolvedValue(true)
+        },
+        answer: { ...answerBase, filename: 'Calendar_2026-01-01T00:00:00.000Z', image_url: 'http://api/screens/devices/1/screen1.png', refresh_rate: 7 * 3600 },
+        record: { ...recordBase, lastServedAt: ASLEEP_AT, lastServedKind: 'screen', lastServedScreenId: 'screen1', lastServedReason: 'asleep', lastServedImagePath: '/screens/devices/1/screen1.png', lastServedRefreshRate: 7 * 3600 },
+      },
+      {
+        name: 'the no-screen Fallback Screen while asleep with no Active Screen to keep',
+        at: ASLEEP_AT,
+        prime: () => {
+          deviceRepo.findOneBy.mockResolvedValue(makeDevice(sleeper))
+          screenRepo.findOneBy.mockResolvedValue(null)
+          screenRepo.count.mockResolvedValue(2)
+        },
+        answer: { ...answerBase, filename: 'noScreen.png', image_url: 'http://api/screens/noScreen.png', refresh_rate: 7 * 3600 },
+        record: { ...recordBase, lastServedAt: ASLEEP_AT, lastServedKind: 'fallback', lastServedFallback: 'noScreen', lastServedReason: 'noneEligible', lastServedImagePath: '/screens/noScreen.png', lastServedRefreshRate: 7 * 3600 },
+      },
+    ]
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      configService.get.mockReturnValue('http://api')
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    async function poll({ at = POLLED_AT, prime }: ServedCase): Promise<Display> {
+      vi.setSystemTime(at)
+      prime()
+      return service.getCurrentImage(headers)
+    }
+
+    it.each(cases)('answers the Device as it did before the record existed when serving $name', async (served) => {
+      expect({ ...await poll(served) }).toEqual(served.answer)
+    })
+
+    it.each(cases)('records $name', async (served) => {
+      await poll(served)
+
+      expect(deviceRepo.update).toHaveBeenCalledExactlyOnceWith({ id: '1' }, served.record)
     })
   })
 })
