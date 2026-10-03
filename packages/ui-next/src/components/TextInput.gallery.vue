@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import Specimen from '@/gallery/Specimen.vue'
 import SpecimenRow from '@/gallery/SpecimenRow.vue'
+import SaveState from './SaveState.vue'
 import TextInput from './TextInput.vue'
 
 const name = ref('Kitchen')
@@ -38,7 +39,7 @@ const saved = ref('Hallway')
     <Specimen caption="the state itself comes with save as changed">
       <TextInput v-model="saved" aria-label="Name">
         <template #status>
-          <span class="state">Saved</span>
+          <SaveState status="saved" />
         </template>
       </TextInput>
     </Specimen>
@@ -46,7 +47,7 @@ const saved = ref('Hallway')
       <div class="stretch">
         <TextInput v-model="saved" aria-label="Name" wide>
           <template #status>
-            <span class="state">Saved</span>
+            <SaveState status="saved" />
           </template>
         </TextInput>
       </div>
@@ -58,11 +59,6 @@ const saved = ref('Hallway')
 @layer components {
   .stretch {
     justify-self: stretch;
-  }
-
-  .state {
-    color: var(--color-ink-soft);
-    font-size: var(--text-sm);
   }
 }
 </style>

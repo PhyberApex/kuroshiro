@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import Specimen from '@/gallery/Specimen.vue'
 import SpecimenRow from '@/gallery/SpecimenRow.vue'
+import SaveState from './SaveState.vue'
 import Switch from './Switch.vue'
 
 const off = ref(false)
@@ -34,7 +35,7 @@ const on = ref(true)
       <Switch v-model="off" error>
         Sleep Mode
         <template #status>
-          Not saved
+          <SaveState status="failed" />
         </template>
       </Switch>
     </Specimen>
@@ -65,7 +66,7 @@ const on = ref(true)
       <Switch v-model="on" saving>
         Sleep Mode
         <template #status>
-          Saving
+          <SaveState status="saving" />
         </template>
       </Switch>
     </Specimen>
@@ -73,7 +74,7 @@ const on = ref(true)
       <Switch v-model="on" error>
         Sleep Mode
         <template #status>
-          Not saved
+          <SaveState status="failed" />
         </template>
       </Switch>
     </Specimen>

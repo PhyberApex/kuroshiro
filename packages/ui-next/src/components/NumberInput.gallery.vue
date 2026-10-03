@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import Specimen from '@/gallery/Specimen.vue'
 import SpecimenRow from '@/gallery/SpecimenRow.vue'
 import NumberInput from './NumberInput.vue'
+import SaveState from './SaveState.vue'
 
 const value = ref<number | null>(900)
 const empty = ref<number | null>(null)
@@ -31,18 +32,9 @@ const empty = ref<number | null>(null)
     <Specimen caption="with the place of the save state">
       <NumberInput v-model="value" aria-label="Refresh rate">
         <template #status>
-          <span class="state">Saved</span>
+          <SaveState status="saved" />
         </template>
       </NumberInput>
     </Specimen>
   </SpecimenRow>
 </template>
-
-<style scoped>
-@layer components {
-  .state {
-    color: var(--color-ink-soft);
-    font-size: var(--text-sm);
-  }
-}
-</style>

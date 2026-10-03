@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import Specimen from '@/gallery/Specimen.vue'
 import SpecimenRow from '@/gallery/SpecimenRow.vue'
 import DateInput from './DateInput.vue'
+import SaveState from './SaveState.vue'
 
 const value = ref<string | null>('2026-10-03')
 const empty = ref<string | null>(null)
@@ -31,18 +32,9 @@ const empty = ref<string | null>(null)
     <Specimen caption="with the place of the save state">
       <DateInput v-model="value" aria-label="From">
         <template #status>
-          <span class="state">Saved</span>
+          <SaveState status="saved" />
         </template>
       </DateInput>
     </Specimen>
   </SpecimenRow>
 </template>
-
-<style scoped>
-@layer components {
-  .state {
-    color: var(--color-ink-soft);
-    font-size: var(--text-sm);
-  }
-}
-</style>
