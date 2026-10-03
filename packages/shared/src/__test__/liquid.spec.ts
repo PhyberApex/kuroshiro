@@ -177,6 +177,12 @@ describe('templateProblemOf', () => {
     expect(templateProblemOf(error)).toEqual({ message: 'undefined filter: nope', line: 2 })
   })
 
+  it('reads the line of a tag that fails at render', async () => {
+    const error = await renderLiquid('a\n{% render "zz" %}', {}).catch((e: unknown) => e)
+
+    expect(templateProblemOf(error).line).toBe(2)
+  })
+
   it('answers no line for an error without a position', () => {
     expect(templateProblemOf(new Error('boom'))).toEqual({ message: 'boom', line: null })
   })
