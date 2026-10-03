@@ -3,8 +3,10 @@ import type { DataSource } from 'typeorm'
 import type { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
 import type { MashupConfiguration } from '../../mashup/entities/mashup-configuration.entity.js'
 import type { MashupSlot } from '../../mashup/entities/mashup-slot.entity.js'
+import type { PreviewDataDto } from '../dto/preview-data.dto.js'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Alert } from '../../alerts/entities/alert.entity.js'
+import { DeviceSensor } from '../../device-sensors/entities/device-sensor.entity.js'
 import { Device } from '../../devices/devices.entity.js'
 import { MashupRendererService } from '../../mashup/services/mashup-renderer.service.js'
 import { Screen } from '../../screens/screens.entity.js'
@@ -23,6 +25,7 @@ import { PluginAssignmentsService } from '../services/plugin-assignments.service
 import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
 import { PluginDataResolverService } from '../services/plugin-data-resolver.service.js'
 import { PluginFieldValuesService } from '../services/plugin-field-values.service.js'
+import { PluginPreviewDataService } from '../services/plugin-preview-data.service.js'
 import { PluginReadsService } from '../services/plugin-reads.service.js'
 import { PluginRefreshService } from '../services/plugin-refresh.service.js'
 import { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
@@ -48,6 +51,8 @@ describe('field values against a real database', () => {
   let fieldValues: PluginFieldValuesService
   let mashupRenderer: MashupRendererService
   let webhookIngest: WebhookIngestService
+  let previewData: PluginPreviewDataService
+  const renderer = new PluginRendererService()
   let recipeUpdate: RecipeUpdateService
   let mockImporter: { importFromRecipe: ReturnType<typeof vi.fn> }
   let device: Device
@@ -56,13 +61,12 @@ describe('field values against a real database', () => {
   beforeAll(async () => {
     database = await createTestDatabase()
 
-    const renderer = new PluginRendererService()
     fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
-    const templateContext = new PluginTemplateContextService(fieldValues)
     const config = asService<ConfigService>({ get: () => false })
     const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config), new PluginTransformService())
+    const templateContext = new PluginTemplateContextService(fieldValues, resolver)
     const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
-    const refresh = new PluginRefreshService(resolver, renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
+    const refresh = new PluginRefreshService(renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
 
     scheduler = new PluginSchedulerService(refresh)
     plugins = new PluginsService(
@@ -71,16 +75,14 @@ describe('field values against a real database', () => {
       database.getRepository(PluginDataSource),
       database.getRepository(PluginTemplate),
       database.getRepository(PluginField),
-      resolver,
-      renderer,
       scheduler,
       renderCache,
       fieldValues,
-      templateContext,
     )
     pluginReads = new PluginReadsService(database.getRepository(Plugin), database.getRepository(Screen), database.getRepository(Alert), fieldValues, asService<ConfigService>({ getOrThrow: () => 'https://kuroshiro.example' }))
     assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
-    mashupRenderer = new MashupRendererService(resolver, renderer, config, asService<DeviceSensorsService>({ findForDevice: async () => [] }), templateContext)
+    mashupRenderer = new MashupRendererService(renderer, config, asService<DeviceSensorsService>({ findForDevice: async () => [] }), templateContext)
+    previewData = new PluginPreviewDataService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DeviceSensor), templateContext)
     webhookIngest = new WebhookIngestService(database.getRepository(Plugin), refresh)
     mockImporter = { importFromRecipe: vi.fn() }
     recipeUpdate = new RecipeUpdateService(
@@ -135,6 +137,12 @@ describe('field values against a real database', () => {
     })
   }
 
+  /** What the browser's preview draws: the Template rendered against the preview's data. */
+  async function preview({ sources, template, pluginId, fieldValues }: { sources: PreviewDataDto['dataSources'], template: string, pluginId: string, fieldValues?: Record<string, string> }): Promise<{ html: string }> {
+    const { context } = await previewData.previewData(pluginId, { deviceId: null, dataSources: sources, fieldValues })
+    return { html: await renderer.render(template, context) }
+  }
+
   async function scheduledTick(pluginId: string): Promise<void> {
     await scheduler.runTick(await loadForRender(pluginId))
   }
@@ -179,10 +187,10 @@ describe('field values against a real database', () => {
 
     it('renders it in the preview, where an unsaved value overrides the saved one', async () => {
       const plugin = await createWeatherPlugin({ fieldValues: { city: 'Berlin' } })
-      const sources = [{ name: 'weather', url: 'https://api.example.com/{{ city }}/{{ trmnl.plugin_settings.custom_fields_values.city }}' }]
+      const sources = [{ name: 'weather', mode: 'fetch' as const, url: 'https://api.example.com/{{ city }}/{{ trmnl.plugin_settings.custom_fields_values.city }}' }]
 
-      const saved = await plugins.preview({ sources, template: BOTH_ADDRESS_FORMS, pluginId: plugin.id })
-      const unsaved = await plugins.preview({ sources, template: BOTH_ADDRESS_FORMS, pluginId: plugin.id, fieldValues: { city: 'Paris' } })
+      const saved = await preview({ sources, template: BOTH_ADDRESS_FORMS, pluginId: plugin.id })
+      const unsaved = await preview({ sources, template: BOTH_ADDRESS_FORMS, pluginId: plugin.id, fieldValues: { city: 'Paris' } })
 
       expect(saved.html).toBe(BERLIN)
       expect(unsaved.html).toBe('Paris|Paris|https://api.example.com/Paris/Paris')
@@ -194,7 +202,7 @@ describe('field values against a real database', () => {
         fieldValues: { city: 'Berlin' },
       })
 
-      const { html } = await plugins.preview({ sources: [], template: '[{{ city }}]', pluginId: plugin.id, fieldValues: { city: '' } })
+      const { html } = await preview({ sources: [], template: '[{{ city }}]', pluginId: plugin.id, fieldValues: { city: '' } })
 
       expect(html).toBe('[Tokyo]')
     })
@@ -220,7 +228,7 @@ describe('field values against a real database', () => {
       // The admin API refuses this collision, so the row is renamed underneath it.
       await database.getRepository(PluginField).update({ plugin: { id: plugin.id }, keyname: 'city' }, { keyname: 'weather' })
 
-      const { html } = await plugins.preview({
+      const { html } = await preview({
         sources: [{ name: 'weather', mode: 'literal', literalValue: { url: 'from the Data Source' } }],
         template: '{{ weather.url }}|{{ trmnl.plugin_settings.custom_fields_values.weather }}',
         pluginId: plugin.id,
@@ -235,8 +243,8 @@ describe('field values against a real database', () => {
       })
       const withNeither = await createWeatherPlugin()
 
-      const defaulted = await plugins.preview({ sources: [], template: '[{{ city }}]', pluginId: withDefault.id })
-      const empty = await plugins.preview({ sources: [], template: '[{{ city }}]', pluginId: withNeither.id })
+      const defaulted = await preview({ sources: [], template: '[{{ city }}]', pluginId: withDefault.id })
+      const empty = await preview({ sources: [], template: '[{{ city }}]', pluginId: withNeither.id })
 
       expect(defaulted.html).toBe('[Tokyo]')
       expect(withDefault.needsValues).toBe(false)

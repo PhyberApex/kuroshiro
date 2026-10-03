@@ -30,6 +30,7 @@ import { PluginDataResolverService } from '../services/plugin-data-resolver.serv
 import { PluginExporterService } from '../services/plugin-exporter.service.js'
 import { PluginFieldValuesService } from '../services/plugin-field-values.service.js'
 import { PluginImporterService } from '../services/plugin-importer.service.js'
+import { PluginPreviewDataService } from '../services/plugin-preview-data.service.js'
 import { PluginReadsService } from '../services/plugin-reads.service.js'
 import { PluginRefreshService } from '../services/plugin-refresh.service.js'
 import { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
@@ -69,11 +70,11 @@ describe('the Plugin reads, GET /api/plugins and GET /api/plugins/:id, against a
 
     const renderer = new PluginRendererService()
     const fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
-    const templateContext = new PluginTemplateContextService(fieldValues)
     const config = asService<ConfigService>({ get: () => false, getOrThrow: () => API_URL })
     const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config), new PluginTransformService())
+    const templateContext = new PluginTemplateContextService(fieldValues, resolver)
     const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
-    refresh = new PluginRefreshService(resolver, renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
+    refresh = new PluginRefreshService(renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
     scheduler = new PluginSchedulerService(refresh)
     plugins = new PluginsService(
       database.getRepository(Plugin),
@@ -81,12 +82,9 @@ describe('the Plugin reads, GET /api/plugins and GET /api/plugins/:id, against a
       database.getRepository(PluginDataSource),
       database.getRepository(PluginTemplate),
       database.getRepository(PluginField),
-      resolver,
-      renderer,
       scheduler,
       renderCache,
       fieldValues,
-      templateContext,
     )
     assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
     const reads = new PluginReadsService(database.getRepository(Plugin), database.getRepository(Screen), database.getRepository(Alert), fieldValues, config)
@@ -96,6 +94,7 @@ describe('the Plugin reads, GET /api/plugins and GET /api/plugins/:id, against a
       providers: [
         { provide: PluginsService, useValue: plugins },
         { provide: PluginReadsService, useValue: reads },
+        { provide: PluginPreviewDataService, useValue: asService<PluginPreviewDataService>({}) },
         { provide: PluginAssignmentsService, useValue: assignments },
         { provide: PluginImporterService, useValue: asService<PluginImporterService>({}) },
         { provide: PluginExporterService, useValue: asService<PluginExporterService>({}) },

@@ -3,6 +3,7 @@ import type { PluginsService } from '../plugins.service.js'
 import type { PluginAssignmentsService } from '../services/plugin-assignments.service.js'
 import type { PluginExporterService } from '../services/plugin-exporter.service.js'
 import type { PluginImporterService } from '../services/plugin-importer.service.js'
+import type { PluginPreviewDataService } from '../services/plugin-preview-data.service.js'
 import type { PluginReadsService } from '../services/plugin-reads.service.js'
 import type { RecipeUpdateService } from '../services/recipe-update.service.js'
 import { Buffer } from 'node:buffer'
@@ -65,6 +66,7 @@ describe('pluginsController', () => {
     controller = new PluginsController(
       asService<PluginsService>(mockService),
       asService<PluginReadsService>(mockReads),
+      asService<PluginPreviewDataService>({}),
       asService<PluginAssignmentsService>(mockAssignments),
       asService<PluginImporterService>(mockImporter),
       asService<PluginExporterService>(mockExporter),
@@ -139,20 +141,6 @@ describe('pluginsController', () => {
 
     expect(mockService.remove).toHaveBeenCalledWith('1')
     expect(result).toEqual({ success: true })
-  })
-
-  it('preview returns preview data', async () => {
-    const previewData = {
-      sources: [{ name: 'source', url: 'https://api.example.com', method: 'GET' }],
-      template: '<div>{{ source }}</div>',
-    }
-    const previewResult = { html: '<div>test</div>', data: { source: { test: true } } }
-    mockService.preview.mockResolvedValue(previewResult)
-
-    const result = await controller.preview(previewData)
-
-    expect(result).toBe(previewResult)
-    expect(mockService.preview).toHaveBeenCalledWith(previewData)
   })
 
   it('importPlugin imports from file without device assignment', async () => {

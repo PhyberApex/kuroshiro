@@ -27,6 +27,7 @@ export const API_ERROR_CODES = [
   'device-model-unknown',
   'firmware-not-custom',
   'upstream-unreachable',
+  'template-full-missing',
 ] as const
 
 export type ApiErrorCode = typeof API_ERROR_CODES[number]

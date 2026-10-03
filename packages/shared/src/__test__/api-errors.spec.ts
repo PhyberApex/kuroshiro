@@ -31,6 +31,7 @@ const wording: Record<ApiErrorCode, string> = {
   'device-model-unknown': 'This Instance does not know that Device Model.',
   'firmware-not-custom': 'Only a custom Firmware can be deleted.',
   'upstream-unreachable': 'TRMNL did not answer.',
+  'template-full-missing': 'A Plugin needs its full Template.',
 }
 
 function wordingBySwitch(code: ApiErrorCode): string {
@@ -53,6 +54,7 @@ function wordingBySwitch(code: ApiErrorCode): string {
     case 'firmware-version-taken':
     case 'device-model-unknown':
     case 'firmware-not-custom':
+    case 'template-full-missing':
     case 'conflict':
     case 'payload-too-large':
     case 'unprocessable':

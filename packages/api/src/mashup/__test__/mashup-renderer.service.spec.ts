@@ -41,11 +41,10 @@ describe('mashupRendererService', () => {
     )
 
     service = new MashupRendererService(
-      pluginDataResolver,
       asService<PluginRendererService>(pluginRenderer),
       asService<ConfigService>(configService),
       asService<DeviceSensorsService>(deviceSensors),
-      createPluginTemplateContextService(),
+      createPluginTemplateContextService({}, pluginDataResolver),
     )
 
     vi.resetAllMocks()

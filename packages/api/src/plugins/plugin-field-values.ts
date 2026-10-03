@@ -19,6 +19,15 @@ export function resolveFieldValues(fields: FieldDefinition[], stored: StoredFiel
   return Object.fromEntries(fields.map(field => [field.keyname, stored[field.keyname] ?? field.defaultValue ?? '']))
 }
 
+/** What stands in for a password Field Value wherever the admin's browser reads a render's context. */
+const HIDDEN_FIELD_VALUE = '••••••••'
+
+/** The resolved Field Values with every password that has a value hidden; one without a value stays empty. */
+export function hideSecretFieldValues(fields: Array<Pick<PluginField, 'keyname' | 'fieldType'>>, resolved: Record<string, string>): Record<string, string> {
+  const secretKeynames = new Set(fields.filter(isSecretField).map(field => field.keyname))
+  return Object.fromEntries(Object.entries(resolved).map(([keyname, value]) => [keyname, value && secretKeynames.has(keyname) ? HIDDEN_FIELD_VALUE : value]))
+}
+
 /** `author_bio` is a read-only credit, never an input, so it can't be what a Plugin is waiting on. */
 export function needsValues(fields: FieldDefinition[], stored: StoredFieldValues): boolean {
   return fields.some(field =>

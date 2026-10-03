@@ -5,7 +5,6 @@ import type { CreatePluginDto } from './dto/create-plugin.dto.js'
 import type { PluginDataSourceDto } from './dto/plugin-data-source.dto.js'
 import type { PluginFieldDto } from './dto/plugin-field.dto.js'
 import type { PluginTemplateDto } from './dto/plugin-template.dto.js'
-import type { PreviewPluginDto } from './dto/preview-plugin.dto.js'
 import type { UpdateDataSourceDto, UpdatePluginDto, UpdateTemplateDto } from './dto/update-plugin.dto.js'
 import type { PluginKindFields } from './plugin-kind-fields.js'
 import type { PluginWithFieldValues } from './services/plugin-field-values.service.js'
@@ -22,12 +21,9 @@ import { PluginTemplate } from './entities/plugin-template.entity.js'
 import { Plugin } from './entities/plugin.entity.js'
 import { dataSourceModeViolation } from './plugin-data-source-mode.js'
 import { pluginKindFieldViolation } from './plugin-kind-fields.js'
-import { PluginDataResolverService } from './services/plugin-data-resolver.service.js'
 import { PluginFieldValuesService } from './services/plugin-field-values.service.js'
 import { PluginRenderCacheService } from './services/plugin-render-cache.service.js'
-import { PluginRendererService } from './services/plugin-renderer.service.js'
 import { PluginSchedulerService } from './services/plugin-scheduler.service.js'
-import { PluginTemplateContextService } from './services/plugin-template-context.service.js'
 
 // A `literal` Data Source is never fetched, so one switched to it starts over (ADR-0025).
 const NO_FETCH_OUTCOME = { fetchFailureStreak: 0, lastFetchAttemptAt: null, lastFetchSucceededAt: null, lastFetchError: null }
@@ -49,12 +45,9 @@ export class PluginsService implements OnModuleInit {
     private readonly templateRepository: Repository<PluginTemplate>,
     @InjectRepository(PluginField)
     private readonly fieldRepository: Repository<PluginField>,
-    private readonly pluginDataResolver: PluginDataResolverService,
-    private readonly renderer: PluginRendererService,
     private readonly scheduler: PluginSchedulerService,
     private readonly renderCache: PluginRenderCacheService,
     private readonly fieldValues: PluginFieldValuesService,
-    private readonly templateContext: PluginTemplateContextService,
   ) {
     // Lazy injection to avoid circular dependency with MashupModule
     setTimeout(() => {
@@ -104,6 +97,7 @@ export class PluginsService implements OnModuleInit {
     this.logger.debug(`Creating plugin with data: ${JSON.stringify({ dataSources, templates, fields, basicFields })}`)
 
     this.validateNewChildren(dataSources, fields)
+    this.assertOneTemplatePerSize((templates ?? []).map(template => template.layout || 'full'), 'layout')
     this.fieldValues.assertWritable(fields, fieldValues)
 
     const kind = basicFields.kind || 'Poll'
@@ -303,7 +297,9 @@ export class PluginsService implements OnModuleInit {
       if (dataSources) {
         await this.saveDataSources(manager, plugin, dataSources)
       }
-      await this.saveFirstTemplate(manager, plugin, templates)
+      if (templates) {
+        await this.saveTemplates(manager, plugin, templates)
+      }
       const savedFields = fields ? await this.saveFields(manager, plugin, fields) : plugin.fields
       await manager.update(Plugin, id, basicFields)
       await this.fieldValues.within(manager).write({ id, fields: savedFields }, fieldValues)
@@ -336,7 +332,14 @@ export class PluginsService implements OnModuleInit {
     }
   }
 
-  private assertSavable(plugin: Plugin, { refreshInterval, dataSources, fields }: UpdatePluginDto): void {
+  private assertSavable(plugin: Plugin, { refreshInterval, dataSources, fields, templates }: UpdatePluginDto): void {
+    if (templates) {
+      this.assertOneTemplatePerSize(templates.map(template => template.size), 'size')
+      if (!templates.some(template => template.size === 'full')) {
+        throw new ApiException(HttpStatus.BAD_REQUEST, 'template-full-missing', 'A Plugin needs a Template of size full')
+      }
+    }
+
     if (plugin.kind === 'Webhook' && refreshInterval !== undefined) {
       throw new ValidationException([{ path: 'refreshInterval', message: 'A Webhook-kind Plugin has no refresh interval' }])
     }
@@ -364,6 +367,15 @@ export class PluginsService implements OnModuleInit {
       seenIds.add(sourceId)
       return []
     })
+    if (violations.length > 0) {
+      throw new ValidationException(violations)
+    }
+  }
+
+  private assertOneTemplatePerSize(sizes: string[], key: 'size' | 'layout'): void {
+    const violations = sizes.flatMap((size, index): ApiErrorField[] => sizes.indexOf(size) < index
+      ? [{ path: `templates.${index}.${key}`, message: `There is more than one Template of size "${size}"` }]
+      : [])
     if (violations.length > 0) {
       throw new ValidationException(violations)
     }
@@ -410,16 +422,20 @@ export class PluginsService implements OnModuleInit {
     }
   }
 
-  private async saveFirstTemplate(manager: EntityManager, plugin: Plugin, templates: UpdateTemplateDto[] | undefined): Promise<void> {
-    if (!templates?.length)
-      return
-
+  private async saveTemplates(manager: EntityManager, plugin: Plugin, templates: UpdateTemplateDto[]): Promise<void> {
     const repository = manager.getRepository(PluginTemplate)
-    const [{ size, liquidMarkup }] = templates
-    const [stored] = plugin.templates
-    await repository.save(stored
-      ? Object.assign(stored, { layout: size, liquidMarkup })
-      : repository.create({ layout: size, liquidMarkup, plugin: { id: plugin.id } }))
+    const sizes = new Set<string>(templates.map(template => template.size))
+    const removed = plugin.templates.filter(stored => !sizes.has(stored.layout))
+    if (removed.length > 0) {
+      await repository.remove(removed)
+    }
+
+    for (const { size, liquidMarkup } of templates) {
+      const stored = plugin.templates.find(candidate => candidate.layout === size)
+      await repository.save(stored
+        ? Object.assign(stored, { liquidMarkup })
+        : repository.create({ layout: size, liquidMarkup, plugin: { id: plugin.id } }))
+    }
   }
 
   private async saveFields(manager: EntityManager, plugin: Plugin, fields: PluginFieldDto[]): Promise<PluginField[]> {
@@ -575,16 +591,5 @@ export class PluginsService implements OnModuleInit {
 
     await this.pluginRepository.remove(plugin)
     return true
-  }
-
-  async preview({ sources, template, fieldValues, pluginId }: PreviewPluginDto): Promise<{ html: string, data: Record<string, unknown> }> {
-    const savedFieldValues = pluginId ? await this.fieldValues.resolveFor(pluginId, fieldValues) : {}
-    const templateContext = this.templateContext.buildFrom('Preview', { ...fieldValues, ...savedFieldValues }, [])
-
-    const data = await this.pluginDataResolver.resolveAll(sources || [], templateContext)
-    const templateData: Record<string, unknown> = { ...templateContext, ...data }
-
-    const html = template ? await this.renderer.render(template, templateData) : ''
-    return { html, data }
   }
 }

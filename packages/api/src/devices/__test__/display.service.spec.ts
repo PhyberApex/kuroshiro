@@ -4,7 +4,6 @@ import type { FallbackScreensService } from '../../device-models/fallback-screen
 import type { MockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService.js'
 import type { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
 import type { FirmwareService } from '../../firmware/firmware.service.js'
-import type { PluginDataResolverService } from '../../plugins/services/plugin-data-resolver.service.js'
 import type { PluginRendererService } from '../../plugins/services/plugin-renderer.service.js'
 import type { Schedule } from '../../schedule/schedule.entity.js'
 import type { Screen } from '../../screens/screens.entity.js'
@@ -92,7 +91,6 @@ describe('deviceDisplayService', () => {
       asService<DeviceModelsService>(deviceModels),
       asService<FallbackScreensService>(fallbackScreens),
       asService<FirmwareService>(firmwareService),
-      asService<PluginDataResolverService>({}),
       asService<PluginRendererService>({}),
       asService<DeviceSensorsService>(deviceSensors),
       createPluginTemplateContextService(),
@@ -241,7 +239,7 @@ describe('deviceDisplayService', () => {
         templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '{{ v }}' })],
       })
       primeRotation({ id: 'screen2', type: 'plugin', order: 2, plugin, filename: 'x' }, device)
-      injectPrivate(service, 'pluginDataResolver', { resolveAll: vi.fn().mockResolvedValue({ v: 1 }) })
+      injectPrivate(service, 'pluginTemplateContext', createPluginTemplateContextService({}, { resolveAll: vi.fn().mockResolvedValue({ v: 1 }) }))
       injectPrivate(service, 'pluginRenderer', { render: vi.fn().mockResolvedValue('<b>1</b>') })
 
       await service.getCurrentImage(headers)
@@ -256,7 +254,6 @@ describe('deviceDisplayService', () => {
       const plugin = makePlugin({ id: 'p1', name: 'Clock', dataSources: [], templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '{{ city }}' })] })
       primeRotation({ id: 'screen2', type: 'plugin', order: 2, plugin, filename: 'x' }, device)
       const render = vi.fn().mockResolvedValue('<b>Berlin</b>')
-      injectPrivate(service, 'pluginDataResolver', { resolveAll: vi.fn().mockResolvedValue({}) })
       injectPrivate(service, 'pluginRenderer', { render })
       injectPrivate(service, 'pluginTemplateContext', createPluginTemplateContextService({ city: 'Berlin' }))
 
@@ -278,9 +275,8 @@ describe('deviceDisplayService', () => {
       primeRotation({ id: 'screen2', type: 'plugin', order: 2, plugin, filename: 'x' }, device)
       const resolveAll = vi.fn().mockResolvedValue({ source: 1 })
       const render = vi.fn().mockResolvedValue('<b>Berlin</b>')
-      injectPrivate(service, 'pluginDataResolver', { resolveAll })
       injectPrivate(service, 'pluginRenderer', { render })
-      injectPrivate(service, 'pluginTemplateContext', createPluginTemplateContextService({ city: 'Berlin' }))
+      injectPrivate(service, 'pluginTemplateContext', createPluginTemplateContextService({ city: 'Berlin' }, { resolveAll }))
 
       await service.getCurrentImage(headers)
 
@@ -289,6 +285,7 @@ describe('deviceDisplayService', () => {
         trmnl: expect.objectContaining({ plugin_settings: expect.objectContaining({ custom_fields_values: { city: 'Berlin' } }) }),
       })
       expect(resolveAll).toHaveBeenCalledWith(plugin.dataSources, fieldValuesInContext)
+      expect(render).toHaveBeenCalledWith('{{ city }}', expect.objectContaining({ source: 1 }))
       expect(render).toHaveBeenCalledWith('{{ city }}', fieldValuesInContext)
     })
 
@@ -871,7 +868,6 @@ describe('deviceDisplayService', () => {
 
   describe('mashup screen rendering', () => {
     beforeEach(() => {
-      injectPrivate(service, 'pluginDataResolver', { resolveAll: vi.fn() })
       injectPrivate(service, 'pluginRenderer', { render: vi.fn() })
     })
 
@@ -1358,7 +1354,7 @@ describe('deviceDisplayService', () => {
         name: 'the error Fallback Screen, for a Plugin that failed to render on demand',
         prime: () => {
           primeNext({ type: 'plugin', plugin: makePlugin({ id: 'p1', dataSources: [makePluginDataSource()], templates: [makePluginTemplate()] }) })
-          injectPrivate(service, 'pluginDataResolver', { resolveAll: vi.fn().mockRejectedValue(new Error('Fetch failed')) })
+          injectPrivate(service, 'pluginTemplateContext', createPluginTemplateContextService({}, { resolveAll: vi.fn().mockRejectedValue(new Error('Fetch failed')) }))
         },
         answer: errorAnswer,
         record: renderFailedRecord,

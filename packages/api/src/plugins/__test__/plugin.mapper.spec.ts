@@ -1,7 +1,7 @@
 import type { PluginDetailFacts, PluginFacts } from '../plugin.mapper.js'
 import { describe, expect, it } from 'vitest'
 import { makeDevice, makePlugin, makePluginDataSource, makePluginField, makePluginTemplate, makeSchedule, makeScreen } from '../../test/fixtures.js'
-import { toPluginDetail, toPluginSummary } from '../plugin.mapper.js'
+import { toPluginDetail, toPluginSummary, toPreviewData } from '../plugin.mapper.js'
 
 const CREATED_AT = new Date('2026-02-01T08:00:00.000Z')
 const UPDATED_AT = new Date('2026-02-02T08:00:00.000Z')
@@ -358,5 +358,62 @@ describe('toPluginDetail', () => {
       at: '2026-03-01T09:15:00.000Z',
       error: { message: 'unknown tag "endfour"', line: 12, size: 'quadrant' },
     })
+  })
+})
+
+describe('toPreviewData', () => {
+  const trmnl = { plugin_settings: { instance_name: 'Weather' } }
+
+  it('names the Field Values in their order, then the Data Sources with the error of one that failed, then sensors and trmnl', () => {
+    const plugin = makePlugin({ fields: [makePluginField({ keyname: 'unit', order: 2 }), makePluginField({ keyname: 'city', order: 1 })] })
+    const fieldValues = { unit: 'C', city: 'Berlin' }
+    const sourceData = { weather: { temperature: 21 }, air: { error: true, message: 'HTTP error! status: 503' } }
+    const context = { ...fieldValues, trmnl, sensors: {}, ...sourceData }
+
+    expect(serialized(toPreviewData(plugin, { context, fieldValues, sourceData }, NOW))).toEqual({
+      context,
+      names: [
+        { name: 'city', origin: 'fieldValue', error: null },
+        { name: 'unit', origin: 'fieldValue', error: null },
+        { name: 'weather', origin: 'dataSource', error: null },
+        { name: 'air', origin: 'dataSource', error: 'HTTP error! status: 503' },
+        { name: 'sensors', origin: 'sensors', error: null },
+        { name: 'trmnl', origin: 'trmnl', error: null },
+      ],
+      fetchedAt: '2026-03-01T09:30:00.000Z',
+      webhookPayloadReceivedAt: null,
+    })
+  })
+
+  it('names a name the data replaces once, as the data', () => {
+    const plugin = makePlugin({
+      kind: 'Webhook',
+      webhookPayload: { city: 'from the payload', sensors: 'mine' },
+      payloadReceivedAt: new Date('2026-03-01T09:00:00.000Z'),
+      fields: [makePluginField({ keyname: 'city' })],
+    })
+    const context = { trmnl, city: 'from the payload', sensors: 'mine' }
+
+    const preview = toPreviewData(plugin, { context, fieldValues: { city: 'Berlin' }, sourceData: {} }, NOW)
+
+    expect(preview.names).toEqual([
+      { name: 'city', origin: 'webhookPayload', error: null },
+      { name: 'sensors', origin: 'webhookPayload', error: null },
+      { name: 'trmnl', origin: 'trmnl', error: null },
+    ])
+    expect(preview.webhookPayloadReceivedAt).toBe('2026-03-01T09:00:00.000Z')
+  })
+
+  it('leaves out a Field Value whose keyname is trmnl or sensors, which a Template cannot read', () => {
+    const plugin = makePlugin({ fields: [makePluginField({ keyname: 'trmnl' }), makePluginField({ keyname: 'sensors' })] })
+    const context = { trmnl, sensors: {} }
+
+    expect(toPreviewData(plugin, { context, fieldValues: { trmnl: 'x', sensors: 'y' }, sourceData: {} }, NOW).names.map(row => row.name)).toEqual(['sensors', 'trmnl'])
+  })
+
+  it('names nothing for a Webhook Payload that is a list, which is the whole context', () => {
+    const plugin = makePlugin({ kind: 'Webhook', webhookPayload: [1, 2] })
+
+    expect(toPreviewData(plugin, { context: [1, 2], fieldValues: {}, sourceData: {} }, NOW)).toMatchObject({ context: [1, 2], names: [] })
   })
 })

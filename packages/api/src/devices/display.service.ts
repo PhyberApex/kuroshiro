@@ -14,8 +14,8 @@ import { FallbackScreensService } from '../device-models/fallback-screens.servic
 import { renderHtmlToPng } from '../device-models/render-html-to-png.js'
 import { DeviceSensorsService } from '../device-sensors/device-sensors.service.js'
 import { FirmwareService } from '../firmware/firmware.service.js'
+import { templateOfSize } from '../plugins/plugin-templates.js'
 import { isRenderablePollPlugin } from '../plugins/renderable-poll-plugin.js'
-import { PluginDataResolverService } from '../plugins/services/plugin-data-resolver.service.js'
 import { PluginRendererService } from '../plugins/services/plugin-renderer.service.js'
 import { PluginTemplateContextService } from '../plugins/services/plugin-template-context.service.js'
 import { nextEligibleScreen } from '../schedule/rotation.js'
@@ -82,7 +82,6 @@ export class DeviceDisplayService {
     private deviceModels: DeviceModelsService,
     private fallbackScreens: FallbackScreensService,
     private firmwareService: FirmwareService,
-    private pluginDataResolver: PluginDataResolverService,
     private pluginRenderer: PluginRendererService,
     private deviceSensors: DeviceSensorsService,
     private pluginTemplateContext: PluginTemplateContextService,
@@ -93,7 +92,6 @@ export class DeviceDisplayService {
         const { MashupRendererService } = await import('../mashup/services/mashup-renderer.service.js')
         // Get it from the module (this is a workaround for circular deps)
         this.mashupRenderer = new MashupRendererService(
-          this.pluginDataResolver,
           this.pluginRenderer,
           this.configService,
           this.deviceSensors,
@@ -621,15 +619,14 @@ export class DeviceDisplayService {
   private async renderPluginHtml(plugin: Plugin, screen: Screen, device: Device): Promise<string | null> {
     this.logger.log(`No cache, rendering plugin ${plugin.id} on-demand for screen ${screen.id}`)
 
-    const sensors = await this.deviceSensors.findForDevice(device.id)
-    const templateContext = await this.pluginTemplateContext.build(plugin, sensors)
-    const data = await this.pluginDataResolver.resolveAll(plugin.dataSources, templateContext)
-
-    const fullTemplate = plugin.templates.find(t => t.layout === 'full')
+    const fullTemplate = templateOfSize(plugin.templates, 'full')
     if (!fullTemplate)
       return null
 
-    const renderedHtml = await this.pluginRenderer.render(fullTemplate.liquidMarkup, { ...templateContext, ...data })
+    const sensors = await this.deviceSensors.findForDevice(device.id)
+    const { context } = await this.pluginTemplateContext.contextFor(plugin, sensors)
+
+    const renderedHtml = await this.pluginRenderer.render(fullTemplate.liquidMarkup, context)
     await this.cachePluginOutput(screen, renderedHtml)
     return renderedHtml
   }

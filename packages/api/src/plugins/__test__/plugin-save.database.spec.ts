@@ -27,6 +27,7 @@ import { PluginDataResolverService } from '../services/plugin-data-resolver.serv
 import { PluginExporterService } from '../services/plugin-exporter.service.js'
 import { PluginFieldValuesService } from '../services/plugin-field-values.service.js'
 import { PluginImporterService } from '../services/plugin-importer.service.js'
+import { PluginPreviewDataService } from '../services/plugin-preview-data.service.js'
 import { PluginReadsService } from '../services/plugin-reads.service.js'
 import { PluginRefreshService } from '../services/plugin-refresh.service.js'
 import { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
@@ -62,11 +63,11 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
 
     const renderer = new PluginRendererService()
     const fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
-    const templateContext = new PluginTemplateContextService(fieldValues)
     const config = asService<ConfigService>({ get: () => false, getOrThrow: () => 'https://kuroshiro.example' })
     const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config), new PluginTransformService())
+    const templateContext = new PluginTemplateContextService(fieldValues, resolver)
     const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
-    const refresh = new PluginRefreshService(resolver, renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
+    const refresh = new PluginRefreshService(renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
     scheduler = new PluginSchedulerService(refresh)
     plugins = new PluginsService(
       database.getRepository(Plugin),
@@ -74,12 +75,9 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
       database.getRepository(PluginDataSource),
       database.getRepository(PluginTemplate),
       database.getRepository(PluginField),
-      resolver,
-      renderer,
       scheduler,
       renderCache,
       fieldValues,
-      templateContext,
     )
     assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
 
@@ -88,6 +86,7 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
       providers: [
         { provide: PluginsService, useValue: plugins },
         { provide: PluginReadsService, useValue: new PluginReadsService(database.getRepository(Plugin), database.getRepository(Screen), database.getRepository(Alert), fieldValues, config) },
+        { provide: PluginPreviewDataService, useValue: asService<PluginPreviewDataService>({}) },
         { provide: PluginAssignmentsService, useValue: assignments },
         { provide: PluginImporterService, useValue: asService<PluginImporterService>({}) },
         { provide: PluginExporterService, useValue: asService<PluginExporterService>({}) },
@@ -263,6 +262,98 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
       const envelope = await refused(plugin.id, { dataSources: [{ name: 'weather', mode: 'fetch', url: 'https://api.example.com/weather' }] })
 
       expect(envelope.fields).toEqual([{ path: 'dataSources', message: expect.any(String) }])
+    })
+  })
+
+  describe('the Templates, the whole set by size', () => {
+    const FULL = { size: 'full', liquidMarkup: '<p>full</p>' } as const
+    const QUADRANT = { size: 'quadrant', liquidMarkup: '<p>quadrant</p>' } as const
+
+    function createPluginWithTemplates(...layouts: string[]) {
+      return createPollPlugin({ templates: layouts.map(layout => ({ layout, liquidMarkup: `<p>stored ${layout}</p>` })) })
+    }
+
+    function storedTemplates(pluginId: string): Promise<PluginTemplate[]> {
+      return database.getRepository(PluginTemplate).find({ where: { plugin: { id: pluginId } } })
+    }
+
+    it('updates a size sent, adds a new one and deletes one left out', async () => {
+      const plugin = await createPluginWithTemplates('full', 'half_vertical')
+      const [storedFull] = await storedTemplates(plugin.id)
+
+      const detail = await saved(plugin.id, { templates: [QUADRANT, FULL] })
+
+      expect(detail.templates).toEqual([FULL, QUADRANT])
+      const stored = await storedTemplates(plugin.id)
+      expect(stored.map(template => template.layout).sort()).toEqual(['full', 'quadrant'])
+      expect(stored.find(template => template.layout === 'full')?.id).toBe(storedFull.id)
+    })
+
+    it('leaves the Templates alone when the save leaves the key out', async () => {
+      const plugin = await createPluginWithTemplates('full', 'quadrant')
+
+      const detail = await saved(plugin.id, { name: 'Forecast' })
+
+      expect(detail.templates).toEqual([
+        { size: 'full', liquidMarkup: '<p>stored full</p>' },
+        { size: 'quadrant', liquidMarkup: '<p>stored quadrant</p>' },
+      ])
+    })
+
+    it.each([
+      ['no Template of size full', [QUADRANT]],
+      ['no Template at all', []],
+    ])('refuses a set with %s as template-full-missing, and stores nothing of the save', async (_case, templates) => {
+      const plugin = await createPluginWithTemplates('full', 'half_vertical')
+
+      const envelope = await refused(plugin.id, { name: 'Forecast', templates })
+
+      expect(envelope.code).toBe('template-full-missing')
+      const detail = await read(plugin.id)
+      expect(detail.name).toBe('Weather')
+      expect(detail.templates.map(template => template.size)).toEqual(['full', 'half_vertical'])
+    })
+
+    it('refuses a size sent twice, and stores nothing of the save', async () => {
+      const plugin = await createPluginWithTemplates('full')
+
+      const envelope = await refused(plugin.id, { name: 'Forecast', templates: [FULL, QUADRANT, { size: 'quadrant', liquidMarkup: '<p>again</p>' }] })
+
+      expect(envelope.code).toBe('validation')
+      expect(envelope.fields?.map(field => field.path)).toEqual(['templates.2.size'])
+      const detail = await read(plugin.id)
+      expect(detail.name).toBe('Weather')
+      expect(detail.templates).toEqual([{ size: 'full', liquidMarkup: '<p>stored full</p>' }])
+    })
+
+    it('refuses a size that is no Template size', async () => {
+      const plugin = await createPluginWithTemplates('full')
+
+      const envelope = await refused(plugin.id, { templates: [FULL, { size: 'third', liquidMarkup: '<p>third</p>' }] })
+
+      expect(envelope.code).toBe('validation')
+    })
+
+    it('rolls the Templates back with the rest of the save when a later write fails', async () => {
+      const plugin = await createPluginWithTemplates('full', 'half_vertical')
+      vi.spyOn(PluginFieldValuesService.prototype, 'write').mockRejectedValue(new Error('the database went away'))
+
+      await refused(plugin.id, { templates: [FULL, QUADRANT] }, 500)
+
+      expect((await read(plugin.id)).templates).toEqual([
+        { size: 'full', liquidMarkup: '<p>stored full</p>' },
+        { size: 'half_vertical', liquidMarkup: '<p>stored half_vertical</p>' },
+      ])
+    })
+
+    it('keeps one Template per size in the database', async () => {
+      const plugin = await createPluginWithTemplates('full')
+
+      await expect(database.getRepository(PluginTemplate).save({ layout: 'full', liquidMarkup: '<p>second</p>', plugin: { id: plugin.id } })).rejects.toThrow(/unique|duplicate/i)
+    })
+
+    it('refuses a new Plugin with two Templates of one size', async () => {
+      await expect(createPluginWithTemplates('full', 'full')).rejects.toMatchObject({ code: 'validation', fields: [{ path: 'templates.1.layout' }] })
     })
   })
 

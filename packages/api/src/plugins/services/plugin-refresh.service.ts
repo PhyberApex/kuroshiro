@@ -3,8 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Plugin } from '../entities/plugin.entity.js'
 import { DataSourceFetchOutcomeService } from './data-source-fetch-outcome.service.js'
-import { PluginDataResolverService } from './plugin-data-resolver.service.js'
-import { PluginRenderCacheService } from './plugin-render-cache.service.js'
+import { PluginRenderCacheService, TemplateRenderError } from './plugin-render-cache.service.js'
 import { PluginTemplateContextService } from './plugin-template-context.service.js'
 
 /**
@@ -16,7 +15,6 @@ import { PluginTemplateContextService } from './plugin-template-context.service.
 @Injectable()
 export class PluginRefreshService {
   constructor(
-    private readonly pluginDataResolver: PluginDataResolverService,
     private readonly renderCache: PluginRenderCacheService,
     private readonly pluginTemplateContext: PluginTemplateContextService,
     private readonly fetchOutcome: DataSourceFetchOutcomeService,
@@ -27,16 +25,12 @@ export class PluginRefreshService {
   async refresh(plugin: Plugin, { scheduled }: { scheduled: boolean } = { scheduled: false }): Promise<void> {
     // The cache entry is shared across Devices, so there is no single Device
     // to scope sensors to here.
-    const templateContext = await this.pluginTemplateContext.build(plugin, [])
+    const { context, sourceData } = await this.pluginTemplateContext.contextFor(plugin, [])
 
     if (plugin.kind === 'Webhook') {
-      const payload = plugin.webhookPayload
-      // An array payload has no keys to merge into, so it stays the whole render context.
-      await this.renderCache.renderAndCache(plugin, Array.isArray(payload) ? payload : { ...templateContext, ...payload })
+      await this.renderCache.renderAndCache(plugin, context)
       return
     }
-
-    const sourceData = await this.pluginDataResolver.resolveAll(plugin.dataSources ?? [], templateContext)
 
     // Only a scheduled render moves a Fetch Failure Streak (ADR-0025). Recorded
     // before the render so a render failure below can never lose the outcome.
@@ -44,10 +38,18 @@ export class PluginRefreshService {
       await this.fetchOutcome.recordOutcomes(plugin.dataSources ?? [], sourceData)
     }
 
-    await this.renderCache.renderAndCache(plugin, { ...templateContext, ...sourceData })
+    try {
+      await this.renderCache.renderAndCache(plugin, context)
+    }
+    catch (error) {
+      if (scheduled && error instanceof TemplateRenderError) {
+        await this.recordScheduledRender(plugin.id, error)
+      }
+      throw error
+    }
 
     if (scheduled) {
-      await this.recordScheduledRender(plugin.id)
+      await this.recordScheduledRender(plugin.id, null)
     }
   }
 
@@ -55,12 +57,12 @@ export class PluginRefreshService {
    * `updatedAt` is set to itself because TypeORM otherwise stamps it on every
    * update, and a scheduler tick is not a change to the Plugin.
    */
-  private async recordScheduledRender(pluginId: string): Promise<void> {
+  private async recordScheduledRender(pluginId: string, failure: TemplateRenderError | null): Promise<void> {
     await this.pluginRepository.update(pluginId, {
       lastScheduledRenderAt: new Date(),
-      lastScheduledRenderError: null,
-      lastScheduledRenderErrorLine: null,
-      lastScheduledRenderErrorSize: null,
+      lastScheduledRenderError: failure?.problem.message ?? null,
+      lastScheduledRenderErrorLine: failure?.problem.line ?? null,
+      lastScheduledRenderErrorSize: failure?.size ?? null,
       updatedAt: () => '"updatedAt"',
     })
   }
