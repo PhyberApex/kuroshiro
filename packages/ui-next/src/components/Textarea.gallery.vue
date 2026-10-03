@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import Specimen from '@/gallery/Specimen.vue'
 import SpecimenRow from '@/gallery/SpecimenRow.vue'
+import SaveState from './SaveState.vue'
 import Textarea from './Textarea.vue'
 
 const html = ref('<div class="note">\n  Back at 6\n</div>')
@@ -44,7 +45,7 @@ const empty = ref('')
       <div class="sized">
         <Textarea v-model="html" aria-label="HTML" spellcheck="false">
           <template #status>
-            <span class="state">Saved</span>
+            <SaveState status="saved" />
           </template>
         </Textarea>
       </div>
@@ -57,11 +58,6 @@ const empty = ref('')
   .sized {
     width: 20rem;
     max-width: 100%;
-  }
-
-  .state {
-    color: var(--color-ink-soft);
-    font-size: var(--text-sm);
   }
 }
 </style>
