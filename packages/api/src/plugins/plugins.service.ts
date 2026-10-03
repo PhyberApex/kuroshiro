@@ -29,6 +29,9 @@ import { PluginRendererService } from './services/plugin-renderer.service.js'
 import { PluginSchedulerService } from './services/plugin-scheduler.service.js'
 import { PluginTemplateContextService } from './services/plugin-template-context.service.js'
 
+// A `literal` Data Source is never fetched, so one switched to it starts over (ADR-0025).
+const NO_FETCH_OUTCOME = { fetchFailureStreak: 0, lastFetchAttemptAt: null, lastFetchSucceededAt: null, lastFetchError: null }
+
 @Injectable()
 export class PluginsService implements OnModuleInit {
   private readonly logger = new Logger(PluginsService.name)
@@ -71,8 +74,13 @@ export class PluginsService implements OnModuleInit {
       relations: { dataSources: true, templates: true },
     })
 
+    // A timer counts from now, so without a tick at start an Instance restarted
+    // more often than a refresh interval would never run that Plugin.
     for (const plugin of plugins) {
       this.schedule(plugin, `Scheduled plugin: ${plugin.name}`)
+      if (this.scheduler.hasScheduledJob(plugin.id)) {
+        void this.scheduler.runTick(plugin)
+      }
     }
   }
 
@@ -289,7 +297,7 @@ export class PluginsService implements OnModuleInit {
 
       const { dataSources, templates, fields, fieldValues, ...basicFields } = pluginData
 
-      this.assertDataSourcesSavable(plugin, dataSources, fields)
+      this.assertSavable(plugin, pluginData)
       this.fieldValues.assertWritable(fields ?? plugin.fields, fieldValues)
 
       if (dataSources) {
@@ -305,30 +313,42 @@ export class PluginsService implements OnModuleInit {
   }
 
   /**
-   * Runs once a save is committed. The scheduler's job holds the Plugin as it
-   * was loaded, so it is replaced on every save, and the tick started here is
-   * not awaited: a save does not wait for a Data Source.
+   * Runs once a save is committed, so a failure here is logged and the save
+   * still answers. The scheduler's job holds the Plugin as it was loaded, so
+   * it is replaced on every save, and the tick started here is not awaited: a
+   * save does not wait for a Data Source.
    */
   private async refreshRendersAfterSave(id: string): Promise<void> {
-    await this.invalidateRenderCaches(id)
+    try {
+      await this.invalidateRenderCaches(id)
 
-    const plugin = await this.findPluginWithRelations(id, { dataSources: true, templates: true })
-    if (!plugin)
-      return
+      const plugin = await this.findPluginWithRelations(id, { dataSources: true, templates: true })
+      if (!plugin)
+        return
 
-    this.schedule(plugin, `Rescheduled plugin: ${plugin.name}`)
-    if (plugin.templates.length > 0) {
-      void this.scheduler.runTick(plugin)
+      this.schedule(plugin, `Rescheduled plugin: ${plugin.name}`)
+      if (plugin.templates.length > 0) {
+        void this.scheduler.runTick(plugin)
+      }
+    }
+    catch (error) {
+      this.logger.error(`Plugin ${id} was saved, but its renders could not be refreshed`, error)
     }
   }
 
-  private assertDataSourcesSavable(plugin: Plugin, dataSources: UpdateDataSourceDto[] | undefined, fields: PluginFieldDto[] | undefined): void {
+  private assertSavable(plugin: Plugin, { refreshInterval, dataSources, fields }: UpdatePluginDto): void {
+    if (plugin.kind === 'Webhook' && refreshInterval !== undefined) {
+      throw new ValidationException([{ path: 'refreshInterval', message: 'A Webhook-kind Plugin has no refresh interval' }])
+    }
     if (plugin.kind === 'Webhook' && dataSources?.length) {
       throw new ValidationException([{ path: 'dataSources', message: 'A Webhook-kind Plugin cannot have Data Sources' }])
     }
 
-    if (dataSources || fields) {
-      this.validateDataSourceNames(dataSources ?? plugin.dataSources, fields ?? plugin.fields)
+    if (dataSources) {
+      this.validateDataSourceNames(dataSources, fields ?? plugin.fields)
+    }
+    else if (fields) {
+      this.assertNoKeynameIsADataSourceName(fields, plugin.dataSources)
     }
 
     const ownIds = new Set(plugin.dataSources.map(source => source.id))
@@ -349,6 +369,16 @@ export class PluginsService implements OnModuleInit {
     }
   }
 
+  private assertNoKeynameIsADataSourceName(fields: PluginFieldDto[], dataSources: PluginDataSource[]): void {
+    const names = new Set(dataSources.map(source => source.name))
+    const violations = fields.flatMap((field, index): ApiErrorField[] => names.has(field.keyname)
+      ? [{ path: `fields.${index}.keyname`, message: `Plugin field keyname "${field.keyname}" collides with a data source's name` }]
+      : [])
+    if (violations.length > 0) {
+      throw new ValidationException(violations)
+    }
+  }
+
   // A Data Source saved by its id is updated in place, so it keeps its Fetch
   // Failure Streak, its last fetch facts and its firing Alert (ADR-0025).
   private async saveDataSources(manager: EntityManager, plugin: Plugin, dataSources: UpdateDataSourceDto[]): Promise<void> {
@@ -363,7 +393,9 @@ export class PluginsService implements OnModuleInit {
     for (const [index, sourceData] of dataSources.entries()) {
       const stored = sourceData.id ? storedById.get(sourceData.id) : undefined
       const columns = this.buildDataSourceFields(sourceData, index)
-      await repository.save(stored ? Object.assign(stored, columns) : repository.create({ ...columns, plugin: { id: plugin.id } }))
+      await repository.save(stored
+        ? Object.assign(stored, columns, columns.mode === 'literal' ? NO_FETCH_OUTCOME : {})
+        : repository.create({ ...columns, plugin: { id: plugin.id } }))
     }
   }
 
@@ -425,7 +457,7 @@ export class PluginsService implements OnModuleInit {
     }
   }
 
-  /** Every column a mode leaves unused is `null`, so a Data Source saved under the other mode drops what it held. */
+  /** A column the mode does not use is `null` (`method`, which cannot be, its default), so a Data Source saved under the other mode drops what it held. */
   private buildDataSourceFields(sourceData: PluginDataSourceDto, index: number) {
     const mode = sourceData.mode || 'fetch'
     const common = { name: sourceData.name, mode, order: sourceData.order ?? index }

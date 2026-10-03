@@ -1,6 +1,6 @@
 import type { Plugin } from '../entities/plugin.entity.js'
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common'
-import { pollPluginRenders } from '../poll-plugin-renders.js'
+import { isRenderablePollPlugin } from '../renderable-poll-plugin.js'
 import { PluginRefreshService } from './plugin-refresh.service.js'
 
 const MINUTE_MS = 60_000
@@ -18,7 +18,7 @@ export class PluginSchedulerService implements OnModuleDestroy {
   schedulePlugin(plugin: Plugin): void {
     this.removeScheduledJob(plugin.id)
 
-    if (!pollPluginRenders(plugin)) {
+    if (!isRenderablePollPlugin(plugin)) {
       return
     }
 

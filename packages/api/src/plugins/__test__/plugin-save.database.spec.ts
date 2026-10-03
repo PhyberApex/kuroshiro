@@ -234,13 +234,13 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
       expect(detail.dataSources.map(source => source.name)).toEqual(['air', 'weather'])
     })
 
-    it('drops the fetch settings of a Data Source that becomes a literal one', async () => {
+    it('drops the fetch settings and the Fetch Failure Streak of a Data Source that becomes a literal one', async () => {
       const plugin = await createPollPlugin({ dataSources: [{ name: 'weather', mode: 'fetch', url: 'https://api.example.com/weather', headers: { Authorization: 'Bearer abc' }, transformJs: 'return input' }] })
-      const [weather] = (await read(plugin.id)).dataSources
+      const weather = await failingThreeTimesWithAnAlert(plugin.id)
 
       await saved(plugin.id, { dataSources: [{ id: weather.id, name: 'weather', mode: 'literal', literalValue: { temperature: 5 } }] })
 
-      expect(await database.getRepository(PluginDataSource).findOneByOrFail({ id: weather.id })).toMatchObject({ mode: 'literal', url: null, headers: null, body: null, transformJs: null, literalValue: { temperature: 5 } })
+      expect(await database.getRepository(PluginDataSource).findOneByOrFail({ id: weather.id })).toMatchObject({ mode: 'literal', url: null, headers: null, body: null, transformJs: null, literalValue: { temperature: 5 }, fetchFailureStreak: 0, lastFetchAttemptAt: null, lastFetchError: null })
     })
 
     it('refuses the id of another Plugin\'s Data Source, and one no Data Source has', async () => {
@@ -370,6 +370,12 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
       expect((await read(plugin.id)).refreshInterval).toBe(15)
     })
 
+    it('refuses a refresh interval on a Webhook-kind Plugin, which has none', async () => {
+      const plugin = await createWebhookPlugin()
+
+      expect((await refused(plugin.id, { refreshInterval: 30 })).fields).toEqual([{ path: 'refreshInterval', message: expect.any(String) }])
+    })
+
     it.each([1, 1440])('saves a refresh interval of %i', async (refreshInterval) => {
       const plugin = await createPollPlugin()
 
@@ -414,7 +420,7 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
 
       expect((await refused(plugin.id, { dataSources: [air, air] })).fields).toEqual([{ path: 'dataSources.1.name', message: expect.any(String) }])
       expect((await refused(plugin.id, { dataSources: [air, { ...air, name: 'city' }] })).fields).toEqual([{ path: 'dataSources.1.name', message: expect.any(String) }])
-      expect((await refused(plugin.id, { fields: [{ keyname: 'weather', name: 'Weather' }] })).fields).toEqual([{ path: 'dataSources.0.name', message: expect.any(String) }])
+      expect((await refused(plugin.id, { fields: [{ keyname: 'city', name: 'City' }, { keyname: 'weather', name: 'Weather' }] })).fields).toEqual([{ path: 'fields.1.keyname', message: expect.any(String) }])
     })
   })
 
@@ -464,6 +470,13 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
       expect(backgroundTicks).toHaveLength(4)
     })
 
+    it('answers the saved Plugin even when its renders cannot be refreshed', async () => {
+      const plugin = await createPollPlugin()
+      vi.spyOn(plugins, 'invalidateRenderCaches').mockRejectedValue(new Error('the database went away'))
+
+      expect((await saved(plugin.id, { name: 'Forecast' })).name).toBe('Forecast')
+    })
+
     it('starts no tick for a save that was refused', async () => {
       const plugin = await createPollPlugin()
 
@@ -500,6 +513,19 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
 
       expect(scheduler.hasScheduledJob(poll.id)).toBe(true)
       expect(scheduler.hasScheduledJob(webhook.id)).toBe(false)
+    })
+
+    it('schedules every Poll-kind Plugin when the Instance starts, and runs each once at start', async () => {
+      const poll = await createPollPlugin()
+      await createWebhookPlugin()
+      scheduler.onModuleDestroy()
+
+      await plugins.onModuleInit()
+      await backgroundTicksDone()
+
+      expect(scheduler.hasScheduledJob(poll.id)).toBe(true)
+      expect(backgroundTicks).toHaveLength(1)
+      expect((await read(poll.id)).lastScheduledRender).toEqual({ at: expect.any(String), error: null })
     })
 
     it('clears the cached output of a Mashup holding the Plugin in a slot', async () => {
