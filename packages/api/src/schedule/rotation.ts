@@ -13,7 +13,7 @@ export interface RotationScreen {
 export interface RotationMoment {
   now: Date
   /** When Rotation next advances: the Device's next poll, or the end of Sleep Mode's window while it is asleep. */
-  nextPollAt: Date
+  nextRotationAt: Date
   isMirrored: boolean
 }
 
@@ -63,7 +63,7 @@ export function screenStatesOf(screensInOrder: RotationScreen[], moment: Rotatio
   if (moment.isMirrored)
     return new Map(screensInOrder.map(screen => [screen.id, NO_STATE]))
 
-  const upNext = nextEligibleScreen(screensInOrder, moment.nextPollAt)
+  const upNext = nextEligibleScreen(screensInOrder, moment.nextRotationAt)
   return new Map(screensInOrder.map((screen) => {
     const state = ownState(screen, moment.now)
       ?? (screen === upNext ? { state: 'upNext' as const, stateCause: null } : NO_STATE)

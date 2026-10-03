@@ -19,7 +19,7 @@ function scheduled(id: string, schedule: Partial<Schedule>, overrides: Partial<R
 
 function statesOf(screens: RotationScreen[], moment: { now?: Date, nextPollAt?: Date, isMirrored?: boolean } = {}) {
   const now = moment.now ?? FRIDAY_NOON
-  const states = screenStatesOf(screens, { now, nextPollAt: moment.nextPollAt ?? NEXT_POLL, isMirrored: moment.isMirrored ?? false })
+  const states = screenStatesOf(screens, { now, nextRotationAt: moment.nextPollAt ?? NEXT_POLL, isMirrored: moment.isMirrored ?? false })
   return Object.fromEntries(screens.map(({ id }) => [id, states.get(id)]))
 }
 

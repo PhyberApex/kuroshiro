@@ -15,7 +15,7 @@ import { resolveAppPath } from '../utils/pathHelper.js'
 import { toScreenRead } from './screen.mapper.js'
 import { Screen } from './screens.entity.js'
 
-/** No Screen remembers a Render Signal yet, so none is ever read. */
+/** A Screen stores no Render Signal, so none is read. */
 function renderSignalOf(_screen: Screen): RenderSignal | null {
   return null
 }
@@ -52,12 +52,12 @@ export class ScreenReadsService {
 
     const now = new Date()
     const rotationScreens = screens.map(screen => ({ id: screen.id, isActive: screen.isActive, schedule: screen.schedule, renderSignal: renderSignalOf(screen) }))
-    const states = screenStatesOf(rotationScreens, { now, nextPollAt: nextRotationAt(device, now), isMirrored: !!device.mirrorEnabled })
+    const states = screenStatesOf(rotationScreens, { now, nextRotationAt: nextRotationAt(device, now), isMirrored: !!device.mirrorEnabled })
 
-    return screens.map(screen => toScreenRead(screen, {
+    return screens.map((screen, index) => toScreenRead(screen, {
       deviceId,
       state: states.get(screen.id)!,
-      renderSignal: renderSignalOf(screen),
+      renderSignal: rotationScreens[index].renderSignal,
       isRendered: renderedIds.has(screen.id),
       requiredFieldEmpty: !!screen.plugin && needsValues(screen.plugin.fields ?? [], storedFieldValues.get(screen.plugin.id) ?? {}),
       fetchAlertFiring: !!screen.plugin && pluginsWithFetchAlert.has(screen.plugin.id),
