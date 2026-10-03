@@ -188,7 +188,7 @@ For local hacking or deployment inspiration, check out [`docker-compose.yml`](./
 - [`packages/api`](./packages/api) — The NestJS backend
 - [`packages/ui-next`](./packages/ui-next) — The Vue 3 + Reka UI frontend the image serves
 - [`packages/ui`](./packages/ui) — The previous Vue 3 + Vuetify frontend, kept as a read-only reference outside the workspace
-- [`packages/shared`](./packages/shared) — Code that is byte-identical in the API and UI
+- [`packages/shared`](./packages/shared) — The admin API's request and response types, and code that is identical in the API and UI
 
 ---
 
