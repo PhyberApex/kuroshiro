@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Headers, HttpCode, Logger, Param, Post } from '@nestjs/common'
-import { DeviceFacing } from '../errors/device-facing.decorator.js'
+import { OutsideAdminApi } from '../errors/outside-admin-api.decorator.js'
 import { CreateLogDto } from './dto/create-log.dto.js'
 import { LogEntry } from './logs.entity.js'
 import { LogsService } from './logs.service.js'
@@ -11,7 +11,7 @@ export class LogsController {
 
   @Post()
   @HttpCode(204)
-  @DeviceFacing()
+  @OutsideAdminApi()
   async consumeLog(@Headers() headers: { id: string }, @Body() body: CreateLogDto) {
     this.logger.debug(`Got log ${JSON.stringify(body)}`)
     await this.logsService.addLogToDevice(headers.id, body)

@@ -7,7 +7,7 @@ import { HttpException } from '@nestjs/common'
  * `throw new ApiException(HttpStatus.CONFLICT, 'conflict', 'That MAC is taken.', { mac })`.
  *
  * Its Nest response keeps Nest's default `{ statusCode, message, error }` shape,
- * which is what a Device-facing route answers with (see `DeviceFacing`).
+ * which is what a Device-facing route answers with (see `OutsideAdminApi`).
  */
 export class ApiException extends HttpException {
   constructor(

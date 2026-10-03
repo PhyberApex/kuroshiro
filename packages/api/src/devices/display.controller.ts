@@ -1,13 +1,13 @@
 import type { DisplayRequestHeadersDto } from './dto/display-request-headers.dto.js'
 import { Controller, Get, Headers } from '@nestjs/common'
-import { DeviceFacing } from '../errors/device-facing.decorator.js'
+import { OutsideAdminApi } from '../errors/outside-admin-api.decorator.js'
 import { Display } from './display.js'
 import { DeviceDisplayService } from './display.service.js'
 import { DisplayScreen } from './displayScreen.js'
 import 'dotenv/config'
 
 @Controller('')
-@DeviceFacing()
+@OutsideAdminApi()
 export class DisplayController {
   constructor(
     private readonly deviceDisplayService: DeviceDisplayService,

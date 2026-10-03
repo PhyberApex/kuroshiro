@@ -1,6 +1,6 @@
 import type { SetupRequestHeadersDto } from './dto/setup-request-headers.dto.js'
 import { Controller, Get, Headers } from '@nestjs/common'
-import { DeviceFacing } from '../errors/device-facing.decorator.js'
+import { OutsideAdminApi } from '../errors/outside-admin-api.decorator.js'
 import { DeviceSetupService } from './setup.service.js'
 import 'dotenv/config'
 
@@ -13,7 +13,7 @@ interface SetupResponse {
 }
 
 @Controller('setup')
-@DeviceFacing()
+@OutsideAdminApi()
 export class SetupController {
   constructor(
     private readonly deviceSetupService: DeviceSetupService,

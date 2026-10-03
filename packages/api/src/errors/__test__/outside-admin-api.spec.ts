@@ -8,6 +8,8 @@ import { SetupController } from '../../devices/setup.controller.js'
 import { DeviceSetupService } from '../../devices/setup.service.js'
 import { LogsController } from '../../logs/logs.controller.js'
 import { LogsService } from '../../logs/logs.service.js'
+import { MetricsController } from '../../metrics/metrics.controller.js'
+import { MetricsService } from '../../metrics/metrics.service.js'
 import { Plugin } from '../../plugins/entities/plugin.entity.js'
 import { WebhookPluginGuard } from '../../plugins/guards/webhook-plugin.guard.js'
 import { WebhookIngestService } from '../../plugins/services/webhook-ingest.service.js'
@@ -37,22 +39,24 @@ const firmwareHeaders = {
   'x-not-declared-anywhere': 'still fine',
 }
 
-describe('the Device-facing endpoints behind the global pipe and filter', () => {
+describe('the endpoints outside the admin API behind the global pipe and filter', () => {
   let http: HttpTestApp
   const displayService = { getCurrentImage: vi.fn(), getCurrentImageWithoutProgressing: vi.fn() }
   const setupService = { setupDevice: vi.fn() }
   const logsService = { addLogToDevice: vi.fn(), getByDevice: vi.fn(), clearLogsByDeviceId: vi.fn() }
   const ingestService = { ingest: vi.fn(), readPayload: vi.fn() }
   const pluginRepository = { findOne: vi.fn() }
+  const metricsService = { render: vi.fn() }
 
   beforeAll(async () => {
     http = await createHttpTestApp({
-      controllers: [DisplayController, SetupController, LogsController, WebhookIngestController],
+      controllers: [DisplayController, SetupController, LogsController, WebhookIngestController, MetricsController],
       providers: [
         { provide: DeviceDisplayService, useValue: displayService },
         { provide: DeviceSetupService, useValue: setupService },
         { provide: LogsService, useValue: logsService },
         { provide: WebhookIngestService, useValue: ingestService },
+        { provide: MetricsService, useValue: metricsService },
         { provide: getRepositoryToken(Plugin), useValue: pluginRepository },
         WebhookPluginGuard,
       ],
@@ -170,5 +174,14 @@ describe('the Device-facing endpoints behind the global pipe and filter', () => 
 
     expect(response.status).toBe(401)
     expect(await response.json()).toEqual({ statusCode: 401, message: 'Invalid webhook token', error: 'Unauthorized' })
+  })
+
+  it('answers a failed /metrics scrape in Nest\'s default body', async () => {
+    metricsService.render.mockRejectedValue(new Error('boom'))
+
+    const response = await http.request('/metrics')
+
+    expect(response.status).toBe(500)
+    expect(await response.json()).toEqual({ statusCode: 500, message: 'Internal server error' })
   })
 })

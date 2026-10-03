@@ -43,7 +43,8 @@ export class ApiValidationPipe extends ValidationPipe {
   }
 
   async transform(value: unknown, metadata: ArgumentMetadata): Promise<unknown> {
-    return dropUnsetFields(await super.transform(value, metadata))
+    const transformed = await super.transform(value, metadata)
+    return metadata.type === 'body' ? dropUnsetFields(transformed) : transformed
   }
 
   createExceptionFactory() {

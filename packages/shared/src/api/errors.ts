@@ -1,7 +1,6 @@
 /**
- * Every code a non-2xx answer of the admin API can carry. The first entries are
- * the generic code of each status; an endpoint's own codes are added here by
- * the slice that lands the endpoint.
+ * Every code a non-2xx answer of the admin API can carry: the generic code of
+ * each status first, then the codes of individual endpoints.
  */
 export const API_ERROR_CODES = [
   'validation',
