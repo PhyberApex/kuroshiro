@@ -24,6 +24,8 @@ import { UpdateScreenDto } from './dto/update-screen.dto.js'
 import { closeGapInOrder, joinEndOfOrder, writeOrder } from './screen-order.js'
 import { Screen } from './screens.entity.js'
 
+interface StagedPaths { originalPath: string, imagePath: string }
+
 type FileFacts = Pick<Screen, 'fileOriginalName' | 'fileWidth' | 'fileHeight' | 'fileBytes'>
 
 const EDITABLE_FIELDS: Record<Screen['type'], ReadonlyArray<keyof UpdateScreenDto>> = {
@@ -174,7 +176,7 @@ export class ScreensService {
       imagePath,
       discard,
       /** Runs `produce` against the staged paths and moves both files over the Screen's own on success. */
-      store: async <T>(produce: (staged: { originalPath: string, imagePath: string }) => Promise<T>): Promise<T> => {
+      store: async <T>(produce: (staged: StagedPaths) => Promise<T>): Promise<T> => {
         try {
           const result = await produce({ originalPath, imagePath })
           await fs.promises.rename(originalPath, this.originalImagePath(device.id, screenId))
@@ -189,7 +191,7 @@ export class ScreensService {
     }
   }
 
-  private async fetchKeptImage(device: Device, url: string, staged: { originalPath: string, imagePath: string }): Promise<void> {
+  private async fetchKeptImage(device: Device, url: string, staged: StagedPaths): Promise<void> {
     if (this.configService.get<boolean>('demo_mode'))
       assertPublicUrl(url)
     const target = await this.deviceModels.renderTargetFor(device)
@@ -207,7 +209,7 @@ export class ScreensService {
     }
   }
 
-  private async convertUpload(device: Device, file: Express.Multer.File, staged: { originalPath: string, imagePath: string }): Promise<FileFacts> {
+  private async convertUpload(device: Device, file: Express.Multer.File, staged: StagedPaths): Promise<FileFacts> {
     const target = await this.deviceModels.renderTargetFor(device)
     await fs.promises.mkdir(path.dirname(staged.originalPath), { recursive: true })
     await fs.promises.writeFile(staged.originalPath, file.buffer)
