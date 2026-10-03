@@ -1,9 +1,11 @@
 import type { WebhookRequest } from './guards/webhook-plugin.guard.js'
 import { Body, Controller, Get, Header, Post, Req, UseGuards } from '@nestjs/common'
+import { DeviceFacing } from '../errors/device-facing.decorator.js'
 import { WebhookPluginGuard } from './guards/webhook-plugin.guard.js'
 import { WebhookIngestService } from './services/webhook-ingest.service.js'
 
 @Controller('webhook')
+@DeviceFacing()
 @UseGuards(WebhookPluginGuard)
 export class WebhookIngestController {
   constructor(

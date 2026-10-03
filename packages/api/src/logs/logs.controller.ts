@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Headers, HttpCode, Logger, Param, Post, UsePipes, ValidationPipe } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Headers, HttpCode, Logger, Param, Post } from '@nestjs/common'
+import { DeviceFacing } from '../errors/device-facing.decorator.js'
 import { CreateLogDto } from './dto/create-log.dto.js'
 import { LogEntry } from './logs.entity.js'
 import { LogsService } from './logs.service.js'
@@ -10,14 +11,13 @@ export class LogsController {
 
   @Post()
   @HttpCode(204)
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  @DeviceFacing()
   async consumeLog(@Headers() headers: { id: string }, @Body() body: CreateLogDto) {
     this.logger.debug(`Got log ${JSON.stringify(body)}`)
     await this.logsService.addLogToDevice(headers.id, body)
   }
 
   @Get('/device/:deviceId')
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async getLogsByDevice(@Param('deviceId') deviceId: string): Promise<LogEntry[]> {
     return this.logsService.getByDevice(deviceId)
   }
