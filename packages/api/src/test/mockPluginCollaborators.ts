@@ -1,5 +1,6 @@
 import type { Mock } from 'vitest'
 import type { FetchableDataSource } from '../plugins/services/plugin-data-fetcher.service.js'
+import type { PluginDataResolverService } from '../plugins/services/plugin-data-resolver.service.js'
 import type { PluginFieldValuesService } from '../plugins/services/plugin-field-values.service.js'
 import { vi } from 'vitest'
 import { PluginTemplateContextService } from '../plugins/services/plugin-template-context.service.js'
@@ -53,9 +54,15 @@ export function createMockPluginRenderCacheService(): MockPluginRenderCacheServi
   return { invalidateMashupCaches: vi.fn() }
 }
 
-/** The real template context builder over a fixed set of resolved Field Values, for specs that don't have a database behind them. */
-export function createPluginTemplateContextService(resolvedFieldValues: Record<string, string> = {}): PluginTemplateContextService {
-  return new PluginTemplateContextService({ resolveFor: async () => resolvedFieldValues } as unknown as PluginFieldValuesService)
+/** The real template context builder over a fixed set of resolved Field Values, for specs that don't have a database behind them. Without a resolver, no Data Source answers anything. */
+export function createPluginTemplateContextService(
+  resolvedFieldValues: Record<string, string> = {},
+  dataResolver: Pick<PluginDataResolverService, 'resolveAll'> = { resolveAll: async () => ({}) },
+): PluginTemplateContextService {
+  return new PluginTemplateContextService(
+    { resolveFor: async () => resolvedFieldValues } as unknown as PluginFieldValuesService,
+    dataResolver as PluginDataResolverService,
+  )
 }
 
 /** A Plugin with no stored Field Values: reads attach an empty view, writes change nothing. */

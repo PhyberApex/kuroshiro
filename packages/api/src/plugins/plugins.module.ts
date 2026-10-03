@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { Alert } from '../alerts/entities/alert.entity.js'
+import { DeviceSensorsModule } from '../device-sensors/device-sensors.module.js'
 import { Device } from '../devices/devices.entity.js'
 import { Screen } from '../screens/screens.entity.js'
 import { DevicePlugin } from './entities/device-plugin.entity.js'
@@ -20,6 +21,7 @@ import { PluginDataResolverService } from './services/plugin-data-resolver.servi
 import { PluginExporterService } from './services/plugin-exporter.service.js'
 import { PluginFieldValuesService } from './services/plugin-field-values.service.js'
 import { PluginImporterService } from './services/plugin-importer.service.js'
+import { PluginPreviewDataService } from './services/plugin-preview-data.service.js'
 import { PluginReadsService } from './services/plugin-reads.service.js'
 import { PluginRefreshService } from './services/plugin-refresh.service.js'
 import { PluginRenderCacheService } from './services/plugin-render-cache.service.js'
@@ -34,6 +36,7 @@ import { WebhookIngestController } from './webhook-ingest.controller.js'
 @Module({
   imports: [
     ConfigModule,
+    DeviceSensorsModule,
     TypeOrmModule.forFeature([
       Plugin,
       DevicePlugin,
@@ -50,6 +53,7 @@ import { WebhookIngestController } from './webhook-ingest.controller.js'
   providers: [
     PluginsService,
     PluginReadsService,
+    PluginPreviewDataService,
     PluginAssignmentsService,
     DataSourceFetchOutcomeService,
     PluginDataFetcherService,

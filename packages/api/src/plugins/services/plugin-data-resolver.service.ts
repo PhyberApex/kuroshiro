@@ -4,11 +4,21 @@ import { PluginDataFetcherService } from './plugin-data-fetcher.service.js'
 import { PluginTransformService } from './plugin-transform.service.js'
 
 // The subset of a Data Source's fields resolveAll needs — shared by the
-// PluginDataSource entity and PreviewSourceDto, which carry the same fields
+// PluginDataSource entity and PreviewDataSourceDto, which carry the same fields
 // under slightly different types.
 export interface ResolvableDataSource extends FetchableDataSource {
   name: string
   transformJs?: string | null
+}
+
+export interface FetchErrorMarker {
+  error: true
+  message: string
+}
+
+/** What a Template reads in place of the data of a Data Source that failed (ADR-0005). */
+export function isFetchErrorMarker(value: unknown): value is FetchErrorMarker {
+  return typeof value === 'object' && value !== null && (value as { error?: unknown }).error === true
 }
 
 @Injectable()

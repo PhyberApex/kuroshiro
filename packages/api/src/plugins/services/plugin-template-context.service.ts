@@ -1,6 +1,11 @@
 import type { DeviceSensor } from '../../device-sensors/entities/device-sensor.entity.js'
+import type { PluginField } from '../entities/plugin-field.entity.js'
 import type { Plugin } from '../entities/plugin.entity.js'
+import type { ResolvableDataSource } from './plugin-data-resolver.service.js'
+import type { FieldValueWrites } from './plugin-field-values.service.js'
 import { Injectable } from '@nestjs/common'
+import { hideSecretFieldValues, hideSecretsIn, secretValues } from '../plugin-field-values.js'
+import { PluginDataResolverService } from './plugin-data-resolver.service.js'
 import { PluginFieldValuesService } from './plugin-field-values.service.js'
 
 export interface PluginTemplateContext {
@@ -19,24 +24,74 @@ export interface PluginTemplateContext {
   sensors: Record<string, { value: number, unit: string }>
 }
 
+/** What the Plugin page's form holds and has not saved, for a context built ahead of the save. */
+export interface UnsavedPluginInput {
+  name?: string
+  /** Poll only. */
+  dataSources?: ResolvableDataSource[]
+  fieldValues?: FieldValueWrites
+}
+
+export interface ContextOptions {
+  /**
+   * The Plugin Fields whose password values the admin's browser must not
+   * read: each reads as dots in `context`, in a Field Value and wherever a
+   * Data Source's result or error repeats it. A Data Source is still fetched
+   * with the real one.
+   */
+  hideSecretsOf?: Array<Pick<PluginField, 'keyname' | 'fieldType'>>
+}
+
+export interface PluginRenderContext {
+  /** What Liquid is given. A Webhook Payload that is an array has no keys to merge into, so it is the whole context. */
+  context: Record<string, unknown> | unknown[]
+  /** By keyname, as `context` holds them. */
+  fieldValues: Record<string, string>
+  /** Each Data Source's result or error marker by name; empty for a Webhook-kind Plugin. */
+  sourceData: Record<string, unknown>
+}
+
 /**
- * The Liquid context every render of a Plugin starts from: its resolved Field
- * Values, both under `trmnl.plugin_settings.custom_fields_values` and as bare
- * root keys (ADR-0032), the `trmnl` system object, and an implicit `sensors`
- * object keyed by kind (ADR-0018) for whichever kinds the rendering Device
- * currently has a reading for. Callers spread a Plugin's Data Source data on
- * top, so that data wins over a bare Field Value key of the same name.
+ * The Liquid context of every render of a Plugin, and of the preview's data:
+ * its resolved Field Values, both under `trmnl.plugin_settings.custom_fields_values`
+ * and as bare root keys (ADR-0032), the `trmnl` system object, an implicit
+ * `sensors` object keyed by kind (ADR-0018) for whichever kinds the rendering
+ * Device currently has a reading for, and on top the data: a Poll-kind
+ * Plugin's Data Source results or error markers by name, a Webhook-kind
+ * Plugin's Webhook Payload keys. The data wins over a bare Field Value key of
+ * the same name.
  */
 @Injectable()
 export class PluginTemplateContextService {
-  constructor(private readonly fieldValues: PluginFieldValuesService) {}
+  constructor(
+    private readonly fieldValues: PluginFieldValuesService,
+    private readonly dataResolver: PluginDataResolverService,
+  ) {}
 
-  async build(plugin: Plugin, sensors: DeviceSensor[]): Promise<PluginTemplateContext> {
-    return this.buildFrom(plugin.name, await this.fieldValues.resolveFor(plugin.id), sensors)
+  /** `sensors` are the rendering Device's, and empty where the render is for no single Device. */
+  async contextFor(plugin: Plugin, sensors: DeviceSensor[], unsaved: UnsavedPluginInput = {}, { hideSecretsOf = [] }: ContextOptions = {}): Promise<PluginRenderContext> {
+    const resolved = await this.fieldValues.resolveFor(plugin.id, unsaved.fieldValues)
+    const fetchContext = this.withoutData(unsaved.name ?? plugin.name, resolved, sensors)
+
+    const fieldValues = hideSecretFieldValues(hideSecretsOf, resolved)
+    const withoutData = {
+      ...fetchContext,
+      ...fieldValues,
+      trmnl: { ...fetchContext.trmnl, plugin_settings: { ...fetchContext.trmnl.plugin_settings, custom_fields_values: fieldValues } },
+      sensors: fetchContext.sensors,
+    }
+
+    if (plugin.kind === 'Webhook') {
+      const payload = plugin.webhookPayload
+      return { context: Array.isArray(payload) ? payload : { ...withoutData, ...payload }, fieldValues, sourceData: {} }
+    }
+
+    const fetched = await this.dataResolver.resolveAll(unsaved.dataSources ?? plugin.dataSources ?? [], fetchContext)
+    const sourceData = hideSecretsIn(fetched, secretValues(hideSecretsOf, resolved))
+    return { context: { ...withoutData, ...sourceData }, fieldValues, sourceData }
   }
 
-  /** For a render of something that isn't saved (the preview), which brings its own Field Values. */
-  buildFrom(instanceName: string, fieldValues: Record<string, string>, sensors: DeviceSensor[]): PluginTemplateContext {
+  private withoutData(instanceName: string, fieldValues: Record<string, string>, sensors: DeviceSensor[]): PluginTemplateContext {
     return {
       ...fieldValues,
       trmnl: {

@@ -1,11 +1,25 @@
+import type { TemplateProblem, TemplateSize } from 'kuroshiro-shared'
 import type { MashupSlot } from '../../mashup/entities/mashup-slot.entity.js'
 import type { Plugin } from '../entities/plugin.entity.js'
 import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
+import { templateProblemOf } from 'kuroshiro-shared'
 import { Repository } from 'typeorm'
 import { Screen } from '../../screens/screens.entity.js'
 import { getErrorMessage } from '../../utils/getErrorMessage.js'
+import { templateOfSize } from '../plugin-templates.js'
 import { PluginRendererService } from './plugin-renderer.service.js'
+
+/** A Template that Liquid could not render, as against a render that failed to be stored. */
+export class TemplateRenderError extends Error {
+  readonly problem: TemplateProblem
+
+  constructor(readonly size: TemplateSize, cause: unknown) {
+    const problem = templateProblemOf(cause)
+    super(problem.message, { cause })
+    this.problem = problem
+  }
+}
 
 @Injectable()
 export class PluginRenderCacheService {
@@ -28,12 +42,16 @@ export class PluginRenderCacheService {
     }, 0)
   }
 
+  /** Renders the `full` Template, the one a Screen on its own shows, into the cache of every Screen of the Plugin. */
   async renderAndCache(plugin: Plugin, data: object | null): Promise<void> {
-    if (!plugin.templates || plugin.templates.length === 0) {
+    const template = templateOfSize(plugin.templates, 'full')
+    if (!template) {
       return
     }
 
-    const rendered = await this.renderer.render(plugin.templates[0].liquidMarkup, data ?? {})
+    const rendered = await this.renderer.render(template.liquidMarkup, data ?? {}).catch((error) => {
+      throw new TemplateRenderError('full', error)
+    })
 
     await this.screenRepository.update(
       { plugin: { id: plugin.id } },

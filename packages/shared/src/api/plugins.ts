@@ -165,3 +165,35 @@ export interface UpdatePluginInput {
   /** By keyname; `null` or an empty string clears a value, a keyname left out keeps it. */
   fieldValues?: Record<string, string | null>
 }
+
+/** What the Plugin page's form holds and has not saved, for the data its preview draws against. */
+export interface PreviewDataInput {
+  /** `null`: no Device, so no Sensors. */
+  deviceId: string | null
+  /** For `trmnl.plugin_settings.instance_name`. */
+  name?: string
+  /** The whole set; Poll only. */
+  dataSources?: Array<{ id?: string } & DataSourceInput>
+  /** By keyname; a keyname left out uses what is stored, a password included. */
+  fieldValues?: Record<string, string | null>
+}
+
+export type PreviewOrigin = 'fieldValue' | 'dataSource' | 'webhookPayload' | 'sensors' | 'trmnl'
+
+/** One name a Template can read. */
+export interface PreviewName {
+  name: string
+  origin: PreviewOrigin
+  /** Why a Data Source could not be fetched; its value in `context` is then the error marker. */
+  error: string | null
+}
+
+export interface PreviewData {
+  /** What the server's render passes to Liquid, with a password Field Value as dots. A Webhook Payload that is a list is the whole context. */
+  context: Record<string, unknown> | unknown[]
+  /** In the order Field Values, Data Sources or Webhook Payload keys, `sensors`, `trmnl`. A name the data replaces is listed once, as the data. */
+  names: PreviewName[]
+  fetchedAt: string
+  /** `null` for a Poll-kind Plugin, and until a Webhook Payload is received. */
+  webhookPayloadReceivedAt: string | null
+}

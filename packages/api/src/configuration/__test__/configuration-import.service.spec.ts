@@ -47,6 +47,10 @@ const ENTITY_NAMES = [
  */
 type FakeRow = Record<string, unknown> & { id?: string }
 
+function isRelationReference(value: unknown): value is { id: string } {
+  return typeof value === 'object' && value !== null && 'id' in value
+}
+
 function createFakeManager() {
   const backing = new Map<string, Map<string, FakeRow>>()
   for (const name of ENTITY_NAMES) backing.set(name, new Map())
@@ -58,7 +62,7 @@ function createFakeManager() {
     return {
       findOneBy: vi.fn(async (where: Record<string, unknown>) => {
         for (const row of table.values()) {
-          if (Object.entries(where).every(([key, value]) => row[key] === value)) {
+          if (Object.entries(where).every(([key, value]) => isRelationReference(value) ? (row[key] as { id?: string } | undefined)?.id === value.id : row[key] === value)) {
             return { ...row }
           }
         }
@@ -275,6 +279,35 @@ describe('configurationImportService', () => {
     expect(backing.get('Device')!.size).toBe(1)
     expect(backing.get('Plugin')!.size).toBe(1)
     expect(backing.get('Screen')!.size).toBe(1)
+  })
+
+  it('replaces the stored Template of a size whose id is not the archive\'s, keeping one Template per size', async () => {
+    const archiveWithTemplate = (templateId: string, markup: string) => buildArchive({
+      plugins: [{
+        id: 'plugin-1',
+        kind: 'Poll',
+        mergeStrategy: null,
+        streamLimit: null,
+        webhookToken: null,
+        sourceRecipeId: null,
+        dataSources: [{ id: 'ds-1', name: 'source' }],
+        templates: [{ id: templateId, layout: 'full' }],
+        fields: [],
+      }],
+      pluginFolders: {
+        'plugin-1': {
+          manifest: { name: 'Test Plugin', description: '', custom_fields: [] },
+          settings: { refresh_interval: 15, data_sources: [{ name: 'source', endpoint: 'https://api.example.com', method: 'GET', headers: {}, body: {} }] },
+          templates: { full: markup },
+        },
+      },
+    })
+    await service.importFromZip(archiveWithTemplate('tpl-stored', 'Stored'))
+
+    const result = await service.importFromZip(archiveWithTemplate('tpl-archive', 'From the archive'))
+
+    expect(result.updated).toMatchObject({ templates: 1 })
+    expect([...backing.get('PluginTemplate')!.values()]).toEqual([expect.objectContaining({ id: 'tpl-stored', layout: 'full', liquidMarkup: 'From the archive' })])
   })
 
   it('restores the Recipe Snapshot from the manifest entry, and falls back to null when an archive predates it', async () => {

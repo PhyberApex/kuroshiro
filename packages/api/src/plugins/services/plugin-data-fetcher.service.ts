@@ -7,7 +7,7 @@ import { assertPublicUrl } from '../../utils/ssrfGuard.js'
 import { PluginRendererService } from './plugin-renderer.service.js'
 
 // The subset of a Data Source's fields fetchOrLiteral needs — shared by the
-// PluginDataSource entity and PreviewSourceDto, which carry the same fields
+// PluginDataSource entity and PreviewDataSourceDto, which carry the same fields
 // under slightly different types.
 export interface FetchableDataSource {
   mode?: DataSourceMode

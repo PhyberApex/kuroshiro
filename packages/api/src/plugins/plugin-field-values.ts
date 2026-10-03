@@ -19,6 +19,38 @@ export function resolveFieldValues(fields: FieldDefinition[], stored: StoredFiel
   return Object.fromEntries(fields.map(field => [field.keyname, stored[field.keyname] ?? field.defaultValue ?? '']))
 }
 
+/** What stands in for a password Field Value wherever the admin's browser reads a render's context. */
+const HIDDEN_FIELD_VALUE = '••••••••'
+
+type SecretCandidate = Pick<PluginField, 'keyname' | 'fieldType'>
+
+/** The values to hide: of every password among `fields` that has one. */
+export function secretValues(fields: SecretCandidate[], resolved: Record<string, string>): string[] {
+  return fields.filter(isSecretField).map(field => resolved[field.keyname]).filter(Boolean)
+}
+
+/** The resolved Field Values with every password among `fields` that has a value hidden; one without a value stays empty. */
+export function hideSecretFieldValues(fields: SecretCandidate[], resolved: Record<string, string>): Record<string, string> {
+  const secretKeynames = new Set(fields.filter(isSecretField).map(field => field.keyname))
+  return Object.fromEntries(Object.entries(resolved).map(([keyname, value]) => [keyname, value && secretKeynames.has(keyname) ? HIDDEN_FIELD_VALUE : value]))
+}
+
+/** `value` with every occurrence of a secret hidden, in each string at any depth: a failed fetch quotes its URL, and an API may repeat a key it was sent. */
+export function hideSecretsIn<T>(value: T, secrets: string[]): T {
+  if (secrets.length === 0)
+    return value
+  const hide = (item: unknown): unknown => {
+    if (typeof item === 'string')
+      return secrets.reduce((text, secret) => text.replaceAll(secret, HIDDEN_FIELD_VALUE), item)
+    if (Array.isArray(item))
+      return item.map(hide)
+    if (typeof item === 'object' && item !== null)
+      return Object.fromEntries(Object.entries(item).map(([key, nested]) => [key, hide(nested)]))
+    return item
+  }
+  return hide(value) as T
+}
+
 /** `author_bio` is a read-only credit, never an input, so it can't be what a Plugin is waiting on. */
 export function needsValues(fields: FieldDefinition[], stored: StoredFieldValues): boolean {
   return fields.some(field =>

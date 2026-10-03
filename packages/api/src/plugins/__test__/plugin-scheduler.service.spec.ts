@@ -39,9 +39,8 @@ describe('pluginSchedulerService', () => {
     )
 
     service = new PluginSchedulerService(new PluginRefreshService(
-      pluginDataResolver,
       asService<PluginRenderCacheService>(mockRenderCache),
-      createPluginTemplateContextService(),
+      createPluginTemplateContextService({}, pluginDataResolver),
       asService<DataSourceFetchOutcomeService>(mockFetchOutcome),
       asRepository(mockPluginRepo),
     ))

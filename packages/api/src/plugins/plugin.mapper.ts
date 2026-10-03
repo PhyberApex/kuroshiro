@@ -1,13 +1,15 @@
-import type { DataSourceRead, PluginAssignmentRead, PluginDetail, PluginFieldRead, PluginPlace, PluginSummary, ScheduledRenderRead } from 'kuroshiro-shared'
+import type { DataSourceRead, PluginAssignmentRead, PluginDetail, PluginFieldRead, PluginPlace, PluginSummary, PreviewData, PreviewName, PreviewOrigin, ScheduledRenderRead } from 'kuroshiro-shared'
 import type { Screen } from '../screens/screens.entity.js'
 import type { PluginDataSource } from './entities/plugin-data-source.entity.js'
 import type { PluginField } from './entities/plugin-field.entity.js'
 import type { Plugin } from './entities/plugin.entity.js'
 import type { StoredFieldValues } from './plugin-field-values.js'
+import type { PluginRenderContext } from './services/plugin-template-context.service.js'
 import { TEMPLATE_SIZES } from 'kuroshiro-shared'
 import { screenStatesOfDevice } from '../screens/screen-states.js'
 import { toIsoString, toIsoStringOrNull } from '../utils/readModel.js'
 import { needsValues, toFieldValueReads } from './plugin-field-values.js'
+import { isFetchErrorMarker } from './services/plugin-data-resolver.service.js'
 
 export interface PluginFacts {
   /** Secrets included; the mappers never pass one on. */
@@ -199,5 +201,36 @@ export function toPluginDetail(plugin: Plugin, facts: PluginDetailFacts): Plugin
       .sort((a, b) => compareIgnoringCase(a.deviceName, b.deviceName)),
     mashups: toPluginPlaces(facts.mashupScreens),
     lastScheduledRender: toScheduledRenderRead(plugin),
+  }
+}
+
+const BUILT_IN_NAMES = ['sensors', 'trmnl'] as const satisfies readonly PreviewOrigin[]
+
+function toPreviewNames(plugin: Plugin, { context, fieldValues, sourceData }: PluginRenderContext): PreviewName[] {
+  if (Array.isArray(context))
+    return []
+
+  const data = isPolled(plugin) ? sourceData : plugin.webhookPayload ?? {}
+  const origin = isPolled(plugin) ? 'dataSource' : 'webhookPayload'
+  const isReplaced = (name: string) => name in data
+  const isBuiltIn = (name: string) => name === 'sensors' || name === 'trmnl'
+  const fieldValueNames = inOrder(plugin.fields)
+    .map(field => field.keyname)
+    .filter(keyname => keyname in fieldValues && !isReplaced(keyname) && !isBuiltIn(keyname))
+
+  return [
+    ...fieldValueNames.map((name): PreviewName => ({ name, origin: 'fieldValue', error: null })),
+    ...Object.entries(data).map(([name, value]): PreviewName => ({ name, origin, error: isFetchErrorMarker(value) ? value.message : null })),
+    ...BUILT_IN_NAMES.filter(name => !isReplaced(name)).map((name): PreviewName => ({ name, origin: name, error: null })),
+  ]
+}
+
+/** The data a preview of the Plugin draws against, and the names of it a Template can read. */
+export function toPreviewData(plugin: Plugin, rendering: PluginRenderContext, fetchedAt: Date): PreviewData {
+  return {
+    context: rendering.context,
+    names: toPreviewNames(plugin, rendering),
+    fetchedAt: toIsoString(fetchedAt),
+    webhookPayloadReceivedAt: isPolled(plugin) ? null : toIsoStringOrNull(plugin.payloadReceivedAt),
   }
 }

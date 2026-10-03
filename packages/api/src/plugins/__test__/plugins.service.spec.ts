@@ -1,22 +1,18 @@
 import type { Screen } from '../../screens/screens.entity.js'
-import type { MockPluginDataFetcherService, MockPluginRenderCacheService, MockPluginRendererService, MockPluginTransformService } from '../../test/mockPluginCollaborators.js'
+import type { MockPluginRenderCacheService } from '../../test/mockPluginCollaborators.js'
 import type { PluginDataSource } from '../entities/plugin-data-source.entity.js'
 import type { PluginField } from '../entities/plugin-field.entity.js'
 import type { PluginTemplate } from '../entities/plugin-template.entity.js'
 import type { Plugin } from '../entities/plugin.entity.js'
-import type { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
 import type { PluginFieldValuesService } from '../services/plugin-field-values.service.js'
 import type { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
-import type { PluginRendererService } from '../services/plugin-renderer.service.js'
 import type { PluginSchedulerService } from '../services/plugin-scheduler.service.js'
-import type { PluginTransformService } from '../services/plugin-transform.service.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeDevicePlugin, makePlugin, makePluginDataSource, makePluginField, makePluginTemplate } from '../../test/fixtures.js'
-import { createMockPluginDataFetcherService, createMockPluginFieldValuesService, createMockPluginRenderCacheService, createMockPluginRendererService, createMockPluginTransformService, createPluginTemplateContextService } from '../../test/mockPluginCollaborators.js'
+import { createMockPluginFieldValuesService, createMockPluginRenderCacheService } from '../../test/mockPluginCollaborators.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
 import { asService, injectPrivate } from '../../test/mockService.js'
 import { PluginsService } from '../plugins.service.js'
-import { PluginDataResolverService } from '../services/plugin-data-resolver.service.js'
 
 describe('pluginsService', () => {
   let service: PluginsService
@@ -26,10 +22,7 @@ describe('pluginsService', () => {
   let templateRepo: ReturnType<typeof createMockRepository<PluginTemplate>>
   let fieldRepo: ReturnType<typeof createMockRepository<PluginField>>
   let mockFieldValues: ReturnType<typeof createMockPluginFieldValuesService>
-  let mockDataFetcher: MockPluginDataFetcherService
-  let mockRenderer: MockPluginRendererService
   let mockScheduler: { schedulePlugin: ReturnType<typeof vi.fn>, removeScheduledJob: ReturnType<typeof vi.fn>, hasScheduledJob: ReturnType<typeof vi.fn> }
-  let mockTransformer: MockPluginTransformService
   let mockRenderCache: MockPluginRenderCacheService
 
   beforeEach(() => {
@@ -40,14 +33,11 @@ describe('pluginsService', () => {
     fieldRepo = createMockRepository<PluginField>()
     mockFieldValues = createMockPluginFieldValuesService()
 
-    mockDataFetcher = createMockPluginDataFetcherService()
-    mockRenderer = createMockPluginRendererService()
     mockScheduler = {
       schedulePlugin: vi.fn(),
       removeScheduledJob: vi.fn(),
       hasScheduledJob: vi.fn(),
     }
-    mockTransformer = createMockPluginTransformService()
     mockRenderCache = createMockPluginRenderCacheService()
 
     service = new PluginsService(
@@ -56,12 +46,9 @@ describe('pluginsService', () => {
       asRepository(dataSourceRepo),
       asRepository(templateRepo),
       asRepository(fieldRepo),
-      new PluginDataResolverService(asService<PluginDataFetcherService>(mockDataFetcher), asService<PluginTransformService>(mockTransformer)),
-      asService<PluginRendererService>(mockRenderer),
       asService<PluginSchedulerService>(mockScheduler),
       asService<PluginRenderCacheService>(mockRenderCache),
       asService<PluginFieldValuesService>(mockFieldValues),
-      createPluginTemplateContextService(),
     )
   })
 
@@ -369,101 +356,6 @@ describe('pluginsService', () => {
       dataSources: [{ name: 'weather', mode: 'fetch', url: 'https://api.com', method: 'GET' }],
       fields: [{ keyname: 'weather', fieldType: 'string', name: 'Weather' }],
     })).rejects.toMatchObject({ fields: [{ path: 'dataSources.0.name', message: expect.stringContaining('collides') }] })
-  })
-
-  it('preview fetches a single source and renders template under its name', async () => {
-    const apiData = { temperature: 25, location: 'Tokyo' }
-    mockDataFetcher.fetchData = vi.fn().mockResolvedValue(apiData)
-    mockRenderer.render = vi.fn().mockResolvedValue('25°C in Tokyo')
-
-    const result = await service.preview({
-      sources: [{ name: 'weather', url: 'https://api.example.com', method: 'GET' }],
-      template: '{{ weather.temperature }}°C in {{ weather.location }}',
-    })
-
-    expect(mockDataFetcher.fetchData).toHaveBeenCalledWith('GET', 'https://api.example.com', undefined, undefined, expect.any(Object))
-    expect(mockRenderer.render).toHaveBeenCalledWith(
-      '{{ weather.temperature }}°C in {{ weather.location }}',
-      expect.objectContaining({ weather: apiData }),
-    )
-    expect(result.html).toBe('25°C in Tokyo')
-    expect(result.data).toEqual({ weather: apiData })
-  })
-
-  it('preview fetches multiple sources in parallel, each keyed by its own name', async () => {
-    mockDataFetcher.fetchData = vi.fn()
-      .mockImplementation((_method, url) => Promise.resolve(url === 'https://api.example.com/weather' ? { temp: 25 } : { aqi: 42 }))
-    mockRenderer.render = vi.fn().mockResolvedValue('rendered')
-
-    const result = await service.preview({
-      sources: [
-        { name: 'weather', url: 'https://api.example.com/weather', method: 'GET' },
-        { name: 'air_quality', url: 'https://api.example.com/air', method: 'GET' },
-      ],
-      template: '{{ weather.temp }} / {{ air_quality.aqi }}',
-    })
-
-    expect(mockDataFetcher.fetchData).toHaveBeenCalledTimes(2)
-    expect(result.data).toEqual({ weather: { temp: 25 }, air_quality: { aqi: 42 } })
-  })
-
-  it('preview applies each source\'s own transform to its own data', async () => {
-    const apiData = { value: 10 }
-    const transformedData = { value: 20 }
-    mockDataFetcher.fetchData = vi.fn().mockResolvedValue(apiData)
-    mockTransformer.transform = vi.fn().mockReturnValue(transformedData)
-    mockRenderer.render = vi.fn().mockResolvedValue('20')
-
-    await service.preview({
-      sources: [{
-        name: 'source',
-        url: 'https://api.example.com',
-        method: 'GET',
-        transformJs: 'module.exports = (d) => ({ value: d.value * 2 })',
-      }],
-      template: '{{ source.value }}',
-    })
-
-    expect(mockTransformer.transform).toHaveBeenCalledWith('module.exports = (d) => ({ value: d.value * 2 })', apiData)
-    expect(mockRenderer.render).toHaveBeenCalledWith('{{ source.value }}', expect.objectContaining({ source: transformedData }))
-  })
-
-  it('preview gives a failing source an error marker instead of rejecting the whole preview', async () => {
-    mockDataFetcher.fetchData = vi.fn()
-      .mockResolvedValueOnce({ temp: 25 })
-      .mockRejectedValueOnce(new Error('API timeout'))
-    mockRenderer.render = vi.fn().mockResolvedValue('rendered')
-
-    const result = await service.preview({
-      sources: [
-        { name: 'weather', url: 'https://api.example.com/weather', method: 'GET' },
-        { name: 'air_quality', url: 'https://api.example.com/air', method: 'GET' },
-      ],
-      template: '{{ weather.temp }}',
-    })
-
-    expect(result.data.weather).toEqual({ temp: 25 })
-    expect(result.data.air_quality).toEqual({ error: true, message: 'API timeout' })
-  })
-
-  it('preview includes field values in context', async () => {
-    const apiData = { temp: 25 }
-    mockDataFetcher.fetchData = vi.fn().mockResolvedValue(apiData)
-    mockRenderer.render = vi.fn().mockResolvedValue('<html>test</html>')
-
-    await service.preview({
-      sources: [{ name: 'source', url: 'https://api.example.com', method: 'GET' }],
-      template: '{{ api_key }}',
-      fieldValues: { api_key: 'secret-123' },
-    })
-
-    expect(mockDataFetcher.fetchData).toHaveBeenCalledWith(
-      'GET',
-      'https://api.example.com',
-      undefined,
-      undefined,
-      expect.objectContaining({ api_key: 'secret-123' }),
-    )
   })
 
   describe('webhook-kind plugins', () => {
