@@ -9,6 +9,8 @@ import { InjectRepository } from '@nestjs/typeorm'
 import cron from 'node-cron'
 import { Repository } from 'typeorm'
 import { TRMNL_API_URL } from '../device-models/trmnl-payloads.js'
+import { SyncRunService } from '../sync-runs/sync-run.service.js'
+import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { Firmware } from './entities/firmware.entity.js'
 import { FirmwareAutoUpdateService } from './firmware-auto-update.service.js'
 import { firmwareFilePath } from './firmware-paths.js'
@@ -34,6 +36,7 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
     @InjectRepository(Firmware)
     private readonly firmwareRepository: Repository<Firmware>,
     private readonly autoUpdateService: FirmwareAutoUpdateService,
+    private readonly syncRuns: SyncRunService,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -48,19 +51,33 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
    * promise instead of racing on the same insert.
    */
   sync(): Promise<FirmwareSyncResult> {
-    this.syncing ??= this.runSync().finally(() => {
+    this.syncing ??= this.runAndRecord().finally(() => {
       this.syncing = null
     })
     return this.syncing
   }
 
-  private async runSync(): Promise<FirmwareSyncResult> {
+  private async runAndRecord(): Promise<FirmwareSyncResult> {
+    const ranAt = new Date()
+    let result: FirmwareSyncResult
+    try {
+      result = await this.runSync(ranAt)
+    }
+    catch (error) {
+      await this.syncRuns.record('firmware', ranAt, { ok: false, error: getErrorMessage(error) })
+      throw error
+    }
+    await this.syncRuns.record('firmware', ranAt, { ok: true })
+    return result
+  }
+
+  private async runSync(ranAt: Date): Promise<FirmwareSyncResult> {
     this.logger.log('Syncing firmware from TRMNL')
     const payload = await this.fetchLatest()
     const newest = await this.firmwareRepository.findOne({ where: { kind: 'official-synced' }, order: { syncedAt: 'DESC' } })
     if (newest && newest.version === payload.version) {
       this.logger.log(`Firmware ${payload.version} already synced, nothing to do`)
-      return { inserted: false, version: payload.version }
+      return { ranAt: ranAt.toISOString(), inserted: false, version: payload.version, assigned: [] }
     }
 
     const binary = await this.downloadBinary(payload.url)
@@ -85,10 +102,15 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
       await this.firmwareRepository.update({ kind: 'official-synced', deprecated: false }, { deprecated: true })
     await this.firmwareRepository.insert(newFirmware)
 
-    const assignedCount = await this.autoUpdateService.applyPolicy(newFirmware)
+    const assigned = await this.autoUpdateService.applyPolicy(newFirmware)
 
     this.logger.log(`Synced firmware ${payload.version} (${id})`)
-    return { inserted: true, version: payload.version, syncedAt: syncedAt.toISOString(), assignedCount }
+    return {
+      ranAt: ranAt.toISOString(),
+      inserted: true,
+      version: payload.version,
+      assigned: assigned.map(({ id, name }) => ({ id, name })),
+    }
   }
 
   private async fetchLatest(): Promise<TrmnlFirmwarePayload> {

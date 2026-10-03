@@ -1,3 +1,4 @@
+import type { SyncRunService } from '../../sync-runs/sync-run.service.js'
 import type { Firmware } from '../entities/firmware.entity.js'
 import type { FirmwareAutoUpdateService } from '../firmware-auto-update.service.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -35,14 +36,16 @@ describe('firmwareSyncService', () => {
   let service: FirmwareSyncService
   let firmwareRepo: ReturnType<typeof createMockRepository<Firmware>>
   let autoUpdateService: { applyPolicy: ReturnType<typeof vi.fn> }
+  let syncRuns: { record: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     vi.resetAllMocks()
     fsMock.mkdir.mockResolvedValue(undefined)
     fsMock.writeFile.mockResolvedValue(undefined)
     firmwareRepo = createMockRepository<Firmware>()
-    autoUpdateService = { applyPolicy: vi.fn().mockResolvedValue(0) }
-    service = new FirmwareSyncService(asRepository(firmwareRepo), asService<FirmwareAutoUpdateService>(autoUpdateService))
+    autoUpdateService = { applyPolicy: vi.fn().mockResolvedValue([]) }
+    syncRuns = { record: vi.fn().mockResolvedValue(undefined) }
+    service = new FirmwareSyncService(asRepository(firmwareRepo), asService<FirmwareAutoUpdateService>(autoUpdateService), asService<SyncRunService>(syncRuns))
   })
 
   describe('onApplicationBootstrap', () => {
@@ -59,7 +62,7 @@ describe('firmwareSyncService', () => {
         .mockResolvedValueOnce(jsonResponse(latestPayload))
         .mockResolvedValueOnce(binaryResponse())
       firmwareRepo.findOne.mockResolvedValue(makeFirmware({ id: 'old', version: '1.5.5' }))
-      autoUpdateService.applyPolicy.mockResolvedValue(2)
+      autoUpdateService.applyPolicy.mockResolvedValue([{ id: 'd1', name: 'One', apikey: 'secret' }, { id: 'd2', name: 'Two' }])
 
       const result = await service.sync()
 
@@ -74,7 +77,7 @@ describe('firmwareSyncService', () => {
         deprecated: false,
       }))
       expect(autoUpdateService.applyPolicy).toHaveBeenCalledWith(expect.objectContaining({ version: '1.5.6', kind: 'official-synced' }))
-      expect(result).toMatchObject({ inserted: true, version: '1.5.6', assignedCount: 2 })
+      expect(result).toEqual({ ranAt: expect.any(String), inserted: true, version: '1.5.6', assigned: [{ id: 'd1', name: 'One' }, { id: 'd2', name: 'Two' }] })
     })
 
     it('is a no-op when the version matches the newest existing row', async () => {
@@ -87,7 +90,7 @@ describe('firmwareSyncService', () => {
       expect(firmwareRepo.insert).not.toHaveBeenCalled()
       expect(firmwareRepo.update).not.toHaveBeenCalled()
       expect(autoUpdateService.applyPolicy).not.toHaveBeenCalled()
-      expect(result).toEqual({ inserted: false, version: '1.5.6' })
+      expect(result).toEqual({ ranAt: expect.any(String), inserted: false, version: '1.5.6', assigned: [] })
     })
 
     it('inserts without deprecating anything on the first-ever sync', async () => {
@@ -119,6 +122,7 @@ describe('firmwareSyncService', () => {
       mockFetch.mockResolvedValueOnce(jsonResponse(null, { ok: false }))
       await expect(service.sync()).rejects.toThrow(/request failed/)
       expect(firmwareRepo.insert).not.toHaveBeenCalled()
+      expect(syncRuns.record).toHaveBeenCalledWith('firmware', expect.any(Date), { ok: false, error: expect.stringContaining('request failed') })
     })
 
     it('throws when the response is missing url/version', async () => {

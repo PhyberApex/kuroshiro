@@ -26,9 +26,9 @@ describe('firmwareAutoUpdateService', () => {
     settingsService.resolveFirmwareAutoUpdate.mockResolvedValue(false)
     deviceRepo.find.mockResolvedValue([makeDevice({ deviceModel: OG_PLUS })])
 
-    const count = await service.applyPolicy(officialFirmware)
+    const assigned = await service.applyPolicy(officialFirmware)
 
-    expect(count).toBe(0)
+    expect(assigned).toEqual([])
     expect(deviceRepo.save).not.toHaveBeenCalled()
   })
 
@@ -36,37 +36,37 @@ describe('firmwareAutoUpdateService', () => {
     const device = makeDevice({ id: 'device-1', deviceModel: OG_PLUS, updateFirmware: false })
     deviceRepo.find.mockResolvedValue([device])
 
-    const count = await service.applyPolicy(officialFirmware)
+    const assigned = await service.applyPolicy(officialFirmware)
 
     expect(deviceRepo.find).toHaveBeenCalledWith({ where: { updateFirmware: false } })
     expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ id: 'device-1', targetFirmware: officialFirmware, updateFirmware: true }))
-    expect(count).toBe(1)
+    expect(assigned).toEqual([device])
   })
 
   it('skips a mirrored Device', async () => {
     deviceRepo.find.mockResolvedValue([makeDevice({ deviceModel: OG_PLUS, mirrorEnabled: true })])
 
-    const count = await service.applyPolicy(officialFirmware)
+    const assigned = await service.applyPolicy(officialFirmware)
 
-    expect(count).toBe(0)
+    expect(assigned).toEqual([])
     expect(deviceRepo.save).not.toHaveBeenCalled()
   })
 
   it('skips a Device without a Device Model', async () => {
     deviceRepo.find.mockResolvedValue([makeDevice({ deviceModel: null })])
 
-    const count = await service.applyPolicy(officialFirmware)
+    const assigned = await service.applyPolicy(officialFirmware)
 
-    expect(count).toBe(0)
+    expect(assigned).toEqual([])
     expect(deviceRepo.save).not.toHaveBeenCalled()
   })
 
   it('skips a Device whose model is outside compatibleModels', async () => {
     deviceRepo.find.mockResolvedValue([makeDevice({ deviceModel: V2 })])
 
-    const count = await service.applyPolicy(officialFirmware)
+    const assigned = await service.applyPolicy(officialFirmware)
 
-    expect(count).toBe(0)
+    expect(assigned).toEqual([])
     expect(deviceRepo.save).not.toHaveBeenCalled()
   })
 

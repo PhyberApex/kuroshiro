@@ -1,3 +1,4 @@
+import type { UploadFirmwareInput } from 'kuroshiro-shared'
 import buffer from 'node:buffer'
 import * as crypto from 'node:crypto'
 import * as fs from 'node:fs'
@@ -5,18 +6,15 @@ import * as path from 'node:path'
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { In, Repository } from 'typeorm'
+import { DeviceModel } from '../device-models/entities/device-model.entity.js'
+import { Device } from '../devices/devices.entity.js'
+import { ApiException } from '../errors/api.exception.js'
 import { uploadTooLarge } from '../uploads/limited-file-interceptor.js'
 import { UPLOAD_LIMITS } from '../uploads/upload-limits.js'
 import { fileExists } from '../utils/fileExists.js'
 import { Firmware } from './entities/firmware.entity.js'
 import { firmwareFilePath, firmwareFileUrl } from './firmware-paths.js'
-
-export interface UploadFirmwareInput {
-  version?: string
-  label?: string
-  compatibleModels?: string[]
-}
 
 @Injectable()
 export class FirmwareService {
@@ -25,6 +23,8 @@ export class FirmwareService {
   constructor(
     @InjectRepository(Firmware)
     private readonly firmwareRepository: Repository<Firmware>,
+    @InjectRepository(DeviceModel)
+    private readonly deviceModelRepository: Repository<DeviceModel>,
     private readonly configService: ConfigService,
   ) {}
 
@@ -46,12 +46,13 @@ export class FirmwareService {
   }
 
   async upload(file: { buffer: buffer.Buffer, originalname: string, mimetype: string, size: number }, input: UploadFirmwareInput): Promise<Firmware> {
-    if (!input.version)
-      throw new BadRequestException('Firmware version is required')
     if (file.size > UPLOAD_LIMITS.firmwareUploadBytes)
       throw uploadTooLarge(UPLOAD_LIMITS.firmwareUploadBytes)
     if (path.extname(file.originalname).toLowerCase() !== '.bin')
       throw new BadRequestException('Firmware upload must be a .bin file')
+    const compatibleModels = input.compatibleModels ?? []
+    await this.assertVersionFree(input.version)
+    await this.assertDeviceModelsKnown(compatibleModels)
 
     const id = crypto.randomUUID()
     const checksum = crypto.createHash('sha256').update(file.buffer).digest('hex')
@@ -63,7 +64,7 @@ export class FirmwareService {
       version: input.version,
       kind: 'custom',
       checksum,
-      compatibleModels: input.compatibleModels ?? [],
+      compatibleModels,
       deprecated: false,
       label: input.label ?? file.originalname,
       uploadedAt: new Date(),
@@ -73,13 +74,31 @@ export class FirmwareService {
     return saved
   }
 
+  private async assertVersionFree(version: string): Promise<void> {
+    if (await this.firmwareRepository.existsBy({ version }))
+      throw new ApiException(409, 'firmware-version-taken', `There is already a Firmware ${version}.`, { version })
+  }
+
+  private async assertDeviceModelsKnown(names: string[]): Promise<void> {
+    if (names.length === 0)
+      return
+    const known = new Set((await this.deviceModelRepository.find({ select: { name: true }, where: { name: In(names) } })).map(model => model.name))
+    const unknown = names.filter(name => !known.has(name))
+    if (unknown.length > 0)
+      throw new ApiException(400, 'device-model-unknown', `This Instance does not know the Device Model ${unknown.join(', ')}.`, { names: unknown })
+  }
+
+  /** Every Device that targets the Firmware loses the target and the push pending for it, in the same transaction that removes the row. */
   async delete(id: string): Promise<void> {
     const firmware = await this.firmwareRepository.findOneBy({ id })
     if (!firmware)
       throw new NotFoundException(`Firmware ${id} not found`)
     if (firmware.kind !== 'custom')
-      throw new BadRequestException('Only custom firmware can be deleted')
-    await this.firmwareRepository.remove(firmware)
+      throw new ApiException(400, 'firmware-not-custom', 'Only a custom Firmware can be deleted.')
+    await this.firmwareRepository.manager.transaction(async (manager) => {
+      await manager.createQueryBuilder().update(Device).set({ targetFirmware: null, updateFirmware: false }).where('"targetFirmwareId" = :id', { id }).execute()
+      await manager.delete(Firmware, { id })
+    })
     await fs.promises.unlink(this.filePath(id)).catch(() => {})
     this.logger.log(`Deleted custom firmware ${id}`)
   }

@@ -22,9 +22,9 @@ export class FirmwareAutoUpdateService {
     private readonly instanceSettingsService: InstanceSettingsService,
   ) {}
 
-  async applyPolicy(firmware: Firmware): Promise<number> {
+  async applyPolicy(firmware: Firmware): Promise<Device[]> {
     if (!await this.instanceSettingsService.resolveFirmwareAutoUpdate())
-      return 0
+      return []
 
     const candidates = await this.deviceRepository.find({ where: { updateFirmware: false } })
     const eligible = candidates.filter(device =>
@@ -40,6 +40,6 @@ export class FirmwareAutoUpdateService {
       this.logger.log(`Auto-assigned firmware ${firmware.version} to device ${device.id}`)
     }
 
-    return eligible.length
+    return eligible
   }
 }
