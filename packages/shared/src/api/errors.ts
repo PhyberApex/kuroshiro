@@ -27,6 +27,9 @@ export const API_ERROR_CODES = [
   'firmware-version-taken',
   'device-model-unknown',
   'firmware-not-custom',
+  'firmware-push-without-target',
+  'firmware-push-mirrored',
+  'firmware-push-pending',
   'upstream-unreachable',
   'template-full-missing',
 ] as const

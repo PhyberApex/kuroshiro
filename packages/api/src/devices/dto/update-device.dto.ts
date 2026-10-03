@@ -1,7 +1,14 @@
 import type { ValidationArguments, ValidationOptions } from 'class-validator'
-import { IsBoolean, IsIn, IsInt, IsNumber, IsOptional, IsString, Max, Min, registerDecorator } from 'class-validator'
+import type { UpdateDeviceInput } from 'kuroshiro-shared'
+import { Transform } from 'class-transformer'
+import { IsBoolean, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Matches, Max, Min, registerDecorator, ValidateIf } from 'class-validator'
+import { MAC_ADDRESS_PATTERN, REFRESH_RATE_MAX, REFRESH_RATE_MIN, SPECIAL_FUNCTIONS } from 'kuroshiro-shared'
+import { trimmed } from '../../utils/trimmed.js'
 
 const SLEEP_TIME_MAX = 86399
+
+/** For fields that cannot be cleared: an absent key is skipped, `null` is validated like any other value. */
+const isSent = (_object: unknown, value: unknown): boolean => value !== undefined
 
 function RequiresSleepWindow(validationOptions?: ValidationOptions) {
   return function (object: object, propertyName: string) {
@@ -24,69 +31,45 @@ function RequiresSleepWindow(validationOptions?: ValidationOptions) {
   }
 }
 
-export class UpdateDeviceDto {
-  @IsOptional()
+export class UpdateDeviceDto implements UpdateDeviceInput {
+  @ValidateIf(isSent)
+  @Transform(trimmed)
   @IsString()
+  @IsNotEmpty()
   name?: string
 
-  @IsOptional()
-  @IsString()
-  mac?: string
-
-  @IsOptional()
-  @IsString()
-  friendlyId?: string
-
-  @IsOptional()
-  @IsString()
-  batteryVoltage?: string
-
-  @IsOptional()
-  @IsString()
-  fwVersion?: string
-
-  @IsOptional()
-  @IsString()
-  host?: string
-
-  @IsOptional()
-  @IsNumber()
+  @ValidateIf(isSent)
+  @IsInt()
+  @Min(REFRESH_RATE_MIN)
+  @Max(REFRESH_RATE_MAX)
   refreshRate?: number
 
-  @IsOptional()
-  @IsString()
-  rssi?: string
-
-  @IsOptional()
-  @IsString()
-  userAgent?: string
-
-  @IsOptional()
+  @ValidateIf(isSent)
   @IsString()
   deviceModelName?: string
 
-  @IsOptional()
+  @ValidateIf(isSent)
   @IsString()
   paletteId?: string
 
-  @IsOptional()
+  @ValidateIf(isSent)
   @IsBoolean()
   mirrorEnabled?: boolean
 
-  @IsOptional()
-  @IsString()
+  @ValidateIf(isSent)
+  @Transform(({ value }) => typeof value === 'string' ? value.toUpperCase() : value)
+  @Matches(MAC_ADDRESS_PATTERN)
   mirrorMac?: string
 
-  @IsOptional()
+  @ValidateIf(isSent)
   @IsString()
   mirrorApikey?: string
 
-  @IsOptional()
-  @IsString()
-  @IsIn(['none', 'identify', 'sleep', 'add_wifi', 'restart_playlist', 'rewind', 'send_to_me'])
-  specialFunction?: string
+  @ValidateIf(isSent)
+  @IsIn(['none', ...SPECIAL_FUNCTIONS])
+  specialFunction?: UpdateDeviceInput['specialFunction']
 
-  @IsOptional()
+  @ValidateIf(isSent)
   @IsBoolean()
   @RequiresSleepWindow()
   sleepModeEnabled?: boolean
@@ -103,19 +86,19 @@ export class UpdateDeviceDto {
   @Max(SLEEP_TIME_MAX)
   sleepEndTime?: number | null
 
-  @IsOptional()
+  @ValidateIf(isSent)
   @IsBoolean()
   sleepScreenEnabled?: boolean
 
-  @IsOptional()
+  @ValidateIf(isSent)
   @IsBoolean()
   resetDevice?: boolean
 
-  @IsOptional()
+  @ValidateIf(isSent)
   @IsBoolean()
   updateFirmware?: boolean
 
   @IsOptional()
   @IsString()
-  targetFirmwareId?: string
+  targetFirmwareId?: string | null
 }
