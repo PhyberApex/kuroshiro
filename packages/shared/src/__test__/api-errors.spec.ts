@@ -19,6 +19,7 @@ const wording: Record<ApiErrorCode, string> = {
   'internal': 'Something went wrong on the server.',
   'device-not-found': 'That Device does not exist.',
   'screen-not-found': 'That Screen does not exist.',
+  'screen-field-not-for-kind': 'That Screen has no such setting.',
   'plugin-not-found': 'That Plugin does not exist.',
   'assignment-not-found': 'That Plugin is not on this Device.',
   'plugin-already-assigned': 'That Plugin is already on this Device.',
@@ -43,6 +44,7 @@ function wordingBySwitch(code: ApiErrorCode): string {
     case 'not-found':
     case 'device-not-found':
     case 'screen-not-found':
+    case 'screen-field-not-for-kind':
     case 'plugin-not-found':
     case 'assignment-not-found':
     case 'plugin-already-assigned':

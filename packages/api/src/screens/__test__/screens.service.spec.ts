@@ -46,16 +46,6 @@ describe('screensService', () => {
     unlinkMock = vi.spyOn(fs.promises, 'unlink').mockResolvedValue(undefined)
   })
 
-  it('updateExternalScreen refetches into the retained original and converts it', async () => {
-    const device = makeDevice({ id: 'dev', width: 100, height: 100 })
-    const screen = makeScreen({ id: SCREEN_ID, device, externalLink: 'url', fetchManual: true })
-    screensRepo.findOne.mockResolvedValue(screen)
-    await expect(service.updateExternalScreen(SCREEN_ID)).resolves.toBeUndefined()
-    const { downloadImage, convertToPng } = await import('../../utils/imageUtils.js')
-    expect(downloadImage).toHaveBeenCalledWith('url', expect.stringContaining(`public/screens/devices/dev/${SCREEN_ID}.original`), expect.any(Object))
-    expect(convertToPng).toHaveBeenCalledWith(expect.stringContaining(`${SCREEN_ID}.original`), expect.stringContaining(`${SCREEN_ID}.png`), expect.anything(), expect.any(Object))
-  })
-
   describe('reconvertImageScreens', () => {
     const device = makeDevice({ id: 'dev' })
 
@@ -95,8 +85,8 @@ describe('screensService', () => {
     })
   })
 
-  it('updateExternalScreen throws if not found', async () => {
+  it('refresh throws if not found', async () => {
     screensRepo.findOne.mockResolvedValue(null)
-    await expect(service.updateExternalScreen(SCREEN_ID)).rejects.toThrow()
+    await expect(service.refresh(SCREEN_ID)).rejects.toThrow()
   })
 })

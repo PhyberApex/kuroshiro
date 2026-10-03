@@ -168,3 +168,22 @@ export interface ReorderScreensInput {
   /** Every Screen of the Device, once, in the new Order. */
   screenIds: string[]
 }
+
+/** Each field belongs to some kinds only; a field the Screen's kind does not have answers 400 `screen-field-not-for-kind`. */
+export interface UpdateScreenInput {
+  /** Every kind but a Plugin Screen, which reads its Plugin's name. */
+  name?: string
+  /** External link only, `http` or `https`. A new one is fetched and converted first when the image is kept. */
+  url?: string
+  /** External link only. Switching to `true` fetches and converts the image first. */
+  fetchManual?: boolean
+  /** HTML Screen only. */
+  html?: string
+}
+
+export interface UpdateMashupInput {
+  /** Defaults to the Mashup's current layout. */
+  layout?: MashupLayout
+  /** The whole slot list for the layout, in slot order. */
+  pluginIds: string[]
+}
