@@ -187,7 +187,7 @@ For local hacking or deployment inspiration, check out [`docker-compose.yml`](./
 
 - [`packages/api`](./packages/api) — The NestJS backend
 - [`packages/ui`](./packages/ui) — The Vue 3 + Vuetify frontend
-- [`packages/shared`](./packages/shared) — Code that is byte-identical in the API and UI
+- [`packages/shared`](./packages/shared) — The admin API's request and response types, and code that is identical in the API and UI
 
 ---
 
