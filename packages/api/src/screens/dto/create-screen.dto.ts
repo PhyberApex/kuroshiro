@@ -4,6 +4,14 @@ import { IsBoolean, IsIn, IsNotEmpty, IsString, IsUrl, IsUUID, ValidateIf } from
 import { CREATABLE_SCREEN_KINDS } from 'kuroshiro-shared'
 import { trimmed } from '../../utils/trimmed.js'
 
+type KeyOfAnyKind = CreateScreenInput extends infer Kind ? Kind extends unknown ? keyof Kind : never : never
+type KeyOfEveryKind = keyof CreateScreenInput
+
+/** `CreateScreenInput` as one object: what every kind carries, plus each kind's own fields as optional ones. */
+type CreateScreenFields = Pick<CreateScreenInput, KeyOfEveryKind> & {
+  [Key in Exclude<KeyOfAnyKind, KeyOfEveryKind>]?: Extract<CreateScreenInput, Record<Key, unknown>>[Key]
+}
+
 const BOOLEAN_BY_FORM_VALUE: Record<string, boolean> = { true: true, false: false }
 
 /**
@@ -11,7 +19,7 @@ const BOOLEAN_BY_FORM_VALUE: Record<string, boolean> = { true: true, false: fals
  * belongs to; a field of another kind is accepted and not stored. Sent as JSON
  * or, with a file, as `multipart/form-data`, where every value is a string.
  */
-export class CreateScreenDto implements Pick<CreateScreenInput, 'deviceId' | 'kind' | 'name'> {
+export class CreateScreenDto implements CreateScreenFields {
   @IsUUID()
   deviceId: string
 

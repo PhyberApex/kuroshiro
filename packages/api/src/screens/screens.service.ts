@@ -1,3 +1,4 @@
+import type { ApiErrorCode } from 'kuroshiro-shared'
 import type { DeepPartial } from 'typeorm'
 import { randomUUID } from 'node:crypto'
 import * as fs from 'node:fs'
@@ -82,34 +83,42 @@ export class ScreensService {
   private async fetchKeptImage(device: Device, screenId: string, url: string): Promise<void> {
     if (this.configService.get<boolean>('demo_mode'))
       assertPublicUrl(url)
+    const target = await this.deviceModels.renderTargetFor(device)
     const inputPath = this.originalImagePath(device.id, screenId)
     try {
       await downloadImage(url, inputPath, this.logger)
-      await convertToPng(inputPath, this.screenImagePath(device.id, screenId), await this.deviceModels.renderTargetFor(device), this.logger)
     }
     catch (err) {
-      const reason = getErrorMessage(err)
-      this.logger.error(`Failed to fetch the image of a new screen: ${reason}`)
-      await this.deleteImages(device.id, screenId)
-      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'image-fetch-failed', `The image could not be fetched: ${reason}`, { url })
+      throw await this.refuseImage(device.id, screenId, err, HttpStatus.UNPROCESSABLE_ENTITY, 'image-fetch-failed', `The image could not be fetched: ${getErrorMessage(err)}`)
+    }
+    try {
+      await convertToPng(inputPath, this.screenImagePath(device.id, screenId), target, this.logger)
+    }
+    catch (err) {
+      throw await this.refuseImage(device.id, screenId, err, HttpStatus.UNPROCESSABLE_ENTITY, 'image-fetch-failed', 'The address did not answer with an image Kuroshiro can read.')
     }
   }
 
   private async storeUpload(device: Device, screenId: string, file: Express.Multer.File): Promise<DeepPartial<Screen>> {
+    const target = await this.deviceModels.renderTargetFor(device)
     const inputPath = this.originalImagePath(device.id, screenId)
+    await fs.promises.mkdir(path.dirname(inputPath), { recursive: true })
+    await fs.promises.writeFile(inputPath, file.buffer)
     try {
-      await fs.promises.mkdir(path.dirname(inputPath), { recursive: true })
-      await fs.promises.writeFile(inputPath, file.buffer)
       const { width, height } = await readImageSize(inputPath, this.logger)
-      await convertToPng(inputPath, this.screenImagePath(device.id, screenId), await this.deviceModels.renderTargetFor(device), this.logger)
+      await convertToPng(inputPath, this.screenImagePath(device.id, screenId), target, this.logger)
       return { fileOriginalName: file.originalname, fileWidth: width, fileHeight: height, fileBytes: file.size }
     }
     catch (err) {
-      const reason = getErrorMessage(err)
-      this.logger.error(`Failed to read the upload of a new screen: ${reason}`)
-      await this.deleteImages(device.id, screenId)
-      throw new ApiException(HttpStatus.BAD_REQUEST, 'image-unreadable', `The file is not an image Kuroshiro can read: ${reason}`)
+      throw await this.refuseImage(device.id, screenId, err, HttpStatus.BAD_REQUEST, 'image-unreadable', 'The file is not an image Kuroshiro can read.')
     }
+  }
+
+  /** Removes what a refused image left on disk and builds the refusal; the cause goes to the log, not to the client. */
+  private async refuseImage(deviceId: string, screenId: string, cause: unknown, status: HttpStatus, code: ApiErrorCode, message: string): Promise<ApiException> {
+    this.logger.error(`Refusing the image of a new screen (${code}): ${getErrorMessage(cause)}`)
+    await this.deleteImages(deviceId, screenId)
+    return new ApiException(status, code, message)
   }
 
   async delete(id: string): Promise<void> {

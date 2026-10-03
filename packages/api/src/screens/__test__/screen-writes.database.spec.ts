@@ -521,6 +521,7 @@ describe('adding, deleting and reordering a Device\'s Screens, against a real da
       ['misses a Screen', (ids: string[]) => ids.slice(1)],
       ['repeats a Screen', (ids: string[]) => [ids[0], ids[0]]],
       ['names a Screen of another Device', (ids: string[]) => [ids[0], UNKNOWN_ID]],
+      ['is empty', () => []],
     ])('answers 400 order-not-a-permutation for a list that %s', async (_case, listOf) => {
       const first = await seedScreen(1, { filename: 'First', isActive: true })
       const second = await seedScreen(2, { filename: 'Second' })
