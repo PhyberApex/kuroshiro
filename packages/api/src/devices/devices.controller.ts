@@ -5,12 +5,14 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Logger,
-  NotFoundException,
   Param,
   Patch,
   Post,
 } from '@nestjs/common'
+import { ApiException } from '../errors/api.exception.js'
 import { DeviceReadsService } from './device-reads.service.js'
 import { Device } from './devices.entity.js'
 import { DevicesService } from './devices.service.js'
@@ -49,21 +51,21 @@ export class DevicesController {
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   async delete(@Param('id') id: string): Promise<void> {
-    const removed = await this.devicesService.remove(id)
-    if (!removed) {
-      this.logger.warn(`Device not found: ${id}`)
-      throw new NotFoundException('Device not found')
-    }
+    if (!(await this.devicesService.remove(id)))
+      throw this.deviceNotFound(id)
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() newDevice: UpdateDeviceDto): Promise<void> {
-    const dbDevice = await this.devicesService.findById(id)
-    if (!dbDevice) {
-      this.logger.warn(`Device not found: ${id}`)
-      throw new NotFoundException('Device not found')
-    }
-    await this.devicesService.update(id, newDevice)
+  async update(@Param('id') id: string, @Body() changes: UpdateDeviceDto): Promise<DeviceDetail> {
+    if (!(await this.devicesService.update(id, changes)))
+      throw this.deviceNotFound(id)
+    return this.deviceReads.detail(id)
+  }
+
+  private deviceNotFound(id: string): ApiException {
+    this.logger.warn(`Device not found: ${id}`)
+    return new ApiException(HttpStatus.NOT_FOUND, 'device-not-found', 'Device not found', { id })
   }
 }

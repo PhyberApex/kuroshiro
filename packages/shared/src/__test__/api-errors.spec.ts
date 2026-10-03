@@ -19,6 +19,7 @@ const wording: Record<ApiErrorCode, string> = {
   'internal': 'Something went wrong on the server.',
   'device-not-found': 'That Device does not exist.',
   'screen-not-found': 'That Screen does not exist.',
+  'screen-field-not-for-kind': 'That Screen has no such setting.',
   'plugin-not-found': 'That Plugin does not exist.',
   'assignment-not-found': 'That Plugin is not on this Device.',
   'plugin-already-assigned': 'That Plugin is already on this Device.',
@@ -30,7 +31,11 @@ const wording: Record<ApiErrorCode, string> = {
   'firmware-version-taken': 'There is already a Firmware with that version.',
   'device-model-unknown': 'This Instance does not know that Device Model.',
   'firmware-not-custom': 'Only a custom Firmware can be deleted.',
+  'firmware-push-without-target': 'Choose a target Firmware before updating.',
+  'firmware-push-mirrored': 'A mirrored Device is not given Firmware.',
+  'firmware-push-pending': 'A Firmware push is waiting for the Device.',
   'upstream-unreachable': 'TRMNL did not answer.',
+  'template-full-missing': 'A Plugin needs its full Template.',
 }
 
 function wordingBySwitch(code: ApiErrorCode): string {
@@ -42,6 +47,7 @@ function wordingBySwitch(code: ApiErrorCode): string {
     case 'not-found':
     case 'device-not-found':
     case 'screen-not-found':
+    case 'screen-field-not-for-kind':
     case 'plugin-not-found':
     case 'assignment-not-found':
     case 'plugin-already-assigned':
@@ -53,6 +59,10 @@ function wordingBySwitch(code: ApiErrorCode): string {
     case 'firmware-version-taken':
     case 'device-model-unknown':
     case 'firmware-not-custom':
+    case 'firmware-push-without-target':
+    case 'firmware-push-mirrored':
+    case 'firmware-push-pending':
+    case 'template-full-missing':
     case 'conflict':
     case 'payload-too-large':
     case 'unprocessable':

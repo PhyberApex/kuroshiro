@@ -1,17 +1,18 @@
 import type { Response } from 'express'
-import type { PluginDetail, PluginSummary } from 'kuroshiro-shared'
-import { Body, Controller, Delete, Get, Param, Patch, Post, Res, UploadedFile, UseInterceptors } from '@nestjs/common'
+import type { PluginDetail, PluginSummary, PreviewData } from 'kuroshiro-shared'
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Res, UploadedFile, UseInterceptors } from '@nestjs/common'
 import { diskStorage } from 'multer'
 import { LimitedFileInterceptor } from '../uploads/limited-file-interceptor.js'
 import { UPLOAD_LIMITS } from '../uploads/upload-limits.js'
 import { ApplyRecipeUpdateDto } from './dto/apply-recipe-update.dto.js'
 import { CreatePluginDto } from './dto/create-plugin.dto.js'
-import { PreviewPluginDto } from './dto/preview-plugin.dto.js'
+import { PreviewDataDto } from './dto/preview-data.dto.js'
 import { UpdatePluginDto } from './dto/update-plugin.dto.js'
 import { PluginsService } from './plugins.service.js'
 import { PluginAssignmentsService } from './services/plugin-assignments.service.js'
 import { PluginExporterService } from './services/plugin-exporter.service.js'
 import { ParsedPlugin, PluginImporterService } from './services/plugin-importer.service.js'
+import { PluginPreviewDataService } from './services/plugin-preview-data.service.js'
 import { PluginReadsService } from './services/plugin-reads.service.js'
 import { RecipeUpdateService } from './services/recipe-update.service.js'
 
@@ -20,16 +21,12 @@ export class PluginsController {
   constructor(
     private readonly pluginsService: PluginsService,
     private readonly pluginReads: PluginReadsService,
+    private readonly previewDataService: PluginPreviewDataService,
     private readonly assignments: PluginAssignmentsService,
     private readonly importerService: PluginImporterService,
     private readonly exporterService: PluginExporterService,
     private readonly recipeUpdateService: RecipeUpdateService,
   ) {}
-
-  @Post('preview')
-  async preview(@Body() previewData: PreviewPluginDto) {
-    return this.pluginsService.preview(previewData)
-  }
 
   @Get()
   async findAll(): Promise<PluginSummary[]> {
@@ -50,6 +47,12 @@ export class PluginsController {
   async update(@Param('id') id: string, @Body() updatePluginDto: UpdatePluginDto): Promise<PluginDetail> {
     await this.pluginsService.update(id, updatePluginDto)
     return this.pluginReads.detail(id)
+  }
+
+  @Post(':id/preview-data')
+  @HttpCode(HttpStatus.OK)
+  async previewData(@Param('id') id: string, @Body() previewDataDto: PreviewDataDto): Promise<PreviewData> {
+    return this.previewDataService.previewData(id, previewDataDto)
   }
 
   @Post(':id/duplicate')

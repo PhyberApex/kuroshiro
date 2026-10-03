@@ -1,3 +1,4 @@
+import type { FallbackScreenRequest } from '../device-models/fallback-screen-templates.js'
 import type { MashupRendererService } from '../mashup/services/mashup-renderer.service.js'
 import type { Plugin } from '../plugins/entities/plugin.entity.js'
 import type { DisplayRequestHeadersDto } from './dto/display-request-headers.dto.js'
@@ -14,8 +15,8 @@ import { FallbackScreensService } from '../device-models/fallback-screens.servic
 import { renderHtmlToPng } from '../device-models/render-html-to-png.js'
 import { DeviceSensorsService } from '../device-sensors/device-sensors.service.js'
 import { FirmwareService } from '../firmware/firmware.service.js'
+import { templateOfSize } from '../plugins/plugin-templates.js'
 import { isRenderablePollPlugin } from '../plugins/renderable-poll-plugin.js'
-import { PluginDataResolverService } from '../plugins/services/plugin-data-resolver.service.js'
 import { PluginRendererService } from '../plugins/services/plugin-renderer.service.js'
 import { PluginTemplateContextService } from '../plugins/services/plugin-template-context.service.js'
 import { nextEligibleScreen } from '../schedule/rotation.js'
@@ -82,7 +83,6 @@ export class DeviceDisplayService {
     private deviceModels: DeviceModelsService,
     private fallbackScreens: FallbackScreensService,
     private firmwareService: FirmwareService,
-    private pluginDataResolver: PluginDataResolverService,
     private pluginRenderer: PluginRendererService,
     private deviceSensors: DeviceSensorsService,
     private pluginTemplateContext: PluginTemplateContextService,
@@ -93,7 +93,6 @@ export class DeviceDisplayService {
         const { MashupRendererService } = await import('../mashup/services/mashup-renderer.service.js')
         // Get it from the module (this is a workaround for circular deps)
         this.mashupRenderer = new MashupRendererService(
-          this.pluginDataResolver,
           this.pluginRenderer,
           this.configService,
           this.deviceSensors,
@@ -212,7 +211,7 @@ export class DeviceDisplayService {
           action: report.specialFunction,
           filename: 'noScreen.png',
           firmware_url: report.firmwareUrl,
-          image_url: await this.fallbackImageUrl('noScreen', device),
+          image_url: await this.fallbackImageUrl({ kind: 'noScreen' }, device),
           refresh_rate: device.refreshRate,
           reset_firmware: report.resetDevice,
           special_function: report.specialFunction,
@@ -261,7 +260,7 @@ export class DeviceDisplayService {
     }
     let refreshRate = device.refreshRate
     let filename = 'error.png'
-    let localImageUrl = await this.fallbackImageUrl('error', device)
+    let localImageUrl = await this.fallbackImageUrl({ kind: 'error', cause: 'mirror' }, device)
     let firmwareUrl: string | null = null
     let resetFirmware = report.resetDevice
     let mirrorSpecialFunction = report.specialFunction
@@ -334,7 +333,7 @@ export class DeviceDisplayService {
   private async buildSleepResponse(device: Device, now: Date, report: HeaderReport): Promise<DisplayAnswer> {
     const refreshRate = secondsUntilSleepEnd(device.sleepEndTime!, now)
     const { filename, imgUrl, served } = device.sleepScreenEnabled
-      ? { filename: 'sleep.png', imgUrl: await this.fallbackImageUrl('sleep', device), served: servedFallback('sleep', 'asleep') }
+      ? { filename: 'sleep.png', imgUrl: await this.fallbackImageUrl({ kind: 'sleep' }, device), served: servedFallback('sleep', 'asleep') }
       : await this.resolveFrozenImage(device)
     return {
       display: new Display({
@@ -363,7 +362,7 @@ export class DeviceDisplayService {
       const screenCount = await this.screenRepository.count({ where: { device: { id: device.id } } })
       return {
         filename: 'noScreen.png',
-        imgUrl: await this.fallbackImageUrl('noScreen', device),
+        imgUrl: await this.fallbackImageUrl({ kind: 'noScreen' }, device),
         served: servedNoScreen(screenCount),
       }
     }
@@ -389,7 +388,7 @@ export class DeviceDisplayService {
       this.logger.log(`Device ${device.id} is asleep. Returning the dedicated sleep screen.`)
       return new DisplayScreen({
         filename: 'sleep.png',
-        image_url: await this.fallbackImageUrl('sleep', device),
+        image_url: await this.fallbackImageUrl({ kind: 'sleep' }, device),
         refresh_rate: refreshRate,
         rendered_at: now,
       })
@@ -400,7 +399,7 @@ export class DeviceDisplayService {
       this.logger.log('No screen found returning default no screen image')
       return new DisplayScreen({
         filename: 'noScreen.png',
-        image_url: await this.fallbackImageUrl('noScreen', device),
+        image_url: await this.fallbackImageUrl({ kind: 'noScreen' }, device),
         refresh_rate: refreshRate,
         rendered_at: new Date(),
       })
@@ -419,7 +418,7 @@ export class DeviceDisplayService {
   private async resolveMirrorScreen(device: Device): Promise<{ filename: string, imgUrl: string, renderedAt: undefined }> {
     const filename = `mirror_${new Date().toISOString()}`
     this.logger.log(`Mirroring enabled for device ${device.id}, checking for image...`)
-    let imgUrl = await this.fallbackImageUrl('error', device)
+    let imgUrl = await this.fallbackImageUrl({ kind: 'error', cause: 'mirror' }, device)
     if (await fileExists(resolveAppPath('public', 'screens', 'devices', device.id, 'mirror.png'))) {
       this.logger.log(`Image found returning`)
       imgUrl = `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/mirror.png`
@@ -498,7 +497,15 @@ export class DeviceDisplayService {
 
     return typeof outcome === 'string'
       ? { imgUrl: outcome, served: servedScreen(screen.id) }
-      : { imgUrl: await this.fallbackImageUrl('error', device), served: servedFallback('error', 'renderFailed', screen.id) }
+      : { imgUrl: await this.fallbackImageUrl({ kind: 'error', cause: 'render', screenName: await this.nameOf(screen) }, device), served: servedFallback('error', 'renderFailed', screen.id) }
+  }
+
+  /** A plugin-type Screen goes by its Plugin's name; every other Screen carries its own. */
+  private async nameOf(screen: Screen): Promise<string | null> {
+    if (screen.type !== 'plugin')
+      return screen.filename ?? null
+    const withPlugin = await this.screenRepository.findOne({ where: { id: screen.id }, relations: { plugin: true } })
+    return withPlugin?.plugin?.name ?? screen.filename ?? null
   }
 
   private async renderMashupScreen(screen: Screen, device: Device): Promise<RenderOutcome> {
@@ -556,8 +563,18 @@ export class DeviceDisplayService {
       return await this.renderPluginScreen(screenWithPlugin, screen, device)
 
     return screen.html
-      ? await this.renderBodyToScreenPng(viewFull(screen.html), screen, device)
+      ? await this.renderHtmlScreen(screen.html, screen, device)
       : null
+  }
+
+  private async renderHtmlScreen(html: string, screen: Screen, device: Device): Promise<RenderOutcome> {
+    try {
+      return await this.renderBodyToScreenPng(viewFull(html), screen, device)
+    }
+    catch (err) {
+      this.logger.error(`Failed to render HTML screen: ${getErrorMessage(err)}`)
+      return RENDER_FAILED
+    }
   }
 
   private async renderPluginScreen(screenWithPlugin: Screen, screen: Screen, device: Device): Promise<RenderOutcome> {
@@ -621,15 +638,14 @@ export class DeviceDisplayService {
   private async renderPluginHtml(plugin: Plugin, screen: Screen, device: Device): Promise<string | null> {
     this.logger.log(`No cache, rendering plugin ${plugin.id} on-demand for screen ${screen.id}`)
 
-    const sensors = await this.deviceSensors.findForDevice(device.id)
-    const templateContext = await this.pluginTemplateContext.build(plugin, sensors)
-    const data = await this.pluginDataResolver.resolveAll(plugin.dataSources, templateContext)
-
-    const fullTemplate = plugin.templates.find(t => t.layout === 'full')
+    const fullTemplate = templateOfSize(plugin.templates, 'full')
     if (!fullTemplate)
       return null
 
-    const renderedHtml = await this.pluginRenderer.render(fullTemplate.liquidMarkup, { ...templateContext, ...data })
+    const sensors = await this.deviceSensors.findForDevice(device.id)
+    const { context } = await this.pluginTemplateContext.contextFor(plugin, sensors)
+
+    const renderedHtml = await this.pluginRenderer.render(fullTemplate.liquidMarkup, context)
     await this.cachePluginOutput(screen, renderedHtml)
     return renderedHtml
   }
@@ -659,7 +675,7 @@ export class DeviceDisplayService {
     return `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${screen.id}.png`
   }
 
-  private async fallbackImageUrl(kind: 'noScreen' | 'error' | 'sleep', device: Device): Promise<string> {
-    return this.fallbackScreens.urlFor(kind, await this.deviceModels.renderTargetFor(device))
+  private async fallbackImageUrl(request: FallbackScreenRequest, device: Device): Promise<string> {
+    return this.fallbackScreens.urlFor(request, device, await this.deviceModels.renderTargetFor(device))
   }
 }

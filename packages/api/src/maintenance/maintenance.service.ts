@@ -18,6 +18,7 @@ const SYSTEM_FILES = new Set([
   'noScreen.png',
   'error.png',
   'welcome.png',
+  'sleep.png',
   'colormap-2bit.png',
 ])
 

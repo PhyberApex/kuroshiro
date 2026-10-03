@@ -15,6 +15,7 @@ export const API_ERROR_CODES = [
   'internal',
   'device-not-found',
   'screen-not-found',
+  'screen-field-not-for-kind',
   'plugin-not-found',
   'assignment-not-found',
   'plugin-already-assigned',
@@ -26,7 +27,11 @@ export const API_ERROR_CODES = [
   'firmware-version-taken',
   'device-model-unknown',
   'firmware-not-custom',
+  'firmware-push-without-target',
+  'firmware-push-mirrored',
+  'firmware-push-pending',
   'upstream-unreachable',
+  'template-full-missing',
 ] as const
 
 export type ApiErrorCode = typeof API_ERROR_CODES[number]

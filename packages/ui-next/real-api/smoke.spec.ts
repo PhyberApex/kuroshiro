@@ -53,4 +53,22 @@ describe('the built UI on the real API', () => {
     expect(listed?.rssi).toBe(-61)
     expect(listed?.currentScreen).toMatchObject({ kind: 'fallback', fallback: 'noScreen', reason: 'noScreens' })
   })
+
+  it('points a Device at images that exist', async () => {
+    const device = await connectDevice(baseUrl, { mac: 'A4:C1:38:5F:0B:9F' })
+    const display = await device.display()
+
+    for (const imageUrl of [device.setup.image_url, display.image_url]) {
+      const image = await fetch(imageUrl)
+      expect(image.status).toBe(200)
+      expect(image.headers.get('content-type')).toBe('image/png')
+    }
+  })
+
+  it.each(['welcome', 'noScreen', 'error', 'sleep'])('serves the static %s Fallback Screen without the UI shipping it', async (kind) => {
+    const image = await fetch(new URL(`screens/${kind}.png`, baseUrl))
+
+    expect(image.status).toBe(200)
+    expect(image.headers.get('content-type')).toBe('image/png')
+  })
 })

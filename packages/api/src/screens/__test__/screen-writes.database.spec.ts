@@ -23,6 +23,7 @@ import { PluginAssignmentsService } from '../../plugins/services/plugin-assignme
 import { PluginExporterService } from '../../plugins/services/plugin-exporter.service.js'
 import { PluginFieldValuesService } from '../../plugins/services/plugin-field-values.service.js'
 import { PluginImporterService } from '../../plugins/services/plugin-importer.service.js'
+import { PluginPreviewDataService } from '../../plugins/services/plugin-preview-data.service.js'
 import { PluginReadsService } from '../../plugins/services/plugin-reads.service.js'
 import { RecipeUpdateService } from '../../plugins/services/recipe-update.service.js'
 import { nextEligibleScreen } from '../../schedule/rotation.js'
@@ -70,6 +71,7 @@ describe('adding, deleting and reordering a Device\'s Screens, against a real da
       providers: [
         { provide: PluginsService, useValue: {} },
         { provide: PluginReadsService, useValue: {} },
+        { provide: PluginPreviewDataService, useValue: {} },
         { provide: PluginImporterService, useValue: {} },
         { provide: PluginExporterService, useValue: {} },
         { provide: RecipeUpdateService, useValue: {} },

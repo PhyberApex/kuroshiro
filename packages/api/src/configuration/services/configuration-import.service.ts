@@ -498,7 +498,8 @@ export class ConfigurationImportService {
 
     for (const parsedTemplate of parsedTemplates) {
       const id = idByLayout.get(parsedTemplate.layout) ?? randomUUID()
-      const existing = await repo.findOneBy({ id })
+      // A Plugin has one Template per size, so the stored one of this size is the one to replace, whatever its id.
+      const existing = await repo.findOneBy({ id }) ?? await repo.findOneBy({ plugin: { id: plugin.id }, layout: parsedTemplate.layout })
       const template = existing ?? repo.create({ id })
       template.layout = parsedTemplate.layout
       template.liquidMarkup = parsedTemplate.liquidMarkup

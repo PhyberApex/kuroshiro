@@ -73,13 +73,14 @@ describe('deviceSetupService', () => {
   })
 
   it('serves the welcome image converted for the device render target', async () => {
-    deviceRepo.findOneBy.mockResolvedValue(makeDevice({ apikey: 'key', friendlyId: 'id', deviceModel: V2 }))
+    const device = makeDevice({ apikey: 'key', friendlyId: 'id', deviceModel: V2 })
+    deviceRepo.findOneBy.mockResolvedValue(device)
     deviceModels.renderTargetFor.mockResolvedValue({ model: V2, palette: OG_PLUS })
     fallbackScreens.urlFor.mockResolvedValue('http://api/screens/fallback/v2-gray-16/welcome.png')
 
     const result = await service.setupDevice(headers)
 
-    expect(fallbackScreens.urlFor).toHaveBeenCalledWith('welcome', { model: V2, palette: OG_PLUS })
+    expect(fallbackScreens.urlFor).toHaveBeenCalledWith({ kind: 'welcome' }, device, { model: V2, palette: OG_PLUS })
     expect(result.image_url).toBe('http://api/screens/fallback/v2-gray-16/welcome.png')
   })
 

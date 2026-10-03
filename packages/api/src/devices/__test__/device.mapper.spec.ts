@@ -50,7 +50,7 @@ describe('toDeviceSummary', () => {
         fallback: 'welcome',
         reason: 'neverPolled',
         screenId: null,
-        imagePath: '/screens/welcome.png',
+        imagePath: '/screens/welcome.png?v=2',
         servedAt: null,
       })
     })
@@ -313,7 +313,7 @@ describe('toDeviceDetail', () => {
       isMirrored: false,
       isProxied: false,
       sleep: { enabled: false, start: null, end: null, whileAsleep: 'keep', inWindow: false, endsAt: null },
-      currentScreen: { kind: 'fallback', fallback: 'welcome', reason: 'neverPolled', screenId: null, imagePath: '/screens/welcome.png', servedAt: null },
+      currentScreen: { kind: 'fallback', fallback: 'welcome', reason: 'neverPolled', screenId: null, imagePath: '/screens/welcome.png?v=2', servedAt: null },
       mac: 'AA:BB:CC:DD:EE:FF',
       apikey: 'test-api-key',
       refreshRate: 300,

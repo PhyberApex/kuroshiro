@@ -90,19 +90,25 @@ async function ensureColormap(paletteId: string, colors: string[], logger: Logge
   return colormapPath
 }
 
-async function paletteOperators(palette: Palette, logger: Logger): Promise<string[]> {
+export interface ConversionOptions {
+  /** Off for pure ink-and-paper artwork, whose edges Floyd-Steinberg would fray. */
+  dither?: boolean
+}
+
+async function paletteOperators(palette: Palette, { dither = true }: ConversionOptions, logger: Logger): Promise<string[]> {
   const conversion = paletteConversion(palette)
+  const ditherMethod = dither ? 'FloydSteinberg' : 'None'
   switch (conversion.kind) {
     case 'gray': {
       const colormap = await ensureColormap(palette.id, grayLevelsHex(conversion.levels), logger)
-      return ['-colorspace', 'Gray', '-dither', 'FloydSteinberg', '-remap', colormap, '-define', `png:bit-depth=${conversion.bitDepth}`, '-define', 'png:color-type=0']
+      return ['-colorspace', 'Gray', '-dither', ditherMethod, '-remap', colormap, '-define', `png:bit-depth=${conversion.bitDepth}`, '-define', 'png:color-type=0']
     }
     case 'color': {
       const colormap = await ensureColormap(palette.id, conversion.colors, logger)
       // -modulate brightness,saturation: pushed colours past the thresholds the firmware
       // uses to tell red/yellow apart from gray (see docs/adr/0002-color-palette-png-format.md)
       const saturationBoost = '110,150'
-      return ['-normalize', '-modulate', saturationBoost, '-colorspace', 'RGB', '-dither', 'FloydSteinberg', '-remap', colormap, '-colorspace', 'sRGB', '-define', 'png:color-type=3']
+      return ['-normalize', '-modulate', saturationBoost, '-colorspace', 'RGB', '-dither', ditherMethod, '-remap', colormap, '-colorspace', 'sRGB', '-define', 'png:color-type=3']
     }
     case 'full-color':
       return ['-colorspace', 'sRGB', '-define', 'png:color-type=2']
@@ -155,9 +161,9 @@ export async function readImageSize(inputPath: string, logger: Logger): Promise<
 }
 
 /** Converts any supported raster image into the PNG a device with the given render target expects. */
-export async function convertToPng(inputPath: string, outputPath: string, target: DeviceRenderTarget, logger: Logger) {
+export async function convertToPng(inputPath: string, outputPath: string, target: DeviceRenderTarget, logger: Logger, options: ConversionOptions = {}) {
   const format = await detectFormatOfFile(inputPath)
-  const palette = await paletteOperators(target.palette, logger)
+  const palette = await paletteOperators(target.palette, options, logger)
 
   const args = [
     `${format}:${inputPath}`,

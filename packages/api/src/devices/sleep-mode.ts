@@ -45,3 +45,9 @@ export function nextSleepEnd(sleepEndTime: number, now: Date): Date {
 function secondsOfDay(now: Date): number {
   return now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds()
 }
+
+/** `hh:mm` for a time of day stored as seconds since midnight. */
+export function toClockTime(secondsOfDay: number): string {
+  const twoDigits = (value: number) => String(value).padStart(2, '0')
+  return `${twoDigits(Math.floor(secondsOfDay / 3600))}:${twoDigits(Math.floor(secondsOfDay % 3600 / 60))}`
+}

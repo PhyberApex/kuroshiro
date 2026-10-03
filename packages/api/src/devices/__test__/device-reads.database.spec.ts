@@ -4,7 +4,6 @@ import type { DataSource } from 'typeorm'
 import type { DeviceModelsService } from '../../device-models/device-models.service.js'
 import type { FallbackScreensService } from '../../device-models/fallback-screens.service.js'
 import type { FirmwareService } from '../../firmware/firmware.service.js'
-import type { PluginDataResolverService } from '../../plugins/services/plugin-data-resolver.service.js'
 import type { PluginRendererService } from '../../plugins/services/plugin-renderer.service.js'
 import type { ScreensService } from '../../screens/screens.service.js'
 import type { HttpTestApp } from '../../test/httpApp.js'
@@ -61,7 +60,6 @@ describe('the Device reads against a real database', () => {
             asService<DeviceModelsService>(deviceModels),
             asService<FallbackScreensService>(fallbackScreens),
             firmware,
-            asService<PluginDataResolverService>({}),
             asService<PluginRendererService>({}),
             deviceSensors,
             createPluginTemplateContextService(),
@@ -106,7 +104,7 @@ describe('the Device reads against a real database', () => {
     const waitingForFirstPoll = {
       lastSeenAt: null,
       nextPollAt: null,
-      currentScreen: { kind: 'fallback', fallback: 'welcome', reason: 'neverPolled', screenId: null, imagePath: '/screens/welcome.png', servedAt: null },
+      currentScreen: { kind: 'fallback', fallback: 'welcome', reason: 'neverPolled', screenId: null, imagePath: '/screens/welcome.png?v=2', servedAt: null },
     }
 
     it('reads as waiting for its first poll when registered by hand, and the offline Alert Rule passes over it', async () => {
