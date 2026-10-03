@@ -14,7 +14,7 @@ Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-
 
 Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 
-Code that is byte-identical in API and UI lives in `packages/shared`; see ADR-0020 for what does and doesn't belong there.
+Code both API and UI need lives in `packages/shared`: the admin API's wire types (ADR-0033) and code that is identical on both sides (ADR-0020, which also sets how the package is built and imported).
 
 ### Fallow (dead code, duplication, complexity)
 
