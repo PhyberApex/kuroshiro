@@ -6,7 +6,7 @@ The design spec for the admin UI rebuilt from zero in `packages/ui-next`. It is 
 |---|---|
 | Devices: the Screens view, an opened Screen, Add Screen, Settings, Logs, the Devices list, Connect a Device | [devices.md](./devices.md) |
 | Plugins: the list, Add a Plugin, the Plugin page, the Recipe Update Check | [plugins.md](./plugins.md) |
-| The Plugin template editor | not written yet |
+| The Plugin template editor: the Template section of the Plugin page, its live preview and data, and the code editor in its Liquid, HTML, JSON and JavaScript modes | [template-editor.md](./template-editor.md) |
 | Instance: Instance Settings, Firmware, Device Models and Palettes, Configuration Archive, Housekeeping, the Device Simulator; and the Alerts page | [instance.md](./instance.md) |
 
 ## What is settled elsewhere
@@ -21,6 +21,7 @@ A surface spec does not restate these. It builds on them, and where it has to de
 | Plate: a Device's Screens view | [Device details hero screen](https://github.com/PhyberApex/kuroshiro/issues/1081) |
 | Tokens, the nineteen components and their states | [Design tokens and component inventory](https://github.com/PhyberApex/kuroshiro/issues/1091) |
 | The four Fallback Screens | [On-device fallback screens in the Hanko identity](https://github.com/PhyberApex/kuroshiro/issues/1090) |
+| The error Fallback Screen's two wordings: "Mirroring failed" and "{Screen} could not be shown" | [The error Fallback Screen's wording when a Screen could not be rendered](https://github.com/PhyberApex/kuroshiro/issues/1105) |
 | Vocabulary | [`CONTEXT.md`](../../CONTEXT.md) |
 | Parallel package, cutover at parity | [Cutover strategy from the old UI to the new one](https://github.com/PhyberApex/kuroshiro/issues/1082) |
 | Tests every build issue ships with | [Test strategy for the new UI](https://github.com/PhyberApex/kuroshiro/issues/1083) |

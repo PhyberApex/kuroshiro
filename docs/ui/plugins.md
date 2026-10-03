@@ -3,7 +3,7 @@
 Everything under **Plugins** in the rebuilt admin UI except the template editor itself: the Plugins list, Add a Plugin, the Plugin page around the editor, and the Recipe Update Check. Read [README.md](./README.md) first; its shared patterns (loading, a failed load, saving, destructive actions, fresh data, time, phone) apply here and are not repeated.
 
 - **Reference.** [Primary journeys and the story each screen tells](https://github.com/PhyberApex/kuroshiro/issues/1078) set what the list and the Plugin page are for. [Plugin field values and Plugin Variables](https://github.com/PhyberApex/kuroshiro/issues/1087) and [ADR-0032](../adr/0032-field-values-belong-to-the-plugin-and-plugin-variables-are-removed.md) set what a Field Value is. The page patterns are those of [devices.md](./devices.md).
-- **The template editor** is specced by [The Plugin template editor](https://github.com/PhyberApex/kuroshiro/issues/1095). This spec gives it its place on the page and says what the page hands it. The editor and preview in the drawings are a stand-in.
+- **The template editor** is specced in [template-editor.md](./template-editor.md). This spec gives it its place on the page and says what the page hands it. The editor and preview in the drawings here are a stand-in.
 - **Drawings.** [`packages/ui/prototypes/plugin-surfaces`][proto] on the throwaway branch `prototype/plugin-surfaces`, at commit `d19583b`. Open `index.html` in a browser; `t` switches the theme, `d` the number of Devices (1, 3, none), `a` the firing Alert, `g` the number of Plugins (10, 4, none), `l` loaded, loading or failed, `c` the outcome of the Recipe Update Check. Each section below links the renders it describes.
 - **Facts.** How the server behaves today was read from `main` at `d0589c7`. Nothing was run.
 
@@ -368,12 +368,12 @@ Applying saves at once, fetches and renders the Plugin again and opens the Plugi
 [On-device fallback screens in the Hanko identity](https://github.com/PhyberApex/kuroshiro/issues/1090) handed this here. Today a failed slot shows the static `error.png`, which names nothing. It is replaced by a drawing made for the slot:
 
 - Paper ground, ink only, no dithering, no seal. The seal signs a whole sheet; a slot is not one.
-- Set at the slot's left, centred vertically: the problem mark (the icon's ink square with its exclamation mark), the Plugin's name in the title face, then two lines in the text face: "could not be shown." and "Next try at the next poll."
+- Set at the slot's left, centred vertically: the problem mark (the icon's ink square with its exclamation mark), the Plugin's name in the title face, then two lines in the text face: "could not be shown." and "Next try on its next turn in Rotation."
 - Sized from the slot, not the Screen: the name at about 11 % of the slot's height and never wider than the slot less its margins, cut with an ellipsis; the two lines at about half that.
 - The other slots render as usual. The Mashup itself is not an error: the Device shows it, and its row on the Device's Screens view carries no fault.
 - When every slot fails, the Device still shows the Mashup with every slot saying so. The error Fallback Screen is for a Screen that could not be produced at all.
 
-The wording is kept in step with the error Fallback Screen's second wording, which [The error Fallback Screen's wording when a Screen could not be rendered](https://github.com/PhyberApex/kuroshiro/issues/1105) decides.
+The wording is kept in step with the error Fallback Screen's "{Screen} could not be shown" ([The error Fallback Screen's wording when a Screen could not be rendered](https://github.com/PhyberApex/kuroshiro/issues/1105)): the name first, then the same phrase.
 
 A Data Source whose fetch failed does not make a slot fail: the Plugin renders with the error marker, in a slot as on its own Screen.
 
@@ -504,11 +504,11 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 
 **Left undecided**
 
-- **The starter template** of a built Plugin. [The Plugin template editor](https://github.com/PhyberApex/kuroshiro/issues/1095) owns what a template looks like; this spec only says it shows the Plugin's name.
+- **The starter template** of a built Plugin is settled in [template-editor.md](./template-editor.md).
 - **A Recipe whose refresh interval is longer than 24 hours.** It is shown and kept as imported, and saving the rest of the Plugin leaves it alone. The limit does not rise.
 - **A size limit for a Webhook POST.** None is set in the code; the framework's default of about 100 kB probably applies. The page states no limit.
 - **Secrets in an export.** A header written out in a Data Source is exported as written. The page says so and steers secrets into password Plugin Fields, which are not exported; it does not warn at the moment of exporting.
-- **Whether a Mashup slot should use the template of its own size.** Today a slot always renders the `full` template. It belongs to the template editor's ticket, which decides the layouts a Plugin has.
+- **Whether a Mashup slot should use the template of its own size** is settled in [template-editor.md](./template-editor.md): it does, and falls back to `full`.
 - **GitHub import of a branch or a sub-folder.** The server reads the root of `main` only, and the form says so.
 - **A copy of a Recipe's Plugin** stays tied to the Recipe, so both offer the same Recipe Update Check. Untying it would need an action that does not exist.
 

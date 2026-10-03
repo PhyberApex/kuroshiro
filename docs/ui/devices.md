@@ -263,7 +263,7 @@ The form ends with the primary button, "Cancel" (back to the Screens view) and t
 - Under the Screens tab: the back link "{Device}'s Screens", the heading "Edit {Screen}", then the code editor and the live preview side by side (stacked on phone, editor first).
 - A form: "Save HTML" (primary), "Cancel", and "{Device} shows the change when this Screen's turn next comes." Markup is not saved as it is typed, since half-written HTML would reach the Device.
 - Leaving with unsaved changes asks: "Leave without saving?" · Lost: "Your changes to {Screen}'s HTML." · "Leave" / "Keep editing".
-- The code editor is the one [The Plugin template editor](https://github.com/PhyberApex/kuroshiro/issues/1095) settles, in its HTML mode. Until then the drawings show a mono textarea.
+- The code editor is the one of [template-editor.md](./template-editor.md), in its HTML mode. The drawings here show a mono textarea.
 
 ## Settings
 
@@ -503,12 +503,11 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 
 **Left undecided**
 
-- **The error Fallback Screen has one wording, "Mirroring failed".** A Screen whose render failed serves the same image, so the Device then says the wrong thing. It needs a second wording on the Device; this spec only words the admin's side.
 - **Cancelling a pending Device Reset.** The API would allow it today. It is a new capability, like [Cancel a pending Firmware push](https://github.com/PhyberApex/kuroshiro/issues/1086), and is not specced.
 - **A new Device starts with a pending `identify` Special Function** (the column's default), so its first Screens view shows that fact. Whether the default should be `none` is the API ticket's call.
 - **When "no Screen can be shown" ends.** The column says to open a Screen; it does not say when the next one returns, which the server would have to work out from every Schedule.
 - **A size limit for uploads.** None is configured today, so the UI can only relay the server's refusal.
-- **The code editor** for HTML waits for [The Plugin template editor](https://github.com/PhyberApex/kuroshiro/issues/1095).
+- **The code editor** for HTML is specced in [template-editor.md](./template-editor.md).
 
 [proto]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces
 [screens-light]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-light.png
