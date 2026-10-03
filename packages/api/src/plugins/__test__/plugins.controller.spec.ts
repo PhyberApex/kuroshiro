@@ -3,6 +3,7 @@ import type { PluginsService } from '../plugins.service.js'
 import type { PluginAssignmentsService } from '../services/plugin-assignments.service.js'
 import type { PluginExporterService } from '../services/plugin-exporter.service.js'
 import type { PluginImporterService } from '../services/plugin-importer.service.js'
+import type { PluginReadsService } from '../services/plugin-reads.service.js'
 import type { RecipeUpdateService } from '../services/recipe-update.service.js'
 import { Buffer } from 'node:buffer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -12,8 +13,8 @@ import { PluginsController } from '../plugins.controller.js'
 
 describe('pluginsController', () => {
   let controller: PluginsController
+  let mockReads: { list: ReturnType<typeof vi.fn>, detail: ReturnType<typeof vi.fn> }
   let mockService: {
-    findAll: ReturnType<typeof vi.fn>
     findById: ReturnType<typeof vi.fn>
     create: ReturnType<typeof vi.fn>
     update: ReturnType<typeof vi.fn>
@@ -34,8 +35,8 @@ describe('pluginsController', () => {
   }
 
   beforeEach(() => {
+    mockReads = { list: vi.fn(), detail: vi.fn() }
     mockService = {
-      findAll: vi.fn(),
       findById: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
@@ -63,6 +64,7 @@ describe('pluginsController', () => {
 
     controller = new PluginsController(
       asService<PluginsService>(mockService),
+      asService<PluginReadsService>(mockReads),
       asService<PluginAssignmentsService>(mockAssignments),
       asService<PluginImporterService>(mockImporter),
       asService<PluginExporterService>(mockExporter),
@@ -76,25 +78,6 @@ describe('pluginsController', () => {
     description: 'Shows weather',
     kind: 'Poll',
     refreshInterval: 15,
-  })
-
-  it('findAll returns all plugins', async () => {
-    const plugins = [basePlugin]
-    mockService.findAll.mockResolvedValue(plugins)
-
-    const result = await controller.findAll()
-
-    expect(mockService.findAll).toHaveBeenCalled()
-    expect(result).toBe(plugins)
-  })
-
-  it('findById returns a plugin by id', async () => {
-    mockService.findById.mockResolvedValue(basePlugin)
-
-    const result = await controller.findById('1')
-
-    expect(mockService.findById).toHaveBeenCalledWith('1')
-    expect(result).toBe(basePlugin)
   })
 
   it('create creates a new plugin', async () => {

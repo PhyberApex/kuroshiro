@@ -1,4 +1,4 @@
-import type { PluginFieldOption } from './entities/plugin-field.entity.js'
+import type { PluginFieldOption } from 'kuroshiro-shared'
 import { isPlainObject } from '../utils/json.js'
 
 // A `.trmnlp` manifest writes a select's options either as bare strings or as

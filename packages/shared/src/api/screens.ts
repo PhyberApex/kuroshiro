@@ -9,7 +9,8 @@ export type ScreenStateCause = 'weekday' | 'dateRange'
 
 export type RenderSignal = 'skip' | 'hold'
 
-export type TemplateSize = 'full' | 'half_horizontal' | 'half_vertical' | 'quadrant'
+export const TEMPLATE_SIZES = ['full', 'half_horizontal', 'half_vertical', 'quadrant'] as const
+export type TemplateSize = typeof TEMPLATE_SIZES[number]
 
 /** The Mashup layouts, each with its slots in slot order. */
 export const MASHUP_LAYOUTS = [

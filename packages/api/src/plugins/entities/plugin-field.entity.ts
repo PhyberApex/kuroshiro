@@ -1,10 +1,6 @@
+import type { PluginFieldOption } from 'kuroshiro-shared'
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { Plugin } from './plugin.entity.js'
-
-export interface PluginFieldOption {
-  label: string
-  value: string
-}
 
 @Entity()
 export class PluginField {

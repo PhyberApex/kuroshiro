@@ -195,7 +195,7 @@ describe('recipeUpdateService', () => {
 
       await service.applyUpdate('plugin-1', { contentHash, apply: [] })
 
-      expect(pluginRepo.update).toHaveBeenCalledWith('plugin-1', { sourceRecipeSnapshot: { ...upstream } })
+      expect(pluginRepo.update).toHaveBeenCalledWith('plugin-1', { sourceRecipeSnapshot: { ...upstream }, snapshotTakenAt: expect.any(Date) })
       expect(mockPluginsService.invalidateRenderCaches).not.toHaveBeenCalled()
       expect(mockPluginsService.rescheduleAfterUpdate).not.toHaveBeenCalled()
     })
@@ -209,7 +209,7 @@ describe('recipeUpdateService', () => {
 
       await service.applyUpdate('plugin-1', { contentHash, apply: [{ itemType: 'name', key: 'name' }] })
 
-      expect(pluginRepo.update).toHaveBeenCalledWith('plugin-1', { name: 'New Name', sourceRecipeSnapshot: { ...upstream } })
+      expect(pluginRepo.update).toHaveBeenCalledWith('plugin-1', { name: 'New Name', sourceRecipeSnapshot: { ...upstream }, snapshotTakenAt: expect.any(Date) })
       expect(mockPluginsService.invalidateRenderCaches).toHaveBeenCalledWith('plugin-1')
       expect(mockPluginsService.rescheduleAfterUpdate).not.toHaveBeenCalled()
     })
@@ -223,7 +223,7 @@ describe('recipeUpdateService', () => {
 
       await service.applyUpdate('plugin-1', { contentHash, apply: [{ itemType: 'refreshInterval', key: 'refreshInterval' }] })
 
-      expect(pluginRepo.update).toHaveBeenCalledWith('plugin-1', { refreshInterval: 30, sourceRecipeSnapshot: { ...upstream } })
+      expect(pluginRepo.update).toHaveBeenCalledWith('plugin-1', { refreshInterval: 30, sourceRecipeSnapshot: { ...upstream }, snapshotTakenAt: expect.any(Date) })
       expect(mockPluginsService.rescheduleAfterUpdate).toHaveBeenCalledWith('plugin-1')
     })
 

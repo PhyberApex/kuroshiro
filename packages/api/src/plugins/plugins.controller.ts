@@ -1,4 +1,5 @@
 import type { Response } from 'express'
+import type { PluginDetail, PluginSummary } from 'kuroshiro-shared'
 import { Body, Controller, Delete, Get, Param, Patch, Post, Res, UploadedFile, UseInterceptors } from '@nestjs/common'
 import { diskStorage } from 'multer'
 import { LimitedFileInterceptor } from '../uploads/limited-file-interceptor.js'
@@ -11,12 +12,14 @@ import { PluginsService } from './plugins.service.js'
 import { PluginAssignmentsService } from './services/plugin-assignments.service.js'
 import { PluginExporterService } from './services/plugin-exporter.service.js'
 import { ParsedPlugin, PluginImporterService } from './services/plugin-importer.service.js'
+import { PluginReadsService } from './services/plugin-reads.service.js'
 import { RecipeUpdateService } from './services/recipe-update.service.js'
 
 @Controller('plugins')
 export class PluginsController {
   constructor(
     private readonly pluginsService: PluginsService,
+    private readonly pluginReads: PluginReadsService,
     private readonly assignments: PluginAssignmentsService,
     private readonly importerService: PluginImporterService,
     private readonly exporterService: PluginExporterService,
@@ -29,13 +32,13 @@ export class PluginsController {
   }
 
   @Get()
-  async findAll() {
-    return this.pluginsService.findAll()
+  async findAll(): Promise<PluginSummary[]> {
+    return this.pluginReads.list()
   }
 
   @Get(':id')
-  async findById(@Param('id') id: string) {
-    return this.pluginsService.findById(id)
+  async findById(@Param('id') id: string): Promise<PluginDetail> {
+    return this.pluginReads.detail(id)
   }
 
   @Post()

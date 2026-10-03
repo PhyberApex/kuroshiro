@@ -1,3 +1,4 @@
+import type { FieldValueRead } from 'kuroshiro-shared'
 import type { PluginField } from './entities/plugin-field.entity.js'
 
 type FieldDefinition = Pick<PluginField, 'keyname' | 'fieldType' | 'defaultValue' | 'required'>
@@ -34,5 +35,13 @@ export function fieldValueViews(fields: FieldDefinition[], stored: StoredFieldVa
     const value = stored[field.keyname]
     const isSet = value !== undefined
     return [field.keyname, { value: isSet && !isSecretField(field) ? value : null, isSet }]
+  }))
+}
+
+/** The read-model form of a Plugin's Field Values, by keyname: a secret one reports only whether it is set. */
+export function toFieldValueReads(fields: FieldDefinition[], stored: StoredFieldValues): Record<string, FieldValueRead> {
+  return Object.fromEntries(fields.map((field): [string, FieldValueRead] => {
+    const value = stored[field.keyname]
+    return [field.keyname, isSecretField(field) ? { secret: true, set: value !== undefined } : { secret: false, value: value ?? null }]
   }))
 }
