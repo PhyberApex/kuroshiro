@@ -1,11 +1,11 @@
-import type { DataSourceRead, PluginAssignmentRead, PluginDetail, PluginFieldRead, PluginPlace, PluginSummary, ScheduledRenderRead, TemplateSize } from 'kuroshiro-shared'
+import type { DataSourceRead, PluginAssignmentRead, PluginDetail, PluginFieldRead, PluginPlace, PluginSummary, ScheduledRenderRead } from 'kuroshiro-shared'
 import type { Screen } from '../screens/screens.entity.js'
 import type { PluginDataSource } from './entities/plugin-data-source.entity.js'
 import type { PluginField } from './entities/plugin-field.entity.js'
 import type { Plugin } from './entities/plugin.entity.js'
 import type { StoredFieldValues } from './plugin-field-values.js'
-import { nextRotationAt } from '../devices/next-poll.js'
-import { screenStatesOf } from '../schedule/rotation.js'
+import { TEMPLATE_SIZES } from 'kuroshiro-shared'
+import { screenStatesOfDevice } from '../screens/screen-states.js'
 import { toIsoString, toIsoStringOrNull } from '../utils/readModel.js'
 import { needsValues, toFieldValueReads } from './plugin-field-values.js'
 
@@ -27,8 +27,6 @@ export interface PluginDetailFacts extends PluginFacts {
   /** The address the instance is reached at from outside. */
   apiUrl: string
 }
-
-const TEMPLATE_SIZES: readonly TemplateSize[] = ['full', 'half_horizontal', 'half_vertical', 'quadrant']
 
 export function compareIgnoringCase(a: string, b: string): number {
   return a.toLowerCase().localeCompare(b.toLowerCase()) || a.localeCompare(b)
@@ -153,7 +151,7 @@ function toRecipeRead(plugin: Plugin): PluginDetail['recipe'] {
 function toAssignmentRead(screen: Screen, facts: PluginDetailFacts): PluginAssignmentRead {
   const { device } = screen
   const screensInOrder = facts.screensByDevice.get(device.id) ?? [screen]
-  const states = screenStatesOf(screensInOrder, { now: facts.now, nextRotationAt: nextRotationAt(device, facts.now), isMirrored: !!device.mirrorEnabled })
+  const states = screenStatesOfDevice(device, screensInOrder, facts.now)
   return {
     deviceId: device.id,
     deviceName: device.name,

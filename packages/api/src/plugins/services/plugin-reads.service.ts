@@ -39,7 +39,7 @@ export class PluginReadsService {
     const plugins = await this.pluginRepository.find({ relations: { dataSources: true, fields: true } })
     const factsOf = await this.factsByPlugin(plugins.map(plugin => plugin.id))
 
-    return plugins
+    return [...plugins]
       .sort((a, b) => compareIgnoringCase(a.name, b.name))
       .map(plugin => toPluginSummary(plugin, factsOf(plugin.id)))
   }

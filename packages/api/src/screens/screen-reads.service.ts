@@ -1,24 +1,18 @@
-import type { RenderSignal, ScreenRead } from 'kuroshiro-shared'
+import type { ScreenRead } from 'kuroshiro-shared'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { isUUID } from 'class-validator'
 import { In, IsNull, Repository } from 'typeorm'
 import { Alert } from '../alerts/entities/alert.entity.js'
 import { Device } from '../devices/devices.entity.js'
-import { nextRotationAt } from '../devices/next-poll.js'
 import { ApiException } from '../errors/api.exception.js'
 import { needsValues } from '../plugins/plugin-field-values.js'
 import { PluginFieldValuesService } from '../plugins/services/plugin-field-values.service.js'
-import { screenStatesOf } from '../schedule/rotation.js'
 import { fileExists } from '../utils/fileExists.js'
 import { resolveAppPath } from '../utils/pathHelper.js'
+import { renderSignalOf, screenStatesOfDevice } from './screen-states.js'
 import { toScreenRead } from './screen.mapper.js'
 import { Screen } from './screens.entity.js'
-
-/** A Screen stores no Render Signal, so none is read. */
-function renderSignalOf(_screen: Screen): RenderSignal | null {
-  return null
-}
 
 @Injectable()
 export class ScreenReadsService {
@@ -50,14 +44,12 @@ export class ScreenReadsService {
       this.pluginIdsWithFiringFetchAlert(pluginIds),
     ])
 
-    const now = new Date()
-    const rotationScreens = screens.map(screen => ({ id: screen.id, isActive: screen.isActive, schedule: screen.schedule, renderSignal: renderSignalOf(screen) }))
-    const states = screenStatesOf(rotationScreens, { now, nextRotationAt: nextRotationAt(device, now), isMirrored: !!device.mirrorEnabled })
+    const states = screenStatesOfDevice(device, screens, new Date())
 
-    return screens.map((screen, index) => toScreenRead(screen, {
+    return screens.map(screen => toScreenRead(screen, {
       deviceId,
       state: states.get(screen.id)!,
-      renderSignal: rotationScreens[index].renderSignal,
+      renderSignal: renderSignalOf(screen),
       isRendered: renderedIds.has(screen.id),
       requiredFieldEmpty: !!screen.plugin && needsValues(screen.plugin.fields ?? [], storedFieldValues.get(screen.plugin.id) ?? {}),
       fetchAlertFiring: !!screen.plugin && pluginsWithFetchAlert.has(screen.plugin.id),
