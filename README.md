@@ -5,12 +5,17 @@
 [![GitHub Repo stars](https://img.shields.io/github/stars/phyberapex/kuroshiro?style=social)](https://github.com/PhyberApex/kuroshiro/stargazers)
 
 <p align="center">
-  <img src="graphics/logo_white.png" alt="Kuroshiro Logo" width="200" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="graphics/logo-dark.svg" />
+    <img src="graphics/logo-light.svg" alt="Kuroshiro" width="200" />
+  </picture>
 </p>
 
 # KUROSHIRO: Unleash Your TRMNL!
 
 **Kuroshiro** is an open-source BYOS (Bring Your Own Server) solution for the [TRMNL](https://usetrmnl.com/) ecosystem. Our goal is to give you more flexibility and control over your TRMNL experience, whether you're self-hosting for fun, learning, or customization. Kuroshiro bundles a [NestJS](https://nestjs.com/) API and a [Vue.js](https://vuejs.org/) UI into a single Docker image, ready to run alongside your own Postgres database.
+
+> **The `:next` image has an incomplete admin UI.** While the [Admin UI rebuild from zero](https://github.com/PhyberApex/kuroshiro/issues/1074) runs, the `:next` image ships an admin UI that is unfinished and may be broken. Run `:latest`.
 
 ---
 
@@ -170,6 +175,8 @@ HTML Preview
 ## 🐳 Dockerized & Ready to Roll
 
 Kuroshiro is built for Docker. Just bring your own Postgres database and you're set!
+
+> **The `:next` image has an incomplete admin UI.** While the [Admin UI rebuild from zero](https://github.com/PhyberApex/kuroshiro/issues/1074) runs, the `:next` image ships an admin UI that is unfinished and may be broken. Run `:latest`.
 
 We build these tags automatically:
 
