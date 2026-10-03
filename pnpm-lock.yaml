@@ -518,6 +518,9 @@ importers:
       vue:
         specifier: 'catalog:'
         version: 3.5.43(typescript@6.0.3)
+      vue-router:
+        specifier: 'catalog:'
+        version: 5.3.1(@vue/compiler-sfc@3.5.43)(esbuild@0.27.7)(rolldown@1.2.11)(rollup@4.62.3)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))(vue@3.5.43(typescript@6.0.3))(webpack@5.106.2(esbuild@0.27.7)(lightningcss@1.33.0)(postcss@8.5.28)(uglify-js@3.19.3))
     devDependencies:
       '@antfu/eslint-config':
         specifier: 'catalog:'
@@ -570,9 +573,6 @@ importers:
       vitest-browser-vue:
         specifier: 'catalog:'
         version: 3.1.0(@vue/compiler-dom@3.5.43)(@vue/server-renderer@3.5.43)(vitest@5.0.3)(vue@3.5.43(typescript@6.0.3))
-      vue-router:
-        specifier: 'catalog:'
-        version: 5.3.1(@vue/compiler-sfc@3.5.43)(esbuild@0.27.7)(rolldown@1.2.11)(rollup@4.62.3)(vite@8.3.1(@types/node@24.19.0)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))(vue@3.5.43(typescript@6.0.3))(webpack@5.106.2(esbuild@0.27.7)(lightningcss@1.33.0)(postcss@8.5.28)(uglify-js@3.19.3))
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.11(typescript@6.0.3)

@@ -20,7 +20,8 @@
     "@fontsource-variable/archivo": "catalog:",
     "@fontsource-variable/jetbrains-mono": "catalog:",
     "reka-ui": "catalog:",
-    "vue": "catalog:"
+    "vue": "catalog:",
+    "vue-router": "catalog:"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:",
@@ -40,7 +41,6 @@
     "vite": "catalog:",
     "vitest": "catalog:",
     "vitest-browser-vue": "catalog:",
-    "vue-router": "catalog:",
     "vue-tsc": "catalog:"
   }
 }
