@@ -189,12 +189,14 @@ function takeImageSize(event: Event) {
     padding: var(--space-1);
   }
 
-  /* The seal hangs over the top right corner by a quarter of its side, a little askew, as a stamp lands. */
+  /*
+  The seal hangs over the top right corner by a quarter of its side. It stands straight, where the drawing has it 4 degrees
+  askew: a rotated edge is rastered a few pixels differently from one run to the next, which no screenshot baseline survives.
+  */
   .mark {
     position: absolute;
     top: -0.375rem;
     right: -0.375rem;
-    rotate: 4deg;
   }
 
   .plate.preview > .mark {

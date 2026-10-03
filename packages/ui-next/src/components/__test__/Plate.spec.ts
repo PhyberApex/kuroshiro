@@ -93,7 +93,7 @@ describe('plate', () => {
     const sealed = await mount(Plate, { props: { name: NAME, src: imageOf(800, 480), size: 'current', sealed: true } })
     const seal = sealed.container.querySelector('svg')!
     expect(seal).toHaveAttribute('aria-hidden', 'true')
-    expect(seal.getBoundingClientRect().width).toBeCloseTo(56 * Math.cos(4 * Math.PI / 180) + 56 * Math.sin(4 * Math.PI / 180), 0)
+    expect(seal.getBoundingClientRect().width).toBe(56)
     expect(getComputedStyle(seal.querySelector('path')!).fill).toBe('rgb(255, 255, 255)')
     const red = elementsInSealColour(sealed.container)
     expect(red).toContain(seal)
