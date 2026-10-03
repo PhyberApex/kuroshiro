@@ -1,5 +1,7 @@
-import type { Plugin } from '../entities/plugin.entity.js'
 import { Injectable } from '@nestjs/common'
+import { InjectRepository } from '@nestjs/typeorm'
+import { Repository } from 'typeorm'
+import { Plugin } from '../entities/plugin.entity.js'
 import { DataSourceFetchOutcomeService } from './data-source-fetch-outcome.service.js'
 import { PluginDataResolverService } from './plugin-data-resolver.service.js'
 import { PluginRenderCacheService } from './plugin-render-cache.service.js'
@@ -18,6 +20,8 @@ export class PluginRefreshService {
     private readonly renderCache: PluginRenderCacheService,
     private readonly pluginTemplateContext: PluginTemplateContextService,
     private readonly fetchOutcome: DataSourceFetchOutcomeService,
+    @InjectRepository(Plugin)
+    private readonly pluginRepository: Repository<Plugin>,
   ) {}
 
   async refresh(plugin: Plugin, { scheduled }: { scheduled: boolean } = { scheduled: false }): Promise<void> {
@@ -41,5 +45,23 @@ export class PluginRefreshService {
     }
 
     await this.renderCache.renderAndCache(plugin, { ...templateContext, ...sourceData })
+
+    if (scheduled) {
+      await this.recordScheduledRender(plugin.id)
+    }
+  }
+
+  /**
+   * `updatedAt` is set to itself because TypeORM otherwise stamps it on every
+   * update, and a scheduler tick is not a change to the Plugin.
+   */
+  private async recordScheduledRender(pluginId: string): Promise<void> {
+    await this.pluginRepository.update(pluginId, {
+      lastScheduledRenderAt: new Date(),
+      lastScheduledRenderError: null,
+      lastScheduledRenderErrorLine: null,
+      lastScheduledRenderErrorSize: null,
+      updatedAt: () => '"updatedAt"',
+    })
   }
 }

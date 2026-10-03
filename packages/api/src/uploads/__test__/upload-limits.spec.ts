@@ -13,6 +13,7 @@ import { PluginsService } from '../../plugins/plugins.service.js'
 import { PluginAssignmentsService } from '../../plugins/services/plugin-assignments.service.js'
 import { PluginExporterService } from '../../plugins/services/plugin-exporter.service.js'
 import { PluginImporterService } from '../../plugins/services/plugin-importer.service.js'
+import { PluginReadsService } from '../../plugins/services/plugin-reads.service.js'
 import { RecipeUpdateService } from '../../plugins/services/recipe-update.service.js'
 import { WebhookIngestService } from '../../plugins/services/webhook-ingest.service.js'
 import { WebhookIngestController } from '../../plugins/webhook-ingest.controller.js'
@@ -52,6 +53,7 @@ describe('the upload limits', () => {
         { provide: ConfigurationExportService, useValue: {} },
         { provide: ConfigurationImportService, useValue: { importFromZip: async () => answered } },
         { provide: PluginsService, useValue: { create: async () => answered } },
+        { provide: PluginReadsService, useValue: {} },
         { provide: PluginAssignmentsService, useValue: {} },
         { provide: PluginImporterService, useValue: { importFromFile: async () => ({ name: 'Imported' }) } },
         { provide: PluginExporterService, useValue: {} },

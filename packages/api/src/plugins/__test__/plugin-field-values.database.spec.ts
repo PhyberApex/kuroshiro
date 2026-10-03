@@ -4,6 +4,7 @@ import type { DeviceSensorsService } from '../../device-sensors/device-sensors.s
 import type { MashupConfiguration } from '../../mashup/entities/mashup-configuration.entity.js'
 import type { MashupSlot } from '../../mashup/entities/mashup-slot.entity.js'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { Alert } from '../../alerts/entities/alert.entity.js'
 import { Device } from '../../devices/devices.entity.js'
 import { MashupRendererService } from '../../mashup/services/mashup-renderer.service.js'
 import { Screen } from '../../screens/screens.entity.js'
@@ -22,6 +23,7 @@ import { PluginAssignmentsService } from '../services/plugin-assignments.service
 import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
 import { PluginDataResolverService } from '../services/plugin-data-resolver.service.js'
 import { PluginFieldValuesService } from '../services/plugin-field-values.service.js'
+import { PluginReadsService } from '../services/plugin-reads.service.js'
 import { PluginRefreshService } from '../services/plugin-refresh.service.js'
 import { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
 import { PluginRendererService } from '../services/plugin-renderer.service.js'
@@ -52,6 +54,7 @@ const mockFetch = stubFetch()
 describe('field values against a real database', () => {
   let database: DataSource
   let plugins: PluginsService
+  let pluginReads: PluginReadsService
   let assignments: PluginAssignmentsService
   let fieldValues: PluginFieldValuesService
   let mashupRenderer: MashupRendererService
@@ -69,7 +72,7 @@ describe('field values against a real database', () => {
     const config = asService<ConfigService>({ get: () => false })
     const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config), new PluginTransformService())
     const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
-    const refresh = new PluginRefreshService(resolver, renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)))
+    const refresh = new PluginRefreshService(resolver, renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
 
     plugins = new PluginsService(
       database.getRepository(Plugin),
@@ -85,6 +88,7 @@ describe('field values against a real database', () => {
       refresh,
       templateContext,
     )
+    pluginReads = new PluginReadsService(database.getRepository(Plugin), database.getRepository(Screen), database.getRepository(Alert), fieldValues, asService<ConfigService>({ getOrThrow: () => 'https://kuroshiro.example' }))
     assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
     mashupRenderer = new MashupRendererService(resolver, renderer, config, asService<DeviceSensorsService>({ findForDevice: async () => [] }), templateContext)
     webhookIngest = new WebhookIngestService(database.getRepository(Plugin), refresh)
@@ -227,7 +231,7 @@ describe('field values against a real database', () => {
       expect(withDefault.needsValues).toBe(false)
       expect(empty.html).toBe('[]')
       expect(withNeither.needsValues).toBe(true)
-      expect((await plugins.findAll()).find(plugin => plugin.id === withNeither.id)!.needsValues).toBe(true)
+      expect((await pluginReads.list()).find(plugin => plugin.id === withNeither.id)!.needsValues).toBe(true)
     })
   })
 
@@ -296,8 +300,11 @@ describe('field values against a real database', () => {
         plugin,
         updated,
         await plugins.findById(plugin.id),
-        (await plugins.findAll()).find(candidate => candidate.id === plugin.id),
       ]
+      const detail = await pluginReads.detail(plugin.id)
+
+      expect(JSON.stringify([detail, await pluginReads.list()])).not.toContain('s3cret')
+      expect(detail.fieldValues.api_key).toEqual({ secret: true, set: true })
 
       for (const read of reads) {
         expect(JSON.stringify(read)).not.toContain('s3cret')

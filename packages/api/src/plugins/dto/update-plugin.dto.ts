@@ -1,7 +1,7 @@
-import type { PluginKind } from '../entities/plugin.entity.js'
+import type { PluginKind } from 'kuroshiro-shared'
 import { OmitType, PartialType } from '@nestjs/mapped-types'
 import { IsIn, IsOptional } from 'class-validator'
-import { PLUGIN_KINDS } from '../entities/plugin.entity.js'
+import { PLUGIN_KINDS } from 'kuroshiro-shared'
 import { CreatePluginDto } from './create-plugin.dto.js'
 
 // `kind`, `sourceRecipeId` and `sourceRecipeSnapshot` are create-only: `kind` is fixed at

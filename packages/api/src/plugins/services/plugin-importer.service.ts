@@ -1,6 +1,5 @@
+import type { PluginFieldOption, PluginKind } from 'kuroshiro-shared'
 import type { JsonObject } from '../../utils/json.js'
-import type { PluginFieldOption } from '../entities/plugin-field.entity.js'
-import type { PluginKind } from '../entities/plugin.entity.js'
 import { Buffer } from 'node:buffer'
 import * as fs from 'node:fs'
 import * as path from 'node:path'

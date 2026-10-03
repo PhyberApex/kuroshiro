@@ -44,6 +44,9 @@ export class PluginDataSource {
   @Column('timestamptz', { nullable: true })
   lastFetchAttemptAt?: Date | null
 
+  @Column('timestamptz', { nullable: true })
+  lastFetchSucceededAt?: Date | null
+
   @Column('text', { nullable: true })
   lastFetchError?: string | null
 

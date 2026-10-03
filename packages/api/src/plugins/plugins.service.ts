@@ -1,3 +1,4 @@
+import type { MergeStrategy, PluginKind } from 'kuroshiro-shared'
 import type { FindOptionsRelations } from 'typeorm'
 import type { MashupSlot } from '../mashup/entities/mashup-slot.entity.js'
 import type { CreatePluginDto } from './dto/create-plugin.dto.js'
@@ -6,7 +7,6 @@ import type { PluginFieldDto } from './dto/plugin-field.dto.js'
 import type { PluginTemplateDto } from './dto/plugin-template.dto.js'
 import type { PreviewPluginDto } from './dto/preview-plugin.dto.js'
 import type { UpdatePluginDto } from './dto/update-plugin.dto.js'
-import type { MergeStrategy, PluginKind } from './entities/plugin.entity.js'
 import type { PluginKindFields } from './plugin-kind-fields.js'
 import type { PluginWithFieldValues } from './services/plugin-field-values.service.js'
 import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common'
@@ -89,14 +89,6 @@ export class PluginsService implements OnModuleInit {
     }
   }
 
-  async findAll(): Promise<PluginWithFieldValues[]> {
-    const plugins = await this.pluginRepository.find({
-      relations: { dataSources: true, templates: true, fields: true, deviceAssignments: { device: true } },
-      order: { name: 'ASC' },
-    })
-    return this.fieldValues.attach(plugins)
-  }
-
   async findById(id: string): Promise<PluginWithFieldValues | null> {
     const plugin = await this.pluginRepository.findOne({
       where: { id },
@@ -110,7 +102,8 @@ export class PluginsService implements OnModuleInit {
     return withValues
   }
 
-  async create(pluginData: CreatePluginDto): Promise<PluginWithFieldValues> {
+  /** `snapshotTakenAt` says when the Recipe Snapshot being saved was taken, for one taken before this call. */
+  async create(pluginData: CreatePluginDto, { snapshotTakenAt }: { snapshotTakenAt?: Date | null } = {}): Promise<PluginWithFieldValues> {
     const { dataSources, templates, fields, fieldValues, ...basicFields } = pluginData
 
     this.logger.debug(`Creating plugin with data: ${JSON.stringify({ dataSources, templates, fields, basicFields })}`)
@@ -128,7 +121,7 @@ export class PluginsService implements OnModuleInit {
       streamLimit: basicFields.streamLimit,
     })
 
-    const savedPlugin = await this.pluginRepository.save(this.buildPluginToSave(basicFields, kind))
+    const savedPlugin = await this.pluginRepository.save(this.buildPluginToSave(basicFields, kind, snapshotTakenAt ?? new Date()))
     this.logger.debug(`Saved plugin: ${savedPlugin.id}`)
 
     await this.createDataSources(savedPlugin, dataSources)
@@ -148,10 +141,10 @@ export class PluginsService implements OnModuleInit {
       throw new NotFoundException(`Plugin ${id} not found`)
     }
 
-    return this.create({
-      ...this.buildDuplicateDto(source),
-      fieldValues: await this.fieldValues.storedFor(id),
-    })
+    return this.create(
+      { ...this.buildDuplicateDto(source), fieldValues: await this.fieldValues.storedFor(id) },
+      { snapshotTakenAt: source.snapshotTakenAt },
+    )
   }
 
   private buildDuplicateDto(source: Plugin): CreatePluginDto {
@@ -199,7 +192,7 @@ export class PluginsService implements OnModuleInit {
     }
   }
 
-  private buildPluginToSave(basicFields: Omit<CreatePluginDto, 'dataSources' | 'templates' | 'fields'>, kind: PluginKind) {
+  private buildPluginToSave(basicFields: Omit<CreatePluginDto, 'dataSources' | 'templates' | 'fields'>, kind: PluginKind, snapshotTakenAt: Date) {
     return {
       name: basicFields.name,
       description: basicFields.description,
@@ -207,6 +200,7 @@ export class PluginsService implements OnModuleInit {
       refreshInterval: basicFields.refreshInterval || 15,
       sourceRecipeId: basicFields.sourceRecipeId,
       sourceRecipeSnapshot: basicFields.sourceRecipeSnapshot,
+      snapshotTakenAt: basicFields.sourceRecipeSnapshot ? snapshotTakenAt : null,
       ...(kind === 'Webhook'
         ? {
             webhookToken: generateApikey(),

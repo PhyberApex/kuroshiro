@@ -1,5 +1,4 @@
-import type { BooleanSettingKey, SettingKey } from 'kuroshiro-shared'
-import type { MergeStrategy, PluginKind } from '../plugins/entities/plugin.entity.js'
+import type { BooleanSettingKey, MergeStrategy, PluginKind, SettingKey } from 'kuroshiro-shared'
 import type { ParsedPlugin } from '../plugins/services/plugin-importer.service.js'
 import type { Screen } from '../screens/screens.entity.js'
 
