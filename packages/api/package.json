@@ -48,6 +48,7 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:",
+    "@electric-sql/pglite": "catalog:",
     "@nestjs/cli": "catalog:",
     "@nestjs/testing": "catalog:",
     "@swc/core": "catalog:",
@@ -62,6 +63,7 @@
     "ts-loader": "catalog:",
     "ts-node": "catalog:",
     "tsup": "catalog:",
+    "typeorm-pglite": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

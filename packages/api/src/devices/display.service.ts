@@ -576,7 +576,7 @@ export class DeviceDisplayService {
     this.logger.log(`No cache, rendering plugin ${plugin.id} on-demand for screen ${screen.id}`)
 
     const sensors = await this.deviceSensors.findForDevice(device.id)
-    const templateContext = this.pluginTemplateContext.build(plugin, sensors)
+    const templateContext = await this.pluginTemplateContext.build(plugin, sensors)
     const data = await this.pluginDataResolver.resolveAll(plugin.dataSources, templateContext)
 
     const fullTemplate = plugin.templates.find(t => t.layout === 'full')

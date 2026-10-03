@@ -209,6 +209,19 @@ describe('diffRecipeUpdate', () => {
       expect(items).toContainEqual(expect.objectContaining({ itemType: 'dataSource', key: 'weather', kind: 'changed' }))
     })
 
+    it('offers a field whose select options changed upstream, including one imported before options were kept', () => {
+      const withoutOptions = { keyname: 'units', fieldType: 'select', name: 'Units', required: false, order: 1 }
+      const snapshot = basePlugin({ fields: [withoutOptions] })
+      const local = basePlugin({ fields: [withoutOptions] })
+      const upstream = basePlugin({ fields: [{ ...withoutOptions, options: [{ label: 'Metric', value: 'metric' }] }] })
+
+      const { items } = diffRecipeUpdate(snapshot, local, upstream)
+
+      expect(items).toEqual([
+        expect.objectContaining({ kind: 'changed', conflict: false, itemType: 'field', key: 'units' }),
+      ])
+    })
+
     it('never emits an item for a Data Source/template/field that only exists locally', () => {
       const local = basePlugin({ dataSources: [{ name: 'admin-added', mode: 'literal', literalValue: 'x' }] })
       const upstream = basePlugin({ dataSources: [] })

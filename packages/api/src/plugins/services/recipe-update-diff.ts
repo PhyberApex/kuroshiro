@@ -1,4 +1,5 @@
 import type { JsonObject } from '../../utils/json.js'
+import type { PluginFieldOption } from '../entities/plugin-field.entity.js'
 import * as crypto from 'node:crypto'
 
 // A plain, framework-free shape every side of the diff (the stored Recipe
@@ -30,6 +31,7 @@ export interface ComparableField {
   name: string
   description?: string | null
   defaultValue?: string | null
+  options?: PluginFieldOption[] | null
   required: boolean
   order: number
 }
@@ -71,6 +73,7 @@ export interface NormalizedField {
   name: string
   description: string | null
   defaultValue: string | null
+  options: PluginFieldOption[] | null
   required: boolean
   order: number
 }
@@ -125,6 +128,7 @@ function normalizeField(field: ComparableField): NormalizedField {
     name: field.name,
     description: field.description ?? null,
     defaultValue: field.defaultValue ?? null,
+    options: field.options ?? null,
     required: !!field.required,
     order: field.order ?? 0,
   }

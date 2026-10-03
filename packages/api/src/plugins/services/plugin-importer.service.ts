@@ -1,4 +1,5 @@
 import type { JsonObject } from '../../utils/json.js'
+import type { PluginFieldOption } from '../entities/plugin-field.entity.js'
 import type { PluginKind } from '../entities/plugin.entity.js'
 import { Buffer } from 'node:buffer'
 import * as fs from 'node:fs'
@@ -8,6 +9,7 @@ import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
 import { isPlainObject } from '../../utils/json.js'
 import { resolveAppPath } from '../../utils/pathHelper.js'
+import { parseFieldOptions } from '../plugin-field-options.js'
 
 function parseYamlObject<T>(content: string, invalidMessage: string): T {
   const parsed: unknown = yaml.load(content)
@@ -42,11 +44,12 @@ interface TerminusManifest {
 
 interface CustomField {
   keyname: string
-  field_type: string
-  name: string
+  field_type?: string
+  name?: string
   description?: string
   default_value?: string
   optional?: boolean
+  options?: unknown
 }
 
 interface DataSourceEntry {
@@ -122,6 +125,7 @@ export interface ParsedPlugin {
     name: string
     description?: string
     defaultValue?: string
+    options?: PluginFieldOption[]
     required: boolean
     order: number
   }>
@@ -530,15 +534,19 @@ export class PluginImporterService {
         ? settings.custom_fields
         : []
 
-    return customFieldsSource.map((field, index) => ({
-      keyname: field.keyname,
-      fieldType: field.field_type,
-      name: field.name,
-      description: field.description,
-      defaultValue: field.default_value,
-      required: !field.optional,
-      order: index + 1,
-    }))
+    return customFieldsSource.map((field, index) => {
+      const options = parseFieldOptions(field.options)
+      return {
+        keyname: field.keyname,
+        fieldType: field.field_type ?? 'string',
+        name: field.name ?? field.keyname,
+        description: field.description,
+        defaultValue: field.default_value,
+        ...(options ? { options } : {}),
+        required: !field.optional,
+        order: index + 1,
+      }
+    })
   }
 
   private parseDataSourcesArray(entries: DataSourceEntry[]): ParsedDataSource[] {

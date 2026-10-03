@@ -68,7 +68,7 @@ async function confirmImport() {
         The archive contains Data Source headers and Device API keys in plaintext. Store it as carefully as you would a database backup.
       </VAlert>
       <VAlert v-else type="info" variant="tonal" class="mt-2" :icon="mdiAlertCircle" data-test-id="export-redacted-warning">
-        Data Source header values, Device API keys and mirror API keys, secret Plugin Variables and Webhook Tokens are replaced with the Redaction Sentinel. Data Source URLs and bodies are still exported as-is, so a key embedded there is not redacted. Restoring this archive onto a fresh instance will need those secrets re-entered.
+        Data Source header values, Device API keys and mirror API keys, password Field Values and Webhook Tokens are replaced with the Redaction Sentinel. Data Source URLs and bodies are still exported as-is, so a key embedded there is not redacted. Restoring this archive onto a fresh instance will need those secrets re-entered.
       </VAlert>
     </VCardText>
 

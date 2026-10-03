@@ -37,7 +37,7 @@ describe('recipeUpdateService', () => {
   let templateRepo: ReturnType<typeof createMockRepository<PluginTemplate>>
   let fieldRepo: ReturnType<typeof createMockRepository<PluginField>>
   let mockImporter: { importFromRecipe: ReturnType<typeof vi.fn> }
-  let mockPluginsService: { invalidateRenderCaches: ReturnType<typeof vi.fn>, rescheduleAfterUpdate: ReturnType<typeof vi.fn> }
+  let mockPluginsService: { invalidateRenderCaches: ReturnType<typeof vi.fn>, rescheduleAfterUpdate: ReturnType<typeof vi.fn>, findById: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     pluginRepo = createMockRepository<Plugin>()
@@ -45,7 +45,7 @@ describe('recipeUpdateService', () => {
     templateRepo = createMockRepository<PluginTemplate>()
     fieldRepo = createMockRepository<PluginField>()
     mockImporter = { importFromRecipe: vi.fn() }
-    mockPluginsService = { invalidateRenderCaches: vi.fn(), rescheduleAfterUpdate: vi.fn() }
+    mockPluginsService = { invalidateRenderCaches: vi.fn(), rescheduleAfterUpdate: vi.fn(), findById: vi.fn(async (id: string) => makePlugin({ id })) }
 
     service = new RecipeUpdateService(
       asRepository(pluginRepo),
@@ -301,7 +301,7 @@ describe('recipeUpdateService', () => {
       expect(mockPluginsService.rescheduleAfterUpdate).toHaveBeenCalledWith('plugin-1')
     })
 
-    it('removes a field (and, via FK cascade, its stored assignment values) when applying a removed field', async () => {
+    it('removes a field (and, via FK cascade, its Field Value) when applying a removed field', async () => {
       const localField = makePluginField({ id: 'field-1', keyname: 'api_key' })
       const snapshot = baseParsedPlugin({ fields: [{ keyname: 'api_key', fieldType: 'string', name: 'API Key', required: true, order: 1 }] })
       const upstream = baseParsedPlugin({ fields: [] })
@@ -334,9 +334,8 @@ describe('recipeUpdateService', () => {
       const upstream = baseParsedPlugin({ name: 'New Name' })
       const plugin = makePlugin({ id: 'plugin-1', sourceRecipeId: '150460', sourceRecipeSnapshot: toSnapshot(baseParsedPlugin()) })
       const reloaded = makePlugin({ id: 'plugin-1', name: 'New Name' })
-      pluginRepo.findOne
-        .mockResolvedValueOnce(plugin)
-        .mockResolvedValueOnce(reloaded)
+      pluginRepo.findOne.mockResolvedValueOnce(plugin)
+      mockPluginsService.findById.mockResolvedValue(reloaded)
       mockImporter.importFromRecipe.mockResolvedValue(upstream)
       const contentHash = computeRecipeContentHash(upstream)
 
