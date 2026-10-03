@@ -1,4 +1,5 @@
 import type { HttpTestApp } from '../../test/httpApp.js'
+import { Buffer } from 'node:buffer'
 import { getRepositoryToken } from '@nestjs/typeorm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { ConfigurationController } from '../../configuration/configuration.controller.js'
@@ -48,7 +49,7 @@ describe('the upload limits', () => {
     http = await createHttpTestApp({
       controllers: [ScreensController, FirmwareController, ConfigurationController, PluginsController, WebhookIngestController],
       providers: [
-        { provide: ScreensService, useValue: { add: async () => 'screen-id' } },
+        { provide: ScreensService, useValue: { add: async () => 'screen-id', replaceImage: async () => 'screen-id', previewImage: async () => Buffer.from('png') } },
         { provide: ScreenReadsService, useValue: { forScreen: async () => answered } },
         { provide: FirmwareService, useValue: { upload: async () => ({ id: 'firmware-id' }) } },
         { provide: FirmwareReadsService, useValue: { readById: async () => answered } },
@@ -72,21 +73,23 @@ describe('the upload limits', () => {
     await http.app.close()
   })
 
-  const uploads: { name: string, path: string, limit: number, fields: Record<string, string>, filename: string }[] = [
+  const uploads: { name: string, path: string, method?: string, status?: number, limit: number, fields: Record<string, string>, filename: string }[] = [
     { name: 'image upload', path: '/api/screens', limit: UPLOAD_LIMITS.imageUploadBytes, fields: { deviceId: DEVICE_ID, kind: 'file', name: 'Photo' }, filename: 'photo.png' },
+    { name: 'image replacement', path: '/api/screens/screen-id/image', method: 'PUT', status: 200, limit: UPLOAD_LIMITS.imageUploadBytes, fields: {}, filename: 'photo.png' },
+    { name: 'image preview', path: '/api/screens/screen-id/image-preview', status: 200, limit: UPLOAD_LIMITS.imageUploadBytes, fields: {}, filename: 'photo.png' },
     { name: 'firmware upload', path: '/api/firmware/upload', limit: UPLOAD_LIMITS.firmwareUploadBytes, fields: { version: '1.0.0' }, filename: 'firmware.bin' },
     { name: 'archive upload', path: '/api/config/import', limit: UPLOAD_LIMITS.archiveUploadBytes, fields: {}, filename: 'archive.zip' },
     { name: 'plugin import', path: '/api/plugins/import', limit: UPLOAD_LIMITS.pluginImportBytes, fields: {}, filename: 'plugin.zip' },
   ]
 
-  describe.each(uploads)('the $name', ({ path, limit, fields, filename }) => {
+  describe.each(uploads)('the $name', ({ path, method = 'POST', status = 201, limit, fields, filename }) => {
     it('succeeds at the limit', async () => {
-      const response = await http.request(path, { method: 'POST', body: multipart(limit, fields, filename) })
-      expect(response.status).toBe(201)
+      const response = await http.request(path, { method, body: multipart(limit, fields, filename) })
+      expect(response.status).toBe(status)
     })
 
     it('answers 413 upload-too-large with the limit one byte over', async () => {
-      const response = await http.request(path, { method: 'POST', body: multipart(limit + 1, fields, filename) })
+      const response = await http.request(path, { method, body: multipart(limit + 1, fields, filename) })
       expect(response.status).toBe(413)
       expect(await response.json()).toEqual({
         statusCode: 413,

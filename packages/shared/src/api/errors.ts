@@ -15,6 +15,7 @@ export const API_ERROR_CODES = [
   'internal',
   'device-not-found',
   'screen-not-found',
+  'screen-field-not-for-kind',
   'plugin-not-found',
   'assignment-not-found',
   'plugin-already-assigned',
