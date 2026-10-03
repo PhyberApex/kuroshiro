@@ -11,7 +11,6 @@ import type { DevicePlugin } from '../plugins/entities/device-plugin.entity.js'
 import type { PluginDataSource } from '../plugins/entities/plugin-data-source.entity.js'
 import type { PluginField } from '../plugins/entities/plugin-field.entity.js'
 import type { PluginTemplate } from '../plugins/entities/plugin-template.entity.js'
-import type { PluginVariable } from '../plugins/entities/plugin-variable.entity.js'
 import type { Plugin } from '../plugins/entities/plugin.entity.js'
 import type { Schedule } from '../schedule/schedule.entity.js'
 import type { Screen } from '../screens/screens.entity.js'
@@ -121,7 +120,6 @@ export function makePlugin(overrides: Partial<Plugin> = {}): Plugin {
     dataSources: [],
     templates: [],
     fields: [],
-    variables: [],
     ...overrides,
   }
 }
@@ -169,17 +167,6 @@ export function makePluginField(overrides: Partial<PluginField> = {}): PluginFie
     name: 'Test Field',
     required: false,
     order: 0,
-    plugin: makePlugin(),
-    ...overrides,
-  }
-}
-
-export function makePluginVariable(overrides: Partial<PluginVariable> = {}): PluginVariable {
-  return {
-    id: 'variable-1',
-    key: 'API_KEY',
-    value: 'secret',
-    isSecret: false,
     plugin: makePlugin(),
     ...overrides,
   }

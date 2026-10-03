@@ -1,10 +1,10 @@
 import type { DataSourceLiteralValue, DataSourceMode } from 'kuroshiro-shared'
 import type { JsonObject } from '../../utils/json.js'
 import { Type } from 'class-transformer'
-import { IsArray, IsIn, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator'
+import { IsArray, IsIn, IsObject, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator'
 import { DATA_SOURCE_MODES } from 'kuroshiro-shared'
 
-export class PreviewSourceDto {
+class PreviewSourceDto {
   @IsString()
   name: string
 
@@ -49,4 +49,11 @@ export class PreviewPluginDto {
   @IsOptional()
   @IsObject()
   fieldValues?: Record<string, string>
+
+  // The saved Plugin being edited: its resolved Field Values fill in every
+  // keyname `fieldValues` leaves out, which is how a write-only secret the
+  // browser never holds still reaches the preview.
+  @IsOptional()
+  @IsUUID()
+  pluginId?: string
 }

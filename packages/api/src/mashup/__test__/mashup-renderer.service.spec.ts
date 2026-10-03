@@ -9,9 +9,8 @@ import type { MashupConfiguration } from '../entities/mashup-configuration.entit
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMockDeviceSensorsService, primeMockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService.js'
 import { PluginDataResolverService } from '../../plugins/services/plugin-data-resolver.service.js'
-import { PluginTemplateContextService } from '../../plugins/services/plugin-template-context.service.js'
 import { makeDevice, makeMashupConfiguration, makeMashupSlot, makePlugin, makePluginDataSource, makePluginTemplate } from '../../test/fixtures.js'
-import { createMockPluginDataFetcherService, createMockPluginRendererService, createMockPluginTransformService } from '../../test/mockPluginCollaborators.js'
+import { createMockPluginDataFetcherService, createMockPluginRendererService, createMockPluginTransformService, createPluginTemplateContextService } from '../../test/mockPluginCollaborators.js'
 import { asService } from '../../test/mockService.js'
 import { MashupRendererService } from '../services/mashup-renderer.service.js'
 
@@ -45,7 +44,7 @@ describe('mashupRendererService', () => {
       asService<PluginRendererService>(pluginRenderer),
       asService<ConfigService>(configService),
       asService<DeviceSensorsService>(deviceSensors),
-      new PluginTemplateContextService(),
+      createPluginTemplateContextService(),
     )
 
     vi.resetAllMocks()

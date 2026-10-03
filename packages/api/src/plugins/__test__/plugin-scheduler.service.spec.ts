@@ -6,11 +6,11 @@ import type { PluginRenderCacheService } from '../services/plugin-render-cache.s
 import type { PluginTransformService } from '../services/plugin-transform.service.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makePlugin, makePluginDataSource, makePluginTemplate } from '../../test/fixtures.js'
-import { createMockPluginDataFetcherService, createMockPluginTransformService } from '../../test/mockPluginCollaborators.js'
+import { createMockPluginDataFetcherService, createMockPluginTransformService, createPluginTemplateContextService } from '../../test/mockPluginCollaborators.js'
 import { asService, callPrivate } from '../../test/mockService.js'
 import { PluginDataResolverService } from '../services/plugin-data-resolver.service.js'
+import { PluginRefreshService } from '../services/plugin-refresh.service.js'
 import { PluginSchedulerService } from '../services/plugin-scheduler.service.js'
-import { PluginTemplateContextService } from '../services/plugin-template-context.service.js'
 
 let capturedCallback: (() => Promise<void>) | undefined
 
@@ -51,12 +51,12 @@ describe('pluginSchedulerService', () => {
       asService<PluginTransformService>(mockTransformer),
     )
 
-    service = new PluginSchedulerService(
+    service = new PluginSchedulerService(new PluginRefreshService(
       pluginDataResolver,
       asService<PluginRenderCacheService>(mockRenderCache),
-      new PluginTemplateContextService(),
+      createPluginTemplateContextService(),
       asService<DataSourceFetchOutcomeService>(mockFetchOutcome),
-    )
+    ))
   })
 
   it('schedules a plugin with refresh interval', () => {
@@ -225,7 +225,7 @@ describe('pluginSchedulerService', () => {
       const tickPromise = capturedCallback!()
 
       // Both fetches were started before either resolved — proof they run in parallel, not sequentially
-      expect(mockDataFetcher.fetchData).toHaveBeenCalledTimes(2)
+      await vi.waitFor(() => expect(mockDataFetcher.fetchData).toHaveBeenCalledTimes(2))
 
       resolveAirQuality!({ aqi: 42 })
       resolveWeather!({ temp: 25 })

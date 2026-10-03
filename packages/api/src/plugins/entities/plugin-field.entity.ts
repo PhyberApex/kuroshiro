@@ -1,6 +1,11 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { Plugin } from './plugin.entity.js'
 
+export interface PluginFieldOption {
+  label: string
+  value: string
+}
+
 @Entity()
 export class PluginField {
   @PrimaryGeneratedColumn('uuid')
@@ -20,6 +25,9 @@ export class PluginField {
 
   @Column('text', { nullable: true })
   defaultValue?: string | null
+
+  @Column('jsonb', { nullable: true })
+  options?: PluginFieldOption[] | null
 
   @Column('boolean', { default: false })
   required: boolean = false

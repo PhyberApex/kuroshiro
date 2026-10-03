@@ -103,4 +103,10 @@ export class CreatePluginDto {
   @ValidateNested({ each: true })
   @Type(() => PluginFieldDto)
   fields?: PluginFieldDto[]
+
+  // Keyed by Plugin Field keyname. A keyname left out keeps its stored value;
+  // `null` or an empty string clears it.
+  @IsOptional()
+  @IsObject()
+  fieldValues?: Record<string, string | null>
 }
