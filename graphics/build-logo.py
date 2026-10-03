@@ -32,7 +32,7 @@ def seal_characters() -> str:
     return re.search(r'<path class="characters" d="([^"]+)"', source).group(1)
 
 
-def wordmark_path(font_file: str) -> tuple[str, float, float]:
+def wordmark_path(font_file: str) -> tuple[str, float]:
     font = instantiateVariableFont(TTFont(font_file), {"wght": WEIGHT, "wdth": WIDTH})
     glyphs = font.getGlyphSet()
     cmap = font.getBestCmap()
@@ -45,7 +45,7 @@ def wordmark_path(font_file: str) -> tuple[str, float, float]:
         glyph = glyphs[cmap[ord(char)]]
         glyph.draw(TransformPen(pen, (scale, 0, 0, -scale, x, baseline)))
         x += glyph.width * scale + TRACKING_EM * FONT_SIZE
-    return pen.getCommands(), x - TRACKING_EM * FONT_SIZE, baseline
+    return pen.getCommands(), x - TRACKING_EM * FONT_SIZE
 
 
 def logo(colours: dict[str, str], characters: str, wordmark: str, wordmark_width: float) -> str:
@@ -59,10 +59,11 @@ def logo(colours: dict[str, str], characters: str, wordmark: str, wordmark_width
 
 
 def main() -> None:
-    wordmark, wordmark_width, _ = wordmark_path(sys.argv[1])
+    wordmark, wordmark_width = wordmark_path(sys.argv[1])
     characters = seal_characters()
     for theme, colours in THEMES.items():
         (ROOT / f"logo-{theme}.svg").write_text(logo(colours, characters, wordmark, wordmark_width))
 
 
-main()
+if __name__ == "__main__":
+    main()
