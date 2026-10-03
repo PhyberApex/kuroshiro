@@ -1,4 +1,4 @@
-import type { InstanceSettingsResponse } from 'kuroshiro-shared'
+import type { DeviceSummary, InstanceSettingsResponse } from 'kuroshiro-shared'
 import type { Browser } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest'
@@ -46,8 +46,11 @@ describe('the built UI on the real API', () => {
     expect(display.refresh_rate).toBeGreaterThan(0)
 
     await device.log([{ id: 1, message: 'wifi connect failed', created_at: Math.floor(Date.now() / 1000) }])
-    const devices = await (await fetch(new URL('api/devices', baseUrl))).json() as { mac: string }[]
+    const devices = await (await fetch(new URL('api/devices', baseUrl))).json() as DeviceSummary[]
+    const listed = devices.find(summary => summary.friendlyId === device.setup.friendly_id)
 
-    expect(devices.map(listed => listed.mac)).toContain('A4:C1:38:5F:0B:9E')
+    expect(listed?.lastSeenAt).toEqual(expect.any(String))
+    expect(listed?.rssi).toBe(-61)
+    expect(listed?.currentScreen).toMatchObject({ kind: 'fallback', fallback: 'noScreen', reason: 'noScreens' })
   })
 })

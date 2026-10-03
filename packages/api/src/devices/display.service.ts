@@ -1,6 +1,7 @@
 import type { MashupRendererService } from '../mashup/services/mashup-renderer.service.js'
 import type { Plugin } from '../plugins/entities/plugin.entity.js'
 import type { DisplayRequestHeadersDto } from './dto/display-request-headers.dto.js'
+import type { Served } from './last-served.js'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common'
@@ -26,6 +27,7 @@ import { resolveAppPath } from '../utils/pathHelper.js'
 import { Device } from './devices.entity.js'
 import { Display } from './display.js'
 import { DisplayScreen } from './displayScreen.js'
+import { SERVED_MIRROR, servedFallback, servedNoScreen, servedScreen, toLastServedRecord } from './last-served.js'
 import { isDeviceAsleep, secondsUntilSleepEnd } from './sleep-mode.js'
 
 // The fields getCurrentImage's response builders need out of applyHeaderReport,
@@ -38,6 +40,21 @@ interface HeaderReport {
   firmwareUrl: string
   updateFirmware: boolean
 }
+
+interface DisplayAnswer {
+  display: Display
+  served: Served
+}
+
+interface ScreenImage {
+  imgUrl: string
+  served: Served
+}
+
+const RENDER_FAILED = Symbol('render failed')
+
+/** A rendered image's URL, `null` when the Screen has nothing to render from, or `RENDER_FAILED`. */
+type RenderOutcome = string | null | typeof RENDER_FAILED
 
 export interface TrmnlScreenResponse {
   action?: string
@@ -94,9 +111,26 @@ export class DeviceDisplayService {
     const device = await this.authenticateDevice(headers)
     const report = await this.applyHeaderReport(device, headers)
 
-    return device.mirrorEnabled
-      ? this.buildMirrorResponse(device, headers, report)
-      : this.buildRotationResponse(device, report)
+    const { display, served } = device.mirrorEnabled
+      ? await this.buildMirrorResponse(device, headers, report)
+      : await this.buildRotationResponse(device, report)
+    await this.recordServed(device, display, served)
+    return display
+  }
+
+  /**
+   * Written on its own, to these columns only: the answer can take seconds to
+   * render, and saving the whole Device afterwards would undo an admin's edit
+   * made in the meantime. The Device gets its answer whether or not this
+   * write succeeds.
+   */
+  private async recordServed(device: Device, display: Display, served: Served): Promise<void> {
+    try {
+      await this.deviceRepository.update({ id: device.id }, toLastServedRecord(served, display, device.lastSeen ?? new Date()))
+    }
+    catch (err) {
+      this.logger.error(`Could not record what device ${device.id} was served: ${getErrorMessage(err)}`)
+    }
   }
 
   /**
@@ -155,7 +189,7 @@ export class DeviceDisplayService {
    * otherwise advances to the next eligible Screen (or the no-screen
    * fallback) and generates its image.
    */
-  private async buildRotationResponse(device: Device, report: HeaderReport): Promise<Display> {
+  private async buildRotationResponse(device: Device, report: HeaderReport): Promise<DisplayAnswer> {
     const now = new Date()
     if (isDeviceAsleep(device, now)) {
       this.logger.log(`Device ${device.id} is asleep. Holding rotation.`)
@@ -172,35 +206,41 @@ export class DeviceDisplayService {
       await this.screenRepository.update({ device: { id: device.id } }, { isActive: false })
     if (!nextScreen) {
       this.logger.log(`No eligible screen for device ${device.id} returning default no screen image`)
-      return new Display({
-        action: report.specialFunction,
-        filename: 'noScreen.png',
-        firmware_url: report.firmwareUrl,
-        image_url: await this.fallbackImageUrl('noScreen', device),
-        refresh_rate: device.refreshRate,
-        reset_firmware: report.resetDevice,
-        special_function: report.specialFunction,
-        temperature_profile: 'default',
-        update_firmware: report.updateFirmware,
-      })
+      return {
+        display: new Display({
+          action: report.specialFunction,
+          filename: 'noScreen.png',
+          firmware_url: report.firmwareUrl,
+          image_url: await this.fallbackImageUrl('noScreen', device),
+          refresh_rate: device.refreshRate,
+          reset_firmware: report.resetDevice,
+          special_function: report.specialFunction,
+          temperature_profile: 'default',
+          update_firmware: report.updateFirmware,
+        }),
+        served: servedNoScreen(screens.length),
+      }
     }
     nextScreen.isActive = true
     await this.screenRepository.save(nextScreen)
     this.logger.log(`Returning screen ${nextScreen.id} for device ${device.id}`)
 
-    const imgUrl = await this.generateScreenImage(nextScreen, device)
+    const { imgUrl, served } = await this.generateScreenImage(nextScreen, device)
 
-    return new Display({
-      action: report.specialFunction,
-      filename: `${nextScreen.filename}_${nextScreen.generatedAt.toISOString()}`,
-      firmware_url: report.firmwareUrl,
-      image_url: imgUrl,
-      refresh_rate: device.refreshRate,
-      reset_firmware: report.resetDevice,
-      special_function: report.specialFunction,
-      temperature_profile: 'default',
-      update_firmware: report.updateFirmware,
-    })
+    return {
+      display: new Display({
+        action: report.specialFunction,
+        filename: `${nextScreen.filename}_${nextScreen.generatedAt.toISOString()}`,
+        firmware_url: report.firmwareUrl,
+        image_url: imgUrl,
+        refresh_rate: device.refreshRate,
+        reset_firmware: report.resetDevice,
+        special_function: report.specialFunction,
+        temperature_profile: 'default',
+        update_firmware: report.updateFirmware,
+      }),
+      served,
+    }
   }
 
   /**
@@ -208,7 +248,7 @@ export class DeviceDisplayService {
    * (matching MACs), otherwise mirrors another Device's `current_screen` and
    * keeps this Device's own reset/special-function/firmware fields as-is.
    */
-  private async buildMirrorResponse(device: Device, headers: DisplayRequestHeadersDto, report: Pick<HeaderReport, 'resetDevice' | 'specialFunction'>): Promise<Display> {
+  private async buildMirrorResponse(device: Device, headers: DisplayRequestHeadersDto, report: Pick<HeaderReport, 'resetDevice' | 'specialFunction'>): Promise<DisplayAnswer> {
     this.logger.log(`Device ${device.id} is mirrored. Fetching from TRMNL.`)
     let proxy = false
     if (device.mac === device.mirrorMac) {
@@ -226,6 +266,7 @@ export class DeviceDisplayService {
     let mirrorSpecialFunction = report.specialFunction
     let mirrorAction = report.specialFunction
     let updateFirmware = false
+    let served = servedFallback('error', 'mirrorFailed')
     try {
       const { response, localImageUrl: localImage } = await this.fetchAndStoreMirrorImage(device, proxy ? headers : undefined)
 
@@ -239,23 +280,27 @@ export class DeviceDisplayService {
       }
       localImageUrl = localImage
       filename = response.filename
+      served = SERVED_MIRROR
     }
     catch (err) {
       const message = getErrorMessage(err)
       this.logger.error(`Failed to process image: ${message}`)
     }
     this.logger.log(`Returning mirrored screen for device ${device.id}`)
-    return new Display({
-      action: mirrorAction,
-      filename,
-      firmware_url: firmwareUrl,
-      image_url: localImageUrl,
-      refresh_rate: refreshRate,
-      reset_firmware: resetFirmware,
-      special_function: mirrorSpecialFunction,
-      temperature_profile: 'default',
-      update_firmware: updateFirmware,
-    })
+    return {
+      display: new Display({
+        action: mirrorAction,
+        filename,
+        firmware_url: firmwareUrl,
+        image_url: localImageUrl,
+        refresh_rate: refreshRate,
+        reset_firmware: resetFirmware,
+        special_function: mirrorSpecialFunction,
+        temperature_profile: 'default',
+        update_firmware: updateFirmware,
+      }),
+      served,
+    }
   }
 
   /**
@@ -302,22 +347,25 @@ export class DeviceDisplayService {
    * exactly on schedule, and the served image is either the dedicated Sleep
    * fallback screen or whatever was already showing.
    */
-  private async buildSleepResponse(device: Device, now: Date, report: HeaderReport): Promise<Display> {
+  private async buildSleepResponse(device: Device, now: Date, report: HeaderReport): Promise<DisplayAnswer> {
     const refreshRate = secondsUntilSleepEnd(device.sleepEndTime!, now)
-    const { filename, imgUrl } = device.sleepScreenEnabled
-      ? { filename: 'sleep.png', imgUrl: await this.fallbackImageUrl('sleep', device) }
+    const { filename, imgUrl, served } = device.sleepScreenEnabled
+      ? { filename: 'sleep.png', imgUrl: await this.fallbackImageUrl('sleep', device), served: servedFallback('sleep', 'asleep') }
       : await this.resolveFrozenImage(device)
-    return new Display({
-      action: report.specialFunction,
-      filename,
-      firmware_url: report.firmwareUrl,
-      image_url: imgUrl,
-      refresh_rate: refreshRate,
-      reset_firmware: report.resetDevice,
-      special_function: report.specialFunction,
-      temperature_profile: 'default',
-      update_firmware: report.updateFirmware,
-    })
+    return {
+      display: new Display({
+        action: report.specialFunction,
+        filename,
+        firmware_url: report.firmwareUrl,
+        image_url: imgUrl,
+        refresh_rate: refreshRate,
+        reset_firmware: report.resetDevice,
+        special_function: report.specialFunction,
+        temperature_profile: 'default',
+        update_firmware: report.updateFirmware,
+      }),
+      served,
+    }
   }
 
   /**
@@ -325,14 +373,24 @@ export class DeviceDisplayService {
    * turned off: whatever the current Active Screen already has on disk, or
    * the plain no-screen fallback for a Device that never had one.
    */
-  private async resolveFrozenImage(device: Device): Promise<{ filename: string, imgUrl: string }> {
+  private async resolveFrozenImage(device: Device): Promise<ScreenImage & { filename: string }> {
     const activeScreen = await this.screenRepository.findOneBy({ device: { id: device.id }, isActive: true })
-    if (!activeScreen)
-      return { filename: 'noScreen.png', imgUrl: await this.fallbackImageUrl('noScreen', device) }
-    const imgUrl = await fileExists(this.screenImagePath(device, activeScreen))
-      ? this.screenImageUrl(device, activeScreen)
+    if (!activeScreen) {
+      const screenCount = await this.screenRepository.count({ where: { device: { id: device.id } } })
+      return {
+        filename: 'noScreen.png',
+        imgUrl: await this.fallbackImageUrl('noScreen', device),
+        served: servedNoScreen(screenCount),
+      }
+    }
+    const { imgUrl, served } = await fileExists(this.screenImagePath(device, activeScreen))
+      ? { imgUrl: this.screenImageUrl(device, activeScreen), served: servedScreen(activeScreen.id) }
       : await this.generateScreenImage(activeScreen, device)
-    return { filename: `${activeScreen.filename}_${activeScreen.generatedAt.toISOString()}`, imgUrl }
+    return {
+      filename: `${activeScreen.filename}_${activeScreen.generatedAt.toISOString()}`,
+      imgUrl,
+      served: served.kind === 'screen' ? servedScreen(activeScreen.id, 'asleep') : served,
+    }
   }
 
   async getCurrentImageWithoutProgressing(headers: Pick<DisplayRequestHeadersDto, 'id' | 'access-token'>): Promise<DisplayScreen> {
@@ -406,7 +464,7 @@ export class DeviceDisplayService {
     }
     else {
       this.logger.log(`Screen image for ${activeScreen.id} missing on disk, generating on demand`)
-      imgUrl = await this.generateScreenImage(activeScreen, device)
+      imgUrl = (await this.generateScreenImage(activeScreen, device)).imgUrl
     }
     return { filename: `${activeScreen.filename}_${activeScreen.generatedAt.toISOString()}`, imgUrl, renderedAt: activeScreen.generatedAt }
   }
@@ -438,24 +496,28 @@ export class DeviceDisplayService {
     return { response, localImageUrl: `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${pngFilename}` }
   }
 
-  private async generateScreenImage(screen: Screen, device: Device): Promise<string> {
-    let imgUrl = screen.type === 'mashup'
+  /**
+   * The Screen's image, or the error Fallback Screen when it could not be
+   * made: a render that failed, an External link that could not be fetched, or
+   * a Screen with nothing to render from whose stored image is missing.
+   */
+  private async generateScreenImage(screen: Screen, device: Device): Promise<ScreenImage> {
+    let outcome = screen.type === 'mashup'
       ? await this.renderMashupScreen(screen, device)
       : await this.renderPluginOrHtmlScreen(screen, device)
 
     if (screen.externalLink && !screen.fetchManual)
-      imgUrl = await this.renderExternalLinkScreen(screen, device)
+      outcome = await this.renderExternalLinkScreen(screen, device)
 
-    if (imgUrl !== null)
-      return imgUrl
+    if (outcome === null && await fileExists(this.screenImagePath(device, screen)))
+      outcome = this.screenImageUrl(device, screen)
 
-    // No rendering source (e.g. uploaded file screens) — serve the stored image if present
-    return await fileExists(this.screenImagePath(device, screen))
-      ? this.screenImageUrl(device, screen)
-      : await this.fallbackImageUrl('error', device)
+    return typeof outcome === 'string'
+      ? { imgUrl: outcome, served: servedScreen(screen.id) }
+      : { imgUrl: await this.fallbackImageUrl('error', device), served: servedFallback('error', 'renderFailed', screen.id) }
   }
 
-  private async renderMashupScreen(screen: Screen, device: Device): Promise<string | null> {
+  private async renderMashupScreen(screen: Screen, device: Device): Promise<RenderOutcome> {
     try {
       const screenWithMashup = await this.screenRepository.findOne({
         where: { id: screen.id },
@@ -488,7 +550,7 @@ export class DeviceDisplayService {
     catch (err) {
       const message = getErrorMessage(err)
       this.logger.error(`Failed to render mashup: ${message}`)
-      return await this.fallbackImageUrl('error', device)
+      return RENDER_FAILED
     }
   }
 
@@ -499,7 +561,7 @@ export class DeviceDisplayService {
     return renderedHtml
   }
 
-  private async renderPluginOrHtmlScreen(screen: Screen, device: Device): Promise<string | null> {
+  private async renderPluginOrHtmlScreen(screen: Screen, device: Device): Promise<RenderOutcome> {
     // Load plugin relationship if needed
     const screenWithPlugin = await this.screenRepository.findOne({
       where: { id: screen.id },
@@ -514,7 +576,7 @@ export class DeviceDisplayService {
       : null
   }
 
-  private async renderPluginScreen(screenWithPlugin: Screen, screen: Screen, device: Device): Promise<string | null> {
+  private async renderPluginScreen(screenWithPlugin: Screen, screen: Screen, device: Device): Promise<RenderOutcome> {
     const plugin = screenWithPlugin.plugin!
 
     // Use cached output if available
@@ -526,7 +588,7 @@ export class DeviceDisplayService {
       catch (err) {
         const message = getErrorMessage(err)
         this.logger.error(`Failed to render cached plugin output: ${message}`)
-        return await this.fallbackImageUrl('error', device)
+        return RENDER_FAILED
       }
     }
 
@@ -539,14 +601,14 @@ export class DeviceDisplayService {
       catch (err) {
         const message = getErrorMessage(err)
         this.logger.error(`Failed to render plugin: ${message}`)
-        return await this.fallbackImageUrl('error', device)
+        return RENDER_FAILED
       }
     }
 
     return null
   }
 
-  private async renderExternalLinkScreen(screen: Screen, device: Device): Promise<string> {
+  private async renderExternalLinkScreen(screen: Screen, device: Device): Promise<string | typeof RENDER_FAILED> {
     const inputPath = path.join(resolveAppPath('public', 'screens', 'devices', device.id), 'tmp-source')
     try {
       await downloadImage(screen.externalLink!, inputPath, this.logger)
@@ -560,7 +622,7 @@ export class DeviceDisplayService {
     catch (err) {
       const message = getErrorMessage(err)
       this.logger.error(`Failed to process image: ${message}`)
-      return await this.fallbackImageUrl('error', device)
+      return RENDER_FAILED
     }
     finally {
       try {

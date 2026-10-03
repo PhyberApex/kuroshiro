@@ -300,7 +300,7 @@ A daily Retention job (same 4am schedule as the Device Model and Firmware syncs)
 |---|---|---|---|
 | `kuroshiro_device_battery_volts` | gauge | `device`, `friendly_id` | Last reported battery voltage. Omitted for a Device with no or non-numeric reading. |
 | `kuroshiro_device_rssi_dbm` | gauge | `device`, `friendly_id` | Last reported Wi-Fi signal strength. Omitted for a Device with no or non-numeric reading. |
-| `kuroshiro_device_last_seen_timestamp_seconds` | gauge | `device`, `friendly_id` | The Device's `lastSeen` as a Unix timestamp (compute `time() - x` for staleness). |
+| `kuroshiro_device_last_seen_timestamp_seconds` | gauge | `device`, `friendly_id` | The Device's `lastSeen` as a Unix timestamp (compute `time() - x` for staleness). No sample for a Device that never polled. |
 | `kuroshiro_alerts_active` | gauge | `kind` | Count of currently active Alerts per `AlertKind` — every known kind is emitted, 0 included, so a series never vanishes. |
 
 `device` is the Device's `name` and `friendly_id` its `friendlyId`; the MAC address is never used as a label. Like the Device-facing routes (`/display`, `/current_screen`), `/metrics` sits outside the `/api` prefix and has no authentication of its own — if you want it private, keep it off your reverse proxy.

@@ -48,12 +48,24 @@ describe('metricsService', () => {
     expect(text).not.toContain('kuroshiro_device_rssi_dbm{')
   })
 
-  it('emits a last-seen sample as a Unix timestamp for every Device', async () => {
+  it('emits a last-seen sample as a Unix timestamp for a Device that polled', async () => {
     deviceRepo.find.mockResolvedValue([makeDevice({ name: 'Living Room', friendlyId: 'ABC123', lastSeen: new Date('2026-01-01T00:00:00.000Z') })])
 
     const text = await service.render()
 
     expect(text).toContain('kuroshiro_device_last_seen_timestamp_seconds{device="Living Room",friendly_id="ABC123"} 1767225600\n')
+  })
+
+  it('leaves the last-seen sample out for a Device that never polled', async () => {
+    deviceRepo.find.mockResolvedValue([
+      makeDevice({ name: 'Living Room', friendlyId: 'ABC123', lastSeen: new Date('2026-01-01T00:00:00.000Z') }),
+      makeDevice({ name: 'Hallway', friendlyId: 'DEF456', lastSeen: null }),
+    ])
+
+    const text = await service.render()
+
+    expect(text).toContain('kuroshiro_device_last_seen_timestamp_seconds{device="Living Room",friendly_id="ABC123"} 1767225600\n')
+    expect(text).not.toContain('kuroshiro_device_last_seen_timestamp_seconds{device="Hallway"')
   })
 
   it('emits one alerts_active sample per known kind, defaulting absent kinds to 0', async () => {

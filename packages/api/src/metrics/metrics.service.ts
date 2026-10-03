@@ -80,12 +80,11 @@ export class MetricsService {
   private lastSeenFamily(devices: MetricsDevice[]): MetricFamily {
     return {
       name: 'kuroshiro_device_last_seen_timestamp_seconds',
-      help: 'Unix timestamp of the Device\'s last successful poll.',
+      help: 'Unix timestamp of the Device\'s last successful poll. No sample for a Device that never polled.',
       type: 'gauge',
-      samples: devices.map(device => ({
-        labels: deviceLabels(device),
-        value: Math.floor(device.lastSeen.getTime() / 1000),
-      })),
+      samples: devices.flatMap(device => device.lastSeen
+        ? [{ labels: deviceLabels(device), value: Math.floor(device.lastSeen.getTime() / 1000) }]
+        : []),
     }
   }
 

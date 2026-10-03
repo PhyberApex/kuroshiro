@@ -27,10 +27,10 @@ function lastSleepWindowEnd(device: Device, now: Date): Date | undefined {
  * Device isn't marked offline merely for having slept through its window
  * (ADR brief for issue #1006).
  */
-function effectiveLastSeen(device: Device, now: Date): Date {
+function effectiveLastSeen(device: Device, lastSeen: Date, now: Date): Date {
   const windowEnd = lastSleepWindowEnd(device, now)
-  if (!windowEnd || windowEnd <= device.lastSeen)
-    return device.lastSeen
+  if (!windowEnd || windowEnd <= lastSeen)
+    return lastSeen
   return windowEnd
 }
 
@@ -40,13 +40,15 @@ export const offlineRule: AlertRule = {
 
   evaluate(subject, context, hasActiveAlert) {
     const device = subject as Device
-    if (isDeviceAsleep(device, context.now))
+    const { lastSeen } = device
+    // A Device that never polled is waiting for its first poll, not offline.
+    if (!lastSeen || isDeviceAsleep(device, context.now))
       return { skip: true, active: hasActiveAlert }
 
-    const reference = effectiveLastSeen(device, context.now)
+    const reference = effectiveLastSeen(device, lastSeen, context.now)
     const staleMs = context.now.getTime() - reference.getTime()
     const thresholdMs = device.refreshRate * context.offlineMultiplier * MS_PER_SECOND
-    return { active: staleMs > thresholdMs, details: { lastSeen: device.lastSeen.toISOString() } }
+    return { active: staleMs > thresholdMs, details: { lastSeen: lastSeen.toISOString() } }
   },
 
   openedNotification(subject, details) {
