@@ -1,6 +1,6 @@
 # Fallow: dead code, duplication, complexity
 
-[fallow](https://github.com/fallow-rs/fallow) scans both workspaces for unused files/exports/dependencies, import cycles, copy-paste duplication, and complexity hotspots. Config lives in `.fallowrc.jsonc`; it runs in CI as part of the `Checks` workflow.
+[fallow](https://github.com/fallow-rs/fallow) scans the workspace packages for unused files/exports/dependencies, import cycles, copy-paste duplication, and complexity hotspots. Config lives in `.fallowrc.jsonc`; it runs in CI as part of the `Checks` workflow.
 
 ## Commands
 
@@ -25,5 +25,7 @@ Rules for touching the baselines:
 ## Known false positives already handled in `.fallowrc.jsonc`
 
 - `pg` (TypeORM loads the driver reflectively) and `jiti` (ESLint loads `packages/ui-next/eslint.config.ts` through it) are in `ignoreDependencies`.
+- `reka-ui` and `kuroshiro-shared` are in `ignoreDependencies` because `packages/ui-next` declares them and its placeholder page imports neither. Remove each entry in the PR that first imports the package in `packages/ui-next`.
+- `packages/ui/**` is in `ignorePatterns`: the old admin UI is a read-only reference outside the pnpm workspace.
 - `packages/api/src/devices/display.ts` and `displayScreen.ts` are wire-format classes for the TRMNL firmware; `unused-class-members` is off for them.
 - Migrations and the generated TRMNL snapshot are excluded from duplication and health scoring.

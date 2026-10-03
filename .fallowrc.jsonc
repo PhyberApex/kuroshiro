@@ -6,7 +6,7 @@
   // packages/ui is the old admin UI, kept on disk as a read-only reference and outside the pnpm workspace
   "ignorePatterns": ["packages/ui/**"],
   // pg is TypeORM's postgres driver, loaded reflectively at runtime; jiti is what ESLint uses to load packages/ui-next/eslint.config.ts;
-  // reka-ui and kuroshiro-shared are the foundation packages/ui-next declares ahead of the first component and API type that import them
+  // reka-ui and kuroshiro-shared are declared by packages/ui-next, whose one placeholder page has no component or API type to import them from
   "ignoreDependencies": ["pg", "jiti", "reka-ui", "kuroshiro-shared"],
   "overrides": [
     {

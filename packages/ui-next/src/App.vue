@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { version } from '../package.json'
 
-const adminApiPath = new URL('api', document.baseURI).pathname
+const pathUnderBase = (path: string) => new URL(path, document.baseURI).pathname
 
 const facts = [
   { term: 'Version', value: version },
-  { term: 'Admin API', value: adminApiPath },
-  { term: 'Fallback Screens', value: new URL('screens/', document.baseURI).pathname },
+  { term: 'Admin API', value: pathUnderBase('api') },
+  { term: 'Fallback Screens', value: pathUnderBase('screens/') },
 ]
 </script>
 
