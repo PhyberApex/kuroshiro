@@ -24,6 +24,10 @@ Request and response types live in `packages/shared/src/api/`; the API maps enti
 
 `packages/ui-next` is tested in real Chromium with the API faked by MSW, an axe gate, screenshot baselines from one pinned image and a suite against the real API. How to run each, how to regenerate baselines and what a primitive, a screen and a journey must ship with: `docs/agents/ui-testing.md`.
 
+### Building a screen of the admin UI
+
+A page of `packages/ui-next` stands on the shell, the router, the API client and the shared page patterns: how to add a route and a page, load data with its loading, empty and failed states, write and word a refusal, resolve an image path, show a time and guard unsaved changes is in `docs/agents/ui-screens.md`.
+
 ### Fallow (dead code, duplication, complexity)
 
 `pnpm fallow:ci` runs in CI against committed baselines; fixing a baselined finding means re-running `pnpm fallow:baseline` in the same PR. See `docs/agents/fallow.md`.
