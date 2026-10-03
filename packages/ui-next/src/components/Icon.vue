@@ -3,7 +3,6 @@ import type { IconName } from './icons'
 import { ICON_PATHS } from './icons'
 
 defineProps<{
-  /** The paths are filled evenodd, which cuts the counters of copy, search and problem. */
   name: IconName
   /** An icon is decorative unless it is given a label, which makes it an image with that name. */
   label?: string
@@ -19,7 +18,7 @@ defineProps<{
     :aria-label="label"
     :aria-hidden="label ? undefined : true"
   >
-    <path fill-rule="evenodd" :d="ICON_PATHS[name]" />
+    <path :d="ICON_PATHS[name]" />
   </svg>
 </template>
 
@@ -30,6 +29,8 @@ defineProps<{
     width: var(--icon);
     height: var(--icon);
     fill: currentColor;
+    /* Cuts the counters of copy, search and problem; the other paths do not overlap themselves. */
+    fill-rule: evenodd;
   }
 }
 </style>

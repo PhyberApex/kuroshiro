@@ -7,7 +7,7 @@ defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(defineProps<{
   icon: IconName
-  /** The accessible name, and the text of the tooltip. */
+  /** The accessible name, and the text of the tooltip. The button drops the description Reka's tooltip would add, which would say the name twice. */
   label: string
   disabled?: boolean
   /** Holds the tooltip open, for the gallery. */
@@ -27,6 +27,7 @@ if (import.meta.env.DEV && !props.label?.trim())
       type="button"
       class="icon-button"
       :aria-label="label"
+      :aria-describedby="undefined"
       :disabled="disabled"
     >
       <Icon :name="icon" />

@@ -85,7 +85,7 @@ Primitives live flat in `src/components/`, named as the component inventory name
 
 | File | Holds |
 | --- | --- |
-| `src/components/IconButton.vue` | The component. Styles are `<style scoped>` inside `@layer components { … }`, built from the tokens only |
+| `src/components/IconButton.vue` | The component. Styles are `<style scoped>` inside `@layer components { … }`, built from the tokens |
 | `src/components/IconButton.gallery.vue` | Its gallery section: every state of the inventory |
 | `src/components/__test__/IconButton.spec.ts` | Its spec; the last test mounts the gallery file and calls `expectAccessible()` and `expectNoHorizontalOverflow()` |
 
@@ -93,7 +93,7 @@ A gallery file is rows of specimens: `SpecimenRow` (an optional `title`) holding
 
 A state that needs a pointer or a key press is held still for the gallery in one of two ways:
 
-- **Hover and active**: the component's own CSS answers `[data-force~='hover']` and `[data-force~='active']` beside `:hover` and `:active`, and the gallery sets `data-force="hover"` on it. The focus ring belongs to the page, so `data-force="focus"` works on any element with no CSS in the component.
+- **Hover and active**: for each such state its gallery shows, the component's own CSS answers `[data-force~='hover']` or `[data-force~='active']` beside `:hover` or `:active`, and the gallery sets `data-force="hover"` on it. The focus ring belongs to the page, so `data-force="focus"` works on any element with no CSS in the component.
 - **A state held in script** (an open tooltip, "Copied"): the component takes a prop for it, documented as being for the gallery (`tooltipOpen`, `copied`).
 
 Three things Reka UI does not do for you:
@@ -106,7 +106,7 @@ Three things Reka UI does not do for you:
 
 Baselines are the `*-chromium-linux.png` files in `__screenshots__/` folders beside their `*.shots.ts` file, and they are committed. Fonts render differently from machine to machine, so shots are only written or compared inside one pinned image, `mcr.microsoft.com/playwright:v<version>-noble`, where `<version>` is the `playwright` entry of the workspace catalog in `pnpm-workspace.yaml`. `scripts/screenshots.mjs` starts it; running a `*.shots.ts` file any other way is refused.
 
-- The comparison is as good as exact: one grey level of one pixel is forgiven, because Chromium antialiases a rounded corner at the edge of a shot a level lighter or darker from run to run. Any colour change of a token is two levels or more somewhere and fails.
+- The comparison is as good as exact: one grey level of one pixel is forgiven, because Chromium antialiases a rounded corner at the edge of a shot a level lighter or darker from run to run. Two levels of grey fail, so a token that changes by more than a hair is still caught.
 - A new or changed shot: run `pnpm test:screenshots:update`, look at the PNGs, commit them.
 - A failing comparison writes the actual image and the diff under `packages/ui-next/.vitest/attachments/`; CI uploads that folder as the `ui-screenshot-diffs` artifact.
 - **A PR that changes a baseline says why in its description**, baseline by baseline or by group ("every section: `--space-3` grew"). A baseline that changed for no stated reason is a regression until explained.

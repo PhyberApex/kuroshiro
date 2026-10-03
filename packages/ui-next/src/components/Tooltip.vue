@@ -12,7 +12,7 @@ withDefaults(defineProps<{
 const HOVER_DELAY_MS = 400
 
 // Reka reads the layer off the content and puts it on the positioned wrapper it draws around it.
-const LAYER = { zIndex: 'var(--layer-popover)' }
+const POPOVER_LAYER = { zIndex: 'var(--layer-popover)' }
 </script>
 
 <template>
@@ -26,7 +26,7 @@ const LAYER = { zIndex: 'var(--layer-popover)' }
           :aria-label="text"
           :side-offset="6"
           :collision-padding="8"
-          :style="LAYER"
+          :style="POPOVER_LAYER"
         >
           <span class="tooltip">{{ text }}</span>
         </TooltipContent>

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { expectAccessible } from '@/testing/a11y'
 import { withCoarsePointer } from '@/testing/media'
@@ -6,6 +6,8 @@ import { mount } from '@/testing/mount'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import IconButtonGallery from '../IconButton.gallery.vue'
 import IconButton from '../IconButton.vue'
+
+afterEach(() => vi.restoreAllMocks())
 
 describe('icon button', () => {
   it('is a button named by its label, with a decorative icon', async () => {
@@ -17,13 +19,11 @@ describe('icon button', () => {
   })
 
   it.for([undefined, '', '  '])('cannot be mounted without a name (%o)', async (label) => {
-    const silenced = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     await expect(mount(IconButton, { props: { icon: 'up', label: label as string } }))
       .rejects
       .toThrow('An IconButton needs a label')
-
-    silenced.mockRestore()
   })
 
   it('fires on a click, on Enter and on Space', async () => {
@@ -62,6 +62,7 @@ describe('icon button', () => {
 
     await userEvent.keyboard('{Tab}')
     await expect.element(screen.getByRole('tooltip', { includeHidden: true })).toHaveTextContent('More actions for Weather')
+    await expect.element(screen.getByRole('button', { name: 'More actions for Weather' })).not.toHaveAttribute('aria-describedby')
 
     await userEvent.keyboard('{Escape}')
 

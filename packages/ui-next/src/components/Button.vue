@@ -7,7 +7,7 @@ const props = withDefaults(defineProps<{
   variant?: 'primary' | 'plain' | 'quiet'
   type?: 'button' | 'submit' | 'reset'
   disabled?: boolean
-  /** Shows the loading mark in place of the label. The button keeps its width, its name and the focus, and does not fire. */
+  /** Shows the loading mark in place of the label. The button keeps its width, its name and the focus, and does not fire. Only a `button` shows the mark; a link has nothing to wait for. */
   loading?: boolean
   /** Gives the button's looks to its one child, a router link or an anchor, instead of rendering a `button`. */
   asChild?: boolean
@@ -16,10 +16,10 @@ const props = withDefaults(defineProps<{
   type: 'button',
 })
 
-const inert = computed(() => props.disabled || props.loading)
+const unpressable = computed(() => props.disabled || props.loading)
 
-function swallowWhileInert(event: MouseEvent) {
-  if (!inert.value)
+function swallowWhileUnpressable(event: MouseEvent) {
+  if (!unpressable.value)
     return
   event.preventDefault()
   event.stopImmediatePropagation()
@@ -34,9 +34,9 @@ function swallowWhileInert(event: MouseEvent) {
     :class="variant"
     :type="asChild ? undefined : type"
     :disabled="(!asChild && disabled) || undefined"
-    :aria-disabled="(asChild ? inert : loading) || undefined"
+    :aria-disabled="(asChild ? unpressable : loading) || undefined"
     :aria-busy="loading || undefined"
-    @click.capture="swallowWhileInert"
+    @click.capture="swallowWhileUnpressable"
   >
     <slot v-if="asChild" />
     <template v-else>

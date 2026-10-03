@@ -22,19 +22,19 @@ const COPIED_FOR_MS = 2000
 const valueId = useId()
 const justCopied = ref(false)
 const showsCopied = computed(() => props.copied || justCopied.value)
-let revert: ReturnType<typeof setTimeout> | undefined
+let revertTimer: ReturnType<typeof setTimeout> | undefined
 
 async function copy() {
   if (!await copyText(props.value))
     return
   justCopied.value = true
-  clearTimeout(revert)
-  revert = setTimeout(() => {
+  clearTimeout(revertTimer)
+  revertTimer = setTimeout(() => {
     justCopied.value = false
   }, COPIED_FOR_MS)
 }
 
-onBeforeUnmount(() => clearTimeout(revert))
+onBeforeUnmount(() => clearTimeout(revertTimer))
 </script>
 
 <template>

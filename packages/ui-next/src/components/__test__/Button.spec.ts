@@ -3,7 +3,7 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { RouterLink } from 'vue-router'
 import { expectAccessible } from '@/testing/a11y'
-import { withCoarsePointer } from '@/testing/media'
+import { withCoarsePointer, withMotionAllowed } from '@/testing/media'
 import { mount, mountPage } from '@/testing/mount'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import { forceTheme, THEMES } from '@/testing/theme'
@@ -123,12 +123,15 @@ describe('button', () => {
     })
   })
 
-  it('answers hover and press within the 120 ms token', async () => {
+  it('answers hover and press in 120 ms', async () => {
     const screen = await mount(Button, { slots: { default: 'Update now' } })
+    const button = screen.getByRole('button', { name: 'Update now' }).element()
 
-    expect(getComputedStyle(screen.getByRole('button').element()).transitionProperty).toContain('background-color')
-    expect(getComputedStyle(document.documentElement).getPropertyValue('--duration-quick')).toBe('0.01ms')
-    expect(getComputedStyle(screen.getByRole('button').element()).transitionDuration).toMatch(/^1e-05s/)
+    await withMotionAllowed(async () => {
+      const { transitionProperty, transitionDuration } = getComputedStyle(button)
+      expect(transitionProperty).toBe('background-color, border-color, color, translate')
+      expect(transitionDuration).toBe('0.12s, 0.12s, 0.12s, 0.12s')
+    })
   })
 
   it('carries no red when it deletes: a destructive action is a plain button', async () => {
