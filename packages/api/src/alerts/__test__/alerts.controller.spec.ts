@@ -23,17 +23,17 @@ describe('alertsController', () => {
 
       const result = await controller.list({ resolvedSince: '2026-01-01T00:00:00.000Z' })
 
-      expect(service.list).toHaveBeenCalledWith('2026-01-01T00:00:00.000Z')
+      expect(service.list).toHaveBeenCalledWith({ resolvedSince: '2026-01-01T00:00:00.000Z' })
       expect(result).toBe(mockList)
     })
 
-    it('calls service.list with undefined when no query param is given', async () => {
+    it('calls service.list with an empty query when no query param is given', async () => {
       const mockList: AlertsList = { active: [], resolved: [] }
       vi.mocked(service.list).mockResolvedValue(mockList)
 
       await controller.list({})
 
-      expect(service.list).toHaveBeenCalledWith(undefined)
+      expect(service.list).toHaveBeenCalledWith({})
     })
   })
 

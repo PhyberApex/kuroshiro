@@ -7,8 +7,9 @@ export const ALERT_KIND_LABELS: Record<AlertKind, string> = {
 }
 
 // A Device-subject Alert carries deviceId/deviceName; a Data-Source-subject
-// Alert (data-source-fetch-failing) carries dataSourceId/dataSourceName/
-// pluginName instead — never both (ADR-0025).
+// Alert (data-source-fetch-failing) carries pluginId/pluginName/dataSourceId/
+// dataSourceName instead — never both (ADR-0025). The subject keys stay
+// optional rather than null because the old UI reads this type as it is.
 export interface AlertSummary {
   id: string
   kind: AlertKind
@@ -16,6 +17,7 @@ export interface AlertSummary {
   deviceName?: string
   dataSourceId?: string
   dataSourceName?: string
+  pluginId?: string
   pluginName?: string
   openedAt: string
   resolvedAt: string | null
@@ -25,4 +27,10 @@ export interface AlertSummary {
 export interface AlertsList {
   active: AlertSummary[]
   resolved: AlertSummary[]
+}
+
+export interface ListAlertsQuery {
+  deviceId?: string
+  pluginId?: string
+  resolvedSince?: string
 }

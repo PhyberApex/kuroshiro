@@ -11,7 +11,7 @@ export class AlertsController {
 
   @Get()
   async list(@Query() query: ListAlertsQueryDto): Promise<AlertsList> {
-    return this.alertsService.list(query.resolvedSince)
+    return this.alertsService.list(query)
   }
 
   @Post('test-notification')

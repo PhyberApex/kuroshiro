@@ -68,9 +68,10 @@ describe('alertsService', () => {
       expect(result.active).toEqual([{
         id: 'alert-active',
         kind: 'data-source-fetch-failing',
+        pluginId: 'plugin-1',
+        pluginName: 'Weather Dashboard',
         dataSourceId: 'ds-1',
         dataSourceName: 'Weather API',
-        pluginName: 'Weather Dashboard',
         openedAt: active.openedAt.toISOString(),
         resolvedAt: null,
         details: { streak: 3, lastError: 'timeout' },
@@ -102,7 +103,7 @@ describe('alertsService', () => {
     })
 
     it('uses an explicit resolvedSince over the default window', async () => {
-      await service.list('2026-01-15T00:00:00.000Z')
+      await service.list({ resolvedSince: '2026-01-15T00:00:00.000Z' })
 
       const resolvedCall = alertRepo.find.mock.calls[1]?.[0]
       const cutoff = (resolvedCall?.where as { resolvedAt: FindOperator<Date> }).resolvedAt.value
