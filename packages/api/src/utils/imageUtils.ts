@@ -63,9 +63,9 @@ function grayLevelsHex(levels: number): string[] {
   })
 }
 
-function runMagick(args: string[], logger: Logger): Promise<void> {
+function runMagick(args: string[], logger: Logger): Promise<string> {
   logger.log(`Running ImageMagick: magick ${args.join(' ')}`)
-  return new Promise<void>((resolve, reject) => {
+  return new Promise<string>((resolve, reject) => {
     execFile('magick', args, (error, stdout, stderr) => {
       if (error) {
         logger.error(`ImageMagick error: ${stderr}`)
@@ -73,7 +73,7 @@ function runMagick(args: string[], logger: Logger): Promise<void> {
       }
       else {
         logger.log(`ImageMagick output: ${stdout}`)
-        resolve()
+        resolve(stdout)
       }
     })
   })
@@ -132,8 +132,7 @@ function geometryOperators({ model }: DeviceRenderTarget): string[] {
   return ops
 }
 
-/** Converts any supported raster image into the PNG a device with the given render target expects. */
-export async function convertToPng(inputPath: string, outputPath: string, target: DeviceRenderTarget, logger: Logger) {
+async function detectFormatOfFile(inputPath: string): Promise<string> {
   const header = buffer.Buffer.allocUnsafe(8)
   const fd = await fs.promises.open(inputPath, 'r')
   try {
@@ -142,7 +141,22 @@ export async function convertToPng(inputPath: string, outputPath: string, target
   finally {
     await fd.close()
   }
-  const format = detectImageFormat(header)
+  return detectImageFormat(header)
+}
+
+/** The pixel size of a supported raster image as it is stored, before any conversion. Rejects for anything else. */
+export async function readImageSize(inputPath: string, logger: Logger): Promise<{ width: number, height: number }> {
+  const format = await detectFormatOfFile(inputPath)
+  const output = await runMagick(['identify', '-format', '%w %h', `${format}:${inputPath}[0]`], logger)
+  const [width, height] = output.trim().split(' ').map(Number)
+  if (!Number.isInteger(width) || !Number.isInteger(height))
+    throw new Error(`Could not read the image size from "${output}"`)
+  return { width, height }
+}
+
+/** Converts any supported raster image into the PNG a device with the given render target expects. */
+export async function convertToPng(inputPath: string, outputPath: string, target: DeviceRenderTarget, logger: Logger) {
+  const format = await detectFormatOfFile(inputPath)
   const palette = await paletteOperators(target.palette, logger)
 
   const args = [

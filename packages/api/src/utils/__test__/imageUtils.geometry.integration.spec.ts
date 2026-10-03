@@ -8,7 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { TRMNL_MODELS_SNAPSHOT } from '../../device-models/data/trmnl-snapshot.js'
 import { makeDeviceModel, makePalette } from '../../test/fixtures.js'
 import { asService } from '../../test/mockService.js'
-import { convertToPng } from '../imageUtils.js'
+import { convertToPng, readImageSize } from '../imageUtils.js'
 
 const execFileAsync = promisify(execFile)
 
@@ -67,6 +67,10 @@ describe.runIf(magickAvailable())('convertToPng (real magick)', () => {
 
   afterAll(async () => {
     await fs.promises.rm(tmpDir, { recursive: true, force: true })
+  })
+
+  it('reads the pixel size of the image as it is stored', async () => {
+    await expect(readImageSize(inputPath, logger)).resolves.toEqual({ width: 1400, height: 840 })
   })
 
   it('produces an output at the model\'s rotated dimensions for a model with an offset', async () => {

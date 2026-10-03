@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { TypeOrmModule } from '@nestjs/typeorm'
+import { Device } from '../devices/devices.entity.js'
 import { Screen } from '../screens/screens.entity.js'
 import { DevicePlugin } from './entities/device-plugin.entity.js'
 import { PluginDataSource } from './entities/plugin-data-source.entity.js'
@@ -12,6 +13,7 @@ import { WebhookPluginGuard } from './guards/webhook-plugin.guard.js'
 import { PluginsController } from './plugins.controller.js'
 import { PluginsService } from './plugins.service.js'
 import { DataSourceFetchOutcomeService } from './services/data-source-fetch-outcome.service.js'
+import { PluginAssignmentsService } from './services/plugin-assignments.service.js'
 import { PluginDataFetcherService } from './services/plugin-data-fetcher.service.js'
 import { PluginDataResolverService } from './services/plugin-data-resolver.service.js'
 import { PluginExporterService } from './services/plugin-exporter.service.js'
@@ -38,11 +40,13 @@ import { WebhookIngestController } from './webhook-ingest.controller.js'
       PluginField,
       PluginFieldValue,
       Screen,
+      Device,
     ]),
   ],
   controllers: [PluginsController, WebhookIngestController],
   providers: [
     PluginsService,
+    PluginAssignmentsService,
     DataSourceFetchOutcomeService,
     PluginDataFetcherService,
     PluginDataResolverService,
@@ -59,6 +63,6 @@ import { WebhookIngestController } from './webhook-ingest.controller.js'
     WebhookIngestService,
     WebhookPluginGuard,
   ],
-  exports: [PluginsService, PluginSchedulerService, PluginDataFetcherService, PluginDataResolverService, PluginRendererService, PluginTransformService, PluginRenderCacheService, PluginTemplateContextService, PluginImporterService, PluginExporterService, PluginFieldValuesService],
+  exports: [PluginsService, PluginAssignmentsService, PluginSchedulerService, PluginDataFetcherService, PluginDataResolverService, PluginRendererService, PluginTransformService, PluginRenderCacheService, PluginTemplateContextService, PluginImporterService, PluginExporterService, PluginFieldValuesService],
 })
 export class PluginsModule {}

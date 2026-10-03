@@ -1,14 +1,7 @@
-import { IsBoolean, IsInt, IsOptional, IsString } from 'class-validator'
+import type { AssignPluginInput } from 'kuroshiro-shared'
+import { IsUUID } from 'class-validator'
 
-export class AssignPluginToDeviceDto {
-  @IsString()
+export class AssignPluginToDeviceDto implements AssignPluginInput {
+  @IsUUID()
   deviceId: string
-
-  @IsOptional()
-  @IsBoolean()
-  isActive?: boolean
-
-  @IsOptional()
-  @IsInt()
-  order?: number
 }
