@@ -14,7 +14,7 @@ from fontTools.ttLib import TTFont
 from fontTools.varLib.instancer import instantiateVariableFont
 
 ROOT = Path(__file__).resolve().parent
-SEAL_SOURCE = ROOT.parent / "packages/ui-next/src/App.vue"
+SEAL_SOURCE = ROOT.parent / "packages/ui-next/src/components/sealDrawing.ts"
 WORDMARK = "Kuroshiro"
 WEIGHT, WIDTH = 800, 68
 FONT_SIZE = 44
@@ -28,8 +28,9 @@ THEMES = {
 
 
 def seal_characters() -> str:
+    """The full drawing's path: the one on the 64 px grid, which is the logo's seal size."""
     source = SEAL_SOURCE.read_text()
-    return re.search(r'<path class="characters" d="([^"]+)"', source).group(1)
+    return re.search(rf"grid: {SEAL_SIZE},.*?characters: '([^']+)'", source, re.DOTALL).group(1)
 
 
 def wordmark_path(font_file: str) -> tuple[str, float]:

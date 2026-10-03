@@ -31,6 +31,8 @@ Specs sit in a `__test__` folder beside what they test. There is no jsdom.
 All in `packages/ui-next/src/testing/`. The specs in `src/testing/__test__/` are one worked example of each.
 
 - **`mount(Component, { props, slots, theme })`** and **`mountPage({ routes, at, theme })`** (`mount.ts`). Both return the `vitest-browser-vue` screen (`getByRole`, `getByText`, ...) and are awaited. `mountPage` builds a test router over the routes you pass and opens it at `at`; it also returns `router`. The tokens, the reset and the faces are already loaded by the setup file, in the order the app loads them. The theme is `light` unless you pass `dark`.
+- **`mountApp({ at, theme })`** and **`fakeShellReads({ instance, devices, alerts })`** (`app.ts`) are how a screen is mounted: the whole app, shell and real routes, opened at `at`, returning the screen and `router`. The shell reads the Instance facts, the Devices and the Alerts on every page, so call `fakeShellReads()` first; left out, each argument is an ordinary Instance with one Device, Kitchen, and no Alert firing. `mountApp` also takes `routes`, stand-in routes for a spec of the shell itself. `mountPage` is for a component that needs a router but is not a route of the app; it installs the shared reads too, and each asks the API only once something uses it.
+- **`freezeTime('2026-10-03T07:35:00.000Z')`** (`time.ts`) holds `Date` for the rest of the test, so a relative time reads the same on every run. A page with a `RelativeTime` calls it before mounting, in its spec and in its shots.
 - **Events** come from `vitest/browser`: `await locator.click()`, `await userEvent.keyboard('{Tab}')`. They are real pointer and keyboard events, which is what Reka UI needs. Assert with `await expect.element(locator).toBeVisible()`, which retries.
 - **`expectAccessible()`** (`a11y.ts`) runs axe-core at WCAG 2.1 AA on what is mounted, in light and in dark, and fails on any violation.
 - **`expectNoHorizontalOverflow()`** (`overflow.ts`) fails if the page scrolls sideways at 375, 768 or 1280 px and names the elements that stick out.
@@ -88,13 +90,13 @@ A request to the admin API that no handler fakes fails as a network error and is
 export const buildInstanceSettings = defineBuilder<InstanceSettingsResponse>(() => ({ ...every key... }))
 ```
 
-and is called as `build<ReadModel>(overrides?)`. The type always comes from `kuroshiro-shared` and every key is spelled out, so a reshaped read model fails `pnpm type-check` in its builder. A builder lands with the UI slice that first reads its endpoint. Defaults are plausible values in the vocabulary of `CONTEXT.md`, not `foo`.
+and is called as `build<ReadModel>(overrides?)`. There are builders for the Instance facts and Instance Settings (`instance.ts`), a Device's summary (`devices.ts`), an Alert and the Alerts list (`alerts.ts`), a Screen and its Schedule (`screens.ts`) and a refusal (`errors.ts`). The type always comes from `kuroshiro-shared` and every key is spelled out, so a reshaped read model fails `pnpm type-check` in its builder. A builder lands with the UI slice that first reads its endpoint. Defaults are plausible values in the vocabulary of `CONTEXT.md`, not `foo`.
 
 ## The gallery
 
 `/gallery` on the dev server (`pnpm dev`) shows every primitive in every state. It is not in the production build: `vite build` fails if a module of `src/gallery/` or `src/testing/` reaches the bundle.
 
-A primitive registers its section by adding `<Name>.gallery.vue` beside its component. The file name is the section: `IconButton.gallery.vue` becomes "Icon Button" at `#icon-button`. Nothing else has to be edited, and `src/gallery/gallery.shots.ts` shoots every section in light and dark without being touched.
+A primitive registers its section by adding `<Name>.gallery.vue` beside its component. So do the parts of the shell and the page patterns that have states to show (`src/shell/Bar.gallery.vue`, `src/patterns/TitleLine.gallery.vue`); a page does not. The file name is the section: `IconButton.gallery.vue` becomes "Icon Button" at `#icon-button`. Nothing else has to be edited, and `src/gallery/gallery.shots.ts` shoots every section in light and dark without being touched.
 
 ### A primitive's files
 
@@ -190,10 +192,14 @@ Baselines are the `*-chromium-linux.png` files in `__screenshots__/` folders bes
 A screen's four shots are one call in a `*.shots.ts` file beside the page:
 
 ```ts
-const screen = await mountPage({ routes, at: '/devices' })
+freezeTime('2026-10-03T07:35:00.000Z')
+fakeShellReads({ devices })
+const screen = await mountApp({ at: '/devices' })
 await expect.element(screen.getByRole('heading', { name: 'Devices' })).toBeVisible()
 await expectPageScreenshots('devices')
 ```
+
+The shots hold the shell, so wait for what the shell loads as well (a Device's name in the bar) before shooting. The shell's own baselines (`src/shell/AppShell.shots.ts`) mount a stand-in page, so they do not change when a page lands.
 
 ## The real-API suite
 
@@ -208,6 +214,6 @@ The suite holds one test per primary journey of [Primary journeys and the story 
 Decision 9 of the test strategy. A PR that builds one of these is not done without it.
 
 - **A primitive**: a spec covering its behaviour and its keyboard paths; `expectAccessible()`; a `<Name>.gallery.vue` showing every state; regenerated baselines.
-- **A screen**: a page spec with the API faked that has at least one test per capability its issue names, plus its empty state and its failed-request state; `expectAccessible()`; `expectNoHorizontalOverflow()`; a `*.shots.ts` calling `expectPageScreenshots`.
+- **A screen**: built as [`ui-screens.md`](./ui-screens.md) says; a page spec with the API faked (`mountApp`) that has at least one test per capability its issue names, plus its empty state and its failed-request state; `expectAccessible()`; `expectNoHorizontalOverflow()`; a `*.shots.ts` calling `expectPageScreenshots`.
 - **A journey**: the issue that completes a primary journey adds its test to `real-api/`.
 - A store gets its own spec only when it holds real logic; otherwise the page spec covers it.
