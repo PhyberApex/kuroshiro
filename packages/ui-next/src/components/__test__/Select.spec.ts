@@ -260,6 +260,8 @@ describe('select', () => {
 
       await expect.element(disabled).toHaveAttribute('aria-disabled', 'true')
       await expect.element(disabled).toHaveAccessibleDescription('Not on TRMNL OG')
+      // A forced click does not wait, and the list is parked off screen until it is placed under its control.
+      await expect.poll(() => disabled.element().getBoundingClientRect().top).toBeGreaterThan(0)
       await disabled.click({ force: true })
 
       expect(onUpdate).not.toHaveBeenCalled()

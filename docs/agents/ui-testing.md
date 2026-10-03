@@ -50,6 +50,8 @@ The browser runs with reduced motion, so the duration tokens collapse and nothin
 
 Under reduced motion every property still transitions for 0.01 ms, and a colour a child inherits from a parent with a transition of its own starts a second transition when the parent's ends. `settled()` (`paint.ts`), which `forceTheme` and the viewport helpers call, therefore waits until no CSS transition is running, not for a fixed number of frames.
 
+A Reka popper layer is parked off screen until it is placed, and `click({ force: true })` does not wait for that. Before a forced click on something in a layer, poll its `getBoundingClientRect().top` (`Select.spec.ts`).
+
 Two fast presses of an arrow key in an open Reka `Select` both start from the same option, because Reka moves the focus in a timeout. Press once, assert where the focus is, press again.
 
 `userEvent.upload(input, file)` chooses a file in a native file input; a drop is a `DragEvent` dispatched with a `DataTransfer` holding the file (`FileDrop.spec.ts`).
