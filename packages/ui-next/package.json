@@ -7,6 +7,12 @@
     "dev": "vite",
     "build": "vue-tsc --build && vite build",
     "type-check": "vue-tsc --build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:screenshots": "node scripts/screenshots.mjs",
+    "test:screenshots:update": "node scripts/screenshots.mjs --update",
+    "test:real-api": "vitest run --config vitest.real-api.config.ts",
     "lint": "eslint",
     "lint:fix": "eslint --fix"
   },
@@ -21,12 +27,20 @@
     "@tsconfig/node24": "catalog:",
     "@types/node": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
+    "@vitest/browser-playwright": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
     "@vue/tsconfig": "catalog:",
+    "axe-core": "catalog:",
     "eslint": "catalog:",
     "jiti": "catalog:",
     "kuroshiro-shared": "workspace:*",
+    "msw": "catalog:",
+    "playwright": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
+    "vitest": "catalog:",
+    "vitest-browser-vue": "catalog:",
+    "vue-router": "catalog:",
     "vue-tsc": "catalog:"
   }
 }
