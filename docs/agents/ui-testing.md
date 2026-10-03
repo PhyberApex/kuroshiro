@@ -37,12 +37,19 @@ All in `packages/ui-next/src/testing/`. The specs in `src/testing/__test__/` are
 - **`expectPageScreenshots(name)`** and **`expectScreenshot(locator, name)`** (`screenshots.ts`), for `*.shots.ts` files only.
 
 - **`withCoarsePointer(body)`** and **`withMotionAllowed(body)`** (`media.ts`) run `body` as on a touch screen (a control is 44 px high) or with motion allowed, and put the browser back afterwards.
+- **`pressAndHold(key)`** (`keys.ts`) presses a key down, waits a tick and lets go. A Reka radio group (`SegmentedFilter`, `RadioRow`, `LayoutPicker`) chooses the radio an arrow key moved to only while the key is still down a tick later, so `userEvent.keyboard('{ArrowRight}')` moves the focus and chooses nothing.
 
 The browser may read and write the clipboard, so a spec reads back what a control copied with `await navigator.clipboard.readText()`.
 
 Playwright refuses to click what is disabled, `aria-disabled` included. To assert that such a control does not fire, click it with `{ force: true }`.
 
 The pointer stays where the last click left it, so an element mounted under it is hovered from the start. Do not assert a resting colour that hover changes.
+
+A click moves the place Tab starts from, a forced click on a disabled control included. In a test that walks a group by keyboard, press the keys first and click afterwards.
+
+A component under test is controlled: it emits and waits for its `modelValue` to follow. Where a test needs the value to follow, give the mock `mockImplementation(value => screen.rerender({ modelValue: value }))` after mounting (`Switch.spec.ts`).
+
+`toHaveStyle` normalises what it expects on an element without a border style, so `{ 'border-bottom-width': '2px' }` is compared as `0px`. Read a border from `getComputedStyle` inside `expect.poll`.
 
 A Reka UI layer (a tooltip, a menu) is teleported to `body`. The `screen` queries still find it, but Reka's `role="tooltip"` element is hidden from the accessibility tree: query it with `getByRole('tooltip', { includeHidden: true })` or assert the trigger's accessible description.
 
@@ -104,6 +111,8 @@ A state that needs a pointer or a key press is shown in the gallery in one of th
 - **Hover and active**: for each such state its gallery shows, the component's own CSS answers `[data-force~='hover']` or `[data-force~='active']` beside `:hover` or `:active`, and the gallery sets `data-force="hover"` on it. The focus ring belongs to the page, so `data-force="focus"` works on any element with no CSS in the component.
 - **A state held in script** (an open tooltip, "Copied"): the component takes a prop for it, documented as being for the gallery (`tooltipOpen`, `copied`).
 
+- **A state of one choice among several** (a hovered segment, a focused tab): a component that draws its choices from a list takes a `force` prop, documented as being for the gallery, that maps a choice's key to the `data-force` value set on it: `:force="{ Settings: 'hover', Logs: 'focus' }"`.
+- **A state only a narrow window has** (the page list as a row below 820 px): the gallery is shot at desktop width, so the state gets its baselines from a `<Name>.shots.ts` that resizes the page first (`PageList.shots.ts`).
 - **A state behind a modal layer** (an open select): Reka hides everything but an open `Select` or `Combobox` list from assistive technology and traps the focus in it, so it cannot be held open on the gallery page. The gallery shows the control closed and says "press it"; the open state gets its baselines from a `<Name>.shots.ts` beside the component, which opens it for real and shoots a stage around it (`Select.shots.ts`), and its axe run in the spec, given the list (`expectAccessible(listbox)`).
 
 ### Field components
@@ -114,6 +123,14 @@ A state that needs a pointer or a key press is shown in the gallery in one of th
 - **`FieldError`** is the message with the problem icon, inside a live region that is rendered before the message is. It is a part, not a primitive of the inventory: `Field`, `FileDrop` and `InlineEdit` show it, and their galleries and specs are where it is seen and tested.
 - **`InlineEdit`** is the exception to the rule above: it is a value with an editing mode, not a form control, so it takes `value`, `v-model:editing`, `validate` and `v-model:error`, and emits `save`.
 - **"commit"** is what save as changed listens to: `TextInput`, `NumberInput`, `TimeInput` and `DateInput` emit it on blur and on Enter, `Textarea` on blur, and only for a value that differs from the one held on focus or committed last. `commitWhenDone` holds that rule. The `#status` slot beside each is the place of the save state.
+
+### Choices and in-page navigation
+
+- **`Switch`** is labelled by its default slot and has the `#status` slot beside it for the save state. `saving` and `error` are its own looks while that state runs; it stays pressable in both.
+- **`WeekdayToggle`** holds its days as a Schedule does: an array of numbers where 0 is Sunday, given back in ascending order.
+- **`SegmentedFilter`**, **`RadioRow`** and **`LayoutPicker`** are Reka radio groups over a list of choices passed as a prop. Their name comes from an `aria-label` or `aria-labelledby` attribute, which lands on the group. `LayoutPicker` draws the layouts it is given; `layoutDrawing.ts` only knows how each known id arranges its slots.
+- **`Tabs`** and **`PageList`** take `label` (the name of the `nav`) and `items`, a list of `NavItem` (`{ label, to }`). They render `RouterLink`s, so they need a router: `mountPage` in a spec, and in a gallery file `RouteStage` from `src/gallery/`, which gives what is inside it a router of its own at the path `at`, so a specimen has a current link and a pressed link does not leave the gallery.
+- A link is current (`aria-current="page"`) when its route is exactly the current one, as `RouterLink` decides it. A route below a page (`/instance/firmware/upload`) therefore marks nothing.
 
 Three things Reka UI does not do for you:
 
