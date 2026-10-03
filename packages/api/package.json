@@ -26,7 +26,6 @@
     "@nestjs/common": "catalog:",
     "@nestjs/config": "catalog:",
     "@nestjs/core": "catalog:",
-    "@nestjs/mapped-types": "catalog:",
     "@nestjs/platform-express": "catalog:",
     "@nestjs/serve-static": "catalog:",
     "@nestjs/typeorm": "catalog:",

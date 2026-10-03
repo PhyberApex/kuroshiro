@@ -10,8 +10,8 @@ import { PluginTemplateContextService } from './plugin-template-context.service.
 /**
  * Re-renders a Plugin into the cache shared by every Screen it is assigned
  * to: a Poll-kind Plugin from freshly fetched Data Sources, a Webhook-kind
- * Plugin from its stored Webhook Payload. The scheduler tick, a Webhook
- * ingest and a save that changes Field Values all go through here.
+ * Plugin from its stored Webhook Payload. The scheduler tick, the tick a
+ * save starts and a Webhook ingest all go through here.
  */
 @Injectable()
 export class PluginRefreshService {

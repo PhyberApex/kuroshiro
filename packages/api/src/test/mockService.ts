@@ -19,12 +19,3 @@ export function asService<T>(mock: object): T {
 export function injectPrivate<T extends object, V>(instance: T, key: string, value: V): void {
   (instance as unknown as Record<string, V>)[key] = value
 }
-
-/**
- * Invokes a private method on a constructed instance — the same `unknown` hop as
- * {@link asService}, scoped to a single call, for specs asserting on private helper
- * logic (e.g. a cron-expression builder) that isn't worth exposing publicly.
- */
-export function callPrivate<R>(instance: object, key: string, ...args: unknown[]): R {
-  return (instance as unknown as Record<string, (...args: unknown[]) => R>)[key](...args)
-}

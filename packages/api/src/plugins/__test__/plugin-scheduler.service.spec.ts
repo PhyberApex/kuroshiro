@@ -4,28 +4,14 @@ import type { DataSourceFetchOutcomeService } from '../services/data-source-fetc
 import type { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
 import type { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
 import type { PluginTransformService } from '../services/plugin-transform.service.js'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makePlugin, makePluginDataSource, makePluginTemplate } from '../../test/fixtures.js'
 import { createMockPluginDataFetcherService, createMockPluginTransformService, createPluginTemplateContextService } from '../../test/mockPluginCollaborators.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
-import { asService, callPrivate } from '../../test/mockService.js'
+import { asService } from '../../test/mockService.js'
 import { PluginDataResolverService } from '../services/plugin-data-resolver.service.js'
 import { PluginRefreshService } from '../services/plugin-refresh.service.js'
 import { PluginSchedulerService } from '../services/plugin-scheduler.service.js'
-
-let capturedCallback: (() => Promise<void>) | undefined
-
-vi.mock('node-cron', () => ({
-  default: {
-    schedule: vi.fn((_expression, callback) => {
-      capturedCallback = callback
-      return {
-        start: vi.fn(),
-        stop: vi.fn(),
-      }
-    }),
-  },
-}))
 
 describe('pluginSchedulerService', () => {
   let service: PluginSchedulerService
@@ -36,8 +22,6 @@ describe('pluginSchedulerService', () => {
   let mockPluginRepo: ReturnType<typeof createMockRepository<Plugin>>
 
   beforeEach(() => {
-    capturedCallback = undefined
-
     mockDataFetcher = createMockPluginDataFetcherService()
     mockTransformer = createMockPluginTransformService()
 
@@ -63,6 +47,10 @@ describe('pluginSchedulerService', () => {
     ))
   })
 
+  afterEach(() => {
+    service.onModuleDestroy()
+  })
+
   it('schedules a plugin with refresh interval', () => {
     const plugin = makePlugin({
       id: 'plugin-1',
@@ -76,7 +64,7 @@ describe('pluginSchedulerService', () => {
     expect(service.hasScheduledJob('plugin-1')).toBe(true)
   })
 
-  it('does not schedule inactive plugins', () => {
+  it('does not schedule a Plugin without a Template', () => {
     const plugin = makePlugin({
       id: 'plugin-1',
       refreshInterval: 15,
@@ -102,11 +90,69 @@ describe('pluginSchedulerService', () => {
     expect(service.hasScheduledJob('plugin-1')).toBe(false)
   })
 
-  it('converts refresh interval to cron expression', () => {
-    expect(callPrivate<string>(service, 'getCronExpression', 1)).toBe('*/1 * * * *')
-    expect(callPrivate<string>(service, 'getCronExpression', 15)).toBe('*/15 * * * *')
-    expect(callPrivate<string>(service, 'getCronExpression', 30)).toBe('*/30 * * * *')
-    expect(callPrivate<string>(service, 'getCronExpression', 60)).toBe('0 * * * *')
+  describe('the refresh interval, kept as entered', () => {
+    const MINUTE = 60_000
+
+    function scheduleWithInterval(refreshInterval: number) {
+      const plugin = makePlugin({
+        id: 'plugin-1',
+        refreshInterval,
+        dataSources: [makePluginDataSource({ name: 'source', mode: 'literal', literalValue: { n: 1 } })],
+        templates: [makePluginTemplate({ layout: 'full', liquidMarkup: 'Test' })],
+      })
+      service.schedulePlugin(plugin)
+      return plugin
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers()
+      mockRenderCache.renderAndCache.mockResolvedValue(undefined)
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it.each([7, 90])('runs a Plugin with an interval of %i every %i minutes from when it was scheduled', async (interval) => {
+      scheduleWithInterval(interval)
+
+      await vi.advanceTimersByTimeAsync(interval * MINUTE - 1)
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledTimes(0)
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledTimes(1)
+
+      await vi.advanceTimersByTimeAsync(3 * interval * MINUTE)
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledTimes(4)
+    })
+
+    it('runs on the new interval alone once a Plugin is scheduled again', async () => {
+      scheduleWithInterval(10)
+      scheduleWithInterval(25)
+
+      await vi.advanceTimersByTimeAsync(24 * MINUTE)
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledTimes(0)
+
+      await vi.advanceTimersByTimeAsync(MINUTE)
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledTimes(1)
+    })
+
+    it('waits out an interval longer than a timer can hold instead of running at once', async () => {
+      scheduleWithInterval(100_000)
+
+      await vi.advanceTimersByTimeAsync(24 * 60 * MINUTE)
+
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledTimes(0)
+    })
+
+    it('stops running a Plugin whose job was removed', async () => {
+      scheduleWithInterval(5)
+      service.removeScheduledJob('plugin-1')
+
+      await vi.advanceTimersByTimeAsync(60 * MINUTE)
+
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledTimes(0)
+    })
   })
 
   it('schedules multiple plugins independently', () => {
@@ -149,29 +195,20 @@ describe('pluginSchedulerService', () => {
     expect(service.hasScheduledJob('plugin-1')).toBe(true)
   })
 
-  it('does not schedule if there are no data sources', () => {
+  it('schedules a Poll-kind Plugin without Data Sources and renders it with trmnl alone', async () => {
     const plugin = makePlugin({
       id: 'plugin-1',
-      refreshInterval: 15,
-      templates: [makePluginTemplate({ layout: 'full', liquidMarkup: 'Test' })],
-    })
-
-    service.schedulePlugin(plugin)
-
-    expect(service.hasScheduledJob('plugin-1')).toBe(false)
-  })
-
-  it('does not schedule a draft plugin with zero data sources', () => {
-    const plugin = makePlugin({
-      id: 'plugin-1',
+      name: 'Clock',
       refreshInterval: 15,
       dataSources: [],
       templates: [makePluginTemplate({ layout: 'full', liquidMarkup: 'Test' })],
     })
+    mockRenderCache.renderAndCache.mockResolvedValue(undefined)
 
     service.schedulePlugin(plugin)
+    await service.runTick(plugin)
 
-    expect(service.hasScheduledJob('plugin-1')).toBe(false)
+    expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(plugin, expect.objectContaining({ trmnl: expect.anything() }))
   })
 
   it('does not schedule if templates are missing', () => {
@@ -226,7 +263,7 @@ describe('pluginSchedulerService', () => {
       mockRenderCache.renderAndCache.mockResolvedValue(undefined)
 
       service.schedulePlugin(plugin)
-      const tickPromise = capturedCallback!()
+      const tickPromise = service.runTick(plugin)
 
       // Both fetches were started before either resolved — proof they run in parallel, not sequentially
       await vi.waitFor(() => expect(mockDataFetcher.fetchData).toHaveBeenCalledTimes(2))
@@ -257,7 +294,7 @@ describe('pluginSchedulerService', () => {
       service.schedulePlugin(plugin)
       expect(service.hasScheduledJob('plugin-1')).toBe(true)
 
-      await capturedCallback!()
+      await service.runTick(plugin)
 
       expect(mockDataFetcher.fetchData).not.toHaveBeenCalled()
       expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(
@@ -282,7 +319,7 @@ describe('pluginSchedulerService', () => {
       mockRenderCache.renderAndCache = vi.fn().mockResolvedValue(undefined)
 
       service.schedulePlugin(plugin)
-      await capturedCallback!()
+      await service.runTick(plugin)
 
       expect(mockDataFetcher.fetchData).toHaveBeenCalledTimes(1)
       expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(
@@ -307,7 +344,7 @@ describe('pluginSchedulerService', () => {
       mockRenderCache.renderAndCache = vi.fn().mockResolvedValue(undefined)
 
       service.schedulePlugin(plugin)
-      await capturedCallback!()
+      await service.runTick(plugin)
 
       expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(
         plugin,
@@ -337,7 +374,7 @@ describe('pluginSchedulerService', () => {
       mockRenderCache.renderAndCache.mockResolvedValue(undefined)
 
       service.schedulePlugin(plugin)
-      await capturedCallback!()
+      await service.runTick(plugin)
 
       expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(
         plugin,
@@ -370,7 +407,7 @@ describe('pluginSchedulerService', () => {
       mockRenderCache.renderAndCache.mockResolvedValue(undefined)
 
       service.schedulePlugin(plugin)
-      await capturedCallback!()
+      await service.runTick(plugin)
 
       expect(mockTransformer.transform).toHaveBeenCalledWith('return { totalShort: "3.5k" }', { raw: 'graphql body' })
       expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(
@@ -404,7 +441,7 @@ describe('pluginSchedulerService', () => {
       mockRenderCache.renderAndCache.mockResolvedValue(undefined)
 
       service.schedulePlugin(plugin)
-      await capturedCallback!()
+      await service.runTick(plugin)
 
       expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(
         plugin,
@@ -430,7 +467,7 @@ describe('pluginSchedulerService', () => {
       mockRenderCache.renderAndCache.mockResolvedValue(undefined)
 
       service.schedulePlugin(plugin)
-      await capturedCallback!()
+      await service.runTick(plugin)
 
       expect(mockFetchOutcome.recordOutcomes).toHaveBeenCalledWith(dataSources, expect.objectContaining({ weather: { temp: 25 } }))
       expect(mockFetchOutcome.recordOutcomes.mock.invocationCallOrder[0])
@@ -452,7 +489,7 @@ describe('pluginSchedulerService', () => {
       mockRenderCache.renderAndCache.mockRejectedValue(new Error('render blew up'))
 
       service.schedulePlugin(plugin)
-      await capturedCallback!()
+      await service.runTick(plugin)
 
       expect(mockFetchOutcome.recordOutcomes).toHaveBeenCalledWith(dataSources, expect.objectContaining({ weather: { temp: 25 } }))
     })

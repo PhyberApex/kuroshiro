@@ -90,15 +90,16 @@ describe('pluginsController', () => {
     expect(result).toBe(basePlugin)
   })
 
-  it('update updates a plugin', async () => {
+  it('update saves the Plugin, then answers it as a read gives it', async () => {
     const updateDto = { name: 'Updated Weather' }
-    const updated = { ...basePlugin, name: 'Updated Weather' }
-    mockService.update.mockResolvedValue(updated)
+    const detail = { id: '1', name: 'Updated Weather' }
+    mockService.update.mockResolvedValue(undefined)
+    mockReads.detail.mockResolvedValue(detail)
 
     const result = await controller.update('1', updateDto)
 
     expect(mockService.update).toHaveBeenCalledWith('1', updateDto)
-    expect(result).toBe(updated)
+    expect(result).toBe(detail)
   })
 
   it('duplicate duplicates a plugin', async () => {

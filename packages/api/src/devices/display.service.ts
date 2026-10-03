@@ -14,6 +14,7 @@ import { FallbackScreensService } from '../device-models/fallback-screens.servic
 import { renderHtmlToPng } from '../device-models/render-html-to-png.js'
 import { DeviceSensorsService } from '../device-sensors/device-sensors.service.js'
 import { FirmwareService } from '../firmware/firmware.service.js'
+import { isRenderablePollPlugin } from '../plugins/renderable-poll-plugin.js'
 import { PluginDataResolverService } from '../plugins/services/plugin-data-resolver.service.js'
 import { PluginRendererService } from '../plugins/services/plugin-renderer.service.js'
 import { PluginTemplateContextService } from '../plugins/services/plugin-template-context.service.js'
@@ -576,7 +577,7 @@ export class DeviceDisplayService {
     }
 
     // Fallback: fetch and render on-demand
-    if (plugin.dataSources && plugin.dataSources.length > 0 && plugin.templates && plugin.templates.length > 0) {
+    if (isRenderablePollPlugin(plugin)) {
       try {
         const renderedHtml = await this.renderPluginHtml(plugin, screen, device)
         return renderedHtml ? await this.renderBodyToScreenPng(viewFull(renderedHtml), screen, device) : null

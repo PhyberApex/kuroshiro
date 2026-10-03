@@ -38,6 +38,7 @@ import { Screen } from './screens/screens.entity.js'
 import { ScreensModule } from './screens/screens.module.js'
 import { InstanceSettings } from './settings/entities/instance-settings.entity.js'
 import { SettingsModule } from './settings/settings.module.js'
+import { SyncRun } from './sync-runs/entities/sync-run.entity.js'
 import { resolveAppPath } from './utils/pathHelper.js'
 
 const conf = config()
@@ -58,7 +59,7 @@ const conf = config()
       username: conf.database.user,
       password: conf.database.password,
       database: conf.database.database,
-      entities: [Device, DeviceModel, Palette, DeviceSensor, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, MashupConfiguration, MashupSlot, Schedule, Firmware, Alert, InstanceSettings],
+      entities: [Device, DeviceModel, Palette, DeviceSensor, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, MashupConfiguration, MashupSlot, Schedule, Firmware, Alert, InstanceSettings, SyncRun],
       migrations: (() => {
         const dir = path.join(process.cwd(), 'dist', 'src', 'migrations')
         if (!fs.existsSync(dir))

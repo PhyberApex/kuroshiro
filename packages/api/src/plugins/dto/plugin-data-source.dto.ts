@@ -1,8 +1,8 @@
 import type { ValidationArguments, ValidationOptions, ValidatorConstraintInterface } from 'class-validator'
 import type { DataSourceLiteralValue, DataSourceMode } from 'kuroshiro-shared'
 import type { JsonObject } from '../../utils/json.js'
-import { IsIn, IsInt, IsObject, IsOptional, IsString, registerDecorator, ValidatorConstraint } from 'class-validator'
-import { DATA_SOURCE_MODES } from 'kuroshiro-shared'
+import { IsIn, IsInt, IsObject, IsOptional, IsString, Matches, registerDecorator, ValidatorConstraint } from 'class-validator'
+import { DATA_SOURCE_METHODS, DATA_SOURCE_MODES } from 'kuroshiro-shared'
 import { dataSourceModeViolation } from '../plugin-data-source-mode.js'
 
 @ValidatorConstraint({ name: 'dataSourceModeFields' })
@@ -49,11 +49,12 @@ export class PluginDataSourceDto {
   mode: DataSourceMode = 'fetch'
 
   @IsOptional()
-  @IsString()
+  @IsIn(DATA_SOURCE_METHODS)
   method?: string
 
   @IsOptional()
   @IsString()
+  @Matches(/^https?:\/\//i, { message: 'url must start with http:// or https://' })
   url?: string
 
   @IsOptional()

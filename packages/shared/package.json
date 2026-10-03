@@ -15,6 +15,9 @@
     "lint:fix": "eslint --fix",
     "type-check": "tsc --noEmit -p tsconfig.json"
   },
+  "dependencies": {
+    "liquidjs": "catalog:"
+  },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:",
     "@vitest/coverage-v8": "catalog:",

@@ -188,9 +188,6 @@ catalogs:
     '@nestjs/core':
       specifier: 12.1.1
       version: 12.1.1
-    '@nestjs/mapped-types':
-      specifier: 12.0.0
-      version: 12.0.0
     '@nestjs/platform-express':
       specifier: 12.1.1
       version: 12.1.1
@@ -373,9 +370,6 @@ importers:
       '@nestjs/core':
         specifier: 'catalog:'
         version: 12.1.1(@nestjs/common@12.1.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/platform-express@12.1.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
-      '@nestjs/mapped-types':
-        specifier: 'catalog:'
-        version: 12.0.0(@nestjs/common@12.1.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)
       '@nestjs/platform-express':
         specifier: 'catalog:'
         version: 12.1.1(@nestjs/common@12.1.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@12.1.1)(supports-color@10.2.2)
@@ -493,6 +487,10 @@ importers:
         version: 5.0.3(@types/node@24.19.0)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(msw@2.15.0(@types/node@24.19.0)(typescript@6.0.3))(vite@8.3.1(@types/node@24.19.0)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
 
   packages/shared:
+    dependencies:
+      liquidjs:
+        specifier: 'catalog:'
+        version: 10.29.0
     devDependencies:
       '@antfu/eslint-config':
         specifier: 'catalog:'
@@ -1331,20 +1329,6 @@ packages:
       '@nestjs/platform-express':
         optional: true
       '@nestjs/websockets':
-        optional: true
-
-  '@nestjs/mapped-types@12.0.0':
-    resolution: {integrity: sha512-aX7lxZcqXldtnSr0bgT2ZPQvpTpIwBMW1GMX29o4s3q02vmq6JoTYuPW0GwYXa8BiFMRX7WbGZVDA703pNqOMQ==}
-    engines: {node: '>=20.19.0'}
-    peerDependencies:
-      '@nestjs/common': ^10.0.0 || ^11.0.0 || ^12.0.0
-      class-transformer: ^0.4.0 || ^0.5.0
-      class-validator: ^0.13.0 || ^0.14.0 || ^0.15.0
-      reflect-metadata: ^0.1.12 || ^0.2.0
-    peerDependenciesMeta:
-      class-transformer:
-        optional: true
-      class-validator:
         optional: true
 
   '@nestjs/platform-express@12.1.1':
@@ -6018,14 +6002,6 @@ snapshots:
       uid: 2.0.2
     optionalDependencies:
       '@nestjs/platform-express': 12.1.1(@nestjs/common@12.1.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@12.1.1)(supports-color@10.2.2)
-
-  '@nestjs/mapped-types@12.0.0(@nestjs/common@12.1.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)':
-    dependencies:
-      '@nestjs/common': 12.1.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2)
-      reflect-metadata: 0.2.2
-    optionalDependencies:
-      class-transformer: 0.5.1
-      class-validator: 0.15.1
 
   '@nestjs/platform-express@12.1.1(@nestjs/common@12.1.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/core@12.1.1)(supports-color@10.2.2)':
     dependencies:

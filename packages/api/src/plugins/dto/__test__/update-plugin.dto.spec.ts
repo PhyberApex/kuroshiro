@@ -12,98 +12,46 @@ function flattenConstraints(errors: ValidationError[]): string[] {
 }
 
 async function violations(payload: Record<string, unknown>): Promise<string[]> {
-  const errors = await validate(plainToInstance(UpdatePluginDto, payload))
+  const errors = await validate(plainToInstance(UpdatePluginDto, payload), { whitelist: true, forbidNonWhitelisted: true })
   return flattenConstraints(errors)
 }
 
 describe('update-plugin dto', () => {
-  it('creates dto with partial fields', () => {
-    const dto = new UpdatePluginDto()
-    dto.name = 'Updated Plugin'
-
-    expect(dto.name).toBe('Updated Plugin')
-    expect(dto.description).toBeUndefined()
-    expect(dto.refreshInterval).toBeUndefined()
+  it('accepts an empty body, and everything the Plugin page\'s form holds', async () => {
+    await expect(violations({})).resolves.toEqual([])
+    await expect(violations({
+      name: 'Weather',
+      description: null,
+      refreshInterval: 90,
+      templates: [{ size: 'full', liquidMarkup: '<p>{{ weather.temperature }}</p>' }],
+      dataSources: [
+        { id: '00000000-0000-4000-8000-000000000000', name: 'weather', mode: 'fetch', method: 'POST', url: 'https://api.example.com/{{ city }}', headers: { Authorization: 'Bearer token' }, body: { key: 'value' } },
+        { name: 'greeting', mode: 'literal', literalValue: { text: 'hello' } },
+      ],
+      fields: [{ keyname: 'city', fieldType: 'string', name: 'City', required: false }],
+      fieldValues: { city: 'Berlin' },
+    })).resolves.toEqual([])
   })
 
-  it('updates dataSources array', () => {
-    const dto = new UpdatePluginDto()
-    dto.dataSources = [
-      {
-        name: 'weather',
-        mode: 'fetch',
-        url: 'https://new-api.example.com',
-        method: 'POST',
-        headers: { Authorization: 'Bearer token' },
-        body: { key: 'value' },
-      },
-    ]
+  it('rejects a data source with a non-string url', async () => {
+    const errors = await violations({ dataSources: [{ name: 'weather', url: 123, method: 'GET' }] })
 
-    expect(dto.dataSources).toHaveLength(1)
-    expect(dto.dataSources?.[0].url).toBe('https://new-api.example.com')
-    expect(dto.dataSources?.[0].method).toBe('POST')
+    expect(errors).toContain('url must be a string')
   })
 
-  it('updates templates', () => {
-    const dto = new UpdatePluginDto()
-    dto.templates = [
-      { layout: 'half_horizontal', liquidMarkup: 'New template' },
-    ]
+  it('rejects a Data Source id that is not an id', async () => {
+    const errors = await violations({ dataSources: [{ id: 'first', name: 'weather', mode: 'fetch', url: 'https://api.example.com' }] })
 
-    expect(dto.templates).toHaveLength(1)
-    expect(dto.templates?.[0].layout).toBe('half_horizontal')
+    expect(errors).toEqual(['id must be a UUID'])
   })
 
-  it('updates fields', () => {
-    const dto = new UpdatePluginDto()
-    dto.fields = [
-      { keyname: 'new_field', fieldType: 'string', name: 'New Field', required: false },
-    ]
+  it('rejects a Template of a size Kuroshiro does not know', async () => {
+    const errors = await violations({ templates: [{ size: 'third', liquidMarkup: 'x' }] })
 
-    expect(dto.fields).toHaveLength(1)
-    expect(dto.fields?.[0].keyname).toBe('new_field')
+    expect(errors).toEqual(['size must be one of the following values: full, half_horizontal, half_vertical, quadrant'])
   })
 
-  describe('nested dataSources validation', () => {
-    it('rejects a data source with a non-string url', async () => {
-      const errors = await violations({ dataSources: [{ name: 'weather', url: 123, method: 'GET' }] })
-
-      expect(errors.some(message => message.includes('url must be a string'))).toBe(true)
-    })
-  })
-
-  describe('webhook fields', () => {
-    it('accepts a new Merge Strategy and Stream Limit', async () => {
-      await expect(violations({ mergeStrategy: 'stream', streamLimit: 20 })).resolves.toEqual([])
-    })
-
-    it('rejects an unknown Merge Strategy', async () => {
-      await expect(violations({ mergeStrategy: 'append' })).resolves.toContain(
-        'mergeStrategy must be one of the following values: standard, deep_merge, stream',
-      )
-    })
-
-    it('rejects a Stream Limit below 1', async () => {
-      await expect(violations({ streamLimit: 0 })).resolves.toContain('streamLimit must not be less than 1')
-    })
-
-    it('rejects a kind outside Poll and Webhook', async () => {
-      await expect(violations({ kind: 'Push' })).resolves.toContain(
-        'kind must be one of the following values: Poll, Webhook',
-      )
-    })
-  })
-
-  describe('create-only fields', () => {
-    it('rejects an attempt to change sourceRecipeSnapshot or sourceRecipeId through the update, matching the mass-assignment guard on the route', async () => {
-      const errors = await validate(plainToInstance(UpdatePluginDto, {
-        sourceRecipeId: 'other-recipe',
-        sourceRecipeSnapshot: { name: 'Smuggled' },
-      }), { whitelist: true, forbidNonWhitelisted: true })
-      const messages = flattenConstraints(errors)
-
-      expect(messages.some(message => message.includes('sourceRecipeId') && message.includes('should not exist'))).toBe(true)
-      expect(messages.some(message => message.includes('sourceRecipeSnapshot') && message.includes('should not exist'))).toBe(true)
-    })
+  it.each(['kind', 'mergeStrategy', 'streamLimit', 'webhookToken', 'sourceRecipeId', 'sourceRecipeSnapshot'])('rejects %s, which is fixed when the Plugin is created', async (property) => {
+    await expect(violations({ [property]: 'Poll' })).resolves.toEqual([`property ${property} should not exist`])
   })
 })

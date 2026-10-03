@@ -3,7 +3,7 @@ import type { ApiError, PluginDetail, PluginSummary } from 'kuroshiro-shared'
 import type { DataSource, DeepPartial } from 'typeorm'
 import type { HttpTestApp } from '../../test/httpApp.js'
 import { getRepositoryToken } from '@nestjs/typeorm'
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { Alert } from '../../alerts/entities/alert.entity.js'
 import { Device } from '../../devices/devices.entity.js'
 import { MashupConfiguration } from '../../mashup/entities/mashup-configuration.entity.js'
@@ -41,10 +41,6 @@ import { RecipeUpdateService } from '../services/recipe-update.service.js'
 import { WebhookIngestService } from '../services/webhook-ingest.service.js'
 import { WebhookIngestController } from '../webhook-ingest.controller.js'
 
-vi.mock('node-cron', () => ({
-  default: { schedule: vi.fn(() => ({ start: vi.fn(), stop: vi.fn() })) },
-}))
-
 const UNKNOWN_ID = '00000000-0000-4000-8000-000000000000'
 const API_URL = 'https://kuroshiro.example'
 const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
@@ -63,6 +59,7 @@ describe('the Plugin reads, GET /api/plugins and GET /api/plugins/:id, against a
   let database: DataSource
   let http: HttpTestApp
   let plugins: PluginsService
+  let scheduler: PluginSchedulerService
   let assignments: PluginAssignmentsService
   let refresh: PluginRefreshService
   let deviceCount = 0
@@ -77,6 +74,7 @@ describe('the Plugin reads, GET /api/plugins and GET /api/plugins/:id, against a
     const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config), new PluginTransformService())
     const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
     refresh = new PluginRefreshService(resolver, renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
+    scheduler = new PluginSchedulerService(refresh)
     plugins = new PluginsService(
       database.getRepository(Plugin),
       database.getRepository(Screen),
@@ -85,10 +83,9 @@ describe('the Plugin reads, GET /api/plugins and GET /api/plugins/:id, against a
       database.getRepository(PluginField),
       resolver,
       renderer,
-      new PluginSchedulerService(refresh),
+      scheduler,
       renderCache,
       fieldValues,
-      refresh,
       templateContext,
     )
     assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
@@ -118,6 +115,7 @@ describe('the Plugin reads, GET /api/plugins and GET /api/plugins/:id, against a
   })
 
   afterAll(async () => {
+    scheduler.onModuleDestroy()
     await http.app.close()
     await database.destroy()
   })
