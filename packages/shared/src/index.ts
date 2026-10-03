@@ -1,4 +1,5 @@
 export * from './alerts'
+export * from './api/errors'
 export * from './battery'
 export * from './configuration'
 export * from './data-source'

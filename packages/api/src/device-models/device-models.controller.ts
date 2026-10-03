@@ -1,5 +1,5 @@
 import type { DeviceModelSyncResult } from 'kuroshiro-shared'
-import { Body, Controller, Delete, Get, Logger, Param, Post, ServiceUnavailableException, UsePipes, ValidationPipe } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Logger, Param, Post, ServiceUnavailableException } from '@nestjs/common'
 import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { CustomPalettesService } from './custom-palettes.service.js'
 import { DeviceModelSyncService } from './device-model-sync.service.js'
@@ -29,7 +29,6 @@ export class DeviceModelsController {
   }
 
   @Post('palettes')
-  @UsePipes(new ValidationPipe({ transform: true }))
   createPalette(@Body() dto: CreateCustomPaletteDto): Promise<Palette> {
     return this.customPalettesService.create(dto)
   }
