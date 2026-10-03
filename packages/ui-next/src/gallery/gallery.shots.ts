@@ -11,6 +11,6 @@ describe('gallery baselines', () => {
   it.for(shots)('$section.title in $theme', async ({ section, theme }) => {
     const screen = await mount(GalleryPage, { theme })
 
-    await expectScreenshot(screen.getByRole('region', { name: section.title }), `${section.id}-${theme}`)
+    await expectScreenshot(screen.getByRole('region', { name: section.title, exact: true }), `${section.id}-${theme}`)
   })
 })

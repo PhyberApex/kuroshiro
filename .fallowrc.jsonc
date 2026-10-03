@@ -27,6 +27,7 @@
     "ignore": ["packages/api/src/migrations/**", "packages/api/src/device-models/data/trmnl-snapshot.ts"]
   },
   "health": {
-    "ignore": ["**/__test__/**", "**/*.spec.ts", "packages/api/src/migrations/**", "packages/api/src/device-models/data/trmnl-snapshot.ts"]
+    // packages/ui-next/real-api is test code throughout: the suite's specs and the environment its global setup starts
+    "ignore": ["**/__test__/**", "**/*.spec.ts", "packages/ui-next/real-api/**", "packages/api/src/migrations/**", "packages/api/src/device-models/data/trmnl-snapshot.ts"]
   }
 }

@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import process from 'node:process'
+import { becomesReady } from './poll.ts'
 
 export interface Database {
   /** The `KUROSHIRO_DB_*` variables the API connects with. */
@@ -13,20 +14,14 @@ function docker(...args: string[]) {
   return execFileSync('docker', args, { encoding: 'utf8' }).trim()
 }
 
-function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
-
-async function acceptsConnections(container: string, attemptsLeft = 60): Promise<void> {
+function acceptsConnections(container: string) {
   try {
     // Over TCP, because the socket already answers while the image's init scripts still run.
     docker('exec', container, 'pg_isready', '--host', '127.0.0.1', '--username', CREDENTIALS.user, '--dbname', CREDENTIALS.database)
+    return true
   }
-  catch (error) {
-    if (attemptsLeft === 0)
-      throw error
-    await sleep(500)
-    return acceptsConnections(container, attemptsLeft - 1)
+  catch {
+    return false
   }
 }
 
@@ -49,7 +44,8 @@ async function startThrowawayPostgres(): Promise<Database> {
     docker('rm', '--force', '--volumes', container)
   }
   try {
-    await acceptsConnections(container)
+    if (!await becomesReady(() => acceptsConnections(container), 60))
+      throw new Error('Postgres did not accept connections within 30 seconds.')
     const port = docker('port', container, '5432/tcp').split(':').at(-1)!
     return {
       env: {

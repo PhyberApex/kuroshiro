@@ -5,6 +5,7 @@ import { cpSync, mkdirSync, rmSync } from 'node:fs'
 import { createServer } from 'node:net'
 import { resolve } from 'node:path'
 import process from 'node:process'
+import { becomesReady } from './poll.ts'
 
 const uiDir = resolve(import.meta.dirname, '../..')
 const apiDir = resolve(uiDir, '../api')
@@ -32,10 +33,6 @@ async function freePort() {
   return port
 }
 
-function sleep(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
-
 export interface RunningApi {
   baseUrl: string
   stop: () => Promise<void>
@@ -60,32 +57,20 @@ export async function startApi(databaseEnv: Record<string, string>): Promise<Run
   })
   api.stdout.on('data', chunk => output.push(String(chunk)))
   api.stderr.on('data', chunk => output.push(String(chunk)))
+  const exited = once(api, 'exit')
+  const hasExited = () => api.exitCode !== null || api.signalCode !== null
 
   const stop = async () => {
-    if (api.exitCode !== null)
-      return
-    api.kill()
-    await once(api, 'exit')
+    if (!hasExited())
+      api.kill()
+    await exited
   }
 
-  const answers = async (attemptsLeft = 120): Promise<void> => {
-    if (api.exitCode !== null)
-      throw new Error(`The API exited with code ${api.exitCode} before it answered:\n${output.join('')}`)
-    const ok = await fetch(new URL('api/settings', baseUrl)).then(response => response.ok, () => false)
-    if (ok)
-      return
-    if (attemptsLeft === 0)
-      throw new Error(`The API did not answer within a minute:\n${output.join('')}`)
-    await sleep(500)
-    return answers(attemptsLeft - 1)
-  }
+  const answers = () => fetch(new URL('api/settings', baseUrl)).then(response => response.ok, () => false)
 
-  try {
-    await answers()
-  }
-  catch (error) {
+  if (!await becomesReady(() => hasExited() || answers(), 120) || hasExited()) {
     await stop()
-    throw error
+    throw new Error(`The API did not come up (exit: ${api.exitCode ?? api.signalCode ?? 'still running after a minute'}):\n${output.join('')}`)
   }
   return { baseUrl, stop }
 }

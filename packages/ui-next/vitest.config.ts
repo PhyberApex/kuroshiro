@@ -8,7 +8,8 @@ export default mergeConfig(viteConfig, defineConfig({
       provider: 'v8',
       reporter: ['text-summary', 'lcov'],
       include: ['src/**/*.{ts,vue}'],
-      exclude: ['src/main.ts', 'src/**/__test__/**', 'src/**/*.spec.ts', 'src/**/*.shots.ts'],
+      // screenshots.ts only runs in the pinned-image run, which reports no coverage
+      exclude: ['src/main.ts', 'src/testing/screenshots.ts', 'src/**/__test__/**', 'src/**/*.spec.ts', 'src/**/*.shots.ts'],
     },
     projects: [
       {

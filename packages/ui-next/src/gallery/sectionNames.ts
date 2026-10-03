@@ -8,7 +8,7 @@ export function sectionNameFromPath(path: string): SectionName {
   const words = path
     .slice(path.lastIndexOf('/') + 1)
     .replace(/\.gallery\.vue$/, '')
-    .split(/(?=[A-Z])/)
+    .split(/(?<=[a-z0-9])(?=[A-Z])/)
   return {
     id: words.join('-').toLowerCase(),
     title: words.join(' '),

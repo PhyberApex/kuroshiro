@@ -48,10 +48,14 @@ function randomMac() {
   return [...randomBytes(6)].map(byte => byte.toString(16).padStart(2, '0').toUpperCase()).join(':')
 }
 
-async function answerOf<T>(response: Response): Promise<T> {
+async function accepted(response: Response) {
   if (!response.ok)
     throw new Error(`${response.url} answered ${response.status}: ${await response.text()}`)
-  return response.json() as Promise<T>
+  return response
+}
+
+async function answerOf<T>(response: Response) {
+  return (await accepted(response)).json() as Promise<T>
 }
 
 interface ConnectOptions {
@@ -78,13 +82,11 @@ export async function connectDevice(baseUrl: string, { mac = randomMac(), firmwa
       headers: { ...identity, 'access-token': setup.api_key, ...report },
     })),
     log: async (entries) => {
-      const response = await fetch(endpoint('log'), {
+      await accepted(await fetch(endpoint('log'), {
         method: 'POST',
         headers: { 'id': mac, 'content-type': 'application/json' },
         body: JSON.stringify({ logs: entries }),
-      })
-      if (!response.ok)
-        throw new Error(`${response.url} answered ${response.status}: ${await response.text()}`)
+      }))
     },
   }
 }

@@ -25,8 +25,7 @@ export async function expectAccessible(target: Element = document.body) {
   const failures = await THEMES.reduce<Promise<string[]>>(
     async (earlier, theme) => [...await earlier, ...await violationsIn(theme, target)],
     Promise.resolve([]),
-  )
-  await forceTheme('light')
+  ).finally(() => forceTheme('light'))
   if (failures.length > 0)
     throw new Error(failures.join('\n\n'))
 }

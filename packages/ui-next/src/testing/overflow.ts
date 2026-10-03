@@ -27,8 +27,7 @@ export async function expectNoHorizontalOverflow() {
       return [...found, ...overflowAt(width)]
     },
     Promise.resolve([]),
-  )
-  await resetViewport()
+  ).finally(resetViewport)
   if (failures.length > 0)
     throw new Error(failures.join('\n\n'))
 }

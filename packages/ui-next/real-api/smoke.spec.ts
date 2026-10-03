@@ -29,7 +29,7 @@ describe('the built UI on the real API', () => {
     )
 
     expect(await page.title()).toBe('Kuroshiro')
-    expect(settings.lowBatteryPercent.value).toBe(20)
+    expect(settings.lowBatteryPercent.override).toBeNull()
     expect(settings.firmwareAutoUpdate.fallbackSource).toBe('default')
     expect(failures).toEqual([])
   })
