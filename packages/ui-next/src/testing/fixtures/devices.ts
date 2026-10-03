@@ -1,4 +1,4 @@
-import type { DeviceSummary } from 'kuroshiro-shared'
+import type { DeviceDetail, DeviceSummary } from 'kuroshiro-shared'
 import { defineBuilder } from './defineBuilder'
 
 export const buildDeviceSummary = defineBuilder<DeviceSummary>(() => ({
@@ -24,4 +24,19 @@ export const buildDeviceSummary = defineBuilder<DeviceSummary>(() => ({
     paused: false,
     holding: false,
   },
+}))
+
+export const buildDeviceDetail = defineBuilder<DeviceDetail>(() => ({
+  ...buildDeviceSummary(),
+  mac: 'A4:C1:38:5F:0B:9D',
+  apikey: 'k7Qm2Zr9Xw4Tn8Vb',
+  refreshRate: 900,
+  reported: { batteryVoltage: '4.05', rssi: '-61', firmwareVersion: '1.7.8', model: 'og_plus', width: 800, height: 480 },
+  palette: { id: '5c9e2f7a-3b1d-4e8f-a6c4-0d2b7e9f1a3c', name: 'Greyscale, 4 levels', kind: 'official' },
+  mirror: { enabled: false, mac: null, apikeySet: false },
+  targetFirmware: null,
+  pending: { specialFunction: null, deviceReset: false, firmwarePush: false },
+  sleepImagePath: null,
+  sensors: [],
+  screenCount: 1,
 }))
