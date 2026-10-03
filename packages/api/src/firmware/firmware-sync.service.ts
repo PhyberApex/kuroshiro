@@ -14,6 +14,7 @@ import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { Firmware } from './entities/firmware.entity.js'
 import { FirmwareAutoUpdateService } from './firmware-auto-update.service.js'
 import { firmwareFilePath } from './firmware-paths.js'
+import { toDeviceReference } from './firmware.mapper.js'
 
 interface TrmnlFirmwarePayload {
   url: string
@@ -65,6 +66,7 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
     }
     catch (error) {
       await this.syncRuns.record('firmware', ranAt, { ok: false, error: getErrorMessage(error) })
+        .catch(recordError => this.logger.error(`Could not record the failed firmware sync: ${getErrorMessage(recordError)}`))
       throw error
     }
     await this.syncRuns.record('firmware', ranAt, { ok: true })
@@ -109,7 +111,7 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
       ranAt: ranAt.toISOString(),
       inserted: true,
       version: payload.version,
-      assigned: assigned.map(({ id, name }) => ({ id, name })),
+      assigned: assigned.map(toDeviceReference),
     }
   }
 

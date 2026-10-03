@@ -3,7 +3,6 @@ import { Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Device } from '../devices/devices.entity.js'
-import { toSyncRun } from '../sync-runs/sync-run.mapper.js'
 import { SyncRunService } from '../sync-runs/sync-run.service.js'
 import { fileExists } from '../utils/fileExists.js'
 import { Firmware } from './entities/firmware.entity.js'
@@ -27,7 +26,7 @@ export class FirmwareReadsService {
       this.syncRuns.last('firmware'),
     ])
     const firmware = await Promise.all(rows.map(row => this.read(row, devices)))
-    return toFirmwareList(lastSync ? toSyncRun(lastSync) : null, firmware)
+    return toFirmwareList(lastSync, firmware)
   }
 
   async readById(id: string): Promise<FirmwareRead> {

@@ -1,6 +1,8 @@
-import type { DeviceReference, FirmwareList, FirmwareRead, SyncRun } from 'kuroshiro-shared'
+import type { DeviceReference, FirmwareList, FirmwareRead } from 'kuroshiro-shared'
 import type { Device } from '../devices/devices.entity.js'
+import type { SyncRun } from '../sync-runs/entities/sync-run.entity.js'
 import type { Firmware } from './entities/firmware.entity.js'
+import { toSyncRun } from '../sync-runs/sync-run.mapper.js'
 import { toIsoStringOrNull } from '../utils/readModel.js'
 
 export interface FirmwareFacts {
@@ -11,7 +13,7 @@ export interface FirmwareFacts {
   runningOn: Pick<Device, 'id' | 'name'>[]
 }
 
-function toDeviceReference({ id, name }: Pick<Device, 'id' | 'name'>): DeviceReference {
+export function toDeviceReference({ id, name }: Pick<Device, 'id' | 'name'>): DeviceReference {
   return { id, name }
 }
 
@@ -32,5 +34,5 @@ export function toFirmwareRead(firmware: Firmware, facts: FirmwareFacts): Firmwa
 }
 
 export function toFirmwareList(lastSync: SyncRun | null, firmware: FirmwareRead[]): FirmwareList {
-  return { lastSync, firmware }
+  return { lastSync: lastSync ? toSyncRun(lastSync) : null, firmware }
 }

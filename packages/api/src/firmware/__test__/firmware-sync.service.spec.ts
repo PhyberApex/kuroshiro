@@ -125,6 +125,12 @@ describe('firmwareSyncService', () => {
       expect(syncRuns.record).toHaveBeenCalledWith('firmware', expect.any(Date), { ok: false, error: expect.stringContaining('request failed') })
     })
 
+    it('still throws the upstream error when recording the failure fails', async () => {
+      mockFetch.mockResolvedValueOnce(jsonResponse(null, { ok: false }))
+      syncRuns.record.mockRejectedValue(new Error('database down'))
+      await expect(service.sync()).rejects.toThrow(/request failed/)
+    })
+
     it('throws when the response is missing url/version', async () => {
       mockFetch.mockResolvedValueOnce(jsonResponse({ url: 'https://example.com/fw.bin' }))
       await expect(service.sync()).rejects.toThrow(/missing url\/version/)
