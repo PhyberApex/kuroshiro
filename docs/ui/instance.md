@@ -31,7 +31,7 @@ In the bar, "Instance" is current on every `/instance` route. On `/alerts` no se
 - **A page's heading line** is its name in the title face at `title-sm` on a 2 px ink rule, with the page's actions at its right. Sections inside a page are headed at `text-lg`, weight 600, on a 1 px rule, so a page reads as one page and not as a second list of pages.
 - **Under the list**, below a rule, two things that belong to the app and not to a page:
   - **Appearance.** A segmented control, "System", "Light", "Dark". "System" follows the system preference and is the default. The choice is kept in this browser and saved nowhere else.
-  - **The version.** "Kuroshiro {version}", the version in mono. It is the UI's own build version.
+  - **The version.** "Kuroshiro {version}", the version in mono. It is the server's version, read with the Instance facts; the UI ships in the same release.
 - **Phone.** The list becomes a row of tabs that scrolls sideways, the current one underlined. Appearance and the version move to the foot of the page.
 - **Demo mode** ([render][demo]). While demo mode is on, one line sits under the bar on every page of the app, on `wash`: "This is the Kuroshiro demo. Image uploads are off, and anyone can change what you see here." The UI learns it from the server, not from the address.
 
@@ -293,7 +293,7 @@ Section heading "Stored files", with "Check again" at its right. The check runs 
   | "Folders of deleted Devices" | folders | "The image folder of a Device that is no longer registered." |
   | "Temporary files older than a day" | files | "{N} leftovers of renders that did not finish." |
   | "Uploads older than a day" | files | "{N} uploaded files that were never turned into a Screen." |
-  | "Screens whose image is missing" | Screens | "The Screen “{name}” on {Device} and its Schedule. Its image is already gone, so {Device} skips it today." |
+  | "Screens whose image is missing" | Screens | "The Screen “{name}” on {Device} and its Schedule. Its image is already gone, so {Device} shows the error Fallback Screen at its turn today." |
 
   A row is a checkbox, the group's name, its count, its size, and a chevron. It opens in place and lists what it holds: paths below the storage folder in mono with their sizes, or for Screens "{name}, a {kind} Screen on {Device}" and its Order.
 - **What is ticked.** The four groups of files are ticked. "Screens whose image is missing" is not: cleaning it up deletes Screens. Under the rows, at the left: "A Screen whose image is missing is left alone unless you tick it.", or once ticked "Cleaning up deletes {n} Screens."
@@ -430,7 +430,7 @@ Capability 78 (a Device's firing Alerts) is homed by [devices.md](./devices.md) 
 
 ## What this asks of the admin API
 
-A request list for [Admin API reshaping for the new screens](https://github.com/PhyberApex/kuroshiro/issues/1096), which settles the shapes. [devices.md](./devices.md) already asks for the Instance facts (server URL, timezone, demo mode, Retention ages) and [plugins.md](./plugins.md) for the Plugin's id on a fetch Alert; both are leaned on here.
+A request list for [Admin API reshaping for the new screens](https://github.com/PhyberApex/kuroshiro/issues/1096), which settles the shapes. [devices.md](./devices.md) already asks for the Instance facts (server URL, timezone, demo mode) and [plugins.md](./plugins.md) for the Plugin's id on a fetch Alert; both are leaned on here.
 
 **To add**
 

@@ -74,7 +74,7 @@ The plate always shows the Device's Current Screen. The column's heading and sen
 | Never polled | the welcome Fallback Screen | "Waiting for {Device}'s first poll" | "{Device} is registered and has not called in yet." |
 
 - **The seal** sits on the plate only while the plate shows the Active Screen's image and the Device is not offline. It stamps (the one authored motion) when a refresh brings a different Active Screen.
-- **The next poll's time** is the Device's last seen time plus its refresh rate. When that moment has passed, sentences say "at its next poll" without a time.
+- **The next poll's time** comes from the server, which works it out from the refresh rate the last poll was actually given, so it is right while the Device sleeps and on a Proxied Device. When that moment has passed, sentences say "at its next poll" without a time.
 - The plate's image has an accessible name: "On {Device}: {heading}".
 - An empty Device shows the no-screen Fallback Screen, not welcome as the approved screen drew it. Welcome is served only in the setup response, so it appears only for a Device that never polled.
 
@@ -294,7 +294,7 @@ The form ends with the primary button, "Cancel" (back to the Screens view) and t
 | Row | Control | Notes |
 |---|---|---|
 | Reported version | the version in mono | "Not reported yet" until the first poll. |
-| Target Firmware | select, "None" then "{version} · official" or "{version} · custom · {label}", and the button "Update now" | Only Firmware that fits the Device Model and is not deprecated is listed, plus the assigned one. Under the row: "Only Firmware that fits {Device Model} is listed." Choosing saves the target and pushes nothing. "Update now" queues the push; until the next poll delivers it the row reads "Goes out at the next poll, around {hh:mm}" with the loading mark and the button is disabled. On a mirrored Device the row reads "Off while Mirroring"; on a Proxied Device "Set by TRMNL". |
+| Target Firmware | select, "None" then "{version} · official" or "{version} · custom · {label}", and the button "Update now" | Only Firmware that fits the Device Model and is not deprecated is listed, plus the assigned one. Under the row: "Only Firmware that fits {Device Model} is listed." Choosing saves the target and pushes nothing. "None" clears the target; while a push is pending "None" is disabled, since taking a pending push back is [Cancel a pending Firmware push](https://github.com/PhyberApex/kuroshiro/issues/1086). "Update now" queues the push; until the next poll delivers it the row reads "Goes out at the next poll, around {hh:mm}" with the loading mark and the button is disabled. On a mirrored Device the row reads "Off while Mirroring"; on a Proxied Device "Set by TRMNL". |
 
 Under the section: "The Firmware library lives under Instance." (a link) and the state of Firmware Auto-Update: "Firmware Auto-Update is off, so {Device} only updates when you press “Update now”." or "Firmware Auto-Update is on: {Device} is given each new official Firmware by itself."
 
@@ -461,7 +461,7 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 5. Editing a Screen: its name, an External link's URL and fetch choice, an HTML Screen's markup, and replacing a File Screen's image.
 6. Converting an uploaded image for a preview without saving it, for "Replace file".
 7. Device Logs: newest first, a page size and a cursor, a level filter, a search over the message, the total and the matching count, and the level, message, source and status as fields instead of a raw string the UI has to parse.
-8. Instance facts for the UI: the address the server hands to Devices, the server's timezone name, whether demo mode is on, and the Retention ages.
+8. Instance facts for the UI: the address the server hands to Devices, the server's timezone name, and whether demo mode is on. The Retention ages are Instance Settings ([instance.md](./instance.md)), not Instance facts.
 9. The custom sleep image of [#1064](https://github.com/PhyberApex/kuroshiro/issues/1064).
 
 **To change**

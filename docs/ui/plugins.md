@@ -129,7 +129,7 @@ The page is one form. A Plugin's template is not valid halfway through, and its 
 
 **The save bar** ([render][plugin-unsaved]) appears at the bottom of the window as soon as anything in the form differs from what is saved, and stays there while the page scrolls. Left: "**Unsaved changes** to the {template, Data Sources and Field Values}. The preview already shows them." Right: "Discard changes" (quiet) and "Save Plugin" (primary).
 
-- "Save Plugin" saves everything at once; the server then fetches and renders the Plugin again for every Device it is on. The bar leaves and a line under the facts reads "Saved at {hh:mm}. Fetched and rendered again for {Devices}." until the page is left ([render][plugin-saved]). For a Plugin on no Device: "Saved at {hh:mm}."
+- "Save Plugin" saves everything at once; the server then fetches and renders the Plugin again for every Device it is on, in the background, so the save does not wait for a Data Source. The bar leaves and a line under the facts reads "Saved at {hh:mm}. Fetching and rendering again for {Devices}." until the page is left ([render][plugin-saved]). For a Plugin on no Device: "Saved at {hh:mm}."
 - When something is invalid, nothing is sent. The bar reads "{n} things to fix before this can be saved." with "Show the first", which opens the row or tucked section holding it and focuses the field. The rules are named with each field below.
 - A save the server refuses keeps everything the admin entered. The bar reads "Not saved. {reason}" with "Try again".
 - "Discard changes" puts every field back and asks nothing, since nothing saved is lost.
@@ -153,7 +153,7 @@ The page is one form. A Plugin's template is not valid halfway through, and its 
 | An import that brought a transform | The line above, then: "It brings a transform: JavaScript that runs on this server at every fetch. Read it under Data Sources." |
 | Building | "Created. It shows its name until you write its template." |
 | Duplicating | "A copy of {Plugin}. It is not on a Device yet." |
-| Saving, or applying a Recipe Update Check | "Saved at {hh:mm}. Fetched and rendered again for {Devices}." or "Applied {n} Update Items from the Recipe {name}." |
+| Saving, or applying a Recipe Update Check | "Saved at {hh:mm}. Fetching and rendering again for {Devices}." or "Applied {n} Update Items from the Recipe {name}." |
 
 **Problems** follow, one line each between 1 px rules, each with a link at the right that goes to where it is fixed:
 
@@ -180,7 +180,7 @@ What the page hands the editor:
 
 For a Poll-kind Plugin. A heading "Data Sources" with the action "Add a Data Source" (plain) on its line.
 
-**The refresh interval** is the first row: "Fetch" · "every {number} {minutes|hours}" · under it "The refresh interval: how often Kuroshiro fetches every Data Source and renders {Plugin} again. A Device shows the newest render at its own next poll." At least 1 minute, at most 24 hours, a whole number: "Enter between 1 minute and 24 hours."
+**The refresh interval** is the first row: "Fetch" · "every {number} {minutes|hours}" · under it "The refresh interval: how often Kuroshiro fetches every Data Source and renders {Plugin} again. A Device shows the newest render at its own next poll." At least 1 minute, at most 24 hours, a whole number: "Enter between 1 minute and 24 hours." A longer interval that came with a Recipe is shown and kept as imported: the limit applies only to a value the admin enters, and a save sends the interval only when it was changed.
 
 **One row per Data Source**, in the Plugin's order, opening in place like a Screen row; opening another closes it. A row, left to right:
 
@@ -451,7 +451,7 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 5. Building a Plugin with only a name and a Plugin Kind, with a starter template that shows the name.
 6. Options on a Plugin Field of type select (no column holds them today), and its help text on the read.
 7. In an export: the Plugin Kind, the Merge Strategy and the Stream Limit, so a Webhook-kind Plugin comes back as one.
-8. A worded reason on every import refusal. Today nearly all of them are a server error with no reason: a bad id, a Recipe TRMNL does not have, OAuth, a pushed strategy, a file or repository without a Plugin, TRMNL or GitHub not answering.
+8. A worded reason on every import refusal. Today nearly all of them are a server error with no reason: a bad id, a Recipe TRMNL does not have, OAuth, a pushed strategy, a file or repository without a Plugin, TRMNL or GitHub not answering. A Template that cannot be parsed is not a refusal: the Plugin is imported and the editor shows the problem, so a Recipe that works on TRMNL can be brought in and fixed.
 
 **To change**
 
@@ -505,7 +505,7 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 **Left undecided**
 
 - **The starter template** of a built Plugin. [The Plugin template editor](https://github.com/PhyberApex/kuroshiro/issues/1095) owns what a template looks like; this spec only says it shows the Plugin's name.
-- **A Recipe whose refresh interval is longer than 24 hours.** It is shown and kept as imported; whether the limit should rise is the API ticket's call.
+- **A Recipe whose refresh interval is longer than 24 hours.** It is shown and kept as imported, and saving the rest of the Plugin leaves it alone. The limit does not rise.
 - **A size limit for a Webhook POST.** None is set in the code; the framework's default of about 100 kB probably applies. The page states no limit.
 - **Secrets in an export.** A header written out in a Data Source is exported as written. The page says so and steers secrets into password Plugin Fields, which are not exported; it does not warn at the moment of exporting.
 - **Whether a Mashup slot should use the template of its own size.** Today a slot always renders the `full` template. It belongs to the template editor's ticket, which decides the layouts a Plugin has.
