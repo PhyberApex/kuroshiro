@@ -1,4 +1,5 @@
 import { ArrayUnique, IsArray, IsIn, IsString } from 'class-validator'
+import { MASHUP_LAYOUT_IDS } from '../constants/layouts.js'
 
 export class CreateMashupDto {
   @IsString()
@@ -8,7 +9,7 @@ export class CreateMashupDto {
   filename: string
 
   @IsString()
-  @IsIn(['1Lx1R', '1Tx1B', '1Lx2R', '2Lx1R', '2Tx1B', '1Tx2B', '2x2'])
+  @IsIn(MASHUP_LAYOUT_IDS)
   layout: string
 
   @IsArray()

@@ -99,7 +99,6 @@ const KNOWN_EXCEPTIONS: string[] = [
   'ScheduleController.update',
   'ScreensController.add',
   'ScreensController.getAll',
-  'ScreensController.getByDevice',
   'ScreensController.reorder',
 ]
 

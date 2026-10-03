@@ -3,9 +3,9 @@ import type { Screen } from '../screens/screens.entity.js'
 import type { Device } from './devices.entity.js'
 import { batteryPercentFromVoltage, SPECIAL_FUNCTIONS } from 'kuroshiro-shared'
 import { toImagePath, toIsoString, toIsoStringOrNull } from '../utils/readModel.js'
+import { nextPollOf } from './next-poll.js'
 import { isDeviceAsleep, nextSleepEnd } from './sleep-mode.js'
 
-const MS_PER_SECOND = 1000
 const WELCOME_IMAGE_PATH = '/screens/welcome.png'
 
 export interface DeviceSummaryFacts {
@@ -84,12 +84,6 @@ function toCurrentScreen(device: Device, servedScreen: DeviceSummaryFacts['serve
     : toFallbackScreen(image, 'noScreen', 'noScreens', null)
 }
 
-function toNextPollAt(device: Device): string | null {
-  if (!device.lastSeen || !device.lastServedAt || device.lastServedRefreshRate == null)
-    return null
-  return toIsoString(new Date(device.lastServedAt.getTime() + device.lastServedRefreshRate * MS_PER_SECOND))
-}
-
 function toClockTime(secondsOfDay: number | null | undefined): string | null {
   if (secondsOfDay == null)
     return null
@@ -131,7 +125,7 @@ export function toDeviceSummary(device: Device, facts: DeviceSummaryFacts): Devi
       ? { name: deviceModel.name, label: deviceModel.label, width: deviceModel.width, height: deviceModel.height, deprecated: deviceModel.deprecated }
       : null,
     lastSeenAt: toIsoStringOrNull(device.lastSeen),
-    nextPollAt: toNextPollAt(device),
+    nextPollAt: toIsoStringOrNull(nextPollOf(device)),
     batteryPercent: batteryPercentFromVoltage(device.batteryVoltage) ?? null,
     rssi: toFiniteNumberOrNull(device.rssi),
     isMirrored: !!device.mirrorEnabled,

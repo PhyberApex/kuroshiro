@@ -17,7 +17,7 @@ import { FirmwareService } from '../firmware/firmware.service.js'
 import { PluginDataResolverService } from '../plugins/services/plugin-data-resolver.service.js'
 import { PluginRendererService } from '../plugins/services/plugin-renderer.service.js'
 import { PluginTemplateContextService } from '../plugins/services/plugin-template-context.service.js'
-import { isScheduleEligible } from '../schedule/schedule-eligibility.js'
+import { nextEligibleScreen } from '../schedule/rotation.js'
 import { Screen } from '../screens/screens.entity.js'
 import { fileExists } from '../utils/fileExists.js'
 import { getErrorMessage } from '../utils/getErrorMessage.js'
@@ -201,7 +201,7 @@ export class DeviceDisplayService {
       relations: { schedule: true },
       order: { order: 'ASC' },
     })
-    const nextScreen = this.nextEligibleScreen(screens, new Date())
+    const nextScreen = nextEligibleScreen(screens, new Date())
     if (screens.length > 0)
       await this.screenRepository.update({ device: { id: device.id } }, { isActive: false })
     if (!nextScreen) {
@@ -322,23 +322,6 @@ export class DeviceDisplayService {
     }
     device.updateFirmware = false
     return { firmwareUrl: this.firmwareService.fileUrl(target.id), updateFirmware: true }
-  }
-
-  /**
-   * Scans forward by `order` from the Active Screen, wrapping past the end, and
-   * returns the first Screen whose Schedule currently lets it show. Scanning from
-   * the start of the Rotation when no Screen is active is what lets a Device that
-   * had nothing eligible pick the Rotation back up on a later poll.
-   */
-  private nextEligibleScreen(screens: Screen[], now: Date): Screen | null {
-    const activeIndex = screens.findIndex(screen => screen.isActive)
-    const startIndex = activeIndex === -1 ? 0 : activeIndex + 1
-    for (let offset = 0; offset < screens.length; offset++) {
-      const candidate = screens[(startIndex + offset) % screens.length]
-      if (isScheduleEligible(candidate.schedule, now))
-        return candidate
-    }
-    return null
   }
 
   /**
