@@ -22,6 +22,7 @@ export const API_ERROR_CODES = [
   'image-unreadable',
   'order-not-a-permutation',
   'demo-mode',
+  'upload-too-large',
 ] as const
 
 export type ApiErrorCode = typeof API_ERROR_CODES[number]

@@ -1,7 +1,9 @@
 import type { INestApplication, ModuleMetadata } from '@nestjs/common'
+import type { NestExpressApplication } from '@nestjs/platform-express'
 import type { AddressInfo } from 'node:net'
 import { Test } from '@nestjs/testing'
 import { registerErrorEnvelope } from '../errors/register-error-envelope.js'
+import { registerBodyParsers } from '../uploads/register-body-parsers.js'
 
 export interface HttpTestApp {
   app: INestApplication
@@ -16,7 +18,8 @@ export interface HttpTestApp {
  */
 export async function createHttpTestApp(metadata: ModuleMetadata): Promise<HttpTestApp> {
   const moduleRef = await Test.createTestingModule(metadata).compile()
-  const app = moduleRef.createNestApplication({ logger: false })
+  const app = moduleRef.createNestApplication<NestExpressApplication>({ logger: false, bodyParser: false })
+  registerBodyParsers(app)
   app.setGlobalPrefix('api', { exclude: ['metrics'] })
   registerErrorEnvelope(app)
   await app.listen(0)

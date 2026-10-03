@@ -77,7 +77,7 @@ describe('firmwareService', () => {
     })
 
     it('rejects a file over the size limit', async () => {
-      await expect(service.upload({ ...file, size: 999_999_999 }, { version: '1.0.0' })).rejects.toThrow(BadRequestException)
+      await expect(service.upload({ ...file, size: 999_999_999 }, { version: '1.0.0' })).rejects.toMatchObject({ code: 'upload-too-large', details: { limitBytes: 8 * 1024 * 1024 } })
       expect(repo.save).not.toHaveBeenCalled()
     })
 

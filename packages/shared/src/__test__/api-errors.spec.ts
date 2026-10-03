@@ -26,6 +26,7 @@ const wording: Record<ApiErrorCode, string> = {
   'image-unreadable': 'That file is not an image Kuroshiro can read.',
   'order-not-a-permutation': 'The Order has to name every Screen once.',
   'demo-mode': 'Not available in demo mode.',
+  'upload-too-large': 'That file is larger than this Instance accepts.',
 }
 
 function wordingBySwitch(code: ApiErrorCode): string {
@@ -44,6 +45,7 @@ function wordingBySwitch(code: ApiErrorCode): string {
     case 'image-unreadable':
     case 'order-not-a-permutation':
     case 'demo-mode':
+    case 'upload-too-large':
     case 'conflict':
     case 'payload-too-large':
     case 'unprocessable':

@@ -1,6 +1,7 @@
 import type { ScreenRead } from 'kuroshiro-shared'
 import { Body, Controller, Delete, HttpCode, HttpStatus, Param, Post, UploadedFile, UseInterceptors } from '@nestjs/common'
-import { FileInterceptor } from '@nestjs/platform-express'
+import { LimitedFileInterceptor } from '../uploads/limited-file-interceptor.js'
+import { UPLOAD_LIMITS } from '../uploads/upload-limits.js'
 import { CreateScreenDto } from './dto/create-screen.dto.js'
 import { ScreenReadsService } from './screen-reads.service.js'
 import { ScreensService } from './screens.service.js'
@@ -10,7 +11,7 @@ export class ScreensController {
   constructor(private readonly screensService: ScreensService, private readonly screenReads: ScreenReadsService) {}
 
   @Post()
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(LimitedFileInterceptor('file', UPLOAD_LIMITS.imageUploadBytes))
   async add(@Body() body: CreateScreenDto, @UploadedFile() file?: Express.Multer.File): Promise<ScreenRead> {
     return this.screenReads.forScreen(await this.screensService.add(body, file))
   }

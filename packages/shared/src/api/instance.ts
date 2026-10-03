@@ -40,3 +40,24 @@ export interface InstanceSettingValue<T = number> {
 export interface InstanceSettingsResponse extends Record<SettingKey, InstanceSettingValue>, Record<BooleanSettingKey, InstanceSettingValue<boolean>> {}
 
 export type UpdateInstanceSettingsInput = Partial<Record<SettingKey, number | null>> & Partial<Record<BooleanSettingKey, boolean | null>>
+
+export interface InstanceLimits {
+  imageUploadBytes: number
+  firmwareUploadBytes: number
+  archiveUploadBytes: number
+  pluginImportBytes: number
+  webhookBodyBytes: number
+}
+
+export interface InstanceFacts {
+  version: string
+  serverUrl: string
+  serverUrlIsLoopback: boolean
+  timezone: string
+  demoMode: boolean
+  notifications: {
+    configured: boolean
+    appriseUrl: string | null
+  }
+  limits: InstanceLimits
+}
