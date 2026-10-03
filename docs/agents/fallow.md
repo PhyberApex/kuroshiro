@@ -24,6 +24,6 @@ Rules for touching the baselines:
 
 ## Known false positives already handled in `.fallowrc.jsonc`
 
-- `pg` (TypeORM loads the driver reflectively) and `jiti` (ESLint loads `packages/ui/eslint.config.ts` through it) are in `ignoreDependencies`.
+- `pg` (TypeORM loads the driver reflectively) and `jiti` (ESLint loads `packages/ui-next/eslint.config.ts` through it) are in `ignoreDependencies`.
 - `packages/api/src/devices/display.ts` and `displayScreen.ts` are wire-format classes for the TRMNL firmware; `unused-class-members` is off for them.
 - Migrations and the generated TRMNL snapshot are excluded from duplication and health scoring.

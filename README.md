@@ -186,7 +186,8 @@ For local hacking or deployment inspiration, check out [`docker-compose.yml`](./
 ## 📦 Packages
 
 - [`packages/api`](./packages/api) — The NestJS backend
-- [`packages/ui`](./packages/ui) — The Vue 3 + Vuetify frontend
+- [`packages/ui-next`](./packages/ui-next) — The Vue 3 + Reka UI frontend the image serves
+- [`packages/ui`](./packages/ui) — The previous Vue 3 + Vuetify frontend, kept as a read-only reference outside the workspace
 - [`packages/shared`](./packages/shared) — Code that is byte-identical in the API and UI
 
 ---
@@ -315,10 +316,6 @@ We love contributions! Jump in:
 - Run all tests before submitting a PR
 - `pnpm fallow:ci` runs in CI and fails on new dead code, duplication, or complexity hotspots; see [docs/agents/fallow.md](docs/agents/fallow.md) for how the baselines work
 - **We use [release-please](https://github.com/googleapis/release-please)!** Use [Conventional Commits](https://www.conventionalcommits.org/) for your commit messages to enable automatic versioning and changelogs.
-
-### UI responsive support
-
-The dashboard (`packages/ui`) supports viewports down to **375px** wide. CI drives every route in a real Chromium browser at 375 / 768 / 1280px (`pnpm --filter ./packages/ui test:e2e`) and fails on horizontal overflow, so if you add a toolbar, card header, or dialog, check it at 375px before opening a PR.
 
 ### Contributors
 
