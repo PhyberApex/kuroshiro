@@ -1,14 +1,12 @@
 import type { FindOptionsRelations } from 'typeorm'
 import type { MashupSlot } from '../mashup/entities/mashup-slot.entity.js'
-import type { AssignPluginToDeviceDto } from './dto/assign-plugin-to-device.dto.js'
 import type { CreatePluginDto } from './dto/create-plugin.dto.js'
 import type { PluginDataSourceDto } from './dto/plugin-data-source.dto.js'
 import type { PluginFieldDto } from './dto/plugin-field.dto.js'
 import type { PluginTemplateDto } from './dto/plugin-template.dto.js'
 import type { PreviewPluginDto } from './dto/preview-plugin.dto.js'
-import type { UpdateDeviceAssignmentDto } from './dto/update-device-assignment.dto.js'
 import type { UpdatePluginDto } from './dto/update-plugin.dto.js'
-import type { DevicePluginView, MergeStrategy, PluginKind } from './entities/plugin.entity.js'
+import type { MergeStrategy, PluginKind } from './entities/plugin.entity.js'
 import type { PluginKindFields } from './plugin-kind-fields.js'
 import type { PluginWithFieldValues } from './services/plugin-field-values.service.js'
 import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common'
@@ -16,7 +14,6 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Screen } from '../screens/screens.entity.js'
 import generateApikey from '../utils/generateApikey.js'
-import { DevicePlugin } from './entities/device-plugin.entity.js'
 import { PluginDataSource } from './entities/plugin-data-source.entity.js'
 import { PluginField } from './entities/plugin-field.entity.js'
 import { PluginTemplate } from './entities/plugin-template.entity.js'
@@ -47,8 +44,6 @@ export class PluginsService implements OnModuleInit {
   constructor(
     @InjectRepository(Plugin)
     private readonly pluginRepository: Repository<Plugin>,
-    @InjectRepository(DevicePlugin)
-    private readonly devicePluginRepository: Repository<DevicePlugin>,
     @InjectRepository(Screen)
     private readonly screenRepository: Repository<Screen>,
     @InjectRepository(PluginDataSource)
@@ -110,89 +105,9 @@ export class PluginsService implements OnModuleInit {
     return plugin && this.withFieldValues(plugin)
   }
 
-  async findByDevice(deviceId: string): Promise<PluginWithFieldValues<DevicePluginView>[]> {
-    const devicePlugins = await this.devicePluginRepository.find({
-      where: { device: { id: deviceId } },
-      relations: { plugin: { dataSources: true, templates: true, fields: true } },
-      order: { order: 'ASC' },
-    })
-
-    return this.fieldValues.attach(devicePlugins.map(dp => ({
-      ...dp.plugin,
-      _devicePluginId: dp.id,
-      _isActive: dp.isActive,
-      _order: dp.order,
-    })))
-  }
-
   private async withFieldValues(plugin: Plugin): Promise<PluginWithFieldValues> {
     const [withValues] = await this.fieldValues.attach([plugin])
     return withValues
-  }
-
-  async assignToDevice(pluginId: string, assignData: AssignPluginToDeviceDto): Promise<DevicePlugin> {
-    const existing = await this.devicePluginRepository.findOne({
-      where: { plugin: { id: pluginId }, device: { id: assignData.deviceId } },
-    })
-    if (existing) {
-      return existing
-    }
-
-    const devicePlugin = this.devicePluginRepository.create({
-      plugin: { id: pluginId },
-      device: { id: assignData.deviceId },
-      isActive: assignData.isActive ?? true,
-      order: assignData.order ?? 0,
-    })
-    const saved = await this.devicePluginRepository.save(devicePlugin)
-
-    // Create a Screen entity for this plugin assignment
-    const maxOrder = await this.screenRepository.maximum('order', { device: { id: assignData.deviceId } }) || 0
-    const screen = this.screenRepository.create({
-      type: 'plugin',
-      device: { id: assignData.deviceId },
-      plugin: { id: pluginId },
-      devicePluginId: saved.id,
-      isActive: assignData.isActive ?? true,
-      order: maxOrder + 1,
-      generatedAt: new Date(),
-      fetchManual: false,
-    })
-    await this.screenRepository.save(screen)
-
-    return saved
-  }
-
-  async unassignFromDevice(pluginId: string, deviceId: string): Promise<boolean> {
-    const devicePlugin = await this.devicePluginRepository.findOne({
-      where: { plugin: { id: pluginId }, device: { id: deviceId } },
-    })
-    if (!devicePlugin)
-      return false
-
-    // Delete associated Screen
-    await this.screenRepository.delete({ devicePluginId: devicePlugin.id })
-
-    await this.devicePluginRepository.remove(devicePlugin)
-    return true
-  }
-
-  async updateDeviceAssignment(devicePluginId: string, updates: UpdateDeviceAssignmentDto): Promise<DevicePlugin | null> {
-    const devicePlugin = await this.devicePluginRepository.findOneBy({ id: devicePluginId })
-    if (!devicePlugin)
-      return null
-    Object.assign(devicePlugin, updates)
-    const saved = await this.devicePluginRepository.save(devicePlugin)
-
-    // Update associated Screen's isActive state
-    if (updates.isActive !== undefined) {
-      await this.screenRepository.update(
-        { devicePluginId },
-        { isActive: updates.isActive },
-      )
-    }
-
-    return saved
   }
 
   async create(pluginData: CreatePluginDto): Promise<PluginWithFieldValues> {

@@ -1,57 +1,23 @@
-import type { CreateMashupDto } from '../dto/create-mashup.dto.js'
+import type { ScreenReadsService } from '../../screens/screen-reads.service.js'
 import type { UpdateMashupDto } from '../dto/update-mashup.dto.js'
 import type { MashupService } from '../mashup.service.js'
-import { BadRequestException, NotFoundException } from '@nestjs/common'
+import { NotFoundException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { asService } from '../../test/mockService.js'
 import { MashupController } from '../mashup.controller.js'
 
 describe('mashupController', () => {
   let controller: MashupController
-  let mockService: { create: ReturnType<typeof vi.fn>, update: ReturnType<typeof vi.fn>, delete: ReturnType<typeof vi.fn>, getConfiguration: ReturnType<typeof vi.fn>, getLayouts: ReturnType<typeof vi.fn> }
+  let mockService: { update: ReturnType<typeof vi.fn>, getConfiguration: ReturnType<typeof vi.fn>, getLayouts: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     mockService = {
-      create: vi.fn(),
       update: vi.fn(),
-      delete: vi.fn(),
       getConfiguration: vi.fn(),
       getLayouts: vi.fn(),
     }
 
-    controller = new MashupController(asService<MashupService>(mockService))
-  })
-
-  describe('create', () => {
-    it('should create a mashup', async () => {
-      const dto: CreateMashupDto = {
-        deviceId: 'device-1',
-        filename: 'Dashboard',
-        layout: '2x2',
-        pluginIds: ['p1', 'p2', 'p3', 'p4'],
-      }
-
-      const screen = { id: 'screen-1', type: 'mashup', filename: 'Dashboard' }
-      mockService.create = vi.fn().mockResolvedValue(screen)
-
-      const result = await controller.create(dto)
-
-      expect(mockService.create).toHaveBeenCalledWith(dto)
-      expect(result).toBe(screen)
-    })
-
-    it('should throw BadRequestException on validation error', async () => {
-      const dto: CreateMashupDto = {
-        deviceId: 'device-1',
-        filename: 'Dashboard',
-        layout: '2x2',
-        pluginIds: ['p1', 'p2'], // wrong count
-      }
-
-      mockService.create = vi.fn().mockRejectedValue(new BadRequestException('2x2 requires 4 plugins'))
-
-      await expect(controller.create(dto)).rejects.toThrow(BadRequestException)
-    })
+    controller = new MashupController(asService<MashupService>(mockService), asService<ScreenReadsService>({}))
   })
 
   describe('update', () => {
@@ -75,22 +41,6 @@ describe('mashupController', () => {
       mockService.update = vi.fn().mockRejectedValue(new NotFoundException('Mashup screen not found'))
 
       await expect(controller.update('nonexistent', {})).rejects.toThrow(NotFoundException)
-    })
-  })
-
-  describe('delete', () => {
-    it('should delete a mashup', async () => {
-      mockService.delete = vi.fn().mockResolvedValue(undefined)
-
-      await controller.delete('screen-1')
-
-      expect(mockService.delete).toHaveBeenCalledWith('screen-1')
-    })
-
-    it('should throw NotFoundException if screen not found', async () => {
-      mockService.delete = vi.fn().mockRejectedValue(new NotFoundException('Mashup screen not found'))
-
-      await expect(controller.delete('nonexistent')).rejects.toThrow(NotFoundException)
     })
   })
 

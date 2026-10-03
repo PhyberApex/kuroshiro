@@ -80,9 +80,3 @@ export class Plugin {
   @OneToMany('PluginField', 'plugin')
   fields: PluginField[]
 }
-
-export type DevicePluginView = Plugin & {
-  _devicePluginId: string
-  _isActive: boolean
-  _order: number
-}

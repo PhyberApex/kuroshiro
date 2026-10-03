@@ -1,6 +1,5 @@
 import type { Screen } from '../../screens/screens.entity.js'
 import type { MockPluginDataFetcherService, MockPluginRenderCacheService, MockPluginRendererService, MockPluginTransformService } from '../../test/mockPluginCollaborators.js'
-import type { DevicePlugin } from '../entities/device-plugin.entity.js'
 import type { PluginDataSource } from '../entities/plugin-data-source.entity.js'
 import type { PluginField } from '../entities/plugin-field.entity.js'
 import type { PluginTemplate } from '../entities/plugin-template.entity.js'
@@ -14,7 +13,7 @@ import type { PluginSchedulerService } from '../services/plugin-scheduler.servic
 import type { PluginTransformService } from '../services/plugin-transform.service.js'
 import { plainToInstance } from 'class-transformer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeDevicePlugin, makePlugin, makePluginDataSource, makePluginField, makePluginTemplate, makeScreen } from '../../test/fixtures.js'
+import { makeDevicePlugin, makePlugin, makePluginDataSource, makePluginField, makePluginTemplate } from '../../test/fixtures.js'
 import { createMockPluginDataFetcherService, createMockPluginFieldValuesService, createMockPluginRenderCacheService, createMockPluginRendererService, createMockPluginTransformService, createPluginTemplateContextService } from '../../test/mockPluginCollaborators.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
 import { asService, injectPrivate } from '../../test/mockService.js'
@@ -25,7 +24,6 @@ import { PluginDataResolverService } from '../services/plugin-data-resolver.serv
 describe('pluginsService', () => {
   let service: PluginsService
   let pluginRepo: ReturnType<typeof createMockRepository<Plugin>>
-  let devicePluginRepo: ReturnType<typeof createMockRepository<DevicePlugin>>
   let screenRepo: ReturnType<typeof createMockRepository<Screen>>
   let dataSourceRepo: ReturnType<typeof createMockRepository<PluginDataSource>>
   let templateRepo: ReturnType<typeof createMockRepository<PluginTemplate>>
@@ -40,7 +38,6 @@ describe('pluginsService', () => {
 
   beforeEach(() => {
     pluginRepo = createMockRepository<Plugin>()
-    devicePluginRepo = createMockRepository<DevicePlugin>()
     screenRepo = createMockRepository<Screen>()
     dataSourceRepo = createMockRepository<PluginDataSource>()
     templateRepo = createMockRepository<PluginTemplate>()
@@ -60,7 +57,6 @@ describe('pluginsService', () => {
 
     service = new PluginsService(
       asRepository(pluginRepo),
-      asRepository(devicePluginRepo),
       asRepository(screenRepo),
       asRepository(dataSourceRepo),
       asRepository(templateRepo),
@@ -102,24 +98,6 @@ describe('pluginsService', () => {
       relations: { dataSources: true, templates: true, fields: true, deviceAssignments: { device: true } },
     })
     expect(result).toEqual({ ...basePlugin, fieldValues: {}, needsValues: false })
-  })
-
-  it('findByDevice returns plugins for a specific device', async () => {
-    const devicePlugins = [makeDevicePlugin({
-      id: 'dp-1',
-      isActive: true,
-      order: 1,
-      plugin: basePlugin,
-    })]
-    devicePluginRepo.find.mockResolvedValue(devicePlugins)
-    const result = await service.findByDevice('device-1')
-    expect(devicePluginRepo.find).toHaveBeenCalledWith({
-      where: { device: { id: 'device-1' } },
-      relations: { plugin: { dataSources: true, templates: true, fields: true } },
-      order: { order: 'ASC' },
-    })
-    expect(result).toHaveLength(1)
-    expect(result[0]).toMatchObject(basePlugin)
   })
 
   it('create creates and saves a new plugin', async () => {
@@ -404,98 +382,6 @@ describe('pluginsService', () => {
 
     await expect(service.create(pluginData)).rejects.toThrow('A literal-mode Data Source cannot have a URL')
     expect(pluginRepo.save).not.toHaveBeenCalled()
-  })
-
-  it('assignToDevice creates device plugin and screen', async () => {
-    const devicePlugin = makeDevicePlugin({ id: 'dp-1', isActive: true, order: 0 })
-    devicePluginRepo.findOne.mockResolvedValue(null)
-    devicePluginRepo.create.mockReturnValue(devicePlugin)
-    devicePluginRepo.save.mockResolvedValue(devicePlugin)
-    screenRepo.maximum.mockResolvedValue(5)
-    screenRepo.create.mockReturnValue(makeScreen())
-    screenRepo.save.mockResolvedValue(makeScreen())
-
-    const result = await service.assignToDevice('plugin-1', {
-      deviceId: 'device-1',
-      isActive: true,
-      order: 1,
-    })
-
-    expect(devicePluginRepo.findOne).toHaveBeenCalledWith({
-      where: { plugin: { id: 'plugin-1' }, device: { id: 'device-1' } },
-    })
-    expect(devicePluginRepo.create).toHaveBeenCalled()
-    expect(devicePluginRepo.save).toHaveBeenCalled()
-    expect(screenRepo.create).toHaveBeenCalledWith(expect.objectContaining({ type: 'plugin' }))
-    expect(screenRepo.save).toHaveBeenCalled()
-    expect(result).toBe(devicePlugin)
-  })
-
-  it('assignToDevice returns the existing assignment without creating a duplicate when already assigned', async () => {
-    const existingDevicePlugin = makeDevicePlugin({ id: 'dp-1', isActive: true, order: 0 })
-    devicePluginRepo.findOne.mockResolvedValue(existingDevicePlugin)
-
-    const result = await service.assignToDevice('plugin-1', {
-      deviceId: 'device-1',
-      isActive: true,
-      order: 1,
-    })
-
-    expect(devicePluginRepo.findOne).toHaveBeenCalledWith({
-      where: { plugin: { id: 'plugin-1' }, device: { id: 'device-1' } },
-    })
-    expect(devicePluginRepo.create).not.toHaveBeenCalled()
-    expect(devicePluginRepo.save).not.toHaveBeenCalled()
-    expect(screenRepo.create).not.toHaveBeenCalled()
-    expect(screenRepo.save).not.toHaveBeenCalled()
-    expect(result).toBe(existingDevicePlugin)
-  })
-
-  it('unassignFromDevice removes device plugin and screen', async () => {
-    const devicePlugin = makeDevicePlugin({ id: 'dp-1' })
-    devicePluginRepo.findOne.mockResolvedValue(devicePlugin)
-    devicePluginRepo.remove.mockResolvedValue(devicePlugin)
-    screenRepo.delete = vi.fn().mockResolvedValue(undefined)
-
-    const result = await service.unassignFromDevice('plugin-1', 'device-1')
-
-    expect(devicePluginRepo.findOne).toHaveBeenCalled()
-    expect(screenRepo.delete).toHaveBeenCalledWith({ devicePluginId: 'dp-1' })
-    expect(devicePluginRepo.remove).toHaveBeenCalled()
-    expect(result).toBe(true)
-  })
-
-  it('unassignFromDevice returns false if not found', async () => {
-    devicePluginRepo.findOne.mockResolvedValue(null)
-
-    const result = await service.unassignFromDevice('plugin-1', 'device-1')
-
-    expect(result).toBe(false)
-  })
-
-  it('updateDeviceAssignment updates device plugin and screen', async () => {
-    const devicePlugin = makeDevicePlugin({ id: 'dp-1', isActive: true })
-    const updated = { ...devicePlugin, isActive: false }
-    devicePluginRepo.findOneBy.mockResolvedValue(devicePlugin)
-    devicePluginRepo.save.mockResolvedValue(updated)
-    screenRepo.update = vi.fn().mockResolvedValue(undefined)
-
-    const result = await service.updateDeviceAssignment('dp-1', { isActive: false })
-
-    expect(devicePluginRepo.save).toHaveBeenCalled()
-    expect(screenRepo.update).toHaveBeenCalledWith(
-      { devicePluginId: 'dp-1' },
-      { isActive: false },
-    )
-    expect(result).toBe(updated)
-  })
-
-  it('updateDeviceAssignment returns null if not found', async () => {
-    devicePluginRepo.findOneBy.mockResolvedValue(null)
-
-    const result = await service.updateDeviceAssignment('dp-1', { isActive: false })
-
-    expect(result).toBeNull()
   })
 
   it('update creates new data sources if none exist', async () => {
