@@ -44,12 +44,16 @@ export class PluginFieldValuesService {
     return (await this.storedByPlugin([pluginId])).get(pluginId)!
   }
 
-  async resolveFor(pluginId: string): Promise<Record<string, string>> {
+  /** What a render of the Plugin sees. `unsaved` lays writes that have not been saved over the stored values, with the same clearing rule as `write`. */
+  async resolveFor(pluginId: string, unsaved: FieldValueWrites = {}): Promise<Record<string, string>> {
     const [fields, stored] = await Promise.all([
       this.fieldRepository.find({ where: { plugin: { id: pluginId } } }),
       this.storedFor(pluginId),
     ])
-    return resolveFieldValues(fields, stored)
+    const withUnsaved = Object.fromEntries(
+      Object.entries({ ...stored, ...unsaved }).filter((entry): entry is [string, string] => !!entry[1]),
+    )
+    return resolveFieldValues(fields, withUnsaved)
   }
 
   async attach<T extends Plugin>(plugins: T[]): Promise<PluginWithFieldValues<T>[]> {

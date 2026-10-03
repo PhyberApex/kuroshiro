@@ -339,8 +339,8 @@ export class PluginsService implements OnModuleInit {
       keyname: fieldData.keyname,
       fieldType: fieldData.fieldType || 'string',
       name: fieldData.name,
-      description: fieldData.description,
-      defaultValue: fieldData.defaultValue,
+      description: fieldData.description ?? null,
+      defaultValue: fieldData.defaultValue ?? null,
       options: fieldData.options ?? null,
       required: fieldData.required || false,
       order: fieldData.order || 0,
@@ -710,8 +710,8 @@ export class PluginsService implements OnModuleInit {
   }
 
   async preview({ sources, template, fieldValues, pluginId }: PreviewPluginDto): Promise<{ html: string, data: Record<string, unknown> }> {
-    const savedFieldValues = pluginId ? await this.fieldValues.resolveFor(pluginId) : {}
-    const templateContext = this.templateContext.buildFrom('Preview', { ...savedFieldValues, ...fieldValues }, [])
+    const savedFieldValues = pluginId ? await this.fieldValues.resolveFor(pluginId, fieldValues) : {}
+    const templateContext = this.templateContext.buildFrom('Preview', { ...fieldValues, ...savedFieldValues }, [])
 
     const data = await this.pluginDataResolver.resolveAll(sources || [], templateContext)
     const templateData: Record<string, unknown> = { ...templateContext, ...data }

@@ -171,6 +171,17 @@ describe('field values against a real database', () => {
       expect(unsaved.html).toBe('Paris|Paris|https://api.example.com/Paris/Paris')
     })
 
+    it('previews an unsaved empty value the way a save would render it: with the Plugin Field\'s default', async () => {
+      const plugin = await createWeatherPlugin({
+        fields: [{ keyname: 'city', name: 'City', defaultValue: 'Tokyo' }],
+        fieldValues: { city: 'Berlin' },
+      })
+
+      const { html } = await plugins.preview({ sources: [], template: '[{{ city }}]', pluginId: plugin.id, fieldValues: { city: '' } })
+
+      expect(html).toBe('[Tokyo]')
+    })
+
     it('renders it for a Webhook-kind Plugin, where the Webhook Payload wins a bare-key collision', async () => {
       const created = await plugins.create({
         name: 'Feed',
@@ -229,6 +240,31 @@ describe('field values against a real database', () => {
       expect(await cachedOutput(plugin.id)).toBe('Paris|Paris|https://api.example.com/Paris/Paris')
       expect(updated!.fieldValues.city).toEqual({ value: 'Paris', isSet: true })
       expect(updated!.needsValues).toBe(false)
+    })
+
+    it('leaves the Fetch Failure Streak to the scheduler: a failing fetch on a save does not move it', async () => {
+      const plugin = await createWeatherPlugin({ fieldValues: { city: 'Berlin' } })
+      mockFetch.mockRejectedValue(new Error('down'))
+
+      await plugins.update(plugin.id, { fieldValues: { city: 'Paris' } })
+      const afterSave = await database.getRepository(PluginDataSource).findOneOrFail({ where: { plugin: { id: plugin.id } } })
+      await scheduledTicks.get(plugin.id)!()
+      const afterTick = await database.getRepository(PluginDataSource).findOneOrFail({ where: { plugin: { id: plugin.id } } })
+
+      expect(afterSave.fetchFailureStreak).toBe(0)
+      expect(afterTick.fetchFailureStreak).toBe(1)
+    })
+
+    it('clears a Plugin Field\'s default and help text when an update leaves them out', async () => {
+      const plugin = await createWeatherPlugin({
+        fields: [{ keyname: 'city', name: 'City', description: 'Where you live', defaultValue: 'Tokyo' }],
+      })
+
+      await plugins.update(plugin.id, { fields: [{ keyname: 'city', name: 'City' }] })
+
+      const [field] = (await plugins.findById(plugin.id))!.fields
+      expect(field.description).toBeNull()
+      expect(field.defaultValue).toBeNull()
     })
 
     it('clears a Field Value sent as null or empty, so the default applies again', async () => {

@@ -540,6 +540,11 @@ export class ConfigurationImportService {
         continue
       }
 
+      // An empty value is no value: the Plugin Field's default applies, as on a save.
+      if (!value) {
+        continue
+      }
+
       const existing = await repo.findOne({ where: { field: { id: field.id } } })
       if (value === CONFIGURATION_REDACTION_SENTINEL) {
         if (!existing) {

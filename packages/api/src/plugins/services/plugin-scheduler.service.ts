@@ -24,7 +24,7 @@ export class PluginSchedulerService {
 
     const task = cron.schedule(cronExpression, async () => {
       try {
-        await this.pluginRefresh.refresh(plugin)
+        await this.pluginRefresh.refresh(plugin, { scheduled: true })
       }
       catch (error) {
         this.logger.error(`Error executing plugin ${plugin.id}`, error)
