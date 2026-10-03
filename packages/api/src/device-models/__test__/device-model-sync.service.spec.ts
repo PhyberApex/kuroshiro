@@ -11,6 +11,9 @@ import { TRMNL_MODELS_SNAPSHOT, TRMNL_PALETTES_SNAPSHOT } from '../data/trmnl-sn
 import { DeviceModelSyncService } from '../device-model-sync.service.js'
 
 const mockFetch = stubFetch()
+const { cronMock } = vi.hoisted(() => ({ cronMock: { schedule: vi.fn() } }))
+
+vi.mock('node-cron', () => ({ default: cronMock }))
 
 const paletteA = { id: 'bw', name: 'Black & White (1-bit)', grays: 2, framework_class: 'screen--1bit' }
 const paletteB = { id: 'gray-4', name: '4 Grays (2-bit)', grays: 4, framework_class: 'screen--2bit' }
@@ -64,6 +67,22 @@ describe('deviceModelSyncService', () => {
       expect(modelRepo.insert).toHaveBeenCalledWith([expect.objectContaining({ name: 'v2' })])
       expect(modelRepo.upsert).not.toHaveBeenCalled()
       expect(modelRepo.update).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('onApplicationBootstrap', () => {
+    it('records the sync it runs at start and the one its daily schedule runs', async () => {
+      mockFetch.mockImplementation(async () => jsonResponse(null, { ok: false }))
+      paletteRepo.find.mockResolvedValue([])
+      modelRepo.find.mockResolvedValue([])
+
+      await service.onApplicationBootstrap()
+      await vi.waitFor(() => expect(syncRuns.record).toHaveBeenCalledTimes(1))
+      expect(syncRuns.record).toHaveBeenLastCalledWith('device-models', expect.any(Date), { ok: false, error: expect.any(String) })
+
+      expect(cronMock.schedule).toHaveBeenCalledWith('0 4 * * *', expect.any(Function))
+      cronMock.schedule.mock.calls[0][1]()
+      await vi.waitFor(() => expect(syncRuns.record).toHaveBeenCalledTimes(2))
     })
   })
 

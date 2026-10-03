@@ -10,7 +10,7 @@ import { toIsoStringOrNull } from '../utils/readModel.js'
 type DeviceName = Pick<Device, 'id' | 'name'>
 
 export interface DeviceModelFacts {
-  /** Every Palette that fits the Device Model, in the order DM1 lists them. */
+  /** Every Palette that fits the Device Model, curated ones first, then the custom ones. */
   paletteIds: string[]
   usedBy: DeviceName[]
 }
