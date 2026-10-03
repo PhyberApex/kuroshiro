@@ -17,7 +17,7 @@ export default mergeConfig(viteConfig, defineConfig({
         test: {
           name: 'node',
           environment: 'node',
-          include: ['src/**/*.node.spec.ts'],
+          include: ['src/**/*.node.spec.ts', 'scripts/**/*.node.spec.ts'],
         },
       },
       chromiumProject({
