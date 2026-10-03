@@ -1,10 +1,12 @@
 import type { FallbackSource, InstanceSettingsResponse, SettingKey, UpdateInstanceSettingsInput } from 'kuroshiro-shared'
 import type { Repository } from 'typeorm'
+import type { InstanceSettingsFallbacks } from './instance-settings.mapper.js'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
 import { BOOLEAN_SETTING_KEYS, SETTING_KEYS } from 'kuroshiro-shared'
 import { INSTANCE_SETTINGS_ID, InstanceSettings } from './entities/instance-settings.entity.js'
+import { toInstanceSettingsResponse } from './instance-settings.mapper.js'
 
 interface AlertsEnvConfig {
   lowBatteryPercent: number
@@ -59,30 +61,15 @@ export class InstanceSettingsService {
     return row?.firmwareAutoUpdate ?? false
   }
 
-  async get(): Promise<InstanceSettingsResponse> {
-    const row = await this.loadRow()
+  private fallbacks(): InstanceSettingsFallbacks {
     const alertsConfig = this.alertsConfig()
-    const response = {} as InstanceSettingsResponse
-    for (const key of SETTING_KEYS) {
-      const override = row?.[key] ?? null
-      const fallbackValue = alertsConfig[key]
-      response[key] = {
-        override,
-        value: override ?? fallbackValue,
-        fallbackSource: alertsConfig[SOURCE_KEY[key]] as FallbackSource,
-        fallbackValue,
-      }
-    }
-    for (const key of BOOLEAN_SETTING_KEYS) {
-      const override = row?.[key] ?? null
-      response[key] = {
-        override,
-        value: override ?? false,
-        fallbackSource: 'default',
-        fallbackValue: false,
-      }
-    }
-    return response
+    return Object.fromEntries(SETTING_KEYS.map(key =>
+      [key, { value: alertsConfig[key], source: alertsConfig[SOURCE_KEY[key]] as FallbackSource }],
+    )) as InstanceSettingsFallbacks
+  }
+
+  async get(): Promise<InstanceSettingsResponse> {
+    return toInstanceSettingsResponse(await this.loadRow(), this.fallbacks())
   }
 
   /** Only the keys present in `input` change; a key mapped to `null` clears its override back to the fallback. */
