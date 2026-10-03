@@ -36,6 +36,16 @@ All in `packages/ui-next/src/testing/`. The specs in `src/testing/__test__/` are
 - **`expectNoHorizontalOverflow()`** (`overflow.ts`) fails if the page scrolls sideways at 375, 768 or 1280 px and names the elements that stick out.
 - **`expectPageScreenshots(name)`** and **`expectScreenshot(locator, name)`** (`screenshots.ts`), for `*.shots.ts` files only.
 
+- **`withCoarsePointer(body)`** and **`withMotionAllowed(body)`** (`media.ts`) run `body` as on a touch screen (a control is 44 px high) or with motion allowed, and put the browser back afterwards.
+
+The browser may read and write the clipboard, so a spec reads back what a control copied with `await navigator.clipboard.readText()`.
+
+Playwright refuses to click what is disabled, `aria-disabled` included. To assert that such a control does not fire, click it with `{ force: true }`.
+
+The pointer stays where the last click left it, so an element mounted under it is hovered from the start. Do not assert a resting colour that hover changes.
+
+A Reka UI layer (a tooltip, a menu) is teleported to `body`. The `screen` queries still find it, but Reka's `role="tooltip"` element is hidden from the accessibility tree: query it with `getByRole('tooltip', { includeHidden: true })` or assert the trigger's accessible description.
+
 The browser runs with reduced motion, so the duration tokens collapse and nothing is asserted or shot mid-transition. A style change still lands one frame later; `forceTheme` and the viewport helpers wait for it, and `expect.element` retries, so read computed styles through those rather than straight after a change.
 
 ## Faking the API
@@ -69,10 +79,34 @@ and is called as `build<ReadModel>(overrides?)`. The type always comes from `kur
 
 A primitive registers its section by adding `<Name>.gallery.vue` beside its component. The file name is the section: `IconButton.gallery.vue` becomes "Icon Button" at `#icon-button`. Nothing else has to be edited, and `src/gallery/gallery.shots.ts` shoots every section in light and dark without being touched.
 
+### A primitive's files
+
+Primitives live flat in `src/components/`, named as the component inventory names them:
+
+| File | Holds |
+| --- | --- |
+| `src/components/IconButton.vue` | The component. Styles are `<style scoped>` inside `@layer components { … }`, built from the tokens only |
+| `src/components/IconButton.gallery.vue` | Its gallery section: every state of the inventory |
+| `src/components/__test__/IconButton.spec.ts` | Its spec; the last test mounts the gallery file and calls `expectAccessible()` and `expectNoHorizontalOverflow()` |
+
+A gallery file is rows of specimens: `SpecimenRow` (an optional `title`) holding one `Specimen` per state, whose `caption` is the state's name. Both are in `src/gallery/`.
+
+A state that needs a pointer or a key press is held still for the gallery in one of two ways:
+
+- **Hover and active**: the component's own CSS answers `[data-force~='hover']` and `[data-force~='active']` beside `:hover` and `:active`, and the gallery sets `data-force="hover"` on it. The focus ring belongs to the page, so `data-force="focus"` works on any element with no CSS in the component.
+- **A state held in script** (an open tooltip, "Copied"): the component takes a prop for it, documented as being for the gallery (`tooltipOpen`, `copied`).
+
+Three things Reka UI does not do for you:
+
+- Its `VisuallyHidden` is always `aria-hidden`, so it cannot hold a live region. Use the `.visually-hidden` class of `base.css` on a plain element with `role="status"`.
+- A teleported layer's content does not carry the component's scoped style id. Style an element of your own inside it (see `Tooltip.vue`), and set its layer with a `z-index` on the content, which Reka copies to the positioned wrapper.
+- A component whose root is a Reka root with a teleported part (`Tooltip`, so `IconButton` too) has no single root element: it sets `inheritAttrs: false` and binds `$attrs` to its control.
+
 ## Screenshots
 
 Baselines are the `*-chromium-linux.png` files in `__screenshots__/` folders beside their `*.shots.ts` file, and they are committed. Fonts render differently from machine to machine, so shots are only written or compared inside one pinned image, `mcr.microsoft.com/playwright:v<version>-noble`, where `<version>` is the `playwright` entry of the workspace catalog in `pnpm-workspace.yaml`. `scripts/screenshots.mjs` starts it; running a `*.shots.ts` file any other way is refused.
 
+- The comparison is as good as exact: one grey level of one pixel is forgiven, because Chromium antialiases a rounded corner at the edge of a shot a level lighter or darker from run to run. Any colour change of a token is two levels or more somewhere and fails.
 - A new or changed shot: run `pnpm test:screenshots:update`, look at the PNGs, commit them.
 - A failing comparison writes the actual image and the diff under `packages/ui-next/.vitest/attachments/`; CI uploads that folder as the `ui-screenshot-diffs` artifact.
 - **A PR that changes a baseline says why in its description**, baseline by baseline or by group ("every section: `--space-3` grew"). A baseline that changed for no stated reason is a regression until explained.

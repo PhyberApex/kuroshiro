@@ -83,6 +83,12 @@ import { sections } from './sections'
     scroll-margin-top: var(--space-4);
   }
 
+  /* A component draws its hover and active states under `data-force` itself; the focus ring is the page's, so it is forced here. */
+  .section :deep([data-force~='focus']) {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-offset);
+  }
+
   .section-title {
     font-stretch: var(--width-title);
     font-weight: var(--weight-title);

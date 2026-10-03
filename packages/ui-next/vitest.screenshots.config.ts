@@ -17,9 +17,12 @@ export default mergeConfig(viteConfig, defineConfig({
         browser: {
           expect: {
             toMatchScreenshot: {
-              // Exact: one image renders one way, and the default tolerance lets a small colour change of a token through.
+              // As good as exact: the default tolerance lets a small colour change of a token through.
+              // The threshold forgives one level of one pixel (a grey that is 155 in one run and 156 in
+              // the next), which is how far Chromium's antialiasing of a rounded corner at the edge of
+              // a shot wanders between runs. Two levels of grey are a mismatch.
               comparatorName: 'pixelmatch',
-              comparatorOptions: { threshold: 0, allowedMismatchedPixels: 0 },
+              comparatorOptions: { threshold: 0.004, allowedMismatchedPixels: 0 },
             },
           },
         },
