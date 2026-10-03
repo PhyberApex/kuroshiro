@@ -368,12 +368,12 @@ Applying saves at once, fetches and renders the Plugin again and opens the Plugi
 [On-device fallback screens in the Hanko identity](https://github.com/PhyberApex/kuroshiro/issues/1090) handed this here. Today a failed slot shows the static `error.png`, which names nothing. It is replaced by a drawing made for the slot:
 
 - Paper ground, ink only, no dithering, no seal. The seal signs a whole sheet; a slot is not one.
-- Set at the slot's left, centred vertically: the problem mark (the icon's ink square with its exclamation mark), the Plugin's name in the title face, then two lines in the text face: "could not be shown." and "Next try at the next poll."
+- Set at the slot's left, centred vertically: the problem mark (the icon's ink square with its exclamation mark), the Plugin's name in the title face, then two lines in the text face: "could not be shown." and "Next try on its next turn in Rotation."
 - Sized from the slot, not the Screen: the name at about 11 % of the slot's height and never wider than the slot less its margins, cut with an ellipsis; the two lines at about half that.
 - The other slots render as usual. The Mashup itself is not an error: the Device shows it, and its row on the Device's Screens view carries no fault.
 - When every slot fails, the Device still shows the Mashup with every slot saying so. The error Fallback Screen is for a Screen that could not be produced at all.
 
-The wording is kept in step with the error Fallback Screen's second wording, which [The error Fallback Screen's wording when a Screen could not be rendered](https://github.com/PhyberApex/kuroshiro/issues/1105) decides.
+The wording is kept in step with the error Fallback Screen's "{Screen} could not be shown" ([The error Fallback Screen's wording when a Screen could not be rendered](https://github.com/PhyberApex/kuroshiro/issues/1105)): the name first, then the same phrase.
 
 A Data Source whose fetch failed does not make a slot fail: the Plugin renders with the error marker, in a slot as on its own Screen.
 
