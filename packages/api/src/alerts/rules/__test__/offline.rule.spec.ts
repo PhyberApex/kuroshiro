@@ -33,6 +33,12 @@ describe('offlineRule', () => {
     expect(offlineRule.evaluate(device, context(), false).active).toBe(false)
   })
 
+  it('has nothing to say about a Device that never polled', () => {
+    const device = makeDevice({ refreshRate: 300, lastSeen: null })
+
+    expect(offlineRule.evaluate(device, context(), false)).toEqual({ skip: true, active: false })
+  })
+
   it('resolves once the device has polled again', () => {
     const device = makeDevice({ refreshRate: 300, lastSeen: NOW })
     expect(offlineRule.evaluate(device, context(), true).active).toBe(false)

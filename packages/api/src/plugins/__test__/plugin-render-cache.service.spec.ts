@@ -33,7 +33,7 @@ describe('pluginRenderCacheService', () => {
     service = new PluginRenderCacheService(asService<PluginRendererService>(mockRenderer), asRepository(mockScreenRepo))
   })
 
-  it('renders the primary template and caches it to every screen of the plugin', async () => {
+  it('renders the full Template and caches it to every Screen of the Plugin', async () => {
     await service.renderAndCache(plugin, { data: 'hello' })
 
     expect(mockRenderer.render).toHaveBeenCalledWith('{{ data }}', { data: 'hello' })
@@ -41,6 +41,21 @@ describe('pluginRenderCacheService', () => {
       { plugin: { id: 'plugin-1' } },
       expect.objectContaining({ cachedPluginOutput: '<div>rendered</div>' }),
     )
+  })
+
+  it('renders the full Template wherever it is stored among the Plugin\'s Templates', async () => {
+    const quadrantFirst = makePlugin({ id: 'plugin-1', templates: [makePluginTemplate({ layout: 'quadrant', liquidMarkup: 'quadrant' }), makePluginTemplate({ layout: 'full', liquidMarkup: 'full' })] })
+
+    await service.renderAndCache(quadrantFirst, {})
+
+    expect(mockRenderer.render).toHaveBeenCalledExactlyOnceWith('full', {})
+  })
+
+  it('rejects with the size and Liquid\'s problem when the Template cannot be rendered, and caches nothing', async () => {
+    mockRenderer.render.mockRejectedValue(Object.assign(new Error('undefined variable: city, line:3, col:1'), { token: { getPosition: () => [3, 1] } }))
+
+    await expect(service.renderAndCache(plugin, {})).rejects.toMatchObject({ size: 'full', problem: { message: 'undefined variable: city', line: 3 } })
+    expect(mockScreenRepo.update).not.toHaveBeenCalled()
   })
 
   it('does nothing when the plugin has no template', async () => {

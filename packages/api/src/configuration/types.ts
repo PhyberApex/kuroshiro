@@ -1,5 +1,4 @@
-import type { BooleanSettingKey, SettingKey } from 'kuroshiro-shared'
-import type { MergeStrategy, PluginKind } from '../plugins/entities/plugin.entity.js'
+import type { BooleanSettingKey, MergeStrategy, PluginKind, SettingKey } from 'kuroshiro-shared'
 import type { ParsedPlugin } from '../plugins/services/plugin-importer.service.js'
 import type { Screen } from '../screens/screens.entity.js'
 
@@ -37,13 +36,6 @@ export interface PluginManifestField {
   keyname: string
 }
 
-export interface PluginManifestVariable {
-  id: string
-  key: string
-  value: string
-  isSecret: boolean
-}
-
 // The fields the nested `plugins/<id>/.trmnlp` folder can't carry (ADR-0021):
 // identity for every child row, plus Webhook-kind-only fields the per-Plugin
 // exporter deliberately omits.
@@ -58,7 +50,18 @@ export interface PluginManifestEntry {
   dataSources: PluginManifestDataSource[]
   templates: PluginManifestTemplate[]
   fields: PluginManifestField[]
-  variables: PluginManifestVariable[]
+  // Keyed by Plugin Field keyname; only what the admin entered, never a default.
+  fieldValues: Record<string, string>
+}
+
+// Carried only by a schemaVersion 2 archive; Configuration Import ignores both
+// with a warning (ADR-0032): Plugin Variables, and Field Values per Assignment.
+export interface LegacyPluginManifestFields {
+  variables?: unknown[]
+}
+
+export interface LegacyAssignmentManifestFields {
+  fieldValues?: unknown[]
 }
 
 export interface DeviceManifestEntry {
@@ -119,19 +122,12 @@ export interface ScreenManifestEntry {
   mashupConfiguration: MashupConfigurationManifestEntry | null
 }
 
-export interface AssignmentFieldValueManifestEntry {
-  id: string
-  fieldId: string
-  value: string
-}
-
 export interface AssignmentManifestEntry {
   id: string
   deviceId: string
   pluginId: string
   order: number
   isActive: boolean
-  fieldValues: AssignmentFieldValueManifestEntry[]
 }
 
 export interface PaletteManifestEntry {

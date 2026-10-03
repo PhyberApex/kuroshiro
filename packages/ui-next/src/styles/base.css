@@ -1,0 +1,47 @@
+@layer reset {
+  *, *::before, *::after { box-sizing: border-box; }
+  body, h1, h2, h3, p, ul, ol, figure, dl, dd, fieldset, table { margin: 0; padding: 0; }
+  ul, ol { list-style: none; }
+  fieldset { border: 0; min-width: 0; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { background: none; border: 0; padding: 0; cursor: pointer; text-align: inherit; }
+  a { color: inherit; }
+  svg { display: block; }
+}
+
+@layer base {
+  html { scrollbar-color: var(--color-ink-soft) transparent; }
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-text);
+    font-size: var(--text-md);
+    line-height: var(--leading-text);
+    font-variant-numeric: tabular-nums;
+    caret-color: var(--color-ink);
+    accent-color: var(--color-ink);
+  }
+  ::selection { background: var(--color-ink); color: var(--color-paper); }
+  :focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-offset); border-radius: var(--radius); }
+
+  /* For text only a screen reader gets, such as a live region. Reka's VisuallyHidden cannot hold one: it is always aria-hidden. */
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* The duration tokens already collapse; this catches motion that does not read them. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

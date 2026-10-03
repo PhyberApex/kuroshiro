@@ -1,8 +1,9 @@
 import type { ValidationArguments, ValidationOptions, ValidatorConstraintInterface } from 'class-validator'
-import type { MergeStrategy, PluginKind, RecipeSnapshot } from '../entities/plugin.entity.js'
+import type { MergeStrategy, PluginKind } from 'kuroshiro-shared'
+import type { RecipeSnapshot } from '../entities/plugin.entity.js'
 import { Type } from 'class-transformer'
 import { IsArray, IsBoolean, IsIn, IsInt, IsObject, IsOptional, IsString, Min, registerDecorator, ValidateNested, ValidatorConstraint } from 'class-validator'
-import { MERGE_STRATEGIES, PLUGIN_KINDS } from '../entities/plugin.entity.js'
+import { MERGE_STRATEGIES, PLUGIN_KINDS } from 'kuroshiro-shared'
 import { pluginKindFieldViolation } from '../plugin-kind-fields.js'
 import { PluginDataSourceDto } from './plugin-data-source.dto.js'
 import { PluginFieldDto } from './plugin-field.dto.js'
@@ -103,4 +104,10 @@ export class CreatePluginDto {
   @ValidateNested({ each: true })
   @Type(() => PluginFieldDto)
   fields?: PluginFieldDto[]
+
+  // Keyed by Plugin Field keyname. A keyname left out keeps its stored value;
+  // `null` or an empty string clears it.
+  @IsOptional()
+  @IsObject()
+  fieldValues?: Record<string, string | null>
 }

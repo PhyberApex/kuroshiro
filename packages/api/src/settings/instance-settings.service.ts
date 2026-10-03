@@ -1,31 +1,22 @@
-import type { FallbackSource, InstanceSettingsResponse, SettingKey, UpdateInstanceSettingsInput } from 'kuroshiro-shared'
+import type { AlertThresholdKey, FallbackSource, InstanceSettingsResponse, RetentionAgeKey, RetentionAges, SettingKey, UpdateInstanceSettingsInput } from 'kuroshiro-shared'
 import type { Repository } from 'typeorm'
+import type { InstanceSettingsFallbacks } from './instance-settings.mapper.js'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
-import { BOOLEAN_SETTING_KEYS, SETTING_KEYS } from 'kuroshiro-shared'
+import { ALERT_THRESHOLD_KEYS, BOOLEAN_SETTING_KEYS, RETENTION_AGE_KEYS, SETTING_KEYS } from 'kuroshiro-shared'
 import { INSTANCE_SETTINGS_ID, InstanceSettings } from './entities/instance-settings.entity.js'
+import { toInstanceSettingsResponse } from './instance-settings.mapper.js'
 
-interface AlertsEnvConfig {
-  lowBatteryPercent: number
-  lowBatteryPercentSource: FallbackSource
-  offlineMultiplier: number
-  offlineMultiplierSource: FallbackSource
-  fetchFailureThreshold: number
-  fetchFailureThresholdSource: FallbackSource
-}
+type EnvFallbacks<K extends SettingKey> = Record<K, number> & Record<`${K}Source`, FallbackSource>
 
-const SOURCE_KEY: Record<SettingKey, keyof AlertsEnvConfig> = {
-  lowBatteryPercent: 'lowBatteryPercentSource',
-  offlineMultiplier: 'offlineMultiplierSource',
-  fetchFailureThreshold: 'fetchFailureThresholdSource',
-}
+const FIRMWARE_AUTO_UPDATE_DEFAULT = false
 
 /**
- * The persisted home for admin-tunable, instance-wide values (ADR-0027) — today the three
- * Alert Rule thresholds. Each Setting resolves as override, else its environment variable,
- * else the built-in default; the single row need not exist until the first save, and an
- * absent row behaves like every Setting being unset.
+ * The persisted home for admin-tunable, instance-wide values (ADR-0027) — the Alert Rule
+ * thresholds, the Retention ages and Firmware Auto-Update. Each numeric Setting resolves as
+ * override, else its environment variable, else the built-in default; the single row need
+ * not exist until the first save, and an absent row behaves like every Setting being unset.
  */
 @Injectable()
 export class InstanceSettingsService {
@@ -39,50 +30,43 @@ export class InstanceSettingsService {
     return this.repository.findOneBy({ id: INSTANCE_SETTINGS_ID })
   }
 
-  private alertsConfig(): AlertsEnvConfig {
-    return this.configService.get<AlertsEnvConfig>('alerts')!
+  private fallbacks(): InstanceSettingsFallbacks {
+    const config: EnvFallbacks<SettingKey> = {
+      ...this.configService.get<EnvFallbacks<AlertThresholdKey>>('alerts')!,
+      ...this.configService.get<EnvFallbacks<RetentionAgeKey>>('retention')!,
+    }
+    const numeric = Object.fromEntries(
+      SETTING_KEYS.map(key => [key, { value: config[key], source: config[`${key}Source`] }]),
+    ) as Pick<InstanceSettingsFallbacks, SettingKey>
+    return { ...numeric, firmwareAutoUpdate: { value: FIRMWARE_AUTO_UPDATE_DEFAULT, source: 'default' } }
+  }
+
+  private async resolve<K extends SettingKey>(keys: readonly K[]): Promise<Record<K, number>> {
+    const row = await this.loadRow()
+    const fallbacks = this.fallbacks()
+    return Object.fromEntries(
+      keys.map(key => [key, row?.[key] ?? fallbacks[key].value]),
+    ) as Record<K, number>
   }
 
   /** The resolved thresholds `AlertSweepService` builds its `AlertRuleContext` from every Sweep — never cached, so a saved override applies from the next Sweep. */
-  async resolveThresholds(): Promise<Record<SettingKey, number>> {
-    const row = await this.loadRow()
-    const alertsConfig = this.alertsConfig()
-    const result = {} as Record<SettingKey, number>
-    for (const key of SETTING_KEYS)
-      result[key] = row?.[key] ?? alertsConfig[key]
-    return result
+  resolveThresholds(): Promise<Record<AlertThresholdKey, number>> {
+    return this.resolve(ALERT_THRESHOLD_KEYS)
+  }
+
+  /** The resolved ages `RetentionService` reads at the start of every Retention Run — never cached, so a saved override applies to the next run, dry or real. */
+  resolveRetentionAges(): Promise<RetentionAges> {
+    return this.resolve(RETENTION_AGE_KEYS)
   }
 
   /** Whether the Firmware Auto-Update policy (ADR-0029) is on — `FirmwareSyncService` reads this after every insert; the Setting has no environment-variable fallback, only the built-in default of `false`. */
   async resolveFirmwareAutoUpdate(): Promise<boolean> {
     const row = await this.loadRow()
-    return row?.firmwareAutoUpdate ?? false
+    return row?.firmwareAutoUpdate ?? FIRMWARE_AUTO_UPDATE_DEFAULT
   }
 
   async get(): Promise<InstanceSettingsResponse> {
-    const row = await this.loadRow()
-    const alertsConfig = this.alertsConfig()
-    const response = {} as InstanceSettingsResponse
-    for (const key of SETTING_KEYS) {
-      const override = row?.[key] ?? null
-      const fallbackValue = alertsConfig[key]
-      response[key] = {
-        override,
-        value: override ?? fallbackValue,
-        fallbackSource: alertsConfig[SOURCE_KEY[key]] as FallbackSource,
-        fallbackValue,
-      }
-    }
-    for (const key of BOOLEAN_SETTING_KEYS) {
-      const override = row?.[key] ?? null
-      response[key] = {
-        override,
-        value: override ?? false,
-        fallbackSource: 'default',
-        fallbackValue: false,
-      }
-    }
-    return response
+    return toInstanceSettingsResponse(await this.loadRow(), this.fallbacks())
   }
 
   /** Only the keys present in `input` change; a key mapped to `null` clears its override back to the fallback. */

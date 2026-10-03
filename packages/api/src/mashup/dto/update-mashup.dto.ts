@@ -1,18 +1,14 @@
-import { ArrayUnique, IsArray, IsIn, IsOptional, IsString } from 'class-validator'
+import type { MashupLayout, UpdateMashupInput } from 'kuroshiro-shared'
+import { ArrayUnique, IsArray, IsIn, IsOptional, IsUUID } from 'class-validator'
+import { MASHUP_LAYOUT_IDS } from '../constants/layouts.js'
 
-export class UpdateMashupDto {
+export class UpdateMashupDto implements UpdateMashupInput {
   @IsOptional()
-  @IsString()
-  filename?: string
+  @IsIn(MASHUP_LAYOUT_IDS)
+  layout?: MashupLayout
 
-  @IsOptional()
-  @IsString()
-  @IsIn(['1Lx1R', '1Tx1B', '1Lx2R', '2Lx1R', '2Tx1B', '1Tx2B', '2x2'])
-  layout?: string
-
-  @IsOptional()
   @IsArray()
-  @IsString({ each: true })
+  @IsUUID(undefined, { each: true })
   @ArrayUnique()
-  pluginIds?: string[]
+  pluginIds: string[]
 }

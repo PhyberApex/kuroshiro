@@ -1,6 +1,18 @@
-import { IsBoolean, IsInt, IsOptional, IsString } from 'class-validator'
+import type { PluginFieldInput } from 'kuroshiro-shared'
+import { Type } from 'class-transformer'
+import { IsArray, IsBoolean, IsInt, IsOptional, IsString, ValidateNested } from 'class-validator'
+// `@Type` reads design metadata as a DTO module is evaluated, and this is the first one the Plugin DTOs load.
+import 'reflect-metadata'
 
-export class PluginFieldDto {
+class PluginFieldOptionDto {
+  @IsString()
+  label: string
+
+  @IsString()
+  value: string
+}
+
+export class PluginFieldDto implements PluginFieldInput {
   @IsString()
   keyname: string
 
@@ -18,6 +30,12 @@ export class PluginFieldDto {
   @IsOptional()
   @IsString()
   defaultValue?: string
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PluginFieldOptionDto)
+  options?: PluginFieldOptionDto[] | null
 
   @IsOptional()
   @IsBoolean()

@@ -1,4 +1,3 @@
-import type { TestingModule } from '@nestjs/testing'
 import type { PluginTemplate } from '../../plugins/entities/plugin-template.entity.js'
 import type { Plugin } from '../../plugins/entities/plugin.entity.js'
 import type { Screen } from '../../screens/screens.entity.js'
@@ -15,11 +14,9 @@ import { makeDevice, makeMashupConfiguration, makeMashupSlot, makePlugin, makePl
 import { createMockRepository, whereId } from '../../test/mockRepository.js'
 import { MashupConfiguration } from '../entities/mashup-configuration.entity.js'
 import { MashupSlot } from '../entities/mashup-slot.entity.js'
-import { MashupService } from '../mashup.service.js'
 import { MashupRendererService } from '../services/mashup-renderer.service.js'
 
 describe('mashup Integration Tests', () => {
-  let mashupService: MashupService
   let deviceRepo: ReturnType<typeof createMockRepository<Device>>
   let screenRepo: ReturnType<typeof createMockRepository<Screen>>
   let pluginRepo: ReturnType<typeof createMockRepository<Plugin>>
@@ -103,9 +100,8 @@ describe('mashup Integration Tests', () => {
       }),
     }
 
-    const module: TestingModule = await Test.createTestingModule({
+    await Test.createTestingModule({
       providers: [
-        MashupService,
         {
           provide: getRepositoryToken(Device),
           useValue: deviceRepo,
@@ -136,27 +132,6 @@ describe('mashup Integration Tests', () => {
         },
       ],
     }).compile()
-
-    mashupService = module.get<MashupService>(MashupService)
-  })
-
-  it('should create a mashup with two plugins in 1Lx1R layout', async () => {
-    const dto = {
-      deviceId: 'device-1',
-      filename: 'Test Mashup',
-      layout: '1Lx1R',
-      pluginIds: ['plugin-1', 'plugin-2'],
-    }
-
-    const result = await mashupService.create(dto)
-
-    expect(result).toBeDefined()
-    expect(result.type).toBe('mashup')
-    expect(result.filename).toBe('Test Mashup')
-    expect(screenRepo.create).toHaveBeenCalled()
-    expect(screenRepo.save).toHaveBeenCalled()
-    expect(mashupConfigRepo.create).toHaveBeenCalled()
-    expect(mashupConfigRepo.save).toHaveBeenCalled()
   })
 
   it.skip('should render mashup HTML with plugin content', async () => {
@@ -291,53 +266,5 @@ describe('mashup Integration Tests', () => {
     expect(html).toContain('error.png')
     expect(html).toContain('Weather Plugin')
     expect(html).toContain('class="plugin-calendar"')
-  })
-
-  it('should update an existing mashup and clear old slots', async () => {
-    const existingScreen = makeScreen({
-      id: 'screen-1',
-      type: 'mashup',
-      filename: 'Old Mashup',
-      device: makeDevice({ id: 'device-1' }),
-      mashupConfiguration: makeMashupConfiguration({
-        id: 'config-1',
-        slots: [
-          makeMashupSlot({ id: 'old-slot-1', plugin: makePlugin({ id: 'plugin-1' }) }),
-          makeMashupSlot({ id: 'old-slot-2', plugin: makePlugin({ id: 'plugin-2' }) }),
-        ],
-      }),
-    })
-
-    screenRepo.findOne.mockResolvedValue(existingScreen)
-    mashupConfigRepo.findOne.mockResolvedValue(existingScreen.mashupConfiguration ?? null)
-
-    const dto = {
-      filename: 'Updated Mashup',
-      layout: '1Lx1R',
-      pluginIds: ['plugin-2', 'plugin-1'],
-    }
-
-    const result = await mashupService.update('screen-1', dto)
-
-    expect(result).toBeDefined()
-    expect(result.filename).toBe('Updated Mashup')
-    expect(mashupSlotRepo.remove).toHaveBeenCalledWith(existingScreen.mashupConfiguration?.slots)
-    expect(mashupSlotRepo.save).toHaveBeenCalled()
-  })
-
-  it('should delete mashup and cascade to configuration and slots', async () => {
-    const existingScreen = makeScreen({
-      id: 'screen-1',
-      type: 'mashup',
-      device: makeDevice({ id: 'device-1' }),
-      mashupConfiguration: makeMashupConfiguration({ id: 'config-1' }),
-    })
-
-    screenRepo.findOne.mockResolvedValue(existingScreen)
-    screenRepo.remove.mockResolvedValue([])
-
-    await mashupService.delete('screen-1')
-
-    expect(screenRepo.remove).toHaveBeenCalledWith(existingScreen)
   })
 })

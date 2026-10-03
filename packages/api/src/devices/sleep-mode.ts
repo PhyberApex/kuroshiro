@@ -32,6 +32,16 @@ export function secondsUntilSleepEnd(sleepEndTime: number, now: Date): number {
   return Math.max(MIN_SLEEP_REFRESH_RATE, raw)
 }
 
+/** The next moment after `now` at which the server's clock reads `sleepEndTime`. */
+export function nextSleepEnd(sleepEndTime: number, now: Date): Date {
+  const end = new Date(now)
+  end.setHours(0, 0, 0, 0)
+  end.setSeconds(sleepEndTime)
+  if (end <= now)
+    end.setDate(end.getDate() + 1)
+  return end
+}
+
 function secondsOfDay(now: Date): number {
   return now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds()
 }

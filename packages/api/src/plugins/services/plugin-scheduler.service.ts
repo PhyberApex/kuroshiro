@@ -1,62 +1,45 @@
-import type { ScheduledTask } from 'node-cron'
 import type { Plugin } from '../entities/plugin.entity.js'
-import { Injectable, Logger } from '@nestjs/common'
-import cron from 'node-cron'
-import { DataSourceFetchOutcomeService } from './data-source-fetch-outcome.service.js'
-import { PluginDataResolverService } from './plugin-data-resolver.service.js'
-import { PluginRenderCacheService } from './plugin-render-cache.service.js'
-import { PluginTemplateContextService } from './plugin-template-context.service.js'
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common'
+import { isRenderablePollPlugin } from '../renderable-poll-plugin.js'
+import { PluginRefreshService } from './plugin-refresh.service.js'
+
+const MINUTE_MS = 60_000
+// A longer delay overflows Node's timer and fires after one millisecond.
+const LONGEST_TIMER_DELAY_MS = 2 ** 31 - 1
 
 @Injectable()
-export class PluginSchedulerService {
-  private scheduledJobs: Map<string, ScheduledTask> = new Map()
+export class PluginSchedulerService implements OnModuleDestroy {
+  private scheduledJobs: Map<string, NodeJS.Timeout> = new Map()
   private readonly logger = new Logger(PluginSchedulerService.name)
 
-  constructor(
-    private readonly pluginDataResolver: PluginDataResolverService,
-    private readonly renderCache: PluginRenderCacheService,
-    private readonly pluginTemplateContext: PluginTemplateContextService,
-    private readonly fetchOutcome: DataSourceFetchOutcomeService,
-  ) {}
+  constructor(private readonly pluginRefresh: PluginRefreshService) {}
 
+  /** Runs the Plugin every `refreshInterval` minutes from now, in place of any job it already has. */
   schedulePlugin(plugin: Plugin): void {
-    if (plugin.kind === 'Webhook') {
+    this.removeScheduledJob(plugin.id)
+
+    if (!isRenderablePollPlugin(plugin)) {
       return
     }
 
-    if (!plugin.dataSources || plugin.dataSources.length === 0 || !plugin.templates || plugin.templates.length === 0) {
-      return
+    const delay = Math.min(Math.max(plugin.refreshInterval, 1) * MINUTE_MS, LONGEST_TIMER_DELAY_MS)
+    this.scheduledJobs.set(plugin.id, setInterval(() => void this.runTick(plugin), delay))
+  }
+
+  /** One scheduler tick, outside the timer. It never rejects: a failed tick is logged. */
+  async runTick(plugin: Plugin): Promise<void> {
+    try {
+      await this.pluginRefresh.refresh(plugin, { scheduled: true })
     }
-
-    const cronExpression = this.getCronExpression(plugin.refreshInterval)
-
-    const task = cron.schedule(cronExpression, async () => {
-      try {
-        // This cache entry is shared across every Screen/Device the Plugin is
-        // assigned to (renderAndCache below writes it to all of them), so
-        // there is no single Device to scope sensors to here.
-        const templateContext = this.pluginTemplateContext.build(plugin, [])
-
-        const sourceData = await this.pluginDataResolver.resolveAll(plugin.dataSources, templateContext)
-
-        // Recorded before the render so a render failure below can never
-        // lose the fetch outcome the scheduler tick just observed (ADR-0025).
-        await this.fetchOutcome.recordOutcomes(plugin.dataSources, sourceData)
-
-        await this.renderCache.renderAndCache(plugin, { ...templateContext, ...sourceData })
-      }
-      catch (error) {
-        this.logger.error(`Error executing plugin ${plugin.id}`, error)
-      }
-    })
-
-    this.scheduledJobs.set(plugin.id, task)
+    catch (error) {
+      this.logger.error(`Error executing plugin ${plugin.id}`, error)
+    }
   }
 
   removeScheduledJob(pluginId: string): void {
-    const task = this.scheduledJobs.get(pluginId)
-    if (task) {
-      task.stop()
+    const timer = this.scheduledJobs.get(pluginId)
+    if (timer) {
+      clearInterval(timer)
       this.scheduledJobs.delete(pluginId)
     }
   }
@@ -65,11 +48,8 @@ export class PluginSchedulerService {
     return this.scheduledJobs.has(pluginId)
   }
 
-  private getCronExpression(minutes: number): string {
-    if (minutes >= 60) {
-      const hours = Math.floor(minutes / 60)
-      return hours === 1 ? '0 * * * *' : `0 */${hours} * * *`
-    }
-    return `*/${minutes} * * * *`
+  onModuleDestroy(): void {
+    for (const pluginId of [...this.scheduledJobs.keys()])
+      this.removeScheduledJob(pluginId)
   }
 }

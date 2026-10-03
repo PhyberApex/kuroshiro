@@ -1,0 +1,106 @@
+import type { RadioChoice } from '../RadioRow.vue'
+import { describe, expect, it, vi } from 'vitest'
+import { userEvent } from 'vitest/browser'
+import { expectAccessible } from '@/testing/a11y'
+import { pressAndHold } from '@/testing/keys'
+import { withCoarsePointer } from '@/testing/media'
+import { mount } from '@/testing/mount'
+import { expectNoHorizontalOverflow } from '@/testing/overflow'
+import RadioRowGallery from '../RadioRow.gallery.vue'
+import RadioRow from '../RadioRow.vue'
+
+const KINDS: RadioChoice<string>[] = [
+  { value: 'plugin', label: 'Plugin', hint: 'One of your Plugins, rendered for this Device' },
+  { value: 'mashup', label: 'Mashup', hint: 'Several Plugins sharing one Screen in a layout' },
+  { value: 'link', label: 'External link' },
+]
+
+async function mountRows(chosen: string | undefined, props: { choices?: RadioChoice<string>[], disabled?: boolean } = {}) {
+  const onUpdate = vi.fn<(value: string) => void>()
+  const screen = await mount(RadioRow, {
+    props: { 'choices': KINDS, ...props, 'modelValue': chosen, 'onUpdate:modelValue': onUpdate },
+    attrs: { 'aria-label': 'Kind' },
+  })
+  onUpdate.mockImplementation(value => screen.rerender({ modelValue: value }))
+  return { screen, onUpdate }
+}
+
+describe('radio row', () => {
+  it('is a named radio group whose rows are named by their name and described by their explanation', async () => {
+    const { screen } = await mountRows('plugin')
+    const group = screen.getByRole('radiogroup', { name: 'Kind' })
+
+    await expect.element(group.getByRole('radio', { name: 'Plugin', exact: true })).toBeChecked()
+    await expect.element(group.getByRole('radio', { name: 'Plugin', exact: true })).toHaveAccessibleDescription('One of your Plugins, rendered for this Device')
+    await expect.element(group.getByRole('radio', { name: 'External link', exact: true })).toHaveAccessibleDescription('')
+    await expect.element(group.getByRole('radio', { name: 'Mashup', exact: true })).not.toBeChecked()
+  })
+
+  it('can start with nothing chosen, and chooses a row on a click anywhere on it', async () => {
+    const { screen, onUpdate } = await mountRows(undefined)
+
+    expect(screen.getByRole('radio', { checked: true }).elements()).toHaveLength(0)
+
+    await screen.getByText('Several Plugins sharing one Screen in a layout').click()
+
+    expect(onUpdate).toHaveBeenLastCalledWith('mashup')
+    await expect.element(screen.getByRole('radio', { name: 'Mashup', exact: true })).toBeChecked()
+  })
+
+  it('is one Tab stop on the chosen row, and the arrow keys move and choose', async () => {
+    const { screen, onUpdate } = await mountRows('mashup')
+
+    await userEvent.keyboard('{Tab}')
+    await expect.element(screen.getByRole('radio', { name: 'Mashup', exact: true })).toHaveFocus()
+
+    await pressAndHold('ArrowDown')
+    await expect.element(screen.getByRole('radio', { name: 'External link', exact: true })).toHaveFocus()
+    await expect.element(screen.getByRole('radio', { name: 'External link', exact: true })).toBeChecked()
+    expect(onUpdate).toHaveBeenLastCalledWith('link')
+
+    await pressAndHold('ArrowUp')
+    await expect.element(screen.getByRole('radio', { name: 'Mashup', exact: true })).toBeChecked()
+
+    await userEvent.keyboard('{Tab}')
+    expect(screen.getByRole('radiogroup').element().contains(document.activeElement)).toBe(false)
+  })
+
+  it('skips a disabled row', async () => {
+    const choices = KINDS.map(choice => ({ ...choice, disabled: choice.value === 'mashup' }))
+    const { screen, onUpdate } = await mountRows('plugin', { choices })
+
+    await userEvent.keyboard('{Tab}')
+    await pressAndHold('ArrowDown')
+
+    await expect.element(screen.getByRole('radio', { name: 'External link', exact: true })).toBeChecked()
+
+    await screen.getByRole('radio', { name: 'Mashup', exact: true }).click({ force: true })
+    expect(onUpdate).toHaveBeenCalledExactlyOnceWith('link')
+  })
+
+  it('chooses nothing while the whole group is disabled', async () => {
+    const { screen, onUpdate } = await mountRows('plugin', { disabled: true })
+
+    await expect.element(screen.getByRole('radio', { name: 'Mashup', exact: true })).toBeDisabled()
+    await screen.getByRole('radio', { name: 'Mashup', exact: true }).click({ force: true })
+
+    expect(onUpdate).not.toHaveBeenCalled()
+  })
+
+  it('is at least a 44 px target, at a coarse pointer too', async () => {
+    const { screen } = await mountRows('plugin')
+    const bare = screen.getByRole('radio', { name: 'External link', exact: true }).element()
+
+    expect(bare.getBoundingClientRect().height).toBeGreaterThanOrEqual(44)
+    await withCoarsePointer(async () => {
+      expect(bare.getBoundingClientRect().height).toBeGreaterThanOrEqual(44)
+    })
+  })
+
+  it('is accessible and does not overflow in every state', async () => {
+    await mount(RadioRowGallery)
+
+    await expectAccessible()
+    await expectNoHorizontalOverflow()
+  })
+})

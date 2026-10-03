@@ -1,38 +1,21 @@
-import type { Screen } from '../screens/screens.entity.js'
-import type { MashupConfiguration } from './entities/mashup-configuration.entity.js'
-import { Body, Controller, Delete, Get, Param, Post, Put, UsePipes, ValidationPipe } from '@nestjs/common'
+import type { ScreenRead } from 'kuroshiro-shared'
+import { Body, Controller, Param, Patch, Post } from '@nestjs/common'
+import { ScreenReadsService } from '../screens/screen-reads.service.js'
 import { CreateMashupDto } from './dto/create-mashup.dto.js'
 import { UpdateMashupDto } from './dto/update-mashup.dto.js'
 import { MashupService } from './mashup.service.js'
 
 @Controller('mashup')
 export class MashupController {
-  constructor(private readonly mashupService: MashupService) {}
+  constructor(private readonly mashupService: MashupService, private readonly screenReads: ScreenReadsService) {}
 
   @Post()
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-  async create(@Body() dto: CreateMashupDto): Promise<Screen> {
-    return this.mashupService.create(dto)
+  async create(@Body() dto: CreateMashupDto): Promise<ScreenRead> {
+    return this.screenReads.forScreen(await this.mashupService.create(dto))
   }
 
-  @Put(':id')
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-  async update(@Param('id') id: string, @Body() dto: UpdateMashupDto): Promise<Screen> {
-    return this.mashupService.update(id, dto)
-  }
-
-  @Delete(':id')
-  async delete(@Param('id') id: string): Promise<void> {
-    return this.mashupService.delete(id)
-  }
-
-  @Get(':id/configuration')
-  async getConfiguration(@Param('id') id: string): Promise<MashupConfiguration> {
-    return this.mashupService.getConfiguration(id)
-  }
-
-  @Get('layouts')
-  getLayouts() {
-    return this.mashupService.getLayouts()
+  @Patch(':id')
+  async update(@Param('id') id: string, @Body() dto: UpdateMashupDto): Promise<ScreenRead> {
+    return this.screenReads.forScreen(await this.mashupService.update(id, dto))
   }
 }

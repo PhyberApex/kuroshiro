@@ -186,8 +186,9 @@ For local hacking or deployment inspiration, check out [`docker-compose.yml`](./
 ## 📦 Packages
 
 - [`packages/api`](./packages/api) — The NestJS backend
-- [`packages/ui`](./packages/ui) — The Vue 3 + Vuetify frontend
-- [`packages/shared`](./packages/shared) — Code that is byte-identical in the API and UI
+- [`packages/ui-next`](./packages/ui-next) — The Vue 3 + Reka UI frontend the image serves
+- [`packages/ui`](./packages/ui) — The previous Vue 3 + Vuetify frontend, kept as a read-only reference outside the workspace
+- [`packages/shared`](./packages/shared) — The admin API's request and response types, and code that is identical in the API and UI
 
 ---
 
@@ -281,13 +282,13 @@ Delivery goes through the [`apprise-api`](https://github.com/caronc/apprise-api)
 | `KUROSHIRO_ALERT_RETENTION_DAYS` | `90` | Age (in days) after which a resolved Alert is pruned by the daily Retention job. `0` disables Alert pruning. |
 | `KUROSHIRO_DEVICE_LOG_RETENTION_DAYS` | `30` | Age (in days) after which a Device Log entry is pruned by the daily Retention job. `0` disables Device Log pruning. |
 
-The three threshold variables above are only fallbacks: an admin can override any of them from the Maintenance page's Settings card (Instance Settings), which then wins over the environment variable until the override is cleared. See [ADR-0027](docs/adr/0027-instance-settings-typed-single-row-persisted-over-env-in-the-archive.md).
+The three threshold variables and the two Retention variables above are only fallbacks: each is an Instance Setting an admin can override (`PATCH /api/settings`; the Maintenance page's Settings card edits the three thresholds), and an override wins over the environment variable until it is cleared. A Retention age of `0` disables pruning for that age whether it comes from an override or from the environment. See [ADR-0027](docs/adr/0027-instance-settings-typed-single-row-persisted-over-env-in-the-archive.md).
 
 To run the sidecar alongside Kuroshiro, uncomment the `apprise-api` service in [`docker-compose.yml`](./docker-compose.yml) and point `KUROSHIRO_APPRISE_URL` at it (e.g. `http://apprise-api:8000`), then configure your notification channels in its own persisted config under the `kuroshiro` key (or whatever `KUROSHIRO_APPRISE_KEY` is set to).
 
 The Maintenance page's Alerts card shows every active Alert plus anything resolved in the last 7 days, with a **Send test Notification** button that exercises the real delivery path (a synthetic success Notification, not a real Alert) so you can confirm Apprise is wired up correctly without waiting for a real condition to fire.
 
-A daily Retention job (same 4am schedule as the Device Model and Firmware syncs) prunes resolved Alerts and Device Log entries older than `KUROSHIRO_ALERT_RETENTION_DAYS`/`KUROSHIRO_DEVICE_LOG_RETENTION_DAYS` respectively; active Alerts are never touched regardless of age. The Maintenance page's Retention card shows the configured ages and the last run's time and counts (lost on restart — it isn't persisted), and lets you trigger a run on demand, previewing the counts via a dry run before you confirm.
+A daily Retention job (same 4am schedule as the Device Model and Firmware syncs) prunes resolved Alerts and Device Log entries older than their Retention age (the Instance Setting, else `KUROSHIRO_ALERT_RETENTION_DAYS`/`KUROSHIRO_DEVICE_LOG_RETENTION_DAYS`, else the default); active Alerts are never touched regardless of age. Every run, scheduled, manual or dry, reads the ages afresh, so a saved override applies without a restart, and saving one never triggers a run. The Maintenance page's Retention card shows the effective ages and the last run's time and counts (lost on restart — it isn't persisted), and lets you trigger a run on demand, previewing the counts via a dry run before you confirm.
 
 ---
 
@@ -299,7 +300,7 @@ A daily Retention job (same 4am schedule as the Device Model and Firmware syncs)
 |---|---|---|---|
 | `kuroshiro_device_battery_volts` | gauge | `device`, `friendly_id` | Last reported battery voltage. Omitted for a Device with no or non-numeric reading. |
 | `kuroshiro_device_rssi_dbm` | gauge | `device`, `friendly_id` | Last reported Wi-Fi signal strength. Omitted for a Device with no or non-numeric reading. |
-| `kuroshiro_device_last_seen_timestamp_seconds` | gauge | `device`, `friendly_id` | The Device's `lastSeen` as a Unix timestamp (compute `time() - x` for staleness). |
+| `kuroshiro_device_last_seen_timestamp_seconds` | gauge | `device`, `friendly_id` | The Device's `lastSeen` as a Unix timestamp (compute `time() - x` for staleness). No sample for a Device that never polled. |
 | `kuroshiro_alerts_active` | gauge | `kind` | Count of currently active Alerts per `AlertKind` — every known kind is emitted, 0 included, so a series never vanishes. |
 
 `device` is the Device's `name` and `friendly_id` its `friendlyId`; the MAC address is never used as a label. Like the Device-facing routes (`/display`, `/current_screen`), `/metrics` sits outside the `/api` prefix and has no authentication of its own — if you want it private, keep it off your reverse proxy.
@@ -315,10 +316,6 @@ We love contributions! Jump in:
 - Run all tests before submitting a PR
 - `pnpm fallow:ci` runs in CI and fails on new dead code, duplication, or complexity hotspots; see [docs/agents/fallow.md](docs/agents/fallow.md) for how the baselines work
 - **We use [release-please](https://github.com/googleapis/release-please)!** Use [Conventional Commits](https://www.conventionalcommits.org/) for your commit messages to enable automatic versioning and changelogs.
-
-### UI responsive support
-
-The dashboard (`packages/ui`) supports viewports down to **375px** wide. CI drives every route in a real Chromium browser at 375 / 768 / 1280px (`pnpm --filter ./packages/ui test:e2e`) and fails on horizontal overflow, so if you add a toolbar, card header, or dialog, check it at 375px before opening a PR.
 
 ### Contributors
 

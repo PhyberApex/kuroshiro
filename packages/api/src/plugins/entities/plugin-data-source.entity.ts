@@ -21,10 +21,10 @@ export class PluginDataSource {
   url?: string | null
 
   @Column('jsonb', { nullable: true })
-  headers?: Record<string, string>
+  headers?: Record<string, string> | null
 
   @Column('jsonb', { nullable: true })
-  body?: JsonObject
+  body?: JsonObject | null
 
   @Column('text', { nullable: true })
   transformJs?: string | null
@@ -43,6 +43,9 @@ export class PluginDataSource {
 
   @Column('timestamptz', { nullable: true })
   lastFetchAttemptAt?: Date | null
+
+  @Column('timestamptz', { nullable: true })
+  lastFetchSucceededAt?: Date | null
 
   @Column('text', { nullable: true })
   lastFetchError?: string | null

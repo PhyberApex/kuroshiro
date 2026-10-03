@@ -1,10 +1,10 @@
 import type { Repository } from 'typeorm'
-import type { DeviceModel } from '../device-models/entities/device-model.entity.js'
-import type { Palette } from '../device-models/entities/palette.entity.js'
 import type { UpdateDeviceDto } from './dto/update-device.dto.js'
-import { BadRequestException, Injectable } from '@nestjs/common'
+import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
+import { isUUID } from 'class-validator'
 import { DeviceModelsService } from '../device-models/device-models.service.js'
+import { ApiException } from '../errors/api.exception.js'
 import { isFirmwareCompatible } from '../firmware/firmware-compatibility.js'
 import { FirmwareService } from '../firmware/firmware.service.js'
 import { ScreensService } from '../screens/screens.service.js'
@@ -23,10 +23,6 @@ export class DevicesService {
     private screensService: ScreensService,
   ) {}
 
-  async findAll(): Promise<Device[]> {
-    return this.deviceRepository.find({ order: { friendlyId: 'ASC' } })
-  }
-
   async findById(id: string): Promise<Device | null> {
     return this.deviceRepository.findOneBy({ id })
   }
@@ -39,28 +35,38 @@ export class DevicesService {
   }
 
   async update(id: string, changes: UpdateDeviceDto): Promise<Device | null> {
-    const dbDevice = await this.deviceRepository.findOneBy({ id })
+    const dbDevice = await this.findByIdOrNull(id)
     if (!dbDevice)
       return null
     const { deviceModelName, paletteId, targetFirmwareId, ...attributes } = changes
+    const pushWasPending = dbDevice.updateFirmware
     Object.assign(dbDevice, attributes)
     this.assertSleepWindowConfigured(dbDevice)
     const before = { model: dbDevice.deviceModel?.name, palette: dbDevice.palette?.id }
     await this.applyModelChange(dbDevice, deviceModelName)
     await this.applyPaletteChange(dbDevice, paletteId)
-    await this.applyFirmwareChanges(dbDevice, targetFirmwareId)
+    await this.applyFirmwareChanges(dbDevice, targetFirmwareId, pushWasPending)
+    this.assertPushCanBeServed(dbDevice, changes.updateFirmware)
     const saved = await this.deviceRepository.save(dbDevice)
-    if (before.model !== saved.deviceModel?.name || before.palette !== saved.palette?.id)
+    if (this.renderTargetChanged(before, saved))
       await this.screensService.reconvertImageScreens(saved)
     return saved
   }
 
   async remove(id: string): Promise<boolean> {
-    const dbDevice = await this.deviceRepository.findOneBy({ id })
+    const dbDevice = await this.findByIdOrNull(id)
     if (!dbDevice)
       return false
     await this.deviceRepository.remove(dbDevice)
     return true
+  }
+
+  private async findByIdOrNull(id: string): Promise<Device | null> {
+    return isUUID(id) ? this.deviceRepository.findOneBy({ id }) : null
+  }
+
+  private renderTargetChanged(before: { model?: string, palette?: string }, device: Device): boolean {
+    return before.model !== device.deviceModel?.name || before.palette !== device.palette?.id
   }
 
   private async applyModelChange(device: Device, deviceModelName?: string): Promise<void> {
@@ -78,7 +84,7 @@ export class DevicesService {
       if (!device.deviceModel)
         throw new BadRequestException('Cannot set a palette on a device with no assigned device model')
       const palette = await this.deviceModels.findPalette(paletteId)
-      if (!palette || !(await this.paletteSupportedBy(palette, device.deviceModel)))
+      if (!palette || !(await this.deviceModels.supportsPalette(device.deviceModel, palette)))
         throw new BadRequestException(`Palette ${paletteId} is not supported by device model ${device.deviceModel.name}`)
       device.palette = palette
     }
@@ -86,27 +92,30 @@ export class DevicesService {
       device.palette = await this.deviceModels.defaultPaletteFor(device.deviceModel)
   }
 
-  /**
-   * Official palettes are validated against the model's curated `paletteIds`;
-   * custom palettes have no per-model list, so compatibility is derived from
-   * whether the palette's colour family is already represented on the model.
-   */
-  private async paletteSupportedBy(palette: Palette, model: DeviceModel): Promise<boolean> {
-    if (palette.kind === 'official')
-      return model.paletteIds.includes(palette.id)
-    const compatibleFamilies = await this.deviceModels.compatibleFamiliesFor(model)
-    return compatibleFamilies.has(palette.frameworkClass)
-  }
-
-  private async applyFirmwareChanges(device: Device, targetFirmwareId?: string): Promise<void> {
+  private async applyFirmwareChanges(device: Device, targetFirmwareId: string | null | undefined, pushWasPending: boolean): Promise<void> {
     if (targetFirmwareId === undefined)
       return
+    if (targetFirmwareId === null) {
+      if (pushWasPending)
+        throw new ApiException(HttpStatus.CONFLICT, 'firmware-push-pending', 'The target Firmware cannot be cleared while a push is pending.', { id: device.id })
+      device.targetFirmware = null
+      return
+    }
     const firmware = await this.firmwareService.findById(targetFirmwareId)
     if (!firmware)
       throw new BadRequestException(`Unknown firmware: ${targetFirmwareId}`)
     if (!isFirmwareCompatible(firmware, device.deviceModel?.name))
       throw new BadRequestException(`Firmware ${targetFirmwareId} is not compatible with device model ${device.deviceModel?.name ?? 'unknown'}`)
     device.targetFirmware = firmware
+  }
+
+  private assertPushCanBeServed(device: Device, updateFirmware?: boolean): void {
+    if (updateFirmware !== true)
+      return
+    if (!device.targetFirmware)
+      throw new ApiException(HttpStatus.CONFLICT, 'firmware-push-without-target', 'A Firmware push needs a target Firmware.', { id: device.id })
+    if (device.mirrorEnabled)
+      throw new ApiException(HttpStatus.CONFLICT, 'firmware-push-mirrored', 'A mirrored Device is not given Firmware.', { id: device.id })
   }
 
   /**

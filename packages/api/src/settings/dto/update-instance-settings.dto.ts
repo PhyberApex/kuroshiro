@@ -1,7 +1,8 @@
+import type { UpdateInstanceSettingsInput } from 'kuroshiro-shared'
 import { IsBoolean, IsInt, IsOptional, Max, Min } from 'class-validator'
 import { SETTING_BOUNDS } from 'kuroshiro-shared'
 
-export class UpdateInstanceSettingsDto {
+export class UpdateInstanceSettingsDto implements UpdateInstanceSettingsInput {
   @IsOptional()
   @IsInt()
   @Min(SETTING_BOUNDS.lowBatteryPercent.min)
@@ -17,6 +18,16 @@ export class UpdateInstanceSettingsDto {
   @IsInt()
   @Min(SETTING_BOUNDS.fetchFailureThreshold.min)
   fetchFailureThreshold?: number | null
+
+  @IsOptional()
+  @IsInt()
+  @Min(SETTING_BOUNDS.alertRetentionDays.min)
+  alertRetentionDays?: number | null
+
+  @IsOptional()
+  @IsInt()
+  @Min(SETTING_BOUNDS.deviceLogRetentionDays.min)
+  deviceLogRetentionDays?: number | null
 
   @IsOptional()
   @IsBoolean()

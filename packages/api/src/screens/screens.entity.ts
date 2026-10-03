@@ -25,6 +25,19 @@ export class Screen {
   @Column({ type: 'boolean', default: false })
   fetchManual: boolean
 
+  /** The name, pixel size and byte size of a File Screen's upload as it arrived, before conversion. */
+  @Column({ type: 'text', nullable: true })
+  fileOriginalName?: string | null
+
+  @Column({ type: 'int', nullable: true })
+  fileWidth?: number | null
+
+  @Column({ type: 'int', nullable: true })
+  fileHeight?: number | null
+
+  @Column({ type: 'int', nullable: true })
+  fileBytes?: number | null
+
   @Column({ type: 'boolean', default: false })
   isActive: boolean
 

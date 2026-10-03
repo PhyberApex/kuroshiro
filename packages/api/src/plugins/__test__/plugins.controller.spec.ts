@@ -1,7 +1,10 @@
 import type { Response } from 'express'
 import type { PluginsService } from '../plugins.service.js'
+import type { PluginAssignmentsService } from '../services/plugin-assignments.service.js'
 import type { PluginExporterService } from '../services/plugin-exporter.service.js'
 import type { PluginImporterService } from '../services/plugin-importer.service.js'
+import type { PluginPreviewDataService } from '../services/plugin-preview-data.service.js'
+import type { PluginReadsService } from '../services/plugin-reads.service.js'
 import type { RecipeUpdateService } from '../services/recipe-update.service.js'
 import { Buffer } from 'node:buffer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -11,19 +14,16 @@ import { PluginsController } from '../plugins.controller.js'
 
 describe('pluginsController', () => {
   let controller: PluginsController
+  let mockReads: { list: ReturnType<typeof vi.fn>, detail: ReturnType<typeof vi.fn> }
   let mockService: {
-    findAll: ReturnType<typeof vi.fn>
     findById: ReturnType<typeof vi.fn>
-    findByDevice: ReturnType<typeof vi.fn>
     create: ReturnType<typeof vi.fn>
     update: ReturnType<typeof vi.fn>
     duplicate: ReturnType<typeof vi.fn>
     remove: ReturnType<typeof vi.fn>
-    assignToDevice: ReturnType<typeof vi.fn>
-    unassignFromDevice: ReturnType<typeof vi.fn>
-    updateDeviceAssignment: ReturnType<typeof vi.fn>
     preview: ReturnType<typeof vi.fn>
   }
+  let mockAssignments: { assign: ReturnType<typeof vi.fn> }
   let mockImporter: {
     importFromFile: ReturnType<typeof vi.fn>
     importFromGithubUrl: ReturnType<typeof vi.fn>
@@ -36,19 +36,17 @@ describe('pluginsController', () => {
   }
 
   beforeEach(() => {
+    mockReads = { list: vi.fn(), detail: vi.fn() }
     mockService = {
-      findAll: vi.fn(),
       findById: vi.fn(),
-      findByDevice: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       duplicate: vi.fn(),
       remove: vi.fn(),
-      assignToDevice: vi.fn(),
-      unassignFromDevice: vi.fn(),
-      updateDeviceAssignment: vi.fn(),
       preview: vi.fn(),
     }
+
+    mockAssignments = { assign: vi.fn() }
 
     mockImporter = {
       importFromFile: vi.fn(),
@@ -67,6 +65,9 @@ describe('pluginsController', () => {
 
     controller = new PluginsController(
       asService<PluginsService>(mockService),
+      asService<PluginReadsService>(mockReads),
+      asService<PluginPreviewDataService>({}),
+      asService<PluginAssignmentsService>(mockAssignments),
       asService<PluginImporterService>(mockImporter),
       asService<PluginExporterService>(mockExporter),
       asService<RecipeUpdateService>(mockRecipeUpdateService),
@@ -81,35 +82,6 @@ describe('pluginsController', () => {
     refreshInterval: 15,
   })
 
-  it('findAll returns all plugins', async () => {
-    const plugins = [basePlugin]
-    mockService.findAll.mockResolvedValue(plugins)
-
-    const result = await controller.findAll()
-
-    expect(mockService.findAll).toHaveBeenCalled()
-    expect(result).toBe(plugins)
-  })
-
-  it('findById returns a plugin by id', async () => {
-    mockService.findById.mockResolvedValue(basePlugin)
-
-    const result = await controller.findById('1')
-
-    expect(mockService.findById).toHaveBeenCalledWith('1')
-    expect(result).toBe(basePlugin)
-  })
-
-  it('findByDevice returns plugins for a device', async () => {
-    const plugins = [basePlugin]
-    mockService.findByDevice.mockResolvedValue(plugins)
-
-    const result = await controller.findByDevice('device-1')
-
-    expect(mockService.findByDevice).toHaveBeenCalledWith('device-1')
-    expect(result).toBe(plugins)
-  })
-
   it('create creates a new plugin', async () => {
     const createDto = { name: 'Weather Plugin', kind: 'Poll' as const }
     mockService.create.mockResolvedValue(basePlugin)
@@ -120,15 +92,16 @@ describe('pluginsController', () => {
     expect(result).toBe(basePlugin)
   })
 
-  it('update updates a plugin', async () => {
+  it('update saves the Plugin, then answers it as a read gives it', async () => {
     const updateDto = { name: 'Updated Weather' }
-    const updated = { ...basePlugin, name: 'Updated Weather' }
-    mockService.update.mockResolvedValue(updated)
+    const detail = { id: '1', name: 'Updated Weather' }
+    mockService.update.mockResolvedValue(undefined)
+    mockReads.detail.mockResolvedValue(detail)
 
     const result = await controller.update('1', updateDto)
 
     expect(mockService.update).toHaveBeenCalledWith('1', updateDto)
-    expect(result).toBe(updated)
+    expect(result).toBe(detail)
   })
 
   it('duplicate duplicates a plugin', async () => {
@@ -170,24 +143,6 @@ describe('pluginsController', () => {
     expect(result).toEqual({ success: true })
   })
 
-  it('preview returns preview data', async () => {
-    const previewData = {
-      sources: [{ name: 'source', url: 'https://api.example.com', method: 'GET' }],
-      template: '<div>{{ source }}</div>',
-    }
-    const previewResult = { html: '<div>test</div>', data: { source: { test: true } } }
-    mockService.preview.mockResolvedValue(previewResult)
-
-    const result = await controller.preview(previewData)
-
-    expect(result).toBe(previewResult)
-    expect(mockService.preview).toHaveBeenCalledWith(
-      previewData.sources,
-      previewData.template,
-      undefined,
-    )
-  })
-
   it('importPlugin imports from file without device assignment', async () => {
     const file = asService<Express.Multer.File>({ path: '/tmp/plugin.zip' })
     const parsedPlugin = {
@@ -202,7 +157,7 @@ describe('pluginsController', () => {
 
     expect(mockImporter.importFromFile).toHaveBeenCalledWith('/tmp/plugin.zip')
     expect(mockService.create).toHaveBeenCalled()
-    expect(mockService.assignToDevice).not.toHaveBeenCalled()
+    expect(mockAssignments.assign).not.toHaveBeenCalled()
     expect(result).toMatchObject(createdPlugin)
     expect(result._hasTransform).toBe(false)
   })
@@ -223,15 +178,11 @@ describe('pluginsController', () => {
     const createdPlugin = { id: 'plugin-1', name: 'Imported Plugin' }
     mockImporter.importFromFile.mockResolvedValue(parsedPlugin)
     mockService.create.mockResolvedValue(createdPlugin)
-    mockService.assignToDevice.mockResolvedValue({})
+    mockAssignments.assign.mockResolvedValue('screen-1')
 
     const result = await controller.importPlugin(file, 'device-1')
 
-    expect(mockService.assignToDevice).toHaveBeenCalledWith('plugin-1', {
-      deviceId: 'device-1',
-      isActive: true,
-      order: 0,
-    })
+    expect(mockAssignments.assign).toHaveBeenCalledWith('plugin-1', 'device-1')
     expect(result._hasTransform).toBe(true)
   })
 
@@ -254,7 +205,7 @@ describe('pluginsController', () => {
 
     expect(mockImporter.importFromGithubUrl).toHaveBeenCalledWith(body.githubUrl)
     expect(mockService.create).toHaveBeenCalled()
-    expect(mockService.assignToDevice).not.toHaveBeenCalled()
+    expect(mockAssignments.assign).not.toHaveBeenCalled()
     expect(result).toMatchObject(createdPlugin)
   })
 
@@ -267,15 +218,11 @@ describe('pluginsController', () => {
     const createdPlugin = { id: 'plugin-2', name: 'GitHub Plugin' }
     mockImporter.importFromGithubUrl.mockResolvedValue(parsedPlugin)
     mockService.create.mockResolvedValue(createdPlugin)
-    mockService.assignToDevice.mockResolvedValue({})
+    mockAssignments.assign.mockResolvedValue('screen-1')
 
     await controller.importFromGithub(body)
 
-    expect(mockService.assignToDevice).toHaveBeenCalledWith('plugin-2', {
-      deviceId: 'device-1',
-      isActive: true,
-      order: 0,
-    })
+    expect(mockAssignments.assign).toHaveBeenCalledWith('plugin-2', 'device-1')
   })
 
   it('importFromGithub throws error if no URL provided', async () => {
@@ -297,7 +244,7 @@ describe('pluginsController', () => {
 
     expect(mockImporter.importFromRecipe).toHaveBeenCalledWith(body.recipeId)
     expect(mockService.create).toHaveBeenCalled()
-    expect(mockService.assignToDevice).not.toHaveBeenCalled()
+    expect(mockAssignments.assign).not.toHaveBeenCalled()
     expect(result).toMatchObject(createdPlugin)
     expect(result._hasTransform).toBe(false)
   })
@@ -347,15 +294,11 @@ describe('pluginsController', () => {
     const createdPlugin = { id: 'plugin-3', name: 'Daily Weather' }
     mockImporter.importFromRecipe.mockResolvedValue(parsedPlugin)
     mockService.create.mockResolvedValue(createdPlugin)
-    mockService.assignToDevice.mockResolvedValue({})
+    mockAssignments.assign.mockResolvedValue('screen-1')
 
     const result = await controller.importFromRecipe(body)
 
-    expect(mockService.assignToDevice).toHaveBeenCalledWith('plugin-3', {
-      deviceId: 'device-1',
-      isActive: true,
-      order: 0,
-    })
+    expect(mockAssignments.assign).toHaveBeenCalledWith('plugin-3', 'device-1')
     expect(result._hasTransform).toBe(true)
   })
 
@@ -395,36 +338,5 @@ describe('pluginsController', () => {
 
     expect(res.status).toHaveBeenCalledWith(404)
     expect(res.json).toHaveBeenCalledWith({ message: 'Plugin not found' })
-  })
-
-  it('assignToDevice assigns plugin to device', async () => {
-    const assignData = { deviceId: 'device-1', isActive: true, order: 0 }
-    const devicePlugin = { id: 'dp-1' }
-    mockService.assignToDevice.mockResolvedValue(devicePlugin)
-
-    const result = await controller.assignToDevice('plugin-1', assignData)
-
-    expect(result).toBe(devicePlugin)
-    expect(mockService.assignToDevice).toHaveBeenCalledWith('plugin-1', assignData)
-  })
-
-  it('unassignFromDevice removes plugin from device', async () => {
-    mockService.unassignFromDevice.mockResolvedValue(true)
-
-    const result = await controller.unassignFromDevice('plugin-1', 'device-1')
-
-    expect(result).toEqual({ success: true })
-    expect(mockService.unassignFromDevice).toHaveBeenCalledWith('plugin-1', 'device-1')
-  })
-
-  it('updateDeviceAssignment updates device assignment', async () => {
-    const updates = { isActive: false }
-    const devicePlugin = { id: 'dp-1', isActive: false }
-    mockService.updateDeviceAssignment.mockResolvedValue(devicePlugin)
-
-    const result = await controller.updateDeviceAssignment('dp-1', updates)
-
-    expect(result).toBe(devicePlugin)
-    expect(mockService.updateDeviceAssignment).toHaveBeenCalledWith('dp-1', updates)
   })
 })

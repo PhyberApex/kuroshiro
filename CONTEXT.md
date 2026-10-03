@@ -33,7 +33,7 @@ The one Screen per Device currently being shown (`isActive: true`). Not a fixed 
 _Avoid_: Selected screen
 
 **Current Screen**:
-What a Device is showing right now, as far as the server knows — the Active Screen's image, a Fallback Screen, or on a mirrored Device the mirrored image. Read through `/current_screen`, which never advances the Rotation, unlike the `/display` poll a Device itself makes.
+What a Device is showing right now, as far as the server knows — the Active Screen's image, a Fallback Screen, or on a mirrored Device the mirrored image. A Device reads it through `/current_screen`, which never advances the Rotation, unlike the `/display` poll a Device itself makes. The admin API reads it from what the Device's last `/display` poll was answered with, which the server records on the Device (the kind, the Screen, the Fallback Screen and its reason, the refresh rate given); a Device that never polled shows the welcome Fallback Screen.
 _Avoid_: Active Screen (the Screen whose turn it is — the Current Screen is the image, and may not come from a Screen at all), on the panel (say "on the Device"), preview
 
 **Rotation**:
@@ -133,11 +133,11 @@ A Configuration Archive whose secrets — Data Source header values, Device API 
 _Avoid_: Sanitized, scrubbed, anonymized (nothing but credentials is removed)
 
 **Redaction Sentinel**:
-The one fixed string Configuration Export writes in place of every redacted secret and Configuration Import recognises in any redactable field. On import it means "keep the value the target already has"; where the target has none, the field falls back (header dropped, Variable emptied, mirror API key unset, Device API key or Webhook Token freshly generated) and the import summary carries a warning for it.
+The one fixed string Configuration Export writes in place of every redacted secret and Configuration Import recognises in any redactable field. On import it means "keep the value the target already has"; where the target has none, the field falls back (header dropped, password Field Value left unset, mirror API key unset, Device API key or Webhook Token freshly generated) and the import summary carries a warning for it.
 _Avoid_: Placeholder, mask, `***`
 
 **Configuration Import**:
-Restoring a Configuration Archive onto an instance: an upsert of every record by its exported `id`, so re-importing the same archive is idempotent. Devices additionally re-attach by `mac` when an existing row has it. Refuses an archive whose `schemaVersion` differs from the running instance's. Designed for a fresh instance; merging onto an instance that already holds unrelated content is not defined.
+Restoring a Configuration Archive onto an instance: an upsert of every record by its exported `id`, so re-importing the same archive is idempotent. Devices additionally re-attach by `mac` when an existing row has it. Refuses an archive whose `schemaVersion` is neither the running instance's nor the one before it; from the previous version it ignores Plugin Variables and per-Assignment Field Values, with a warning when the archive held any. Designed for a fresh instance; merging onto an instance that already holds unrelated content is not defined.
 _Avoid_: Restore (bare, in prose — reserve for the ADR's "restore targets a fresh instance" framing), sync
 
 **Special Function**:
@@ -197,7 +197,7 @@ The periodic job that evaluates every Alert Rule against Kuroshiro's persisted s
 _Avoid_: Poll (reserved for what a Device does), scan, check
 
 **Retention**:
-The daily job that deletes resolved Alerts and Device Log entries older than their configured retention age. Active Alerts are never pruned. One execution, scheduled or triggered from the Maintenance page, is a Retention Run.
+The daily job that deletes resolved Alerts and Device Log entries older than their Retention age. The two ages are Instance Settings, read afresh by every Retention Run; an age of 0 disables pruning for that age. Active Alerts are never pruned. One execution, scheduled or triggered from the Maintenance page, is a Retention Run.
 _Avoid_: Cleanup (reserved for the Maintenance page's file cleanup), purge, garbage collection
 
 **Notification**:
@@ -213,7 +213,7 @@ One running Kuroshiro server together with its database and stored files — the
 _Avoid_: Installation, deployment, site, server (bare, as a name for the whole — fine for the machine or URL a Device connects to)
 
 **Instance Settings**:
-The one set of admin-tunable values that apply to the whole Kuroshiro instance rather than to any single Device, Plugin or Screen — today the Alert Rule thresholds and Firmware Auto-Update. Each Setting is either overridden (an admin saved a value, which wins) or not (the matching environment variable, else the built-in default, applies); clearing an override returns the Setting to that fallback.
+The one set of admin-tunable values that apply to the whole Kuroshiro instance rather than to any single Device, Plugin or Screen — today the Alert Rule thresholds, the two Retention ages and Firmware Auto-Update. Each Setting is either overridden (an admin saved a value, which wins) or not (the matching environment variable, else the built-in default, applies); clearing an override returns the Setting to that fallback.
 _Avoid_: Global settings, preferences, options, Settings (bare — that names one Device's Settings view), Configuration (reserved for the Configuration Archive), config (reserved for environment variables)
 
 **Firmware Auto-Update**:

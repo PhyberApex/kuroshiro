@@ -2,10 +2,7 @@ import type { Repository } from 'typeorm'
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { PluginDataSource } from '../entities/plugin-data-source.entity.js'
-
-function isErrorMarker(value: unknown): value is { error: true, message: string } {
-  return typeof value === 'object' && value !== null && (value as { error?: unknown }).error === true
-}
+import { isFetchErrorMarker } from './plugin-data-resolver.service.js'
 
 /**
  * Records each `fetch`-mode Data Source's outcome from one scheduler tick's
@@ -23,7 +20,7 @@ export class DataSourceFetchOutcomeService {
   ) {}
 
   /**
-   * `dataSources` comes from the scheduler's cron closure, captured once at
+   * `dataSources` comes from the scheduler's timer closure, captured once at
    * schedule time (`PluginSchedulerService.schedulePlugin`) — every later
    * tick reuses that same in-memory snapshot, so `source.fetchFailureStreak`
    * is stale from the second tick onward. The failure branch therefore must
@@ -39,12 +36,12 @@ export class DataSourceFetchOutcomeService {
         continue
 
       const value = resolved[source.name]
-      if (isErrorMarker(value)) {
+      if (isFetchErrorMarker(value)) {
         await this.dataSourceRepository.increment({ id: source.id }, 'fetchFailureStreak', 1)
         await this.dataSourceRepository.update(source.id, { lastFetchAttemptAt: now, lastFetchError: value.message })
       }
       else {
-        await this.dataSourceRepository.update(source.id, { fetchFailureStreak: 0, lastFetchAttemptAt: now, lastFetchError: null })
+        await this.dataSourceRepository.update(source.id, { fetchFailureStreak: 0, lastFetchAttemptAt: now, lastFetchSucceededAt: now, lastFetchError: null })
       }
     }
   }

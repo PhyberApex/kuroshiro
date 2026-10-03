@@ -1,3 +1,4 @@
+import type { PluginFieldOption } from 'kuroshiro-shared'
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { Plugin } from './plugin.entity.js'
 
@@ -20,6 +21,9 @@ export class PluginField {
 
   @Column('text', { nullable: true })
   defaultValue?: string | null
+
+  @Column('jsonb', { nullable: true })
+  options?: PluginFieldOption[] | null
 
   @Column('boolean', { default: false })
   required: boolean = false

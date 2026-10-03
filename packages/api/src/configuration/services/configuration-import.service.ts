@@ -7,6 +7,8 @@ import type {
   DeviceManifestEntry,
   FirmwareManifestEntry,
   InstanceSettingsManifestEntry,
+  LegacyAssignmentManifestFields,
+  LegacyPluginManifestFields,
   PaletteManifestEntry,
   PluginManifestDataSource,
   PluginManifestEntry,
@@ -34,7 +36,6 @@ import { PluginDataSource } from '../../plugins/entities/plugin-data-source.enti
 import { PluginFieldValue } from '../../plugins/entities/plugin-field-value.entity.js'
 import { PluginField } from '../../plugins/entities/plugin-field.entity.js'
 import { PluginTemplate } from '../../plugins/entities/plugin-template.entity.js'
-import { PluginVariable } from '../../plugins/entities/plugin-variable.entity.js'
 import { Plugin } from '../../plugins/entities/plugin.entity.js'
 import { PluginImporterService } from '../../plugins/services/plugin-importer.service.js'
 import { Schedule } from '../../schedule/schedule.entity.js'
@@ -42,7 +43,7 @@ import { Screen } from '../../screens/screens.entity.js'
 import { INSTANCE_SETTINGS_ID, InstanceSettings } from '../../settings/entities/instance-settings.entity.js'
 import generateApikey from '../../utils/generateApikey.js'
 import { resolveAppPath } from '../../utils/pathHelper.js'
-import { CONFIG_SCHEMA_VERSION } from '../schema-version.js'
+import { CONFIG_SCHEMA_VERSION, PREVIOUS_CONFIG_SCHEMA_VERSION } from '../schema-version.js'
 import { CONFIG_ARCHIVE_FILES } from '../types.js'
 
 interface ImportCounts {
@@ -57,7 +58,6 @@ interface TransactionRepos {
   dataSource: Repository<PluginDataSource>
   template: Repository<PluginTemplate>
   field: Repository<PluginField>
-  variable: Repository<PluginVariable>
   device: Repository<Device>
   deviceModel: Repository<DeviceModel>
   devicePlugin: Repository<DevicePlugin>
@@ -85,16 +85,18 @@ export class ConfigurationImportService {
     const manifest = this.readManifest(zip)
     this.assertSchemaVersion(manifest)
 
-    const pluginEntries = this.readJson<PluginManifestEntry[]>(zip, CONFIG_ARCHIVE_FILES.plugins)
+    const pluginEntries = this.readJson<Array<PluginManifestEntry & LegacyPluginManifestFields>>(zip, CONFIG_ARCHIVE_FILES.plugins)
     const deviceEntries = this.readJson<DeviceManifestEntry[]>(zip, CONFIG_ARCHIVE_FILES.devices)
     const screenEntries = this.readJson<ScreenManifestEntry[]>(zip, CONFIG_ARCHIVE_FILES.screens)
-    const assignmentEntries = this.readJson<AssignmentManifestEntry[]>(zip, CONFIG_ARCHIVE_FILES.assignments)
+    const assignmentEntries = this.readJson<Array<AssignmentManifestEntry & LegacyAssignmentManifestFields>>(zip, CONFIG_ARCHIVE_FILES.assignments)
     const paletteEntries = this.readJson<PaletteManifestEntry[]>(zip, CONFIG_ARCHIVE_FILES.palettes)
     const firmwareEntries = this.readJson<FirmwareManifestEntry[]>(zip, CONFIG_ARCHIVE_FILES.firmware)
     const settingsEntry = this.readJson<InstanceSettingsManifestEntry>(zip, CONFIG_ARCHIVE_FILES.settings)
 
     const counts: ImportCounts = { created: {}, updated: {} }
-    const warnings: string[] = []
+    const warnings: string[] = manifest.schemaVersion === PREVIOUS_CONFIG_SCHEMA_VERSION
+      ? this.legacyContentWarnings(pluginEntries, assignmentEntries)
+      : []
 
     await this.pluginRepository.manager.transaction(async (manager) => {
       const repos = this.reposFor(manager)
@@ -144,7 +146,6 @@ export class ConfigurationImportService {
       dataSource: manager.getRepository(PluginDataSource),
       template: manager.getRepository(PluginTemplate),
       field: manager.getRepository(PluginField),
-      variable: manager.getRepository(PluginVariable),
       device: manager.getRepository(Device),
       deviceModel: manager.getRepository(DeviceModel),
       devicePlugin: manager.getRepository(DevicePlugin),
@@ -196,11 +197,22 @@ export class ConfigurationImportService {
   }
 
   private assertSchemaVersion(manifest: ConfigurationManifest): void {
-    if (manifest.schemaVersion !== CONFIG_SCHEMA_VERSION) {
+    if (manifest.schemaVersion !== CONFIG_SCHEMA_VERSION && manifest.schemaVersion !== PREVIOUS_CONFIG_SCHEMA_VERSION) {
       throw new BadRequestException(
         `Archive schemaVersion is ${manifest.schemaVersion ?? 'missing'}, but this Kuroshiro instance expects schemaVersion ${CONFIG_SCHEMA_VERSION}`,
       )
     }
+  }
+
+  /** A schemaVersion 2 archive's Plugin Variables and per-Assignment Field Values have nowhere to go (ADR-0032); say so only when it actually held some. */
+  private legacyContentWarnings(pluginEntries: LegacyPluginManifestFields[], assignmentEntries: LegacyAssignmentManifestFields[]): string[] {
+    const variableCount = pluginEntries.reduce((count, entry) => count + (entry.variables?.length ?? 0), 0)
+    const fieldValueCount = assignmentEntries.reduce((count, entry) => count + (entry.fieldValues?.length ?? 0), 0)
+
+    return [
+      ...(variableCount > 0 ? [`This archive holds ${variableCount} Plugin Variable(s), which no longer exist; they were not imported`] : []),
+      ...(fieldValueCount > 0 ? [`This archive holds ${fieldValueCount} Field Value(s) saved per Plugin Assignment; Field Values now belong to the Plugin, so they were not imported`] : []),
+    ]
   }
 
   private readJson<T>(zip: AdmZip, filename: string): T {
@@ -420,8 +432,8 @@ export class ConfigurationImportService {
 
     await this.upsertPluginDataSources(repos.dataSource, saved, parsed.dataSources, entry.dataSources, counts, warnings)
     await this.upsertPluginTemplates(repos.template, saved, parsed.templates, entry.templates, counts)
-    await this.upsertPluginFields(repos.field, saved, parsed.fields, entry.fields, counts)
-    await this.upsertPluginVariables(repos.variable, saved, entry.variables, counts, warnings)
+    const fields = await this.upsertPluginFields(repos.field, saved, parsed.fields, entry.fields, counts)
+    await this.upsertFieldValues(repos.fieldValue, saved, fields, entry.fieldValues, counts, warnings)
   }
 
   /** A redacted webhookToken keeps the target Plugin's value when one is set, otherwise a fresh one is minted and the external sender must be updated (ADR-0028). */
@@ -486,7 +498,8 @@ export class ConfigurationImportService {
 
     for (const parsedTemplate of parsedTemplates) {
       const id = idByLayout.get(parsedTemplate.layout) ?? randomUUID()
-      const existing = await repo.findOneBy({ id })
+      // A Plugin has one Template per size, so the stored one of this size is the one to replace, whatever its id.
+      const existing = await repo.findOneBy({ id }) ?? await repo.findOneBy({ plugin: { id: plugin.id }, layout: parsedTemplate.layout })
       const template = existing ?? repo.create({ id })
       template.layout = parsedTemplate.layout
       template.liquidMarkup = parsedTemplate.liquidMarkup
@@ -496,8 +509,9 @@ export class ConfigurationImportService {
     }
   }
 
-  private async upsertPluginFields(repo: Repository<PluginField>, plugin: Plugin, parsedFields: ParsedPlugin['fields'], manifestEntries: PluginManifestField[], counts: ImportCounts): Promise<void> {
+  private async upsertPluginFields(repo: Repository<PluginField>, plugin: Plugin, parsedFields: ParsedPlugin['fields'], manifestEntries: PluginManifestField[], counts: ImportCounts): Promise<PluginField[]> {
     const idByKeyname = new Map(manifestEntries.map(e => [e.keyname, e.id]))
+    const saved: PluginField[] = []
 
     for (const parsedField of parsedFields) {
       const id = idByKeyname.get(parsedField.keyname) ?? randomUUID()
@@ -508,39 +522,43 @@ export class ConfigurationImportService {
       field.name = parsedField.name
       field.description = parsedField.description
       field.defaultValue = parsedField.defaultValue
+      field.options = parsedField.options ?? null
       field.required = parsedField.required
       field.order = parsedField.order
       field.plugin = plugin
-      await repo.save(field)
+      saved.push(await repo.save(field))
       this.bump(counts, 'fields', !existing)
     }
+    return saved
   }
 
-  private async upsertPluginVariables(repo: Repository<PluginVariable>, plugin: Plugin, manifestVariables: PluginManifestEntry['variables'], counts: ImportCounts, warnings: string[]): Promise<void> {
-    for (const entry of manifestVariables) {
-      const existing = await repo.findOneBy({ id: entry.id })
-      const variable = existing ?? repo.create({ id: entry.id })
-      variable.key = entry.key
-      variable.value = this.resolveVariableValue(plugin, entry, existing, warnings)
-      variable.isSecret = entry.isSecret
-      variable.plugin = plugin
-      await repo.save(variable)
-      this.bump(counts, 'variables', !existing)
-    }
-  }
+  /** A redacted (password-type) Field Value keeps the target Plugin Field's value when one is stored, otherwise the Plugin Field is left without a value (ADR-0028, ADR-0032). */
+  private async upsertFieldValues(repo: Repository<PluginFieldValue>, plugin: Plugin, fields: PluginField[], fieldValues: Record<string, string> | undefined, counts: ImportCounts, warnings: string[]): Promise<void> {
+    for (const [keyname, value] of Object.entries(fieldValues ?? {})) {
+      const field = fields.find(candidate => candidate.keyname === keyname)
+      if (!field) {
+        warnings.push(`Plugin ${plugin.id}: Field Value "${keyname}" has no Plugin Field of that keyname; dropped`)
+        continue
+      }
 
-  /** A redacted Variable value keeps the target row's value when the row exists (even an empty one), otherwise falls back to empty (ADR-0028). */
-  private resolveVariableValue(plugin: Plugin, entry: PluginManifestEntry['variables'][number], existing: PluginVariable | null, warnings: string[]): string {
-    if (entry.value !== CONFIGURATION_REDACTION_SENTINEL) {
-      return entry.value
+      // An empty value is no value: the Plugin Field's default applies, as on a save.
+      if (!value) {
+        continue
+      }
+
+      const existing = await repo.findOne({ where: { field: { id: field.id } } })
+      if (value === CONFIGURATION_REDACTION_SENTINEL) {
+        if (!existing) {
+          warnings.push(`Plugin ${plugin.id}: Field Value "${field.name}" was redacted and no existing value to keep; left empty`)
+        }
+        continue
+      }
+
+      const fieldValue = existing ?? repo.create({ plugin, field })
+      fieldValue.value = value
+      await repo.save(fieldValue)
+      this.bump(counts, 'fieldValues', !existing)
     }
-    return this.resolveRedactedField(
-      existing !== null,
-      existing?.value ?? '',
-      () => '',
-      `Plugin ${plugin.id} Variable "${entry.key}": value was redacted and no existing value to keep; left empty`,
-      warnings,
-    )
   }
 
   private async upsertAssignment(repos: TransactionRepos, entry: AssignmentManifestEntry, deviceIdRemap: Map<string, string>, counts: ImportCounts): Promise<void> {
@@ -554,17 +572,6 @@ export class ConfigurationImportService {
     assignment.isActive = entry.isActive
     await repos.devicePlugin.save(assignment)
     this.bump(counts, 'assignments', !existing)
-
-    for (const fieldValueEntry of entry.fieldValues) {
-      const existingValue = await repos.fieldValue.findOneBy({ id: fieldValueEntry.id })
-      const fieldValue = existingValue ?? repos.fieldValue.create({ id: fieldValueEntry.id })
-      fieldValue.value = fieldValueEntry.value
-      fieldValue.plugin = { id: entry.pluginId } as Plugin
-      fieldValue.field = { id: fieldValueEntry.fieldId } as PluginField
-      fieldValue.device = { id: deviceId } as Device
-      await repos.fieldValue.save(fieldValue)
-      this.bump(counts, 'fieldValues', !existingValue)
-    }
   }
 
   private async upsertScreen(repos: TransactionRepos, zip: AdmZip, entry: ScreenManifestEntry, deviceIdRemap: Map<string, string>, counts: ImportCounts): Promise<void> {

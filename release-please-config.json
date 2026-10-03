@@ -4,7 +4,8 @@
   "extra-files": [
     "packages/api/package.json",
     "packages/shared/package.json",
-    "packages/ui/package.json"
+    "packages/ui/package.json",
+    "packages/ui-next/package.json"
   ],
   "packages": {
     ".": {}

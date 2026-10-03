@@ -1,4 +1,4 @@
-import type { AlertsList, AlertSummary } from 'kuroshiro-shared'
+import type { AlertsList, AlertSummary, ListAlertsQuery } from 'kuroshiro-shared'
 import type { Repository } from 'typeorm'
 import { BadRequestException, Injectable, ServiceUnavailableException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
@@ -14,7 +14,12 @@ function toSummary(alert: Alert): AlertSummary | undefined {
   const subject = alert.device
     ? { deviceId: alert.device.id, deviceName: alert.device.name }
     : alert.dataSource
-      ? { dataSourceId: alert.dataSource.id, dataSourceName: alert.dataSource.name, pluginName: alert.dataSource.plugin.name }
+      ? {
+          pluginId: alert.dataSource.plugin.id,
+          pluginName: alert.dataSource.plugin.name,
+          dataSourceId: alert.dataSource.id,
+          dataSourceName: alert.dataSource.name,
+        }
       : undefined
   if (!subject)
     return undefined
@@ -40,19 +45,28 @@ export class AlertsService {
     private readonly sender: NotificationSenderService,
   ) {}
 
-  /** Active Alerts (uncapped) plus resolved Alerts since `resolvedSince` (an ISO timestamp, default 7 days ago), capped at 50 — both newest first. */
-  async list(resolvedSince?: string): Promise<AlertsList> {
+  /**
+   * Active Alerts (uncapped) plus resolved Alerts since `resolvedSince` (an ISO timestamp, default 7 days ago), capped at 50 after
+   * filtering — both newest first. `deviceId` keeps one Device's Alerts, `pluginId` the fetch Alerts of one Plugin's Data Sources.
+   */
+  async list({ deviceId, pluginId, resolvedSince }: ListAlertsQuery): Promise<AlertsList> {
     const cutoff = resolvedSince ? new Date(resolvedSince) : new Date(Date.now() - DEFAULT_RESOLVED_WINDOW_MS)
+    const subjectFilter = {
+      ...(deviceId && { device: { id: deviceId } }),
+      ...(pluginId && { dataSource: { plugin: { id: pluginId } } }),
+    }
+
+    const relations = { device: true, dataSource: { plugin: true } }
 
     const [active, resolved] = await Promise.all([
       this.alertRepository.find({
-        where: { resolvedAt: IsNull() },
-        relations: { device: true, dataSource: { plugin: true } },
+        where: { ...subjectFilter, resolvedAt: IsNull() },
+        relations,
         order: { openedAt: 'DESC' },
       }),
       this.alertRepository.find({
-        where: { resolvedAt: MoreThan(cutoff) },
-        relations: { device: true, dataSource: { plugin: true } },
+        where: { ...subjectFilter, resolvedAt: MoreThan(cutoff) },
+        relations,
         order: { resolvedAt: 'DESC' },
         take: RESOLVED_ALERTS_LIMIT,
       }),

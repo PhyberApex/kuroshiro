@@ -6,6 +6,7 @@ import { Device } from '../devices/devices.entity.js'
 import { Plugin } from '../plugins/entities/plugin.entity.js'
 import { PluginsModule } from '../plugins/plugins.module.js'
 import { Screen } from '../screens/screens.entity.js'
+import { ScreensModule } from '../screens/screens.module.js'
 import { MashupConfiguration } from './entities/mashup-configuration.entity.js'
 import { MashupSlot } from './entities/mashup-slot.entity.js'
 import { MashupController } from './mashup.controller.js'
@@ -22,6 +23,7 @@ import { MashupRendererService } from './services/mashup-renderer.service.js'
       Plugin,
     ]),
     PluginsModule,
+    ScreensModule,
     DeviceSensorsModule,
     ConfigModule,
   ],

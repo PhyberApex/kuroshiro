@@ -1,26 +1,25 @@
 import type { DataSourceLiteralValue, DataSourceMode } from 'kuroshiro-shared'
-import type { JsonObject } from '../../utils/json.js'
-import { Injectable, Logger } from '@nestjs/common'
+import type { JsonObject, JsonValue } from '../../utils/json.js'
+import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { isPlainObject } from '../../utils/json.js'
 import { assertPublicUrl } from '../../utils/ssrfGuard.js'
 import { PluginRendererService } from './plugin-renderer.service.js'
 
 // The subset of a Data Source's fields fetchOrLiteral needs — shared by the
-// PluginDataSource entity and PreviewSourceDto, which carry the same fields
+// PluginDataSource entity and PreviewDataSourceDto, which carry the same fields
 // under slightly different types.
 export interface FetchableDataSource {
   mode?: DataSourceMode
   method?: string
   url?: string | null
-  headers?: Record<string, string>
-  body?: JsonObject
+  headers?: Record<string, string> | null
+  body?: JsonObject | null
   literalValue?: DataSourceLiteralValue
 }
 
 @Injectable()
 export class PluginDataFetcherService {
-  private readonly logger = new Logger(PluginDataFetcherService.name)
-
   constructor(
     private readonly renderer: PluginRendererService,
     private readonly configService: ConfigService,
@@ -37,7 +36,7 @@ export class PluginDataFetcherService {
     if (source.mode === 'literal') {
       return source.literalValue ?? null
     }
-    return this.fetchData(source.method || 'GET', source.url || '', source.headers, source.body, templateContext)
+    return this.fetchData(source.method || 'GET', source.url || '', source.headers ?? undefined, source.body ?? undefined, templateContext)
   }
 
   async fetchData(
@@ -47,23 +46,36 @@ export class PluginDataFetcherService {
     body?: JsonObject,
     templateContext?: object,
   ): Promise<unknown> {
-    const resolvedUrl = await this.resolveUrl(url, templateContext)
+    const context = templateContext ?? {}
+    const resolvedUrl = await this.renderLiquid(url, context)
 
     if (this.configService.get<boolean>('demo_mode'))
       assertPublicUrl(resolvedUrl)
 
-    const response = await fetch(resolvedUrl, this.buildRequestInit(method, headers, body))
+    const resolvedHeaders = await this.renderLiquidDeep(headers, context) as Record<string, string>
+    const resolvedBody = body && await this.renderLiquidDeep(body, context) as JsonObject
+
+    const response = await fetch(resolvedUrl, this.buildRequestInit(method, resolvedHeaders, resolvedBody))
     return this.parseResponse(response)
   }
 
-  // If the URL contains Liquid template syntax, render it first.
-  private async resolveUrl(url: string, templateContext?: object): Promise<string> {
-    if (!url.includes('{{') && !url.includes('{%'))
-      return url
-    this.logger.debug(`Rendering URL template: ${url}`)
-    const resolvedUrl = await this.renderer.render(url, templateContext || {})
-    this.logger.debug(`Resolved URL: ${resolvedUrl}`)
-    return resolvedUrl
+  // The rendered result is never logged: a Field Value placed in a url or a header can be a secret.
+  private async renderLiquid(text: string, context: object): Promise<string> {
+    if (!text.includes('{{') && !text.includes('{%'))
+      return text
+    return this.renderer.render(text, context)
+  }
+
+  private async renderLiquidDeep(value: JsonValue, context: object): Promise<JsonValue> {
+    if (typeof value === 'string')
+      return this.renderLiquid(value, context)
+    if (Array.isArray(value))
+      return Promise.all(value.map(item => this.renderLiquidDeep(item, context)))
+    if (isPlainObject(value)) {
+      const entries = await Promise.all(Object.entries(value).map(async ([key, item]) => [key, await this.renderLiquidDeep(item as JsonValue, context)] as const))
+      return Object.fromEntries(entries)
+    }
+    return value
   }
 
   private buildRequestInit(method: string, headers: Record<string, string>, body?: JsonObject): RequestInit {

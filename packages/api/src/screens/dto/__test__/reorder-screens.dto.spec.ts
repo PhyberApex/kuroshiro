@@ -10,7 +10,7 @@ describe('reorder-screens dto', () => {
     expect(dto.screenIds).toEqual(['screen-1', 'screen-2'])
   })
 
-  it('passes validation with a non-empty array of string ids', async () => {
+  it('passes validation with an array of string ids', async () => {
     const dto = new ReorderScreensDto()
     dto.screenIds = ['screen-1', 'screen-2']
 
@@ -21,15 +21,6 @@ describe('reorder-screens dto', () => {
 
   it('fails validation when screenIds is missing', async () => {
     const dto = new ReorderScreensDto()
-
-    const errors = await validate(dto)
-
-    expect(errors.length).toBeGreaterThan(0)
-  })
-
-  it('fails validation when screenIds is empty', async () => {
-    const dto = new ReorderScreensDto()
-    dto.screenIds = []
 
     const errors = await validate(dto)
 

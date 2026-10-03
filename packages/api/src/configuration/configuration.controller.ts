@@ -1,6 +1,7 @@
 import type { Response } from 'express'
 import { BadRequestException, Controller, Get, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common'
-import { FileInterceptor } from '@nestjs/platform-express'
+import { LimitedFileInterceptor } from '../uploads/limited-file-interceptor.js'
+import { UPLOAD_LIMITS } from '../uploads/upload-limits.js'
 import { ConfigurationExportService } from './services/configuration-export.service.js'
 import { ConfigurationImportService } from './services/configuration-import.service.js'
 
@@ -29,7 +30,7 @@ export class ConfigurationController {
   }
 
   @Post('import')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(LimitedFileInterceptor('file', UPLOAD_LIMITS.archiveUploadBytes))
   async importConfiguration(@UploadedFile() file?: Express.Multer.File) {
     if (!file) {
       throw new BadRequestException('No file uploaded')

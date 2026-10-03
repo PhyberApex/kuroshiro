@@ -11,7 +11,6 @@ import { PluginDataSource } from '../plugins/entities/plugin-data-source.entity.
 import { PluginFieldValue } from '../plugins/entities/plugin-field-value.entity.js'
 import { PluginField } from '../plugins/entities/plugin-field.entity.js'
 import { PluginTemplate } from '../plugins/entities/plugin-template.entity.js'
-import { PluginVariable } from '../plugins/entities/plugin-variable.entity.js'
 import { Plugin } from '../plugins/entities/plugin.entity.js'
 import { PluginsModule } from '../plugins/plugins.module.js'
 import { Schedule } from '../schedule/schedule.entity.js'
@@ -30,7 +29,6 @@ import { ConfigurationImportService } from './services/configuration-import.serv
       PluginTemplate,
       PluginField,
       PluginFieldValue,
-      PluginVariable,
       Device,
       DeviceModel,
       Palette,

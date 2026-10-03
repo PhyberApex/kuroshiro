@@ -1,5 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
-import { Device } from '../../devices/devices.entity.js'
+import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { PluginField } from './plugin-field.entity.js'
 import { Plugin } from './plugin.entity.js'
 
@@ -11,12 +10,10 @@ export class PluginFieldValue {
   @Column('text')
   value: string
 
-  @ManyToOne(() => Plugin, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Plugin, { onDelete: 'CASCADE', nullable: false })
   plugin: Plugin
 
-  @ManyToOne(() => PluginField, { onDelete: 'CASCADE' })
+  @OneToOne(() => PluginField, { onDelete: 'CASCADE', nullable: false })
+  @JoinColumn()
   field: PluginField
-
-  @ManyToOne(() => Device, { onDelete: 'CASCADE', nullable: true })
-  device?: Device
 }

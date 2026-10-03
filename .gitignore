@@ -24,6 +24,10 @@ packages/api/uploads
 # Coverage
 packages/api/coverage
 packages/ui/coverage
+packages/ui-next/coverage
+
+# Screenshots that differed from their baseline
+packages/ui-next/.vitest
 
 # TSBuildinfo
 packages/api/tsconfig.migrations.tsbuildinfo

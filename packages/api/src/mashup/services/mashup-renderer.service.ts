@@ -5,7 +5,8 @@ import type { MashupSlot } from '../entities/mashup-slot.entity.js'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
-import { PluginDataResolverService } from '../../plugins/services/plugin-data-resolver.service.js'
+import { templateOfSize, templateSizeOfSlot } from '../../plugins/plugin-templates.js'
+import { isRenderablePollPlugin } from '../../plugins/renderable-poll-plugin.js'
 import { PluginRendererService } from '../../plugins/services/plugin-renderer.service.js'
 import { PluginTemplateContextService } from '../../plugins/services/plugin-template-context.service.js'
 import { getErrorMessage } from '../../utils/getErrorMessage.js'
@@ -15,7 +16,6 @@ export class MashupRendererService {
   private readonly logger = new Logger(MashupRendererService.name)
 
   constructor(
-    private readonly pluginDataResolver: PluginDataResolverService,
     private readonly pluginRenderer: PluginRendererService,
     private readonly configService: ConfigService,
     private readonly deviceSensors: DeviceSensorsService,
@@ -51,18 +51,19 @@ export class MashupRendererService {
   private async renderSlot(slot: MashupSlot, sensors: DeviceSensor[]): Promise<string> {
     const plugin = slot.plugin
 
-    if (!plugin.dataSources || plugin.dataSources.length === 0 || !plugin.templates || plugin.templates.length === 0) {
-      throw new Error('Plugin missing data sources or templates')
+    if (!isRenderablePollPlugin(plugin)) {
+      throw new Error('Plugin is not a Poll-kind Plugin with a Template')
     }
 
-    const templateContext = this.pluginTemplateContext.build(plugin, sensors)
-    const data = await this.pluginDataResolver.resolveAll(plugin.dataSources, templateContext)
+    const template = templateOfSize(plugin.templates, templateSizeOfSlot(slot.size))
+    if (!template) {
+      throw new Error('Plugin has no Template of the slot\'s size and no full one')
+    }
 
-    // Find template (prefer 'full' layout for now, could support size variants later)
-    const template = plugin.templates.find(t => t.layout === 'full') || plugin.templates[0]
+    const { context } = await this.pluginTemplateContext.contextFor(plugin, sensors)
 
     // Render unwrapped plugin content
-    return await this.pluginRenderer.render(template.liquidMarkup, { ...templateContext, ...data })
+    return await this.pluginRenderer.render(template.liquidMarkup, context)
   }
 
   private buildMashupHtml(layout: string, slotHtmls: Array<{ slot: MashupSlot, html: string }>): string {

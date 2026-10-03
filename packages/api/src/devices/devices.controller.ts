@@ -1,19 +1,19 @@
-import type { SensorReading } from 'kuroshiro-shared'
+import type { DeviceDetail, DeviceSummary } from 'kuroshiro-shared'
 import {
   BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Logger,
-  NotFoundException,
   Param,
   Patch,
   Post,
-  UsePipes,
-  ValidationPipe,
 } from '@nestjs/common'
-import { DeviceSensorsService } from '../device-sensors/device-sensors.service.js'
+import { ApiException } from '../errors/api.exception.js'
+import { DeviceReadsService } from './device-reads.service.js'
 import { Device } from './devices.entity.js'
 import { DevicesService } from './devices.service.js'
 import { CreateDeviceDto } from './dto/create-device.dto.js'
@@ -29,16 +29,20 @@ export class DevicesController {
 
   constructor(
     private readonly devicesService: DevicesService,
-    private readonly deviceSensorsService: DeviceSensorsService,
+    private readonly deviceReads: DeviceReadsService,
   ) {}
 
   @Get()
-  async getAll(): Promise<Device[]> {
-    return this.devicesService.findAll()
+  async getAll(): Promise<DeviceSummary[]> {
+    return this.deviceReads.list()
+  }
+
+  @Get(':id')
+  async getOne(@Param('id') id: string): Promise<DeviceDetail> {
+    return this.deviceReads.detail(id)
   }
 
   @Post()
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async add(@Body() device: CreateDeviceDto): Promise<Device> {
     if (!device.mac || !isValidMac(device.mac)) {
       throw new BadRequestException('Invalid or missing MAC address')
@@ -47,33 +51,21 @@ export class DevicesController {
   }
 
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   async delete(@Param('id') id: string): Promise<void> {
-    const removed = await this.devicesService.remove(id)
-    if (!removed) {
-      this.logger.warn(`Device not found: ${id}`)
-      throw new NotFoundException('Device not found')
-    }
+    if (!(await this.devicesService.remove(id)))
+      throw this.deviceNotFound(id)
   }
 
   @Patch(':id')
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-  async update(@Param('id') id: string, @Body() newDevice: UpdateDeviceDto): Promise<void> {
-    const dbDevice = await this.devicesService.findById(id)
-    if (!dbDevice) {
-      this.logger.warn(`Device not found: ${id}`)
-      throw new NotFoundException('Device not found')
-    }
-    await this.devicesService.update(id, newDevice)
+  async update(@Param('id') id: string, @Body() changes: UpdateDeviceDto): Promise<DeviceDetail> {
+    if (!(await this.devicesService.update(id, changes)))
+      throw this.deviceNotFound(id)
+    return this.deviceReads.detail(id)
   }
 
-  @Get(':id/sensors')
-  async getSensors(@Param('id') id: string): Promise<SensorReading[]> {
-    const device = await this.devicesService.findById(id)
-    if (!device) {
-      this.logger.warn(`Device not found: ${id}`)
-      throw new NotFoundException('Device not found')
-    }
-    const readings = await this.deviceSensorsService.findForDevice(id)
-    return readings.map(({ kind, value, unit }) => ({ kind, value, unit }))
+  private deviceNotFound(id: string): ApiException {
+    this.logger.warn(`Device not found: ${id}`)
+    return new ApiException(HttpStatus.NOT_FOUND, 'device-not-found', 'Device not found', { id })
   }
 }

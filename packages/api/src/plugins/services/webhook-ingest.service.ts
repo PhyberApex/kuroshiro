@@ -4,7 +4,8 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { isPlainObject } from '../../utils/json.js'
 import { Plugin } from '../entities/plugin.entity.js'
-import { PluginRenderCacheService } from './plugin-render-cache.service.js'
+import { templateOfSize } from '../plugin-templates.js'
+import { PluginRefreshService } from './plugin-refresh.service.js'
 
 function isWebhookPayload(value: unknown): value is WebhookPayload {
   return value === null || Array.isArray(value) || isPlainObject(value)
@@ -53,11 +54,11 @@ export class WebhookIngestService {
   constructor(
     @InjectRepository(Plugin)
     private readonly pluginRepository: Repository<Plugin>,
-    private readonly renderCache: PluginRenderCacheService,
+    private readonly pluginRefresh: PluginRefreshService,
   ) {}
 
   async ingest(plugin: Plugin, body: unknown): Promise<{ success: boolean }> {
-    if (!plugin.templates || plugin.templates.length === 0) {
+    if (!templateOfSize(plugin.templates, 'full')) {
       throw new UnprocessableEntityException(`Plugin "${plugin.name}" has no template configured`)
     }
 
@@ -70,8 +71,8 @@ export class WebhookIngestService {
     // TypeORM's QueryDeepPartialEntity can't distribute over the WebhookPayload
     // union against a union-typed value, even though `merged`'s type already
     // matches the column exactly — hence the assertion rather than a real gap.
-    await this.pluginRepository.update(plugin.id, { webhookPayload: merged } as Parameters<typeof this.pluginRepository.update>[1])
-    await this.renderCache.renderAndCache(plugin, merged)
+    await this.pluginRepository.update(plugin.id, { webhookPayload: merged, payloadReceivedAt: new Date() } as Parameters<typeof this.pluginRepository.update>[1])
+    await this.pluginRefresh.refresh({ ...plugin, webhookPayload: merged })
 
     this.logger.debug(`Ingested webhook payload for plugin ${plugin.id} using ${plugin.mergeStrategy} merge strategy`)
 
