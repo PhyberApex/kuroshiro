@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, useId } from 'vue'
+import { useId } from 'vue'
 import Button from './Button.vue'
-import { copyText } from './copyText'
-import Icon from './Icon.vue'
+import CopyFaces from './CopyFaces.vue'
+import { useCopied } from './useCopied'
 
 const props = withDefaults(defineProps<{
   /** What is copied, and what is shown unless the default slot shows something else (a masked secret). */
@@ -17,24 +17,8 @@ const props = withDefaults(defineProps<{
   label: 'Copy',
 })
 
-const COPIED_FOR_MS = 2000
-
 const valueId = useId()
-const justCopied = ref(false)
-const showsCopied = computed(() => props.copied || justCopied.value)
-let revertTimer: ReturnType<typeof setTimeout> | undefined
-
-async function copy() {
-  if (!await copyText(props.value))
-    return
-  justCopied.value = true
-  clearTimeout(revertTimer)
-  revertTimer = setTimeout(() => {
-    justCopied.value = false
-  }, COPIED_FOR_MS)
-}
-
-onBeforeUnmount(() => clearTimeout(revertTimer))
+const { copy, showsCopied } = useCopied(() => props.value, () => props.copied)
 </script>
 
 <template>
@@ -46,10 +30,7 @@ onBeforeUnmount(() => clearTimeout(revertTimer))
       :aria-describedby="valueId"
       @click="copy"
     >
-      <span class="faces">
-        <span class="face" :class="{ shown: !showsCopied }"><Icon name="copy" />{{ label }}</span>
-        <span class="face" :class="{ shown: showsCopied }"><Icon name="check" />Copied</span>
-      </span>
+      <CopyFaces :label="label" :copied="showsCopied" />
     </Button>
     <span class="visually-hidden" role="status">{{ showsCopied ? 'Copied' : '' }}</span>
   </span>
@@ -104,23 +85,6 @@ onBeforeUnmount(() => clearTimeout(revertTimer))
     padding: 0;
     font-size: var(--title-md);
     line-height: var(--leading-title);
-  }
-
-  /* Both faces share one cell, so the button is as wide as the wider one and does not jump. */
-  .faces {
-    display: grid;
-  }
-
-  .face {
-    display: inline-flex;
-    grid-area: 1 / 1;
-    align-items: center;
-    gap: var(--space-2);
-    visibility: hidden;
-  }
-
-  .face.shown {
-    visibility: visible;
   }
 
   @media (max-width: 820px) {

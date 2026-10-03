@@ -41,6 +41,8 @@ All in `packages/ui-next/src/testing/`. The specs in `src/testing/__test__/` are
 
 The browser may read and write the clipboard, so a spec reads back what a control copied with `await navigator.clipboard.readText()`.
 
+Spec files run side by side and share that one clipboard, so only one of them may read it back: `CopyValue.spec.ts`. Any other spec that copies replaces `navigator.clipboard.writeText` with a `vi.fn` for the test and asserts what it was called with (`CodeBlock.spec.ts`).
+
 Playwright refuses to click what is disabled, `aria-disabled` included. To assert that such a control does not fire, click it with `{ force: true }`.
 
 The pointer stays where the last click left it, so an element mounted under it is hovered from the start. Do not assert a resting colour that hover changes.
@@ -143,6 +145,17 @@ A state that needs a pointer, a key press or a narrow window is shown in the gal
 - **`ProblemLines`** is the one primitive here that paints in the seal colour, and only on a line of `kind: 'alert'`. `elementsInSealColour(root)` (`src/testing/sealColour.ts`) lists what is painted in it; a component that reports any other trouble asserts that it is empty.
 - **An opening animation** sits inside `@media (prefers-reduced-motion: no-preference)`, so the specs and the shots see none. A spec asserts both sides: `animation-name` is `none`, and inside `withMotionAllowed` it is not.
 - **Under a Reka part** (`AlertDialogContent`, `AlertDialogOverlay`, `CollapsibleContent`), pass `as-child` and your own element: it carries the scoped style id, and a fixed layer sets its own `z-index` in its CSS.
+
+### Things that show
+
+- **`Seal`** picks its drawing from `size`: 黒白 from 20 px up, 白 alone below. `colour` is `seal` or `ink`. Its characters are cut in `--seal-ground`, which is paper unless what it sits on sets it, as `Plate` does. `stamps` lands it once when it is mounted; to stamp again, mount it anew with a `key`.
+- **`Plate`** needs `name` and throws without one, as `IconButton` does. It takes the `src` as it is: the caller resolves an app-relative image path against `document.baseURI`. Without `src` (a Screen never rendered) or with `rendering` it is the dither; `failed`, or an image that cannot be loaded, is the error state. `width` and `height` are the Device Model's panel and set the frame's shape before the image is known; left out, the frame takes the image's own ratio. `sealed` puts the seal on it and `stampKey` (the Active Screen's id) stamps it when it changes. The seal hangs over the frame by up to 14 px, so the place it stands in leaves that room above and to the right. The default slot replaces the image and makes the frame a `group` with the same name.
+- **`FactRows`** takes `facts` (`Fact` in `fact.ts`): a fact with no `value` is left out, `alert` is the label a firing Alert replaces the row's with, `pending` adds the loading mark, `to` makes the value a link (which needs a router).
+- **`ScreenRows` and `ScreenRow`** are one accordion. `ScreenRows` takes `items` (each with `id` and `name`), renders its default slot once per item and holds `v-model:open`; a `ScreenRow` outside one throws. The row's `state` (a `ScreenState` or `null`) decides its look and whether Rotation passes it over; the `#thumbnail` slot is handed `active` and `passedOver` for the `Plate` in it. The whole line opens the row except where a slot holds a control of its own. `SCREEN_KIND_LABELS` and `SCREEN_STATE_LABELS` (`screenRows.ts`) word the wire values.
+- **Reordering** is `sortable` on `ScreenRows`. The list is controlled: it emits `reorder` with every id in the new order and shows that order once `items` holds it, so the owner takes the order at once and, when the save is rejected, hands `items` back as they were. With `useSaveAsChanged`, which leaves the value as entered after a failed save, that is one `watch` on its `status`. Pointer dragging is `@atlaskit/pragmatic-drag-and-drop`, which rides the browser's own drag and drop: in a spec, `userEvent.dragAndDrop(grip, target, { targetPosition })` drops for real, and a state in the middle of a drag is reached by dispatching `DragEvent`s (`ScreenRow.spec.ts`). The lifted and landing looks are held still for the gallery with `force`.
+- **`CodeBlock`** takes `code`, `copy` for the button, `copyValue` when "Copy" writes more than is shown, and `foldAfter` (a number of lines). `useCopied` and `CopyFaces` are the state and the two faces of a "Copy" button, shared with `CopyValue`.
+- **`DayHeading`** is an `li` for the list it stands in. **`NumberedSteps`** is an `ol` whose slot holds the `li`s.
+- **A class on a component's root can be matched by an ancestor's class in another component's scoped CSS.** `Plate`'s size class `row` sits inside the gallery's `.row`. So a rule that hangs on a state or size class names the root with it: `.plate.row .note`, not `.row .note`.
 
 Three things Reka UI does not do for you:
 
