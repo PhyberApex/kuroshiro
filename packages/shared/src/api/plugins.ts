@@ -36,7 +36,7 @@ export interface DataSourceRead {
   name: string
   mode: DataSourceMode
   /** `null`, like `url`, `headers`, `body` and `transformJs`, for a `literal` Data Source. */
-  method: 'GET' | 'POST' | null
+  method: DataSourceMethod | null
   url: string | null
   headers: Record<string, string> | null
   body: Record<string, unknown> | null
@@ -120,4 +120,48 @@ export interface PluginDetail {
   mashups: PluginPlace[]
   /** `null` until a scheduled render has run. */
   lastScheduledRender: ScheduledRenderRead | null
+}
+
+export const DATA_SOURCE_METHODS = ['GET', 'POST'] as const
+export type DataSourceMethod = typeof DATA_SOURCE_METHODS[number]
+
+/** In minutes, for an interval the admin enters. A longer one that came with a Recipe is kept as imported. */
+export const REFRESH_INTERVAL_BOUNDS = { min: 1, max: 1440 } as const
+
+export interface DataSourceInput {
+  name: string
+  mode: DataSourceMode
+  method?: DataSourceMethod
+  /** http or https. */
+  url?: string
+  headers?: Record<string, string>
+  body?: Record<string, unknown>
+  transformJs?: string | null
+  literalValue?: DataSourceLiteralValue
+}
+
+export interface PluginFieldInput {
+  keyname: string
+  name: string
+  fieldType?: string
+  description?: string
+  defaultValue?: string
+  options?: PluginFieldOption[] | null
+  required?: boolean
+  order?: number
+}
+
+/** A key left out keeps what is stored. Each collection is the whole set. */
+export interface UpdatePluginInput {
+  name?: string
+  description?: string | null
+  /** Poll only. A whole number within `REFRESH_INTERVAL_BOUNDS`. */
+  refreshInterval?: number
+  templates?: Array<{ size: TemplateSize, liquidMarkup: string }>
+  /** Matched by `id`: one with an id is updated in place, one without is created, one left out is deleted. */
+  dataSources?: Array<{ id?: string } & DataSourceInput>
+  /** Matched by keyname. */
+  fields?: PluginFieldInput[]
+  /** By keyname; `null` or an empty string clears a value, a keyname left out keeps it. */
+  fieldValues?: Record<string, string | null>
 }

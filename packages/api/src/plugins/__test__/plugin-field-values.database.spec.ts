@@ -3,7 +3,7 @@ import type { DataSource } from 'typeorm'
 import type { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
 import type { MashupConfiguration } from '../../mashup/entities/mashup-configuration.entity.js'
 import type { MashupSlot } from '../../mashup/entities/mashup-slot.entity.js'
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Alert } from '../../alerts/entities/alert.entity.js'
 import { Device } from '../../devices/devices.entity.js'
 import { MashupRendererService } from '../../mashup/services/mashup-renderer.service.js'
@@ -33,18 +33,6 @@ import { PluginTransformService } from '../services/plugin-transform.service.js'
 import { RecipeUpdateService } from '../services/recipe-update.service.js'
 import { WebhookIngestService } from '../services/webhook-ingest.service.js'
 
-const scheduledTicks = new Map<string, () => Promise<void>>()
-let lastScheduledTick: (() => Promise<void>) | undefined
-
-vi.mock('node-cron', () => ({
-  default: {
-    schedule: vi.fn((_expression: string, callback: () => Promise<void>) => {
-      lastScheduledTick = callback
-      return { start: vi.fn(), stop: vi.fn() }
-    }),
-  },
-}))
-
 const BOTH_ADDRESS_FORMS = '{{ city }}|{{ trmnl.plugin_settings.custom_fields_values.city }}|{{ weather.url }}'
 
 // Every fetched Data Source answers with the url it was asked for, so a
@@ -54,6 +42,7 @@ const mockFetch = stubFetch()
 describe('field values against a real database', () => {
   let database: DataSource
   let plugins: PluginsService
+  let scheduler: PluginSchedulerService
   let pluginReads: PluginReadsService
   let assignments: PluginAssignmentsService
   let fieldValues: PluginFieldValuesService
@@ -62,6 +51,7 @@ describe('field values against a real database', () => {
   let recipeUpdate: RecipeUpdateService
   let mockImporter: { importFromRecipe: ReturnType<typeof vi.fn> }
   let device: Device
+  let backgroundTicks: Promise<void>[] = []
 
   beforeAll(async () => {
     database = await createTestDatabase()
@@ -74,6 +64,7 @@ describe('field values against a real database', () => {
     const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
     const refresh = new PluginRefreshService(resolver, renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
 
+    scheduler = new PluginSchedulerService(refresh)
     plugins = new PluginsService(
       database.getRepository(Plugin),
       database.getRepository(Screen),
@@ -82,10 +73,9 @@ describe('field values against a real database', () => {
       database.getRepository(PluginField),
       resolver,
       renderer,
-      new PluginSchedulerService(refresh),
+      scheduler,
       renderCache,
       fieldValues,
-      refresh,
       templateContext,
     )
     pluginReads = new PluginReadsService(database.getRepository(Plugin), database.getRepository(Screen), database.getRepository(Alert), fieldValues, asService<ConfigService>({ getOrThrow: () => 'https://kuroshiro.example' }))
@@ -109,17 +99,29 @@ describe('field values against a real database', () => {
   }, 120_000)
 
   beforeEach(() => {
-    scheduledTicks.clear()
+    backgroundTicks = []
+    const runTick = scheduler.runTick.bind(scheduler)
+    vi.spyOn(scheduler, 'runTick').mockImplementation((plugin) => {
+      const tick = runTick(plugin)
+      backgroundTicks.push(tick)
+      return tick
+    })
     mockFetch.mockReset()
     mockFetch.mockImplementation(async url => new Response(JSON.stringify({ url: String(url) })))
   })
 
+  afterEach(async () => {
+    await Promise.all(backgroundTicks)
+    vi.restoreAllMocks()
+  })
+
   afterAll(async () => {
+    scheduler.onModuleDestroy()
     await database.destroy()
   })
 
-  async function createWeatherPlugin(overrides: Partial<Parameters<PluginsService['create']>[0]> = {}) {
-    const created = await plugins.create({
+  function createWeatherPlugin(overrides: Partial<Parameters<PluginsService['create']>[0]> = {}) {
+    return plugins.create({
       name: 'Weather',
       kind: 'Poll',
       refreshInterval: 15,
@@ -131,8 +133,17 @@ describe('field values against a real database', () => {
       ],
       ...overrides,
     })
-    scheduledTicks.set(created.id, lastScheduledTick!)
-    return created
+  }
+
+  async function scheduledTick(pluginId: string): Promise<void> {
+    await scheduler.runTick(await loadForRender(pluginId))
+  }
+
+  /** Saves, lets the tick the save started finish, and reads the Plugin back. */
+  async function save(pluginId: string, input: Parameters<PluginsService['update']>[1]) {
+    await plugins.update(pluginId, input)
+    await Promise.all(backgroundTicks)
+    return (await plugins.findById(pluginId))!
   }
 
   async function cachedOutput(pluginId: string): Promise<string | null | undefined> {
@@ -151,7 +162,7 @@ describe('field values against a real database', () => {
       const plugin = await createWeatherPlugin({ fieldValues: { city: 'Berlin' } })
       await assignments.assign(plugin.id, device.id)
 
-      await scheduledTicks.get(plugin.id)!()
+      await scheduledTick(plugin.id)
 
       expect(await cachedOutput(plugin.id)).toBe(BERLIN)
     })
@@ -236,29 +247,16 @@ describe('field values against a real database', () => {
   })
 
   describe('saving', () => {
-    it('re-fetches and re-renders into the cache at once when a Field Value changes', async () => {
+    it('re-fetches and re-renders into the cache, in the background, when a Field Value changes', async () => {
       const plugin = await createWeatherPlugin({ fieldValues: { city: 'Berlin' } })
       await assignments.assign(plugin.id, device.id)
-      await scheduledTicks.get(plugin.id)!()
+      await scheduledTick(plugin.id)
 
-      const updated = await plugins.update(plugin.id, { fieldValues: { city: 'Paris' } })
+      const updated = await save(plugin.id, { fieldValues: { city: 'Paris' } })
 
       expect(await cachedOutput(plugin.id)).toBe('Paris|Paris|https://api.example.com/Paris/Paris')
-      expect(updated!.fieldValues.city).toEqual({ value: 'Paris', isSet: true })
-      expect(updated!.needsValues).toBe(false)
-    })
-
-    it('leaves the Fetch Failure Streak to the scheduler: a failing fetch on a save does not move it', async () => {
-      const plugin = await createWeatherPlugin({ fieldValues: { city: 'Berlin' } })
-      mockFetch.mockRejectedValue(new Error('down'))
-
-      await plugins.update(plugin.id, { fieldValues: { city: 'Paris' } })
-      const afterSave = await database.getRepository(PluginDataSource).findOneOrFail({ where: { plugin: { id: plugin.id } } })
-      await scheduledTicks.get(plugin.id)!()
-      const afterTick = await database.getRepository(PluginDataSource).findOneOrFail({ where: { plugin: { id: plugin.id } } })
-
-      expect(afterSave.fetchFailureStreak).toBe(0)
-      expect(afterTick.fetchFailureStreak).toBe(1)
+      expect(updated.fieldValues.city).toEqual({ value: 'Paris', isSet: true })
+      expect(updated.needsValues).toBe(false)
     })
 
     it('clears a Plugin Field\'s default and help text when an update leaves them out', async () => {
@@ -266,7 +264,7 @@ describe('field values against a real database', () => {
         fields: [{ keyname: 'city', name: 'City', description: 'Where you live', defaultValue: 'Tokyo' }],
       })
 
-      await plugins.update(plugin.id, { fields: [{ keyname: 'city', name: 'City' }] })
+      await save(plugin.id, { fields: [{ keyname: 'city', name: 'City' }] })
 
       const [field] = (await plugins.findById(plugin.id))!.fields
       expect(field.description).toBeNull()
@@ -279,9 +277,9 @@ describe('field values against a real database', () => {
         fieldValues: { city: 'Berlin', units: 'metric' },
       })
 
-      const updated = await plugins.update(plugin.id, { fieldValues: { city: null, units: '' } })
+      const updated = await save(plugin.id, { fieldValues: { city: null, units: '' } })
 
-      expect(updated!.fieldValues).toEqual({ city: { value: null, isSet: false }, units: { value: null, isSet: false } })
+      expect(updated.fieldValues).toEqual({ city: { value: null, isSet: false }, units: { value: null, isSet: false } })
       expect(await fieldValues.resolveFor(plugin.id)).toEqual({ city: 'Tokyo', units: '' })
     })
 
@@ -295,7 +293,7 @@ describe('field values against a real database', () => {
       const plugin = await createWeatherPlugin({ fieldValues: { city: 'Berlin', api_key: 's3cret' } })
       await assignments.assign(plugin.id, device.id)
 
-      const updated = await plugins.update(plugin.id, { fieldValues: { city: 'Paris' } })
+      const updated = await save(plugin.id, { fieldValues: { city: 'Paris' } })
       const reads = [
         plugin,
         updated,
@@ -317,7 +315,7 @@ describe('field values against a real database', () => {
       const plugin = await createWeatherPlugin({ fieldValues: { city: 'Berlin', api_key: 's3cret' } })
       const cityFieldId = plugin.fields.find(field => field.keyname === 'city')!.id
 
-      await plugins.update(plugin.id, {
+      await save(plugin.id, {
         fields: [{ keyname: 'city', name: 'Town', fieldType: 'string', required: true, order: 1 }],
       })
 
@@ -330,7 +328,7 @@ describe('field values against a real database', () => {
     it('leaves every Plugin Field attached to its Plugin after an update that carries fields', async () => {
       const plugin = await createWeatherPlugin()
 
-      await plugins.update(plugin.id, {
+      await save(plugin.id, {
         name: 'Weather, renamed',
         fields: [
           { keyname: 'city', name: 'City' },

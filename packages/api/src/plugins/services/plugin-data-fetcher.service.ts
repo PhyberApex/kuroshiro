@@ -13,8 +13,8 @@ export interface FetchableDataSource {
   mode?: DataSourceMode
   method?: string
   url?: string | null
-  headers?: Record<string, string>
-  body?: JsonObject
+  headers?: Record<string, string> | null
+  body?: JsonObject | null
   literalValue?: DataSourceLiteralValue
 }
 
@@ -36,7 +36,7 @@ export class PluginDataFetcherService {
     if (source.mode === 'literal') {
       return source.literalValue ?? null
     }
-    return this.fetchData(source.method || 'GET', source.url || '', source.headers, source.body, templateContext)
+    return this.fetchData(source.method || 'GET', source.url || '', source.headers ?? undefined, source.body ?? undefined, templateContext)
   }
 
   async fetchData(

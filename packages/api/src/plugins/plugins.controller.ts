@@ -47,8 +47,9 @@ export class PluginsController {
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() updatePluginDto: UpdatePluginDto) {
-    return this.pluginsService.update(id, updatePluginDto)
+  async update(@Param('id') id: string, @Body() updatePluginDto: UpdatePluginDto): Promise<PluginDetail> {
+    await this.pluginsService.update(id, updatePluginDto)
+    return this.pluginReads.detail(id)
   }
 
   @Post(':id/duplicate')

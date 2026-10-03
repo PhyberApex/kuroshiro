@@ -1,6 +1,7 @@
 import type { ConfigService } from '@nestjs/config'
 import type { MockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService.js'
 import type { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
+import type { Plugin } from '../../plugins/entities/plugin.entity.js'
 import type { PluginDataFetcherService } from '../../plugins/services/plugin-data-fetcher.service.js'
 import type { PluginRendererService } from '../../plugins/services/plugin-renderer.service.js'
 import type { PluginTransformService } from '../../plugins/services/plugin-transform.service.js'
@@ -152,29 +153,31 @@ describe('mashupRendererService', () => {
     )
   })
 
-  it('falls back to the error placeholder when a slot has no data sources at all', async () => {
-    const device = makeDevice({ id: 'device-1', width: 800, height: 480 })
-
-    const config: MashupConfiguration = makeMashupConfiguration({
+  function draftSlotConfiguration(plugin: Plugin): MashupConfiguration {
+    return makeMashupConfiguration({
       id: 'config-1',
       layout: '1Lx1R',
-      slots: [
-        makeMashupSlot({
-          id: 'slot-1',
-          position: 'left',
-          size: 'view--half_vertical',
-          order: 0,
-          plugin: makePlugin({
-            id: 'plugin-1',
-            name: 'Draft Plugin',
-            dataSources: [],
-            templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '<div>Never rendered</div>' })],
-          }),
-        }),
-      ],
+      slots: [makeMashupSlot({ id: 'slot-1', position: 'left', size: 'view--half_vertical', order: 0, plugin })],
     })
+  }
 
-    const result = await service.renderMashup(config, device)
+  it('renders a Poll-kind Plugin without Data Sources in its slot', async () => {
+    const device = makeDevice({ id: 'device-1', width: 800, height: 480 })
+    const plugin = makePlugin({ id: 'plugin-1', name: 'Clock', dataSources: [], templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '<div>Clock</div>' })] })
+    pluginRenderer.render.mockResolvedValue('<div>Clock</div>')
+
+    const result = await service.renderMashup(draftSlotConfiguration(plugin), device)
+
+    expect(result).toContain('<div>Clock</div>')
+    expect(result).not.toContain('error.png')
+    expect(pluginDataFetcher.fetchData).not.toHaveBeenCalled()
+  })
+
+  it('falls back to the error placeholder when a slot\'s Plugin has no Template', async () => {
+    const device = makeDevice({ id: 'device-1', width: 800, height: 480 })
+    const plugin = makePlugin({ id: 'plugin-1', name: 'Draft Plugin', dataSources: [makePluginDataSource({ name: 'source' })], templates: [] })
+
+    const result = await service.renderMashup(draftSlotConfiguration(plugin), device)
 
     expect(result).toContain('error.png')
     expect(pluginDataFetcher.fetchData).not.toHaveBeenCalled()

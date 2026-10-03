@@ -2,7 +2,7 @@ import type { Plugin } from '../entities/plugin.entity.js'
 import type { FieldValueView, StoredFieldValues } from '../plugin-field-values.js'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { In, Repository } from 'typeorm'
+import { EntityManager, In, Repository } from 'typeorm'
 import { ApiException } from '../../errors/api.exception.js'
 import { PluginFieldValue } from '../entities/plugin-field-value.entity.js'
 import { PluginField } from '../entities/plugin-field.entity.js'
@@ -23,6 +23,11 @@ export class PluginFieldValuesService {
     @InjectRepository(PluginField)
     private readonly fieldRepository: Repository<PluginField>,
   ) {}
+
+  /** The same service reading and writing inside the transaction `manager` runs. */
+  within(manager: EntityManager): PluginFieldValuesService {
+    return new PluginFieldValuesService(manager.getRepository(PluginFieldValue), manager.getRepository(PluginField))
+  }
 
   /** Stored Field Values by keyname, for each given Plugin. Secrets included: for renders, duplicates and the archive, never for an admin read. */
   async storedByPlugin(pluginIds: string[]): Promise<Map<string, StoredFieldValues>> {
@@ -83,7 +88,7 @@ export class PluginFieldValuesService {
    * or an empty string clears a value, so the Plugin Field's default applies again.
    * Returns whether anything stored changed.
    */
-  async write(plugin: Plugin, writes: FieldValueWrites | undefined): Promise<boolean> {
+  async write(plugin: Pick<Plugin, 'id' | 'fields'>, writes: FieldValueWrites | undefined): Promise<boolean> {
     const entries = Object.entries(writes ?? {})
     if (entries.length === 0)
       return false
@@ -100,7 +105,7 @@ export class PluginFieldValuesService {
     return changes.length > 0
   }
 
-  private async store(plugin: Plugin, field: PluginField, value: string | undefined): Promise<void> {
+  private async store(plugin: Pick<Plugin, 'id'>, field: PluginField, value: string | undefined): Promise<void> {
     if (value === undefined) {
       await this.fieldValueRepository.delete({ field: { id: field.id } })
       return

@@ -18,7 +18,6 @@ catalog:
   '@nestjs/common': 12.1.1
   '@nestjs/config': 12.0.1
   '@nestjs/core': 12.1.1
-  '@nestjs/mapped-types': 12.0.0
   '@nestjs/platform-express': 12.1.1
   '@nestjs/serve-static': 12.0.0
   '@nestjs/testing': 12.1.1

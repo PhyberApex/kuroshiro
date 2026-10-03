@@ -55,8 +55,8 @@ function toComparablePlugin(plugin: Plugin): ComparablePlugin {
       mode: dataSource.mode,
       method: dataSource.method,
       url: dataSource.url,
-      headers: dataSource.headers,
-      body: dataSource.body,
+      headers: dataSource.headers ?? undefined,
+      body: dataSource.body ?? undefined,
       transformJs: dataSource.transformJs,
       literalValue: dataSource.literalValue,
     })),
@@ -254,7 +254,7 @@ export class RecipeUpdateService {
       return
     }
 
-    const fields = this.buildDataSourceFields(item.upstream as NormalizedDataSource, existing?.headers)
+    const fields = this.buildDataSourceFields(item.upstream as NormalizedDataSource, existing?.headers ?? undefined)
 
     if (existing) {
       Object.assign(existing, fields)

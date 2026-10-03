@@ -23,7 +23,7 @@ export class DataSourceFetchOutcomeService {
   ) {}
 
   /**
-   * `dataSources` comes from the scheduler's cron closure, captured once at
+   * `dataSources` comes from the scheduler's timer closure, captured once at
    * schedule time (`PluginSchedulerService.schedulePlugin`) — every later
    * tick reuses that same in-memory snapshot, so `source.fetchFailureStreak`
    * is stale from the second tick onward. The failure branch therefore must
