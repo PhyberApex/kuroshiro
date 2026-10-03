@@ -23,6 +23,10 @@ export const API_ERROR_CODES = [
   'order-not-a-permutation',
   'demo-mode',
   'upload-too-large',
+  'firmware-version-taken',
+  'device-model-unknown',
+  'firmware-not-custom',
+  'upstream-unreachable',
 ] as const
 
 export type ApiErrorCode = typeof API_ERROR_CODES[number]

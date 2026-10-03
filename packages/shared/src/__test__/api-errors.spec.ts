@@ -27,6 +27,10 @@ const wording: Record<ApiErrorCode, string> = {
   'order-not-a-permutation': 'The Order has to name every Screen once.',
   'demo-mode': 'Not available in demo mode.',
   'upload-too-large': 'That file is larger than this Instance accepts.',
+  'firmware-version-taken': 'There is already a Firmware with that version.',
+  'device-model-unknown': 'This Instance does not know that Device Model.',
+  'firmware-not-custom': 'Only a custom Firmware can be deleted.',
+  'upstream-unreachable': 'TRMNL did not answer.',
 }
 
 function wordingBySwitch(code: ApiErrorCode): string {
@@ -46,11 +50,15 @@ function wordingBySwitch(code: ApiErrorCode): string {
     case 'order-not-a-permutation':
     case 'demo-mode':
     case 'upload-too-large':
+    case 'firmware-version-taken':
+    case 'device-model-unknown':
+    case 'firmware-not-custom':
     case 'conflict':
     case 'payload-too-large':
     case 'unprocessable':
       return 'The server refused.'
     case 'bad-gateway':
+    case 'upstream-unreachable':
     case 'service-unavailable':
     case 'internal':
       return 'The server failed.'

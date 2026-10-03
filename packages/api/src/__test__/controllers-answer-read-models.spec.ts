@@ -74,8 +74,6 @@ const KNOWN_EXCEPTIONS: string[] = [
   'DeviceModelsController.getAll',
   'DeviceModelsController.getPalettes',
   'DevicesController.add',
-  'FirmwareController.getAll',
-  'FirmwareController.upload',
   'LogsController.getLogsByDevice',
   'MashupController.getConfiguration',
   'MashupController.update',

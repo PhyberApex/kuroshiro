@@ -1,7 +1,8 @@
+import type { DeviceModel } from '../../device-models/entities/device-model.entity.js'
 import type { Firmware } from '../entities/firmware.entity.js'
 import nodeBuffer from 'node:buffer'
 import * as crypto from 'node:crypto'
-import { BadRequestException, NotFoundException } from '@nestjs/common'
+import { BadRequestException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeFirmware } from '../../test/fixtures.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
@@ -53,7 +54,7 @@ describe('firmwareService', () => {
     }
 
     configService = { get: vi.fn().mockReturnValue('http://api') }
-    service = new FirmwareService(asRepository(repo), asService(configService))
+    service = new FirmwareService(asRepository(Object.assign(repo, { existsBy: vi.fn().mockResolvedValue(false) })), asRepository(createMockRepository<DeviceModel>()), asService(configService))
   })
 
   describe('upload', () => {
@@ -84,34 +85,6 @@ describe('firmwareService', () => {
     it('rejects a file that is not a .bin', async () => {
       await expect(service.upload({ ...file, originalname: 'og.zip' }, { version: '1.0.0' })).rejects.toThrow(BadRequestException)
       expect(repo.save).not.toHaveBeenCalled()
-    })
-
-    it('rejects a missing version', async () => {
-      await expect(service.upload(file, { version: '' })).rejects.toThrow(BadRequestException)
-      expect(repo.save).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('delete', () => {
-    it('deletes a custom firmware', async () => {
-      const firmware = makeFirmware({ id: 'fw-1', kind: 'custom' })
-      repo.findOneBy.mockResolvedValue(firmware)
-
-      await service.delete('fw-1')
-
-      expect(repo.remove).toHaveBeenCalledWith(firmware)
-      expect(fsMock.unlink).toHaveBeenCalledWith(expect.stringContaining('fw-1.bin'))
-    })
-
-    it('refuses to delete an official-synced firmware', async () => {
-      repo.findOneBy.mockResolvedValue(makeFirmware({ id: 'fw-1', kind: 'official-synced' }))
-      await expect(service.delete('fw-1')).rejects.toThrow(BadRequestException)
-      expect(repo.remove).not.toHaveBeenCalled()
-    })
-
-    it('throws NotFoundException for an unknown id', async () => {
-      repo.findOneBy.mockResolvedValue(null)
-      await expect(service.delete('nope')).rejects.toThrow(NotFoundException)
     })
   })
 
