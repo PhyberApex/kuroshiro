@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { isPlainObject } from '../../utils/json.js'
 import { Plugin } from '../entities/plugin.entity.js'
+import { templateOfSize } from '../plugin-templates.js'
 import { PluginRefreshService } from './plugin-refresh.service.js'
 
 function isWebhookPayload(value: unknown): value is WebhookPayload {
@@ -57,7 +58,7 @@ export class WebhookIngestService {
   ) {}
 
   async ingest(plugin: Plugin, body: unknown): Promise<{ success: boolean }> {
-    if (!plugin.templates || plugin.templates.length === 0) {
+    if (!templateOfSize(plugin.templates, 'full')) {
       throw new UnprocessableEntityException(`Plugin "${plugin.name}" has no template configured`)
     }
 

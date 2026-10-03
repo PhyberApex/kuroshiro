@@ -6,7 +6,6 @@ import type { MashupSlot } from '../../mashup/entities/mashup-slot.entity.js'
 import type { PreviewDataDto } from '../dto/preview-data.dto.js'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Alert } from '../../alerts/entities/alert.entity.js'
-import { DeviceSensor } from '../../device-sensors/entities/device-sensor.entity.js'
 import { Device } from '../../devices/devices.entity.js'
 import { MashupRendererService } from '../../mashup/services/mashup-renderer.service.js'
 import { Screen } from '../../screens/screens.entity.js'
@@ -81,8 +80,9 @@ describe('field values against a real database', () => {
     )
     pluginReads = new PluginReadsService(database.getRepository(Plugin), database.getRepository(Screen), database.getRepository(Alert), fieldValues, asService<ConfigService>({ getOrThrow: () => 'https://kuroshiro.example' }))
     assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
-    mashupRenderer = new MashupRendererService(renderer, config, asService<DeviceSensorsService>({ findForDevice: async () => [] }), templateContext)
-    previewData = new PluginPreviewDataService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DeviceSensor), templateContext)
+    const deviceSensors = asService<DeviceSensorsService>({ findForDevice: async () => [] })
+    mashupRenderer = new MashupRendererService(renderer, config, deviceSensors, templateContext)
+    previewData = new PluginPreviewDataService(database.getRepository(Plugin), database.getRepository(Device), deviceSensors, templateContext)
     webhookIngest = new WebhookIngestService(database.getRepository(Plugin), refresh)
     mockImporter = { importFromRecipe: vi.fn() }
     recipeUpdate = new RecipeUpdateService(

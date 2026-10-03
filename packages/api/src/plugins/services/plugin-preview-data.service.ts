@@ -1,10 +1,11 @@
 import type { PreviewData } from 'kuroshiro-shared'
+import type { DeviceSensor } from '../../device-sensors/entities/device-sensor.entity.js'
 import type { PreviewDataDto } from '../dto/preview-data.dto.js'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { isUUID } from 'class-validator'
 import { Repository } from 'typeorm'
-import { DeviceSensor } from '../../device-sensors/entities/device-sensor.entity.js'
+import { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
 import { Device } from '../../devices/devices.entity.js'
 import { ApiException } from '../../errors/api.exception.js'
 import { Plugin } from '../entities/plugin.entity.js'
@@ -24,8 +25,7 @@ export class PluginPreviewDataService {
     private readonly pluginRepository: Repository<Plugin>,
     @InjectRepository(Device)
     private readonly deviceRepository: Repository<Device>,
-    @InjectRepository(DeviceSensor)
-    private readonly sensorRepository: Repository<DeviceSensor>,
+    private readonly deviceSensors: DeviceSensorsService,
     private readonly templateContext: PluginTemplateContextService,
   ) {}
 
@@ -37,7 +37,7 @@ export class PluginPreviewDataService {
       throw new ApiException(HttpStatus.NOT_FOUND, 'plugin-not-found', 'Plugin not found', { id: pluginId })
 
     const sensors = deviceId ? await this.sensorsOf(deviceId) : []
-    const rendering = await this.templateContext.contextFor(plugin, sensors, { name, dataSources, fieldValues, hideSecrets: true })
+    const rendering = await this.templateContext.contextFor(plugin, sensors, { name, dataSources, fieldValues }, { hideSecretsOf: plugin.fields })
 
     return toPreviewData(plugin, rendering, new Date())
   }
@@ -46,6 +46,6 @@ export class PluginPreviewDataService {
     if (!await this.deviceRepository.existsBy({ id: deviceId }))
       throw new ApiException(HttpStatus.NOT_FOUND, 'device-not-found', 'Device not found', { id: deviceId })
 
-    return this.sensorRepository.find({ where: { device: { id: deviceId } } })
+    return this.deviceSensors.findForDevice(deviceId)
   }
 }

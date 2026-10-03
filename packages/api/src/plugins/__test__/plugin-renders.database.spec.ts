@@ -70,6 +70,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
   let webhookIngest: WebhookIngestService
   let display: DeviceDisplayService
   let mashupRenderer: MashupRendererService
+  let deviceSensors: DeviceSensorsService
   let deviceCount = 0
   const renderer = new PluginRendererService()
 
@@ -96,7 +97,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
     assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
     webhookIngest = new WebhookIngestService(database.getRepository(Plugin), refresh)
 
-    const deviceSensors = new DeviceSensorsService(database.getRepository(DeviceSensor))
+    deviceSensors = new DeviceSensorsService(database.getRepository(DeviceSensor))
     const deviceModels = createMockDeviceModelsService()
     const fallbackScreens = createMockFallbackScreensService()
     primeMockDeviceModelsService(deviceModels)
@@ -121,7 +122,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
       providers: [
         { provide: PluginsService, useValue: plugins },
         { provide: PluginReadsService, useValue: new PluginReadsService(database.getRepository(Plugin), database.getRepository(Screen), database.getRepository(Alert), fieldValues, config) },
-        { provide: PluginPreviewDataService, useValue: new PluginPreviewDataService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DeviceSensor), templateContext) },
+        { provide: PluginPreviewDataService, useValue: new PluginPreviewDataService(database.getRepository(Plugin), database.getRepository(Device), deviceSensors, templateContext) },
         { provide: PluginAssignmentsService, useValue: assignments },
         { provide: PluginImporterService, useValue: asService<PluginImporterService>({}) },
         { provide: PluginExporterService, useValue: asService<PluginExporterService>({}) },
@@ -436,6 +437,29 @@ describe('what a Plugin renders from, and with which Template, against a real da
       expect(dataSourceFetches()).toEqual([['https://api.example.com/weather', expect.objectContaining({ headers: { Authorization: 'Bearer hunter2' } })]])
     })
 
+    it('hides a password where a failed fetch quotes it and where the Data Source\'s answer repeats it', async () => {
+      const plugin = await createPollPlugin({
+        dataSources: [
+          { name: 'half_typed', mode: 'fetch', url: 'https://api.example.com/v1?key={{ api_key }}' },
+          { name: 'echo', mode: 'fetch', url: 'https://api.example.com/echo', headers: { 'X-Key': '{{ api_key }}' } },
+        ],
+        fields: [{ keyname: 'api_key', name: 'API key', fieldType: 'password' }],
+        fieldValues: { api_key: 'hunter2' },
+      })
+      dataSourceAnswer = (url, init) => {
+        if (url.includes('/v1'))
+          throw new TypeError(`Failed to parse URL from ${url}`)
+        return new Response(JSON.stringify({ sent: { headers: init?.headers } }))
+      }
+
+      const answer = await (await requestPreviewData(plugin.id, { deviceId: null })).text()
+
+      expect(answer).not.toContain('hunter2')
+      const preview: PreviewData = JSON.parse(answer)
+      expect(preview.names).toContainEqual({ name: 'half_typed', origin: 'dataSource', error: 'Failed to parse URL from https://api.example.com/v1?key=••••••••' })
+      expect(preview.context).toMatchObject({ echo: { sent: { headers: { 'X-Key': '••••••••' } } } })
+    })
+
     it('hides a password the request itself sends, and fetches with it', async () => {
       const plugin = await createPollPlugin({
         dataSources: [{ name: 'weather', mode: 'fetch', url: 'https://api.example.com/weather?key={{ api_key }}' }],
@@ -491,7 +515,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
       const demoConfig = asService<ConfigService>({ get: (key: string) => key === 'demo_mode' })
       const demoResolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, demoConfig), new PluginTransformService())
       const demoFieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
-      const demoPreview = new PluginPreviewDataService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DeviceSensor), new PluginTemplateContextService(demoFieldValues, demoResolver))
+      const demoPreview = new PluginPreviewDataService(database.getRepository(Plugin), database.getRepository(Device), deviceSensors, new PluginTemplateContextService(demoFieldValues, demoResolver))
       const plugin = await createPollPlugin()
 
       const preview = await demoPreview.previewData(plugin.id, { deviceId: null, dataSources: [{ name: 'internal', mode: 'fetch', url: 'http://127.0.0.1:9/secrets' }] })

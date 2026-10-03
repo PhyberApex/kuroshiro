@@ -91,13 +91,11 @@ describe('pluginTemplateContextService', () => {
     })
 
     it('hides a password Field Value in both address forms, and still fetches with the real one', async () => {
-      const withSecret = makePlugin({
-        fields: [makePluginField({ keyname: 'api_key', fieldType: 'password' }), makePluginField({ keyname: 'city', fieldType: 'string' }), makePluginField({ keyname: 'unset', fieldType: 'password' })],
-      })
+      const fields = [makePluginField({ keyname: 'api_key', fieldType: 'password' }), makePluginField({ keyname: 'city', fieldType: 'string' }), makePluginField({ keyname: 'unset', fieldType: 'password' })]
       const resolveAll = vi.fn().mockResolvedValue({})
 
       const { context, fieldValues } = await createPluginTemplateContextService({ api_key: 'hunter2', city: 'Berlin', unset: '' }, { resolveAll })
-        .contextFor(withSecret, [], { hideSecrets: true })
+        .contextFor(plugin, [], {}, { hideSecretsOf: fields })
 
       const shown = { api_key: '••••••••', city: 'Berlin', unset: '' }
       expect(context).toMatchObject({ ...shown, trmnl: { plugin_settings: { custom_fields_values: shown } } })

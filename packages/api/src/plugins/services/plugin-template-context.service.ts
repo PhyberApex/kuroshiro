@@ -1,9 +1,10 @@
 import type { DeviceSensor } from '../../device-sensors/entities/device-sensor.entity.js'
+import type { PluginField } from '../entities/plugin-field.entity.js'
 import type { Plugin } from '../entities/plugin.entity.js'
 import type { ResolvableDataSource } from './plugin-data-resolver.service.js'
 import type { FieldValueWrites } from './plugin-field-values.service.js'
 import { Injectable } from '@nestjs/common'
-import { hideSecretFieldValues } from '../plugin-field-values.js'
+import { hideSecretFieldValues, hideSecretsIn, secretValues } from '../plugin-field-values.js'
 import { PluginDataResolverService } from './plugin-data-resolver.service.js'
 import { PluginFieldValuesService } from './plugin-field-values.service.js'
 
@@ -29,8 +30,16 @@ export interface UnsavedPluginInput {
   /** Poll only. */
   dataSources?: ResolvableDataSource[]
   fieldValues?: FieldValueWrites
-  /** A password Field Value reads as dots in `context`. A Data Source is still fetched with the real one. Needs the Plugin's `fields`. */
-  hideSecrets?: boolean
+}
+
+export interface ContextOptions {
+  /**
+   * The Plugin Fields whose password values the admin's browser must not
+   * read: each reads as dots in `context`, in a Field Value and wherever a
+   * Data Source's result or error repeats it. A Data Source is still fetched
+   * with the real one.
+   */
+  hideSecretsOf?: Array<Pick<PluginField, 'keyname' | 'fieldType'>>
 }
 
 export interface PluginRenderContext {
@@ -60,25 +69,26 @@ export class PluginTemplateContextService {
   ) {}
 
   /** `sensors` are the rendering Device's, and empty where the render is for no single Device. */
-  async contextFor(plugin: Plugin, sensors: DeviceSensor[], unsaved: UnsavedPluginInput = {}): Promise<PluginRenderContext> {
+  async contextFor(plugin: Plugin, sensors: DeviceSensor[], unsaved: UnsavedPluginInput = {}, { hideSecretsOf = [] }: ContextOptions = {}): Promise<PluginRenderContext> {
     const resolved = await this.fieldValues.resolveFor(plugin.id, unsaved.fieldValues)
-    const fetchedWith = this.withoutData(unsaved.name ?? plugin.name, resolved, sensors)
+    const fetchContext = this.withoutData(unsaved.name ?? plugin.name, resolved, sensors)
 
-    const fieldValues = unsaved.hideSecrets ? hideSecretFieldValues(plugin.fields ?? [], resolved) : resolved
-    const shown = {
-      ...fetchedWith,
+    const fieldValues = hideSecretFieldValues(hideSecretsOf, resolved)
+    const withoutData = {
+      ...fetchContext,
       ...fieldValues,
-      trmnl: { ...fetchedWith.trmnl, plugin_settings: { ...fetchedWith.trmnl.plugin_settings, custom_fields_values: fieldValues } },
-      sensors: fetchedWith.sensors,
+      trmnl: { ...fetchContext.trmnl, plugin_settings: { ...fetchContext.trmnl.plugin_settings, custom_fields_values: fieldValues } },
+      sensors: fetchContext.sensors,
     }
 
     if (plugin.kind === 'Webhook') {
       const payload = plugin.webhookPayload
-      return { context: Array.isArray(payload) ? payload : { ...shown, ...payload }, fieldValues, sourceData: {} }
+      return { context: Array.isArray(payload) ? payload : { ...withoutData, ...payload }, fieldValues, sourceData: {} }
     }
 
-    const sourceData = await this.dataResolver.resolveAll(unsaved.dataSources ?? plugin.dataSources ?? [], fetchedWith)
-    return { context: { ...shown, ...sourceData }, fieldValues, sourceData }
+    const fetched = await this.dataResolver.resolveAll(unsaved.dataSources ?? plugin.dataSources ?? [], fetchContext)
+    const sourceData = hideSecretsIn(fetched, secretValues(hideSecretsOf, resolved))
+    return { context: { ...withoutData, ...sourceData }, fieldValues, sourceData }
   }
 
   private withoutData(instanceName: string, fieldValues: Record<string, string>, sensors: DeviceSensor[]): PluginTemplateContext {

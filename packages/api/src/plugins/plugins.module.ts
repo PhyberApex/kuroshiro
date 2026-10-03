@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { Alert } from '../alerts/entities/alert.entity.js'
-import { DeviceSensor } from '../device-sensors/entities/device-sensor.entity.js'
+import { DeviceSensorsModule } from '../device-sensors/device-sensors.module.js'
 import { Device } from '../devices/devices.entity.js'
 import { Screen } from '../screens/screens.entity.js'
 import { DevicePlugin } from './entities/device-plugin.entity.js'
@@ -36,6 +36,7 @@ import { WebhookIngestController } from './webhook-ingest.controller.js'
 @Module({
   imports: [
     ConfigModule,
+    DeviceSensorsModule,
     TypeOrmModule.forFeature([
       Plugin,
       DevicePlugin,
@@ -45,7 +46,6 @@ import { WebhookIngestController } from './webhook-ingest.controller.js'
       PluginFieldValue,
       Screen,
       Device,
-      DeviceSensor,
       Alert,
     ]),
   ],

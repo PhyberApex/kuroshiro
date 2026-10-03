@@ -3,8 +3,8 @@ import type { MigrationInterface, QueryRunner } from 'typeorm'
 /**
  * A Plugin has one Template per size and always a `full` one, which is what
  * lets every render pick its Template by size. "Earliest" is the row order of
- * the table (`ctid`), the order a render read "the first Template" in: the
- * table has no creation time.
+ * the table (`ctid`), which is the order a read without a sort answers them
+ * in: the table has no creation time.
  *
  * Deleting the later Templates of a size drops their markup for good, so
  * `down` only takes the constraint away.

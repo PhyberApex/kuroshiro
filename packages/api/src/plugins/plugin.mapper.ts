@@ -1,4 +1,4 @@
-import type { DataSourceRead, PluginAssignmentRead, PluginDetail, PluginFieldRead, PluginPlace, PluginSummary, PreviewData, PreviewName, ScheduledRenderRead } from 'kuroshiro-shared'
+import type { DataSourceRead, PluginAssignmentRead, PluginDetail, PluginFieldRead, PluginPlace, PluginSummary, PreviewData, PreviewName, PreviewOrigin, ScheduledRenderRead } from 'kuroshiro-shared'
 import type { Screen } from '../screens/screens.entity.js'
 import type { PluginDataSource } from './entities/plugin-data-source.entity.js'
 import type { PluginField } from './entities/plugin-field.entity.js'
@@ -204,23 +204,24 @@ export function toPluginDetail(plugin: Plugin, facts: PluginDetailFacts): Plugin
   }
 }
 
+const BUILT_IN_NAMES = ['sensors', 'trmnl'] as const satisfies readonly PreviewOrigin[]
+
 function toPreviewNames(plugin: Plugin, { context, fieldValues, sourceData }: PluginRenderContext): PreviewName[] {
   if (Array.isArray(context))
     return []
 
   const data = isPolled(plugin) ? sourceData : plugin.webhookPayload ?? {}
-  const dataNames = new Set(Object.keys(data))
-  const replacedByData = (name: string) => dataNames.has(name)
+  const origin = isPolled(plugin) ? 'dataSource' : 'webhookPayload'
+  const isReplaced = (name: string) => name in data
+  const isBuiltIn = (name: string) => name === 'sensors' || name === 'trmnl'
   const fieldValueNames = inOrder(plugin.fields)
     .map(field => field.keyname)
-    .filter(keyname => keyname in fieldValues && context[keyname] === fieldValues[keyname] && !replacedByData(keyname))
+    .filter(keyname => keyname in fieldValues && !isReplaced(keyname) && !isBuiltIn(keyname))
 
   return [
     ...fieldValueNames.map((name): PreviewName => ({ name, origin: 'fieldValue', error: null })),
-    ...Object.entries(data).map(([name, value]): PreviewName => isPolled(plugin)
-      ? { name, origin: 'dataSource', error: isFetchErrorMarker(value) ? value.message : null }
-      : { name, origin: 'webhookPayload', error: null }),
-    ...(['sensors', 'trmnl'] as const).filter(name => !replacedByData(name)).map((name): PreviewName => ({ name, origin: name, error: null })),
+    ...Object.entries(data).map(([name, value]): PreviewName => ({ name, origin, error: isFetchErrorMarker(value) ? value.message : null })),
+    ...BUILT_IN_NAMES.filter(name => !isReplaced(name)).map((name): PreviewName => ({ name, origin: name, error: null })),
   ]
 }
 
