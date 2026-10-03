@@ -35,6 +35,6 @@
     "husky": "9.1.7",
     "lint-staged": "17.6.0",
     "puppeteer": "catalog:",
-    "wait-on": "9.5.0"
+    "wait-on": "9.5.1"
   }
 }
