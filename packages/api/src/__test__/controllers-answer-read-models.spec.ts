@@ -83,8 +83,6 @@ const KNOWN_EXCEPTIONS: string[] = [
   'PluginsController.clearWebhookPayload',
   'PluginsController.create',
   'PluginsController.duplicate',
-  'PluginsController.findAll',
-  'PluginsController.findById',
   'PluginsController.importFromGithub',
   'PluginsController.importFromRecipe',
   'PluginsController.importPlugin',

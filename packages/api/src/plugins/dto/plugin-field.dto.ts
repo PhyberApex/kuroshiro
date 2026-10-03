@@ -1,5 +1,7 @@
 import { Type } from 'class-transformer'
 import { IsArray, IsBoolean, IsInt, IsOptional, IsString, ValidateNested } from 'class-validator'
+// `@Type` reads design metadata as a DTO module is evaluated, and this is the first one the Plugin DTOs load.
+import 'reflect-metadata'
 
 class PluginFieldOptionDto {
   @IsString()

@@ -7,6 +7,7 @@ import type { PluginTransformService } from '../services/plugin-transform.servic
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makePlugin, makePluginDataSource, makePluginTemplate } from '../../test/fixtures.js'
 import { createMockPluginDataFetcherService, createMockPluginTransformService, createPluginTemplateContextService } from '../../test/mockPluginCollaborators.js'
+import { asRepository, createMockRepository } from '../../test/mockRepository.js'
 import { asService, callPrivate } from '../../test/mockService.js'
 import { PluginDataResolverService } from '../services/plugin-data-resolver.service.js'
 import { PluginRefreshService } from '../services/plugin-refresh.service.js'
@@ -32,6 +33,7 @@ describe('pluginSchedulerService', () => {
   let mockTransformer: MockPluginTransformService
   let mockRenderCache: { renderAndCache: ReturnType<typeof vi.fn> }
   let mockFetchOutcome: { recordOutcomes: ReturnType<typeof vi.fn> }
+  let mockPluginRepo: ReturnType<typeof createMockRepository<Plugin>>
 
   beforeEach(() => {
     capturedCallback = undefined
@@ -42,6 +44,7 @@ describe('pluginSchedulerService', () => {
     mockRenderCache = {
       renderAndCache: vi.fn(),
     }
+    mockPluginRepo = createMockRepository<Plugin>()
     mockFetchOutcome = {
       recordOutcomes: vi.fn().mockResolvedValue(undefined),
     }
@@ -56,6 +59,7 @@ describe('pluginSchedulerService', () => {
       asService<PluginRenderCacheService>(mockRenderCache),
       createPluginTemplateContextService(),
       asService<DataSourceFetchOutcomeService>(mockFetchOutcome),
+      asRepository(mockPluginRepo),
     ))
   })
 

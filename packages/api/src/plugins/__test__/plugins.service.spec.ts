@@ -79,17 +79,6 @@ describe('pluginsService', () => {
     refreshInterval: 15,
   })
 
-  it('findAll returns all plugins ordered by name', async () => {
-    const plugins = [basePlugin]
-    pluginRepo.find.mockResolvedValue(plugins)
-    const result = await service.findAll()
-    expect(pluginRepo.find).toHaveBeenCalledWith({
-      relations: { dataSources: true, templates: true, fields: true, deviceAssignments: { device: true } },
-      order: { name: 'ASC' },
-    })
-    expect(result).toEqual([{ ...basePlugin, fieldValues: {}, needsValues: false }])
-  })
-
   it('findById returns a plugin by id with relations', async () => {
     pluginRepo.findOne.mockResolvedValue(basePlugin)
     const result = await service.findById('1')

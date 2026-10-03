@@ -1,14 +1,9 @@
+import type { MergeStrategy, PluginKind, TemplateSize } from 'kuroshiro-shared'
 import type { DevicePlugin } from './device-plugin.entity.js'
 import type { PluginDataSource } from './plugin-data-source.entity.js'
 import type { PluginField } from './plugin-field.entity.js'
 import type { PluginTemplate } from './plugin-template.entity.js'
 import { Column, CreateDateColumn, Entity, Index, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
-
-export const PLUGIN_KINDS = ['Poll', 'Webhook'] as const
-export type PluginKind = typeof PLUGIN_KINDS[number]
-
-export const MERGE_STRATEGIES = ['standard', 'deep_merge', 'stream'] as const
-export type MergeStrategy = typeof MERGE_STRATEGIES[number]
 
 // A plain object, array, or null — modeled shallowly (rather than as a fully
 // recursive JSON type) because TypeORM's DeepPartial mapping over a
@@ -50,6 +45,9 @@ export class Plugin {
   @Column('jsonb', { nullable: true })
   webhookPayload?: WebhookPayload
 
+  @Column('timestamptz', { nullable: true })
+  payloadReceivedAt?: Date | null
+
   // Inert: the id of the TRMNL Recipe this Plugin was imported from, if any.
   // Nothing reads it yet — kept so a future update-check feature (#794-adjacent)
   // doesn't need a backfill migration (ADR-0011).
@@ -61,6 +59,26 @@ export class Plugin {
   // import sets it; a Plugin imported before this column existed has null.
   @Column('jsonb', { nullable: true })
   sourceRecipeSnapshot?: RecipeSnapshot
+
+  @Column('timestamptz', { nullable: true })
+  snapshotTakenAt?: Date | null
+
+  /**
+   * The last render a scheduler tick made, and what stopped it if it failed.
+   * Runtime state, like the Fetch Failure Streak: left out of `.trmnlp` export
+   * and the Configuration Archive.
+   */
+  @Column('timestamptz', { nullable: true })
+  lastScheduledRenderAt?: Date | null
+
+  @Column('text', { nullable: true })
+  lastScheduledRenderError?: string | null
+
+  @Column('int', { nullable: true })
+  lastScheduledRenderErrorLine?: number | null
+
+  @Column('text', { nullable: true })
+  lastScheduledRenderErrorSize?: TemplateSize | null
 
   @CreateDateColumn()
   createdAt: Date

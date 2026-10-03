@@ -37,6 +37,7 @@ describe('dataSourceFetchOutcomeService', () => {
     expect(dataSourceRepo.update).toHaveBeenCalledWith('ds-1', {
       fetchFailureStreak: 0,
       lastFetchAttemptAt: expect.any(Date),
+      lastFetchSucceededAt: expect.any(Date),
       lastFetchError: null,
     })
   })

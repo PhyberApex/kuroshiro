@@ -44,7 +44,7 @@ export class DataSourceFetchOutcomeService {
         await this.dataSourceRepository.update(source.id, { lastFetchAttemptAt: now, lastFetchError: value.message })
       }
       else {
-        await this.dataSourceRepository.update(source.id, { fetchFailureStreak: 0, lastFetchAttemptAt: now, lastFetchError: null })
+        await this.dataSourceRepository.update(source.id, { fetchFailureStreak: 0, lastFetchAttemptAt: now, lastFetchSucceededAt: now, lastFetchError: null })
       }
     }
   }

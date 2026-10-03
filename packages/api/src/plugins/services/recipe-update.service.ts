@@ -130,6 +130,7 @@ export class RecipeUpdateService {
     await this.pluginRepository.update(pluginId, {
       ...basicFieldUpdates,
       sourceRecipeSnapshot: { ...upstream },
+      snapshotTakenAt: new Date(),
     })
 
     if (selected.length > 0) {

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { TypeOrmModule } from '@nestjs/typeorm'
+import { Alert } from '../alerts/entities/alert.entity.js'
 import { Device } from '../devices/devices.entity.js'
 import { Screen } from '../screens/screens.entity.js'
 import { DevicePlugin } from './entities/device-plugin.entity.js'
@@ -19,6 +20,7 @@ import { PluginDataResolverService } from './services/plugin-data-resolver.servi
 import { PluginExporterService } from './services/plugin-exporter.service.js'
 import { PluginFieldValuesService } from './services/plugin-field-values.service.js'
 import { PluginImporterService } from './services/plugin-importer.service.js'
+import { PluginReadsService } from './services/plugin-reads.service.js'
 import { PluginRefreshService } from './services/plugin-refresh.service.js'
 import { PluginRenderCacheService } from './services/plugin-render-cache.service.js'
 import { PluginRendererService } from './services/plugin-renderer.service.js'
@@ -41,11 +43,13 @@ import { WebhookIngestController } from './webhook-ingest.controller.js'
       PluginFieldValue,
       Screen,
       Device,
+      Alert,
     ]),
   ],
   controllers: [PluginsController, WebhookIngestController],
   providers: [
     PluginsService,
+    PluginReadsService,
     PluginAssignmentsService,
     DataSourceFetchOutcomeService,
     PluginDataFetcherService,

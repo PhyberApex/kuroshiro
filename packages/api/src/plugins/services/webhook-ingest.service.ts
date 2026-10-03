@@ -70,7 +70,7 @@ export class WebhookIngestService {
     // TypeORM's QueryDeepPartialEntity can't distribute over the WebhookPayload
     // union against a union-typed value, even though `merged`'s type already
     // matches the column exactly — hence the assertion rather than a real gap.
-    await this.pluginRepository.update(plugin.id, { webhookPayload: merged } as Parameters<typeof this.pluginRepository.update>[1])
+    await this.pluginRepository.update(plugin.id, { webhookPayload: merged, payloadReceivedAt: new Date() } as Parameters<typeof this.pluginRepository.update>[1])
     await this.pluginRefresh.refresh({ ...plugin, webhookPayload: merged })
 
     this.logger.debug(`Ingested webhook payload for plugin ${plugin.id} using ${plugin.mergeStrategy} merge strategy`)

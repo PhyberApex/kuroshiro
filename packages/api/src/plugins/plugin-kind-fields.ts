@@ -1,4 +1,4 @@
-import type { MergeStrategy, PluginKind } from './entities/plugin.entity.js'
+import type { MergeStrategy, PluginKind } from 'kuroshiro-shared'
 
 export interface PluginKindFields {
   kind: PluginKind
