@@ -3,7 +3,7 @@ import { Buffer } from 'node:buffer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeDeviceModel, makePalette } from '../../test/fixtures.js'
 import { asService } from '../../test/mockService.js'
-import { convertToPng, downloadImage, paletteConversion } from '../imageUtils.js'
+import { convertToPng, downloadImage, paletteConversion, readImageSize } from '../imageUtils.js'
 
 type ExecFileCallback = (error: Error | null, stdout: string, stderr: string) => void
 
@@ -249,6 +249,35 @@ describe('imageUtils', () => {
       await expect(convertToPng('/input.bin', '/output.png', { model: OG_PLUS, palette: GRAY_4 }, mockLogger))
         .rejects
         .toThrow('Unsupported or unrecognised image format')
+    })
+  })
+
+  describe('readImageSize', () => {
+    it('asks ImageMagick for the first frame of the file, in the format its first bytes name', async () => {
+      mockExecFile.mockImplementation((_file: string, _args: string[], callback: ExecFileCallback) => {
+        callback(null, '1600 960', '')
+      })
+
+      await expect(readImageSize('/upload.original', mockLogger)).resolves.toEqual({ width: 1600, height: 960 })
+      expect(mockExecFile).toHaveBeenCalledWith('magick', ['identify', '-format', '%w %h', 'JPEG:/upload.original[0]'], expect.any(Function))
+    })
+
+    it('rejects a file that is not a supported image without running ImageMagick', async () => {
+      mockFd.read.mockImplementation((buf: Buffer) => {
+        buf.fill(0)
+        return Promise.resolve()
+      })
+
+      await expect(readImageSize('/notes.txt', mockLogger)).rejects.toThrow('Unsupported or unrecognised image format')
+      expect(mockExecFile).not.toHaveBeenCalled()
+    })
+
+    it('rejects when ImageMagick answers something that is not a size', async () => {
+      mockExecFile.mockImplementation((_file: string, _args: string[], callback: ExecFileCallback) => {
+        callback(null, '', '')
+      })
+
+      await expect(readImageSize('/upload.original', mockLogger)).rejects.toThrow('Could not read the image size')
     })
   })
 

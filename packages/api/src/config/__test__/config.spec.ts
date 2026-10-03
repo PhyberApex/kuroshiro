@@ -61,7 +61,9 @@ describe('config', () => {
       },
       retention: {
         alertRetentionDays: 90,
+        alertRetentionDaysSource: 'default',
         deviceLogRetentionDays: 30,
+        deviceLogRetentionDaysSource: 'default',
       },
     })
   })
@@ -106,7 +108,9 @@ describe('config', () => {
       },
       retention: {
         alertRetentionDays: 120,
+        alertRetentionDaysSource: 'env',
         deviceLogRetentionDays: 14,
+        deviceLogRetentionDaysSource: 'env',
       },
     })
   })
@@ -165,7 +169,9 @@ describe('config', () => {
   it('defaults retention to 90 days for Alerts and 30 days for Device Logs', () => {
     expect(config().retention).toEqual({
       alertRetentionDays: 90,
+      alertRetentionDaysSource: 'default',
       deviceLogRetentionDays: 30,
+      deviceLogRetentionDaysSource: 'default',
     })
   })
 
@@ -175,7 +181,9 @@ describe('config', () => {
 
     expect(config().retention).toEqual({
       alertRetentionDays: 0,
+      alertRetentionDaysSource: 'env',
       deviceLogRetentionDays: 0,
+      deviceLogRetentionDaysSource: 'env',
     })
   })
 
@@ -186,7 +194,9 @@ describe('config', () => {
 
     expect(config().retention).toEqual({
       alertRetentionDays: 90,
+      alertRetentionDaysSource: 'default',
       deviceLogRetentionDays: 30,
+      deviceLogRetentionDaysSource: 'default',
     })
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('KUROSHIRO_ALERT_RETENTION_DAYS'))
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('KUROSHIRO_DEVICE_LOG_RETENTION_DAYS'))

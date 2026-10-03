@@ -64,6 +64,15 @@ export class ScreenReadsService {
     }))
   }
 
+  /** One Screen, with the Screen State it has among its Device's Screens. */
+  async forScreen(screenId: string): Promise<ScreenRead> {
+    const owner = isUUID(screenId) ? await this.screenRepository.findOne({ where: { id: screenId }, relations: { device: true } }) : null
+    const read = owner && (await this.forDevice(owner.device.id)).find(screen => screen.id === screenId)
+    if (!read)
+      throw new ApiException(HttpStatus.NOT_FOUND, 'screen-not-found', 'Screen not found', { id: screenId })
+    return read
+  }
+
   private async renderedScreenIds(deviceId: string, screens: Screen[]): Promise<Set<string>> {
     const rendered = await Promise.all(screens.map(async screen =>
       await fileExists(resolveAppPath('public', 'screens', 'devices', deviceId, `${screen.id}.png`)) ? [screen.id] : [],

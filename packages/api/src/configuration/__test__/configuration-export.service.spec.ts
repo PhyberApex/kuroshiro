@@ -391,6 +391,16 @@ describe('configurationExportService', () => {
     expect(settingsJson).toEqual({ firmwareAutoUpdate: true })
   })
 
+  it('writes an overridden Retention age to settings.json, 0 included, and leaves a non-overridden one out', async () => {
+    instanceSettingsRepo.findOneBy.mockResolvedValue({ id: 1, alertRetentionDays: 0, deviceLogRetentionDays: null })
+
+    const buffer = await service.exportToZip()
+    const zip = new AdmZip(buffer)
+    const settingsJson = JSON.parse(zip.getEntry('settings.json')!.getData().toString('utf8'))
+
+    expect(settingsJson).toEqual({ alertRetentionDays: 0 })
+  })
+
   it('omits the image for a file-type Screen when nothing is on disk, and for non-file Screen types', async () => {
     const device = makeDevice({ id: 'device-1' })
     const fileScreen = makeScreen({ id: 'screen-1', device, type: 'file' })

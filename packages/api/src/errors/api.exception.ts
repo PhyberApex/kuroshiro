@@ -21,7 +21,7 @@ export class ApiException extends HttpException {
 }
 
 export class ValidationException extends ApiException {
-  constructor(readonly fields: ApiErrorField[], private readonly flatMessages: string[]) {
+  constructor(readonly fields: ApiErrorField[], private readonly flatMessages: string[] = fields.map(field => field.message)) {
     super(400, 'validation', 'The request has invalid fields.')
   }
 

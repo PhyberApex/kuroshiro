@@ -14,6 +14,15 @@ export const API_ERROR_CODES = [
   'service-unavailable',
   'internal',
   'device-not-found',
+  'screen-not-found',
+  'plugin-not-found',
+  'assignment-not-found',
+  'plugin-already-assigned',
+  'image-fetch-failed',
+  'image-unreadable',
+  'order-not-a-permutation',
+  'demo-mode',
+  'upload-too-large',
 ] as const
 
 export type ApiErrorCode = typeof API_ERROR_CODES[number]

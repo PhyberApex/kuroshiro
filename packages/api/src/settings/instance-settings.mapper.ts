@@ -14,11 +14,11 @@ function toInstanceSettingValue<T>(override: T | null, fallback: SettingFallback
 }
 
 export function toInstanceSettingsResponse(row: InstanceSettings | null, fallbacks: InstanceSettingsFallbacks): InstanceSettingsResponse {
-  const thresholds = Object.fromEntries(SETTING_KEYS.map(key =>
+  const numeric = Object.fromEntries(SETTING_KEYS.map(key =>
     [key, toInstanceSettingValue(row?.[key] ?? null, fallbacks[key])],
   )) as Record<SettingKey, InstanceSettingValue>
   const booleans = Object.fromEntries(BOOLEAN_SETTING_KEYS.map(key =>
     [key, toInstanceSettingValue(row?.[key] ?? null, fallbacks[key])],
   )) as Record<BooleanSettingKey, InstanceSettingValue<boolean>>
-  return { ...thresholds, ...booleans }
+  return { ...numeric, ...booleans }
 }

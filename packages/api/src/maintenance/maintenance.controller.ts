@@ -40,7 +40,7 @@ export class MaintenanceController {
   }
 
   @Get('retention')
-  getRetentionStatus(): RetentionStatus {
+  getRetentionStatus(): Promise<RetentionStatus> {
     this.logger.log('Retention status requested')
     return this.retentionService.getStatus()
   }

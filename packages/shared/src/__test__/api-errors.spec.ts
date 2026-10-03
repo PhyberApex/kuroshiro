@@ -18,6 +18,15 @@ const wording: Record<ApiErrorCode, string> = {
   'service-unavailable': 'Not available right now.',
   'internal': 'Something went wrong on the server.',
   'device-not-found': 'That Device does not exist.',
+  'screen-not-found': 'That Screen does not exist.',
+  'plugin-not-found': 'That Plugin does not exist.',
+  'assignment-not-found': 'That Plugin is not on this Device.',
+  'plugin-already-assigned': 'That Plugin is already on this Device.',
+  'image-fetch-failed': 'The image could not be fetched.',
+  'image-unreadable': 'That file is not an image Kuroshiro can read.',
+  'order-not-a-permutation': 'The Order has to name every Screen once.',
+  'demo-mode': 'Not available in demo mode.',
+  'upload-too-large': 'That file is larger than this Instance accepts.',
 }
 
 function wordingBySwitch(code: ApiErrorCode): string {
@@ -28,6 +37,15 @@ function wordingBySwitch(code: ApiErrorCode): string {
     case 'forbidden':
     case 'not-found':
     case 'device-not-found':
+    case 'screen-not-found':
+    case 'plugin-not-found':
+    case 'assignment-not-found':
+    case 'plugin-already-assigned':
+    case 'image-fetch-failed':
+    case 'image-unreadable':
+    case 'order-not-a-permutation':
+    case 'demo-mode':
+    case 'upload-too-large':
     case 'conflict':
     case 'payload-too-large':
     case 'unprocessable':

@@ -20,6 +20,16 @@ export class UpdateInstanceSettingsDto implements UpdateInstanceSettingsInput {
   fetchFailureThreshold?: number | null
 
   @IsOptional()
+  @IsInt()
+  @Min(SETTING_BOUNDS.alertRetentionDays.min)
+  alertRetentionDays?: number | null
+
+  @IsOptional()
+  @IsInt()
+  @Min(SETTING_BOUNDS.deviceLogRetentionDays.min)
+  deviceLogRetentionDays?: number | null
+
+  @IsOptional()
   @IsBoolean()
   firmwareAutoUpdate?: boolean | null
 }

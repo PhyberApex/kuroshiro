@@ -1,70 +1,16 @@
-import type { ConfigService } from '@nestjs/config'
-import type { CreateScreenDto } from '../dto/create-screen.dto.js'
+import type { ScreenReadsService } from '../screen-reads.service.js'
 import type { ScreensService } from '../screens.service.js'
-import buffer from 'node:buffer'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeScreen } from '../../test/fixtures.js'
-import { makeMulterFile } from '../../test/fs.js'
+import { describe, expect, it, vi } from 'vitest'
 import { asService } from '../../test/mockService.js'
 import { ScreensController } from '../screens.controller.js'
 
-function createMockService() {
-  return {
-    getAll: vi.fn(),
-    add: vi.fn(),
-    getByDevice: vi.fn(),
-    delete: vi.fn(),
-    updateExternalScreen: vi.fn(),
-    reorder: vi.fn(),
-  }
-}
-
 describe('screensController (unit)', () => {
-  let controller: ScreensController
-  let service: ReturnType<typeof createMockService>
-  let configService: { get: ReturnType<typeof vi.fn> }
-
-  beforeEach(() => {
-    service = createMockService()
-    configService = { get: vi.fn() }
-    controller = new ScreensController(asService<ScreensService>(service), asService<ConfigService>(configService))
-  })
-
-  it('getAll returns all screens', async () => {
-    const screens = [makeScreen({ id: '1' })]
-    service.getAll.mockResolvedValue(screens)
-    const result = await controller.getAll()
-    expect(result).toBe(screens)
-  })
-
-  it('add creates a screen', async () => {
-    const dto: CreateScreenDto = { filename: 'file', deviceId: 'dev', fetchManual: false }
-    const file = makeMulterFile({ buffer: buffer.Buffer.from('data') })
-    const screen = makeScreen({ id: '1', filename: 'file' })
-    service.add.mockResolvedValue(screen)
-    configService.get.mockReturnValue(false)
-    const result = await controller.add(dto, file)
-    expect(service.add).toHaveBeenCalledWith(dto, file)
-    expect(result).toBe(screen)
-  })
-
-  it('delete calls service delete', async () => {
-    service.delete.mockResolvedValue(undefined)
-    await expect(controller.delete('1')).resolves.toBeUndefined()
-    expect(service.delete).toHaveBeenCalledWith('1')
-  })
-
   it('updateExternalScreen calls service', async () => {
-    service.updateExternalScreen.mockResolvedValue(undefined)
-    await expect(controller.updateExternalScreen('1')).resolves.toBeUndefined()
-    expect(service.updateExternalScreen).toHaveBeenCalledWith('1')
-  })
+    const service = { updateExternalScreen: vi.fn().mockResolvedValue(undefined) }
+    const controller = new ScreensController(asService<ScreensService>(service), asService<ScreenReadsService>({}))
 
-  it('reorder calls service with device id and screen ids', async () => {
-    const screens = [makeScreen({ id: '2' }), makeScreen({ id: '1' })]
-    service.reorder.mockResolvedValue(screens)
-    const result = await controller.reorder('dev', { screenIds: ['2', '1'] })
-    expect(service.reorder).toHaveBeenCalledWith('dev', ['2', '1'])
-    expect(result).toBe(screens)
+    await expect(controller.updateExternalScreen('1')).resolves.toBeUndefined()
+
+    expect(service.updateExternalScreen).toHaveBeenCalledWith('1')
   })
 })

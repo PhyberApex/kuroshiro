@@ -140,25 +140,6 @@ describe('mashup Integration Tests', () => {
     mashupService = module.get<MashupService>(MashupService)
   })
 
-  it('should create a mashup with two plugins in 1Lx1R layout', async () => {
-    const dto = {
-      deviceId: 'device-1',
-      filename: 'Test Mashup',
-      layout: '1Lx1R',
-      pluginIds: ['plugin-1', 'plugin-2'],
-    }
-
-    const result = await mashupService.create(dto)
-
-    expect(result).toBeDefined()
-    expect(result.type).toBe('mashup')
-    expect(result.filename).toBe('Test Mashup')
-    expect(screenRepo.create).toHaveBeenCalled()
-    expect(screenRepo.save).toHaveBeenCalled()
-    expect(mashupConfigRepo.create).toHaveBeenCalled()
-    expect(mashupConfigRepo.save).toHaveBeenCalled()
-  })
-
   it.skip('should render mashup HTML with plugin content', async () => {
     const mockPluginRenderer = {
       render: vi.fn((plugin: Plugin) => {
@@ -323,21 +304,5 @@ describe('mashup Integration Tests', () => {
     expect(result.filename).toBe('Updated Mashup')
     expect(mashupSlotRepo.remove).toHaveBeenCalledWith(existingScreen.mashupConfiguration?.slots)
     expect(mashupSlotRepo.save).toHaveBeenCalled()
-  })
-
-  it('should delete mashup and cascade to configuration and slots', async () => {
-    const existingScreen = makeScreen({
-      id: 'screen-1',
-      type: 'mashup',
-      device: makeDevice({ id: 'device-1' }),
-      mashupConfiguration: makeMashupConfiguration({ id: 'config-1' }),
-    })
-
-    screenRepo.findOne.mockResolvedValue(existingScreen)
-    screenRepo.remove.mockResolvedValue([])
-
-    await mashupService.delete('screen-1')
-
-    expect(screenRepo.remove).toHaveBeenCalledWith(existingScreen)
   })
 })

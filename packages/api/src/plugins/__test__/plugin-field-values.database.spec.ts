@@ -18,6 +18,7 @@ import { PluginTemplate } from '../entities/plugin-template.entity.js'
 import { Plugin } from '../entities/plugin.entity.js'
 import { PluginsService } from '../plugins.service.js'
 import { DataSourceFetchOutcomeService } from '../services/data-source-fetch-outcome.service.js'
+import { PluginAssignmentsService } from '../services/plugin-assignments.service.js'
 import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
 import { PluginDataResolverService } from '../services/plugin-data-resolver.service.js'
 import { PluginFieldValuesService } from '../services/plugin-field-values.service.js'
@@ -51,6 +52,7 @@ const mockFetch = stubFetch()
 describe('field values against a real database', () => {
   let database: DataSource
   let plugins: PluginsService
+  let assignments: PluginAssignmentsService
   let fieldValues: PluginFieldValuesService
   let mashupRenderer: MashupRendererService
   let webhookIngest: WebhookIngestService
@@ -71,7 +73,6 @@ describe('field values against a real database', () => {
 
     plugins = new PluginsService(
       database.getRepository(Plugin),
-      database.getRepository(DevicePlugin),
       database.getRepository(Screen),
       database.getRepository(PluginDataSource),
       database.getRepository(PluginTemplate),
@@ -84,6 +85,7 @@ describe('field values against a real database', () => {
       refresh,
       templateContext,
     )
+    assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
     mashupRenderer = new MashupRendererService(resolver, renderer, config, asService<DeviceSensorsService>({ findForDevice: async () => [] }), templateContext)
     webhookIngest = new WebhookIngestService(database.getRepository(Plugin), refresh)
     mockImporter = { importFromRecipe: vi.fn() }
@@ -143,7 +145,7 @@ describe('field values against a real database', () => {
   describe('reaching every render', () => {
     it('renders the saved value for both address forms, in the template and the Data Source url, on the scheduler tick', async () => {
       const plugin = await createWeatherPlugin({ fieldValues: { city: 'Berlin' } })
-      await plugins.assignToDevice(plugin.id, { deviceId: device.id })
+      await assignments.assign(plugin.id, device.id)
 
       await scheduledTicks.get(plugin.id)!()
 
@@ -191,7 +193,7 @@ describe('field values against a real database', () => {
         fields: [{ keyname: 'city', name: 'City' }, { keyname: 'title', name: 'Title' }],
         fieldValues: { city: 'Berlin', title: 'from the field' },
       })
-      await plugins.assignToDevice(created.id, { deviceId: device.id })
+      await assignments.assign(created.id, device.id)
 
       await webhookIngest.ingest(await loadForRender(created.id), { title: 'from the payload' })
 
@@ -232,7 +234,7 @@ describe('field values against a real database', () => {
   describe('saving', () => {
     it('re-fetches and re-renders into the cache at once when a Field Value changes', async () => {
       const plugin = await createWeatherPlugin({ fieldValues: { city: 'Berlin' } })
-      await plugins.assignToDevice(plugin.id, { deviceId: device.id })
+      await assignments.assign(plugin.id, device.id)
       await scheduledTicks.get(plugin.id)!()
 
       const updated = await plugins.update(plugin.id, { fieldValues: { city: 'Paris' } })
@@ -287,7 +289,7 @@ describe('field values against a real database', () => {
 
     it('never returns a password-type Field Value on any read, and keeps it when an update omits it', async () => {
       const plugin = await createWeatherPlugin({ fieldValues: { city: 'Berlin', api_key: 's3cret' } })
-      await plugins.assignToDevice(plugin.id, { deviceId: device.id })
+      await assignments.assign(plugin.id, device.id)
 
       const updated = await plugins.update(plugin.id, { fieldValues: { city: 'Paris' } })
       const reads = [
@@ -295,7 +297,6 @@ describe('field values against a real database', () => {
         updated,
         await plugins.findById(plugin.id),
         (await plugins.findAll()).find(candidate => candidate.id === plugin.id),
-        (await plugins.findByDevice(device.id)).find(candidate => candidate.id === plugin.id),
       ]
 
       for (const read of reads) {

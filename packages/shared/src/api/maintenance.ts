@@ -1,3 +1,5 @@
+import type { RetentionAgeKey } from './instance.js'
+
 export interface OrphanedScreenFile {
   deviceId: string
   screenId: string
@@ -43,10 +45,7 @@ export interface CleanupResult {
   errors: string[]
 }
 
-export interface RetentionAges {
-  alertRetentionDays: number
-  deviceLogRetentionDays: number
-}
+export type RetentionAges = Record<RetentionAgeKey, number>
 
 export interface RetentionRunResult {
   alertsPruned: number

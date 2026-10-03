@@ -122,3 +122,48 @@ export interface ScreenRead {
   file: { originalName: string | null, width: number | null, height: number | null, bytes: number | null, uploadedAt: string | null } | null
   html: string | null
 }
+
+/** The kinds `POST /api/screens` creates; a Mashup and a Plugin Assignment have their own endpoints. */
+export const CREATABLE_SCREEN_KINDS = ['external', 'file', 'html'] as const satisfies readonly ScreenKind[]
+
+interface CreateScreenBase {
+  deviceId: string
+  name: string
+}
+
+export interface CreateExternalScreenInput extends CreateScreenBase {
+  kind: 'external'
+  /** `http` or `https`. */
+  url: string
+  /** `true` keeps the image fetched at creation; `false` fetches it at every turn. */
+  fetchManual: boolean
+}
+
+/** Sent as `multipart/form-data` with the image in the part `file`. */
+export interface CreateFileScreenInput extends CreateScreenBase {
+  kind: 'file'
+}
+
+export interface CreateHtmlScreenInput extends CreateScreenBase {
+  kind: 'html'
+  html: string
+}
+
+export type CreateScreenInput = CreateExternalScreenInput | CreateFileScreenInput | CreateHtmlScreenInput
+
+export interface CreateMashupInput {
+  deviceId: string
+  name: string
+  layout: MashupLayout
+  /** One Plugin per slot of the layout, in slot order. */
+  pluginIds: string[]
+}
+
+export interface AssignPluginInput {
+  deviceId: string
+}
+
+export interface ReorderScreensInput {
+  /** Every Screen of the Device, once, in the new Order. */
+  screenIds: string[]
+}
