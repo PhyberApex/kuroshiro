@@ -4,6 +4,8 @@ import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import cron from 'node-cron'
 import { In, Repository } from 'typeorm'
+import { SyncRunService } from '../sync-runs/sync-run.service.js'
+import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { TRMNL_MODELS_SNAPSHOT, TRMNL_PALETTES_SNAPSHOT } from './data/trmnl-snapshot.js'
 import { DeviceModel } from './entities/device-model.entity.js'
 import { Palette } from './entities/palette.entity.js'
@@ -22,6 +24,7 @@ export class DeviceModelSyncService implements OnApplicationBootstrap {
     private readonly deviceModelRepository: Repository<DeviceModel>,
     @InjectRepository(Palette)
     private readonly paletteRepository: Repository<Palette>,
+    private readonly syncRuns: SyncRunService,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -62,13 +65,28 @@ export class DeviceModelSyncService implements OnApplicationBootstrap {
    * promise instead of racing on the same upsert.
    */
   sync(): Promise<DeviceModelSyncResult> {
-    this.syncing ??= this.runSync().finally(() => {
+    this.syncing ??= this.runAndRecord().finally(() => {
       this.syncing = null
     })
     return this.syncing
   }
 
-  private async runSync(): Promise<DeviceModelSyncResult> {
+  private async runAndRecord(): Promise<DeviceModelSyncResult> {
+    const ranAt = new Date()
+    let result: DeviceModelSyncResult
+    try {
+      result = await this.runSync(ranAt)
+    }
+    catch (error) {
+      await this.syncRuns.record('device-models', ranAt, { ok: false, error: getErrorMessage(error) })
+        .catch(recordError => this.logger.error(`Could not record the failed device model sync: ${getErrorMessage(recordError)}`))
+      throw error
+    }
+    await this.syncRuns.record('device-models', ranAt, { ok: true })
+    return result
+  }
+
+  private async runSync(ranAt: Date): Promise<DeviceModelSyncResult> {
     this.logger.log('Syncing device models from TRMNL')
     const [rawPalettes, rawModels] = await Promise.all([
       this.fetchList<TrmnlPalettePayload>('palettes'),
@@ -85,7 +103,7 @@ export class DeviceModelSyncService implements OnApplicationBootstrap {
     const deprecatedModels = await this.deprecateMissingModels(models.map(m => m.name))
 
     this.logger.log(`Synced ${models.length} device models and ${palettes.length} palettes (${deprecatedModels} models, ${deprecatedPalettes} palettes deprecated)`)
-    return { models: models.length, palettes: palettes.length, deprecatedModels, deprecatedPalettes, syncedAt: syncedAt.toISOString() }
+    return { models: models.length, palettes: palettes.length, deprecatedModels, deprecatedPalettes, ranAt: ranAt.toISOString() }
   }
 
   /** Drops payload entries that fail validation, logging each so a bad upstream response is visible without failing the whole sync. */

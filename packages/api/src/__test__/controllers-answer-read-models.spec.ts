@@ -71,8 +71,6 @@ export class WidgetsController {
  */
 const KNOWN_EXCEPTIONS: string[] = [
   'DeviceModelsController.createPalette',
-  'DeviceModelsController.getAll',
-  'DeviceModelsController.getPalettes',
   'DevicesController.add',
   'LogsController.getLogsByDevice',
   'MashupController.getConfiguration',

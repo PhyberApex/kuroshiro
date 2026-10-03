@@ -1,3 +1,4 @@
+import type { SyncRunService } from '../../sync-runs/sync-run.service.js'
 import type { DeviceModel } from '../entities/device-model.entity.js'
 import type { Palette } from '../entities/palette.entity.js'
 import { Logger } from '@nestjs/common'
@@ -5,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { jsonResponse, stubFetch } from '../../test/fetch.js'
 import { makeDeviceModel, makePalette } from '../../test/fixtures.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
+import { asService } from '../../test/mockService.js'
 import { TRMNL_MODELS_SNAPSHOT, TRMNL_PALETTES_SNAPSHOT } from '../data/trmnl-snapshot.js'
 import { DeviceModelSyncService } from '../device-model-sync.service.js'
 
@@ -33,12 +35,14 @@ describe('deviceModelSyncService', () => {
   let service: DeviceModelSyncService
   let modelRepo: ReturnType<typeof createMockRepository<DeviceModel>>
   let paletteRepo: ReturnType<typeof createMockRepository<Palette>>
+  let syncRuns: { record: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     vi.resetAllMocks()
     modelRepo = createMockRepository<DeviceModel>()
     paletteRepo = createMockRepository<Palette>()
-    service = new DeviceModelSyncService(asRepository(modelRepo), asRepository(paletteRepo))
+    syncRuns = { record: vi.fn().mockResolvedValue(undefined) }
+    service = new DeviceModelSyncService(asRepository(modelRepo), asRepository(paletteRepo), asService<SyncRunService>(syncRuns))
   })
 
   describe('seedFromSnapshot', () => {
@@ -92,7 +96,9 @@ describe('deviceModelSyncService', () => {
       expect(paletteRepo.update).toHaveBeenCalledWith({ id: expect.anything() }, { deprecated: true })
       expect(modelRepo.update).toHaveBeenCalledWith({ name: expect.anything() }, { deprecated: true })
       expect(result).toMatchObject({ models: 1, palettes: 2, deprecatedModels: 1, deprecatedPalettes: 1 })
-      expect(new Date(result.syncedAt).toISOString()).toBe(result.syncedAt)
+      expect(new Date(result.ranAt).toISOString()).toBe(result.ranAt)
+      expect(result).not.toHaveProperty('syncedAt')
+      expect(syncRuns.record).toHaveBeenCalledWith('device-models', new Date(result.ranAt), { ok: true })
     })
 
     it('never upserts or deprecates a kind: custom palette, regardless of what upstream reports', async () => {
@@ -124,8 +130,15 @@ describe('deviceModelSyncService', () => {
     it('throws and writes nothing when TRMNL is unreachable', async () => {
       mockFetch.mockImplementation(async () => jsonResponse(null, { ok: false }))
       await expect(service.sync()).rejects.toThrow(/request failed/)
+      expect(syncRuns.record).toHaveBeenCalledWith('device-models', expect.any(Date), { ok: false, error: expect.stringMatching(/request failed/) })
       expect(paletteRepo.upsert).not.toHaveBeenCalled()
       expect(modelRepo.upsert).not.toHaveBeenCalled()
+    })
+
+    it('rethrows the upstream error when the failed run cannot be recorded', async () => {
+      mockFetch.mockImplementation(async () => jsonResponse(null, { ok: false }))
+      syncRuns.record.mockRejectedValue(new Error('database is down'))
+      await expect(service.sync()).rejects.toThrow(/request failed/)
     })
 
     it('throws when the response has no data array', async () => {
