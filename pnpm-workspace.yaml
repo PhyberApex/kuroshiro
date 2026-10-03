@@ -22,7 +22,7 @@ catalog:
   '@nestjs/serve-static': 12.0.0
   '@nestjs/testing': 12.1.1
   '@nestjs/typeorm': 12.0.2
-  '@swc/core': 1.16.12
+  '@swc/core': 1.16.13
   '@tsconfig/node24': 24.0.5
   '@types/adm-zip': ^0.5.8
   '@types/express': 5.0.6
