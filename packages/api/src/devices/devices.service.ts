@@ -39,12 +39,13 @@ export class DevicesService {
     if (!dbDevice)
       return null
     const { deviceModelName, paletteId, targetFirmwareId, ...attributes } = changes
+    const pushWasPending = dbDevice.updateFirmware
     Object.assign(dbDevice, attributes)
     this.assertSleepWindowConfigured(dbDevice)
     const before = { model: dbDevice.deviceModel?.name, palette: dbDevice.palette?.id }
     await this.applyModelChange(dbDevice, deviceModelName)
     await this.applyPaletteChange(dbDevice, paletteId)
-    await this.applyFirmwareChanges(dbDevice, targetFirmwareId)
+    await this.applyFirmwareChanges(dbDevice, targetFirmwareId, pushWasPending)
     this.assertPushCanBeServed(dbDevice, changes.updateFirmware)
     const saved = await this.deviceRepository.save(dbDevice)
     if (this.renderTargetChanged(before, saved))
@@ -91,11 +92,11 @@ export class DevicesService {
       device.palette = await this.deviceModels.defaultPaletteFor(device.deviceModel)
   }
 
-  private async applyFirmwareChanges(device: Device, targetFirmwareId?: string | null): Promise<void> {
+  private async applyFirmwareChanges(device: Device, targetFirmwareId: string | null | undefined, pushWasPending: boolean): Promise<void> {
     if (targetFirmwareId === undefined)
       return
     if (targetFirmwareId === null) {
-      if (device.updateFirmware)
+      if (pushWasPending)
         throw new ApiException(HttpStatus.CONFLICT, 'firmware-push-pending', 'The target Firmware cannot be cleared while a push is pending.', { id: device.id })
       device.targetFirmware = null
       return

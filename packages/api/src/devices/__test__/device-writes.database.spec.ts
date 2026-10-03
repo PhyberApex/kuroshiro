@@ -222,6 +222,15 @@ describe('the Device write and delete against a real database', () => {
         expect(await response.json()).toMatchObject({ code: 'firmware-push-pending' })
         expect((await stored(device.id)).targetFirmware?.id).toBe(FIRMWARE_ID)
       })
+
+      it('refuses to clear the target while a push is pending even when the same request withdraws the push', async () => {
+        const device = await registerDevice({ updateFirmware: true, targetFirmware: await database.getRepository(Firmware).findOneByOrFail({ id: FIRMWARE_ID }) })
+
+        const response = await patch(device.id, { targetFirmwareId: null, updateFirmware: false })
+
+        expect(response.status).toBe(409)
+        expect(await response.json()).toMatchObject({ code: 'firmware-push-pending' })
+      })
     })
   })
 
