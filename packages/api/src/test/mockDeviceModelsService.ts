@@ -90,5 +90,5 @@ export function createMockFallbackScreensService(): MockFallbackScreensService {
 
 /** Default behaviour after `vi.resetAllMocks()`: static placeholder URLs under http://api. */
 export function primeMockFallbackScreensService(mock: MockFallbackScreensService) {
-  mock.urlFor.mockImplementation(async (kind: string) => `http://api/screens/${kind}.png`)
+  mock.urlFor.mockImplementation(async ({ kind }: { kind: string }) => `http://api/screens/${kind}.png`)
 }

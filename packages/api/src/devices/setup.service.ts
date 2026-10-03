@@ -44,7 +44,7 @@ export class DeviceSetupService {
 
     const setupResponse: SetupResponse = {
       status: 200,
-      image_url: await this.fallbackScreens.urlFor('welcome', await this.deviceModels.renderTargetFor(device)),
+      image_url: await this.fallbackScreens.urlFor({ kind: 'welcome' }, device, await this.deviceModels.renderTargetFor(device)),
       message: 'Welcome to Kuroshiro',
       friendly_id: device.friendlyId,
       api_key: device.apikey,

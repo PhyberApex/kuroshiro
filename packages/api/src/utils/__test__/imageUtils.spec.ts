@@ -126,6 +126,20 @@ describe('imageUtils', () => {
       expect(args.lastIndexOf('-colorspace')).toBeGreaterThan(args.indexOf('-remap'))
     })
 
+    it.each([
+      ['a gray Palette', GRAY_4],
+      ['a colour Palette', COLOR_6A],
+    ])('remaps %s without dithering when asked to', async (_, palette) => {
+      mockFs.existsSync.mockReturnValue(true)
+      magickSucceeds()
+
+      await convertToPng('/input.png', '/output.png', { model: OG_PLUS, palette }, mockLogger, { dither: false })
+
+      const args = mockExecFile.mock.calls[0][1]
+      expect(args).toEqual(expect.arrayContaining(['-dither', 'None', '-remap']))
+      expect(args).not.toContain('FloydSteinberg')
+    })
+
     it('skips colormap creation if it already exists', async () => {
       mockFs.existsSync.mockReturnValue(true)
       magickSucceeds()
