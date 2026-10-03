@@ -1,4 +1,6 @@
 @layer reset, base, components;
 
+@import "@fontsource-variable/archivo/wdth.css";
+@import "@fontsource-variable/jetbrains-mono/wght.css";
 @import "./tokens.css";
 @import "./base.css";

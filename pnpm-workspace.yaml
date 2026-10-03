@@ -5,6 +5,7 @@ packages:
 allowBuilds:
   '@swc/core': true
   esbuild: true
+  msw: false
   puppeteer: true
   vue-demi: false
 
@@ -22,7 +23,7 @@ catalog:
   '@nestjs/serve-static': 12.0.0
   '@nestjs/testing': 12.1.1
   '@nestjs/typeorm': 12.0.2
-  '@swc/core': 1.16.12
+  '@swc/core': 1.16.13
   '@tsconfig/node24': 24.0.5
   '@types/adm-zip': ^0.5.8
   '@types/express': 5.0.6
@@ -31,9 +32,11 @@ catalog:
   '@types/node': 24.19.0
   '@types/node-cron': ^3.0.11
   '@vitejs/plugin-vue': 6.0.9
-  '@vitest/coverage-v8': 5.0.2
+  '@vitest/browser-playwright': 5.0.3
+  '@vitest/coverage-v8': 5.0.3
   '@vue/tsconfig': 0.9.1
   adm-zip: ^0.6.0
+  axe-core: 4.13.0
   class-transformer: 0.5.1
   class-validator: 0.15.1
   dotenv: 18.0.4
@@ -41,9 +44,11 @@ catalog:
   jiti: 2.7.0
   js-yaml: ^5.0.0
   liquidjs: ^10.25.5
+  msw: 2.15.0
   multer: ^2.1.1
   node-cron: ^4.2.1
   pg: 8.23.0
+  playwright: 1.63.0
   puppeteer: 25.12.0
   reflect-metadata: 0.2.2
   reka-ui: 2.10.5
@@ -55,9 +60,11 @@ catalog:
   typeorm-pglite: 0.3.4
   typescript: 6.0.3
   vite: 8.3.1
-  vitest: 5.0.2
+  vitest: 5.0.3
+  vitest-browser-vue: 3.1.0
   vm2: ^3.10.5
   vue: 3.5.43
+  vue-router: 5.3.1
   vue-tsc: 3.3.11
 
 minimumReleaseAgeExclude:

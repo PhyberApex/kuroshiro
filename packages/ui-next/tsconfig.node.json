@@ -6,10 +6,14 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "types": ["node"],
+    "allowImportingTsExtensions": true,
     "noEmit": true
   },
   "include": [
     "vite.config.*",
+    "vitest.*",
+    "scripts/**/*",
+    "real-api/**/*",
     "eslint.config.*"
   ]
 }
