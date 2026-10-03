@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core'
 import { DataSource } from 'typeorm'
 import { AppModule } from './app.module.js'
 import config from './config/config.js'
+import { registerErrorEnvelope } from './errors/register-error-envelope.js'
 import { LoggingInterceptor } from './interceptors/logging.interceptor.js'
 import { ingressBasePathMiddleware } from './middleware/ingress-base-path.middleware.js'
 import { resolveAppPath } from './utils/pathHelper.js'
@@ -25,6 +26,7 @@ async function bootstrap() {
     logger.log(`[Migrations] No migrations to be run`)
   }
   app.setGlobalPrefix('api', { exclude: ['metrics'] })
+  registerErrorEnvelope(app)
   app.useGlobalInterceptors(new LoggingInterceptor())
   await app.listen(config().port)
 }

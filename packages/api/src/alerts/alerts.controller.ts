@@ -1,5 +1,5 @@
 import type { AlertsList } from 'kuroshiro-shared'
-import { Controller, Get, HttpCode, Logger, Post, Query, UsePipes, ValidationPipe } from '@nestjs/common'
+import { Controller, Get, HttpCode, Logger, Post, Query } from '@nestjs/common'
 import { AlertsService } from './alerts.service.js'
 import { ListAlertsQueryDto } from './dto/list-alerts-query.dto.js'
 
@@ -10,7 +10,6 @@ export class AlertsController {
   constructor(private readonly alertsService: AlertsService) {}
 
   @Get()
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
   async list(@Query() query: ListAlertsQueryDto): Promise<AlertsList> {
     return this.alertsService.list(query.resolvedSince)
   }

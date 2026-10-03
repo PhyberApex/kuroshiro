@@ -10,8 +10,6 @@ import {
   Param,
   Patch,
   Post,
-  UsePipes,
-  ValidationPipe,
 } from '@nestjs/common'
 import { DeviceSensorsService } from '../device-sensors/device-sensors.service.js'
 import { Device } from './devices.entity.js'
@@ -38,7 +36,6 @@ export class DevicesController {
   }
 
   @Post()
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async add(@Body() device: CreateDeviceDto): Promise<Device> {
     if (!device.mac || !isValidMac(device.mac)) {
       throw new BadRequestException('Invalid or missing MAC address')
@@ -56,7 +53,6 @@ export class DevicesController {
   }
 
   @Patch(':id')
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async update(@Param('id') id: string, @Body() newDevice: UpdateDeviceDto): Promise<void> {
     const dbDevice = await this.devicesService.findById(id)
     if (!dbDevice) {

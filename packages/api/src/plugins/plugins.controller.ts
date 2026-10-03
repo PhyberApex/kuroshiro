@@ -1,5 +1,5 @@
 import type { Response } from 'express'
-import { Body, Controller, Delete, Get, Param, Patch, Post, Res, UploadedFile, UseInterceptors, UsePipes, ValidationPipe } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Patch, Post, Res, UploadedFile, UseInterceptors } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { diskStorage } from 'multer'
 import { ApplyRecipeUpdateDto } from './dto/apply-recipe-update.dto.js'
@@ -23,7 +23,6 @@ export class PluginsController {
   ) {}
 
   @Post('preview')
-  @UsePipes(new ValidationPipe({ transform: true }))
   async preview(@Body() previewData: PreviewPluginDto) {
     return this.pluginsService.preview(previewData.sources, previewData.template, previewData.fieldValues)
   }
@@ -44,13 +43,11 @@ export class PluginsController {
   }
 
   @Post()
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   async create(@Body() createPluginDto: CreatePluginDto) {
     return this.pluginsService.create(createPluginDto)
   }
 
   @Patch(':id')
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   async update(@Param('id') id: string, @Body() updatePluginDto: UpdatePluginDto) {
     return this.pluginsService.update(id, updatePluginDto)
   }
@@ -66,7 +63,6 @@ export class PluginsController {
   }
 
   @Post(':id/recipe-update/apply')
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   async applyRecipeUpdate(@Param('id') id: string, @Body() applyDto: ApplyRecipeUpdateDto) {
     return this.recipeUpdateService.applyUpdate(id, applyDto)
   }
@@ -177,7 +173,6 @@ export class PluginsController {
   }
 
   @Patch('device-assignment/:devicePluginId')
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async updateDeviceAssignment(@Param('devicePluginId') devicePluginId: string, @Body() updates: UpdateDeviceAssignmentDto) {
     return this.pluginsService.updateDeviceAssignment(devicePluginId, updates)
   }

@@ -1,7 +1,9 @@
 import { Controller, Get, Header } from '@nestjs/common'
+import { OutsideAdminApi } from '../errors/outside-admin-api.decorator.js'
 import { MetricsService } from './metrics.service.js'
 
 @Controller('metrics')
+@OutsideAdminApi()
 export class MetricsController {
   constructor(private readonly metricsService: MetricsService) {}
 

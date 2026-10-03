@@ -9,8 +9,6 @@ import {
   Post,
   UploadedFile,
   UseInterceptors,
-  UsePipes,
-  ValidationPipe,
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { FileInterceptor } from '@nestjs/platform-express'
@@ -29,7 +27,6 @@ export class ScreensController {
   }
 
   @Post()
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   @UseInterceptors(FileInterceptor('file'))
   async add(@Body() body: CreateScreenDto, @UploadedFile() file?: Express.Multer.File): Promise<Screen> {
     if (file && this.configService.get<string>('demo_mode'))
@@ -43,7 +40,6 @@ export class ScreensController {
   }
 
   @Patch('device/:deviceId/reorder')
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async reorder(@Param('deviceId') deviceId: string, @Body() body: ReorderScreensDto): Promise<Screen[]> {
     return this.screensService.reorder(deviceId, body.screenIds)
   }
