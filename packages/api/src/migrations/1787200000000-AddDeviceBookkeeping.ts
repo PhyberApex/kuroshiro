@@ -30,6 +30,47 @@ export class AddDeviceBookkeeping1787200000000 implements MigrationInterface {
         ADD COLUMN "lastServedRefreshRate" integer,
         ADD COLUMN "lastServedImagePath" text
     `)
+    await this.backfillLastServed(queryRunner)
+  }
+
+  /**
+   * A Device that polled before the record existed gets the closest one its
+   * row can tell, so it does not read as never polled until its next poll:
+   * the mirrored image, else its Active Screen, else the no-screen Fallback Screen.
+   */
+  private async backfillLastServed(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`
+      UPDATE "device"
+      SET "lastServedAt" = "lastSeen",
+          "lastServedRefreshRate" = "refreshRate",
+          "lastServedKind" = 'mirror',
+          "lastServedImagePath" = '/screens/devices/' || "id" || '/mirror.png'
+      WHERE "lastSeen" IS NOT NULL AND "mirrorEnabled" IS TRUE
+    `)
+    await queryRunner.query(`
+      UPDATE "device"
+      SET "lastServedAt" = "device"."lastSeen",
+          "lastServedRefreshRate" = "device"."refreshRate",
+          "lastServedKind" = 'screen',
+          "lastServedScreenId" = "screen"."id",
+          "lastServedImagePath" = '/screens/devices/' || "device"."id" || '/' || "screen"."id" || '.png'
+      FROM "screen"
+      WHERE "screen"."deviceId" = "device"."id" AND "screen"."isActive" IS TRUE
+        AND "device"."lastSeen" IS NOT NULL AND "device"."lastServedKind" IS NULL
+    `)
+    await queryRunner.query(`
+      UPDATE "device"
+      SET "lastServedAt" = "lastSeen",
+          "lastServedRefreshRate" = "refreshRate",
+          "lastServedKind" = 'fallback',
+          "lastServedFallback" = 'noScreen',
+          "lastServedReason" = CASE
+            WHEN EXISTS (SELECT 1 FROM "screen" WHERE "screen"."deviceId" = "device"."id") THEN 'noneEligible'
+            ELSE 'noScreens'
+          END,
+          "lastServedImagePath" = '/screens/noScreen.png'
+      WHERE "lastSeen" IS NOT NULL AND "lastServedKind" IS NULL
+    `)
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

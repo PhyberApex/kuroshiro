@@ -24,6 +24,11 @@ export function servedFallback(fallback: LastServedFallback, reason: LastServedR
   return { kind: 'fallback', screenId, fallback, reason }
 }
 
+/** The no-screen Fallback Screen: for a Device without Screens, or one whose Screens Rotation all passes over. */
+export function servedNoScreen(screenCount: number): Served {
+  return servedFallback('noScreen', screenCount > 0 ? 'noneEligible' : 'noScreens')
+}
+
 export type LastServedRecord = Required<Pick<Device, 'lastServedAt' | 'lastServedKind' | 'lastServedScreenId' | 'lastServedFallback' | 'lastServedReason' | 'lastServedRefreshRate' | 'lastServedImagePath'>>
 
 /**

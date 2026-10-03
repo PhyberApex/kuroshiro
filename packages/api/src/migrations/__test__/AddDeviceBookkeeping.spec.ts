@@ -16,7 +16,8 @@ describe('the Device bookkeeping migration', () => {
   beforeEach(async () => {
     dataSource = await new TypeOrmDataSource({ type: 'postgres', driver: new PGliteDriver().driver }).initialize()
     queryRunner = dataSource.createQueryRunner()
-    await queryRunner.query(`CREATE TABLE "device" ("id" uuid PRIMARY KEY, "lastSeen" timestamptz NOT NULL DEFAULT '2026-04-18T22:36:39.653Z')`)
+    await queryRunner.query(`CREATE TABLE "device" ("id" uuid PRIMARY KEY, "refreshRate" integer NOT NULL DEFAULT 300, "mirrorEnabled" boolean, "lastSeen" timestamptz NOT NULL DEFAULT '2026-04-18T22:36:39.653Z')`)
+    await queryRunner.query(`CREATE TABLE "screen" ("id" uuid PRIMARY KEY, "isActive" boolean NOT NULL, "deviceId" uuid)`)
     await queryRunner.query(`CREATE TABLE "alert" ("id" serial PRIMARY KEY, "kind" text NOT NULL, "deviceId" uuid)`)
     await queryRunner.query(`INSERT INTO "device" ("id") VALUES ('${NEVER_POLLED}')`)
     await queryRunner.query(`INSERT INTO "device" ("id", "lastSeen") VALUES ('${POLLED}', '${REAL_DATE}')`)
@@ -58,6 +59,64 @@ describe('the Device bookkeeping migration', () => {
     })
   })
 
+  describe('a Device that polled before the record existed', () => {
+    const ACTIVE_SCREEN = '00000000-0000-4000-8000-0000000000a1'
+
+    async function recordOf(id: string): Promise<Record<string, unknown>> {
+      const [{ lastServedAt, ...record }] = await queryRunner.query(`
+        SELECT "lastServedAt", "lastServedKind", "lastServedScreenId", "lastServedFallback", "lastServedReason", "lastServedRefreshRate", "lastServedImagePath"
+        FROM "device" WHERE "id" = '${id}'
+      `)
+      return { ...record, lastServedAt: new Date(lastServedAt).toISOString() }
+    }
+
+    it('is recorded as showing its Active Screen since it was last seen', async () => {
+      await queryRunner.query(`INSERT INTO "screen" ("id", "isActive", "deviceId") VALUES ('${ACTIVE_SCREEN}', true, '${POLLED}'), ('00000000-0000-4000-8000-0000000000a2', false, '${POLLED}')`)
+
+      await migration.up(queryRunner)
+
+      expect(await recordOf(POLLED)).toEqual({
+        lastServedAt: REAL_DATE,
+        lastServedKind: 'screen',
+        lastServedScreenId: ACTIVE_SCREEN,
+        lastServedFallback: null,
+        lastServedReason: null,
+        lastServedRefreshRate: 300,
+        lastServedImagePath: `/screens/devices/${POLLED}/${ACTIVE_SCREEN}.png`,
+      })
+    })
+
+    it('is recorded as showing the mirrored image when it is mirrored', async () => {
+      await queryRunner.query(`UPDATE "device" SET "mirrorEnabled" = true WHERE "id" = '${POLLED}'`)
+      await queryRunner.query(`INSERT INTO "screen" ("id", "isActive", "deviceId") VALUES ('${ACTIVE_SCREEN}', true, '${POLLED}')`)
+
+      await migration.up(queryRunner)
+
+      expect(await recordOf(POLLED)).toMatchObject({ lastServedKind: 'mirror', lastServedScreenId: null, lastServedImagePath: `/screens/devices/${POLLED}/mirror.png` })
+    })
+
+    it('is recorded as showing the no-screen Fallback Screen when it has no Active Screen', async () => {
+      await migration.up(queryRunner)
+      expect(await recordOf(POLLED)).toMatchObject({ lastServedKind: 'fallback', lastServedFallback: 'noScreen', lastServedReason: 'noScreens', lastServedImagePath: '/screens/noScreen.png' })
+    })
+
+    it('says Rotation passed over its Screens when it has Screens and none is active', async () => {
+      await queryRunner.query(`INSERT INTO "screen" ("id", "isActive", "deviceId") VALUES ('${ACTIVE_SCREEN}', false, '${POLLED}')`)
+
+      await migration.up(queryRunner)
+
+      expect(await recordOf(POLLED)).toMatchObject({ lastServedKind: 'fallback', lastServedFallback: 'noScreen', lastServedReason: 'noneEligible' })
+    })
+
+    it('leaves a Device that never polled without a record', async () => {
+      await migration.up(queryRunner)
+
+      const [row] = await queryRunner.query(`SELECT "lastServedAt", "lastServedKind" FROM "device" WHERE "id" = '${NEVER_POLLED}'`)
+
+      expect(row).toEqual({ lastServedAt: null, lastServedKind: null })
+    })
+  })
+
   it('removes the offline Alert the placeholder date opened, and no other Alert', async () => {
     await migration.up(queryRunner)
 
@@ -77,7 +136,7 @@ describe('the Device bookkeeping migration', () => {
     const rows = await queryRunner.query(`SELECT * FROM "device" ORDER BY "id"`)
 
     expect(rows.map((row: { lastSeen: Date }) => new Date(row.lastSeen).toISOString())).toEqual(['2026-04-18T22:36:39.653Z', REAL_DATE, '2026-04-18T22:36:39.653Z'])
-    expect(Object.keys(rows[0])).toEqual(['id', 'lastSeen'])
+    expect(Object.keys(rows[0])).toEqual(['id', 'refreshRate', 'mirrorEnabled', 'lastSeen'])
     await expect(queryRunner.query(`UPDATE "device" SET "lastSeen" = NULL`)).rejects.toThrow()
   })
 })

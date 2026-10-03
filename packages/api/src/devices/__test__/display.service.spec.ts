@@ -1433,6 +1433,12 @@ describe('deviceDisplayService', () => {
       expect({ ...await poll(served) }).toEqual(served.answer)
     })
 
+    it('answers the Device even when the record cannot be written', async () => {
+      deviceRepo.update.mockRejectedValue(new Error('connection lost'))
+
+      expect({ ...await poll(cases[0]) }).toEqual(cases[0].answer)
+    })
+
     it.each(cases)('records $name', async (served) => {
       await poll(served)
 

@@ -27,7 +27,7 @@ import { resolveAppPath } from '../utils/pathHelper.js'
 import { Device } from './devices.entity.js'
 import { Display } from './display.js'
 import { DisplayScreen } from './displayScreen.js'
-import { SERVED_MIRROR, servedFallback, servedScreen, toLastServedRecord } from './last-served.js'
+import { SERVED_MIRROR, servedFallback, servedNoScreen, servedScreen, toLastServedRecord } from './last-served.js'
 import { isDeviceAsleep, secondsUntilSleepEnd } from './sleep-mode.js'
 
 // The fields getCurrentImage's response builders need out of applyHeaderReport,
@@ -121,10 +121,16 @@ export class DeviceDisplayService {
   /**
    * Written on its own, to these columns only: the answer can take seconds to
    * render, and saving the whole Device afterwards would undo an admin's edit
-   * made in the meantime.
+   * made in the meantime. The Device gets its answer whether or not this
+   * write succeeds.
    */
   private async recordServed(device: Device, display: Display, served: Served): Promise<void> {
-    await this.deviceRepository.update({ id: device.id }, toLastServedRecord(served, display, device.lastSeen ?? new Date()))
+    try {
+      await this.deviceRepository.update({ id: device.id }, toLastServedRecord(served, display, device.lastSeen ?? new Date()))
+    }
+    catch (err) {
+      this.logger.error(`Could not record what device ${device.id} was served: ${getErrorMessage(err)}`)
+    }
   }
 
   /**
@@ -212,7 +218,7 @@ export class DeviceDisplayService {
           temperature_profile: 'default',
           update_firmware: report.updateFirmware,
         }),
-        served: servedFallback('noScreen', screens.length === 0 ? 'noScreens' : 'noneEligible'),
+        served: servedNoScreen(screens.length),
       }
     }
     nextScreen.isActive = true
@@ -374,7 +380,7 @@ export class DeviceDisplayService {
       return {
         filename: 'noScreen.png',
         imgUrl: await this.fallbackImageUrl('noScreen', device),
-        served: servedFallback('noScreen', screenCount > 0 ? 'noneEligible' : 'noScreens'),
+        served: servedNoScreen(screenCount),
       }
     }
     const { imgUrl, served } = await fileExists(this.screenImagePath(device, activeScreen))
