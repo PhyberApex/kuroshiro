@@ -1,7 +1,7 @@
 import { dirname } from 'node:path'
 import ts from 'typescript'
 
-const ROUTE_DECORATORS = new Set(['Get', 'Post', 'Put', 'Patch', 'Delete', 'All', 'Head', 'Options'])
+const ROUTE_DECORATORS = new Set(['Get', 'Post', 'Put', 'Patch', 'Delete', 'All', 'Head', 'Options', 'Search', 'Sse'])
 const ENTITY_DECORATORS = new Set(['Entity', 'ViewEntity', 'ChildEntity'])
 
 export interface EntityReturn {
@@ -24,7 +24,7 @@ function isOwnSource(declaration: ts.Declaration, program: ts.Program): boolean 
   return !program.isSourceFileFromExternalLibrary(file) && !program.isSourceFileDefaultLibrary(file)
 }
 
-/** Every `@Entity` class reachable from `type`: through promises, arrays, unions, generics and the properties of our own types. */
+/** Every `@Entity` class reachable from `type`: through promises, arrays, unions, generics, base classes, and the properties and index signatures of our own types. */
 function entitiesIn(type: ts.Type, checker: ts.TypeChecker, program: ts.Program, seen = new Set<ts.Type>()): string[] {
   if (seen.has(type))
     return []
@@ -40,21 +40,28 @@ function entitiesIn(type: ts.Type, checker: ts.TypeChecker, program: ts.Program,
     return [type.getSymbol()!.getName()]
 
   const typeArguments = [...(type.aliasTypeArguments ?? []), ...checker.getTypeArguments(type as ts.TypeReference)]
-  const ownProperties = declarations.every(declaration => isOwnSource(declaration, program))
-    ? type.getProperties().map(property => checker.getTypeOfSymbol(property))
+  const baseTypes = type.isClassOrInterface() ? checker.getBaseTypes(type) : []
+  const ownMembers = declarations.every(declaration => isOwnSource(declaration, program))
+    ? [
+        ...type.getProperties().map(property => checker.getTypeOfSymbol(property)),
+        ...checker.getIndexInfosOfType(type).map(index => index.type),
+      ]
     : []
-  return [...typeArguments, ...ownProperties].flatMap(recurse)
+  return [...typeArguments, ...baseTypes, ...ownMembers].flatMap(recurse)
 }
 
 function createProgram(rootNames: string[], tsconfigPath: string, virtualFiles: Record<string, string>): ts.Program {
-  const { config } = ts.readConfigFile(tsconfigPath, ts.sys.readFile)
-  const { options } = ts.parseJsonConfigFileContent(config, ts.sys, dirname(tsconfigPath))
-  const host = ts.createCompilerHost({ ...options, noEmit: true, incremental: false })
+  const { config, error } = ts.readConfigFile(tsconfigPath, ts.sys.readFile)
+  if (error)
+    throw new Error(ts.flattenDiagnosticMessageText(error.messageText, '\n'))
+  const parsed = ts.parseJsonConfigFileContent(config, ts.sys, dirname(tsconfigPath))
+  const options = { ...parsed.options, noEmit: true, incremental: false }
+  const host = ts.createCompilerHost(options)
   const readFile = host.readFile.bind(host)
   const fileExists = host.fileExists.bind(host)
   host.readFile = fileName => virtualFiles[fileName] ?? readFile(fileName)
   host.fileExists = fileName => fileName in virtualFiles || fileExists(fileName)
-  return ts.createProgram({ rootNames, options: { ...options, noEmit: true, incremental: false }, host })
+  return ts.createProgram({ rootNames, options, host })
 }
 
 /**

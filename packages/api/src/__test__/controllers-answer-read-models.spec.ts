@@ -6,8 +6,8 @@ import { findEntityReturns } from './entityReturns.js'
 const SRC_ROOT = join(import.meta.dirname, '..')
 const TSCONFIG = join(SRC_ROOT, '..', 'tsconfig.json')
 
-const WRONG_CONTROLLER = join(SRC_ROOT, 'widgets', 'widgets.controller.ts')
-const WRONG_CONTROLLER_SOURCE = `
+const FIXTURE_CONTROLLER = join(SRC_ROOT, 'widgets', 'widgets.controller.ts')
+const FIXTURE_CONTROLLER_SOURCE = `
 import { Controller, Get, Post } from '@nestjs/common'
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm'
 
@@ -19,6 +19,8 @@ export class Widget {
   @Column()
   apikey: string
 }
+
+export class SpecialWidget extends Widget {}
 
 interface WidgetRead {
   id: string
@@ -42,6 +44,16 @@ export class WidgetsController {
     return null
   }
 
+  @Get('by-id')
+  async byId(): Promise<{ [id: string]: Widget }> {
+    return {}
+  }
+
+  @Get('special')
+  async special(): Promise<SpecialWidget> {
+    return new SpecialWidget()
+  }
+
   @Post()
   async create(): Promise<WidgetRead> {
     return { id: '1', createdAt: null }
@@ -54,8 +66,8 @@ export class WidgetsController {
 `
 
 /**
- * Handlers that still answer an entity. Each entry leaves with the slice of the admin UI
- * rebuild (#1074) that reshapes its endpoint into a read model; none may be added.
+ * Handlers that still answer an entity. An entry leaves in the PR that reshapes its
+ * endpoint into a read model; none may be added.
  */
 const KNOWN_EXCEPTIONS: string[] = [
   'DeviceModelsController.createPalette',
@@ -94,12 +106,14 @@ const KNOWN_EXCEPTIONS: string[] = [
 
 describe('admin controllers answer read models, never entities (ADR-0033)', () => {
   it('flags a handler whose return type carries an entity, declared or inferred', () => {
-    const found = findEntityReturns([WRONG_CONTROLLER], TSCONFIG, { [WRONG_CONTROLLER]: WRONG_CONTROLLER_SOURCE })
+    const found = findEntityReturns([FIXTURE_CONTROLLER], TSCONFIG, { [FIXTURE_CONTROLLER]: FIXTURE_CONTROLLER_SOURCE })
 
     expect(found).toEqual([
       { handler: 'WidgetsController.list', entities: ['Widget'] },
       { handler: 'WidgetsController.undeclared', entities: ['Widget'] },
       { handler: 'WidgetsController.nullable', entities: ['Widget'] },
+      { handler: 'WidgetsController.byId', entities: ['Widget'] },
+      { handler: 'WidgetsController.special', entities: ['Widget'] },
     ])
   }, 60_000)
 

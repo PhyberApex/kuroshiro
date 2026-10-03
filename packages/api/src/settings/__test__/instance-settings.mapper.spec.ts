@@ -6,6 +6,7 @@ const fallbacks: InstanceSettingsFallbacks = {
   lowBatteryPercent: { value: 20, source: 'default' },
   offlineMultiplier: { value: 4, source: 'env' },
   fetchFailureThreshold: { value: 3, source: 'default' },
+  firmwareAutoUpdate: { value: false, source: 'default' },
 }
 
 describe('toInstanceSettingsResponse', () => {
@@ -34,7 +35,7 @@ describe('toInstanceSettingsResponse', () => {
     expect(toInstanceSettingsResponse(row, fallbacks).firmwareAutoUpdate.override).toBe(false)
   })
 
-  it('serializes with the keys in the order the endpoint has always answered', () => {
+  it('serializes the thresholds first, then the boolean Settings, each as override, value, fallbackSource, fallbackValue', () => {
     expect(JSON.stringify(toInstanceSettingsResponse(null, fallbacks))).toBe(
       '{"lowBatteryPercent":{"override":null,"value":20,"fallbackSource":"default","fallbackValue":20},'
       + '"offlineMultiplier":{"override":null,"value":4,"fallbackSource":"env","fallbackValue":4},'

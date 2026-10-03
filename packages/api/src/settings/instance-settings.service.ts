@@ -17,11 +17,7 @@ interface AlertsEnvConfig {
   fetchFailureThresholdSource: FallbackSource
 }
 
-const SOURCE_KEY: Record<SettingKey, keyof AlertsEnvConfig> = {
-  lowBatteryPercent: 'lowBatteryPercentSource',
-  offlineMultiplier: 'offlineMultiplierSource',
-  fetchFailureThreshold: 'fetchFailureThresholdSource',
-}
+const FIRMWARE_AUTO_UPDATE_DEFAULT = false
 
 /**
  * The persisted home for admin-tunable, instance-wide values (ADR-0027) — today the three
@@ -58,14 +54,17 @@ export class InstanceSettingsService {
   /** Whether the Firmware Auto-Update policy (ADR-0029) is on — `FirmwareSyncService` reads this after every insert; the Setting has no environment-variable fallback, only the built-in default of `false`. */
   async resolveFirmwareAutoUpdate(): Promise<boolean> {
     const row = await this.loadRow()
-    return row?.firmwareAutoUpdate ?? false
+    return row?.firmwareAutoUpdate ?? FIRMWARE_AUTO_UPDATE_DEFAULT
   }
 
   private fallbacks(): InstanceSettingsFallbacks {
     const alertsConfig = this.alertsConfig()
-    return Object.fromEntries(SETTING_KEYS.map(key =>
-      [key, { value: alertsConfig[key], source: alertsConfig[SOURCE_KEY[key]] as FallbackSource }],
-    )) as InstanceSettingsFallbacks
+    return {
+      lowBatteryPercent: { value: alertsConfig.lowBatteryPercent, source: alertsConfig.lowBatteryPercentSource },
+      offlineMultiplier: { value: alertsConfig.offlineMultiplier, source: alertsConfig.offlineMultiplierSource },
+      fetchFailureThreshold: { value: alertsConfig.fetchFailureThreshold, source: alertsConfig.fetchFailureThresholdSource },
+      firmwareAutoUpdate: { value: FIRMWARE_AUTO_UPDATE_DEFAULT, source: 'default' },
+    }
   }
 
   async get(): Promise<InstanceSettingsResponse> {

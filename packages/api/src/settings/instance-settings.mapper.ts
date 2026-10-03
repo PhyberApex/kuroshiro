@@ -2,18 +2,23 @@ import type { BooleanSettingKey, FallbackSource, InstanceSettingsResponse, Insta
 import type { InstanceSettings } from './entities/instance-settings.entity.js'
 import { BOOLEAN_SETTING_KEYS, SETTING_KEYS } from 'kuroshiro-shared'
 
-export type InstanceSettingsFallbacks = Record<SettingKey, { value: number, source: FallbackSource }>
+interface SettingFallback<T> {
+  value: T
+  source: FallbackSource
+}
 
-function toSettingValue<T>(override: T | null, fallbackValue: T, fallbackSource: FallbackSource): InstanceSettingValue<T> {
-  return { override, value: override ?? fallbackValue, fallbackSource, fallbackValue }
+export type InstanceSettingsFallbacks = Record<SettingKey, SettingFallback<number>> & Record<BooleanSettingKey, SettingFallback<boolean>>
+
+function toInstanceSettingValue<T>(override: T | null, fallback: SettingFallback<T>): InstanceSettingValue<T> {
+  return { override, value: override ?? fallback.value, fallbackSource: fallback.source, fallbackValue: fallback.value }
 }
 
 export function toInstanceSettingsResponse(row: InstanceSettings | null, fallbacks: InstanceSettingsFallbacks): InstanceSettingsResponse {
   const thresholds = Object.fromEntries(SETTING_KEYS.map(key =>
-    [key, toSettingValue(row?.[key] ?? null, fallbacks[key].value, fallbacks[key].source)],
+    [key, toInstanceSettingValue(row?.[key] ?? null, fallbacks[key])],
   )) as Record<SettingKey, InstanceSettingValue>
   const booleans = Object.fromEntries(BOOLEAN_SETTING_KEYS.map(key =>
-    [key, toSettingValue(row?.[key] ?? null, false, 'default')],
+    [key, toInstanceSettingValue(row?.[key] ?? null, fallbacks[key])],
   )) as Record<BooleanSettingKey, InstanceSettingValue<boolean>>
   return { ...thresholds, ...booleans }
 }
