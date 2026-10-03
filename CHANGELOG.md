@@ -1,5 +1,48 @@
 # Changelog
 
+## [0.18.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.17.1...kuroshiro-v0.18.0) (2026-10-03)
+
+
+### Features
+
+* **api:** adding a Screen never changes the Active Screen, deleting closes the gap in the Order ([#1199](https://github.com/PhyberApex/kuroshiro/issues/1199)) ([64aa8ff](https://github.com/PhyberApex/kuroshiro/commit/64aa8ff506025d28ed60b0419b8f8a4e3e99b5ea))
+* **api:** Device bookkeeping (nullable last seen, the last-served record) and the Device reads ([#1195](https://github.com/PhyberApex/kuroshiro/issues/1195)) ([b44653d](https://github.com/PhyberApex/kuroshiro/commit/b44653da9168954545e85b18174bf0f40f1c5f97))
+* **api:** editing a Screen ([#1213](https://github.com/PhyberApex/kuroshiro/issues/1213)) ([955ef02](https://github.com/PhyberApex/kuroshiro/commit/955ef02dc7ef695cc713bc69920ff279fed97a75))
+* **api:** Instance facts on GET /api/instance, with the upload limits set and stated ([#1200](https://github.com/PhyberApex/kuroshiro/issues/1200)) ([a030a23](https://github.com/PhyberApex/kuroshiro/commit/a030a237b353ba732884c7bb7ebbf1727b03b06d))
+* **api:** one error envelope and one validation pipe for the admin API ([#1184](https://github.com/PhyberApex/kuroshiro/issues/1184)) ([06b2359](https://github.com/PhyberApex/kuroshiro/commit/06b23596298db047325a8557aa8a62d5eaece0b4))
+* **api:** one render context, the preview's data, Templates saved and picked by size, and the stored failed render ([#1212](https://github.com/PhyberApex/kuroshiro/issues/1212)) ([186a8cb](https://github.com/PhyberApex/kuroshiro/commit/186a8cb51bab5768ea0bc018d612ae5cd916fabc))
+* **api:** Plugin reads as read models, with the facts the Plugin screens show ([#1205](https://github.com/PhyberApex/kuroshiro/issues/1205)) ([14c3ab8](https://github.com/PhyberApex/kuroshiro/commit/14c3ab8c6ad33ae534622460d17a7278cb9eef6b))
+* **api:** save Field Values on the Plugin and feed them to every render; remove Plugin Variables ([#1190](https://github.com/PhyberApex/kuroshiro/issues/1190)) ([4586336](https://github.com/PhyberApex/kuroshiro/commit/4586336cbba5c035a7f6f1aa279a402119238ff8))
+* **api:** saving a Plugin is one transaction that keeps its Data Sources ([#1207](https://github.com/PhyberApex/kuroshiro/issues/1207)) ([efb59cd](https://github.com/PhyberApex/kuroshiro/commit/efb59cdc5c851357edba247a6498238540650278))
+* **api:** Screen State and the Screen read of a Device ([#1196](https://github.com/PhyberApex/kuroshiro/issues/1196)) ([caea958](https://github.com/PhyberApex/kuroshiro/commit/caea95817cea61b656c486badf4866c4435a626a))
+* **api:** the Alerts list filtered by Device or Plugin, with the Plugin's id on a fetch Alert ([#1201](https://github.com/PhyberApex/kuroshiro/issues/1201)) ([911daf4](https://github.com/PhyberApex/kuroshiro/commit/911daf46bf212c6373b79cdb32fbc3a2475636e5))
+* **api:** the Device Model and Palette reads and their sync ([#1211](https://github.com/PhyberApex/kuroshiro/issues/1211)) ([116b7d0](https://github.com/PhyberApex/kuroshiro/commit/116b7d031a10073409a8789d9700eb6729f97b38))
+* **api:** the Device write and delete ([#1215](https://github.com/PhyberApex/kuroshiro/issues/1215)) ([bb7f023](https://github.com/PhyberApex/kuroshiro/commit/bb7f023b5d67895b607bfb7ad04858e013a71298))
+* **api:** the Fallback Screens in the Hanko identity, per Device, with the two error wordings ([#1216](https://github.com/PhyberApex/kuroshiro/issues/1216)) ([886ccc9](https://github.com/PhyberApex/kuroshiro/commit/886ccc9447cfbc763b2d5d34823fdd4b0a4b982b)), closes [#1180](https://github.com/PhyberApex/kuroshiro/issues/1180)
+* **api:** the Firmware reads and writes, and a record of every sync with TRMNL ([#1209](https://github.com/PhyberApex/kuroshiro/issues/1209)) ([c6e26e5](https://github.com/PhyberApex/kuroshiro/commit/c6e26e5055e65f245b74b0b12aa840bfc787f89b))
+* **config:** add opt-in secret redaction to Configuration Export/Import ([#1055](https://github.com/PhyberApex/kuroshiro/issues/1055)) ([a826efc](https://github.com/PhyberApex/kuroshiro/commit/a826efc11270f68c1e1e49eea1f4f33d76735860))
+* **firmware:** add Firmware Auto-Update Instance Setting ([#1056](https://github.com/PhyberApex/kuroshiro/issues/1056)) ([426c3cb](https://github.com/PhyberApex/kuroshiro/commit/426c3cbe6ebc5f439df946c8b8a125c04d4f916e)), closes [#1041](https://github.com/PhyberApex/kuroshiro/issues/1041)
+* **plugins:** add Recipe Update Check preview and apply endpoints ([#1058](https://github.com/PhyberApex/kuroshiro/issues/1058)) ([944779c](https://github.com/PhyberApex/kuroshiro/commit/944779c1e026f35d12f423c463f006d59aac8912))
+* **plugins:** add Recipe Update Check preview dialog to Plugin cards ([#1059](https://github.com/PhyberApex/kuroshiro/issues/1059)) ([a8edd21](https://github.com/PhyberApex/kuroshiro/commit/a8edd2141cfc54f92c24f834d98ba77f0758fe57))
+* **plugins:** persist an imported Recipe's parsed output as a Recipe Snapshot ([#1057](https://github.com/PhyberApex/kuroshiro/issues/1057)) ([d22dde5](https://github.com/PhyberApex/kuroshiro/commit/d22dde511ddd756e40476356bab8a2cb37c63d6a))
+* **settings:** add persisted Instance Settings for Alert thresholds ([#1051](https://github.com/PhyberApex/kuroshiro/issues/1051)) ([384983f](https://github.com/PhyberApex/kuroshiro/commit/384983f1ce89c814256c17786e03707dc4942a5d))
+* **settings:** make the two Retention ages Instance Settings ([#1202](https://github.com/PhyberApex/kuroshiro/issues/1202)) ([d59b77d](https://github.com/PhyberApex/kuroshiro/commit/d59b77dedbbb4b3d5c1ec600558f608d3dc3a100))
+* **shared:** admin API wire types in packages/shared/src/api, with the mapper convention and an entity-return guard ([#1183](https://github.com/PhyberApex/kuroshiro/issues/1183)) ([38f0515](https://github.com/PhyberApex/kuroshiro/commit/38f05156ee53503e03fa106859baaaeecd112e0c))
+* **ui-next:** buttons, icon button, tooltip, copy value, the loading mark and the thirteen icons ([#1197](https://github.com/PhyberApex/kuroshiro/issues/1197)) ([a0c1603](https://github.com/PhyberApex/kuroshiro/commit/a0c16035e6d213b581eda303c4c19a46c0187835))
+* **ui-next:** choices (switch, weekday toggle, segmented filter, radio row, layout picker, tabs, page list) ([#1206](https://github.com/PhyberApex/kuroshiro/issues/1206)) ([20e3e87](https://github.com/PhyberApex/kuroshiro/commit/20e3e877efb2704f287880627120ba8379d6dc11))
+* **ui-next:** fields (inputs, field, select, checkbox, secret field, search field, file drop, inline edit) ([#1203](https://github.com/PhyberApex/kuroshiro/issues/1203)) ([4bb8a08](https://github.com/PhyberApex/kuroshiro/commit/4bb8a087b6eb021e10757fbb38c0cc5b7ab4d8e3))
+* **ui-next:** layers and messages (confirmation, notice, empty state, row menu, tucked section, save states, save bar, result and problem lines) ([#1210](https://github.com/PhyberApex/kuroshiro/issues/1210)) ([2ac5057](https://github.com/PhyberApex/kuroshiro/commit/2ac505786810525c0a5970f2c6c450dd31a57a69))
+* **ui-next:** plate, seal, fact rows, the Screen row with its drag state, code block and two small lists ([#1214](https://github.com/PhyberApex/kuroshiro/issues/1214)) ([83d3c94](https://github.com/PhyberApex/kuroshiro/commit/83d3c9470dd8faa4fdd27d3bb560200a0dd061d0))
+* **ui-next:** the Masthead shell, the router, the API client and the shared page patterns ([#1218](https://github.com/PhyberApex/kuroshiro/issues/1218)) ([b9f103e](https://github.com/PhyberApex/kuroshiro/commit/b9f103e8151e2350dba348b604fb7611eb07157f))
+* **ui-next:** the new admin UI package, served by the image, with the tokens, the faces and the favicon ([#1188](https://github.com/PhyberApex/kuroshiro/issues/1188)) ([6676566](https://github.com/PhyberApex/kuroshiro/commit/6676566d8dd15961494cf32b39bbc444a974ae4f))
+
+
+### Bug Fixes
+
+* **api:** import InstanceSettingsService as a value so AlertSweepService can be injected ([#1191](https://github.com/PhyberApex/kuroshiro/issues/1191)) ([4b1b796](https://github.com/PhyberApex/kuroshiro/commit/4b1b7960b15a0b2d62d518029b4afccb4813a18c))
+* **api:** only delete cleanup paths inside the storage folders ([#1115](https://github.com/PhyberApex/kuroshiro/issues/1115)) ([93cda9a](https://github.com/PhyberApex/kuroshiro/commit/93cda9a9174d26e4608aecda4f8bf9138c8fff3d))
+* **ui:** load stored refresh rate into the device form on mount ([#1097](https://github.com/PhyberApex/kuroshiro/issues/1097)) ([3e82308](https://github.com/PhyberApex/kuroshiro/commit/3e82308b9daaa84d5bf618d49deb594487c56649))
+
 ## [0.17.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.17.0...kuroshiro-v0.17.1) (2026-09-30)
 
 
