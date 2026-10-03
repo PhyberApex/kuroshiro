@@ -15,9 +15,9 @@ interface SettingFallback {
 
 /**
  * The persisted home for admin-tunable, instance-wide values (ADR-0027) — the Alert Rule
- * thresholds, the Retention ages and Firmware Auto-Update. Each numeric Setting resolves as override, else its environment variable,
- * else the built-in default; the single row need not exist until the first save, and an
- * absent row behaves like every Setting being unset.
+ * thresholds, the Retention ages and Firmware Auto-Update. Each numeric Setting resolves as
+ * override, else its environment variable, else the built-in default; the single row need
+ * not exist until the first save, and an absent row behaves like every Setting being unset.
  */
 @Injectable()
 export class InstanceSettingsService {
