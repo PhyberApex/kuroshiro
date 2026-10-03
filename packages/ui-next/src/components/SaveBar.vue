@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import Button from './Button.vue'
+import { notSavedSentence } from './failureReason'
 
 defineOptions({ inheritAttrs: false })
 
@@ -36,7 +37,7 @@ defineSlots<{
   default?: () => unknown
 }>()
 
-const notSaved = computed(() => ['Not saved.', props.reason].filter(Boolean).join(' '))
+const notSaved = computed(() => notSavedSentence(props.reason))
 
 const announcement = computed(() => {
   if (!props.changed)

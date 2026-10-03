@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { defineComponent, h } from 'vue'
 import { expectAccessible } from '@/testing/a11y'
 import { mount } from '@/testing/mount'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
@@ -14,6 +15,18 @@ describe('result line', () => {
     await expect.element(line).toHaveTextContent('Sending the Test Notification')
     expect(line.element().querySelector('.loading-mark')).not.toBeNull()
     expect(line.element().querySelector('svg')).toBeNull()
+  })
+
+  it('is an empty status region until it is given a sentence, and says it in that region', async () => {
+    const Line = defineComponent((props: { sentence?: string }) => () => h(ResultLineComponent, { running: true }, props.sentence ? { default: () => props.sentence } : {}), { props: ['sentence'] })
+    const screen = await mount(Line)
+    const region = screen.getByRole('status').element()
+    expect(region).toBeEmptyDOMElement()
+
+    await screen.rerender({ sentence: 'Sending the Test Notification' })
+
+    await expect.element(screen.getByRole('status')).toHaveTextContent('Sending the Test Notification')
+    expect(screen.getByRole('status').element()).toBe(region)
   })
 
   it('swaps the loading mark for an icon in the same region when the action is done', async () => {

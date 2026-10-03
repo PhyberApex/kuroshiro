@@ -23,8 +23,8 @@ defineProps<{
   disabled?: boolean
 }>()
 
-// A disabled link is drawn as an item that leads nowhere, so a press cannot follow it.
-function selected(item: RowMenuItem) {
+// Also what a disabled link is drawn as: an item that leads nowhere, so a press cannot follow it.
+function runAction(item: RowMenuItem) {
   if ('select' in item)
     item.select()
 }
@@ -50,7 +50,7 @@ function selected(item: RowMenuItem) {
                 {{ item.label }}
               </RouterLink>
             </DropdownMenuItem>
-            <DropdownMenuItem v-else class="option" :disabled="item.disabled" @select="selected(item)">
+            <DropdownMenuItem v-else class="option" :disabled="item.disabled" @select="runAction(item)">
               {{ item.label }}
             </DropdownMenuItem>
           </template>

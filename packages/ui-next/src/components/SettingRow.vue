@@ -10,7 +10,7 @@ const props = withDefaults(defineProps<{
   status?: SaveStatus
   /** Why the save failed, as a sentence. */
   reason?: string
-  /** What is wrong with the value and what is allowed. Set, it marks the control invalid and takes the note's place. */
+  /** What is wrong with the value and what is allowed. Set, it marks the control invalid and stands above the note. */
   error?: string
 }>(), {
   status: 'idle',
@@ -40,15 +40,9 @@ const labelId = `${id}-label`
 const noteId = `${id}-note`
 const errorId = `${id}-error`
 
-function describedBy() {
-  if (props.error)
-    return errorId
-  return slots.note ? noteId : undefined
-}
-
 const control = computed(() => ({
   'id': controlId,
-  'aria-describedby': describedBy(),
+  'aria-describedby': [props.error && errorId, slots.note && noteId].filter(Boolean).join(' ') || undefined,
   'invalid': Boolean(props.error),
 }))
 </script>
@@ -60,10 +54,10 @@ const control = computed(() => ({
       <slot :control="control" :label-id="labelId" />
     </div>
     <SaveState class="state" :status="status" :reason="reason" @retry="$emit('retry')" />
-    <p v-if="$slots.note && !error" :id="noteId" class="note">
+    <FieldError :id="errorId" class="under" :message="error" />
+    <p v-if="$slots.note" :id="noteId" class="note">
       <slot name="note" />
     </p>
-    <FieldError :id="errorId" class="under" :message="error" />
   </div>
 </template>
 

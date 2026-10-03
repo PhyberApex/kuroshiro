@@ -3,6 +3,7 @@ import { userEvent } from 'vitest/browser'
 import { expectAccessible } from '@/testing/a11y'
 import { mount } from '@/testing/mount'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
+import { elementsInSealColour } from '@/testing/sealColour'
 import SaveStateGallery from '../SaveState.gallery.vue'
 import SaveState from '../SaveState.vue'
 
@@ -54,6 +55,7 @@ describe('save state', () => {
     const screen = await mount(SaveState, { props: { status: 'failed' } })
 
     await expect.poll(() => getComputedStyle(screen.getByRole('status').element()).color).toBe(getComputedStyle(document.body).color)
+    expect(elementsInSealColour(screen.container)).toEqual([])
   })
 
   it('saves a control\'s commit and shows what came of it', async () => {

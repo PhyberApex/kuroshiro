@@ -4,3 +4,8 @@ export function failureReason(error: unknown): string | undefined {
     return error.message || undefined
   return typeof error === 'string' && error ? error : undefined
 }
+
+/** "Not saved." and, when the failure gave one, its reason. */
+export function notSavedSentence(reason?: string) {
+  return reason ? `Not saved. ${reason}` : 'Not saved.'
+}

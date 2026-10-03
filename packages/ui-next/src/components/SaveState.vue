@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { SaveStatus } from './useSaveAsChanged'
 import Button from './Button.vue'
+import { notSavedSentence } from './failureReason'
 import Icon from './Icon.vue'
 import LoadingMark from './LoadingMark.vue'
 
@@ -27,7 +28,7 @@ defineEmits<{
         <Icon name="check" class="mark" />Saved
       </template>
       <template v-else-if="status === 'failed'">
-        <Icon name="problem" class="mark" /><span>{{ reason ? `Not saved. ${reason}` : 'Not saved.' }}</span>
+        <Icon name="problem" class="mark" /><span>{{ notSavedSentence(reason) }}</span>
       </template>
     </span>
     <Button v-if="status === 'failed'" variant="quiet" @click="$emit('retry')">

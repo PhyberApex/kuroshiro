@@ -11,7 +11,7 @@ const props = withDefaults(defineProps<{
   /** The heading the title is, by where the section sits in the page's outline. */
   heading?: 'h2' | 'h3' | 'h4'
   /** For the gallery: the state held still on the trigger, `hover` or `focus`. */
-  force?: string
+  force?: 'hover' | 'focus'
 }>(), {
   heading: 'h2',
 })

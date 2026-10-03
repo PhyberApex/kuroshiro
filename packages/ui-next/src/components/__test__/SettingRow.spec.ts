@@ -3,6 +3,7 @@ import { defineComponent, h } from 'vue'
 import { expectAccessible } from '@/testing/a11y'
 import { mount } from '@/testing/mount'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
+import { elementsInSealColour } from '@/testing/sealColour'
 import { resetViewport, resizeTo } from '@/testing/viewport'
 import SettingRowGallery from '../SettingRow.gallery.vue'
 import SettingRow from '../SettingRow.vue'
@@ -28,13 +29,13 @@ describe('setting row', () => {
     await expect.element(screen.getByRole('textbox', { name: 'Name' })).toHaveAccessibleDescription('Shown in the Masthead.')
   })
 
-  it('marks the control invalid and puts the error in the note\'s place', async () => {
+  it('marks the control invalid and says what is wrong above the note, which stays', async () => {
     const screen = await mount(rowOf({ error: 'Enter a name.' }, 'Shown in the Masthead.'))
     const input = screen.getByRole('textbox', { name: 'Name' })
 
     await expect.element(input).toHaveAttribute('aria-invalid', 'true')
-    await expect.element(input).toHaveAccessibleDescription('Enter a name.')
-    await expect.element(screen.getByText('Shown in the Masthead.')).not.toBeInTheDocument()
+    await expect.element(input).toHaveAccessibleDescription('Enter a name. Shown in the Masthead.')
+    await expect.element(screen.getByText('Shown in the Masthead.')).toBeVisible()
   })
 
   it('shows where the save stands at its side', async () => {
@@ -46,11 +47,16 @@ describe('setting row', () => {
     expect(state.element().getBoundingClientRect().left).toBeGreaterThan(input.getBoundingClientRect().right)
   })
 
-  it('hands "Try again" on after a failed save', async () => {
+  it('says why a save failed under the control, in ink, and hands "Try again" on', async () => {
     const onRetry = vi.fn()
     const screen = await mount(rowOf({ status: 'failed', reason: 'Kuroshiro\'s server is not answering.', onRetry }))
+    const input = screen.getByRole('textbox', { name: 'Name' }).element().getBoundingClientRect()
+    const state = screen.getByRole('status').element().getBoundingClientRect()
 
     await expect.element(screen.getByRole('status')).toHaveTextContent('Not saved. Kuroshiro\'s server is not answering.')
+    expect(state.top).toBeGreaterThanOrEqual(input.bottom)
+    expect(state.left).toBe(input.left)
+    expect(elementsInSealColour(screen.container)).toEqual([])
     await screen.getByRole('button', { name: 'Try again' }).click()
 
     expect(onRetry).toHaveBeenCalledOnce()

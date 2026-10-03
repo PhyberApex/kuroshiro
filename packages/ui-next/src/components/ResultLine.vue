@@ -13,16 +13,18 @@ withDefaults(defineProps<{
 })
 
 defineSlots<{
-  /** One sentence: what is running, or what came of it. */
-  default: () => unknown
+  /** One sentence: what is running, or what came of it. Left out, the line is an empty status region that waits for one. */
+  default?: () => unknown
 }>()
 </script>
 
 <template>
   <p class="result-line" role="status">
-    <LoadingMark v-if="running" class="mark running" decorative />
-    <Icon v-else class="mark" :name="icon" />
-    <span><slot /></span>
+    <template v-if="$slots.default">
+      <LoadingMark v-if="running" class="mark running" decorative />
+      <Icon v-else class="mark" :name="icon" />
+      <span><slot /></span>
+    </template>
   </p>
 </template>
 
