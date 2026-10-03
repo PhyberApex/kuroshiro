@@ -48,14 +48,6 @@ describe('screensController (unit)', () => {
     expect(result).toBe(screen)
   })
 
-  it('getByDevice returns screens for a device', async () => {
-    const screens = [makeScreen({ id: '1' })]
-    service.getByDevice.mockResolvedValue(screens)
-    const result = await controller.getByDevice('dev')
-    expect(service.getByDevice).toHaveBeenCalledWith('dev')
-    expect(result).toBe(screens)
-  })
-
   it('delete calls service delete', async () => {
     service.delete.mockResolvedValue(undefined)
     await expect(controller.delete('1')).resolves.toBeUndefined()

@@ -17,6 +17,7 @@ const wording: Record<ApiErrorCode, string> = {
   'bad-gateway': 'A service Kuroshiro depends on did not answer.',
   'service-unavailable': 'Not available right now.',
   'internal': 'Something went wrong on the server.',
+  'device-not-found': 'That Device does not exist.',
 }
 
 function wordingBySwitch(code: ApiErrorCode): string {
@@ -26,6 +27,7 @@ function wordingBySwitch(code: ApiErrorCode): string {
       return 'Check what you sent.'
     case 'forbidden':
     case 'not-found':
+    case 'device-not-found':
     case 'conflict':
     case 'payload-too-large':
     case 'unprocessable':

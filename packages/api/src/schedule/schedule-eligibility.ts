@@ -1,17 +1,35 @@
+import type { ScreenStateCause } from 'kuroshiro-shared'
 import type { Schedule } from './schedule.entity.js'
 
+export type ScheduleExclusion
+  = | { state: 'scheduleOff', stateCause: null }
+    | { state: 'notToday', stateCause: ScreenStateCause }
+    | { state: 'notThisHour', stateCause: null }
+
 /**
+ * Why a Schedule keeps its Screen out of Rotation at `now`, or `null` when it
+ * lets the Screen show. The first reason that applies wins: switched off, then
+ * the weekday, then the date range, then the hours.
+ *
  * All constraints are evaluated against the server process's local timezone —
  * Devices have no timezone of their own (ADR-0009).
  */
-export function isScheduleEligible(schedule: Schedule | null | undefined, now: Date): boolean {
+export function scheduleExclusion(schedule: Schedule | null | undefined, now: Date): ScheduleExclusion | null {
   if (!schedule)
-    return true
+    return null
   if (!schedule.enabled)
-    return false
-  return matchesWeekday(schedule.weekdays, now)
-    && matchesTimeWindow(schedule.startTime, schedule.endTime, now)
-    && matchesDateRange(schedule.startDate, schedule.endDate, now)
+    return { state: 'scheduleOff', stateCause: null }
+  if (!matchesWeekday(schedule.weekdays, now))
+    return { state: 'notToday', stateCause: 'weekday' }
+  if (!matchesDateRange(schedule.startDate, schedule.endDate, now))
+    return { state: 'notToday', stateCause: 'dateRange' }
+  if (!matchesTimeWindow(schedule.startTime, schedule.endTime, now))
+    return { state: 'notThisHour', stateCause: null }
+  return null
+}
+
+export function isScheduleEligible(schedule: Schedule | null | undefined, now: Date): boolean {
+  return scheduleExclusion(schedule, now) === null
 }
 
 function matchesWeekday(weekdays: number[] | null | undefined, now: Date): boolean {

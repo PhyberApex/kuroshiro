@@ -34,11 +34,6 @@ export class ScreensController {
     return this.screensService.add(body, file)
   }
 
-  @Get('device/:deviceId')
-  async getByDevice(@Param('deviceId') deviceId: string): Promise<Screen[]> {
-    return this.screensService.getByDevice(deviceId)
-  }
-
   @Patch('device/:deviceId/reorder')
   async reorder(@Param('deviceId') deviceId: string, @Body() body: ReorderScreensDto): Promise<Screen[]> {
     return this.screensService.reorder(deviceId, body.screenIds)
