@@ -1,4 +1,6 @@
 import type { DeviceModelsService } from '../../device-models/device-models.service.js'
+import type { DeviceModel } from '../../device-models/entities/device-model.entity.js'
+import type { Palette } from '../../device-models/entities/palette.entity.js'
 import type { FirmwareService } from '../../firmware/firmware.service.js'
 import type { ScreensService } from '../../screens/screens.service.js'
 import type { MockDeviceModelsService } from '../../test/mockDeviceModelsService.js'
@@ -21,6 +23,7 @@ describe('devicesService', () => {
   beforeEach(() => {
     repo = createMockRepository<Device>()
     deviceModels = createMockDeviceModelsService()
+    deviceModels.supportsPalette.mockImplementation(async (model: DeviceModel, palette: Palette) => model.paletteIds.includes(palette.id))
     firmwareService = { findById: vi.fn() }
     screensService = { reconvertImageScreens: vi.fn().mockResolvedValue(0) }
     service = new DevicesService(
@@ -171,16 +174,16 @@ describe('devicesService', () => {
     it('accepts a custom palette whose colour family is compatible with the device model', async () => {
       repo.findOneBy.mockResolvedValue(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, palette: GRAY_4 }))
       deviceModels.findPalette.mockResolvedValue(CUSTOM_RED_3BWR)
-      deviceModels.compatibleFamiliesFor.mockResolvedValue(new Set(['screen--color-3bwr']))
+      deviceModels.supportsPalette.mockResolvedValue(true)
       const result = (await service.update('1', { paletteId: CUSTOM_RED_3BWR.id }))!
-      expect(deviceModels.compatibleFamiliesFor).toHaveBeenCalledWith(OG_PLUS)
+      expect(deviceModels.supportsPalette).toHaveBeenCalledWith(OG_PLUS, CUSTOM_RED_3BWR)
       expect(result.palette).toBe(CUSTOM_RED_3BWR)
     })
 
     it('rejects a custom palette whose colour family is not compatible with the device model', async () => {
       repo.findOneBy.mockResolvedValue(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, palette: GRAY_4 }))
       deviceModels.findPalette.mockResolvedValue(CUSTOM_RED_3BWR)
-      deviceModels.compatibleFamiliesFor.mockResolvedValue(new Set())
+      deviceModels.supportsPalette.mockResolvedValue(false)
       await expect(service.update('1', { paletteId: CUSTOM_RED_3BWR.id })).rejects.toThrow(BadRequestException)
       expect(repo.save).not.toHaveBeenCalled()
     })

@@ -51,7 +51,7 @@ export interface MockDeviceModelsService {
   findPalette: Mock
   allowedPalettesFor: Mock
   defaultPaletteFor: Mock
-  compatibleFamiliesFor: Mock
+  supportsPalette: Mock
   resolve: Mock
   assignResolvedModel: Mock
   renderTargetFor: Mock
@@ -65,7 +65,7 @@ export function createMockDeviceModelsService(): MockDeviceModelsService {
     findPalette: vi.fn(),
     allowedPalettesFor: vi.fn(),
     defaultPaletteFor: vi.fn(),
-    compatibleFamiliesFor: vi.fn(),
+    supportsPalette: vi.fn(),
     resolve: vi.fn(),
     assignResolvedModel: vi.fn(),
     renderTargetFor: vi.fn(),
