@@ -32,6 +32,7 @@ const { fileExists, puppeteerPage, puppeteerLaunch } = vi.hoisted(() => ({
     setViewport: vi.fn(),
     setContent: vi.fn(),
     screenshot: vi.fn(),
+    evaluate: vi.fn(),
   },
   puppeteerLaunch: vi.fn(),
 }))
@@ -212,7 +213,7 @@ describe('deviceDisplayService', () => {
       expect(html).toContain('--screen-w: 1040px;')
       expect(html).toContain('<div class="view view--full"><p>hi</p></div>')
       const { convertToPng } = await import('../../utils/imageUtils.js')
-      expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('screen2.png'), { model: V2, palette: GRAY_16 }, expect.any(Object))
+      expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('screen2.png'), { model: V2, palette: GRAY_16 }, expect.any(Object), {})
       expect(result.image_url).toBe('http://api/screens/devices/1/screen2.png')
       expect(fs.unlink).toHaveBeenCalledWith(expect.stringContaining('tmp-source'))
     })
@@ -228,6 +229,28 @@ describe('deviceDisplayService', () => {
       expect(html).toContain('screen--og_plus')
       expect(html).toContain('screen--2bit')
       expect(html).toContain('<div class="view view--full"><span>cached</span></div>')
+    })
+
+    it('serves the error Fallback Screen naming the Screen when its render fails', async () => {
+      const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS })
+      primeRotation({ id: 'screen2', type: 'html', order: 2, html: '<p>hi</p>', filename: 'Weather' }, device)
+      puppeteerPage.setContent.mockRejectedValue(new Error('Chrome crashed'))
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.image_url).toBe('http://api/screens/error.png')
+      expect(fallbackScreens.urlFor).toHaveBeenCalledWith({ kind: 'error', cause: 'render', screenName: 'Weather' }, device, { model: OG_PLUS, palette: GRAY_4 })
+    })
+
+    it('names a plugin-type Screen that could not be rendered after its Plugin', async () => {
+      const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS })
+      primeRotation({ id: 'screen2', type: 'plugin', order: 2, plugin: makePlugin({ id: 'p1', name: 'Weather' }), cachedPluginOutput: '<span>cached</span>', filename: null }, device)
+      puppeteerPage.setContent.mockRejectedValue(new Error('Chrome crashed'))
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.image_url).toBe('http://api/screens/error.png')
+      expect(fallbackScreens.urlFor).toHaveBeenCalledWith({ kind: 'error', cause: 'render', screenName: 'Weather' }, device, { model: OG_PLUS, palette: GRAY_4 })
     })
 
     it('caches only the rendered plugin body when rendering on demand', async () => {
@@ -394,6 +417,19 @@ describe('deviceDisplayService', () => {
     expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', expect.any(String), expect.any(Object))
     expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('mirror.png'), { model: OG_PLUS, palette: GRAY_4 }, expect.any(Object))
     expect(fs.unlink).toHaveBeenCalled()
+  })
+
+  it('serves the error Fallback Screen in its mirror wording when the mirror fetch fails', async () => {
+    const device = makeDevice({ ...baseDevice, mirrorEnabled: true, mirrorMac: 'different-mac', mirrorApikey: 'mirror-token' })
+    deviceRepo.findOneBy.mockResolvedValue(device)
+    deviceRepo.save.mockResolvedValue(device)
+    configService.get.mockReturnValue('http://api')
+    mockFetch.mockRejectedValueOnce(new Error('TRMNL unreachable'))
+
+    const result = await service.getCurrentImage(headers)
+
+    expect(result.image_url).toBe('http://api/screens/error.png')
+    expect(fallbackScreens.urlFor).toHaveBeenCalledWith({ kind: 'error', cause: 'mirror' }, device, { model: OG_PLUS, palette: GRAY_4 })
   })
 
   it('handles mirroring without proxy when MACs are different', async () => {
@@ -772,6 +808,7 @@ describe('deviceDisplayService', () => {
       expect(result).toBeInstanceOf(DisplayScreen)
       expect(result.filename).toContain('mirror')
       expect(result.image_url).toBe('http://api/screens/error.png')
+      expect(fallbackScreens.urlFor).toHaveBeenCalledWith({ kind: 'error', cause: 'mirror' }, device, { model: OG_PLUS, palette: GRAY_4 })
       expect(result.rendered_at).toBeUndefined()
     })
 
@@ -839,6 +876,7 @@ describe('deviceDisplayService', () => {
       const result = await service.getCurrentImageWithoutProgressing(headers)
       expect(result).toBeInstanceOf(DisplayScreen)
       expect(result.image_url).toBe('http://api/screens/error.png')
+      expect(fallbackScreens.urlFor).toHaveBeenCalledWith({ kind: 'error', cause: 'render', screenName: 'test.png' }, device, { model: OG_PLUS, palette: GRAY_4 })
     })
 
     it('returns fresh generation metadata after on-demand generation', async () => {
@@ -976,6 +1014,7 @@ describe('deviceDisplayService', () => {
 
       expect(result).toBeInstanceOf(Display)
       expect(result.image_url).toBe('http://api/screens/error.png')
+      expect(fallbackScreens.urlFor).toHaveBeenCalledWith({ kind: 'error', cause: 'render', screenName: 'Dashboard' }, device, { model: OG_PLUS, palette: GRAY_4 })
     })
   })
 
@@ -1201,6 +1240,7 @@ describe('deviceDisplayService', () => {
       expect(result.filename).toBe('sleep.png')
       expect(result.image_url).toBe('http://api/screens/sleep.png')
       expect(screenRepo.find).not.toHaveBeenCalled()
+      expect(fallbackScreens.urlFor).toHaveBeenCalledWith({ kind: 'sleep' }, device, { model: OG_PLUS, palette: GRAY_4 })
     })
 
     it('keeps showing noScreen for a screenless device with the sleep screen disabled', async () => {

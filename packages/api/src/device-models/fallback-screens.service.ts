@@ -1,20 +1,30 @@
 import type { DeviceRenderTarget } from './device-models.service.js'
+import type { FallbackScreenFacts, FallbackScreenRequest } from './fallback-screen-templates.js'
+import { createHash } from 'node:crypto'
 import * as fs from 'node:fs'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { viewFull, wrapInScreenShell } from 'kuroshiro-shared'
+import { toClockTime } from '../devices/sleep-mode.js'
 import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { resolveAppPath } from '../utils/pathHelper.js'
-import { FALLBACK_SCREEN_TEMPLATE_VERSION, fallbackScreenBody } from './fallback-screen-templates.js'
+import { FALLBACK_SCREEN_TEMPLATE_VERSION, fallbackScreenHtml } from './fallback-screen-templates.js'
 import { renderHtmlToPng } from './render-html-to-png.js'
 
-export type FallbackScreenKind = 'noScreen' | 'error' | 'welcome' | 'sleep'
+/** What a Fallback Screen prints about the Device it is served to. */
+export interface FallbackScreenDevice {
+  name: string
+  friendlyId: string
+  /** Seconds since midnight in the server's timezone. */
+  sleepEndTime?: number | null
+}
 
 /**
- * Serves the built-in placeholder screens (no screen, error, welcome, sleep), rendered
- * natively at a render target's model size through the same puppeteer shell
- * regular screens use, generated on first use and cached under
- * `public/screens/fallback/v<template version>/<model>-<palette>/`.
+ * Serves the four Fallback Screens, each drawn for one Device at its render
+ * target's size and Palette on first use and cached under
+ * `public/screens/fallback/v<template version>/<model>-<palette>/<kind>-<sheet hash>.png`.
+ * The hash is taken over the whole sheet, so a Device's rename, a new wake
+ * time or another Screen name each get a file of their own, and Devices whose
+ * sheets print the same share one.
  */
 @Injectable()
 export class FallbackScreensService {
@@ -22,24 +32,33 @@ export class FallbackScreensService {
 
   constructor(private readonly configService: ConfigService) {}
 
-  async urlFor(kind: FallbackScreenKind, target: DeviceRenderTarget): Promise<string> {
-    const relativePath = ['screens', 'fallback', `v${FALLBACK_SCREEN_TEMPLATE_VERSION}`, `${target.model.name}-${target.palette.id}`, `${kind}.png`]
-    const outputPath = resolveAppPath('public', ...relativePath)
+  async urlFor(request: FallbackScreenRequest, device: FallbackScreenDevice, target: DeviceRenderTarget): Promise<string> {
     try {
-      if (await this.isStale(outputPath)) {
-        const html = wrapInScreenShell(target, viewFull(fallbackScreenBody(kind)))
-        await renderHtmlToPng(html, target, outputPath, this.logger)
-      }
+      const html = fallbackScreenHtml(request, this.factsFor(device), target.model)
+      const sheetHash = createHash('sha256').update(html).digest('hex').slice(0, 16)
+      const relativePath = ['screens', 'fallback', `v${FALLBACK_SCREEN_TEMPLATE_VERSION}`, `${target.model.name}-${target.palette.id}`, `${request.kind}-${sheetHash}.png`]
+      const outputPath = resolveAppPath('public', ...relativePath)
+      if (await this.isMissing(outputPath))
+        await renderHtmlToPng(html, target, outputPath, this.logger, { dither: false })
       return `${this.apiUrl()}/${relativePath.join('/')}`
     }
     catch (err) {
       const message = getErrorMessage(err)
-      this.logger.error(`Could not generate ${kind} screen for ${target.model.name}/${target.palette.id}, serving the static image: ${message}`)
-      return `${this.apiUrl()}/screens/${kind}.png`
+      this.logger.error(`Could not generate ${request.kind} screen for ${target.model.name}/${target.palette.id}, serving the static image: ${message}`)
+      return `${this.apiUrl()}/screens/${request.kind}.png`
     }
   }
 
-  private async isStale(outputPath: string): Promise<boolean> {
+  private factsFor(device: FallbackScreenDevice): FallbackScreenFacts {
+    return {
+      deviceName: device.name,
+      friendlyId: device.friendlyId,
+      instanceUrl: this.apiUrl(),
+      wakeTime: device.sleepEndTime == null ? null : toClockTime(device.sleepEndTime),
+    }
+  }
+
+  private async isMissing(outputPath: string): Promise<boolean> {
     try {
       await fs.promises.stat(outputPath)
       return false

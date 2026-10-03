@@ -2,11 +2,16 @@ import type { CurrentScreen, DeviceDetail, DeviceSummary, FallbackKind, Fallback
 import type { Screen } from '../screens/screens.entity.js'
 import type { Device } from './devices.entity.js'
 import { batteryPercentFromVoltage, SPECIAL_FUNCTIONS } from 'kuroshiro-shared'
+import { FALLBACK_SCREEN_TEMPLATE_VERSION } from '../device-models/fallback-screen-templates.js'
 import { toImagePath, toIsoString, toIsoStringOrNull } from '../utils/readModel.js'
 import { nextPollOf } from './next-poll.js'
-import { isDeviceAsleep, nextSleepEnd } from './sleep-mode.js'
+import { isDeviceAsleep, nextSleepEnd, toClockTime } from './sleep-mode.js'
 
-const WELCOME_IMAGE_PATH = '/screens/welcome.png'
+/**
+ * The static welcome image: a Device that never polled has no last-served
+ * record to name the one drawn for it at setup.
+ */
+const WELCOME_IMAGE_PATH = `/screens/welcome.png?v=${FALLBACK_SCREEN_TEMPLATE_VERSION}`
 
 export interface DeviceSummaryFacts {
   now: Date
@@ -84,19 +89,16 @@ function toCurrentScreen(device: Device, servedScreen: DeviceSummaryFacts['serve
     : toFallbackScreen(image, 'noScreen', 'noScreens', null)
 }
 
-function toClockTime(secondsOfDay: number | null | undefined): string | null {
-  if (secondsOfDay == null)
-    return null
-  const twoDigits = (value: number) => String(value).padStart(2, '0')
-  return `${twoDigits(Math.floor(secondsOfDay / 3600))}:${twoDigits(Math.floor(secondsOfDay % 3600 / 60))}`
+function toClockTimeOrNull(secondsOfDay: number | null | undefined): string | null {
+  return secondsOfDay == null ? null : toClockTime(secondsOfDay)
 }
 
 function toSleepState(device: Device, now: Date): SleepState {
   const inWindow = !device.mirrorEnabled && isDeviceAsleep(device, now)
   return {
     enabled: device.sleepModeEnabled,
-    start: toClockTime(device.sleepStartTime),
-    end: toClockTime(device.sleepEndTime),
+    start: toClockTimeOrNull(device.sleepStartTime),
+    end: toClockTimeOrNull(device.sleepEndTime),
     whileAsleep: device.sleepScreenEnabled ? 'fallback' : 'keep',
     inWindow,
     endsAt: inWindow ? toIsoString(nextSleepEnd(device.sleepEndTime!, now)) : null,

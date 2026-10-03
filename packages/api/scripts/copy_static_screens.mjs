@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const srcDir = path.resolve(__dirname, '../../ui-next/public/screens')
+const srcDir = path.resolve(__dirname, '../assets/screens')
 const destDir = path.resolve(__dirname, '../dist/public/screens')
 
 function copyDirSync(src, dest) {

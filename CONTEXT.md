@@ -53,7 +53,7 @@ The one reason a Screen is or is not showing right now, derived on every read an
 _Avoid_: Queued, status, inactive, disabled (a Schedule is disabled, a Screen is not)
 
 **Fallback Screen**:
-One of four built-in images a Device shows when it has no Screen's image to show — welcome (in the setup response, before the Device's first poll), no-screen (registered, but zero Screens or none that can currently be shown), error (the Screen's or the mirrored image could not be produced) and sleep (Sleep Mode in its window with the sleep screen on). Rendered per Device Model and Palette; not a Screen — it has no Order, no Schedule, belongs to no Device and cannot be edited.
+One of four built-in images a Device shows when it has no Screen's image to show — welcome (in the setup response, before the Device's first poll), no-screen (registered, but zero Screens or none that can currently be shown), error (the Screen's or the mirrored image could not be produced; worded "Mirroring failed" for a failed mirror fetch and "{Screen} could not be shown" for every other cause) and sleep (Sleep Mode in its window with the sleep screen on). Rendered per Device in its Device Model's size and Palette, since it prints the Device's name, the Instance's address and, on sleep, the wake time; below a short side of 200 px it is the seal alone. When that render itself fails the Device gets a static image that names no Device or Screen. Not a Screen — it has no Order, no Schedule, belongs to no Device and cannot be edited.
 _Avoid_: Fallback image, placeholder, default screen, system screen, `noScreen` (bare, in prose — reserve for the kind's code name)
 
 **Plugin Kind**:

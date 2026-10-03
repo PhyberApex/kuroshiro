@@ -9,7 +9,8 @@ import { becomesReady } from './poll.ts'
 
 const uiDir = resolve(import.meta.dirname, '../..')
 const apiDir = resolve(uiDir, '../api')
-// Laid out like the image: the API bundle in `dist/` beside the built UI in `public/`.
+// Laid out like the image: the API bundle in `dist/` beside the built UI in `public/`,
+// with the API's static Fallback Screens under `public/screens/`.
 // It sits under the API's own `dist/`, which is already ignored and resolves the API's node_modules.
 const stageDir = resolve(apiDir, 'dist/real-api')
 
@@ -22,6 +23,7 @@ function build() {
   mkdirSync(resolve(stageDir, 'dist'), { recursive: true })
   cpSync(resolve(apiDir, 'dist/main.js'), resolve(stageDir, 'dist/main.js'))
   cpSync(resolve(uiDir, 'dist'), resolve(stageDir, 'public'), { recursive: true })
+  cpSync(resolve(apiDir, 'assets/screens'), resolve(stageDir, 'public/screens'), { recursive: true })
 }
 
 async function freePort() {

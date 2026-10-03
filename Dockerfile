@@ -64,6 +64,9 @@ RUN apk add --no-cache \
 COPY --from=api-build /prod/api/node_modules ./node_modules
 COPY --from=api-build /app/packages/api/dist ./dist
 COPY --from=ui-build /app/packages/ui-next/dist ./public
+# The static last-resort Fallback Screens belong to the api and are served at
+# /screens/<kind>.png whatever the UI stage ships.
+COPY --from=api-build /app/packages/api/assets/screens ./public/screens
 
 # Copy entrypoint
 COPY entrypoint.sh ./entrypoint.sh
