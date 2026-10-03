@@ -17,7 +17,7 @@ defineEmits<{
   goToProblem: []
 }>()
 
-const place = computed(() => props.problem?.line == null ? '' : `Line ${props.problem.line}: `)
+const lineWords = computed(() => props.problem?.line == null ? '' : `Line ${props.problem.line}: `)
 </script>
 
 <template>
@@ -25,7 +25,7 @@ const place = computed(() => props.problem?.line == null ? '' : `Line ${props.pr
     <p class="problem" role="status">
       <template v-if="problem">
         <Icon name="problem" class="mark" />
-        <span>{{ place }}<code class="message">{{ problem.message }}</code></span>
+        <span>{{ lineWords }}<code class="message">{{ problem.message }}</code></span>
       </template>
     </p>
     <Button v-if="problem && problem.line !== null" class="go" variant="quiet" @click="$emit('goToProblem')">

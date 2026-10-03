@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { describe, it } from 'vitest'
+import { arrived } from '@/testing/arrivals'
 import { mount } from '@/testing/mount'
 import { expectScreenshot } from '@/testing/screenshots'
 import { THEMES } from '@/testing/theme'
@@ -10,8 +11,7 @@ describe('gallery baselines', () => {
 
   it.for(shots)('$section.title in $theme', async ({ section, theme }) => {
     const screen = await mount(GalleryPage, { theme })
-    // A code editor is fetched and a preview is drawn in a frame, and the `div` of each is busy while that lasts. A button or a switch that is busy is a state the gallery holds.
-    await expect.poll(() => screen.container.querySelectorAll('div[aria-busy="true"]').length).toBe(0)
+    await arrived(screen.container)
 
     await expectScreenshot(screen.getByRole('region', { name: section.title, exact: true }), `${section.id}-${theme}`)
   })

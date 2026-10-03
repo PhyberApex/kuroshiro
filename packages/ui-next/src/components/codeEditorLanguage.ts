@@ -49,7 +49,7 @@ const liquidWash = ViewPlugin.fromClass(class {
   }
 }, { decorations: plugin => plugin.decorations })
 
-const JAVASCRIPT_KEYWORDS = 'async await break case catch class const continue debugger default delete do else export extends false finally for function if import in instanceof let new null of return static super switch this throw true try typeof undefined var void while yield'
+const JAVASCRIPT_KEYWORDS = 'async await break case catch class const continue debugger default delete do else export extends false finally for function if import in instanceof let new null of return static super switch this throw true try typeof var void while yield'
   .split(' ')
   .map(label => ({ label, type: 'keyword' }))
 

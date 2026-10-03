@@ -95,7 +95,7 @@ function validityOf(view: EditorView): CodeValidity {
 const hasLineNumbers = (mode: CodeEditorMode) => mode !== 'json'
 
 function problemSupport(mode: CodeEditorMode): Extension {
-  if (mode === 'liquid')
+  if (mode === 'liquid' || mode === 'html')
     return lintGutter()
   return mode === 'json' ? linter(jsonDiagnostics, { delay: JSON_UNDERLINE_DELAY }) : []
 }
@@ -109,11 +109,11 @@ export function createCodeEditor(options: CodeEditorOptions) {
     problem: options.problem,
   }
   const language = new Compartment()
-  const lock = new Compartment()
+  const readOnlySetting = new Compartment()
   const attributes = new Compartment()
 
   const languageNow = () => languageOf(mode, settings.completion)
-  const lockNow = () => EditorState.readOnly.of(settings.readOnly)
+  const readOnlyNow = () => EditorState.readOnly.of(settings.readOnly)
   const attributesNow = () => EditorView.contentAttributes.of({
     ...settings.attributes,
     // It is in the tab order as any editable element is; said outright, a checker sees that the scroller around it can be reached.
@@ -147,7 +147,7 @@ export function createCodeEditor(options: CodeEditorOptions) {
     hankoLook,
     sizeLook[options.size],
     language.of(languageNow()),
-    lock.of(lockNow()),
+    readOnlySetting.of(readOnlyNow()),
     attributes.of(attributesNow()),
     keymap.of([
       {
@@ -202,14 +202,14 @@ export function createCodeEditor(options: CodeEditorOptions) {
       documents.set(shown, view.state)
       shown = document
       view.setState(documents.get(document) ?? stateOf(text))
-      view.dispatch({ effects: [language.reconfigure(languageNow()), lock.reconfigure(lockNow()), attributes.reconfigure(attributesNow())] })
+      view.dispatch({ effects: [language.reconfigure(languageNow()), readOnlySetting.reconfigure(readOnlyNow()), attributes.reconfigure(attributesNow())] })
       setText(text)
       markProblem()
       checkJson(view)
     },
     setReadOnly(readOnly: boolean) {
       settings.readOnly = readOnly
-      view.dispatch({ effects: [lock.reconfigure(lockNow()), attributes.reconfigure(attributesNow())] })
+      view.dispatch({ effects: [readOnlySetting.reconfigure(readOnlyNow()), attributes.reconfigure(attributesNow())] })
     },
     setAttributes(next: Record<string, string>) {
       settings.attributes = next

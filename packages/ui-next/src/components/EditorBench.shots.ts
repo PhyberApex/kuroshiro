@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { arrived } from '@/testing/arrivals'
 import { mount } from '@/testing/mount'
 import { expectScreenshot } from '@/testing/screenshots'
 import { THEMES } from '@/testing/theme'
@@ -11,7 +12,7 @@ describe('editor bench baselines', () => {
     await resizeTo(VIEWPORTS.phone.width, VIEWPORTS.phone.height)
     try {
       const screen = await mount(EditorBenchGallery, { theme })
-      await expect.poll(() => screen.container.querySelectorAll('[aria-busy="true"]').length).toBe(0)
+      await arrived(screen.container)
       await expect.element(screen.getByRole('textbox', { name: 'Template of Weather on the bench' })).toBeVisible()
 
       await expectScreenshot(screen.getByRole('figure').first(), `editor-bench-phone-${theme}`)

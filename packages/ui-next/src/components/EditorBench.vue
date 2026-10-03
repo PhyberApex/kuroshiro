@@ -7,7 +7,6 @@ defineProps<{
 defineSlots<{
   /** The code editor: `size="bench"`, or `size="full-window"` in the full window. */
   editor: () => unknown
-  /** The preview plate. */
   plate: () => unknown
   /** What sits under the plate: the facts, the honest line, the notices, "Data". */
   default?: () => unknown

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { expectAccessible } from '@/testing/a11y'
+import { arrived } from '@/testing/arrivals'
 import { mount } from '@/testing/mount'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import PreviewPlateGallery from '../PreviewPlate.gallery.vue'
@@ -136,7 +137,7 @@ describe('preview plate', () => {
 
   it('is accessible and does not overflow in every state', async () => {
     const screen = await mount(PreviewPlateGallery)
-    await expect.poll(() => screen.container.querySelectorAll('[aria-busy]').length).toBe(0)
+    await arrived(screen.container)
 
     await expectAccessible()
     await expectNoHorizontalOverflow()

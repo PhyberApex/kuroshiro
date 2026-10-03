@@ -17,7 +17,7 @@ const props = withDefaults(defineProps<{
   invalid?: boolean
   /** Takes the hint's place in the strip: "This template is removed when you save." */
   stripNote?: string
-  /** A problem the caller found, for an editor with a strip: marked in the code and the gutter, worded in the strip. */
+  /** A problem the caller found, for an editor with a strip: marked in the code and the gutter, worded in the strip. The Template section finds them in Liquid; HTML is never invalid. */
   problem?: CodeProblem | null
   /** Liquid only: the data the preview renders with. Completion offers its names and the keys under them. */
   completionData?: Record<string, unknown>
@@ -51,14 +51,15 @@ const attrs = useAttrs()
 if (import.meta.env.DEV && !attrs['aria-label'] && !attrs['aria-labelledby'])
   throw new Error('A CodeEditor needs a name: give it aria-label or aria-labelledby. A label\'s `for` does not name it.')
 
-const NAMING = /^(?:id$|aria-)/
-function attrsWhere(keep: (name: string) => boolean) {
-  return Object.fromEntries(Object.entries(attrs).filter(([name]) => keep(name)))
-}
+/** The attributes that name or describe a control. They belong on the element that is typed in, not on the frame. */
+const FOR_THE_TYPED_IN = /^(?:id$|aria-)/
+const isSet = (value: unknown) => value !== undefined && value !== null && value !== false
 
-const frameAttrs = computed(() => attrsWhere(name => !NAMING.test(name)))
+const frameAttrs = computed(() => Object.fromEntries(Object.entries(attrs).filter(([name]) => !FOR_THE_TYPED_IN.test(name))))
 const typedInAttrs = computed<Record<string, string>>(() => ({
-  ...Object.fromEntries(Object.entries(attrsWhere(name => NAMING.test(name))).map(([name, value]) => [name, String(value)])),
+  ...Object.fromEntries(Object.entries(attrs)
+    .filter(([name, value]) => FOR_THE_TYPED_IN.test(name) && isSet(value))
+    .map(([name, value]) => [name, String(value)])),
   ...(props.invalid ? { 'aria-invalid': 'true' } : {}),
 }))
 
@@ -146,6 +147,7 @@ defineExpose({
 @layer components {
   .code-editor {
     --code-size: var(--text-xs);
+    --code-leading: 1.65;
     --code-pad: var(--space-3);
     --code-field-size: var(--text-xs);
 
@@ -174,7 +176,7 @@ defineExpose({
     width: 100%;
     height: auto;
     /* Three lines, as the editor that arrives is at its smallest. */
-    min-height: calc(3 * 1.65 * var(--code-size) + 2 * var(--code-pad) + 2px);
+    min-height: calc(3 * var(--code-leading) * var(--code-size) + 2 * var(--code-pad) + 2px);
   }
 
   /* `data-force` holds a state still for the gallery, where no pointer is over the editor. */

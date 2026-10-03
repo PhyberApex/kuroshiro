@@ -26,12 +26,12 @@ interface Drawing {
 }
 
 const drawings = ref<Drawing[]>([])
-let drawn = 0
+let lastDrawingId = 0
 
 // A new document is drawn in a frame of its own, out of sight, and the one before it stays until that frame has loaded.
 watch(() => props.rendering ? null : props.document, (document) => {
   const shown = drawings.value.filter(drawing => drawing.arrived)
-  drawings.value = document === null ? [] : [...shown, { id: ++drawn, document, arrived: false }]
+  drawings.value = document === null ? [] : [...shown, { id: ++lastDrawingId, document, arrived: false }]
 }, { immediate: true })
 
 function arrived(id: number) {
@@ -43,16 +43,16 @@ const redrawing = computed(() => drawings.value.some(drawing => !drawing.arrived
 
 const stage = useTemplateRef('stage')
 const stageWidth = ref(0)
-const sizes = new ResizeObserver(([entry]) => stageWidth.value = entry.contentRect.width)
+const stageResizes = new ResizeObserver(([entry]) => stageWidth.value = entry.contentRect.width)
 
 watch(stage, (element) => {
-  sizes.disconnect()
+  stageResizes.disconnect()
   if (element) {
     stageWidth.value = element.clientWidth
-    sizes.observe(element)
+    stageResizes.observe(element)
   }
 })
-onBeforeUnmount(() => sizes.disconnect())
+onBeforeUnmount(() => stageResizes.disconnect())
 
 const frameStyle = computed(() => ({
   width: `${props.width}px`,

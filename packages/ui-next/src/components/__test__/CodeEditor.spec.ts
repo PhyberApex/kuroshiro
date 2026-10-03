@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h, ref } from 'vue'
 import { expectAccessible } from '@/testing/a11y'
+import { arrived } from '@/testing/arrivals'
 import { withCoarsePointer } from '@/testing/media'
 import { mount } from '@/testing/mount'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
@@ -255,7 +256,8 @@ describe('code editor: completion', () => {
     await pressed('{{{{ location | ')
     await pressed('{Control>} {/Control}')
 
-    await expect.poll(() => completionsOf(screen), { timeout: 400 }).toEqual([]).catch(() => {})
+    await new Promise(resolve => setTimeout(resolve, 300))
+
     expect(completionsOf(screen).join(' ')).not.toMatch(/forecast|yesno|upcase/)
   })
 
@@ -322,6 +324,14 @@ describe('code editor: problems', () => {
     await expect.poll(() => screen.baseElement.querySelector('.cm-tooltip-lint')?.textContent).toBe(PROBLEM.message)
     expect(getComputedStyle(screen.baseElement.querySelector('.cm-diagnostic')!).borderLeftStyle).toBe('none')
     expect(getComputedStyle(screen.baseElement.querySelector('.cm-tooltip-lint')!).borderColor).toBe(INK)
+  })
+
+  it('shows the message when the icon in the gutter is hovered', async () => {
+    const { screen } = await mountEditor({ modelValue: TEMPLATE, problem: PROBLEM })
+
+    await userEvent.hover([...screen.container.querySelectorAll('.cm-lint-marker-error')].at(-1)!)
+
+    await expect.poll(() => screen.baseElement.querySelector('.cm-tooltip-lint')?.textContent).toBe(PROBLEM.message)
   })
 
   it('puts the cursor at the line with "Go to line"', async () => {
@@ -563,6 +573,13 @@ describe('code editor: its frame', () => {
     expect(getComputedStyle(screen.container.querySelector('.cm-line')!, '::selection').color).toBe('rgb(255, 255, 255)')
   })
 
+  it('gives the typed-in element what a Field hands its control, and leaves out what is not set', async () => {
+    const { editor } = await mountEditor({ 'id': 'headers', 'aria-describedby': undefined })
+
+    await expect.element(editor).toHaveAttribute('id', 'headers')
+    await expect.element(editor).not.toHaveAttribute('aria-describedby')
+  })
+
   it('throws without a name', async () => {
     await expect(mount(CodeEditor, { props: { mode: 'liquid' } })).rejects.toThrow('needs a name')
   })
@@ -595,7 +612,7 @@ describe('code editor: its frame', () => {
 
   it('is accessible and does not overflow in every state', async () => {
     const screen = await mount(CodeEditorGallery)
-    await expect.poll(() => screen.container.querySelectorAll('[aria-busy]').length).toBe(0)
+    await arrived(screen.container)
 
     await expectAccessible()
     await expectNoHorizontalOverflow()

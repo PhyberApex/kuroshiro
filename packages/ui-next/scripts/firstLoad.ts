@@ -10,7 +10,7 @@ export interface BundleChunk {
 }
 
 /** Modules that may only arrive with the first code editor on a page. */
-const LAZY_ONLY = ['/@codemirror/']
+const LAZY_ONLY = ['/@codemirror/', '/@lezer/']
 
 /** The modules whose dynamic import is the one door to the lazy-only ones. */
 const LAZY_DOORS = ['/src/components/codeEditorView.ts']

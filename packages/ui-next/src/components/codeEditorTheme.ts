@@ -43,7 +43,7 @@ const theme = EditorView.theme({
   '&.cm-focused': { outline: 'none' },
   // Where motion is reduced every property still transitions for 0.01 ms, so a style lands a frame after CodeMirror has measured its lines and the gutter is laid out from the old one.
   '&, & *': { transitionProperty: 'none' },
-  '.cm-scroller': { fontFamily: 'var(--font-mono)', lineHeight: '1.65', scrollbarWidth: 'thin', scrollbarColor: `${SOFT} transparent` },
+  '.cm-scroller': { fontFamily: 'var(--font-mono)', lineHeight: 'var(--code-leading)', scrollbarWidth: 'thin', scrollbarColor: `${SOFT} transparent` },
   '.cm-content': { padding: 'var(--code-pad) 0', caretColor: INK },
   '.cm-line': { padding: '0 var(--space-3)' },
 
@@ -102,7 +102,7 @@ const fillsItsFrame = EditorView.theme({ '&': { height: '100%' } })
 const growsWithItsText = EditorView.theme({
   '&': { maxHeight: '15rem' },
   '.cm-scroller': { overflow: 'auto' },
-  '.cm-content, .cm-gutter': { minHeight: 'calc(3 * 1.65em + 2 * var(--code-pad))' },
+  '.cm-content, .cm-gutter': { minHeight: 'calc(3 * var(--code-leading) * 1em + 2 * var(--code-pad))' },
 })
 
 export const hankoLook = [theme, syntaxHighlighting(highlight)]
