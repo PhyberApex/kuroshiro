@@ -27,7 +27,7 @@ describe('alertsService', () => {
       // First call (active) resolves with `active`, second (resolved) resolves with `resolved`.
       alertRepo.find.mockResolvedValueOnce([active]).mockResolvedValueOnce([resolved])
 
-      const result = await service.list()
+      const result = await service.list({})
 
       expect(result.active).toEqual([{
         id: 'alert-active',
@@ -53,7 +53,7 @@ describe('alertsService', () => {
       const orphan = makeAlert({ id: 'alert-orphan', device: undefined })
       alertRepo.find.mockResolvedValueOnce([orphan]).mockResolvedValueOnce([])
 
-      const result = await service.list()
+      const result = await service.list({})
 
       expect(result.active).toEqual([])
     })
@@ -63,14 +63,15 @@ describe('alertsService', () => {
       const active = makeAlert({ id: 'alert-active', kind: 'data-source-fetch-failing', device: undefined, dataSource, details: { streak: 3, lastError: 'timeout' } })
       alertRepo.find.mockResolvedValueOnce([active]).mockResolvedValueOnce([])
 
-      const result = await service.list()
+      const result = await service.list({})
 
       expect(result.active).toEqual([{
         id: 'alert-active',
         kind: 'data-source-fetch-failing',
+        pluginId: 'plugin-1',
+        pluginName: 'Weather Dashboard',
         dataSourceId: 'ds-1',
         dataSourceName: 'Weather API',
-        pluginName: 'Weather Dashboard',
         openedAt: active.openedAt.toISOString(),
         resolvedAt: null,
         details: { streak: 3, lastError: 'timeout' },
@@ -81,7 +82,7 @@ describe('alertsService', () => {
       const orphan = makeAlert({ id: 'alert-orphan', kind: 'data-source-fetch-failing', device: undefined, dataSource: undefined })
       alertRepo.find.mockResolvedValueOnce([orphan]).mockResolvedValueOnce([])
 
-      const result = await service.list()
+      const result = await service.list({})
 
       expect(result.active).toEqual([])
     })
@@ -91,7 +92,7 @@ describe('alertsService', () => {
       vi.useFakeTimers()
       vi.setSystemTime(now)
 
-      await service.list()
+      await service.list({})
 
       const resolvedCall = alertRepo.find.mock.calls[1]?.[0]
       expect(resolvedCall).toMatchObject({ take: 50 })
@@ -101,8 +102,26 @@ describe('alertsService', () => {
       vi.useRealTimers()
     })
 
+    it('restricts both queries to the named Device', async () => {
+      await service.list({ deviceId: 'device-1' })
+
+      expect(alertRepo.find.mock.calls.map(([options]) => options?.where)).toEqual([
+        expect.objectContaining({ device: { id: 'device-1' } }),
+        expect.objectContaining({ device: { id: 'device-1' } }),
+      ])
+    })
+
+    it('restricts both queries to the named Plugin\'s Data Sources', async () => {
+      await service.list({ pluginId: 'plugin-1' })
+
+      expect(alertRepo.find.mock.calls.map(([options]) => options?.where)).toEqual([
+        expect.objectContaining({ dataSource: { plugin: { id: 'plugin-1' } } }),
+        expect.objectContaining({ dataSource: { plugin: { id: 'plugin-1' } } }),
+      ])
+    })
+
     it('uses an explicit resolvedSince over the default window', async () => {
-      await service.list('2026-01-15T00:00:00.000Z')
+      await service.list({ resolvedSince: '2026-01-15T00:00:00.000Z' })
 
       const resolvedCall = alertRepo.find.mock.calls[1]?.[0]
       const cutoff = (resolvedCall?.where as { resolvedAt: FindOperator<Date> }).resolvedAt.value
