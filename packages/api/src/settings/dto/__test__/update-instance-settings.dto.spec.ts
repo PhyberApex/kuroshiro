@@ -14,12 +14,12 @@ describe('updateInstanceSettingsDto', () => {
   })
 
   it('accepts null for every Setting, clearing its override', async () => {
-    const dto = plainToInstance(UpdateInstanceSettingsDto, { lowBatteryPercent: null, offlineMultiplier: null, fetchFailureThreshold: null, firmwareAutoUpdate: null })
+    const dto = plainToInstance(UpdateInstanceSettingsDto, { lowBatteryPercent: null, offlineMultiplier: null, fetchFailureThreshold: null, alertRetentionDays: null, deviceLogRetentionDays: null, firmwareAutoUpdate: null })
     await expect(rejectedFields(dto)).resolves.toEqual([])
   })
 
   it('accepts an in-range integer for every Setting', async () => {
-    const dto = plainToInstance(UpdateInstanceSettingsDto, { lowBatteryPercent: 50, offlineMultiplier: 4, fetchFailureThreshold: 5 })
+    const dto = plainToInstance(UpdateInstanceSettingsDto, { lowBatteryPercent: 50, offlineMultiplier: 4, fetchFailureThreshold: 5, alertRetentionDays: 120, deviceLogRetentionDays: 14 })
     await expect(rejectedFields(dto)).resolves.toEqual([])
   })
 
@@ -49,5 +49,17 @@ describe('updateInstanceSettingsDto', () => {
 
   it('rejects a fetchFailureThreshold below 1', async () => {
     await expect(rejectedFields(plainToInstance(UpdateInstanceSettingsDto, { fetchFailureThreshold: 0 }))).resolves.toEqual(['fetchFailureThreshold'])
+  })
+
+  it('accepts 0 for a Retention age, which disables pruning for it', async () => {
+    await expect(rejectedFields(plainToInstance(UpdateInstanceSettingsDto, { alertRetentionDays: 0, deviceLogRetentionDays: 0 }))).resolves.toEqual([])
+  })
+
+  it('rejects a negative Retention age', async () => {
+    await expect(rejectedFields(plainToInstance(UpdateInstanceSettingsDto, { alertRetentionDays: -1, deviceLogRetentionDays: -30 }))).resolves.toEqual(['alertRetentionDays', 'deviceLogRetentionDays'])
+  })
+
+  it('rejects a non-integer Retention age', async () => {
+    await expect(rejectedFields(plainToInstance(UpdateInstanceSettingsDto, { alertRetentionDays: 1.5, deviceLogRetentionDays: 'thirty' }))).resolves.toEqual(['alertRetentionDays', 'deviceLogRetentionDays'])
   })
 })

@@ -17,6 +17,12 @@ export class InstanceSettings {
   @Column('int', { nullable: true })
   fetchFailureThreshold?: number | null
 
+  @Column('int', { nullable: true })
+  alertRetentionDays?: number | null
+
+  @Column('int', { nullable: true })
+  deviceLogRetentionDays?: number | null
+
   @Column('boolean', { nullable: true })
   firmwareAutoUpdate?: boolean | null
 }

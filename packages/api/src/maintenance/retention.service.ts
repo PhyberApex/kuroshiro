@@ -1,20 +1,20 @@
 import type { OnApplicationBootstrap } from '@nestjs/common'
-import type { RetentionAges, RetentionLastRun, RetentionRunResult, RetentionStatus } from 'kuroshiro-shared'
+import type { RetentionLastRun, RetentionRunResult, RetentionStatus } from 'kuroshiro-shared'
 import type { FindOptionsWhere, ObjectLiteral, Repository } from 'typeorm'
 import { Injectable, Logger } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
 import cron from 'node-cron'
 import { LessThan } from 'typeorm'
 import { Alert } from '../alerts/entities/alert.entity.js'
 import { LogEntry } from '../logs/logs.entity.js'
+import { InstanceSettingsService } from '../settings/instance-settings.service.js'
 import { getErrorMessage } from '../utils/getErrorMessage.js'
 
 const DAILY_AT_4AM = '0 4 * * *'
 
 /**
- * Prunes resolved Alerts and Device Log entries older than their configured
- * retention age. A dry run reports the counts a real run would delete without
+ * Prunes resolved Alerts and Device Log entries older than their Retention
+ * age, an Instance Setting resolved afresh for every run and status read. A dry run reports the counts a real run would delete without
  * deleting anything or updating `lastRun`. `lastRun` is in-memory only (lost
  * on restart) and is updated by both the scheduled job and a manual trigger,
  * which share this same `run` operation.
@@ -33,7 +33,7 @@ export class RetentionService implements OnApplicationBootstrap {
     private readonly alertRepository: Repository<Alert>,
     @InjectRepository(LogEntry)
     private readonly logEntryRepository: Repository<LogEntry>,
-    private readonly configService: ConfigService,
+    private readonly instanceSettingsService: InstanceSettingsService,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -42,16 +42,16 @@ export class RetentionService implements OnApplicationBootstrap {
     })
   }
 
-  getStatus(): RetentionStatus {
+  async getStatus(): Promise<RetentionStatus> {
     return {
-      ages: this.getAges(),
+      ages: await this.instanceSettingsService.resolveRetentionAges(),
       lastRun: this.lastRun,
     }
   }
 
   async run(dryRun: boolean): Promise<RetentionRunResult> {
     this.logger.log(`Starting retention run (dryRun: ${dryRun})`)
-    const ages = this.getAges()
+    const ages = await this.instanceSettingsService.resolveRetentionAges()
 
     const [alertsPruned, deviceLogsPruned] = await Promise.all([
       this.pruneTable(this.alertRepository, 'resolvedAt', 'resolved Alerts', ages.alertRetentionDays, dryRun),
@@ -65,10 +65,6 @@ export class RetentionService implements OnApplicationBootstrap {
       this.lastRun = { ...result, ranAt: new Date().toISOString() }
 
     return result
-  }
-
-  private getAges(): RetentionAges {
-    return this.configService.get<RetentionAges>('retention')!
   }
 
   /** Shared by both tables: same age guard, same dry-run-counts-vs-deletes shape, same isolated failure handling. */

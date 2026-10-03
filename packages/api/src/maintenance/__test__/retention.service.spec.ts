@@ -1,22 +1,22 @@
-import type { ConfigService } from '@nestjs/config'
+import type { RetentionAges } from 'kuroshiro-shared'
 import type { Alert } from '../../alerts/entities/alert.entity.js'
 import type { LogEntry } from '../../logs/logs.entity.js'
+import type { InstanceSettingsService } from '../../settings/instance-settings.service.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
+import { asService } from '../../test/mockService.js'
 import { RetentionService } from '../retention.service.js'
 
 const { cronMock } = vi.hoisted(() => ({ cronMock: { schedule: vi.fn() } }))
 
 vi.mock('node-cron', () => ({ default: cronMock }))
 
-function makeConfigService(overrides: Partial<{ alertRetentionDays: number, deviceLogRetentionDays: number }> = {}): ConfigService {
-  const retention = { alertRetentionDays: 90, deviceLogRetentionDays: 30, ...overrides }
-  return { get: (key: string) => (key === 'retention' ? retention : undefined) } as unknown as ConfigService
-}
+const DEFAULT_AGES: RetentionAges = { alertRetentionDays: 90, deviceLogRetentionDays: 30 }
 
 describe('retentionService', () => {
   let alertRepo: ReturnType<typeof createMockRepository<Alert>>
   let logEntryRepo: ReturnType<typeof createMockRepository<LogEntry>>
+  let settingsService: { resolveRetentionAges: ReturnType<typeof vi.fn> }
   let service: RetentionService
 
   beforeEach(() => {
@@ -27,7 +27,8 @@ describe('retentionService', () => {
     alertRepo.delete.mockResolvedValue({ affected: 0, raw: [] })
     logEntryRepo.count.mockResolvedValue(0)
     logEntryRepo.delete.mockResolvedValue({ affected: 0, raw: [] })
-    service = new RetentionService(asRepository(alertRepo), asRepository(logEntryRepo), makeConfigService())
+    settingsService = { resolveRetentionAges: vi.fn().mockResolvedValue(DEFAULT_AGES) }
+    service = new RetentionService(asRepository(alertRepo), asRepository(logEntryRepo), asService<InstanceSettingsService>(settingsService))
   })
 
   describe('onApplicationBootstrap', () => {
@@ -47,11 +48,17 @@ describe('retentionService', () => {
   })
 
   describe('getStatus', () => {
-    it('reports the configured ages and no last run before any run', () => {
-      expect(service.getStatus()).toEqual({
+    it('reports the resolved ages and no last run before any run', async () => {
+      await expect(service.getStatus()).resolves.toEqual({
         ages: { alertRetentionDays: 90, deviceLogRetentionDays: 30 },
         lastRun: null,
       })
+    })
+
+    it('reports an age saved after startup without a restart', async () => {
+      settingsService.resolveRetentionAges.mockResolvedValue({ alertRetentionDays: 7, deviceLogRetentionDays: 30 })
+
+      await expect(service.getStatus()).resolves.toMatchObject({ ages: { alertRetentionDays: 7, deviceLogRetentionDays: 30 } })
     })
   })
 
@@ -80,8 +87,8 @@ describe('retentionService', () => {
 
       await service.run(false)
 
-      expect(service.getStatus().lastRun).toMatchObject({ alertsPruned: 2, deviceLogsPruned: 3 })
-      expect(service.getStatus().lastRun?.ranAt).toEqual(expect.any(String))
+      expect((await service.getStatus()).lastRun).toMatchObject({ alertsPruned: 2, deviceLogsPruned: 3 })
+      expect((await service.getStatus()).lastRun?.ranAt).toEqual(expect.any(String))
     })
 
     it('does a dry run: same counts, no deletion, lastRun left unchanged', async () => {
@@ -93,11 +100,26 @@ describe('retentionService', () => {
       expect(result).toEqual({ alertsPruned: 5, deviceLogsPruned: 9 })
       expect(alertRepo.delete).not.toHaveBeenCalled()
       expect(logEntryRepo.delete).not.toHaveBeenCalled()
-      expect(service.getStatus().lastRun).toBeNull()
+      expect((await service.getStatus()).lastRun).toBeNull()
+    })
+
+    it('prunes by the ages resolved when the run starts, so a just-saved override applies to a dry run and a real run alike', async () => {
+      vi.useFakeTimers({ now: new Date('2026-10-03T00:00:00.000Z') })
+      settingsService.resolveRetentionAges.mockResolvedValue({ alertRetentionDays: 7, deviceLogRetentionDays: 2 })
+
+      await service.run(true)
+      await service.run(false)
+      vi.useRealTimers()
+
+      const cutoffOf = (criteria: unknown, field: string) => (criteria as Record<string, { _value: Date }>)[field]._value.toISOString()
+      expect(cutoffOf(alertRepo.count.mock.calls[0][0]!.where, 'resolvedAt')).toBe('2026-09-26T00:00:00.000Z')
+      expect(cutoffOf(logEntryRepo.count.mock.calls[0][0]!.where, 'date')).toBe('2026-10-01T00:00:00.000Z')
+      expect(cutoffOf(alertRepo.delete.mock.calls[0][0], 'resolvedAt')).toBe('2026-09-26T00:00:00.000Z')
+      expect(cutoffOf(logEntryRepo.delete.mock.calls[0][0], 'date')).toBe('2026-10-01T00:00:00.000Z')
     })
 
     it('skips pruning Alerts when their retention age is 0, but still prunes Device Logs', async () => {
-      service = new RetentionService(asRepository(alertRepo), asRepository(logEntryRepo), makeConfigService({ alertRetentionDays: 0 }))
+      settingsService.resolveRetentionAges.mockResolvedValue({ ...DEFAULT_AGES, alertRetentionDays: 0 })
       logEntryRepo.delete.mockResolvedValue({ affected: 3, raw: [] })
 
       const result = await service.run(false)
@@ -108,7 +130,7 @@ describe('retentionService', () => {
     })
 
     it('skips pruning Device Logs when their retention age is 0, but still prunes Alerts', async () => {
-      service = new RetentionService(asRepository(alertRepo), asRepository(logEntryRepo), makeConfigService({ deviceLogRetentionDays: 0 }))
+      settingsService.resolveRetentionAges.mockResolvedValue({ ...DEFAULT_AGES, deviceLogRetentionDays: 0 })
       alertRepo.delete.mockResolvedValue({ affected: 4, raw: [] })
 
       const result = await service.run(false)
@@ -125,7 +147,7 @@ describe('retentionService', () => {
       const result = await service.run(false)
 
       expect(result).toEqual({ alertsPruned: 0, deviceLogsPruned: 6 })
-      expect(service.getStatus().lastRun).toMatchObject({ alertsPruned: 0, deviceLogsPruned: 6 })
+      expect((await service.getStatus()).lastRun).toMatchObject({ alertsPruned: 0, deviceLogsPruned: 6 })
     })
   })
 })

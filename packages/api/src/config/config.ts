@@ -30,6 +30,8 @@ export default () => {
   const lowBatteryPercent = parseIntEnv(SETTING_ENV_VARS.lowBatteryPercent, DEFAULT_LOW_BATTERY_PERCENT)
   const offlineMultiplier = parseIntEnv(SETTING_ENV_VARS.offlineMultiplier, DEFAULT_OFFLINE_MULTIPLIER)
   const fetchFailureThreshold = parseIntEnv(SETTING_ENV_VARS.fetchFailureThreshold, DEFAULT_FETCH_FAILURE_THRESHOLD)
+  const alertRetentionDays = parseIntEnv(SETTING_ENV_VARS.alertRetentionDays, DEFAULT_ALERT_RETENTION_DAYS)
+  const deviceLogRetentionDays = parseIntEnv(SETTING_ENV_VARS.deviceLogRetentionDays, DEFAULT_DEVICE_LOG_RETENTION_DAYS)
 
   return {
     port: Number.parseInt(process.env.KUROSHIRO_PORT || '', 10) || 3000,
@@ -53,8 +55,10 @@ export default () => {
       fetchFailureThresholdSource: fetchFailureThreshold.source,
     },
     retention: {
-      alertRetentionDays: parseIntEnv('KUROSHIRO_ALERT_RETENTION_DAYS', DEFAULT_ALERT_RETENTION_DAYS).value,
-      deviceLogRetentionDays: parseIntEnv('KUROSHIRO_DEVICE_LOG_RETENTION_DAYS', DEFAULT_DEVICE_LOG_RETENTION_DAYS).value,
+      alertRetentionDays: alertRetentionDays.value,
+      alertRetentionDaysSource: alertRetentionDays.source,
+      deviceLogRetentionDays: deviceLogRetentionDays.value,
+      deviceLogRetentionDaysSource: deviceLogRetentionDays.source,
     },
   }
 }

@@ -197,7 +197,7 @@ The periodic job that evaluates every Alert Rule against Kuroshiro's persisted s
 _Avoid_: Poll (reserved for what a Device does), scan, check
 
 **Retention**:
-The daily job that deletes resolved Alerts and Device Log entries older than their configured retention age. Active Alerts are never pruned. One execution, scheduled or triggered from the Maintenance page, is a Retention Run.
+The daily job that deletes resolved Alerts and Device Log entries older than their Retention age. The two ages are Instance Settings, read afresh by every Retention Run; an age of 0 disables pruning for that half. Active Alerts are never pruned. One execution, scheduled or triggered from the Maintenance page, is a Retention Run.
 _Avoid_: Cleanup (reserved for the Maintenance page's file cleanup), purge, garbage collection
 
 **Notification**:
@@ -213,7 +213,7 @@ One running Kuroshiro server together with its database and stored files — the
 _Avoid_: Installation, deployment, site, server (bare, as a name for the whole — fine for the machine or URL a Device connects to)
 
 **Instance Settings**:
-The one set of admin-tunable values that apply to the whole Kuroshiro instance rather than to any single Device, Plugin or Screen — today the Alert Rule thresholds and Firmware Auto-Update. Each Setting is either overridden (an admin saved a value, which wins) or not (the matching environment variable, else the built-in default, applies); clearing an override returns the Setting to that fallback.
+The one set of admin-tunable values that apply to the whole Kuroshiro instance rather than to any single Device, Plugin or Screen — today the Alert Rule thresholds, the two Retention ages and Firmware Auto-Update. Each Setting is either overridden (an admin saved a value, which wins) or not (the matching environment variable, else the built-in default, applies); clearing an override returns the Setting to that fallback.
 _Avoid_: Global settings, preferences, options, Settings (bare — that names one Device's Settings view), Configuration (reserved for the Configuration Archive), config (reserved for environment variables)
 
 **Firmware Auto-Update**:

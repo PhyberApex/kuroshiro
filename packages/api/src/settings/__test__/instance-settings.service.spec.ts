@@ -4,16 +4,28 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
 import { InstanceSettingsService } from '../instance-settings.service.js'
 
-function makeConfigService(): ConfigService {
-  const alerts = {
-    lowBatteryPercent: 20,
-    lowBatteryPercentSource: 'default' as const,
-    offlineMultiplier: 3,
-    offlineMultiplierSource: 'default' as const,
-    fetchFailureThreshold: 3,
-    fetchFailureThresholdSource: 'default' as const,
+const DEFAULT_ALERTS = {
+  lowBatteryPercent: 20,
+  lowBatteryPercentSource: 'default' as const,
+  offlineMultiplier: 3,
+  offlineMultiplierSource: 'default' as const,
+  fetchFailureThreshold: 3,
+  fetchFailureThresholdSource: 'default' as const,
+}
+
+const DEFAULT_RETENTION = {
+  alertRetentionDays: 90,
+  alertRetentionDaysSource: 'default' as const,
+  deviceLogRetentionDays: 30,
+  deviceLogRetentionDaysSource: 'default' as const,
+}
+
+function makeConfigService(overrides: { alerts?: object, retention?: object } = {}): ConfigService {
+  const config: Record<string, object> = {
+    alerts: { ...DEFAULT_ALERTS, ...overrides.alerts },
+    retention: { ...DEFAULT_RETENTION, ...overrides.retention },
   }
-  return { get: (key: string) => (key === 'alerts' ? alerts : undefined) } as unknown as ConfigService
+  return { get: (key: string) => config[key] } as unknown as ConfigService
 }
 
 describe('instanceSettingsService', () => {
@@ -48,6 +60,39 @@ describe('instanceSettingsService', () => {
     })
   })
 
+  describe('resolveRetentionAges', () => {
+    function withEnvAges(): void {
+      configService = makeConfigService({ retention: { alertRetentionDays: 120, alertRetentionDaysSource: 'env', deviceLogRetentionDays: 14, deviceLogRetentionDaysSource: 'env' } })
+      service = new InstanceSettingsService(asRepository(repo), configService)
+    }
+
+    it('falls back to the built-in defaults when no row exists and no env var is set', async () => {
+      await expect(service.resolveRetentionAges()).resolves.toEqual({ alertRetentionDays: 90, deviceLogRetentionDays: 30 })
+    })
+
+    it('falls back to the env-derived values when nothing is overridden', async () => {
+      withEnvAges()
+      repo.findOneBy.mockResolvedValue({ id: 1, alertRetentionDays: null, deviceLogRetentionDays: null })
+
+      await expect(service.resolveRetentionAges()).resolves.toEqual({ alertRetentionDays: 120, deviceLogRetentionDays: 14 })
+    })
+
+    it('prefers a saved override over the env-derived value, for each age on its own', async () => {
+      withEnvAges()
+      repo.findOneBy.mockResolvedValue({ id: 1, alertRetentionDays: 7, deviceLogRetentionDays: null })
+      await expect(service.resolveRetentionAges()).resolves.toEqual({ alertRetentionDays: 7, deviceLogRetentionDays: 14 })
+
+      repo.findOneBy.mockResolvedValue({ id: 1, alertRetentionDays: null, deviceLogRetentionDays: 3 })
+      await expect(service.resolveRetentionAges()).resolves.toEqual({ alertRetentionDays: 120, deviceLogRetentionDays: 3 })
+    })
+
+    it('keeps an override of 0, which disables pruning, instead of falling back', async () => {
+      repo.findOneBy.mockResolvedValue({ id: 1, alertRetentionDays: 0, deviceLogRetentionDays: 0 })
+
+      await expect(service.resolveRetentionAges()).resolves.toEqual({ alertRetentionDays: 0, deviceLogRetentionDays: 0 })
+    })
+  })
+
   describe('resolveFirmwareAutoUpdate', () => {
     it('resolves to false when no row exists', async () => {
       await expect(service.resolveFirmwareAutoUpdate()).resolves.toBe(false)
@@ -70,12 +115,14 @@ describe('instanceSettingsService', () => {
         lowBatteryPercent: { override: null, value: 20, fallbackSource: 'default', fallbackValue: 20 },
         offlineMultiplier: { override: null, value: 3, fallbackSource: 'default', fallbackValue: 3 },
         fetchFailureThreshold: { override: null, value: 3, fallbackSource: 'default', fallbackValue: 3 },
+        alertRetentionDays: { override: null, value: 90, fallbackSource: 'default', fallbackValue: 90 },
+        deviceLogRetentionDays: { override: null, value: 30, fallbackSource: 'default', fallbackValue: 30 },
         firmwareAutoUpdate: { override: null, value: false, fallbackSource: 'default', fallbackValue: false },
       })
     })
 
     it('reports the env value as the fallback when the env var is set', async () => {
-      configService = { get: () => ({ lowBatteryPercent: 15, lowBatteryPercentSource: 'env', offlineMultiplier: 3, offlineMultiplierSource: 'default', fetchFailureThreshold: 3, fetchFailureThresholdSource: 'default' }) } as unknown as ConfigService
+      configService = makeConfigService({ alerts: { lowBatteryPercent: 15, lowBatteryPercentSource: 'env' } })
       service = new InstanceSettingsService(asRepository(repo), configService)
 
       const result = await service.get()
@@ -87,6 +134,16 @@ describe('instanceSettingsService', () => {
 
       const result = await service.get()
       expect(result.lowBatteryPercent).toEqual({ override: 45, value: 45, fallbackSource: 'default', fallbackValue: 20 })
+    })
+
+    it('reports the fallback source of each Retention age, overridden or not', async () => {
+      configService = makeConfigService({ retention: { alertRetentionDays: 120, alertRetentionDaysSource: 'env' } })
+      service = new InstanceSettingsService(asRepository(repo), configService)
+      repo.findOneBy.mockResolvedValue({ id: 1, alertRetentionDays: 0, deviceLogRetentionDays: null })
+
+      const result = await service.get()
+      expect(result.alertRetentionDays).toEqual({ override: 0, value: 0, fallbackSource: 'env', fallbackValue: 120 })
+      expect(result.deviceLogRetentionDays).toEqual({ override: null, value: 30, fallbackSource: 'default', fallbackValue: 30 })
     })
 
     it('reports an overridden firmwareAutoUpdate with a default fallback source', async () => {
@@ -125,6 +182,23 @@ describe('instanceSettingsService', () => {
     it('does not touch the repository for a Setting never saved', async () => {
       await service.update({})
       expect(repo.save).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }))
+    })
+
+    it('saves a Retention age of 0 as an override', async () => {
+      const result = await service.update({ alertRetentionDays: 0 })
+
+      expect(repo.save).toHaveBeenCalledWith(expect.objectContaining({ alertRetentionDays: 0 }))
+      expect(repo.save).not.toHaveBeenCalledWith(expect.objectContaining({ deviceLogRetentionDays: expect.anything() }))
+      expect(result.deviceLogRetentionDays.override).toBeNull()
+    })
+
+    it('clears a Retention age override back to its fallback when given null', async () => {
+      repo.findOneBy.mockResolvedValue({ id: 1, alertRetentionDays: 7, deviceLogRetentionDays: 3 })
+
+      const result = await service.update({ deviceLogRetentionDays: null })
+
+      expect(repo.save).toHaveBeenCalledWith(expect.objectContaining({ alertRetentionDays: 7, deviceLogRetentionDays: null }))
+      expect(result.deviceLogRetentionDays).toEqual({ override: null, value: 30, fallbackSource: 'default', fallbackValue: 30 })
     })
 
     it('saves a firmwareAutoUpdate override', async () => {

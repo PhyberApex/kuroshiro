@@ -149,14 +149,14 @@ describe('maintenanceController', () => {
   })
 
   describe('getRetentionStatus', () => {
-    it('calls retentionService.getStatus and returns the status', () => {
+    it('calls retentionService.getStatus and returns the status', async () => {
       const mockStatus: RetentionStatus = {
         ages: { alertRetentionDays: 90, deviceLogRetentionDays: 30 },
         lastRun: null,
       }
-      vi.mocked(retentionService.getStatus).mockReturnValue(mockStatus)
+      vi.mocked(retentionService.getStatus).mockResolvedValue(mockStatus)
 
-      const result = controller.getRetentionStatus()
+      const result = await controller.getRetentionStatus()
 
       expect(retentionService.getStatus).toHaveBeenCalled()
       expect(result).toBe(mockStatus)
