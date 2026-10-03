@@ -9,12 +9,12 @@ const tabIsVisible = () => document.visibilityState === 'visible'
  * once when the tab shows again or the window regains the focus. Stops with the scope it
  * was started in.
  */
-export function usePolling(ask: () => void, intervalMs = FRESH_DATA_INTERVAL_MS) {
+export function usePolling(ask: () => void) {
   const askWhileVisible = () => {
     if (tabIsVisible())
       ask()
   }
-  const timer = setInterval(askWhileVisible, intervalMs)
+  const timer = setInterval(askWhileVisible, FRESH_DATA_INTERVAL_MS)
   window.addEventListener('focus', askWhileVisible)
   document.addEventListener('visibilitychange', askWhileVisible)
 

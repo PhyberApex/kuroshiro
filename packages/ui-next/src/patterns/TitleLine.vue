@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { NavItem } from '@/components/navItem'
-import { watchEffect } from 'vue'
 import { RouterLink } from 'vue-router'
+import { usePageTitle } from './usePageTitle'
 
 const props = defineProps<{
   /** The page's title, which is also the browser tab's: "Kitchen" reads "Kitchen · Kuroshiro". */
@@ -15,9 +15,7 @@ defineSlots<{
   actions?: () => unknown
 }>()
 
-watchEffect(() => {
-  document.title = `${props.title} · Kuroshiro`
-})
+usePageTitle(() => props.title)
 </script>
 
 <template>

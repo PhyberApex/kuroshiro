@@ -92,6 +92,12 @@ describe('the API client', () => {
     expect(isUnreachable(await failureOf(apiGet('devices')))).toBe(true)
   })
 
+  it('takes a page answered in the API\'s place with a 200 for a server that is not answering too', async () => {
+    api.use(http.get(apiUrl('devices'), () => new HttpResponse('<h1>Sign in</h1>', { headers: { 'content-type': 'text/html' } })))
+
+    expect(isUnreachable(await failureOf(apiGet('devices')))).toBe(true)
+  })
+
   it('turns the root-relative image path of a read into an address under the document base', () => {
     expect(imageUrl('/screens/devices/42/7.png?v=1759476660000')).toBe(new URL('screens/devices/42/7.png?v=1759476660000', document.baseURI).href)
   })

@@ -236,6 +236,38 @@ describe('useLoad, kept fresh', () => {
     expect(name.data).toBe('Pantry')
   })
 
+  it('does not put a held answer over the failure of a later ask', async () => {
+    let answer = () => Promise.resolve('Kitchen')
+    const name = load(() => answer(), { fresh: true })
+    await vi.advanceTimersByTimeAsync(0)
+    const input = document.body.appendChild(document.createElement('input'))
+    input.focus()
+    answer = () => Promise.resolve('Pantry')
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(name.data).toBe('Kitchen')
+    answer = () => Promise.reject(new ApiRefusal(buildApiError({ statusCode: 500, code: 'internal' })))
+    await vi.advanceTimersByTimeAsync(30_000)
+    expect(name.failure).toBeDefined()
+
+    input.blur()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(name.failure).toBeDefined()
+  })
+
+  it('does not ask for a record once its key is gone, as when the route leaves the page', async () => {
+    const deviceId = ref<string | undefined>('kitchen')
+    const fetcher = vi.fn(() => Promise.resolve(`the Device ${deviceId.value}`))
+    const device = load(fetcher, { key: () => deviceId.value })
+    await vi.advanceTimersByTimeAsync(0)
+
+    deviceId.value = undefined
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(fetcher).toHaveBeenCalledTimes(1)
+    expect(device.data).toBe('the Device kitchen')
+  })
+
   it('swaps an answer the admin asked for even while a control has the focus', async () => {
     const fetcher = vi.fn<() => Promise<string>>().mockResolvedValueOnce('Kitchen').mockResolvedValue('Pantry')
     const name = load(fetcher, { fresh: true })

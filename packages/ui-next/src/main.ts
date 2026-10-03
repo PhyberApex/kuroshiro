@@ -14,7 +14,7 @@ async function mountGallery() {
   createApp((await import('./gallery/GalleryPage.vue')).default).mount('#app')
 }
 
-function mountApp() {
+function mountAdminUi() {
   createApp(App)
     .use(createAppRouter(createWebHistory(basePathOf(document.baseURI))))
     .use(sharedReads)
@@ -24,4 +24,4 @@ function mountApp() {
 if (galleryRequested)
   void mountGallery()
 else
-  mountApp()
+  mountAdminUi()

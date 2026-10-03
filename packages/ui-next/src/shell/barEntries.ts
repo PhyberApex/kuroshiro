@@ -21,6 +21,7 @@ const LONGEST_NAME = 16
 
 export const CONNECT_PATH = '/connect'
 export const DEVICES_PATH = '/devices'
+export const ALERTS_PATH = '/alerts'
 
 const devicePath = (device: NamedDevice) => `${DEVICES_PATH}/${device.id}`
 
@@ -49,7 +50,7 @@ export function indexOfCurrentEntry(entries: BarEntry[], path: string) {
   return places[indexOfCurrentPath(places.map(({ place }) => place), path)]?.index ?? -1
 }
 
-/** Where the phone's first tab leads and what it is called, by the number of Devices. */
+/** What the phone's first tab is called: after the Device when there is one. */
 export function firstTabLabel(devices: NamedDevice[]) {
   if (devices.length === 0)
     return 'Connect'

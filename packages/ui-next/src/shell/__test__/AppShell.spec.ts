@@ -307,6 +307,15 @@ describe('the shell on a phone', () => {
     await expect.poll(() => screen.router.currentRoute.value.path).toBe('/devices')
   })
 
+  it.each(['/alerts', '/nowhere/at/all'])('marks no tab as current on %s', async (at) => {
+    fakeShellReads({ alerts: buildAlertsList({ active: [buildAlert()] }) })
+    const screen = await mountApp({ at })
+    await resizeTo(375, 812)
+    await expect.element(tabs(screen).getByRole('link', { name: 'Kitchen' })).toBeVisible()
+
+    expect(tabs(screen).element().querySelectorAll('[aria-current]')).toHaveLength(0)
+  })
+
   it('opens the Devices list when the first tab is tapped on Connect a Device', async () => {
     fakeShellReads({ devices: [] })
     const screen = await mountApp({ at: '/connect' })

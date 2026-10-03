@@ -185,6 +185,32 @@ describe('a form with unsaved changes', () => {
     expect(screen.router.currentRoute.value.path).toBe('/form')
   })
 
+  it('asks once for the route asked for last when a second route change comes while it is asking', async () => {
+    const screen = await mountPage({ routes: [...routes, { path: '/third', component: { template: '<h1>Third</h1>' } }], at: '/form' })
+    await screen.getByRole('textbox', { name: 'HTML' }).fill('<h1>Hello</h1>')
+    const first = screen.router.push('/elsewhere')
+    await expect.element(screen.getByRole('alertdialog')).toBeVisible()
+
+    void screen.router.push('/third')
+    await first
+    await screen.getByRole('alertdialog').getByRole('button', { name: 'Leave' }).click()
+
+    await expect.element(screen.getByRole('heading', { name: 'Third' })).toBeVisible()
+  })
+
+  it('has its loading line\'s live region in the page before it says anything', async () => {
+    api.use(http.get(apiUrl('devices'), async () => {
+      await delay(900)
+      return fakeDevices('Kitchen')
+    }))
+    const screen = await mountPage({ routes, at: '/skeleton' })
+    const region = screen.getByRole('status').element()
+    expect(region.textContent).toBe('')
+
+    await expect.element(screen.getByRole('status')).toHaveTextContent('Loading Devices')
+    expect(screen.getByRole('status').element()).toBe(region)
+  })
+
   it('leaves once the admin confirms', async () => {
     const screen = await mountPage({ routes, at: '/form' })
     await screen.getByRole('textbox', { name: 'HTML' }).fill('<h1>Hello</h1>')

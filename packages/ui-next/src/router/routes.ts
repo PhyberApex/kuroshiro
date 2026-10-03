@@ -2,7 +2,7 @@ import type { RouteRecordRaw } from 'vue-router'
 
 declare module 'vue-router' {
   interface RouteMeta {
-    /** The title a page that is not built yet shows. The slice that builds the page removes it. */
+    /** The title of a page that is not built yet, shown by the page that stands in for it. */
     notBuiltYet?: string
   }
 }
@@ -16,8 +16,8 @@ function notBuiltYet(path: string, title: string): RouteRecordRaw {
 }
 
 /**
- * Every route of the four route tables of `docs/ui/`. The slice that builds a page swaps
- * its `notBuiltYet` line for `{ path, component: () => import('@/pages/…Page.vue') }`.
+ * Every route of the four route tables of `docs/ui/`. A built page is
+ * `{ path, component: () => import('@/pages/…Page.vue') }`; a `notBuiltYet` line stands in for one that is not.
  */
 export const routes: RouteRecordRaw[] = [
   { path: '/', component: () => import('@/pages/LandingPage.vue') },

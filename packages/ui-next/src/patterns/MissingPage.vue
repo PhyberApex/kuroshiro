@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { NavItem } from '@/components/navItem'
-import { watchEffect } from 'vue'
 import { RouterLink } from 'vue-router'
 import Button from '@/components/Button.vue'
 import EmptyState from '@/components/EmptyState.vue'
+import { usePageTitle } from './usePageTitle'
 
 const props = defineProps<{
   /** What is missing: "No Device here". */
@@ -17,9 +17,7 @@ defineSlots<{
   default?: () => unknown
 }>()
 
-watchEffect(() => {
-  document.title = `${props.title} · Kuroshiro`
-})
+usePageTitle(() => props.title)
 </script>
 
 <template>

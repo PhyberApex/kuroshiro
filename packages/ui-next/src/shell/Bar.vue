@@ -3,7 +3,7 @@ import type { NamedDevice } from './barEntries'
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import Seal from '@/components/Seal.vue'
-import { DEVICES_ENTRY, indexOfCurrentEntry, MOST_DEVICES_NAMED, namedDeviceEntries, SECTION_ENTRIES } from './barEntries'
+import { ALERTS_PATH, DEVICES_ENTRY, indexOfCurrentEntry, MOST_DEVICES_NAMED, namedDeviceEntries, SECTION_ENTRIES } from './barEntries'
 import BarLink from './BarLink.vue'
 
 const props = withDefaults(defineProps<{
@@ -76,8 +76,8 @@ const alertsFiring = computed(() => `${props.firingAlerts} ${props.firingAlerts 
     <RouterLink
       v-if="firingAlerts > 0"
       class="alert-indicator"
-      to="/alerts"
-      :aria-current="route.path === '/alerts' ? 'page' : undefined"
+      :to="ALERTS_PATH"
+      :aria-current="route.path === ALERTS_PATH ? 'page' : undefined"
     >
       {{ alertsFiring }}
     </RouterLink>

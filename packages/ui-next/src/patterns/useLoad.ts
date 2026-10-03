@@ -77,6 +77,7 @@ export function useLoad<T>(fetcher: () => Promise<T>, { fresh = false, key }: Lo
   }
 
   function showFailure(error: unknown) {
+    heldBack = undefined
     const unreachable = isUnreachable(error)
     failure.value = { reason: failureReason(error) ?? 'Something went wrong.', unreachable }
     missing.value = isRefusal(error) && error.statusCode === 404
@@ -130,8 +131,9 @@ export function useLoad<T>(fetcher: () => Promise<T>, { fresh = false, key }: Lo
     void ask({ quietly: false })
   }
 
+  // A key that is gone is a route that has left the page, which has nothing more to load.
   if (key)
-    watch(key, startOver)
+    watch(key, now => now != null && startOver())
   if (fresh)
     usePolling(refresh)
 

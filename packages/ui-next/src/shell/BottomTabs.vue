@@ -2,7 +2,7 @@
 import type { BarEntry, NamedDevice } from './barEntries'
 import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
-import { CONNECT_PATH, DEVICES_PATH, firstTabLabel, indexOfCurrentEntry, SECTION_ENTRIES } from './barEntries'
+import { DEVICES_ENTRY, DEVICES_PATH, firstTabLabel, indexOfCurrentEntry, SECTION_ENTRIES } from './barEntries'
 
 const props = defineProps<{
   /** Every Device, in the order they are listed in. */
@@ -11,18 +11,16 @@ const props = defineProps<{
 
 const route = useRoute()
 
-const DEVICE_PLACES = [DEVICES_PATH, CONNECT_PATH]
-const onDevicePlace = computed(() => indexOfCurrentEntry([{ label: '', to: DEVICES_PATH, alsoCurrentOn: [CONNECT_PATH] }], route.path) === 0)
+const amongDevices = computed(() => indexOfCurrentEntry([DEVICES_ENTRY], route.path) === 0)
 
 /*
 The first tab opens the landing route. Tapped while already among the Devices it opens the
 Devices list, which is how "Connect a Device" is reached with a single Device.
 */
-const tabs = computed<BarEntry[]>(() => [
-  { label: firstTabLabel(props.devices), to: onDevicePlace.value ? DEVICES_PATH : '/', alsoCurrentOn: DEVICE_PLACES },
-  ...SECTION_ENTRIES,
-])
-const current = computed(() => indexOfCurrentEntry(tabs.value, route.path))
+const firstTab = computed<BarEntry>(() => ({ label: firstTabLabel(props.devices), to: amongDevices.value ? DEVICES_PATH : '/' }))
+const tabs = computed(() => [firstTab.value, ...SECTION_ENTRIES])
+const currentSection = computed(() => indexOfCurrentEntry(SECTION_ENTRIES, route.path))
+const current = computed(() => amongDevices.value ? 0 : currentSection.value === -1 ? -1 : currentSection.value + 1)
 </script>
 
 <template>

@@ -74,7 +74,7 @@ async function answerOf<T>(response: Response): Promise<T> {
   if (response.status === 204)
     return undefined as T
   const body: unknown = await response.json().catch(() => undefined)
-  if (response.ok)
+  if (response.ok && body !== undefined)
     return body as T
   throw isApiError(body) ? new ApiRefusal(body) : new ServerUnreachable()
 }

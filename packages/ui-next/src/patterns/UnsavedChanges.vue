@@ -24,6 +24,8 @@ function settle(leave: boolean) {
 onBeforeRouteLeave(() => {
   if (!props.when)
     return true
+  // A route change asked for while the question is open replaces the one it was asked about.
+  settle(false)
   asking.value = true
   return new Promise<boolean>((resolve) => {
     answer = resolve

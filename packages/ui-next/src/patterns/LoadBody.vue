@@ -30,9 +30,11 @@ defineSlots<{
     @act="load.reload"
   />
   <slot v-if="load.data !== undefined" :data="load.data" />
-  <div v-else-if="load.waiting" class="waiting" aria-busy="true">
-    <LoadingLine>{{ loading }}</LoadingLine>
-    <slot name="skeleton" />
+  <div v-else class="waiting">
+    <LoadingLine :shown="load.waiting">
+      {{ loading }}
+    </LoadingLine>
+    <slot v-if="load.waiting" name="skeleton" />
   </div>
 </template>
 

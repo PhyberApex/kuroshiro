@@ -10,8 +10,8 @@ What every screen of `packages/ui-next` stands on: the shell, the router, the AP
 | `reads/` | `sharedReads.ts`: the reads made once for the whole app |
 | `router/` | `routes.ts` (every route) and `index.ts` (`createAppRouter`, the scroll behaviour) |
 | `shell/` | The bar, the phone's bottom tabs, the demo line, the page column |
-| `patterns/` | The shared page patterns: `TitleLine`, `LoadBody`, `LoadingLine`, `WashBar`, `MissingPage`, `RelativeTime`, `UnsavedChanges`, `useLoad`, `usePolling`, `useNow`, `time.ts` |
-| `pages/` | One component per route, `<Name>Page.vue`, in a folder per surface (`pages/devices/`, `pages/plugins/`, `pages/instance/`) |
+| `patterns/` | The shared page patterns: `TitleLine`, `LoadBody`, `LoadingLine`, `WashBar`, `MissingPage`, `RelativeTime`, `UnsavedChanges`, `useLoad`, `usePolling`, `useNow`, `usePageTitle`, `time.ts` |
+| `pages/` | One component per route, `<Name>Page.vue`, in a folder per surface (`pages/devices/`, `pages/plugins/`, `pages/instance/`). The three pages at its top are the shell's own: the landing route, the unknown route and "not built yet" |
 | `components/` | The primitives |
 
 ## A route and its page
@@ -86,7 +86,8 @@ It does by itself: nothing for 300 ms; a retry every 10 seconds while the server
 <template v-else>…the title line and the body…</template>
 ```
 
-- A page that needs something other than `LoadBody`'s layout reads `waiting`, `failure` and `data` itself and uses `LoadingLine` (one per view) and `Notice`.
+- A page that needs something other than `LoadBody`'s layout reads `waiting`, `failure` and `data` itself and uses `LoadingLine` (one per view) and `Notice`. `LoadingLine` is a live region: mount it before it has anything to say and give it `:shown="load.waiting"`.
+- A key that becomes `undefined` (the route has left the page) loads nothing.
 
 ### The shared reads
 
@@ -135,7 +136,7 @@ const nameSave = useSaveAsChanged(name => updateDevice(deviceId, { name }).then(
 ```
 
 - `REFUSAL_WORDING` is typed `Record<ApiErrorCode, …>`: a code added to `API_ERROR_CODES` fails type-check until it is worded there. The slice that adds a code adds its general wording.
-- **A refusal a spec words more exactly** is caught where it happens: `isRefusal(error, 'firmware-version-taken')` narrows to `ApiRefusal`, which carries `code`, `statusCode`, `details` and `fields`.
+- **A refusal that `docs/ui/` words more exactly for one place** is caught there: `isRefusal(error, 'firmware-version-taken')` narrows to `ApiRefusal`, which carries `code`, `statusCode`, `details` and `fields`.
 - **Validation**: `fieldErrorsOf(error)` gives `{ [path]: message }` for a `validation` refusal (and `{}` for anything else), to hand each `Field` its `error`. The browser checks first; the server's messages are a fallback.
 - `isUnreachable(error)` tells the second kind.
 
