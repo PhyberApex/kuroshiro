@@ -1,0 +1,60 @@
+/*
+The frame every typed-in control shares: the inputs, the textarea, a select's trigger. It is
+one class and not one component because a native `input`, a `textarea` and a `button` wear it.
+*/
+@layer components {
+  .control {
+    min-width: 0;
+    min-height: var(--control-height);
+    padding: 0 var(--space-2);
+    border: var(--rule-control);
+    border-radius: var(--radius);
+    background: var(--color-paper);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    transition: border-color var(--duration-quick) var(--ease-out);
+  }
+
+  /* Mono is for a value; a name or a search is prose and is set in the text face. */
+  .control.prose {
+    font-family: var(--font-text);
+  }
+
+  .control::placeholder {
+    color: var(--color-ink-soft);
+    opacity: 1;
+  }
+
+  /* `data-force` holds a state still for the gallery, where no pointer is over the control. */
+  .control:not(:disabled):is(:hover, [data-force~='hover']) {
+    border-color: var(--color-ink);
+  }
+
+  .control:disabled {
+    border-color: var(--color-line);
+    background: var(--color-wash);
+    color: var(--color-ink-soft);
+    cursor: default;
+  }
+
+  /* An error is ink, never red: the border doubles. */
+  .control[aria-invalid='true'] {
+    border-color: var(--color-ink);
+    box-shadow: inset 0 0 0 1px var(--color-ink);
+  }
+
+  .control[type='number'] {
+    appearance: textfield;
+  }
+
+  .control[type='number']::-webkit-inner-spin-button {
+    appearance: none;
+  }
+
+  /* 16 px, so iOS does not zoom into a focused input. */
+  @media (pointer: coarse) {
+    .control {
+      font-size: var(--text-lg);
+    }
+  }
+}
