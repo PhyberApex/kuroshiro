@@ -48,6 +48,14 @@ A Reka UI layer (a tooltip, a menu) is teleported to `body`. The `screen` querie
 
 The browser runs with reduced motion, so the duration tokens collapse and nothing is asserted or shot mid-transition. A style change still lands one frame later; `forceTheme` and the viewport helpers wait for it, and `expect.element` retries, so read computed styles through those rather than straight after a change.
 
+Under reduced motion every property still transitions for 0.01 ms, and a colour a child inherits from a parent with a transition of its own starts a second transition when the parent's ends. `settled()` (`paint.ts`), which `forceTheme` and the viewport helpers call, therefore waits until no CSS transition is running, not for a fixed number of frames.
+
+A Reka popper layer is parked off screen until it is placed, and `click({ force: true })` does not wait for that. Before a forced click on something in a layer, poll its `getBoundingClientRect().top` (`Select.spec.ts`).
+
+Two fast presses of an arrow key in an open Reka `Select` both start from the same option, because Reka moves the focus in a timeout. Press once, assert where the focus is, press again.
+
+`userEvent.upload(input, file)` chooses a file in a native file input; a drop is a `DragEvent` dispatched with a `DataTransfer` holding the file (`FileDrop.spec.ts`).
+
 ## Faking the API
 
 MSW answers at the network boundary; nothing in the UI is mocked. `src/testing/api/server.ts` exports:
@@ -91,10 +99,21 @@ Primitives live flat in `src/components/`, named as the component inventory name
 
 A gallery file is rows of specimens: `SpecimenRow` (an optional `title`) holding one `Specimen` per state, whose `caption` is the state's name. Both are in `src/gallery/`.
 
-A state that needs a pointer or a key press is held still for the gallery in one of two ways:
+A state that needs a pointer or a key press is shown in the gallery in one of three ways:
 
 - **Hover and active**: for each such state its gallery shows, the component's own CSS answers `[data-force~='hover']` or `[data-force~='active']` beside `:hover` or `:active`, and the gallery sets `data-force="hover"` on it. The focus ring belongs to the page, so `data-force="focus"` works on any element with no CSS in the component.
 - **A state held in script** (an open tooltip, "Copied"): the component takes a prop for it, documented as being for the gallery (`tooltipOpen`, `copied`).
+
+- **A state behind a modal layer** (an open select): Reka hides everything but an open `Select` or `Combobox` list from assistive technology and traps the focus in it, so it cannot be held open on the gallery page. The gallery shows the control closed and says "press it"; the open state gets its baselines from a `<Name>.shots.ts` beside the component, which opens it for real and shoots a stage around it (`Select.shots.ts`), and its axe run in the spec, given the list (`expectAccessible(listbox)`).
+
+### Field components
+
+- **The frame of a typed-in control** is the `.control` class of `src/styles/controls.css`, not a component: an `input`, a `textarea` and a select's `button` all wear it. It carries the border, hover, disabled, `aria-invalid` (the doubled ink border) and the 16 px text on touch. `.control.prose` sets the value in the text face instead of mono.
+- **Every control** takes `v-model`, `disabled` and `invalid`, and passes any other attribute (`id`, `aria-label`, `aria-describedby`, `placeholder`, `min`) to its native control, wherever that sits in its markup.
+- **`Field`** hands its control what it needs through its slot: `<Field v-slot="{ control }" label="Refresh rate" :error="error"><NumberInput v-model="rate" v-bind="control" /></Field>`. An error takes the hint's place.
+- **`FieldError`** is the message with the problem icon, inside a live region that is rendered before the message is. It is a part, not a primitive of the inventory: `Field`, `FileDrop` and `InlineEdit` show it, and their galleries and specs are where it is seen and tested.
+- **`InlineEdit`** is the exception to the rule above: it is a value with an editing mode, not a form control, so it takes `value`, `v-model:editing`, `validate` and `v-model:error`, and emits `save`.
+- **"commit"** is what save as changed listens to: `TextInput`, `NumberInput`, `TimeInput` and `DateInput` emit it on blur and on Enter, `Textarea` on blur, and only for a value that differs from the one held on focus or committed last. `commitWhenDone` holds that rule. The `#status` slot beside each is the place of the save state.
 
 Three things Reka UI does not do for you:
 
@@ -109,6 +128,7 @@ Baselines are the `*-chromium-linux.png` files in `__screenshots__/` folders bes
 - The comparison is as good as exact: one grey level of one pixel is forgiven, because Chromium antialiases a rounded corner at the edge of a shot a level lighter or darker from run to run. Two levels of grey fail, so a token that changes by more than a hair is still caught.
 - A new or changed shot: run `pnpm test:screenshots:update`, look at the PNGs, commit them.
 - A failing comparison writes the actual image and the diff under `packages/ui-next/.vitest/attachments/`; CI uploads that folder as the `ui-screenshot-diffs` artifact.
+- A new gallery section moves every section below it, and a section that lands on another fraction of a pixel is shot a pixel taller or shorter with its text antialiased differently. So a PR that adds a primitive rewrites the gallery baselines after it in the page too; say so in the description.
 - **A PR that changes a baseline says why in its description**, baseline by baseline or by group ("every section: `--space-3` grew"). A baseline that changed for no stated reason is a regression until explained.
 - Bumping `playwright` changes the image and the browser. Regenerate the baselines in the same PR and say so.
 
