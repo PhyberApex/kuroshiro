@@ -197,7 +197,7 @@ The periodic job that evaluates every Alert Rule against Kuroshiro's persisted s
 _Avoid_: Poll (reserved for what a Device does), scan, check
 
 **Retention**:
-The daily job that deletes resolved Alerts and Device Log entries older than their Retention age. The two ages are Instance Settings, read afresh by every Retention Run; an age of 0 disables pruning for that half. Active Alerts are never pruned. One execution, scheduled or triggered from the Maintenance page, is a Retention Run.
+The daily job that deletes resolved Alerts and Device Log entries older than their Retention age. The two ages are Instance Settings, read afresh by every Retention Run; an age of 0 disables pruning for that age. Active Alerts are never pruned. One execution, scheduled or triggered from the Maintenance page, is a Retention Run.
 _Avoid_: Cleanup (reserved for the Maintenance page's file cleanup), purge, garbage collection
 
 **Notification**:

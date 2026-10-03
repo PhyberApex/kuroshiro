@@ -14,9 +14,10 @@ const DAILY_AT_4AM = '0 4 * * *'
 
 /**
  * Prunes resolved Alerts and Device Log entries older than their Retention
- * age, an Instance Setting resolved afresh for every run and status read. A dry run reports the counts a real run would delete without
- * deleting anything or updating `lastRun`. `lastRun` is in-memory only (lost
- * on restart) and is updated by both the scheduled job and a manual trigger,
+ * age, an Instance Setting resolved afresh for every run and status read. A
+ * dry run reports the counts a real run would delete without deleting
+ * anything or updating `lastRun`. `lastRun` is in-memory only (lost on
+ * restart) and is updated by both the scheduled job and a manual trigger,
  * which share this same `run` operation.
  *
  * Unlike the Device Model/Firmware syncs this schedule is modelled on, there's

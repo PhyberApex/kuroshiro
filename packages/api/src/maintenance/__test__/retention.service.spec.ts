@@ -16,7 +16,7 @@ const DEFAULT_AGES: RetentionAges = { alertRetentionDays: 90, deviceLogRetention
 describe('retentionService', () => {
   let alertRepo: ReturnType<typeof createMockRepository<Alert>>
   let logEntryRepo: ReturnType<typeof createMockRepository<LogEntry>>
-  let settingsService: { resolveRetentionAges: ReturnType<typeof vi.fn> }
+  let instanceSettingsService: { resolveRetentionAges: ReturnType<typeof vi.fn> }
   let service: RetentionService
 
   beforeEach(() => {
@@ -27,8 +27,8 @@ describe('retentionService', () => {
     alertRepo.delete.mockResolvedValue({ affected: 0, raw: [] })
     logEntryRepo.count.mockResolvedValue(0)
     logEntryRepo.delete.mockResolvedValue({ affected: 0, raw: [] })
-    settingsService = { resolveRetentionAges: vi.fn().mockResolvedValue(DEFAULT_AGES) }
-    service = new RetentionService(asRepository(alertRepo), asRepository(logEntryRepo), asService<InstanceSettingsService>(settingsService))
+    instanceSettingsService = { resolveRetentionAges: vi.fn().mockResolvedValue(DEFAULT_AGES) }
+    service = new RetentionService(asRepository(alertRepo), asRepository(logEntryRepo), asService<InstanceSettingsService>(instanceSettingsService))
   })
 
   describe('onApplicationBootstrap', () => {
@@ -56,7 +56,7 @@ describe('retentionService', () => {
     })
 
     it('reports an age saved after startup without a restart', async () => {
-      settingsService.resolveRetentionAges.mockResolvedValue({ alertRetentionDays: 7, deviceLogRetentionDays: 30 })
+      instanceSettingsService.resolveRetentionAges.mockResolvedValue({ alertRetentionDays: 7, deviceLogRetentionDays: 30 })
 
       await expect(service.getStatus()).resolves.toMatchObject({ ages: { alertRetentionDays: 7, deviceLogRetentionDays: 30 } })
     })
@@ -105,7 +105,7 @@ describe('retentionService', () => {
 
     it('prunes by the ages resolved when the run starts, so a just-saved override applies to a dry run and a real run alike', async () => {
       vi.useFakeTimers({ now: new Date('2026-10-03T00:00:00.000Z') })
-      settingsService.resolveRetentionAges.mockResolvedValue({ alertRetentionDays: 7, deviceLogRetentionDays: 2 })
+      instanceSettingsService.resolveRetentionAges.mockResolvedValue({ alertRetentionDays: 7, deviceLogRetentionDays: 2 })
 
       await service.run(true)
       await service.run(false)
@@ -119,7 +119,7 @@ describe('retentionService', () => {
     })
 
     it('skips pruning Alerts when their retention age is 0, but still prunes Device Logs', async () => {
-      settingsService.resolveRetentionAges.mockResolvedValue({ ...DEFAULT_AGES, alertRetentionDays: 0 })
+      instanceSettingsService.resolveRetentionAges.mockResolvedValue({ ...DEFAULT_AGES, alertRetentionDays: 0 })
       logEntryRepo.delete.mockResolvedValue({ affected: 3, raw: [] })
 
       const result = await service.run(false)
@@ -130,7 +130,7 @@ describe('retentionService', () => {
     })
 
     it('skips pruning Device Logs when their retention age is 0, but still prunes Alerts', async () => {
-      settingsService.resolveRetentionAges.mockResolvedValue({ ...DEFAULT_AGES, deviceLogRetentionDays: 0 })
+      instanceSettingsService.resolveRetentionAges.mockResolvedValue({ ...DEFAULT_AGES, deviceLogRetentionDays: 0 })
       alertRepo.delete.mockResolvedValue({ affected: 4, raw: [] })
 
       const result = await service.run(false)

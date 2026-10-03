@@ -1,7 +1,8 @@
+import type { UpdateInstanceSettingsInput } from 'kuroshiro-shared'
 import { IsBoolean, IsInt, IsOptional, Max, Min } from 'class-validator'
 import { SETTING_BOUNDS } from 'kuroshiro-shared'
 
-export class UpdateInstanceSettingsDto {
+export class UpdateInstanceSettingsDto implements UpdateInstanceSettingsInput {
   @IsOptional()
   @IsInt()
   @Min(SETTING_BOUNDS.lowBatteryPercent.min)

@@ -1,4 +1,3 @@
-// The three Alert Rule thresholds are the first tenants of Instance Settings (ADR-0027).
 export const ALERT_THRESHOLD_KEYS = ['lowBatteryPercent', 'offlineMultiplier', 'fetchFailureThreshold'] as const
 export type AlertThresholdKey = typeof ALERT_THRESHOLD_KEYS[number]
 
