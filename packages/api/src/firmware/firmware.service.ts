@@ -6,13 +6,11 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
+import { uploadTooLarge } from '../uploads/limited-file-interceptor.js'
+import { UPLOAD_LIMITS } from '../uploads/upload-limits.js'
 import { fileExists } from '../utils/fileExists.js'
 import { Firmware } from './entities/firmware.entity.js'
 import { firmwareFilePath, firmwareFileUrl } from './firmware-paths.js'
-
-// ESP32 OTA images from usetrmnl/firmware run well under this; a generous
-// ceiling still catches an obviously-wrong upload without inspecting the binary.
-export const MAX_FIRMWARE_UPLOAD_BYTES = 8 * 1024 * 1024
 
 export interface UploadFirmwareInput {
   version?: string
@@ -50,8 +48,8 @@ export class FirmwareService {
   async upload(file: { buffer: buffer.Buffer, originalname: string, mimetype: string, size: number }, input: UploadFirmwareInput): Promise<Firmware> {
     if (!input.version)
       throw new BadRequestException('Firmware version is required')
-    if (file.size > MAX_FIRMWARE_UPLOAD_BYTES)
-      throw new BadRequestException(`Firmware upload exceeds the ${MAX_FIRMWARE_UPLOAD_BYTES / (1024 * 1024)}MB limit`)
+    if (file.size > UPLOAD_LIMITS.firmwareUploadBytes)
+      throw uploadTooLarge(UPLOAD_LIMITS.firmwareUploadBytes)
     if (path.extname(file.originalname).toLowerCase() !== '.bin')
       throw new BadRequestException('Firmware upload must be a .bin file')
 

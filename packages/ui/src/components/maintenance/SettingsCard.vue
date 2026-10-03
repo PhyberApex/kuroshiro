@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AlertThresholdKey, InstanceSettingsResponse } from 'kuroshiro-shared'
+import type { InstanceSettingsResponse, SettingKey } from 'kuroshiro-shared'
 import { mdiAlertCircle, mdiCheck, mdiRestore } from '@mdi/js'
 import { SETTING_BOUNDS, SETTING_ENV_VARS } from 'kuroshiro-shared'
 import { reactive, watch } from 'vue'
@@ -12,25 +12,25 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  save: [key: AlertThresholdKey, value: number]
-  reset: [key: AlertThresholdKey]
+  save: [key: SettingKey, value: number]
+  reset: [key: SettingKey]
   saveFirmwareAutoUpdate: [value: boolean]
   resetFirmwareAutoUpdate: []
 }>()
 
-const FIELDS: { key: AlertThresholdKey, label: string }[] = [
+const FIELDS: { key: SettingKey, label: string }[] = [
   { key: 'lowBatteryPercent', label: 'Low battery percent' },
   { key: 'offlineMultiplier', label: 'Offline multiplier' },
   { key: 'fetchFailureThreshold', label: 'Fetch failure threshold' },
 ]
 
-const drafts = reactive<Record<AlertThresholdKey, string>>({
+const drafts = reactive<Record<SettingKey, string>>({
   lowBatteryPercent: '',
   offlineMultiplier: '',
   fetchFailureThreshold: '',
 })
 
-function currentDraft(key: AlertThresholdKey): string {
+function currentDraft(key: SettingKey): string {
   const override = props.settings?.[key].override ?? null
   return override != null ? String(override) : ''
 }
@@ -40,11 +40,11 @@ watch(() => props.settings, () => {
     drafts[key] = currentDraft(key)
 }, { immediate: true })
 
-function isDirty(key: AlertThresholdKey): boolean {
+function isDirty(key: SettingKey): boolean {
   return drafts[key].trim() !== currentDraft(key)
 }
 
-function hint(key: AlertThresholdKey): string {
+function hint(key: SettingKey): string {
   const setting = props.settings?.[key]
   if (!setting)
     return ''
@@ -53,7 +53,7 @@ function hint(key: AlertThresholdKey): string {
     : `Falls back to the built-in default (${setting.fallbackValue})`
 }
 
-function save(key: AlertThresholdKey) {
+function save(key: SettingKey) {
   const draft = drafts[key].trim()
   if (draft === '')
     return
@@ -63,7 +63,7 @@ function save(key: AlertThresholdKey) {
   emit('save', key, value)
 }
 
-function reset(key: AlertThresholdKey) {
+function reset(key: SettingKey) {
   emit('reset', key)
 }
 

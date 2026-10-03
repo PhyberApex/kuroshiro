@@ -2,8 +2,8 @@ import type { Palette } from '../../device-models/entities/palette.entity.js'
 import type { Device } from '../../devices/devices.entity.js'
 import type { Firmware } from '../../firmware/entities/firmware.entity.js'
 import type { DevicePlugin } from '../../plugins/entities/device-plugin.entity.js'
-import type { PluginFieldValue } from '../../plugins/entities/plugin-field-value.entity.js'
 import type { Plugin } from '../../plugins/entities/plugin.entity.js'
+import type { PluginFieldValuesService } from '../../plugins/services/plugin-field-values.service.js'
 import type { Screen } from '../../screens/screens.entity.js'
 import type { InstanceSettings } from '../../settings/entities/instance-settings.entity.js'
 import { Buffer } from 'node:buffer'
@@ -18,12 +18,14 @@ import {
   makePalette,
   makePlugin,
   makePluginDataSource,
+  makePluginField,
   makePluginTemplate,
-  makePluginVariable,
   makeSchedule,
   makeScreen,
 } from '../../test/fixtures.js'
+import { createMockPluginFieldValuesService } from '../../test/mockPluginCollaborators.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
+import { asService } from '../../test/mockService.js'
 import { CONFIG_SCHEMA_VERSION } from '../schema-version.js'
 import { ConfigurationExportService } from '../services/configuration-export.service.js'
 
@@ -50,7 +52,7 @@ describe('configurationExportService', () => {
   let deviceRepo: ReturnType<typeof createMockRepository<Device>>
   let screenRepo: ReturnType<typeof createMockRepository<Screen>>
   let devicePluginRepo: ReturnType<typeof createMockRepository<DevicePlugin>>
-  let fieldValueRepo: ReturnType<typeof createMockRepository<PluginFieldValue>>
+  let mockFieldValues: ReturnType<typeof createMockPluginFieldValuesService>
   let paletteRepo: ReturnType<typeof createMockRepository<Palette>>
   let firmwareRepo: ReturnType<typeof createMockRepository<Firmware>>
   let instanceSettingsRepo: ReturnType<typeof createMockRepository<InstanceSettings>>
@@ -61,7 +63,7 @@ describe('configurationExportService', () => {
     deviceRepo = createMockRepository()
     screenRepo = createMockRepository()
     devicePluginRepo = createMockRepository()
-    fieldValueRepo = createMockRepository()
+    mockFieldValues = createMockPluginFieldValuesService()
     paletteRepo = createMockRepository()
     firmwareRepo = createMockRepository()
     instanceSettingsRepo = createMockRepository()
@@ -70,7 +72,6 @@ describe('configurationExportService', () => {
     deviceRepo.find.mockResolvedValue([])
     screenRepo.find.mockResolvedValue([])
     devicePluginRepo.find.mockResolvedValue([])
-    fieldValueRepo.find.mockResolvedValue([])
     paletteRepo.find.mockResolvedValue([])
     firmwareRepo.find.mockResolvedValue([])
     instanceSettingsRepo.findOneBy.mockResolvedValue(null)
@@ -80,11 +81,11 @@ describe('configurationExportService', () => {
       asRepository(deviceRepo),
       asRepository(screenRepo),
       asRepository(devicePluginRepo),
-      asRepository(fieldValueRepo),
       asRepository(paletteRepo),
       asRepository(firmwareRepo),
       asRepository(instanceSettingsRepo),
       new PluginExporterService(),
+      asService<PluginFieldValuesService>(mockFieldValues),
     )
   })
 
@@ -220,18 +221,19 @@ describe('configurationExportService', () => {
     expect(settings).toContain('Bearer real-token')
   })
 
-  it('redacts isSecret Plugin Variable values and a set webhookToken in plugins.json, leaving non-secret values and an unset webhookToken alone', async () => {
+  it('redacts password-type Field Values and a set webhookToken in plugins.json, leaving other Field Values and an unset webhookToken alone', async () => {
     const plugin = makePlugin({
       id: 'plugin-1',
       kind: 'Webhook',
       webhookToken: 'real-webhook-token',
-      variables: [
-        makePluginVariable({ id: 'var-1', key: 'SECRET_KEY', value: 'real-secret', isSecret: true }),
-        makePluginVariable({ id: 'var-2', key: 'PUBLIC_KEY', value: 'not-secret', isSecret: false }),
+      fields: [
+        makePluginField({ id: 'field-1', keyname: 'api_key', fieldType: 'password' }),
+        makePluginField({ id: 'field-2', keyname: 'city', fieldType: 'string' }),
       ],
     })
     const pluginNoToken = makePlugin({ id: 'plugin-2', webhookToken: null })
     pluginRepo.find.mockResolvedValue([plugin, pluginNoToken])
+    mockFieldValues.storedByPlugin.mockResolvedValue(new Map([['plugin-1', { api_key: 'real-secret', city: 'Berlin' }]]))
 
     const buffer = await service.exportToZip({ redact: true })
     const zip = new AdmZip(buffer)
@@ -239,10 +241,8 @@ describe('configurationExportService', () => {
 
     const entry = pluginsJson.find((p: { id: string }) => p.id === 'plugin-1')
     expect(entry.webhookToken).toBe(CONFIGURATION_REDACTION_SENTINEL)
-    expect(entry.variables).toEqual([
-      { id: 'var-1', key: 'SECRET_KEY', value: CONFIGURATION_REDACTION_SENTINEL, isSecret: true },
-      { id: 'var-2', key: 'PUBLIC_KEY', value: 'not-secret', isSecret: false },
-    ])
+    expect(entry.fieldValues).toEqual({ api_key: CONFIGURATION_REDACTION_SENTINEL, city: 'Berlin' })
+    expect(entry).not.toHaveProperty('variables')
 
     const entryNoToken = pluginsJson.find((p: { id: string }) => p.id === 'plugin-2')
     expect(entryNoToken.webhookToken).toBeNull()
@@ -325,21 +325,26 @@ describe('configurationExportService', () => {
     expect(screensJson[0].schedule.id).toBe('schedule-1')
   })
 
-  it('builds an assignments.json entry per DevicePlugin with its field values scoped to that device+plugin pair', async () => {
+  it('writes a Plugin\'s Field Values, secrets included, on its plugins.json entry and none on the assignments.json entry', async () => {
     const device = makeDevice({ id: 'device-1' })
-    const plugin = makePlugin({ id: 'plugin-1' })
+    const plugin = makePlugin({
+      id: 'plugin-1',
+      fields: [
+        makePluginField({ id: 'field-1', keyname: 'api_key', fieldType: 'password' }),
+        makePluginField({ id: 'field-2', keyname: 'city', fieldType: 'string' }),
+      ],
+    })
+    pluginRepo.find.mockResolvedValue([plugin])
     devicePluginRepo.find.mockResolvedValue([makeDevicePlugin({ id: 'dp-1', device, plugin, order: 0, isActive: true })])
-    fieldValueRepo.find.mockResolvedValue([
-      { id: 'fv-1', value: 'hello', plugin: { id: 'plugin-1' }, field: { id: 'field-1' }, device: { id: 'device-1' } },
-      { id: 'fv-2', value: 'other-device', plugin: { id: 'plugin-1' }, field: { id: 'field-1' }, device: { id: 'device-2' } },
-    ] as PluginFieldValue[])
+    mockFieldValues.storedByPlugin.mockResolvedValue(new Map([['plugin-1', { api_key: 'real-secret', city: 'Berlin' }]]))
 
     const buffer = await service.exportToZip()
     const zip = new AdmZip(buffer)
+    const pluginsJson = JSON.parse(zip.getEntry('plugins.json')!.getData().toString('utf8'))
     const assignmentsJson = JSON.parse(zip.getEntry('assignments.json')!.getData().toString('utf8'))
 
-    expect(assignmentsJson).toHaveLength(1)
-    expect(assignmentsJson[0].fieldValues).toEqual([{ id: 'fv-1', fieldId: 'field-1', value: 'hello' }])
+    expect(pluginsJson[0].fieldValues).toEqual({ api_key: 'real-secret', city: 'Berlin' })
+    expect(assignmentsJson).toEqual([{ id: 'dp-1', deviceId: 'device-1', pluginId: 'plugin-1', order: 0, isActive: true }])
   })
 
   it('includes a file-type Screen\'s rendered image when it exists on disk', async () => {

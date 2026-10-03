@@ -1,5 +1,5 @@
 import type { CleanupResult, MaintenanceIssues, RetentionRunResult, RetentionStatus } from 'kuroshiro-shared'
-import { Body, Controller, Get, Logger, Post, UsePipes, ValidationPipe } from '@nestjs/common'
+import { Body, Controller, Get, Logger, Post } from '@nestjs/common'
 import { CleanupDto } from './dto/cleanup.dto.js'
 import { RetentionRunDto } from './dto/retention-run.dto.js'
 import { MaintenanceService } from './maintenance.service.js'
@@ -21,7 +21,6 @@ export class MaintenanceController {
   }
 
   @Post('cleanup')
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async cleanup(@Body() cleanupDto: CleanupDto): Promise<CleanupResult> {
     this.logger.log('Cleanup requested')
     return this.maintenanceService.cleanup(
@@ -47,7 +46,6 @@ export class MaintenanceController {
   }
 
   @Post('retention/run')
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async runRetention(@Body() retentionRunDto: RetentionRunDto): Promise<RetentionRunResult> {
     this.logger.log('Retention run requested')
     return this.retentionService.run(retentionRunDto.dryRun || false)

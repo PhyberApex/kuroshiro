@@ -1,4 +1,13 @@
-import { IsBoolean, IsInt, IsOptional, IsString } from 'class-validator'
+import { Type } from 'class-transformer'
+import { IsArray, IsBoolean, IsInt, IsOptional, IsString, ValidateNested } from 'class-validator'
+
+class PluginFieldOptionDto {
+  @IsString()
+  label: string
+
+  @IsString()
+  value: string
+}
 
 export class PluginFieldDto {
   @IsString()
@@ -18,6 +27,12 @@ export class PluginFieldDto {
   @IsOptional()
   @IsString()
   defaultValue?: string
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PluginFieldOptionDto)
+  options?: PluginFieldOptionDto[] | null
 
   @IsOptional()
   @IsBoolean()

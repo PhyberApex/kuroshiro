@@ -8,17 +8,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MashupSlot as MashupSlotEntity } from '../../mashup/entities/mashup-slot.entity.js'
 import { Screen as ScreenEntity } from '../../screens/screens.entity.js'
 import { makeMashupConfiguration, makeMashupSlot, makePlugin, makePluginDataSource, makePluginTemplate, makeScreen } from '../../test/fixtures.js'
-import { createMockPluginDataFetcherService, createMockPluginTransformService } from '../../test/mockPluginCollaborators.js'
+import { createMockPluginDataFetcherService, createMockPluginFieldValuesService, createMockPluginTransformService } from '../../test/mockPluginCollaborators.js'
 import { DevicePlugin } from '../entities/device-plugin.entity.js'
 import { PluginDataSource } from '../entities/plugin-data-source.entity.js'
 import { PluginField } from '../entities/plugin-field.entity.js'
 import { PluginTemplate } from '../entities/plugin-template.entity.js'
-import { PluginVariable } from '../entities/plugin-variable.entity.js'
 import { Plugin as PluginEntity } from '../entities/plugin.entity.js'
 import { PluginsService } from '../plugins.service.js'
 import { DataSourceFetchOutcomeService } from '../services/data-source-fetch-outcome.service.js'
 import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
 import { PluginDataResolverService } from '../services/plugin-data-resolver.service.js'
+import { PluginFieldValuesService } from '../services/plugin-field-values.service.js'
+import { PluginRefreshService } from '../services/plugin-refresh.service.js'
 import { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
 import { PluginRendererService } from '../services/plugin-renderer.service.js'
 import { PluginSchedulerService } from '../services/plugin-scheduler.service.js'
@@ -111,6 +112,7 @@ describe('plugin update cache invalidation integration', () => {
         PluginRenderCacheService,
         PluginRendererService,
         PluginTemplateContextService,
+        PluginRefreshService,
         { provide: PluginDataFetcherService, useValue: mockDataFetcher },
         { provide: PluginTransformService, useValue: createMockPluginTransformService() },
         { provide: getRepositoryToken(PluginEntity), useValue: pluginRepo },
@@ -119,7 +121,7 @@ describe('plugin update cache invalidation integration', () => {
         { provide: getRepositoryToken(PluginDataSource), useValue: { update: vi.fn(), increment: vi.fn() } },
         { provide: getRepositoryToken(PluginTemplate), useValue: templateRepo },
         { provide: getRepositoryToken(PluginField), useValue: {} },
-        { provide: getRepositoryToken(PluginVariable), useValue: {} },
+        { provide: PluginFieldValuesService, useValue: createMockPluginFieldValuesService() },
         { provide: getRepositoryToken(MashupSlotEntity), useValue: mashupSlotRepo },
       ],
     }).compile()

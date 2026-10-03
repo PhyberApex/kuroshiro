@@ -8,6 +8,7 @@ import { LogEntry } from '../logs/logs.entity.js'
 import { PluginsModule } from '../plugins/plugins.module.js'
 import { Screen } from '../screens/screens.entity.js'
 import { ScreensModule } from '../screens/screens.module.js'
+import { DeviceReadsService } from './device-reads.service.js'
 import { DevicesController } from './devices.controller.js'
 import { Device } from './devices.entity.js'
 import { DevicesService } from './devices.service.js'
@@ -19,7 +20,7 @@ import { DeviceSetupService } from './setup.service.js'
 @Module({
   imports: [TypeOrmModule.forFeature([Device, Screen, LogEntry]), ConfigModule, PluginsModule, DeviceModelsModule, DeviceSensorsModule, FirmwareModule, ScreensModule],
   controllers: [DevicesController, DisplayController, SetupController],
-  providers: [DevicesService, DeviceDisplayService, DeviceSetupService],
+  providers: [DevicesService, DeviceReadsService, DeviceDisplayService, DeviceSetupService],
   exports: [DevicesService],
 })
 export class DevicesModule {}

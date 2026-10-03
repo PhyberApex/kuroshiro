@@ -1,17 +1,16 @@
 import type { AlertThresholdKey, FallbackSource, InstanceSettingsResponse, RetentionAgeKey, RetentionAges, SettingKey, UpdateInstanceSettingsInput } from 'kuroshiro-shared'
 import type { Repository } from 'typeorm'
+import type { InstanceSettingsFallbacks } from './instance-settings.mapper.js'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
 import { ALERT_THRESHOLD_KEYS, BOOLEAN_SETTING_KEYS, RETENTION_AGE_KEYS, SETTING_KEYS } from 'kuroshiro-shared'
 import { INSTANCE_SETTINGS_ID, InstanceSettings } from './entities/instance-settings.entity.js'
+import { toInstanceSettingsResponse } from './instance-settings.mapper.js'
 
 type EnvFallbacks<K extends SettingKey> = Record<K, number> & Record<`${K}Source`, FallbackSource>
 
-interface SettingFallback {
-  value: number
-  source: FallbackSource
-}
+const FIRMWARE_AUTO_UPDATE_DEFAULT = false
 
 /**
  * The persisted home for admin-tunable, instance-wide values (ADR-0027) — the Alert Rule
@@ -31,14 +30,15 @@ export class InstanceSettingsService {
     return this.repository.findOneBy({ id: INSTANCE_SETTINGS_ID })
   }
 
-  private fallbacks(): Record<SettingKey, SettingFallback> {
+  private fallbacks(): InstanceSettingsFallbacks {
     const config: EnvFallbacks<SettingKey> = {
       ...this.configService.get<EnvFallbacks<AlertThresholdKey>>('alerts')!,
       ...this.configService.get<EnvFallbacks<RetentionAgeKey>>('retention')!,
     }
-    return Object.fromEntries(
+    const numeric = Object.fromEntries(
       SETTING_KEYS.map(key => [key, { value: config[key], source: config[`${key}Source`] }]),
-    ) as Record<SettingKey, SettingFallback>
+    ) as Pick<InstanceSettingsFallbacks, SettingKey>
+    return { ...numeric, firmwareAutoUpdate: { value: FIRMWARE_AUTO_UPDATE_DEFAULT, source: 'default' } }
   }
 
   private async resolve<K extends SettingKey>(keys: readonly K[]): Promise<Record<K, number>> {
@@ -62,33 +62,11 @@ export class InstanceSettingsService {
   /** Whether the Firmware Auto-Update policy (ADR-0029) is on — `FirmwareSyncService` reads this after every insert; the Setting has no environment-variable fallback, only the built-in default of `false`. */
   async resolveFirmwareAutoUpdate(): Promise<boolean> {
     const row = await this.loadRow()
-    return row?.firmwareAutoUpdate ?? false
+    return row?.firmwareAutoUpdate ?? FIRMWARE_AUTO_UPDATE_DEFAULT
   }
 
   async get(): Promise<InstanceSettingsResponse> {
-    const row = await this.loadRow()
-    const fallbacks = this.fallbacks()
-    const response = {} as InstanceSettingsResponse
-    for (const key of SETTING_KEYS) {
-      const override = row?.[key] ?? null
-      const fallback = fallbacks[key]
-      response[key] = {
-        override,
-        value: override ?? fallback.value,
-        fallbackSource: fallback.source,
-        fallbackValue: fallback.value,
-      }
-    }
-    for (const key of BOOLEAN_SETTING_KEYS) {
-      const override = row?.[key] ?? null
-      response[key] = {
-        override,
-        value: override ?? false,
-        fallbackSource: 'default',
-        fallbackValue: false,
-      }
-    }
-    return response
+    return toInstanceSettingsResponse(await this.loadRow(), this.fallbacks())
   }
 
   /** Only the keys present in `input` change; a key mapped to `null` clears its override back to the fallback. */

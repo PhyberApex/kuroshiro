@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AlertThresholdKey, CleanupResult, DeviceModelSyncResult, FirmwareSyncResult, RetentionRunResult } from 'kuroshiro-shared'
+import type { CleanupResult, DeviceModelSyncResult, FirmwareSyncResult, RetentionRunResult, SettingKey } from 'kuroshiro-shared'
 import { mdiAlertCircle, mdiCheckCircle, mdiRefresh } from '@mdi/js'
 import { computed, onMounted, ref } from 'vue'
 import { VAlert, VBtn, VCard, VCardText, VCardTitle, VChip, VCol, VContainer, VDivider, VListItemSubtitle, VListItemTitle, VProgressCircular, VRow } from 'vuetify/components'
@@ -28,11 +28,11 @@ const firmwareStore = useFirmwareStore()
 const alertsStore = useAlertsStore()
 const settingsStore = useSettingsStore()
 
-async function handleSaveSetting(key: AlertThresholdKey, value: number) {
+async function handleSaveSetting(key: SettingKey, value: number) {
   await settingsStore.update({ [key]: value })
 }
 
-async function handleResetSetting(key: AlertThresholdKey) {
+async function handleResetSetting(key: SettingKey) {
   await settingsStore.update({ [key]: null })
 }
 

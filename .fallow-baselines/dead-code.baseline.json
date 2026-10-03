@@ -1,4 +1,5 @@
 {
+  "kind": "dead-code",
   "analysis_identity": {
     "mode": "syntactic",
     "semantic_schema_version": 1,
@@ -11,6 +12,7 @@
   "unused_exports": [],
   "unused_types": [],
   "private_type_leaks": [],
+  "deprecated_exports_in_use": [],
   "unused_dependencies": [],
   "unused_dev_dependencies": [],
   "circular_dependencies": [],

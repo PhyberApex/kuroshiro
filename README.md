@@ -186,8 +186,9 @@ For local hacking or deployment inspiration, check out [`docker-compose.yml`](./
 ## 📦 Packages
 
 - [`packages/api`](./packages/api) — The NestJS backend
-- [`packages/ui`](./packages/ui) — The Vue 3 + Vuetify frontend
-- [`packages/shared`](./packages/shared) — Code that is byte-identical in the API and UI
+- [`packages/ui-next`](./packages/ui-next) — The Vue 3 + Reka UI frontend the image serves
+- [`packages/ui`](./packages/ui) — The previous Vue 3 + Vuetify frontend, kept as a read-only reference outside the workspace
+- [`packages/shared`](./packages/shared) — The admin API's request and response types, and code that is identical in the API and UI
 
 ---
 
@@ -299,7 +300,7 @@ A daily Retention job (same 4am schedule as the Device Model and Firmware syncs)
 |---|---|---|---|
 | `kuroshiro_device_battery_volts` | gauge | `device`, `friendly_id` | Last reported battery voltage. Omitted for a Device with no or non-numeric reading. |
 | `kuroshiro_device_rssi_dbm` | gauge | `device`, `friendly_id` | Last reported Wi-Fi signal strength. Omitted for a Device with no or non-numeric reading. |
-| `kuroshiro_device_last_seen_timestamp_seconds` | gauge | `device`, `friendly_id` | The Device's `lastSeen` as a Unix timestamp (compute `time() - x` for staleness). |
+| `kuroshiro_device_last_seen_timestamp_seconds` | gauge | `device`, `friendly_id` | The Device's `lastSeen` as a Unix timestamp (compute `time() - x` for staleness). No sample for a Device that never polled. |
 | `kuroshiro_alerts_active` | gauge | `kind` | Count of currently active Alerts per `AlertKind` — every known kind is emitted, 0 included, so a series never vanishes. |
 
 `device` is the Device's `name` and `friendly_id` its `friendlyId`; the MAC address is never used as a label. Like the Device-facing routes (`/display`, `/current_screen`), `/metrics` sits outside the `/api` prefix and has no authentication of its own — if you want it private, keep it off your reverse proxy.
@@ -315,10 +316,6 @@ We love contributions! Jump in:
 - Run all tests before submitting a PR
 - `pnpm fallow:ci` runs in CI and fails on new dead code, duplication, or complexity hotspots; see [docs/agents/fallow.md](docs/agents/fallow.md) for how the baselines work
 - **We use [release-please](https://github.com/googleapis/release-please)!** Use [Conventional Commits](https://www.conventionalcommits.org/) for your commit messages to enable automatic versioning and changelogs.
-
-### UI responsive support
-
-The dashboard (`packages/ui`) supports viewports down to **375px** wide. CI drives every route in a real Chromium browser at 375 / 768 / 1280px (`pnpm --filter ./packages/ui test:e2e`) and fails on horizontal overflow, so if you add a toolbar, card header, or dialog, check it at 375px before opening a PR.
 
 ### Contributors
 

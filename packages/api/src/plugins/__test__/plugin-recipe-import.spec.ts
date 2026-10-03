@@ -2,6 +2,8 @@ import { Buffer } from 'node:buffer'
 import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
 import { describe, expect, it } from 'vitest'
+import { makePlugin, makePluginDataSource, makePluginField, makePluginTemplate } from '../../test/fixtures.js'
+import { PluginExporterService } from '../services/plugin-exporter.service.js'
 import { PluginImporterService } from '../services/plugin-importer.service.js'
 
 function buildFlatRecipeArchive(settings: Record<string, unknown>, files: Record<string, string> = { 'full.liquid': '<div>{{ source.title }}</div>' }): Buffer {
@@ -135,6 +137,56 @@ describe('pluginImporterService recipe import', () => {
 
       expect(result.fields[0].fieldType).toBe('author_bio')
       expect(result.fields[0].required).toBe(false)
+    })
+
+    it('keeps a select field\'s options, and they survive a .trmnlp export and re-import', async () => {
+      const settings = {
+        name: 'Weather',
+        strategy: 'polling',
+        polling_url: 'https://api.example.com',
+        custom_fields: [
+          { keyname: 'units', field_type: 'select', name: 'Units', options: [{ Metric: 'metric' }, { Imperial: 'imperial' }, 'kelvin'], default_value: 'metric' },
+        ],
+      }
+      const expectedOptions = [
+        { label: 'Metric', value: 'metric' },
+        { label: 'Imperial', value: 'imperial' },
+        { label: 'kelvin', value: 'kelvin' },
+      ]
+
+      const service = new PluginImporterService()
+      const imported = await service.importFromRecipeArchive(buildFlatRecipeArchive(settings), '1')
+
+      expect(imported.fields[0].options).toEqual(expectedOptions)
+
+      const exported = await new PluginExporterService().exportToZip(makePlugin({
+        name: imported.name,
+        dataSources: imported.dataSources.map(source => makePluginDataSource(source)),
+        templates: imported.templates.map(template => makePluginTemplate(template)),
+        fields: imported.fields.map(field => makePluginField(field)),
+      }))
+      const reimported = service.parseZip(new AdmZip(exported), 'weather')
+
+      expect(reimported.fields[0].options).toEqual(expectedOptions)
+    })
+
+    it('imports a field of a type Kuroshiro has no control for, and one with no type at all', async () => {
+      const settings = {
+        name: 'Odd Fields',
+        strategy: 'polling',
+        polling_url: 'https://api.example.com',
+        custom_fields: [
+          { keyname: 'when', field_type: 'time_zone', name: 'Time zone' },
+          { keyname: 'bare' },
+        ],
+      }
+
+      const result = await new PluginImporterService().importFromRecipeArchive(buildFlatRecipeArchive(settings), '1')
+
+      expect(result.fields.map(field => [field.keyname, field.fieldType, field.name])).toEqual([
+        ['when', 'time_zone', 'Time zone'],
+        ['bare', 'string', 'bare'],
+      ])
     })
 
     it('rejects an OAuth-enabled recipe with a clear error', async () => {

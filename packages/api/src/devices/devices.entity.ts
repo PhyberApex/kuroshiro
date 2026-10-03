@@ -1,6 +1,7 @@
 import type { Relation } from 'typeorm'
 import type { LogEntry } from '../logs/logs.entity.js'
 import type { Screen } from '../screens/screens.entity.js'
+import type { LastServedFallback, LastServedKind, LastServedReason } from './last-served.js'
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm'
 import { DeviceModel } from '../device-models/entities/device-model.entity.js'
 import { Palette } from '../device-models/entities/palette.entity.js'
@@ -89,8 +90,31 @@ export class Device {
   @JoinColumn({ name: 'targetFirmwareId' })
   targetFirmware?: Firmware | null
 
-  @Column('timestamptz', { default: new Date() })
-  lastSeen: Date
+  /** `null` until the Device's first `/display` poll. */
+  @Column('timestamptz', { nullable: true })
+  lastSeen?: Date | null
+
+  @Column('timestamptz', { nullable: true })
+  lastServedAt?: Date | null
+
+  @Column('text', { nullable: true })
+  lastServedKind?: LastServedKind | null
+
+  /** The Screen served, or the one that could not be rendered when the error Fallback Screen was served for it. */
+  @Column('uuid', { nullable: true })
+  lastServedScreenId?: string | null
+
+  @Column('text', { nullable: true })
+  lastServedFallback?: LastServedFallback | null
+
+  @Column('text', { nullable: true })
+  lastServedReason?: LastServedReason | null
+
+  @Column('int', { nullable: true })
+  lastServedRefreshRate?: number | null
+
+  @Column('text', { nullable: true })
+  lastServedImagePath?: string | null
 
   @OneToMany('Screen', (screen: Screen) => screen.device)
   screens: Relation<Screen[]>

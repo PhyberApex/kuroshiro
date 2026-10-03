@@ -2,7 +2,6 @@ import type { DevicePlugin } from './device-plugin.entity.js'
 import type { PluginDataSource } from './plugin-data-source.entity.js'
 import type { PluginField } from './plugin-field.entity.js'
 import type { PluginTemplate } from './plugin-template.entity.js'
-import type { PluginVariable } from './plugin-variable.entity.js'
 import { Column, CreateDateColumn, Entity, Index, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
 
 export const PLUGIN_KINDS = ['Poll', 'Webhook'] as const
@@ -80,13 +79,4 @@ export class Plugin {
 
   @OneToMany('PluginField', 'plugin')
   fields: PluginField[]
-
-  @OneToMany('PluginVariable', 'plugin')
-  variables: PluginVariable[]
-}
-
-export type DevicePluginView = Plugin & {
-  _devicePluginId: string
-  _isActive: boolean
-  _order: number
 }

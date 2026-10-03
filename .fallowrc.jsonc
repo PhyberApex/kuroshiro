@@ -3,7 +3,17 @@
   "workspaces": {
     "patterns": ["packages/*"]
   },
-  // pg is TypeORM's postgres driver, loaded reflectively at runtime; jiti is what ESLint uses to load packages/ui/eslint.config.ts
+  // packages/ui is the old admin UI, kept on disk as a read-only reference and outside the pnpm workspace
+  "ignorePatterns": ["packages/ui/**"],
+  // What Vitest starts in packages/ui-next beyond its default config: the screenshot run, the real-API suite and its global setup
+  "entry": [
+    "packages/ui-next/vitest.screenshots.config.ts",
+    "packages/ui-next/src/**/*.shots.ts",
+    "packages/ui-next/real-api/globalSetup.ts"
+  ],
+  // Gallery sections are collected with import.meta.glob, and the browser projects name their setup file as a string in vitest.browser.ts
+  "dynamicallyLoaded": ["packages/ui-next/src/**/*.gallery.vue", "packages/ui-next/src/testing/setup.ts"],
+  // pg is TypeORM's postgres driver, loaded reflectively at runtime; jiti is what ESLint uses to load packages/ui-next/eslint.config.ts
   "ignoreDependencies": ["pg", "jiti"],
   "overrides": [
     {
@@ -17,6 +27,7 @@
     "ignore": ["packages/api/src/migrations/**", "packages/api/src/device-models/data/trmnl-snapshot.ts"]
   },
   "health": {
-    "ignore": ["**/__test__/**", "**/*.spec.ts", "packages/api/src/migrations/**", "packages/api/src/device-models/data/trmnl-snapshot.ts"]
+    // packages/ui-next/real-api is test code throughout: the suite's specs and the environment its global setup starts
+    "ignore": ["**/__test__/**", "**/*.spec.ts", "packages/ui-next/real-api/**", "packages/api/src/migrations/**", "packages/api/src/device-models/data/trmnl-snapshot.ts"]
   }
 }

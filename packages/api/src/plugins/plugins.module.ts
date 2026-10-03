@@ -1,22 +1,25 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { TypeOrmModule } from '@nestjs/typeorm'
+import { Device } from '../devices/devices.entity.js'
 import { Screen } from '../screens/screens.entity.js'
 import { DevicePlugin } from './entities/device-plugin.entity.js'
 import { PluginDataSource } from './entities/plugin-data-source.entity.js'
 import { PluginFieldValue } from './entities/plugin-field-value.entity.js'
 import { PluginField } from './entities/plugin-field.entity.js'
 import { PluginTemplate } from './entities/plugin-template.entity.js'
-import { PluginVariable } from './entities/plugin-variable.entity.js'
 import { Plugin } from './entities/plugin.entity.js'
 import { WebhookPluginGuard } from './guards/webhook-plugin.guard.js'
 import { PluginsController } from './plugins.controller.js'
 import { PluginsService } from './plugins.service.js'
 import { DataSourceFetchOutcomeService } from './services/data-source-fetch-outcome.service.js'
+import { PluginAssignmentsService } from './services/plugin-assignments.service.js'
 import { PluginDataFetcherService } from './services/plugin-data-fetcher.service.js'
 import { PluginDataResolverService } from './services/plugin-data-resolver.service.js'
 import { PluginExporterService } from './services/plugin-exporter.service.js'
+import { PluginFieldValuesService } from './services/plugin-field-values.service.js'
 import { PluginImporterService } from './services/plugin-importer.service.js'
+import { PluginRefreshService } from './services/plugin-refresh.service.js'
 import { PluginRenderCacheService } from './services/plugin-render-cache.service.js'
 import { PluginRendererService } from './services/plugin-renderer.service.js'
 import { PluginSchedulerService } from './services/plugin-scheduler.service.js'
@@ -36,13 +39,14 @@ import { WebhookIngestController } from './webhook-ingest.controller.js'
       PluginTemplate,
       PluginField,
       PluginFieldValue,
-      PluginVariable,
       Screen,
+      Device,
     ]),
   ],
   controllers: [PluginsController, WebhookIngestController],
   providers: [
     PluginsService,
+    PluginAssignmentsService,
     DataSourceFetchOutcomeService,
     PluginDataFetcherService,
     PluginDataResolverService,
@@ -53,10 +57,12 @@ import { WebhookIngestController } from './webhook-ingest.controller.js'
     PluginTransformService,
     PluginRenderCacheService,
     PluginTemplateContextService,
+    PluginFieldValuesService,
+    PluginRefreshService,
     RecipeUpdateService,
     WebhookIngestService,
     WebhookPluginGuard,
   ],
-  exports: [PluginsService, PluginSchedulerService, PluginDataFetcherService, PluginDataResolverService, PluginRendererService, PluginTransformService, PluginRenderCacheService, PluginTemplateContextService, PluginImporterService, PluginExporterService],
+  exports: [PluginsService, PluginAssignmentsService, PluginSchedulerService, PluginDataFetcherService, PluginDataResolverService, PluginRendererService, PluginTransformService, PluginRenderCacheService, PluginTemplateContextService, PluginImporterService, PluginExporterService, PluginFieldValuesService],
 })
 export class PluginsModule {}

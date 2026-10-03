@@ -1,14 +1,14 @@
 import type { Response } from 'express'
-import { Body, Controller, Delete, Get, Param, Patch, Post, Res, UploadedFile, UseInterceptors, UsePipes, ValidationPipe } from '@nestjs/common'
-import { FileInterceptor } from '@nestjs/platform-express'
+import { Body, Controller, Delete, Get, Param, Patch, Post, Res, UploadedFile, UseInterceptors } from '@nestjs/common'
 import { diskStorage } from 'multer'
+import { LimitedFileInterceptor } from '../uploads/limited-file-interceptor.js'
+import { UPLOAD_LIMITS } from '../uploads/upload-limits.js'
 import { ApplyRecipeUpdateDto } from './dto/apply-recipe-update.dto.js'
-import { AssignPluginToDeviceDto } from './dto/assign-plugin-to-device.dto.js'
 import { CreatePluginDto } from './dto/create-plugin.dto.js'
 import { PreviewPluginDto } from './dto/preview-plugin.dto.js'
-import { UpdateDeviceAssignmentDto } from './dto/update-device-assignment.dto.js'
 import { UpdatePluginDto } from './dto/update-plugin.dto.js'
 import { PluginsService } from './plugins.service.js'
+import { PluginAssignmentsService } from './services/plugin-assignments.service.js'
 import { PluginExporterService } from './services/plugin-exporter.service.js'
 import { ParsedPlugin, PluginImporterService } from './services/plugin-importer.service.js'
 import { RecipeUpdateService } from './services/recipe-update.service.js'
@@ -17,15 +17,15 @@ import { RecipeUpdateService } from './services/recipe-update.service.js'
 export class PluginsController {
   constructor(
     private readonly pluginsService: PluginsService,
+    private readonly assignments: PluginAssignmentsService,
     private readonly importerService: PluginImporterService,
     private readonly exporterService: PluginExporterService,
     private readonly recipeUpdateService: RecipeUpdateService,
   ) {}
 
   @Post('preview')
-  @UsePipes(new ValidationPipe({ transform: true }))
   async preview(@Body() previewData: PreviewPluginDto) {
-    return this.pluginsService.preview(previewData.sources, previewData.template, previewData.fieldValues)
+    return this.pluginsService.preview(previewData)
   }
 
   @Get()
@@ -38,19 +38,12 @@ export class PluginsController {
     return this.pluginsService.findById(id)
   }
 
-  @Get('device/:deviceId')
-  async findByDevice(@Param('deviceId') deviceId: string) {
-    return this.pluginsService.findByDevice(deviceId)
-  }
-
   @Post()
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   async create(@Body() createPluginDto: CreatePluginDto) {
     return this.pluginsService.create(createPluginDto)
   }
 
   @Patch(':id')
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   async update(@Param('id') id: string, @Body() updatePluginDto: UpdatePluginDto) {
     return this.pluginsService.update(id, updatePluginDto)
   }
@@ -66,7 +59,6 @@ export class PluginsController {
   }
 
   @Post(':id/recipe-update/apply')
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   async applyRecipeUpdate(@Param('id') id: string, @Body() applyDto: ApplyRecipeUpdateDto) {
     return this.recipeUpdateService.applyUpdate(id, applyDto)
   }
@@ -89,7 +81,7 @@ export class PluginsController {
 
   @Post('import')
   @UseInterceptors(
-    FileInterceptor('file', {
+    LimitedFileInterceptor('file', UPLOAD_LIMITS.pluginImportBytes, {
       storage: diskStorage({
         destination: './uploads',
         filename: (req, file, cb) => {
@@ -139,10 +131,8 @@ export class PluginsController {
 
     const plugin = await this.pluginsService.create(createDto)
 
-    // If deviceId provided, auto-assign to that device
-    if (deviceId) {
-      await this.pluginsService.assignToDevice(plugin.id, { deviceId, isActive: true, order: 0 })
-    }
+    if (deviceId)
+      await this.assignments.assign(plugin.id, deviceId)
 
     // Return plugin with security warning if transform.js exists
     return {
@@ -163,22 +153,5 @@ export class PluginsController {
     res.setHeader('Content-Type', 'application/zip')
     res.setHeader('Content-Disposition', `attachment; filename="${plugin.name}.trmnlp.zip"`)
     res.send(zipBuffer)
-  }
-
-  @Post(':id/assign')
-  async assignToDevice(@Param('id') id: string, @Body() assignData: AssignPluginToDeviceDto) {
-    return this.pluginsService.assignToDevice(id, assignData)
-  }
-
-  @Delete(':id/unassign/:deviceId')
-  async unassignFromDevice(@Param('id') id: string, @Param('deviceId') deviceId: string) {
-    const success = await this.pluginsService.unassignFromDevice(id, deviceId)
-    return { success }
-  }
-
-  @Patch('device-assignment/:devicePluginId')
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-  async updateDeviceAssignment(@Param('devicePluginId') devicePluginId: string, @Body() updates: UpdateDeviceAssignmentDto) {
-    return this.pluginsService.updateDeviceAssignment(devicePluginId, updates)
   }
 }

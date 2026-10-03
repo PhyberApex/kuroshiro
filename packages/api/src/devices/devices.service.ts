@@ -23,10 +23,6 @@ export class DevicesService {
     private screensService: ScreensService,
   ) {}
 
-  async findAll(): Promise<Device[]> {
-    return this.deviceRepository.find({ order: { friendlyId: 'ASC' } })
-  }
-
   async findById(id: string): Promise<Device | null> {
     return this.deviceRepository.findOneBy({ id })
   }

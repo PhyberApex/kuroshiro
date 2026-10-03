@@ -1,34 +1,34 @@
 import type { FindOptionsRelations } from 'typeorm'
 import type { MashupSlot } from '../mashup/entities/mashup-slot.entity.js'
-import type { AssignPluginToDeviceDto } from './dto/assign-plugin-to-device.dto.js'
 import type { CreatePluginDto } from './dto/create-plugin.dto.js'
 import type { PluginDataSourceDto } from './dto/plugin-data-source.dto.js'
 import type { PluginFieldDto } from './dto/plugin-field.dto.js'
 import type { PluginTemplateDto } from './dto/plugin-template.dto.js'
-import type { PreviewSourceDto } from './dto/preview-plugin.dto.js'
-import type { UpdateDeviceAssignmentDto } from './dto/update-device-assignment.dto.js'
+import type { PreviewPluginDto } from './dto/preview-plugin.dto.js'
 import type { UpdatePluginDto } from './dto/update-plugin.dto.js'
-import type { DevicePluginView, MergeStrategy, PluginKind } from './entities/plugin.entity.js'
+import type { MergeStrategy, PluginKind } from './entities/plugin.entity.js'
 import type { PluginKindFields } from './plugin-kind-fields.js'
+import type { PluginWithFieldValues } from './services/plugin-field-values.service.js'
 import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Screen } from '../screens/screens.entity.js'
 import generateApikey from '../utils/generateApikey.js'
-import { DevicePlugin } from './entities/device-plugin.entity.js'
 import { PluginDataSource } from './entities/plugin-data-source.entity.js'
 import { PluginField } from './entities/plugin-field.entity.js'
 import { PluginTemplate } from './entities/plugin-template.entity.js'
-import { PluginVariable } from './entities/plugin-variable.entity.js'
 import { Plugin } from './entities/plugin.entity.js'
 import { dataSourceModeViolation } from './plugin-data-source-mode.js'
 import { pluginKindFieldViolation } from './plugin-kind-fields.js'
 import { PluginDataResolverService } from './services/plugin-data-resolver.service.js'
+import { PluginFieldValuesService } from './services/plugin-field-values.service.js'
+import { PluginRefreshService } from './services/plugin-refresh.service.js'
 import { PluginRenderCacheService } from './services/plugin-render-cache.service.js'
 import { PluginRendererService } from './services/plugin-renderer.service.js'
 import { PluginSchedulerService } from './services/plugin-scheduler.service.js'
+import { PluginTemplateContextService } from './services/plugin-template-context.service.js'
 
-type UpdateBasicFields = Omit<UpdatePluginDto, 'dataSources' | 'templates' | 'fields' | 'webhookToken'>
+type UpdateBasicFields = Omit<UpdatePluginDto, 'dataSources' | 'templates' | 'fields' | 'fieldValues' | 'webhookToken'>
 
 interface MergeFields {
   mergeStrategy: MergeStrategy | null | undefined
@@ -44,8 +44,6 @@ export class PluginsService implements OnModuleInit {
   constructor(
     @InjectRepository(Plugin)
     private readonly pluginRepository: Repository<Plugin>,
-    @InjectRepository(DevicePlugin)
-    private readonly devicePluginRepository: Repository<DevicePlugin>,
     @InjectRepository(Screen)
     private readonly screenRepository: Repository<Screen>,
     @InjectRepository(PluginDataSource)
@@ -54,12 +52,13 @@ export class PluginsService implements OnModuleInit {
     private readonly templateRepository: Repository<PluginTemplate>,
     @InjectRepository(PluginField)
     private readonly fieldRepository: Repository<PluginField>,
-    @InjectRepository(PluginVariable)
-    private readonly variableRepository: Repository<PluginVariable>,
     private readonly pluginDataResolver: PluginDataResolverService,
     private readonly renderer: PluginRendererService,
     private readonly scheduler: PluginSchedulerService,
     private readonly renderCache: PluginRenderCacheService,
+    private readonly fieldValues: PluginFieldValuesService,
+    private readonly pluginRefresh: PluginRefreshService,
+    private readonly templateContext: PluginTemplateContextService,
   ) {
     // Lazy injection to avoid circular dependency with MashupModule
     setTimeout(() => {
@@ -90,106 +89,34 @@ export class PluginsService implements OnModuleInit {
     }
   }
 
-  async findAll(): Promise<Plugin[]> {
-    return this.pluginRepository.find({
+  async findAll(): Promise<PluginWithFieldValues[]> {
+    const plugins = await this.pluginRepository.find({
       relations: { dataSources: true, templates: true, fields: true, deviceAssignments: { device: true } },
       order: { name: 'ASC' },
     })
+    return this.fieldValues.attach(plugins)
   }
 
-  async findById(id: string): Promise<Plugin | null> {
-    return this.pluginRepository.findOne({
+  async findById(id: string): Promise<PluginWithFieldValues | null> {
+    const plugin = await this.pluginRepository.findOne({
       where: { id },
       relations: { dataSources: true, templates: true, fields: true, deviceAssignments: { device: true } },
     })
+    return plugin && this.withFieldValues(plugin)
   }
 
-  async findByDevice(deviceId: string): Promise<DevicePluginView[]> {
-    const devicePlugins = await this.devicePluginRepository.find({
-      where: { device: { id: deviceId } },
-      relations: { plugin: { dataSources: true, templates: true, fields: true } },
-      order: { order: 'ASC' },
-    })
-
-    return devicePlugins.map(dp => ({
-      ...dp.plugin,
-      _devicePluginId: dp.id,
-      _isActive: dp.isActive,
-      _order: dp.order,
-    }))
+  private async withFieldValues(plugin: Plugin): Promise<PluginWithFieldValues> {
+    const [withValues] = await this.fieldValues.attach([plugin])
+    return withValues
   }
 
-  async assignToDevice(pluginId: string, assignData: AssignPluginToDeviceDto): Promise<DevicePlugin> {
-    const existing = await this.devicePluginRepository.findOne({
-      where: { plugin: { id: pluginId }, device: { id: assignData.deviceId } },
-    })
-    if (existing) {
-      return existing
-    }
-
-    const devicePlugin = this.devicePluginRepository.create({
-      plugin: { id: pluginId },
-      device: { id: assignData.deviceId },
-      isActive: assignData.isActive ?? true,
-      order: assignData.order ?? 0,
-    })
-    const saved = await this.devicePluginRepository.save(devicePlugin)
-
-    // Create a Screen entity for this plugin assignment
-    const maxOrder = await this.screenRepository.maximum('order', { device: { id: assignData.deviceId } }) || 0
-    const screen = this.screenRepository.create({
-      type: 'plugin',
-      device: { id: assignData.deviceId },
-      plugin: { id: pluginId },
-      devicePluginId: saved.id,
-      isActive: assignData.isActive ?? true,
-      order: maxOrder + 1,
-      generatedAt: new Date(),
-      fetchManual: false,
-    })
-    await this.screenRepository.save(screen)
-
-    return saved
-  }
-
-  async unassignFromDevice(pluginId: string, deviceId: string): Promise<boolean> {
-    const devicePlugin = await this.devicePluginRepository.findOne({
-      where: { plugin: { id: pluginId }, device: { id: deviceId } },
-    })
-    if (!devicePlugin)
-      return false
-
-    // Delete associated Screen
-    await this.screenRepository.delete({ devicePluginId: devicePlugin.id })
-
-    await this.devicePluginRepository.remove(devicePlugin)
-    return true
-  }
-
-  async updateDeviceAssignment(devicePluginId: string, updates: UpdateDeviceAssignmentDto): Promise<DevicePlugin | null> {
-    const devicePlugin = await this.devicePluginRepository.findOneBy({ id: devicePluginId })
-    if (!devicePlugin)
-      return null
-    Object.assign(devicePlugin, updates)
-    const saved = await this.devicePluginRepository.save(devicePlugin)
-
-    // Update associated Screen's isActive state
-    if (updates.isActive !== undefined) {
-      await this.screenRepository.update(
-        { devicePluginId },
-        { isActive: updates.isActive },
-      )
-    }
-
-    return saved
-  }
-
-  async create(pluginData: CreatePluginDto): Promise<Plugin> {
-    const { dataSources, templates, fields, ...basicFields } = pluginData
+  async create(pluginData: CreatePluginDto): Promise<PluginWithFieldValues> {
+    const { dataSources, templates, fields, fieldValues, ...basicFields } = pluginData
 
     this.logger.debug(`Creating plugin with data: ${JSON.stringify({ dataSources, templates, fields, basicFields })}`)
 
     this.validateNewChildren(dataSources, fields)
+    this.fieldValues.assertWritable(fields, fieldValues)
 
     const kind = basicFields.kind || 'Poll'
 
@@ -209,32 +136,22 @@ export class PluginsService implements OnModuleInit {
     await this.createFields(savedPlugin, fields)
 
     const created = await this.reloadPlugin(savedPlugin.id)
+    await this.fieldValues.write(created, fieldValues)
     this.scheduleIfReady(created, `Scheduled new plugin: ${created.name}`)
 
-    return created
+    return this.withFieldValues(created)
   }
 
-  async duplicate(id: string): Promise<Plugin> {
-    const source = await this.pluginRepository.findOne({
-      where: { id },
-      relations: { dataSources: true, templates: true, fields: true, variables: true },
-    })
+  async duplicate(id: string): Promise<PluginWithFieldValues> {
+    const source = await this.findPluginWithRelations(id, { dataSources: true, templates: true, fields: true })
     if (!source) {
       throw new NotFoundException(`Plugin ${id} not found`)
     }
 
-    const duplicate = await this.create(this.buildDuplicateDto(source))
-
-    if (source.variables && source.variables.length > 0) {
-      await this.cloneVariables(duplicate.id, source.variables)
-    }
-
-    const reloaded = await this.findPluginWithRelations(duplicate.id, { dataSources: true, templates: true, fields: true, variables: true })
-    if (!reloaded) {
-      throw new Error(`Failed to load newly duplicated plugin: ${duplicate.id}`)
-    }
-
-    return reloaded
+    return this.create({
+      ...this.buildDuplicateDto(source),
+      fieldValues: await this.fieldValues.storedFor(id),
+    })
   }
 
   private buildDuplicateDto(source: Plugin): CreatePluginDto {
@@ -268,21 +185,10 @@ export class PluginsService implements OnModuleInit {
         name: f.name,
         description: f.description ?? undefined,
         defaultValue: f.defaultValue ?? undefined,
+        options: f.options,
         required: f.required,
         order: f.order,
       })),
-    }
-  }
-
-  private async cloneVariables(pluginId: string, variables: PluginVariable[]): Promise<void> {
-    for (const variable of variables) {
-      const clone = this.variableRepository.create({
-        key: variable.key,
-        value: variable.value,
-        isSecret: variable.isSecret,
-        plugin: { id: pluginId } as Plugin,
-      })
-      await this.variableRepository.save(clone)
     }
   }
 
@@ -348,22 +254,27 @@ export class PluginsService implements OnModuleInit {
       keyname: fieldData.keyname,
       fieldType: fieldData.fieldType || 'string',
       name: fieldData.name,
-      description: fieldData.description,
-      defaultValue: fieldData.defaultValue,
+      description: fieldData.description ?? null,
+      defaultValue: fieldData.defaultValue ?? null,
+      options: fieldData.options ?? null,
       required: fieldData.required || false,
       order: fieldData.order || 0,
     }
   }
 
-  private async persistFields(plugin: Plugin, fields: PluginFieldDto[]): Promise<void> {
+  // An existing Plugin Field of the same keyname is updated in place, so it
+  // keeps its id and with it its Field Value (ADR-0032).
+  private async persistFields(plugin: Plugin, fields: PluginFieldDto[], existingFields: PluginField[] = []): Promise<PluginField[]> {
+    const saved: PluginField[] = []
     for (const fieldData of fields) {
-      const newField = this.fieldRepository.create({
-        ...this.buildFieldFields(fieldData),
-        plugin,
-      })
-      await this.fieldRepository.save(newField)
-      this.logger.debug(`Saved field: ${newField.keyname}`)
+      const existing = existingFields.find(field => field.keyname === fieldData.keyname)
+      const field = existing
+        ? Object.assign(existing, this.buildFieldFields(fieldData))
+        : this.fieldRepository.create({ ...this.buildFieldFields(fieldData), plugin })
+      saved.push(await this.fieldRepository.save(field))
+      this.logger.debug(`Saved field: ${field.keyname}`)
     }
+    return saved
   }
 
   private async findPluginWithRelations(id: string, relations: FindOptionsRelations<Plugin>): Promise<Plugin | null> {
@@ -383,6 +294,10 @@ export class PluginsService implements OnModuleInit {
     return !!(plugin.dataSources && plugin.dataSources.length > 0 && plugin.templates && plugin.templates.length > 0)
   }
 
+  private isRenderable(plugin: Plugin): boolean {
+    return plugin.kind === 'Webhook' ? !!plugin.templates?.length : this.isSchedulable(plugin)
+  }
+
   private scheduleIfReady(plugin: Plugin, message: string): void {
     if (this.isSchedulable(plugin)) {
       this.scheduler.schedulePlugin(plugin)
@@ -390,7 +305,7 @@ export class PluginsService implements OnModuleInit {
     }
   }
 
-  async update(id: string, pluginData: UpdatePluginDto): Promise<Plugin | null> {
+  async update(id: string, pluginData: UpdatePluginDto): Promise<PluginWithFieldValues | null> {
     const plugin = await this.pluginRepository.findOne({
       where: { id },
       relations: { dataSources: true, templates: true, fields: true },
@@ -398,11 +313,12 @@ export class PluginsService implements OnModuleInit {
     if (!plugin)
       return null
 
-    const { dataSources, templates, fields, webhookToken, ...rawBasicFields } = pluginData
+    const { dataSources, templates, fields, fieldValues, webhookToken, ...rawBasicFields } = pluginData
     const basicFields = this.dropUnsetFields(rawBasicFields)
 
     this.assertKindUnchanged(basicFields, plugin)
     this.validateUpdatedChildren(plugin, dataSources, fields)
+    this.fieldValues.assertWritable(fields ?? plugin.fields, fieldValues)
 
     const mergeFields = this.resolveMergeFields(basicFields, plugin)
 
@@ -423,14 +339,43 @@ export class PluginsService implements OnModuleInit {
     await this.replaceFields(plugin, fields)
 
     const updated = await this.pluginRepository.save(plugin)
+    const fieldValuesChanged = await this.fieldValues.write(updated, fieldValues)
 
+    await this.refreshRendersAfterUpdate(id, {
+      reschedule: dataSources !== undefined || !!templates,
+      rerender: fieldValuesChanged || Array.isArray(fields),
+    })
+
+    return this.withFieldValues(updated)
+  }
+
+  private async refreshRendersAfterUpdate(id: string, { reschedule, rerender }: { reschedule: boolean, rerender: boolean }): Promise<void> {
     await this.invalidateRenderCaches(id)
 
-    if (dataSources !== undefined || templates) {
+    if (reschedule) {
       await this.rescheduleAfterUpdate(id)
     }
 
-    return updated
+    if (rerender) {
+      await this.refreshNow(id)
+    }
+  }
+
+  // A changed Field Value (or default) changes what is fetched and rendered,
+  // so the cache is rebuilt at once rather than at the next scheduler tick.
+  // The caches were invalidated before this runs, so a failure here leaves
+  // the next poll to render on demand.
+  private async refreshNow(id: string): Promise<void> {
+    const plugin = await this.findPluginWithRelations(id, { dataSources: true, templates: true })
+    if (!plugin || !this.isRenderable(plugin))
+      return
+
+    try {
+      await this.pluginRefresh.refresh(plugin)
+    }
+    catch (error) {
+      this.logger.error(`Failed to refresh plugin ${id} after its Field Values changed`, error)
+    }
   }
 
   // class-transformer's plainToInstance (the real ValidationPipe path) gives every declared
@@ -514,13 +459,16 @@ export class PluginsService implements OnModuleInit {
     if (!fields || !Array.isArray(fields))
       return
 
-    if (plugin.fields && plugin.fields.length > 0) {
-      await this.fieldRepository.remove(plugin.fields)
+    const existingFields = plugin.fields ?? []
+    const removed = existingFields.filter(existing => !fields.some(field => field.keyname === existing.keyname))
+    if (removed.length > 0) {
+      await this.fieldRepository.remove(removed)
     }
-    if (fields.length > 0) {
-      this.logger.debug(`Updating ${fields.length} fields`)
-      await this.persistFields(plugin, fields)
-    }
+
+    this.logger.debug(`Updating ${fields.length} fields`)
+    // Reassigned so the Plugin save that follows sees exactly the rows that
+    // exist: a row missing from a loaded relation array is detached by TypeORM.
+    plugin.fields = await this.persistFields(plugin, fields, existingFields)
   }
 
   // Public: also called directly by RecipeUpdateService, whose Recipe Update
@@ -676,30 +624,9 @@ export class PluginsService implements OnModuleInit {
     return true
   }
 
-  async preview(sources: PreviewSourceDto[], template?: string, fieldValues?: Record<string, string>): Promise<{ html: string, data: Record<string, unknown> }> {
-    // Build template context with trmnl system variables and plugin field values
-    const templateContext: Record<string, unknown> = {
-      trmnl: {
-        system: {
-          timestamp_utc: Math.floor(Date.now() / 1000),
-        },
-        plugin_settings: {
-          instance_name: 'Preview',
-          strategy: 'polling',
-          dark_mode: 'no',
-          no_screen_padding: 'no',
-        },
-        user: {
-          id: 'preview-user',
-          locale: 'en',
-        },
-      },
-    }
-
-    // Add plugin field values to root context
-    if (fieldValues) {
-      Object.assign(templateContext, fieldValues)
-    }
+  async preview({ sources, template, fieldValues, pluginId }: PreviewPluginDto): Promise<{ html: string, data: Record<string, unknown> }> {
+    const savedFieldValues = pluginId ? await this.fieldValues.resolveFor(pluginId, fieldValues) : {}
+    const templateContext = this.templateContext.buildFrom('Preview', { ...fieldValues, ...savedFieldValues }, [])
 
     const data = await this.pluginDataResolver.resolveAll(sources || [], templateContext)
     const templateData: Record<string, unknown> = { ...templateContext, ...data }

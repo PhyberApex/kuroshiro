@@ -33,7 +33,7 @@ The one Screen per Device currently being shown (`isActive: true`). Not a fixed 
 _Avoid_: Selected screen
 
 **Current Screen**:
-What a Device is showing right now, as far as the server knows — the Active Screen's image, a Fallback Screen, or on a mirrored Device the mirrored image. Read through `/current_screen`, which never advances the Rotation, unlike the `/display` poll a Device itself makes.
+What a Device is showing right now, as far as the server knows — the Active Screen's image, a Fallback Screen, or on a mirrored Device the mirrored image. A Device reads it through `/current_screen`, which never advances the Rotation, unlike the `/display` poll a Device itself makes. The admin API reads it from what the Device's last `/display` poll was answered with, which the server records on the Device (the kind, the Screen, the Fallback Screen and its reason, the refresh rate given); a Device that never polled shows the welcome Fallback Screen.
 _Avoid_: Active Screen (the Screen whose turn it is — the Current Screen is the image, and may not come from a Screen at all), on the panel (say "on the Device"), preview
 
 **Rotation**:
@@ -133,11 +133,11 @@ A Configuration Archive whose secrets — Data Source header values, Device API 
 _Avoid_: Sanitized, scrubbed, anonymized (nothing but credentials is removed)
 
 **Redaction Sentinel**:
-The one fixed string Configuration Export writes in place of every redacted secret and Configuration Import recognises in any redactable field. On import it means "keep the value the target already has"; where the target has none, the field falls back (header dropped, Variable emptied, mirror API key unset, Device API key or Webhook Token freshly generated) and the import summary carries a warning for it.
+The one fixed string Configuration Export writes in place of every redacted secret and Configuration Import recognises in any redactable field. On import it means "keep the value the target already has"; where the target has none, the field falls back (header dropped, password Field Value left unset, mirror API key unset, Device API key or Webhook Token freshly generated) and the import summary carries a warning for it.
 _Avoid_: Placeholder, mask, `***`
 
 **Configuration Import**:
-Restoring a Configuration Archive onto an instance: an upsert of every record by its exported `id`, so re-importing the same archive is idempotent. Devices additionally re-attach by `mac` when an existing row has it. Refuses an archive whose `schemaVersion` differs from the running instance's. Designed for a fresh instance; merging onto an instance that already holds unrelated content is not defined.
+Restoring a Configuration Archive onto an instance: an upsert of every record by its exported `id`, so re-importing the same archive is idempotent. Devices additionally re-attach by `mac` when an existing row has it. Refuses an archive whose `schemaVersion` is neither the running instance's nor the one before it; from the previous version it ignores Plugin Variables and per-Assignment Field Values, with a warning when the archive held any. Designed for a fresh instance; merging onto an instance that already holds unrelated content is not defined.
 _Avoid_: Restore (bare, in prose — reserve for the ADR's "restore targets a fresh instance" framing), sync
 
 **Special Function**:

@@ -1,18 +1,23 @@
-import { ArrayUnique, IsArray, IsIn, IsString } from 'class-validator'
+import type { CreateMashupInput, MashupLayout } from 'kuroshiro-shared'
+import { Transform } from 'class-transformer'
+import { ArrayUnique, IsArray, IsIn, IsNotEmpty, IsString, IsUUID } from 'class-validator'
+import { trimmed } from '../../utils/trimmed.js'
+import { MASHUP_LAYOUT_IDS } from '../constants/layouts.js'
 
-export class CreateMashupDto {
-  @IsString()
+export class CreateMashupDto implements CreateMashupInput {
+  @IsUUID()
   deviceId: string
 
+  @Transform(trimmed)
   @IsString()
-  filename: string
+  @IsNotEmpty()
+  name: string
 
-  @IsString()
-  @IsIn(['1Lx1R', '1Tx1B', '1Lx2R', '2Lx1R', '2Tx1B', '1Tx2B', '2x2'])
-  layout: string
+  @IsIn(MASHUP_LAYOUT_IDS)
+  layout: MashupLayout
 
   @IsArray()
-  @IsString({ each: true })
+  @IsUUID(undefined, { each: true })
   @ArrayUnique()
   pluginIds: string[]
 }

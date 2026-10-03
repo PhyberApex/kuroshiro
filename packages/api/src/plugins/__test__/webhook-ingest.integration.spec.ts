@@ -9,17 +9,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MashupSlot as MashupSlotEntity } from '../../mashup/entities/mashup-slot.entity.js'
 import { Screen as ScreenEntity } from '../../screens/screens.entity.js'
 import { makeMashupConfiguration, makeMashupSlot, makePlugin, makePluginTemplate, makeScreen } from '../../test/fixtures.js'
+import { createMockPluginFieldValuesService } from '../../test/mockPluginCollaborators.js'
 import { DevicePlugin } from '../entities/device-plugin.entity.js'
 import { PluginDataSource } from '../entities/plugin-data-source.entity.js'
 import { PluginField } from '../entities/plugin-field.entity.js'
 import { PluginTemplate } from '../entities/plugin-template.entity.js'
-import { PluginVariable } from '../entities/plugin-variable.entity.js'
 import { Plugin as PluginEntity } from '../entities/plugin.entity.js'
 import { PluginsService } from '../plugins.service.js'
+import { DataSourceFetchOutcomeService } from '../services/data-source-fetch-outcome.service.js'
 import { PluginDataResolverService } from '../services/plugin-data-resolver.service.js'
+import { PluginFieldValuesService } from '../services/plugin-field-values.service.js'
+import { PluginRefreshService } from '../services/plugin-refresh.service.js'
 import { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
 import { PluginRendererService } from '../services/plugin-renderer.service.js'
 import { PluginSchedulerService } from '../services/plugin-scheduler.service.js'
+import { PluginTemplateContextService } from '../services/plugin-template-context.service.js'
 import { WebhookIngestService } from '../services/webhook-ingest.service.js'
 
 function matches(entity: unknown, where: Record<string, unknown>): boolean {
@@ -90,13 +94,16 @@ describe('webhook ingest integration', () => {
         PluginRenderCacheService,
         PluginRendererService,
         PluginsService,
+        PluginRefreshService,
+        PluginTemplateContextService,
+        { provide: DataSourceFetchOutcomeService, useValue: {} },
         { provide: getRepositoryToken(PluginEntity), useValue: pluginRepo },
         { provide: getRepositoryToken(DevicePlugin), useValue: {} },
         { provide: getRepositoryToken(ScreenEntity), useValue: screenRepo },
         { provide: getRepositoryToken(PluginDataSource), useValue: {} },
         { provide: getRepositoryToken(PluginTemplate), useValue: {} },
         { provide: getRepositoryToken(PluginField), useValue: {} },
-        { provide: getRepositoryToken(PluginVariable), useValue: {} },
+        { provide: PluginFieldValuesService, useValue: createMockPluginFieldValuesService() },
         { provide: getRepositoryToken(MashupSlotEntity), useValue: mashupSlotRepo },
         { provide: PluginDataResolverService, useValue: {} },
         { provide: PluginSchedulerService, useValue: { schedulePlugin: vi.fn(), removeScheduledJob: vi.fn() } },

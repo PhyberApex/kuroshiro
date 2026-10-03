@@ -55,7 +55,7 @@ export class MashupRendererService {
       throw new Error('Plugin missing data sources or templates')
     }
 
-    const templateContext = this.pluginTemplateContext.build(plugin, sensors)
+    const templateContext = await this.pluginTemplateContext.build(plugin, sensors)
     const data = await this.pluginDataResolver.resolveAll(plugin.dataSources, templateContext)
 
     // Find template (prefer 'full' layout for now, could support size variants later)
