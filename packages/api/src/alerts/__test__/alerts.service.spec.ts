@@ -27,7 +27,7 @@ describe('alertsService', () => {
       // First call (active) resolves with `active`, second (resolved) resolves with `resolved`.
       alertRepo.find.mockResolvedValueOnce([active]).mockResolvedValueOnce([resolved])
 
-      const result = await service.list()
+      const result = await service.list({})
 
       expect(result.active).toEqual([{
         id: 'alert-active',
@@ -53,7 +53,7 @@ describe('alertsService', () => {
       const orphan = makeAlert({ id: 'alert-orphan', device: undefined })
       alertRepo.find.mockResolvedValueOnce([orphan]).mockResolvedValueOnce([])
 
-      const result = await service.list()
+      const result = await service.list({})
 
       expect(result.active).toEqual([])
     })
@@ -63,7 +63,7 @@ describe('alertsService', () => {
       const active = makeAlert({ id: 'alert-active', kind: 'data-source-fetch-failing', device: undefined, dataSource, details: { streak: 3, lastError: 'timeout' } })
       alertRepo.find.mockResolvedValueOnce([active]).mockResolvedValueOnce([])
 
-      const result = await service.list()
+      const result = await service.list({})
 
       expect(result.active).toEqual([{
         id: 'alert-active',
@@ -82,7 +82,7 @@ describe('alertsService', () => {
       const orphan = makeAlert({ id: 'alert-orphan', kind: 'data-source-fetch-failing', device: undefined, dataSource: undefined })
       alertRepo.find.mockResolvedValueOnce([orphan]).mockResolvedValueOnce([])
 
-      const result = await service.list()
+      const result = await service.list({})
 
       expect(result.active).toEqual([])
     })
@@ -92,7 +92,7 @@ describe('alertsService', () => {
       vi.useFakeTimers()
       vi.setSystemTime(now)
 
-      await service.list()
+      await service.list({})
 
       const resolvedCall = alertRepo.find.mock.calls[1]?.[0]
       expect(resolvedCall).toMatchObject({ take: 50 })
@@ -100,6 +100,24 @@ describe('alertsService', () => {
       expect(cutoff.toISOString()).toBe('2026-01-25T00:00:00.000Z')
 
       vi.useRealTimers()
+    })
+
+    it('restricts both queries to the named Device', async () => {
+      await service.list({ deviceId: 'device-1' })
+
+      expect(alertRepo.find.mock.calls.map(([options]) => options?.where)).toEqual([
+        expect.objectContaining({ device: { id: 'device-1' } }),
+        expect.objectContaining({ device: { id: 'device-1' } }),
+      ])
+    })
+
+    it('restricts both queries to the named Plugin\'s Data Sources', async () => {
+      await service.list({ pluginId: 'plugin-1' })
+
+      expect(alertRepo.find.mock.calls.map(([options]) => options?.where)).toEqual([
+        expect.objectContaining({ dataSource: { plugin: { id: 'plugin-1' } } }),
+        expect.objectContaining({ dataSource: { plugin: { id: 'plugin-1' } } }),
+      ])
     })
 
     it('uses an explicit resolvedSince over the default window', async () => {

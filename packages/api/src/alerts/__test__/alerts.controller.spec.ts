@@ -27,6 +27,14 @@ describe('alertsController', () => {
       expect(result).toBe(mockList)
     })
 
+    it('forwards the Device and Plugin filters', async () => {
+      vi.mocked(service.list).mockResolvedValue({ active: [], resolved: [] })
+
+      await controller.list({ deviceId: 'device-1', pluginId: 'plugin-1' })
+
+      expect(service.list).toHaveBeenCalledWith({ deviceId: 'device-1', pluginId: 'plugin-1' })
+    })
+
     it('calls service.list with an empty query when no query param is given', async () => {
       const mockList: AlertsList = { active: [], resolved: [] }
       vi.mocked(service.list).mockResolvedValue(mockList)

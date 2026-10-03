@@ -49,22 +49,24 @@ export class AlertsService {
    * Active Alerts (uncapped) plus resolved Alerts since `resolvedSince` (an ISO timestamp, default 7 days ago), capped at 50 after
    * filtering — both newest first. `deviceId` keeps one Device's Alerts, `pluginId` the fetch Alerts of one Plugin's Data Sources.
    */
-  async list({ deviceId, pluginId, resolvedSince }: ListAlertsQuery = {}): Promise<AlertsList> {
+  async list({ deviceId, pluginId, resolvedSince }: ListAlertsQuery): Promise<AlertsList> {
     const cutoff = resolvedSince ? new Date(resolvedSince) : new Date(Date.now() - DEFAULT_RESOLVED_WINDOW_MS)
-    const subject = {
+    const subjectFilter = {
       ...(deviceId && { device: { id: deviceId } }),
       ...(pluginId && { dataSource: { plugin: { id: pluginId } } }),
     }
 
+    const relations = { device: true, dataSource: { plugin: true } }
+
     const [active, resolved] = await Promise.all([
       this.alertRepository.find({
-        where: { ...subject, resolvedAt: IsNull() },
-        relations: { device: true, dataSource: { plugin: true } },
+        where: { ...subjectFilter, resolvedAt: IsNull() },
+        relations,
         order: { openedAt: 'DESC' },
       }),
       this.alertRepository.find({
-        where: { ...subject, resolvedAt: MoreThan(cutoff) },
-        relations: { device: true, dataSource: { plugin: true } },
+        where: { ...subjectFilter, resolvedAt: MoreThan(cutoff) },
+        relations,
         order: { resolvedAt: 'DESC' },
         take: RESOLVED_ALERTS_LIMIT,
       }),
