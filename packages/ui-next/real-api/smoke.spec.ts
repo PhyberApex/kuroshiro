@@ -1,4 +1,4 @@
-import type { DeviceSummary, InstanceSettingsResponse } from 'kuroshiro-shared'
+import type { DeviceSummary } from 'kuroshiro-shared'
 import type { Browser } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest'
@@ -15,23 +15,59 @@ describe('the built UI on the real API', () => {
 
   afterAll(() => browser.close())
 
-  it('loads in a browser and reads the admin API from the page', async () => {
+  it('opens the shell on a fresh Instance and lands on Connect a Device', async () => {
     const page = await browser.newPage()
     const failures: string[] = []
     page.on('pageerror', error => failures.push(error.message))
     page.on('requestfailed', request => failures.push(`${request.method()} ${request.url()}`))
 
     await page.goto(baseUrl)
-    await expect.poll(() => page.locator('#app > *').count()).toBeGreaterThan(0)
-    // Evaluated in the page, so the request resolves against the document base the way the UI's own requests do.
-    const settings = await page.evaluate<InstanceSettingsResponse>(
-      `fetch(new URL('api/settings', document.baseURI)).then(response => response.json())`,
-    )
+    const bar = page.getByRole('banner').getByRole('navigation', { name: 'Main' })
+    await bar.getByRole('link', { name: 'Connect a Device' }).and(page.locator('[aria-current="page"]')).waitFor()
 
-    expect(await page.title()).toBe('Kuroshiro')
-    expect(settings.lowBatteryPercent.override).toBeNull()
-    expect(settings.firmwareAutoUpdate.fallbackSource).toBe('default')
+    expect(new URL(page.url()).pathname).toBe('/connect')
+    expect(await bar.getByRole('link').allTextContents()).toEqual(['Connect a Device', 'Plugins', 'Instance'])
+    expect(await page.getByRole('link', { name: /firing/ }).count()).toBe(0)
+    expect(await page.getByText('This is the Kuroshiro demo.').count()).toBe(0)
     expect(failures).toEqual([])
+    await page.close()
+  })
+
+  it('opens a deep link, and names a Device in the bar once it has set itself up', async () => {
+    const device = await connectDevice(baseUrl, { mac: 'A4:C1:38:5F:0B:9D' })
+    const page = await browser.newPage()
+
+    await page.goto(new URL('instance/firmware', baseUrl).href)
+    const bar = page.getByRole('banner').getByRole('navigation', { name: 'Main' })
+    await bar.getByRole('link', { name: 'Instance' }).and(page.locator('[aria-current="page"]')).waitFor()
+    const devices = await (await fetch(new URL('api/devices', baseUrl))).json() as DeviceSummary[]
+    const listed = devices.find(summary => summary.friendlyId === device.setup.friendly_id)!
+
+    await bar.getByRole('link', { name: listed.name }).waitFor()
+    expect(await bar.getByRole('link', { name: listed.name }).getAttribute('href')).toBe(`/devices/${listed.id}`)
+    await page.close()
+  })
+
+  it('works under the prefix of an ingress proxy', async () => {
+    const prefix = '/api/hassio_ingress/kuroshiro'
+    const page = await browser.newPage({ extraHTTPHeaders: { 'X-Ingress-Path': prefix } })
+    const failures: string[] = []
+    page.on('pageerror', error => failures.push(error.message))
+    page.on('requestfailed', request => failures.push(`${request.method()} ${request.url()}`))
+    // The proxy strips its prefix before the request reaches Kuroshiro.
+    await page.route(`**${prefix}/**`, route => route.continue({ url: route.request().url().replace(prefix, '') }))
+
+    await page.goto(new URL(`${prefix}/plugins`, baseUrl).href)
+    const bar = page.getByRole('banner').getByRole('navigation', { name: 'Main' })
+    await bar.getByRole('link', { name: 'Plugins' }).and(page.locator('[aria-current="page"]')).waitFor()
+
+    expect(await bar.getByRole('link', { name: 'Plugins' }).getAttribute('href')).toBe(`${prefix}/plugins`)
+    expect(await page.getByRole('banner').getByRole('link', { name: 'Kuroshiro' }).getAttribute('href')).toBe(`${prefix}/`)
+
+    await bar.getByRole('link', { name: 'Instance' }).click()
+    await page.waitForURL(`**${prefix}/instance/settings`)
+    expect(failures).toEqual([])
+    await page.close()
   })
 
   it('answers a Device that sets itself up, polls and logs', async () => {
