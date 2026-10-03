@@ -40,7 +40,8 @@ export function chromiumProject(test: ProjectTestOptions & { name: string }): Te
       browser: {
         enabled: true,
         // Reduced motion collapses the duration tokens, so no assertion or shot lands mid-transition.
-        provider: playwright({ contextOptions: { reducedMotion: 'reduce' } }),
+        // The clipboard is granted so a spec can read back what a control copied.
+        provider: playwright({ contextOptions: { reducedMotion: 'reduce', permissions: ['clipboard-read', 'clipboard-write'] } }),
         headless: true,
         screenshotFailures: false,
         instances: [{ browser: 'chromium' }],
