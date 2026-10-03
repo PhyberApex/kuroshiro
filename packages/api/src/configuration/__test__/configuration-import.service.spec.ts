@@ -442,10 +442,10 @@ describe('configurationImportService', () => {
 
     await service.importFromZip(buffer)
     const settingsRows = [...backing.get('InstanceSettings')!.values()]
-    expect(settingsRows).toEqual([{ id: 1, lowBatteryPercent: 15, offlineMultiplier: null, fetchFailureThreshold: 5, firmwareAutoUpdate: null }])
+    expect(settingsRows).toEqual([{ id: 1, lowBatteryPercent: 15, offlineMultiplier: null, fetchFailureThreshold: 5, alertRetentionDays: null, deviceLogRetentionDays: null, firmwareAutoUpdate: null }])
 
     await service.importFromZip(buffer)
-    expect([...backing.get('InstanceSettings')!.values()]).toEqual([{ id: 1, lowBatteryPercent: 15, offlineMultiplier: null, fetchFailureThreshold: 5, firmwareAutoUpdate: null }])
+    expect([...backing.get('InstanceSettings')!.values()]).toEqual([{ id: 1, lowBatteryPercent: 15, offlineMultiplier: null, fetchFailureThreshold: 5, alertRetentionDays: null, deviceLogRetentionDays: null, firmwareAutoUpdate: null }])
   })
 
   it('clears an existing override for a Setting absent from the archive', async () => {
@@ -455,17 +455,25 @@ describe('configurationImportService', () => {
     await service.importFromZip(buffer)
 
     const settingsRows = [...backing.get('InstanceSettings')!.values()]
-    expect(settingsRows).toEqual([{ id: 1, lowBatteryPercent: 15, offlineMultiplier: null, fetchFailureThreshold: null, firmwareAutoUpdate: null }])
+    expect(settingsRows).toEqual([{ id: 1, lowBatteryPercent: 15, offlineMultiplier: null, fetchFailureThreshold: null, alertRetentionDays: null, deviceLogRetentionDays: null, firmwareAutoUpdate: null }])
   })
 
   it('imports an overridden firmwareAutoUpdate and clears it when absent from the archive', async () => {
     const buffer = buildArchive({ settings: { firmwareAutoUpdate: true } })
 
     await service.importFromZip(buffer)
-    expect([...backing.get('InstanceSettings')!.values()]).toEqual([{ id: 1, lowBatteryPercent: null, offlineMultiplier: null, fetchFailureThreshold: null, firmwareAutoUpdate: true }])
+    expect([...backing.get('InstanceSettings')!.values()]).toEqual([{ id: 1, lowBatteryPercent: null, offlineMultiplier: null, fetchFailureThreshold: null, alertRetentionDays: null, deviceLogRetentionDays: null, firmwareAutoUpdate: true }])
 
     await service.importFromZip(buildArchive({ settings: {} }))
-    expect([...backing.get('InstanceSettings')!.values()]).toEqual([{ id: 1, lowBatteryPercent: null, offlineMultiplier: null, fetchFailureThreshold: null, firmwareAutoUpdate: null }])
+    expect([...backing.get('InstanceSettings')!.values()]).toEqual([{ id: 1, lowBatteryPercent: null, offlineMultiplier: null, fetchFailureThreshold: null, alertRetentionDays: null, deviceLogRetentionDays: null, firmwareAutoUpdate: null }])
+  })
+
+  it('imports an overridden Retention age, 0 included, and clears the one absent from the archive', async () => {
+    backing.get('InstanceSettings')!.set(1 as unknown as string, { id: 1 as unknown as string, alertRetentionDays: 7, deviceLogRetentionDays: 3 })
+
+    await service.importFromZip(buildArchive({ settings: { alertRetentionDays: 0 } }))
+
+    expect([...backing.get('InstanceSettings')!.values()]).toEqual([{ id: 1, lowBatteryPercent: null, offlineMultiplier: null, fetchFailureThreshold: null, alertRetentionDays: 0, deviceLogRetentionDays: null, firmwareAutoUpdate: null }])
   })
 
   it('keeps a Data Source\'s existing header value when the archive holds the sentinel and a value exists, with no warning', async () => {
