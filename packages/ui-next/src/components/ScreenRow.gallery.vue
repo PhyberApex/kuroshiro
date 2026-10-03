@@ -23,8 +23,12 @@ const looks = ref<ScreenRead[]>([
   buildScreen({ id: 'photo', name: 'Photo of the week', kind: 'file', state: 'notToday', schedule: buildSchedule({ weekdays: [0] }) }),
   buildScreen({ id: 'notes', name: 'Notes', kind: 'html', imagePath: null }),
 ])
+
+const held = looks.value.slice(1, 4)
 const FORCED: Record<string, 'hover' | 'focus'> = { weather: 'hover', weekend: 'focus' }
-const openLook = ref('trains')
+const openHeld = ref('trains')
+
+const mirrored = looks.value.slice(0, 2).map(screen => ({ ...screen, state: null }))
 
 const dragged = looks.value.slice(0, 4).map(screen => ({ ...screen, state: null }))
 
@@ -44,10 +48,10 @@ const hours = (screen: ScreenRead) => screen.schedule?.startTime ? `${screen.sch
 
 <template>
   <SpecimenRow title="Looks">
-    <Specimen caption="Active Screen · Up next, hover · Schedule off, focus · Skipping, open · passed over (Not today) · no state, never rendered" wide>
-      <ScreenRows v-model:open="openLook" class="stretch" :items="looks" sortable @reorder="ids => looks = ids.map(id => looks.find(screen => screen.id === id)!)">
+    <Specimen caption="Active Screen · Up next · Schedule off · Skipping · passed over (Not today) · no state, never rendered" wide>
+      <ScreenRows class="stretch" :items="looks" sortable @reorder="ids => looks = ids.map(id => looks.find(screen => screen.id === id)!)">
         <template #default="{ item }">
-          <ScreenRow :value="item.id" :name="item.name" :kind="SCREEN_KIND_LABELS[item.kind]" :state="item.state" :force="FORCED[item.id]">
+          <ScreenRow :value="item.id" :name="item.name" :kind="SCREEN_KIND_LABELS[item.kind]" :state="item.state">
             <template #thumbnail="{ active, passedOver }">
               <Plate :name="item.name" :src="item.imagePath && image" size="row" :sealed="active" :passed-over="passedOver" lazy />
             </template>
@@ -59,8 +63,36 @@ const hours = (screen: ScreenRead) => screen.schedule?.startTime ? `${screen.sch
               <span v-else class="summary">Always shown</span>
             </template>
             <p class="why">
+              What {{ item.name }} is and why it is or is not showing.
+            </p>
+          </ScreenRow>
+        </template>
+      </ScreenRows>
+    </Specimen>
+    <Specimen caption="hover · focus · open" wide>
+      <ScreenRows v-model:open="openHeld" class="stretch" :items="held" sortable>
+        <template #default="{ item }">
+          <ScreenRow :value="item.id" :name="item.name" :kind="SCREEN_KIND_LABELS[item.kind]" :state="item.state" :force="FORCED[item.id]">
+            <template #thumbnail="{ passedOver }">
+              <Plate :name="item.name" :src="image" size="row" :passed-over="passedOver" lazy />
+            </template>
+            <p class="why">
               Skipping: this Screen's own content asked to be left out of Rotation for now. It returns by itself when the content changes.
             </p>
+          </ScreenRow>
+        </template>
+      </ScreenRows>
+    </Specimen>
+    <Specimen caption="a qualifier beside the Screen State · a mirrored Device: no state, the names passed over" wide>
+      <ScreenRows class="stretch" :items="mirrored" sortable>
+        <template #default="{ item, order }">
+          <ScreenRow :value="item.id" :name="item.name" :kind="SCREEN_KIND_LABELS[item.kind]" :state="order === 1 ? 'active' : null" :passed-over="order === 2">
+            <template #thumbnail="{ active }">
+              <Plate :name="item.name" :src="image" size="row" :sealed="active" lazy />
+            </template>
+            <template v-if="order === 1" #state>
+              <span>Active Screen <span class="qualifier">· holding image</span></span>
+            </template>
           </ScreenRow>
         </template>
       </ScreenRows>
@@ -122,6 +154,11 @@ const hours = (screen: ScreenRead) => screen.schedule?.startTime ? `${screen.sch
 
   .summary.off {
     text-decoration: line-through;
+  }
+
+  .qualifier {
+    color: var(--color-ink-soft);
+    font-weight: var(--weight-regular);
   }
 
   .why {

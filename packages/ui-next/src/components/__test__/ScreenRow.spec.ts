@@ -186,6 +186,29 @@ describe('screen row', () => {
     await expect.element(triggerOf(screen, 'Train departures')).toHaveStyle({ color: 'rgb(18, 18, 18)' })
   })
 
+  it('words its Screen State itself unless it is given the words, and keeps the seal beside them', async () => {
+    const List = defineComponent(() => () => h(ScreenRows, { items: [{ id: 'calendar', name: 'Calendar' }] }, {
+      default: () => h(ScreenRow, { value: 'calendar', name: 'Calendar', state: 'active', heading: 'h4' }, { state: () => 'Active Screen, paused' }),
+    }))
+    const screen = await mount(List)
+
+    await expect.element(screen.getByText('Active Screen, paused')).toBeVisible()
+    expect(screen.container.querySelector('svg[viewBox="0 0 16 16"]:not(.icon)')).not.toBeNull()
+    await expect.element(screen.getByRole('heading', { name: 'Calendar', level: 4 })).toBeVisible()
+  })
+
+  it('can be told that Rotation passes it over, whatever its state', async () => {
+    const List = defineComponent(() => () => h(ScreenRows, { items: [{ id: 'calendar', name: 'Calendar' }] }, {
+      default: () => h(ScreenRow, { value: 'calendar', name: 'Calendar', passedOver: true }, {
+        thumbnail: ({ passedOver }: { passedOver: boolean }) => h('span', passedOver ? 'dimmed' : 'clear'),
+      }),
+    }))
+    const screen = await mount(List)
+
+    await expect.element(screen.getByRole('button', { name: 'Calendar' })).toHaveStyle({ color: 'rgb(102, 102, 102)' })
+    await expect.element(screen.getByText('dimmed')).toBeVisible()
+  })
+
   it('unfolds in 200 ms, and without any animation where motion is reduced', async () => {
     const screen = await mount(listOf())
     await triggerOf(screen, 'Calendar').click()
@@ -427,6 +450,19 @@ describe('reordering screen rows', () => {
     await expect.poll(() => namesOf(screen)).toEqual(NAMES)
     expect(rowOf(screen, 'Calendar').textContent).toContain('1')
     await expect.element(gripOf(screen, 'Calendar')).toHaveAttribute('aria-pressed', 'false')
+    await expect.element(screen.getByRole('status')).toHaveTextContent('Calendar, Order 1 of 4')
+  })
+
+  it('announces the same move again when it is made again after the rows were put back', async () => {
+    const save = vi.fn(() => Promise.reject(new Error('Kuroshiro\'s server is not answering.')))
+    const screen = await mount(listOf({ save }))
+
+    await userEvent.keyboard('{Tab}{Enter}{ArrowDown}{Enter}')
+    await expect.element(screen.getByRole('status')).toHaveTextContent('Calendar, Order 1 of 4')
+    await expect.poll(() => namesOf(screen)).toEqual(NAMES)
+    await userEvent.keyboard('{Enter}{ArrowDown}')
+
+    await expect.element(screen.getByRole('status')).toHaveTextContent('Calendar, Order 2 of 4')
   })
 
   it('has 44 px targets at a coarse pointer: the line, the grip and the move buttons', async () => {

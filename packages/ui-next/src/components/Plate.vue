@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUpdate, ref, watch } from 'vue'
 import Icon from './Icon.vue'
 import LoadingMark from './LoadingMark.vue'
 import Seal from './Seal.vue'
@@ -45,11 +45,23 @@ const imageSize = ref<{ width: number, height: number }>()
 const unloadable = ref(false)
 
 watch(() => props.src, () => {
+  imageSize.value = undefined
   unloadable.value = false
 })
 
+// `slots` is not reactive, so whether the frame holds something of the caller's is read again at every render.
+const holdsSlot = ref(Boolean(slots.default))
+onBeforeUpdate(() => {
+  holdsSlot.value = Boolean(slots.default)
+})
+
+const WITHOUT_IMAGE = {
+  rendering: { said: 'rendering', words: 'Rendering' },
+  failed: { said: 'no image yet', words: 'No image yet' },
+} as const
+
 const state = computed(() => {
-  if (slots.default)
+  if (holdsSlot.value)
     return 'held'
   if (props.failed || unloadable.value)
     return 'failed'
@@ -62,12 +74,12 @@ const panel = computed(() => props.width && props.height
   ? { width: props.width, height: props.height }
   : imageSize.value ?? DEFAULT_PANEL)
 
-const STATE_SAID = { rendering: 'rendering', failed: 'no image yet' } as const
-const frameRole = computed(() => state.value === 'image' ? undefined : state.value === 'held' ? 'group' : 'img')
-const frameName = computed(() => {
+const frame = computed(() => {
   if (state.value === 'image')
-    return undefined
-  return state.value === 'held' ? props.name : `${props.name}: ${STATE_SAID[state.value]}`
+    return {}
+  if (state.value === 'held')
+    return { 'role': 'group', 'aria-label': props.name }
+  return { 'role': 'img', 'aria-label': `${props.name}: ${WITHOUT_IMAGE[state.value].said}` }
 })
 
 const stampCount = ref(0)
@@ -85,8 +97,7 @@ function takeImageSize(event: Event) {
     class="plate"
     :class="[size, `is-${state}`, { 'passed-over': passedOver }]"
     :style="{ aspectRatio: `${panel.width} / ${panel.height}` }"
-    :role="frameRole"
-    :aria-label="frameName"
+    v-bind="frame"
   >
     <slot v-if="state === 'held'" />
     <img
@@ -102,7 +113,7 @@ function takeImageSize(event: Event) {
     <span v-else class="note" aria-hidden="true">
       <LoadingMark v-if="state === 'rendering'" decorative />
       <Icon v-else name="problem" />
-      <span class="words">{{ state === 'rendering' ? 'Rendering' : 'No image yet' }}</span>
+      <span class="words">{{ WITHOUT_IMAGE[state].words }}</span>
     </span>
     <Seal
       v-if="sealed"
@@ -149,7 +160,7 @@ function takeImageSize(event: Event) {
     object-fit: contain;
   }
 
-  .passed-over > :not(.mark) {
+  .plate.passed-over > :not(.mark) {
     opacity: 0.45;
   }
 
@@ -201,9 +212,6 @@ function takeImageSize(event: Event) {
       width: 7rem;
     }
 
-    .row {
-      width: 4rem;
-    }
   }
 }
 </style>

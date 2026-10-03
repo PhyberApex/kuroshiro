@@ -62,7 +62,7 @@ const said = computed(() => props.facts.filter(fact => fact.value?.trim()))
   }
 
   /* The seal colour is rationed: of all the facts, only one a firing Alert stands behind wears it. */
-  .alert :is(.label, .value) {
+  .fact.alert :is(.label, .value) {
     color: var(--color-seal);
     font-weight: var(--weight-medium);
   }

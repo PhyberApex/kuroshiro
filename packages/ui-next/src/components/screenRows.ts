@@ -10,6 +10,12 @@ export interface RowItem {
 
 export type DropEdge = 'before' | 'after'
 
+/** What lifted a row. */
+export type LiftedBy = 'keyboard' | 'pointer'
+
+/** One place earlier or later in the Order. */
+export type Step = -1 | 1
+
 function insertedAt(ids: string[], index: number, id: string) {
   return [...ids.slice(0, index), id, ...ids.slice(index)]
 }
@@ -39,13 +45,13 @@ export interface ScreenRowsContext {
   gripHelpId: string
   /** The row's place in the Order, from 1, as shown now: a lifted row counts where it stands. */
   orderOf: (id: string) => number
-  liftedBy: (id: string) => 'keyboard' | 'pointer' | undefined
+  liftedBy: (id: string) => LiftedBy | undefined
   /** For the gallery: whether the row's grip is drawn as holding the focus. */
   gripForce: (id: string) => 'focus' | undefined
   dropEdgeOf: (id: string) => DropEdge | undefined
   pressGrip: (id: string, event: KeyboardEvent) => void
   leaveGrip: (id: string) => void
-  nudge: (id: string, by: -1 | 1) => void
+  nudge: (id: string, by: Step) => void
   /** Makes the row draggable by its grip and a place to drop on. Returns what undoes it. */
   attach: (id: string, row: HTMLElement) => () => void
 }

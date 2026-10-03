@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T extends RowItem">
-import type { DropEdge, RowItem } from './screenRows'
+import type { DropEdge, LiftedBy, RowItem, Step } from './screenRows'
 import { autoScrollWindowForElements } from '@atlaskit/pragmatic-drag-and-drop-auto-scroll/element'
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine'
 import { draggable, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
@@ -13,7 +13,7 @@ const props = defineProps<{
   /** Gives each row its grip, its two move buttons on phone and its Order. */
   sortable?: boolean
   /** Holds the drag state still, for the gallery: the id of the lifted row, what lifted it, and the id of the row the landing line is drawn before or after. */
-  force?: { lifted?: string, by?: 'keyboard' | 'pointer', dropBefore?: string, dropAfter?: string }
+  force?: { lifted?: string, by?: LiftedBy, dropBefore?: string, dropAfter?: string }
 }>()
 
 const emit = defineEmits<{
@@ -31,7 +31,7 @@ const open = defineModel<string>('open')
 
 interface Lift {
   id: string
-  by: 'keyboard' | 'pointer'
+  by: LiftedBy
   /** Where the rows stand while the lift lasts. Only a keyboard lift moves them before the drop. */
   ids: string[]
 }
@@ -55,9 +55,17 @@ const shown = computed(() => {
 })
 const shownIds = computed(() => shown.value.map(item => item.id))
 
-watch(() => givenIds.value.join('\n'), () => {
+/** The last order emitted, with the one it replaced: an owner whose save was rejected hands that one back. */
+let settled: { id: string, before: string[] } | undefined
+
+watch(givenIds, (given) => {
   lift.value = undefined
   landing.value = undefined
+  if (settled && sameOrder(given, settled.before)) {
+    sayPlace(settled.id, given)
+    settled = undefined
+  }
+  keepFocusInRows()
 })
 
 const rowElements = new Map<string, HTMLElement>()
@@ -81,13 +89,26 @@ async function returnFocusTo(id: string, ...controls: string[]) {
   returningFocus = false
 }
 
+/** Rows that change places under the admin, as when a rejected save puts them back, must not take the focus away from the control it is on. */
+async function keepFocusInRows() {
+  const focused = document.activeElement
+  if (!(focused instanceof HTMLElement) || ![...rowElements.values()].some(row => row.contains(focused)))
+    return
+  returningFocus = true
+  await nextTick()
+  if (focused.isConnected && document.activeElement !== focused)
+    focused.focus()
+  returningFocus = false
+}
+
 const GRIP = '[data-grip]'
-const moveButton = (by: -1 | 1) => by < 0 ? '[data-move="earlier"]' : '[data-move="later"]'
+const moveButton = (by: Step) => by < 0 ? '[data-move="earlier"]' : '[data-move="later"]'
 
 function settle(id: string, ids: string[]) {
   if (sameOrder(ids, givenIds.value))
     return
   sayPlace(id, ids)
+  settled = { id, before: givenIds.value }
   emit('reorder', ids)
 }
 
@@ -99,14 +120,14 @@ function putBack() {
 }
 
 const LIFT_KEYS = ['Enter', ' ']
-const MOVE_KEYS: Record<string, -1 | 1> = { ArrowUp: -1, ArrowDown: 1 }
+const MOVE_KEYS: Record<string, Step> = { ArrowUp: -1, ArrowDown: 1 }
 
 function dropLifted(lifted: Lift) {
   lift.value = undefined
   settle(lifted.id, lifted.ids)
 }
 
-function moveLifted(lifted: Lift, by: -1 | 1) {
+function moveLifted(lifted: Lift, by: Step) {
   const ids = movedBy(lifted.ids, lifted.id, by)
   if (sameOrder(ids, lifted.ids))
     return
@@ -140,7 +161,7 @@ function leaveGrip(id: string) {
     putBack()
 }
 
-function nudge(id: string, by: -1 | 1) {
+function nudge(id: string, by: Step) {
   settle(id, movedBy(givenIds.value, id, by))
   returnFocusTo(id, moveButton(by), moveButton(by < 0 ? 1 : -1))
 }

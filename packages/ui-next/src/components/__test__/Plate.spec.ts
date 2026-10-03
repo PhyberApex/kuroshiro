@@ -69,7 +69,7 @@ describe('plate', () => {
     expect(await widthAt('preview')).toBe(document.body.clientWidth)
   })
 
-  it('is 112 px in a list and 64 px in a row on a phone, where the Current Screen takes the width there is', async () => {
+  it('is 112 px in a list and still 72 px in a row on a phone, where the Current Screen takes the width there is', async () => {
     const list = await mount(Plate, { props: { name: NAME, size: 'list', rendering: true } })
     const row = await mount(Plate, { props: { name: NAME, size: 'row', rendering: true } })
     const current = await mount(Plate, { props: { name: NAME, size: 'current', rendering: true } })
@@ -77,7 +77,7 @@ describe('plate', () => {
     await resizeTo(375)
     try {
       expect(frameOf(list.container).getBoundingClientRect().width).toBe(112)
-      expect(frameOf(row.container).getBoundingClientRect().width).toBe(64)
+      expect(frameOf(row.container).getBoundingClientRect().width).toBe(72)
       expect(frameOf(current.container).getBoundingClientRect().width).toBe(document.body.clientWidth)
     }
     finally {
@@ -161,6 +161,15 @@ describe('plate', () => {
 
     await broken.rerender({ src: imageOf(800, 480) })
     await expect.element(broken.getByRole('img', { name: 'Photo', exact: true })).toBeVisible()
+  })
+
+  it('takes the shape of a new image when its image changes', async () => {
+    const screen = await mount(Plate, { props: { name: NAME, src: imageOf(800, 480), size: 'list' } })
+    await expect.poll(() => ratioOf(frameOf(screen.container))).toBeCloseTo(800 / 480, 2)
+
+    await screen.rerender({ src: imageOf(480, 800) })
+
+    await expect.poll(() => ratioOf(frameOf(screen.container))).toBeCloseTo(480 / 800, 2)
   })
 
   it('loads lazily when asked to', async () => {

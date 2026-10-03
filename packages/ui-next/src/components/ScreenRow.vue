@@ -30,16 +30,8 @@ const props = withDefaults(defineProps<{
 })
 
 defineSlots<{
-  /** In place of the grip. */
-  grip?: () => unknown
-  /** In place of the row's place in the Order. */
-  order?: (props: { order: number }) => unknown
   /** The thumbnail. A list without images leaves it out. */
   thumbnail?: (props: { active: boolean, passedOver: boolean }) => unknown
-  /** In place of the name inside the button that opens the row. */
-  name?: () => unknown
-  /** In place of the kind. */
-  kind?: () => unknown
   /** The Schedule's switch and summary. Controls in it work without opening the row. */
   schedule?: () => unknown
   /** In place of the Screen State's name, for a qualifier: "Active Screen, paused". The small seal stays beside it. */
@@ -92,23 +84,21 @@ function openFromLine(event: MouseEvent) {
     >
       <div class="line" :data-force="force" @click="openFromLine">
         <template v-if="rows.sortable.value">
-          <slot name="grip">
-            <Tooltip :text="`Move ${name} in the Order`">
-              <button
-                type="button"
-                class="grip"
-                data-grip
-                :aria-label="`Move ${name} in the Order`"
-                :aria-describedby="rows.gripHelpId"
-                :aria-pressed="liftedBy === 'keyboard'"
-                :data-force="rows.gripForce(value)"
-                @keydown="rows.pressGrip(value, $event)"
-                @blur="rows.leaveGrip(value)"
-              >
-                <Icon name="grip" />
-              </button>
-            </Tooltip>
-          </slot>
+          <Tooltip :text="`Move ${name} in the Order`">
+            <button
+              type="button"
+              class="grip"
+              data-grip
+              :aria-label="`Move ${name} in the Order`"
+              :aria-describedby="rows.gripHelpId"
+              :aria-pressed="liftedBy === 'keyboard'"
+              :data-force="rows.gripForce(value)"
+              @keydown="rows.pressGrip(value, $event)"
+              @blur="rows.leaveGrip(value)"
+            >
+              <Icon name="grip" />
+            </button>
+          </Tooltip>
           <span class="nudge">
             <IconButton
               icon="up"
@@ -125,7 +115,7 @@ function openFromLine(event: MouseEvent) {
               @click="rows.nudge(value, 1)"
             />
           </span>
-          <span class="order"><slot name="order" :order="order">{{ order }}</slot></span>
+          <span class="order">{{ order }}</span>
         </template>
         <span v-if="$slots.thumbnail" class="thumbnail">
           <slot name="thumbnail" :active="active" :passed-over="dimmed" />
@@ -136,14 +126,12 @@ function openFromLine(event: MouseEvent) {
               <component :is="heading" class="heading">
                 <AccordionTrigger as-child>
                   <button type="button" class="trigger">
-                    <slot name="name">
-                      {{ name }}
-                    </slot>
+                    {{ name }}
                   </button>
                 </AccordionTrigger>
               </component>
             </AccordionHeader>
-            <span v-if="kind || $slots.kind" class="kind"><slot name="kind">{{ kind }}</slot></span>
+            <span v-if="kind" class="kind">{{ kind }}</span>
           </div>
           <div class="schedule">
             <slot name="schedule" />
