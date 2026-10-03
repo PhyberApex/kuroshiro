@@ -19,6 +19,8 @@ jobs:
           cache: 'pnpm'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Install Chromium for the UI's browser-mode tests
+        run: pnpm --filter kuroshiro-ui-next exec playwright install --with-deps --only-shell chromium
       - name: Lint
         run: pnpm run lint
       - name: Type Check
@@ -29,3 +31,67 @@ jobs:
         run: pnpm run test
       - name: Build
         run: pnpm run build
+
+  ui-screenshots:
+    name: UI screenshots
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Compare screenshots with their baselines in the pinned Playwright image
+        run: pnpm --filter kuroshiro-ui-next run test:screenshots
+      - name: Upload the shots that differ
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ui-screenshot-diffs
+          path: packages/ui-next/.vitest/attachments
+          include-hidden-files: true
+          if-no-files-found: ignore
+
+  ui-real-api:
+    name: UI against the real API
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        run: pnpm --filter kuroshiro-ui-next exec playwright install --with-deps --only-shell chromium
+      - name: Drive the built UI against the real API and Postgres
+        run: pnpm --filter kuroshiro-ui-next run test:real-api
+        env:
+          KUROSHIRO_DB_HOST: localhost
+          KUROSHIRO_DB_PORT: 5432
+          KUROSHIRO_DB_USER: test
+          KUROSHIRO_DB_PASSWORD: test
+          KUROSHIRO_DB_DB: test

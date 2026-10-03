@@ -20,6 +20,8 @@ jobs:
           cache: 'pnpm'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Install Chromium for the UI's browser-mode tests
+        run: pnpm --filter kuroshiro-ui-next exec playwright install --with-deps --only-shell chromium
       - name: Test
         run: pnpm run test:coverage
 
@@ -39,4 +41,13 @@ jobs:
           files: ./packages/shared/coverage/lcov.info
           flags: shared
           name: shared-coverage
+          fail_ci_if_error: true
+
+      - name: Upload ui coverage to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./packages/ui-next/coverage/lcov.info
+          flags: ui
+          name: ui-coverage
           fail_ci_if_error: true

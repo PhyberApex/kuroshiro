@@ -5,9 +5,16 @@
   },
   // packages/ui is the old admin UI, kept on disk as a read-only reference and outside the pnpm workspace
   "ignorePatterns": ["packages/ui/**"],
-  // pg is TypeORM's postgres driver, loaded reflectively at runtime; jiti is what ESLint uses to load packages/ui-next/eslint.config.ts;
-  // reka-ui and kuroshiro-shared are declared by packages/ui-next, whose one placeholder page has no component or API type to import them from
-  "ignoreDependencies": ["pg", "jiti", "reka-ui", "kuroshiro-shared"],
+  // What Vitest starts in packages/ui-next beyond its default config: the screenshot run, the real-API suite and its global setup
+  "entry": [
+    "packages/ui-next/vitest.screenshots.config.ts",
+    "packages/ui-next/src/**/*.shots.ts",
+    "packages/ui-next/real-api/globalSetup.ts"
+  ],
+  // Gallery sections are collected with import.meta.glob, and the browser projects name their setup file as a string in vitest.browser.ts
+  "dynamicallyLoaded": ["packages/ui-next/src/**/*.gallery.vue", "packages/ui-next/src/testing/setup.ts"],
+  // pg is TypeORM's postgres driver, loaded reflectively at runtime; jiti is what ESLint uses to load packages/ui-next/eslint.config.ts
+  "ignoreDependencies": ["pg", "jiti"],
   "overrides": [
     {
       // Wire-format response classes for the TRMNL firmware: fields are populated via Object.assign and read by the device, never by our code
