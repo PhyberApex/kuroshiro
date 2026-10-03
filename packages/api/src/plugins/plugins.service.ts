@@ -1,17 +1,19 @@
-import type { MergeStrategy, PluginKind } from 'kuroshiro-shared'
-import type { FindOptionsRelations } from 'typeorm'
+import type { ApiErrorField, PluginKind } from 'kuroshiro-shared'
+import type { EntityManager, FindOptionsRelations } from 'typeorm'
 import type { MashupSlot } from '../mashup/entities/mashup-slot.entity.js'
 import type { CreatePluginDto } from './dto/create-plugin.dto.js'
 import type { PluginDataSourceDto } from './dto/plugin-data-source.dto.js'
 import type { PluginFieldDto } from './dto/plugin-field.dto.js'
 import type { PluginTemplateDto } from './dto/plugin-template.dto.js'
 import type { PreviewPluginDto } from './dto/preview-plugin.dto.js'
-import type { UpdatePluginDto } from './dto/update-plugin.dto.js'
+import type { UpdateDataSourceDto, UpdatePluginDto, UpdateTemplateDto } from './dto/update-plugin.dto.js'
 import type { PluginKindFields } from './plugin-kind-fields.js'
 import type { PluginWithFieldValues } from './services/plugin-field-values.service.js'
-import { BadRequestException, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common'
+import { BadRequestException, HttpStatus, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
+import { isUUID } from 'class-validator'
 import { Repository } from 'typeorm'
+import { ApiException, ValidationException } from '../errors/api.exception.js'
 import { Screen } from '../screens/screens.entity.js'
 import generateApikey from '../utils/generateApikey.js'
 import { PluginDataSource } from './entities/plugin-data-source.entity.js'
@@ -22,18 +24,13 @@ import { dataSourceModeViolation } from './plugin-data-source-mode.js'
 import { pluginKindFieldViolation } from './plugin-kind-fields.js'
 import { PluginDataResolverService } from './services/plugin-data-resolver.service.js'
 import { PluginFieldValuesService } from './services/plugin-field-values.service.js'
-import { PluginRefreshService } from './services/plugin-refresh.service.js'
 import { PluginRenderCacheService } from './services/plugin-render-cache.service.js'
 import { PluginRendererService } from './services/plugin-renderer.service.js'
 import { PluginSchedulerService } from './services/plugin-scheduler.service.js'
 import { PluginTemplateContextService } from './services/plugin-template-context.service.js'
 
-type UpdateBasicFields = Omit<UpdatePluginDto, 'dataSources' | 'templates' | 'fields' | 'fieldValues' | 'webhookToken'>
-
-interface MergeFields {
-  mergeStrategy: MergeStrategy | null | undefined
-  streamLimit: number | null | undefined
-}
+// A `literal` Data Source is never fetched, so one switched to it starts over (ADR-0025).
+const NO_FETCH_OUTCOME = { fetchFailureStreak: 0, lastFetchAttemptAt: null, lastFetchSucceededAt: null, lastFetchError: null }
 
 @Injectable()
 export class PluginsService implements OnModuleInit {
@@ -57,7 +54,6 @@ export class PluginsService implements OnModuleInit {
     private readonly scheduler: PluginSchedulerService,
     private readonly renderCache: PluginRenderCacheService,
     private readonly fieldValues: PluginFieldValuesService,
-    private readonly pluginRefresh: PluginRefreshService,
     private readonly templateContext: PluginTemplateContextService,
   ) {
     // Lazy injection to avoid circular dependency with MashupModule
@@ -78,13 +74,12 @@ export class PluginsService implements OnModuleInit {
       relations: { dataSources: true, templates: true },
     })
 
+    // A timer counts from now, so without a tick at start an Instance restarted
+    // more often than a refresh interval would never run that Plugin.
     for (const plugin of plugins) {
-      if (plugin.kind === 'Webhook') {
-        continue
-      }
-      if (plugin.dataSources && plugin.dataSources.length > 0 && plugin.templates && plugin.templates.length > 0) {
-        this.scheduler.schedulePlugin(plugin)
-        this.logger.log(`Scheduled plugin: ${plugin.name}`)
+      this.schedule(plugin, `Scheduled plugin: ${plugin.name}`)
+      if (this.scheduler.hasScheduledJob(plugin.id)) {
+        void this.scheduler.runTick(plugin)
       }
     }
   }
@@ -130,7 +125,7 @@ export class PluginsService implements OnModuleInit {
 
     const created = await this.reloadPlugin(savedPlugin.id)
     await this.fieldValues.write(created, fieldValues)
-    this.scheduleIfReady(created, `Scheduled new plugin: ${created.name}`)
+    this.schedule(created, `Scheduled new plugin: ${created.name}`)
 
     return this.withFieldValues(created)
   }
@@ -162,8 +157,8 @@ export class PluginsService implements OnModuleInit {
         mode: ds.mode,
         method: ds.method,
         url: ds.url ?? undefined,
-        headers: ds.headers,
-        body: ds.body,
+        headers: ds.headers ?? undefined,
+        body: ds.body ?? undefined,
         transformJs: ds.transformJs,
         literalValue: ds.literalValue,
         order: ds.order,
@@ -240,7 +235,7 @@ export class PluginsService implements OnModuleInit {
       return
 
     this.logger.debug(`Creating ${fields.length} fields`)
-    await this.persistFields(plugin, fields)
+    await this.persistFields(this.fieldRepository, plugin, fields)
   }
 
   private buildFieldFields(fieldData: PluginFieldDto) {
@@ -258,14 +253,14 @@ export class PluginsService implements OnModuleInit {
 
   // An existing Plugin Field of the same keyname is updated in place, so it
   // keeps its id and with it its Field Value (ADR-0032).
-  private async persistFields(plugin: Plugin, fields: PluginFieldDto[], existingFields: PluginField[] = []): Promise<PluginField[]> {
+  private async persistFields(repository: Repository<PluginField>, plugin: Plugin, fields: PluginFieldDto[], existingFields: PluginField[] = []): Promise<PluginField[]> {
     const saved: PluginField[] = []
     for (const fieldData of fields) {
       const existing = existingFields.find(field => field.keyname === fieldData.keyname)
       const field = existing
         ? Object.assign(existing, this.buildFieldFields(fieldData))
-        : this.fieldRepository.create({ ...this.buildFieldFields(fieldData), plugin })
-      saved.push(await this.fieldRepository.save(field))
+        : repository.create({ ...this.buildFieldFields(fieldData), plugin })
+      saved.push(await repository.save(field))
       this.logger.debug(`Saved field: ${field.keyname}`)
     }
     return saved
@@ -284,201 +279,172 @@ export class PluginsService implements OnModuleInit {
     return plugin
   }
 
-  private isSchedulable(plugin: Plugin): boolean {
-    return !!(plugin.dataSources && plugin.dataSources.length > 0 && plugin.templates && plugin.templates.length > 0)
-  }
-
-  private isRenderable(plugin: Plugin): boolean {
-    return plugin.kind === 'Webhook' ? !!plugin.templates?.length : this.isSchedulable(plugin)
-  }
-
-  private scheduleIfReady(plugin: Plugin, message: string): void {
-    if (this.isSchedulable(plugin)) {
-      this.scheduler.schedulePlugin(plugin)
+  private schedule(plugin: Plugin, message: string): void {
+    this.scheduler.schedulePlugin(plugin)
+    if (this.scheduler.hasScheduledJob(plugin.id)) {
       this.logger.log(message)
     }
   }
 
-  async update(id: string, pluginData: UpdatePluginDto): Promise<PluginWithFieldValues | null> {
-    const plugin = await this.pluginRepository.findOne({
-      where: { id },
-      relations: { dataSources: true, templates: true, fields: true },
-    })
-    if (!plugin)
-      return null
+  /** Saves everything the input carries, or nothing. A key left out keeps what is stored. */
+  async update(id: string, pluginData: UpdatePluginDto): Promise<void> {
+    await this.pluginRepository.manager.transaction(async (manager) => {
+      const plugin = isUUID(id)
+        ? await manager.findOne(Plugin, { where: { id }, relations: { dataSources: true, templates: true, fields: true } })
+        : null
+      if (!plugin)
+        throw new ApiException(HttpStatus.NOT_FOUND, 'plugin-not-found', 'Plugin not found', { id })
 
-    const { dataSources, templates, fields, fieldValues, webhookToken, ...rawBasicFields } = pluginData
-    const basicFields = this.dropUnsetFields(rawBasicFields)
+      const { dataSources, templates, fields, fieldValues, ...basicFields } = pluginData
 
-    this.assertKindUnchanged(basicFields, plugin)
-    this.validateUpdatedChildren(plugin, dataSources, fields)
-    this.fieldValues.assertWritable(fields ?? plugin.fields, fieldValues)
+      this.assertSavable(plugin, pluginData)
+      this.fieldValues.assertWritable(fields ?? plugin.fields, fieldValues)
 
-    const mergeFields = this.resolveMergeFields(basicFields, plugin)
-
-    this.assertKindFields({
-      kind: plugin.kind,
-      dataSources: dataSources ?? plugin.dataSources,
-      webhookToken: webhookToken === plugin.webhookToken ? undefined : webhookToken,
-      mergeStrategy: mergeFields.mergeStrategy,
-      streamLimit: mergeFields.streamLimit,
+      if (dataSources) {
+        await this.saveDataSources(manager, plugin, dataSources)
+      }
+      await this.saveFirstTemplate(manager, plugin, templates)
+      const savedFields = fields ? await this.saveFields(manager, plugin, fields) : plugin.fields
+      await manager.update(Plugin, id, basicFields)
+      await this.fieldValues.within(manager).write({ id, fields: savedFields }, fieldValues)
     })
 
-    this.applyBasicFields(plugin, basicFields, mergeFields)
-
-    if (dataSources !== undefined) {
-      await this.replaceDataSources(plugin, dataSources)
-    }
-    await this.replaceTemplates(plugin, templates)
-    await this.replaceFields(plugin, fields)
-
-    const updated = await this.pluginRepository.save(plugin)
-    const fieldValuesChanged = await this.fieldValues.write(updated, fieldValues)
-
-    await this.refreshRendersAfterUpdate(id, {
-      reschedule: dataSources !== undefined || !!templates,
-      rerender: fieldValuesChanged || Array.isArray(fields),
-    })
-
-    return this.withFieldValues(updated)
+    await this.refreshRendersAfterSave(id)
   }
 
-  private async refreshRendersAfterUpdate(id: string, { reschedule, rerender }: { reschedule: boolean, rerender: boolean }): Promise<void> {
-    await this.invalidateRenderCaches(id)
-
-    if (reschedule) {
-      await this.rescheduleAfterUpdate(id)
-    }
-
-    if (rerender) {
-      await this.refreshNow(id)
-    }
-  }
-
-  // A changed Field Value (or default) changes what is fetched and rendered,
-  // so the cache is rebuilt at once rather than at the next scheduler tick.
-  // The caches were invalidated before this runs, so a failure here leaves
-  // the next poll to render on demand.
-  private async refreshNow(id: string): Promise<void> {
-    const plugin = await this.findPluginWithRelations(id, { dataSources: true, templates: true })
-    if (!plugin || !this.isRenderable(plugin))
-      return
-
+  /**
+   * Runs once a save is committed, so a failure here is logged and the save
+   * still answers. The scheduler's job holds the Plugin as it was loaded, so
+   * it is replaced on every save, and the tick started here is not awaited: a
+   * save does not wait for a Data Source.
+   */
+  private async refreshRendersAfterSave(id: string): Promise<void> {
     try {
-      await this.pluginRefresh.refresh(plugin)
+      await this.invalidateRenderCaches(id)
+
+      const plugin = await this.findPluginWithRelations(id, { dataSources: true, templates: true })
+      if (!plugin)
+        return
+
+      this.schedule(plugin, `Rescheduled plugin: ${plugin.name}`)
+      if (plugin.templates.length > 0) {
+        void this.scheduler.runTick(plugin)
+      }
     }
     catch (error) {
-      this.logger.error(`Failed to refresh plugin ${id} after its Field Values changed`, error)
+      this.logger.error(`Plugin ${id} was saved, but its renders could not be refreshed`, error)
     }
   }
 
-  // class-transformer's plainToInstance (the real ValidationPipe path) gives every declared
-  // UpdatePluginDto field an own property equal to `undefined` even when the caller never sent
-  // it, so unset fields must be dropped here before they reach the Object.assign in
-  // applyBasicFields — otherwise a partial PATCH would blank out every field the caller omitted.
-  private dropUnsetFields(rawFields: UpdateBasicFields): UpdateBasicFields {
-    return Object.fromEntries(
-      Object.entries(rawFields).filter(([, value]) => value !== undefined),
-    ) as UpdateBasicFields
-  }
+  private assertSavable(plugin: Plugin, { refreshInterval, dataSources, fields }: UpdatePluginDto): void {
+    if (plugin.kind === 'Webhook' && refreshInterval !== undefined) {
+      throw new ValidationException([{ path: 'refreshInterval', message: 'A Webhook-kind Plugin has no refresh interval' }])
+    }
+    if (plugin.kind === 'Webhook' && dataSources?.length) {
+      throw new ValidationException([{ path: 'dataSources', message: 'A Webhook-kind Plugin cannot have Data Sources' }])
+    }
 
-  private assertKindUnchanged(basicFields: UpdateBasicFields, plugin: Plugin): void {
-    if (basicFields.kind !== undefined && basicFields.kind !== plugin.kind) {
-      throw new BadRequestException(`A Plugin's Kind is fixed at creation and cannot be changed`)
+    if (dataSources) {
+      this.validateDataSourceNames(dataSources, fields ?? plugin.fields)
+    }
+    else if (fields) {
+      this.assertNoKeynameIsADataSourceName(fields, plugin.dataSources)
+    }
+
+    const ownIds = new Set(plugin.dataSources.map(source => source.id))
+    const seenIds = new Set<string>()
+    const violations = (dataSources ?? []).flatMap(({ id: sourceId }, index): ApiErrorField[] => {
+      if (!sourceId)
+        return []
+      const path = `dataSources.${index}.id`
+      if (!ownIds.has(sourceId))
+        return [{ path, message: 'This Plugin has no Data Source of that id' }]
+      if (seenIds.has(sourceId))
+        return [{ path, message: 'A Data Source can be saved only once' }]
+      seenIds.add(sourceId)
+      return []
+    })
+    if (violations.length > 0) {
+      throw new ValidationException(violations)
     }
   }
 
-  private validateUpdatedChildren(plugin: Plugin, dataSources: PluginDataSourceDto[] | undefined, fields: PluginFieldDto[] | undefined): void {
-    if (dataSources !== undefined || fields !== undefined) {
-      const finalDataSources = dataSources !== undefined ? dataSources : (plugin.dataSources || [])
-      const finalFields = fields !== undefined ? fields : (plugin.fields || [])
-      this.validateDataSourceNames(finalDataSources, finalFields)
-    }
-
-    if (dataSources !== undefined && Array.isArray(dataSources) && dataSources.length > 0) {
-      this.assertDataSourceModeFields(dataSources)
+  private assertNoKeynameIsADataSourceName(fields: PluginFieldDto[], dataSources: PluginDataSource[]): void {
+    const names = new Set(dataSources.map(source => source.name))
+    const violations = fields.flatMap((field, index): ApiErrorField[] => names.has(field.keyname)
+      ? [{ path: `fields.${index}.keyname`, message: `Plugin field keyname "${field.keyname}" collides with a data source's name` }]
+      : [])
+    if (violations.length > 0) {
+      throw new ValidationException(violations)
     }
   }
 
-  private resolveMergeFields(basicFields: UpdateBasicFields, plugin: Plugin): MergeFields {
-    const mergeStrategy = basicFields.mergeStrategy !== undefined ? basicFields.mergeStrategy : plugin.mergeStrategy
-    const streamLimit = mergeStrategy === 'stream' ? basicFields.streamLimit ?? plugin.streamLimit : basicFields.streamLimit
-    return { mergeStrategy, streamLimit }
-  }
-
-  private applyBasicFields(plugin: Plugin, basicFields: UpdateBasicFields, mergeFields: MergeFields): void {
-    Object.assign(plugin, basicFields, plugin.kind === 'Webhook' ? { mergeStrategy: mergeFields.mergeStrategy, streamLimit: mergeFields.streamLimit ?? null } : {})
-  }
-
-  private async replaceDataSources(plugin: Plugin, dataSources: PluginDataSourceDto[]): Promise<void> {
-    if (plugin.dataSources && plugin.dataSources.length > 0) {
-      await this.dataSourceRepository.remove(plugin.dataSources)
+  // A Data Source saved by its id is updated in place, so it keeps its Fetch
+  // Failure Streak, its last fetch facts and its firing Alert (ADR-0025).
+  private async saveDataSources(manager: EntityManager, plugin: Plugin, dataSources: UpdateDataSourceDto[]): Promise<void> {
+    const repository = manager.getRepository(PluginDataSource)
+    const storedById = new Map(plugin.dataSources.map(stored => [stored.id, stored]))
+    const keptIds = new Set(dataSources.map(source => source.id))
+    const removed = plugin.dataSources.filter(stored => !keptIds.has(stored.id))
+    if (removed.length > 0) {
+      await repository.remove(removed)
     }
-    plugin.dataSources = Array.isArray(dataSources) && dataSources.length > 0
-      ? await this.persistDataSources(plugin, dataSources)
-      : []
+
+    for (const [index, sourceData] of dataSources.entries()) {
+      const stored = sourceData.id ? storedById.get(sourceData.id) : undefined
+      const columns = this.buildDataSourceFields(sourceData, index)
+      await repository.save(stored
+        ? Object.assign(stored, columns, columns.mode === 'literal' ? NO_FETCH_OUTCOME : {})
+        : repository.create({ ...columns, plugin: { id: plugin.id } }))
+    }
   }
 
-  private async persistDataSources(plugin: Plugin, dataSources: PluginDataSourceDto[]): Promise<PluginDataSource[]> {
-    const saved: PluginDataSource[] = []
+  private async persistDataSources(plugin: Plugin, dataSources: PluginDataSourceDto[]): Promise<void> {
     for (const [index, sourceData] of dataSources.entries()) {
       const newDataSource = this.dataSourceRepository.create({
         ...this.buildDataSourceFields(sourceData, index),
         plugin,
       })
-      saved.push(await this.dataSourceRepository.save(newDataSource))
+      await this.dataSourceRepository.save(newDataSource)
       this.logger.debug(`Saved data source: ${newDataSource.name}`)
     }
-    return saved
   }
 
-  private async replaceTemplates(plugin: Plugin, templates: PluginTemplateDto[] | undefined): Promise<void> {
-    if (!templates || !Array.isArray(templates) || templates.length === 0)
+  private async saveFirstTemplate(manager: EntityManager, plugin: Plugin, templates: UpdateTemplateDto[] | undefined): Promise<void> {
+    if (!templates?.length)
       return
 
-    if (plugin.templates && plugin.templates.length > 0) {
-      Object.assign(plugin.templates[0], templates[0])
-      await this.templateRepository.save(plugin.templates[0])
-    }
-    else {
-      const newTemplate = this.templateRepository.create({
-        ...templates[0],
-        plugin,
-      })
-      await this.templateRepository.save(newTemplate)
-    }
+    const repository = manager.getRepository(PluginTemplate)
+    const [{ size, liquidMarkup }] = templates
+    const [stored] = plugin.templates
+    await repository.save(stored
+      ? Object.assign(stored, { layout: size, liquidMarkup })
+      : repository.create({ layout: size, liquidMarkup, plugin: { id: plugin.id } }))
   }
 
-  private async replaceFields(plugin: Plugin, fields: PluginFieldDto[] | undefined): Promise<void> {
-    if (!fields || !Array.isArray(fields))
-      return
-
-    const existingFields = plugin.fields ?? []
-    const removed = existingFields.filter(existing => !fields.some(field => field.keyname === existing.keyname))
+  private async saveFields(manager: EntityManager, plugin: Plugin, fields: PluginFieldDto[]): Promise<PluginField[]> {
+    const repository = manager.getRepository(PluginField)
+    const removed = plugin.fields.filter(existing => !fields.some(field => field.keyname === existing.keyname))
     if (removed.length > 0) {
-      await this.fieldRepository.remove(removed)
+      await repository.remove(removed)
     }
 
-    this.logger.debug(`Updating ${fields.length} fields`)
-    // Reassigned so the Plugin save that follows sees exactly the rows that
-    // exist: a row missing from a loaded relation array is detached by TypeORM.
-    plugin.fields = await this.persistFields(plugin, fields, existingFields)
+    return this.persistFields(repository, plugin, fields, plugin.fields)
   }
 
-  // Public: also called directly by RecipeUpdateService, whose Recipe Update
-  // apply mutates data sources/templates/fields itself (ADR-0030's whole-item
-  // apply semantics don't fit this method's wipe-and-recreate `update()` path)
-  // but still needs the same cache invalidation and rescheduling afterward.
+  // Public: also called by RecipeUpdateService, whose Recipe Update apply
+  // writes Data Sources, Templates and Plugin Fields itself (ADR-0030's
+  // whole-item apply does not fit `update()`), and needs the same cache
+  // invalidation and rescheduling afterwards.
   async invalidateRenderCaches(pluginId: string): Promise<void> {
     await this.screenRepository.update({ plugin: { id: pluginId } }, { cachedPluginOutput: null })
     await this.renderCache.invalidateMashupCaches(pluginId)
   }
 
   async rescheduleAfterUpdate(id: string): Promise<void> {
-    this.scheduler.removeScheduledJob(id)
     const fullPlugin = await this.findPluginWithRelations(id, { dataSources: true, templates: true })
     if (fullPlugin) {
-      this.scheduleIfReady(fullPlugin, `Rescheduled plugin: ${fullPlugin.name}`)
+      this.schedule(fullPlugin, `Rescheduled plugin: ${fullPlugin.name}`)
     }
   }
 
@@ -491,52 +457,45 @@ export class PluginsService implements OnModuleInit {
     }
   }
 
+  /** A column the mode does not use is `null` (`method`, which cannot be, its default), so a Data Source saved under the other mode drops what it held. */
   private buildDataSourceFields(sourceData: PluginDataSourceDto, index: number) {
     const mode = sourceData.mode || 'fetch'
-    const order = sourceData.order ?? index
+    const common = { name: sourceData.name, mode, order: sourceData.order ?? index }
 
     if (mode === 'literal') {
-      return {
-        name: sourceData.name,
-        mode,
-        literalValue: sourceData.literalValue ?? null,
-        order,
-      }
+      return { ...common, method: 'GET', url: null, headers: null, body: null, transformJs: null, literalValue: sourceData.literalValue ?? null }
     }
 
     return {
-      name: sourceData.name,
-      mode,
+      ...common,
       method: sourceData.method || 'GET',
       url: sourceData.url,
       headers: sourceData.headers || {},
       body: sourceData.body || {},
       transformJs: sourceData.transformJs || null,
-      order,
+      literalValue: null,
     }
   }
 
   private validateDataSourceNames(dataSources: Array<{ name?: string }>, fields: Array<{ keyname?: string }>): void {
     const seenNames = new Set<string>()
+    const keynames = new Set(fields.map(field => field.keyname))
 
-    for (const source of dataSources) {
+    const violations = dataSources.flatMap((source, index): ApiErrorField[] => {
+      const path = `dataSources.${index}.name`
       const name = source.name?.trim()
-      if (!name) {
-        throw new BadRequestException('Each data source needs a name')
-      }
-      if (name === 'trmnl') {
-        throw new BadRequestException('Data source name "trmnl" is reserved')
-      }
-      if (seenNames.has(name)) {
-        throw new BadRequestException(`Data source name "${name}" is used by more than one data source`)
-      }
+      if (!name)
+        return [{ path, message: 'Each data source needs a name' }]
+      if (name === 'trmnl')
+        return [{ path, message: 'Data source name "trmnl" is reserved' }]
+      if (seenNames.has(name))
+        return [{ path, message: `Data source name "${name}" is used by more than one data source` }]
       seenNames.add(name)
-    }
+      return keynames.has(name) ? [{ path, message: `Data source name "${name}" collides with a plugin field's keyname` }] : []
+    })
 
-    for (const field of fields) {
-      if (field.keyname && seenNames.has(field.keyname)) {
-        throw new BadRequestException(`Data source name "${field.keyname}" collides with a plugin field's keyname`)
-      }
+    if (violations.length > 0) {
+      throw new ValidationException(violations)
     }
   }
 

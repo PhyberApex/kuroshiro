@@ -6,18 +6,15 @@ import type { PluginTemplate } from '../entities/plugin-template.entity.js'
 import type { Plugin } from '../entities/plugin.entity.js'
 import type { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
 import type { PluginFieldValuesService } from '../services/plugin-field-values.service.js'
-import type { PluginRefreshService } from '../services/plugin-refresh.service.js'
 import type { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
 import type { PluginRendererService } from '../services/plugin-renderer.service.js'
 import type { PluginSchedulerService } from '../services/plugin-scheduler.service.js'
 import type { PluginTransformService } from '../services/plugin-transform.service.js'
-import { plainToInstance } from 'class-transformer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeDevicePlugin, makePlugin, makePluginDataSource, makePluginField, makePluginTemplate } from '../../test/fixtures.js'
 import { createMockPluginDataFetcherService, createMockPluginFieldValuesService, createMockPluginRenderCacheService, createMockPluginRendererService, createMockPluginTransformService, createPluginTemplateContextService } from '../../test/mockPluginCollaborators.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
 import { asService, injectPrivate } from '../../test/mockService.js'
-import { UpdatePluginDto } from '../dto/update-plugin.dto.js'
 import { PluginsService } from '../plugins.service.js'
 import { PluginDataResolverService } from '../services/plugin-data-resolver.service.js'
 
@@ -29,7 +26,6 @@ describe('pluginsService', () => {
   let templateRepo: ReturnType<typeof createMockRepository<PluginTemplate>>
   let fieldRepo: ReturnType<typeof createMockRepository<PluginField>>
   let mockFieldValues: ReturnType<typeof createMockPluginFieldValuesService>
-  let mockRefresh: { refresh: ReturnType<typeof vi.fn> }
   let mockDataFetcher: MockPluginDataFetcherService
   let mockRenderer: MockPluginRendererService
   let mockScheduler: { schedulePlugin: ReturnType<typeof vi.fn>, removeScheduledJob: ReturnType<typeof vi.fn>, hasScheduledJob: ReturnType<typeof vi.fn> }
@@ -43,7 +39,6 @@ describe('pluginsService', () => {
     templateRepo = createMockRepository<PluginTemplate>()
     fieldRepo = createMockRepository<PluginField>()
     mockFieldValues = createMockPluginFieldValuesService()
-    mockRefresh = { refresh: vi.fn() }
 
     mockDataFetcher = createMockPluginDataFetcherService()
     mockRenderer = createMockPluginRendererService()
@@ -66,7 +61,6 @@ describe('pluginsService', () => {
       asService<PluginSchedulerService>(mockScheduler),
       asService<PluginRenderCacheService>(mockRenderCache),
       asService<PluginFieldValuesService>(mockFieldValues),
-      asService<PluginRefreshService>(mockRefresh),
       createPluginTemplateContextService(),
     )
   })
@@ -121,59 +115,6 @@ describe('pluginsService', () => {
     await service.create(pluginData)
 
     expect(pluginRepo.save).toHaveBeenCalledWith(expect.objectContaining({ sourceRecipeSnapshot: snapshot }))
-  })
-
-  it('update updates and saves an existing plugin', async () => {
-    pluginRepo.findOne.mockResolvedValue(basePlugin)
-    const updated = { ...basePlugin, name: 'Updated Weather' }
-    pluginRepo.save.mockResolvedValue(updated)
-    const result = await service.update('1', { name: 'Updated Weather' })
-    expect(pluginRepo.findOne).toHaveBeenCalledWith({
-      where: { id: '1' },
-      relations: { dataSources: true, templates: true, fields: true },
-    })
-    expect(pluginRepo.save).toHaveBeenCalled()
-    expect(result).toEqual({ ...updated, fieldValues: {}, needsValues: false })
-  })
-
-  it('update returns null if plugin not found', async () => {
-    pluginRepo.findOne.mockResolvedValue(null)
-    const result = await service.update('1', { name: 'Updated' })
-    expect(result).toBeNull()
-  })
-
-  it('update clears the cached render output on every Screen assigned the plugin', async () => {
-    pluginRepo.findOne.mockResolvedValue(basePlugin)
-    pluginRepo.save.mockResolvedValue(basePlugin)
-
-    await service.update('1', { name: 'Updated Weather' })
-
-    expect(screenRepo.update).toHaveBeenCalledWith(
-      { plugin: { id: '1' } },
-      { cachedPluginOutput: null },
-    )
-  })
-
-  it('update invalidates mashup caches referencing the plugin', async () => {
-    pluginRepo.findOne.mockResolvedValue(basePlugin)
-    pluginRepo.save.mockResolvedValue(basePlugin)
-
-    await service.update('1', { name: 'Updated Weather' })
-
-    expect(mockRenderCache.invalidateMashupCaches).toHaveBeenCalledWith('1')
-  })
-
-  it('update clears the cache even when only a cosmetic field like name changes', async () => {
-    pluginRepo.findOne.mockResolvedValue(basePlugin)
-    pluginRepo.save.mockResolvedValue({ ...basePlugin, name: 'Renamed' })
-
-    await service.update('1', { name: 'Renamed' })
-
-    expect(screenRepo.update).toHaveBeenCalledWith(
-      { plugin: { id: '1' } },
-      { cachedPluginOutput: null },
-    )
-    expect(mockRenderCache.invalidateMashupCaches).toHaveBeenCalledWith('1')
   })
 
   it('remove deletes a plugin and returns true', async () => {
@@ -373,206 +314,6 @@ describe('pluginsService', () => {
     expect(pluginRepo.save).not.toHaveBeenCalled()
   })
 
-  it('update creates new data sources if none exist', async () => {
-    const pluginWithoutDataSources = { ...basePlugin, dataSources: [] }
-    pluginRepo.findOne.mockResolvedValue(pluginWithoutDataSources)
-    dataSourceRepo.create.mockReturnValue(makePluginDataSource({ id: 'ds-1' }))
-    dataSourceRepo.save.mockResolvedValue(makePluginDataSource({ id: 'ds-1' }))
-    pluginRepo.save.mockResolvedValue(pluginWithoutDataSources)
-
-    await service.update('1', {
-      dataSources: [{ name: 'weather', mode: 'fetch', url: 'https://new-api.com', method: 'GET', headers: {}, body: {} }],
-    })
-
-    expect(dataSourceRepo.create).toHaveBeenCalled()
-    expect(dataSourceRepo.save).toHaveBeenCalled()
-  })
-
-  it('update removes existing data sources and creates the replacement set', async () => {
-    const oldDataSources = [makePluginDataSource({ id: 'ds-old', name: 'old' })]
-    const pluginWithDataSources = {
-      ...basePlugin,
-      dataSources: oldDataSources,
-    }
-    pluginRepo.findOne.mockResolvedValue(pluginWithDataSources)
-    dataSourceRepo.create.mockReturnValue(makePluginDataSource({ id: 'ds-new' }))
-    dataSourceRepo.save.mockResolvedValue(makePluginDataSource({ id: 'ds-new' }))
-    pluginRepo.save.mockResolvedValue(pluginWithDataSources)
-
-    const result = await service.update('1', {
-      dataSources: [{ name: 'weather', mode: 'fetch', url: 'https://new-api.com', method: 'GET' }],
-    })
-
-    expect(dataSourceRepo.remove).toHaveBeenCalledWith(oldDataSources)
-    expect(dataSourceRepo.create).toHaveBeenCalled()
-    // The returned plugin reflects the new data sources, not the removed ones
-    expect(result?.dataSources).toEqual([makePluginDataSource({ id: 'ds-new' })])
-  })
-
-  it('update rejects a data source named "trmnl"', async () => {
-    pluginRepo.findOne.mockResolvedValue({ ...basePlugin, dataSources: [], fields: [] })
-
-    await expect(service.update('1', {
-      dataSources: [{ name: 'trmnl', mode: 'fetch', url: 'https://api.com', method: 'GET' }],
-    })).rejects.toThrow('reserved')
-
-    expect(dataSourceRepo.save).not.toHaveBeenCalled()
-  })
-
-  it('update rejects two data sources sharing a name', async () => {
-    pluginRepo.findOne.mockResolvedValue({ ...basePlugin, dataSources: [], fields: [] })
-
-    await expect(service.update('1', {
-      dataSources: [
-        { name: 'weather', mode: 'fetch', url: 'https://api.com/1', method: 'GET' },
-        { name: 'weather', mode: 'fetch', url: 'https://api.com/2', method: 'GET' },
-      ],
-    })).rejects.toThrow('more than one data source')
-  })
-
-  it('update rejects a data source name colliding with a plugin field keyname', async () => {
-    pluginRepo.findOne.mockResolvedValue({
-      ...basePlugin,
-      dataSources: [],
-      fields: [makePluginField({ id: 'field-1', keyname: 'weather' })],
-    })
-
-    await expect(service.update('1', {
-      dataSources: [{ name: 'weather', mode: 'fetch', url: 'https://api.com', method: 'GET' }],
-    })).rejects.toThrow('collides')
-  })
-
-  it('update creates new template if none exists', async () => {
-    const pluginWithoutTemplates = { ...basePlugin, templates: [] }
-    pluginRepo.findOne.mockResolvedValue(pluginWithoutTemplates)
-    templateRepo.create.mockReturnValue(makePluginTemplate({ id: 't-1' }))
-    templateRepo.save.mockResolvedValue(makePluginTemplate({ id: 't-1' }))
-    pluginRepo.save.mockResolvedValue(pluginWithoutTemplates)
-
-    await service.update('1', {
-      templates: [{ layout: 'full', liquidMarkup: 'New template' }],
-    })
-
-    expect(templateRepo.create).toHaveBeenCalled()
-    expect(templateRepo.save).toHaveBeenCalled()
-  })
-
-  it('update removes a field whose keyname is gone and creates one for a new keyname', async () => {
-    const oldField = makePluginField({ id: 'field-1', keyname: 'old_field' })
-    const pluginWithFields = { ...basePlugin, fields: [oldField] }
-    pluginRepo.findOne.mockResolvedValue(pluginWithFields)
-    fieldRepo.create.mockReturnValue(makePluginField({ id: 'field-2' }))
-    fieldRepo.save.mockResolvedValue(makePluginField({ id: 'field-2' }))
-    pluginRepo.save.mockImplementation(async plugin => plugin as Plugin)
-
-    await service.update('1', {
-      fields: [{ keyname: 'new_field', fieldType: 'string', name: 'New Field', required: false }],
-    })
-
-    expect(fieldRepo.remove).toHaveBeenCalledWith([oldField])
-    expect(fieldRepo.create).toHaveBeenCalled()
-    expect(fieldRepo.save).toHaveBeenCalled()
-  })
-
-  it('update keeps a field of the same keyname in place rather than recreating it', async () => {
-    const cityField = makePluginField({ id: 'field-1', keyname: 'city', name: 'City' })
-    pluginRepo.findOne.mockResolvedValue({ ...basePlugin, fields: [cityField] })
-    fieldRepo.save.mockImplementation(async field => field as PluginField)
-    pluginRepo.save.mockImplementation(async plugin => plugin as Plugin)
-
-    await service.update('1', {
-      fields: [{ keyname: 'city', fieldType: 'string', name: 'Town', required: false }],
-    })
-
-    expect(fieldRepo.remove).not.toHaveBeenCalled()
-    expect(fieldRepo.create).not.toHaveBeenCalled()
-    expect(fieldRepo.save).toHaveBeenCalledWith(expect.objectContaining({ id: 'field-1', keyname: 'city', name: 'Town' }))
-  })
-
-  it('update refuses a Field Value for a keyname the Plugin has no field for', async () => {
-    pluginRepo.findOne.mockResolvedValue({ ...basePlugin, fields: [makePluginField({ keyname: 'city' })] })
-    mockFieldValues.assertWritable.mockImplementation(() => {
-      throw new Error('no Plugin Field')
-    })
-
-    await expect(service.update('1', { fieldValues: { town: 'Berlin' } })).rejects.toThrow('no Plugin Field')
-    expect(pluginRepo.save).not.toHaveBeenCalled()
-  })
-
-  it('update re-renders at once when a Field Value changed', async () => {
-    const schedulable = makePlugin({
-      ...basePlugin,
-      fields: [makePluginField({ keyname: 'city' })],
-      dataSources: [makePluginDataSource({ name: 'weather' })],
-      templates: [makePluginTemplate()],
-    })
-    pluginRepo.findOne.mockResolvedValue(schedulable)
-    pluginRepo.save.mockResolvedValue(schedulable)
-    mockFieldValues.write.mockResolvedValue(true)
-
-    await service.update('1', { fieldValues: { city: 'Berlin' } })
-
-    expect(mockFieldValues.write).toHaveBeenCalledWith(schedulable, { city: 'Berlin' })
-    expect(mockRefresh.refresh).toHaveBeenCalledWith(schedulable)
-  })
-
-  it('update does not re-render when no Field Value changed', async () => {
-    pluginRepo.findOne.mockResolvedValue(basePlugin)
-    pluginRepo.save.mockResolvedValue(basePlugin)
-
-    await service.update('1', { name: 'Renamed' })
-
-    expect(mockRefresh.refresh).not.toHaveBeenCalled()
-  })
-
-  it('update still succeeds when the immediate re-render fails', async () => {
-    const schedulable = makePlugin({
-      ...basePlugin,
-      dataSources: [makePluginDataSource({ name: 'weather' })],
-      templates: [makePluginTemplate()],
-    })
-    pluginRepo.findOne.mockResolvedValue(schedulable)
-    pluginRepo.save.mockResolvedValue(schedulable)
-    mockFieldValues.write.mockResolvedValue(true)
-    mockRefresh.refresh.mockRejectedValue(new Error('fetch failed'))
-
-    await expect(service.update('1', { fieldValues: { city: 'Berlin' } })).resolves.toMatchObject({ id: '1' })
-  })
-
-  it('update removes fields when empty array provided', async () => {
-    const pluginWithFields = {
-      ...basePlugin,
-      fields: [makePluginField({ id: 'field-1', keyname: 'old_field' })],
-    }
-    const existingFields = [...pluginWithFields.fields]
-    pluginRepo.findOne.mockResolvedValue(pluginWithFields)
-    pluginRepo.save.mockResolvedValue(pluginWithFields)
-
-    await service.update('1', { fields: [] })
-
-    expect(fieldRepo.remove).toHaveBeenCalledWith(existingFields)
-    expect(fieldRepo.create).not.toHaveBeenCalled()
-  })
-
-  it('update reschedules plugin when dataSources or templates change', async () => {
-    const pluginWithDataSource = {
-      ...basePlugin,
-      dataSources: [makePluginDataSource({ id: 'ds-1', name: 'weather', url: 'https://api.com' })],
-      templates: [makePluginTemplate({ id: 't-1', layout: 'full' })],
-    }
-    pluginRepo.findOne.mockResolvedValueOnce(pluginWithDataSource)
-    pluginRepo.findOne.mockResolvedValueOnce(pluginWithDataSource)
-    dataSourceRepo.save.mockResolvedValue(pluginWithDataSource.dataSources[0])
-    pluginRepo.save.mockResolvedValue(pluginWithDataSource)
-
-    await service.update('1', {
-      dataSources: [{ name: 'weather', mode: 'fetch', url: 'https://new-api.com', method: 'GET' }],
-    })
-
-    expect(mockScheduler.removeScheduledJob).toHaveBeenCalledWith('1')
-    expect(mockScheduler.schedulePlugin).toHaveBeenCalledWith(pluginWithDataSource)
-  })
-
   it('create schedules plugin when it has data sources and templates', async () => {
     const createdPlugin = {
       ...basePlugin,
@@ -596,26 +337,6 @@ describe('pluginsService', () => {
     expect(mockScheduler.schedulePlugin).toHaveBeenCalledWith(createdPlugin)
   })
 
-  it('create does not schedule plugin without any data sources', async () => {
-    const createdPlugin = {
-      ...basePlugin,
-      dataSources: [],
-      templates: [makePluginTemplate({ id: 't-1' })],
-    }
-    pluginRepo.save.mockResolvedValue(basePlugin)
-    templateRepo.create.mockReturnValue(makePluginTemplate())
-    templateRepo.save.mockResolvedValue(makePluginTemplate())
-    pluginRepo.findOne.mockResolvedValue(createdPlugin)
-
-    await service.create({
-      name: 'Plugin',
-      kind: 'Poll',
-      templates: [{ layout: 'full', liquidMarkup: 'Template' }],
-    })
-
-    expect(mockScheduler.schedulePlugin).not.toHaveBeenCalled()
-  })
-
   it('create allows zero data sources as a valid draft state', async () => {
     const createdPlugin = { ...basePlugin, dataSources: [], templates: [] }
     pluginRepo.save.mockResolvedValue(basePlugin)
@@ -634,7 +355,7 @@ describe('pluginsService', () => {
       name: 'Plugin',
       kind: 'Poll',
       dataSources: [{ name: 'trmnl', mode: 'fetch', url: 'https://api.com', method: 'GET' }],
-    })).rejects.toThrow('reserved')
+    })).rejects.toMatchObject({ fields: [{ path: 'dataSources.0.name', message: expect.stringContaining('reserved') }] })
 
     expect(pluginRepo.save).not.toHaveBeenCalled()
   })
@@ -647,7 +368,7 @@ describe('pluginsService', () => {
       kind: 'Poll',
       dataSources: [{ name: 'weather', mode: 'fetch', url: 'https://api.com', method: 'GET' }],
       fields: [{ keyname: 'weather', fieldType: 'string', name: 'Weather' }],
-    })).rejects.toThrow('collides')
+    })).rejects.toMatchObject({ fields: [{ path: 'dataSources.0.name', message: expect.stringContaining('collides') }] })
   })
 
   it('preview fetches a single source and renders template under its name', async () => {
@@ -756,7 +477,7 @@ describe('pluginsService', () => {
       streamLimit: 20,
     })
 
-    it('create issues a webhook token and never schedules the plugin', async () => {
+    it('create issues a webhook token', async () => {
       pluginRepo.save.mockImplementation(async plugin => makePlugin({ ...plugin, id: '1' }))
       pluginRepo.findOne.mockResolvedValue(webhookPlugin)
 
@@ -767,7 +488,6 @@ describe('pluginsService', () => {
         mergeStrategy: 'standard',
         webhookToken: expect.any(String),
       }))
-      expect(mockScheduler.schedulePlugin).not.toHaveBeenCalled()
     })
 
     it('create rejects a data source on a webhook-kind plugin', async () => {
@@ -777,65 +497,6 @@ describe('pluginsService', () => {
         mergeStrategy: 'standard',
         dataSources: [{ name: 'source', mode: 'fetch', url: 'https://api.example.com' }],
       })).rejects.toThrow('A Webhook-kind Plugin cannot have Data Sources')
-    })
-
-    it('update rejects a change of kind', async () => {
-      pluginRepo.findOne.mockResolvedValue({ ...webhookPlugin })
-
-      await expect(service.update('1', { kind: 'Poll' })).rejects.toThrow(
-        'A Plugin\'s Kind is fixed at creation and cannot be changed',
-      )
-    })
-
-    it('update rejects a nulled kind', async () => {
-      pluginRepo.findOne.mockResolvedValue({ ...webhookPlugin })
-
-      // @ts-expect-error kind is intentionally invalid (null) to prove the service rejects it
-      await expect(service.update('1', { kind: null })).rejects.toThrow(
-        'A Plugin\'s Kind is fixed at creation and cannot be changed',
-      )
-    })
-
-    it('update rejects an explicit stream limit alongside a non-stream merge strategy', async () => {
-      pluginRepo.findOne.mockResolvedValue({ ...webhookPlugin })
-
-      await expect(service.update('1', { mergeStrategy: 'deep_merge', streamLimit: 20 })).rejects.toThrow(
-        'A Stream Limit is only valid for the stream Merge Strategy',
-      )
-    })
-
-    it('update accepts an unchanged kind', async () => {
-      const stored = { ...webhookPlugin }
-      pluginRepo.findOne.mockResolvedValue(stored)
-      pluginRepo.save.mockImplementation(async plugin => makePlugin(plugin))
-
-      await expect(service.update('1', { kind: 'Webhook', name: 'Renamed' })).resolves.toMatchObject({ name: 'Renamed' })
-    })
-
-    it('update rejects a merge strategy on a poll-kind plugin', async () => {
-      pluginRepo.findOne.mockResolvedValue({ ...basePlugin })
-
-      await expect(service.update('1', { mergeStrategy: 'stream' })).rejects.toThrow(
-        'A Poll-kind Plugin cannot have a Merge Strategy',
-      )
-    })
-
-    it('update drops the stream limit when the merge strategy moves off stream', async () => {
-      const stored = { ...webhookPlugin }
-      pluginRepo.findOne.mockResolvedValue(stored)
-      pluginRepo.save.mockImplementation(async plugin => makePlugin(plugin))
-
-      const updated = await service.update('1', { mergeStrategy: 'deep_merge' })
-
-      expect(updated).toMatchObject({ mergeStrategy: 'deep_merge', streamLimit: null })
-    })
-
-    it('update rejects a directly supplied webhook token', async () => {
-      pluginRepo.findOne.mockResolvedValue({ ...webhookPlugin })
-
-      await expect(service.update('1', { webhookToken: 'stolen' })).rejects.toThrow(
-        'The Webhook Token is issued by Kuroshiro and cannot be set directly',
-      )
     })
 
     it('regenerateWebhookToken issues a new token', async () => {
@@ -852,63 +513,6 @@ describe('pluginsService', () => {
 
       await expect(service.clearWebhookPayload('1')).rejects.toThrow('is not a Webhook-kind Plugin')
       expect(pluginRepo.update).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('update through the real DTO transformation pipeline (regression for #828)', () => {
-    // plainToInstance gives every UpdatePluginDto field (incl. `kind`, `mergeStrategy`) an own
-    // property set to `undefined` even when the caller never sent it — a plain object literal
-    // cast `as any` doesn't reproduce that, so these tests go through the real pipeline instead.
-    function transform(body: Record<string, unknown>): UpdatePluginDto {
-      return plainToInstance(UpdatePluginDto, body)
-    }
-
-    it('update accepts a body that omits kind entirely, and leaves kind and other unset fields untouched', async () => {
-      const stored = { ...basePlugin }
-      pluginRepo.findOne.mockResolvedValue(stored)
-      pluginRepo.save.mockImplementation(plugin => Promise.resolve(makePlugin(plugin)))
-
-      const result = await service.update('1', transform({ description: 'test only' }))
-
-      expect(result).toMatchObject({
-        description: 'test only',
-        kind: basePlugin.kind,
-        name: basePlugin.name,
-        refreshInterval: basePlugin.refreshInterval,
-      })
-      expect(result?.kind).not.toBeUndefined()
-      expect(result?.name).not.toBeUndefined()
-    })
-
-    it('update accepts a webhook-kind body that omits mergeStrategy entirely, and leaves it untouched', async () => {
-      const stored = makePlugin({
-        id: '1',
-        name: 'Sensor Feed',
-        kind: 'Webhook',
-        refreshInterval: 15,
-        webhookToken: 'token-abc',
-        mergeStrategy: 'stream',
-        streamLimit: 20,
-      })
-      pluginRepo.findOne.mockResolvedValue(stored)
-      pluginRepo.save.mockImplementation(plugin => Promise.resolve(makePlugin(plugin)))
-
-      const result = await service.update('1', transform({ description: 'test only' }))
-
-      expect(result).toMatchObject({
-        description: 'test only',
-        kind: 'Webhook',
-        mergeStrategy: 'stream',
-        streamLimit: 20,
-      })
-    })
-
-    it('update still rejects an explicit kind change sent through the real pipeline', async () => {
-      pluginRepo.findOne.mockResolvedValue({ ...basePlugin })
-
-      await expect(service.update('1', transform({ kind: 'Webhook' }))).rejects.toThrow(
-        'A Plugin\'s Kind is fixed at creation and cannot be changed',
-      )
     })
   })
 

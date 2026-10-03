@@ -1,16 +1,71 @@
-import type { PluginKind } from 'kuroshiro-shared'
-import { OmitType, PartialType } from '@nestjs/mapped-types'
-import { IsIn, IsOptional } from 'class-validator'
-import { PLUGIN_KINDS } from 'kuroshiro-shared'
-import { CreatePluginDto } from './create-plugin.dto.js'
+import type { DataSourceInput, DataSourceMethod, TemplateSize, UpdatePluginInput } from 'kuroshiro-shared'
+import { Transform, Type } from 'class-transformer'
+import { IsArray, IsIn, IsInt, IsNotEmpty, IsObject, IsOptional, IsString, IsUUID, Max, Min, ValidateIf, ValidateNested } from 'class-validator'
+import { REFRESH_INTERVAL_BOUNDS, TEMPLATE_SIZES } from 'kuroshiro-shared'
+import { PluginDataSourceDto } from './plugin-data-source.dto.js'
+import { PluginFieldDto } from './plugin-field.dto.js'
 
-// `kind`, `sourceRecipeId` and `sourceRecipeSnapshot` are create-only: `kind` is fixed at
-// creation (enforced by PluginsService.update, see #828) so it's redeclared below without
-// CreatePluginDto's @MatchesPluginKind() constraint, which assumes a full creation-shaped
-// payload and would misfire against a partial update body. `sourceRecipeId` and
-// `sourceRecipeSnapshot` have no update semantics at all.
-export class UpdatePluginDto extends PartialType(OmitType(CreatePluginDto, ['kind', 'sourceRecipeId', 'sourceRecipeSnapshot'] as const)) {
+function isSent(_dto: object, value: unknown): boolean {
+  return value !== undefined
+}
+
+export class UpdateDataSourceDto extends PluginDataSourceDto implements DataSourceInput {
+  declare method?: DataSourceMethod
+
   @IsOptional()
-  @IsIn(PLUGIN_KINDS)
-  kind?: PluginKind
+  @IsUUID()
+  id?: string
+}
+
+export class UpdateTemplateDto {
+  @IsIn(TEMPLATE_SIZES)
+  size: TemplateSize
+
+  @IsString()
+  liquidMarkup: string
+}
+
+/**
+ * What the Plugin page's form holds. `kind`, `mergeStrategy`, `streamLimit`
+ * and `webhookToken` are fixed when a Plugin is created, so they are not
+ * declared and the validation pipe refuses them.
+ */
+export class UpdatePluginDto implements UpdatePluginInput {
+  @ValidateIf(isSent)
+  @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
+  @IsString()
+  @IsNotEmpty()
+  name?: string
+
+  @IsOptional()
+  @IsString()
+  description?: string | null
+
+  @ValidateIf(isSent)
+  @IsInt()
+  @Min(REFRESH_INTERVAL_BOUNDS.min)
+  @Max(REFRESH_INTERVAL_BOUNDS.max)
+  refreshInterval?: number
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UpdateTemplateDto)
+  templates?: UpdateTemplateDto[]
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UpdateDataSourceDto)
+  dataSources?: UpdateDataSourceDto[]
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PluginFieldDto)
+  fields?: PluginFieldDto[]
+
+  @IsOptional()
+  @IsObject()
+  fieldValues?: Record<string, string | null>
 }

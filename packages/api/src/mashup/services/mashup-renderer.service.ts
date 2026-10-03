@@ -5,6 +5,7 @@ import type { MashupSlot } from '../entities/mashup-slot.entity.js'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
+import { isRenderablePollPlugin } from '../../plugins/renderable-poll-plugin.js'
 import { PluginDataResolverService } from '../../plugins/services/plugin-data-resolver.service.js'
 import { PluginRendererService } from '../../plugins/services/plugin-renderer.service.js'
 import { PluginTemplateContextService } from '../../plugins/services/plugin-template-context.service.js'
@@ -51,8 +52,8 @@ export class MashupRendererService {
   private async renderSlot(slot: MashupSlot, sensors: DeviceSensor[]): Promise<string> {
     const plugin = slot.plugin
 
-    if (!plugin.dataSources || plugin.dataSources.length === 0 || !plugin.templates || plugin.templates.length === 0) {
-      throw new Error('Plugin missing data sources or templates')
+    if (!isRenderablePollPlugin(plugin)) {
+      throw new Error('Plugin is not a Poll-kind Plugin with a Template')
     }
 
     const templateContext = await this.pluginTemplateContext.build(plugin, sensors)
