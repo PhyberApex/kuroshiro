@@ -5,15 +5,15 @@ WORKDIR /app
 # PUPPETEER_EXECUTABLE_PATH), and puppeteer's download crashes with SIGILL under QEMU on
 # linux/arm64. Skips both the puppeteer postinstall and the root prepare script's install.
 ENV PUPPETEER_SKIP_DOWNLOAD=true
-COPY packages/ui ./packages/ui
+COPY packages/ui-next ./packages/ui-next
 COPY packages/shared ./packages/shared
 # pnpm's frozen install refuses a lockfile naming a workspace project whose manifest is
 # absent from the build context, so every manifest is present and --filter keeps the
 # install to this stage's own dependency subtree.
 COPY packages/api/package.json ./packages/api/package.json
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
-RUN corepack enable && pnpm install --frozen-lockfile --filter kuroshiro-ui...
-RUN pnpm --filter ./packages/ui build
+RUN corepack enable && pnpm install --frozen-lockfile --filter kuroshiro-ui-next...
+RUN pnpm --filter ./packages/ui-next build
 
 # Stage 2: Build api
 FROM node:24-alpine AS api-build
@@ -21,7 +21,7 @@ WORKDIR /app
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 COPY packages/api ./packages/api
 COPY packages/shared ./packages/shared
-COPY packages/ui/package.json ./packages/ui/package.json
+COPY packages/ui-next/package.json ./packages/ui-next/package.json
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 RUN corepack enable && pnpm install --frozen-lockfile --filter kuroshiro-api...
 RUN pnpm --filter ./packages/api run build && pnpm --filter ./packages/api run build:migrations
@@ -63,7 +63,7 @@ RUN apk add --no-cache \
 # not be reintroduced here.
 COPY --from=api-build /prod/api/node_modules ./node_modules
 COPY --from=api-build /app/packages/api/dist ./dist
-COPY --from=ui-build /app/packages/ui/dist ./public
+COPY --from=ui-build /app/packages/ui-next/dist ./public
 
 # Copy entrypoint
 COPY entrypoint.sh ./entrypoint.sh
