@@ -88,6 +88,18 @@ describe('switch', () => {
     await expect.element(control).toHaveAttribute('aria-checked', 'true')
   })
 
+  it('shows saving as a blinking thumb, and as a hollow one where motion is reduced', async () => {
+    const screen = await mount(Switch, { props: { saving: true }, slots: { default: 'Sleep Mode' } })
+    const thumb = screen.getByRole('switch', { name: 'Sleep Mode' }).element().firstElementChild!
+
+    await expect.poll(() => getComputedStyle(thumb).backgroundColor).toBe('rgba(0, 0, 0, 0)')
+    expect(getComputedStyle(thumb).boxShadow).toContain('inset')
+    await withMotionAllowed(async () => {
+      expect(getComputedStyle(thumb).animationDuration).toBe('1s')
+      expect(getComputedStyle(thumb).boxShadow).toBe('none')
+    })
+  })
+
   it('doubles its border when its change could not be saved', async () => {
     const screen = await mount(Switch, { props: { error: true }, slots: { default: 'Sleep Mode' } })
     const control = screen.getByRole('switch', { name: 'Sleep Mode' })

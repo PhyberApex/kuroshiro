@@ -25,11 +25,11 @@ describe('page list baselines', () => {
     try {
       const screen = await mountPage({
         routes: PAGES.map(page => ({ path: page.to as string, component: InstanceFrame })),
-        at: '/instance/firmware',
+        at: '/instance/simulator',
         theme,
       })
       const nav = screen.getByRole('navigation', { name: 'Instance' })
-      await expect.element(nav.getByRole('link', { name: 'Firmware' })).toHaveAttribute('aria-current', 'page')
+      await expect.element(nav.getByRole('link', { name: 'Device Simulator' })).toHaveAttribute('aria-current', 'page')
 
       await expectScreenshot(nav, `page-list-row-${theme}`)
     }

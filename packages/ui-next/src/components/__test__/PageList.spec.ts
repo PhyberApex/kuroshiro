@@ -23,7 +23,7 @@ const InstanceFrame = defineComponent(() => () => h(PageList, { label: 'Instance
 
 function mountList(at: string) {
   return mountPage({
-    routes: PAGES.map(page => ({ path: page.to as string, component: InstanceFrame })),
+    routes: [...PAGES.map(page => page.to as string), '/instance/firmware/upload'].map(path => ({ path, component: InstanceFrame })),
     at,
   })
 }
@@ -64,6 +64,13 @@ describe('page list', () => {
 
     await expect.element(screen.getByRole('link', { name: 'Housekeeping' })).toHaveAttribute('aria-current', 'page')
     await expect.element(screen.getByRole('link', { name: 'Firmware' })).not.toHaveAttribute('aria-current')
+  })
+
+  it('keeps a page current on a route below it', async () => {
+    const screen = await mountList('/instance/firmware/upload')
+
+    await expect.element(screen.getByRole('link', { name: 'Firmware' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.container.querySelectorAll('[aria-current]')).toHaveLength(1)
   })
 
   it('is a column with the current page in solid ink', async () => {

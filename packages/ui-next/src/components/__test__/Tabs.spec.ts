@@ -20,7 +20,7 @@ const DeviceView = defineComponent(() => () => h(Tabs, { label: 'Kitchen', items
 
 function mountTabs(at: string) {
   return mountPage({
-    routes: VIEWS.map(view => ({ path: view.to as string, component: DeviceView })),
+    routes: [...VIEWS.map(view => view.to as string), '/devices/kitchen/screens/new'].map(path => ({ path, component: DeviceView })),
     at,
   })
 }
@@ -49,6 +49,13 @@ describe('tabs', () => {
 
     await expect.element(screen.getByRole('link', { name: 'Logs' })).toHaveAttribute('aria-current', 'page')
     await expect.element(screen.getByRole('link', { name: 'Settings' })).not.toHaveAttribute('aria-current')
+  })
+
+  it('keeps the nearest tab above current on a route that has no tab of its own', async () => {
+    const screen = await mountTabs('/devices/kitchen/screens/new')
+
+    await expect.element(screen.getByRole('link', { name: 'Screens' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.container.querySelectorAll('[aria-current]')).toHaveLength(1)
   })
 
   it('draws a 2 px ink line under the current tab only', async () => {

@@ -68,11 +68,11 @@ const model = defineModel<boolean>({ default: false })
       border-color var(--duration-quick) var(--ease-out);
   }
 
-  /* The track is 16 px high; this is what a finger or a near miss lands on. */
+  /* The track is 32 by 16 px; this is the 44 px square a finger or a near miss lands on. */
   .track::before {
     content: "";
     position: absolute;
-    inset: -14px -6px;
+    inset: -15px -7px;
   }
 
   .thumb {
@@ -146,9 +146,16 @@ const model = defineModel<boolean>({ default: false })
     50% { opacity: 0; }
   }
 
+  /* Without the blink, saving is a hollow thumb. */
   @media (prefers-reduced-motion: reduce) {
     .track[aria-busy='true'] .thumb {
+      box-shadow: inset 0 0 0 2px var(--color-ink);
+      background: none;
       animation: none;
+    }
+
+    .track[aria-busy='true'][aria-checked='true'] .thumb {
+      box-shadow: inset 0 0 0 2px var(--color-paper);
     }
   }
 }

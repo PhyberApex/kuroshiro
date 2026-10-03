@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { NavItem } from './navItem'
 import { useTemplateRef, watch, watchEffect } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink } from 'vue-router'
+import { useCurrentNavItem } from './navItem'
 
-defineProps<{
+const props = defineProps<{
   /** What the pages belong to, such as "Instance". It names the navigation. */
   label: string
   items: NavItem[]
@@ -11,36 +12,43 @@ defineProps<{
   force?: Record<string, string>
 }>()
 
-const route = useRoute()
-const list = useTemplateRef('list')
+const current = useCurrentNavItem(() => props.items)
+const scroller = useTemplateRef('scroller')
+const pages = useTemplateRef('pages')
 
 /* Below 820 px the list is a row that scrolls sideways. It is scrolled by hand, because `scrollIntoView` would move the page too. */
 function revealCurrent() {
-  const current = list.value?.querySelector('[aria-current="page"]')
-  if (!list.value || !current)
+  const currentLink = scroller.value?.querySelector('[aria-current="page"]')
+  if (!scroller.value || !currentLink)
     return
-  const frame = list.value.getBoundingClientRect()
-  const link = current.getBoundingClientRect()
-  list.value.scrollLeft += Math.min(0, link.left - frame.left) + Math.max(0, link.right - frame.right)
+  const frame = scroller.value.getBoundingClientRect()
+  const link = currentLink.getBoundingClientRect()
+  scroller.value.scrollLeft += Math.min(0, link.left - frame.left) + Math.max(0, link.right - frame.right)
 }
 
-watch(() => route.path, revealCurrent, { flush: 'post' })
+watch(current, revealCurrent, { flush: 'post' })
 
-// Observing also covers the first layout and a window that is narrowed into the row.
+// Observing also covers the first layout, a window that is narrowed into the row and links that change width when the face loads.
 watchEffect((onCleanup) => {
-  if (!list.value)
+  if (!scroller.value || !pages.value)
     return
   const observer = new ResizeObserver(revealCurrent)
-  observer.observe(list.value)
+  observer.observe(scroller.value)
+  observer.observe(pages.value)
   onCleanup(() => observer.disconnect())
 })
 </script>
 
 <template>
-  <nav ref="list" class="page-list" :aria-label="label">
-    <ul class="pages">
-      <li v-for="item in items" :key="item.label">
-        <RouterLink class="page" :to="item.to" :data-force="force?.[item.label]">
+  <nav ref="scroller" class="page-list" :aria-label="label">
+    <ul ref="pages" class="pages">
+      <li v-for="(item, index) in items" :key="item.label">
+        <RouterLink
+          class="page"
+          :to="item.to"
+          :aria-current="index === current ? 'page' : undefined"
+          :data-force="force?.[item.label]"
+        >
           {{ item.label }}
         </RouterLink>
       </li>

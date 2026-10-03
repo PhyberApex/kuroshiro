@@ -1,23 +1,27 @@
 <script setup lang="ts">
 import type { NavItem } from './navItem'
 import { RouterLink } from 'vue-router'
+import { useCurrentNavItem } from './navItem'
 
-defineProps<{
+const props = defineProps<{
   /** What the tabs are the views of, such as the Device's name. It names the navigation. */
   label: string
   items: NavItem[]
   /** For the gallery: the states held still on a tab, by its label, such as `{ Settings: 'hover' }`. */
   force?: Record<string, string>
 }>()
+
+const current = useCurrentNavItem(() => props.items)
 </script>
 
 <template>
   <nav class="tabs" :aria-label="label">
     <RouterLink
-      v-for="item in items"
+      v-for="(item, index) in items"
       :key="item.label"
       class="tab"
       :to="item.to"
+      :aria-current="index === current ? 'page' : undefined"
       :data-force="force?.[item.label]"
     >
       {{ item.label }}

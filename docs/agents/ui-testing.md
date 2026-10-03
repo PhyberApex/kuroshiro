@@ -106,11 +106,10 @@ Primitives live flat in `src/components/`, named as the component inventory name
 
 A gallery file is rows of specimens: `SpecimenRow` (an optional `title`) holding one `Specimen` per state, whose `caption` is the state's name. Both are in `src/gallery/`.
 
-A state that needs a pointer or a key press is shown in the gallery in one of three ways:
+A state that needs a pointer, a key press or a narrow window is shown in the gallery in one of these ways:
 
 - **Hover and active**: for each such state its gallery shows, the component's own CSS answers `[data-force~='hover']` or `[data-force~='active']` beside `:hover` or `:active`, and the gallery sets `data-force="hover"` on it. The focus ring belongs to the page, so `data-force="focus"` works on any element with no CSS in the component.
 - **A state held in script** (an open tooltip, "Copied"): the component takes a prop for it, documented as being for the gallery (`tooltipOpen`, `copied`).
-
 - **A state of one choice among several** (a hovered segment, a focused tab): a component that draws its choices from a list takes a `force` prop, documented as being for the gallery, that maps a choice's key to the `data-force` value set on it: `:force="{ Settings: 'hover', Logs: 'focus' }"`.
 - **A state only a narrow window has** (the page list as a row below 820 px): the gallery is shot at desktop width, so the state gets its baselines from a `<Name>.shots.ts` that resizes the page first (`PageList.shots.ts`).
 - **A state behind a modal layer** (an open select): Reka hides everything but an open `Select` or `Combobox` list from assistive technology and traps the focus in it, so it cannot be held open on the gallery page. The gallery shows the control closed and says "press it"; the open state gets its baselines from a `<Name>.shots.ts` beside the component, which opens it for real and shoots a stage around it (`Select.shots.ts`), and its axe run in the spec, given the list (`expectAccessible(listbox)`).
@@ -126,11 +125,11 @@ A state that needs a pointer or a key press is shown in the gallery in one of th
 
 ### Choices and in-page navigation
 
-- **`Switch`** is labelled by its default slot and has the `#status` slot beside it for the save state. `saving` and `error` are its own looks while that state runs; it stays pressable in both.
+- **`Switch`** is labelled by its default slot and has the `#status` slot beside it for the save state. `saving` and `error` are its own looks while that state runs; it stays pressable in both. Where motion is reduced, saving is a hollow thumb instead of a blinking one, which is also what the baselines show.
 - **`WeekdayToggle`** holds its days as a Schedule does: an array of numbers where 0 is Sunday, given back in ascending order.
 - **`SegmentedFilter`**, **`RadioRow`** and **`LayoutPicker`** are Reka radio groups over a list of choices passed as a prop. Their name comes from an `aria-label` or `aria-labelledby` attribute, which lands on the group. `LayoutPicker` draws the layouts it is given; `layoutDrawing.ts` only knows how each known id arranges its slots.
 - **`Tabs`** and **`PageList`** take `label` (the name of the `nav`) and `items`, a list of `NavItem` (`{ label, to }`). They render `RouterLink`s, so they need a router: `mountPage` in a spec, and in a gallery file `RouteStage` from `src/gallery/`, which gives what is inside it a router of its own at the path `at`, so a specimen has a current link and a pressed link does not leave the gallery.
-- A link is current (`aria-current="page"`) when its route is exactly the current one, as `RouterLink` decides it. A route below a page (`/instance/firmware/upload`) therefore marks nothing.
+- The current link (`aria-current="page"`) is the item whose path the current route is at, or the nearest item above it (`useCurrentNavItem` in `navItem.ts`). So `/instance/firmware/upload` keeps "Firmware" current, and `/devices/7/settings` is "Settings" and not the Screens view at `/devices/7`. It compares paths, not route records, so it does not care how the routes are nested.
 
 Three things Reka UI does not do for you:
 
