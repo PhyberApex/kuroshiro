@@ -1,8 +1,8 @@
 import type { MashupConfiguration } from '../../mashup/entities/mashup-configuration.entity.js'
+import type { StoredFieldValues } from '../../plugins/plugin-field-values.js'
 import type { ParsedPlugin } from '../../plugins/services/plugin-importer.service.js'
 import type { Schedule } from '../../schedule/schedule.entity.js'
 import type {
-  AssignmentFieldValueManifestEntry,
   AssignmentManifestEntry,
   DeviceManifestEntry,
   FirmwareManifestEntry,
@@ -10,7 +10,6 @@ import type {
   MashupConfigurationManifestEntry,
   PaletteManifestEntry,
   PluginManifestEntry,
-  PluginManifestVariable,
   ScheduleManifestEntry,
   ScreenManifestEntry,
 } from '../types.js'
@@ -25,10 +24,10 @@ import { Palette } from '../../device-models/entities/palette.entity.js'
 import { Device } from '../../devices/devices.entity.js'
 import { Firmware } from '../../firmware/entities/firmware.entity.js'
 import { DevicePlugin } from '../../plugins/entities/device-plugin.entity.js'
-import { PluginFieldValue } from '../../plugins/entities/plugin-field-value.entity.js'
-import { PluginVariable } from '../../plugins/entities/plugin-variable.entity.js'
 import { Plugin } from '../../plugins/entities/plugin.entity.js'
+import { isSecretField } from '../../plugins/plugin-field-values.js'
 import { PluginExporterService } from '../../plugins/services/plugin-exporter.service.js'
+import { PluginFieldValuesService } from '../../plugins/services/plugin-field-values.service.js'
 import { Screen } from '../../screens/screens.entity.js'
 import { INSTANCE_SETTINGS_ID, InstanceSettings } from '../../settings/entities/instance-settings.entity.js'
 import { resolveAppPath } from '../../utils/pathHelper.js'
@@ -47,8 +46,6 @@ export class ConfigurationExportService {
     private readonly screenRepository: Repository<Screen>,
     @InjectRepository(DevicePlugin)
     private readonly devicePluginRepository: Repository<DevicePlugin>,
-    @InjectRepository(PluginFieldValue)
-    private readonly fieldValueRepository: Repository<PluginFieldValue>,
     @InjectRepository(Palette)
     private readonly paletteRepository: Repository<Palette>,
     @InjectRepository(Firmware)
@@ -56,18 +53,18 @@ export class ConfigurationExportService {
     @InjectRepository(InstanceSettings)
     private readonly instanceSettingsRepository: Repository<InstanceSettings>,
     private readonly pluginExporter: PluginExporterService,
+    private readonly fieldValues: PluginFieldValuesService,
   ) {}
 
   async exportToZip(options: { redact?: boolean } = {}): Promise<Buffer> {
     const redact = options.redact ?? false
     const zip = new AdmZip()
 
-    const [plugins, devices, screens, assignments, fieldValues, palettes, firmware, instanceSettings] = await Promise.all([
-      this.pluginRepository.find({ relations: { dataSources: true, templates: true, fields: true, variables: true } }),
+    const [plugins, devices, screens, assignments, palettes, firmware, instanceSettings] = await Promise.all([
+      this.pluginRepository.find({ relations: { dataSources: true, templates: true, fields: true } }),
       this.deviceRepository.find(),
       this.screenRepository.find({ relations: { device: true, plugin: true, schedule: true, mashupConfiguration: { slots: { plugin: true } } } }),
       this.devicePluginRepository.find({ relations: { device: true, plugin: true } }),
-      this.fieldValueRepository.find({ relations: { field: true, plugin: true, device: true } }),
       this.paletteRepository.find({ where: { kind: 'custom' } }),
       this.firmwareRepository.find({ where: { kind: 'custom' } }),
       this.instanceSettingsRepository.findOneBy({ id: INSTANCE_SETTINGS_ID }),
@@ -80,7 +77,8 @@ export class ConfigurationExportService {
         zip.addFile(`plugins/${plugin.id}/${entry.path}`, entry.content)
       }
     }
-    this.addJson(zip, CONFIG_ARCHIVE_FILES.plugins, plugins.map(plugin => this.buildPluginEntry(plugin, redact)))
+    const fieldValuesByPlugin = await this.fieldValues.storedByPlugin(plugins.map(plugin => plugin.id))
+    this.addJson(zip, CONFIG_ARCHIVE_FILES.plugins, plugins.map(plugin => this.buildPluginEntry(plugin, fieldValuesByPlugin.get(plugin.id) ?? {}, redact)))
 
     this.addJson(zip, CONFIG_ARCHIVE_FILES.devices, devices.map(device => this.buildDeviceEntry(device, redact)))
 
@@ -91,7 +89,7 @@ export class ConfigurationExportService {
     }
     this.addJson(zip, CONFIG_ARCHIVE_FILES.screens, screenEntries)
 
-    this.addJson(zip, CONFIG_ARCHIVE_FILES.assignments, assignments.map(assignment => this.buildAssignmentEntry(assignment, fieldValues)))
+    this.addJson(zip, CONFIG_ARCHIVE_FILES.assignments, assignments.map(assignment => this.buildAssignmentEntry(assignment)))
 
     this.addJson(zip, CONFIG_ARCHIVE_FILES.palettes, palettes.map(palette => this.buildPaletteEntry(palette)))
 
@@ -123,7 +121,7 @@ export class ConfigurationExportService {
     }
   }
 
-  private buildPluginEntry(plugin: Plugin, redact: boolean): PluginManifestEntry {
+  private buildPluginEntry(plugin: Plugin, fieldValues: StoredFieldValues, redact: boolean): PluginManifestEntry {
     return {
       id: plugin.id,
       kind: plugin.kind,
@@ -135,7 +133,7 @@ export class ConfigurationExportService {
       dataSources: (plugin.dataSources || []).map(ds => ({ id: ds.id, name: ds.name })),
       templates: (plugin.templates || []).map(template => ({ id: template.id, layout: template.layout })),
       fields: (plugin.fields || []).map(field => ({ id: field.id, keyname: field.keyname })),
-      variables: (plugin.variables || []).map(variable => this.buildVariableEntry(variable, redact)),
+      fieldValues: redact ? this.redactSecretFieldValues(plugin, fieldValues) : fieldValues,
     }
   }
 
@@ -160,13 +158,11 @@ export class ConfigurationExportService {
     }
   }
 
-  private buildVariableEntry(variable: PluginVariable, redact: boolean): PluginManifestVariable {
-    return {
-      id: variable.id,
-      key: variable.key,
-      value: redact && variable.isSecret ? CONFIGURATION_REDACTION_SENTINEL : variable.value,
-      isSecret: variable.isSecret,
-    }
+  private redactSecretFieldValues(plugin: Plugin, fieldValues: StoredFieldValues): StoredFieldValues {
+    const secretKeynames = new Set((plugin.fields || []).filter(isSecretField).map(field => field.keyname))
+    return Object.fromEntries(
+      Object.entries(fieldValues).map(([keyname, value]) => [keyname, secretKeynames.has(keyname) ? CONFIGURATION_REDACTION_SENTINEL : value]),
+    )
   }
 
   private buildDeviceEntry(device: Device, redact: boolean): DeviceManifestEntry {
@@ -256,18 +252,13 @@ export class ConfigurationExportService {
     zip.addFile(`screens/${screen.id}/${screen.filename ?? `${screen.id}.png`}`, readFileSync(imagePath))
   }
 
-  private buildAssignmentEntry(assignment: DevicePlugin, fieldValues: PluginFieldValue[]): AssignmentManifestEntry {
-    const values: AssignmentFieldValueManifestEntry[] = fieldValues
-      .filter(fieldValue => fieldValue.plugin.id === assignment.plugin.id && fieldValue.device?.id === assignment.device.id)
-      .map(fieldValue => ({ id: fieldValue.id, fieldId: fieldValue.field.id, value: fieldValue.value }))
-
+  private buildAssignmentEntry(assignment: DevicePlugin): AssignmentManifestEntry {
     return {
       id: assignment.id,
       deviceId: assignment.device.id,
       pluginId: assignment.plugin.id,
       order: assignment.order,
       isActive: assignment.isActive,
-      fieldValues: values,
     }
   }
 

@@ -16,10 +16,10 @@ import { promises as fs } from 'node:fs'
 import { NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMockDeviceSensorsService, primeMockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService.js'
-import { PluginTemplateContextService } from '../../plugins/services/plugin-template-context.service.js'
 import { jsonResponse, stubFetch } from '../../test/fetch.js'
 import { makeDevice, makeFirmware, makeMashupConfiguration, makeMashupSlot, makePlugin, makePluginDataSource, makePluginTemplate, makeSchedule, makeScreen } from '../../test/fixtures.js'
 import { createMockDeviceModelsService, createMockFallbackScreensService, GRAY_4, GRAY_16, OG_PLUS, primeMockDeviceModelsService, primeMockFallbackScreensService, V2 } from '../../test/mockDeviceModelsService.js'
+import { createPluginTemplateContextService } from '../../test/mockPluginCollaborators.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
 import { asService, injectPrivate } from '../../test/mockService.js'
 import { Display } from '../display.js'
@@ -94,7 +94,7 @@ describe('deviceDisplayService', () => {
       asService<PluginDataResolverService>({}),
       asService<PluginRendererService>({}),
       asService<DeviceSensorsService>(deviceSensors),
-      new PluginTemplateContextService(),
+      createPluginTemplateContextService(),
     )
     vi.resetAllMocks()
     primeMockDeviceModelsService(deviceModels)
@@ -248,6 +248,31 @@ describe('deviceDisplayService', () => {
       expect(screenRepo.update).toHaveBeenCalledWith({ id: 'screen2' }, expect.objectContaining({ cachedPluginOutput: '<b>1</b>' }))
       const html: string = puppeteerPage.setContent.mock.calls[0][0]
       expect(html).toContain('<div class="view view--full"><b>1</b></div>')
+    })
+
+    it('fetches and renders with the Plugin\'s Field Values, in both address forms, when rendering on demand', async () => {
+      const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS })
+      const plugin = makePlugin({
+        id: 'p1',
+        name: 'P',
+        dataSources: [makePluginDataSource({ name: 'source', method: 'GET', url: 'http://x/{{ city }}' })],
+        templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '{{ city }}' })],
+      })
+      primeRotation({ id: 'screen2', type: 'plugin', order: 2, plugin, filename: 'x' }, device)
+      const resolveAll = vi.fn().mockResolvedValue({ source: 1 })
+      const render = vi.fn().mockResolvedValue('<b>Berlin</b>')
+      injectPrivate(service, 'pluginDataResolver', { resolveAll })
+      injectPrivate(service, 'pluginRenderer', { render })
+      injectPrivate(service, 'pluginTemplateContext', createPluginTemplateContextService({ city: 'Berlin' }))
+
+      await service.getCurrentImage(headers)
+
+      const fieldValuesInContext = expect.objectContaining({
+        city: 'Berlin',
+        trmnl: expect.objectContaining({ plugin_settings: expect.objectContaining({ custom_fields_values: { city: 'Berlin' } }) }),
+      })
+      expect(resolveAll).toHaveBeenCalledWith(plugin.dataSources, fieldValuesInContext)
+      expect(render).toHaveBeenCalledWith('{{ city }}', fieldValuesInContext)
     })
 
     it('places cached mashup markup directly inside the shell', async () => {

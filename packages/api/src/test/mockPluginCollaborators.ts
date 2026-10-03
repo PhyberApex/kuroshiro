@@ -1,6 +1,8 @@
 import type { Mock } from 'vitest'
 import type { FetchableDataSource } from '../plugins/services/plugin-data-fetcher.service.js'
+import type { PluginFieldValuesService } from '../plugins/services/plugin-field-values.service.js'
 import { vi } from 'vitest'
+import { PluginTemplateContextService } from '../plugins/services/plugin-template-context.service.js'
 
 export interface MockPluginDataFetcherService {
   fetchData: Mock
@@ -49,4 +51,30 @@ export function createMockPluginTransformService(): MockPluginTransformService {
 
 export function createMockPluginRenderCacheService(): MockPluginRenderCacheService {
   return { invalidateMashupCaches: vi.fn() }
+}
+
+/** The real template context builder over a fixed set of resolved Field Values, for specs that don't have a database behind them. */
+export function createPluginTemplateContextService(resolvedFieldValues: Record<string, string> = {}): PluginTemplateContextService {
+  return new PluginTemplateContextService({ resolveFor: async () => resolvedFieldValues } as unknown as PluginFieldValuesService)
+}
+
+/** A Plugin with no stored Field Values: reads attach an empty view, writes change nothing. */
+export interface MockPluginFieldValuesService {
+  storedByPlugin: Mock<(pluginIds: string[]) => Promise<Map<string, Record<string, string>>>>
+  storedFor: Mock<() => Promise<Record<string, string>>>
+  resolveFor: Mock<() => Promise<Record<string, string>>>
+  attach: Mock<(plugins: object[]) => Promise<object[]>>
+  assertWritable: Mock
+  write: Mock<() => Promise<boolean>>
+}
+
+export function createMockPluginFieldValuesService(): MockPluginFieldValuesService {
+  return {
+    storedByPlugin: vi.fn(async (pluginIds: string[]) => new Map(pluginIds.map(id => [id, {} as Record<string, string>]))),
+    storedFor: vi.fn(async () => ({} as Record<string, string>)),
+    resolveFor: vi.fn(async () => ({} as Record<string, string>)),
+    attach: vi.fn(async (plugins: object[]) => plugins.map(plugin => ({ ...plugin, fieldValues: {}, needsValues: false }))),
+    assertWritable: vi.fn(),
+    write: vi.fn(async () => false),
+  }
 }

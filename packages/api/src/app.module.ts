@@ -29,7 +29,6 @@ import { PluginDataSource } from './plugins/entities/plugin-data-source.entity.j
 import { PluginFieldValue } from './plugins/entities/plugin-field-value.entity.js'
 import { PluginField } from './plugins/entities/plugin-field.entity.js'
 import { PluginTemplate } from './plugins/entities/plugin-template.entity.js'
-import { PluginVariable } from './plugins/entities/plugin-variable.entity.js'
 import { Plugin } from './plugins/entities/plugin.entity.js'
 import { PluginsModule } from './plugins/plugins.module.js'
 import { Schedule } from './schedule/schedule.entity.js'
@@ -58,7 +57,7 @@ const conf = config()
       username: conf.database.user,
       password: conf.database.password,
       database: conf.database.database,
-      entities: [Device, DeviceModel, Palette, DeviceSensor, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, PluginVariable, MashupConfiguration, MashupSlot, Schedule, Firmware, Alert, InstanceSettings],
+      entities: [Device, DeviceModel, Palette, DeviceSensor, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, MashupConfiguration, MashupSlot, Schedule, Firmware, Alert, InstanceSettings],
       migrations: (() => {
         const dir = path.join(process.cwd(), 'dist', 'src', 'migrations')
         if (!fs.existsSync(dir))

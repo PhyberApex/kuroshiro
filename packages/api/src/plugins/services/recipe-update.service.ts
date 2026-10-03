@@ -1,6 +1,7 @@
 import type { ApplyRecipeUpdateDto } from '../dto/apply-recipe-update.dto.js'
 import type { DevicePlugin } from '../entities/device-plugin.entity.js'
 import type { Plugin } from '../entities/plugin.entity.js'
+import type { PluginWithFieldValues } from './plugin-field-values.service.js'
 import type { ParsedPlugin } from './plugin-importer.service.js'
 import type {
   ComparableDataSource,
@@ -69,6 +70,7 @@ function toComparablePlugin(plugin: Plugin): ComparablePlugin {
       name: field.name,
       description: field.description,
       defaultValue: field.defaultValue,
+      options: field.options,
       required: field.required,
       order: field.order,
     })),
@@ -115,7 +117,7 @@ export class RecipeUpdateService {
     }
   }
 
-  async applyUpdate(pluginId: string, dto: ApplyRecipeUpdateDto): Promise<Plugin> {
+  async applyUpdate(pluginId: string, dto: ApplyRecipeUpdateDto): Promise<PluginWithFieldValues> {
     const { plugin, upstream, contentHash, items } = await this.prepareDiff(pluginId)
 
     if (contentHash !== dto.contentHash) {
@@ -197,8 +199,8 @@ export class RecipeUpdateService {
     return { basicFieldUpdates, reschedule }
   }
 
-  private async reload(pluginId: string): Promise<Plugin> {
-    const updated = await this.pluginRepository.findOne({ where: { id: pluginId }, relations: PLUGIN_UPDATE_RELATIONS })
+  private async reload(pluginId: string): Promise<PluginWithFieldValues> {
+    const updated = await this.pluginsService.findById(pluginId)
     if (!updated) {
       throw new NotFoundException(`Plugin ${pluginId} not found`)
     }
@@ -317,8 +319,9 @@ export class RecipeUpdateService {
     }
   }
 
-  // A removed field's stored values (one per Plugin Assignment) cascade-delete
-  // at the DB level via PluginFieldValue's `onDelete: 'CASCADE'` FK to PluginField.
+  // Matched by keyname: a kept Plugin Field keeps its id and so its Field
+  // Value, and a removed one takes its Field Value with it through
+  // PluginFieldValue's `onDelete: 'CASCADE'` FK to PluginField (ADR-0032).
   private async applyFieldItem(plugin: Plugin, item: UpdateItem): Promise<void> {
     const existing = plugin.fields.find(field => field.keyname === item.key)
 
@@ -336,6 +339,7 @@ export class RecipeUpdateService {
       name: upstream.name,
       description: upstream.description,
       defaultValue: upstream.defaultValue,
+      options: upstream.options,
       required: upstream.required,
       order: upstream.order,
     }

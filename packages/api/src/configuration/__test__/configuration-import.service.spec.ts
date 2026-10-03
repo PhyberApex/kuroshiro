@@ -27,7 +27,6 @@ const ENTITY_NAMES = [
   'PluginDataSource',
   'PluginTemplate',
   'PluginField',
-  'PluginVariable',
   'Device',
   'DeviceModel',
   'DevicePlugin',
@@ -60,6 +59,15 @@ function createFakeManager() {
       findOneBy: vi.fn(async (where: Record<string, unknown>) => {
         for (const row of table.values()) {
           if (Object.entries(where).every(([key, value]) => row[key] === value)) {
+            return { ...row }
+          }
+        }
+        return null
+      }),
+      // Only the `{ relation: { id } }` shape the import looks a Field Value up by.
+      findOne: vi.fn(async ({ where }: { where: Record<string, { id: string }> }) => {
+        for (const row of table.values()) {
+          if (Object.entries(where).every(([key, value]) => (row[key] as { id?: string } | undefined)?.id === value.id)) {
             return { ...row }
           }
         }
@@ -230,7 +238,6 @@ describe('configurationImportService', () => {
         dataSources: [{ id: 'ds-1', name: 'source' }],
         templates: [{ id: 'tpl-1', layout: 'full' }],
         fields: [],
-        variables: [],
       }],
       pluginFolders: {
         'plugin-1': {
@@ -254,7 +261,7 @@ describe('configurationImportService', () => {
         schedule: null,
         mashupConfiguration: null,
       }],
-      assignments: [{ id: 'dp-1', deviceId: 'device-1', pluginId: 'plugin-1', order: 0, isActive: true, fieldValues: [] }],
+      assignments: [{ id: 'dp-1', deviceId: 'device-1', pluginId: 'plugin-1', order: 0, isActive: true }],
     })
 
     const first = await service.importFromZip(buffer)
@@ -292,7 +299,6 @@ describe('configurationImportService', () => {
         dataSources: [{ id: 'ds-1', name: 'source' }],
         templates: [{ id: 'tpl-1', layout: 'full' }],
         fields: [],
-        variables: [],
       }],
       pluginFolders,
     })
@@ -311,7 +317,6 @@ describe('configurationImportService', () => {
         dataSources: [{ id: 'ds-2', name: 'source' }],
         templates: [{ id: 'tpl-2', layout: 'full' }],
         fields: [],
-        variables: [],
       }],
       pluginFolders: { 'plugin-2': pluginFolders['plugin-1'] },
     })
@@ -384,7 +389,6 @@ describe('configurationImportService', () => {
           dataSources: [],
           templates: [{ id: 'tpl-A', layout: 'full' }],
           fields: [],
-          variables: [],
         },
         {
           id: 'plugin-B',
@@ -396,7 +400,6 @@ describe('configurationImportService', () => {
           dataSources: [],
           templates: [{ id: 'tpl-B', layout: 'full' }],
           fields: [],
-          variables: [],
         },
       ],
       pluginFolders: {
@@ -480,7 +483,6 @@ describe('configurationImportService', () => {
         dataSources: [{ id: 'ds-1', name: 'source' }],
         templates: [{ id: 'tpl-1', layout: 'full' }],
         fields: [],
-        variables: [],
       }],
       pluginFolders: {
         'plugin-1': {
@@ -510,7 +512,6 @@ describe('configurationImportService', () => {
         dataSources: [{ id: 'ds-1', name: 'source' }],
         templates: [{ id: 'tpl-1', layout: 'full' }],
         fields: [],
-        variables: [],
       }],
       pluginFolders: {
         'plugin-1': {
@@ -543,7 +544,6 @@ describe('configurationImportService', () => {
         dataSources: [{ id: 'ds-1', name: 'source' }],
         templates: [{ id: 'tpl-1', layout: 'full' }],
         fields: [],
-        variables: [],
       }],
       pluginFolders: {
         'plugin-1': {
@@ -561,12 +561,8 @@ describe('configurationImportService', () => {
     expect(summary.warnings).toEqual([])
   })
 
-  it('keeps an existing Plugin Variable value when the archive holds the sentinel — including a legitimately empty one — and falls back to empty with a warning for one that has never had a value', async () => {
-    backing.get('Plugin')!.set('plugin-1', { id: 'plugin-1', name: 'Test Plugin', kind: 'Poll', refreshInterval: 15 })
-    backing.get('PluginVariable')!.set('var-1', { id: 'var-1', key: 'SECRET', value: 'real-secret', isSecret: true })
-    backing.get('PluginVariable')!.set('var-3', { id: 'var-3', key: 'EMPTY_SECRET', value: '', isSecret: true })
-
-    const buffer = buildArchive({
+  function fieldValuePlugin(fieldValues: Record<string, string>, legacy: Record<string, unknown> = {}) {
+    return {
       plugins: [{
         id: 'plugin-1',
         kind: 'Poll',
@@ -576,25 +572,103 @@ describe('configurationImportService', () => {
         sourceRecipeId: null,
         dataSources: [],
         templates: [{ id: 'tpl-1', layout: 'full' }],
-        fields: [],
-        variables: [
-          { id: 'var-1', key: 'SECRET', value: CONFIGURATION_REDACTION_SENTINEL, isSecret: true },
-          { id: 'var-2', key: 'NEW_SECRET', value: CONFIGURATION_REDACTION_SENTINEL, isSecret: true },
-          { id: 'var-3', key: 'EMPTY_SECRET', value: CONFIGURATION_REDACTION_SENTINEL, isSecret: true },
-        ],
+        fields: [{ id: 'field-key', keyname: 'api_key' }, { id: 'field-city', keyname: 'city' }],
+        fieldValues,
+        ...legacy,
       }],
       pluginFolders: {
-        'plugin-1': { manifest: { name: 'Test Plugin', custom_fields: [] }, templates: { full: 'Hello' } },
+        'plugin-1': {
+          manifest: {
+            name: 'Test Plugin',
+            custom_fields: [
+              { keyname: 'api_key', field_type: 'password', name: 'API key' },
+              { keyname: 'city', field_type: 'string', name: 'City' },
+            ],
+          },
+          templates: { full: 'Hello' },
+        },
       },
+    }
+  }
+
+  function storedFieldValues(): Record<string, unknown> {
+    return Object.fromEntries([...backing.get('PluginFieldValue')!.values()].map(row => [(row.field as { id: string }).id, row.value]))
+  }
+
+  it('imports a Plugin\'s Field Values onto its Plugin Fields, and changes nothing on a second import', async () => {
+    const buffer = buildArchive(fieldValuePlugin({ api_key: 'secret', city: 'Berlin' }))
+
+    const first = await service.importFromZip(buffer)
+    const second = await service.importFromZip(buffer)
+
+    expect(storedFieldValues()).toEqual({ 'field-key': 'secret', 'field-city': 'Berlin' })
+    expect(first.created.fieldValues).toBe(2)
+    expect(second.created.fieldValues).toBeUndefined()
+    expect(second.updated.fieldValues).toBe(2)
+    expect(backing.get('PluginFieldValue')!.size).toBe(2)
+    expect(first.warnings).toEqual([])
+  })
+
+  it('keeps an existing password Field Value when the archive holds the sentinel, and warns for one that has none', async () => {
+    backing.get('Plugin')!.set('plugin-1', { id: 'plugin-1', name: 'Test Plugin', kind: 'Poll', refreshInterval: 15 })
+    backing.get('PluginField')!.set('field-key', { id: 'field-key', keyname: 'api_key' })
+    backing.get('PluginFieldValue')!.set('value-1', { id: 'value-1', value: 'real-secret', field: { id: 'field-key' }, plugin: { id: 'plugin-1' } })
+
+    const kept = await service.importFromZip(buildArchive(fieldValuePlugin({ api_key: CONFIGURATION_REDACTION_SENTINEL, city: 'Berlin' })))
+
+    expect(storedFieldValues()).toEqual({ 'field-key': 'real-secret', 'field-city': 'Berlin' })
+    expect(kept.warnings).toEqual([])
+
+    backing.get('PluginFieldValue')!.clear()
+    const dropped = await service.importFromZip(buildArchive(fieldValuePlugin({ api_key: CONFIGURATION_REDACTION_SENTINEL })))
+
+    expect(storedFieldValues()).toEqual({})
+    expect(dropped.warnings).toEqual([expect.stringContaining('API key')])
+  })
+
+  it('warns about a Field Value whose keyname the Plugin has no Plugin Field for, and drops it', async () => {
+    const summary = await service.importFromZip(buildArchive(fieldValuePlugin({ town: 'Berlin' })))
+
+    expect(storedFieldValues()).toEqual({})
+    expect(summary.warnings).toEqual([expect.stringContaining('town')])
+  })
+
+  describe('a previous-version (schemaVersion 2) archive', () => {
+    const previousManifest = { kuroshiroVersion: '0.17.0', schemaVersion: 2, exportedAt: new Date().toISOString(), containsSecrets: true }
+
+    function previousVersionArchive(variables: unknown[], assignmentFieldValues: unknown[]) {
+      const { plugins, pluginFolders } = fieldValuePlugin({}, { variables })
+      const { fieldValues: _fieldValues, ...pluginEntry } = plugins[0]
+      return buildArchive({
+        manifest: previousManifest,
+        plugins: [pluginEntry],
+        pluginFolders,
+        devices: [{ id: 'device-1', name: 'Device', friendlyId: 'ABC123', mac: 'AA:BB:CC:DD:EE:FF', apikey: 'key', refreshRate: 300, deviceModelName: null, paletteId: null, mirrorEnabled: null, mirrorMac: null, mirrorApikey: null, sleepModeEnabled: false, sleepStartTime: null, sleepEndTime: null, sleepScreenEnabled: false, targetFirmwareId: null }],
+        assignments: [{ id: 'dp-1', deviceId: 'device-1', pluginId: 'plugin-1', order: 0, isActive: true, fieldValues: assignmentFieldValues }],
+      })
+    }
+
+    it('imports without a warning when it held no Plugin Variables and no per-Assignment Field Values', async () => {
+      const summary = await service.importFromZip(previousVersionArchive([], []))
+
+      expect(summary.created.plugins).toBe(1)
+      expect(summary.created.assignments).toBe(1)
+      expect(summary.warnings).toEqual([])
     })
 
-    const summary = await service.importFromZip(buffer)
+    it('ignores its Plugin Variables and per-Assignment Field Values, with one warning for each kind', async () => {
+      const summary = await service.importFromZip(previousVersionArchive(
+        [{ id: 'var-1', key: 'SECRET', value: 'x', isSecret: true }],
+        [{ id: 'fv-1', fieldId: 'field-city', value: 'Tokyo' }],
+      ))
 
-    const variables = [...backing.get('PluginVariable')!.values()]
-    expect(variables.find(v => v.id === 'var-1')!.value).toBe('real-secret')
-    expect(variables.find(v => v.id === 'var-2')!.value).toBe('')
-    expect(variables.find(v => v.id === 'var-3')!.value).toBe('')
-    expect(summary.warnings).toEqual([expect.stringContaining('NEW_SECRET')])
+      expect(storedFieldValues()).toEqual({})
+      expect(summary.created.variables).toBeUndefined()
+      expect(summary.warnings).toEqual([
+        expect.stringContaining('1 Plugin Variable'),
+        expect.stringContaining('1 Field Value'),
+      ])
+    })
   })
 
   it('keeps an existing Device\'s mirrorApikey when the archive holds the sentinel, with no warning', async () => {
@@ -676,7 +750,6 @@ describe('configurationImportService', () => {
         dataSources: [],
         templates: [{ id: 'tpl-1', layout: 'full' }],
         fields: [],
-        variables: [],
       }],
       pluginFolders: { 'plugin-1': { manifest: { name: 'Existing', custom_fields: [] }, templates: { full: 'Hello' } } },
     })
@@ -700,7 +773,6 @@ describe('configurationImportService', () => {
         dataSources: [],
         templates: [{ id: 'tpl-1', layout: 'full' }],
         fields: [],
-        variables: [],
       }],
       pluginFolders: { 'plugin-1': { manifest: { name: 'Test', custom_fields: [] }, templates: { full: 'Hello' } } },
     })

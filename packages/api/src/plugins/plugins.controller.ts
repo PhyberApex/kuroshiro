@@ -24,7 +24,7 @@ export class PluginsController {
 
   @Post('preview')
   async preview(@Body() previewData: PreviewPluginDto) {
-    return this.pluginsService.preview(previewData.sources, previewData.template, previewData.fieldValues)
+    return this.pluginsService.preview(previewData)
   }
 
   @Get()

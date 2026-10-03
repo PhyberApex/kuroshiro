@@ -181,11 +181,7 @@ describe('pluginsController', () => {
     const result = await controller.preview(previewData)
 
     expect(result).toBe(previewResult)
-    expect(mockService.preview).toHaveBeenCalledWith(
-      previewData.sources,
-      previewData.template,
-      undefined,
-    )
+    expect(mockService.preview).toHaveBeenCalledWith(previewData)
   })
 
   it('importPlugin imports from file without device assignment', async () => {

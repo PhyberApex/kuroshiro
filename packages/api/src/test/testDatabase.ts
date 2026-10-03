@@ -1,5 +1,6 @@
-import process from 'node:process'
+import { uuid_ossp } from '@electric-sql/pglite/contrib/uuid_ossp'
 import { DataSource } from 'typeorm'
+import { PGliteDriver } from 'typeorm-pglite'
 import { Alert } from '../alerts/entities/alert.entity.js'
 import { DeviceModel } from '../device-models/entities/device-model.entity.js'
 import { Palette } from '../device-models/entities/palette.entity.js'
@@ -19,18 +20,17 @@ import { Schedule } from '../schedule/schedule.entity.js'
 import { Screen } from '../screens/screens.entity.js'
 import { InstanceSettings } from '../settings/entities/instance-settings.entity.js'
 
-const AppDataSource = new DataSource({
-  type: 'postgres',
-  host: process.env.KUROSHIRO_DB_HOST || 'localhost',
-  port: Number.parseInt(process.env.KUROSHIRO_DB_PORT || '5432', 10),
-  username: process.env.KUROSHIRO_DB_USER || 'root',
-  password: process.env.KUROSHIRO_DB_PASSWORD || 'root',
-  database: process.env.KUROSHIRO_DB_DB || 'test',
-  entities: [Device, DeviceModel, Palette, DeviceSensor, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, MashupConfiguration, MashupSlot, Schedule, Firmware, Alert, InstanceSettings],
-  migrations: ['dist/src/migrations/*.js'],
-  migrationsTableName: 'migrations',
-  synchronize: false,
-  logging: process.env.NODE_ENV !== 'production',
-})
-
-export default AppDataSource
+/**
+ * A real Postgres (PGlite, in-process and in-memory) with the schema TypeORM
+ * derives from the entities, for specs whose subject is what the database
+ * does with a save: cascades, orphaned relations, unique constraints.
+ */
+export async function createTestDatabase(): Promise<DataSource> {
+  const dataSource = new DataSource({
+    type: 'postgres',
+    driver: new PGliteDriver({ extensions: { uuid_ossp } }).driver,
+    entities: [Device, DeviceModel, Palette, DeviceSensor, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, MashupConfiguration, MashupSlot, Schedule, Firmware, Alert, InstanceSettings],
+    synchronize: true,
+  })
+  return dataSource.initialize()
+}

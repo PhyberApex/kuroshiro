@@ -1,9 +1,9 @@
 import type { ConfigService } from '@nestjs/config'
-import type { PluginRendererService } from '../services/plugin-renderer.service.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { jsonResponse, stubFetch } from '../../test/fetch.js'
 import { asService } from '../../test/mockService.js'
 import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
+import { PluginRendererService } from '../services/plugin-renderer.service.js'
 
 const mockFetch = stubFetch()
 
@@ -56,6 +56,26 @@ describe('pluginDataFetcherService', () => {
     expect(mockFetch).toHaveBeenCalledWith('https://api.example.com', {
       method: 'GET',
       headers,
+    })
+  })
+
+  it('renders Liquid in the url, the header values and the body against the template context', async () => {
+    const liquid = new PluginRendererService()
+    mockRenderer.render.mockImplementation((template: string, data: object) => liquid.render(template, data))
+    mockFetch.mockResolvedValue(jsonResponse({}))
+
+    await service.fetchData(
+      'POST',
+      'https://api.example.com/{{ city }}',
+      { 'Authorization': 'Bearer {{ trmnl.plugin_settings.custom_fields_values.api_key }}', 'X-Plain': 'as-is' },
+      { query: { place: '{{ city }}', limit: 3 }, tags: ['{{ city }}', 'fixed'] },
+      { city: 'Berlin', trmnl: { plugin_settings: { custom_fields_values: { api_key: 's3cret' } } } },
+    )
+
+    expect(mockFetch).toHaveBeenCalledWith('https://api.example.com/Berlin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer s3cret', 'X-Plain': 'as-is' },
+      body: JSON.stringify({ query: { place: 'Berlin', limit: 3 }, tags: ['Berlin', 'fixed'] }),
     })
   })
 
