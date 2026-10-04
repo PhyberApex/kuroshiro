@@ -1,4 +1,4 @@
-import type { AlertSummary, CurrentFallbackScreen, CurrentMirroredScreen, CurrentScreenOfRotation, DeviceDetail, FallbackReason, ScreenRead } from 'kuroshiro-shared'
+import type { AlertSummary, CurrentFallbackScreen, CurrentMirroredScreen, CurrentScreenOfRotation, DeviceDetail, DeviceSummary, FallbackReason, ScreenRead } from 'kuroshiro-shared'
 import type { Sentence } from './sentence'
 import { clockTime } from '@/patterns/time'
 import { deviceSettingsPath } from './devicePaths'
@@ -28,22 +28,27 @@ export interface CurrentScreenStory {
   stampKey?: string
 }
 
-export interface DeviceTold {
-  device: DeviceDetail
+/** What the story is told from. A Device of the Devices list is enough; without its Screens the sentences leave out the Order and what is up next. */
+export interface CurrentScreenTold {
+  device: DeviceSummary
   screens: ScreenRead[]
   /** The Alerts firing on this Device. */
   alerts: AlertSummary[]
   now: Date
 }
 
-type Told<Current> = DeviceTold & { current: Current }
+export interface DeviceTold extends CurrentScreenTold {
+  device: DeviceDetail
+}
+
+type Told<Current> = CurrentScreenTold & { current: Current }
 
 const isOffline = (alerts: AlertSummary[]) => alerts.some(alert => alert.kind === 'device-offline')
 
 const pollOf = (at: string | null) => at ? `the ${clockTime(new Date(at))} poll` : 'its last poll'
 
 /** The `{hh:mm}` of the next poll, or nothing once that moment has passed. */
-export function nextPollTime({ nextPollAt }: Pick<DeviceDetail, 'nextPollAt'>, now: Date) {
+export function nextPollTime({ nextPollAt }: Pick<DeviceSummary, 'nextPollAt'>, now: Date) {
   const next = nextPollAt ? new Date(nextPollAt) : undefined
   return next && next > now ? clockTime(next) : undefined
 }
@@ -59,9 +64,9 @@ function nameOfServed({ current, screens }: Told<CurrentScreenOfRotation>) {
   return screenName(screens.find(screen => screen.id === current.screenId)?.name || current.name)
 }
 
-const wakeTime = ({ sleep }: DeviceDetail) => sleep.end ?? 'the end of its window'
+const wakeTime = ({ sleep }: DeviceSummary) => sleep.end ?? 'the end of its window'
 
-function resumeSentence({ device, screens }: DeviceTold) {
+function resumeSentence({ device, screens }: CurrentScreenTold) {
   const first = upNextOf(screens) ?? screens.find(screen => screen.state === 'active')
   return first
     ? sentence(`Rotation resumes at ${wakeTime(device)} with `, strong(screenName(first.name)), '.')
@@ -189,7 +194,7 @@ function mirroredImage({ device, current }: Told<CurrentMirroredScreen>): Curren
 }
 
 /** The plate's state, the heading beside it and its sentences, from what the Device's last poll was answered with. */
-export function currentScreenStory(told: DeviceTold): CurrentScreenStory {
+export function currentScreenStory(told: CurrentScreenTold): CurrentScreenStory {
   const current = told.device.currentScreen
   if (current.kind === 'screen')
     return screenOfRotation({ ...told, current })

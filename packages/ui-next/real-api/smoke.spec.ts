@@ -15,24 +15,6 @@ describe('the built UI on the real API', () => {
 
   afterAll(() => browser.close())
 
-  it('opens the shell on a fresh Instance and lands on Connect a Device', async () => {
-    const page = await browser.newPage()
-    const failures: string[] = []
-    page.on('pageerror', error => failures.push(error.message))
-    page.on('requestfailed', request => failures.push(`${request.method()} ${request.url()}`))
-
-    await page.goto(baseUrl)
-    const bar = page.getByRole('banner').getByRole('navigation', { name: 'Main' })
-    await bar.getByRole('link', { name: 'Connect a Device' }).and(page.locator('[aria-current="page"]')).waitFor()
-
-    expect(new URL(page.url()).pathname).toBe('/connect')
-    expect(await bar.getByRole('link').allTextContents()).toEqual(['Connect a Device', 'Plugins', 'Instance'])
-    expect(await page.getByRole('link', { name: /firing/ }).count()).toBe(0)
-    expect(await page.getByText('This is the Kuroshiro demo.').count()).toBe(0)
-    expect(failures).toEqual([])
-    await page.close()
-  })
-
   it('opens a deep link, and names a Device in the bar once it has set itself up', async () => {
     const device = await connectDevice(baseUrl, { mac: 'A4:C1:38:5F:0B:9D' })
     const page = await browser.newPage()

@@ -1,5 +1,5 @@
-import type { DeviceDetail, DeviceSummary } from 'kuroshiro-shared'
-import { apiGet } from './client'
+import type { CreateDeviceInput, DeviceDetail, DeviceSummary, UpdateDeviceInput } from 'kuroshiro-shared'
+import { apiGet, apiSend } from './client'
 
 const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
 
@@ -10,4 +10,13 @@ export async function listDevices() {
 
 export function getDevice(deviceId: string) {
   return apiGet<DeviceDetail>(`devices/${deviceId}`)
+}
+
+/** Registers a Device by hand. A MAC address already registered is refused with `device-mac-taken`. */
+export function createDevice(input: CreateDeviceInput) {
+  return apiSend<DeviceDetail>('POST', 'devices', input)
+}
+
+export function updateDevice(deviceId: string, input: UpdateDeviceInput) {
+  return apiSend<DeviceDetail>('PATCH', `devices/${deviceId}`, input)
 }

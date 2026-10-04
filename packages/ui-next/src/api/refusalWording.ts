@@ -27,6 +27,7 @@ const REFUSAL_WORDING: Record<ApiErrorCode, Wording> = {
   'service-unavailable': 'Not available right now.',
   'internal': 'Something went wrong on the server.',
   'device-not-found': 'That Device does not exist.',
+  'device-mac-taken': 'A Device with this MAC address is already registered.',
   'screen-not-found': 'That Screen does not exist.',
   'screen-field-not-for-kind': 'A Screen of that kind has no such setting.',
   'plugin-not-found': 'That Plugin does not exist.',
