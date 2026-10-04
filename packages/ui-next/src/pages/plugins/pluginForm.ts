@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import { computed, reactive, ref, shallowReactive, shallowRef } from 'vue'
 import { fieldErrorsOf } from '@/api/client'
 import { failureReason } from '@/components/failureReason'
-import { listed } from './pluginWording'
+import { listed } from '@/patterns/listed'
 
 export type PluginInputKey = keyof UpdatePluginInput
 

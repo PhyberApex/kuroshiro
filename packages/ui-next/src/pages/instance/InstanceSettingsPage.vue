@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import type { InstanceFacts, InstanceSettingsResponse } from 'kuroshiro-shared'
-import type { Load } from '@/patterns/useLoad'
-import { computed, reactive } from 'vue'
 import { RouterLink } from 'vue-router'
 import { getInstanceSettings } from '@/api/instance'
+import { joinLoads } from '@/patterns/joinLoads'
 import LoadBody from '@/patterns/LoadBody.vue'
 import ReadRow from '@/patterns/ReadRow.vue'
 import { useLoad } from '@/patterns/useLoad'
@@ -23,15 +22,7 @@ const instanceFacts = useInstanceFacts()
 const onlyDevice = useOnlyDevice()
 
 /** The page shows the Settings and the Instance facts together, so it waits for both and either one's failure is its notice. */
-const page: Load<{ settings: InstanceSettingsResponse, facts: InstanceFacts }> = reactive({
-  data: computed(() => settings.data && instanceFacts.data ? { settings: settings.data, facts: instanceFacts.data } : undefined),
-  waiting: computed(() => settings.waiting || instanceFacts.waiting),
-  failure: computed(() => settings.failure ?? instanceFacts.failure),
-  missing: false,
-  reload: async () => {
-    await Promise.all([settings.reload(), instanceFacts.reload()])
-  },
-})
+const page = joinLoads<{ settings: InstanceSettingsResponse, facts: InstanceFacts }>({ settings, facts: instanceFacts })
 
 const metricsUrl = (serverUrl: string) => `${serverUrl.replace(/\/+$/, '')}/metrics`
 

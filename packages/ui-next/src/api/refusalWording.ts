@@ -30,6 +30,8 @@ function recipeNotFound({ details }: ApiError) {
   return typeof id === 'string' ? `TRMNL has no Recipe ${id}.` : 'TRMNL has no such Recipe.'
 }
 
+const NOT_A_CONFIGURATION_ARCHIVE = 'This is not a Configuration Archive. It has to be the .zip a Configuration Export made.'
+
 export const NOT_IN_DEMO = 'Not available in the demo.'
 
 /**
@@ -85,6 +87,10 @@ const REFUSAL_WORDING: Record<ApiErrorCode, Wording> = {
   'recipe-strategy-unsupported': 'This Recipe gets its data pushed by TRMNL. Kuroshiro can only import Recipes that poll or hold fixed data. Build a Webhook Plugin instead.',
   // docs/ui/ has no sentence for it, so the server's own stands.
   'recipe-static-transform': ({ message }) => message,
+  'archive-not-zip': NOT_A_CONFIGURATION_ARCHIVE,
+  'archive-not-configuration': NOT_A_CONFIGURATION_ARCHIVE,
+  'archive-schema-version': 'This archive was made with an archive version this Kuroshiro does not read.',
+  'archive-record-refused': 'This archive holds a record that cannot be imported. Nothing was changed.',
 }
 
 /** A code this build does not know, from a newer server, falls back on the server's own sentence. */

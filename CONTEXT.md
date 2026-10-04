@@ -137,7 +137,7 @@ The one fixed string Configuration Export writes in place of every redacted secr
 _Avoid_: Placeholder, mask, `***`
 
 **Configuration Import**:
-Restoring a Configuration Archive onto an instance: an upsert of every record by its exported `id`, so re-importing the same archive is idempotent. Devices additionally re-attach by `mac` when an existing row has it. Refuses an archive whose `schemaVersion` is neither the running instance's nor the one before it; from the previous version it ignores Plugin Variables and per-Assignment Field Values, with a warning when the archive held any. Designed for a fresh instance; merging onto an instance that already holds unrelated content is not defined.
+Restoring a Configuration Archive onto an instance: an upsert of every record by its exported `id`, so re-importing the same archive is idempotent. Devices additionally re-attach by `mac` when an existing row has it. Refuses an archive whose `schemaVersion` is neither the running instance's nor the one before it; from the previous version it ignores Plugin Variables and per-Assignment Field Values, with a warning when the archive held any. Designed for a fresh instance; merging onto an instance that already holds unrelated content is not defined. An archive can be read before it is imported (`POST /api/config/import/check`): the same import run and rolled back, answering what it would add, overwrite and warn about without changing anything. A warning is a kind with the record it is about, never a sentence.
 _Avoid_: Restore (bare, in prose — reserve for the ADR's "restore targets a fresh instance" framing), sync
 
 **Special Function**:

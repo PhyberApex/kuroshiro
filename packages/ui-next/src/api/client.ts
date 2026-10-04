@@ -118,9 +118,9 @@ export async function apiSendForImage(method: WriteMethod, path: string, body: F
 }
 
 /** Has the browser download what `GET /api/{path}` answers as a file, under the name the server gives it. */
-export function apiDownload(path: string) {
+export function apiDownload(path: string, query?: Query) {
   const link = document.createElement('a')
-  link.href = apiAddress(path).href
+  link.href = apiAddress(path, query).href
   link.download = ''
   document.body.append(link)
   link.click()

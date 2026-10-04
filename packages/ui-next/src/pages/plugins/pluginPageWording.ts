@@ -4,10 +4,10 @@ import type { NavItem } from '@/components/navItem'
 import type { ProblemLine } from '@/components/problemLine'
 import { devicePath } from '@/pages/devices/devicePaths'
 import { possessive } from '@/pages/devices/screenNaming'
+import { listed } from '@/patterns/listed'
 import { clockTime } from '@/patterns/time'
 import { pluginPath } from './pluginPaths'
 import { whereItShows } from './pluginRows'
-import { listed } from './pluginWording'
 
 const MINUTES_IN_HOUR = 60
 
