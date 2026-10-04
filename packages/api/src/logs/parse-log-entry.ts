@@ -6,13 +6,13 @@ export type ParsedLogEntry = Pick<DeviceLogEntry, 'level' | 'message' | 'source'
 
 type FirmwareFields = Record<string, unknown>
 
-const FIRMWARE_LEVELS: Record<string, LogLevel> = {
-  fatal: 'error',
-  error: 'error',
-  warn: 'warning',
-  info: 'info',
-  debug: 'debug',
-}
+const FIRMWARE_LEVELS = new Map<unknown, LogLevel>([
+  ['fatal', 'error'],
+  ['error', 'error'],
+  ['warn', 'warning'],
+  ['info', 'info'],
+  ['debug', 'debug'],
+])
 
 const CURRENT_KNOWN_KEYS = ['id', 'created_at', 'message', 'level', 'source_path', 'source_line', 'wifi_signal', 'wifi_status', 'battery_voltage', 'firmware_version', 'free_heap_size', 'wake_reason']
 const LEGACY_STATUS_KNOWN_KEYS = ['wifi_rssi_level', 'wifi_status', 'battery_voltage', 'current_fw_version', 'free_heap_size', 'wakeup_reason']
@@ -73,7 +73,7 @@ function parseLegacy(fields: FirmwareFields): ParsedLogEntry {
 function parseCurrent(fields: FirmwareFields): ParsedLogEntry {
   const message = stringOrNull(fields.message) ?? ''
   return {
-    level: FIRMWARE_LEVELS[String(fields.level)] ?? levelFromKeywords(message),
+    level: FIRMWARE_LEVELS.get(fields.level) ?? levelFromKeywords(message),
     message,
     source: sourceOf(fields.source_path, fields.source_line),
     status: statusOf({

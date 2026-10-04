@@ -1,6 +1,7 @@
 import type { DeviceLogPage } from 'kuroshiro-shared'
 import type { DataSource } from 'typeorm'
 import type { HttpTestApp } from '../../test/httpApp.js'
+import { Buffer } from 'node:buffer'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { Device } from '../../devices/devices.entity.js'
 import { createHttpTestApp } from '../../test/httpApp.js'
@@ -221,6 +222,7 @@ describe('the Device Log against a real database', () => {
       ['an unknown level', '?level=errors', 'level'],
       ['a cursor it never answered', '?before=nonsense', 'before'],
       ['an after cursor it never answered', '?after=nonsense', 'after'],
+      ['a cursor with more in it than a date and an id', `?before=${Buffer.from(`2026-09-30T09:00:00.000Z_${UNKNOWN_ID}_more`).toString('base64url')}`, 'before'],
     ])('refuses %s with 400', async (_what, query, path) => {
       const response = await http.request(`/api/devices/${kitchen.id}/logs${query}`)
 

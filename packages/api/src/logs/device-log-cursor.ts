@@ -14,7 +14,7 @@ export function encodeCursor({ date, id }: LogPosition): string {
 }
 
 export function decodeCursor(cursor: string): LogPosition | null {
-  const [iso, id] = Buffer.from(cursor, 'base64url').toString().split(SEPARATOR)
+  const [iso, id, ...rest] = Buffer.from(cursor, 'base64url').toString().split(SEPARATOR)
   const date = new Date(iso)
-  return !Number.isNaN(date.getTime()) && isUUID(id) ? { date, id } : null
+  return rest.length === 0 && !Number.isNaN(date.getTime()) && isUUID(id) ? { date, id } : null
 }

@@ -63,18 +63,17 @@ export interface MarkedPart {
   marked: boolean
 }
 
+const asText = (sought: string) => sought.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
 /** A message in runs, with every occurrence of what is searched for marked, whatever its case. */
 export function markedParts(message: string, q: string): MarkedPart[] {
   if (!q)
     return [{ text: message, marked: false }]
-  const sought = q.toLowerCase()
-  const parts: MarkedPart[] = []
-  let from = 0
-  for (let at = message.toLowerCase().indexOf(sought); at !== -1; at = message.toLowerCase().indexOf(sought, from)) {
-    parts.push({ text: message.slice(from, at), marked: false }, { text: message.slice(at, at + q.length), marked: true })
-    from = at + q.length
-  }
-  return [...parts, { text: message.slice(from), marked: false }].filter(part => part.text !== '')
+  // Splitting on a captured group keeps the matches, at every odd place.
+  return message
+    .split(new RegExp(`(${asText(q)})`, 'gi'))
+    .map((text, index) => ({ text, marked: index % 2 === 1 }))
+    .filter(part => part.text !== '')
 }
 
 export interface EntryFact {

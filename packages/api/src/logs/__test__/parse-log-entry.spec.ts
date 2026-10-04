@@ -44,6 +44,7 @@ describe('parsing a Device Log entry', () => {
     it('falls back to the keywords of the message for a level it does not know', () => {
       expect(parseLogEntry({ id: 1, message: 'wifi warning: weak signal', level: 'verbose' }).level).toBe('warning')
       expect(parseLogEntry({ id: 1, message: 'display poll' }).level).toBe('info')
+      expect(parseLogEntry({ id: 1, message: 'display poll', level: 'constructor' }).level).toBe('info')
     })
 
     it('answers no source and no Device status for an entry that carries neither', () => {

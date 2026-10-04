@@ -26,7 +26,6 @@ export function listDeviceLogs(deviceId: string, query: DeviceLogsQuery = {}) {
   return apiGet<DeviceLogPage>(`devices/${deviceId}/logs`, { ...query })
 }
 
-/** Clears the whole Device Log. */
 export function clearDeviceLogs(deviceId: string) {
   return apiSend('DELETE', `devices/${deviceId}/logs`)
 }

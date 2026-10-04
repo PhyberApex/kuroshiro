@@ -2,6 +2,7 @@
 import type { DeviceLogEntry } from 'kuroshiro-shared'
 import { computed } from 'vue'
 import Icon from '@/components/Icon.vue'
+import { entryLineId } from './deviceLog'
 import { entryFacts, logTime, markedParts } from './deviceLogWording'
 
 const props = defineProps<{
@@ -18,7 +19,7 @@ defineEmits<{
 const time = computed(() => logTime(new Date(props.entry.at)))
 const message = computed(() => markedParts(props.entry.message, props.sought))
 const facts = computed(() => entryFacts(props.entry))
-const lineId = computed(() => `log-entry-${props.entry.id}`)
+const lineId = computed(() => entryLineId(props.entry.id))
 const factsId = computed(() => `${lineId.value}-facts`)
 </script>
 
@@ -39,7 +40,7 @@ const factsId = computed(() => `${lineId.value}-facts`)
     </button>
     <div v-if="open" :id="factsId" class="carried">
       <dl v-if="facts.length > 0" class="entry-facts">
-        <div v-for="fact in facts" :key="fact.label" class="entry-fact">
+        <div v-for="(fact, index) in facts" :key="index" class="entry-fact">
           <dt>{{ fact.label }}</dt>
           <dd>{{ fact.value }}</dd>
         </div>

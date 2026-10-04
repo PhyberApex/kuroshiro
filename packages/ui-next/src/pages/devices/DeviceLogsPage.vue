@@ -12,7 +12,7 @@ import EmptyState from '@/components/EmptyState.vue'
 import Notice from '@/components/Notice.vue'
 import { useLoad } from '@/patterns/useLoad'
 import { useDeviceFrame } from './deviceFrame'
-import { useDeviceLog } from './deviceLog'
+import { entryLineId, useDeviceLog } from './deviceLog'
 import DeviceLogBar from './DeviceLogBar.vue'
 import DeviceLogEntries from './DeviceLogEntries.vue'
 import DeviceLogFoot from './DeviceLogFoot.vue'
@@ -75,7 +75,7 @@ async function showOlder() {
   if (!firstOlder)
     return
   await nextTick()
-  document.getElementById(`log-entry-${firstOlder}`)?.focus()
+  document.getElementById(entryLineId(firstOlder))?.focus()
 }
 
 const clearing = ref(false)
