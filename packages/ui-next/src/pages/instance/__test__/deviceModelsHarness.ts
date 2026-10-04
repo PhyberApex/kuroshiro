@@ -1,4 +1,4 @@
-import type { DeviceModelList, DeviceModelRead, DeviceModelSyncResult, DeviceReference, PaletteRead } from 'kuroshiro-shared'
+import type { CreateCustomPaletteInput, DeviceModelList, DeviceModelRead, DeviceModelSyncResult, DeviceReference, PaletteRead, UpdateCustomPaletteInput } from 'kuroshiro-shared'
 import { http, HttpResponse } from 'msw'
 import { expect } from 'vitest'
 import { api, apiUrl } from '@/testing/api/server'
@@ -44,7 +44,7 @@ const SOFT_RED = buildPalette({
 })
 
 function model(name: string, label: string, paletteIds: string[], overrides: Partial<DeviceModelRead> = {}) {
-  return buildDeviceModel({ name, label, paletteIds, syncedAt: LAST_SYNCED, ...overrides })
+  return buildDeviceModel({ name, label, paletteIds, defaultPaletteId: paletteIds.at(-1) ?? null, syncedAt: LAST_SYNCED, ...overrides })
 }
 
 export const KOBO_AURA = model('kobo_aura', 'Kobo Aura', ['bw', 'gray-16'], { width: 758, height: 1024, deprecated: true, syncedAt: '2026-09-02T04:00:00.000Z' })
@@ -54,7 +54,7 @@ export const DEVICE_MODELS: DeviceModelRead[] = [
   model('inkplate_10', 'Inkplate 10', ['bw', 'gray-4'], { width: 1200, height: 825 }),
   model('kindle_pw_7', 'Kindle Paperwhite 7', ['bw', 'gray-4', 'gray-16'], { width: 1236, height: 1648 }),
   KOBO_AURA,
-  model('seeed_e1002', 'Seeed reTerminal E1002', ['bw', 'color-6a', 'study-panel'], { usedBy: [study] }),
+  model('seeed_e1002', 'Seeed reTerminal E1002', ['bw', 'color-6a', 'study-panel'], { defaultPaletteId: 'color-6a', usedBy: [study] }),
   model('og_plus', 'TRMNL OG', ['bw', 'gray-4'], { usedBy: [hallway, kitchen] }),
   model('og_png', 'TRMNL OG (1-bit)', ['bw']),
   model('v2', 'TRMNL X', ['bw', 'gray-4', 'gray-16'], { width: 1872, height: 1404 }),
@@ -77,7 +77,12 @@ export interface FakedDeviceModels {
   syncAnswer: DeviceModelSyncResult | Response
   /** While set, a sync is not answered until it resolves. */
   holding?: Promise<unknown>
+  /** Every write to a custom Palette, in order. */
+  writes: { method: string, path: string, body?: unknown }[]
 }
+
+/** The id the server gives the custom Palette a test adds. */
+const NEW_PALETTE_ID = 'f3a1c2d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d'
 
 interface Faked {
   models?: DeviceModelRead[]
@@ -98,7 +103,9 @@ export function fakeDeviceModels({
     palettes,
     syncs: 0,
     syncAnswer: { models: 38, palettes: 11, deprecatedModels: 0, deprecatedPalettes: 0, ranAt: NOW },
+    writes: [],
   }
+  const written = (method: string, path: string, body?: unknown) => faked.writes.push({ method, path, ...(body === undefined ? {} : { body }) })
   freezeTime(NOW)
   fakeShellReads({ devices: devices.map(device => buildDeviceSummary(device)) })
   api.use(
@@ -111,6 +118,24 @@ export function fakeDeviceModels({
         return faked.syncAnswer.clone()
       faked.list = { ...faked.list, lastSync: { ranAt: faked.syncAnswer.ranAt, ok: true, error: null } }
       return HttpResponse.json(faked.syncAnswer)
+    }),
+    http.post(apiUrl('device-models/palettes'), async ({ request }) => {
+      const body = await request.json() as CreateCustomPaletteInput
+      written('POST', 'device-models/palettes', body)
+      const created = buildPalette({ id: NEW_PALETTE_ID, kind: 'custom', grays: 2, colors: body.colors, name: body.name, frameworkClass: body.frameworkClass, grayscaleBitDepth: null, syncedAt: null })
+      faked.palettes = [...faked.palettes, created]
+      return HttpResponse.json(created, { status: 201 })
+    }),
+    http.patch(apiUrl('device-models/palettes/:id'), async ({ request, params }) => {
+      const body = await request.json() as UpdateCustomPaletteInput
+      written('PATCH', `device-models/palettes/${params.id}`, body)
+      faked.palettes = faked.palettes.map(palette => palette.id === params.id ? { ...palette, ...body } : palette)
+      return HttpResponse.json(faked.palettes.find(palette => palette.id === params.id))
+    }),
+    http.delete(apiUrl('device-models/palettes/:id'), ({ params }) => {
+      written('DELETE', `device-models/palettes/${params.id}`)
+      faked.palettes = faked.palettes.filter(palette => palette.id !== params.id)
+      return new HttpResponse(null, { status: 204 })
     }),
   )
   return faked

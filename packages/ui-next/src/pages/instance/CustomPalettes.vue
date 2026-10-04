@@ -1,25 +1,61 @@
 <script setup lang="ts">
-import type { PaletteRead } from 'kuroshiro-shared'
+import type { DeviceModelRead, PaletteRead } from 'kuroshiro-shared'
 import { computed } from 'vue'
+import { RouterLink, useRoute } from 'vue-router'
+import Button from '@/components/Button.vue'
+import Icon from '@/components/Icon.vue'
 import { customPalettesByName } from './deviceModelsWording'
 import InstanceSection from './InstanceSection.vue'
+import PaletteDeletion from './PaletteDeletion.vue'
+import PaletteForm from './PaletteForm.vue'
 import PaletteRow from './PaletteRow.vue'
 
 const props = defineProps<{
   palettes: PaletteRead[]
+  models: DeviceModelRead[]
 }>()
 
+defineEmits<{
+  /** A custom Palette was added, changed or deleted: what the page shows is to be read again. */
+  changed: []
+}>()
+
+const route = useRoute()
+
 const custom = computed(() => customPalettesByName(props.palettes))
+/** Whose form is open, from `?palette=`: `new`, or the id of a custom Palette. One form is open at a time. */
+const open = computed(() => typeof route.query.palette === 'string' ? route.query.palette : undefined)
+const formFor = (palette?: PaletteRead) => ({ query: { palette: palette?.id ?? 'new' } })
 </script>
 
 <template>
   <InstanceSection id="custom-palettes" title="Custom Palettes">
-    <!-- #aside: "Add a custom Palette", and its form between the heading and the rows (#1175) -->
+    <template #aside>
+      <Button as-child>
+        <RouterLink :to="formFor()">
+          <Icon name="plus" />Add a custom Palette
+        </RouterLink>
+      </Button>
+    </template>
+    <div v-if="open === 'new'" class="new-form">
+      <PaletteForm :palettes="palettes" @saved="$emit('changed')" />
+    </div>
     <ul v-if="custom.length > 0">
-      <!-- A row's "Edit" and "Delete" stand after its Devices, and its form opens in LibraryRow's #form (#1175) -->
-      <PaletteRow v-for="palette in custom" :key="palette.id" :palette="palette" />
+      <PaletteRow v-for="palette in custom" :key="palette.id" :palette="palette">
+        <template #actions>
+          <Button as-child>
+            <RouterLink :to="formFor(palette)" :aria-label="`Edit ${palette.name}`">
+              Edit
+            </RouterLink>
+          </Button>
+          <PaletteDeletion :palette="palette" :models="models" :palettes="palettes" @deleted="$emit('changed')" />
+        </template>
+        <template v-if="open === palette.id" #form>
+          <PaletteForm :palette="palette" :palettes="palettes" @saved="$emit('changed')" />
+        </template>
+      </PaletteRow>
     </ul>
-    <p v-else class="none">
+    <p v-else-if="open !== 'new'" class="none">
       None yet. A colour panel rarely shows the exact red or yellow TRMNL's Palette assumes. A custom Palette holds the colours your panel really shows, so images are reduced to those.
     </p>
   </InstanceSection>
@@ -32,6 +68,11 @@ const custom = computed(() => customPalettesByName(props.palettes))
     margin-top: var(--space-3);
     color: var(--color-ink-soft);
     text-wrap: pretty;
+  }
+
+  .new-form {
+    padding: var(--space-4) 0 var(--space-5);
+    border-bottom: var(--rule);
   }
 }
 </style>

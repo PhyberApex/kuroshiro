@@ -5,6 +5,7 @@ export const instancePagePath = (page: string) => `${INSTANCE_PATH}/${page}`
 
 export const FIRMWARE_PATH = instancePagePath('firmware')
 export const UPLOAD_FIRMWARE_PATH = `${FIRMWARE_PATH}/upload`
+export const DEVICE_MODELS_PATH = instancePagePath('models')
 export const HOUSEKEEPING_PATH = instancePagePath('housekeeping')
 
 /** The sections of Instance Settings other pages link to, each by the fragment it answers to. */

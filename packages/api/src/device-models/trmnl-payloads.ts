@@ -1,5 +1,6 @@
 import type { DeviceModel } from './entities/device-model.entity.js'
 import type { Palette } from './entities/palette.entity.js'
+import { HEX_COLOR_PATTERN } from 'kuroshiro-shared'
 
 export const TRMNL_API_URL = 'https://usetrmnl.com/api'
 
@@ -38,7 +39,6 @@ export type DeviceModelAttributes = Omit<DeviceModel, 'deprecated' | 'syncedAt'>
 export type PaletteAttributes = Omit<Palette, 'deprecated' | 'syncedAt'>
 
 const ID_PATTERN = /^[\w.-]+$/
-export const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i
 const CSS_CLASS_PATTERN = /^[\w-]+$/
 const MODEL_NUMERIC_FIELDS = ['width', 'height', 'colors', 'bit_depth', 'scale_factor', 'rotation', 'offset_x', 'offset_y'] as const
 

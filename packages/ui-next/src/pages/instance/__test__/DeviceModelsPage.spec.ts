@@ -10,6 +10,7 @@ import { DEVICES, NOW, rowsOf } from './firmwareHarness'
 
 const main = (screen: Screen) => screen.getByRole('main').element()
 const tucked = (screen: Screen, id: string) => main(screen).querySelector(`#${id}`)
+const section = (screen: Screen) => screen.getByRole('region', { name: 'Custom Palettes' }).element()
 const swatchesOf = (row: Element) => [...row.querySelectorAll<HTMLElement>('.swatches > *')].map(square => getComputedStyle(square).backgroundColor)
 
 describe('the Device Models and Palettes page', () => {
@@ -29,8 +30,8 @@ describe('the Device Models and Palettes page', () => {
       const section = screen.getByRole('region', { name: 'Custom Palettes' }).element()
 
       expect(rowsOf(section)).toEqual([
-        ['Soft red', 'Black, white and red'],
-        ['Study panel, measured', 'Six colours', 'Study'],
+        ['Soft red', 'Black, white and red', 'Edit Delete'],
+        ['Study panel, measured', 'Six colours', 'Study Edit Delete'],
       ])
       const sections = [...main(screen).querySelectorAll('section')].map(found => found.getAttribute('id'))
       expect(sections).toEqual(['custom-palettes', 'device-models'])
@@ -190,16 +191,219 @@ describe('the Device Models and Palettes page', () => {
     })
   })
 
-  it('offers nothing to edit: the sync is its only action', async () => {
+  it('offers custom Palettes as the only thing to add, change or delete; everything else is read', async () => {
     fakeDeviceModels()
     const screen = await mountLoadedDeviceModels(`${MODELS_PATH}#trmnl-palettes`)
     await screen.getByRole('button', { name: 'The other 5 Device Models' }).click()
     await expect.element(screen.getByRole('searchbox', { name: 'Find a Device Model' })).toBeVisible()
 
-    const buttons = [...main(screen).querySelectorAll('.page-heading button, .body button')].map(words)
-    expect(buttons).toEqual(['Sync from TRMNL', 'The other 5 Device Models', 'TRMNL\'s Palettes (5)'])
+    const actions = [...main(screen).querySelectorAll('.page-heading button, .body :is(button, a.button)')].map(action => action.getAttribute('aria-label') ?? words(action))
+    expect(actions).toEqual(['Sync from TRMNL', 'Add a custom Palette', 'Edit Soft red', 'Delete Soft red', 'Edit Study panel, measured', 'Delete Study panel, measured', 'The other 5 Device Models', 'TRMNL\'s Palettes (5)'])
     const controls = [...main(screen).querySelectorAll('.body :is(input, select, textarea, [contenteditable])')]
     expect(controls.map(control => control.getAttribute('aria-label'))).toEqual(['Find a Device Model'])
+  })
+
+  describe('adding a custom Palette', () => {
+    const form = (screen: Screen) => screen.getByRole('form', { name: 'New custom Palette' })
+    const colourValues = (screen: Screen) => [...form(screen).element().querySelectorAll<HTMLInputElement>('.colour-row input')].map(input => input.value)
+
+    it('opens the form under the section heading on "Add a custom Palette", starting from TRMNL\'s black, white and red, and hides the empty text', async () => {
+      fakeDeviceModels({ palettes: TRMNL_PALETTES })
+      const screen = await mountLoadedDeviceModels()
+
+      await screen.getByRole('link', { name: 'Add a custom Palette' }).click()
+
+      await expect.element(form(screen)).toBeVisible()
+      await expect.poll(() => screen.router.currentRoute.value.fullPath).toBe(`${MODELS_PATH}?palette=new`)
+      await expect.element(form(screen).getByRole('textbox', { name: 'Name' })).toHaveValue('')
+      await expect.element(form(screen).getByRole('combobox', { name: 'Palette Family' })).toHaveTextContent('Black, white and red · 3bwr')
+      await expect.element(form(screen).getByText('The inks the panel has. It decides which Device Models can use this Palette.', { exact: true })).toBeVisible()
+      expect(colourValues(screen)).toEqual(['#000000', '#FF0000', '#FFFFFF'])
+      expect(screen.getByText(/^None yet\./).elements()).toEqual([])
+      expect(form(screen).element().closest('.instance-section > *')?.previousElementSibling?.tagName).toBe('HEADER')
+    })
+
+    it('adds the Palette with its name, family and colours, closes the form and lists it', async () => {
+      const faked = fakeDeviceModels()
+      const screen = await mountLoadedDeviceModels(`${MODELS_PATH}?palette=new`)
+
+      await form(screen).getByRole('textbox', { name: 'Name' }).fill('Hallway panel, measured')
+      await form(screen).getByRole('textbox', { name: 'Colour 2' }).fill('#c0392b')
+      await form(screen).getByRole('button', { name: 'Remove colour 3' }).click()
+      await form(screen).getByRole('button', { name: 'Add a colour' }).click()
+      await expect.element(form(screen).getByRole('textbox', { name: 'Colour 3' })).toHaveFocus()
+      await form(screen).getByRole('textbox', { name: 'Colour 3' }).fill('#F2F0EA')
+      await form(screen).getByRole('button', { name: 'Add Palette' }).click()
+
+      await expect.poll(() => faked.writes).toEqual([{ method: 'POST', path: 'device-models/palettes', body: { name: 'Hallway panel, measured', frameworkClass: 'screen--color-3bwr', colors: ['#000000', '#c0392b', '#F2F0EA'] } }])
+      await expect.poll(() => rowsOf(section(screen)).map(([name]) => name)).toEqual(['Hallway panel, measured', 'Soft red', 'Study panel, measured'])
+      expect(screen.getByRole('form').elements()).toEqual([])
+      expect(screen.router.currentRoute.value.fullPath).toBe(MODELS_PATH)
+    })
+
+    it('takes TRMNL\'s colours of another Palette Family while the colours are untouched', async () => {
+      fakeDeviceModels()
+      const screen = await mountLoadedDeviceModels(`${MODELS_PATH}?palette=new`)
+
+      await form(screen).getByRole('combobox', { name: 'Palette Family' }).click()
+      await screen.getByRole('option', { name: 'Six colours · 6a' }).click()
+
+      await expect.poll(() => colourValues(screen)).toEqual(['#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF', '#FFFF00'])
+    })
+
+    it('refuses an empty name, an invalid colour and an empty colour list without sending', async () => {
+      const faked = fakeDeviceModels()
+      const screen = await mountLoadedDeviceModels(`${MODELS_PATH}?palette=new`)
+
+      await form(screen).getByRole('textbox', { name: 'Colour 2' }).fill('#B53A3')
+      await form(screen).getByRole('button', { name: 'Add Palette' }).click()
+
+      await expect.element(form(screen).getByText('A Palette needs a name.')).toBeVisible()
+      await expect.element(form(screen).getByText('Enter a colour like #B53A30.')).toBeVisible()
+      await expect.element(form(screen).getByRole('textbox', { name: 'Colour 2' })).toHaveAttribute('aria-invalid', 'true')
+      await expect.element(form(screen).getByRole('textbox', { name: 'Colour 1' })).not.toHaveAttribute('aria-invalid')
+
+      for (const _ of [1, 2, 3])
+        await form(screen).getByRole('button', { name: 'Remove colour 1' }).click()
+      await form(screen).getByRole('textbox', { name: 'Name' }).fill('Hallway')
+      await form(screen).getByRole('button', { name: 'Add Palette' }).click()
+
+      await expect.element(form(screen).getByText('A Palette needs at least one colour.')).toBeVisible()
+      expect(faked.writes).toEqual([])
+    })
+
+    it('words a name another custom Palette has on the Name field', async () => {
+      fakeDeviceModels()
+      api.use(http.post(apiUrl('device-models/palettes'), () => apiErrorResponse({ statusCode: 409, code: 'palette-name-taken' })))
+      const screen = await mountLoadedDeviceModels(`${MODELS_PATH}?palette=new`)
+
+      await form(screen).getByRole('textbox', { name: 'Name' }).fill('soft red')
+      await form(screen).getByRole('button', { name: 'Add Palette' }).click()
+
+      await expect.element(form(screen).getByRole('textbox', { name: 'Name' })).toHaveAccessibleDescription('There is already a custom Palette called soft red. Give this one a name that tells them apart.')
+      await expect.element(form(screen)).toBeVisible()
+    })
+
+    it('says why nothing was added when the server fails, and keeps what was entered', async () => {
+      fakeDeviceModels()
+      api.use(http.post(apiUrl('device-models/palettes'), () => apiErrorResponse({ statusCode: 500, code: 'internal' })))
+      const screen = await mountLoadedDeviceModels(`${MODELS_PATH}?palette=new`)
+
+      await form(screen).getByRole('textbox', { name: 'Name' }).fill('Hallway')
+      await form(screen).getByRole('button', { name: 'Add Palette' }).click()
+
+      await expect.element(form(screen).getByText(/^Not added\. /)).toBeVisible()
+      await expect.element(form(screen).getByRole('textbox', { name: 'Name' })).toHaveValue('Hallway')
+    })
+
+    it('closes on "Cancel" and clears the query', async () => {
+      const faked = fakeDeviceModels()
+      const screen = await mountLoadedDeviceModels(`${MODELS_PATH}?palette=new`)
+
+      await form(screen).getByRole('link', { name: 'Cancel' }).click()
+
+      await expect.poll(() => screen.router.currentRoute.value.fullPath).toBe(MODELS_PATH)
+      expect(screen.getByRole('form').elements()).toEqual([])
+      expect(faked.writes).toEqual([])
+    })
+  })
+
+  describe('editing a custom Palette', () => {
+    const form = (screen: Screen, name: string) => screen.getByRole('form', { name: `Edit ${name}` })
+
+    it('opens its form under its row from the address, filled in, one form at a time', async () => {
+      fakeDeviceModels()
+      const screen = await mountLoadedDeviceModels(`${MODELS_PATH}?palette=soft-red`)
+      const edited = form(screen, 'Soft red')
+
+      await expect.element(edited.getByRole('textbox', { name: 'Name' })).toHaveValue('Soft red')
+      await expect.element(edited.getByRole('combobox', { name: 'Palette Family' })).toBeEnabled()
+      expect([...edited.element().querySelectorAll<HTMLInputElement>('.colour-row input')].map(input => input.value)).toEqual(['#111111', '#B53A30', '#F2F0EA'])
+      expect(edited.element().closest('.library-row')?.querySelector('.name')?.textContent).toBe('Soft red')
+      await expect.element(edited.getByRole('button', { name: 'Save Palette' })).toBeVisible()
+
+      await screen.getByRole('link', { name: 'Edit Study panel, measured' }).click()
+
+      await expect.element(form(screen, 'Study panel, measured')).toBeVisible()
+      expect(screen.getByRole('form').elements()).toHaveLength(1)
+      expect(screen.router.currentRoute.value.fullPath).toBe(`${MODELS_PATH}?palette=study-panel`)
+    })
+
+    it('saves the change, closes and shows it in the row', async () => {
+      const faked = fakeDeviceModels()
+      const screen = await mountLoadedDeviceModels(`${MODELS_PATH}?palette=soft-red`)
+
+      await form(screen, 'Soft red').getByRole('textbox', { name: 'Name' }).fill('Softer red')
+      await form(screen, 'Soft red').getByRole('button', { name: 'Save Palette' }).click()
+
+      await expect.poll(() => faked.writes).toEqual([{ method: 'PATCH', path: 'device-models/palettes/soft-red', body: { name: 'Softer red', frameworkClass: 'screen--color-3bwr', colors: ['#111111', '#B53A30', '#F2F0EA'] } }])
+      await expect.poll(() => rowsOf(section(screen))[0]).toEqual(['Softer red', 'Black, white and red', 'Edit Delete'])
+      expect(screen.router.currentRoute.value.fullPath).toBe(MODELS_PATH)
+    })
+
+    it('holds the Palette Family still and says whose images a save converts while a Device uses it', async () => {
+      fakeDeviceModels()
+      const screen = await mountLoadedDeviceModels(`${MODELS_PATH}?palette=study-panel`)
+      const edited = form(screen, 'Study panel, measured')
+
+      await expect.element(edited.getByRole('combobox', { name: 'Palette Family' })).toBeDisabled()
+      await expect.element(edited.getByText('The inks the panel has. It decides which Device Models can use this Palette, and cannot be changed while a Device uses it.')).toBeVisible()
+      await expect.element(edited.getByText('Saving converts Study\'s stored images again.')).toBeVisible()
+    })
+
+    it('says why it was not saved when the server refuses', async () => {
+      fakeDeviceModels()
+      api.use(http.patch(apiUrl('device-models/palettes/:id'), () => apiErrorResponse({ statusCode: 409, code: 'palette-in-use' })))
+      const screen = await mountLoadedDeviceModels(`${MODELS_PATH}?palette=study-panel`)
+
+      await form(screen, 'Study panel, measured').getByRole('button', { name: 'Save Palette' }).click()
+
+      await expect.element(form(screen, 'Study panel, measured').getByText('Not saved. The Palette Family cannot be changed while a Device uses the Palette.')).toBeVisible()
+    })
+
+    it('opens no form for a Palette that is not a custom one', async () => {
+      fakeDeviceModels()
+      const screen = await mountLoadedDeviceModels(`${MODELS_PATH}?palette=gray-4`)
+
+      expect(screen.getByRole('form').elements()).toEqual([])
+    })
+  })
+
+  describe('deleting a custom Palette', () => {
+    const lostAndStays = (dialog: Element) => [...dialog.querySelectorAll('dl > div')].map(line => [...line.children].map(words).join(' '))
+
+    it('asks first, naming the Palette its Device goes back to, and deletes on "Delete Palette"', async () => {
+      const faked = fakeDeviceModels()
+      const screen = await mountLoadedDeviceModels()
+
+      await screen.getByRole('button', { name: 'Delete Study panel, measured' }).click()
+
+      const dialog = screen.getByRole('alertdialog', { name: 'Delete the Palette Study panel, measured?' })
+      await expect.element(dialog).toBeVisible()
+      expect(lostAndStays(dialog.element())).toEqual([
+        'Lost The custom Palette and its 6 colours.',
+        'Stays Study, which goes back to its Device Model\'s richest Palette, Color (6 colors). Its stored images are converted again.',
+      ])
+
+      await dialog.getByRole('button', { name: 'Delete Palette' }).click()
+
+      await expect.poll(() => faked.writes).toEqual([{ method: 'DELETE', path: 'device-models/palettes/study-panel' }])
+      await expect.poll(() => rowsOf(section(screen)).map(([name]) => name)).toEqual(['Soft red'])
+    })
+
+    it('says that nothing else changes where no Device uses it', async () => {
+      fakeDeviceModels()
+      const screen = await mountLoadedDeviceModels()
+
+      await screen.getByRole('button', { name: 'Delete Soft red' }).click()
+
+      const dialog = screen.getByRole('alertdialog', { name: 'Delete the Palette Soft red?' })
+      await expect.element(dialog).toBeVisible()
+      expect(lostAndStays(dialog.element())).toEqual([
+        'Lost The custom Palette and its 3 colours.',
+        'Stays Everything else. No Device uses it.',
+      ])
+    })
   })
 
   describe('sync from TRMNL', () => {
@@ -308,6 +512,18 @@ describe('the Device Models and Palettes page', () => {
     const screen = await mountLoadedDeviceModels(`${MODELS_PATH}#trmnl-palettes`)
     await screen.getByRole('button', { name: 'The other 5 Device Models' }).click()
     await expect.element(screen.getByRole('searchbox', { name: 'Find a Device Model' })).toBeVisible()
+
+    await expectAccessible()
+    await expectNoHorizontalOverflow()
+  })
+
+  it.each([
+    ['a new custom Palette', 'new'],
+    ['a custom Palette a Device uses', 'study-panel'],
+  ])('is accessible and does not overflow with the form of %s open', async (_, palette) => {
+    fakeDeviceModels()
+    const screen = await mountLoadedDeviceModels(`${MODELS_PATH}?palette=${palette}`)
+    await expect.element(screen.getByRole('form')).toBeVisible()
 
     await expectAccessible()
     await expectNoHorizontalOverflow()

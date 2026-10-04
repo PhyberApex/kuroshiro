@@ -1,9 +1,11 @@
-import type { CustomPaletteFrameworkClass } from '../entities/palette.entity.js'
+import type { CreateCustomPaletteInput, CustomPaletteFrameworkClass } from 'kuroshiro-shared'
+import { Transform } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsIn, IsNotEmpty, IsString, Matches } from 'class-validator'
-import { CUSTOM_PALETTE_FRAMEWORK_CLASSES } from '../entities/palette.entity.js'
-import { HEX_COLOR_PATTERN } from '../trmnl-payloads.js'
+import { CUSTOM_PALETTE_FRAMEWORK_CLASSES, HEX_COLOR_PATTERN } from 'kuroshiro-shared'
+import { trimmed } from '../../utils/trimmed.js'
 
-export class CreateCustomPaletteDto {
+export class CreateCustomPaletteDto implements CreateCustomPaletteInput {
+  @Transform(trimmed)
   @IsString()
   @IsNotEmpty()
   name: string

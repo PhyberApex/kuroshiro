@@ -1,6 +1,6 @@
 import type { DeviceModel } from './entities/device-model.entity.js'
 import type { Palette } from './entities/palette.entity.js'
-import { CUSTOM_PALETTE_FRAMEWORK_CLASSES } from './entities/palette.entity.js'
+import { CUSTOM_PALETTE_FRAMEWORK_CLASSES } from 'kuroshiro-shared'
 
 /**
  * The colour families a custom palette may target on this model: whichever

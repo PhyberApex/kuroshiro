@@ -93,6 +93,9 @@ const REFUSAL_WORDING: Record<ApiErrorCode, Wording> = {
   'archive-not-configuration': NOT_A_CONFIGURATION_ARCHIVE,
   'archive-schema-version': 'This archive was made with an archive version this Kuroshiro does not read.',
   'archive-record-refused': 'This archive holds a record that cannot be imported. Nothing was changed.',
+  'palette-name-taken': 'There is already a custom Palette with that name.',
+  'palette-not-custom': 'Only a custom Palette can be changed or deleted.',
+  'palette-in-use': 'The Palette Family cannot be changed while a Device uses the Palette.',
 }
 
 /** A code this build does not know, from a newer server, falls back on the server's own sentence. */
