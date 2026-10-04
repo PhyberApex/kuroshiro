@@ -330,19 +330,17 @@ describe('the shell\'s reads', () => {
   it('asks for the firing Alerts again when the window regains the focus', async () => {
     holdTabVisible()
     fakeShellReads()
-    const answered: string[] = []
-    api.events.on('response:mocked', ({ request }) => answered.push(new URL(request.url).pathname))
     const screen = await mountApp({ at: '/plugins' })
     await expect.element(bar(screen).getByRole('link', { name: 'Kitchen' })).toBeVisible()
-    // A read that is still under way is not asked again, so the first answers are waited for.
-    await expect.poll(() => answered).toEqual(expect.arrayContaining(['/api/alerts', '/api/devices']))
-    api.events.removeAllListeners()
 
     fakeShellReads({ alerts: buildAlertsList({ active: [buildAlert()] }), devices: devicesNamed('Pantry') })
-    window.dispatchEvent(new Event('focus'))
-
-    await expect.element(screen.getByRole('link', { name: '1 Alert firing' })).toBeVisible()
-    await expect.element(bar(screen).getByRole('link', { name: 'Pantry' })).toBeVisible()
+    // A focus is passed over while a read is still under way, and the first reads settle a moment after their
+    // answers arrive, so the focus is given again until the new answers show.
+    await expect.poll(() => {
+      window.dispatchEvent(new Event('focus'))
+      return screen.getByRole('link', { name: '1 Alert firing' }).query() !== null
+        && bar(screen).getByRole('link', { name: 'Pantry' }).query() !== null
+    }).toBe(true)
   })
 
   it('changes nothing in the page for an identical answer', async () => {
