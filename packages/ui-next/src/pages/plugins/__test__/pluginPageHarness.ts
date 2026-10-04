@@ -1,6 +1,6 @@
 import type { PluginDetail, UpdatePluginInput } from 'kuroshiro-shared'
 import { http, HttpResponse } from 'msw'
-import { expect } from 'vitest'
+import { expect, onTestFinished } from 'vitest'
 import { api, apiUrl } from '@/testing/api/server'
 import { fakeShellReads, mountApp } from '@/testing/app'
 import { buildPluginDetail } from '@/testing/fixtures/plugins'
@@ -66,3 +66,17 @@ export type Mounted = Awaited<ReturnType<typeof mountPlugin>>
 export const refresh = () => window.dispatchEvent(new Event('focus'))
 
 export const saveBar = (screen: Mounted) => screen.getByRole('region', { name: 'Unsaved changes' })
+
+/** Catches what the page has the browser download, in place of the download. */
+export function catchDownloads() {
+  const addresses: string[] = []
+  const hold = (event: MouseEvent) => {
+    if (event.target instanceof HTMLAnchorElement && event.target.hasAttribute('download')) {
+      event.preventDefault()
+      addresses.push(event.target.href)
+    }
+  }
+  document.addEventListener('click', hold, true)
+  onTestFinished(() => document.removeEventListener('click', hold, true))
+  return addresses
+}

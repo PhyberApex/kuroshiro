@@ -218,7 +218,7 @@ The form does the rest, and a section never does any of it itself:
 - **A save** sends only the changed keys in one `PATCH`, and the answer becomes what is saved in every part. A part edited while the save was under way keeps what was typed.
 - **The 30-second refresh and a `reload()`** reach a part that has no unsaved changes; a part with unsaved changes is left alone entirely. `plugin` is fresh either way.
 - **"Show the first"** calls the `reveal(path)` of the part that owns the first problem, waits a tick and focuses the element whose id is `fieldId(path)`. So `reveal` only opens what holds the field (a tucked section, a row), and the control carries `:id="fieldId(path)"` through its `Field`. Problems are counted in the order the parts were registered, which is the order of the page.
-- **Discard changes** puts every draft back; a part that holds state beside its draft (which row is open) keeps it.
+- **Discard changes** puts every draft back to what the server said last; a part that holds state beside its draft (which row is open) keeps it.
 
 A section with a part that lives in a `TuckedSection` or a row registers in the component that holds it, not inside the content that is unmounted while it is closed.
 
@@ -231,6 +231,7 @@ A section with a part that lives in a `TuckedSection` or a row registers in the 
 | `saveBar(screen)` | The save bar's region: `saveBar(screen).getByRole('button', { name: 'Save Plugin' })`, `saveBar(screen).getByText('Unsaved changes to the name.')` (the whole sentence) |
 | `refresh()` | The 30-second re-read, now. Blur the control first: a re-read is held back while a typed-in control has the focus |
 | `clock(iso)` | The `{hh:mm}` of a sentence, in the browser's timezone |
+| `catchDownloads()` | Holds every download the page starts and returns their addresses |
 
 So a section's test is "edit, press Save Plugin, assert `faked.saves`". `__test__/examples/StandInSection.vue` is a section in forty lines, and `StandInPluginPage.vue` shows a frame mounted with sections of a test's choosing (`mountPage`).
 

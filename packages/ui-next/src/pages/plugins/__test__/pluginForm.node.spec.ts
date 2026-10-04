@@ -5,13 +5,7 @@ import { ApiRefusal } from '@/api/client'
 import { buildApiError } from '@/testing/fixtures/errors'
 import { buildPluginDetail } from '@/testing/fixtures/plugins'
 import { changedSentence, createPluginForm, lostSentence, thingsToFix } from '../pluginForm'
-
-const naming: PluginFormPart<{ name: string, description: string }> = {
-  keys: ['name', 'description'],
-  read: plugin => ({ name: plugin.name, description: plugin.description ?? '' }),
-  toInput: draft => ({ name: draft.name.trim(), description: draft.description.trim() || null }),
-  validate: draft => draft.name.trim() ? [] : [{ path: 'name', message: 'A Plugin needs a name.' }],
-}
+import { pluginNaming } from '../pluginNaming'
 
 const sources: PluginFormPart<{ rows: Array<{ id?: string, name: string, url: string }> }> = {
   keys: ['dataSources'],
@@ -40,7 +34,7 @@ describe('the Plugin page\'s one form', () => {
   describe('what differs', () => {
     it('is unchanged until a part\'s draft differs from what is saved, and names the changed keys in the page\'s order', () => {
       const { form } = formOf()
-      const name = form.register(naming)
+      const name = form.register(pluginNaming)
       const data = form.register(sources)
       expect(form.changed).toBe(false)
 
@@ -57,7 +51,7 @@ describe('the Plugin page\'s one form', () => {
 
     it('does not count a draft that maps to the same input, such as a space after the name', () => {
       const { form } = formOf()
-      const name = form.register(naming)
+      const name = form.register(pluginNaming)
 
       name.draft.name = 'Weather '
 
@@ -66,7 +60,7 @@ describe('the Plugin page\'s one form', () => {
 
     it('holds the whole unsaved state, changed or not, for the preview', () => {
       const { form } = formOf()
-      const name = form.register(naming)
+      const name = form.register(pluginNaming)
       form.register(sources)
 
       name.draft.description = 'Rain or shine'
@@ -76,7 +70,7 @@ describe('the Plugin page\'s one form', () => {
 
     it('puts every draft back on discard', () => {
       const { form } = formOf()
-      const name = form.register(naming)
+      const name = form.register(pluginNaming)
 
       name.draft.name = 'Forecast'
       form.discard()
@@ -87,16 +81,16 @@ describe('the Plugin page\'s one form', () => {
 
     it('refuses a second part that owns a key another part owns', () => {
       const { form } = formOf()
-      form.register(naming)
+      form.register(pluginNaming)
 
-      expect(() => form.register(naming)).toThrow('name')
+      expect(() => form.register(pluginNaming)).toThrow('name')
     })
   })
 
   describe('saving', () => {
     it('sends only the keys that changed and nothing when nothing did', async () => {
       const { form, sent } = formOf()
-      const name = form.register(naming)
+      const name = form.register(pluginNaming)
       form.register(sources)
 
       await form.save()
@@ -110,7 +104,7 @@ describe('the Plugin page\'s one form', () => {
 
     it('replaces what is saved with the answer, so the form is unchanged and the drafts read the answer', async () => {
       const { form, send } = formOf()
-      const name = form.register(naming)
+      const name = form.register(pluginNaming)
       send.mockImplementationOnce(async () => ({ ...WEATHER, name: 'Forecast (as stored)' }))
 
       name.draft.name = 'Forecast'
@@ -124,7 +118,7 @@ describe('the Plugin page\'s one form', () => {
 
     it('keeps what was typed into a part while its save was under way', async () => {
       const { form, send } = formOf()
-      const name = form.register(naming)
+      const name = form.register(pluginNaming)
       let answer!: (plugin: PluginDetail) => void
       send.mockImplementationOnce(() => new Promise<PluginDetail>(resolve => (answer = resolve)))
 
@@ -141,7 +135,7 @@ describe('the Plugin page\'s one form', () => {
 
     it('keeps everything entered when the save is refused, says why, and forgets the reason once the form is edited', async () => {
       const { form, send } = formOf()
-      const name = form.register(naming)
+      const name = form.register(pluginNaming)
       send.mockRejectedValueOnce(new Error('Kuroshiro\'s server is not answering.'))
 
       name.draft.name = 'Forecast'
@@ -159,7 +153,7 @@ describe('the Plugin page\'s one form', () => {
   describe('problems', () => {
     it('sends nothing while a part is invalid, and counts the problems only once a save was tried', async () => {
       const { form, sent } = formOf()
-      const name = form.register(naming)
+      const name = form.register(pluginNaming)
       const data = form.register(sources)
 
       name.draft.name = ''
@@ -177,7 +171,7 @@ describe('the Plugin page\'s one form', () => {
 
     it('drops a problem as soon as its field is put right', async () => {
       const { form } = formOf()
-      const name = form.register(naming)
+      const name = form.register(pluginNaming)
 
       name.draft.name = ''
       await form.save()
@@ -189,7 +183,7 @@ describe('the Plugin page\'s one form', () => {
 
     it('hands a validation refusal\'s field errors to the part that owns the path, until that part is edited', async () => {
       const { form, send } = formOf()
-      const name = form.register(naming)
+      const name = form.register(pluginNaming)
       const data = form.register(sources)
       send.mockRejectedValueOnce(refusal({ 'dataSources.0.url': 'url must be a URL address' }))
 
@@ -210,7 +204,7 @@ describe('the Plugin page\'s one form', () => {
 
     it('says "Not saved" for a validation refusal whose paths no part owns', async () => {
       const { form, send } = formOf()
-      const name = form.register(naming)
+      const name = form.register(pluginNaming)
       send.mockRejectedValueOnce(refusal({ 'templates.0.liquidMarkup': 'too long' }))
 
       name.draft.name = 'Forecast'
@@ -224,7 +218,7 @@ describe('the Plugin page\'s one form', () => {
       const { form } = formOf()
       const revealName = vi.fn()
       const revealSource = vi.fn()
-      form.register(naming, revealName)
+      form.register(pluginNaming, revealName)
       const data = form.register(sources, revealSource)
 
       data.draft.rows[0]!.url = ''
@@ -237,7 +231,7 @@ describe('the Plugin page\'s one form', () => {
 
     it('lets a part validate against the whole unsaved state', async () => {
       const { form } = formOf()
-      const name = form.register(naming)
+      const name = form.register(pluginNaming)
       form.register<{ keynames: string[] }>({
         keys: ['fields'],
         read: () => ({ keynames: ['forecast'] }),
@@ -258,7 +252,7 @@ describe('the Plugin page\'s one form', () => {
   describe('a re-read of the Plugin', () => {
     it('follows the server in a part that is unchanged', () => {
       const { form } = formOf()
-      const name = form.register(naming)
+      const name = form.register(pluginNaming)
 
       form.refresh({ ...WEATHER, name: 'Weather, renamed elsewhere' })
 
@@ -268,7 +262,7 @@ describe('the Plugin page\'s one form', () => {
 
     it('never touches a part that holds unsaved changes', () => {
       const { form } = formOf()
-      const name = form.register(naming)
+      const name = form.register(pluginNaming)
       const data = form.register(sources)
 
       name.draft.name = 'Forecast'
@@ -277,6 +271,18 @@ describe('the Plugin page\'s one form', () => {
       expect(name.draft.name).toBe('Forecast')
       expect(form.changes).toEqual({ name: 'Forecast' })
       expect(data.draft.rows[0]!.url).toBe('https://example.com/changed-elsewhere')
+    })
+
+    it('puts a discarded part back to what the server said last, not to what it held before', () => {
+      const { form } = formOf()
+      const name = form.register(pluginNaming)
+
+      name.draft.name = 'Forecast'
+      form.refresh({ ...WEATHER, name: 'Weather, renamed elsewhere' })
+      form.discard()
+
+      expect(name.draft.name).toBe('Weather, renamed elsewhere')
+      expect(form.changed).toBe(false)
     })
 
     it('keeps the same draft object when what was read is the same, so nothing renders again', () => {
@@ -293,7 +299,7 @@ describe('the Plugin page\'s one form', () => {
   describe('a part that leaves the page', () => {
     it('takes its changes and problems with it', () => {
       const { form } = formOf()
-      const name = form.register(naming)
+      const name = form.register(pluginNaming)
 
       name.draft.name = 'Forecast'
       name.remove()

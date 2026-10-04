@@ -1,6 +1,6 @@
 import type { PluginPlace, PluginSummary } from 'kuroshiro-shared'
 import { delay, http, HttpResponse } from 'msw'
-import { describe, expect, it, onTestFinished } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { expectAccessible } from '@/testing/a11y'
 import { api, apiErrorResponse, apiUrl } from '@/testing/api/server'
 import { fakeShellReads, mountApp } from '@/testing/app'
@@ -8,6 +8,7 @@ import { buildDeviceSummary } from '@/testing/fixtures/devices'
 import { buildPluginDetail, buildPluginPlace, buildPluginSummary } from '@/testing/fixtures/plugins'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import { elementsInSealColour } from '@/testing/sealColour'
+import { catchDownloads } from './pluginPageHarness'
 
 const device = (name: string) => ({ id: name.toLowerCase(), name })
 const KITCHEN = device('Kitchen')
@@ -61,20 +62,6 @@ const rowText = (name: string) => [...row(name).children].slice(1, 4).map(cell =
 async function choose(screen: Mounted, plugin: string, action: 'Duplicate' | 'Export' | 'Delete Plugin') {
   await screen.getByRole('button', { name: `More actions for ${plugin}` }).click()
   await screen.getByRole('menuitem', { name: action }).click()
-}
-
-/** Catches what the page has the browser download, in place of the download. */
-function catchDownloads() {
-  const addresses: string[] = []
-  const hold = (event: MouseEvent) => {
-    if (event.target instanceof HTMLAnchorElement && event.target.hasAttribute('download')) {
-      event.preventDefault()
-      addresses.push(event.target.href)
-    }
-  }
-  document.addEventListener('click', hold, true)
-  onTestFinished(() => document.removeEventListener('click', hold, true))
-  return addresses
 }
 
 function refuseDeletionFor(pluginId: string, mashups: PluginPlace[]) {

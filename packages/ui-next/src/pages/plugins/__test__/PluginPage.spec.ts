@@ -1,7 +1,7 @@
 import type { PluginArrival } from '../pluginArrival'
 import type { Mounted } from './pluginPageHarness'
 import { delay, http, HttpResponse } from 'msw'
-import { describe, expect, it, onTestFinished } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { expectAccessible } from '@/testing/a11y'
 import { api, apiErrorResponse, apiUrl } from '@/testing/api/server'
 import { fakeShellReads, mountApp } from '@/testing/app'
@@ -13,7 +13,7 @@ import { freezeTime } from '@/testing/time'
 import { holdTabVisible } from '@/testing/visibility'
 import { openPluginPage } from '../pluginArrival'
 import StandInPluginPage from './examples/StandInPluginPage.vue'
-import { clock, fakePlugin, mountPlugin, NOW, refresh, saveBar, WEATHER } from './pluginPageHarness'
+import { catchDownloads, clock, fakePlugin, mountPlugin, NOW, refresh, saveBar, WEATHER } from './pluginPageHarness'
 
 const SOURCE = WEATHER.dataSources[0]!
 
@@ -33,20 +33,6 @@ async function rename(screen: Mounted, name: string) {
 
 async function openActions(screen: Mounted, plugin = 'Weather') {
   await screen.getByRole('button', { name: `Duplicate, export or delete ${plugin}` }).click()
-}
-
-/** Catches what the page has the browser download, in place of the download. */
-function catchDownloads() {
-  const addresses: string[] = []
-  const hold = (event: MouseEvent) => {
-    if (event.target instanceof HTMLAnchorElement && event.target.hasAttribute('download')) {
-      event.preventDefault()
-      addresses.push(event.target.href)
-    }
-  }
-  document.addEventListener('click', hold, true)
-  onTestFinished(() => document.removeEventListener('click', hold, true))
-  return addresses
 }
 
 describe('the Plugin page', () => {
@@ -319,6 +305,22 @@ describe('the Plugin page', () => {
       await screen.getByRole('alertdialog').getByRole('button', { name: 'Leave' }).click()
 
       await expect.element(screen.getByRole('heading', { name: 'Plugins', level: 1 })).toBeVisible()
+    })
+
+    it('asks on the way to another Plugin\'s page, and not when only the fragment changes', async () => {
+      fakePlugin()
+      const tides = buildPluginDetail({ id: 'tides', name: 'Tide table' })
+      api.use(http.get(apiUrl('plugins/tides'), () => HttpResponse.json(tides)))
+      const screen = await mountPlugin()
+
+      await rename(screen, 'Forecast')
+      await screen.router.push('/plugins/weather#actions')
+      await expect.element(screen.getByRole('alertdialog')).not.toBeInTheDocument()
+
+      void screen.router.push('/plugins/tides')
+      await screen.getByRole('alertdialog', { name: 'Leave without saving?' }).getByRole('button', { name: 'Leave' }).click()
+
+      await expect.element(screen.getByRole('heading', { name: 'Tide table', level: 1 })).toBeVisible()
     })
 
     it('does not ask when nothing was changed', async () => {

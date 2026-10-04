@@ -54,12 +54,10 @@ interface Refusal {
   reason: string | undefined
   fields: Record<string, string>
   /** What each part would have sent when the save was refused: an edit to a part drops what the server said about it. */
-  refused: Map<Registered, string>
+  inputs: Map<Registered, string>
 }
 
-/** The keys in the order their sections stand on the page, which is the order they are named in. */
-const KEYS_IN_PAGE_ORDER: readonly PluginInputKey[] = ['templates', 'refreshInterval', 'dataSources', 'fieldValues', 'fields', 'name', 'description']
-
+/** What the save bar calls each key, in the order their sections stand on the page, which is the order they are named in. */
 const KEY_NAMES: Record<PluginInputKey, string> = {
   templates: 'template',
   refreshInterval: 'refresh interval',
@@ -69,6 +67,8 @@ const KEY_NAMES: Record<PluginInputKey, string> = {
   name: 'name',
   description: 'description',
 }
+
+const KEYS_IN_PAGE_ORDER = Object.keys(KEY_NAMES) as PluginInputKey[]
 
 /** What the Template section's preview draws from, so what it shows before a save. */
 const PREVIEWED: readonly PluginInputKey[] = ['templates', 'dataSources', 'fieldValues', 'fields', 'refreshInterval', 'name']
@@ -123,6 +123,8 @@ export function createPluginForm(loaded: PluginDetail, send: (input: UpdatePlugi
   const ownProblems = computed(() => parts.flatMap(({ part, draft }) =>
     part.validate?.(draft.value, { plugin: plugin.value, unsaved: unsaved.value }) ?? []))
 
+  const editedSince = (refused: Refusal, registered: Registered) => refused.inputs.get(registered) !== JSON.stringify(inputOf(registered))
+
   const ownerOf = (path: string) => parts.find(({ part }) => (part.keys as readonly string[]).includes(ownerKeyOf(path)))
 
   /** The server's field errors that still stand: those of a part that has not been edited since. */
@@ -130,7 +132,7 @@ export function createPluginForm(loaded: PluginDetail, send: (input: UpdatePlugi
     const refused = refusal.value
     if (!refused)
       return []
-    return parts.flatMap(registered => refused.refused.get(registered) !== JSON.stringify(inputOf(registered))
+    return parts.flatMap(registered => editedSince(refused, registered)
       ? []
       : Object.entries(refused.fields)
           .filter(([path]) => ownerOf(path) === registered)
@@ -142,7 +144,7 @@ export function createPluginForm(loaded: PluginDetail, send: (input: UpdatePlugi
   /** Why the last save did not happen, until the form is edited or saved again. A refusal the fields explain is told by them. */
   const failure = computed(() => {
     const refused = refusal.value
-    const edited = refused && parts.some(registered => refused.refused.get(registered) !== JSON.stringify(inputOf(registered)))
+    const edited = refused && parts.some(registered => editedSince(refused, registered))
     return !refused || edited || problems.value.length > 0 ? undefined : refused.reason ?? 'That did not work.'
   })
 
@@ -189,7 +191,7 @@ export function createPluginForm(loaded: PluginDetail, send: (input: UpdatePlugi
   function discard() {
     attempted.value = false
     refusal.value = undefined
-    parts.forEach(registered => follow(registered, registered.source.value))
+    parts.forEach(registered => follow(registered, plugin.value))
   }
 
   function accept(answer: PluginDetail, sent: Map<Registered, string>) {
@@ -209,7 +211,7 @@ export function createPluginForm(loaded: PluginDetail, send: (input: UpdatePlugi
       return undefined
     saving.value = true
     const sent = new Map(parts.map(registered => [registered, JSON.stringify(registered.draft.value)]))
-    const refused = new Map(parts.map(registered => [registered, JSON.stringify(inputOf(registered))]))
+    const inputs = new Map(parts.map(registered => [registered, JSON.stringify(inputOf(registered))]))
     try {
       const answer = await send(changes.value)
       attempted.value = false
@@ -218,7 +220,7 @@ export function createPluginForm(loaded: PluginDetail, send: (input: UpdatePlugi
       return answer
     }
     catch (error) {
-      refusal.value = { reason: failureReason(error), fields: fieldErrorsOf(error), refused }
+      refusal.value = { reason: failureReason(error), fields: fieldErrorsOf(error), inputs }
       return undefined
     }
     finally {
