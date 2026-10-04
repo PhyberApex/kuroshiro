@@ -13,6 +13,7 @@ import TextInput from '@/components/TextInput.vue'
 import { useDevices } from '@/reads/sharedReads'
 import { deviceNameProblem } from './deviceNaming'
 import { devicePath } from './devicePaths'
+import { madeUpMac } from './madeUpMac'
 
 type FieldErrors = Partial<Record<keyof CreateDeviceInput, string>>
 
@@ -30,13 +31,8 @@ const errors = ref<FieldErrors>({})
 const failure = ref<string>()
 const registering = ref(false)
 
-const hexPair = (byte: number) => byte.toString(16).padStart(2, '0').toUpperCase()
-
 function makeOneUp() {
-  const bytes = crypto.getRandomValues(new Uint8Array(6))
-  // Locally administered and unicast: the range no manufacturer assigns, so a made-up address never is a real Device's.
-  bytes[0] = (bytes[0]! & 0xFC) | 0x02
-  mac.value = [...bytes].map(hexPair).join(':')
+  mac.value = madeUpMac()
   errors.value = { ...errors.value, mac: undefined }
 }
 

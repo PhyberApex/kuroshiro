@@ -3,8 +3,6 @@ import { keepAddPluginOrigin } from '@/pages/plugins/addPluginOrigin'
 
 declare module 'vue-router' {
   interface RouteMeta {
-    /** The title of a page that is not built yet, shown by the page that stands in for it. */
-    notBuiltYet?: string
     /** The name of a page of the Instance frame, as the frame's page list shows it. */
     instancePage?: string
   }
@@ -20,11 +18,6 @@ type LazyPage = () => Promise<unknown>
 /** A built page of the Instance frame. The frame lists it under `label`, in the order the pages stand here. */
 function instancePage(path: string, label: string, component: LazyPage): RouteRecordRaw {
   return { path, component, meta: { instancePage: label } }
-}
-
-/** A page under the Instance frame that is not built yet. The frame leaves it out of its page list until it is an `instancePage`. */
-function notBuiltYetUnderInstance(path: string, title: string): RouteRecordRaw {
-  return { path, component: () => import('@/pages/instance/InstanceNotBuiltYetPage.vue'), meta: { notBuiltYet: title } }
 }
 
 /**
@@ -66,7 +59,7 @@ export const routes: RouteRecordRaw[] = [
       instancePage('models', 'Device Models and Palettes', () => import('@/pages/instance/DeviceModelsPage.vue')),
       instancePage('archive', 'Configuration Archive', () => import('@/pages/instance/ConfigurationArchivePage.vue')),
       instancePage('housekeeping', 'Housekeeping', () => import('@/pages/instance/HousekeepingPage.vue')),
-      notBuiltYetUnderInstance('simulator', 'Device Simulator'),
+      instancePage('simulator', 'Device Simulator', () => import('@/pages/instance/DeviceSimulatorPage.vue')),
     ],
   },
 
