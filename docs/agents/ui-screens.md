@@ -155,7 +155,7 @@ A boolean Setting (Firmware Auto-Update) is a `SettingRow` with a `Switch` and `
 - The mark that says "this leads on" is an inline `svg` drawn pointing right. Do not turn the chevron icon with `rotate`: a rotated mark makes the baselines flaky.
 - A list has no empty state of its own when its spec sends "none" elsewhere (the Devices list redirects); otherwise the `EmptyState` goes in the default slot.
 - A line of facts joined by " · " writes the separators into the template (`v-for` with `index > 0`), not into CSS `content`, so a spec and a screen reader read them.
-- A firing Alert in a row is the only red: the label with its square, as `FactRows` draws it. `devicesListRow.ts` words the two Device Alerts ("Alert: offline", "Alert: battery low").
+- A firing Alert in a row is the only red: the label with its square, as `FactRows` draws it. `devicesListRow.ts` words the two Device Alerts ("Alert: offline", "Alert: battery low") from `FIRING_ALERT_LABELS`.
 - What a Device shows comes from `currentScreenStory`, which takes a `DeviceSummary` (pass `screens: []` when the Screens are not loaded): its `heading` names the plate (`On {Device}: {heading}`) and `whatItShows(story)` words the line.
 
 ## Waiting for something to happen
@@ -183,6 +183,20 @@ A write that adds a record and then leaves the page navigates first and reloads 
 - A row's fetch Alert is `PluginSummary.fetchAlertFiring`; the list does not read the Alerts.
 - The shell's shared reads hold no Plugin, so after a write only the page's own load needs `reload()`.
 - A view's search and filter live in the address: read them from `route.query` and write them with `router.replace`, which keeps the scroll position.
+
+## The Alerts page and an Alert's words
+
+`pages/alerts/` holds the Alerts page (`/alerts`) and the words every surface uses for an Alert:
+
+| File | Holds |
+| --- | --- |
+| `alertLabels.ts` | `FIRING_ALERT_LABELS` ("Alert: battery low") and `RESOLVED_ALERT_LABELS` ("Battery low"), by Alert kind. A Device's facts and a Plugin's row state read the firing ones from here |
+| `alertWording.ts` | `alertWhy(alert, { now, lowBatteryPercent })`, the sentence that says why an Alert fires or, once it has `resolvedAt`, why it fired, from the `details` the server keeps; `alertSubject(alert)`, the name and the link of its Device or of its Plugin's Data Source; `sinceWhen`, `firedFor` and `duration` |
+| `AlertRow.vue` | One Alert as a row of four cells, red only while it fires |
+
+- The page reads the shared `useAlerts()`, which already holds the firing Alerts and those resolved in the last 7 days, capped at 50. It fetches nothing of its own but the Instance Settings, for the thresholds.
+- An Alert's `details` are the cause as of the last Alert Sweep while it fired. An Alert that resolved before the server kept the cause may hold details of its recovery, or none: `alertWhy` answers an empty sentence for those.
+- `ALERT_RULES_PATH` and `NOTIFICATIONS_PATH` (`pages/instance/instancePaths.ts`) are the two sections of Instance Settings other pages link to.
 
 ## Loading what a page shows
 

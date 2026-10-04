@@ -34,6 +34,8 @@ function effectiveLastSeen(device: Device, lastSeen: Date, now: Date): Date {
   return windowEnd
 }
 
+const lastSeenOf = (device: Device) => device.lastSeen?.toISOString() ?? 'never'
+
 export const offlineRule: AlertRule = {
   kind: 'device-offline',
   ...deviceSubjectFields(),
@@ -48,23 +50,24 @@ export const offlineRule: AlertRule = {
     const reference = effectiveLastSeen(device, lastSeen, context.now)
     const staleMs = context.now.getTime() - reference.getTime()
     const thresholdMs = device.refreshRate * context.offlineMultiplier * MS_PER_SECOND
-    return { active: staleMs > thresholdMs, details: { lastSeen: lastSeen.toISOString() } }
+    const active = staleMs > thresholdMs
+    return active ? { active, details: { lastSeen: lastSeen.toISOString() } } : { active }
   },
 
-  openedNotification(subject, details) {
+  openedNotification(subject) {
     const device = subject as Device
     return {
       title: `Kuroshiro: ${device.name} is offline`,
-      body: `${device.name} (${device.mac}) was last seen ${details.lastSeen}.`,
+      body: `${device.name} (${device.mac}) was last seen ${lastSeenOf(device)}.`,
       type: 'failure',
     }
   },
 
-  resolvedNotification(subject, details) {
+  resolvedNotification(subject) {
     const device = subject as Device
     return {
       title: `Kuroshiro: ${device.name} back online`,
-      body: `${device.name} (${device.mac}) was last seen ${details.lastSeen}.`,
+      body: `${device.name} (${device.mac}) was last seen ${lastSeenOf(device)}.`,
       type: 'success',
     }
   },

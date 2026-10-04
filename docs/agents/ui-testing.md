@@ -221,6 +221,8 @@ Specs drive the UI with Playwright (`chromium.launch()`, `page.goto(baseUrl)`) a
 
 Every spec file shares that one Instance. `firstRun.spec.ts` runs first, on the empty Instance, and the other files after it, one at a time; any other journey must not assume that no other Device exists.
 
+`somethingIsWrong.spec.ts` waits for an Alert Sweep, which runs every 5 minutes on the clock, so it takes up to that long; nothing triggers a Sweep from outside.
+
 The suite holds one test per primary journey of [Primary journeys and the story each screen tells](https://github.com/PhyberApex/kuroshiro/issues/1078), plus `smoke.spec.ts`. It is not the place for broad coverage; that is the page specs' job.
 
 ## What every build issue ships with
