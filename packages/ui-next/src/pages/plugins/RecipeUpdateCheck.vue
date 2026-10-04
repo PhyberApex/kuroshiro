@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import type { PluginDetail } from 'kuroshiro-shared'
 import { computed, onMounted } from 'vue'
-import { RouterLink } from 'vue-router'
-import Button from '@/components/Button.vue'
-import EmptyState from '@/components/EmptyState.vue'
 import Notice from '@/components/Notice.vue'
 import LoadingLine from '@/patterns/LoadingLine.vue'
-import NotFromRecipe from './NotFromRecipe.vue'
-import { pluginPath } from './pluginPaths'
+import RecipeCheckEmpty from './RecipeCheckEmpty.vue'
 import RecipeName from './RecipeName.vue'
 import { recipeDay } from './recipeUpdate'
 import { useRecipeUpdateCheck } from './recipeUpdateCheck'
@@ -40,19 +36,14 @@ const since = computed(() => recipeDay(preview.value?.snapshotTakenAt ?? props.r
     action="Try again"
     @act="check.run"
   />
-  <NotFromRecipe v-else-if="check.state.step === 'notFromRecipe'" :plugin="plugin" />
+  <RecipeCheckEmpty v-else-if="check.state.step === 'notFromRecipe'" title="Not from a Recipe" :plugin="plugin">
+    {{ plugin.name }} was not imported from a Recipe, so there is nothing to check.
+  </RecipeCheckEmpty>
   <template v-else-if="preview">
     <Notice v-if="check.changedAgain" class="changed-again" title="The Recipe changed again while you were reading." reason="This is the new comparison." />
-    <EmptyState v-if="preview.items.length === 0" class="nothing" title="Nothing to apply" heading="h3">
+    <RecipeCheckEmpty v-if="preview.items.length === 0" title="Nothing to apply" :plugin="plugin">
       The Recipe <RecipeName :recipe="recipeNow" /> has not changed since {{ plugin.name }} last took it over, on {{ since }}. Your own changes to {{ plugin.name }} are untouched.
-      <template #action>
-        <Button as-child>
-          <RouterLink :to="pluginPath(plugin.id)">
-            Back to {{ plugin.name }}
-          </RouterLink>
-        </Button>
-      </template>
-    </EmptyState>
+    </RecipeCheckEmpty>
     <template v-else>
       <RecipeUpdateItems v-model:checked="check.checked" :preview="preview" :plugin-name="plugin.name" :since="since" />
       <RecipeUpdateFoot
@@ -73,12 +64,6 @@ const since = computed(() => recipeDay(preview.value?.snapshotTakenAt ?? props.r
 @layer components {
   .changed-again {
     margin-bottom: var(--space-5);
-  }
-
-  /* It stands under the section's heading, which already draws the heavy rule. */
-  .nothing {
-    padding-top: 0;
-    border-top: 0;
   }
 }
 </style>

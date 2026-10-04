@@ -5,10 +5,12 @@ import { delay, http, HttpResponse } from 'msw'
 import { afterEach, describe, expect, it } from 'vitest'
 import { expectAccessible } from '@/testing/a11y'
 import { api, apiErrorResponse, apiUrl } from '@/testing/api/server'
+import { fakeShellReads, mountApp } from '@/testing/app'
 import { buildPluginDetail, buildRecipeUpdatePreview, buildUpdateItem } from '@/testing/fixtures/plugins'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
+import { freezeTime } from '@/testing/time'
 import { resetViewport } from '@/testing/viewport'
-import { fakePlugin, mountPlugin } from './pluginPageHarness'
+import { fakePlugin, mountPlugin, NOW } from './pluginPageHarness'
 
 afterEach(() => resetViewport())
 
@@ -270,6 +272,33 @@ describe('the Recipe Update Check', () => {
     await expect.element(screen.getByText('Weather was not imported from a Recipe, so there is nothing to check.')).toBeVisible()
     await expect.element(screen.getByRole('link', { name: 'Back to Weather' })).toHaveAttribute('href', '/plugins/weather')
     expect(check.runs).toBe(0)
+  })
+
+  it('shows "No Plugin here" for a Plugin that does not exist', async () => {
+    const check = fakeCheck([CHANGED])
+    fakeShellReads()
+    api.use(http.get(apiUrl('plugins/gone'), () => apiErrorResponse({ statusCode: 404, code: 'plugin-not-found' })))
+    freezeTime(NOW)
+    const screen = await mountApp({ at: '/plugins/gone/update' })
+
+    await expect.element(screen.getByRole('heading', { name: 'No Plugin here', level: 1 })).toBeVisible()
+    await expect.element(screen.getByRole('link', { name: 'All Plugins' })).toHaveAttribute('href', '/plugins')
+    expect(check.runs).toBe(0)
+  })
+
+  it('says the Plugin could not be loaded, and runs the check once it is', async () => {
+    let reads = 0
+    const check = fakeCheck([CHANGED])
+    fakePlugin(WEATHER)
+    api.use(http.get(apiUrl('plugins/weather'), () => reads++ === 0 ? apiErrorResponse({ statusCode: 500, code: 'internal' }) : HttpResponse.json(WEATHER)))
+    freezeTime(NOW)
+    const screen = await mountApp({ at: '/plugins/weather/update' })
+
+    await expect.element(screen.getByText('Could not load the Plugin.')).toBeVisible()
+    expect(check.runs).toBe(0)
+    await screen.getByRole('button', { name: 'Try again' }).click()
+
+    await expect.poll(lede).toMatch(/changed in 5 places/)
   })
 
   it('is accessible and does not overflow, with a diff opened', async () => {

@@ -33,7 +33,7 @@ import { STARTER_TEMPLATE } from './starter-template.js'
 // A `literal` Data Source is never fetched, so one switched to it starts over (ADR-0025).
 const NO_FETCH_OUTCOME = { fetchFailureStreak: 0, lastFetchAttemptAt: null, lastFetchSucceededAt: null, lastFetchError: null }
 
-function pluginNotFound(id: string): ApiException {
+export function pluginNotFound(id: string): ApiException {
   return new ApiException(HttpStatus.NOT_FOUND, 'plugin-not-found', 'Plugin not found', { id })
 }
 

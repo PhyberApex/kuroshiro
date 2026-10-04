@@ -1,4 +1,4 @@
-import type { RecipeUpdatePreview } from 'kuroshiro-shared'
+import type { RecipeUpdateMode, RecipeUpdatePreview } from 'kuroshiro-shared'
 import type { ApplyRecipeUpdateDto } from '../dto/apply-recipe-update.dto.js'
 import type { Plugin } from '../entities/plugin.entity.js'
 import type { ParsedPlugin } from './plugin-importer.service.js'
@@ -10,7 +10,6 @@ import type {
   NormalizedDataSource,
   NormalizedField,
   NormalizedTemplate,
-  RecipeUpdateMode,
   UpdateItem,
 } from './recipe-update-diff.js'
 import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common'
@@ -22,7 +21,7 @@ import { PluginDataSource } from '../entities/plugin-data-source.entity.js'
 import { PluginField } from '../entities/plugin-field.entity.js'
 import { PluginTemplate } from '../entities/plugin-template.entity.js'
 import { Plugin as PluginEntity } from '../entities/plugin.entity.js'
-import { PluginsService } from '../plugins.service.js'
+import { pluginNotFound, PluginsService } from '../plugins.service.js'
 import { toRecipeUpdatePreview } from '../recipe-update.mapper.js'
 import { PluginFieldValuesService } from './plugin-field-values.service.js'
 import { PluginImporterService } from './plugin-importer.service.js'
@@ -193,13 +192,13 @@ export class RecipeUpdateService {
   private async loadPluginWithSourceRecipe(pluginId: string): Promise<Plugin> {
     const plugin = isUUID(pluginId) ? await this.pluginRepository.findOne({ where: { id: pluginId }, relations: PLUGIN_UPDATE_RELATIONS }) : null
     if (!plugin)
-      throw new ApiException(HttpStatus.NOT_FOUND, 'plugin-not-found', 'Plugin not found', { id: pluginId })
+      throw pluginNotFound(pluginId)
     if (!plugin.sourceRecipeId)
       throw new ApiException(HttpStatus.NOT_FOUND, 'plugin-not-from-recipe', `Plugin ${pluginId} was not imported from a Recipe.`)
     return plugin
   }
 
-  // Field Values belong to the Plugin (ADR-0032), so a Plugin Field is left empty once for the Plugin, not per Device.
+  // Field Values belong to the Plugin (ADR-0032), so whether one is stored is asked of the Plugin alone.
   private async requiredFieldsLeftEmpty(pluginId: string, items: UpdateItem[]): Promise<string[]> {
     const stored = await this.fieldValues.storedFor(pluginId)
     return items

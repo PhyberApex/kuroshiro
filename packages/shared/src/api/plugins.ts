@@ -282,6 +282,9 @@ export type UpdateItemType = typeof UPDATE_ITEM_TYPES[number]
 
 export type UpdateItemKind = 'added' | 'changed' | 'removed'
 
+/** `two-way` without a Recipe Snapshot: every difference is listed, none is a conflict or `removed`. */
+export type RecipeUpdateMode = 'two-way' | 'three-way'
+
 /** A Data Source as a Recipe Update Check compares it: only what its mode uses. */
 export type RecipeDataSource
   = | {
@@ -327,8 +330,7 @@ export interface RecipeUpdatePreview {
   snapshotTakenAt: string | null
   /** Handed back to apply, which is refused with `recipe-changed` when the Recipe moved since. */
   contentHash: string
-  /** `two-way` without a Recipe Snapshot: every difference is listed, none is a conflict or `removed`. */
-  mode: 'two-way' | 'three-way'
+  mode: RecipeUpdateMode
   items: UpdateItem[]
   /** Keynames of the required Plugin Fields that applying would leave without a value or a default. */
   requiredFieldsLeftEmpty: string[]

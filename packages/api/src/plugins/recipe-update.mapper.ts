@@ -1,5 +1,5 @@
-import type { RecipeDataSource, RecipeField, RecipeUpdatePreview, UpdateItem as UpdateItemRead, UpdateItemType } from 'kuroshiro-shared'
-import type { NormalizedDataSource, NormalizedField, NormalizedTemplate, RecipeUpdateMode, UpdateItem } from './services/recipe-update-diff.js'
+import type { RecipeDataSource, RecipeField, RecipeUpdateMode, RecipeUpdatePreview, UpdateItem as UpdateItemRead, UpdateItemType } from 'kuroshiro-shared'
+import type { NormalizedDataSource, NormalizedField, NormalizedTemplate, UpdateItem } from './services/recipe-update-diff.js'
 import { toIsoStringOrNull } from '../utils/readModel.js'
 
 export interface RecipeUpdateFacts {

@@ -1,4 +1,4 @@
-import type { PluginFieldOption, UpdateItemKind, UpdateItemType } from 'kuroshiro-shared'
+import type { PluginFieldOption, RecipeUpdateMode, UpdateItemKind, UpdateItemType } from 'kuroshiro-shared'
 import type { JsonObject } from '../../utils/json.js'
 import * as crypto from 'node:crypto'
 
@@ -44,8 +44,6 @@ export interface ComparablePlugin {
   templates: ComparableTemplate[]
   fields: ComparableField[]
 }
-
-export type RecipeUpdateMode = 'two-way' | 'three-way'
 
 export interface NormalizedDataSource {
   mode: ComparableDataSourceMode

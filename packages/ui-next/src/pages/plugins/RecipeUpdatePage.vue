@@ -7,8 +7,8 @@ import MissingPage from '@/patterns/MissingPage.vue'
 import PageSection from '@/patterns/PageSection.vue'
 import TitleLine from '@/patterns/TitleLine.vue'
 import { useLoad } from '@/patterns/useLoad'
-import NotFromRecipe from './NotFromRecipe.vue'
 import { pluginPath, PLUGINS_PATH } from './pluginPaths'
+import RecipeCheckEmpty from './RecipeCheckEmpty.vue'
 import RecipeUpdateCheck from './RecipeUpdateCheck.vue'
 
 const route = useRoute()
@@ -28,7 +28,9 @@ const back = computed(() => ({ label: load.data?.name ?? 'Plugin', to: pluginPat
     <PageSection class="check" title="Recipe Update Check">
       <LoadBody v-slot="{ data }" :load="load" :loading="`Loading ${called}`" :failed="`Could not load ${called}.`">
         <RecipeUpdateCheck v-if="data.recipe" :key="data.id" :plugin="data" :recipe="data.recipe" />
-        <NotFromRecipe v-else :plugin="data" />
+        <RecipeCheckEmpty v-else title="Not from a Recipe" :plugin="data">
+          {{ data.name }} was not imported from a Recipe, so there is nothing to check.
+        </RecipeCheckEmpty>
       </LoadBody>
     </PageSection>
   </template>

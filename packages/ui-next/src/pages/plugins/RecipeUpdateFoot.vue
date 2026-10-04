@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { RecipeUpdatePreview } from 'kuroshiro-shared'
+import type { RecipeUpdateMode } from 'kuroshiro-shared'
 import { RouterLink } from 'vue-router'
 import Button from '@/components/Button.vue'
 import Notice from '@/components/Notice.vue'
@@ -13,7 +13,7 @@ defineProps<{
   chosen: number
   /** How many the check found. */
   offered: number
-  mode: RecipeUpdatePreview['mode']
+  mode: RecipeUpdateMode
   sending?: 'apply' | 'skip'
   notSent?: { reason?: string }
 }>()

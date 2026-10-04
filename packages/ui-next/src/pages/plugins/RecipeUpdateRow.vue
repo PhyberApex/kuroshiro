@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { RecipeUpdatePreview, UpdateItem } from 'kuroshiro-shared'
+import type { RecipeUpdateMode, UpdateItem } from 'kuroshiro-shared'
 import { computed, ref, useId } from 'vue'
 import Checkbox from '@/components/Checkbox.vue'
 import Icon from '@/components/Icon.vue'
@@ -9,7 +9,7 @@ import RecipeUpdateDetail from './RecipeUpdateDetail.vue'
 /** One Update Item: its checkbox, what it is, how it changed and whether you changed it too. The name opens its diff. */
 const props = defineProps<{
   item: UpdateItem
-  mode: RecipeUpdatePreview['mode']
+  mode: RecipeUpdateMode
   pluginName: string
   /** A required Plugin Field that applying leaves without a value or a default. */
   leftEmpty: boolean

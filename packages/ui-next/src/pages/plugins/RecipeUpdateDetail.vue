@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { RecipeUpdatePreview, UpdateItem } from 'kuroshiro-shared'
+import type { RecipeUpdateMode, UpdateItem } from 'kuroshiro-shared'
 import { computed } from 'vue'
 import Diff from '@/components/Diff.vue'
 import { conflictSentence, linesOf, recipeChange } from './recipeUpdate'
@@ -7,7 +7,7 @@ import { conflictSentence, linesOf, recipeChange } from './recipeUpdate'
 /** An opened Update Item: for a conflict your own version first, then the Recipe's change, then what applying a Plugin Field means. */
 const props = defineProps<{
   item: UpdateItem
-  mode: RecipeUpdatePreview['mode']
+  mode: RecipeUpdateMode
   /** "Template full". */
   called: string
   pluginName: string

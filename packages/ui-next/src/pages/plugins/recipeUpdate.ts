@@ -1,4 +1,4 @@
-import type { PluginDetail, RecipeDataSource, RecipeField, RecipeUpdatePreview, UpdateItem, UpdateItemType } from 'kuroshiro-shared'
+import type { PluginDetail, RecipeDataSource, RecipeField, RecipeUpdateMode, UpdateItem, UpdateItemType } from 'kuroshiro-shared'
 import { isRefusal } from '@/api/client'
 import { failureReason } from '@/components/failureReason'
 import { fetchInterval } from './pluginPageWording'
@@ -73,25 +73,25 @@ function fieldLines(field: RecipeField): string[] {
 
 type Side = 'snapshot' | 'local' | 'upstream'
 
+type ValueOf<T extends UpdateItemType> = NonNullable<Extract<UpdateItem, { itemType: T }>['upstream']>
+
+const LINES: { [T in UpdateItemType]: (value: ValueOf<T>) => string[] } = {
+  name: value => [value],
+  description: value => [value],
+  refreshInterval: value => [fetchInterval(value)],
+  template: value => value.split('\n'),
+  dataSource: dataSourceLines,
+  field: fieldLines,
+}
+
 /** One side of an Update Item as the lines its diff compares; none where the item does not exist on that side. */
 export function linesOf(item: UpdateItem, side: Side): string[] {
-  switch (item.itemType) {
-    case 'name':
-    case 'description':
-      return item[side] === null ? [] : [item[side]]
-    case 'refreshInterval':
-      return item[side] === null ? [] : [fetchInterval(item[side])]
-    case 'template':
-      return item[side] === null ? [] : item[side].split('\n')
-    case 'dataSource':
-      return item[side] === null ? [] : dataSourceLines(item[side])
-    case 'field':
-      return item[side] === null ? [] : fieldLines(item[side])
-  }
+  const value = item[side]
+  return value === null ? [] : (LINES[item.itemType] as (value: unknown) => string[])(value)
 }
 
 /** The Recipe's change, from the Recipe Snapshot or, without one, from the Plugin as it is. */
-export function recipeChange(item: UpdateItem, mode: RecipeUpdatePreview['mode']) {
+export function recipeChange(item: UpdateItem, mode: RecipeUpdateMode) {
   return { before: linesOf(item, mode === 'three-way' ? 'snapshot' : 'local'), after: linesOf(item, 'upstream') }
 }
 
