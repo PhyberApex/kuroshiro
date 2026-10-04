@@ -347,8 +347,11 @@ describe('a Mashup Screen', () => {
     await expect.element(screen.getByRole('img', { name: 'Weekend board, as rendered for Kitchen: rendering' })).toBeVisible()
 
     faked.screens = faked.screens.map(kept => kept.id === 'weekend' ? { ...kept, renderedAt: '2026-10-03T07:35:00.000Z', imagePath: `${imagePath('weekend')}2` } : kept)
-    // A refresh is held back while a select has the focus.
-    ;(document.activeElement as HTMLElement).blur()
+    // The save reads the Screens again, and a read under way is not asked again; a refresh is held back while a select has the focus.
+    await expect.element(source.getByText('Saved')).toBeVisible()
+    const right = source.getByRole('combobox', { name: 'Right', exact: true })
+    await expect.element(right).toHaveFocus()
+    ;(right.element() as HTMLElement).blur()
     window.dispatchEvent(new Event('focus'))
     await expect.element(screen.getByRole('img', { name: 'Weekend board, as rendered for Kitchen', exact: true })).toBeVisible()
   })
