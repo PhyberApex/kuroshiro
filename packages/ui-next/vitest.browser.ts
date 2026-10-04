@@ -59,6 +59,8 @@ export function chromiumProject(test: ProjectTestOptions & { name: string }): Te
     },
     test: {
       setupFiles: ['src/testing/setup.ts'],
+      // A click that saves and then navigates takes longer than Vitest's one second on a loaded CI runner.
+      expect: { poll: { timeout: 5000 } },
       ...test,
       browser: {
         enabled: true,

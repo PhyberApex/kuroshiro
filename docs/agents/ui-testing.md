@@ -68,7 +68,7 @@ Two fast presses of an arrow key in an open Reka `Select` both start from the sa
 
 **`holdTabVisible()`** (`visibility.ts`) holds `document.visibilityState` at `visible` for the test. Spec files run side by side and the tab that takes the shots is never in front, so a page that only asks while its tab is visible (`usePolling`, so anything `fresh` and Connect a Device) asks in some runs and not in others. A spec or a shot that waits for such a poll calls it before mounting (`ConnectPage.spec.ts`).
 
-`expect.poll` gives up after one second, far sooner than `expect.element`. An assertion that waits for a real timer of the page (Connect a Device asks every 3 seconds) passes `expect.poll` a `timeout`.
+`expect.poll` gives up after five seconds here (`vitest.browser.ts` raises Vitest's one second, which a save followed by a navigation outran on a loaded CI runner). An assertion that waits for a real timer of the page (Connect a Device asks every 3 seconds) passes `expect.poll` a longer `timeout`.
 
 `userEvent.dragAndDrop` onto a target below the window's edge drops nothing: drag onto a row that is in view.
 
