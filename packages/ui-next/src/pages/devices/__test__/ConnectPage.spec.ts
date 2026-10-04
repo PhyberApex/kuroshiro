@@ -132,6 +132,20 @@ describe('connect a Device', () => {
     expect(main(screen).element().querySelector('.unreachable')).toBeNull()
   })
 
+  it('says so when the server URL cannot be loaded, and shows it once "Try again" works', async () => {
+    fakeInstance()
+    api.use(http.get(apiUrl('instance'), () => apiErrorResponse({ statusCode: 500, code: 'internal' }), { once: true }))
+    const screen = await mountApp({ at: '/connect' })
+
+    await expect.element(screen.getByRole('alert')).toHaveTextContent('Could not load the server URL. Something went wrong on the server.')
+    expect(listening(screen)).toBe('Waiting for a Device to call in')
+
+    await screen.getByRole('button', { name: 'Try again' }).click()
+
+    await expect.element(screen.getByText('http://kuroshiro.lan:3000')).toBeVisible()
+    expect(screen.getByRole('alert').query()).toBeNull()
+  })
+
   it('shows a block for a Device that calls in after the page opened, and a second block for a second one', async () => {
     const faked = fakeInstance({ devices: [KITCHEN] })
     const screen = await mountApp({ at: '/connect' })

@@ -16,11 +16,20 @@ import SentenceLine from './SentenceLine.vue'
 
 const CONFIGURATION_ARCHIVE_PATH = '/instance/archive'
 
+function hostOf(address: string) {
+  try {
+    return new URL(address).hostname
+  }
+  catch {
+    return address
+  }
+}
+
 const facts = useInstanceFacts()
-const { calledIn, openedWithNoDevices, notAnswering } = useDevicesCallingIn()
+const { calledIn, openedWithNoDevices, notAnswering, expect: expectDevice } = useDevicesCallingIn()
 
 const title = computed(() => openedWithNoDevices.value ? 'Connect your Device' : 'Connect a Device')
-const serverHost = computed(() => facts.data && URL.parse(facts.data.serverUrl)?.hostname)
+const serverHost = computed(() => facts.data && hostOf(facts.data.serverUrl))
 
 const listening = computed(() => {
   if (notAnswering.value)
@@ -74,7 +83,7 @@ const moving = sentence(
 
   <div class="by-hand">
     <TuckedSection title="Register a Device by hand">
-      <RegisterByHand />
+      <RegisterByHand @registered="expectDevice" />
     </TuckedSection>
   </div>
 </template>

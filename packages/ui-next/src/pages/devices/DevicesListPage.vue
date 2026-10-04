@@ -17,7 +17,12 @@ const alerts = useAlerts()
 
 const firingOn = (device: DeviceSummary) => alerts.data?.active.filter(alert => alert.deviceId === device.id) ?? []
 
-const LOADING_ROWS = [['34%', '46%'], ['26%', '40%'], ['30%', '52%']]
+/** The widths of the two bars of each loading row: where the name and what the Device shows will be. */
+const LOADING_ROWS = [
+  { name: '34%', shows: '46%' },
+  { name: '26%', shows: '40%' },
+  { name: '30%', shows: '52%' },
+]
 
 watchEffect(() => {
   if (devices.data?.length === 0)
@@ -43,11 +48,11 @@ watchEffect(() => {
     </template>
     <template #skeleton>
       <div class="devices" aria-hidden="true">
-        <div v-for="[name, shows] in LOADING_ROWS" :key="name" class="loading-row">
+        <div v-for="(widths, index) in LOADING_ROWS" :key="index" class="loading-row">
           <Plate size="list" name="A Device's Current Screen" rendering />
           <div class="bars">
-            <WashBar :width="name" />
-            <WashBar :width="shows" />
+            <WashBar :width="widths.name" />
+            <WashBar :width="widths.shows" />
           </div>
         </div>
       </div>

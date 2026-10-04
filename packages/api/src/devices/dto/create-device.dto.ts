@@ -10,7 +10,7 @@ export class CreateDeviceDto implements CreateDeviceInput {
   @IsNotEmpty()
   name: string
 
-  @Transform(({ value }) => typeof value === 'string' ? value.toUpperCase() : value)
+  @Transform(({ value }) => typeof value === 'string' ? value.trim().toUpperCase() : value)
   @Matches(MAC_ADDRESS_PATTERN)
   mac: string
 }

@@ -10,6 +10,12 @@ export interface DeviceFact extends Fact {
   lead?: string
 }
 
+/** What a firing Alert on a Device is called where the Device's facts are shown. */
+export const DEVICE_ALERT_LABELS = {
+  'device-offline': 'Alert: offline',
+  'device-low-battery': 'Alert: battery low',
+} as const satisfies Partial<Record<AlertKind, string>>
+
 const SENSOR_LABELS: Record<DeviceSensorKind, string> = {
   temperature: 'Temperature',
   humidity: 'Humidity',
@@ -35,7 +41,7 @@ function lastSeenOf({ lastSeenAt }: DeviceDetail, offline: boolean, now: Date): 
   return {
     label: 'Last seen',
     value: seen && `${lead}${relativeTime(seen, now) ?? exactTime(seen)}`,
-    alert: offline ? 'Alert: offline' : undefined,
+    alert: offline ? DEVICE_ALERT_LABELS['device-offline'] : undefined,
     at: lastSeenAt ?? undefined,
     lead,
   }
@@ -62,7 +68,7 @@ export function deviceFacts({ device, alerts, now }: DeviceTold): DeviceFact[] {
     {
       label: 'Battery',
       value: device.batteryPercent === null ? null : `${device.batteryPercent} %`,
-      alert: firing('device-low-battery') ? 'Alert: battery low' : undefined,
+      alert: firing('device-low-battery') ? DEVICE_ALERT_LABELS['device-low-battery'] : undefined,
     },
     { label: 'Signal', value: signalOf(device.rssi) },
     { label: 'Sleep Mode', value: sleepModeOf(device.sleep, device.isMirrored) },

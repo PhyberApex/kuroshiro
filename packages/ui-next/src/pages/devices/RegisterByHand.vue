@@ -11,9 +11,15 @@ import Field from '@/components/Field.vue'
 import ResultLine from '@/components/ResultLine.vue'
 import TextInput from '@/components/TextInput.vue'
 import { useDevices } from '@/reads/sharedReads'
+import { deviceNameProblem } from './deviceNaming'
 import { devicePath } from './devicePaths'
 
 type FieldErrors = Partial<Record<keyof CreateDeviceInput, string>>
+
+const emit = defineEmits<{
+  /** A Device was registered, before its Screens view opens: the page must not take it for one that called in. */
+  registered: [deviceId: string]
+}>()
 
 const router = useRouter()
 const devices = useDevices()
@@ -40,10 +46,12 @@ function entered(): CreateDeviceInput {
 
 function whatIsWrong(input: CreateDeviceInput): FieldErrors {
   return {
-    name: input.name ? undefined : 'A Device needs a name.',
+    name: deviceNameProblem(input.name),
     mac: MAC_ADDRESS_PATTERN.test(input.mac) ? undefined : 'Enter six pairs of hex digits, like A4:C1:38:5F:0B:9D.',
   }
 }
+
+const hasProblems = ({ name: nameError, mac: macError }: FieldErrors) => Boolean(nameError || macError)
 
 function refusedFields(error: unknown): FieldErrors {
   if (isRefusal(error, 'device-mac-taken'))
@@ -56,18 +64,18 @@ async function register() {
   const input = entered()
   errors.value = whatIsWrong(input)
   failure.value = undefined
-  if (errors.value.name || errors.value.mac)
+  if (hasProblems(errors.value))
     return
   registering.value = true
   try {
     const device = await createDevice(input)
-    // The page leaves before the Devices are asked for again, so the new Device is not taken for one that called in.
+    emit('registered', device.id)
     await router.push(devicePath(device.id))
     void devices.reload()
   }
   catch (error) {
     errors.value = refusedFields(error)
-    if (!errors.value.name && !errors.value.mac)
+    if (!hasProblems(errors.value))
       failure.value = failureReason(error) ?? 'Something went wrong.'
   }
   finally {

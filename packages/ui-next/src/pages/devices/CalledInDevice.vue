@@ -11,6 +11,7 @@ import SaveState from '@/components/SaveState.vue'
 import TextInput from '@/components/TextInput.vue'
 import { useSaveAsChanged } from '@/components/useSaveAsChanged'
 import { useDevices } from '@/reads/sharedReads'
+import { deviceNameProblem } from './deviceNaming'
 import { devicePath } from './devicePaths'
 
 const props = defineProps<{
@@ -39,7 +40,7 @@ const nameSave = useSaveAsChanged(async (entered: string) => {
 
 function saveName() {
   name.value = name.value.trim()
-  error.value = name.value ? undefined : 'A Device needs a name.'
+  error.value = deviceNameProblem(name.value)
   if (!error.value)
     nameSave.commit()
 }

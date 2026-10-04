@@ -1,6 +1,6 @@
-import type { AlertKind, AlertSummary } from 'kuroshiro-shared'
 import type { CurrentScreenStory, CurrentScreenTold, PlateState } from './currentScreenStory'
 import type { Sentence } from './sentence'
+import { DEVICE_ALERT_LABELS } from './deviceFacts'
 import { sentence, strong } from './sentence'
 
 /** The states in which the story's heading is the name of the Screen whose image is on the Device. */
@@ -11,10 +11,7 @@ export function whatItShows({ state, heading }: CurrentScreenStory): Sentence {
   return SHOWS_A_SCREEN.includes(state) ? sentence('Showing ', strong(heading)) : sentence(strong(heading))
 }
 
-const DEVICE_ALERT_LABELS: Partial<Record<AlertKind, string>> = {
-  'device-offline': 'Alert: offline',
-  'device-low-battery': 'Alert: battery low',
-}
+const ALERTS_IN_ROW_ORDER = ['device-offline', 'device-low-battery'] as const
 
 export type RowFact
   = | { kind: 'alert', text: string }
@@ -23,9 +20,9 @@ export type RowFact
 
 /** The facts of a Devices list row, the firing Alerts first. A Device that never polled has nothing to report but that. */
 export function rowFacts({ device, alerts }: Pick<CurrentScreenTold, 'device' | 'alerts'>): RowFact[] {
-  const firing = (Object.keys(DEVICE_ALERT_LABELS) as AlertKind[])
-    .filter(kind => alerts.some((alert: AlertSummary) => alert.kind === kind))
-    .map((kind): RowFact => ({ kind: 'alert', text: DEVICE_ALERT_LABELS[kind]! }))
+  const firing = ALERTS_IN_ROW_ORDER
+    .filter(kind => alerts.some(alert => alert.kind === kind))
+    .map((kind): RowFact => ({ kind: 'alert', text: DEVICE_ALERT_LABELS[kind] }))
   if (device.lastSeenAt === null)
     return [...firing, { kind: 'words', text: 'Has not called in yet' }]
   return [
