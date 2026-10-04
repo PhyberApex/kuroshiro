@@ -1,4 +1,4 @@
-import type { CreatePluginInput, ImportGithubPluginInput, ImportRecipeInput, PluginDetail, PluginImportResult, PluginSummary, PreviewData, PreviewDataInput, UpdatePluginInput } from 'kuroshiro-shared'
+import type { ApplyRecipeUpdateInput, CreatePluginInput, ImportGithubPluginInput, ImportRecipeInput, PluginDetail, PluginImportResult, PluginSummary, PreviewData, PreviewDataInput, RecipeUpdatePreview, UpdatePluginInput } from 'kuroshiro-shared'
 import { apiDownload, apiGet, apiSend } from './client'
 
 /** Every Plugin as a row of the list, by name whatever its case. */
@@ -73,4 +73,21 @@ export function deletePlugin(pluginId: string) {
 /** Downloads the Plugin as `{Plugin}.trmnlp.zip`. */
 export function exportPlugin(pluginId: string) {
   apiDownload(`plugins/${pluginId}/export`)
+}
+
+/**
+ * Downloads the Plugin's Recipe from TRMNL again and compares it. Refused with `plugin-not-from-recipe`, with
+ * `recipe-not-found` when TRMNL no longer has it and `upstream-unreachable` when TRMNL does not answer.
+ */
+export function checkRecipeUpdate(pluginId: string) {
+  return apiGet<RecipeUpdatePreview>(`plugins/${pluginId}/recipe-update`)
+}
+
+/**
+ * Applies the chosen Update Items and takes the Recipe as it is now as the Recipe Snapshot; `apply: []` applies nothing.
+ * Answers the Plugin, which the server then renders again in the background. Refused with `recipe-changed` when the
+ * Recipe moved since the check.
+ */
+export function applyRecipeUpdate(pluginId: string, input: ApplyRecipeUpdateInput) {
+  return apiSend<PluginDetail>('POST', `plugins/${pluginId}/recipe-update/apply`, input)
 }

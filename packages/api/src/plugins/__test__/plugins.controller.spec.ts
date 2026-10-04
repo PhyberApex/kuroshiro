@@ -6,7 +6,6 @@ import type { PluginPreviewDataService } from '../services/plugin-preview-data.s
 import type { PluginReadsService } from '../services/plugin-reads.service.js'
 import type { RecipeUpdateService } from '../services/recipe-update.service.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { makePlugin } from '../../test/fixtures.js'
 import { asService } from '../../test/mockService.js'
 import { PluginsController } from '../plugins.controller.js'
 
@@ -63,14 +62,6 @@ describe('pluginsController', () => {
     )
   })
 
-  const basePlugin = makePlugin({
-    id: '1',
-    name: 'Weather Plugin',
-    description: 'Shows weather',
-    kind: 'Poll',
-    refreshInterval: 15,
-  })
-
   it('create builds the Plugin, then answers it as a read gives it', async () => {
     const createDto = { name: 'Weather Plugin', kind: 'Poll' as const }
     const detail = { id: '1', name: 'Weather Plugin' }
@@ -97,7 +88,7 @@ describe('pluginsController', () => {
   })
 
   it('checkRecipeUpdate delegates to the recipe update service', async () => {
-    const preview = { contentHash: 'abc', mode: 'three-way' as const, items: [], assignmentsMissingRequiredField: [] }
+    const preview = { recipe: { id: '150460', name: 'Weather' }, snapshotTakenAt: null, contentHash: 'abc', mode: 'three-way' as const, items: [], requiredFieldsLeftEmpty: [] }
     mockRecipeUpdateService.checkForUpdate.mockResolvedValue(preview)
 
     const result = await controller.checkRecipeUpdate('1')
@@ -106,13 +97,16 @@ describe('pluginsController', () => {
     expect(result).toBe(preview)
   })
 
-  it('applyRecipeUpdate delegates to the recipe update service', async () => {
+  it('applyRecipeUpdate delegates to the recipe update service and answers the Plugin as read afterwards', async () => {
     const applyDto = { contentHash: 'abc', apply: [{ itemType: 'name' as const, key: 'name' }] }
-    mockRecipeUpdateService.applyUpdate.mockResolvedValue(basePlugin)
+    const detail = { id: '1', name: 'Weather' }
+    mockRecipeUpdateService.applyUpdate.mockResolvedValue(undefined)
+    mockReads.detail.mockResolvedValue(detail)
 
     const result = await controller.applyRecipeUpdate('1', applyDto)
 
     expect(mockRecipeUpdateService.applyUpdate).toHaveBeenCalledWith('1', applyDto)
-    expect(result).toBe(basePlugin)
+    expect(mockReads.detail).toHaveBeenCalledWith('1')
+    expect(result).toBe(detail)
   })
 })

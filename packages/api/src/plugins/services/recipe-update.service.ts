@@ -1,7 +1,6 @@
+import type { RecipeUpdateMode, RecipeUpdatePreview } from 'kuroshiro-shared'
 import type { ApplyRecipeUpdateDto } from '../dto/apply-recipe-update.dto.js'
-import type { DevicePlugin } from '../entities/device-plugin.entity.js'
 import type { Plugin } from '../entities/plugin.entity.js'
-import type { PluginWithFieldValues } from './plugin-field-values.service.js'
 import type { ParsedPlugin } from './plugin-importer.service.js'
 import type {
   ComparableDataSource,
@@ -11,38 +10,29 @@ import type {
   NormalizedDataSource,
   NormalizedField,
   NormalizedTemplate,
-  RecipeUpdateMode,
   UpdateItem,
 } from './recipe-update-diff.js'
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
+import { isUUID } from 'class-validator'
 import { Repository } from 'typeorm'
+import { ApiException } from '../../errors/api.exception.js'
 import { PluginDataSource } from '../entities/plugin-data-source.entity.js'
 import { PluginField } from '../entities/plugin-field.entity.js'
 import { PluginTemplate } from '../entities/plugin-template.entity.js'
 import { Plugin as PluginEntity } from '../entities/plugin.entity.js'
-import { PluginsService } from '../plugins.service.js'
+import { pluginNotFound, PluginsService } from '../plugins.service.js'
+import { toRecipeUpdatePreview } from '../recipe-update.mapper.js'
+import { PluginFieldValuesService } from './plugin-field-values.service.js'
 import { PluginImporterService } from './plugin-importer.service.js'
 import { computeRecipeContentHash, diffRecipeUpdate } from './recipe-update-diff.js'
 
-const PLUGIN_UPDATE_RELATIONS = { dataSources: true, templates: true, fields: true, deviceAssignments: { device: true } } as const
+const PLUGIN_UPDATE_RELATIONS = { dataSources: true, templates: true, fields: true } as const
 
 interface BasicFieldUpdates {
   name?: string
   description?: string | null
   refreshInterval?: number
-}
-
-export interface AssignmentsMissingRequiredField {
-  key: string
-  assignments: Array<{ deviceId: string, deviceName: string }>
-}
-
-export interface RecipeUpdatePreview {
-  contentHash: string
-  mode: RecipeUpdateMode
-  items: UpdateItem[]
-  assignmentsMissingRequiredField: AssignmentsMissingRequiredField[]
 }
 
 function toComparablePlugin(plugin: Plugin): ComparablePlugin {
@@ -104,28 +94,32 @@ export class RecipeUpdateService {
     private readonly fieldRepository: Repository<PluginField>,
     private readonly importerService: PluginImporterService,
     private readonly pluginsService: PluginsService,
+    private readonly fieldValues: PluginFieldValuesService,
   ) {}
 
   async checkForUpdate(pluginId: string): Promise<RecipeUpdatePreview> {
-    const { plugin, contentHash, mode, items } = await this.prepareDiff(pluginId)
+    const { plugin, upstream, contentHash, mode, items } = await this.prepareDiff(pluginId)
 
-    return {
+    return toRecipeUpdatePreview({
+      recipe: { id: plugin.sourceRecipeId!, name: upstream.name },
+      snapshotTakenAt: plugin.sourceRecipeSnapshot ? plugin.snapshotTakenAt ?? null : null,
       contentHash,
       mode,
       items,
-      assignmentsMissingRequiredField: this.missingRequiredFieldAssignments(items, plugin.deviceAssignments ?? []),
-    }
+      requiredFieldsLeftEmpty: await this.requiredFieldsLeftEmpty(pluginId, items),
+    })
   }
 
-  async applyUpdate(pluginId: string, dto: ApplyRecipeUpdateDto): Promise<PluginWithFieldValues> {
+  /** Writes what is chosen and takes the Recipe as it is now as the Recipe Snapshot; `apply: []` writes only the Recipe Snapshot. */
+  async applyUpdate(pluginId: string, dto: ApplyRecipeUpdateDto): Promise<void> {
     const { plugin, upstream, contentHash, items } = await this.prepareDiff(pluginId)
 
     if (contentHash !== dto.contentHash) {
-      throw new ConflictException('The Recipe changed since the check ran; run the check again.')
+      throw new ApiException(HttpStatus.CONFLICT, 'recipe-changed', 'The Recipe changed since the check ran; run the check again.')
     }
 
     const selected = this.resolveSelectedItems(items, dto.apply)
-    const { basicFieldUpdates, reschedule } = await this.applySelectedItems(plugin, selected)
+    const basicFieldUpdates = await this.applySelectedItems(plugin, selected)
 
     await this.pluginRepository.update(pluginId, {
       ...basicFieldUpdates,
@@ -134,13 +128,8 @@ export class RecipeUpdateService {
     })
 
     if (selected.length > 0) {
-      await this.pluginsService.invalidateRenderCaches(pluginId)
-      if (reschedule) {
-        await this.pluginsService.rescheduleAfterUpdate(pluginId)
-      }
+      await this.pluginsService.refreshRendersAfterSave(pluginId)
     }
-
-    return this.reload(pluginId)
   }
 
   private async prepareDiff(pluginId: string): Promise<{ plugin: Plugin, upstream: ParsedPlugin, contentHash: string, mode: RecipeUpdateMode, items: UpdateItem[] }> {
@@ -167,9 +156,8 @@ export class RecipeUpdateService {
     })
   }
 
-  private async applySelectedItems(plugin: Plugin, selected: UpdateItem[]): Promise<{ basicFieldUpdates: BasicFieldUpdates, reschedule: boolean }> {
+  private async applySelectedItems(plugin: Plugin, selected: UpdateItem[]): Promise<BasicFieldUpdates> {
     const basicFieldUpdates: BasicFieldUpdates = {}
-    let reschedule = false
 
     for (const item of selected) {
       switch (item.itemType) {
@@ -181,15 +169,12 @@ export class RecipeUpdateService {
           break
         case 'refreshInterval':
           basicFieldUpdates.refreshInterval = item.upstream as number
-          reschedule = true
           break
         case 'dataSource':
           await this.applyDataSourceItem(plugin, item)
-          reschedule = true
           break
         case 'template':
           await this.applyTemplateItem(plugin, item)
-          reschedule = true
           break
         case 'field':
           await this.applyFieldItem(plugin, item)
@@ -197,15 +182,7 @@ export class RecipeUpdateService {
       }
     }
 
-    return { basicFieldUpdates, reschedule }
-  }
-
-  private async reload(pluginId: string): Promise<PluginWithFieldValues> {
-    const updated = await this.pluginsService.findById(pluginId)
-    if (!updated) {
-      throw new NotFoundException(`Plugin ${pluginId} not found`)
-    }
-    return updated
+    return basicFieldUpdates
   }
 
   private snapshotOf(plugin: Plugin): ComparablePlugin | null {
@@ -213,20 +190,22 @@ export class RecipeUpdateService {
   }
 
   private async loadPluginWithSourceRecipe(pluginId: string): Promise<Plugin> {
-    const plugin = await this.pluginRepository.findOne({ where: { id: pluginId }, relations: PLUGIN_UPDATE_RELATIONS })
-    if (!plugin || !plugin.sourceRecipeId) {
-      throw new NotFoundException(`Plugin ${pluginId} was not imported from a Recipe`)
-    }
+    const plugin = isUUID(pluginId) ? await this.pluginRepository.findOne({ where: { id: pluginId }, relations: PLUGIN_UPDATE_RELATIONS }) : null
+    if (!plugin)
+      throw pluginNotFound(pluginId)
+    if (!plugin.sourceRecipeId)
+      throw new ApiException(HttpStatus.NOT_FOUND, 'plugin-not-from-recipe', `Plugin ${pluginId} was not imported from a Recipe.`)
     return plugin
   }
 
-  private missingRequiredFieldAssignments(items: UpdateItem[], assignments: DevicePlugin[]): AssignmentsMissingRequiredField[] {
+  // Field Values belong to the Plugin (ADR-0032), so whether one is stored is asked of the Plugin alone.
+  private async requiredFieldsLeftEmpty(pluginId: string, items: UpdateItem[]): Promise<string[]> {
+    const stored = await this.fieldValues.storedFor(pluginId)
     return items
-      .filter(item => item.itemType === 'field' && item.kind === 'added' && (item.upstream as NormalizedField).required)
-      .map(item => ({
-        key: item.key,
-        assignments: assignments.map(assignment => ({ deviceId: assignment.device.id, deviceName: assignment.device.name })),
-      }))
+      .filter(item => item.itemType === 'field' && item.kind !== 'removed')
+      .map(item => item.upstream as NormalizedField)
+      .filter(field => field.required && !field.defaultValue && !stored[field.keyname])
+      .map(field => field.keyname)
   }
 
   private async applyDataSourceItem(plugin: Plugin, item: UpdateItem): Promise<void> {

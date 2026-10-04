@@ -10,3 +10,5 @@ export type AddPluginWay = 'recipe' | 'file' | 'github' | 'poll' | 'webhook'
 export function addPluginPath(way: AddPluginWay, deviceId?: string) {
   return `${PLUGINS_PATH}/new?way=${way}${deviceId ? `&device=${encodeURIComponent(deviceId)}` : ''}`
 }
+
+export const recipeUpdatePath = (pluginId: string) => `${pluginPath(pluginId)}/update`

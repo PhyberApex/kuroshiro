@@ -53,6 +53,8 @@ const wording: Record<ApiErrorCode, string> = {
   'recipe-oauth': 'That Recipe signs in with OAuth.',
   'recipe-strategy-unsupported': 'That Recipe does not poll or hold fixed data.',
   'recipe-static-transform': 'That Recipe holds fixed data and a transform.',
+  'plugin-not-from-recipe': 'That Plugin was not imported from a Recipe.',
+  'recipe-changed': 'The Recipe changed since it was compared.',
   'archive-not-zip': 'That file is not a .zip.',
   'archive-not-configuration': 'That is not a Configuration Archive.',
   'archive-schema-version': 'That archive was made with another archive version.',
@@ -103,6 +105,8 @@ function wordingBySwitch(code: ApiErrorCode): string {
     case 'recipe-oauth':
     case 'recipe-strategy-unsupported':
     case 'recipe-static-transform':
+    case 'plugin-not-from-recipe':
+    case 'recipe-changed':
     case 'archive-not-zip':
     case 'archive-not-configuration':
     case 'archive-schema-version':

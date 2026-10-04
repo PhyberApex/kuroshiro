@@ -49,6 +49,8 @@ export const API_ERROR_CODES = [
   'recipe-oauth',
   'recipe-strategy-unsupported',
   'recipe-static-transform',
+  'plugin-not-from-recipe',
+  'recipe-changed',
   'archive-not-zip',
   'archive-not-configuration',
   'archive-schema-version',

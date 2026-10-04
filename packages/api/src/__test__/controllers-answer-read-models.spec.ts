@@ -70,7 +70,6 @@ export class WidgetsController {
  * endpoint into a read model; none may be added.
  */
 const KNOWN_EXCEPTIONS: string[] = [
-  'PluginsController.applyRecipeUpdate',
   'PluginsController.clearWebhookPayload',
   'PluginsController.regenerateWebhookToken',
 ]
