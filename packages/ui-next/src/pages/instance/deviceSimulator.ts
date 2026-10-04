@@ -45,10 +45,11 @@ export function firstChoice(devices: DeviceSummary[], named: unknown) {
 function useDeviceSimulator(initialChoice: string) {
   const devices = useDevices()
   const choice = ref(initialChoice)
-  const registered = computed(() => choice.value === NOT_REGISTERED ? undefined : choice.value)
-  const detail = useLoad(() => registered.value ? getDevice(registered.value) : Promise.resolve(undefined), { key: () => registered.value, fresh: true })
-  const device: ComputedRef<DeviceDetail | undefined> = computed(() => detail.data?.id === registered.value ? detail.data : undefined)
-  const listed = computed(() => devices.data?.find(each => each.id === registered.value))
+  const registeredId = computed(() => choice.value === NOT_REGISTERED ? undefined : choice.value)
+  const detail = useLoad(() => registeredId.value ? getDevice(registeredId.value) : Promise.resolve(undefined), { key: () => registeredId.value, fresh: true })
+  const device: ComputedRef<DeviceDetail | undefined> = computed(() => detail.data?.id === registeredId.value ? detail.data : undefined)
+  const listed = computed(() => devices.data?.find(each => each.id === registeredId.value))
+  const deviceName = computed(() => listed.value?.name)
 
   const mac = ref('')
   const setUp = ref<SetUpDevice>()
@@ -58,7 +59,7 @@ function useDeviceSimulator(initialChoice: string) {
 
   watch(choice, () => {
     outcome.value = { kind: 'none' }
-    if (!registered.value)
+    if (!registeredId.value)
       report.value = { ...NEW_DEVICE_REPORT }
   })
   watch(() => device.value?.id, (id) => {
@@ -66,7 +67,8 @@ function useDeviceSimulator(initialChoice: string) {
       report.value = reportOf(device.value!)
   }, { immediate: true })
 
-  const canPoll = computed(() => registered.value ? Boolean(device.value) : setUp.value?.mac === mac.value.trim())
+  const canPoll = computed(() => calling.value !== 'setup' && (registeredId.value ? Boolean(device.value) : setUp.value?.mac === mac.value.trim()))
+  const canSetup = computed(() => calling.value !== 'poll' && (!registeredId.value || Boolean(device.value)))
 
   async function settled<T>(call: Call, made: () => Promise<DeviceCall<T>>, then: (answer: T) => Promise<SimulatorOutcome>) {
     calling.value = call
@@ -98,8 +100,8 @@ function useDeviceSimulator(initialChoice: string) {
 
   async function poll() {
     const headers = reportHeaders(report.value)
-    if (registered.value) {
-      const deviceId = registered.value
+    if (registeredId.value) {
+      const deviceId = registeredId.value
       await settled('poll', async () => {
         const playing = await getDevice(deviceId)
         const sensors = sensorsHeader(playing.sensors)
@@ -117,15 +119,15 @@ function useDeviceSimulator(initialChoice: string) {
   async function setupAsDevice(deviceId: string) {
     await settled('setup', async () => callSetup({ ID: (await getDevice(deviceId)).mac }), async () => {
       void devices.reload()
-      return { kind: 'known', deviceName: listed.value?.name ?? 'the Device', chosen: true }
+      return { kind: 'known', deviceName: deviceName.value ?? 'the Device', chosen: true }
     })
   }
 
   async function setupNew() {
     const entered = mac.value.trim()
     const known = new Map(devices.data?.map(each => [each.friendlyId, each.name]))
-    const { firmwareVersion, model } = report.value
-    const identity = Object.fromEntries([['FW-Version', firmwareVersion.trim()], ['Model', model.trim()]].filter(([, value]) => value !== ''))
+    const { 'FW-Version': firmwareVersion, 'Model': model } = reportHeaders(report.value)
+    const identity = { ...firmwareVersion ? { 'FW-Version': firmwareVersion } : {}, ...model ? { Model: model } : {} }
     await settled('setup', () => callSetup({ ...identity, ID: entered }), async (answer) => {
       setUp.value = { mac: entered, apiKey: answer.api_key, friendlyId: answer.friendly_id }
       void devices.reload()
@@ -137,10 +139,10 @@ function useDeviceSimulator(initialChoice: string) {
   }
 
   function setup() {
-    return registered.value ? setupAsDevice(registered.value) : setupNew()
+    return registeredId.value ? setupAsDevice(registeredId.value) : setupNew()
   }
 
-  return reactive({ choice, registered, device, detail, listed, mac, report, outcome, calling, canPoll, poll, setup })
+  return reactive({ choice, registeredId, device, listed, deviceName, detail, mac, report, outcome, calling, canPoll, canSetup, poll, setup })
 }
 
 type DeviceSimulator = ReturnType<typeof useDeviceSimulator>

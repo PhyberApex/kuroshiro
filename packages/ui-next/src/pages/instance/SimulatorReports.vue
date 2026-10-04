@@ -11,8 +11,8 @@ const simulator = useSimulator()
 <template>
   <TuckedSection title="What it reports" heading="h3">
     <p class="about">
-      <template v-if="simulator.listed">
-        Filled with what {{ simulator.listed.name }} last reported, so a poll leaves its facts as they are. Change one to see what the server does with it.
+      <template v-if="simulator.deviceName">
+        Filled with what {{ simulator.deviceName }} last reported, so a poll leaves its facts as they are. Change one to see what the server does with it.
       </template>
       <template v-else>
         What the simulated Device tells the server about itself.

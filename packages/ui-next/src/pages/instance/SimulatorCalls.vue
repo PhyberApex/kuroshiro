@@ -9,8 +9,7 @@ const simulator = useSimulator()
 
 const confirming = ref(false)
 
-const name = computed(() => simulator.listed?.name)
-const pollLabel = computed(() => simulator.registered && name.value ? `Poll as ${name.value}` : 'Poll')
+const pollLabel = computed(() => simulator.registeredId && simulator.deviceName ? `Poll as ${simulator.deviceName}` : 'Poll')
 const takes = computed(() => simulator.device ? pendingTaken(simulator.device) : [])
 
 function poll() {
@@ -23,10 +22,10 @@ function poll() {
 
 <template>
   <div class="calls">
-    <Button variant="primary" :disabled="!simulator.canPoll || simulator.calling === 'setup'" :loading="simulator.calling === 'poll'" @click="poll">
+    <Button variant="primary" :disabled="!simulator.canPoll" :loading="simulator.calling === 'poll'" @click="poll">
       {{ pollLabel }}
     </Button>
-    <Button :disabled="(simulator.registered && !simulator.device) || simulator.calling === 'poll'" :loading="simulator.calling === 'setup'" @click="simulator.setup">
+    <Button :disabled="!simulator.canSetup" :loading="simulator.calling === 'setup'" @click="simulator.setup">
       Call setup
     </Button>
   </div>
@@ -42,7 +41,7 @@ function poll() {
       {{ pendingLost(simulator.device) }}
     </template>
     <template #stays>
-      {{ name }}, its Screens and its Settings.
+      {{ simulator.deviceName }}, its Screens and its Settings.
     </template>
   </Confirmation>
 </template>

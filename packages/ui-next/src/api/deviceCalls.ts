@@ -27,7 +27,8 @@ export type DeviceHeaders = Record<string, string>
 
 /**
  * How a Device-facing call came back: the answer, or the server's refusal as its status and reason.
- * These routes keep Nest's own `{ statusCode, message, error }` body, not the admin API's envelope.
+ * These routes keep Nest's own `{ statusCode, message, error }` body, not the admin API's envelope. An answer that is
+ * not JSON came from something in the server's place, as the admin client takes it.
  */
 export type DeviceCall<T> = { answered: T } | { refused: string }
 
@@ -51,6 +52,8 @@ async function deviceCall<T>(path: string, headers: DeviceHeaders): Promise<Devi
   const body: unknown = await response.json().catch(() => undefined)
   if (response.ok && body !== undefined)
     return { answered: body as T }
+  if (response.ok)
+    throw new ServerUnreachable()
   return { refused: reasonOf(response, body as NestRefusal | undefined) }
 }
 

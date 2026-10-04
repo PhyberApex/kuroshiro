@@ -24,8 +24,7 @@ const options = computed(() => [
   { value: NOT_REGISTERED, label: 'A Device that is not registered' },
 ])
 
-const consequence = computed(() => callConsequence(simulator.registered ? simulator.device : undefined))
-const name = computed(() => simulator.listed?.name)
+const consequence = computed(() => callConsequence(simulator.registeredId ? simulator.device : undefined))
 
 function choose(choice: string | null) {
   if (choice)
@@ -39,7 +38,7 @@ function choose(choice: string | null) {
       <Select v-bind="control" :model-value="simulator.choice" :options="options" @update:model-value="choose" />
     </Field>
     <Field
-      v-if="!simulator.registered"
+      v-if="!simulator.registeredId"
       v-slot="{ control }"
       label="MAC address"
       hint="Calling setup with a MAC address nobody registered creates a Device. It stays until you delete it."
@@ -52,8 +51,8 @@ function choose(choice: string | null) {
       </span>
     </Field>
     <Notice
-      v-if="simulator.registered && simulator.detail.failure"
-      :title="`Could not load ${name ?? 'the Device'}.`"
+      v-if="simulator.registeredId && simulator.detail.failure"
+      :title="`Could not load ${simulator.deviceName ?? 'the Device'}.`"
       :reason="simulator.detail.failure.reason"
       action="Try again"
       @act="simulator.detail.reload"
