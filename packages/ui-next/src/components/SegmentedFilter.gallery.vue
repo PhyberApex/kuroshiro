@@ -25,9 +25,16 @@ const templates: Segment<Template>[] = [
   { value: 'quadrant', label: 'Quadrant' },
 ]
 
+const removals: Segment<Template>[] = [
+  { value: 'full', label: 'Full' },
+  { value: 'half_vertical', label: 'Half vertical', removed: true },
+  { value: 'quadrant', label: 'Quadrant', removed: true },
+]
+
 const level = ref<Level>('all')
 const appearance = ref<Appearance>('light')
 const template = ref<Template>('full')
+const kept = ref<Template>('quadrant')
 </script>
 
 <template>
@@ -49,6 +56,9 @@ const template = ref<Template>('full')
   <SpecimenRow>
     <Specimen caption="a problem on a segment, and one segment disabled">
       <SegmentedFilter v-model="template" :segments="templates" aria-label="Template" />
+    </Specimen>
+    <Specimen caption="a removed segment, chosen and not">
+      <SegmentedFilter v-model="kept" :segments="removals" aria-label="Kept" />
     </Specimen>
   </SpecimenRow>
 </template>

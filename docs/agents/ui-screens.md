@@ -273,6 +273,8 @@ A write that adds a record and then leaves the page navigates first and reloads 
 | `pluginDataSources.ts`, `PluginDataSources.vue` | "Data Sources": the worked example of a section whose part holds a list of rows and code inputs. See "A list of rows in the form" below |
 | `pluginDataSourceWording.ts` | A Data Source's line, how its fetches stand (`fetchStanding`) and the words of its health and its story |
 | `PluginRefreshInterval.vue`, `PluginDataSourceRow.vue`, `DataSourceForm.vue`, `DataSourceFetchFields.vue`, `DataSourceCode.vue`, `DataSourceStory.vue`, `DataSourceFailing.vue`, `DataSourceHealth.vue` | The section in parts: the interval's row, one row, its form, the fields of Fetch mode, one code input as a field, the story, the story of a streak and the row's health |
+| `pluginTemplates.ts`, `PluginTemplate.vue`, `TemplateLine.vue`, `TemplatePreviewFor.vue`, `pluginTemplateWording.ts` | "Template": the part, the section, the Template line, what sits under the plate and the section's words. See "The Template section" below |
+| `templatePreview.ts`, `useTemplatePreview.ts`, `templateContext.ts`, `previewTarget.ts` | The preview: the browser's render of a Template (the one module that holds the Liquid engine), when it is drawn, the context made of the form alone, and which Device or Device Model it is for |
 | `formRows.ts` | What the lists of rows in the form share: `FormRow` (`key`, `removed`), `keptRows`, `sentPathsOf(collection, rows)`, `nextAddedKey` and `freeName` |
 | `pluginFieldValues.ts`, `PluginFieldValues.vue`, `FieldValueRow.vue`, `FieldValueControl.vue` | "Field Values": the part, the control of each Plugin Field type (`fieldControl`), the note at a row's right (`fieldValueNote`), one row and its control. See "Two parts that read each other" below |
 | `pluginFields.ts`, `PluginFields.vue`, `PluginFieldRow.vue`, `PluginFieldForm.vue` | The tucked "Plugin Fields": the part with every rule of a keyname, the rows in a sortable `ScreenRows`, one row and its form |
@@ -301,6 +303,7 @@ A section's root is a `PageSection` (or a `TuckedSection` in `#tucked`) with the
 | `plugin` | A computed `PluginDetail`, never `undefined`: the Plugin as the server last answered it, re-read every 30 seconds and after a save. Read the facts the form does not hold from here (a Fetch Failure Streak, the Webhook Payload, the assignments). Never fetch the Plugin again |
 | `form` | The one form. `form.unsaved` is everything every part would send, changed or not: the unsaved state the Template section's preview draws (`PreviewDataInput`'s `dataSources` and `fieldValues` are its keys). `form.changed`, `form.changedKeys` and `form.saving` say where it stands |
 | `reload()` | Reads the Plugin again. Call it after a write that acts at once (assigning, unassigning, clearing the Webhook Payload, regenerating the Webhook Token) |
+| `save()` | "Save Plugin", as the save bar's button does it. The Template editor's Ctrl or Cmd S calls it |
 | `leaveFor(action)` | Asks "Leave without saving?" while the form holds unsaved changes and runs `action` unless the admin keeps editing: for an action that counts as leaving without being a route change (Duplicate, Export). A route change, the Recipe Update Check's link included, is asked about by the page's guard and needs nothing |
 
 **Joining the form.** A section that edits the Plugin declares one `PluginFormPart<Draft>` in a `.ts` file of its own (so it can have a node spec) and registers it:
@@ -340,6 +343,7 @@ const naming = usePluginFormPart(pluginNaming, () => (open.value = true))
 | `read(plugin)` | The draft of a Plugin as it is saved: what the controls are bound to. Plain data (it is compared and copied as JSON), and the same Plugin must read as the same draft, so a row's client-side key is derived from its `id`, never random. Keep only what is edited in it; a fact like a streak is read from `plugin` |
 | `toInput(draft)` | What a save sends for `keys`, each key whole and input-shaped: `DataSourceInput` with its `id`, not a `DataSourceRead`. A key it leaves out is never sent (`refreshInterval` of a Webhook-kind Plugin; a password Field Value that was not replaced) |
 | `validate(draft, { plugin, unsaved })` | What stops a save, as `{ path, message }` with the path `toInput` would send the field at (`dataSources.2.url`), which is the path the server names it by. `unsaved` is the whole form, for a rule across sections (a Data Source's name against the Plugin Fields' keynames) |
+| `refused(error, draft)` | Optional. What a refused save says about the part's fields when the server names none: a refusal with a code of its own (`template-invalid`, whose `details` name a size and a line). It answers problems as `validate` does |
 
 `usePluginFormPart(part, reveal?)` registers the part while the component is mounted and returns a reactive handle. Do not destructure it.
 
@@ -348,6 +352,7 @@ const naming = usePluginFormPart(pluginNaming, () => (open.value = true))
 | `draft` | What the controls edit: `v-model="part.draft.name"`, or `part.draft.rows.push(…)`. Editing it is all it takes to mark the form changed |
 | `saved` | The draft as it is saved, for what a section says about the difference ("Removed when you save") |
 | `errors` | `{ [path]: message }` for the part's paths: hand each `Field` its `:error="part.errors['dataSources.2.url']"`. It holds the part's own problems once a save was tried, and the server's field errors of a refused save until the part is edited |
+| `problems` | The same problems whole (`{ path, message, line? }`), for a field that is code and shows the line |
 
 The form does the rest, and a section never does any of it itself:
 
@@ -382,11 +387,22 @@ A section with a part that lives in a `TuckedSection` or a row registers in the 
 - **What is left out is not in the draft.** A password's stored value never reaches the browser, so `read` gives it no entry and a save leaves its keyname out, which keeps it. An entry appears once one is typed. An empty entry is held only where a save has something to clear: a saved value, or a stored password whose Plugin Field the form retypes to something a read would show, which is sent as `null` so that the secret is never read back.
 - **A list that is reordered** stands in a sortable `ScreenRows` with `place="place"` (what a row's place is called when it is announced; "Order" is a Screen's). A row of its own draws the grip and the two buttons on phone from `useScreenRows()`, as `PluginFieldRow.vue` does. The draft is put in the order `reorder` names (`inOrderOf`), and `toInput` sends `order` by the row's place.
 
+**The Template section** (`PluginTemplate.vue`) is the form's `templates` and the preview:
+
+- **The draft is one row per Template** (`TemplateRow`: `size`, `liquidMarkup`, `removed`), in the order of the sizes. A removed row always stays, with "Put back", also one that was added and never saved. A row's error path is `templates.N.liquidMarkup`, counted among the rows that are sent (`templatePaths`), and the editor carries `fieldId` of the chosen row's path, so "Show the first" finds it once `reveal` has chosen the Template.
+- **The Liquid engine is fetched apart from the page.** `templatePreview.ts` is the only module that imports `renderLiquid`, `checkTemplate` or `KUROSHIRO_FILTERS` from `kuroshiro-shared`, and the section loads it with `import()`. Importing any of the three anywhere else puts `liquidjs` in a first load, which fails the build (`scripts/firstLoad.ts`). `templatesPart(check)` is therefore handed Liquid's check by the section, and stops only an empty Template until the engine is there.
+- **The preview is a pure function and a composable.** `previewOf({ markup, size, context, target })` answers `{ document }` or `{ problem, stopsSave }`: a Template that does not parse stops a save, one that fails against the data does not. `useTemplatePreview(source)` draws 300 ms after the last keystroke and at once when the size, the context or the target changes, shows a problem 700 ms after the last keystroke and keeps the last document that worked.
+- **`context` is the seam for the fetched data.** In `PluginTemplate.vue` it is `formContext(plugin, form.unsaved)`: the unsaved name and the Field Values in both address forms, and nothing else. The section hands the same value to the preview and to the editor's completion; replacing that one computed with the server's `PreviewData.context` is all that the fetched data takes.
+- **What the preview is for** is the section's own state, not the form's: `PreviewChoice` (`previewTarget.ts`), which starts at the first Device the Plugin is assigned to. A Device's Palette is the one whose `usedBy` names it; the list read of the Devices does not carry it. With no Device, a Device Model starts at its richest Palette, as the server gives a Device its Palette.
+- **Everything under the plate** stands in `EditorBench`'s default slot, after `TemplatePreviewFor`.
+
 **Testing a section.** The part gets a node spec of its own (`read`, `toInput`, `validate` are pure). The section is tested through the page, in a spec of its own beside `PluginPage.spec.ts`, with what `__test__/pluginPageHarness.ts` exports:
 
 | Helper | Does |
 | --- | --- |
 | `fakePlugin(plugin?, answer?)` | Fakes the shell's reads, `GET /api/plugins/:id`, `PATCH /api/plugins/:id` and `GET /api/settings`. It returns `{ plugin, saves }`: assign `plugin` to change what the next read answers, and assert `saves`, every `PATCH` body in order. A save answers the Plugin with the sent name, description and refresh interval laid over it; pass `answer(plugin, input)` when a collection must come back as a read model |
+| `fakePreviewLibrary(models?, palettes?)` | The Device Models and Palettes the Template section draws for. `fakePlugin` calls it with TRMNL OG and the one Palette Kitchen is set to; call it again after `fakePlugin` for others |
+| `holdPreviewLibrary()` | Leaves that read unanswered, so the plate stays in its rendering state. Every `*.shots.ts` file of the Plugin page calls it: a drawn preview loads TRMNL's framework from the network |
 | `mountPlugin()` | Freezes the time at `NOW`, holds the tab visible, mounts the app at `/plugins/weather` and waits for the title |
 | `saveBar(screen)` | The save bar's region: `saveBar(screen).getByRole('button', { name: 'Save Plugin' })`, `saveBar(screen).getByText('Unsaved changes to the name.')` (the whole sentence) |
 | `refresh()` | The 30-second re-read, now. Blur the control first: a re-read is held back while a typed-in control has the focus |
@@ -396,6 +412,8 @@ A section with a part that lives in a `TuckedSection` or a row registers in the 
 So a section's test is "edit, press Save Plugin, assert `faked.saves`". `__test__/examples/StandInSection.vue` is a section in forty lines, and `StandInPluginPage.vue` shows a frame mounted with sections of a test's choosing (`mountPage`).
 
 - A code input is typed in, not filled: wait for its `textbox`, click it and send keys (`typeCode` in `PluginDataSources.spec.ts`). The editor closes brackets and quotes itself, so type `[[1, 2` for `[1, 2]`. `withSourcesSaved` in the same spec is an `answer` that gives a saved collection back as read models.
+- What the plate drew is read from the last frame's `srcdoc` (`drawn` in `PluginTemplate.spec.ts`), and the Template editor is typed in at its end (`type`). The editor closes an HTML tag as well as a bracket, so a test types plain words or one Liquid tag.
+- The save bar says "The preview already shows them." after every change the preview draws from, the name included.
 - The arrival line is taken once per page (`takePluginArrival` in `PluginFrame`), so a spec reaches it by mounting the app elsewhere and calling `openPluginPage(screen.router, id, arrival)`.
 
 ### Add a Plugin

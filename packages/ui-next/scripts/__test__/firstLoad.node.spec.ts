@@ -52,4 +52,13 @@ describe('the editor stays out of every first load', () => {
 
     expect(lazyModulesInFirstLoad([entry(), route, editor()])).toEqual([`PluginPage.js loads ${CODEMIRROR}`])
   })
+
+  it('fails when a route\'s chunk holds the Liquid engine, and passes when only the Template preview\'s own chunk does', () => {
+    const liquid = '/repo/node_modules/.pnpm/liquidjs@10.0.0/node_modules/liquidjs/dist/liquid.browser.mjs'
+    const route = chunk('PluginPage.js', { isDynamicEntry: true, facadeModuleId: '/repo/src/pages/PluginPage.vue', moduleIds: [liquid] })
+    const preview = chunk('templatePreview.js', { isDynamicEntry: true, facadeModuleId: '/repo/src/pages/plugins/templatePreview.ts', moduleIds: [liquid] })
+
+    expect(lazyModulesInFirstLoad([entry(), route])).toEqual([`PluginPage.js loads ${liquid}`])
+    expect(lazyModulesInFirstLoad([entry(), preview])).toEqual([])
+  })
 })

@@ -35,13 +35,6 @@ watch(() => props.plugin, fresh => form.refresh(fresh))
 
 const leaving = useTemplateRef('leaving')
 
-providePluginPage({
-  plugin: computed(() => props.plugin),
-  form,
-  reload: () => props.reload(),
-  leaveFor: async action => leaving.value?.leaveFor(action),
-})
-
 const savedAt = ref<Date>()
 
 const onceLines = computed(() => [
@@ -56,6 +49,14 @@ async function save() {
   savedAt.value = new Date()
   emit('saved', answer)
 }
+
+providePluginPage({
+  plugin: computed(() => props.plugin),
+  form,
+  save,
+  reload: () => props.reload(),
+  leaveFor: async action => leaving.value?.leaveFor(action),
+})
 
 async function showFirst() {
   const path = await form.showFirst()

@@ -315,6 +315,29 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
       expect(detail.templates.map(template => template.size)).toEqual(['full', 'half_vertical'])
     })
 
+    it.each([
+      ['does not parse', '<p>full</p>\n{% if rain %}\n<p>umbrella</p>', { size: 'quadrant', line: 2, message: 'tag {% if rain %} not closed' }],
+      ['is empty', '  \n', { size: 'quadrant', line: null, message: 'A template cannot be empty.' }],
+    ])('refuses a Template that %s as template-invalid, naming its size and line, and stores nothing of the save', async (_case, liquidMarkup, details) => {
+      const plugin = await createPluginWithTemplates('full', 'half_vertical')
+
+      const envelope = await refused(plugin.id, { name: 'Forecast', templates: [FULL, { size: 'quadrant', liquidMarkup }] })
+
+      expect(envelope.code).toBe('template-invalid')
+      expect(envelope.details).toEqual(details)
+      const detail = await read(plugin.id)
+      expect(detail.name).toBe('Weather')
+      expect(detail.templates.map(template => template.size)).toEqual(['full', 'half_vertical'])
+    })
+
+    it('saves a Template that parses and would fail only at render', async () => {
+      const plugin = await createPluginWithTemplates('full')
+
+      const detail = await saved(plugin.id, { templates: [{ size: 'full', liquidMarkup: '{% render "missing" %}' }] })
+
+      expect(detail.templates).toEqual([{ size: 'full', liquidMarkup: '{% render "missing" %}' }])
+    })
+
     it('refuses a size sent twice, and stores nothing of the save', async () => {
       const plugin = await createPluginWithTemplates('full')
 

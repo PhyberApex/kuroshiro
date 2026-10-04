@@ -9,6 +9,8 @@ export interface PluginPage {
   plugin: ComputedRef<PluginDetail>
   /** The page's one form. A section joins it with `usePluginFormPart`, and reads `form.unsaved` for the state that is not saved yet. */
   form: PluginForm
+  /** "Save Plugin", as the save bar's button does it: for the code editor's Ctrl or Cmd S. */
+  save: () => Promise<void>
   /** Reads the Plugin again: call it after a write that acts at once (assigning, clearing the Webhook Payload). */
   reload: () => Promise<void>
   /** Asks "Leave without saving?" while the form holds unsaved changes, and runs `action` unless the admin keeps editing. A route change is asked about by itself. */

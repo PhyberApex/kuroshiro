@@ -36,6 +36,7 @@ export const API_ERROR_CODES = [
   'firmware-push-pending',
   'upstream-unreachable',
   'template-full-missing',
+  'template-invalid',
   'notifications-off',
   'notification-failed',
   'import-not-zip',

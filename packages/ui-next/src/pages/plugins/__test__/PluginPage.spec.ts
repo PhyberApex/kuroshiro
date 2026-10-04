@@ -81,7 +81,7 @@ describe('the Plugin page', () => {
       await expect.element(screen.getByText('Template', { exact: true })).toBeVisible()
       await expect.element(screen.getByRole('link', { name: 'All Plugins' })).toBeVisible()
       await expect.element(screen.getByRole('heading', { name: 'Weather', level: 1 })).toBeVisible()
-      await expect.element(screen.getByText('Template', { exact: true })).not.toBeInTheDocument()
+      await expect.poll(() => document.querySelector('.plugin-loading')).toBeNull()
     })
 
     it('says that the Plugin could not be loaded and tries again', async () => {
@@ -118,7 +118,7 @@ describe('the Plugin page', () => {
       await expect.element(saveBar(screen)).not.toBeInTheDocument()
 
       await rename(screen, 'Forecast')
-      await expect.element(saveBar(screen).getByText('Unsaved changes to the name.')).toBeVisible()
+      await expect.element(saveBar(screen).getByText('Unsaved changes to the name. The preview already shows them.')).toBeVisible()
       await saveBar(screen).getByRole('button', { name: 'Save Plugin' }).click()
 
       await expect.element(screen.getByRole('heading', { name: 'Forecast', level: 1 })).toBeVisible()
@@ -136,7 +136,7 @@ describe('the Plugin page', () => {
 
       await rename(screen, 'Forecast')
       await screen.getByRole('textbox', { name: 'Description' }).fill('')
-      await expect.element(saveBar(screen).getByText('Unsaved changes to the name and description.')).toBeVisible()
+      await expect.element(saveBar(screen).getByText('Unsaved changes to the name and description. The preview already shows them.')).toBeVisible()
       await saveBar(screen).getByRole('button', { name: 'Save Plugin' }).click()
 
       await expect.element(screen.getByText(`Saved at ${clock(NOW)}.`, { exact: true })).toBeVisible()
@@ -178,7 +178,7 @@ describe('the Plugin page', () => {
       await expect.element(nameField(screen)).toHaveAttribute('aria-invalid', 'true')
 
       await nameField(screen).fill('Forecast')
-      await expect.element(saveBar(screen).getByText('Unsaved changes to the name.')).toBeVisible()
+      await expect.element(saveBar(screen).getByText('Unsaved changes to the name. The preview already shows them.')).toBeVisible()
     })
 
     it('keeps what was entered when the server refuses the save, says why and saves on "Try again"', async () => {
@@ -570,7 +570,7 @@ describe('the Plugin page', () => {
       await expect.poll(factsLine).toBe('Poll Plugin · Fetches every hour · On Kitchen')
       await expect.element(screen.getByText('The last fetch of the Data Source forecast failed.')).toBeVisible()
       await expect.element(nameField(screen)).toHaveValue('Forecast')
-      await expect.element(saveBar(screen).getByText('Unsaved changes to the name.')).toBeVisible()
+      await expect.element(saveBar(screen).getByText('Unsaved changes to the name. The preview already shows them.')).toBeVisible()
     })
   })
 

@@ -1,11 +1,12 @@
 import type { RowMenuItem } from '../rowMenuItem'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
 import { expectAccessible } from '@/testing/a11y'
 import { withCoarsePointer } from '@/testing/media'
 import { mount, mountPage } from '@/testing/mount'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
+import Button from '../Button.vue'
 import RowMenuGallery from '../RowMenu.gallery.vue'
 import RowMenu from '../RowMenu.vue'
 
@@ -140,6 +141,39 @@ describe('row menu', () => {
     await expect.poll(() => getComputedStyle(item(screen, 'Open').element()).backgroundColor).toBe(ink)
     expect(getComputedStyle(item(screen, 'Duplicate').element()).backgroundColor).toBe('rgba(0, 0, 0, 0)')
     expect(screen.getByRole('separator').elements()).toHaveLength(1)
+  })
+
+  it('opens from a worded button in its trigger slot, and says where each item stands beside its label', async () => {
+    const add = vi.fn()
+    const items: RowMenuItem[] = [{ label: 'Half horizontal', hint: 'top or bottom', select: () => {} }, { label: 'Quadrant', hint: 'a quarter', select: add }]
+    const Line = defineComponent(() => () => h(RowMenu, { label: 'Add a template', items }, { trigger: () => h(Button, { variant: 'quiet' }, () => 'Add a template') }))
+    const screen = await mountPage({ routes: [{ path: '/plugins', component: Line }], at: '/plugins' })
+    const trigger = screen.getByRole('button', { name: 'Add a template' })
+
+    await expect.element(trigger).toHaveAttribute('aria-haspopup', 'menu')
+    expect(trigger.element().textContent?.trim()).toBe('Add a template')
+    await trigger.click()
+
+    const quadrant = screen.getByRole('menuitem', { name: 'Quadrant' })
+    await expect.element(quadrant).toHaveAccessibleDescription('a quarter')
+    expect(quadrant.element().textContent?.replace(/\s+/g, ' ').trim()).toBe('Quadrant a quarter')
+    await quadrant.click()
+    expect(add).toHaveBeenCalledOnce()
+  })
+
+  it('leaves the focus to an action that moves it itself, once the menu has closed', async () => {
+    const elsewhere = document.createElement('input')
+    document.body.append(elsewhere)
+    onTestFinished(() => elsewhere.remove())
+    const items: RowMenuItem[] = [{ label: 'Quadrant', select: () => {}, afterClose: () => elsewhere.focus() }]
+    const Line = defineComponent(() => () => h(RowMenu, { label: 'Add a template', items }))
+    const screen = await mountPage({ routes: [{ path: '/plugins', component: Line }], at: '/plugins' })
+
+    await screen.getByRole('button', { name: 'Add a template' }).click()
+    await screen.getByRole('menuitem', { name: 'Quadrant' }).click()
+
+    await expect.poll(() => document.activeElement).toBe(elsewhere)
+    expect(document.querySelector('[role="menu"]')).toBeNull()
   })
 
   it('does not open while disabled', async () => {

@@ -22,7 +22,7 @@ function keepDevOnlySourcesOutOfTheBundle(): Plugin {
   }
 }
 
-/** Fails the production build if the code editor's library would be fetched before a page shows its first editor. */
+/** Fails the production build if the code editor's library or the Liquid engine would be fetched before a page shows its first editor. */
 function keepTheEditorOutOfEveryFirstLoad(): Plugin {
   return {
     name: 'kuroshiro:lazy-editor',
@@ -30,7 +30,7 @@ function keepTheEditorOutOfEveryFirstLoad(): Plugin {
     generateBundle(_options, bundle) {
       const loaded = lazyModulesInFirstLoad(Object.values(bundle).filter(output => output.type === 'chunk'))
       if (loaded.length > 0)
-        this.error(`The code editor's library is in a first load:\n${loaded.join('\n')}`)
+        this.error(`The code editor's library or the Liquid engine is in a first load:\n${loaded.join('\n')}`)
     },
   }
 }

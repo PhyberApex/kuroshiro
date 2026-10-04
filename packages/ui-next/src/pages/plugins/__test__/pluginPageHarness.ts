@@ -1,8 +1,10 @@
-import type { PluginDetail, UpdatePluginInput } from 'kuroshiro-shared'
-import { http, HttpResponse } from 'msw'
+import type { DeviceModelRead, PaletteRead, PluginDetail, UpdatePluginInput } from 'kuroshiro-shared'
+import { delay, http, HttpResponse } from 'msw'
 import { expect, onTestFinished } from 'vitest'
 import { api, apiUrl } from '@/testing/api/server'
 import { fakeShellReads, mountApp } from '@/testing/app'
+import { buildDeviceModel, buildDeviceModelList, buildPalette } from '@/testing/fixtures/device-models'
+import { buildDeviceSummary } from '@/testing/fixtures/devices'
 import { buildInstanceSettings } from '@/testing/fixtures/instance'
 import { buildPluginDetail } from '@/testing/fixtures/plugins'
 import { freezeTime } from '@/testing/time'
@@ -11,6 +13,8 @@ import { holdTabVisible } from '@/testing/visibility'
 /** What the specs of the Plugin page and of its sections share: the faked Plugin, the mounted page and the save bar. */
 
 export const WEATHER = buildPluginDetail({ id: 'weather', name: 'Weather' })
+
+const KITCHEN = { id: buildDeviceSummary().id, name: 'Kitchen' }
 
 export const NOW = '2026-10-03T07:35:00.000Z'
 
@@ -41,6 +45,7 @@ function withScalarsSaved(plugin: PluginDetail, { name, description, refreshInte
 export function fakePlugin(plugin: PluginDetail = WEATHER, answer = withScalarsSaved): Faked {
   const faked: Faked = { plugin, saves: [] }
   fakeShellReads()
+  fakePreviewLibrary()
   api.use(
     http.get(apiUrl('settings'), () => HttpResponse.json(buildInstanceSettings())),
     http.get(apiUrl(`plugins/${plugin.id}`), () => HttpResponse.json(faked.plugin)),
@@ -52,6 +57,28 @@ export function fakePlugin(plugin: PluginDetail = WEATHER, answer = withScalarsS
     }),
   )
   return faked
+}
+
+/** The Device Models and Palettes the Template section sizes its preview by. Left out: TRMNL OG with the one Palette Kitchen is set to. */
+export function fakePreviewLibrary(models: DeviceModelRead[] = [buildDeviceModel()], palettes: PaletteRead[] = [buildPalette({ usedBy: [KITCHEN] })]) {
+  api.use(
+    http.get(apiUrl('device-models'), () => HttpResponse.json(buildDeviceModelList({ models }))),
+    http.get(apiUrl('device-models/palettes'), () => HttpResponse.json(palettes)),
+  )
+}
+
+/**
+ * Leaves the read of the Device Models unanswered, so the Template section's plate stays in its rendering state: a drawn
+ * preview loads TRMNL's framework from the network, which a screenshot must not depend on.
+ */
+export function holdPreviewLibrary() {
+  api.use(
+    http.get(apiUrl('device-models'), async () => {
+      await delay('infinite')
+      return HttpResponse.json(buildDeviceModelList())
+    }),
+    http.get(apiUrl('device-models/palettes'), () => HttpResponse.json([])),
+  )
 }
 
 export async function mountPlugin(name = 'Weather', at = '/plugins/weather') {
