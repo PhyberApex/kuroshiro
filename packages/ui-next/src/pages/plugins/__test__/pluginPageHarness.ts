@@ -3,6 +3,7 @@ import { http, HttpResponse } from 'msw'
 import { expect, onTestFinished } from 'vitest'
 import { api, apiUrl } from '@/testing/api/server'
 import { fakeShellReads, mountApp } from '@/testing/app'
+import { buildInstanceSettings } from '@/testing/fixtures/instance'
 import { buildPluginDetail } from '@/testing/fixtures/plugins'
 import { freezeTime } from '@/testing/time'
 import { holdTabVisible } from '@/testing/visibility'
@@ -33,7 +34,7 @@ function withScalarsSaved(plugin: PluginDetail, { name, description, refreshInte
 }
 
 /**
- * Fakes the Plugin's read and its save. What it holds is read on every request, so a test
+ * Fakes the Plugin's read and its save, and the Instance Settings a section reads a threshold from. What it holds is read on every request, so a test
  * changes it and asks for a refresh. A section whose collection the answer must hold passes
  * its own `answer`, which maps what was sent to the read model.
  */
@@ -41,6 +42,7 @@ export function fakePlugin(plugin: PluginDetail = WEATHER, answer = withScalarsS
   const faked: Faked = { plugin, saves: [] }
   fakeShellReads()
   api.use(
+    http.get(apiUrl('settings'), () => HttpResponse.json(buildInstanceSettings())),
     http.get(apiUrl(`plugins/${plugin.id}`), () => HttpResponse.json(faked.plugin)),
     http.patch(apiUrl(`plugins/${plugin.id}`), async ({ request }) => {
       const input = await request.json() as UpdatePluginInput

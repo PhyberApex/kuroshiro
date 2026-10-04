@@ -24,6 +24,12 @@ describe('setting row', () => {
     await expect.element(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Kitchen')
   })
 
+  it('gives its control the id it is handed, and still names it by its label', async () => {
+    const screen = await mount(rowOf({ id: 'plugin-refreshInterval' }))
+
+    await expect.element(screen.getByRole('textbox', { name: 'Name' })).toHaveAttribute('id', 'plugin-refreshInterval')
+  })
+
   it('describes the control by the note under it', async () => {
     const screen = await mount(rowOf({}, 'Shown in the Masthead.'))
 

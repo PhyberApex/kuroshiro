@@ -229,6 +229,9 @@ A write that adds a record and then leaves the page navigates first and reloads 
 | `@/patterns/PageSection.vue` | A section's frame, shared with Device Settings: `<PageSection id="data" title="Data Sources">` is the `h2` on the 2 px rule with the `#actions` slot at its right, answering to `#data`. `rows` is for a section of Setting rows, which start at the heading's rule and end on one of their own, with `#under` for what is said about the whole section |
 | `pluginNaming.ts`, `PluginNaming.vue` | "Name and description": the worked example of a section that joins the form |
 | `PluginActions.vue` | "Duplicate, export or delete {Plugin}": the worked example of a section that acts at once |
+| `pluginDataSources.ts`, `PluginDataSources.vue` | "Data Sources": the worked example of a section whose part holds a list of rows and code inputs. See "A list of rows in the form" below |
+| `pluginDataSourceWording.ts` | A Data Source's line, how its fetches stand (`fetchStanding`) and the words of its health and its story |
+| `PluginRefreshInterval.vue`, `PluginDataSourceRow.vue`, `DataSourceForm.vue`, `DataSourceFetchFields.vue`, `DataSourceCode.vue`, `DataSourceStory.vue`, `DataSourceFailing.vue`, `DataSourceHealth.vue` | The section in parts: the interval's row, one row, its form, the fields of Fetch mode, one code input as a field, the story, the story of a streak and the row's health |
 
 **Adding a section** is one component and one line. Write `Plugin<Name>.vue` in `pages/plugins/`, and put it in `PluginPage.vue` where the comment names its fragment: in `#default` for a section, in `#tucked` for a tucked one. Both slots hand over `plugin`, for a section only some Plugins have:
 
@@ -312,11 +315,25 @@ The form does the rest, and a section never does any of it itself:
 
 A section with a part that lives in a `TuckedSection` or a row registers in the component that holds it, not inside the content that is unmounted while it is closed.
 
+**A list of rows in the form** (`pluginDataSources.ts` and `PluginDataSources.vue` are the example to copy):
+
+- **The draft is the rows as their controls hold them**, not as they are sent: code is kept as the text that was typed (`headers: string`), both of two modes' entries are kept so that switching back loses nothing, and a row carries `key` (the `id` of a saved row, `added-{n}` counted from the draft for a new one) and `removed`. `toInput` turns that into the input: it leaves the removed rows out, parses the code and sends only what the chosen mode holds. Code that does not parse is left out of the input, which makes the row differ from anything saved, so the bar shows and `validate` stops the save.
+- **A row's error path counts the rows that are sent**, because that is how the server counts them: `sentPaths(rows)` gives each row its `dataSources.N`, and none to a removed one. A row component is handed its `path` and the part's `errors`, and builds `fieldId(`${path}.url`)` and `errors[`${path}.url`]` from them.
+- **A row is handed to its component as a model** (`v-model:source="part.draft.sources[index]!"`, `defineModel` in the row), so the row's fields bind to `source.name` without mutating a prop.
+- **Removing asks nothing.** A saved row is marked `removed` and stays, struck through, with "Put back"; a row that was added and never saved is taken out of the draft. Either way the form sees the change by itself.
+- **Which row is open is the section's own state**, beside the draft, by the row's `key`. A save gives an added row the key of its new id, so the section finds the open row again by its name.
+- **`reveal(path)` may be `async`.** It opens the row and awaits `fieldArrived(path)` (`pluginPage.ts`), which resolves once the control with `fieldId(path)` is in the page: an opened row renders a tick later and a code editor is fetched first. "Add" uses the same to focus the new row's first field.
+- **A problem shown on leaving a field**, before any save, is the section's: `part.errors` holds a part's own problems only once a save was tried. Export the rule as a pure function (`codeProblems(row)`), which `validate` uses too, and show `errors[path] ?? (left ? problem : undefined)` (`DataSourceCode.vue`).
+- **A code input in a `Field`** is `<CodeEditor v-model="code" v-bind="control" :aria-label="label" mode="json" size="code-input" @blur="left = true" />`. The part checks the text itself with `JSON.parse`, whose message is the one the editor underlines by, so the rule has a node spec and needs no `@validity`.
+- **A part whose rule needs more than the Plugin and the form** is made by a function the section calls: `usePluginFormPart(dataSourcesPart(() => instance.data?.demoMode ?? false), reveal)`.
+- **A fact of a row** (its Fetch Failure Streak) is read from `plugin` by the row's `id`, never kept in the draft, so the 30-second refresh reaches it while the row has unsaved changes.
+- `SettingRow` takes `id` for its control, as `Field` does, for a Setting row that is a field of the form (`fieldId('refreshInterval')`).
+
 **Testing a section.** The part gets a node spec of its own (`read`, `toInput`, `validate` are pure). The section is tested through the page, in a spec of its own beside `PluginPage.spec.ts`, with what `__test__/pluginPageHarness.ts` exports:
 
 | Helper | Does |
 | --- | --- |
-| `fakePlugin(plugin?, answer?)` | Fakes the shell's reads, `GET /api/plugins/:id` and `PATCH /api/plugins/:id`. It returns `{ plugin, saves }`: assign `plugin` to change what the next read answers, and assert `saves`, every `PATCH` body in order. A save answers the Plugin with the sent name, description and refresh interval laid over it; pass `answer(plugin, input)` when a collection must come back as a read model |
+| `fakePlugin(plugin?, answer?)` | Fakes the shell's reads, `GET /api/plugins/:id`, `PATCH /api/plugins/:id` and `GET /api/settings`. It returns `{ plugin, saves }`: assign `plugin` to change what the next read answers, and assert `saves`, every `PATCH` body in order. A save answers the Plugin with the sent name, description and refresh interval laid over it; pass `answer(plugin, input)` when a collection must come back as a read model |
 | `mountPlugin()` | Freezes the time at `NOW`, holds the tab visible, mounts the app at `/plugins/weather` and waits for the title |
 | `saveBar(screen)` | The save bar's region: `saveBar(screen).getByRole('button', { name: 'Save Plugin' })`, `saveBar(screen).getByText('Unsaved changes to the name.')` (the whole sentence) |
 | `refresh()` | The 30-second re-read, now. Blur the control first: a re-read is held back while a typed-in control has the focus |
@@ -325,6 +342,7 @@ A section with a part that lives in a `TuckedSection` or a row registers in the 
 
 So a section's test is "edit, press Save Plugin, assert `faked.saves`". `__test__/examples/StandInSection.vue` is a section in forty lines, and `StandInPluginPage.vue` shows a frame mounted with sections of a test's choosing (`mountPage`).
 
+- A code input is typed in, not filled: wait for its `textbox`, click it and send keys (`typeCode` in `PluginDataSources.spec.ts`). The editor closes brackets and quotes itself, so type `[[1, 2` for `[1, 2]`. `withSourcesSaved` in the same spec is an `answer` that gives a saved collection back as read models.
 - The arrival line is taken once per page (`takePluginArrival` in `PluginFrame`), so a spec reaches it by mounting the app elsewhere and calling `openPluginPage(screen.router, id, arrival)`.
 
 ### Add a Plugin

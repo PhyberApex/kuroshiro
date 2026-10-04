@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import PluginActions from './PluginActions.vue'
+import PluginDataSources from './PluginDataSources.vue'
 import PluginFrame from './PluginFrame.vue'
 import PluginNaming from './PluginNaming.vue'
 
@@ -21,9 +22,10 @@ watch(() => route.params.pluginId, (id) => {
     place below; `plugin` is there for a section only some Plugins have (`v-if="plugin.recipe"`).
   -->
   <PluginFrame :key="pluginId" :plugin-id="pluginId">
-    <template #default>
+    <template #default="{ plugin }">
       <!-- #template: Template -->
-      <!-- #data: Data Sources for a Poll-kind Plugin, Webhook for a Webhook-kind one -->
+      <PluginDataSources v-if="plugin.kind === 'Poll'" />
+      <!-- #data: Webhook for a Webhook-kind Plugin, in the `v-else` of the Data Sources -->
       <!-- #values: Field Values -->
       <!-- #devices: Devices -->
       <!-- #recipe: Recipe -->
