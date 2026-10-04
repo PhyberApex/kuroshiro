@@ -12,6 +12,7 @@ type DeviceName = Pick<Device, 'id' | 'name'>
 export interface DeviceModelFacts {
   /** Every Palette that fits the Device Model, curated ones first, then the custom ones. */
   paletteIds: string[]
+  defaultPaletteId: string | null
   usedBy: DeviceName[]
 }
 
@@ -39,6 +40,7 @@ export function toDeviceModelRead(model: DeviceModel, facts: DeviceModelFacts): 
     mimeType: model.mimeType,
     kind: model.kind,
     paletteIds: facts.paletteIds,
+    defaultPaletteId: facts.defaultPaletteId,
     cssClasses: model.cssClasses,
     cssVariables: model.cssVariables,
     imageSizeLimit: model.imageSizeLimit ?? null,

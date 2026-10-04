@@ -33,6 +33,11 @@ function pickRichest(palettes: Palette[]): Palette | null {
     !richest || paletteRichness(candidate) > paletteRichness(richest) ? candidate : richest, null)
 }
 
+/** The Palette a Device on `model` is given when it has none: the richest of TRMNL's curated ones, never a custom one. */
+export function defaultPaletteAmong(model: DeviceModel, palettes: Palette[]): Palette | null {
+  return pickRichest(model.paletteIds.flatMap(id => palettes.filter(palette => palette.id === id)))
+}
+
 function snapshotFallbackModel(): TrmnlModelPayload {
   const model = TRMNL_MODELS_SNAPSHOT.find(m => m.name === FALLBACK_MODEL_NAME)
   if (!model)
@@ -77,7 +82,7 @@ export class DeviceModelsService {
   }
 
   async defaultPaletteFor(model: DeviceModel): Promise<Palette | null> {
-    return pickRichest(await this.allowedPalettesFor(model))
+    return defaultPaletteAmong(model, await this.allowedPalettesFor(model))
   }
 
   async supportsPalette(model: DeviceModel, palette: Palette): Promise<boolean> {

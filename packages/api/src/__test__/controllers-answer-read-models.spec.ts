@@ -69,9 +69,7 @@ export class WidgetsController {
  * Handlers that still answer an entity. An entry leaves in the PR that reshapes its
  * endpoint into a read model; none may be added.
  */
-const KNOWN_EXCEPTIONS: string[] = [
-  'DeviceModelsController.createPalette',
-]
+const KNOWN_EXCEPTIONS: string[] = []
 
 describe('admin controllers answer read models, never entities (ADR-0033)', () => {
   it('flags a handler whose return type carries an entity, declared or inferred', () => {

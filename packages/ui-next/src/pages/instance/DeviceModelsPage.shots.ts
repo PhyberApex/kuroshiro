@@ -20,4 +20,21 @@ describe('device models and palettes', () => {
 
     await expectPageScreenshots('device-models')
   })
+
+  it.each([
+    ['adding a custom Palette', 'new', 'device-models-add-palette'],
+    ['editing a custom Palette a Device uses', 'study-panel', 'device-models-edit-palette'],
+  ])('%s', async (_, palette, name) => {
+    fakeDeviceModels()
+    fakeShellReads({
+      instance: buildInstanceFacts({ version: '0.18.0' }),
+      devices: Object.values(DEVICES).map(device => buildDeviceSummary(device)),
+    })
+    const screen = await mountApp({ at: `/instance/models?palette=${palette}` })
+    await expect.element(screen.getByRole('banner').getByRole('link', { name: 'Study' })).toBeVisible()
+    await expect.element(screen.getByRole('form')).toBeVisible()
+    await expect.element(screen.getByText('Kuroshiro 0.18.0')).toBeVisible()
+
+    await expectPageScreenshots(name)
+  })
 })

@@ -56,6 +56,9 @@ export const API_ERROR_CODES = [
   'archive-not-configuration',
   'archive-schema-version',
   'archive-record-refused',
+  'palette-name-taken',
+  'palette-not-custom',
+  'palette-in-use',
 ] as const
 
 export type ApiErrorCode = typeof API_ERROR_CODES[number]
