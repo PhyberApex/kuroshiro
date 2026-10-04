@@ -188,8 +188,8 @@ describe('building a Plugin, POST /api/plugins, against a real database', () => 
     expect(welcome.isActive).toBe(true)
   })
 
-  it('answers 404 for a Device that does not exist and builds nothing', async () => {
-    const refusal = await refused({ kind: 'Poll', name: 'Weather', deviceId: UNKNOWN_ID }, 404)
+  it.each([UNKNOWN_ID, 'attic'])('answers 404 for the Device "%s", which does not exist, and builds nothing', async (deviceId) => {
+    const refusal = await refused({ kind: 'Poll', name: 'Weather', deviceId }, 404)
 
     expect(refusal.code).toBe('device-not-found')
     expect(await listed()).toEqual([])

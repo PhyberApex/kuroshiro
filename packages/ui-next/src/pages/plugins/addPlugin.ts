@@ -2,6 +2,7 @@ import type { CreatePluginInput, DeviceSummary, MergeStrategy, PluginKind } from
 import type { Component } from 'vue'
 import type { AddPluginWay } from './pluginPaths'
 import type { RadioChoice } from '@/components/RadioRow.vue'
+import type { Load } from '@/patterns/useLoad'
 import { pluginNameProblem } from './pluginNaming'
 
 /** The Device a Plugin added from its Add Screen is assigned to (`?device=`). */
@@ -33,6 +34,11 @@ export function carriedDevice(devices: DeviceSummary[] | undefined, deviceId: un
   return device && { id: device.id, name: device.name }
 }
 
+/** Whether it is known yet which Device the address carries, if any: not while it names one and the Devices are still on their way. */
+export function carryingSettled(devices: Pick<Load<DeviceSummary[]>, 'data' | 'failure'>, deviceId: unknown) {
+  return !deviceId || devices.data !== undefined || devices.failure !== undefined
+}
+
 export const MERGE_STRATEGY_CHOICES: RadioChoice<MergeStrategy>[] = [
   { value: 'standard', label: 'Replace', code: 'standard', hint: 'Each POST replaces the Webhook Payload.' },
   { value: 'deep_merge', label: 'Deep merge', code: 'deep_merge', hint: 'Objects are merged key by key. An array is replaced.' },
@@ -56,7 +62,8 @@ export function buildDraftChanged(draft: BuildDraft) {
 
 export type BuildProblems = Partial<Record<'name' | 'streamLimit', string>>
 
-const streams = (kind: PluginKind, draft: BuildDraft) => kind === 'Webhook' && draft.mergeStrategy === 'stream'
+/** Whether the form shows the Stream Limit. */
+export const streams = (kind: PluginKind, draft: BuildDraft) => kind === 'Webhook' && draft.mergeStrategy === 'stream'
 
 const isStreamLimit = (value: number | null): value is number => value !== null && Number.isInteger(value) && value >= 1
 
@@ -79,6 +86,6 @@ export function buildInput(kind: PluginKind, draft: BuildDraft, deviceId?: strin
     kind,
     ...common,
     mergeStrategy: draft.mergeStrategy,
-    ...(isStreamLimit(draft.streamLimit) && draft.mergeStrategy === 'stream' ? { streamLimit: draft.streamLimit } : {}),
+    ...(streams(kind, draft) && isStreamLimit(draft.streamLimit) ? { streamLimit: draft.streamLimit } : {}),
   }
 }

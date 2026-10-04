@@ -1,7 +1,7 @@
 import type { BuildDraft } from '../addPlugin'
 import { describe, expect, it } from 'vitest'
 import { buildDeviceSummary } from '@/testing/fixtures/devices'
-import { buildDraftChanged, buildInput, buildProblems, carriedDevice, newBuildDraft } from '../addPlugin'
+import { buildDraftChanged, buildInput, buildProblems, carriedDevice, carryingSettled, newBuildDraft } from '../addPlugin'
 
 const draft = (overrides: Partial<BuildDraft> = {}): BuildDraft => ({ ...newBuildDraft(), name: 'Doorbell note', ...overrides })
 
@@ -47,5 +47,12 @@ describe('building a Plugin', () => {
     expect(carriedDevice(devices, 'attic')).toBeUndefined()
     expect(carriedDevice(devices, undefined)).toBeUndefined()
     expect(carriedDevice(undefined, 'kitchen')).toBeUndefined()
+  })
+
+  it('knows which Device is carried once the Devices are there, or could not be loaded, or none is named', () => {
+    expect(carryingSettled({ data: undefined, failure: undefined }, 'kitchen')).toBe(false)
+    expect(carryingSettled({ data: [], failure: undefined }, 'kitchen')).toBe(true)
+    expect(carryingSettled({ data: undefined, failure: { reason: 'Kuroshiro\'s server is not answering.', unreachable: true } }, 'kitchen')).toBe(true)
+    expect(carryingSettled({ data: undefined, failure: undefined }, undefined)).toBe(true)
   })
 })

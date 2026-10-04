@@ -1,6 +1,6 @@
 import type { CreatePollPluginInput, CreateWebhookPluginInput, MergeStrategy, PluginKind } from 'kuroshiro-shared'
 import { Transform } from 'class-transformer'
-import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Min } from 'class-validator'
+import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator'
 import { MERGE_STRATEGIES, PLUGIN_KINDS } from 'kuroshiro-shared'
 
 /**
@@ -26,6 +26,6 @@ export class CreatePluginDto implements Omit<CreatePollPluginInput, 'kind'>, Par
   streamLimit?: number
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
   deviceId?: string
 }

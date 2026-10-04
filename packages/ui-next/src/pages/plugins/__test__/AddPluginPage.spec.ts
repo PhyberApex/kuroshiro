@@ -205,6 +205,24 @@ describe('add a Plugin', () => {
       await expect.element(screen.getByRole('link', { name: 'Back to Kitchen\'s Screens' })).toHaveAttribute('href', '/devices/kitchen')
     })
 
+    it('waits for the Devices before it offers the form, so that the Device is never left behind', async () => {
+      const { sent } = fakeBuilding()
+      api.use(http.get(apiUrl('devices'), async () => {
+        await delay(400)
+        return HttpResponse.json([KITCHEN])
+      }))
+      const screen = await mountAddPlugin('/plugins/new?device=kitchen')
+
+      expect(createPlugin(screen).elements()).toHaveLength(0)
+      await expect.element(screen.getByRole('link', { name: 'Kitchen\'s Screens' })).toBeVisible()
+
+      await nameField(screen).fill('Weather')
+      await createPlugin(screen).click()
+
+      await expect.element(screen.getByRole('heading', { name: 'Weather', level: 1 })).toBeVisible()
+      expect(sent).toEqual([{ kind: 'Poll', name: 'Weather', deviceId: 'kitchen' }])
+    })
+
     it('returns to the Device on Cancel', async () => {
       fakeBuilding()
       const screen = await mountAddPlugin('/plugins/new?device=kitchen')
@@ -283,6 +301,17 @@ describe('add a Plugin', () => {
       await expect.element(nameField(screen)).toHaveValue('Weather')
       expect(sent).toHaveLength(1)
       expect(path(screen)).toBe('/plugins/new')
+    })
+
+    it('says the server\'s reason for a field the form does not show', async () => {
+      const refusal: Partial<ApiError> = { statusCode: 400, code: 'validation', fields: [{ path: 'streamLimit', message: 'streamLimit must not be less than 1' }] }
+      fakeBuilding(() => apiErrorResponse(refusal))
+      const screen = await mountAddPlugin()
+
+      await nameField(screen).fill('Weather')
+      await createPlugin(screen).click()
+
+      await expect.element(screen.getByRole('status').filter({ hasText: 'Not created.' })).toHaveTextContent('Not created. Some of what was sent is not valid.')
     })
 
     it('keeps what was entered and says why nothing was created', async () => {

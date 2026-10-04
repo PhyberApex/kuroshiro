@@ -7,7 +7,7 @@ import { devicePath } from '@/pages/devices/devicePaths'
 import { possessive } from '@/pages/devices/screenNaming'
 import TitleLine from '@/patterns/TitleLine.vue'
 import { useDevices } from '@/reads/sharedReads'
-import { carriedDevice, chosenWay } from './addPlugin'
+import { carriedDevice, carryingSettled, chosenWay } from './addPlugin'
 import { addPluginOrigin } from './addPluginOrigin'
 import { provideAddPluginPage } from './addPluginPage'
 import { ADD_PLUGIN_WAYS } from './addPluginWays'
@@ -20,6 +20,7 @@ const devices = useDevices()
 const ways = ADD_PLUGIN_WAYS.map(({ way, label, hint }) => ({ value: way, label, hint }))
 const chosen = computed(() => chosenWay(ADD_PLUGIN_WAYS, route.query.way))
 const device = computed(() => carriedDevice(devices.data, route.query.device))
+const settled = computed(() => carryingSettled(devices, route.query.device))
 
 const back = computed(() => device.value
   ? { label: `${possessive(device.value.name)} Screens`, to: devicePath(device.value.id) }
@@ -30,8 +31,9 @@ provideAddPluginPage({
   cancelTo: computed(() => device.value ? devicePath(device.value.id) : addPluginOrigin() ?? PLUGINS_PATH),
 })
 
-function choose(way: AddPluginWay) {
-  void router.replace({ query: { ...route.query, way } })
+function choose(way?: AddPluginWay) {
+  if (way)
+    void router.replace({ query: { ...route.query, way } })
 }
 </script>
 
@@ -46,10 +48,10 @@ function choose(way: AddPluginWay) {
       :model-value="chosen.way"
       :choices="ways"
       aria-label="Way to add a Plugin"
-      @update:model-value="choose($event as AddPluginWay)"
+      @update:model-value="choose"
     />
     <div class="way-form">
-      <component :is="chosen.form" v-bind="chosen.props" />
+      <component :is="chosen.form" v-if="settled" v-bind="chosen.props" />
     </div>
   </div>
 </template>

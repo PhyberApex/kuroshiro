@@ -8,7 +8,7 @@ import { createPlugin } from '@/api/plugins'
 import { failureReason } from '@/components/failureReason'
 import Field from '@/components/Field.vue'
 import TextInput from '@/components/TextInput.vue'
-import { buildDraftChanged, buildInput, buildProblems, hasBuildProblems, newBuildDraft } from './addPlugin'
+import { buildDraftChanged, buildInput, buildProblems, hasBuildProblems, newBuildDraft, streams } from './addPlugin'
 import AddPluginFoot from './AddPluginFoot.vue'
 import { useAddPluginPage } from './addPluginPage'
 import BuildWebhookMerge from './BuildWebhookMerge.vue'
@@ -41,7 +41,7 @@ const changed = computed(() => !created.value && buildDraftChanged(draft))
 
 function refusedFields(error: unknown): BuildProblems {
   const { name, streamLimit } = fieldErrorsOf(error)
-  return { name, streamLimit }
+  return { name, streamLimit: streams(props.kind, draft) ? streamLimit : undefined }
 }
 
 async function create() {
