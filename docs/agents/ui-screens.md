@@ -273,6 +273,9 @@ A write that adds a record and then leaves the page navigates first and reloads 
 | `pluginDataSources.ts`, `PluginDataSources.vue` | "Data Sources": the worked example of a section whose part holds a list of rows and code inputs. See "A list of rows in the form" below |
 | `pluginDataSourceWording.ts` | A Data Source's line, how its fetches stand (`fetchStanding`) and the words of its health and its story |
 | `PluginRefreshInterval.vue`, `PluginDataSourceRow.vue`, `DataSourceForm.vue`, `DataSourceFetchFields.vue`, `DataSourceCode.vue`, `DataSourceStory.vue`, `DataSourceFailing.vue`, `DataSourceHealth.vue` | The section in parts: the interval's row, one row, its form, the fields of Fetch mode, one code input as a field, the story, the story of a streak and the row's health |
+| `formRows.ts` | What the lists of rows in the form share: `FormRow` (`key`, `removed`), `keptRows`, `sentPathsOf(collection, rows)`, `nextAddedKey` and `freeName` |
+| `pluginFieldValues.ts`, `PluginFieldValues.vue`, `FieldValueRow.vue`, `FieldValueControl.vue` | "Field Values": the part, the control of each Plugin Field type (`fieldControl`), the note at a row's right (`fieldValueNote`), one row and its control. See "Two parts that read each other" below |
+| `pluginFields.ts`, `PluginFields.vue`, `PluginFieldRow.vue`, `PluginFieldForm.vue` | The tucked "Plugin Fields": the part with every rule of a keyname, the rows in a sortable `ScreenRows`, one row and its form |
 
 **Adding a section** is one component and one line. Write `Plugin<Name>.vue` in `pages/plugins/`, and put it in `PluginPage.vue` where the comment names its fragment: in `#default` for a section, in `#tucked` for a tucked one. Both slots hand over `plugin`, for a section only some Plugins have:
 
@@ -369,6 +372,15 @@ A section with a part that lives in a `TuckedSection` or a row registers in the 
 - **A part whose rule needs more than the Plugin and the form** is made by a function the section calls: `usePluginFormPart(dataSourcesPart(() => instance.data?.demoMode ?? false), reveal)`.
 - **A fact of a row** (its Fetch Failure Streak) is read from `plugin` by the row's `id`, never kept in the draft, so the 30-second refresh reaches it while the row has unsaved changes.
 - `SettingRow` takes `id` for its control, as `Field` does, for a Setting row that is a field of the form (`fieldId('refreshInterval')`).
+
+**Two parts that read each other** (`pluginFields.ts` and `pluginFieldValues.ts` are the example):
+
+- **A section draws another part's unsaved state from `form.unsaved`**, never from the other section. The Field Values rows are `form.unsaved.fields`, so a Plugin Field that is added, renamed, retyped, moved or removed changes them at once; a removed one is not in `unsaved` and has no row.
+- **A section that some Plugins lack by their unsaved state is always mounted** and decides inside whether it renders: `<PluginFieldValues />` stands in `PluginPage.vue` without a `v-if`, because a Plugin gets the section with the first Plugin Field that is added.
+- **A draft keyed by something another part can rename is kept in step by its section.** `toInput` sees only its own draft, and the server refuses a Field Value under a keyname that no Plugin Field has. So `PluginFieldValues.vue` watches the keynames and puts `valuesAmong(keynames, entered, saved, cleared)` in the draft: the value of a keyname that is gone goes with it, one that is back has its saved value again. Entering a value goes through the same function, so the draft only ever holds what it yields.
+- **A record sent by key is sent in a fixed order of its keys** (`toInput` sorts them), because what differs is decided by comparing JSON.
+- **What is left out is not in the draft.** A password's stored value never reaches the browser, so `read` gives it no entry and a save leaves its keyname out, which keeps it. An entry appears once one is typed. An empty entry is held only where a save has something to clear: a saved value, or a stored password whose Plugin Field the form retypes to something a read would show, which is sent as `null` so that the secret is never read back.
+- **A list that is reordered** stands in a sortable `ScreenRows` with `place="place"` (what a row's place is called when it is announced; "Order" is a Screen's). A row of its own draws the grip and the two buttons on phone from `useScreenRows()`, as `PluginFieldRow.vue` does. The draft is put in the order `reorder` names (`inOrderOf`), and `toInput` sends `order` by the row's place.
 
 **Testing a section.** The part gets a node spec of its own (`read`, `toInput`, `validate` are pure). The section is tested through the page, in a spec of its own beside `PluginPage.spec.ts`, with what `__test__/pluginPageHarness.ts` exports:
 

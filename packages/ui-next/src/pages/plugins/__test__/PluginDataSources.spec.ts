@@ -481,7 +481,8 @@ describe('the Data Sources of a Plugin', () => {
 
       await save(screen)
 
-      await expect.element(saveBar(screen).getByText('3 things to fix before this can be saved.')).toBeVisible()
+      // The name that is a keyname is a thing to fix on both sides: at the Data Source and at the Plugin Field.
+      await expect.element(saveBar(screen).getByText('4 things to fix before this can be saved.')).toBeVisible()
       expect(faked.saves).toEqual([])
 
       await saveBar(screen).getByRole('button', { name: 'Show the first' }).click()

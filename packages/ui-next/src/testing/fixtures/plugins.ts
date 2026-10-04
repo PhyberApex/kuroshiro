@@ -1,4 +1,4 @@
-import type { PluginDetail, PluginImportResult, PluginPlace, PluginSummary } from 'kuroshiro-shared'
+import type { PluginDetail, PluginFieldRead, PluginImportResult, PluginPlace, PluginSummary } from 'kuroshiro-shared'
 import { defineBuilder } from './defineBuilder'
 
 export const buildPluginPlace = defineBuilder<PluginPlace>(() => ({
@@ -19,6 +19,18 @@ export const buildPluginSummary = defineBuilder<PluginSummary>(() => ({
   fetchAlertFiring: false,
   needsValues: false,
   webhookPayloadStored: null,
+}))
+
+export const buildPluginField = defineBuilder<PluginFieldRead>(() => ({
+  id: '5c6d7e8f-9a0b-4c1d-8e2f-3a4b5c6d7e8f',
+  keyname: 'location',
+  label: 'Location',
+  type: 'string',
+  helpText: null,
+  default: null,
+  required: false,
+  order: 0,
+  options: null,
 }))
 
 export const buildPluginDetail = defineBuilder<PluginDetail>(() => ({
