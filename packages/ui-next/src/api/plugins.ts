@@ -60,6 +60,16 @@ export function previewPluginData(pluginId: string, input: PreviewDataInput) {
   return apiSend<PreviewData>('POST', `plugins/${pluginId}/preview-data`, input)
 }
 
+/** Empties the Webhook Payload and renders the Plugin again without it. Refused with `plugin-not-webhook` for a Poll-kind Plugin. */
+export function clearWebhookPayload(pluginId: string) {
+  return apiSend<PluginDetail>('DELETE', `plugins/${pluginId}/webhook-payload`)
+}
+
+/** Issues a new Webhook Token: a POST to the old Webhook URL is refused from then on. Refused with `plugin-not-webhook` for a Poll-kind Plugin. */
+export function regenerateWebhookToken(pluginId: string) {
+  return apiSend<PluginDetail>('POST', `plugins/${pluginId}/webhook-token`)
+}
+
 /** Answers the copy, "{Plugin} (copy)", which is on no Device. */
 export function duplicatePlugin(pluginId: string) {
   return apiSend<PluginDetail>('POST', `plugins/${pluginId}/duplicate`)

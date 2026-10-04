@@ -10,6 +10,7 @@ import PluginFrame from './PluginFrame.vue'
 import PluginNaming from './PluginNaming.vue'
 import PluginRecipe from './PluginRecipe.vue'
 import PluginTemplate from './PluginTemplate.vue'
+import PluginWebhook from './PluginWebhook.vue'
 
 const route = useRoute()
 
@@ -30,7 +31,7 @@ watch(() => route.params.pluginId, (id) => {
     <template #default="{ plugin }">
       <PluginTemplate />
       <PluginDataSources v-if="plugin.kind === 'Poll'" />
-      <!-- #data: Webhook for a Webhook-kind Plugin, in the `v-else` of the Data Sources -->
+      <PluginWebhook v-else />
       <PluginFieldValues />
       <PluginDevices />
       <PluginRecipe v-if="plugin.recipe" />

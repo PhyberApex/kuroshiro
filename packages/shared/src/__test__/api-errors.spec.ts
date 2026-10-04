@@ -27,6 +27,7 @@ const wording: Record<ApiErrorCode, string> = {
   'assignment-not-found': 'That Plugin is not on this Device.',
   'plugin-already-assigned': 'That Plugin is already on this Device.',
   'plugin-in-mashup': 'That Plugin fills a slot in a Mashup.',
+  'plugin-not-webhook': 'That Plugin is not a Webhook-kind Plugin.',
   'image-fetch-failed': 'The image could not be fetched.',
   'image-unreadable': 'That file is not an image Kuroshiro can read.',
   'order-not-a-permutation': 'The Order has to name every Screen once.',
@@ -81,6 +82,7 @@ function wordingBySwitch(code: ApiErrorCode): string {
     case 'assignment-not-found':
     case 'plugin-already-assigned':
     case 'plugin-in-mashup':
+    case 'plugin-not-webhook':
     case 'image-fetch-failed':
     case 'image-unreadable':
     case 'order-not-a-permutation':

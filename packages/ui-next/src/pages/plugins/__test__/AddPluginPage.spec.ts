@@ -12,8 +12,14 @@ const KITCHEN = buildDeviceSummary({ id: 'kitchen', name: 'Kitchen' })
 
 type Answer = (input: CreatePluginInput) => Response | Promise<Response>
 
+const WEBHOOK_TOKEN = 'wh8c1f02d94a7be6033f9a'
+
+/** The Plugin as the server builds it: a Webhook-kind one has its Webhook URL from the start. */
 function created(input: CreatePluginInput): PluginDetail {
-  return buildPluginDetail({ id: 'new-plugin', name: input.name, kind: input.kind, description: null, dataSources: [], assignments: [], lastScheduledRender: null })
+  const webhook = input.kind === 'Webhook'
+    ? { token: WEBHOOK_TOKEN, url: `https://kuroshiro.example/api/webhook/${WEBHOOK_TOKEN}`, mergeStrategy: input.mergeStrategy, streamLimit: input.streamLimit ?? null, payload: null, payloadReceivedAt: null }
+    : null
+  return buildPluginDetail({ id: 'new-plugin', name: input.name, kind: input.kind, description: null, ...(webhook ? { refreshInterval: null } : {}), dataSources: [], assignments: [], lastScheduledRender: null, webhook })
 }
 
 /** Fakes the shell's reads, `POST /api/plugins` and the read of the Plugin it answers. `sent` holds every body, in order. */

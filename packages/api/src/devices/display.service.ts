@@ -16,7 +16,6 @@ import { renderHtmlToPng } from '../device-models/render-html-to-png.js'
 import { DeviceSensorsService } from '../device-sensors/device-sensors.service.js'
 import { FirmwareService } from '../firmware/firmware.service.js'
 import { templateOfSize } from '../plugins/plugin-templates.js'
-import { isRenderablePollPlugin } from '../plugins/renderable-poll-plugin.js'
 import { PluginRendererService } from '../plugins/services/plugin-renderer.service.js'
 import { PluginTemplateContextService } from '../plugins/services/plugin-template-context.service.js'
 import { nextEligibleScreen } from '../schedule/rotation.js'
@@ -593,20 +592,16 @@ export class DeviceDisplayService {
       }
     }
 
-    // Fallback: fetch and render on-demand
-    if (isRenderablePollPlugin(plugin)) {
-      try {
-        const renderedHtml = await this.renderPluginHtml(plugin, screen, device)
-        return renderedHtml ? await this.renderBodyToScreenPng(viewFull(renderedHtml), screen, device) : null
-      }
-      catch (err) {
-        const message = getErrorMessage(err)
-        this.logger.error(`Failed to render plugin: ${message}`)
-        return RENDER_FAILED
-      }
+    // No render is cached yet: a Poll-kind Plugin fetches now, a Webhook-kind one renders what it has received, or nothing.
+    try {
+      const renderedHtml = await this.renderPluginHtml(plugin, screen, device)
+      return renderedHtml ? await this.renderBodyToScreenPng(viewFull(renderedHtml), screen, device) : null
     }
-
-    return null
+    catch (err) {
+      const message = getErrorMessage(err)
+      this.logger.error(`Failed to render plugin: ${message}`)
+      return RENDER_FAILED
+    }
   }
 
   private async renderExternalLinkScreen(screen: Screen, device: Device): Promise<string | typeof RENDER_FAILED> {

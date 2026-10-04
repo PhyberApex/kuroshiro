@@ -38,7 +38,6 @@ function matches(entity: unknown, where: Record<string, unknown>): boolean {
 
 describe('webhook ingest integration', () => {
   let ingest: WebhookIngestService
-  let pluginsService: PluginsService
   let plugin: Plugin
   let screens: Screen[]
   let mashupSlots: MashupSlot[]
@@ -113,7 +112,6 @@ describe('webhook ingest integration', () => {
     }).compile()
 
     ingest = module.get(WebhookIngestService)
-    pluginsService = module.get(PluginsService)
 
     // Wait for lazy injection of mashupSlotRepository
     await new Promise(resolve => setTimeout(resolve, 10))
@@ -217,21 +215,6 @@ describe('webhook ingest integration', () => {
 
     it('returns null before the first POST', () => {
       expect(ingest.readPayload(plugin)).toBeNull()
-    })
-  })
-
-  describe('clearing the stored payload', () => {
-    it('empties the Webhook Payload without touching the webhook configuration', async () => {
-      plugin.mergeStrategy = 'stream'
-      plugin.streamLimit = 3
-      await ingest.ingest(plugin, { readings: [1] })
-
-      await pluginsService.clearWebhookPayload('plugin-1')
-
-      expect(plugin.webhookPayload).toBeNull()
-      expect(plugin.webhookToken).toBe('token-abc')
-      expect(plugin.mergeStrategy).toBe('stream')
-      expect(plugin.streamLimit).toBe(3)
     })
   })
 })

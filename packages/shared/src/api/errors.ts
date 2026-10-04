@@ -23,6 +23,7 @@ export const API_ERROR_CODES = [
   'assignment-not-found',
   'plugin-already-assigned',
   'plugin-in-mashup',
+  'plugin-not-webhook',
   'image-fetch-failed',
   'image-unreadable',
   'order-not-a-permutation',
