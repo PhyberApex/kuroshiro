@@ -52,8 +52,8 @@ describe('the daily glance', () => {
 
     await page.getByRole('img', { name: `On ${name}: Harbour photo` }).waitFor()
     await page.getByText('The Current Screen. Order 1 of 2, on the Device since the').waitFor()
-    expect(await page.getByRole('region', { name: 'Current Screen', exact: true }).textContent()).toContain('Up next: Alps in March')
-    expect(await screenStates(page)).toEqual({ 'Harbour photo': 'Active Screen', 'Alps in March': 'Up next' })
+    await expect.poll(() => page.getByRole('region', { name: 'Current Screen', exact: true }).textContent()).toContain('Up next: Alps in March')
+    await expect.poll(() => screenStates(page)).toEqual({ 'Harbour photo': 'Active Screen', 'Alps in March': 'Up next' })
 
     await device.display()
     // The view asks again when the window regains the focus; the suite's own types have no DOM to say so in.
@@ -61,8 +61,9 @@ describe('the daily glance', () => {
 
     await page.getByRole('img', { name: `On ${name}: Alps in March` }).waitFor()
     await page.getByText('The Current Screen. Order 2 of 2, on the Device since the').waitFor()
-    expect(await page.getByRole('region', { name: 'Current Screen', exact: true }).textContent()).toContain('Up next: Harbour photo')
-    expect(await screenStates(page)).toEqual({ 'Harbour photo': 'Up next', 'Alps in March': 'Active Screen' })
+    // The Device and its Screens are two reads, answered one after the other.
+    await expect.poll(() => page.getByRole('region', { name: 'Current Screen', exact: true }).textContent()).toContain('Up next: Harbour photo')
+    await expect.poll(() => screenStates(page)).toEqual({ 'Harbour photo': 'Up next', 'Alps in March': 'Active Screen' })
     await page.close()
   })
 })
