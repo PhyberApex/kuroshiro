@@ -1,48 +1,53 @@
 import type { RetentionAgeKey } from './instance.js'
+import type { ScreenKind } from './screens.js'
 
-export interface OrphanedScreenFile {
-  deviceId: string
-  screenId: string
+/** A leftover file, by its path below the storage folder (`devices/{deviceId}/{file}`, `uploads/{file}`). */
+export interface StoredFileFinding {
+  id: string
+  group: 'unusedImage' | 'tempFile' | 'oldUpload'
   path: string
-  size: number
+  bytes: number
 }
 
-export interface OrphanedDeviceDir {
-  deviceId: string
+export interface DeletedDeviceFolderFinding {
+  id: string
+  group: 'deletedDeviceFolder'
   path: string
-  fileCount: number
-  size: number
+  bytes: number
+  files: number
 }
 
-export interface BrokenScreen {
-  screenId: string
-  deviceId: string
-  filename: string
-  type: string
+export interface MissingImageFinding {
+  id: string
+  group: 'missingImage'
+  screen: {
+    id: string
+    name: string
+    kind: ScreenKind
+    deviceId: string
+    deviceName: string
+    order: number
+  }
 }
 
-export interface TempFile {
-  path: string
-  age: number
-  size: number
+/** One thing the stored-files check found. Its `id` is the same in every check that finds it again. */
+export type StorageFinding = StoredFileFinding | DeletedDeviceFolderFinding | MissingImageFinding
+
+export type StorageFindingGroup = StorageFinding['group']
+
+export interface StorageCheck {
+  checkedAt: string
+  screenImages: { files: number, bytes: number }
+  findings: StorageFinding[]
 }
 
-export interface MaintenanceIssues {
-  orphanedScreenFiles: OrphanedScreenFile[]
-  orphanedDeviceDirs: OrphanedDeviceDir[]
-  brokenScreens: BrokenScreen[]
-  tempFiles: TempFile[]
-  oldUploads: TempFile[]
-  totalSize: number
-  scannedAt: string
+export interface CleanupInput {
+  findingIds: string[]
 }
 
 export interface CleanupResult {
-  filesDeleted: number
-  dirsDeleted: number
-  screensDeleted: number
-  bytesFreed: number
-  errors: string[]
+  removed: { files: number, folders: number, screens: number, bytes: number }
+  failed: Array<{ findingId: string, reason: string }>
 }
 
 export type RetentionAges = Record<RetentionAgeKey, number>
