@@ -1,6 +1,6 @@
 <script setup lang="ts">
 defineSlots<{
-  /** The 576 px plate. */
+  /** The plate of the Current Screen. */
   plate: () => unknown
   /** The column beside it: under it on phone. */
   default: () => unknown

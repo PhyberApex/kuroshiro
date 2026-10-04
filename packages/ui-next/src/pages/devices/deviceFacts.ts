@@ -2,7 +2,7 @@ import type { AlertKind, DeviceDetail, DeviceSensorKind, SleepState } from 'kuro
 import type { DeviceTold } from './currentScreenStory'
 import type { Fact } from '@/components/fact'
 import { exactTime, relativeTime } from '@/patterns/time'
-import { deviceSettingsPath } from './screenNaming'
+import { deviceSettingsPath } from './devicePaths'
 
 export interface DeviceFact extends Fact {
   /** The instant the value words, for its exact time: the fact is shown as `lead` and that time. */
@@ -50,7 +50,7 @@ function pendingFacts({ pending, targetFirmware }: DeviceDetail): DeviceFact[] {
   return [
     { label: 'Special Function', value: pending.specialFunction && `${pending.specialFunction} at the next poll`, pending: true },
     { label: 'Device Reset', value: pending.deviceReset ? 'at the next poll' : null, pending: true },
-    { label: 'Firmware', value: pending.firmwarePush && targetFirmware ? `${targetFirmware.version} at the next poll` : null, pending: true },
+    { label: 'Firmware', value: pending.firmwarePush ? `${targetFirmware ? `${targetFirmware.version} ` : ''}at the next poll` : null, pending: true },
   ]
 }
 

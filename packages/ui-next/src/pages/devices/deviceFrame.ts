@@ -1,4 +1,4 @@
-import type { DeviceDetail } from 'kuroshiro-shared'
+import type { DeviceDetail, DeviceSummary } from 'kuroshiro-shared'
 import type { ComputedRef, InjectionKey } from 'vue'
 import type { Load } from '@/patterns/useLoad'
 import { inject, provide } from 'vue'
@@ -7,6 +7,8 @@ import { inject, provide } from 'vue'
 export interface DeviceFrame {
   /** The Device of the route, loaded once for all its pages and kept fresh. After a write that changes it, call its `reload()`. */
   device: Load<DeviceDetail>
+  /** The Device as the Devices list has it, which is there before the Device itself has loaded. */
+  listed: ComputedRef<DeviceSummary | undefined>
   /** The Device's name, known from the Devices list before the Device itself has loaded. */
   name: ComputedRef<string>
   /** The path of the Device's Screens view, which the paths of its other pages start with. */

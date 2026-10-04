@@ -1,7 +1,8 @@
 import type { AlertSummary, CurrentFallbackScreen, CurrentMirroredScreen, CurrentScreenOfRotation, DeviceDetail, FallbackReason, ScreenRead } from 'kuroshiro-shared'
 import type { Sentence } from './sentence'
 import { clockTime } from '@/patterns/time'
-import { deviceSettingsPath, possessive, screenName } from './screenNaming'
+import { deviceSettingsPath } from './devicePaths'
+import { possessive, screenName } from './screenNaming'
 import { linkTo, mono, sentence, strong } from './sentence'
 
 export type PlateState
@@ -23,7 +24,7 @@ export interface CurrentScreenStory {
   sentences: Sentence[]
   /** The seal: only on the Active Screen's image of a Device that is not offline. */
   sealed: boolean
-  /** The Active Screen's id, which the seal stamps for when it changes. */
+  /** The id of the Screen whose image the plate shows, which the seal stamps for when it changes. */
   stampKey?: string
 }
 
@@ -76,6 +77,7 @@ function keptAsleep(told: Told<CurrentScreenOfRotation>): CurrentScreenStory {
       resumeSentence(told),
     ],
     sealed: false,
+    stampKey: told.current.screenId,
   }
 }
 
@@ -91,6 +93,7 @@ function lastGiven(told: Told<CurrentScreenOfRotation>): CurrentScreenStory {
       ...upNext ? [sentence('Up next: ', strong(screenName(upNext.name)), `, when ${device.name} calls in again.`)] : [],
     ],
     sealed: false,
+    stampKey: current.screenId,
   }
 }
 

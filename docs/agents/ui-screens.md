@@ -59,18 +59,19 @@ Every page of one Device is a child route of `/devices/:deviceId`, whose compone
 To build a page under it, swap its `notBuiltYetUnderDevice('settings')` line in `router/routes.ts` for `{ path: 'settings', component: () => import('@/pages/devices/DeviceSettingsPage.vue') }`. A page under the Screens tab (`screens/new`, `screens/:screenId/html`) keeps "Screens" current by its path alone.
 
 ```ts
-const { device, name, path } = useDeviceFrame() // from '@/pages/devices/deviceFrame'
+const { device, listed, name, path } = useDeviceFrame() // from '@/pages/devices/deviceFrame'
 ```
 
 | Member | Is |
 | --- | --- |
 | `device` | The `useLoad` result of the `DeviceDetail`. Never fetch the Device again in a page. After a write that changes it (a setting, a Screen added or deleted, which moves `screenCount`), call `device.reload()`; after one that renames or deletes it, `useDevices().reload()` too |
+| `listed` | The Device's `DeviceSummary` from the Devices list, there before the Device has loaded: the Device Model for a skeleton's plates |
 | `name` | The Device's name, known from the Devices list before the Device has loaded: use it in a loading line and a notice |
-| `path` | `/devices/{id}`, the Screens view, which the paths of the other pages start with |
+| `path` | `/devices/{id}`, the Screens view, which the paths of the other pages start with. `devicePaths.ts` builds the paths of a Device's pages from its id |
 
 - The page does not render a `TitleLine` or `MissingPage` of its own, and reads `device.data`, `device.waiting` and `device.failure` for its own loading and failed states (`LoadBody :load="device"` when the Device is all it shows). `DeviceScreensPage.vue` shows how a page with a second load joins the two.
 - The frame's one title-line action is "Add Screen", on the Screens view while the Device has Screens. A page with an action of its own puts it in its body.
-- A page's first root sets its own space under the tabs (`margin-top: var(--space-8)`; `var(--space-6)` on phone).
+- A page's first root sets its own space under the tabs: `margin-top: var(--space-8)`, and `var(--space-6)` on phone.
 
 ### The Screens view's parts
 
@@ -82,8 +83,8 @@ const { device, name, path } = useDeviceFrame() // from '@/pages/devices/deviceF
 | `deviceFacts.ts`, `screenWording.ts`, `scheduleSummary.ts` | The fact rows; a row's Screen State words and the "why" sentences of an opened row; the Schedule summary |
 | `sentence.ts`, `SentenceLine.vue` | A sentence with a name in bold, a value in mono or a link in it: `sentence('Up next: ', strong(name), '.')` |
 | `ScreensInOrder.vue` | The rows, reordering and its save, `?screen=`. The Schedule switch joins `ScheduleSummary` in the row's `#schedule` slot |
-| `OpenedScreen.vue` | The body of an opened row: the "why" sentences, the preview and, in `.parts`, the move actions. The Schedule editor and what the Screen is made from are sections of `.parts` above `.actions`; "Rename" goes before the move buttons and the destructive button after them |
-| `screenNaming.ts` | `screenName(name)`: a Screen saved without a name reads "Unnamed Screen" everywhere |
+| `OpenedScreen.vue` | The body of an opened row: the "why" sentences, the preview and the move actions. Its slots are where the other parts mount, filled where `ScreensInOrder.vue` renders it: `#schedule` (the Schedule editor), `#source` (what the Screen is made from), `#actionsBefore` ("Rename") and `#actionsAfter` (the destructive button) |
+| `screenNaming.ts` | `screenName(name)`: a Screen saved without a name reads "Unnamed Screen" everywhere. `possessive(name)` for "{Device}'s" |
 
 `ScreensInOrder` takes `reload`, which reads the Screens again: call it after any write to a Screen. A new Screen is opened by navigating to `{path}?screen={id}`, which also scrolls to its row.
 

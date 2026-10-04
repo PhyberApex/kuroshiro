@@ -82,4 +82,10 @@ describe('the facts of a Device', () => {
       { label: 'Firmware', value: '1.7.9 at the next poll', pending: true },
     ])
   })
+
+  it('keep the Firmware row of a pending push whose target is not known', () => {
+    const device = kitchen({ pending: { specialFunction: null, deviceReset: false, firmwarePush: true } })
+
+    expect(rows(device).at(-1)).toEqual(['Firmware', 'at the next poll'])
+  })
 })

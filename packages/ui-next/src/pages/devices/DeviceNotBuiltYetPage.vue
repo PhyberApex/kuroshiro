@@ -13,5 +13,11 @@ import EmptyState from '@/components/EmptyState.vue'
   .not-built-yet {
     margin-top: var(--space-8);
   }
+
+  @media (max-width: 820px) {
+    .not-built-yet {
+      margin-top: var(--space-6);
+    }
+  }
 }
 </style>

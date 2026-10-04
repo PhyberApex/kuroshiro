@@ -4,5 +4,3 @@ export function screenName(name: string | null | undefined) {
 }
 
 export const possessive = (name: string) => `${name}'s`
-
-export const deviceSettingsPath = (deviceId: string) => `/devices/${deviceId}/settings`

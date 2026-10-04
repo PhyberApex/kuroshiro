@@ -15,6 +15,8 @@ const props = defineProps<{
   /** The Device's Screens in the Order the rows stand in. */
   screens: ScreenRead[]
   device: DeviceDetail
+  /** Whether the Screen can jump to the top and to the end of the Order, as on a Device with many Screens. */
+  jumps?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -22,8 +24,16 @@ const emit = defineEmits<{
   move: [by: number]
 }>()
 
-/** From this many Screens on, a Screen can jump to the top and to the end of the Order. */
-const MANY_SCREENS = 9
+defineSlots<{
+  /** The Schedule editor. */
+  schedule?: () => unknown
+  /** What the Screen is made from, by its kind. */
+  source?: () => unknown
+  /** The actions before the move buttons: "Rename". */
+  actionsBefore?: () => unknown
+  /** The destructive action, after the move buttons. */
+  actionsAfter?: () => unknown
+}>()
 
 const now = useNow()
 const timezone = useServerTimezone()
@@ -45,7 +55,7 @@ const isLast = computed(() => place.value === props.screens.length - 1)
 const moves = computed(() => [
   { label: 'Move up', by: -1, disabled: isFirst.value },
   { label: 'Move down', by: 1, disabled: isLast.value },
-  ...props.screens.length >= MANY_SCREENS
+  ...props.jumps
     ? [
         { label: 'Move to top', by: Number.NEGATIVE_INFINITY, disabled: isFirst.value },
         { label: 'Move to end', by: Number.POSITIVE_INFINITY, disabled: isLast.value },
@@ -93,12 +103,15 @@ watch(place, async () => {
         </template>
       </figcaption>
     </figure>
-    <!-- The parts other slices add stand here in the spec's order: the Schedule editor, what the Screen is made from, then the actions. -->
     <div class="parts">
+      <slot name="schedule" />
+      <slot name="source" />
       <div ref="actions" class="actions">
+        <slot name="actionsBefore" />
         <Button v-for="action in moves" :key="action.label" variant="quiet" :disabled="action.disabled" @click="move(action.by)">
           {{ action.label }}
         </Button>
+        <slot name="actionsAfter" />
       </div>
     </div>
   </div>

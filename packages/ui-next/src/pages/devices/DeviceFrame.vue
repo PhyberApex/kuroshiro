@@ -11,6 +11,7 @@ import { useLoad } from '@/patterns/useLoad'
 import { useDevices } from '@/reads/sharedReads'
 import { DEVICES_PATH, MOST_DEVICES_NAMED } from '@/shell/barEntries'
 import { provideDeviceFrame } from './deviceFrame'
+import { addScreenPath, deviceLogsPath, devicePath, deviceSettingsPath } from './devicePaths'
 
 const route = useRoute()
 const devices = useDevices()
@@ -18,17 +19,18 @@ const devices = useDevices()
 const deviceId = computed(() => String(route.params.deviceId))
 const device = useLoad(() => getDevice(deviceId.value), { key: () => route.params.deviceId, fresh: true })
 
+const listed = computed(() => devices.data?.find(summary => summary.id === deviceId.value))
 const name = computed(() => device.data?.name
-  ?? devices.data?.find(listed => listed.id === deviceId.value)?.name
+  ?? listed.value?.name
   ?? 'Device')
-const path = computed(() => `${DEVICES_PATH}/${deviceId.value}`)
+const path = computed(() => devicePath(deviceId.value))
 
-provideDeviceFrame({ device, name, path })
+provideDeviceFrame({ device, listed, name, path })
 
 const views = computed<NavItem[]>(() => [
   { label: 'Screens', to: path.value },
-  { label: 'Settings', to: `${path.value}/settings` },
-  { label: 'Logs', to: `${path.value}/logs` },
+  { label: 'Settings', to: deviceSettingsPath(deviceId.value) },
+  { label: 'Logs', to: deviceLogsPath(deviceId.value) },
 ])
 
 /** The bar stops naming the Devices from five on, so the way back to them stands above the title. */
@@ -46,7 +48,7 @@ const addsScreen = computed(() => route.path === path.value && (device.data?.scr
     <TitleLine :title="name" :back="back">
       <template v-if="addsScreen" #actions>
         <Button as-child variant="primary">
-          <RouterLink :to="`${path}/screens/new`">
+          <RouterLink :to="addScreenPath(deviceId)">
             Add Screen
           </RouterLink>
         </Button>

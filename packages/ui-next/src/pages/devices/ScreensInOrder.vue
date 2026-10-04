@@ -12,9 +12,10 @@ import ScreenRow from '@/components/ScreenRow.vue'
 import { isPassedOver, movedBy, SCREEN_KIND_LABELS } from '@/components/screenRows'
 import ScreenRows from '@/components/ScreenRows.vue'
 import { useSaveAsChanged } from '@/components/useSaveAsChanged'
+import { addScreenPath, deviceSettingsPath } from './devicePaths'
 import OpenedScreen from './OpenedScreen.vue'
 import ScheduleSummary from './ScheduleSummary.vue'
-import { deviceSettingsPath, possessive, screenName } from './screenNaming'
+import { possessive, screenName } from './screenNaming'
 import { screenStateWords } from './screenWording'
 import { linkTo, sentence } from './sentence'
 import SentenceLine from './SentenceLine.vue'
@@ -27,7 +28,7 @@ const props = defineProps<{
   reload: () => Promise<void>
 }>()
 
-/** From this many Screens on the heading counts them. */
+/** From this many Screens on the heading counts them, and an opened row can jump to the top and to the end of the Order. */
 const MANY_SCREENS = 9
 
 const route = useRoute()
@@ -43,7 +44,13 @@ function inEnteredOrder(screens: ScreenRead[], ids: string[] | undefined) {
   return [...ids.flatMap(id => byId.get(id) ?? []), ...screens.filter(screen => !ids.includes(screen.id))]
 }
 
-const rows = computed(() => inEnteredOrder(props.screens, entered.value).map(screen => ({ ...screen, name: screenName(screen.name) })))
+const isMany = computed(() => props.screens.length >= MANY_SCREENS)
+
+const rows = computed(() => inEnteredOrder(props.screens, entered.value).map(screen => ({
+  ...screen,
+  name: screenName(screen.name),
+  stateWords: screenStateWords(screen, props.device),
+})))
 
 const orderSave = useSaveAsChanged(async (ids) => {
   if (!ids)
@@ -86,8 +93,6 @@ const pausedNote = computed(() => sentence(
   linkTo('Settings', deviceSettingsPath(props.device.id)),
   '.',
 ))
-
-const stateOf = (screen: ScreenRead) => screenStateWords(screen, props.device)
 </script>
 
 <template>
@@ -95,7 +100,7 @@ const stateOf = (screen: ScreenRead) => screenStateWords(screen, props.device)
     A Screen is one thing the Device shows: a Plugin, a Mashup, an image from a link or a file, or HTML you write. With more than one, {{ device.name }} steps through them in Order, one per poll.
     <template #action>
       <Button as-child variant="primary">
-        <RouterLink :to="`/devices/${device.id}/screens/new`">
+        <RouterLink :to="addScreenPath(device.id)">
           Add Screen
         </RouterLink>
       </Button>
@@ -104,7 +109,7 @@ const stateOf = (screen: ScreenRead) => screenStateWords(screen, props.device)
   <section v-else class="screens-in-order" aria-labelledby="screens-in-order-heading">
     <div class="heading-line">
       <h2 class="heading">
-        <span id="screens-in-order-heading">Screens in Order</span> <span v-if="screens.length >= MANY_SCREENS" class="count">{{ screens.length }}</span>
+        <span id="screens-in-order-heading">Screens in Order</span> <span v-if="isMany" class="count">{{ screens.length }}</span>
       </h2>
       <SaveState :status="orderSave.status" :reason="orderSave.reason" @retry="orderSave.retry" />
     </div>
@@ -120,14 +125,13 @@ const stateOf = (screen: ScreenRead) => screenStateWords(screen, props.device)
           :state="item.state"
           :passed-over="device.isMirrored || undefined"
         >
-          <template #thumbnail="{ active }">
+          <template #thumbnail>
             <Plate
               :name="`${item.name}, as last rendered`"
               :src="item.imagePath && imageUrl(item.imagePath)"
               size="row"
               :width="device.deviceModel?.width"
               :height="device.deviceModel?.height"
-              :sealed="active"
               :passed-over="isPassedOver(item.state)"
               lazy
             />
@@ -136,9 +140,9 @@ const stateOf = (screen: ScreenRead) => screenStateWords(screen, props.device)
             <ScheduleSummary :schedule="item.schedule" />
           </template>
           <template #state>
-            <span>{{ stateOf(item).words }}<span v-if="stateOf(item).qualifier" class="qualifier"> · {{ stateOf(item).qualifier }}</span></span>
+            <span>{{ item.stateWords.words }}<span v-if="item.stateWords.qualifier" class="qualifier"> · {{ item.stateWords.qualifier }}</span></span>
           </template>
-          <OpenedScreen :screen="item" :screens="rows" :device="device" @move="by => move(item.id, by)" />
+          <OpenedScreen :screen="item" :screens="rows" :device="device" :jumps="isMany" @move="by => move(item.id, by)" />
         </ScreenRow>
       </template>
     </ScreenRows>

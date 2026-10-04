@@ -198,7 +198,7 @@ describe('the rows of Screens in Order', () => {
     ])
     expect(words(rowOf('Calendar').querySelector('.schedule .days'))).toBe('MTWTF··')
     expect(getComputedStyle(rowOf('Train departures').querySelector('.schedule .hours')!).textDecorationLine).toBe('line-through')
-    expect(rowOf('Calendar').querySelector('.state .seal')).not.toBeNull()
+    expect([...rowsList(screen).element().querySelectorAll('.seal')].map(seal => words(seal.closest('.screen-row')!.querySelector('.trigger')))).toEqual(['Calendar'])
     expect(rowsList(screen).element().querySelector('.count')).toBeNull()
   })
 
@@ -471,6 +471,21 @@ describe('loading and fresh data', () => {
 
     await expect.element(screen.getByRole('heading', { level: 2, name: 'Calendar' })).toBeVisible()
     expect(screen.getByText('Loading Kitchen\'s Screens').elements()).toEqual([])
+  })
+
+  it('shows the notice with the server\'s reason when the first load fails, and loads on "Try again"', async () => {
+    const faked = fakeKitchen()
+    api.use(http.get(apiUrl('devices/kitchen/screens'), () => apiErrorResponse({ statusCode: 500, code: 'internal' }), { once: true }))
+    const screen = await mountApp({ at: '/devices/kitchen' })
+
+    await expect.element(screen.getByRole('alert')).toHaveTextContent('Could not load Kitchen\'s Screens. Something went wrong on the server.')
+    expect(document.querySelectorAll('.screen-row').length).toBe(0)
+
+    await screen.getByRole('button', { name: 'Try again' }).click()
+    await expect.element(screen.getByRole('heading', { level: 2, name: 'Screens in Order' })).toBeVisible()
+
+    await expect.poll(() => rowNames(screen)).toEqual(faked.screens.map(shown => shown.name))
+    expect(screen.getByRole('alert').elements()).toEqual([])
   })
 
   it('shows the notice above what was loaded before when a refresh fails', async () => {
