@@ -20,6 +20,9 @@ const props = defineProps<{
 /** How long the typing has to pause before the markup is drawn again. */
 const DRAWN_AFTER_MS = 200
 
+/** The frame's shape while it is not known what the Device's panel is: TRMNL's own. */
+const USUAL_PANEL = { width: 800, height: 480 }
+
 const headingId = useId()
 
 const sizing = useLoad(async () => {
@@ -28,6 +31,7 @@ const sizing = useLoad(async () => {
 })
 
 const target = computed(() => sizing.data && shellTargetOf(props.device, sizing.data.models, sizing.data.palettes))
+const panel = computed(() => target.value?.model ?? props.device.deviceModel ?? USUAL_PANEL)
 const madeFor = computed(() => rendersFor(props.device))
 
 const drawn = ref(props.html)
@@ -55,8 +59,8 @@ onBeforeUnmount(() => clearTimeout(pause))
       v-else
       :name="name"
       :document="target ? htmlScreenDocument(target, drawn) : null"
-      :width="target?.model.width ?? device.deviceModel?.width ?? 800"
-      :height="target?.model.height ?? device.deviceModel?.height ?? 480"
+      :width="panel.width"
+      :height="panel.height"
       :rendering="!target"
       rendering-note="Loading the preview"
     />

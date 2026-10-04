@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { DeviceDetail } from 'kuroshiro-shared'
 import type { FetchChoice } from './fetchChoices'
-import { computed, reactive, ref } from 'vue'
-import { fieldErrorsOf, isRefusal } from '@/api/client'
+import { computed, reactive } from 'vue'
+import { isRefusal } from '@/api/client'
 import { createScreen } from '@/api/screens'
 import Field from '@/components/Field.vue'
 import RadioRow from '@/components/RadioRow.vue'
@@ -18,48 +18,44 @@ const props = defineProps<{
   device: DeviceDetail
 }>()
 
-const adding = useAddScreen()
+/** An address that answers with something that is no image is worded for an address, where the general wording speaks of a file. */
+const NOT_AN_IMAGE = 'This address does not answer with an image Kuroshiro can read. It has to be PNG, JPEG, BMP, GIF, TIFF or WebP.'
+
+const addition = useAddScreen(['name', 'url'])
 
 const draft = reactive({ name: '', url: '', fetching: 'keep' as FetchChoice })
-const problems = ref<{ name?: string, url?: string }>({})
 
-const changed = computed(() => !adding.added && (draft.name.trim() !== '' || draft.url.trim() !== '' || draft.fetching !== 'keep'))
-
-const hasProblems = () => Boolean(problems.value.name || problems.value.url)
+const changed = computed(() => !addition.added && (draft.name.trim() !== '' || draft.url.trim() !== '' || draft.fetching !== 'keep'))
 
 /** An address that gave no image is a problem of the address: the Screen is not added and the field says why. */
-function placed(error: unknown) {
-  const { name, url } = fieldErrorsOf(error)
-  const noImage = isRefusal(error, 'image-fetch-failed') || isRefusal(error, 'image-unreadable') ? error.message : undefined
-  problems.value = { name, url: url ?? noImage }
-  return hasProblems()
+function noImage(error: unknown) {
+  if (isRefusal(error, 'image-fetch-failed'))
+    return { url: error.message }
+  return isRefusal(error, 'image-unreadable') ? { url: NOT_AN_IMAGE } : {}
 }
 
 function add() {
-  problems.value = {
-    name: screenNameProblem(draft.name),
-    url: isWebAddress(draft.url) ? undefined : NOT_A_WEB_ADDRESS,
-  }
-  if (hasProblems())
-    return
-  void adding.add(() => createScreen({
+  void addition.create(() => createScreen({
     kind: 'external',
     deviceId: props.device.id,
     name: draft.name.trim(),
     url: draft.url.trim(),
     fetchManual: draft.fetching === 'keep',
-  }), placed)
+  }), {
+    name: screenNameProblem(draft.name),
+    url: isWebAddress(draft.url) ? undefined : NOT_A_WEB_ADDRESS,
+  }, noImage)
 }
 </script>
 
 <template>
   <form class="add-external-screen" novalidate @submit.prevent="add">
-    <ScreenNameField v-model="draft.name" :error="problems.name" />
-    <Field v-slot="{ control }" class="address" label="Image URL" :error="problems.url">
+    <ScreenNameField v-model="draft.name" :error="addition.problems.name" />
+    <Field v-slot="{ control }" class="address" label="Image URL" :error="addition.problems.url">
       <TextInput v-model="draft.url" v-bind="control" type="url" inputmode="url" spellcheck="false" autocomplete="off" wide />
     </Field>
     <RadioRow v-model="draft.fetching" class="fetching" :choices="FETCH_CHOICES" aria-label="Fetching" />
-    <AddScreenFoot :running="adding.adding" :changed="changed" :failure="adding.failure" />
+    <AddScreenFoot :running="addition.running" :changed="changed" :failure="addition.failure" />
   </form>
 </template>
 

@@ -104,6 +104,18 @@ describe('add Screen, by kind', () => {
       expect(path(screen)).toBe('/devices/kitchen/screens/new?kind=link')
     })
 
+    it('says at the address when what it answers is no image', async () => {
+      fakeKitchen()
+      api.use(http.post(apiUrl('screens'), () => apiErrorResponse({ statusCode: 422, code: 'image-unreadable' })))
+      const screen = await mountAddScreen('link')
+
+      await nameField(screen).fill('Tide table')
+      await urlField(screen).fill('https://tides.example/today.html')
+      await addScreen(screen).click()
+
+      await expect.element(urlField(screen)).toHaveAccessibleDescription('This address does not answer with an image Kuroshiro can read. It has to be PNG, JPEG, BMP, GIF, TIFF or WebP.')
+    })
+
     it('says under the buttons why nothing was added when the server refuses for another reason', async () => {
       fakeKitchen()
       api.use(http.post(apiUrl('screens'), () => apiErrorResponse({ statusCode: 404, code: 'device-not-found' })))
@@ -239,6 +251,19 @@ describe('add Screen, by kind', () => {
       await expect.element(screen.getByText('This file is not an image Kuroshiro can read. Use PNG, JPEG, BMP, GIF, TIFF or WebP.')).toBeVisible()
       await expect.element(nameField(screen)).toHaveValue('harbour')
       expect(path(screen)).toBe('/devices/kitchen/screens/new?kind=file')
+    })
+  })
+
+  describe('a File, refused for its size', () => {
+    it('says at the file how large a file the Instance accepts', async () => {
+      fakeKitchen()
+      api.use(http.post(apiUrl('screens'), () => apiErrorResponse({ statusCode: 413, code: 'upload-too-large', details: { limitBytes: 10 * 1024 * 1024 } })))
+      const screen = await mountAddScreen('file')
+
+      await userEvent.upload(fileInput(screen), png('harbour.png'))
+      await addScreen(screen).click()
+
+      await expect.element(screen.getByText('That file is larger than the 10 MB this Instance accepts.')).toBeVisible()
     })
   })
 

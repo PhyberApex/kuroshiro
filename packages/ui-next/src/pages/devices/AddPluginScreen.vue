@@ -23,7 +23,7 @@ const props = defineProps<{
 const SEARCHED_FROM = 9
 
 const plugins = useLoad(listPlugins)
-const adding = useAddScreen('Not assigned.')
+const addition = useAddScreen([], 'Not assigned.')
 
 const query = ref('')
 const picked = ref<string>()
@@ -35,12 +35,12 @@ const shortcut = computed(() => sentence(
   linkTo('Import a Recipe or build one', addPluginPath('recipe', props.device.id)),
   `; it is assigned to ${props.device.name} when you save it.`,
 ))
-const changed = computed(() => !adding.added && (picked.value !== undefined || query.value.trim() !== ''))
+const changed = computed(() => !addition.added && (picked.value !== undefined || query.value.trim() !== ''))
 
 function assign() {
   const pluginId = chosen.value
   if (pluginId)
-    void adding.add(() => assignPlugin(pluginId, { deviceId: props.device.id }))
+    void addition.create(() => assignPlugin(pluginId, { deviceId: props.device.id }))
 }
 </script>
 
@@ -56,7 +56,7 @@ function assign() {
         No Plugin is called “{{ query.trim() }}”.
       </p>
       <SentenceLine class="shortcut" :sentence="shortcut" />
-      <AddScreenFoot button="Assign Plugin" :running="adding.adding" :disabled="!chosen" :changed="changed" :failure="adding.failure" />
+      <AddScreenFoot button="Assign Plugin" :running="addition.running" :disabled="!chosen" :changed="changed" :failure="addition.failure" />
     </form>
   </LoadBody>
 </template>

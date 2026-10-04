@@ -19,6 +19,11 @@ export function offeredKinds(kinds: AddScreenKindWording[], demoMode: boolean): 
   })
 }
 
+/** The kind the address names when it can be chosen, and the first kind otherwise. */
+export function chosenKind(offered: RadioChoice<AddScreenKind>[], named: unknown) {
+  return (offered.find(kind => kind.value === named && !kind.disabled) ?? offered[0]!).value
+}
+
 /** Every Plugin as a choice for the Device: one that is already on it cannot be assigned again. */
 export function pluginChoices(plugins: PluginSummary[], device: { id: string, name: string }): RadioChoice<string>[] {
   return plugins.map((plugin) => {
@@ -28,6 +33,7 @@ export function pluginChoices(plugins: PluginSummary[], device: { id: string, na
   })
 }
 
+/** The Plugins whose name holds what is searched for, whatever its case. */
 export function pluginsCalled(plugins: PluginSummary[], query: string) {
   const sought = query.trim().toLowerCase()
   return plugins.filter(plugin => plugin.name.toLowerCase().includes(sought))

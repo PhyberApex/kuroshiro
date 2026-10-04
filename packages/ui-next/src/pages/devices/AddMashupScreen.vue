@@ -20,7 +20,7 @@ const props = defineProps<{
 const FIRST_LAYOUT = MASHUP_LAYOUT_CHOICES[0]!.id
 
 const plugins = useLoad(listPlugins)
-const adding = useAddScreen()
+const addition = useAddScreen()
 
 const layoutLabelId = useId()
 const slotsLabelId = useId()
@@ -33,7 +33,7 @@ const placed = ref<(string | null)[]>([])
 
 const inSlots = computed(() => carriedOver(placed.value, layout.value))
 const isFilled = computed(() => name.value.trim() !== '' && inSlots.value.every(pluginId => pluginId !== null))
-const changed = computed(() => !adding.added && (name.value.trim() !== '' || layout.value !== FIRST_LAYOUT || placed.value.some(Boolean)))
+const changed = computed(() => !addition.added && (name.value.trim() !== '' || layout.value !== FIRST_LAYOUT || placed.value.some(Boolean)))
 
 // The button is disabled without a name, so a name that was entered and cleared again is said to be missing as it is cleared.
 watch(name, () => (nameProblem.value = screenNameProblem(name.value)))
@@ -41,7 +41,7 @@ watch(name, () => (nameProblem.value = screenNameProblem(name.value)))
 function add() {
   if (!isFilled.value)
     return
-  void adding.add(() => createMashup({
+  void addition.create(() => createMashup({
     deviceId: props.device.id,
     name: name.value.trim(),
     layout: layout.value,
@@ -69,7 +69,7 @@ function add() {
           Any Plugin can fill a slot, whether or not it is assigned to {{ device.name }}. A Plugin fills one slot at most.
         </p>
       </div>
-      <AddScreenFoot :running="adding.adding" :disabled="!isFilled" :changed="changed" :failure="adding.failure" />
+      <AddScreenFoot :running="addition.running" :disabled="!isFilled" :changed="changed" :failure="addition.failure" />
     </form>
   </LoadBody>
 </template>

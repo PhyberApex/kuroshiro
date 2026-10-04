@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildPluginSummary } from '@/testing/fixtures/plugins'
-import { nameFromFile, offeredKinds, pluginChoices, pluginsCalled, preselected } from '../addScreen'
+import { chosenKind, nameFromFile, offeredKinds, pluginChoices, pluginsCalled, preselected } from '../addScreen'
 import { screenNameProblem } from '../screenNaming'
 
 const KITCHEN = { id: 'kitchen', name: 'Kitchen' }
@@ -20,6 +20,18 @@ describe('the kinds Add Screen offers', () => {
 
   it('disables the File kind in demo mode and says why', () => {
     expect(offeredKinds(KINDS, true)[1]).toEqual({ value: 'file', label: 'File', hint: 'Not available in the demo.', disabled: true })
+  })
+})
+
+describe('the kind Add Screen opens with', () => {
+  it.each([
+    ['file', false, 'file'],
+    [undefined, false, 'plugin'],
+    ['poster', false, 'plugin'],
+    [['file', 'plugin'], false, 'plugin'],
+    ['file', true, 'plugin'],
+  ])('named %j, in demo mode %s, is %s', (named, demoMode, kind) => {
+    expect(chosenKind(offeredKinds(KINDS, demoMode), named)).toBe(kind)
   })
 })
 

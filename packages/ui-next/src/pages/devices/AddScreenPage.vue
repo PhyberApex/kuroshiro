@@ -7,7 +7,7 @@ import BackLink from '@/patterns/BackLink.vue'
 import ChoiceBesideForm from '@/patterns/ChoiceBesideForm.vue'
 import LoadBody from '@/patterns/LoadBody.vue'
 import { useInstanceFacts } from '@/reads/sharedReads'
-import { offeredKinds } from './addScreen'
+import { chosenKind, offeredKinds } from './addScreen'
 import { ADD_SCREEN_KINDS } from './addScreenKinds'
 import { useDeviceFrame } from './deviceFrame'
 import { possessive } from './screenNaming'
@@ -20,10 +20,9 @@ const { device, name, path } = useDeviceFrame()
 const headingId = useId()
 
 const kinds = computed(() => offeredKinds(ADD_SCREEN_KINDS, facts.data?.demoMode ?? false))
-/** The kind the address names when it can be chosen, and the first kind otherwise. */
 const chosen = computed(() => {
-  const named = kinds.value.find(kind => kind.value === route.query.kind && !kind.disabled)
-  return ADD_SCREEN_KINDS.find(entry => entry.kind === named?.value) ?? ADD_SCREEN_KINDS[0]!
+  const kind = chosenKind(kinds.value, route.query.kind)
+  return ADD_SCREEN_KINDS.find(entry => entry.kind === kind)!
 })
 
 function choose(kind?: AddScreenKind) {
@@ -45,7 +44,9 @@ function choose(kind?: AddScreenKind) {
         <RadioRow :model-value="chosen.kind" :choices="kinds" aria-label="Kind of Screen" @update:model-value="choose" />
       </template>
       <LoadBody v-slot="{ data }" :load="device" :loading="`Loading ${name}`" :failed="`Could not load ${name}.`">
-        <component :is="chosen.form" :key="chosen.kind" :device="data" />
+        <KeepAlive>
+          <component :is="chosen.form" :device="data" />
+        </KeepAlive>
       </LoadBody>
     </ChoiceBesideForm>
   </section>

@@ -33,8 +33,7 @@ defineSlots<{
     transition: color var(--duration-quick) var(--ease-out);
   }
 
-  .back-link:hover,
-  .back-link[data-force~='hover'] {
+  .back-link:hover {
     color: var(--color-ink);
   }
 

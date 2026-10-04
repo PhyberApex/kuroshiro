@@ -66,6 +66,18 @@ describe('add Screen', () => {
       expect(path(screen)).toBe('/devices/kitchen/screens/new?kind=plugin')
     })
 
+    it('keeps what was entered for a kind while another kind is looked at', async () => {
+      fakeKitchen({ plugins: PLUGINS })
+      const screen = await mountAddScreen('link')
+
+      await nameField(screen).fill('Tide table')
+      await kindOf(screen, 'Plugin').click()
+      await expect.element(assignPlugin(screen)).toBeVisible()
+      await kindOf(screen, 'External link').click()
+
+      await expect.element(nameField(screen)).toHaveValue('Tide table')
+    })
+
     it('falls back on the Plugin kind for a kind it does not know', async () => {
       fakeKitchen({ plugins: PLUGINS })
       const screen = await mountAddScreen('poster')
