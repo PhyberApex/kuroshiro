@@ -14,7 +14,7 @@ const imagePath = (id: string) => `/screens/devices/kitchen/${id}.png?v=1`
 
 const screens = [
   buildScreen({ id: 'weather', deviceId: 'kitchen', name: 'Weather', order: 1, imagePath: imagePath('weather'), plugin: { id: 'weather', name: 'Weather', kind: 'Webhook', requiredFieldEmpty: true, fetchAlertFiring: true } }),
-  buildScreen({ id: 'calendar', name: 'Calendar', order: 2, state: 'active', imagePath: imagePath('calendar'), schedule: buildSchedule() }),
+  buildScreen({ id: 'calendar', name: 'Calendar', order: 2, state: 'active', imagePath: imagePath('calendar'), schedule: buildSchedule({ startTime: '22:00', endTime: '06:00', startDate: '2026-09-01', endDate: '2026-10-31' }) }),
   buildScreen({ id: 'photo', deviceId: 'kitchen', name: 'Harbour photo', order: 3, kind: 'file', plugin: null, state: 'upNext', imagePath: imagePath('photo'), file: { originalName: 'harbour.png', width: 1600, height: 960, bytes: 421_888, uploadedAt: '2026-09-12T10:00:00.000Z' } }),
   buildScreen({ id: 'trains', deviceId: 'kitchen', name: 'Train departures', order: 4, kind: 'external', plugin: null, state: 'scheduleOff', imagePath: imagePath('trains'), external: { url: 'https://departures.example/central-station.png', fetchManual: true }, schedule: buildSchedule({ enabled: false, startTime: '06:30', endTime: '08:30' }) }),
   buildScreen({ id: 'weekend', name: 'Weekend board', order: 5, kind: 'mashup', plugin: null, state: 'notToday', stateCause: 'weekday', imagePath: imagePath('weekend'), schedule: buildSchedule({ weekdays: [0], startTime: null, endTime: null }), mashup: {
@@ -76,5 +76,11 @@ describe('the Screens view of a Device', () => {
     await mountWithOpened(id, name)
 
     await expectPageScreenshots(`device-screens-${kind}`)
+  })
+
+  it('with a Schedule of hours that cross midnight between two dates', async () => {
+    await mountWithOpened('calendar', 'Calendar')
+
+    await expectPageScreenshots('device-screens-schedule-dates')
   })
 })

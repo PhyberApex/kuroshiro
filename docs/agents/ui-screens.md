@@ -82,8 +82,11 @@ const { device, listed, name, path } = useDeviceFrame() // from '@/pages/devices
 | `currentScreenStory.ts` | The pure function from the Device, its Screens and its firing Alerts to the plate's state, heading and sentences |
 | `deviceFacts.ts`, `screenWording.ts`, `scheduleSummary.ts` | The fact rows; a row's Screen State words and the "why" sentences of an opened row; the Schedule summary |
 | `sentence.ts`, `SentenceLine.vue` | A sentence with a name in bold, a value in mono or a link in it: `sentence('Up next: ', strong(name), '.')` |
-| `ScreensInOrder.vue` | The rows, reordering and its save, `?screen=`. The Schedule switch joins `ScheduleSummary` in the row's `#schedule` slot |
-| `OpenedScreen.vue` | The body of an opened row: the "why" sentences, the preview and the move actions. Its slots are where the other parts mount, filled where `ScreensInOrder.vue` renders it: `#schedule` (the Schedule editor), `#source` (what the Screen is made from), `#actionsBefore` ("Rename") and `#actionsAfter` (the destructive button) |
+| `ScreensInOrder.vue` | The rows, reordering and its save, `?screen=`. The row's `#schedule` slot holds `RowSchedule`: `ScheduleSwitch` around `ScheduleSummary`, or the summary alone for a Screen without a Schedule |
+| `OpenedScreen.vue` | The body of an opened row: the "why" sentences, the preview and the move actions. Its slots are where the other parts mount, filled where `ScreensInOrder.vue` renders it: `#schedule` (the Schedule editor), `#source` (what the Screen is made from), `#actionsBefore` ("Rename") and `#actionsAfter` (the destructive button). The Schedule stands beside the source and its actions, and above them where the two do not fit side by side |
+| `ScheduleEditor.vue` | What fills `#schedule`: "Add a Schedule" for a Screen without one, otherwise the heading with `ScheduleSwitch`, `ScheduleControls` (the weekdays, `ScheduleHours`, `ScheduleDates`, the timezone line and the one save state they share) and `ScheduleRemoval` |
+| `ScheduleSwitch.vue` | The Schedule's switch with its own save state, on the row and in the editor's heading. Each of the two follows what the other saved |
+| `scheduleEditing.ts` | The pure rules of the editor: no stored weekday means every day, what a pair of times or dates sends (`changedOfPair`: only the ends that changed, and nothing while one is empty), today in the server's timezone (`dateInZone`), the timezone line |
 | `screenNaming.ts` | `screenName(name)`: a Screen saved without a name reads "Unnamed Screen" everywhere. `possessive(name)` for "{Device}'s" |
 | `ScreenSource.vue` | What fills `#source`: the kind as a heading over one component per kind, `PluginScreenSource`, `MashupScreenSource`, `FileScreenSource`, `ExternalScreenSource` and `HtmlScreenSource`. It emits `rerendering` when a write leaves the Screen's image behind (a Slot Change), on which the preview shows the rendering plate until `renderedAt` moves |
 | `ScreenRename.vue`, `ScreenRemoval.vue` | "Rename" as the `InlineEdit` in the row's `#rename` slot, and "Delete Screen" or "Unassign Plugin" with its confirmation, which emits `removed` |
@@ -388,7 +391,7 @@ export function updateDevice(deviceId: string, input: UpdateDeviceInput) {
 }
 ```
 
-`src/api/devices.ts` has `listDevices`, `getDevice`, `createDevice` (refused with `device-mac-taken`), `updateDevice`, `listDeviceLogs` and `clearDeviceLogs`. `src/api/instance.ts` has `getInstanceFacts`, `getInstanceSettings` and `updateInstanceSettings`; `src/api/alerts.ts` has `listAlerts` and `sendTestNotification` (refused with `notifications-off` or `notification-failed`). `src/api/screens.ts` has `listScreens`, `reorderScreens`, `updateScreen`, `previewScreenImage`, `replaceScreenImage`, `refreshScreen`, `deleteScreen`, `updateMashup` (by the Screen's id) and `unassignPlugin`.
+`src/api/devices.ts` has `listDevices`, `getDevice`, `createDevice` (refused with `device-mac-taken`), `updateDevice`, `listDeviceLogs` and `clearDeviceLogs`. `src/api/instance.ts` has `getInstanceFacts`, `getInstanceSettings` and `updateInstanceSettings`; `src/api/alerts.ts` has `listAlerts` and `sendTestNotification` (refused with `notifications-off` or `notification-failed`). `src/api/screens.ts` has `listScreens`, `reorderScreens`, `updateScreen`, `previewScreenImage`, `replaceScreenImage`, `refreshScreen`, `deleteScreen`, `updateMashup` (by the Screen's id), `unassignPlugin`, and `createSchedule`, `updateSchedule` and `removeSchedule`, which answer the owning Screen.
 
 - `apiGet<T>(path, query?)` and `apiSend<T>(method, path, body?)` from `@/api/client`. The path has no leading slash and no `api/`. `body` is a shared `…Input` type, sent as JSON, or a `FormData` for an upload. A 204 answers `undefined`.
 - Types come from `kuroshiro-shared`. Send only what the `…Input` type declares: the server refuses undeclared keys, so a read model sent back as a write is refused.
@@ -431,7 +434,7 @@ A read model gives an image as a root-relative path with its version (`/screens/
 
 - **`<RelativeTime :at="device.lastSeenAt" />`** for an instant of a read model (an ISO string): "4 min ago" with the exact time as its tooltip within the last day, "1 Oct 2026, 07:31" when older, in the browser's timezone. It moves on by itself. Guard a `null` yourself ("Has not called in yet").
 - `clockTime(date)` gives the `{hh:mm}` of a sentence ("the 07:31 poll"); `exactTime(date)` and `relativeTime(date, now)` are the two wordings as functions; `useNow()` is the clock they follow. All in `@/patterns/`.
-- A Schedule's and Sleep Mode's hours are the server's wall clock and are shown as the server sent them, with `useServerTimezone()` naming the zone.
+- A Schedule's and Sleep Mode's hours are the server's wall clock and are shown as the server sent them, with `useServerTimezone()` naming the zone. "Today" beside such a date is the server's day too: `dateInZone(now, timezone)` in `pages/devices/scheduleEditing.ts`.
 
 ## A form with unsaved changes
 

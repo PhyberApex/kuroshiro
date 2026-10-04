@@ -17,6 +17,8 @@ export const API_ERROR_CODES = [
   'device-mac-taken',
   'screen-not-found',
   'screen-field-not-for-kind',
+  'schedule-not-found',
+  'schedule-exists',
   'plugin-not-found',
   'assignment-not-found',
   'plugin-already-assigned',
