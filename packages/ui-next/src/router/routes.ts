@@ -50,7 +50,7 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/devices/DeviceFrame.vue'),
     children: [
       { path: '', component: () => import('@/pages/devices/DeviceScreensPage.vue') },
-      notBuiltYetUnderDevice('screens/new'),
+      { path: 'screens/new', component: () => import('@/pages/devices/AddScreenPage.vue') },
       notBuiltYetUnderDevice('screens/:screenId/html'),
       { path: 'settings', component: () => import('@/pages/devices/DeviceSettingsPage.vue') },
       { path: 'logs', component: () => import('@/pages/devices/DeviceLogsPage.vue') },

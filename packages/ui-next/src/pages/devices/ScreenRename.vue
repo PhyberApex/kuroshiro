@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { updateScreen } from '@/api/screens'
 import { failureReason } from '@/components/failureReason'
 import InlineEdit from '@/components/InlineEdit.vue'
-import { screenName } from './screenNaming'
+import { screenName, screenNameProblem } from './screenNaming'
 
 const props = defineProps<{
   screenId: string
@@ -20,8 +20,6 @@ const saving = ref(false)
 const refusal = ref<string>()
 
 const label = computed(() => `Name of ${screenName(props.name)}`)
-
-const nameProblem = (name: string) => name.trim() ? undefined : 'A Screen needs a name.'
 
 async function save(entered: string) {
   const name = entered.trim()
@@ -50,7 +48,7 @@ async function save(entered: string) {
     v-model:error="refusal"
     :value="name"
     :label="label"
-    :validate="nameProblem"
+    :validate="screenNameProblem"
     :saving="saving"
     @save="save"
   />

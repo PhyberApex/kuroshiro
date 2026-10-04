@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ScreenRead } from 'kuroshiro-shared'
-import type { RadioChoice } from '@/components/RadioRow.vue'
+import type { FetchChoice } from './fetchChoices'
 import { computed, ref, watch } from 'vue'
 import { IMAGE_NOT_FETCHED } from '@/api/refusalWording'
 import { refreshScreen, updateScreen } from '@/api/screens'
@@ -12,6 +12,7 @@ import SaveState from '@/components/SaveState.vue'
 import TextInput from '@/components/TextInput.vue'
 import { useSaveAsChanged } from '@/components/useSaveAsChanged'
 import RelativeTime from '@/patterns/RelativeTime.vue'
+import { FETCH_CHOICES, fetchChoiceOf, NOT_A_WEB_ADDRESS } from './fetchChoices'
 import { isWebAddress } from './screenSourceWording'
 
 const props = defineProps<{
@@ -21,17 +22,8 @@ const props = defineProps<{
   reload: () => Promise<void>
 }>()
 
-type FetchChoice = 'keep' | 'everyPoll'
-
-const FETCH_CHOICES: RadioChoice<FetchChoice>[] = [
-  { value: 'keep', label: 'Fetch once and keep', hint: 'Kuroshiro keeps the converted image until you refresh it.' },
-  { value: 'everyPoll', label: 'Fetch on every poll', hint: 'Kuroshiro downloads and converts it each time this Screen\'s turn comes.' },
-]
-
-const choiceOf = (fetchManual: boolean): FetchChoice => fetchManual ? 'keep' : 'everyPoll'
-
 const url = ref(props.external.url)
-const choice = ref(choiceOf(props.external.fetchManual))
+const choice = ref(fetchChoiceOf(props.external.fetchManual))
 /** What is wrong with the address: it is no web address, or "Refresh image" could not fetch from it. */
 const urlProblem = ref<string>()
 const refreshing = ref(false)
@@ -45,7 +37,7 @@ async function save(input: { url: string } | { fetchManual: boolean }) {
 const urlSave = useSaveAsChanged(async entered => (await save({ url: entered.trim() }))?.url, url)
 const choiceSave = useSaveAsChanged(async (chosen) => {
   const saved = await save({ fetchManual: chosen === 'keep' })
-  return saved ? choiceOf(saved.fetchManual) : undefined
+  return saved ? fetchChoiceOf(saved.fetchManual) : undefined
 }, choice)
 
 watch(() => props.external.url, (saved) => {
@@ -54,14 +46,14 @@ watch(() => props.external.url, (saved) => {
 })
 watch(() => props.external.fetchManual, (saved) => {
   if (choiceSave.status !== 'saving')
-    choice.value = choiceOf(saved)
+    choice.value = fetchChoiceOf(saved)
 })
 
 /** A save that failed says why under the field, like an address that is refused before it is sent. */
 const urlError = computed(() => urlProblem.value ?? (urlSave.status === 'failed' ? urlSave.reason : undefined))
 
 function commitUrl() {
-  urlProblem.value = isWebAddress(url.value) ? undefined : 'Enter an address that starts with http:// or https://.'
+  urlProblem.value = isWebAddress(url.value) ? undefined : NOT_A_WEB_ADDRESS
   if (!urlProblem.value)
     urlSave.commit()
 }

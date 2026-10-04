@@ -11,6 +11,11 @@ const UPLOAD_DAY = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'lo
 
 const startOfSentence = (words: string) => words.charAt(0).toUpperCase() + words.slice(1)
 
+/** What a Device's images are made for: "TRMNL OG, Greyscale". Empty for a Device with neither a Device Model nor a Palette. */
+export function rendersFor(device: Pick<DeviceDetail, 'deviceModel' | 'palette'>) {
+  return [device.deviceModel?.label, device.palette?.name].filter(Boolean).join(', ')
+}
+
 /** "1600 × 960 · 412 KB · uploaded 12 September 2026. Converted for TRMNL OG, Greyscale." A Screen uploaded before the facts were kept has only some of them. */
 export function fileFacts(file: NonNullable<ScreenRead['file']>, device: Pick<DeviceDetail, 'deviceModel' | 'palette'>) {
   const facts = [
@@ -18,10 +23,10 @@ export function fileFacts(file: NonNullable<ScreenRead['file']>, device: Pick<De
     file.bytes !== null ? formatBytes(file.bytes) : undefined,
     file.uploadedAt ? `uploaded ${UPLOAD_DAY.format(new Date(file.uploadedAt))}` : undefined,
   ].filter(fact => fact !== undefined)
-  const convertedFor = [device.deviceModel?.label, device.palette?.name].filter(Boolean)
+  const convertedFor = rendersFor(device)
   return [
     facts.length > 0 ? `${startOfSentence(facts.join(' · '))}.` : undefined,
-    convertedFor.length > 0 ? `Converted for ${convertedFor.join(', ')}.` : undefined,
+    convertedFor ? `Converted for ${convertedFor}.` : undefined,
   ].filter(Boolean).join(' ')
 }
 
