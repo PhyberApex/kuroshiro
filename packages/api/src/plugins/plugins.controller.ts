@@ -4,6 +4,7 @@ import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post
 import { diskStorage } from 'multer'
 import { LimitedFileInterceptor } from '../uploads/limited-file-interceptor.js'
 import { UPLOAD_LIMITS } from '../uploads/upload-limits.js'
+import { attachmentDisposition } from '../utils/contentDisposition.js'
 import { ApplyRecipeUpdateDto } from './dto/apply-recipe-update.dto.js'
 import { CreatePluginDto } from './dto/create-plugin.dto.js'
 import { PreviewDataDto } from './dto/preview-data.dto.js'
@@ -56,8 +57,9 @@ export class PluginsController {
   }
 
   @Post(':id/duplicate')
-  async duplicate(@Param('id') id: string) {
-    return this.pluginsService.duplicate(id)
+  async duplicate(@Param('id') id: string): Promise<PluginDetail> {
+    const copy = await this.pluginsService.duplicate(id)
+    return this.pluginReads.detail(copy.id)
   }
 
   @Get(':id/recipe-update')
@@ -81,9 +83,9 @@ export class PluginsController {
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    const success = await this.pluginsService.remove(id)
-    return { success }
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(@Param('id') id: string): Promise<void> {
+    await this.pluginsService.remove(id)
   }
 
   @Post('import')
@@ -149,16 +151,12 @@ export class PluginsController {
   }
 
   @Get(':id/export')
-  async exportPlugin(@Param('id') id: string, @Res() res: Response) {
-    const plugin = await this.pluginsService.findById(id)
-    if (!plugin) {
-      return res.status(404).json({ message: 'Plugin not found' })
-    }
-
+  async exportPlugin(@Param('id') id: string, @Res() res: Response): Promise<void> {
+    const plugin = await this.pluginsService.requireForExport(id)
     const zipBuffer = await this.exporterService.exportToZip(plugin)
 
     res.setHeader('Content-Type', 'application/zip')
-    res.setHeader('Content-Disposition', `attachment; filename="${plugin.name}.trmnlp.zip"`)
+    res.setHeader('Content-Disposition', attachmentDisposition(`${plugin.name}.trmnlp.zip`))
     res.send(zipBuffer)
   }
 }

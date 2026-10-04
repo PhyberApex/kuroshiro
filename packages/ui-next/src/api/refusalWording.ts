@@ -32,6 +32,7 @@ const REFUSAL_WORDING: Record<ApiErrorCode, Wording> = {
   'plugin-not-found': 'That Plugin does not exist.',
   'assignment-not-found': 'That Plugin is not on this Device.',
   'plugin-already-assigned': 'That Plugin is already on this Device.',
+  'plugin-in-mashup': 'That Plugin fills a slot in a Mashup. Give the slot another Plugin, or delete the Mashup.',
   'image-fetch-failed': 'The image could not be fetched.',
   'image-unreadable': 'That file is not an image Kuroshiro can read.',
   'order-not-a-permutation': 'The Order has to name every Screen once.',

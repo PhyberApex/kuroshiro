@@ -34,29 +34,7 @@ export class PluginExporterService {
 
     entries.push({ path: '.trmnlp.yml', content: Buffer.from(yaml.dump(manifest), 'utf8') })
 
-    if (plugin.dataSources && plugin.dataSources.length > 0) {
-      const settings = {
-        refresh_interval: plugin.refreshInterval,
-        data_sources: [...plugin.dataSources]
-          .sort((a, b) => a.order - b.order)
-          .map(source => source.mode === 'literal'
-            ? {
-                name: source.name,
-                mode: 'literal',
-                literal_value: source.literalValue ?? null,
-              }
-            : {
-                name: source.name,
-                endpoint: source.url,
-                method: source.method,
-                headers: source.headers || {},
-                body: source.body || {},
-                ...(source.transformJs ? { transform_js: source.transformJs } : {}),
-              }),
-      }
-
-      entries.push({ path: 'src/settings.yml', content: Buffer.from(yaml.dump(settings), 'utf8') })
-    }
+    entries.push({ path: 'src/settings.yml', content: Buffer.from(yaml.dump(this.buildSettings(plugin)), 'utf8') })
 
     if (plugin.templates && plugin.templates.length > 0) {
       for (const template of plugin.templates) {
@@ -65,6 +43,38 @@ export class PluginExporterService {
     }
 
     return entries
+  }
+
+  /** `strategy` is the key a TRMNL Recipe names its kind with, so an export says which Plugin Kind it holds. */
+  private buildSettings(plugin: Plugin) {
+    if (plugin.kind === 'Webhook') {
+      return {
+        strategy: 'webhook',
+        merge_strategy: plugin.mergeStrategy,
+        ...(plugin.streamLimit == null ? {} : { stream_limit: plugin.streamLimit }),
+      }
+    }
+
+    return {
+      strategy: 'polling',
+      refresh_interval: plugin.refreshInterval,
+      data_sources: [...plugin.dataSources ?? []]
+        .sort((a, b) => a.order - b.order)
+        .map(source => source.mode === 'literal'
+          ? {
+              name: source.name,
+              mode: 'literal',
+              literal_value: source.literalValue ?? null,
+            }
+          : {
+              name: source.name,
+              endpoint: source.url,
+              method: source.method,
+              headers: source.headers || {},
+              body: source.body || {},
+              ...(source.transformJs ? { transform_js: source.transformJs } : {}),
+            }),
+    }
   }
 
   async exportToZip(plugin: Plugin): Promise<Buffer> {
