@@ -126,7 +126,7 @@ defineProps<{
     text-wrap: pretty;
   }
 
-  /* The block scrolls both ways inside itself, and is reachable by keyboard to be scrolled by it. */
+  /* A long object scrolls inside its block rather than lengthening the list. */
   .json :deep(.code) {
     max-height: 14rem;
     overflow-y: auto;

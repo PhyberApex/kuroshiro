@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildPreviewData } from '@/testing/fixtures/plugins'
-import { dataRowsOf, namesCount, scheduledFailure, unfetchedSources } from '../templateData'
+import { dataNote, dataRowsOf, notFetchedReason, scheduledFailure, unfetchedSources } from '../templateData'
 
 const FETCHED = buildPreviewData({
   context: {
@@ -82,7 +82,16 @@ describe('the rows of "Data"', () => {
 
 describe('what is said about the preview\'s data', () => {
   it('counts the names', () => {
-    expect([0, 1, 14].map(namesCount)).toEqual(['0 names', '1 name', '14 names'])
+    expect([0, 1, 14].map(count => dataNote(count))).toEqual(['0 names', '1 name', '14 names'])
+  })
+
+  it('says when the data was fetched beside the names, for a Plugin that fetches', () => {
+    expect(dataNote(14, '4 min ago')).toBe('14 names, fetched 4 min ago')
+  })
+
+  it('says from when the data the preview keeps is, after a fetch with no answer', () => {
+    expect(notFetchedReason('Kuroshiro\'s server is not answering.', '4 min ago')).toBe('Kuroshiro\'s server is not answering. The preview uses the data from 4 min ago.')
+    expect(notFetchedReason('Kuroshiro\'s server is not answering.', undefined)).toBe('Kuroshiro\'s server is not answering.')
   })
 
   it('names each Data Source that could not be fetched, with the server\'s reason and one full stop', () => {

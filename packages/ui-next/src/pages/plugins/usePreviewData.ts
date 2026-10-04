@@ -45,16 +45,16 @@ export function usePreviewData(input: () => PreviewDataInput | undefined, fetch:
 
   const stop = watch(
     () => {
-      const now = input()
-      return now && { device: now.deviceId, fetched: JSON.stringify([now.dataSources, now.fieldValues]) }
+      const sent = input()
+      return sent && { device: sent.deviceId, sources: JSON.stringify([sent.dataSources, sent.fieldValues]) }
     },
-    (now, before) => {
-      if (!now)
+    (current, previous) => {
+      if (!current)
         return
-      if (!before || now.device !== before.device) {
+      if (!previous || current.device !== previous.device) {
         void fetchAgain()
       }
-      else if (now.fetched !== before.fetched) {
+      else if (current.sources !== previous.sources) {
         clearTimeout(timer)
         timer = setTimeout(fetchAgain, FETCHED_AFTER_MS)
       }

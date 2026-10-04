@@ -8,7 +8,7 @@ import { exactTime, relativeTime } from '@/patterns/time'
 import { useNow } from '@/patterns/useNow'
 import DataList from './DataList.vue'
 import { usePluginPage } from './pluginPage'
-import { dataRowsOf, namesCount, unfetchedSources } from './templateData'
+import { dataNote, dataRowsOf, notFetchedReason, unfetchedSources } from './templateData'
 import TemplateDataFoot from './TemplateDataFoot.vue'
 
 /** What the preview says about its data, under the honest line: what could not be fetched, and "Data", every name the Template can read. */
@@ -46,10 +46,10 @@ const fetchedWhen = computed(() => {
   return relativeTime(at, now.value) ?? exactTime(at)
 })
 
-const note = computed(() => props.data && `${namesCount(props.data.names.length)}${source.value === 'fetched' ? `, fetched ${fetchedWhen.value}` : ''}`)
+const note = computed(() => props.data && dataNote(props.data.names.length, source.value === 'fetched' ? fetchedWhen.value : undefined))
 const rows = computed(() => props.data ? dataRowsOf(props.data, props.deviceName) : [])
 const unfetched = computed(() => props.data ? unfetchedSources(props.data) : [])
-const notAnswered = computed(() => props.failure && `${props.failure}${fetchedWhen.value ? ` The preview uses the data from ${fetchedWhen.value}.` : ''}`)
+const notAnswered = computed(() => props.failure && notFetchedReason(props.failure, fetchedWhen.value))
 </script>
 
 <template>

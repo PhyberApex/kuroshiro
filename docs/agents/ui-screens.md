@@ -49,7 +49,7 @@ The shell gives every page the bar, the demo line, the bottom tabs and one centr
 ```
 
 - **`TitleLine`**: `title` (the `h1`, and the browser tab's title as "{title} · Kuroshiro"), the `#actions` slot at its right (the primary button last), and `back` (`{ label: 'All Plugins', to: '/plugins' }`) for the link above the title. It renders at once; only the body waits.
-- **`SaveBar`** must be a direct child of the column, so put it at the page's root, not inside a wrapper.
+- **`SaveBar`** must be a direct child of the column, so put it at the page's root, not inside a wrapper. The one exception is the Template section's full window, which stands over the column: `PluginOpened.vue` teleports the bar to the window's foot meanwhile ("The Template section" below).
 - A page sets its own vertical rhythm below the title line with the space tokens.
 
 ## The Device frame
@@ -295,7 +295,7 @@ A write that adds a record and then leaves the page navigates first and reloads 
 | `PluginRefreshInterval.vue`, `PluginDataSourceRow.vue`, `DataSourceForm.vue`, `DataSourceFetchFields.vue`, `DataSourceCode.vue`, `DataSourceStory.vue`, `DataSourceFailing.vue`, `DataSourceHealth.vue` | The section in parts: the interval's row, one row, its form, the fields of Fetch mode, one code input as a field, the story, the story of a streak and the row's health |
 | `pluginTemplates.ts`, `PluginTemplate.vue`, `TemplateLine.vue`, `TemplatePreviewFor.vue`, `pluginTemplateWording.ts` | "Template": the part, the section, the Template line, what sits under the plate and the section's words. See "The Template section" below |
 | `templatePreview.ts`, `useTemplatePreview.ts`, `previewTarget.ts` | The preview: the browser's render of a Template (the one module that holds the Liquid engine), when it is drawn, and which Device or Device Model it is for |
-| `usePreviewData.ts`, `templateContext.ts`, `templateData.ts`, `TemplateData.vue`, `DataList.vue`, `ScheduledRenderFailure.vue` | The data the preview draws against: when it is fetched and held, the form laid over it (`heldWithForm`), the rows and words of "Data", the notices and "Data" under the plate, the list itself, and the line of a failed scheduled render |
+| `usePreviewData.ts`, `templateContext.ts`, `templateData.ts`, `TemplatePlate.vue`, `TemplateData.vue`, `DataList.vue`, `TemplateDataFoot.vue`, `ScheduledRenderFailure.vue` | The data the preview draws against: when it is fetched and held, the form laid over it (`heldWithForm`), the rows and words of "Data", the plate or why there is none, the notices and "Data" under the plate, the list itself, what stands under its rows, and the line of a failed scheduled render |
 | `templateWindow.ts` | The section's full window: `useTemplateWindow()` (`offered`, `open`, `enter()`, `leave()`), `useWindowTaken`, and `TEMPLATE_WINDOW_FOOT`, where the save bar stands meanwhile |
 | `formRows.ts` | What the lists of rows in the form share: `FormRow` (`key`, `removed`), `keptRows`, `sentPathsOf(collection, rows)`, `nextAddedKey` and `freeName` |
 | `pluginFieldValues.ts`, `PluginFieldValues.vue`, `FieldValueRow.vue`, `FieldValueControl.vue` | "Field Values": the part, the control of each Plugin Field type (`fieldControl`), the note at a row's right (`fieldValueNote`), one row and its control. See "Two parts that read each other" below |

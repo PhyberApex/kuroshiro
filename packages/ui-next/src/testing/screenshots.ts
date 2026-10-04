@@ -31,14 +31,14 @@ export async function expectWindowScreenshot(name: string) {
   await document.fonts.ready
   // A shot of an element is the page clipped to its box, so a transparent element over the whole window shoots exactly
   // what the window shows; the body may reach below it, where nothing is painted.
-  const window = document.createElement('div')
-  window.style.cssText = 'position: fixed; inset: 0; pointer-events: none; z-index: 2147483647'
-  document.body.append(window)
+  const wholeWindow = document.createElement('div')
+  wholeWindow.style.cssText = 'position: fixed; inset: 0; pointer-events: none; z-index: 2147483647'
+  document.body.append(wholeWindow)
   try {
-    await expect.element(page.elementLocator(window)).toMatchScreenshot(name)
+    await expect.element(page.elementLocator(wholeWindow)).toMatchScreenshot(name)
   }
   finally {
-    window.remove()
+    wholeWindow.remove()
   }
 }
 

@@ -50,7 +50,13 @@ export function dataRowsOf({ context, names }: PreviewData, deviceName: string |
   })
 }
 
-export const namesCount = (count: number) => count === 1 ? '1 name' : `${count} names`
+const namesCount = (count: number) => count === 1 ? '1 name' : `${count} names`
+
+/** What stands beside the title of "Data": how many names, and when they were fetched for a Plugin that fetches. */
+export const dataNote = (count: number, fetchedWhen?: string) => `${namesCount(count)}${fetchedWhen ? `, fetched ${fetchedWhen}` : ''}`
+
+/** Why there is no new data, and from when the data the preview keeps is, if it keeps any. */
+export const notFetchedReason = (failure: string, keptFrom: string | undefined) => keptFrom ? `${failure} The preview uses the data from ${keptFrom}.` : failure
 
 /** The Data Sources the preview could not fetch, each with the server's reason as a sentence. */
 export function unfetchedSources({ names }: PreviewData) {

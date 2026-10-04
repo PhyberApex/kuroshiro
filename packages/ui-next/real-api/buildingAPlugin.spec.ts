@@ -1,4 +1,4 @@
-import type { DeviceSummary } from 'kuroshiro-shared'
+import type { DeviceSummary, ScreenRead } from 'kuroshiro-shared'
 import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest'
@@ -55,6 +55,9 @@ describe('building a Plugin', () => {
 
     const answer = await device.display()
 
+    const screens = await (await fetch(new URL(`api/devices/${id}/screens`, baseUrl))).json() as ScreenRead[]
+    const tideTimes = screens.find(screen => screen.kind === 'plugin' && screen.name === 'Tide times')!
+    expect(answer.image_url).toMatch(new RegExp(`/${tideTimes.id}\\.png$`))
     const image = await fetch(answer.image_url)
     expect([image.status, image.headers.get('content-type')]).toEqual([200, 'image/png'])
     // The view asks again when the window regains the focus; the suite's own types have no DOM to say so in.
