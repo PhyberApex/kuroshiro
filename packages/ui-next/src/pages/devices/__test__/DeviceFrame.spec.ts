@@ -58,7 +58,7 @@ describe('the Device page frame', () => {
   it('opens a stub under the tabs that are not built yet, with the frame around it', async () => {
     fakeShellReads({ devices: devicesNamed('Kitchen') })
     fakeKitchen()
-    const screen = await mountApp({ at: '/devices/kitchen/settings' })
+    const screen = await mountApp({ at: '/devices/kitchen/screens/new' })
 
     await expect.element(screen.getByRole('heading', { name: 'Not built yet' })).toBeVisible()
     await expect.element(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Kitchen')

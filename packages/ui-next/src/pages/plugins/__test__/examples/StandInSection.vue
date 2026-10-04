@@ -3,8 +3,8 @@ import type { PluginFormPart } from '../../pluginForm'
 import { ref } from 'vue'
 import Field from '@/components/Field.vue'
 import NumberInput from '@/components/NumberInput.vue'
+import PageSection from '@/patterns/PageSection.vue'
 import { fieldId, usePluginFormPart, usePluginPage } from '../../pluginPage'
-import PluginSection from '../../PluginSection.vue'
 
 const fetching: PluginFormPart<{ minutes: number | null }> = {
   keys: ['refreshInterval'],
@@ -21,7 +21,7 @@ const part = usePluginFormPart(fetching, () => (open.value = true))
 </script>
 
 <template>
-  <PluginSection id="data" title="Stand-in">
+  <PageSection id="data" title="Stand-in">
     <p>Its Fetch Failure Streak is {{ plugin.dataSources[0]?.fetchFailureStreak }}.</p>
     <button type="button" @click="open = !open">
       Fetch
@@ -29,5 +29,5 @@ const part = usePluginFormPart(fetching, () => (open.value = true))
     <Field v-if="open" :id="fieldId('refreshInterval')" v-slot="{ control }" label="Minutes between fetches" :error="part.errors.refreshInterval">
       <NumberInput v-model="part.draft.minutes" v-bind="control" />
     </Field>
-  </PluginSection>
+  </PageSection>
 </template>

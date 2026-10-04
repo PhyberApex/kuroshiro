@@ -42,7 +42,7 @@ function lastSeenOf({ lastSeenAt }: DeviceDetail, offline: boolean, now: Date): 
   }
 }
 
-function reportsAnotherSize({ reported, deviceModel }: DeviceDetail) {
+export function reportsAnotherSize({ reported, deviceModel }: DeviceDetail) {
   return reported.width !== null && reported.height !== null && deviceModel !== null
     && (reported.width !== deviceModel.width || reported.height !== deviceModel.height)
 }

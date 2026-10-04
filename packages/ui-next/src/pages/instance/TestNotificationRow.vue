@@ -6,7 +6,7 @@ import Button from '@/components/Button.vue'
 import { failureReason } from '@/components/failureReason'
 import ResultLine from '@/components/ResultLine.vue'
 
-import InstanceReadRow from './InstanceReadRow.vue'
+import ReadRow from '@/patterns/ReadRow.vue'
 
 type Outcome = 'sending' | 'sent' | 'not-sent'
 
@@ -34,7 +34,7 @@ async function send() {
 </script>
 
 <template>
-  <InstanceReadRow label="Test Notification">
+  <ReadRow label="Test Notification">
     <Button :disabled="outcome === 'sending'" @click="send">
       Send a Test Notification
     </Button>
@@ -51,7 +51,7 @@ async function send() {
         Travels the same way as a real Notification and belongs to no Alert.
       </template>
     </template>
-  </InstanceReadRow>
+  </ReadRow>
 </template>
 
 <style scoped>

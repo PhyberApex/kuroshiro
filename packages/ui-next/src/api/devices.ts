@@ -29,3 +29,7 @@ export function listDeviceLogs(deviceId: string, query: DeviceLogsQuery = {}) {
 export function clearDeviceLogs(deviceId: string) {
   return apiSend('DELETE', `devices/${deviceId}/logs`)
 }
+
+export function deleteDevice(deviceId: string) {
+  return apiSend('DELETE', `devices/${deviceId}`)
+}

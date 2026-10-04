@@ -5,13 +5,13 @@ import { computed, reactive } from 'vue'
 import { RouterLink } from 'vue-router'
 import { getInstanceSettings } from '@/api/instance'
 import LoadBody from '@/patterns/LoadBody.vue'
+import ReadRow from '@/patterns/ReadRow.vue'
 import { useLoad } from '@/patterns/useLoad'
 import WashBar from '@/patterns/WashBar.vue'
 import { useInstanceFacts } from '@/reads/sharedReads'
 import { ALERTS_PATH } from '@/shell/barEntries'
 import InstancePageHeading from './InstancePageHeading.vue'
 import { FIRMWARE_PATH, HOUSEKEEPING_PATH } from './instancePaths'
-import InstanceReadRow from './InstanceReadRow.vue'
 import InstanceSection from './InstanceSection.vue'
 import InstanceSettingRow from './InstanceSettingRow.vue'
 import { batteryLowNote, deviceLogEntriesNote, fetchFailureStreakNote, offlineNote, resolvedAlertsNote } from './instanceSettingWording'
@@ -83,7 +83,7 @@ const SKELETON_ROW_WIDTHS = ['30%', '26%', '34%', '22%']
 
         <InstanceSection id="notifications" title="Notifications">
           <template v-if="data.facts.notifications.configured">
-            <InstanceReadRow label="Apprise">
+            <ReadRow label="Apprise">
               <code class="value">{{ data.facts.notifications.appriseUrl }}</code>
               <template #side>
                 From <code class="variable">KUROSHIRO_APPRISE_URL</code>
@@ -91,7 +91,7 @@ const SKELETON_ROW_WIDTHS = ['30%', '26%', '34%', '22%']
               <template #note>
                 Each Alert is announced there when it fires and again when it resolves. Which channels it reaches is set in Apprise.
               </template>
-            </InstanceReadRow>
+            </ReadRow>
             <TestNotificationRow />
           </template>
           <template v-else>
@@ -129,31 +129,31 @@ const SKELETON_ROW_WIDTHS = ['30%', '26%', '34%', '22%']
           <p class="under-section intro">
             Read from the environment at start. To change one, change the variable and restart Kuroshiro.
           </p>
-          <InstanceReadRow label="Server URL">
+          <ReadRow label="Server URL">
             <code class="value">{{ data.facts.serverUrl }}</code>
             <template #note>
               The address every Device is given for its images and Firmware. <code class="variable">KUROSHIRO_API_URL</code>
             </template>
-          </InstanceReadRow>
-          <InstanceReadRow label="Timezone">
+          </ReadRow>
+          <ReadRow label="Timezone">
             {{ data.facts.timezone }}
             <template #note>
               Schedules, Sleep Mode and the 04:00 jobs run on this clock. <code class="variable">TZ</code>
             </template>
-          </InstanceReadRow>
-          <InstanceReadRow label="Metrics">
+          </ReadRow>
+          <ReadRow label="Metrics">
             <code class="value">{{ metricsUrl(data.facts.serverUrl) }}</code>
             <template #note>
               For Prometheus: battery, signal and last seen per Device, firing Alerts per kind. Anyone who can reach this server can read it.
             </template>
-          </InstanceReadRow>
-          <InstanceReadRow label="Demo mode">
+          </ReadRow>
+          <ReadRow label="Demo mode">
             {{ data.facts.demoMode ? 'On' : 'Off' }}
             <template #note>
               {{ data.facts.demoMode ? 'Image uploads are refused and Kuroshiro only fetches public addresses.' : 'While on, image uploads are refused.' }}
               <code class="variable">KUROSHIRO_DEMO_MODE</code>
             </template>
-          </InstanceReadRow>
+          </ReadRow>
         </InstanceSection>
 
         <p class="last">

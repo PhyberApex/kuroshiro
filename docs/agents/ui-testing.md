@@ -107,7 +107,7 @@ A request to the admin API that no handler fakes fails as a network error and is
 export const buildInstanceSettings = defineBuilder<InstanceSettingsResponse>(() => ({ ...every key... }))
 ```
 
-and is called as `build<ReadModel>(overrides?)`. There are builders for the Instance facts and Instance Settings (`instance.ts`), a Device's summary, its detail, a Device Log entry and a page of them (`devices.ts`), an Alert and the Alerts list (`alerts.ts`), a Screen and its Schedule (`screens.ts`), a Plugin's summary, its detail, a Mashup it fills a slot in and what an import answers (`plugins.ts`) and a refusal (`errors.ts`). The type always comes from `kuroshiro-shared` and every key is spelled out, so a reshaped read model fails `pnpm type-check` in its builder. A builder lands with the UI slice that first reads its endpoint. Defaults are plausible values in the vocabulary of `CONTEXT.md`, not `foo`.
+and is called as `build<ReadModel>(overrides?)`. There are builders for the Instance facts and Instance Settings (`instance.ts`), a Device's summary, its detail, a Device Log entry and a page of them (`devices.ts`), a Device Model, a Palette and the Device Model list (`device-models.ts`), a Firmware and the Firmware list (`firmware.ts`), an Alert and the Alerts list (`alerts.ts`), a Screen and its Schedule (`screens.ts`), a Plugin's summary, its detail, a Mashup it fills a slot in and what an import answers (`plugins.ts`) and a refusal (`errors.ts`). The type always comes from `kuroshiro-shared` and every key is spelled out, so a reshaped read model fails `pnpm type-check` in its builder. A builder lands with the UI slice that first reads its endpoint. Defaults are plausible values in the vocabulary of `CONTEXT.md`, not `foo`.
 
 ## The gallery
 
