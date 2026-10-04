@@ -18,11 +18,6 @@ function notBuiltYet(path: string, title: string): RouteRecordRaw {
   }
 }
 
-/** A page under the Device frame that is not built yet. The frame has the title line, so the stand-in has none. */
-function notBuiltYetUnderDevice(path: string): RouteRecordRaw {
-  return { path, component: () => import('@/pages/devices/DeviceNotBuiltYetPage.vue') }
-}
-
 type LazyPage = () => Promise<unknown>
 
 /** A built page of the Instance frame. The frame lists it under `label`, in the order the pages stand here. */
@@ -46,7 +41,7 @@ export const routes: RouteRecordRaw[] = [
     children: [
       { path: '', component: () => import('@/pages/devices/DeviceScreensPage.vue') },
       { path: 'screens/new', component: () => import('@/pages/devices/AddScreenPage.vue') },
-      notBuiltYetUnderDevice('screens/:screenId/html'),
+      { path: 'screens/:screenId/html', component: () => import('@/pages/devices/EditHtmlPage.vue') },
       { path: 'settings', component: () => import('@/pages/devices/DeviceSettingsPage.vue') },
       { path: 'logs', component: () => import('@/pages/devices/DeviceLogsPage.vue') },
     ],

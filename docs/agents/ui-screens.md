@@ -56,7 +56,7 @@ The shell gives every page the bar, the demo line, the bottom tabs and one centr
 
 Every page of one Device is a child route of `/devices/:deviceId`, whose component is `pages/devices/DeviceFrame.vue`. The frame loads the Device once (`GET /api/devices/:id`, kept fresh), and renders the title line with the Device's name, the "Devices" back link from five Devices on, the tabs Screens, Settings and Logs, and "No Device here" in place of all of it for a Device that does not exist. A page under it renders only its body.
 
-To build a page under it, swap its `notBuiltYetUnderDevice('settings')` line in `router/routes.ts` for `{ path: 'settings', component: () => import('@/pages/devices/DeviceSettingsPage.vue') }`. A page under the Screens tab (`screens/new`, `screens/:screenId/html`) keeps "Screens" current by its path alone.
+Every page under it is built; a page is a child route, `{ path: 'settings', component: () => import('@/pages/devices/DeviceSettingsPage.vue') }`. A page under the Screens tab (`screens/new`, `screens/:screenId/html`) keeps "Screens" current by its path alone.
 
 ```ts
 const { device, listed, name, path } = useDeviceFrame() // from '@/pages/devices/deviceFrame'
@@ -112,14 +112,21 @@ const { device, listed, name, path } = useDeviceFrame() // from '@/pages/devices
 | `AddScreenFoot.vue` | How every kind's form ends: the primary button (`button`, `running`, `disabled`), "Cancel", the failure, the "Joins the end of the Order" line and "Leave without saving?" while `changed` |
 | `AddPluginScreen.vue`, `NoPluginToAssign.vue`, `AddMashupScreen.vue`, `AddExternalScreen.vue`, `AddFileScreen.vue`, `AddHtmlScreen.vue` | One form per kind |
 | `ScreenNameField.vue` | "Name", as every kind but Plugin has it |
-| `HtmlPreview.vue`, `htmlPreview.ts` | The live preview of an HTML Screen, which Edit HTML shows too: `device`, `html` and `name` in, and it reads the Device Models and Palettes itself, wraps the markup in the screen shell the server renders with (`htmlScreenDocument`) and draws it in a `PreviewPlate` 200 ms after the typing pauses |
+| `HtmlPreview.vue`, `htmlPreview.ts` | The live preview of an HTML Screen, which Edit HTML shows too: `device`, `html` and `name` in, and it reads the Device Models and Palettes itself, wraps the markup in the screen shell the server renders with (`htmlScreenDocument`) and draws it in a `PreviewPlate` 200 ms after the typing pauses. Add Screen labels it above ("Preview as {Device} renders it"); with `facts` it has the bench's wording under the plate instead, the facts line and the honest line of the Template section (`targetFacts`, `honestLine`) |
 
 - `src/api/screens.ts` has `createScreen` (External link and HTML), `createFileScreen` (multipart), `createMashup` and `assignPlugin`. Each answers the new `ScreenRead`, which is last in the Order and never the Active Screen.
 - The forms are kept alive, so what was entered for one kind is still there after a look at another. Only the form in view asks "Leave without saving?".
 - Which Plugins are already on the Device is read off `PluginSummary.devices`, so the page does not read the Screens.
 - The shortcut to a new Plugin is `addPluginPath(way, deviceId)`, which carries the Device to Add a Plugin.
-- The preview's frame loads TRMNL's framework from `usetrmnl.com`, so a spec asserts the frame's `srcdoc` and no shot holds the HTML kind.
+- The HTML kind's markup is a `CodeEditor` in HTML mode inside its `Field`, named "HTML" by `aria-label`.
+- The preview's frame loads TRMNL's framework from `usetrmnl.com`, so a spec asserts the frame's `srcdoc` and a shot of the HTML kind holds the plate in its rendering state (`holdPreviewLibrary()` of `pages/plugins/__test__/pluginPageHarness.ts`).
 - The page's two columns are `ChoiceBesideForm` (`#choice` and the default slot) and a form's foot is `AddFormFoot`, both in `@/patterns/` and shared with Add a Plugin. `BackLink` is the link back of a `TitleLine`, for a page under a frame that has the title line.
+
+### Edit HTML
+
+`/devices/:deviceId/screens/:screenId/html` is `EditHtmlPage.vue`: the back link, the Device joined with its Screens (`listScreens`; the admin API has no read of one Screen), and "No HTML Screen here" for an id that is no HTML Screen of the Device. `EditHtmlForm.vue` is the form: the heading, `EditorBench` with the `CodeEditor` (`mode="html"`, named "HTML of {Screen}", Ctrl or Cmd S saves) and `HtmlPreview` with `facts`, and `AddFormFoot` with "Save HTML", `retryable` for "Try again" beside a refused save, and the guard. A save sends `{ html }` alone through `updateScreen` and opens the Screens view at `?screen={id}`, as "Cancel" does. HTML is never invalid in the browser: an empty save is the server's to refuse.
+
+`__test__/htmlScreenHarness.ts` is what the specs of both HTML forms share: `fakeHtmlPreviewLibrary()`, `previewed()` (the newest frame's `srcdoc`), `codeIn(editor)` and `typeAtEnd(editor, keys)`.
 
 ### The Logs page
 

@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { holdPreviewLibrary } from '@/pages/plugins/__test__/pluginPageHarness'
+import { arrived } from '@/testing/arrivals'
 import { buildPluginSummary } from '@/testing/fixtures/plugins'
 import { expectPageScreenshots } from '@/testing/screenshots'
 import { mountAddScreen } from './__test__/addScreenHarness'
@@ -32,5 +34,16 @@ describe('add Screen', () => {
     ;(name.element() as HTMLElement).blur()
     await expect.element(screen.getByRole('button', { name: 'Add Screen' })).toBeDisabled()
     await expectPageScreenshots('add-screen-mashup')
+  })
+
+  it('an HTML Screen, written in the code editor, with the preview loading', async () => {
+    fakeKitchen({ plugins: PLUGINS })
+    // The preview's frame loads TRMNL's framework from the network, so the plate is held in its rendering state.
+    holdPreviewLibrary()
+    const screen = await mountAddScreen('html')
+
+    await expect.element(screen.getByRole('textbox', { name: 'HTML', exact: true })).toBeVisible()
+    await arrived()
+    await expectPageScreenshots('add-screen-html')
   })
 })

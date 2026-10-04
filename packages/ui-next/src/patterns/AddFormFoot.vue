@@ -17,6 +17,12 @@ defineProps<{
   failure?: string
   /** Where "Cancel" leads. */
   cancelTo: string
+  /** A failure comes with "Try again", for a form whose failure is a refused save that may go through as it stands. */
+  retryable?: boolean
+}>()
+
+defineEmits<{
+  retry: []
 }>()
 
 defineSlots<{
@@ -39,11 +45,16 @@ defineSlots<{
         </RouterLink>
       </Button>
     </div>
-    <ResultLine class="failure" icon="problem">
-      <template v-if="failure" #default>
-        {{ failure }}
-      </template>
-    </ResultLine>
+    <div class="failure-row">
+      <ResultLine class="failure" icon="problem">
+        <template v-if="failure" #default>
+          {{ failure }}
+        </template>
+      </ResultLine>
+      <Button v-if="failure && retryable" variant="quiet" :disabled="running" @click="$emit('retry')">
+        Try again
+      </Button>
+    </div>
     <p class="know">
       <slot />
     </p>
@@ -70,7 +81,14 @@ defineSlots<{
     gap: var(--space-2) var(--space-4);
   }
 
-  .add-form-foot .failure:not(:empty),
+  .failure-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
+  }
+
+  .failure-row:has(.failure:not(:empty)),
   .know {
     margin-top: var(--space-3);
   }
