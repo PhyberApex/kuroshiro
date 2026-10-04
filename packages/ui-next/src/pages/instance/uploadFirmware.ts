@@ -1,7 +1,7 @@
 import type { UploadFirmwareInput } from 'kuroshiro-shared'
 import { fieldErrorsOf, isRefusal } from '@/api/client'
 import { formatBytes } from '@/components/fileRules'
-import { listed } from '@/pages/plugins/pluginWording'
+import { listed } from '@/patterns/listed'
 
 /** Whether a Firmware is offered to some Device Models or to every one. */
 export type Fits = 'some' | 'all'

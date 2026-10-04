@@ -55,7 +55,7 @@ describe('the upload limits', () => {
         { provide: FirmwareReadsService, useValue: { readById: async () => answered } },
         { provide: FirmwareSyncService, useValue: {} },
         { provide: ConfigurationExportService, useValue: {} },
-        { provide: ConfigurationImportService, useValue: { importFromZip: async () => answered } },
+        { provide: ConfigurationImportService, useValue: { importFromZip: async () => answered, checkZip: async () => answered } },
         { provide: PluginsService, useValue: { createOnDevice: async () => 'plugin-id' } },
         { provide: PluginReadsService, useValue: { detail: async () => answered } },
         { provide: PluginPreviewDataService, useValue: {} },
@@ -79,6 +79,7 @@ describe('the upload limits', () => {
     { name: 'image preview', path: '/api/screens/screen-id/image-preview', status: 200, limit: UPLOAD_LIMITS.imageUploadBytes, fields: {}, filename: 'photo.png' },
     { name: 'firmware upload', path: '/api/firmware/upload', limit: UPLOAD_LIMITS.firmwareUploadBytes, fields: { version: '1.0.0' }, filename: 'firmware.bin' },
     { name: 'archive upload', path: '/api/config/import', limit: UPLOAD_LIMITS.archiveUploadBytes, fields: {}, filename: 'archive.zip' },
+    { name: 'archive check', path: '/api/config/import/check', status: 200, limit: UPLOAD_LIMITS.archiveUploadBytes, fields: {}, filename: 'archive.zip' },
     { name: 'plugin import', path: '/api/plugins/import', limit: UPLOAD_LIMITS.pluginImportBytes, fields: {}, filename: 'plugin.zip' },
   ]
 

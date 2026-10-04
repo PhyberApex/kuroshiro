@@ -1,12 +1,6 @@
 import type { PluginKind, PluginPlace } from 'kuroshiro-shared'
 import { screenName } from '@/pages/devices/screenNaming'
-
-/** Names as a sentence lists them: "Kitchen", "Kitchen and Hallway", "Kitchen, Hallway and Study". */
-export function listed(names: string[]) {
-  return names.length < 2
-    ? names.join('')
-    : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`
-}
+import { listed } from '@/patterns/listed'
 
 /** What deleting a Plugin needs to know of it, from the list's row or from the Plugin's page. */
 export interface DeletablePlugin {

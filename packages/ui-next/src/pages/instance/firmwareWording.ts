@@ -1,5 +1,5 @@
 import type { DeviceModelRead, DeviceReference, FirmwareRead, FirmwareSyncResult } from 'kuroshiro-shared'
-import { listed } from '@/pages/plugins/pluginWording'
+import { listed } from '@/patterns/listed'
 
 type ModelLabelled = Pick<DeviceModelRead, 'name' | 'label'>
 

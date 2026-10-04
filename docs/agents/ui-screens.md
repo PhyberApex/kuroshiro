@@ -10,7 +10,7 @@ What every screen of `packages/ui-next` stands on: the shell, the router, the AP
 | `reads/` | `sharedReads.ts`: the reads made once for the whole app |
 | `router/` | `routes.ts` (every route) and `index.ts` (`createAppRouter`, the scroll behaviour) |
 | `shell/` | The bar, the phone's bottom tabs, the demo line, the page column |
-| `patterns/` | The shared page patterns: `TitleLine`, `BackLink`, `LoadBody`, `LoadingLine`, `WashBar`, `MissingPage`, `RelativeTime`, `UnsavedChanges`, `PageSection`, `ReadRow`, `ChoiceBesideForm`, `AddFormFoot`, `useLoad`, `usePolling`, `useNow`, `usePageTitle`, `useNarrowWindow`, `time.ts` |
+| `patterns/` | The shared page patterns: `TitleLine`, `BackLink`, `LoadBody`, `LoadingLine`, `WashBar`, `MissingPage`, `RelativeTime`, `UnsavedChanges`, `PageSection`, `ReadRow`, `ChoiceBesideForm`, `AddFormFoot`, `useLoad`, `joinLoads`, `usePolling`, `useNow`, `usePageTitle`, `useNarrowWindow`, `time.ts`, `listed` |
 | `pages/` | One component per route, `<Name>Page.vue`, in a folder per surface (`pages/devices/`, `pages/plugins/`, `pages/instance/`). The three pages at its top are the shell's own: the landing route, the unknown route and "not built yet" |
 | `components/` | The primitives |
 
@@ -142,7 +142,7 @@ const { device, listed, name, path } = useDeviceFrame() // from '@/pages/devices
 
 ## The Instance frame
 
-Every Instance page is a child route of `/instance`, whose component is `pages/instance/InstanceFrame.vue`. The frame renders the title line "Instance", the page list at the left (a row of tabs that scrolls sideways on a phone, running from one edge of the window to the other), the chosen page beside it, and under the list Appearance and "Kuroshiro {version}", which move to the foot of the page on a phone. `/instance` redirects to `/instance/settings`. It loads nothing: an Instance page reads what it shows itself. A page that shows Instance facts beside a load of its own joins the two into one `Load` for `LoadBody`, so that either one's failure is the page's notice (`InstanceSettingsPage.vue`).
+Every Instance page is a child route of `/instance`, whose component is `pages/instance/InstanceFrame.vue`. The frame renders the title line "Instance", the page list at the left (a row of tabs that scrolls sideways on a phone, running from one edge of the window to the other), the chosen page beside it, and under the list Appearance and "Kuroshiro {version}", which move to the foot of the page on a phone. `/instance` redirects to `/instance/settings`. It loads nothing: an Instance page reads what it shows itself. A page that shows Instance facts beside a load of its own joins the two into one `Load` for `LoadBody` with `joinLoads({ settings, facts: useInstanceFacts() })` (`@/patterns/`), so that either one's failure is the page's notice (`InstanceSettingsPage.vue`).
 
 To build a page under it, swap its `notBuiltYetUnderInstance('firmware', 'Firmware')` line in `router/routes.ts` for
 
@@ -220,6 +220,21 @@ The Firmware page (`FirmwarePage.vue`) is the worked example of an Instance page
 - Upload Firmware (`UploadFirmwarePage.vue`, `UploadFirmwareForm.vue`, `FirmwareFits.vue`) is a form that ends in `AddFormFoot`. `FileDrop` takes `wording` for a place whose spec words the prompt and the two refusals itself, `Field` takes `optional`, and `RadioRow` has the `#under` slot (handed `choice`) for what a choice holds between its row and the next.
 - `__test__/firmwareHarness.ts` fakes it all for a spec: `fakeFirmware({ firmware, lastSync, settings, models })` answers the reads and takes the Settings change, the sync (`syncAnswer`, `holding`), the upload and the delete as the server would; `mountFirmware()`, `mountUpload()` and `rowsOf(list)`, which reads the rows cell by cell.
 
+### The Configuration Archive
+
+`ConfigurationArchivePage.vue` is two sections. `ConfigurationExport` is two `ArchiveExportRow`s, each a browser download (`exportConfiguration({ redacted })`), which cannot report a failure: the button reads "Download started" for 2 seconds whatever the server answers. `ConfigurationImport` waits for the Devices and the Instance facts and renders `ImportSteps`.
+
+| Part | Is |
+| --- | --- |
+| `useImportSteps(version)` (`importSteps.ts`) | The four steps as one `step` (`choose`, `reading`, `read`, `imported`, `refused`): `read(file)` calls `checkConfigurationImport`, which changes nothing; `confirm()` calls `importConfiguration` with the file that was read and then reloads the shared reads; `startOver()` goes back to choosing |
+| `ImportSteps`, `ImportSummary`, `ImportOutcome` | The drop zone, "Reading {file}", the summary with its buttons, "Imported." with "To do now", and the notice of a refusal. Each step takes the place of the one before, so the focus is moved to the step, or back to the file input |
+| `configurationArchiveWording.ts` | Every sentence, with a node spec: the summary's lines from an `ImportCheck`, `wordWarning(warning)` for each kind of `ImportWarning`, and `refusalNotice(error, version, notDone?)` for the notice |
+| `SummaryList`, `SummaryRow` (`@/components/`) | A `dl` of label and value on rules: one `SummaryRow` per `label`, its value in the default slot and `problems`, lines drawn with the problem icon. The Device Simulator's answer uses it too |
+| `__test__/configurationArchiveHarness.ts` | `fakeArchive({ devices, check, summary, archiveUploadBytes })` answers the check and the import (`checkAnswer`, `importAnswer`, `holding`, and `sent`, every archive the server was sent), `mountArchive()`, `archiveFile()` |
+
+- A summary counts six kinds (Devices, Plugins, Screens, Mashups, custom Palettes, custom Firmware). The rows under a Plugin or a Screen that the server also counts (`dataSources`, `templates`, `schedules`, …) are not counted as records.
+- A warning kind added to `ImportWarning` fails type-check in `wordWarning` until it is worded.
+
 ## A list page
 
 `pages/devices/DevicesListPage.vue` with `DevicesListRow.vue` is the worked example of a list.
@@ -249,7 +264,7 @@ A write that adds a record and then leaves the page navigates first and reloads 
 | `pluginArrival.ts` | `PluginArrival`, what just happened to a Plugin (`created`, `duplicated`, `imported`, `applied`, `skipped`, each with an optional `device` it was assigned to). A page that opens a Plugin's page after an action calls `openPluginPage(router, pluginId, arrival)`; the Plugin page calls `takePluginArrival(pluginId)` once and words it as a line shown once. It is held in memory, so a reload shows no line |
 | `pluginActions.ts` | `useDuplicatePlugin()` (`duplicate(plugin)`, `duplicating`, `failure`; opens the copy's page carrying `duplicated`) and `useExportPlugin()` (`download(plugin)`, and `exported`, the Plugin whose control reads "Exported" for 2 seconds) |
 | `PluginDeletion.vue` | "Delete Plugin": mount it with a `DeletablePlugin` (`v-if`), and it is open. It asks, or says why a Plugin in a Mashup cannot be deleted yet, also when the server refuses with `plugin-in-mashup`. It emits `deleted`, then `closed`, on which the caller unmounts it |
-| `pluginWording.ts` | `listed(names)` ("Kitchen, Hallway and Study") and the sentences of the two dialogs |
+| `pluginWording.ts` | The sentences of the two dialogs. `listed(names)` ("Kitchen, Hallway and Study") is in `@/patterns/listed` |
 | `pluginRows.ts` | A row's kind, where it shows and its state with their precedence; the search, the filter and the count line |
 | `PluginsListPage.vue`, `PluginsFilterBar.vue`, `PluginRows.vue`, `PluginRowStateCell.vue`, `NoPluginsYet.vue` | The list in parts: the page holds the load, the address and the actions; the others draw |
 | `PluginPage.vue`, `PluginFrame.vue`, `PluginOpened.vue`, `pluginForm.ts`, `pluginPage.ts` | The Plugin page, its frame and its one form: see "The Plugin page" below |
@@ -531,13 +546,13 @@ export function updateDevice(deviceId: string, input: UpdateDeviceInput) {
 }
 ```
 
-`src/api/devices.ts` has `listDevices`, `getDevice`, `createDevice` (refused with `device-mac-taken`), `updateDevice`, `deleteDevice`, `listDeviceLogs` and `clearDeviceLogs`. `src/api/instance.ts` has `getInstanceFacts`, `getInstanceSettings` and `updateInstanceSettings`; `src/api/alerts.ts` has `listAlerts` and `sendTestNotification` (refused with `notifications-off` or `notification-failed`). `src/api/screens.ts` has `listScreens`, `reorderScreens`, `createScreen`, `createFileScreen`, `createMashup`, `assignPlugin`, `updateScreen`, `previewScreenImage`, `replaceScreenImage`, `refreshScreen`, `deleteScreen`, `updateMashup` (by the Screen's id), `unassignPlugin`, and `createSchedule`, `updateSchedule` and `removeSchedule`, which answer the owning Screen.
+`src/api/configuration.ts` has `exportConfiguration`, `checkConfigurationImport` and `importConfiguration`. `src/api/devices.ts` has `listDevices`, `getDevice`, `createDevice` (refused with `device-mac-taken`), `updateDevice`, `deleteDevice`, `listDeviceLogs` and `clearDeviceLogs`. `src/api/instance.ts` has `getInstanceFacts`, `getInstanceSettings` and `updateInstanceSettings`; `src/api/alerts.ts` has `listAlerts` and `sendTestNotification` (refused with `notifications-off` or `notification-failed`). `src/api/screens.ts` has `listScreens`, `reorderScreens`, `createScreen`, `createFileScreen`, `createMashup`, `assignPlugin`, `updateScreen`, `previewScreenImage`, `replaceScreenImage`, `refreshScreen`, `deleteScreen`, `updateMashup` (by the Screen's id), `unassignPlugin`, and `createSchedule`, `updateSchedule` and `removeSchedule`, which answer the owning Screen.
 
 - `apiGet<T>(path, query?)` and `apiSend<T>(method, path, body?)` from `@/api/client`. The path has no leading slash and no `api/`. `body` is a shared `…Input` type, sent as JSON, or a `FormData` for an upload. A 204 answers `undefined`.
 - Types come from `kuroshiro-shared`. Send only what the `…Input` type declares: the server refuses undeclared keys, so a read model sent back as a write is refused.
 - A page calls these functions and never `fetch`.
 - **An image the server answers to an upload** (a preview that stores nothing) is `apiSendForImage(method, path, formData)`, which answers a `Blob`; show it through `URL.createObjectURL` and revoke the address when it is replaced or the component goes (`ReplaceFile.vue`).
-- **A file the server answers** (an export) is downloaded by the browser itself: `apiDownload(path)` from `@/api/client`, wrapped in the group's file (`exportPlugin(id)`). The file's name is the server's.
+- **A file the server answers** (an export) is downloaded by the browser itself: `apiDownload(path, query?)` from `@/api/client`, wrapped in the group's file (`exportPlugin(id)`). The file's name is the server's.
 
 ### Failures and their wording
 

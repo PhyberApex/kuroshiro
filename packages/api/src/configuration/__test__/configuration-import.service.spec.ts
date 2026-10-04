@@ -1,13 +1,12 @@
 import type { Repository } from 'typeorm'
 import type { Plugin } from '../../plugins/entities/plugin.entity.js'
 import { Buffer } from 'node:buffer'
-import AdmZip from 'adm-zip'
-import * as yaml from 'js-yaml'
 import { CONFIGURATION_REDACTION_SENTINEL } from 'kuroshiro-shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PluginImporterService } from '../../plugins/services/plugin-importer.service.js'
 import { CONFIG_SCHEMA_VERSION } from '../schema-version.js'
 import { ConfigurationImportService } from '../services/configuration-import.service.js'
+import { buildArchive, makeDeviceEntry } from './archive.js'
 
 const { fsMock } = vi.hoisted(() => ({
   fsMock: {
@@ -105,85 +104,6 @@ function createFakeManager() {
   }
 
   return { manager, backing, repoByName }
-}
-
-interface PluginFolder {
-  manifest: Record<string, unknown>
-  settings?: Record<string, unknown>
-  templates: Record<string, string>
-}
-
-function buildArchive(options: {
-  manifest?: Record<string, unknown> | null
-  plugins?: unknown[]
-  devices?: unknown[]
-  screens?: unknown[]
-  assignments?: unknown[]
-  palettes?: unknown[]
-  firmware?: unknown[]
-  settings?: Record<string, number | boolean> | null
-  pluginFolders?: Record<string, PluginFolder>
-  screenImages?: Record<string, string>
-} = {}): Buffer {
-  const zip = new AdmZip()
-
-  if (options.manifest !== null) {
-    const manifest = options.manifest ?? {
-      kuroshiroVersion: '0.13.0',
-      schemaVersion: CONFIG_SCHEMA_VERSION,
-      exportedAt: new Date().toISOString(),
-      containsSecrets: true,
-    }
-    zip.addFile('manifest.json', Buffer.from(JSON.stringify(manifest)))
-  }
-
-  zip.addFile('plugins.json', Buffer.from(JSON.stringify(options.plugins ?? [])))
-  zip.addFile('devices.json', Buffer.from(JSON.stringify(options.devices ?? [])))
-  zip.addFile('screens.json', Buffer.from(JSON.stringify(options.screens ?? [])))
-  zip.addFile('assignments.json', Buffer.from(JSON.stringify(options.assignments ?? [])))
-  zip.addFile('palettes.json', Buffer.from(JSON.stringify(options.palettes ?? [])))
-  zip.addFile('firmware.json', Buffer.from(JSON.stringify(options.firmware ?? [])))
-  if (options.settings !== null) {
-    zip.addFile('settings.json', Buffer.from(JSON.stringify(options.settings ?? {})))
-  }
-
-  for (const [pluginId, folder] of Object.entries(options.pluginFolders ?? {})) {
-    zip.addFile(`plugins/${pluginId}/.trmnlp.yml`, Buffer.from(yaml.dump(folder.manifest)))
-    if (folder.settings) {
-      zip.addFile(`plugins/${pluginId}/src/settings.yml`, Buffer.from(yaml.dump(folder.settings)))
-    }
-    for (const [layout, content] of Object.entries(folder.templates)) {
-      zip.addFile(`plugins/${pluginId}/src/${layout}.liquid`, Buffer.from(content))
-    }
-  }
-
-  for (const [screenId, content] of Object.entries(options.screenImages ?? {})) {
-    zip.addFile(`screens/${screenId}/${screenId}.png`, Buffer.from(content))
-  }
-
-  return zip.toBuffer()
-}
-
-function makeDeviceEntry(overrides: Record<string, unknown> = {}) {
-  return {
-    id: 'device-1',
-    name: 'Device 1',
-    friendlyId: 'ABC123',
-    mac: 'AA:BB:CC:DD:EE:FF',
-    apikey: 'key1',
-    refreshRate: 300,
-    deviceModelName: null,
-    paletteId: null,
-    mirrorEnabled: null,
-    mirrorMac: null,
-    mirrorApikey: null,
-    sleepModeEnabled: false,
-    sleepStartTime: null,
-    sleepEndTime: null,
-    sleepScreenEnabled: false,
-    targetFirmwareId: null,
-    ...overrides,
-  }
 }
 
 describe('configurationImportService', () => {
@@ -441,7 +361,7 @@ describe('configurationImportService', () => {
       },
     })
 
-    await expect(service.importFromZip(buffer)).rejects.toThrow(/webhookToken/)
+    await expect(service.importFromZip(buffer)).rejects.toThrow(/Webhook Token/)
 
     const pluginIds = [...backing.get('Plugin')!.values()].map(row => row.id).sort()
     expect(pluginIds).toEqual(['existing-plugin'])
@@ -474,9 +394,12 @@ describe('configurationImportService', () => {
 
     const summary = await service.importFromZip(buffer)
 
-    expect(summary.warnings.some(w => w.includes('missing_model'))).toBe(true)
-    expect(summary.warnings.some(w => w.includes('missing-palette'))).toBe(true)
-    expect(summary.warnings.some(w => w.includes('missing-firmware'))).toBe(true)
+    const device = { id: 'device-1', name: 'Device 1' }
+    expect(summary.warnings).toEqual([
+      { kind: 'device-model-unknown', device, deviceModel: 'missing_model' },
+      { kind: 'palette-unknown', device, paletteId: 'missing-palette' },
+      { kind: 'firmware-unknown', device, firmwareId: 'missing-firmware' },
+    ])
 
     const deviceRows = [...backing.get('Device')!.values()]
     expect(deviceRows[0].deviceModel).toBeNull()
@@ -587,7 +510,7 @@ describe('configurationImportService', () => {
 
     const dataSource = [...backing.get('PluginDataSource')!.values()][0]
     expect(dataSource.headers).toEqual({ 'X-Keep': 'plain' })
-    expect(summary.warnings.some(w => w.includes('Authorization'))).toBe(true)
+    expect(summary.warnings).toEqual([{ kind: 'header-redacted', plugin: { id: 'plugin-1', name: 'Test Plugin' }, dataSource: 'source', header: 'Authorization' }])
   })
 
   it('keeps a Data Source\'s existing header when its current value is legitimately empty, with no warning', async () => {
@@ -684,14 +607,14 @@ describe('configurationImportService', () => {
     const dropped = await service.importFromZip(buildArchive(fieldValuePlugin({ api_key: CONFIGURATION_REDACTION_SENTINEL })))
 
     expect(storedFieldValues()).toEqual({})
-    expect(dropped.warnings).toEqual([expect.stringContaining('API key')])
+    expect(dropped.warnings).toEqual([{ kind: 'field-value-redacted', plugin: { id: 'plugin-1', name: 'Test Plugin' }, keyname: 'api_key', label: 'API key' }])
   })
 
   it('warns about a Field Value whose keyname the Plugin has no Plugin Field for, and drops it', async () => {
     const summary = await service.importFromZip(buildArchive(fieldValuePlugin({ town: 'Berlin' })))
 
     expect(storedFieldValues()).toEqual({})
-    expect(summary.warnings).toEqual([expect.stringContaining('town')])
+    expect(summary.warnings).toEqual([{ kind: 'field-value-without-field', plugin: { id: 'plugin-1', name: 'Test Plugin' }, keyname: 'town' }])
   })
 
   describe('a previous-version (schemaVersion 2) archive', () => {
@@ -717,7 +640,7 @@ describe('configurationImportService', () => {
       expect(summary.warnings).toEqual([])
     })
 
-    it('ignores its Plugin Variables and per-Assignment Field Values, with one warning for each kind', async () => {
+    it('ignores its Plugin Variables and per-Assignment Field Values, with one warning for the Plugin that held them', async () => {
       const summary = await service.importFromZip(previousVersionArchive(
         [{ id: 'var-1', key: 'SECRET', value: 'x', isSecret: true }],
         [{ id: 'fv-1', fieldId: 'field-city', value: 'Tokyo' }],
@@ -725,10 +648,7 @@ describe('configurationImportService', () => {
 
       expect(storedFieldValues()).toEqual({})
       expect(summary.created.variables).toBeUndefined()
-      expect(summary.warnings).toEqual([
-        expect.stringContaining('1 Plugin Variable'),
-        expect.stringContaining('1 Field Value'),
-      ])
+      expect(summary.warnings).toEqual([{ kind: 'previous-version-values-dropped', plugin: { id: 'plugin-1', name: 'Test Plugin' } }])
     })
   })
 
@@ -761,7 +681,7 @@ describe('configurationImportService', () => {
 
     const device = [...backing.get('Device')!.values()][0]
     expect(device.mirrorApikey).toBeUndefined()
-    expect(summary.warnings.some(w => w.includes('mirrorApikey'))).toBe(true)
+    expect(summary.warnings).toEqual([{ kind: 'mirror-apikey-redacted', device: { id: 'device-1', name: 'Device 1' } }])
   })
 
   it('keeps an existing Device\'s apikey with no warning when the archive holds the sentinel and the row exists by id', async () => {
@@ -794,7 +714,7 @@ describe('configurationImportService', () => {
     expect(device.apikey).not.toBe(CONFIGURATION_REDACTION_SENTINEL)
     expect(typeof device.apikey).toBe('string')
     expect((device.apikey as string).length).toBeGreaterThan(0)
-    expect(summary.warnings.some(w => w.includes('apikey'))).toBe(true)
+    expect(summary.warnings).toEqual([{ kind: 'device-apikey-redacted', device: { id: 'device-1', name: 'Device 1' } }])
   })
 
   it('keeps an existing Plugin\'s webhookToken with no warning when the archive holds the sentinel', async () => {
@@ -844,7 +764,7 @@ describe('configurationImportService', () => {
     expect(plugin.webhookToken).not.toBe(CONFIGURATION_REDACTION_SENTINEL)
     expect(typeof plugin.webhookToken).toBe('string')
     expect((plugin.webhookToken as string).length).toBeGreaterThan(0)
-    expect(summary.warnings.some(w => w.includes('webhookToken'))).toBe(true)
+    expect(summary.warnings).toEqual([{ kind: 'webhook-token-redacted', plugin: { id: 'plugin-1', name: 'Test' } }])
   })
 
   it('restores a file-type Screen\'s image from the archive onto disk', async () => {

@@ -2,7 +2,7 @@ import type { DeviceDetail, ScreenKind, ScreenPluginReference, ScreenRead } from
 import type { Sentence } from './sentence'
 import { formatBytes } from '@/components/fileRules'
 import { pluginPath } from '@/pages/plugins/pluginPaths'
-import { listed } from '@/pages/plugins/pluginWording'
+import { listed } from '@/patterns/listed'
 import { clockTime, exactTime, relativeTime } from '@/patterns/time'
 import { possessive, screenName } from './screenNaming'
 import { linkTo, sentence } from './sentence'

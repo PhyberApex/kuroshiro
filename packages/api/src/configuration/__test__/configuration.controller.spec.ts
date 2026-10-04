@@ -9,11 +9,11 @@ import { ConfigurationController } from '../configuration.controller.js'
 describe('configurationController', () => {
   let controller: ConfigurationController
   let mockExportService: { exportToZip: ReturnType<typeof vi.fn> }
-  let mockImportService: { importFromZip: ReturnType<typeof vi.fn> }
+  let mockImportService: { importFromZip: ReturnType<typeof vi.fn>, checkZip: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     mockExportService = { exportToZip: vi.fn() }
-    mockImportService = { importFromZip: vi.fn() }
+    mockImportService = { importFromZip: vi.fn(), checkZip: vi.fn() }
 
     controller = new ConfigurationController(
       asService<ConfigurationExportService>(mockExportService),
@@ -64,6 +64,18 @@ describe('configurationController', () => {
 
     expect(mockImportService.importFromZip).toHaveBeenCalledWith(file.buffer)
     expect(result).toBe(summary)
+  })
+
+  it('checkConfigurationImport reads the uploaded archive without importing it', async () => {
+    const file = asService<Express.Multer.File>({ buffer: Buffer.from('zip-content') })
+    const check = { adds: { devices: 1 } }
+    mockImportService.checkZip.mockResolvedValue(check)
+
+    const result = await controller.checkConfigurationImport(file)
+
+    expect(mockImportService.checkZip).toHaveBeenCalledWith(file.buffer)
+    expect(mockImportService.importFromZip).not.toHaveBeenCalled()
+    expect(result).toBe(check)
   })
 
   it('importConfiguration throws if no file uploaded', async () => {
