@@ -173,7 +173,7 @@ A page under the frame renders only its body, as a list of roots:
 
 | Part of `pages/instance/` | Is |
 | --- | --- |
-| `InstancePageHeading` | The page's heading line: its name as an `h2` at `title-sm` on the 2 px ink rule, the `#actions` slot at its right. It does not rename the browser tab, which reads "Instance" |
+| `InstancePageHeading` | The page's heading line: its name as an `h2` at `title-sm` on the 2 px ink rule, the `#actions` slot at its right, and `back` (`{ label: 'Firmware', to: FIRMWARE_PATH }`) for the link above the name of a page that is not in the page list. It does not rename the browser tab, which reads "Instance" |
 | `InstanceSection` | A section of a page: `title` as an `h3` at `text-lg`, weight 600, on a 1 px rule, the `#aside` slot at its right (a link, a button, a fact), and `id`, which is what a fragment names (`/instance/settings#retention`). It sets `--space-10` above itself; the first one under a lede takes `--space-8` |
 | `ReadRow` (`@/patterns/`) | A row that is read and not edited, or that holds the button of an action: `label`, the default slot, `#side` at the right and `#note` under it. It shares the Setting row's grid, and Device Settings uses it too |
 | `InstanceSettingRow` | One numeric Instance Setting (see below) |
@@ -195,7 +195,25 @@ A page under the frame renders only its body, as a list of roots:
 - A value outside `SETTING_BOUNDS`, or no whole number, is not sent: the range message of `instanceSettingWording.ts` takes the note's place until the value is in range again.
 - It follows its own saves from the answer's one key, so two rows that save at once do not overwrite each other.
 
-A boolean Setting (Firmware Auto-Update) is a `SettingRow` with a `Switch` and `useSaveAsChanged`, sending `{ firmwareAutoUpdate: true }` through the same `updateInstanceSettings`.
+A boolean Setting (Firmware Auto-Update) is a `SettingRow` with a `Switch` and `useSaveAsChanged`, sending `{ firmwareAutoUpdate: true }` through the same `updateInstanceSettings` (`FirmwareAutoUpdateRow.vue`).
+
+### A library and its sync with TRMNL
+
+The Firmware page (`FirmwarePage.vue`) is the worked example of an Instance page that lists what was synced from TRMNL; Device Models and Palettes is built the same way.
+
+| Part | Is |
+| --- | --- |
+| `LibraryRow` (`@/components/`) | One row of a library, an `li` for a `ul`: `name` (with `mono` for a version), the default slot for what it is (one `p` per line), `problem` for the line with the problem icon, `#end` for the date and the actions, `#form` for a form open under it. The rows carry their own rule below; the first one stands on the section heading's. `--library-name-width` on the list sets the name column (9.5 rem unless set) |
+| `useTrmnlSync(run, synced?)` (`trmnlSync.ts`) | A sync an admin starts: `sync()`, `running`, `result` (the answer of the sync that worked, kept until the page is left), `failed` and `reason` (`details.reason` of `upstream-unreachable`, otherwise the failure's own sentence). `synced` is awaited before the result shows: hand it the page's `reload` |
+| `TrmnlSyncOutcome` | The line under the lede: `running` with `asking` ("Asking TRMNL for …"), `outcome` (the sentence of a sync that worked), and the notice "Could not sync from TRMNL." with `reason` and "Try again" (`@retry`). Its `ResultLine` is in the page before it says anything; a spec reads it at `.sync-line` |
+| `DeviceNames` | Devices in a sentence ("Kitchen, Hallway and Study"), each a link to its Firmware settings |
+| `firmwareWording.ts`, `uploadFirmware.ts` | The pure wording of the Firmware page and the rules of Upload Firmware, each with a node spec |
+
+- The page reads the library, the Device Models and the Instance Settings in one `useLoad` (`Promise.all`), and reads them again after a sync and after a delete.
+- "Checked TRMNL {when}" is `lastSync.ranAt` in a `RelativeTime`, in the section's `#aside`; no `lastSync`, no aside.
+- `src/api/firmware.ts` has `listFirmware`, `syncFirmware`, `uploadFirmware(file, input)` (multipart; the Device Models go as a JSON string) and `deleteFirmware`.
+- Upload Firmware (`UploadFirmwarePage.vue`, `UploadFirmwareForm.vue`, `FirmwareFits.vue`) is a form that ends in `AddFormFoot`. `FileDrop` takes `wording` for a place whose spec words the prompt and the two refusals itself, `Field` takes `optional`, and `RadioRow` has the `#under` slot (handed `choice`) for what a choice holds between its row and the next.
+- `__test__/firmwareHarness.ts` fakes it all for a spec: `fakeFirmware({ firmware, lastSync, settings, models })` answers the reads and takes the Settings change, the sync (`syncAnswer`, `holding`), the upload and the delete as the server would; `mountFirmware()`, `mountUpload()` and `rowsOf(list)`, which reads the rows cell by cell.
 
 ## A list page
 

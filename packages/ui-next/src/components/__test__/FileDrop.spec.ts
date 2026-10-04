@@ -41,6 +41,13 @@ describe('file drop', () => {
     await expect.element(screen.getByText('Drop a file here. ZIP, up to 2 MB.')).toBeVisible()
   })
 
+  it('says a whole sentence of its place\'s own instead, when it is given one', async () => {
+    const { screen, input } = await mountDrop({ accept: ['.bin'], wording: { prompt: 'Drop a .bin here, up to 8 MB.' } })
+
+    await expect.element(screen.getByText('Drop a .bin here, up to 8 MB.', { exact: true })).toBeVisible()
+    await expect.element(input).toHaveAccessibleDescription('Drop a .bin here, up to 8 MB.')
+  })
+
   it('emits a file chosen by a click: "Choose file" is the input\'s label, so the click opens the browser\'s picker', async () => {
     const { screen, onUpdate, input } = await mountDrop()
     const file = fileOf('kitchen.png')

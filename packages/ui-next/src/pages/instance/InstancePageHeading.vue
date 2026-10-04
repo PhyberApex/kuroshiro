@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import BackLink from '@/patterns/BackLink.vue'
+
 defineProps<{
   /** The page's name, as the Instance page list has it. */
   title: string
+  /** The link above the name of a page that is not in the page list, to the page it belongs to. */
+  back?: { label: string, to: string }
 }>()
 
 defineSlots<{
@@ -12,11 +16,16 @@ defineSlots<{
 
 <template>
   <header class="page-heading">
-    <h2 class="title">
-      {{ title }}
-    </h2>
-    <div v-if="$slots.actions" class="actions">
-      <slot name="actions" />
+    <BackLink v-if="back" class="back" :to="back.to">
+      {{ back.label }}
+    </BackLink>
+    <div class="line">
+      <h2 class="title">
+        {{ title }}
+      </h2>
+      <div v-if="$slots.actions" class="actions">
+        <slot name="actions" />
+      </div>
     </div>
   </header>
 </template>
@@ -24,13 +33,20 @@ defineSlots<{
 <style scoped>
 @layer components {
   .page-heading {
+    padding-bottom: var(--space-2);
+    border-bottom: var(--rule-heavy);
+  }
+
+  .page-heading .back {
+    margin-bottom: var(--space-2);
+  }
+
+  .line {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-end;
     justify-content: space-between;
     gap: var(--space-3) var(--space-4);
-    padding-bottom: var(--space-2);
-    border-bottom: var(--rule-heavy);
   }
 
   .title {
