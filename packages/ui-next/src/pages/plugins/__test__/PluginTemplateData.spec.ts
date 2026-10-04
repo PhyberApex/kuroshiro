@@ -166,23 +166,21 @@ describe('the fetched data of the Template section', () => {
       expect(faked.previews).toHaveLength(1)
     })
 
-    it('draws a changed Field Value before the fetch it causes answers, and asks once, 800 ms after a burst of changes', async () => {
+    // The 800 ms wait itself is pinned with fake timers in usePreviewData.node.spec.ts; on real timers a loaded
+    // runner can stretch the gap between two changes past it, so this only proves the burst asks once, with the last value.
+    it('draws a changed Field Value before the fetch it causes answers, and asks once after a burst of changes', async () => {
       const faked = fakeWeather()
       const screen = await mountTemplate()
       await expect.poll(drawn).toContain('<p>Rain from 15:00 at Lindenplatz</p>')
       const held = holdPreviewData()
 
       await screen.getByRole('textbox', { name: 'Location' }).fill('Markt')
-      await expect.poll(drawn, { timeout: 250 }).toContain('<p>Rain from 15:00 at Markt</p>')
-      await pause(400)
       await screen.getByRole('textbox', { name: 'Location' }).fill('Marktplatz')
-      await expect.poll(drawn, { timeout: 250 }).toContain('<p>Rain from 15:00 at Marktplatz</p>')
-      await pause(500)
-      expect(held.asked).toEqual([])
+      await expect.poll(drawn).toContain('<p>Rain from 15:00 at Marktplatz</p>')
 
       await expect.poll(() => held.asked).toEqual([expect.objectContaining({ deviceId: KITCHEN_ID, fieldValues: { location: 'Marktplatz' } })])
       await pause(900)
-      await expect.poll(() => held.asked).toHaveLength(1)
+      expect(held.asked).toHaveLength(1)
       expect(faked.previews).toHaveLength(1)
       held.release()
     })
