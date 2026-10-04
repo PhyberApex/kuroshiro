@@ -91,6 +91,10 @@ const { copy, showsCopied } = useCopied(() => props.value, () => props.copied)
     .title {
       padding: var(--space-4);
     }
+
+    .title .value {
+      font-size: var(--text-lg);
+    }
   }
 }
 </style>

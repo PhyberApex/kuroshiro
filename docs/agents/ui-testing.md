@@ -66,6 +66,10 @@ A Reka popper layer is parked off screen until it is placed, and `click({ force:
 
 Two fast presses of an arrow key in an open Reka `Select` both start from the same option, because Reka moves the focus in a timeout. Press once, assert where the focus is, press again.
 
+**`holdTabVisible()`** (`visibility.ts`) holds `document.visibilityState` at `visible` for the test. Spec files run side by side and the tab that takes the shots is never in front, so a page that only asks while its tab is visible (`usePolling`, so anything `fresh` and Connect a Device) asks in some runs and not in others. A spec or a shot that waits for such a poll calls it before mounting (`ConnectPage.spec.ts`).
+
+`expect.poll` gives up after one second, far sooner than `expect.element`. An assertion that waits for a real timer of the page (Connect a Device asks every 3 seconds) passes `expect.poll` a `timeout`.
+
 `userEvent.dragAndDrop` onto a target below the window's edge drops nothing: drag onto a row that is in view.
 
 A download (`apiDownload`) is a click on a link with a `download` attribute. A spec catches it with a capturing `click` listener on `document` that calls `preventDefault()` and keeps the link's `href` (`PluginsListPage.spec.ts`).
@@ -215,7 +219,7 @@ The shots hold the shell, so wait for what the shell loads as well (a Device's n
 
 Specs drive the UI with Playwright (`chromium.launch()`, `page.goto(baseUrl)`) and play the Device with `connectDevice(baseUrl, { mac, model })` from `devicePlayer.ts`: it calls `/api/setup`, and the returned Device has `setup` (the answer), `display(report?)` for a poll and `log(entries)`.
 
-Every spec file shares that one Instance. `smoke.spec.ts` runs first, on the empty Instance, and the other files after it, one at a time; a journey must not assume that no other Device exists.
+Every spec file shares that one Instance. `firstRun.spec.ts` runs first, on the empty Instance, and the other files after it, one at a time; any other journey must not assume that no other Device exists.
 
 The suite holds one test per primary journey of [Primary journeys and the story each screen tells](https://github.com/PhyberApex/kuroshiro/issues/1078), plus `smoke.spec.ts`. It is not the place for broad coverage; that is the page specs' job.
 

@@ -33,9 +33,11 @@ const SKELETON_ROWS = [['54%', '60%', '64%'], ['46%', '60%', '56%'], ['60%', '60
   </ul>
   <ul v-else class="plugin-rows">
     <li v-for="{ plugin, state, actions } in rows" :key="plugin.id" class="plugin-row">
-      <RouterLink class="name" :to="pluginPath(plugin.id)">
-        {{ plugin.name }}
-      </RouterLink>
+      <h2 class="name">
+        <RouterLink class="open" :to="pluginPath(plugin.id)">
+          {{ plugin.name }}
+        </RouterLink>
+      </h2>
       <span class="soft">{{ kindAndOrigin(plugin) }}</span>
       <span class="soft">{{ whereItShows(plugin) }}</span>
       <PluginRowStateCell :state="state" />
@@ -63,29 +65,33 @@ const SKELETON_ROWS = [['54%', '60%', '64%'], ['46%', '60%', '56%'], ['60%', '60
     border-bottom: var(--rule);
   }
 
-  /* The whole row leads to the Plugin: its name is the link and covers the row, under the menu button. */
   .name {
+    font-size: inherit;
     font-weight: var(--weight-semibold);
-    text-decoration: none;
     overflow-wrap: anywhere;
   }
 
-  .name::after {
+  /* The whole row leads to the Plugin: its name is the link and covers the row, under the menu button. */
+  .open {
+    text-decoration: none;
+  }
+
+  .open::after {
     content: '';
     position: absolute;
     inset: 0;
   }
 
-  .plugin-row:hover .name {
+  .plugin-row:hover .open {
     text-decoration: underline;
     text-underline-offset: 3px;
   }
 
-  .name:focus-visible {
+  .open:focus-visible {
     outline: 0;
   }
 
-  .plugin-row:has(.name:focus-visible) {
+  .plugin-row:has(.open:focus-visible) {
     outline: var(--focus-ring);
     outline-offset: var(--focus-offset);
     border-radius: var(--radius);

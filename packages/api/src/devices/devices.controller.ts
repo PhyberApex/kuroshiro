@@ -1,6 +1,5 @@
 import type { DeviceDetail, DeviceSummary } from 'kuroshiro-shared'
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -14,14 +13,9 @@ import {
 } from '@nestjs/common'
 import { ApiException } from '../errors/api.exception.js'
 import { DeviceReadsService } from './device-reads.service.js'
-import { Device } from './devices.entity.js'
 import { DevicesService } from './devices.service.js'
 import { CreateDeviceDto } from './dto/create-device.dto.js'
 import { UpdateDeviceDto } from './dto/update-device.dto.js'
-
-function isValidMac(mac: string): boolean {
-  return /^(?:[0-9A-F]{2}:){5}[0-9A-F]{2}$/i.test(mac)
-}
 
 @Controller('devices')
 export class DevicesController {
@@ -43,11 +37,9 @@ export class DevicesController {
   }
 
   @Post()
-  async add(@Body() device: CreateDeviceDto): Promise<Device> {
-    if (!device.mac || !isValidMac(device.mac)) {
-      throw new BadRequestException('Invalid or missing MAC address')
-    }
-    return this.devicesService.create(device)
+  async add(@Body() device: CreateDeviceDto): Promise<DeviceDetail> {
+    const created = await this.devicesService.create(device)
+    return this.deviceReads.detail(created.id)
   }
 
   @Delete(':id')

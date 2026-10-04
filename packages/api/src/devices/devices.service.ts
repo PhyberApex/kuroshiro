@@ -3,6 +3,7 @@ import type { UpdateDeviceDto } from './dto/update-device.dto.js'
 import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { isUUID } from 'class-validator'
+import { ILike } from 'typeorm'
 import { DeviceModelsService } from '../device-models/device-models.service.js'
 import { ApiException } from '../errors/api.exception.js'
 import { isFirmwareCompatible } from '../firmware/firmware-compatibility.js'
@@ -28,6 +29,8 @@ export class DevicesService {
   }
 
   async create(device: CreateDeviceDto): Promise<Device> {
+    if (await this.isMacRegistered(device.mac))
+      throw new ApiException(HttpStatus.CONFLICT, 'device-mac-taken', 'A Device with this MAC address is already registered.', { mac: device.mac })
     const friendlyId = generateFriendlyName()
     const apikey = generateApikey()
     const newDevice = this.deviceRepository.create({ ...device, friendlyId, apikey })
@@ -59,6 +62,11 @@ export class DevicesService {
       return false
     await this.deviceRepository.remove(dbDevice)
     return true
+  }
+
+  /** A Device that registered itself through `/api/setup` keeps the letter case it sent, so the comparison ignores it. */
+  private async isMacRegistered(mac: string): Promise<boolean> {
+    return (await this.deviceRepository.findOneBy({ mac: ILike(mac) })) != null
   }
 
   private async findByIdOrNull(id: string): Promise<Device | null> {

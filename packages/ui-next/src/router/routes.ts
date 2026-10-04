@@ -28,7 +28,7 @@ function notBuiltYetUnderDevice(path: string): RouteRecordRaw {
 export const routes: RouteRecordRaw[] = [
   { path: '/', component: () => import('@/pages/LandingPage.vue') },
 
-  notBuiltYet('/devices', 'Devices'),
+  { path: '/devices', component: () => import('@/pages/devices/DevicesListPage.vue') },
   {
     path: '/devices/:deviceId',
     component: () => import('@/pages/devices/DeviceFrame.vue'),
@@ -40,7 +40,7 @@ export const routes: RouteRecordRaw[] = [
       notBuiltYetUnderDevice('logs'),
     ],
   },
-  notBuiltYet('/connect', 'Connect a Device'),
+  { path: '/connect', component: () => import('@/pages/devices/ConnectPage.vue') },
 
   { path: '/plugins', component: () => import('@/pages/plugins/PluginsListPage.vue') },
   notBuiltYet('/plugins/new', 'Add a Plugin'),

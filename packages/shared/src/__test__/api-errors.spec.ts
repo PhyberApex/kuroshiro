@@ -18,6 +18,7 @@ const wording: Record<ApiErrorCode, string> = {
   'service-unavailable': 'Not available right now.',
   'internal': 'Something went wrong on the server.',
   'device-not-found': 'That Device does not exist.',
+  'device-mac-taken': 'A Device with this MAC address is already registered.',
   'screen-not-found': 'That Screen does not exist.',
   'screen-field-not-for-kind': 'That Screen has no such setting.',
   'plugin-not-found': 'That Plugin does not exist.',
@@ -47,6 +48,7 @@ function wordingBySwitch(code: ApiErrorCode): string {
     case 'forbidden':
     case 'not-found':
     case 'device-not-found':
+    case 'device-mac-taken':
     case 'screen-not-found':
     case 'screen-field-not-for-kind':
     case 'plugin-not-found':

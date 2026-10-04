@@ -28,7 +28,7 @@ notBuiltYet('/plugins', 'Plugins'),
 - Routes are lazily loaded and addressed by path (`to="/devices/42/settings"`), not by name. They are flat, except under a frame several pages share: the pages of one Device are the children of `/devices/:deviceId` (see "The Device frame"). The Instance page list is for its slice to introduce, as a component each of those pages renders or as a parent route.
 - **The bar needs no entry.** Its entries are the Devices, "Plugins" and "Instance"; which one is current is read off the path, so any route under `/devices/:deviceId`, `/plugins` or `/instance` is already marked. `/alerts` marks the Alert indicator.
 - Never write a leading-slash URL by hand outside the router. The router knows the base path the UI is served under; `fetch` and `<img>` do not (see "Images" and "The API client").
-- **`/devices` with no Devices redirects to `/connect`**: that is the Devices list's job (it needs the list), not the router's. `/` is already handled.
+- **A redirect that depends on data** is the page's, not the router's: `/` lands by the number of Devices (`pages/LandingPage.vue`), and the Devices list replaces itself with `/connect` when there are none, each in a `watchEffect` on the shared read.
 - The router scrolls to the top on a new path, keeps the position when only the query changes (`?screen=`, `?q=`), and scrolls to the element a fragment names, below the bar, waiting up to 3 seconds for it to render.
 
 ## What a page renders
@@ -87,6 +87,25 @@ const { device, listed, name, path } = useDeviceFrame() // from '@/pages/devices
 | `screenNaming.ts` | `screenName(name)`: a Screen saved without a name reads "Unnamed Screen" everywhere. `possessive(name)` for "{Device}'s" |
 
 `ScreensInOrder` takes `reload`, which reads the Screens again: call it after any write to a Screen. A new Screen is opened by navigating to `{path}?screen={id}`, which also scrolls to its row.
+
+## A list page
+
+`pages/devices/DevicesListPage.vue` with `DevicesListRow.vue` is the worked example of a list.
+
+- The title line carries the list's one action as a plain button that is a link (`<Button as-child><RouterLink …>`).
+- The rows are a `ul` under `LoadBody`, each row an `li` with a `--rule` under it and the list a `--rule` above. The `#skeleton` slot holds three rows of the same grid with a `rendering` `Plate` and two `WashBar`s, and is `aria-hidden`.
+- **A row that is one link**: the name is the link (in a heading, so the list can be walked by headings) and its `::after` covers the row, which makes the whole row the hit area while the link's accessible name stays the name alone. Anything in the row that must answer the pointer itself (a `RelativeTime`'s tooltip) is `position: relative`, which puts it above that cover.
+- The mark that says "this leads on" is an inline `svg` drawn pointing right. Do not turn the chevron icon with `rotate`: a rotated mark makes the baselines flaky.
+- A list has no empty state of its own when its spec sends "none" elsewhere (the Devices list redirects); otherwise the `EmptyState` goes in the default slot.
+- A line of facts joined by " · " writes the separators into the template (`v-for` with `index > 0`), not into CSS `content`, so a spec and a screen reader read them.
+- A firing Alert in a row is the only red: the label with its square, as `FactRows` draws it. `devicesListRow.ts` words the two Device Alerts ("Alert: offline", "Alert: battery low").
+- What a Device shows comes from `currentScreenStory`, which takes a `DeviceSummary` (pass `screens: []` when the Screens are not loaded): its `heading` names the plate (`On {Device}: {heading}`) and `whatItShows(story)` words the line.
+
+## Waiting for something to happen
+
+Connect a Device asks for the Devices every 3 seconds: `usePolling(ask, everyMs)` takes the interval, asks only while the tab is visible, and stops with the page. `devicesCallingIn.ts` shows the two things to copy: it does not ask again while an answer is still out (a later `reload()` drops an earlier one's answer), and it remembers what was there when the page opened to tell what is new.
+
+A write that adds a record and then leaves the page navigates first and reloads the shared read afterwards (`RegisterByHand.vue`), so the page it leaves does not see the new record.
 
 ## The Plugins surface
 
@@ -171,6 +190,8 @@ export function updateDevice(deviceId: string, input: UpdateDeviceInput) {
   return apiSend<DeviceDetail>('PATCH', `devices/${deviceId}`, input)
 }
 ```
+
+`src/api/devices.ts` has `listDevices`, `getDevice`, `createDevice` (refused with `device-mac-taken`) and `updateDevice`.
 
 - `apiGet<T>(path, query?)` and `apiSend<T>(method, path, body?)` from `@/api/client`. The path has no leading slash and no `api/`. `body` is a shared `…Input` type, sent as JSON, or a `FormData` for an upload. A 204 answers `undefined`.
 - Types come from `kuroshiro-shared`. Send only what the `…Input` type declares: the server refuses undeclared keys, so a read model sent back as a write is refused.
