@@ -93,6 +93,17 @@ describe('segmented filter', () => {
     await expect.element(screen.getByRole('img', { name: 'does not parse' })).toBeVisible()
   })
 
+  it('strikes a removed segment through, says so with its label and still lets it be chosen', async () => {
+    const { screen, onUpdate } = await mountFilter('light', { segments: [...APPEARANCES.slice(0, 2), { value: 'dark', label: 'Dark', removed: true }] })
+    const removed = screen.getByRole('radio', { name: 'Dark (removed)' })
+
+    await expect.element(removed).toBeVisible()
+    await expect.poll(() => getComputedStyle(removed.element().querySelector('.label')!).textDecorationLine).toBe('line-through')
+
+    await removed.click()
+    expect(onUpdate).toHaveBeenLastCalledWith('dark')
+  })
+
   it('is 32 px high, and 44 px at a coarse pointer', async () => {
     const { screen } = await mountFilter('light')
     const group = screen.getByRole('radiogroup').element()

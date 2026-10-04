@@ -9,15 +9,15 @@ export interface BundleChunk {
   moduleIds: string[]
 }
 
-/** Modules that may only arrive with the first code editor on a page. */
-const LAZY_ONLY = ['/@codemirror/', '/@lezer/']
+/** Modules that may only arrive with the first code editor on a page, and the Liquid engine that renders a Template's preview. */
+const LAZY_ONLY = ['/@codemirror/', '/@lezer/', '/liquidjs/']
 
 /** The modules whose dynamic import is the one door to the lazy-only ones. */
-const LAZY_DOORS = ['/src/components/codeEditorView.ts']
+const LAZY_DOORS = ['/src/components/codeEditorView.ts', '/src/pages/plugins/templatePreview.ts']
 
 const isLazyDoor = (chunk: BundleChunk) => LAZY_DOORS.some(door => chunk.facadeModuleId?.endsWith(door))
 
-/** A chunk the browser asks for by itself: the entry, and every dynamic import but the editor's own. A route is one of these. */
+/** A chunk the browser asks for by itself: the entry, and every dynamic import but a lazy door's. A route is one of these. */
 const startsALoad = (chunk: BundleChunk) => chunk.isEntry || (chunk.isDynamicEntry && !isLazyDoor(chunk))
 
 function loadedWith(root: BundleChunk, byFileName: Map<string, BundleChunk>) {

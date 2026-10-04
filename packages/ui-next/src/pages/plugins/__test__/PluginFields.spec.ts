@@ -137,7 +137,7 @@ describe('the Plugin Fields of a Plugin', () => {
       await expect.poll(valueLabels).toEqual(['Place', 'Units'])
       await expect.element(screen.getByRole('textbox', { name: 'Place' })).toHaveAccessibleDescription('required Where you are.')
       expect(screen.getByRole('textbox', { name: 'Place' }).element().tagName).toBe('TEXTAREA')
-      await expect.element(saveBar(screen).getByText('Unsaved changes to the Plugin Fields.')).toBeVisible()
+      await expect.element(saveBar(screen).getByText('Unsaved changes to the Plugin Fields. The preview already shows them.')).toBeVisible()
 
       await save(screen)
 
@@ -164,7 +164,7 @@ describe('the Plugin Fields of a Plugin', () => {
 
       await opened.getByRole('textbox', { name: 'Keyname' }).fill('place')
       await screen.getByRole('textbox', { name: 'Location' }).fill('Marktplatz')
-      await expect.element(saveBar(screen).getByText('Unsaved changes to the Field Values and Plugin Fields.')).toBeVisible()
+      await expect.element(saveBar(screen).getByText('Unsaved changes to the Field Values and Plugin Fields. The preview already shows them.')).toBeVisible()
       await save(screen)
 
       await expect.poll(() => sentFields(faked.saves)).toEqual([['place']])

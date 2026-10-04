@@ -1,4 +1,4 @@
-import type { ApiErrorField, PluginInMashupDetails, PluginKind } from 'kuroshiro-shared'
+import type { ApiErrorField, PluginInMashupDetails, PluginKind, TemplateInvalidDetails } from 'kuroshiro-shared'
 import type { EntityManager, FindOptionsRelations } from 'typeorm'
 import type { CreatePluginDto } from './dto/create-plugin.dto.js'
 import type { PluginDataSourceDto } from './dto/plugin-data-source.dto.js'
@@ -11,6 +11,7 @@ import type { PluginWithFieldValues } from './services/plugin-field-values.servi
 import { BadRequestException, HttpStatus, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { isUUID } from 'class-validator'
+import { checkTemplate } from 'kuroshiro-shared'
 import { Repository } from 'typeorm'
 import { ApiException, ValidationException } from '../errors/api.exception.js'
 import { closeGapInOrder } from '../screens/screen-order.js'
@@ -378,12 +379,24 @@ export class PluginsService implements OnModuleInit {
     }
   }
 
+  /** An import stays lenient: a Recipe that works on TRMNL is brought in and fixed in the editor. */
+  private assertTemplatesParse(templates: NonNullable<UpdatePluginDto['templates']>): void {
+    for (const { size, liquidMarkup } of templates) {
+      const problem = checkTemplate(liquidMarkup)
+      if (problem) {
+        const details: TemplateInvalidDetails = { size, line: problem.line, message: problem.message }
+        throw new ApiException(HttpStatus.BAD_REQUEST, 'template-invalid', `The ${size} Template cannot be parsed: ${problem.message}`, { ...details })
+      }
+    }
+  }
+
   private assertSavable(plugin: Plugin, { refreshInterval, dataSources, fields, templates }: UpdatePluginDto): void {
     if (templates) {
       this.assertOneTemplatePerSize(templates.map(template => template.size), 'size')
       if (!templates.some(template => template.size === 'full')) {
         throw new ApiException(HttpStatus.BAD_REQUEST, 'template-full-missing', 'A Plugin needs a Template of size full')
       }
+      this.assertTemplatesParse(templates)
     }
 
     if (plugin.kind === 'Webhook' && refreshInterval !== undefined) {

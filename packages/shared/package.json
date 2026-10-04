@@ -3,6 +3,7 @@
   "version": "0.17.1",
   "private": true,
   "packageManager": "pnpm@12.8.2",
+  "sideEffects": false,
   "exports": {
     ".": "./src/index.ts"
   },

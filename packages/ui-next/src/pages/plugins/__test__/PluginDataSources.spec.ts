@@ -137,7 +137,7 @@ describe('the Data Sources of a Plugin', () => {
       await interval(screen).fill('2')
       await screen.getByRole('combobox', { name: 'Refresh interval unit' }).click()
       await screen.getByRole('option', { name: 'hours' }).click()
-      await expect.element(saveBar(screen).getByText('Unsaved changes to the refresh interval.')).toBeVisible()
+      await expect.element(saveBar(screen).getByText('Unsaved changes to the refresh interval. The preview already shows them.')).toBeVisible()
       await save(screen)
 
       await expect.poll(() => faked.saves).toEqual([{ refreshInterval: 120 }])
@@ -325,7 +325,7 @@ describe('the Data Sources of a Plugin', () => {
       await open(screen, 'pollen')
       await opened(screen, 'pollen').getByRole('button', { name: 'Remove Data Source' }).click()
 
-      await expect.element(saveBar(screen).getByText('Unsaved changes to the Data Sources.')).toBeVisible()
+      await expect.element(saveBar(screen).getByText('Unsaved changes to the Data Sources. The preview already shows them.')).toBeVisible()
       await save(screen)
 
       await expect.poll(() => faked.saves).toEqual([{
@@ -376,7 +376,7 @@ describe('the Data Sources of a Plugin', () => {
       expect(opened(screen, 'holidays').elements()).toEqual([])
       await expect.element(nameOf(screen, 'holidays')).toBeDisabled()
       await expect.element(screen.getByRole('button', { name: 'Put back holidays' })).toHaveFocus()
-      await expect.element(saveBar(screen).getByText('Unsaved changes to the Data Sources.')).toBeVisible()
+      await expect.element(saveBar(screen).getByText('Unsaved changes to the Data Sources. The preview already shows them.')).toBeVisible()
 
       await screen.getByRole('button', { name: 'Put back holidays' }).click()
 

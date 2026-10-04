@@ -20,6 +20,14 @@ export interface PluginInMashupDetails {
   mashups: PluginPlace[]
 }
 
+/** The `details` of a `template-invalid` refusal: the Template a save was refused for, and where Liquid stopped reading it. */
+export interface TemplateInvalidDetails {
+  size: TemplateSize
+  /** `null` for an empty Template, and where Liquid names no line. */
+  line: number | null
+  message: string
+}
+
 export interface PluginSummary {
   id: string
   name: string

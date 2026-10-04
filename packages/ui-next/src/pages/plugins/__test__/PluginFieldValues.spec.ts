@@ -115,7 +115,7 @@ describe('the Field Values of a Plugin', () => {
       const screen = await mountPlugin()
 
       await screen.getByRole('textbox', { name: 'Location' }).fill('Marktplatz')
-      await expect.element(saveBar(screen).getByText('Unsaved changes to the Field Values.')).toBeVisible()
+      await expect.element(saveBar(screen).getByText('Unsaved changes to the Field Values. The preview already shows them.')).toBeVisible()
       await save(screen)
 
       await expect.poll(() => faked.saves).toEqual([{ fieldValues: { location: 'Marktplatz', units: null } }])
