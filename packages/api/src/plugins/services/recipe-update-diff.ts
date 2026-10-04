@@ -1,4 +1,4 @@
-import type { PluginFieldOption } from 'kuroshiro-shared'
+import type { PluginFieldOption, UpdateItemKind, UpdateItemType } from 'kuroshiro-shared'
 import type { JsonObject } from '../../utils/json.js'
 import * as crypto from 'node:crypto'
 
@@ -44,11 +44,6 @@ export interface ComparablePlugin {
   templates: ComparableTemplate[]
   fields: ComparableField[]
 }
-
-export type UpdateItemKind = 'added' | 'changed' | 'removed'
-
-export const UPDATE_ITEM_TYPES = ['name', 'description', 'refreshInterval', 'template', 'dataSource', 'field'] as const
-export type UpdateItemType = typeof UPDATE_ITEM_TYPES[number]
 
 export type RecipeUpdateMode = 'two-way' | 'three-way'
 

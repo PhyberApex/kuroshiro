@@ -10,14 +10,6 @@ declare module 'vue-router' {
   }
 }
 
-function notBuiltYet(path: string, title: string): RouteRecordRaw {
-  return {
-    path,
-    component: () => import('@/pages/NotBuiltYetPage.vue'),
-    meta: { notBuiltYet: title },
-  }
-}
-
 /** A page under the Device frame that is not built yet. The frame has the title line, so the stand-in has none. */
 function notBuiltYetUnderDevice(path: string): RouteRecordRaw {
   return { path, component: () => import('@/pages/devices/DeviceNotBuiltYetPage.vue') }
@@ -37,7 +29,7 @@ function notBuiltYetUnderInstance(path: string, title: string): RouteRecordRaw {
 
 /**
  * Every route of the four route tables of `docs/ui/`. A built page is
- * `{ path, component: () => import('@/pages/…Page.vue') }`; a `notBuiltYet` line stands in for one that is not.
+ * `{ path, component: () => import('@/pages/…Page.vue') }`; a `notBuiltYetUnder…` line stands in for one that is not.
  * The pages of one Device are the children of the Device frame, which loads the Device and has its title line and tabs.
  * The Instance pages are the children of the Instance frame, which has the title line, the page list, Appearance and the version.
  */
@@ -61,7 +53,7 @@ export const routes: RouteRecordRaw[] = [
   { path: '/plugins', component: () => import('@/pages/plugins/PluginsListPage.vue') },
   { path: '/plugins/new', component: () => import('@/pages/plugins/AddPluginPage.vue'), beforeEnter: keepAddPluginOrigin },
   { path: '/plugins/:pluginId', component: () => import('@/pages/plugins/PluginPage.vue') },
-  notBuiltYet('/plugins/:pluginId/update', 'Recipe Update Check'),
+  { path: '/plugins/:pluginId/update', component: () => import('@/pages/plugins/RecipeUpdatePage.vue') },
 
   {
     path: '/instance',

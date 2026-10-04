@@ -11,19 +11,18 @@ What every screen of `packages/ui-next` stands on: the shell, the router, the AP
 | `router/` | `routes.ts` (every route) and `index.ts` (`createAppRouter`, the scroll behaviour) |
 | `shell/` | The bar, the phone's bottom tabs, the demo line, the page column |
 | `patterns/` | The shared page patterns: `TitleLine`, `BackLink`, `LoadBody`, `LoadingLine`, `WashBar`, `MissingPage`, `RelativeTime`, `UnsavedChanges`, `PageSection`, `ReadRow`, `ChoiceBesideForm`, `AddFormFoot`, `useLoad`, `joinLoads`, `usePolling`, `useNow`, `usePageTitle`, `useNarrowWindow`, `time.ts`, `listed` |
-| `pages/` | One component per route, `<Name>Page.vue`, in a folder per surface (`pages/devices/`, `pages/plugins/`, `pages/instance/`). The three pages at its top are the shell's own: the landing route, the unknown route and "not built yet" |
+| `pages/` | One component per route, `<Name>Page.vue`, in a folder per surface (`pages/devices/`, `pages/plugins/`, `pages/instance/`). The pages at its top are the shell's own: the landing route and the unknown route |
 | `components/` | The primitives |
 
 ## A route and its page
 
-Every route of the four route tables is already in `router/routes.ts`, pointing at the "not built yet" page. To build one, swap its line:
+Every route of the four route tables is in `router/routes.ts`. A page is a lazily imported component:
 
 ```ts
-// before
-notBuiltYet('/plugins', 'Plugins'),
-// after
 { path: '/plugins', component: () => import('@/pages/plugins/PluginsListPage.vue') },
 ```
+
+A page under the Device or the Instance frame that is not built yet points at that frame's "not built yet" page (see below).
 
 - Routes are lazily loaded and addressed by path (`to="/devices/42/settings"`), not by name. They are flat, except under a frame several pages share: the pages of one Device are the children of `/devices/:deviceId` (see "The Device frame") and the Instance pages the children of `/instance` (see "The Instance frame").
 - **The bar needs no entry.** Its entries are the Devices, "Plugins" and "Instance"; which one is current is read off the path, so any route under `/devices/:deviceId`, `/plugins` or `/instance` is already marked. `/alerts` marks the Alert indicator.
@@ -318,6 +317,7 @@ A write that adds a record and then leaves the page navigates first and reloads 
 | `pluginFieldValues.ts`, `PluginFieldValues.vue`, `FieldValueRow.vue`, `FieldValueControl.vue` | "Field Values": the part, the control of each Plugin Field type (`fieldControl`), the note at a row's right (`fieldValueNote`), one row and its control. See "Two parts that read each other" below |
 | `pluginFields.ts`, `PluginFields.vue`, `PluginFieldRow.vue`, `PluginFieldForm.vue` | The tucked "Plugin Fields": the part with every rule of a keyname, the rows in a sortable `ScreenRows`, one row and its form |
 | `pluginDevices.ts`, `PluginDevices.vue`, `PlaceRow.vue`, `PluginDeviceRow.vue`, `useAssignToDevice.ts`, `PluginUnassign.vue`, `PluginMashupRow.vue` | "Devices", which acts at once: the pure pairing of the shared Devices with `plugin.assignments` and its words, the section, the row both kinds of row share, a Device's row, "Assign to {Device}" (busy until `reload()` has answered; `plugin-already-assigned` counts as done), "Unassign" with its confirmation (`assignment-not-found` counts as done) and a Mashup's row |
+| `PluginRecipe.vue`, `RecipeName.vue` | "Recipe", for a Plugin imported from one: the sentence and "Run a Recipe Update Check", a link the page's guard asks about. `RecipeName` is a Recipe in a sentence, its name and its id in mono, linked to trmnl.com with `linked` |
 
 **Adding a section** is one component and one line. Write `Plugin<Name>.vue` in `pages/plugins/`, and put it in `PluginPage.vue` where the comment names its fragment: in `#default` for a section, in `#tucked` for a tucked one. Both slots hand over `plugin`, for a section only some Plugins have:
 
@@ -462,6 +462,21 @@ So a section's test is "edit, press Save Plugin, assert `faked.saves`". `__test_
 - What the plate drew is read from the last frame's `srcdoc` (`drawn` in `PluginTemplate.spec.ts`), and the Template editor is typed in at its end (`type`). The editor closes an HTML tag as well as a bracket, so a test types plain words or one Liquid tag.
 - The save bar says "The preview already shows them." after every change the preview draws from, the name included.
 - The arrival line is taken once per page (`takePluginArrival` in `PluginFrame`), so a spec reaches it by mounting the app elsewhere and calling `openPluginPage(screen.router, id, arrival)`.
+
+### The Recipe Update Check
+
+`/plugins/:pluginId/update` (`recipeUpdatePath(id)`) is a page of its own, not a section: it loads the Plugin with its own `useLoad` and runs the check once the Plugin is known to come from a Recipe.
+
+| File | Holds |
+| --- | --- |
+| `RecipeUpdatePage.vue`, `NotFromRecipe.vue` | The route's component: the title line with the back link "{Plugin}", the section "Recipe Update Check", and the notice for a Plugin that was not imported from a Recipe |
+| `recipeUpdateCheck.ts` | `useRecipeUpdateCheck(plugin)`: `state` (`running`, `failed`, `notFromRecipe`, `checked` with the `RecipeUpdatePreview`), `checked` by Update Item, `chosen`, `apply()` and `skipAll()`, which open the Plugin page with the arrival `applied` or `skipped`. A `recipe-changed` refusal runs the check again and sets `changedAgain` |
+| `recipeUpdate.ts` | Every word of it and its pure rules, with a node spec: an Update Item's name and group, what is checked by default, the lines a value is compared as (`linesOf`, `recipeChange`), the conflict sentence, why a check failed, the Recipe's day and whether a check took the Recipe Snapshot over (`recipeTakenOver`) |
+| `RecipeUpdateCheck.vue`, `RecipeUpdateItems.vue`, `RecipeUpdateRow.vue`, `RecipeUpdateDetail.vue`, `RecipeUpdateFoot.vue` | The check in parts: its states, the opening sentence and the groups, one row, an opened row and the foot |
+
+- `src/api/plugins.ts` has `checkRecipeUpdate` and `applyRecipeUpdate` (`apply: []` is the skip). The fixtures are `buildUpdateItem` and `buildRecipeUpdatePreview`.
+- A diff is the `Diff` primitive (`@/components/Diff.vue`): `before` and `after` as lines and a `label` for the list; `:fold="false"` for a value shown whole ("Yours reads:"). `diffLines` and `foldRuns` (`diffLines.ts`) are its pure parts.
+- `toHaveTextContent` does not find a diff's line among the others; read the list's `textContent` with its white space collapsed (`spokenOf` in `RecipeUpdatePage.spec.ts`).
 
 ### Add a Plugin
 

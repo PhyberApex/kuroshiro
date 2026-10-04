@@ -93,6 +93,7 @@ describe('field values against a real database', () => {
       database.getRepository(PluginField),
       asService(mockImporter),
       plugins,
+      fieldValues,
     )
 
     // PluginRenderCacheService and PluginsService look the MashupSlot repository up on a timer.
@@ -381,10 +382,11 @@ describe('field values against a real database', () => {
       mockImporter.importFromRecipe.mockResolvedValue({ ...recipe, fields: [{ ...recipe.fields[0], name: 'Town' }] })
 
       const { contentHash } = await recipeUpdate.checkForUpdate(plugin.id)
-      const updated = await recipeUpdate.applyUpdate(plugin.id, {
+      await recipeUpdate.applyUpdate(plugin.id, {
         contentHash,
         apply: [{ itemType: 'field', key: 'city' }, { itemType: 'field', key: 'api_key' }],
       })
+      const updated = (await plugins.findById(plugin.id))!
 
       expect(updated.fields).toEqual([expect.objectContaining({ keyname: 'city', name: 'Town' })])
       expect(updated.fieldValues).toEqual({ city: { value: 'Berlin', isSet: true } })

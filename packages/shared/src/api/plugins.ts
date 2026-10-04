@@ -276,3 +276,66 @@ export interface PreviewData {
   /** `null` for a Poll-kind Plugin, and until a Webhook Payload is received. */
   webhookPayloadReceivedAt: string | null
 }
+
+export const UPDATE_ITEM_TYPES = ['name', 'description', 'refreshInterval', 'template', 'dataSource', 'field'] as const
+export type UpdateItemType = typeof UPDATE_ITEM_TYPES[number]
+
+export type UpdateItemKind = 'added' | 'changed' | 'removed'
+
+/** A Data Source as a Recipe Update Check compares it: only what its mode uses. */
+export type RecipeDataSource
+  = | {
+    mode: 'fetch'
+    method: string
+    url: string | null
+    headers: Record<string, string>
+    body: Record<string, unknown>
+    transformJs: string | null
+  }
+  | { mode: 'literal', literalValue: DataSourceLiteralValue }
+
+/** A Plugin Field as a Recipe Update Check compares it, in the words of `PluginFieldRead`. */
+export type RecipeField = Omit<PluginFieldRead, 'id'>
+
+interface UpdateItemOf<T extends UpdateItemType, V> {
+  itemType: T
+  /** The item's own name for a name, description and refresh interval; the size, the Data Source's name or the keyname otherwise. */
+  key: string
+  kind: UpdateItemKind
+  /** The Recipe and the Plugin both changed it since the Recipe Snapshot. Never set without one. */
+  conflict: boolean
+  /** Each side is `null` where the item does not exist, and `snapshot` always without a Recipe Snapshot. */
+  snapshot: V | null
+  local: V | null
+  upstream: V | null
+}
+
+/** One unit a Recipe Update Check offers. A template's value is its Liquid markup. */
+export type UpdateItem
+  = | UpdateItemOf<'name', string>
+    | UpdateItemOf<'description', string>
+    | UpdateItemOf<'refreshInterval', number>
+    | UpdateItemOf<'template', string>
+    | UpdateItemOf<'dataSource', RecipeDataSource>
+    | UpdateItemOf<'field', RecipeField>
+
+/** What a Recipe Update Check answers. */
+export interface RecipeUpdatePreview {
+  /** The Recipe as TRMNL has it now. */
+  recipe: { id: string, name: string }
+  /** `null` without a Recipe Snapshot, and for one taken before Kuroshiro recorded when. */
+  snapshotTakenAt: string | null
+  /** Handed back to apply, which is refused with `recipe-changed` when the Recipe moved since. */
+  contentHash: string
+  /** `two-way` without a Recipe Snapshot: every difference is listed, none is a conflict or `removed`. */
+  mode: 'two-way' | 'three-way'
+  items: UpdateItem[]
+  /** Keynames of the required Plugin Fields that applying would leave without a value or a default. */
+  requiredFieldsLeftEmpty: string[]
+}
+
+/** `apply: []` applies nothing and takes the Recipe as it is now as the Recipe Snapshot. */
+export interface ApplyRecipeUpdateInput {
+  contentHash: string
+  apply: Array<{ itemType: UpdateItemType, key: string }>
+}

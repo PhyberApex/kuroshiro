@@ -87,6 +87,8 @@ const REFUSAL_WORDING: Record<ApiErrorCode, Wording> = {
   'recipe-strategy-unsupported': 'This Recipe gets its data pushed by TRMNL. Kuroshiro can only import Recipes that poll or hold fixed data. Build a Webhook Plugin instead.',
   // docs/ui/ has no sentence for it, so the server's own stands.
   'recipe-static-transform': ({ message }) => message,
+  'plugin-not-from-recipe': 'This Plugin was not imported from a Recipe, so there is nothing to check.',
+  'recipe-changed': 'The Recipe changed again since it was compared. Run the check again.',
   'archive-not-zip': NOT_A_CONFIGURATION_ARCHIVE,
   'archive-not-configuration': NOT_A_CONFIGURATION_ARCHIVE,
   'archive-schema-version': 'This archive was made with an archive version this Kuroshiro does not read.',

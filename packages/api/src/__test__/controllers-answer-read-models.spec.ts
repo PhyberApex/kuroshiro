@@ -71,7 +71,6 @@ export class WidgetsController {
  */
 const KNOWN_EXCEPTIONS: string[] = [
   'DeviceModelsController.createPalette',
-  'PluginsController.applyRecipeUpdate',
   'PluginsController.clearWebhookPayload',
   'PluginsController.regenerateWebhookToken',
 ]
