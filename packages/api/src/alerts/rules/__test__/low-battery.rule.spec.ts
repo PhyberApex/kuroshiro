@@ -39,15 +39,15 @@ describe('lowBatteryRule', () => {
   })
 
   it('builds the opened and resolved notification content', () => {
-    const device = makeDevice({ name: 'Kitchen Display', mac: 'AA:BB:CC:DD:EE:FF' })
-    expect(lowBatteryRule.openedNotification(device, { percent: 17 })).toEqual({
+    const device = makeDevice({ name: 'Kitchen Display', mac: 'AA:BB:CC:DD:EE:FF', batteryVoltage: '3.12' })
+    expect(lowBatteryRule.openedNotification(device)).toEqual({
       title: 'Kuroshiro: Kitchen Display battery low',
-      body: 'Kitchen Display (AA:BB:CC:DD:EE:FF) is at 17%.',
+      body: 'Kitchen Display (AA:BB:CC:DD:EE:FF) is at 10%.',
       type: 'warning',
     })
-    expect(lowBatteryRule.resolvedNotification(device, { percent: 25 })).toEqual({
+    expect(lowBatteryRule.resolvedNotification({ ...device, batteryVoltage: '4.2' })).toEqual({
       title: 'Kuroshiro: Kitchen Display battery recovered',
-      body: 'Kitchen Display (AA:BB:CC:DD:EE:FF) is at 25%.',
+      body: 'Kitchen Display (AA:BB:CC:DD:EE:FF) is at 100%.',
       type: 'success',
     })
   })

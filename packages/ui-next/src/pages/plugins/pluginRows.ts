@@ -1,4 +1,5 @@
 import type { PluginSummary } from 'kuroshiro-shared'
+import { FIRING_ALERT_LABELS } from '@/pages/alerts/alertLabels'
 import { listed } from './pluginWording'
 
 /** What a row's state column says: an Alert (the only state in the seal colour), a problem, or a note that is nothing to fix. */
@@ -24,7 +25,7 @@ export function whereItShows({ devices, mashups }: { devices: Array<{ name: stri
 
 /** In the order of precedence: the first that applies is the row's state. */
 const STATES: Array<(plugin: PluginSummary) => PluginRowState | false> = [
-  plugin => plugin.fetchAlertFiring && { kind: 'alert', text: 'Alert: a Data Source keeps failing' },
+  plugin => plugin.fetchAlertFiring && { kind: 'alert', text: FIRING_ALERT_LABELS['data-source-fetch-failing'] },
   plugin => plugin.worstFetchFailureStreak === 1 && { kind: 'problem', text: 'The last fetch failed' },
   plugin => plugin.worstFetchFailureStreak > 1 && { kind: 'problem', text: `${plugin.worstFetchFailureStreak} fetches failed in a row` },
   plugin => plugin.needsValues && { kind: 'problem', text: 'A required Plugin Field is empty' },

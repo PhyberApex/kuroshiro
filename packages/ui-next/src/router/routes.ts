@@ -77,7 +77,7 @@ export const routes: RouteRecordRaw[] = [
     ],
   },
 
-  notBuiltYet('/alerts', 'Alerts'),
+  { path: '/alerts', component: () => import('@/pages/alerts/AlertsPage.vue') },
 
   { path: '/:unknown(.*)*', component: () => import('@/pages/NotFoundPage.vue') },
 ]
