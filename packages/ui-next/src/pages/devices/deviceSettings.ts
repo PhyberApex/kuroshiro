@@ -26,7 +26,7 @@ export function rateShown(seconds: number): RateEntered {
 }
 
 /** The seconds an entered refresh rate sends, or nothing for one the server would refuse. */
-export function rateSeconds(amount: number | null, unit: RateUnit) {
+export function rateSeconds({ amount, unit }: RateEntered) {
   const seconds = amount === null ? Number.NaN : amount * UNIT_SECONDS[unit]
   return Number.isInteger(seconds) && seconds >= REFRESH_RATE_MIN && seconds <= REFRESH_RATE_MAX ? seconds : undefined
 }
@@ -47,13 +47,11 @@ export function sleepWindowInput({ start, end }: { start?: string, end?: string 
   }
 }
 
-const TIMES = '×'
-
 /** The Device Models a Device can be set to: a deprecated one only while it is the assigned one. */
 export function deviceModelOptions(models: DeviceModelRead[], assigned: string | null): SelectOption[] {
   return models
     .filter(model => !model.deprecated || model.name === assigned)
-    .map(model => ({ value: model.name, label: `${model.label} · ${model.width} ${TIMES} ${model.height}` }))
+    .map(model => ({ value: model.name, label: `${model.label} · ${model.width} × ${model.height}` }))
 }
 
 const paletteLabel = ({ name, kind }: Pick<PaletteRead, 'name' | 'kind'>) => kind === 'custom' ? `${name} · custom` : name

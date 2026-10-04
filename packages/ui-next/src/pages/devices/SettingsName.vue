@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import SettingRow from '@/components/SettingRow.vue'
 import TextInput from '@/components/TextInput.vue'
 import { deviceNameProblem } from './deviceNaming'
-import { useDeviceSetting } from './deviceSetting'
+import { useDeviceSetting } from './useDeviceSetting'
 
 const props = defineProps<{
   device: DeviceDetail
@@ -13,12 +13,14 @@ const props = defineProps<{
 const problem = ref<string>()
 
 const name = useDeviceSetting(() => props.device.name, entered =>
-  entered.trim() === props.device.name ? undefined : { name: entered.trim() })
+  entered === props.device.name ? undefined : { name: entered })
 
 function save() {
   problem.value = deviceNameProblem(name.entered)
-  if (!problem.value)
-    name.commit()
+  if (problem.value)
+    return
+  name.entered = name.entered.trim()
+  name.commit()
 }
 </script>
 

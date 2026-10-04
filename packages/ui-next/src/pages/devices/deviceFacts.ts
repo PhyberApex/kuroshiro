@@ -42,7 +42,6 @@ function lastSeenOf({ lastSeenAt }: DeviceDetail, offline: boolean, now: Date): 
   }
 }
 
-/** The Device reports a size, and it is not its Device Model's. */
 export function reportsAnotherSize({ reported, deviceModel }: DeviceDetail) {
   return reported.width !== null && reported.height !== null && deviceModel !== null
     && (reported.width !== deviceModel.width || reported.height !== deviceModel.height)

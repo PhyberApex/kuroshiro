@@ -34,7 +34,7 @@ describe('the refresh rate', () => {
     [24, 'hours', 86400],
     [1.5, 'minutes', 90],
   ] as const)('sends %d %s as seconds', (amount, unit, seconds) => {
-    expect(rateSeconds(amount, unit)).toBe(seconds)
+    expect(rateSeconds({ amount, unit })).toBe(seconds)
   })
 
   it.each([
@@ -45,7 +45,7 @@ describe('the refresh rate', () => {
     [0.0001, 'hours'],
     [null, 'minutes'],
   ] as const)('has no seconds for %s %s, which is outside 1 minute to 24 hours or no whole second', (amount, unit) => {
-    expect(rateSeconds(amount, unit)).toBeUndefined()
+    expect(rateSeconds({ amount, unit })).toBeUndefined()
   })
 })
 

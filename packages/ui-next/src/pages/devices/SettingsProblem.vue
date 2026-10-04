@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
 
+defineProps<{
+  /** Stands inside a row's note, which is a paragraph already. */
+  inline?: boolean
+}>()
+
 defineSlots<{
   /** One sentence: why something in the section cannot be done on this Device. */
   default: () => unknown
@@ -8,10 +13,10 @@ defineSlots<{
 </script>
 
 <template>
-  <p class="settings-problem">
+  <component :is="inline ? 'span' : 'p'" class="settings-problem" :class="{ inline }">
     <Icon name="problem" class="mark" />
     <span><slot /></span>
-  </p>
+  </component>
 </template>
 
 <style scoped>
@@ -23,6 +28,11 @@ defineSlots<{
     gap: var(--space-2);
     max-width: var(--measure);
     margin-top: var(--space-3);
+    color: var(--color-ink);
+  }
+
+  .settings-problem.inline {
+    margin-top: 0;
   }
 
   .mark {

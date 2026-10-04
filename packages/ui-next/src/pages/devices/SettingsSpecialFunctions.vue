@@ -6,9 +6,9 @@ import ResultLine from '@/components/ResultLine.vue'
 import SaveState from '@/components/SaveState.vue'
 import TuckedSection from '@/components/TuckedSection.vue'
 import { useNow } from '@/patterns/useNow'
-import { useDeviceWrite } from './deviceSetting'
 import { OFFERED_SPECIAL_FUNCTIONS, reachesDevice, SETTINGS_SECTIONS } from './deviceSettings'
 import SettingsProblem from './SettingsProblem.vue'
+import { useDeviceWrite } from './useDeviceSetting'
 
 const props = defineProps<{
   device: DeviceDetail
@@ -32,9 +32,6 @@ watch(pending, (waiting) => {
     <p class="intro">
       A one-shot command that reaches {{ device.name }} at its next poll and fires once. The <code class="mono">sleep</code> Special Function is separate from Sleep Mode.
     </p>
-    <SettingsProblem v-if="device.isProxied">
-      {{ device.name }} is a Proxied Device. TRMNL answers its polls, so a Special Function triggered here never reaches it.
-    </SettingsProblem>
     <ul class="functions">
       <li v-for="offered in OFFERED_SPECIAL_FUNCTIONS" :key="offered.name" class="function">
         <code class="name mono">{{ offered.name }}</code>
@@ -51,6 +48,9 @@ watch(pending, (waiting) => {
         </Button>
       </li>
     </ul>
+    <SettingsProblem v-if="device.isProxied">
+      {{ device.name }} is a Proxied Device. TRMNL answers its polls, so a Special Function triggered here never reaches it.
+    </SettingsProblem>
     <SaveState class="state" :status="write.status" :reason="write.reason" @retry="write.retry" />
   </TuckedSection>
 </template>

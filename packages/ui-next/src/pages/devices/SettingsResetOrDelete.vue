@@ -22,9 +22,6 @@ const now = useNow()
       {{ ' ' }}
       <span>Deleting removes {{ device.name }}, its {{ screensCounted(device.screenCount) }}, their Schedules and its Device Log from this Instance.</span>
     </p>
-    <SettingsProblem v-if="device.isProxied">
-      {{ device.name }} is a Proxied Device, so a Device Reset triggered here never reaches it.
-    </SettingsProblem>
     <div class="buttons">
       <DeviceReset :device="device" />
       <DeviceDeletion :device="device" />
@@ -34,6 +31,9 @@ const now = useNow()
         </template>
       </ResultLine>
     </div>
+    <SettingsProblem v-if="device.isProxied">
+      {{ device.name }} is a Proxied Device, so a Device Reset triggered here never reaches it.
+    </SettingsProblem>
   </TuckedSection>
 </template>
 

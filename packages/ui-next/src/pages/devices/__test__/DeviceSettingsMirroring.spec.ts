@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { expectAccessible } from '@/testing/a11y'
+import { apiErrorResponse } from '@/testing/api/server'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import { errorOf, fakeKitchenSettings, KITCHEN, mountSettings, noteOf, rowOf, shownOf, stateOf, words } from './deviceSettingsHarness'
 
@@ -115,6 +116,24 @@ describe('mirroring', () => {
 
     await expect.poll(() => faked.writes).toEqual([{ mirrorMac: 'A4:CF:12:00:00:01' }])
     await expect.poll(() => stateOf(screen, 'Mirror MAC address')).toBe('Saved')
+  })
+
+  it('says "Not saved" on the row that sent it, keeps what was entered, and saves it on "Try again"', async () => {
+    const faked = fakeKitchenSettings({ device: MIRRORED })
+    faked.refusing = apiErrorResponse({ statusCode: 403, code: 'demo-mode' })
+    const screen = await mountSettings()
+
+    await enter(mac(screen), 'A4:CF:12:00:00:01')
+
+    await expect.poll(() => stateOf(screen, 'Mirror MAC address')).toBe('Not saved. Not available in the demo.')
+    expect(stateOf(screen, 'Mirroring')).toBe('')
+    await expect.element(mac(screen)).toHaveValue('A4:CF:12:00:00:01')
+
+    faked.refusing = undefined
+    await screen.getByRole('button', { name: 'Try again' }).click()
+
+    await expect.poll(() => stateOf(screen, 'Mirror MAC address')).toBe('Saved')
+    expect(faked.device.mirror.mac).toBe('A4:CF:12:00:00:01')
   })
 
   it('"Use Kitchen\'s own" fills in the Device\'s MAC address, which makes it a Proxied Device', async () => {

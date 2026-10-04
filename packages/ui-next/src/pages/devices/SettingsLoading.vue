@@ -13,7 +13,7 @@ const SECTIONS = [
 <template>
   <div class="settings-loading" aria-hidden="true">
     <PageSection v-for="section in SECTIONS" :key="section.title" class="section" :title="section.title" rows>
-      <div v-for="width in section.rows" :key="width" class="row">
+      <div v-for="(width, index) in section.rows" :key="index" class="row">
         <WashBar width="45%" />
         <WashBar :width="width" />
       </div>

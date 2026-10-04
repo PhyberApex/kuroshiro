@@ -6,25 +6,23 @@ import NumberInput from '@/components/NumberInput.vue'
 import Select from '@/components/Select.vue'
 import SettingRow from '@/components/SettingRow.vue'
 import ReadRow from '@/patterns/ReadRow.vue'
-import { useDeviceSetting } from './deviceSetting'
 import { RATE_RANGE_MESSAGE, RATE_UNIT_OPTIONS, rateSeconds, rateShown } from './deviceSettings'
+import { useDeviceSetting } from './useDeviceSetting'
 
 const props = defineProps<{
   device: DeviceDetail
 }>()
 
-const secondsOf = ({ amount, unit }: { amount: number | null, unit: RateUnit }) => rateSeconds(amount, unit)
-
 const rate = useDeviceSetting(() => rateShown(props.device.refreshRate), (entered) => {
-  const seconds = secondsOf(entered)
+  const seconds = rateSeconds(entered)
   return seconds === undefined || seconds === props.device.refreshRate ? undefined : { refreshRate: seconds }
 })
 
 const leftOutOfRange = ref(false)
-const rangeMessage = computed(() => leftOutOfRange.value && secondsOf(rate.entered) === undefined ? RATE_RANGE_MESSAGE : undefined)
+const rangeMessage = computed(() => leftOutOfRange.value && rateSeconds(rate.entered) === undefined ? RATE_RANGE_MESSAGE : undefined)
 
 function save() {
-  leftOutOfRange.value = secondsOf(rate.entered) === undefined
+  leftOutOfRange.value = rateSeconds(rate.entered) === undefined
   rate.commit()
 }
 

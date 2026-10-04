@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { DeviceDetail, DeviceModelRead } from 'kuroshiro-shared'
 import { computed } from 'vue'
-import Icon from '@/components/Icon.vue'
 import Select from '@/components/Select.vue'
 import SettingRow from '@/components/SettingRow.vue'
 import { reportsAnotherSize } from './deviceFacts'
-import { useDeviceSetting } from './deviceSetting'
 import { deviceModelOptions } from './deviceSettings'
+import SettingsProblem from './SettingsProblem.vue'
+import { useDeviceSetting } from './useDeviceSetting'
 
 const props = defineProps<{
   device: DeviceDetail
@@ -17,11 +17,6 @@ const assigned = computed(() => props.device.deviceModel)
 
 const model = useDeviceSetting(() => assigned.value?.name ?? null, chosen =>
   chosen && chosen !== assigned.value?.name ? { deviceModelName: chosen } : undefined)
-
-function choose(chosen: string | null) {
-  model.entered = chosen
-  model.commit()
-}
 
 const options = computed(() => deviceModelOptions(props.models, assigned.value?.name ?? null))
 
@@ -41,17 +36,16 @@ const reported = computed(() => {
         :model-value="model.entered"
         :options="options"
         placeholder="Choose a Device Model"
-        @update:model-value="choose"
+        @update:model-value="model.choose"
       />
     </template>
     <template v-if="reported" #source>
       {{ device.name }} reports {{ reported }}
     </template>
     <template v-if="!assigned || assigned.deprecated || reportsAnotherSize(device)" #note>
-      <span v-if="reportsAnotherSize(device)" class="problem">
-        <Icon name="problem" class="mark" />
-        <span>{{ device.name }} reports {{ device.reported.width }} × {{ device.reported.height }}, which is not this Device Model's size. Images are rendered for the Device Model chosen here.</span>
-      </span>
+      <SettingsProblem v-if="reportsAnotherSize(device)" inline>
+        {{ device.name }} reports {{ device.reported.width }} × {{ device.reported.height }}, which is not this Device Model's size. Images are rendered for the Device Model chosen here.
+      </SettingsProblem>
       <span v-if="assigned?.deprecated" class="line">TRMNL no longer lists this Device Model.</span>
       <span v-if="!assigned" class="line">Not resolved yet. Images are rendered for TRMNL OG.</span>
     </template>
@@ -66,19 +60,6 @@ const reported = computed(() => {
 
   .line {
     display: block;
-  }
-
-  /* A problem is ink, never red: it is told by the icon. */
-  .problem {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--space-2);
-    color: var(--color-ink);
-  }
-
-  .mark {
-    flex: none;
-    margin-top: 0.2em;
   }
 }
 </style>

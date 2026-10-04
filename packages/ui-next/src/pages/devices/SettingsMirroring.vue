@@ -8,9 +8,9 @@ import SettingRow from '@/components/SettingRow.vue'
 import Switch from '@/components/Switch.vue'
 import TextInput from '@/components/TextInput.vue'
 import PageSection from '@/patterns/PageSection.vue'
-import { useDeviceWrite } from './deviceSetting'
 import { asStoredMac, isMacAddress, MIRROR_MAC_MESSAGE, mirroringInput, SETTINGS_SECTIONS } from './deviceSettings'
 import { possessive } from './screenNaming'
+import { useDeviceWrite } from './useDeviceSetting'
 
 type Row = 'switch' | 'mac' | 'key'
 
@@ -30,6 +30,7 @@ const write = useDeviceWrite()
 const sentBy = ref<Row>('switch')
 // Enter and the blur that follows it are one entry of the key, not two.
 let keyOffered = ''
+let keySent: string | undefined
 
 watch(() => saved.value.enabled, (enabled) => {
   if (!write.unsettled)
@@ -41,7 +42,7 @@ watch(() => saved.value.mac, (stored) => {
 })
 // The server has the key: the field goes back to saying only that one is stored.
 watch(() => write.status, (status) => {
-  if (status !== 'saved')
+  if (status !== 'saved' || key.value !== keySent)
     return
   key.value = ''
   keyOffered = ''
@@ -52,6 +53,7 @@ function save(row: Row) {
   if (!input)
     return
   sentBy.value = row
+  keySent = input.mirrorApikey
   write.send(input)
 }
 

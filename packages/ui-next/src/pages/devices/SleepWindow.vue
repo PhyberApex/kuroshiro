@@ -4,9 +4,9 @@ import { computed } from 'vue'
 import SettingRow from '@/components/SettingRow.vue'
 import TimeInput from '@/components/TimeInput.vue'
 import { useServerTimezone } from '@/reads/sharedReads'
-import { useDeviceSetting } from './deviceSetting'
 import { sleepWindowInput } from './deviceSettings'
 import { changedOfPair, crossesMidnight } from './scheduleEditing'
+import { useDeviceSetting } from './useDeviceSetting'
 
 const props = defineProps<{
   device: DeviceDetail

@@ -7,8 +7,8 @@ import Select from '@/components/Select.vue'
 import SettingRow from '@/components/SettingRow.vue'
 import { useNow } from '@/patterns/useNow'
 import { nextPollTime } from './currentScreenStory'
-import { useDeviceSetting, useDeviceWrite } from './deviceSetting'
 import { firmwareOptions, NO_TARGET } from './deviceSettings'
+import { useDeviceSetting, useDeviceWrite } from './useDeviceSetting'
 
 const props = defineProps<{
   device: DeviceDetail
@@ -23,15 +23,10 @@ const pushPending = computed(() => props.device.pending.firmwarePush)
 const target = useDeviceSetting(savedTarget, chosen =>
   chosen === savedTarget() ? undefined : { targetFirmwareId: chosen === NO_TARGET ? null : chosen })
 
-function choose(chosen: string | null) {
-  target.entered = chosen ?? NO_TARGET
-  target.commit()
-}
-
 const push = useDeviceWrite()
 
 /** The row has one save state: the push's while it has something to say, the target's otherwise. */
-const shown = computed(() => push.status === 'idle' ? target : push)
+const saveState = computed(() => push.status === 'idle' ? target : push)
 
 const options = computed(() => firmwareOptions(props.firmware, {
   deviceModel: props.device.deviceModel?.name ?? null,
@@ -46,10 +41,10 @@ const goesOut = computed(() => {
 </script>
 
 <template>
-  <SettingRow label="Target Firmware" :status="shown.status" :reason="shown.reason" @retry="shown.retry">
+  <SettingRow label="Target Firmware" :status="saveState.status" :reason="saveState.reason" @retry="saveState.retry">
     <template #default="{ control }">
-      <Select v-bind="control" class="target" :model-value="target.entered" :options="options" @update:model-value="choose" />
-      <Button :disabled="pushPending || !device.targetFirmware" :loading="push.status === 'saving'" @click="push.send({ updateFirmware: true })">
+      <Select v-bind="control" class="target" :model-value="target.entered" :options="options" @update:model-value="target.choose($event ?? NO_TARGET)" />
+      <Button :disabled="pushPending || !device.targetFirmware || target.saving" :loading="push.status === 'saving'" @click="push.send({ updateFirmware: true })">
         Update now
       </Button>
       <ResultLine class="pending" :running="pushPending">

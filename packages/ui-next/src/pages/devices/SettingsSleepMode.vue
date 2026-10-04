@@ -6,9 +6,9 @@ import RadioRow from '@/components/RadioRow.vue'
 import SettingRow from '@/components/SettingRow.vue'
 import Switch from '@/components/Switch.vue'
 import PageSection from '@/patterns/PageSection.vue'
-import { useDeviceSetting } from './deviceSetting'
 import { FIRST_SLEEP_WINDOW, SETTINGS_SECTIONS, sleepWindowInput } from './deviceSettings'
 import SleepWindow from './SleepWindow.vue'
+import { useDeviceSetting } from './useDeviceSetting'
 
 type WhileAsleep = DeviceDetail['sleep']['whileAsleep']
 
@@ -24,18 +24,8 @@ const enabled = useDeviceSetting(() => sleep.value.enabled, on =>
     ? undefined
     : { sleepModeEnabled: on, ...(on && !hasWindow.value ? sleepWindowInput(FIRST_SLEEP_WINDOW) : {}) })
 
-function switchTo(on: boolean) {
-  enabled.entered = on
-  enabled.commit()
-}
-
 const whileAsleep = useDeviceSetting<WhileAsleep>(() => sleep.value.whileAsleep, chosen =>
   chosen === sleep.value.whileAsleep ? undefined : { sleepScreenEnabled: chosen === 'fallback' })
-
-function keepOrShow(chosen: WhileAsleep | undefined) {
-  whileAsleep.entered = chosen ?? 'fallback'
-  whileAsleep.commit()
-}
 
 const choices = computed<RadioChoice<WhileAsleep>[]>(() => [
   { value: 'fallback', label: 'Show the sleep Fallback Screen', hint: `“Asleep until ${sleep.value.end ?? FIRST_SLEEP_WINDOW.end}”.` },
@@ -59,10 +49,10 @@ function switchSays() {
           :id="control.id"
           :model-value="on"
           :disabled="device.isMirrored"
-          :saving="enabled.status === 'saving'"
+          :saving="enabled.saving"
           :error="enabled.status === 'failed'"
           :aria-describedby="control['aria-describedby']"
-          @update:model-value="switchTo"
+          @update:model-value="enabled.choose"
         />
         <span :class="{ soft: device.isMirrored }">{{ switchSays() }}</span>
       </template>
@@ -74,7 +64,7 @@ function switchSays() {
       <SleepWindow :device="device" />
       <SettingRow class="while-asleep" label="While asleep" :status="whileAsleep.status" :reason="whileAsleep.reason" @retry="whileAsleep.retry">
         <template #default="{ labelId }">
-          <RadioRow class="choices" :model-value="whileAsleep.entered" :choices="choices" :aria-labelledby="labelId" @update:model-value="keepOrShow" />
+          <RadioRow class="choices" :model-value="whileAsleep.entered" :choices="choices" :aria-labelledby="labelId" @update:model-value="whileAsleep.choose($event ?? 'fallback')" />
         </template>
       </SettingRow>
     </template>

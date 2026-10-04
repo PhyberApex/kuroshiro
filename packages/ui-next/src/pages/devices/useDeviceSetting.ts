@@ -40,11 +40,11 @@ export function useDeviceWrite() {
  * One setting of the Device as its row edits it. `entered` is what the control holds: it follows `saved`,
  * the value on the Device, except while a save of it is under way or has failed. `commit` sends what `toInput`
  * makes of it, and nothing when that is `undefined`: a value that did not change, or one that is not valid.
+ * A control whose server form may differ from what was typed (a trimmed name) puts that form into `entered` before it commits.
  */
 export function useDeviceSetting<T>(saved: () => T, toInput: (entered: T) => UpdateDeviceInput | undefined) {
   const write = useDeviceWrite()
   const entered = ref(saved()) as Ref<T>
-  let committed: string | undefined
 
   // Compared as written out, so a value that is an object follows only when it differs, not whenever the Device was read again.
   watch(() => JSON.stringify(saved()), () => {
@@ -52,23 +52,23 @@ export function useDeviceSetting<T>(saved: () => T, toInput: (entered: T) => Upd
       entered.value = saved()
   })
 
-  // The server may store what was sent in another form (a trimmed name): the control takes it, unless it was edited meanwhile.
-  watch(() => write.status, (status) => {
-    if (status === 'saved' && JSON.stringify(entered.value) === committed)
-      entered.value = saved()
-  })
+  function commit() {
+    const input = toInput(entered.value)
+    if (input)
+      write.send(input)
+  }
 
   return reactive({
     entered,
     status: toRef(write, 'status'),
     reason: toRef(write, 'reason'),
+    saving: computed(() => write.status === 'saving'),
     retry: write.retry,
-    commit() {
-      const input = toInput(entered.value)
-      if (!input)
-        return
-      committed = JSON.stringify(entered.value)
-      write.send(input)
+    commit,
+    /** For a control that saves on change (a select, a switch, a radio row): holds the chosen value and commits it. */
+    choose(chosen: T) {
+      entered.value = chosen
+      commit()
     },
   })
 }

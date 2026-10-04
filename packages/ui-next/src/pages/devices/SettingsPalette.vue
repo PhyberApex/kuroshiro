@@ -4,8 +4,8 @@ import type { SettingsReference } from './deviceSettings'
 import { computed } from 'vue'
 import Select from '@/components/Select.vue'
 import SettingRow from '@/components/SettingRow.vue'
-import { useDeviceSetting } from './deviceSetting'
 import { paletteOptions } from './deviceSettings'
+import { useDeviceSetting } from './useDeviceSetting'
 
 const props = defineProps<{
   device: DeviceDetail
@@ -14,11 +14,6 @@ const props = defineProps<{
 
 const palette = useDeviceSetting(() => props.device.palette?.id ?? null, chosen =>
   chosen && chosen !== props.device.palette?.id ? { paletteId: chosen } : undefined)
-
-function choose(chosen: string | null) {
-  palette.entered = chosen
-  palette.commit()
-}
 
 const options = computed(() => paletteOptions(
   props.reference.models.find(model => model.name === props.device.deviceModel?.name),
@@ -36,7 +31,7 @@ const options = computed(() => paletteOptions(
         :options="options"
         :disabled="options.length === 0"
         placeholder="None yet"
-        @update:model-value="choose"
+        @update:model-value="palette.choose"
       />
     </template>
     <template #note>
