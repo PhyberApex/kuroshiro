@@ -1,13 +1,13 @@
 import type { DataSourceInput, DataSourceMethod, DataSourceMode, DataSourceRead, PluginDetail, UpdatePluginInput } from 'kuroshiro-shared'
+import type { FormRow } from './formRows'
 import type { FieldProblem, PluginFormPart } from './pluginForm'
 import type { RateUnit } from '@/pages/devices/deviceSettings'
 import { REFRESH_INTERVAL_BOUNDS } from 'kuroshiro-shared'
 import { RATE_RANGE_MESSAGE } from '@/pages/devices/deviceSettings'
+import { freeName, keptRows, nextAddedKey, sentPathsOf } from './formRows'
 
 /** One Data Source as its row edits it. Both modes' entries are held, so switching the mode and back loses nothing before a save. */
-export interface DataSourceDraft {
-  /** Tells the rows apart in the page: the id of a saved Data Source, a counted one for a row that was added. */
-  key: string
+export interface DataSourceDraft extends FormRow {
   /** `null` for a Data Source that was added and not saved yet. */
   id: string | null
   name: string
@@ -21,8 +21,6 @@ export interface DataSourceDraft {
   transformJs: string
   /** JSON as typed. */
   literalValue: string
-  /** Left out of the next save. The row stays, struck through, until then. */
-  removed: boolean
 }
 
 export interface DataSourcesDraft {
@@ -109,13 +107,8 @@ function inputOf(row: DataSourceDraft): SavedDataSource {
   }
 }
 
-const kept = (sources: DataSourceDraft[]) => sources.filter(row => !row.removed)
-
 /** The path a save sends each row at, by the row's place in the draft: a removed row is not sent and has none. */
-export function sentPaths(sources: DataSourceDraft[]): Array<string | undefined> {
-  const keptRows = kept(sources)
-  return sources.map(row => row.removed ? undefined : `dataSources.${keptRows.indexOf(row)}`)
-}
+export const sentPaths = (sources: DataSourceDraft[]) => sentPathsOf('dataSources', sources)
 
 /** What is wrong with a Data Source's name as entered, among the names before it in the Plugin and the Plugin Fields' keynames. */
 export function dataSourceNameProblem(entered: string, among: { plugin: string, earlier: string[], keynames: string[] }) {
@@ -197,7 +190,7 @@ function sourceProblems(row: DataSourceDraft, earlier: string[], names: NameCont
 }
 
 function sourcesProblems(sources: DataSourceDraft[], names: NameContext, demoMode: boolean): FieldProblem[] {
-  const rows = kept(sources)
+  const rows = keptRows(sources)
   return rows.flatMap((row, index) => {
     const earlier = rows.slice(0, index).map(other => other.name.trim())
     return Object.entries(sourceProblems(row, earlier, names, demoMode))
@@ -224,7 +217,7 @@ export function dataSourcesPart(demoMode: () => boolean): PluginFormPart<DataSou
   return {
     keys: ['refreshInterval', 'dataSources'],
     read: plugin => ({ interval: intervalShown(plugin.refreshInterval), sources: plugin.dataSources.map(draftOf) }),
-    toInput: draft => ({ refreshInterval: intervalMinutes(draft.interval), dataSources: kept(draft.sources).map(inputOf) }),
+    toInput: draft => ({ refreshInterval: intervalMinutes(draft.interval), dataSources: keptRows(draft.sources).map(inputOf) }),
     validate: (draft, { plugin, unsaved }) => [
       ...intervalProblems(draft.interval, plugin.refreshInterval),
       ...sourcesProblems(draft.sources, { plugin: plugin.name, keynames: keynamesOf(plugin, unsaved) }, demoMode()),
@@ -232,25 +225,12 @@ export function dataSourcesPart(demoMode: () => boolean): PluginFormPart<DataSou
   }
 }
 
-const ADDED_KEY = /^added-(\d+)$/
-
-function nextAddedKey(sources: DataSourceDraft[]) {
-  const counted = sources.map(row => Number(ADDED_KEY.exec(row.key)?.[1] ?? 0))
-  return `added-${Math.max(0, ...counted) + 1}`
-}
-
-function freeName(sources: DataSourceDraft[]) {
-  const taken = new Set(kept(sources).map(row => row.name.trim()))
-  const candidates = ['source', ...sources.map((_, index) => `source_${index + 2}`), `source_${sources.length + 2}`]
-  return candidates.find(name => !taken.has(name))!
-}
-
 /** What "Add a Data Source" appends: a GET fetch named `source`, or the next free `source_n`. */
 export function addedDataSource(sources: DataSourceDraft[]): DataSourceDraft {
   return {
     key: nextAddedKey(sources),
     id: null,
-    name: freeName(sources),
+    name: freeName('source', keptRows(sources).map(row => row.name.trim())),
     mode: 'fetch',
     method: 'GET',
     url: '',

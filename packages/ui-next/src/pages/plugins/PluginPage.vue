@@ -3,6 +3,8 @@ import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import PluginActions from './PluginActions.vue'
 import PluginDataSources from './PluginDataSources.vue'
+import PluginFields from './PluginFields.vue'
+import PluginFieldValues from './PluginFieldValues.vue'
 import PluginFrame from './PluginFrame.vue'
 import PluginNaming from './PluginNaming.vue'
 
@@ -26,12 +28,12 @@ watch(() => route.params.pluginId, (id) => {
       <!-- #template: Template -->
       <PluginDataSources v-if="plugin.kind === 'Poll'" />
       <!-- #data: Webhook for a Webhook-kind Plugin, in the `v-else` of the Data Sources -->
-      <!-- #values: Field Values -->
+      <PluginFieldValues />
       <!-- #devices: Devices -->
       <!-- #recipe: Recipe -->
     </template>
     <template #tucked>
-      <!-- #fields: Plugin Fields -->
+      <PluginFields />
       <PluginNaming />
       <PluginActions />
     </template>

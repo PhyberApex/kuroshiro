@@ -7,14 +7,18 @@ import { AccordionRoot } from 'reka-ui'
 import { computed, nextTick, provide, ref, useId, watch, watchEffect } from 'vue'
 import { droppedAt, movedBy, sameOrder, screenRowsKey } from './screenRows'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   /** The rows in the order they stand in. The list is controlled: it emits `reorder` and shows the new order once `items` holds it. */
   items: T[]
   /** Gives each row its grip, its two move buttons on phone and its Order. */
   sortable?: boolean
+  /** What a row's place is called when it is announced: "Weather, Order 2 of 5". A list of anything but Screens says "place". */
+  place?: string
   /** Holds the drag state still, for the gallery: the id of the lifted row, what lifted it, and the id of the row the landing line is drawn before or after. */
   force?: { lifted?: string, by?: LiftedBy, dropBefore?: string, dropAfter?: string }
-}>()
+}>(), {
+  place: 'Order',
+})
 
 const emit = defineEmits<{
   /** Every row's id, once, in the order the admin put them in. A failed save is answered by handing `items` back in the old order. */
@@ -72,7 +76,7 @@ const rowElements = new Map<string, HTMLElement>()
 const nameOf = (id: string) => props.items.find(item => item.id === id)?.name ?? ''
 
 function sayPlace(id: string, ids: string[]) {
-  said.value = `${nameOf(id)}, Order ${ids.indexOf(id) + 1} of ${ids.length}`
+  said.value = `${nameOf(id)}, ${props.place} ${ids.indexOf(id) + 1} of ${ids.length}`
 }
 
 /** A row that moves in the page can lose the focus on the way; while this is set, a grip that loses it is not being left. */
