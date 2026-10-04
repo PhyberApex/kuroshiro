@@ -1,4 +1,5 @@
 import type { DeviceModelList, PaletteRead } from 'kuroshiro-shared'
+import type { Palette } from './entities/palette.entity.js'
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
@@ -7,6 +8,10 @@ import { SyncRunService } from '../sync-runs/sync-run.service.js'
 import { toDeviceModelList, toDeviceModelRead, toPaletteRead } from './device-models.mapper.js'
 import { defaultPaletteAmong, DeviceModelsService } from './device-models.service.js'
 import { compatiblePaletteIds } from './palette-compatibility.js'
+
+function devicesOn(palette: Palette, devices: Device[]): Device[] {
+  return devices.filter(device => device.palette?.id === palette.id)
+}
 
 @Injectable()
 export class DeviceModelReadsService {
@@ -33,7 +38,7 @@ export class DeviceModelReadsService {
 
   async listPalettes(): Promise<PaletteRead[]> {
     const [palettes, devices] = await Promise.all([this.deviceModels.findAllPalettes(), this.devicesWithAssignments()])
-    return palettes.map(palette => toPaletteRead(palette, devices.filter(device => device.palette?.id === palette.id)))
+    return palettes.map(palette => toPaletteRead(palette, devicesOn(palette, devices)))
   }
 
   /** One Palette with the Devices set to it, as it stands now. */
@@ -41,8 +46,7 @@ export class DeviceModelReadsService {
     const palette = await this.deviceModels.findPalette(id)
     if (!palette)
       throw new NotFoundException(`Palette ${id} not found`)
-    const devices = await this.devicesWithAssignments()
-    return toPaletteRead(palette, devices.filter(device => device.palette?.id === palette.id))
+    return toPaletteRead(palette, devicesOn(palette, await this.devicesWithAssignments()))
   }
 
   private devicesWithAssignments(): Promise<Device[]> {

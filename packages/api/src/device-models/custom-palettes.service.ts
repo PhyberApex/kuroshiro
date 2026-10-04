@@ -60,6 +60,7 @@ export class CustomPalettesService {
       })
     }
     await this.paletteRepository.save(Object.assign(palette, changes))
+    // Read again: the Devices loaded before the save carry the Palette as it was, and the conversion reads its colours off the Device.
     await this.reconvert(await this.devicesUsing(id))
   }
 

@@ -1,6 +1,6 @@
 import type { CreateCustomPaletteInput, CustomPaletteFrameworkClass, DeviceModelRead, DeviceReference, PaletteRead } from 'kuroshiro-shared'
 import type { SelectOption } from '@/components/selectOption'
-import { HEX_COLOR_PATTERN } from 'kuroshiro-shared'
+import { CUSTOM_PALETTE_FRAMEWORK_CLASSES, HEX_COLOR_PATTERN } from 'kuroshiro-shared'
 import { fieldErrorsOf, isRefusal } from '@/api/client'
 import { listed } from '@/patterns/listed'
 import { PALETTE_FAMILIES } from './paletteFamilies'
@@ -23,12 +23,12 @@ const FIRST_FAMILY = PALETTE_FAMILIES[0].frameworkClass
 const BLACK_AND_WHITE = ['#000000', '#FFFFFF']
 
 /** The colours of TRMNL's Palette of a family: where a new custom Palette in it starts. */
-function trmnlColours(frameworkClass: string, palettes: PaletteRead[]) {
+function trmnlColours(frameworkClass: CustomPaletteFrameworkClass, palettes: PaletteRead[]) {
   return palettes.find(palette => palette.kind === 'official' && palette.frameworkClass === frameworkClass && palette.colors)?.colors ?? undefined
 }
 
 function isFamily(frameworkClass: string): frameworkClass is CustomPaletteFrameworkClass {
-  return PALETTE_FAMILIES.some(family => family.frameworkClass === frameworkClass)
+  return (CUSTOM_PALETTE_FRAMEWORK_CLASSES as readonly string[]).includes(frameworkClass)
 }
 
 /** What the form holds when it opens: the Palette as it is, or a new one in the first family, starting from TRMNL's colours for it. */
@@ -45,7 +45,7 @@ function sameColours(one: string[], other: string[] | undefined) {
 }
 
 /** The colours after a change of family: TRMNL's for the new family while the admin has not changed those of the old one. */
-export function nextDraftColours({ frameworkClass, colours }: PaletteDraft, nextFamily: string, palettes: PaletteRead[]) {
+export function nextDraftColours({ frameworkClass, colours }: PaletteDraft, nextFamily: CustomPaletteFrameworkClass, palettes: PaletteRead[]) {
   const untouched = sameColours(colours, trmnlColours(frameworkClass, palettes))
   const next = trmnlColours(nextFamily, palettes)
   return untouched && next ? [...next] : colours
@@ -93,13 +93,19 @@ export function savingConverts(usedBy: DeviceReference[]) {
 
 const counted = (count: number, one: string) => `${count} ${one}${count === 1 ? '' : 's'}`
 
+interface GoingBack {
+  /** The name of the Palette the Devices go back to, when the page knows it. */
+  fallback: string | undefined
+  names: string[]
+}
+
 /** The Devices of `usedBy` by the Palette each goes back to, in the order they come. */
 function byFallback(usedBy: DeviceReference[], models: DeviceModelRead[], palettes: PaletteRead[]) {
   const fallbackOf = (device: DeviceReference) => {
     const id = models.find(model => model.usedBy.some(user => user.id === device.id))?.defaultPaletteId
     return palettes.find(palette => palette.id === id)?.name
   }
-  return usedBy.reduce<{ fallback: string | undefined, names: string[] }[]>((groups, device) => {
+  return usedBy.reduce<GoingBack[]>((groups, device) => {
     const fallback = fallbackOf(device)
     const group = groups.find(candidate => candidate.fallback === fallback)
     return group
@@ -108,7 +114,7 @@ function byFallback(usedBy: DeviceReference[], models: DeviceModelRead[], palett
   }, [])
 }
 
-function goesBack({ fallback, names }: { fallback: string | undefined, names: string[] }) {
+function goesBack({ fallback, names }: GoingBack) {
   const one = names.length === 1
   return `${listed(names)}, which ${one ? 'goes back to its' : 'go back to their'} Device Model's richest Palette${fallback ? `, ${fallback}` : ''}.`
 }
