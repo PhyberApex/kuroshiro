@@ -178,6 +178,51 @@ export interface CreateWebhookPluginInput {
 /** What a Plugin is built from. It starts with one `full` Template, the starter, and for Poll a refresh interval of 15 minutes. */
 export type CreatePluginInput = CreatePollPluginInput | CreateWebhookPluginInput
 
+export interface ImportGithubPluginInput {
+  /** `https://github.com/{owner}/{repository}`: a public repository with the Plugin at its root, on the branch `main`. */
+  githubUrl: string
+  /** The Device the imported Plugin is assigned to at once, at the end of its Order. */
+  deviceId?: string
+}
+
+export interface ImportRecipeInput {
+  /** The Recipe's id, or the address of its page on trmnl.com. */
+  recipe: string
+  /** The Device the imported Plugin is assigned to at once, at the end of its Order. */
+  deviceId?: string
+}
+
+// Optional `www.`, `.git` and a closing slash; a branch or a sub-folder is not an address of a repository.
+const GITHUB_REPOSITORY = /^https?:\/\/(?:www\.)?github\.com\/([\w.-]+)\/([\w.-]+?)(?:\.git)?\/?$/
+
+/** `owner/repository` of the address of a GitHub repository, or `null` for anything else. */
+export function githubRepositoryOf(entered: string): string | null {
+  const match = GITHUB_REPOSITORY.exec(entered.trim())
+  return match ? `${match[1]}/${match[2]}` : null
+}
+
+/** The Recipe id in what was entered: the digits alone, or an address holding `recipes/{digits}`. */
+export function recipeIdOf(entered: string): string | null {
+  const text = entered.trim()
+  if (/^\d+$/.test(text))
+    return text
+  return /recipes\/(\d+)/.exec(text)?.[1] ?? null
+}
+
+/** Where an imported Plugin came from. A Recipe's `name` is the name the Recipe gave the Plugin. */
+export type PluginImportOrigin
+  = | { type: 'recipe', id: string, name: string }
+    | { type: 'file', fileName: string }
+    | { type: 'github', repository: string }
+
+/** What each of the three imports answers. */
+export interface PluginImportResult {
+  plugin: PluginDetail
+  origin: PluginImportOrigin
+  /** Whether a Data Source came with a transform: JavaScript that runs on the server at every fetch. */
+  hasTransform: boolean
+}
+
 /** A key left out keeps what is stored. Each collection is the whole set. */
 export interface UpdatePluginInput {
   name?: string

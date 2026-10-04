@@ -34,7 +34,7 @@ function fakeBuilding(answer: Answer = input => HttpResponse.json(created(input)
   return { sent }
 }
 
-async function mountAddPlugin(at = '/plugins/new') {
+async function mountAddPlugin(at = '/plugins/new?way=poll') {
   const screen = await mountApp({ at })
   await expect.element(screen.getByRole('heading', { name: 'Add a Plugin', level: 1 })).toBeVisible()
   return screen
@@ -78,7 +78,7 @@ describe('add a Plugin', () => {
       await expect.element(nameField(screen)).toHaveAccessibleDescription('A Plugin needs a name.')
       await expect.element(nameField(screen)).toHaveAttribute('aria-invalid', 'true')
       expect(sent).toEqual([])
-      expect(path(screen)).toBe('/plugins/new')
+      expect(path(screen)).toBe('/plugins/new?way=poll')
     })
 
     it('shows the loading mark on the button while the Plugin is created', async () => {
@@ -159,14 +159,6 @@ describe('add a Plugin', () => {
   })
 
   describe('the ways', () => {
-    it('offers the ways that are built, and falls back to the first for a way it does not know', async () => {
-      fakeBuilding()
-      const screen = await mountAddPlugin('/plugins/new?way=carrier-pigeon')
-
-      await expect.element(way(screen, 'Build a Poll Plugin')).toBeChecked()
-      expect(screen.getByRole('radiogroup', { name: 'Way to add a Plugin' }).getByRole('radio').elements()).toHaveLength(2)
-    })
-
     it('keeps the chosen way in the address and the name across the two ways of building', async () => {
       const { sent } = fakeBuilding()
       const screen = await mountAddPlugin()
@@ -211,7 +203,7 @@ describe('add a Plugin', () => {
         await delay(400)
         return HttpResponse.json([KITCHEN])
       }))
-      const screen = await mountAddPlugin('/plugins/new?device=kitchen')
+      const screen = await mountAddPlugin('/plugins/new?way=poll&device=kitchen')
 
       expect(createPlugin(screen).elements()).toHaveLength(0)
       await expect.element(screen.getByRole('link', { name: 'Kitchen\'s Screens' })).toBeVisible()
@@ -225,7 +217,7 @@ describe('add a Plugin', () => {
 
     it('returns to the Device on Cancel', async () => {
       fakeBuilding()
-      const screen = await mountAddPlugin('/plugins/new?device=kitchen')
+      const screen = await mountAddPlugin('/plugins/new?way=poll&device=kitchen')
 
       await screen.getByRole('link', { name: 'Cancel' }).click()
 
@@ -234,7 +226,7 @@ describe('add a Plugin', () => {
 
     it('carries nothing for an id that is no Device\'s', async () => {
       const { sent } = fakeBuilding()
-      const screen = await mountAddPlugin('/plugins/new?device=attic')
+      const screen = await mountAddPlugin('/plugins/new?way=poll&device=attic')
 
       await expect.element(screen.getByRole('link', { name: 'Kitchen', exact: true })).toBeVisible()
       await expect.element(screen.getByRole('link', { name: 'All Plugins' })).toHaveAttribute('href', '/plugins')
@@ -283,7 +275,7 @@ describe('add a Plugin', () => {
       await expect.element(dialog.getByText('What you entered for the new Plugin.')).toBeVisible()
       await dialog.getByRole('button', { name: 'Keep editing' }).click()
 
-      expect(path(screen)).toBe('/plugins/new')
+      expect(path(screen)).toBe('/plugins/new?way=poll')
       await expect.element(nameField(screen)).toHaveValue('Weather')
     })
   })
@@ -300,7 +292,7 @@ describe('add a Plugin', () => {
       await expect.element(nameField(screen)).toHaveAccessibleDescription('name should not be empty')
       await expect.element(nameField(screen)).toHaveValue('Weather')
       expect(sent).toHaveLength(1)
-      expect(path(screen)).toBe('/plugins/new')
+      expect(path(screen)).toBe('/plugins/new?way=poll')
     })
 
     it('says the server\'s reason for a field the form does not show', async () => {

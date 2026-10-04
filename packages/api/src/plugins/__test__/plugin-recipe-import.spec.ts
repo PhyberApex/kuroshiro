@@ -16,28 +16,6 @@ function buildFlatRecipeArchive(settings: Record<string, unknown>, files: Record
 }
 
 describe('pluginImporterService recipe import', () => {
-  describe('parseRecipeId', () => {
-    it('accepts a bare numeric id', () => {
-      const service = new PluginImporterService()
-      expect(service.parseRecipeId('150460')).toBe('150460')
-    })
-
-    it('extracts the id from a trmnl.com/recipes/:id URL', () => {
-      const service = new PluginImporterService()
-      expect(service.parseRecipeId('https://trmnl.com/recipes/150460')).toBe('150460')
-    })
-
-    it('extracts the id from a trmnl.com/recipes/:id-slug URL', () => {
-      const service = new PluginImporterService()
-      expect(service.parseRecipeId('https://trmnl.com/recipes/150460-daily-weather')).toBe('150460')
-    })
-
-    it('throws on an unrecognized id/URL', () => {
-      const service = new PluginImporterService()
-      expect(() => service.parseRecipeId('not-a-recipe')).toThrow('Invalid Recipe id or URL')
-    })
-  })
-
   describe('importFromRecipeArchive', () => {
     it('parses a flat Recipe archive into the standard parsed-plugin shape', async () => {
       const settings = {

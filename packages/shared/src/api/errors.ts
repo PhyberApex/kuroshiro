@@ -36,6 +36,16 @@ export const API_ERROR_CODES = [
   'template-full-missing',
   'notifications-off',
   'notification-failed',
+  'import-not-zip',
+  'import-no-plugin',
+  'import-legacy-format',
+  'github-url-invalid',
+  'github-repo-not-found',
+  'recipe-id-invalid',
+  'recipe-not-found',
+  'recipe-oauth',
+  'recipe-strategy-unsupported',
+  'recipe-static-transform',
 ] as const
 
 export type ApiErrorCode = typeof API_ERROR_CODES[number]

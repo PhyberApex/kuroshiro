@@ -6,7 +6,7 @@
     "experimentalDecorators": true,
     "module": "nodenext",
     "moduleResolution": "nodenext",
-    "types": ["node"],
+    "types": ["node", "multer"],
     "strictPropertyInitialization": false,
     "declaration": true,
     "outDir": "./dist",

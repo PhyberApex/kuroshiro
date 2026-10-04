@@ -21,6 +21,15 @@ function imageFetchFailed({ message }: ApiError) {
   return [IMAGE_NOT_FETCHED, reason].filter(Boolean).join(' ')
 }
 
+export const NOT_A_RECIPE = 'This is not a Recipe address or id. It looks like https://trmnl.com/recipes/41120, or 41120.'
+
+export const NOT_A_REPOSITORY = 'Enter a repository address like https://github.com/owner/repository.'
+
+function recipeNotFound({ details }: ApiError) {
+  const id = details?.id
+  return typeof id === 'string' ? `TRMNL has no Recipe ${id}.` : 'TRMNL has no such Recipe.'
+}
+
 export const NOT_IN_DEMO = 'Not available in the demo.'
 
 /**
@@ -62,6 +71,17 @@ const REFUSAL_WORDING: Record<ApiErrorCode, Wording> = {
   'template-full-missing': 'A Plugin needs its full Template.',
   'notifications-off': 'Notifications are off on this Instance.',
   'notification-failed': 'Apprise did not accept it. Check that the Apprise sidecar is running, and its logs.',
+  'import-not-zip': 'This file is not a .zip. A Plugin is imported from a .zip as Kuroshiro or TRMNL exports it.',
+  'import-no-plugin': 'This .zip holds no Plugin. It needs a .trmnlp.yml and at least one .liquid template.',
+  'import-legacy-format': 'This Plugin was exported in a format Kuroshiro no longer reads. Export it again where it came from.',
+  'github-url-invalid': NOT_A_REPOSITORY,
+  'github-repo-not-found': 'GitHub has no public repository at this address.',
+  'recipe-id-invalid': NOT_A_RECIPE,
+  'recipe-not-found': recipeNotFound,
+  'recipe-oauth': 'This Recipe signs in to another service with OAuth, which Kuroshiro cannot do.',
+  'recipe-strategy-unsupported': 'This Recipe gets its data pushed by TRMNL. Kuroshiro can only import Recipes that poll or hold fixed data. Build a Webhook Plugin instead.',
+  // docs/ui/ has no sentence for it, so the server's own stands.
+  'recipe-static-transform': ({ message }) => message,
 }
 
 /** A code this build does not know, from a newer server, falls back on the server's own sentence. */

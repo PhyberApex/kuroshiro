@@ -1,4 +1,4 @@
-import type { CreatePluginInput, PluginDetail, PluginSummary, UpdatePluginInput } from 'kuroshiro-shared'
+import type { CreatePluginInput, ImportGithubPluginInput, ImportRecipeInput, PluginDetail, PluginImportResult, PluginSummary, UpdatePluginInput } from 'kuroshiro-shared'
 import { apiDownload, apiGet, apiSend } from './client'
 
 /** Every Plugin as a row of the list, by name whatever its case. */
@@ -16,6 +16,31 @@ export function getPlugin(pluginId: string) {
  */
 export function createPlugin(input: CreatePluginInput) {
   return apiSend<PluginDetail>('POST', 'plugins', input)
+}
+
+/**
+ * Imports a Recipe from TRMNL as a Poll-kind Plugin tied to it. Refused with `recipe-id-invalid`, `recipe-not-found`,
+ * `recipe-oauth`, `recipe-strategy-unsupported` or `recipe-static-transform`, and with `upstream-unreachable` when TRMNL does not answer.
+ */
+export function importRecipe(input: ImportRecipeInput) {
+  return apiSend<PluginImportResult>('POST', 'plugins/import-recipe', input)
+}
+
+/** Imports the Plugin a `.zip` holds. Refused with `import-not-zip`, `import-no-plugin`, `import-legacy-format` or `upload-too-large`. */
+export function importPluginFile(file: File, deviceId?: string) {
+  const form = new FormData()
+  form.append('file', file)
+  if (deviceId)
+    form.append('deviceId', deviceId)
+  return apiSend<PluginImportResult>('POST', 'plugins/import', form)
+}
+
+/**
+ * Imports the Plugin at the root of a public GitHub repository's branch `main`. Refused with `github-url-invalid`,
+ * `github-repo-not-found` or `import-no-plugin`, and with `upstream-unreachable` when GitHub does not answer.
+ */
+export function importGithubPlugin(input: ImportGithubPluginInput) {
+  return apiSend<PluginImportResult>('POST', 'plugins/import-github', input)
 }
 
 /**

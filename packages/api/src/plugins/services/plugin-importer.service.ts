@@ -1,21 +1,62 @@
-import type { PluginFieldOption, PluginKind } from 'kuroshiro-shared'
+import type { MergeStrategy, PluginFieldOption, PluginKind } from 'kuroshiro-shared'
 import type { JsonObject } from '../../utils/json.js'
 import { Buffer } from 'node:buffer'
-import * as fs from 'node:fs'
 import * as path from 'node:path'
-import { BadRequestException, Injectable, Logger } from '@nestjs/common'
+import { HttpStatus, Injectable, Logger } from '@nestjs/common'
 import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
+import { githubRepositoryOf, MERGE_STRATEGIES, recipeIdOf } from 'kuroshiro-shared'
+import { ApiException } from '../../errors/api.exception.js'
 import { isPlainObject } from '../../utils/json.js'
-import { resolveAppPath } from '../../utils/pathHelper.js'
 import { parseFieldOptions } from '../plugin-field-options.js'
 
+const DOWNLOAD_TIMEOUT_MS = 30_000
+
+function importRefused(code: 'import-no-plugin' | 'import-legacy-format' | 'unprocessable', message: string): ApiException {
+  return new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, code, message)
+}
+
+function upstreamUnreachable(upstream: string, reason: string): ApiException {
+  return new ApiException(HttpStatus.BAD_GATEWAY, 'upstream-unreachable', `${upstream} did not answer: ${reason}`, { reason })
+}
+
 function parseYamlObject<T>(content: string, invalidMessage: string): T {
-  const parsed: unknown = yaml.load(content)
+  let parsed: unknown
+  try {
+    parsed = yaml.load(content)
+  }
+  catch {
+    throw importRefused('import-no-plugin', invalidMessage)
+  }
   if (!isPlainObject(parsed)) {
-    throw new BadRequestException(invalidMessage)
+    throw importRefused('import-no-plugin', invalidMessage)
   }
   return parsed as T
+}
+
+function openZip(content: Buffer): AdmZip | null {
+  try {
+    const zip = new AdmZip(content)
+    zip.getEntries()
+    return zip
+  }
+  catch {
+    return null
+  }
+}
+
+/** A Plugin is rendered from its `full` Template, so an import that brings none of that size has its first one take the place. */
+function withFullTemplate(plugin: ParsedPlugin): ParsedPlugin {
+  if (plugin.templates.some(template => template.layout === 'full'))
+    return plugin
+  const [first, ...others] = plugin.templates
+  return { ...plugin, templates: [{ ...first, layout: 'full' }, ...others] }
+}
+
+// TRMNL writes a default under `default`, as a string, a number or a boolean; Kuroshiro's export under `default_value`.
+function defaultOf(field: CustomField): string | undefined {
+  const value = field.default_value ?? field.default
+  return value === undefined || value === null ? undefined : String(value)
 }
 
 export type TemplateLayout = 'full' | 'half_horizontal' | 'half_vertical' | 'quadrant'
@@ -47,6 +88,7 @@ interface CustomField {
   name?: string
   description?: string
   default_value?: string
+  default?: string | number | boolean | null
   optional?: boolean
   options?: unknown
 }
@@ -67,6 +109,11 @@ interface TerminusSettings {
   name?: string
   refresh_interval?: number
   custom_fields?: CustomField[] | JsonObject
+
+  // The Plugin Kind as Kuroshiro's export and TRMNL's own archives name it, with what a Webhook-kind Plugin carries
+  strategy?: string
+  merge_strategy?: string
+  stream_limit?: number | null
 
   // Kuroshiro's own multi-source round-trip format (issue #776)
   data_sources?: DataSourceEntry[]
@@ -91,7 +138,6 @@ interface TerminusSettings {
 interface RecipeSettings extends TerminusSettings {
   description?: string
   oauth_enabled?: boolean
-  strategy?: string
   // Terminus schema: `maybe :hash` — a `strategy: static` recipe's fixed
   // payload (issue #794 / ADR-0018)
   static_data?: JsonObject | null
@@ -113,6 +159,10 @@ export interface ParsedPlugin {
   description?: string
   kind: PluginKind
   refreshInterval: number
+  /** Webhook only. */
+  mergeStrategy?: MergeStrategy
+  /** Webhook with `stream` only. */
+  streamLimit?: number
   dataSources: ParsedDataSource[]
   templates: Array<{
     layout: string
@@ -135,81 +185,47 @@ export interface ParsedPlugin {
 export class PluginImporterService {
   private readonly logger = new Logger(PluginImporterService.name)
 
-  async importFromFile(filePath: string): Promise<ParsedPlugin> {
-    const ext = path.extname(filePath).toLowerCase()
-    const filename = path.basename(filePath, ext)
-
-    if (ext === '.zip') {
-      return this.importFromZip(filePath, filename)
+  /** Reads an uploaded `.trmnlp` zip, which is held in memory. */
+  importFromUpload(file: { buffer: Buffer, originalname: string } | undefined): ParsedPlugin {
+    const zip = file && /\.zip$/i.test(file.originalname) ? openZip(file.buffer) : null
+    if (!file || !zip) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, 'import-not-zip', 'A Plugin is imported from a .zip file.')
     }
-    else if (ext === '.yml' || ext === '.yaml') {
-      return this.importFromYaml(filePath, filename)
-    }
-    else {
-      throw new Error('Unsupported file format. Please upload .yml or .zip file.')
-    }
+    return withFullTemplate(this.parseZip(zip, file.originalname.replace(/\.zip$/i, '')))
   }
 
-  async importFromGithubUrl(githubUrl: string): Promise<ParsedPlugin> {
-    this.logger.log(`Importing plugin from GitHub URL: ${githubUrl}`)
-
-    // Convert GitHub URL to ZIP download URL
-    // Supports: https://github.com/owner/repo or https://github.com/owner/repo/tree/branch/path
-    let zipUrl = githubUrl
-
-    // Extract owner, repo, branch, and path from various GitHub URL formats
-    const repoMatch = githubUrl.match(/github\.com\/([^/]+)\/([^/]+)(?:\/tree\/([^/]+)(?:\/(.+))?)?/)
-    if (repoMatch) {
-      const [, owner, repo, branch] = repoMatch
-      const cleanRepo = repo.replace(/\.git$/, '')
-      const branchOrDefault = branch || 'main'
-      zipUrl = `https://github.com/${owner}/${cleanRepo}/archive/refs/heads/${branchOrDefault}.zip`
-      this.logger.debug(`Converted to ZIP URL: ${zipUrl}`)
+  /** Reads the Plugin at the root of a public repository's branch `main`, and answers it with `owner/repository`. */
+  async importFromGithubUrl(githubUrl: string): Promise<{ plugin: ParsedPlugin, repository: string }> {
+    const repository = githubRepositoryOf(githubUrl)
+    if (!repository) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, 'github-url-invalid', 'The address is not https://github.com/{owner}/{repository}.')
     }
+    this.logger.log(`Importing plugin from GitHub: ${repository}`)
 
-    // Download ZIP file
-    const uploadsDir = resolveAppPath('uploads')
-    await fs.promises.mkdir(uploadsDir, { recursive: true })
+    const archive = await this.download(`https://github.com/${repository}/archive/refs/heads/main.zip`, 'GitHub')
+    if (!archive) {
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'github-repo-not-found', `GitHub has no public repository ${repository} with a branch main.`, { repository })
+    }
+    const zip = openZip(archive)
+    if (!zip) {
+      throw upstreamUnreachable('GitHub', 'what it answered is not a .zip')
+    }
+    return { plugin: withFullTemplate(this.parseZip(zip, repository.split('/')[1])), repository }
+  }
 
-    const tempZipPath = path.join(uploadsDir, `github-${Date.now()}.zip`)
-
+  /** What the address holds, or `null` when the upstream says there is nothing there. */
+  private async download(url: string, upstream: string): Promise<Buffer | null> {
     try {
-      this.logger.debug(`Downloading from: ${zipUrl}`)
-      const response = await fetch(zipUrl)
-
-      if (!response.ok) {
-        throw new Error(`Failed to download from GitHub: ${response.statusText}`)
-      }
-
-      const arrayBuffer = await response.arrayBuffer()
-      const buffer = Buffer.from(arrayBuffer)
-      await fs.promises.writeFile(tempZipPath, buffer)
-
-      this.logger.log(`Downloaded ZIP to: ${tempZipPath}`)
-
-      // Use existing ZIP import logic
-      const result = await this.importFromZip(tempZipPath, 'github-import')
-
-      // Clean up temp file
-      await fs.promises.unlink(tempZipPath)
-
-      return result
+      const response = await fetch(url, { signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) })
+      if (response.status === 404)
+        return null
+      if (!response.ok)
+        throw new Error(`it answered ${response.status}`)
+      return Buffer.from(await response.arrayBuffer())
     }
     catch (error) {
-      // Clean up temp file on error
-      try {
-        await fs.promises.unlink(tempZipPath)
-      }
-      catch {
-        // Ignore cleanup errors
-      }
-      throw error
+      throw upstreamUnreachable(upstream, error instanceof Error ? error.message : String(error))
     }
-  }
-
-  private async importFromZip(zipPath: string, fallbackName: string): Promise<ParsedPlugin> {
-    const zip = new AdmZip(zipPath)
-    return this.parseZip(zip, fallbackName)
   }
 
   /** Parses a `.trmnlp` zip already in memory (e.g. a `plugins/<id>/` folder extracted from a Configuration Archive) through the same manifest/settings/template mapping `importFromFile` uses, without a round trip through disk. */
@@ -235,19 +251,13 @@ export class PluginImporterService {
 
     if (!manifestEntry) {
       const availableFiles = zipEntries.map(e => e.entryName).join(', ')
-      throw new Error(`.trmnlp.yml manifest not found in ZIP. Available files: ${availableFiles}`)
+      throw importRefused('import-no-plugin', `.trmnlp.yml manifest not found in ZIP. Available files: ${availableFiles}`)
     }
 
-    if (!settingsEntry) {
-      const availableFiles = zipEntries.map(e => e.entryName).join(', ')
-      throw new Error(`src/settings.yml not found in ZIP. Available files: ${availableFiles}`)
-    }
-
-    const manifestContent = manifestEntry.getData().toString('utf8')
-    const settingsContent = settingsEntry.getData().toString('utf8')
-
-    const manifest = parseYamlObject<TerminusManifest>(manifestContent, 'Invalid manifest.yml')
-    const settings = parseYamlObject<TerminusSettings>(settingsContent, 'Invalid settings.yml')
+    const manifest = parseYamlObject<TerminusManifest>(manifestEntry.getData().toString('utf8'), 'Invalid manifest.yml')
+    const settings = settingsEntry
+      ? parseYamlObject<TerminusSettings>(settingsEntry.getData().toString('utf8'), 'Invalid settings.yml')
+      : {}
 
     // Extract transform.js if it exists (used to process API data)
     const transformEntry = zipEntries.find(entry =>
@@ -296,50 +306,32 @@ export class PluginImporterService {
     return this.buildParsedPlugin(manifest, settings, templates, fallbackName, transformJs ?? undefined, forcedDataSources)
   }
 
-  parseRecipeId(recipeIdOrUrl: string): string {
-    const trimmed = recipeIdOrUrl.trim()
-
-    if (/^\d+$/.test(trimmed)) {
-      return trimmed
-    }
-
-    const match = trimmed.match(/recipes\/(\d+)/)
-    if (match) {
-      return match[1]
-    }
-
-    throw new Error(`Invalid Recipe id or URL: ${recipeIdOrUrl}`)
-  }
-
   async importFromRecipe(recipeIdOrUrl: string): Promise<ParsedPlugin> {
-    const recipeId = this.parseRecipeId(recipeIdOrUrl)
+    const recipeId = recipeIdOf(recipeIdOrUrl)
+    if (!recipeId) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, 'recipe-id-invalid', 'A Recipe is named by its id or by an address holding recipes/{id}.')
+    }
     this.logger.log(`Importing plugin from TRMNL Recipe: ${recipeId}`)
 
-    const archiveUrl = `https://trmnl.com/api/plugin_settings/${recipeId}/archive`
-    const response = await fetch(archiveUrl)
-
-    if (!response.ok) {
-      throw new Error(`Failed to download Recipe archive: ${response.statusText}`)
+    const archive = await this.download(`https://trmnl.com/api/plugin_settings/${recipeId}/archive`, 'TRMNL')
+    if (!archive) {
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'recipe-not-found', `TRMNL has no Recipe ${recipeId}.`, { id: recipeId })
     }
-
-    const arrayBuffer = await response.arrayBuffer()
-    return this.importFromRecipeArchive(Buffer.from(arrayBuffer), recipeId)
+    return this.importFromRecipeArchive(archive, recipeId)
   }
 
   async importFromRecipeArchive(archiveBuffer: Buffer, recipeId: string): Promise<ParsedPlugin> {
-    const archiveZip = new AdmZip(archiveBuffer)
-    const entries = archiveZip.getEntries()
-
-    const settingsEntry = entries.find(entry => entry.entryName === 'settings.yml')
-    if (!settingsEntry) {
-      throw new Error('settings.yml not found in Recipe archive')
+    const entries = openZip(archiveBuffer)?.getEntries()
+    const settingsEntry = entries?.find(entry => entry.entryName === 'settings.yml')
+    if (!entries || !settingsEntry) {
+      throw upstreamUnreachable('TRMNL', 'what it answered is not a Recipe archive')
     }
 
     const settingsContent = settingsEntry.getData().toString('utf8')
     const recipeSettings = parseYamlObject<RecipeSettings>(settingsContent, 'Invalid settings.yml')
 
     if (recipeSettings.oauth_enabled) {
-      throw new Error('OAuth recipes aren\'t supported yet')
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'recipe-oauth', 'The Recipe signs in to another service with OAuth, which is not supported.')
     }
 
     if (recipeSettings.strategy === 'static') {
@@ -347,11 +339,12 @@ export class PluginImporterService {
     }
 
     if (recipeSettings.strategy !== 'polling') {
-      throw new Error(`Recipe strategy "${recipeSettings.strategy ?? 'none'}" is not supported; only "polling" recipes can be imported`)
+      const strategy = recipeSettings.strategy ?? 'none'
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'recipe-strategy-unsupported', `The Recipe's strategy "${strategy}" is not supported; only "polling" and "static" Recipes can be imported.`, { strategy })
     }
 
     const reshapedZip = this.reshapeRecipeArchive(entries, settingsContent, recipeSettings)
-    const parsed = this.parseZip(reshapedZip, `recipe-${recipeId}`)
+    const parsed = withFullTemplate(this.parseZip(reshapedZip, `recipe-${recipeId}`))
 
     return {
       ...parsed,
@@ -370,7 +363,7 @@ export class PluginImporterService {
       entry.entryName === 'transform.js' || entry.entryName.endsWith('/transform.js'),
     )
     if (hasTransform) {
-      throw new Error('Static recipes with a transform.js aren\'t supported — nothing to transform')
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'recipe-static-transform', 'The Recipe holds fixed data and a transform.js, which has nothing to transform.')
     }
 
     const staticDataSource: ParsedDataSource = {
@@ -380,7 +373,7 @@ export class PluginImporterService {
     }
 
     const reshapedZip = this.reshapeRecipeArchive(entries, settingsContent, recipeSettings)
-    const parsed = this.parseZip(reshapedZip, `recipe-${recipeId}`, [staticDataSource])
+    const parsed = withFullTemplate(this.parseZip(reshapedZip, `recipe-${recipeId}`, [staticDataSource]))
 
     return {
       ...parsed,
@@ -413,52 +406,6 @@ export class PluginImporterService {
     return reshaped
   }
 
-  private async importFromYaml(yamlPath: string, fallbackName: string): Promise<ParsedPlugin> {
-    const content = await fs.promises.readFile(yamlPath, 'utf8')
-    const manifest = parseYamlObject<TerminusManifest>(content, 'Invalid manifest.yml')
-
-    const dirName = path.dirname(yamlPath)
-    const settingsPath = path.join(dirName, 'src', 'settings.yml')
-
-    if (!fs.existsSync(settingsPath)) {
-      throw new Error('src/settings.yml not found')
-    }
-
-    const settingsContent = await fs.promises.readFile(settingsPath, 'utf8')
-    const settings = parseYamlObject<TerminusSettings>(settingsContent, 'Invalid settings.yml')
-
-    const srcDir = path.join(dirName, 'src')
-    const templates: Array<{ layout: string, liquidMarkup: string }> = []
-
-    // Check for transform.js
-    const transformPath = path.join(srcDir, 'transform.js')
-    const transformJs = fs.existsSync(transformPath)
-      ? await fs.promises.readFile(transformPath, 'utf8')
-      : null
-    if (transformJs) {
-      this.logger.debug('Found transform.js, will include in plugin')
-    }
-
-    if (fs.existsSync(srcDir)) {
-      const files = await fs.promises.readdir(srcDir)
-      const liquidFiles = files.filter(f => f.endsWith('.liquid'))
-
-      for (const file of liquidFiles) {
-        const filePath = path.join(srcDir, file)
-        const content = await fs.promises.readFile(filePath, 'utf8')
-        const filename = path.basename(file, '.liquid')
-        const layout = layoutFromTemplateFilename(filename)
-
-        templates.push({
-          layout,
-          liquidMarkup: content,
-        })
-      }
-    }
-
-    return this.buildParsedPlugin(manifest, settings, templates, fallbackName, transformJs ?? undefined)
-  }
-
   private buildParsedPlugin(
     manifest: TerminusManifest,
     settings: TerminusSettings,
@@ -475,25 +422,32 @@ export class PluginImporterService {
     this.logger.log(`Using plugin name: ${pluginName} (from ${nameSource})`)
 
     if (settings.data_source) {
-      throw new Error('This plugin was exported in a legacy single-data-source format that is no longer supported. Re-export it from its source Plugin to get the current "data_sources" format.')
+      throw importRefused('import-legacy-format', 'This plugin was exported in a legacy single-data-source format that is no longer supported. Re-export it from its source Plugin to get the current "data_sources" format.')
     }
 
     if (templates.length === 0) {
-      throw new Error('At least one .liquid template file is required in src/ directory (e.g., src/full.liquid)')
+      throw importRefused('import-no-plugin', 'At least one .liquid template file is required in src/ directory (e.g., src/full.liquid)')
     }
 
-    const dataSources = forcedDataSources ?? this.resolveDataSources(settings, transformJs)
-    const fields = this.resolveFields(manifest, settings)
-
-    return {
+    const common = {
       name: pluginName,
       description: manifest.description?.trim(),
-      kind: 'Poll',
       refreshInterval: settings.refresh_interval || 15,
-      dataSources,
       templates,
-      fields,
+      fields: this.resolveFields(manifest, settings),
     }
+
+    return settings.strategy === 'webhook'
+      ? { ...common, kind: 'Webhook', dataSources: [], ...this.resolveMerge(settings) }
+      : { ...common, kind: 'Poll', dataSources: forcedDataSources ?? this.resolveDataSources(settings, transformJs) }
+  }
+
+  // An archive of TRMNL's own names the strategy alone, which is a Webhook Payload replaced at every POST.
+  private resolveMerge(settings: TerminusSettings): Pick<ParsedPlugin, 'mergeStrategy' | 'streamLimit'> {
+    const mergeStrategy = MERGE_STRATEGIES.find(strategy => strategy === settings.merge_strategy) ?? 'standard'
+    return mergeStrategy === 'stream' && typeof settings.stream_limit === 'number'
+      ? { mergeStrategy, streamLimit: settings.stream_limit }
+      : { mergeStrategy }
   }
 
   // Name can be in manifest, settings, or use filename fallback
@@ -514,15 +468,15 @@ export class PluginImporterService {
   }
 
   private resolveDataSources(settings: TerminusSettings, transformJs?: string): ParsedDataSource[] {
-    const hasDataSourcesArray = Array.isArray(settings.data_sources) && settings.data_sources.length > 0
-
-    if (hasDataSourcesArray && transformJs) {
-      this.logger.warn('Ignoring src/transform.js: settings.yml uses the "data_sources" array format, where each entry carries its own "transform_js" instead')
+    if (!Array.isArray(settings.data_sources)) {
+      const single = this.parseLegacySingleDataSource(settings, transformJs)
+      return single ? [single] : []
     }
 
-    return hasDataSourcesArray
-      ? this.parseDataSourcesArray(settings.data_sources!)
-      : [this.parseLegacySingleDataSource(settings, transformJs)]
+    if (transformJs) {
+      this.logger.warn('Ignoring src/transform.js: settings.yml uses the "data_sources" array format, where each entry carries its own "transform_js" instead')
+    }
+    return this.parseDataSourcesArray(settings.data_sources)
   }
 
   // custom_fields can be in manifest or settings, can be empty object {}, missing, or an array
@@ -540,7 +494,7 @@ export class PluginImporterService {
         fieldType: field.field_type ?? 'string',
         name: field.name ?? field.keyname,
         description: field.description,
-        defaultValue: field.default_value,
+        defaultValue: defaultOf(field),
         ...(options ? { options } : {}),
         required: !field.optional,
         order: index + 1,
@@ -554,7 +508,7 @@ export class PluginImporterService {
 
       return entry.mode === 'literal'
         ? this.parseLiteralEntry(entry, name)
-        : this.parseFetchEntry(entry, name, index)
+        : this.parseFetchEntry(entry, name)
     })
   }
 
@@ -566,9 +520,9 @@ export class PluginImporterService {
     }
   }
 
-  private parseFetchEntry(entry: DataSourceEntry, name: string, index: number): ParsedDataSource {
+  private parseFetchEntry(entry: DataSourceEntry, name: string): ParsedDataSource {
     if (!entry.endpoint || entry.endpoint.trim() === '') {
-      throw new Error(`Data source at index ${index} is missing an "endpoint"`)
+      throw importRefused('unprocessable', `The Data Source "${name}" is missing an "endpoint".`)
     }
 
     return {
@@ -582,12 +536,13 @@ export class PluginImporterService {
     }
   }
 
-  private parseLegacySingleDataSource(settings: TerminusSettings, transformJs?: string): ParsedDataSource {
+  /** The one Data Source of settings that name an address at their top, or none when they name no address: a Poll-kind Plugin renders without Data Sources. */
+  private parseLegacySingleDataSource(settings: TerminusSettings, transformJs?: string): ParsedDataSource | null {
     // Support both our previous format (endpoint/method) and Terminus's own format (polling_url/polling_verb)
     const endpoint = settings.endpoint || settings.polling_url
 
     if (!endpoint || endpoint.trim() === '') {
-      throw new Error('Data source endpoint is required in src/settings.yml. Expected format:\npolling_url: https://api.example.com/data\npolling_verb: get')
+      return null
     }
 
     return {

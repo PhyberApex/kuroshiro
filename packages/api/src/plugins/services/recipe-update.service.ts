@@ -17,6 +17,7 @@ import type {
 import { BadGatewayException, BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
+import { ApiException } from '../../errors/api.exception.js'
 import { PluginDataSource } from '../entities/plugin-data-source.entity.js'
 import { PluginField } from '../entities/plugin-field.entity.js'
 import { PluginTemplate } from '../entities/plugin-template.entity.js'
@@ -220,15 +221,17 @@ export class RecipeUpdateService {
     return plugin
   }
 
-  // Importer errors are plain `Error`s describing the recipe content/strategy
-  // (OAuth, unsupported strategy, malformed archive) or the download itself
-  // failing (recipe deleted, network issue) — the former are the caller's to
-  // fix (400), the latter is the upstream Recipe being unreachable (502).
+  // The importer refuses with a coded `ApiException` that says why (the Recipe is gone, TRMNL did not
+  // answer, OAuth, an unsupported strategy), which is answered as it is. Anything else is sorted by its
+  // message into the upstream being unreachable (502) and the caller's to fix (400).
   private async fetchUpstream(recipeId: string): Promise<ParsedPlugin> {
     try {
       return await this.importerService.importFromRecipe(recipeId)
     }
     catch (error) {
+      if (error instanceof ApiException) {
+        throw error
+      }
       const message = error instanceof Error ? error.message : 'Failed to fetch the Recipe'
       if (message.startsWith('Failed to download Recipe archive')) {
         throw new BadGatewayException(message)
