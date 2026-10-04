@@ -15,7 +15,8 @@ import { useSaveAsChanged } from '@/components/useSaveAsChanged'
 import { useDeviceFrame } from './deviceFrame'
 import { addScreenPath, deviceSettingsPath } from './devicePaths'
 import OpenedScreen from './OpenedScreen.vue'
-import ScheduleSummary from './ScheduleSummary.vue'
+import RowSchedule from './RowSchedule.vue'
+import ScheduleEditor from './ScheduleEditor.vue'
 import { possessive, screenName } from './screenNaming'
 import ScreenRemoval from './ScreenRemoval.vue'
 import ScreenRename from './ScreenRename.vue'
@@ -177,12 +178,15 @@ const pausedNote = computed(() => sentence(
             />
           </template>
           <template #schedule>
-            <ScheduleSummary :schedule="item.schedule" />
+            <RowSchedule :screen="item" :reload="reload" />
           </template>
           <template #state>
             <span>{{ item.stateWords.words }}<span v-if="item.stateWords.qualifier" class="qualifier"> · {{ item.stateWords.qualifier }}</span></span>
           </template>
           <OpenedScreen :screen="item" :screens="rows" :device="device" :jumps="isMany" :rendering="isOutdated(item)" @move="by => move(item.id, by)">
+            <template #schedule>
+              <ScheduleEditor :screen="item" :reload="reload" />
+            </template>
             <template #source>
               <ScreenSource :screen="item" :device="device" :reload="reload" @rerendering="awaitRendering(item)" />
             </template>

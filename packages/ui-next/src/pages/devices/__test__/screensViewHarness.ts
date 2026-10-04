@@ -1,4 +1,4 @@
-import type { DeviceDetail, InstanceFacts, PluginSummary, ScreenRead, UpdateMashupInput, UpdateScreenInput } from 'kuroshiro-shared'
+import type { DeviceDetail, InstanceFacts, PluginSummary, ScheduleInput, ScreenRead, UpdateMashupInput, UpdateScreenInput } from 'kuroshiro-shared'
 import type { mountApp } from '@/testing/app'
 import { MASHUP_LAYOUTS } from 'kuroshiro-shared'
 import { http, HttpResponse } from 'msw'
@@ -9,9 +9,10 @@ import { fakeShellReads } from '@/testing/app'
 import { buildDeviceDetail, buildDeviceSummary } from '@/testing/fixtures/devices'
 import { buildInstanceFacts } from '@/testing/fixtures/instance'
 import { buildPluginSummary } from '@/testing/fixtures/plugins'
-import { buildScreen } from '@/testing/fixtures/screens'
+import { buildSchedule, buildScreen } from '@/testing/fixtures/screens'
 import { fakeScreenImages } from '@/testing/images'
 import { freezeTime } from '@/testing/time'
+import { EVERY_DAY_ALL_DAY } from '../scheduleEditing'
 
 const NOW = '2026-10-03T07:35:00.000Z'
 export const RENDERED_AT = '2026-10-03T07:31:00.000Z'
@@ -37,6 +38,13 @@ export const SCREENS_OF_EVERY_KIND: ScreenRead[] = [
   kitchenScreen({ id: 'photo', name: 'Harbour photo', order: 4, kind: 'file', plugin: null, imagePath: imagePath('photo'), file: { originalName: 'harbour.png', width: 1600, height: 960, bytes: 421_888, uploadedAt: '2026-09-12T10:00:00.000Z' } }),
   kitchenScreen({ id: 'notes', name: 'Notes', order: 5, kind: 'html', plugin: null, imagePath: imagePath('notes'), html: '<h1>Notes</h1>' }),
 ]
+
+/** The Screen with the Schedule a write leaves it, and the one Screen State the fake works out: a Schedule that is off. */
+function scheduled(screen: ScreenRead, input: ScheduleInput): ScreenRead {
+  const schedule = { ...buildSchedule(EVERY_DAY_ALL_DAY), ...screen.schedule, ...input }
+  const stateWithoutSchedule = screen.state === 'scheduleOff' ? null : screen.state
+  return { ...screen, schedule, state: schedule.enabled ? stateWithoutSchedule : 'scheduleOff' }
+}
 
 /** A write the page made: its method, its path under `/api/` and what it sent. An upload is recorded by its file's name. */
 export interface Write {
@@ -128,6 +136,15 @@ export function fakeKitchen({
         })
         return { ...screen, mashup: { layout: layout.id, slots } }
       })
+    }),
+    ...(['post', 'patch'] as const).map(method => http[method](apiUrl('screens/:id/schedule'), async ({ request, params }) => {
+      const body = await request.json() as ScheduleInput
+      faked.writes.push({ method: method.toUpperCase(), path: `screens/${params.id}/schedule`, body })
+      return answerChanged(String(params.id), screen => scheduled(screen, body))
+    })),
+    http.delete(apiUrl('screens/:id/schedule'), ({ params }) => {
+      faked.writes.push({ method: 'DELETE', path: `screens/${params.id}/schedule` })
+      return answerChanged(String(params.id), screen => ({ ...screen, schedule: null, state: screen.state === 'scheduleOff' ? null : screen.state }))
     }),
     http.delete(apiUrl('plugins/:pluginId/assignments/kitchen'), ({ params }) => {
       faked.writes.push({ method: 'DELETE', path: `plugins/${params.pluginId}/assignments/kitchen` })

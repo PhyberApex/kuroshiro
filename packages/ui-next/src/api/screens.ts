@@ -1,4 +1,4 @@
-import type { ReorderScreensInput, ScreenRead, UpdateMashupInput, UpdateScreenInput } from 'kuroshiro-shared'
+import type { ReorderScreensInput, ScheduleInput, ScreenRead, UpdateMashupInput, UpdateScreenInput } from 'kuroshiro-shared'
 import { apiGet, apiSend, apiSendForImage } from './client'
 
 /** A Device's Screens in Order, each with its Screen State. */
@@ -49,4 +49,19 @@ export function updateMashup(screenId: string, input: UpdateMashupInput) {
 /** Removes the Plugin's Screen from the Device; the Plugin itself stays. */
 export function unassignPlugin(pluginId: string, deviceId: string) {
   return apiSend('DELETE', `plugins/${pluginId}/assignments/${deviceId}`)
+}
+
+/** Gives the Screen a Schedule and answers the Screen with the Screen State that follows. Refused with `schedule-exists`. */
+export function createSchedule(screenId: string, input: ScheduleInput) {
+  return apiSend<ScreenRead>('POST', `screens/${screenId}/schedule`, input)
+}
+
+/** Takes only what changed; `null` clears a pair of hours or dates. Half a pair, or a first day after the last, is refused with `validation`. */
+export function updateSchedule(screenId: string, input: ScheduleInput) {
+  return apiSend<ScreenRead>('PATCH', `screens/${screenId}/schedule`, input)
+}
+
+/** The Screen is always shown again. */
+export function removeSchedule(screenId: string) {
+  return apiSend<ScreenRead>('DELETE', `screens/${screenId}/schedule`)
 }

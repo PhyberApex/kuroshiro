@@ -1,8 +1,9 @@
-import type { CreateScheduleDto } from './dto/create-schedule.dto.js'
-import type { UpdateScheduleDto } from './dto/update-schedule.dto.js'
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common'
+import type { ApiErrorField, ScheduleInput } from 'kuroshiro-shared'
+import { HttpStatus, Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
+import { isUUID } from 'class-validator'
 import { Repository } from 'typeorm'
+import { ApiException, ValidationException } from '../errors/api.exception.js'
 import { Screen } from '../screens/screens.entity.js'
 import { Schedule } from './schedule.entity.js'
 
@@ -17,79 +18,83 @@ export class ScheduleService {
     private readonly screenRepository: Repository<Screen>,
   ) {}
 
-  async create(screenId: string, dto: CreateScheduleDto): Promise<Schedule> {
-    this.logger.log(`Creating schedule for screen ${screenId}`)
-    const screen = await this.screenRepository.findOne({ where: { id: screenId } })
-    if (!screen) {
-      this.logger.warn(`Screen not found: ${screenId}`)
-      throw new NotFoundException('Screen not found')
-    }
-
-    const existing = await this.scheduleRepository.findOne({ where: { screen: { id: screenId } } })
-    if (existing) {
-      throw new BadRequestException('Screen already has a schedule')
-    }
+  async create(screenId: string, input: ScheduleInput): Promise<void> {
+    const screen = await this.screenOrRefuse(screenId)
+    if (screen.schedule)
+      throw new ApiException(HttpStatus.BAD_REQUEST, 'schedule-exists', 'Screen already has a schedule', { screenId })
 
     const schedule = this.scheduleRepository.create({
-      enabled: dto.enabled ?? true,
-      weekdays: dto.weekdays ?? null,
-      startTime: dto.startTime ?? null,
-      endTime: dto.endTime ?? null,
-      startDate: dto.startDate ?? null,
-      endDate: dto.endDate ?? null,
+      enabled: input.enabled ?? true,
+      weekdays: input.weekdays ?? null,
+      startTime: input.startTime ?? null,
+      endTime: input.endTime ?? null,
+      startDate: input.startDate ?? null,
+      endDate: input.endDate ?? null,
       screen,
     })
     assertCoherentSchedule(schedule)
 
     const saved = await this.scheduleRepository.save(schedule)
     this.logger.log(`Schedule created with id: ${saved.id} for screen ${screenId}`)
-    return saved
   }
 
-  async getByScreen(screenId: string): Promise<Schedule> {
-    const schedule = await this.scheduleRepository.findOne({ where: { screen: { id: screenId } } })
-    if (!schedule) {
-      throw new NotFoundException('Schedule not found')
-    }
-    return schedule
-  }
+  async update(screenId: string, input: ScheduleInput): Promise<void> {
+    const schedule = await this.scheduleOrRefuse(screenId)
 
-  async update(screenId: string, dto: UpdateScheduleDto): Promise<Schedule> {
-    this.logger.log(`Updating schedule for screen ${screenId}`)
-    const schedule = await this.getByScreen(screenId)
-
-    if (dto.enabled !== undefined)
-      schedule.enabled = dto.enabled
-    if (dto.weekdays !== undefined)
-      schedule.weekdays = dto.weekdays
-    if (dto.startTime !== undefined)
-      schedule.startTime = dto.startTime
-    if (dto.endTime !== undefined)
-      schedule.endTime = dto.endTime
-    if (dto.startDate !== undefined)
-      schedule.startDate = dto.startDate
-    if (dto.endDate !== undefined)
-      schedule.endDate = dto.endDate
+    if (input.enabled !== undefined)
+      schedule.enabled = input.enabled
+    if (input.weekdays !== undefined)
+      schedule.weekdays = input.weekdays
+    if (input.startTime !== undefined)
+      schedule.startTime = input.startTime
+    if (input.endTime !== undefined)
+      schedule.endTime = input.endTime
+    if (input.startDate !== undefined)
+      schedule.startDate = input.startDate
+    if (input.endDate !== undefined)
+      schedule.endDate = input.endDate
     assertCoherentSchedule(schedule)
 
-    const saved = await this.scheduleRepository.save(schedule)
+    await this.scheduleRepository.save(schedule)
     this.logger.log(`Schedule updated for screen ${screenId}`)
-    return saved
   }
 
   async delete(screenId: string): Promise<void> {
-    this.logger.log(`Deleting schedule for screen ${screenId}`)
-    const schedule = await this.getByScreen(screenId)
-    await this.scheduleRepository.remove(schedule)
+    await this.scheduleRepository.remove(await this.scheduleOrRefuse(screenId))
     this.logger.log(`Schedule deleted for screen ${screenId}`)
+  }
+
+  private async screenOrRefuse(screenId: string): Promise<Screen> {
+    const screen = isUUID(screenId)
+      ? await this.screenRepository.findOne({ where: { id: screenId }, relations: { schedule: true } })
+      : null
+    if (!screen)
+      throw new ApiException(HttpStatus.NOT_FOUND, 'screen-not-found', 'Screen not found', { id: screenId })
+    return screen
+  }
+
+  private async scheduleOrRefuse(screenId: string): Promise<Schedule> {
+    const { schedule } = await this.screenOrRefuse(screenId)
+    if (!schedule)
+      throw new ApiException(HttpStatus.NOT_FOUND, 'schedule-not-found', 'Schedule not found', { screenId })
+    return schedule
   }
 }
 
+function missingEndOf(schedule: Schedule, first: 'startTime' | 'startDate', second: 'endTime' | 'endDate', message: string): ApiErrorField[] {
+  if (Boolean(schedule[first]) === Boolean(schedule[second]))
+    return []
+  return [{ path: schedule[first] ? second : first, message }]
+}
+
 function assertCoherentSchedule(schedule: Schedule): void {
-  if (Boolean(schedule.startTime) !== Boolean(schedule.endTime))
-    throw new BadRequestException('A time-of-day window needs both startTime and endTime')
-  if (Boolean(schedule.startDate) !== Boolean(schedule.endDate))
-    throw new BadRequestException('A date range needs both startDate and endDate')
-  if (schedule.startDate && schedule.endDate && schedule.startDate > schedule.endDate)
-    throw new BadRequestException('startDate must not be after endDate')
+  const problems = [
+    ...missingEndOf(schedule, 'startTime', 'endTime', 'A time-of-day window needs both startTime and endTime'),
+    ...missingEndOf(schedule, 'startDate', 'endDate', 'A date range needs both startDate and endDate'),
+    ...schedule.startDate && schedule.endDate && schedule.startDate > schedule.endDate
+      ? [{ path: 'startDate', message: 'startDate must not be after endDate' }]
+      : [],
+  ]
+  if (problems.length > 0)
+    throw new ValidationException(problems)
 }

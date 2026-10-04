@@ -77,9 +77,6 @@ const KNOWN_EXCEPTIONS: string[] = [
   'PluginsController.importFromRecipe',
   'PluginsController.importPlugin',
   'PluginsController.regenerateWebhookToken',
-  'ScheduleController.create',
-  'ScheduleController.get',
-  'ScheduleController.update',
 ]
 
 describe('admin controllers answer read models, never entities (ADR-0033)', () => {

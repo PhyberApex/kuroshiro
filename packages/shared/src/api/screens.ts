@@ -86,6 +86,19 @@ export interface ScheduleRead {
   endDate: string | null
 }
 
+/** A Schedule as it is created and changed. A key left out keeps what is stored, or its default on a new Schedule; `null` clears it. */
+export interface ScheduleInput {
+  enabled?: boolean
+  /** 0 is Sunday. `null` or empty means every day. */
+  weekdays?: number[] | null
+  /** `HH:MM` in the server's timezone. Both times are set, or neither; an end before the start crosses midnight. */
+  startTime?: string | null
+  endTime?: string | null
+  /** `YYYY-MM-DD` in the server's timezone. Both dates are set, or neither, and the first is not after the last. */
+  startDate?: string | null
+  endDate?: string | null
+}
+
 export interface ScreenPluginReference {
   id: string
   name: string
