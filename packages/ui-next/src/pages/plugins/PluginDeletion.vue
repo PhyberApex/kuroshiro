@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PluginPlace } from 'kuroshiro-shared'
+import type { PluginInMashupDetails, PluginPlace } from 'kuroshiro-shared'
 import type { DeletablePlugin } from './pluginWording'
 import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
@@ -20,7 +20,6 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  /** The Plugin is gone. */
   deleted: []
   /** Both dialogs have closed, whatever came of it. */
   closed: []
@@ -41,7 +40,7 @@ async function remove() {
   catch (error) {
     if (!isRefusal(error, 'plugin-in-mashup'))
       throw error
-    refusedFor.value = error.details.mashups as PluginPlace[]
+    refusedFor.value = (error.details as unknown as PluginInMashupDetails).mashups
   }
 }
 

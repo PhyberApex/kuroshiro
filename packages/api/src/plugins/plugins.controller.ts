@@ -152,7 +152,7 @@ export class PluginsController {
 
   @Get(':id/export')
   async exportPlugin(@Param('id') id: string, @Res() res: Response): Promise<void> {
-    const plugin = await this.pluginsService.requireForExport(id)
+    const plugin = await this.pluginsService.requireWhole(id)
     const zipBuffer = await this.exporterService.exportToZip(plugin)
 
     res.setHeader('Content-Type', 'application/zip')

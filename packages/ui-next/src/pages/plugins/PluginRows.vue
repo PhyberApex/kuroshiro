@@ -13,7 +13,6 @@ export interface ShownPlugin {
   plugin: PluginSummary
   /** What the state column reads, which an action of the row's menu may replace for a moment. */
   state: PluginRowState | undefined
-  /** The row menu's items. */
   actions: RowMenuItem[]
 }
 
@@ -29,7 +28,7 @@ const SKELETON_ROWS = [['54%', '60%', '64%'], ['46%', '60%', '56%'], ['60%', '60
 <template>
   <ul v-if="skeleton" class="plugin-rows skeleton" aria-hidden="true">
     <li v-for="widths in SKELETON_ROWS" :key="widths[0]" class="plugin-row">
-      <WashBar v-for="width in widths" :key="width" :width="width" />
+      <WashBar v-for="(width, cell) in widths" :key="cell" :width="width" />
     </li>
   </ul>
   <ul v-else class="plugin-rows">

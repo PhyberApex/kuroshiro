@@ -48,11 +48,7 @@ export class PluginExporterService {
   /** `strategy` is the key a TRMNL Recipe names its kind with, so an export says which Plugin Kind it holds. */
   private buildSettings(plugin: Plugin) {
     if (plugin.kind === 'Webhook') {
-      return {
-        strategy: 'webhook',
-        merge_strategy: plugin.mergeStrategy,
-        ...(plugin.streamLimit == null ? {} : { stream_limit: plugin.streamLimit }),
-      }
+      return { strategy: 'webhook', merge_strategy: plugin.mergeStrategy, stream_limit: plugin.streamLimit ?? null }
     }
 
     return {

@@ -12,14 +12,13 @@ interface NamedPlugin {
 /** "Duplicate": makes the copy and opens its page, which says what it is a copy of. */
 export function useDuplicatePlugin() {
   const router = useRouter()
-  /** The Plugin a copy is being made of. */
-  const running = ref<NamedPlugin>()
+  const duplicating = ref<NamedPlugin>()
   const failure = ref<{ plugin: NamedPlugin, reason: string }>()
 
   async function duplicate(plugin: NamedPlugin) {
-    if (running.value)
+    if (duplicating.value)
       return
-    running.value = plugin
+    duplicating.value = plugin
     failure.value = undefined
     try {
       const copy = await duplicatePlugin(plugin.id)
@@ -29,11 +28,11 @@ export function useDuplicatePlugin() {
       failure.value = { plugin, reason: failureReason(error) ?? 'That did not work.' }
     }
     finally {
-      running.value = undefined
+      duplicating.value = undefined
     }
   }
 
-  return reactive({ running, failure, duplicate })
+  return reactive({ duplicating, failure, duplicate })
 }
 
 const EXPORTED_FOR_MS = 2000

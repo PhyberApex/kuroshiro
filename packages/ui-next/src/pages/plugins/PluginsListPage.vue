@@ -61,7 +61,7 @@ function showAll() {
 function rowState(plugin: PluginSummary): PluginRowState | undefined {
   if (exporting.exported?.id === plugin.id)
     return { kind: 'note', text: 'Exported' }
-  if (duplication.running?.id === plugin.id)
+  if (duplication.duplicating?.id === plugin.id)
     return { kind: 'note', text: 'Duplicating' }
   return pluginRowState(plugin)
 }
@@ -69,7 +69,7 @@ function rowState(plugin: PluginSummary): PluginRowState | undefined {
 const announcement = computed(() => {
   if (exporting.exported)
     return `Exported ${exporting.exported.name}.`
-  return duplication.running ? `Duplicating ${duplication.running.name}` : ''
+  return duplication.duplicating ? `Duplicating ${duplication.duplicating.name}` : ''
 })
 
 function actionsOf(plugin: PluginSummary): RowMenuItem[] {

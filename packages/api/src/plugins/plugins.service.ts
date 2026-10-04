@@ -1,4 +1,4 @@
-import type { ApiErrorField, PluginKind } from 'kuroshiro-shared'
+import type { ApiErrorField, PluginInMashupDetails, PluginKind } from 'kuroshiro-shared'
 import type { EntityManager, FindOptionsRelations } from 'typeorm'
 import type { CreatePluginDto } from './dto/create-plugin.dto.js'
 import type { PluginDataSourceDto } from './dto/plugin-data-source.dto.js'
@@ -77,8 +77,8 @@ export class PluginsService implements OnModuleInit {
     return plugin && this.withFieldValues(plugin)
   }
 
-  /** The Plugin with everything an export writes. */
-  async requireForExport(id: string): Promise<Plugin> {
+  /** The Plugin with its Data Sources, Templates and Plugin Fields: what a copy and an export are made from. */
+  async requireWhole(id: string): Promise<Plugin> {
     const plugin = isUUID(id) ? await this.findPluginWithRelations(id, { dataSources: true, templates: true, fields: true }) : null
     if (!plugin)
       throw pluginNotFound(id)
@@ -125,9 +125,7 @@ export class PluginsService implements OnModuleInit {
   }
 
   async duplicate(id: string): Promise<PluginWithFieldValues> {
-    const source = isUUID(id) ? await this.findPluginWithRelations(id, { dataSources: true, templates: true, fields: true }) : null
-    if (!source)
-      throw pluginNotFound(id)
+    const source = await this.requireWhole(id)
 
     return this.create(
       { ...this.buildDuplicateDto(source), fieldValues: await this.fieldValues.storedFor(id) },
@@ -560,17 +558,20 @@ export class PluginsService implements OnModuleInit {
     if (!plugin)
       throw pluginNotFound(id)
 
-    const mashups = toPluginPlaces(await this.screenRepository.find({
-      where: { type: 'mashup', mashupConfiguration: { slots: { plugin: { id } } } },
-      relations: { device: true },
-    }))
-    if (mashups.length > 0)
-      throw new ApiException(HttpStatus.CONFLICT, 'plugin-in-mashup', 'The Plugin fills a slot in a Mashup.', { mashups })
-
     await this.pluginRepository.manager.transaction(async (manager) => {
-      const screens = await manager.getRepository(Screen).find({ where: { plugin: { id } }, relations: { device: true } })
+      const screens = manager.getRepository(Screen)
+      const mashups = toPluginPlaces(await screens.find({
+        where: { type: 'mashup', mashupConfiguration: { slots: { plugin: { id } } } },
+        relations: { device: true },
+      }))
+      if (mashups.length > 0) {
+        const details: PluginInMashupDetails = { mashups }
+        throw new ApiException(HttpStatus.CONFLICT, 'plugin-in-mashup', 'The Plugin fills a slot in a Mashup.', { ...details })
+      }
+
+      const pluginScreens = await screens.find({ where: { plugin: { id } }, relations: { device: true } })
       await manager.getRepository(Plugin).remove(plugin)
-      for (const deviceId of new Set(screens.map(screen => screen.device.id)))
+      for (const deviceId of new Set(pluginScreens.map(screen => screen.device.id)))
         await closeGapInOrder(manager, deviceId)
     })
 

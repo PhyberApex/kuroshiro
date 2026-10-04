@@ -117,7 +117,7 @@ function close(event: Event) {
                 {{ safeLabel }}
               </Button>
             </AlertDialogCancel>
-            <slot name="also" />
+            <slot v-if="!action" name="also" />
             <Button v-if="action" :loading="running" @click="confirm">
               {{ confirmLabel }}
             </Button>

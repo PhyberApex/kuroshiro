@@ -96,7 +96,7 @@ const { device, listed, name, path } = useDeviceFrame() // from '@/pages/devices
 | --- | --- |
 | `pluginPaths.ts` | `PLUGINS_PATH`, `pluginPath(id)` and `addPluginPath(way)` (`/plugins/new?way=poll`) |
 | `pluginArrival.ts` | `PluginArrival`, what just happened to a Plugin (`created`, `duplicated`, `imported`, `applied`, `skipped`, each with an optional `device` it was assigned to). A page that opens a Plugin's page after an action calls `openPluginPage(router, pluginId, arrival)`; the Plugin page calls `takePluginArrival(pluginId)` once and words it as a line shown once. It is held in memory, so a reload shows no line |
-| `pluginActions.ts` | `useDuplicatePlugin()` (`duplicate(plugin)`, `running`, `failure`; opens the copy's page carrying `duplicated`) and `useExportPlugin()` (`download(plugin)`, and `exported`, the Plugin whose control reads "Exported" for 2 seconds) |
+| `pluginActions.ts` | `useDuplicatePlugin()` (`duplicate(plugin)`, `duplicating`, `failure`; opens the copy's page carrying `duplicated`) and `useExportPlugin()` (`download(plugin)`, and `exported`, the Plugin whose control reads "Exported" for 2 seconds) |
 | `PluginDeletion.vue` | "Delete Plugin": mount it with a `DeletablePlugin` (`v-if`), and it is open. It asks, or says why a Plugin in a Mashup cannot be deleted yet, also when the server refuses with `plugin-in-mashup`. It emits `deleted`, then `closed`, on which the caller unmounts it |
 | `pluginWording.ts` | `listed(names)` ("Kitchen, Hallway and Study") and the sentences of the two dialogs |
 | `pluginRows.ts` | A row's kind, where it shows and its state with their precedence; the search, the filter and the count line |

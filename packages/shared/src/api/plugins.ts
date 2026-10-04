@@ -15,6 +15,11 @@ export interface PluginPlace {
   deviceName: string
 }
 
+/** The `details` of a `plugin-in-mashup` refusal: the Mashups that keep the Plugin from being deleted. */
+export interface PluginInMashupDetails {
+  mashups: PluginPlace[]
+}
+
 export interface PluginSummary {
   id: string
   name: string
