@@ -8,7 +8,6 @@ import { buildDeviceSummary } from '@/testing/fixtures/devices'
 import { buildPluginDetail, buildPluginPlace, buildPluginSummary } from '@/testing/fixtures/plugins'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import { elementsInSealColour } from '@/testing/sealColour'
-import { takePluginArrival } from '../pluginArrival'
 
 const device = (name: string) => ({ id: name.toLowerCase(), name })
 const KITCHEN = device('Kitchen')
@@ -252,7 +251,7 @@ describe('the Plugins list', () => {
   })
 
   describe('duplicating a Plugin', () => {
-    it('makes the copy and opens its page, carrying that it was duplicated and from what', async () => {
+    it('makes the copy and opens its page, which says that it is a copy and of what', async () => {
       fakePlugins()
       const copy = buildPluginDetail({ id: 'weather-copy', name: 'Weather (copy)', assignments: [] })
       api.use(
@@ -266,8 +265,7 @@ describe('the Plugins list', () => {
       await expect.element(screen.getByRole('heading', { name: 'Weather (copy)', level: 1 })).toBeVisible()
       await expect.element(screen.getByRole('link', { name: 'All Plugins' })).toHaveAttribute('href', '/plugins')
       expect(screen.router.currentRoute.value.path).toBe('/plugins/weather-copy')
-      expect(takePluginArrival('weather-copy')).toEqual({ how: 'duplicated', source: 'Weather' })
-      expect(takePluginArrival('weather-copy')).toBeUndefined()
+      await expect.element(screen.getByText('A copy of Weather. It is not on a Device yet.')).toBeVisible()
     })
 
     it('says why when the copy could not be made, and tries again on request', async () => {

@@ -120,12 +120,121 @@ A write that adds a record and then leaves the page navigates first and reloads 
 | `pluginWording.ts` | `listed(names)` ("Kitchen, Hallway and Study") and the sentences of the two dialogs |
 | `pluginRows.ts` | A row's kind, where it shows and its state with their precedence; the search, the filter and the count line |
 | `PluginsListPage.vue`, `PluginsFilterBar.vue`, `PluginRows.vue`, `PluginRowStateCell.vue`, `NoPluginsYet.vue` | The list in parts: the page holds the load, the address and the actions; the others draw |
-| `PluginPage.vue` | The stand-in for the Plugin page: the back link, the name, "No Plugin here" |
+| `PluginPage.vue`, `PluginFrame.vue`, `PluginOpened.vue`, `pluginForm.ts`, `pluginPage.ts` | The Plugin page, its frame and its one form: see "The Plugin page" below |
 
 - `GET /api/plugins` comes ordered by name; the list does not sort again.
 - A row's fetch Alert is `PluginSummary.fetchAlertFiring`; the list does not read the Alerts.
 - The shell's shared reads hold no Plugin, so after a write only the page's own load needs `reload()`.
 - A view's search and filter live in the address: read them from `route.query` and write them with `router.replace`, which keeps the scroll position.
+
+### The Plugin page
+
+`/plugins/:pluginId` is one page with one form ([plugins.md, "What is saved together"](../ui/plugins.md#what-is-saved-together)). The frame is built; each section is one component that a later slice adds.
+
+| File | Holds |
+| --- | --- |
+| `PluginPage.vue` | The route's component, and nothing but the list of sections in the spec's order, inside `PluginFrame`. A comment marks the place of each section that has not landed |
+| `PluginFrame.vue` | The load (kept fresh), "No Plugin here", the title line, loading (`PluginLoading.vue`) and failed. It is keyed by the Plugin's id, so another Plugin starts a new page |
+| `PluginOpened.vue` | The page once the Plugin is there: the facts line, the lines shown once, the problem lines, the sections, the save bar and "Leave without saving?". It creates the form and provides `usePluginPage()` |
+| `pluginForm.ts` | The one form, as a plain module with a node spec: `createPluginForm`, `PluginFormPart`, and the save bar's wording |
+| `pluginPage.ts` | `usePluginPage()`, `usePluginFormPart(part, reveal?)` and `fieldId(path)` |
+| `pluginPageWording.ts` | The facts line, the four problem lines, the arrival lines, "Saved at {hh:mm}", the paragraph over duplicate, export and delete |
+| `PluginSection.vue` | A section's frame: `<PluginSection id="data" title="Data Sources">` is the `h2` on the 2 px rule with the `#actions` slot at its right, answering to `#data` |
+| `pluginNaming.ts`, `PluginNaming.vue` | "Name and description": the worked example of a section that joins the form |
+| `PluginActions.vue` | "Duplicate, export or delete {Plugin}": the worked example of a section that acts at once |
+
+**Adding a section** is one component and one line. Write `Plugin<Name>.vue` in `pages/plugins/`, and put it in `PluginPage.vue` where the comment names its fragment: in `#default` for a section, in `#tucked` for a tucked one. Both slots hand over `plugin`, for a section only some Plugins have:
+
+```vue
+<PluginFrame :key="pluginId" :plugin-id="pluginId">
+  <template #default="{ plugin }">
+    <PluginDataSources v-if="plugin.kind === 'Poll'" />
+    <PluginWebhook v-else />
+  </template>
+  <template #tucked>
+    <PluginNaming />
+    <PluginActions />
+  </template>
+</PluginFrame>
+```
+
+A section's root is a `PluginSection` (or a `TuckedSection` in `#tucked`) with the `id` its fragment names. It renders only its body: no title line, no loading state, no save button.
+
+**What a section is handed**: `const { plugin, form, reload, leaveFor } = usePluginPage()`.
+
+| Member | Is |
+| --- | --- |
+| `plugin` | A computed `PluginDetail`, never `undefined`: the Plugin as the server last answered it, re-read every 30 seconds and after a save. Read the facts the form does not hold from here (a Fetch Failure Streak, the Webhook Payload, the assignments). Never fetch the Plugin again |
+| `form` | The one form. `form.unsaved` is everything every part would send, changed or not: the unsaved state the Template section's preview draws (`PreviewDataInput`'s `dataSources` and `fieldValues` are its keys). `form.changed`, `form.changedKeys` and `form.saving` say where it stands |
+| `reload()` | Reads the Plugin again. Call it after a write that acts at once (assigning, unassigning, clearing the Webhook Payload, regenerating the Webhook Token) |
+| `leaveFor(action)` | Asks "Leave without saving?" while the form holds unsaved changes and runs `action` unless the admin keeps editing: for an action that counts as leaving without being a route change (Duplicate, Export). A route change, the Recipe Update Check's link included, is asked about by the page's guard and needs nothing |
+
+**Joining the form.** A section that edits the Plugin declares one `PluginFormPart<Draft>` in a `.ts` file of its own (so it can have a node spec) and registers it:
+
+```ts
+// pluginNaming.ts
+export const pluginNaming: PluginFormPart<{ name: string, description: string }> = {
+  keys: ['name', 'description'],
+  read: plugin => ({ name: plugin.name, description: plugin.description ?? '' }),
+  toInput: draft => ({ name: draft.name.trim(), description: draft.description.trim() || null }),
+  validate: draft => draft.name.trim() ? [] : [{ path: 'name', message: 'A Plugin needs a name.' }],
+}
+```
+
+```vue
+<!-- PluginNaming.vue -->
+<script setup lang="ts">
+const open = ref(false)
+const naming = usePluginFormPart(pluginNaming, () => (open.value = true))
+</script>
+
+<template>
+  <TuckedSection id="name" v-model:open="open" title="Name and description">
+    <Field :id="fieldId('name')" v-slot="{ control }" label="Name" :error="naming.errors.name">
+      <TextInput v-model="naming.draft.name" v-bind="control" prose wide />
+    </Field>
+  </TuckedSection>
+</template>
+```
+
+| Of the part | Is |
+| --- | --- |
+| `keys` | The keys of `UpdatePluginInput` the part saves. A key belongs to one part; registering a second part for it throws. They are also the part's error paths: a path that starts with one of them is this part's |
+| `read(plugin)` | The draft of a Plugin as it is saved: what the controls are bound to. Plain data (it is compared and copied as JSON), and the same Plugin must read as the same draft, so a row's client-side key is derived from its `id`, never random. Keep only what is edited in it; a fact like a streak is read from `plugin` |
+| `toInput(draft)` | What a save sends for `keys`, each key whole and input-shaped: `DataSourceInput` with its `id`, not a `DataSourceRead`. A key it leaves out is never sent (`refreshInterval` of a Webhook-kind Plugin; a password Field Value that was not replaced) |
+| `validate(draft, { plugin, unsaved })` | What stops a save, as `{ path, message }` with the path `toInput` would send the field at (`dataSources.2.url`), which is the path the server names it by. `unsaved` is the whole form, for a rule across sections (a Data Source's name against the Plugin Fields' keynames) |
+
+`usePluginFormPart(part, reveal?)` registers the part while the component is mounted and returns a reactive handle. Do not destructure it.
+
+| Of the handle | Is |
+| --- | --- |
+| `draft` | What the controls edit: `v-model="part.draft.name"`, or `part.draft.rows.push(…)`. Editing it is all it takes to mark the form changed |
+| `saved` | The draft as it is saved, for what a section says about the difference ("Removed when you save") |
+| `errors` | `{ [path]: message }` for the part's paths: hand each `Field` its `:error="part.errors['dataSources.2.url']"`. It holds the part's own problems once a save was tried, and the server's field errors of a refused save until the part is edited |
+
+The form does the rest, and a section never does any of it itself:
+
+- **What differs** is decided per key by comparing `toInput(draft)` with `toInput(read(saved))`. So a change that maps to the same input (a space after the name) is no change, a collection is sent whole when any of it changed, and the bar names the keys in the page's order: "Unsaved changes to the template, Data Sources and Field Values." The sentence "The preview already shows them." is added once a part saves `templates`.
+- **A save** sends only the changed keys in one `PATCH`, and the answer becomes what is saved in every part. A part edited while the save was under way keeps what was typed.
+- **The 30-second refresh and a `reload()`** reach a part that has no unsaved changes; a part with unsaved changes is left alone entirely. `plugin` is fresh either way.
+- **"Show the first"** calls the `reveal(path)` of the part that owns the first problem, waits a tick and focuses the element whose id is `fieldId(path)`. So `reveal` only opens what holds the field (a tucked section, a row), and the control carries `:id="fieldId(path)"` through its `Field`. Problems are counted in the order the parts were registered, which is the order of the page.
+- **Discard changes** puts every draft back; a part that holds state beside its draft (which row is open) keeps it.
+
+A section with a part that lives in a `TuckedSection` or a row registers in the component that holds it, not inside the content that is unmounted while it is closed.
+
+**Testing a section.** The part gets a node spec of its own (`read`, `toInput`, `validate` are pure). The section is tested through the page, in a spec of its own beside `PluginPage.spec.ts`, with what `__test__/pluginPageHarness.ts` exports:
+
+| Helper | Does |
+| --- | --- |
+| `fakePlugin(plugin?, answer?)` | Fakes the shell's reads, `GET /api/plugins/:id` and `PATCH /api/plugins/:id`. It returns `{ plugin, saves }`: assign `plugin` to change what the next read answers, and assert `saves`, every `PATCH` body in order. A save answers the Plugin with the sent name, description and refresh interval laid over it; pass `answer(plugin, input)` when a collection must come back as a read model |
+| `mountPlugin()` | Freezes the time at `NOW`, holds the tab visible, mounts the app at `/plugins/weather` and waits for the title |
+| `saveBar(screen)` | The save bar's region: `saveBar(screen).getByRole('button', { name: 'Save Plugin' })`, `saveBar(screen).getByText('Unsaved changes to the name.')` (the whole sentence) |
+| `refresh()` | The 30-second re-read, now. Blur the control first: a re-read is held back while a typed-in control has the focus |
+| `clock(iso)` | The `{hh:mm}` of a sentence, in the browser's timezone |
+
+So a section's test is "edit, press Save Plugin, assert `faked.saves`". `__test__/examples/StandInSection.vue` is a section in forty lines, and `StandInPluginPage.vue` shows a frame mounted with sections of a test's choosing (`mountPage`).
+
+- The arrival line is taken once per page (`takePluginArrival` in `PluginFrame`), so a spec reaches it by mounting the app elsewhere and calling `openPluginPage(screen.router, id, arrival)`.
 
 ## Loading what a page shows
 
@@ -245,6 +354,8 @@ A view with a primary button and "Cancel" renders the guard once, anywhere in it
 ```
 
 While `when` is true, a route change opens "Leave without saving?" with "Keep editing" (focused) and "Leave", and the browser asks before the page is unloaded. After a save, let `when` turn false and `await nextTick()` before navigating away, so the guard has seen it.
+
+A change of the path within the same route (another Plugin's page) asks too; a change of the query or the fragment does not. For an action that counts as leaving without being a route change, take a template ref of the guard and call `leaveFor(action)`: it asks first, runs `action` unless the admin keeps editing, and does not ask again about a navigation `action` makes.
 
 ## Tests of a page
 

@@ -1,29 +1,37 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { getPlugin } from '@/api/plugins'
-import EmptyState from '@/components/EmptyState.vue'
-import LoadBody from '@/patterns/LoadBody.vue'
-import MissingPage from '@/patterns/MissingPage.vue'
-import TitleLine from '@/patterns/TitleLine.vue'
-import { useLoad } from '@/patterns/useLoad'
-import { PLUGINS_PATH } from './pluginPaths'
+import PluginActions from './PluginActions.vue'
+import PluginFrame from './PluginFrame.vue'
+import PluginNaming from './PluginNaming.vue'
 
 const route = useRoute()
-const plugin = useLoad(() => getPlugin(String(route.params.pluginId)), { key: () => route.params.pluginId })
 
-const back = { label: 'All Plugins', to: PLUGINS_PATH }
+// The parameter is gone while the route leaves; the page stands as it is until then.
+const pluginId = ref(String(route.params.pluginId))
+watch(() => route.params.pluginId, (id) => {
+  if (id != null)
+    pluginId.value = String(id)
+})
 </script>
 
 <template>
-  <MissingPage v-if="plugin.missing" title="No Plugin here" :back="back">
-    It may have been deleted.
-  </MissingPage>
-  <template v-else>
-    <TitleLine :title="plugin.data?.name ?? 'Plugin'" :back="back" />
-    <LoadBody :load="plugin" loading="Loading the Plugin" failed="Could not load the Plugin.">
-      <EmptyState title="Not built yet">
-        This page of the rebuilt admin UI has not landed. The Plugin keeps fetching and rendering meanwhile.
-      </EmptyState>
-    </LoadBody>
-  </template>
+  <!--
+    The sections of the Plugin page, in the spec's order. Each is one component that stands in its
+    place below; `plugin` is there for a section only some Plugins have (`v-if="plugin.recipe"`).
+  -->
+  <PluginFrame :key="pluginId" :plugin-id="pluginId">
+    <template #default>
+      <!-- #template: Template -->
+      <!-- #data: Data Sources for a Poll-kind Plugin, Webhook for a Webhook-kind one -->
+      <!-- #values: Field Values -->
+      <!-- #devices: Devices -->
+      <!-- #recipe: Recipe -->
+    </template>
+    <template #tucked>
+      <!-- #fields: Plugin Fields -->
+      <PluginNaming />
+      <PluginActions />
+    </template>
+  </PluginFrame>
 </template>
