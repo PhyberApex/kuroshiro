@@ -30,11 +30,11 @@ const arrived = computed(() => props.firmware.uploadedAt
   <LibraryRow :name="firmware.version" mono :problem="firmware.filePresent ? undefined : MISSING_FILE">
     <p>{{ whatItIs(firmware, models) }}</p>
     <p v-if="goesOut || runs">
-      <b v-if="goesOut" class="goes-out">Goes out to <DeviceNames :devices="headed.goesOutTo" /> at the next poll</b>
+      <b v-if="goesOut" class="goes-out">Goes out to <DeviceNames :devices="headed.goesOutTo" section="firmware" /> at the next poll</b>
       <template v-if="goesOut && runs">
         {{ ' · ' }}
       </template>
-      <span v-if="runs">Running on <DeviceNames :devices="headed.runningOn" /></span>
+      <span v-if="runs">Running on <DeviceNames :devices="headed.runningOn" section="firmware" /></span>
     </p>
     <template #end>
       <span v-if="arrived" class="arrived">{{ arrived.how }} <RelativeTime :at="arrived.at" /></span>

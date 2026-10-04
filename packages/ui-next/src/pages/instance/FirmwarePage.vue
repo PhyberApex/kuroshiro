@@ -9,10 +9,10 @@ import LoadBody from '@/patterns/LoadBody.vue'
 import { useLoad } from '@/patterns/useLoad'
 import FirmwareAutoUpdateRow from './FirmwareAutoUpdateRow.vue'
 import FirmwareLibrary from './FirmwareLibrary.vue'
-import FirmwareLoading from './FirmwareLoading.vue'
 import { newestOfficialVersion, syncOutcome } from './firmwareWording'
 import InstancePageHeading from './InstancePageHeading.vue'
 import { UPLOAD_FIRMWARE_PATH } from './instancePaths'
+import LibraryLoading from './LibraryLoading.vue'
 import NoFirmwareYet from './NoFirmwareYet.vue'
 import { useTrmnlSync } from './trmnlSync'
 import TrmnlSyncOutcome from './TrmnlSyncOutcome.vue'
@@ -49,7 +49,7 @@ const sync = useTrmnlSync(async () => {
   <div class="body">
     <LoadBody :load="page" loading="Loading the Firmware" failed="Could not load the Firmware.">
       <template #skeleton>
-        <FirmwareLoading />
+        <LibraryLoading />
       </template>
       <template #default="{ data }">
         <p class="lede">
