@@ -183,6 +183,12 @@ describe('templateProblemOf', () => {
     expect(templateProblemOf(error).line).toBe(2)
   })
 
+  it('looks a partial up nowhere, on the server\'s disk as little as over the browser\'s network', async () => {
+    const error = await renderLiquid('{% render "package.json" %}', {}).catch((e: unknown) => e)
+
+    expect(templateProblemOf(error)).toEqual({ message: 'A template cannot render "package.json": Kuroshiro has no partials.', line: 1 })
+  })
+
   it('answers no line for an error without a position', () => {
     expect(templateProblemOf(new Error('boom'))).toEqual({ message: 'boom', line: null })
   })

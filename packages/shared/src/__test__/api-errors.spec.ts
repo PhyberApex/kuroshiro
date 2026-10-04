@@ -40,6 +40,7 @@ const wording: Record<ApiErrorCode, string> = {
   'firmware-push-pending': 'A Firmware push is waiting for the Device.',
   'upstream-unreachable': 'TRMNL did not answer.',
   'template-full-missing': 'A Plugin needs its full Template.',
+  'template-invalid': 'A Template cannot be parsed.',
   'notifications-off': 'Notifications are off on this Instance.',
   'notification-failed': 'Apprise did not accept it.',
   'import-not-zip': 'That file is not a .zip.',
@@ -87,6 +88,7 @@ function wordingBySwitch(code: ApiErrorCode): string {
     case 'firmware-push-mirrored':
     case 'firmware-push-pending':
     case 'template-full-missing':
+    case 'template-invalid':
     case 'notifications-off':
     case 'import-not-zip':
     case 'import-no-plugin':

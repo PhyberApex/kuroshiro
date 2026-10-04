@@ -8,6 +8,7 @@ import { buildInstanceSettings } from '@/testing/fixtures/instance'
 import { buildPluginDetail } from '@/testing/fixtures/plugins'
 import { expectPageScreenshots } from '@/testing/screenshots'
 import { freezeTime } from '@/testing/time'
+import { holdPreviewLibrary } from './__test__/pluginPageHarness'
 
 const source = buildPluginDetail().dataSources[0]!
 
@@ -39,6 +40,7 @@ describe('the Data Sources of a Plugin', () => {
       http.get(apiUrl('settings'), () => HttpResponse.json(buildInstanceSettings())),
       http.get(apiUrl('plugins/weather'), () => HttpResponse.json(weather)),
     )
+    holdPreviewLibrary()
     const screen = await mountApp({ at: '/plugins/weather?source=forecast' })
 
     await expect.element(screen.getByRole('link', { name: '1 Alert firing' })).toBeVisible()

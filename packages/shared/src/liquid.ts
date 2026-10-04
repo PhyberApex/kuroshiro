@@ -1,4 +1,4 @@
-import type { FilterImplOptions } from 'liquidjs'
+import type { FilterImplOptions, FS } from 'liquidjs'
 import { Liquid } from 'liquidjs'
 
 export interface TemplateProblem {
@@ -48,8 +48,24 @@ const filters: Record<string, FilterImplOptions> = {
 
 export const KUROSHIRO_FILTERS: readonly string[] = Object.keys(filters)
 
+function refusePartial(name: string): never {
+  throw new Error(`A template cannot render "${name}": Kuroshiro has no partials.`)
+}
+
+/**
+ * Where `{% render %}`, `{% include %}` and `{% layout %}` look for their file: nowhere. Left to itself the engine reads
+ * the server's disk and, in a browser, asks the network, so the same Template would not render the same in both.
+ */
+const noPartials: FS = {
+  exists: async () => true,
+  existsSync: () => true,
+  readFile: async name => refusePartial(name),
+  readFileSync: refusePartial,
+  resolve: (_directory, name) => name,
+}
+
 export function createLiquidEngine(): Liquid {
-  const engine = new Liquid()
+  const engine = new Liquid({ fs: noPartials, relativeReference: false })
   Object.entries(filters).forEach(([name, filter]) => engine.registerFilter(name, filter))
   return engine
 }

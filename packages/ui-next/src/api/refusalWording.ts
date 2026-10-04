@@ -73,6 +73,7 @@ const REFUSAL_WORDING: Record<ApiErrorCode, Wording> = {
   'firmware-push-pending': 'A Firmware push is waiting for the Device.',
   'upstream-unreachable': 'TRMNL did not answer.',
   'template-full-missing': 'A Plugin needs its full Template.',
+  'template-invalid': 'A template cannot be parsed.',
   'notifications-off': 'Notifications are off on this Instance.',
   'notification-failed': 'Apprise did not accept it. Check that the Apprise sidecar is running, and its logs.',
   'import-not-zip': 'This file is not a .zip. A Plugin is imported from a .zip as Kuroshiro or TRMNL exports it.',

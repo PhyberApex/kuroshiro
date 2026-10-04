@@ -11,6 +11,8 @@ export type PluginInputKey = keyof UpdatePluginInput
 export interface FieldProblem {
   path: string
   message: string
+  /** The line of a field that is code, where the problem is at one. */
+  line?: number | null
 }
 
 /**
@@ -26,6 +28,8 @@ export interface PluginFormPart<Draft> {
   toInput: (draft: Draft) => UpdatePluginInput
   /** What stops a save, with the paths `toInput` would send the fields at. */
   validate?: (draft: Draft, context: { plugin: PluginDetail, unsaved: UpdatePluginInput }) => FieldProblem[]
+  /** What a refused save says about this part's fields, where the server names none: a refusal with a code of its own. */
+  refused?: (error: unknown, draft: Draft) => FieldProblem[]
 }
 
 /** Opens whatever holds the field at `path` (a row, a tucked section), so that it can be focused. */
@@ -38,6 +42,8 @@ interface PluginFormPartHandle<Draft> {
   readonly saved: Draft
   /** This part's problems by path, for each `Field`'s `error`: its own once a save was tried, and the server's. */
   readonly errors: Record<string, string>
+  /** The same problems whole, for a field that shows more of one than its message. */
+  readonly problems: FieldProblem[]
   /** Takes the part out of the form, with its changes. */
   remove: () => void
 }
@@ -52,7 +58,7 @@ interface Registered {
 
 interface Refusal {
   reason: string | undefined
-  fields: Record<string, string>
+  fields: FieldProblem[]
   /** What each part would have sent when the save was refused: an edit to a part drops what the server said about it. */
   inputs: Map<Registered, string>
 }
@@ -134,9 +140,7 @@ export function createPluginForm(loaded: PluginDetail, send: (input: UpdatePlugi
       return []
     return parts.flatMap(registered => editedSince(refused, registered)
       ? []
-      : Object.entries(refused.fields)
-          .filter(([path]) => ownerOf(path) === registered)
-          .map(([path, message]) => ({ path, message })))
+      : refused.fields.filter(({ path }) => ownerOf(path) === registered))
   })
 
   const problems = computed(() => attempted.value && ownProblems.value.length > 0 ? ownProblems.value : refusedProblems.value)
@@ -148,10 +152,14 @@ export function createPluginForm(loaded: PluginDetail, send: (input: UpdatePlugi
     return !refused || edited || problems.value.length > 0 ? undefined : refused.reason ?? 'That did not work.'
   })
 
-  function errorsOf(registered: Registered) {
-    return Object.fromEntries(problems.value
-      .filter(({ path }) => ownerOf(path) === registered)
-      .map(({ path, message }) => [path, message]))
+  const problemsOf = (registered: Registered) => problems.value.filter(({ path }) => ownerOf(path) === registered)
+
+  /** A validation refusal's fields, and what each part reads from a refusal of another code. */
+  function refusedFields(error: unknown): FieldProblem[] {
+    return [
+      ...Object.entries(fieldErrorsOf(error)).map(([path, message]) => ({ path, message })),
+      ...parts.flatMap(({ part, draft }) => part.refused?.(error, draft.value) ?? []),
+    ]
   }
 
   function register<Draft>(part: PluginFormPart<Draft>, reveal?: RevealField): PluginFormPartHandle<Draft> {
@@ -168,7 +176,8 @@ export function createPluginForm(loaded: PluginDetail, send: (input: UpdatePlugi
     return reactive({
       draft: registered.draft,
       saved: computed(() => part.read(registered.source.value)),
-      errors: computed(() => errorsOf(registered)),
+      errors: computed(() => Object.fromEntries(problemsOf(registered).map(({ path, message }) => [path, message]))),
+      problems: computed(() => problemsOf(registered)),
       remove: () => void parts.splice(parts.indexOf(registered), 1),
     }) as PluginFormPartHandle<Draft>
   }
@@ -230,7 +239,7 @@ export function createPluginForm(loaded: PluginDetail, send: (input: UpdatePlugi
       return answer
     }
     catch (error) {
-      refusal.value = { reason: failureReason(error), fields: fieldErrorsOf(error), inputs }
+      refusal.value = { reason: failureReason(error), fields: refusedFields(error), inputs }
       return undefined
     }
     finally {

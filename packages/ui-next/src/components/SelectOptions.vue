@@ -61,6 +61,15 @@ defineProps<{
     cursor: default;
   }
 
+  .options :deep(.hint) {
+    color: var(--color-ink-soft);
+    font-weight: var(--weight-regular);
+  }
+
+  .options :deep(.option[data-highlighted] .hint) {
+    color: inherit;
+  }
+
   .options :deep(.reason) {
     margin-left: auto;
     font-family: var(--font-text);

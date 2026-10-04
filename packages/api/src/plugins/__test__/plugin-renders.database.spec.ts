@@ -302,7 +302,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
   describe('a scheduled render that fails', () => {
     // Liquid parses a `render` of a partial no Plugin has, and fails on it only when rendering.
     const FAILS_ON_LINE_2 = '<p>Weather</p>\n{% render "header" %}'
-    const FAILURE = { message: 'ENOENT: Failed to lookup "header" in "."', line: 2, size: 'full' }
+    const FAILURE = { message: 'A template cannot render "header": Kuroshiro has no partials.', line: 2, size: 'full' }
 
     it('is stored with its time, Liquid\'s message, its line and the Template\'s size, until a scheduled render succeeds', async () => {
       const plugin = await createPollPlugin({ templates: [{ layout: 'full', liquidMarkup: FAILS_ON_LINE_2 }] })

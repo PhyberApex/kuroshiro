@@ -8,6 +8,8 @@ export interface Segment<T extends string> {
   disabled?: boolean
   /** Puts the problem mark on the segment; the text says what is wrong and is read out with the label. */
   problem?: string
+  /** Strikes the label through and says "(removed)" with it: what the segment stands for goes with the next save. It can still be chosen. */
+  removed?: boolean
 }
 
 defineProps<{
@@ -35,7 +37,7 @@ const model = defineModel<T>({ required: true })
       :disabled="segment.disabled"
       :data-force="force?.[segment.value]"
     >
-      {{ segment.label }}
+      <span class="label" :class="{ removed: segment.removed }">{{ segment.label }}<span v-if="segment.removed" class="visually-hidden">(removed)</span></span>
       <Icon v-if="segment.problem" name="problem" :label="segment.problem" />
     </RadioGroupItem>
   </RadioGroupRoot>
@@ -61,6 +63,10 @@ const model = defineModel<T>({ required: true })
     transition:
       background-color var(--duration-quick) var(--ease-out),
       color var(--duration-quick) var(--ease-out);
+  }
+
+  .removed {
+    text-decoration: line-through;
   }
 
   .segment + .segment {

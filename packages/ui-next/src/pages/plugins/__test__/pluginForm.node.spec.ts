@@ -202,6 +202,30 @@ describe('the Plugin page\'s one form', () => {
       expect(data.errors).toEqual({})
     })
 
+    it('asks each part what a refusal that names no field says about its fields, and hands it the place in the code', async () => {
+      const { form, send } = formOf()
+      const coded: PluginFormPart<{ markup: string }> = {
+        keys: ['templates'],
+        read: plugin => ({ markup: plugin.templates[0]!.liquidMarkup }),
+        toInput: draft => ({ templates: [{ size: 'full', liquidMarkup: draft.markup }] }),
+        refused: (error, draft) => error instanceof ApiRefusal && error.code === 'template-invalid'
+          ? [{ path: 'templates.0.liquidMarkup', message: `${draft.markup} does not parse`, line: 3 }]
+          : [],
+      }
+      const template = form.register(coded)
+      send.mockRejectedValueOnce(new ApiRefusal(buildApiError({ statusCode: 400, code: 'template-invalid' })))
+
+      template.draft.markup = '{% if %}'
+      await form.save()
+
+      expect(template.problems).toEqual([{ path: 'templates.0.liquidMarkup', message: '{% if %} does not parse', line: 3 }])
+      expect(template.errors).toEqual({ 'templates.0.liquidMarkup': '{% if %} does not parse' })
+      expect(form.failure).toBeUndefined()
+
+      template.draft.markup = '{% if rain %}{% endif %}'
+      expect(template.problems).toEqual([])
+    })
+
     it('says "Not saved" for a validation refusal whose paths no part owns', async () => {
       const { form, send } = formOf()
       const name = form.register(pluginNaming)
