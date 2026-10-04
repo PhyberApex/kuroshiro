@@ -255,8 +255,8 @@ catalogs:
       specifier: 0.15.1
       version: 0.15.1
     dotenv:
-      specifier: 18.0.4
-      version: 18.0.4
+      specifier: 18.0.5
+      version: 18.0.5
     eslint:
       specifier: 10.11.0
       version: 10.11.0
@@ -399,7 +399,7 @@ importers:
         version: 0.15.1
       dotenv:
         specifier: 'catalog:'
-        version: 18.0.4
+        version: 18.0.5
       express:
         specifier: 'catalog:'
         version: 5.2.1(supports-color@10.2.2)
@@ -2909,8 +2909,8 @@ packages:
     engines: {node: '>=12'}
     hasBin: true
 
-  dotenv@18.0.4:
-    resolution: {integrity: sha512-jGt9uI5BIxpVO15kvy+iEFqNAwxYClKWnkptLjSNPnFLC003Imd0ofr3aEVsbpHdSBdSsbcApNIlz4nbyGMwdA==}
+  dotenv@18.0.5:
+    resolution: {integrity: sha512-aBrGvt6KhjxbEnatqMWOMidftwsrCiCvqh1yNIGB9QyF0J+VcWkKDMsvYOEm7ZS82oiV+BT1sTOtIlAmUlTpwQ==}
     engines: {node: '>=12'}
     hasBin: true
 
@@ -7475,7 +7475,7 @@ snapshots:
 
   dotenv@18.0.3: {}
 
-  dotenv@18.0.4: {}
+  dotenv@18.0.5: {}
 
   dunder-proto@1.0.1:
     dependencies:
