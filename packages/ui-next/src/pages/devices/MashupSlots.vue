@@ -63,7 +63,8 @@ function optionsOf(slot: number): SelectOption[] {
     color: var(--color-ink-soft);
   }
 
-  .slots .plugin {
+  /* The select's trigger is not its component's root, so it does not carry this component's scope. */
+  .slots :deep(.plugin) {
     width: 100%;
     min-width: 0;
   }

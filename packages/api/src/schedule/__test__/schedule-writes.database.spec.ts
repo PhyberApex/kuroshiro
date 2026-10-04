@@ -187,7 +187,8 @@ describe('writing a Screen\'s Schedule, against a real database', () => {
       [{ startTime: null }, 'startTime'],
       [{ endDate: null }, 'endDate'],
       [{ startDate: '2021-01-01' }, 'startDate'],
-    ] as Array<[ScheduleInput, string]>)('refuses %j with 400 validation, naming %s, when it leaves the Schedule incoherent', async (input, path) => {
+      [{ enabled: null }, 'enabled'],
+    ] as Array<[ScheduleInput, string]>)('refuses %j with 400 validation, naming %s, and keeps the Schedule as it was', async (input, path) => {
       const screen = await seedScreenAfterTheActiveOne({ startTime: '06:00', endTime: '09:00', ...PAST_RANGE })
 
       const response = await send('PATCH', screen.id, input)

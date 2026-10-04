@@ -12,6 +12,7 @@ import { buildPluginSummary } from '@/testing/fixtures/plugins'
 import { buildSchedule, buildScreen } from '@/testing/fixtures/screens'
 import { fakeScreenImages } from '@/testing/images'
 import { freezeTime } from '@/testing/time'
+import { EVERY_DAY_ALL_DAY } from '../scheduleEditing'
 
 const NOW = '2026-10-03T07:35:00.000Z'
 export const RENDERED_AT = '2026-10-03T07:31:00.000Z'
@@ -38,11 +39,9 @@ export const SCREENS_OF_EVERY_KIND: ScreenRead[] = [
   kitchenScreen({ id: 'notes', name: 'Notes', order: 5, kind: 'html', plugin: null, imagePath: imagePath('notes'), html: '<h1>Notes</h1>' }),
 ]
 
-const ALWAYS: ScheduleInput = { enabled: true, weekdays: null, startTime: null, endTime: null, startDate: null, endDate: null }
-
 /** The Screen with the Schedule a write leaves it, and the one Screen State the fake works out: a Schedule that is off. */
 function scheduled(screen: ScreenRead, input: ScheduleInput): ScreenRead {
-  const schedule = { ...buildSchedule(ALWAYS), ...screen.schedule, ...input }
+  const schedule = { ...buildSchedule(EVERY_DAY_ALL_DAY), ...screen.schedule, ...input }
   const stateWithoutSchedule = screen.state === 'scheduleOff' ? null : screen.state
   return { ...screen, schedule, state: schedule.enabled ? stateWithoutSchedule : 'scheduleOff' }
 }
@@ -138,16 +137,11 @@ export function fakeKitchen({
         return { ...screen, mashup: { layout: layout.id, slots } }
       })
     }),
-    http.post(apiUrl('screens/:id/schedule'), async ({ request, params }) => {
+    ...(['post', 'patch'] as const).map(method => http[method](apiUrl('screens/:id/schedule'), async ({ request, params }) => {
       const body = await request.json() as ScheduleInput
-      faked.writes.push({ method: 'POST', path: `screens/${params.id}/schedule`, body })
+      faked.writes.push({ method: method.toUpperCase(), path: `screens/${params.id}/schedule`, body })
       return answerChanged(String(params.id), screen => scheduled(screen, body))
-    }),
-    http.patch(apiUrl('screens/:id/schedule'), async ({ request, params }) => {
-      const body = await request.json() as ScheduleInput
-      faked.writes.push({ method: 'PATCH', path: `screens/${params.id}/schedule`, body })
-      return answerChanged(String(params.id), screen => scheduled(screen, body))
-    }),
+    })),
     http.delete(apiUrl('screens/:id/schedule'), ({ params }) => {
       faked.writes.push({ method: 'DELETE', path: `screens/${params.id}/schedule` })
       return answerChanged(String(params.id), screen => ({ ...screen, schedule: null, state: screen.state === 'scheduleOff' ? null : screen.state }))

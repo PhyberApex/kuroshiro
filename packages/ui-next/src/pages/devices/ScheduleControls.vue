@@ -21,9 +21,9 @@ const props = defineProps<{
 
 const now = useNow()
 const timezone = useServerTimezone()
-const today = computed(() => dateInZone(now.value, timezone.value))
+const today = computed(() => timezone.value && dateInZone(now.value, timezone.value))
 
-/** What the controls last asked to save. After a failed save it grows, so "Try again" and the next change save all of it. */
+/** What the controls ask to save. It grows until a save goes through, so a change made during a save or after a failed one is saved with what came before it. */
 const entered = ref<ScheduleInput>({})
 
 const save = useSaveAsChanged(async (input) => {
@@ -31,17 +31,17 @@ const save = useSaveAsChanged(async (input) => {
   await props.reload()
 }, entered)
 
-const saving = computed(() => save.status === 'saving')
+const unsettled = computed(() => save.status === 'saving' || save.status === 'failed')
 
 function send(input: ScheduleInput) {
-  entered.value = save.status === 'failed' ? { ...entered.value, ...input } : input
+  entered.value = unsettled.value ? { ...entered.value, ...input } : input
   save.commit()
 }
 
 const days = ref(selectedWeekdays(props.schedule.weekdays))
 
 watch(() => props.schedule.weekdays?.join(), () => {
-  if (!saving.value)
+  if (!unsettled.value)
     days.value = selectedWeekdays(props.schedule.weekdays)
 })
 
@@ -56,8 +56,8 @@ function chooseDays(chosen: Weekday[]) {
 
 <template>
   <WeekdayToggle :model-value="days" aria-label="Days" @update:model-value="chooseDays" />
-  <ScheduleHours :schedule="schedule" :held="saving" @change="send" />
-  <ScheduleDates :schedule="schedule" :held="saving" :today="today" @change="send" />
+  <ScheduleHours :schedule="schedule" :unsettled="unsettled" @change="send" />
+  <ScheduleDates :schedule="schedule" :unsettled="unsettled" :today="today" @change="send" />
   <div class="footing">
     <p class="timezone">
       {{ timezoneLine(timezone) }}

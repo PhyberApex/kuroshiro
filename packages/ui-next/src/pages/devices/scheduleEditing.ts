@@ -20,29 +20,26 @@ export function crossesMidnight(from: string | null, to: string | null) {
 
 type PairKey = 'startTime' | 'endTime' | 'startDate' | 'endDate'
 
-/**
- * What a pair of times or dates sends: the ends that differ from the saved Schedule, once both are filled in.
- * `undefined` while one is empty and when nothing differs, so that half a pair is never sent.
- */
+/** A pair of times or dates once both ends are filled in, and `undefined` before: half a pair is never sent. */
+export function filledPair<Key extends PairKey>(pair: Record<Key, string | null>): Record<Key, string> | undefined {
+  return Object.values(pair).every(Boolean) ? pair as Record<Key, string> : undefined
+}
+
+/** What a filled pair sends: the ends that differ from the saved Schedule. `undefined` when none does, and while an end is empty. */
 export function changedOfPair<Key extends PairKey>(saved: ScheduleRead, pair: Record<Key, string | null>): Partial<Record<Key, string>> | undefined {
-  const ends = Object.entries(pair) as [Key, string | null][]
-  if (ends.some(([, value]) => !value))
-    return undefined
-  const changed = ends.filter(([key, value]) => value !== saved[key])
+  const changed = Object.entries(filledPair(pair) ?? {}).filter(([key, value]) => value !== saved[key as Key])
   return changed.length > 0 ? Object.fromEntries(changed) as Partial<Record<Key, string>> : undefined
 }
 
 /** The calendar day it is in a timezone, as `YYYY-MM-DD`. A Schedule's dates are the server's, so "today" is too. */
-export function dateInZone(now: Date, timezone: string | undefined) {
+export function dateInZone(now: Date, timezone: string) {
   return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: timezone }).format(now)
 }
 
-const DAYS_OF_A_WEEK = 7
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 
 export function weekFrom(day: string) {
-  const date = new Date(`${day}T00:00:00Z`)
-  date.setUTCDate(date.getUTCDate() + DAYS_OF_A_WEEK)
-  return date.toISOString().slice(0, 'YYYY-MM-DD'.length)
+  return new Date(Date.parse(`${day}T00:00:00Z`) + WEEK_MS).toISOString().slice(0, 'YYYY-MM-DD'.length)
 }
 
 export function dateRangeProblem(firstDay: string | null, lastDay: string | null) {

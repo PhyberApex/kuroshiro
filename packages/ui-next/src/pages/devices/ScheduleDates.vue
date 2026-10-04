@@ -4,14 +4,14 @@ import { computed, ref, useId, watch } from 'vue'
 import Checkbox from '@/components/Checkbox.vue'
 import DateInput from '@/components/DateInput.vue'
 import FieldError from '@/components/FieldError.vue'
-import { changedOfPair, dateRangeProblem, weekFrom } from './scheduleEditing'
+import { changedOfPair, dateRangeProblem, filledPair, weekFrom } from './scheduleEditing'
 
 const props = defineProps<{
   schedule: ScheduleRead
-  /** A save is under way, so what was entered is not replaced by what the server has. */
-  held: boolean
-  /** The day it is on the server, `YYYY-MM-DD`. */
-  today: string
+  /** A save is under way or has failed: what was entered is not replaced by what the server has, and a pair is sent whole. */
+  unsettled: boolean
+  /** The day it is on the server, `YYYY-MM-DD`, once the server's timezone is known. */
+  today: string | undefined
 }>()
 
 const emit = defineEmits<{
@@ -26,7 +26,7 @@ const lastDay = ref(props.schedule.endDate)
 const ranged = ref(isRanged(props.schedule))
 
 watch(() => `${props.schedule.startDate} ${props.schedule.endDate}`, () => {
-  if (props.held)
+  if (props.unsettled)
     return
   firstDay.value = props.schedule.startDate
   lastDay.value = props.schedule.endDate
@@ -35,10 +35,10 @@ watch(() => `${props.schedule.startDate} ${props.schedule.endDate}`, () => {
 
 const problemId = useId()
 const problem = computed(() => ranged.value ? dateRangeProblem(firstDay.value, lastDay.value) : undefined)
-const hasPassed = computed(() => !!lastDay.value && lastDay.value < props.today)
+const hasPassed = computed(() => !!lastDay.value && !!props.today && lastDay.value < props.today)
 
 function setRanged(checked: boolean) {
-  const days = checked ? { startDate: props.today, endDate: weekFrom(props.today) } : { startDate: null, endDate: null }
+  const days = checked && props.today ? { startDate: props.today, endDate: weekFrom(props.today) } : { startDate: null, endDate: null }
   ranged.value = checked
   firstDay.value = days.startDate
   lastDay.value = days.endDate
@@ -46,15 +46,16 @@ function setRanged(checked: boolean) {
 }
 
 function commit() {
-  const changed = !problem.value && changedOfPair(props.schedule, { startDate: firstDay.value, endDate: lastDay.value })
-  if (changed)
+  const days = { startDate: firstDay.value, endDate: lastDay.value }
+  const changed = props.unsettled ? filledPair(days) : changedOfPair(props.schedule, days)
+  if (changed && !problem.value)
     emit('change', changed)
 }
 </script>
 
 <template>
   <div class="schedule-dates">
-    <Checkbox :model-value="ranged" @update:model-value="setRanged">
+    <Checkbox :model-value="ranged" :disabled="!today" @update:model-value="setRanged">
       Only between two dates
     </Checkbox>
     <div v-if="ranged" class="pair" role="group" aria-label="Dates">

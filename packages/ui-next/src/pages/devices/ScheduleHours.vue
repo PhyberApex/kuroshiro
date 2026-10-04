@@ -3,12 +3,12 @@ import type { ScheduleInput, ScheduleRead } from 'kuroshiro-shared'
 import { computed, ref, watch } from 'vue'
 import Checkbox from '@/components/Checkbox.vue'
 import TimeInput from '@/components/TimeInput.vue'
-import { changedOfPair, crossesMidnight, DEFAULT_HOURS } from './scheduleEditing'
+import { changedOfPair, crossesMidnight, DEFAULT_HOURS, filledPair } from './scheduleEditing'
 
 const props = defineProps<{
   schedule: ScheduleRead
-  /** A save is under way, so what was entered is not replaced by what the server has. */
-  held: boolean
+  /** A save is under way or has failed: what was entered is not replaced by what the server has, and a pair is sent whole. */
+  unsettled: boolean
 }>()
 
 const emit = defineEmits<{
@@ -23,7 +23,7 @@ const to = ref(props.schedule.endTime)
 const allDay = ref(isAllDay(props.schedule))
 
 watch(() => `${props.schedule.startTime} ${props.schedule.endTime}`, () => {
-  if (props.held)
+  if (props.unsettled)
     return
   from.value = props.schedule.startTime
   to.value = props.schedule.endTime
@@ -41,7 +41,8 @@ function setAllDay(checked: boolean) {
 }
 
 function commit() {
-  const changed = changedOfPair(props.schedule, { startTime: from.value, endTime: to.value })
+  const hours = { startTime: from.value, endTime: to.value }
+  const changed = props.unsettled ? filledPair(hours) : changedOfPair(props.schedule, hours)
   if (changed)
     emit('change', changed)
 }

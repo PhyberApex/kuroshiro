@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildSchedule } from '@/testing/fixtures/screens'
-import { changedOfPair, crossesMidnight, dateInZone, dateRangeProblem, EVERY_DAY_ALL_DAY, selectedWeekdays, timezoneLine, weekFrom } from '../scheduleEditing'
+import { changedOfPair, crossesMidnight, dateInZone, dateRangeProblem, EVERY_DAY_ALL_DAY, filledPair, selectedWeekdays, timezoneLine, weekFrom } from '../scheduleEditing'
 
 describe('the weekdays of a Schedule', () => {
   it('reads a Schedule without weekdays as every day, Sunday as 0 included', () => {
@@ -49,6 +49,13 @@ describe('what a pair of times or dates sends', () => {
     expect(changedOfPair(saved, { startTime: null, endTime: '10:00' })).toBeUndefined()
     expect(changedOfPair(saved, { startTime: '07:00', endTime: null })).toBeUndefined()
     expect(changedOfPair(saved, { startTime: '06:00', endTime: '09:00' })).toBeUndefined()
+  })
+})
+
+describe('a pair of times or dates sent whole', () => {
+  it('is the pair once both ends are filled in, and nothing before', () => {
+    expect(filledPair({ startTime: '06:00', endTime: '09:00' })).toEqual({ startTime: '06:00', endTime: '09:00' })
+    expect(filledPair({ startDate: '2026-10-03', endDate: null })).toBeUndefined()
   })
 })
 

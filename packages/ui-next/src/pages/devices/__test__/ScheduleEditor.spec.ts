@@ -194,6 +194,51 @@ describe('the weekdays', () => {
   })
 })
 
+describe('a save that did not go through', () => {
+  it('is saved together with the next change', async () => {
+    const { faked, editor } = await openedPhoto(WEEKDAY_MORNINGS)
+    failsOnce('patch')
+
+    await editor.getByRole('button', { name: 'Saturday' }).click()
+    await expect.element(editor.getByText('Not saved. Something went wrong on the server.')).toBeVisible()
+    await editor.getByRole('checkbox', { name: 'All day' }).click()
+
+    await expect.element(editor.getByText('Saved')).toBeVisible()
+    expect(faked.writes).toEqual([patch({ weekdays: [1, 2, 3, 4, 5, 6], startTime: null, endTime: null })])
+    expect(pressedDays(editor)).toEqual(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'])
+  })
+
+  it('is not lost when it fails while a later change is being saved', async () => {
+    const { faked, editor } = await openedPhoto(WEEKDAY_MORNINGS)
+    let failFirstSave = () => {}
+    const firstSaveHeld = new Promise<void>(resolve => (failFirstSave = resolve))
+    api.use(http.patch(apiUrl('screens/photo/schedule'), async () => {
+      await firstSaveHeld
+      return apiErrorResponse({ statusCode: 500, code: 'internal' })
+    }, { once: true }))
+
+    await editor.getByRole('button', { name: 'Saturday' }).click()
+    await editor.getByRole('checkbox', { name: 'All day' }).click()
+    await expect.element(editor.getByText('Saved')).toBeVisible()
+    failFirstSave()
+
+    expect(faked.writes).toEqual([patch({ weekdays: [1, 2, 3, 4, 5, 6], startTime: null, endTime: null })])
+    await expect.poll(rowSummary).toBe('Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, all day')
+  })
+
+  it('gives way to the saved time typed back in its place', async () => {
+    const { faked, editor } = await openedPhoto(WEEKDAY_MORNINGS)
+    failsOnce('patch')
+
+    await enter(end(hours(editor), 'From'), '10:00')
+    await expect.element(editor.getByText('Not saved. Something went wrong on the server.')).toBeVisible()
+    await enter(end(hours(editor), 'From'), '06:00')
+
+    await expect.element(editor.getByText('Saved')).toBeVisible()
+    expect(faked.writes).toEqual([patch({ startTime: '06:00', endTime: '09:00' })])
+  })
+})
+
 describe('the hours', () => {
   it('save the one time that changed, on blur', async () => {
     const { faked, editor } = await openedPhoto(WEEKDAY_MORNINGS)

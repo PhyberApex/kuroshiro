@@ -81,7 +81,7 @@ export class ScheduleService {
   }
 }
 
-function missingOfPair(schedule: Schedule, first: 'startTime' | 'startDate', second: 'endTime' | 'endDate', message: string): ApiErrorField[] {
+function missingEndOf(schedule: Schedule, first: 'startTime' | 'startDate', second: 'endTime' | 'endDate', message: string): ApiErrorField[] {
   if (Boolean(schedule[first]) === Boolean(schedule[second]))
     return []
   return [{ path: schedule[first] ? second : first, message }]
@@ -89,8 +89,8 @@ function missingOfPair(schedule: Schedule, first: 'startTime' | 'startDate', sec
 
 function assertCoherentSchedule(schedule: Schedule): void {
   const problems = [
-    ...missingOfPair(schedule, 'startTime', 'endTime', 'A time-of-day window needs both startTime and endTime'),
-    ...missingOfPair(schedule, 'startDate', 'endDate', 'A date range needs both startDate and endDate'),
+    ...missingEndOf(schedule, 'startTime', 'endTime', 'A time-of-day window needs both startTime and endTime'),
+    ...missingEndOf(schedule, 'startDate', 'endDate', 'A date range needs both startDate and endDate'),
     ...schedule.startDate && schedule.endDate && schedule.startDate > schedule.endDate
       ? [{ path: 'startDate', message: 'startDate must not be after endDate' }]
       : [],

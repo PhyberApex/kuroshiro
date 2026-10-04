@@ -95,11 +95,14 @@ async function showWithoutSchedule() {
     gap: 0 var(--space-3);
   }
 
+  /* The heading gives way before the switch does: "off, days and hours kept" goes under "Schedule" in a narrow column. */
   .heading {
     display: flex;
+    flex: 1 1 0;
     flex-wrap: wrap;
     align-items: baseline;
     gap: 0 var(--space-2);
+    min-width: 6rem;
     margin: 0;
     font-weight: var(--weight-semibold);
     font-size: var(--text-md);

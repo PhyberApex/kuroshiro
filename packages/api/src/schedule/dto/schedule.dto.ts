@@ -1,13 +1,14 @@
 import type { ScheduleInput } from 'kuroshiro-shared'
-import { ArrayUnique, IsArray, IsBoolean, IsInt, IsOptional, IsString, Matches, Max, Min } from 'class-validator'
+import { ArrayUnique, IsArray, IsBoolean, IsInt, IsOptional, IsString, Matches, Max, Min, ValidateIf } from 'class-validator'
 import { CALENDAR_DATE_PATTERN, TIME_OF_DAY_PATTERN } from './schedule-field-patterns.js'
 
 /**
- * Every field is optional and nullable: omitting one leaves it untouched (or
- * at its default on a new Schedule), sending `null` clears the constraint it carries.
+ * Every field is optional: omitting one leaves it untouched (or at its default
+ * on a new Schedule). `null` clears the constraint a field carries; `enabled`
+ * carries none and is never `null`.
  */
 export class ScheduleDto implements ScheduleInput {
-  @IsOptional()
+  @ValidateIf((_, value) => value !== undefined)
   @IsBoolean()
   enabled?: boolean
 
