@@ -143,7 +143,7 @@ function isLocalHost(host: string) {
     return isPrivateIpv4(Number(ipv4[1]), Number(ipv4[2]))
   return LOCAL_NAMES.includes(host)
     || LOCAL_SUFFIXES.some(suffix => host.endsWith(suffix))
-    || host === '::1' || host.startsWith('fc') || host.startsWith('fd')
+    || (host.includes(':') && (host === '::1' || host.startsWith('fc') || host.startsWith('fd')))
 }
 
 /**

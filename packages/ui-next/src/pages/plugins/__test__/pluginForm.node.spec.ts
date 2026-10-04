@@ -273,6 +273,17 @@ describe('the Plugin page\'s one form', () => {
       expect(data.draft.rows[0]!.url).toBe('https://example.com/changed-elsewhere')
     })
 
+    it('leaves what was entered where the server says nothing new, even when it would send the same as what is saved', () => {
+      const { form } = formOf()
+      const name = form.register(pluginNaming)
+
+      name.draft.name = 'Weather '
+      form.refresh({ ...WEATHER, dataSources: [{ ...WEATHER.dataSources[0]!, fetchFailureStreak: 3 }] })
+
+      expect(form.changed).toBe(false)
+      expect(name.draft.name).toBe('Weather ')
+    })
+
     it('puts a discarded part back to what the server said last, not to what it held before', () => {
       const { form } = formOf()
       const name = form.register(pluginNaming)

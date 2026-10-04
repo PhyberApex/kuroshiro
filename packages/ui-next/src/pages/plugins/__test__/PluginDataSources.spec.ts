@@ -421,6 +421,24 @@ describe('the Data Sources of a Plugin', () => {
       await expect.poll(() => codeOf(screen, 'forecast', 'Value')).toBe('[1, 2]')
     })
 
+    it('keeps what the other mode holds over the 30-second refresh', async () => {
+      const faked = fakeWeather()
+      const screen = await mountPlugin()
+      const row = await open(screen, 'forecast')
+      await row.getByRole('radio', { name: 'Literal' }).click()
+      await typeCode(screen, 'forecast', 'Value', '[[1, 2')
+      await row.getByRole('radio', { name: 'Fetch' }).click()
+      await expect.element(field(screen, 'forecast', 'Request')).toBeVisible()
+
+      faked.plugin = weatherWith([source({ fetchFailureStreak: 1, lastFetchError: 'HTTP 502' })])
+      refresh()
+      await expect.poll(() => healthOf(screen, 'forecast')).toBe('The last fetch failed')
+
+      await row.getByRole('radio', { name: 'Literal' }).click()
+      await expect.element(field(screen, 'forecast', 'Value')).toBeVisible()
+      await expect.poll(() => codeOf(screen, 'forecast', 'Value')).toBe('[1, 2]')
+    })
+
     it('offers the body with POST only, and the transform tucked under its size', async () => {
       const faked = fakeWeather([source({ transformJs: 'const days = input.daily\nreturn { days }' })])
       const screen = await mountPlugin()

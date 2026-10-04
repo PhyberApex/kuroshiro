@@ -279,7 +279,7 @@ describe('the Data Sources part of the Plugin\'s form', () => {
 
   describe('a public address', () => {
     it('is anything but this machine, a private network and a local name', () => {
-      expect(['https://api.open-meteo.com/v1', 'http://8.8.8.8/dns', 'https://{{ host }}/data'].filter(isPublicAddress)).toHaveLength(3)
+      expect(['https://api.open-meteo.com/v1', 'http://8.8.8.8/dns', 'https://{{ host }}/data', 'https://fcm.googleapis.com/x', 'https://fdroid.org/x'].filter(isPublicAddress)).toHaveLength(5)
       expect([
         'http://localhost:3000/x',
         'http://127.0.0.1/x',
