@@ -1,4 +1,4 @@
-import type { PluginDetail, PluginSummary, UpdatePluginInput } from 'kuroshiro-shared'
+import type { CreatePluginInput, PluginDetail, PluginSummary, UpdatePluginInput } from 'kuroshiro-shared'
 import { apiDownload, apiGet, apiSend } from './client'
 
 /** Every Plugin as a row of the list, by name whatever its case. */
@@ -8,6 +8,14 @@ export function listPlugins() {
 
 export function getPlugin(pluginId: string) {
   return apiGet<PluginDetail>(`plugins/${pluginId}`)
+}
+
+/**
+ * Builds a Plugin from its name and Plugin Kind, with the starter template. With `deviceId` it is also assigned
+ * to that Device, at the end of its Order; a Device that does not exist is refused with `device-not-found`.
+ */
+export function createPlugin(input: CreatePluginInput) {
+  return apiSend<PluginDetail>('POST', 'plugins', input)
 }
 
 /**

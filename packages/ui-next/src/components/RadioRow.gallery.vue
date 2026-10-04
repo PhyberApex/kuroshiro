@@ -7,6 +7,7 @@ import RadioRow from './RadioRow.vue'
 
 type Kind = 'plugin' | 'mashup' | 'link' | 'file' | 'html'
 type WhileAsleep = 'keep' | 'sleep-image'
+type MergeStrategy = 'standard' | 'deep_merge'
 
 const kinds: RadioChoice<Kind>[] = [
   { value: 'plugin', label: 'Plugin', hint: 'One of your Plugins, rendered for this Device. Checked.' },
@@ -15,6 +16,10 @@ const kinds: RadioChoice<Kind>[] = [
   { value: 'file', label: 'File', hint: 'Not available in the demo. Disabled.', disabled: true },
   { value: 'html', label: 'HTML', hint: 'Markup you write here, with a live preview. Focus.' },
 ]
+const mergeStrategies: RadioChoice<MergeStrategy>[] = [
+  { value: 'standard', label: 'Replace', code: 'standard', hint: 'Each POST replaces the Webhook Payload.' },
+  { value: 'deep_merge', label: 'Deep merge', code: 'deep_merge', hint: 'Objects are merged key by key. An array is replaced.' },
+]
 const whileAsleep: RadioChoice<WhileAsleep>[] = [
   { value: 'keep', label: 'Keep the last Screen' },
   { value: 'sleep-image', label: 'Show the sleep image' },
@@ -22,12 +27,19 @@ const whileAsleep: RadioChoice<WhileAsleep>[] = [
 
 const kind = ref<Kind>('plugin')
 const asleep = ref<WhileAsleep>('keep')
+const mergeStrategy = ref<MergeStrategy>('standard')
 </script>
 
 <template>
   <SpecimenRow>
     <Specimen caption="checked, default, hover, disabled, focus" wide>
       <RadioRow v-model="kind" class="rows" :choices="kinds" aria-label="Kind" :force="{ link: 'hover', html: 'focus' }" />
+    </Specimen>
+  </SpecimenRow>
+
+  <SpecimenRow>
+    <Specimen caption="with the value's code beside the name" wide>
+      <RadioRow v-model="mergeStrategy" class="rows" :choices="mergeStrategies" aria-label="Merge Strategy" />
     </Specimen>
   </SpecimenRow>
 
