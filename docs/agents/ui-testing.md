@@ -211,7 +211,7 @@ await expect.element(screen.getByRole('heading', { name: 'Devices' })).toBeVisib
 await expectPageScreenshots('devices')
 ```
 
-A `*.shots.ts` file does not click: the shot files run side by side and share one pointer, so a click leaves it hovering in another file's shot, which then fails in some runs. Reach a state by the address (`?screen=`, a fragment that opens a tucked section), by `fill` and by `blur()` (`PluginPage.shots.ts`), or shoot a stage of the file's own as the component shots do.
+A page's shot reaches its state without a click where it can: by the address (`?screen=`, a fragment that opens a tucked section), by `fill` and by `blur()` (`PluginPage.shots.ts`). The shot files run side by side and appear to share one pointer: with clicks in the Plugin page's shot, a phone shot of another file (`ScreenRow.shots.ts`, `EditorBench.shots.ts`) came out with a hovered element and failed in CI, a different one in each run, and stopped failing once the clicks were gone.
 
 The shots hold the shell, so wait for what the shell loads as well (a Device's name in the bar) before shooting. The shell's own baselines (`src/shell/AppShell.shots.ts`) mount a stand-in page, so they do not change when a page lands.
 
