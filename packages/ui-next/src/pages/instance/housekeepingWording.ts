@@ -1,5 +1,6 @@
 import type { CleanupResult, MissingImageFinding, RetentionAges, RetentionRunResult, StorageCheck, StorageFinding, StorageFindingGroup } from 'kuroshiro-shared'
 import { formatBytes } from '@/components/fileRules'
+import { SCREEN_KIND_LABELS } from '@/components/screenRows'
 import { listed } from '@/patterns/listed'
 import { deviceLogEntriesNote, resolvedAlertsNote } from './instanceSettingWording'
 
@@ -80,6 +81,22 @@ export function openedSentence({ group, findings }: FindingGroup) {
   }
 }
 
+const withArticle = (word: string) => `${/^[aeiou]/i.test(word) ? 'an' : 'a'} ${word}`
+
+/** One line of an opened group: a path below the storage folder in mono with its size, or a Screen with its kind, its Device and its Order. */
+export function findingLine(finding: StorageFinding): { what: string, detail: string, path: boolean } {
+  switch (finding.group) {
+    case 'missingImage': {
+      const { name, kind, deviceName, order } = finding.screen
+      return { what: `${name || 'Unnamed Screen'}, ${withArticle(SCREEN_KIND_LABELS[kind])} Screen on ${deviceName}`, detail: `Order ${order}`, path: false }
+    }
+    case 'deletedDeviceFolder':
+      return { what: finding.path, detail: `${formatBytes(finding.bytes)} · ${counted(finding.files, FILE)}`, path: true }
+    default:
+      return { what: finding.path, detail: formatBytes(finding.bytes), path: true }
+  }
+}
+
 const screensOf = (groups: FindingGroup[]) => groups.flatMap(group => group.findings.filter(isScreen))
 
 /** The line under the rows, about the one group whose clean-up deletes Screens. An Instance without such a Screen has no line. */
@@ -156,9 +173,9 @@ export function retentionSentence(ages: RetentionAges) {
   return [`Every day at 04:00, server time, Retention deletes ${listed(deleted)}.`, ...kept].join(' ')
 }
 
-/** What a Retention Run removed, as the end of a sentence that says which run. */
-export function retentionRunSentence({ alertsPruned, deviceLogsPruned }: RetentionRunResult) {
-  return `removed ${counted(alertsPruned, RESOLVED_ALERT)} and ${counted(deviceLogsPruned, DEVICE_LOG_ENTRY)}.`
+/** What a Retention Run removed, for a sentence that says which run. */
+export function prunedCounts({ alertsPruned, deviceLogsPruned }: RetentionRunResult) {
+  return `${counted(alertsPruned, RESOLVED_ALERT)} and ${counted(deviceLogsPruned, DEVICE_LOG_ENTRY)}`
 }
 
 export const nothingOldEnough = ({ alertsPruned, deviceLogsPruned }: RetentionRunResult) => alertsPruned + deviceLogsPruned === 0

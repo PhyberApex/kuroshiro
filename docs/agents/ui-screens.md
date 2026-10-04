@@ -235,6 +235,23 @@ The Firmware page (`FirmwarePage.vue`) is the worked example of an Instance page
 - A summary counts six kinds (Devices, Plugins, Screens, Mashups, custom Palettes, custom Firmware). The rows under a Plugin or a Screen that the server also counts (`dataSources`, `templates`, `schedules`, …) are not counted as records.
 - A warning kind added to `ImportWarning` fails type-check in `wordWarning` until it is worded.
 
+### Housekeeping
+
+`HousekeepingPage.vue` loads the Retention status (`getRetentionStatus()`, which carries the two ages and the last Retention Run) with `LoadBody`, and starts the stored-files check beside it, so a failed check stays inside its own section.
+
+| Part | Is |
+| --- | --- |
+| `useStoredFiles()` (`storedFiles.ts`) | The check as one `state` (`checking`, `checked` with the `StorageCheck`, `failed` with its reason): `check()` runs it again and forgets the last clean-up; `cleanUp(findingIds, findings)` sends the ids, keeps the answer in `cleaned` with the findings it was about, and checks again, so what could not be removed is listed anew |
+| `StoredFilesSection`, `StoredFindings`, `FindingContents` | The section with "Check again", its status line and notices; the Finding rows with what is ticked, the line under them, "Clean up {n} groups" and its confirmation; and what an opened group holds |
+| `RetentionSection` | The sentence, the last run and "Run Retention now", which asks `runRetention({ dryRun: true })` first and confirms only when that counts something. It emits `ran`, on which the page reads the status again |
+| `FindingRow`, `FindingRows` (`@/components/`) | The Finding row: a checkbox (`v-model:ticked`) outside the accordion trigger, the group's name, count and size; `FindingRows` holds `v-model:open`, one row open at a time |
+| `housekeepingWording.ts` | Every sentence, with a node spec: the groups in the spec's order (`findingGroups`), what an opened group says and lists, the line under the rows, "Lost" and "Stays", what a clean-up removed and could not, and the Retention sentences |
+| `__test__/housekeepingHarness.ts` | `fakeHousekeeping({ checks, cleanup, retention, dryRun, run })` answers the four routes (each check in turn, the last one again), keeps `checked`, `cleanups` and `runs`, and holds checks or runs on `holdingChecks` and `holdingRuns`; `mountHousekeeping()` |
+
+- Every clean-up starts from the check on the screen: a group's finding ids are sent, never paths, and the server acts only on ids its own check still holds.
+- The Screens group (`missingImage`) is never ticked when a check arrives, because cleaning it up deletes Screens.
+- `src/api/maintenance.ts` has `checkStoredFiles`, `cleanUpStoredFiles`, `getRetentionStatus` and `runRetention({ dryRun })`; the fixtures are `buildStorageCheck` (one finding in every group, the Screen Holiday photo on Kitchen) and `buildRetentionStatus`.
+
 ## A list page
 
 `pages/devices/DevicesListPage.vue` with `DevicesListRow.vue` is the worked example of a list.

@@ -5,11 +5,14 @@ import {
   cleanedSentence,
   cleanUpLabel,
   findingGroups,
+  findingLine,
   lostLines,
+  nothingOldEnough,
   notRemoved,
   openedSentence,
+  prunedCounts,
+  retentionIsOff,
   retentionLost,
-  retentionRunSentence,
   retentionSentence,
   screenImagesSentence,
   screensLine,
@@ -99,6 +102,23 @@ describe('the stored-files check in words', () => {
     expect(cleanedSentence({ files: 0, folders: 0, screens: 0, bytes: 0 })).toBeUndefined()
   })
 
+  it('lists what a group holds: a path with its size, a folder with its files, a Screen with its kind, Device and Order', () => {
+    expect(check.findings.map(findingLine)).toEqual([
+      { what: 'devices/7c9e6679-7425-40de-944b-e07fc1f90ae7/8e41.png', detail: '64 KB', path: true },
+      { what: 'devices/7c9e6679-7425-40de-944b-e07fc1f90ae7/8e41.original', detail: '188 KB', path: true },
+      { what: 'devices/0d44a1f0-3c5e-4b7a-8d21-6f0e9a4c9b17', detail: '1.3 MB · 14 files', path: true },
+      { what: 'devices/7c9e6679-7425-40de-944b-e07fc1f90ae7/tmp-source', detail: '40 KB', path: true },
+      { what: 'uploads/5b1f0a', detail: '1.4 MB', path: true },
+      { what: 'uploads/aa93e2', detail: '819 KB', path: true },
+      { what: 'Holiday photo, a File Screen on Kitchen', detail: 'Order 4', path: false },
+    ])
+    expect(findingLine(screen('', 'Hallway', 2))).toEqual({ what: 'Unnamed Screen, a File Screen on Hallway', detail: 'Order 2', path: false })
+    const link = screen('Weather', 'Hallway', 1)
+    if (link.group === 'missingImage')
+      link.screen.kind = 'external'
+    expect(findingLine(link).what).toBe('Weather, an External link Screen on Hallway')
+  })
+
   it('says what could not be removed, each by what it is with the server\'s reason', () => {
     expect(notRemoved([
       { findingId: 'oldUpload:uploads/5b1f0a', reason: 'The server could not delete it (EACCES).' },
@@ -127,10 +147,20 @@ describe('retention in words', () => {
     expect(retentionSentence({ alertRetentionDays: 0, deviceLogRetentionDays: 0 })).toBe('Retention is off: both ages are 0.')
   })
 
-  it('says what a run removed', () => {
-    expect(retentionRunSentence({ alertsPruned: 3, deviceLogsPruned: 1284 })).toBe('removed 3 resolved Alerts and 1,284 Device Log entries.')
-    expect(retentionRunSentence({ alertsPruned: 1, deviceLogsPruned: 1 })).toBe('removed 1 resolved Alert and 1 Device Log entry.')
-    expect(retentionRunSentence({ alertsPruned: 0, deviceLogsPruned: 0 })).toBe('removed 0 resolved Alerts and 0 Device Log entries.')
+  it('counts what a run removed', () => {
+    expect(prunedCounts({ alertsPruned: 3, deviceLogsPruned: 1284 })).toBe('3 resolved Alerts and 1,284 Device Log entries')
+    expect(prunedCounts({ alertsPruned: 1, deviceLogsPruned: 1 })).toBe('1 resolved Alert and 1 Device Log entry')
+    expect(prunedCounts({ alertsPruned: 0, deviceLogsPruned: 0 })).toBe('0 resolved Alerts and 0 Device Log entries')
+  })
+
+  it('is off while both ages are 0', () => {
+    expect(retentionIsOff({ alertRetentionDays: 0, deviceLogRetentionDays: 0 })).toBe(true)
+    expect(retentionIsOff({ alertRetentionDays: 0, deviceLogRetentionDays: 30 })).toBe(false)
+  })
+
+  it('finds nothing old enough only when a dry run counts nothing', () => {
+    expect(nothingOldEnough({ alertsPruned: 0, deviceLogsPruned: 0 })).toBe(true)
+    expect(nothingOldEnough({ alertsPruned: 0, deviceLogsPruned: 1 })).toBe(false)
   })
 
   it('says what a run would lose, a half that counts nothing as not old enough and a half that is off not at all', () => {
