@@ -10,7 +10,7 @@ What every screen of `packages/ui-next` stands on: the shell, the router, the AP
 | `reads/` | `sharedReads.ts`: the reads made once for the whole app |
 | `router/` | `routes.ts` (every route) and `index.ts` (`createAppRouter`, the scroll behaviour) |
 | `shell/` | The bar, the phone's bottom tabs, the demo line, the page column |
-| `patterns/` | The shared page patterns: `TitleLine`, `LoadBody`, `LoadingLine`, `WashBar`, `MissingPage`, `RelativeTime`, `UnsavedChanges`, `useLoad`, `usePolling`, `useNow`, `usePageTitle`, `time.ts` |
+| `patterns/` | The shared page patterns: `TitleLine`, `LoadBody`, `LoadingLine`, `WashBar`, `MissingPage`, `RelativeTime`, `UnsavedChanges`, `useLoad`, `usePolling`, `useNow`, `usePageTitle`, `useNarrowWindow`, `time.ts` |
 | `pages/` | One component per route, `<Name>Page.vue`, in a folder per surface (`pages/devices/`, `pages/plugins/`, `pages/instance/`). The three pages at its top are the shell's own: the landing route, the unknown route and "not built yet" |
 | `components/` | The primitives |
 
@@ -25,7 +25,7 @@ notBuiltYet('/plugins', 'Plugins'),
 { path: '/plugins', component: () => import('@/pages/plugins/PluginsListPage.vue') },
 ```
 
-- Routes are lazily loaded and addressed by path (`to="/devices/42/settings"`), not by name. They are flat, except under a frame several pages share: the pages of one Device are the children of `/devices/:deviceId` (see "The Device frame"). The Instance page list is for its slice to introduce, as a component each of those pages renders or as a parent route.
+- Routes are lazily loaded and addressed by path (`to="/devices/42/settings"`), not by name. They are flat, except under a frame several pages share: the pages of one Device are the children of `/devices/:deviceId` (see "The Device frame") and the Instance pages the children of `/instance` (see "The Instance frame").
 - **The bar needs no entry.** Its entries are the Devices, "Plugins" and "Instance"; which one is current is read off the path, so any route under `/devices/:deviceId`, `/plugins` or `/instance` is already marked. `/alerts` marks the Alert indicator.
 - Never write a leading-slash URL by hand outside the router. The router knows the base path the UI is served under; `fetch` and `<img>` do not (see "Images" and "The API client").
 - **A redirect that depends on data** is the page's, not the router's: `/` lands by the number of Devices (`pages/LandingPage.vue`), and the Devices list replaces itself with `/connect` when there are none, each in a `watchEffect` on the shared read.
@@ -87,6 +87,63 @@ const { device, listed, name, path } = useDeviceFrame() // from '@/pages/devices
 | `screenNaming.ts` | `screenName(name)`: a Screen saved without a name reads "Unnamed Screen" everywhere. `possessive(name)` for "{Device}'s" |
 
 `ScreensInOrder` takes `reload`, which reads the Screens again: call it after any write to a Screen. A new Screen is opened by navigating to `{path}?screen={id}`, which also scrolls to its row.
+
+## The Instance frame
+
+Every Instance page is a child route of `/instance`, whose component is `pages/instance/InstanceFrame.vue`. The frame renders the title line "Instance", the page list at the left (a row of tabs that scrolls sideways on a phone, running from one edge of the window to the other), the chosen page beside it, and under the list Appearance and "Kuroshiro {version}", which move to the foot of the page on a phone. `/instance` redirects to `/instance/settings`. It loads nothing: an Instance page reads what it shows itself. A page that shows Instance facts beside a load of its own joins the two into one `Load` for `LoadBody`, so that either one's failure is the page's notice (`InstanceSettingsPage.vue`).
+
+To build a page under it, swap its `notBuiltYetUnderInstance('firmware', 'Firmware')` line in `router/routes.ts` for
+
+```ts
+instancePage('firmware', 'Firmware', () => import('@/pages/instance/FirmwarePage.vue')),
+```
+
+That is the registration: the page list holds the `instancePage` routes, under their labels and in the order they stand in `routes.ts`, which is the spec's order. A page that is not in the list (Upload Firmware) is a plain child, `{ path: 'firmware/upload', component: … }`, and keeps "Firmware" current by its path alone.
+
+A page under the frame renders only its body, as a list of roots:
+
+```vue
+<template>
+  <InstancePageHeading title="Firmware">
+    <template #actions>…buttons, the primary one last…</template>
+  </InstancePageHeading>
+  <div class="body">
+    <LoadBody v-slot="{ data }" :load="firmware" loading="Loading the Firmware" failed="Could not load the Firmware.">
+      <p class="lede">…</p>
+      <InstanceSection id="available" title="Available Firmware">
+        <template #aside>Checked TRMNL …</template>
+        …rows…
+      </InstanceSection>
+    </LoadBody>
+  </div>
+</template>
+```
+
+| Part of `pages/instance/` | Is |
+| --- | --- |
+| `InstancePageHeading` | The page's heading line: its name as an `h2` at `title-sm` on the 2 px ink rule, the `#actions` slot at its right. It does not rename the browser tab, which reads "Instance" |
+| `InstanceSection` | A section of a page: `title` as an `h3` at `text-lg`, weight 600, on a 1 px rule, the `#aside` slot at its right (a link, a button, a fact), and `id`, which is what a fragment names (`/instance/settings#retention`). It sets `--space-10` above itself; the first one under a lede takes `--space-8` |
+| `InstanceReadRow` | A row that is read and not edited, or that holds the button of an action: `label`, the default slot, `#side` at the right and `#note` under it. It shares the Setting row's grid |
+| `InstanceSettingRow` | One numeric Instance Setting (see below) |
+| `instancePaths.ts` | `instancePagePath('firmware')` and the paths other pages link to |
+| `@/shell/appearance.ts` | Not in this folder, because it holds for the whole app: `useAppearance()` and `applyStoredAppearance()`, which `main.ts` calls before the app mounts. The choice is `data-theme` on the root and `kuroshiro:appearance` in `localStorage`; "system" removes the attribute |
+
+- The frame sets `--setting-label-width` to 11 rem, which `SettingRow` and `InstanceReadRow` read: the page beside the list is narrower than a whole column.
+- `useNarrowWindow()` (`@/patterns/`) says whether the window is below 820 px. It is for what CSS cannot do: the frame uses it to render Appearance and the version at one place in the page's order, not two.
+- A spec of an Instance page clears `localStorage`'s `kuroshiro:appearance` if it chooses a side (`InstanceFrame.spec.ts`).
+
+### An Instance Setting
+
+`GET` and `PATCH /api/settings` are `getInstanceSettings()` and `updateInstanceSettings(input)` in `src/api/instance.ts`. The Instance Settings page loads them with its own `useLoad`; a page that only reads a Setting (Housekeeping reads the Retention ages) does the same.
+
+`InstanceSettingRow` is a numeric Setting as a row: `setting-key`, `setting` (the `InstanceSettingValue` as loaded), `label`, and `before` and `after`, the words of the sentence its field stands in. Its `#note` slot is handed `{ value }`, the value in force, for the sentence under the row. It does the rest:
+
+- The field holds the value in force. A number in range is sent alone (`{ lowBatteryPercent: 15 }`) on blur or Enter; the value already in force is not sent again.
+- At its side, in `SettingRow`'s `#source` slot: "Built-in default", "From `{VARIABLE}`" or "Set here · Reset to {fallback}". "Reset" sends `null`, shows the fallback at once and gives the field the focus. "Saving" and "Saved" take the source's place while they show; a failed save goes under the field and the source stays.
+- A value outside `SETTING_BOUNDS`, or no whole number, is not sent: the range message of `instanceSettingWording.ts` takes the note's place until the value is in range again.
+- It follows its own saves from the answer's one key, so two rows that save at once do not overwrite each other.
+
+A boolean Setting (Firmware Auto-Update) is a `SettingRow` with a `Switch` and `useSaveAsChanged`, sending `{ firmwareAutoUpdate: true }` through the same `updateInstanceSettings`.
 
 ## A list page
 
@@ -191,7 +248,7 @@ export function updateDevice(deviceId: string, input: UpdateDeviceInput) {
 }
 ```
 
-`src/api/devices.ts` has `listDevices`, `getDevice`, `createDevice` (refused with `device-mac-taken`) and `updateDevice`.
+`src/api/devices.ts` has `listDevices`, `getDevice`, `createDevice` (refused with `device-mac-taken`) and `updateDevice`. `src/api/instance.ts` has `getInstanceFacts`, `getInstanceSettings` and `updateInstanceSettings`; `src/api/alerts.ts` has `listAlerts` and `sendTestNotification` (refused with `notifications-off` or `notification-failed`).
 
 - `apiGet<T>(path, query?)` and `apiSend<T>(method, path, body?)` from `@/api/client`. The path has no leading slash and no `api/`. `body` is a shared `…Input` type, sent as JSON, or a `FormData` for an upload. A 204 answers `undefined`.
 - Types come from `kuroshiro-shared`. Send only what the `…Input` type declares: the server refuses undeclared keys, so a read model sent back as a write is refused.

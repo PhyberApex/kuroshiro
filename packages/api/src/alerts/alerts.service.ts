@@ -1,8 +1,9 @@
 import type { AlertsList, AlertSummary, ListAlertsQuery } from 'kuroshiro-shared'
 import type { Repository } from 'typeorm'
-import { BadRequestException, Injectable, ServiceUnavailableException } from '@nestjs/common'
+import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { IsNull, MoreThan } from 'typeorm'
+import { ApiException } from '../errors/api.exception.js'
 import { Alert } from './entities/alert.entity.js'
 import { NotificationSenderService } from './notification-sender.service.js'
 
@@ -90,8 +91,8 @@ export class AlertsService {
       return { message: 'Test notification sent successfully.' }
 
     if (!this.sender.isConfigured())
-      throw new BadRequestException('Apprise is not configured — set KUROSHIRO_APPRISE_URL to enable notifications.')
+      throw new ApiException(HttpStatus.BAD_REQUEST, 'notifications-off', 'Apprise is not configured — set KUROSHIRO_APPRISE_URL to enable notifications.')
 
-    throw new ServiceUnavailableException('Test notification failed to send. Check the Apprise sidecar and its logs.')
+    throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, 'notification-failed', 'Test notification failed to send. Check the Apprise sidecar and its logs.')
   }
 }
