@@ -4,6 +4,8 @@ declare module 'vue-router' {
   interface RouteMeta {
     /** The title of a page that is not built yet, shown by the page that stands in for it. */
     notBuiltYet?: string
+    /** The name of a page of the Instance frame, as the frame's page list shows it. */
+    instancePage?: string
   }
 }
 
@@ -20,10 +22,23 @@ function notBuiltYetUnderDevice(path: string): RouteRecordRaw {
   return { path, component: () => import('@/pages/devices/DeviceNotBuiltYetPage.vue') }
 }
 
+type LazyPage = () => Promise<unknown>
+
+/** A built page of the Instance frame. The frame lists it under `label`, in the order the pages stand here. */
+function instancePage(path: string, label: string, component: LazyPage): RouteRecordRaw {
+  return { path, component, meta: { instancePage: label } }
+}
+
+/** A page under the Instance frame that is not built yet. The frame leaves it out of its page list until it is an `instancePage`. */
+function notBuiltYetUnderInstance(path: string, title: string): RouteRecordRaw {
+  return { path, component: () => import('@/pages/instance/InstanceNotBuiltYetPage.vue'), meta: { notBuiltYet: title } }
+}
+
 /**
  * Every route of the four route tables of `docs/ui/`. A built page is
  * `{ path, component: () => import('@/pages/…Page.vue') }`; a `notBuiltYet` line stands in for one that is not.
  * The pages of one Device are the children of the Device frame, which loads the Device and has its title line and tabs.
+ * The Instance pages are the children of the Instance frame, which has the title line, the page list, Appearance and the version.
  */
 export const routes: RouteRecordRaw[] = [
   { path: '/', component: () => import('@/pages/LandingPage.vue') },
@@ -47,14 +62,20 @@ export const routes: RouteRecordRaw[] = [
   { path: '/plugins/:pluginId', component: () => import('@/pages/plugins/PluginPage.vue') },
   notBuiltYet('/plugins/:pluginId/update', 'Recipe Update Check'),
 
-  { path: '/instance', redirect: '/instance/settings' },
-  notBuiltYet('/instance/settings', 'Instance Settings'),
-  notBuiltYet('/instance/firmware', 'Firmware'),
-  notBuiltYet('/instance/firmware/upload', 'Upload Firmware'),
-  notBuiltYet('/instance/models', 'Device Models and Palettes'),
-  notBuiltYet('/instance/archive', 'Configuration Archive'),
-  notBuiltYet('/instance/housekeeping', 'Housekeeping'),
-  notBuiltYet('/instance/simulator', 'Device Simulator'),
+  {
+    path: '/instance',
+    component: () => import('@/pages/instance/InstanceFrame.vue'),
+    redirect: '/instance/settings',
+    children: [
+      instancePage('settings', 'Instance Settings', () => import('@/pages/instance/InstanceSettingsPage.vue')),
+      notBuiltYetUnderInstance('firmware', 'Firmware'),
+      notBuiltYetUnderInstance('firmware/upload', 'Upload Firmware'),
+      notBuiltYetUnderInstance('models', 'Device Models and Palettes'),
+      notBuiltYetUnderInstance('archive', 'Configuration Archive'),
+      notBuiltYetUnderInstance('housekeeping', 'Housekeeping'),
+      notBuiltYetUnderInstance('simulator', 'Device Simulator'),
+    ],
+  },
 
   notBuiltYet('/alerts', 'Alerts'),
 

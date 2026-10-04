@@ -1,7 +1,6 @@
 import type { FindOperator } from 'typeorm'
 import type { Alert } from '../entities/alert.entity.js'
 import type { NotificationSenderService } from '../notification-sender.service.js'
-import { BadRequestException, ServiceUnavailableException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeAlert, makeDevice, makePluginDataSource } from '../../test/fixtures.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
@@ -151,14 +150,14 @@ describe('alertsService', () => {
       sender.send.mockResolvedValue(false)
       sender.isConfigured.mockReturnValue(false)
 
-      await expect(service.sendTestNotification()).rejects.toBeInstanceOf(BadRequestException)
+      await expect(service.sendTestNotification()).rejects.toMatchObject({ code: 'notifications-off' })
     })
 
     it('throws a 5xx when Apprise is configured but delivery failed', async () => {
       sender.send.mockResolvedValue(false)
       sender.isConfigured.mockReturnValue(true)
 
-      await expect(service.sendTestNotification()).rejects.toBeInstanceOf(ServiceUnavailableException)
+      await expect(service.sendTestNotification()).rejects.toMatchObject({ code: 'notification-failed' })
     })
   })
 })

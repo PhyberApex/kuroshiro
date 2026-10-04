@@ -30,8 +30,10 @@ const slots = defineSlots<{
     control: { 'id': string, 'aria-describedby': string | undefined, 'invalid': boolean }
     labelId: string
   }) => unknown
-  /** What the setting does or where its value comes from, under the control. */
+  /** What the setting does, under the control. */
   note?: () => unknown
+  /** Where the value comes from, at the row's side: "Built-in default", or "Set here" with the button that resets it. "Saving" and "Saved" take its place while they show. */
+  source?: () => unknown
 }>()
 
 const id = useId()
@@ -45,6 +47,8 @@ const control = computed(() => ({
   'aria-describedby': [props.error && errorId, slots.note && noteId].filter(Boolean).join(' ') || undefined,
   'invalid': Boolean(props.error),
 }))
+
+const saveStateTakesTheSide = computed(() => props.status === 'saving' || props.status === 'saved')
 </script>
 
 <template>
@@ -54,6 +58,9 @@ const control = computed(() => ({
       <slot :control="control" :label-id="labelId" />
     </div>
     <SaveState class="state" :status="status" :reason="reason" @retry="$emit('retry')" />
+    <p v-if="$slots.source && !saveStateTakesTheSide" class="source">
+      <slot name="source" />
+    </p>
     <FieldError :id="errorId" class="under" :message="error" />
     <p v-if="$slots.note" :id="noteId" class="note">
       <slot name="note" />
@@ -65,7 +72,7 @@ const control = computed(() => ({
 @layer components {
   .setting-row {
     display: grid;
-    grid-template-columns: 12.5rem minmax(0, 1fr) auto;
+    grid-template-columns: var(--setting-label-width, 12.5rem) minmax(0, 1fr) auto;
     align-items: center;
     gap: var(--space-1) var(--space-4);
     min-height: 3.25rem;
@@ -88,10 +95,25 @@ const control = computed(() => ({
     min-width: 0;
   }
 
+  .state,
+  .source {
+    grid-row: 1;
+    grid-column: 3;
+  }
+
+  .source {
+    max-width: 17rem;
+    color: var(--color-ink-soft);
+    font-size: var(--text-sm);
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
   /* "Saving" and "Saved" stand at the row's side. A failed save has a reason and a button, so it goes under the control, where an error goes. */
   .note,
   .under,
   .state.failed {
+    grid-row: auto;
     grid-column: 2 / -1;
   }
 
@@ -106,10 +128,18 @@ const control = computed(() => ({
       grid-template-columns: minmax(0, 1fr);
     }
 
+    .state,
+    .source,
     .note,
     .under,
     .state.failed {
+      grid-row: auto;
       grid-column: 1;
+    }
+
+    .source {
+      max-width: none;
+      text-align: left;
     }
   }
 }
