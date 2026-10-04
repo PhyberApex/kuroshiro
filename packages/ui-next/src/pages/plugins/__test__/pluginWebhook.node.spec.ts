@@ -1,8 +1,6 @@
-import type { PluginDetail } from 'kuroshiro-shared'
+import type { Webhook } from '../pluginWebhook'
 import { describe, expect, it } from 'vitest'
 import { clearPayloadWording, exampleCall, mergeStrategyRead, payloadExampleKey, payloadText, regenerateTokenWording, webhookAddress } from '../pluginWebhook'
-
-type Webhook = NonNullable<PluginDetail['webhook']>
 
 const TOKEN = 'wh8c1f02d94a7be6033f9a'
 const URL = `https://kuroshiro.example/api/webhook/${TOKEN}`

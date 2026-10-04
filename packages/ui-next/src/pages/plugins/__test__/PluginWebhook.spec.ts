@@ -1,4 +1,5 @@
 import type { PluginDetail } from 'kuroshiro-shared'
+import type { Webhook } from '../pluginWebhook'
 import type { Faked, Mounted } from './pluginPageHarness'
 import { http, HttpResponse } from 'msw'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -19,8 +20,6 @@ const urlOf = (token: string) => `${SERVER}/api/webhook/${token}`
 const MASKED_URL = `${SERVER}/api/webhook/${'•'.repeat(TOKEN.length - 4)}3f9a`
 const PAYLOAD = { title: 'Back at six.', body: 'Soup is in the fridge.' }
 const RECEIVED_AT = '2026-10-03T07:31:00.000Z'
-
-type Webhook = NonNullable<PluginDetail['webhook']>
 
 function doorbell(webhook: Partial<Webhook> = {}): PluginDetail {
   return buildPluginDetail({

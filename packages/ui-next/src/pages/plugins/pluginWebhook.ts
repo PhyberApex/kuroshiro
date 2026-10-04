@@ -2,13 +2,13 @@ import type { PluginDetail } from 'kuroshiro-shared'
 import { maskedKey } from '@/pages/devices/deviceSettings'
 import { MERGE_STRATEGY_CHOICES } from './addPlugin'
 
-type Webhook = NonNullable<PluginDetail['webhook']>
+export type Webhook = NonNullable<PluginDetail['webhook']>
 
-/** The Webhook URL ends in its Webhook Token, which is replaced by `token` in what is shown. */
-const withToken = ({ url, token }: Webhook, shown: string) => `${url.slice(0, url.length - token.length)}${shown}`
+/** The Webhook URL ends in its Webhook Token, which is written as `shown` instead. */
+const withTokenShownAs = ({ url, token }: Webhook, shown: string) => `${url.slice(0, url.length - token.length)}${shown}`
 
 /** The Webhook URL as the row shows it: the token as dots and its last four characters until "Reveal". */
-export const webhookAddress = (webhook: Webhook, revealed: boolean) => revealed ? webhook.url : withToken(webhook, maskedKey(webhook.token))
+export const webhookAddress = (webhook: Webhook, revealed: boolean) => revealed ? webhook.url : withTokenShownAs(webhook, maskedKey(webhook.token))
 
 function curlTo(address: string) {
   return [
@@ -21,7 +21,7 @@ function curlTo(address: string) {
 /** The example call: `shown` has "…" for the token while it is hidden, `copied` is always the command that works. */
 export function exampleCall(webhook: Webhook, revealed: boolean) {
   const copied = curlTo(webhook.url)
-  return { shown: revealed ? copied : curlTo(withToken(webhook, '…')), copied }
+  return { shown: revealed ? copied : curlTo(withTokenShownAs(webhook, '…')), copied }
 }
 
 export function mergeStrategyRead({ mergeStrategy, streamLimit }: Webhook) {
