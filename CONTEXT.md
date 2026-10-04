@@ -197,15 +197,15 @@ The periodic job that evaluates every Alert Rule against Kuroshiro's persisted s
 _Avoid_: Poll (reserved for what a Device does), scan, check
 
 **Retention**:
-The daily job that deletes resolved Alerts and Device Log entries older than their Retention age. The two ages are Instance Settings, read afresh by every Retention Run; an age of 0 disables pruning for that age. Active Alerts are never pruned. One execution, scheduled or triggered from the Maintenance page, is a Retention Run.
-_Avoid_: Cleanup (reserved for the Maintenance page's file cleanup), purge, garbage collection
+The daily job that deletes resolved Alerts and Device Log entries older than their Retention age. The two ages are Instance Settings, read afresh by every Retention Run; an age of 0 disables pruning for that age. Active Alerts are never pruned. One execution, scheduled or triggered from the Housekeeping page, is a Retention Run.
+_Avoid_: Cleanup (reserved for the Housekeeping page's cleanup of stored files), purge, garbage collection
 
 **Notification**:
 The message pushed to an admin's channels when an Alert is opened or resolved, delivered via Apprise. Fire-and-forget: a Notification carries no state of its own beyond whether the Alert it belongs to has been announced.
 _Avoid_: Alert (as a name for the message), push, message
 
 **Test Notification**:
-A Notification an admin sends on demand from the Maintenance page to confirm the Apprise sidecar delivers. It travels the exact path a real Notification does but belongs to no Alert and leaves no record.
+A Notification an admin sends on demand from Instance Settings to confirm the Apprise sidecar delivers. It travels the exact path a real Notification does but belongs to no Alert and leaves no record.
 _Avoid_: Ping, health check, dry run
 
 **Instance**:

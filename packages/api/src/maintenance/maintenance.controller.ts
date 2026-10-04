@@ -1,4 +1,4 @@
-import type { CleanupResult, MaintenanceIssues, RetentionRunResult, RetentionStatus } from 'kuroshiro-shared'
+import type { CleanupResult, RetentionRunResult, RetentionStatus, StorageCheck } from 'kuroshiro-shared'
 import { Body, Controller, Get, Logger, Post } from '@nestjs/common'
 import { CleanupDto } from './dto/cleanup.dto.js'
 import { RetentionRunDto } from './dto/retention-run.dto.js'
@@ -15,28 +15,15 @@ export class MaintenanceController {
   ) {}
 
   @Get('scan')
-  async scan(): Promise<MaintenanceIssues> {
-    this.logger.log('Scan requested')
+  async scan(): Promise<StorageCheck> {
+    this.logger.log('Stored-files check requested')
     return this.maintenanceService.scan()
   }
 
   @Post('cleanup')
   async cleanup(@Body() cleanupDto: CleanupDto): Promise<CleanupResult> {
     this.logger.log('Cleanup requested')
-    return this.maintenanceService.cleanup(
-      cleanupDto.orphanedFiles || [],
-      cleanupDto.orphanedDirs || [],
-      cleanupDto.brokenScreens || [],
-      cleanupDto.tempFiles || [],
-      cleanupDto.oldUploads || [],
-      cleanupDto.dryRun || false,
-    )
-  }
-
-  @Get('stats')
-  async getStats(): Promise<{ fileCount: number, totalSize: number }> {
-    this.logger.log('Stats requested')
-    return this.maintenanceService.getStats()
+    return this.maintenanceService.cleanup(cleanupDto.findingIds)
   }
 
   @Get('retention')

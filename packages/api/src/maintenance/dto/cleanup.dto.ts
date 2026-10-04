@@ -1,27 +1,8 @@
-import { IsArray, IsBoolean, IsOptional } from 'class-validator'
+import type { CleanupInput } from 'kuroshiro-shared'
+import { IsArray, IsString } from 'class-validator'
 
-export class CleanupDto {
+export class CleanupDto implements CleanupInput {
   @IsArray()
-  @IsOptional()
-  orphanedFiles?: string[]
-
-  @IsArray()
-  @IsOptional()
-  orphanedDirs?: string[]
-
-  @IsArray()
-  @IsOptional()
-  brokenScreens?: string[]
-
-  @IsArray()
-  @IsOptional()
-  tempFiles?: string[]
-
-  @IsArray()
-  @IsOptional()
-  oldUploads?: string[]
-
-  @IsBoolean()
-  @IsOptional()
-  dryRun?: boolean
+  @IsString({ each: true })
+  findingIds: string[]
 }

@@ -73,7 +73,7 @@ export const routes: RouteRecordRaw[] = [
       { path: 'firmware/upload', component: () => import('@/pages/instance/UploadFirmwarePage.vue') },
       instancePage('models', 'Device Models and Palettes', () => import('@/pages/instance/DeviceModelsPage.vue')),
       instancePage('archive', 'Configuration Archive', () => import('@/pages/instance/ConfigurationArchivePage.vue')),
-      notBuiltYetUnderInstance('housekeeping', 'Housekeeping'),
+      instancePage('housekeeping', 'Housekeeping', () => import('@/pages/instance/HousekeepingPage.vue')),
       notBuiltYetUnderInstance('simulator', 'Device Simulator'),
     ],
   },
