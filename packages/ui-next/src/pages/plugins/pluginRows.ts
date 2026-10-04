@@ -23,11 +23,13 @@ export function whereItShows({ devices, mashups }: { devices: Array<{ name: stri
   return mashups.length > 0 ? `In a Mashup on ${mashups[0]!.deviceName}` : 'Not on a Device'
 }
 
+/** A Fetch Failure Streak in a row's words. */
+export const failedFetches = (streak: number) => streak === 1 ? 'The last fetch failed' : `${streak} fetches failed in a row`
+
 /** In the order of precedence: the first that applies is the row's state. */
 const STATES: Array<(plugin: PluginSummary) => PluginRowState | false> = [
   plugin => plugin.fetchAlertFiring && { kind: 'alert', text: FIRING_ALERT_LABELS['data-source-fetch-failing'] },
-  plugin => plugin.worstFetchFailureStreak === 1 && { kind: 'problem', text: 'The last fetch failed' },
-  plugin => plugin.worstFetchFailureStreak > 1 && { kind: 'problem', text: `${plugin.worstFetchFailureStreak} fetches failed in a row` },
+  plugin => plugin.worstFetchFailureStreak > 0 && { kind: 'problem', text: failedFetches(plugin.worstFetchFailureStreak) },
   plugin => plugin.needsValues && { kind: 'problem', text: 'A required Plugin Field is empty' },
   plugin => plugin.webhookPayloadStored === false && { kind: 'note', text: 'Nothing received yet' },
 ]

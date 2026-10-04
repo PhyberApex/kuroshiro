@@ -182,10 +182,20 @@ export function createPluginForm(loaded: PluginDetail, send: (input: UpdatePlugi
 
   const isChanged = (registered: Registered) => Object.keys(changesOf(registered)).length > 0
 
-  /** Takes a re-read of the Plugin: a part without unsaved changes follows it, a part with them is left alone. */
+  const readsAnew = ({ part, source }: Registered, fresh: PluginDetail) => !same(part.read(fresh), part.read(source.value))
+
+  /**
+   * Takes a re-read of the Plugin: a part without unsaved changes follows what the server says anew, a part with
+   * them is left alone. Where the server says nothing new the draft stays, with what it holds beside what it sends.
+   */
   function refresh(fresh: PluginDetail) {
     plugin.value = fresh
-    parts.filter(registered => !isChanged(registered)).forEach(registered => follow(registered, fresh))
+    parts.filter(registered => !isChanged(registered)).forEach((registered) => {
+      if (readsAnew(registered, fresh))
+        follow(registered, fresh)
+      else
+        registered.source.value = fresh
+    })
   }
 
   function discard() {

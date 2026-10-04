@@ -12,6 +12,8 @@ const props = withDefaults(defineProps<{
   reason?: string
   /** What is wrong with the value and what is allowed. Set, it marks the control invalid and stands above the note. */
   error?: string
+  /** The control's id. Left out, one is made up. */
+  id?: string
 }>(), {
   status: 'idle',
 })
@@ -36,14 +38,14 @@ const slots = defineSlots<{
   source?: () => unknown
 }>()
 
-const id = useId()
-const controlId = `${id}-control`
-const labelId = `${id}-label`
-const noteId = `${id}-note`
-const errorId = `${id}-error`
+const generatedId = useId()
+const controlId = computed(() => props.id ?? `${generatedId}-control`)
+const labelId = `${generatedId}-label`
+const noteId = `${generatedId}-note`
+const errorId = `${generatedId}-error`
 
 const control = computed(() => ({
-  'id': controlId,
+  'id': controlId.value,
   'aria-describedby': [props.error && errorId, slots.note && noteId].filter(Boolean).join(' ') || undefined,
   'invalid': Boolean(props.error),
 }))
