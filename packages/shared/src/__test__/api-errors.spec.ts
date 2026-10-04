@@ -21,6 +21,8 @@ const wording: Record<ApiErrorCode, string> = {
   'device-mac-taken': 'A Device with this MAC address is already registered.',
   'screen-not-found': 'That Screen does not exist.',
   'screen-field-not-for-kind': 'That Screen has no such setting.',
+  'schedule-not-found': 'That Screen has no Schedule.',
+  'schedule-exists': 'That Screen already has a Schedule.',
   'plugin-not-found': 'That Plugin does not exist.',
   'assignment-not-found': 'That Plugin is not on this Device.',
   'plugin-already-assigned': 'That Plugin is already on this Device.',
@@ -63,6 +65,8 @@ function wordingBySwitch(code: ApiErrorCode): string {
     case 'device-mac-taken':
     case 'screen-not-found':
     case 'screen-field-not-for-kind':
+    case 'schedule-not-found':
+    case 'schedule-exists':
     case 'plugin-not-found':
     case 'assignment-not-found':
     case 'plugin-already-assigned':

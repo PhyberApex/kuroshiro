@@ -52,6 +52,8 @@ const REFUSAL_WORDING: Record<ApiErrorCode, Wording> = {
   'device-mac-taken': 'A Device with this MAC address is already registered.',
   'screen-not-found': 'That Screen does not exist.',
   'screen-field-not-for-kind': 'A Screen of that kind has no such setting.',
+  'schedule-not-found': 'That Screen has no Schedule. It may have been removed.',
+  'schedule-exists': 'That Screen already has a Schedule.',
   'plugin-not-found': 'That Plugin does not exist.',
   'assignment-not-found': 'That Plugin is not on this Device.',
   'plugin-already-assigned': 'That Plugin is already on this Device.',

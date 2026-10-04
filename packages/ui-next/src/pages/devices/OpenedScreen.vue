@@ -108,13 +108,15 @@ watch(place, async () => {
     </figure>
     <div class="parts">
       <slot name="schedule" />
-      <slot name="source" />
-      <div ref="actions" class="actions">
-        <slot name="actionsBefore" />
-        <Button v-for="action in moves" :key="action.label" variant="quiet" :disabled="action.disabled" @click="move(action.by)">
-          {{ action.label }}
-        </Button>
-        <slot name="actionsAfter" />
+      <div class="made-from">
+        <slot name="source" />
+        <div ref="actions" class="actions">
+          <slot name="actionsBefore" />
+          <Button v-for="action in moves" :key="action.label" variant="quiet" :disabled="action.disabled" @click="move(action.by)">
+            {{ action.label }}
+          </Button>
+          <slot name="actionsAfter" />
+        </div>
       </div>
     </div>
   </div>
@@ -145,7 +147,16 @@ watch(place, async () => {
     font-size: var(--text-sm);
   }
 
+  /* The Schedule beside what the Screen is made from, and above it where the two do not fit side by side. */
   .parts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    align-items: start;
+    gap: var(--space-6) var(--space-8);
+    min-width: 0;
+  }
+
+  .made-from {
     display: grid;
     gap: var(--space-6);
     min-width: 0;
