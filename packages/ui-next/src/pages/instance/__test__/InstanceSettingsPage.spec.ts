@@ -5,6 +5,7 @@ import { userEvent } from 'vitest/browser'
 import { expectAccessible } from '@/testing/a11y'
 import { api, apiErrorResponse, apiUrl } from '@/testing/api/server'
 import { fakeShellReads, mountApp } from '@/testing/app'
+import { buildAlertsList } from '@/testing/fixtures/alerts'
 import { buildDeviceDetail, buildDeviceSummary } from '@/testing/fixtures/devices'
 import { buildInstanceFacts, buildInstanceSettings } from '@/testing/fixtures/instance'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
@@ -417,6 +418,19 @@ describe('instance Settings', () => {
 
       await expect.element(field(screen, 'Battery low')).toHaveValue(20)
       expect(screen.getByRole('alert').query()).toBeNull()
+    })
+
+    it('shows the same notice when the Instance facts cannot be loaded', async () => {
+      fakeSettings()
+      api.use(
+        http.get(apiUrl('instance'), () => apiErrorResponse({ statusCode: 500, code: 'internal' })),
+        http.get(apiUrl('devices'), () => HttpResponse.json([KITCHEN])),
+        http.get(apiUrl('alerts'), () => HttpResponse.json(buildAlertsList())),
+      )
+      const screen = await mountApp({ at: '/instance/settings' })
+
+      await expect.element(screen.getByRole('alert')).toHaveTextContent('Could not load the Instance Settings. Something went wrong on the server.')
+      expect(screen.getByRole('spinbutton').elements()).toEqual([])
     })
 
     it('is accessible and does not overflow, with a value out of range and a Test Notification not sent', async () => {

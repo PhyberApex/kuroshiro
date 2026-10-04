@@ -13,8 +13,8 @@ const LOW_BATTERY_RESOLVES_ABOVE = 5
 const EXAMPLE_INTERVAL_MINUTES = 15
 const SECONDS_PER_MINUTE = 60
 
-const tidy = (count: number) => Number(count.toFixed(1))
-const minutes = (count: number) => `${tidy(count)} ${tidy(count) === 1 ? 'minute' : 'minutes'}`
+const toOneDecimal = (count: number) => Number(count.toFixed(1))
+const minutes = (count: number) => `${toOneDecimal(count)} ${toOneDecimal(count) === 1 ? 'minute' : 'minutes'}`
 
 export function batteryLowNote(percent: number) {
   return `Fires when a Device's battery is below ${percent} %, and resolves once it is back at ${percent + LOW_BATTERY_RESOLVES_ABOVE} %.`

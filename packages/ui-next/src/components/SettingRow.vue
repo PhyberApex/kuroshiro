@@ -48,7 +48,7 @@ const control = computed(() => ({
   'invalid': Boolean(props.error),
 }))
 
-const sideIsTheSaveStates = computed(() => props.status === 'saving' || props.status === 'saved')
+const saveStateTakesTheSide = computed(() => props.status === 'saving' || props.status === 'saved')
 </script>
 
 <template>
@@ -58,7 +58,7 @@ const sideIsTheSaveStates = computed(() => props.status === 'saving' || props.st
       <slot :control="control" :label-id="labelId" />
     </div>
     <SaveState class="state" :status="status" :reason="reason" @retry="$emit('retry')" />
-    <p v-if="$slots.source && !sideIsTheSaveStates" class="source">
+    <p v-if="$slots.source && !saveStateTakesTheSide" class="source">
       <slot name="source" />
     </p>
     <FieldError :id="errorId" class="under" :message="error" />

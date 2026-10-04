@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Appearance } from './appearance'
 import type { Segment } from '@/components/SegmentedFilter.vue'
+import type { Appearance } from '@/shell/appearance'
 import SegmentedFilter from '@/components/SegmentedFilter.vue'
 import { useInstanceFacts } from '@/reads/sharedReads'
-import { useAppearance } from './appearance'
+import { useAppearance } from '@/shell/appearance'
 
 const APPEARANCE_SEGMENTS: Segment<Appearance>[] = [
   { value: 'system', label: 'System' },

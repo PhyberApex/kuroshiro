@@ -1,12 +1,12 @@
 import { createApp } from 'vue'
 import { createWebHistory } from 'vue-router'
-import './styles/index.css'
 
-// eslint-disable-next-line perfectionist/sort-imports -- index.css declares the cascade layer order, so it has to load before any component's styles
 import App from './App.vue'
-import { applyStoredAppearance } from './pages/instance/appearance'
+
 import { sharedReads } from './reads/sharedReads'
 import { basePathOf, createAppRouter } from './router'
+import { applyStoredAppearance } from './shell/appearance'
+import './styles/index.css'
 
 // The DEV guard is replaced with `false` in a production build, which drops the gallery from the bundle.
 const galleryRequested = import.meta.env.DEV && window.location.pathname.endsWith('/gallery')

@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw'
 import { afterEach, describe, expect, it } from 'vitest'
+import { APPEARANCE_STORAGE_KEY, applyStoredAppearance } from '@/shell/appearance'
 import { expectAccessible } from '@/testing/a11y'
 import { api, apiUrl } from '@/testing/api/server'
 import { fakeShellReads, mountApp } from '@/testing/app'
@@ -7,7 +8,6 @@ import { buildDeviceDetail } from '@/testing/fixtures/devices'
 import { buildInstanceFacts, buildInstanceSettings } from '@/testing/fixtures/instance'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import { resetViewport, resizeTo } from '@/testing/viewport'
-import { APPEARANCE_STORAGE_KEY, applyStoredAppearance } from '../appearance'
 
 function fakeInstancePage() {
   fakeShellReads({ instance: buildInstanceFacts({ version: '0.18.0' }) })

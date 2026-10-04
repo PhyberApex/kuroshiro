@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import type { InstanceFacts, InstanceSettingsResponse } from 'kuroshiro-shared'
+import type { Load } from '@/patterns/useLoad'
+import { computed, reactive } from 'vue'
 import { RouterLink } from 'vue-router'
 import { getInstanceSettings } from '@/api/instance'
 import LoadBody from '@/patterns/LoadBody.vue'
@@ -20,7 +22,18 @@ const settings = useLoad(getInstanceSettings)
 const instanceFacts = useInstanceFacts()
 const onlyDevice = useOnlyDevice()
 
-const metricsUrl = computed(() => `${instanceFacts.data?.serverUrl.replace(/\/+$/, '')}/metrics`)
+/** The page shows the Settings and the Instance facts together, so it waits for both and either one's failure is its notice. */
+const page: Load<{ settings: InstanceSettingsResponse, facts: InstanceFacts }> = reactive({
+  data: computed(() => settings.data && instanceFacts.data ? { settings: settings.data, facts: instanceFacts.data } : undefined),
+  waiting: computed(() => settings.waiting || instanceFacts.waiting),
+  failure: computed(() => settings.failure ?? instanceFacts.failure),
+  missing: false,
+  reload: async () => {
+    await Promise.all([settings.reload(), instanceFacts.reload()])
+  },
+})
+
+const metricsUrl = (serverUrl: string) => `${serverUrl.replace(/\/+$/, '')}/metrics`
 
 const SKELETON_ROW_WIDTHS = ['30%', '26%', '34%', '22%']
 </script>
@@ -28,7 +41,7 @@ const SKELETON_ROW_WIDTHS = ['30%', '26%', '34%', '22%']
 <template>
   <InstancePageHeading title="Instance Settings" />
   <div class="body">
-    <LoadBody :load="settings" loading="Loading the Instance Settings" failed="Could not load the Instance Settings.">
+    <LoadBody :load="page" loading="Loading the Instance Settings" failed="Could not load the Instance Settings.">
       <template #skeleton>
         <div class="skeleton" aria-hidden="true">
           <div v-for="width in SKELETON_ROW_WIDTHS" :key="width" class="skeleton-row">
@@ -48,17 +61,17 @@ const SKELETON_ROW_WIDTHS = ['30%', '26%', '34%', '22%']
               Alerts
             </RouterLink>
           </template>
-          <InstanceSettingRow setting-key="lowBatteryPercent" :setting="data.lowBatteryPercent" label="Battery low" before="below" after="%">
+          <InstanceSettingRow setting-key="lowBatteryPercent" :setting="data.settings.lowBatteryPercent" label="Battery low" before="below" after="%">
             <template #note="{ value }">
               {{ batteryLowNote(value) }}
             </template>
           </InstanceSettingRow>
-          <InstanceSettingRow setting-key="offlineMultiplier" :setting="data.offlineMultiplier" label="Offline" before="after" after="missed polls">
+          <InstanceSettingRow setting-key="offlineMultiplier" :setting="data.settings.offlineMultiplier" label="Offline" before="after" after="missed polls">
             <template #note="{ value }">
               {{ offlineNote(value, onlyDevice) }}
             </template>
           </InstanceSettingRow>
-          <InstanceSettingRow setting-key="fetchFailureThreshold" :setting="data.fetchFailureThreshold" label="Fetch Failure Streak" before="of" after="failed fetches">
+          <InstanceSettingRow setting-key="fetchFailureThreshold" :setting="data.settings.fetchFailureThreshold" label="Fetch Failure Streak" before="of" after="failed fetches">
             <template #note="{ value }">
               {{ fetchFailureStreakNote(value) }}
             </template>
@@ -68,10 +81,10 @@ const SKELETON_ROW_WIDTHS = ['30%', '26%', '34%', '22%']
           </p>
         </InstanceSection>
 
-        <InstanceSection v-if="instanceFacts.data" id="notifications" title="Notifications">
-          <template v-if="instanceFacts.data.notifications.configured">
+        <InstanceSection id="notifications" title="Notifications">
+          <template v-if="data.facts.notifications.configured">
             <InstanceReadRow label="Apprise">
-              <code class="value">{{ instanceFacts.data.notifications.appriseUrl }}</code>
+              <code class="value">{{ data.facts.notifications.appriseUrl }}</code>
               <template #side>
                 From <code class="variable">KUROSHIRO_APPRISE_URL</code>
               </template>
@@ -97,12 +110,12 @@ const SKELETON_ROW_WIDTHS = ['30%', '26%', '34%', '22%']
               Housekeeping
             </RouterLink>
           </template>
-          <InstanceSettingRow setting-key="alertRetentionDays" :setting="data.alertRetentionDays" label="Resolved Alerts" before="kept for" after="days">
+          <InstanceSettingRow setting-key="alertRetentionDays" :setting="data.settings.alertRetentionDays" label="Resolved Alerts" before="kept for" after="days">
             <template #note="{ value }">
               {{ resolvedAlertsNote(value) }}
             </template>
           </InstanceSettingRow>
-          <InstanceSettingRow setting-key="deviceLogRetentionDays" :setting="data.deviceLogRetentionDays" label="Device Log entries" before="kept for" after="days">
+          <InstanceSettingRow setting-key="deviceLogRetentionDays" :setting="data.settings.deviceLogRetentionDays" label="Device Log entries" before="kept for" after="days">
             <template #note="{ value }">
               {{ deviceLogEntriesNote(value) }}
             </template>
@@ -112,32 +125,32 @@ const SKELETON_ROW_WIDTHS = ['30%', '26%', '34%', '22%']
           </p>
         </InstanceSection>
 
-        <InstanceSection v-if="instanceFacts.data" id="fixed" title="Set where Kuroshiro is started">
-          <p class="under-section">
+        <InstanceSection id="fixed" title="Set where Kuroshiro is started">
+          <p class="under-section intro">
             Read from the environment at start. To change one, change the variable and restart Kuroshiro.
           </p>
           <InstanceReadRow label="Server URL">
-            <code class="value">{{ instanceFacts.data.serverUrl }}</code>
+            <code class="value">{{ data.facts.serverUrl }}</code>
             <template #note>
               The address every Device is given for its images and Firmware. <code class="variable">KUROSHIRO_API_URL</code>
             </template>
           </InstanceReadRow>
           <InstanceReadRow label="Timezone">
-            {{ instanceFacts.data.timezone }}
+            {{ data.facts.timezone }}
             <template #note>
               Schedules, Sleep Mode and the 04:00 jobs run on this clock. <code class="variable">TZ</code>
             </template>
           </InstanceReadRow>
           <InstanceReadRow label="Metrics">
-            <code class="value">{{ metricsUrl }}</code>
+            <code class="value">{{ metricsUrl(data.facts.serverUrl) }}</code>
             <template #note>
               For Prometheus: battery, signal and last seen per Device, firing Alerts per kind. Anyone who can reach this server can read it.
             </template>
           </InstanceReadRow>
           <InstanceReadRow label="Demo mode">
-            {{ instanceFacts.data.demoMode ? 'On' : 'Off' }}
+            {{ data.facts.demoMode ? 'On' : 'Off' }}
             <template #note>
-              {{ instanceFacts.data.demoMode ? 'Image uploads are refused and Kuroshiro only fetches public addresses.' : 'While on, image uploads are refused.' }}
+              {{ data.facts.demoMode ? 'Image uploads are refused and Kuroshiro only fetches public addresses.' : 'While on, image uploads are refused.' }}
               <code class="variable">KUROSHIRO_DEMO_MODE</code>
             </template>
           </InstanceReadRow>

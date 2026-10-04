@@ -11,13 +11,14 @@ import { useDevices } from '@/reads/sharedReads'
 export function useOnlyDevice() {
   const devices = useDevices()
   const onlyDevice = ref<OnlyDevice>()
+  const onlyDeviceId = () => devices.data?.length === 1 ? devices.data[0]!.id : undefined
 
-  watch(() => devices.data?.length === 1 ? devices.data[0]!.id : undefined, async (deviceId) => {
+  watch(onlyDeviceId, async (deviceId) => {
     onlyDevice.value = undefined
     if (deviceId === undefined)
       return
     const device = await getDevice(deviceId).catch(() => undefined)
-    if (device?.id === (devices.data?.length === 1 ? devices.data[0]!.id : undefined))
+    if (device?.id === onlyDeviceId())
       onlyDevice.value = device
   }, { immediate: true })
 

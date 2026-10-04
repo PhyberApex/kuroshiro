@@ -90,7 +90,7 @@ const { device, listed, name, path } = useDeviceFrame() // from '@/pages/devices
 
 ## The Instance frame
 
-Every Instance page is a child route of `/instance`, whose component is `pages/instance/InstanceFrame.vue`. The frame renders the title line "Instance", the page list at the left (a row of tabs that scrolls sideways on a phone, running from one edge of the window to the other), the chosen page beside it, and under the list Appearance and "Kuroshiro {version}", which move to the foot of the page on a phone. `/instance` redirects to `/instance/settings`. It loads nothing: an Instance page reads what it shows itself.
+Every Instance page is a child route of `/instance`, whose component is `pages/instance/InstanceFrame.vue`. The frame renders the title line "Instance", the page list at the left (a row of tabs that scrolls sideways on a phone, running from one edge of the window to the other), the chosen page beside it, and under the list Appearance and "Kuroshiro {version}", which move to the foot of the page on a phone. `/instance` redirects to `/instance/settings`. It loads nothing: an Instance page reads what it shows itself. A page that shows Instance facts beside a load of its own joins the two into one `Load` for `LoadBody`, so that either one's failure is the page's notice (`InstanceSettingsPage.vue`).
 
 To build a page under it, swap its `notBuiltYetUnderInstance('firmware', 'Firmware')` line in `router/routes.ts` for
 
@@ -126,7 +126,7 @@ A page under the frame renders only its body, as a list of roots:
 | `InstanceReadRow` | A row that is read and not edited, or that holds the button of an action: `label`, the default slot, `#side` at the right and `#note` under it. It shares the Setting row's grid |
 | `InstanceSettingRow` | One numeric Instance Setting (see below) |
 | `instancePaths.ts` | `instancePagePath('firmware')` and the paths other pages link to |
-| `appearance.ts` | `useAppearance()` and `applyStoredAppearance()`, which `main.ts` calls before the app mounts. The choice is `data-theme` on the root and `kuroshiro:appearance` in `localStorage`; "system" removes the attribute |
+| `@/shell/appearance.ts` | Not in this folder, because it holds for the whole app: `useAppearance()` and `applyStoredAppearance()`, which `main.ts` calls before the app mounts. The choice is `data-theme` on the root and `kuroshiro:appearance` in `localStorage`; "system" removes the attribute |
 
 - The frame sets `--setting-label-width` to 11 rem, which `SettingRow` and `InstanceReadRow` read: the page beside the list is narrower than a whole column.
 - `useNarrowWindow()` (`@/patterns/`) says whether the window is below 820 px. It is for what CSS cannot do: the frame uses it to render Appearance and the version at one place in the page's order, not two.
