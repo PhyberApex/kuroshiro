@@ -6,5 +6,7 @@ export const pluginPath = (pluginId: string) => `${PLUGINS_PATH}/${pluginId}`
 
 export type AddPluginWay = 'recipe' | 'file' | 'github' | 'poll' | 'webhook'
 
-/** Add a Plugin, with one of its ways chosen. */
-export const addPluginPath = (way: AddPluginWay) => `${PLUGINS_PATH}/new?way=${way}`
+/** Add a Plugin, with one of its ways chosen. With a Device, the new Plugin is assigned to it once it exists. */
+export function addPluginPath(way: AddPluginWay, deviceId?: string) {
+  return `${PLUGINS_PATH}/new?way=${way}${deviceId ? `&device=${encodeURIComponent(deviceId)}` : ''}`
+}

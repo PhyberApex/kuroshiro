@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { NavItem } from '@/components/navItem'
-import { RouterLink } from 'vue-router'
+import BackLink from './BackLink.vue'
 import { usePageTitle } from './usePageTitle'
 
 const props = defineProps<{
@@ -20,12 +20,9 @@ usePageTitle(() => props.title)
 
 <template>
   <header class="title-line">
-    <RouterLink v-if="back" class="back" :to="back.to">
-      <svg class="back-mark" viewBox="0 0 16 16" focusable="false" aria-hidden="true">
-        <path d="M10.6 3.2 5.8 8l4.8 4.8-1.1 1.1L3.6 8l5.9-5.9z" />
-      </svg>
+    <BackLink v-if="back" class="back" :to="back.to">
       {{ back.label }}
-    </RouterLink>
+    </BackLink>
     <div class="line">
       <h1 class="title">
         {{ title }}
@@ -44,26 +41,7 @@ usePageTitle(() => props.title)
   }
 
   .back {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
     margin-bottom: var(--space-3);
-    color: var(--color-ink-soft);
-    font-size: var(--text-sm);
-    text-underline-offset: 3px;
-    transition: color var(--duration-quick) var(--ease-out);
-  }
-
-  .back:hover,
-  .back[data-force~='hover'] {
-    color: var(--color-ink);
-  }
-
-  .back-mark {
-    flex: none;
-    width: var(--icon);
-    height: var(--icon);
-    fill: currentColor;
   }
 
   .line {

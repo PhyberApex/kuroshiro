@@ -6,7 +6,7 @@ import { failureReason } from '@/components/failureReason'
 import FieldError from '@/components/FieldError.vue'
 import LayoutPicker from '@/components/LayoutPicker.vue'
 import InPlaceForm from './InPlaceForm.vue'
-import { carriedOver, layoutChoice, MASHUP_LAYOUT_CHOICES, withoutSlot } from './mashupLayouts'
+import { carriedOver, layoutChoice, MASHUP_LAYOUT_CHOICES, placedIn, withoutSlot } from './mashupLayouts'
 import MashupSlots from './MashupSlots.vue'
 import { noSlotLine } from './screenSourceWording'
 
@@ -42,8 +42,7 @@ const withoutSlotLine = computed(() => {
 })
 
 function place(slot: number, pluginId: string) {
-  const elsewhere = placed.value.map(held => held === pluginId ? null : held)
-  placed.value = Array.from({ length: Math.max(elsewhere.length, slot + 1) }, (_, index) => index === slot ? pluginId : elsewhere[index] ?? null)
+  placed.value = placedIn(placed.value, slot, pluginId)
 }
 
 async function saveLayout() {
