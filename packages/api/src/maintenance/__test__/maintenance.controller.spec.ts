@@ -1,4 +1,4 @@
-import type { CleanupResult, MaintenanceIssues, RetentionRunResult, RetentionStatus } from 'kuroshiro-shared'
+import type { CleanupResult, RetentionRunResult, RetentionStatus, StorageCheck } from 'kuroshiro-shared'
 import type { MaintenanceService } from '../maintenance.service.js'
 import type { RetentionService } from '../retention.service.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -7,14 +7,13 @@ import { MaintenanceController } from '../maintenance.controller.js'
 
 describe('maintenanceController', () => {
   let controller: MaintenanceController
-  let service: { scan: ReturnType<typeof vi.fn>, cleanup: ReturnType<typeof vi.fn>, getStats: ReturnType<typeof vi.fn> }
+  let service: { scan: ReturnType<typeof vi.fn>, cleanup: ReturnType<typeof vi.fn> }
   let retentionService: { getStatus: ReturnType<typeof vi.fn>, run: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     service = {
       scan: vi.fn(),
       cleanup: vi.fn(),
-      getStats: vi.fn(),
     }
     retentionService = {
       getStatus: vi.fn(),
@@ -25,126 +24,23 @@ describe('maintenanceController', () => {
   })
 
   describe('scan', () => {
-    it('calls service.scan and returns issues', async () => {
-      const mockIssues: MaintenanceIssues = {
-        orphanedScreenFiles: [],
-        orphanedDeviceDirs: [],
-        brokenScreens: [],
-        tempFiles: [],
-        oldUploads: [],
-        totalSize: 0,
-        scannedAt: new Date().toISOString(),
-      }
+    it('answers the stored-files check', async () => {
+      const check: StorageCheck = { checkedAt: new Date().toISOString(), screenImages: { files: 0, bytes: 0 }, findings: [] }
+      vi.mocked(service.scan).mockResolvedValue(check)
 
-      vi.mocked(service.scan).mockResolvedValue(mockIssues)
-
-      const result = await controller.scan()
-
-      expect(service.scan).toHaveBeenCalled()
-      expect(result).toBe(mockIssues)
+      expect(await controller.scan()).toBe(check)
     })
   })
 
   describe('cleanup', () => {
-    it('calls service.cleanup with provided parameters', async () => {
-      const mockResult: CleanupResult = {
-        filesDeleted: 5,
-        dirsDeleted: 2,
-        screensDeleted: 1,
-        bytesFreed: 10240,
-        errors: [],
-      }
+    it('hands the finding ids to the service and answers its result', async () => {
+      const cleaned: CleanupResult = { removed: { files: 5, folders: 2, screens: 1, bytes: 10240 }, failed: [] }
+      vi.mocked(service.cleanup).mockResolvedValue(cleaned)
 
-      vi.mocked(service.cleanup).mockResolvedValue(mockResult)
+      const result = await controller.cleanup({ findingIds: ['oldUpload:uploads/abc'] })
 
-      const dto = {
-        orphanedFiles: ['/path/to/file.png'],
-        orphanedDirs: ['/path/to/dir'],
-        brokenScreens: ['screen-1'],
-        tempFiles: ['/path/to/temp'],
-        oldUploads: ['/path/to/upload.zip'],
-        dryRun: false,
-      }
-
-      const result = await controller.cleanup(dto)
-
-      expect(service.cleanup).toHaveBeenCalledWith(
-        dto.orphanedFiles,
-        dto.orphanedDirs,
-        dto.brokenScreens,
-        dto.tempFiles,
-        dto.oldUploads,
-        dto.dryRun,
-      )
-      expect(result).toBe(mockResult)
-    })
-
-    it('defaults to empty arrays and false for missing parameters', async () => {
-      const mockResult: CleanupResult = {
-        filesDeleted: 0,
-        dirsDeleted: 0,
-        screensDeleted: 0,
-        bytesFreed: 0,
-        errors: [],
-      }
-
-      vi.mocked(service.cleanup).mockResolvedValue(mockResult)
-
-      const dto = {}
-
-      await controller.cleanup(dto)
-
-      expect(service.cleanup).toHaveBeenCalledWith(
-        [],
-        [],
-        [],
-        [],
-        [],
-        false,
-      )
-    })
-
-    it('passes dryRun parameter correctly', async () => {
-      const mockResult: CleanupResult = {
-        filesDeleted: 0,
-        dirsDeleted: 0,
-        screensDeleted: 0,
-        bytesFreed: 0,
-        errors: [],
-      }
-
-      vi.mocked(service.cleanup).mockResolvedValue(mockResult)
-
-      const dto = {
-        dryRun: true,
-      }
-
-      await controller.cleanup(dto)
-
-      expect(service.cleanup).toHaveBeenCalledWith(
-        [],
-        [],
-        [],
-        [],
-        [],
-        true,
-      )
-    })
-  })
-
-  describe('getStats', () => {
-    it('calls service.getStats and returns stats', async () => {
-      const mockStats = {
-        fileCount: 42,
-        totalSize: 1024000,
-      }
-
-      vi.mocked(service.getStats).mockResolvedValue(mockStats)
-
-      const result = await controller.getStats()
-
-      expect(service.getStats).toHaveBeenCalled()
-      expect(result).toBe(mockStats)
+      expect(service.cleanup).toHaveBeenCalledWith(['oldUpload:uploads/abc'])
+      expect(result).toBe(cleaned)
     })
   })
 
