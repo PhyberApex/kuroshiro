@@ -1,4 +1,4 @@
-import type { DeviceModelRead, PaletteRead, PluginDetail, UpdatePluginInput } from 'kuroshiro-shared'
+import type { DeviceModelRead, PaletteRead, PluginDetail, PreviewData, PreviewDataInput, PreviewName, UpdatePluginInput } from 'kuroshiro-shared'
 import { delay, http, HttpResponse } from 'msw'
 import { expect, onTestFinished } from 'vitest'
 import { api, apiUrl } from '@/testing/api/server'
@@ -6,7 +6,7 @@ import { fakeShellReads, mountApp } from '@/testing/app'
 import { buildDeviceModel, buildDeviceModelList, buildPalette } from '@/testing/fixtures/device-models'
 import { buildDeviceSummary } from '@/testing/fixtures/devices'
 import { buildInstanceSettings } from '@/testing/fixtures/instance'
-import { buildPluginDetail } from '@/testing/fixtures/plugins'
+import { buildPluginDetail, buildPreviewData } from '@/testing/fixtures/plugins'
 import { freezeTime } from '@/testing/time'
 import { holdTabVisible } from '@/testing/visibility'
 
@@ -25,6 +25,59 @@ export interface Faked {
   plugin: PluginDetail
   /** What the page asked the server to save, in order. */
   saves: UpdatePluginInput[]
+  /** Every request for the preview's data, in order. */
+  previews: PreviewDataInput[]
+  /** What a fetch-mode Data Source answers the preview, by its name: its result, or an error marker. Left out, an empty object. */
+  fetched: Record<string, unknown>
+  /** The Sensors of the Devices the preview may be for, by the Device's id. */
+  sensors: Record<string, Record<string, { value: number, unit: string }>>
+}
+
+const HIDDEN_FIELD_VALUE = '••••••••'
+
+function fieldValuesAsRendered(plugin: PluginDetail, unsaved: Record<string, string | null> = {}) {
+  return Object.fromEntries([...plugin.fields].sort((a, b) => a.order - b.order).map(({ keyname, type, default: fallback }) => {
+    const stored = plugin.fieldValues[keyname]
+    const storedSecret = stored?.secret === true && stored.set ? HIDDEN_FIELD_VALUE : null
+    const saved = stored?.secret === false ? stored.value : storedSecret
+    const value = (keyname in unsaved ? unsaved[keyname] : saved) || fallback || ''
+    return [keyname, value && type === 'password' ? HIDDEN_FIELD_VALUE : value]
+  }))
+}
+
+const isErrorMarker = (value: unknown): value is { error: true, message: string } => typeof value === 'object' && value !== null && (value as { error?: unknown }).error === true
+
+function dataAsRendered({ plugin, fetched }: Faked, input: PreviewDataInput): Record<string, unknown> {
+  if (plugin.kind === 'Webhook')
+    return (plugin.webhook?.payload ?? {}) as Record<string, unknown>
+  return Object.fromEntries((input.dataSources ?? plugin.dataSources).map(source =>
+    [source.name, source.mode === 'literal' ? source.literalValue : fetched[source.name] ?? {}]))
+}
+
+/** The preview's data as the server answers it for what is faked and what the form sent. A Webhook Payload that is a list is not modelled. */
+function previewDataOf(faked: Faked, input: PreviewDataInput): PreviewData {
+  const values = fieldValuesAsRendered(faked.plugin, input.fieldValues)
+  const data = dataAsRendered(faked, input)
+  const withoutData = {
+    ...values,
+    trmnl: {
+      system: { timestamp_utc: Math.floor(Date.now() / 1000) },
+      plugin_settings: { instance_name: input.name ?? faked.plugin.name, strategy: 'polling', dark_mode: 'no', no_screen_padding: 'no', custom_fields_values: values },
+      user: { id: 'kuroshiro-user', locale: 'en' },
+    },
+    sensors: input.deviceId ? faked.sensors[input.deviceId] ?? {} : {},
+  }
+  const isBuiltIn = (name: string) => name === 'sensors' || name === 'trmnl'
+  return buildPreviewData({
+    context: { ...withoutData, ...data },
+    names: [
+      ...Object.keys(values).filter(name => !(name in data) && !isBuiltIn(name)).map((name): PreviewName => ({ name, origin: 'fieldValue', error: null })),
+      ...Object.entries(data).map(([name, value]): PreviewName => ({ name, origin: faked.plugin.kind === 'Webhook' ? 'webhookPayload' : 'dataSource', error: isErrorMarker(value) ? value.message : null })),
+      ...(['sensors', 'trmnl'] as const).filter(name => !(name in data)).map((name): PreviewName => ({ name, origin: name, error: null })),
+    ],
+    fetchedAt: new Date().toISOString(),
+    webhookPayloadReceivedAt: faked.plugin.webhook?.payloadReceivedAt ?? null,
+  })
 }
 
 /** The Plugin as a save answers it by default: the name, the description and the refresh interval that were sent, laid over what was there. */
@@ -38,12 +91,12 @@ function withScalarsSaved(plugin: PluginDetail, { name, description, refreshInte
 }
 
 /**
- * Fakes the Plugin's read and its save, and the Instance Settings a section reads a threshold from. What it holds is read on every request, so a test
+ * Fakes the Plugin's read, its save and the data of its preview, and the Instance Settings a section reads a threshold from. What it holds is read on every request, so a test
  * changes it and asks for a refresh. A section whose collection the answer must hold passes
  * its own `answer`, which maps what was sent to the read model.
  */
 export function fakePlugin(plugin: PluginDetail = WEATHER, answer = withScalarsSaved): Faked {
-  const faked: Faked = { plugin, saves: [] }
+  const faked: Faked = { plugin, saves: [], previews: [], fetched: {}, sensors: {} }
   fakeShellReads()
   fakePreviewLibrary()
   api.use(
@@ -54,6 +107,11 @@ export function fakePlugin(plugin: PluginDetail = WEATHER, answer = withScalarsS
       faked.saves.push(input)
       faked.plugin = answer(faked.plugin, input)
       return HttpResponse.json(faked.plugin)
+    }),
+    http.post(apiUrl(`plugins/${plugin.id}/preview-data`), async ({ request }) => {
+      const input = await request.json() as PreviewDataInput
+      faked.previews.push(input)
+      return HttpResponse.json(previewDataOf(faked, input))
     }),
   )
   return faked
@@ -79,6 +137,11 @@ export function holdPreviewLibrary() {
     }),
     http.get(apiUrl('device-models/palettes'), () => HttpResponse.json([])),
   )
+}
+
+/** Answers every fetch of a Plugin's preview data with `data`, for a page that is not faked with `fakePlugin`: a `*.shots.ts` file of the Plugin page. */
+export function fakePreviewData(data: PreviewData = buildPreviewData(), pluginId = WEATHER.id) {
+  api.use(http.post(apiUrl(`plugins/${pluginId}/preview-data`), () => HttpResponse.json(data)))
 }
 
 export async function mountPlugin(name = 'Weather', at = '/plugins/weather') {

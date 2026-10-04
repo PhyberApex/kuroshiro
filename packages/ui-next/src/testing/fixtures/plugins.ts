@@ -1,4 +1,4 @@
-import type { PluginDetail, PluginFieldRead, PluginImportResult, PluginPlace, PluginSummary } from 'kuroshiro-shared'
+import type { PluginDetail, PluginFieldRead, PluginImportResult, PluginPlace, PluginSummary, PreviewData } from 'kuroshiro-shared'
 import { defineBuilder } from './defineBuilder'
 
 export const buildPluginPlace = defineBuilder<PluginPlace>(() => ({
@@ -86,4 +86,23 @@ export const buildPluginImportResult = defineBuilder<PluginImportResult>(() => (
   }),
   origin: { type: 'recipe', id: '41120', name: 'Moon Phase' },
   hasTransform: false,
+}))
+
+export const buildPreviewData = defineBuilder<PreviewData>(() => ({
+  context: {
+    forecast: { today: { summary: 'Rain from 15:00' } },
+    trmnl: {
+      system: { timestamp_utc: 1790926500 },
+      plugin_settings: { instance_name: 'Weather', strategy: 'polling', dark_mode: 'no', no_screen_padding: 'no', custom_fields_values: {} },
+      user: { id: 'kuroshiro-user', locale: 'en' },
+    },
+    sensors: {},
+  },
+  names: [
+    { name: 'forecast', origin: 'dataSource', error: null },
+    { name: 'sensors', origin: 'sensors', error: null },
+    { name: 'trmnl', origin: 'trmnl', error: null },
+  ],
+  fetchedAt: '2026-10-03T07:35:00.000Z',
+  webhookPayloadReceivedAt: null,
 }))

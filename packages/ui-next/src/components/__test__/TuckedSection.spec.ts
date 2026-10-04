@@ -47,6 +47,16 @@ describe('tucked section', () => {
     await expect.element(screen.getByRole('heading', { name: 'Data', level: 3 })).toBeVisible()
   })
 
+  it('says a note beside its title, softer, as part of what the trigger is called', async () => {
+    const screen = await mount(TuckedSection, { props: { title: 'Data', note: '14 names, fetched 4 min ago', heading: 'h3' } })
+
+    const trigger = screen.getByRole('button', { name: 'Data 14 names, fetched 4 min ago' })
+    await expect.element(trigger).toBeVisible()
+    const [title, note] = [screen.getByText('Data', { exact: true }).element(), screen.getByText('14 names, fetched 4 min ago').element()]
+    expect(getComputedStyle(note).color).not.toBe(getComputedStyle(title).color)
+    expect(getComputedStyle(note).fontWeight).toBe('400')
+  })
+
   it.for(['{Enter}', ' '])('opens and closes with %s and exposes its expanded state', async (key) => {
     const onToggled = vi.fn()
     const screen = await mount(sectionOf(), { props: { onToggled } })
