@@ -11,7 +11,7 @@ All commands run from `packages/ui-next` (or with `pnpm --filter kuroshiro-ui-ne
 | `pnpm test:coverage` | The same, with the lcov report Codecov's `ui` flag reads | |
 | `pnpm test:screenshots` | Compares every shot with its committed baseline | Docker |
 | `pnpm test:screenshots:update` | Rewrites the baselines | Docker |
-| `pnpm test:real-api` | Builds the API and the UI and drives them against Postgres | Docker (or a Postgres named by `KUROSHIRO_DB_*`), Chromium |
+| `pnpm test:real-api` | Builds the API and the UI and drives them against Postgres | Docker (or a Postgres named by `KUROSHIRO_DB_*`), Chromium, and ImageMagick 7 (`magick`) for a journey that adds a Screen |
 
 The root `pnpm test` runs the first one. CI (`.github/workflows/checks.yml`) runs all three kinds.
 

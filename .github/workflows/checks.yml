@@ -87,6 +87,18 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Install Chromium
         run: pnpm --filter kuroshiro-ui-next exec playwright install --with-deps --only-shell chromium
+      # The API converts every Screen image with `magick`, as the image has it; the runner only offers ImageMagick 6.
+      - name: Install ImageMagick 7
+        env:
+          IMAGEMAGICK_VERSION: 7.1.2-32
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/magick.AppImage" "https://github.com/ImageMagick/ImageMagick/releases/download/$IMAGEMAGICK_VERSION/ImageMagick-$IMAGEMAGICK_VERSION-gcc-x86_64.AppImage"
+          chmod +x "$RUNNER_TEMP/magick.AppImage"
+          cd "$RUNNER_TEMP" && ./magick.AppImage --appimage-extract > /dev/null
+          sudo mv "$RUNNER_TEMP/squashfs-root" /opt/imagemagick
+          printf '#!/bin/sh\nexec /opt/imagemagick/AppRun "$@"\n' | sudo tee /usr/local/bin/magick > /dev/null
+          sudo chmod +x /usr/local/bin/magick
+          magick -version
       - name: Drive the built UI against the real API and Postgres
         run: pnpm --filter kuroshiro-ui-next run test:real-api
         env:
