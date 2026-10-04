@@ -110,6 +110,26 @@ describe('save as changed', () => {
     expect(saving.status).toBe('failed')
   })
 
+  it('forgets a failed save when the value is replaced from outside, and lets a save still under way pass unnoticed', async () => {
+    const name = ref('Hallway')
+    const saving = useSaveAsChanged(async () => {
+      throw new Error('A Device with this name already exists.')
+    }, name)
+
+    saving.commit()
+    await settle()
+    saving.reset()
+
+    expect(saving.status).toBe('idle')
+    expect(saving.reason).toBeUndefined()
+
+    saving.commit()
+    saving.reset()
+    await settle()
+
+    expect(saving.status).toBe('idle')
+  })
+
   it('repeats the last save on "Try again"', async () => {
     const save = vi.fn<(value: string) => Promise<string>>()
       .mockRejectedValueOnce(new Error('Kuroshiro\'s server is not answering.'))

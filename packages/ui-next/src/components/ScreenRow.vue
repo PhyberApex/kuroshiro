@@ -19,6 +19,8 @@ const props = withDefaults(defineProps<{
   state?: ScreenState | null
   /** Dims the name and tells the thumbnail to dim. Left out, it follows the state: Rotation passes over every state but Active Screen and Up next. */
   passedOver?: boolean
+  /** The name is being edited: what the `#rename` slot holds stands in the place of the name and the kind. */
+  renaming?: boolean
   /** The heading the name is, by where the list sits in the page's outline. */
   heading?: 'h2' | 'h3' | 'h4'
   /** For the gallery: the state held still on the row, `hover` or `focus`. */
@@ -32,6 +34,8 @@ const props = withDefaults(defineProps<{
 defineSlots<{
   /** The thumbnail. A list without images leaves it out. */
   thumbnail?: (props: { active: boolean, passedOver: boolean }) => unknown
+  /** The Inline edit of the name. It is rendered from the start and shown only while `renaming` is set. */
+  rename?: () => unknown
   /** The Schedule's switch and summary. Controls in it work without opening the row. */
   schedule?: () => unknown
   /** In place of the Screen State's name, for a qualifier: "Active Screen, paused". The small seal stays beside it. */
@@ -123,7 +127,7 @@ function openFromLine(event: MouseEvent) {
         <div class="cells">
           <div class="naming">
             <AccordionHeader as-child>
-              <component :is="heading" class="heading">
+              <component :is="heading" v-show="!renaming" class="heading">
                 <AccordionTrigger as-child>
                   <button type="button" class="trigger">
                     {{ name }}
@@ -131,7 +135,10 @@ function openFromLine(event: MouseEvent) {
                 </AccordionTrigger>
               </component>
             </AccordionHeader>
-            <span v-if="kind" class="kind">{{ kind }}</span>
+            <span v-if="kind" v-show="!renaming" class="kind">{{ kind }}</span>
+            <div v-if="$slots.rename" v-show="renaming">
+              <slot name="rename" />
+            </div>
           </div>
           <div class="schedule">
             <slot name="schedule" />

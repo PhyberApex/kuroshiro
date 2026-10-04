@@ -12,6 +12,8 @@ const SAVED_SHOWN_MS = 2000
  * `commit` saves what `value` holds (a control's `commit` or `update:modelValue` calls it),
  * `retry` repeats the last save. A save that worked puts the server's answer into `value`,
  * unless the admin has changed it since; a save that failed leaves `value` as entered.
+ * `reset` is for a `value` that was replaced from outside: it forgets a failed save, and a
+ * save still under way no longer reports.
  */
 export function useSaveAsChanged<T>(save: (value: T) => Promise<T | void>, value: Ref<T>) {
   const status = ref<SaveStatus>('idle')
@@ -59,5 +61,11 @@ export function useSaveAsChanged<T>(save: (value: T) => Promise<T | void>, value
       run()
     },
     retry: run,
+    reset() {
+      attempts++
+      clearTimeout(savedTimer)
+      status.value = 'idle'
+      reason.value = undefined
+    },
   })
 }
