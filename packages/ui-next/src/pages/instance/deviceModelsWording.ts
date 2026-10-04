@@ -34,7 +34,8 @@ export function inUseAndOthers(models: DeviceModelRead[]): DeviceModelsByUse {
   }
 }
 
-const deviceModels = (count: number) => count === 1 ? '1 Device Model' : `${count} Device Models`
+const counted = (count: number, one: string) => count === 1 ? `1 ${one}` : `${count} ${one}s`
+const deviceModels = (count: number) => counted(count, 'Device Model')
 
 export function othersTitle({ inUse, others }: DeviceModelsByUse) {
   if (inUse.length === 0)
@@ -43,7 +44,7 @@ export function othersTitle({ inUse, others }: DeviceModelsByUse) {
 }
 
 /** The Device Models whose label holds what was typed. */
-export function labelled(models: DeviceModelRead[], query: string) {
+export function modelsMatching(models: DeviceModelRead[], query: string) {
   const sought = query.trim().toLowerCase()
   return models.filter(model => model.label.toLowerCase().includes(sought))
 }
@@ -52,7 +53,7 @@ export function noneCalled(query: string) {
   return `No Device Model is called “${query.trim()}”.`
 }
 
-export function panelSize({ width, height }: Pick<DeviceModelRead, 'width' | 'height'>) {
+export function imageSize({ width, height }: Pick<DeviceModelRead, 'width' | 'height'>) {
   return `${width} × ${height}`
 }
 
@@ -63,17 +64,23 @@ export function paletteNames({ paletteIds }: Pick<DeviceModelRead, 'paletteIds'>
 
 /** What a sync came to: what TRMNL lists now, and how many of the Device Models as they stand after it TRMNL has dropped. */
 export function syncOutcome({ models, palettes }: DeviceModelSyncResult, modelsAfterwards: DeviceModelRead[]) {
-  const synced = `Synced: ${deviceModels(models)} and ${palettes === 1 ? '1 Palette' : `${palettes} Palettes`}.`
+  const synced = `Synced: ${deviceModels(models)} and ${counted(palettes, 'Palette')}.`
   const dropped = modelsAfterwards.filter(model => model.deprecated).length
   if (dropped === 0)
     return synced
   return `${synced} ${deviceModels(dropped)} ${dropped === 1 ? 'is no longer listed by TRMNL and stays' : 'are no longer listed by TRMNL and stay'} usable.`
 }
 
-/** Under a sync that failed: when the lists on the page were last synced from TRMNL. */
-export function seenFrom(models: DeviceModelRead[], now: Date) {
+/** When the lists on the page were last synced from TRMNL. */
+function seenFrom(models: DeviceModelRead[], now: Date) {
   const lastSynced = models.flatMap(model => model.syncedAt ? [new Date(model.syncedAt)] : []).sort((one, other) => other.getTime() - one.getTime())[0]
   if (!lastSynced)
     return 'What you see is the list Kuroshiro was shipped with.'
   return `What you see is from ${relativeTime(lastSynced, now) ?? exactTime(lastSynced)}.`
+}
+
+/** What the notice of a sync that failed says after its title: why, and how old the lists it left on the page are. */
+export function whyNotSynced(reason: string | undefined, models: DeviceModelRead[], now: Date) {
+  const why = reason?.trim().replace(/[^.!?]$/, '$&.')
+  return [why, seenFrom(models, now)].filter(Boolean).join(' ')
 }

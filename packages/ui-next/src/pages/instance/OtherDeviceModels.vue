@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 import SearchField from '@/components/SearchField.vue'
 import TuckedSection from '@/components/TuckedSection.vue'
 import DeviceModelRow from './DeviceModelRow.vue'
-import { labelled, noneCalled } from './deviceModelsWording'
+import { modelsMatching, noneCalled } from './deviceModelsWording'
 
 const props = defineProps<{
   /** "The other 36 Device Models", or "All 38 Device Models" where none is in use. */
@@ -14,7 +14,7 @@ const props = defineProps<{
 }>()
 
 const query = ref('')
-const found = computed(() => labelled(props.models, query.value))
+const found = computed(() => modelsMatching(props.models, query.value))
 </script>
 
 <template>

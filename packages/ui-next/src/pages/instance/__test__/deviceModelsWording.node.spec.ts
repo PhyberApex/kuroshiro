@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildDeviceModel, buildPalette } from '@/testing/fixtures/device-models'
-import { customPalettesByName, inUseAndOthers, labelled, noneCalled, othersTitle, paletteNames, panelSize, seenFrom, swatchColours, syncOutcome } from '../deviceModelsWording'
+import { customPalettesByName, imageSize, inUseAndOthers, modelsMatching, noneCalled, othersTitle, paletteNames, swatchColours, syncOutcome, whyNotSynced } from '../deviceModelsWording'
 import { PALETTE_FAMILIES, paletteFamilyName } from '../paletteFamilies'
 
 const KITCHEN = { id: 'kitchen', name: 'Kitchen' }
@@ -76,17 +76,17 @@ describe('device models wording', () => {
     })
 
     it('are found by a part of their label, whatever its case', () => {
-      expect(labelled([KOBO, OG, X], 'trmnl')).toEqual([OG, X])
-      expect(labelled([KOBO, OG, X], ' aura ')).toEqual([KOBO])
-      expect(labelled([KOBO, OG, X], '')).toEqual([KOBO, OG, X])
+      expect(modelsMatching([KOBO, OG, X], 'trmnl')).toEqual([OG, X])
+      expect(modelsMatching([KOBO, OG, X], ' aura ')).toEqual([KOBO])
+      expect(modelsMatching([KOBO, OG, X], '')).toEqual([KOBO, OG, X])
     })
 
     it('says that none is called what was typed', () => {
       expect(noneCalled(' inkplate ')).toBe('No Device Model is called “inkplate”.')
     })
 
-    it('gives a panel\'s size as width by height', () => {
-      expect(panelSize(X)).toBe('1872 × 1404')
+    it('gives the size of a Device Model\'s image as width by height', () => {
+      expect(imageSize(X)).toBe('1872 × 1404')
     })
 
     it('names the Palettes a Device Model supports, in the Device Model\'s order', () => {
@@ -117,20 +117,31 @@ describe('device models wording', () => {
     })
   })
 
-  describe('where what is shown is from, under a sync that failed', () => {
+  describe('why a sync failed', () => {
     const now = new Date('2026-10-03T07:35:00.000Z')
+    const SYNCED = [
+      buildDeviceModel({ syncedAt: '2026-09-02T04:00:00.000Z', deprecated: true }),
+      buildDeviceModel({ syncedAt: '2026-10-03T04:00:00.000Z' }),
+    ]
 
-    it('is the last sync that reached the Device Models', () => {
-      const models = [
-        buildDeviceModel({ syncedAt: '2026-09-02T04:00:00.000Z', deprecated: true }),
-        buildDeviceModel({ syncedAt: '2026-10-03T04:00:00.000Z' }),
-      ]
-
-      expect(seenFrom(models, now)).toBe('What you see is from 3 h ago.')
+    it('is the server\'s reason, then when the Device Models on the page were last synced', () => {
+      expect(whyNotSynced('usetrmnl.com did not answer within 15 seconds.', SYNCED, now)).toBe('usetrmnl.com did not answer within 15 seconds. What you see is from 3 h ago.')
     })
 
-    it('is the list Kuroshiro was shipped with where no sync ever worked', () => {
-      expect(seenFrom([buildDeviceModel({ syncedAt: null })], now)).toBe('What you see is the list Kuroshiro was shipped with.')
+    it('gives the exact time of a sync that is over a day old', () => {
+      expect(whyNotSynced('No answer.', [SYNCED[0]!], now)).toMatch(/^No answer\. What you see is from 2 Sept? 2026, \d\d:00\.$/)
+    })
+
+    it('ends a reason that came without a full stop', () => {
+      expect(whyNotSynced('fetch failed', SYNCED, now)).toBe('fetch failed. What you see is from 3 h ago.')
+    })
+
+    it('says only where the lists are from where there is no reason', () => {
+      expect(whyNotSynced(undefined, SYNCED, now)).toBe('What you see is from 3 h ago.')
+    })
+
+    it('says that the list is the one Kuroshiro was shipped with where no sync ever worked', () => {
+      expect(whyNotSynced('No answer.', [buildDeviceModel({ syncedAt: null })], now)).toBe('No answer. What you see is the list Kuroshiro was shipped with.')
     })
   })
 })

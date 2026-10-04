@@ -11,16 +11,19 @@ const props = defineProps<{
   palette: PaletteRead
 }>()
 
-/** A custom Palette is told by its Palette Family in words; one of TRMNL's by the id TRMNL gave it. */
-const family = computed(() => props.palette.kind === 'custom' ? paletteFamilyName(props.palette.frameworkClass) : undefined)
+/** A custom Palette is told by its Palette Family in words; one of TRMNL's by the id TRMNL gave it, in mono. */
+const told = computed(() => {
+  const { kind, id, frameworkClass } = props.palette
+  const family = kind === 'custom' ? paletteFamilyName(frameworkClass) : undefined
+  return family ? { text: family, mono: false } : { text: kind === 'custom' ? frameworkClass : id, mono: true }
+})
 </script>
 
 <template>
   <LibraryRow :name="palette.name">
     <p class="colours">
       <Swatches :colours="swatchColours(palette)" />
-      <span v-if="family">{{ family }}</span>
-      <span v-else class="id">{{ palette.kind === 'custom' ? palette.frameworkClass : palette.id }}</span>
+      <span :class="{ mono: told.mono }">{{ told.text }}</span>
     </p>
     <template v-if="palette.usedBy.length > 0" #end>
       <span><DeviceNames :devices="palette.usedBy" section="display" /></span>
@@ -37,7 +40,7 @@ const family = computed(() => props.palette.kind === 'custom' ? paletteFamilyNam
     gap: var(--space-1) var(--space-2);
   }
 
-  .id {
+  .mono {
     font-family: var(--font-mono);
   }
 }

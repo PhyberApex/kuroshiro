@@ -2,7 +2,7 @@
 import type { DeviceModelRead, PaletteRead } from 'kuroshiro-shared'
 import { computed } from 'vue'
 import LibraryRow from '@/components/LibraryRow.vue'
-import { paletteNames, panelSize } from './deviceModelsWording'
+import { imageSize, paletteNames } from './deviceModelsWording'
 import DeviceNames from './DeviceNames.vue'
 
 const props = defineProps<{
@@ -18,7 +18,7 @@ const supported = computed(() => paletteNames(props.model, props.palettes))
 <template>
   <LibraryRow :name="model.label" :problem="model.deprecated ? NO_LONGER_LISTED : undefined">
     <p>
-      <span class="size">{{ panelSize(model) }}</span>
+      <span class="size">{{ imageSize(model) }}</span>
       <template v-if="supported">
         {{ ' · ' }}{{ supported }}
       </template>

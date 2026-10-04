@@ -6,7 +6,7 @@ import { useLoad } from '@/patterns/useLoad'
 import { useNow } from '@/patterns/useNow'
 import CustomPalettes from './CustomPalettes.vue'
 import DeviceModelLibrary from './DeviceModelLibrary.vue'
-import { seenFrom, syncOutcome } from './deviceModelsWording'
+import { syncOutcome, whyNotSynced } from './deviceModelsWording'
 import InstancePageHeading from './InstancePageHeading.vue'
 import LibraryLoading from './LibraryLoading.vue'
 import { useTrmnlSync } from './trmnlSync'
@@ -43,7 +43,7 @@ const now = useNow()
           asking="Asking TRMNL for its Device Models and Palettes"
           :outcome="sync.result && syncOutcome(sync.result, data.list.models)"
           :failed="sync.failed"
-          :reason="`${sync.reason} ${seenFrom(data.list.models, now)}`"
+          :reason="whyNotSynced(sync.reason, data.list.models, now)"
           @retry="sync.sync"
         />
         <CustomPalettes :palettes="data.palettes" />
