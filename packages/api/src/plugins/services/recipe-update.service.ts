@@ -14,7 +14,7 @@ import type {
   RecipeUpdateMode,
   UpdateItem,
 } from './recipe-update-diff.js'
-import { BadGatewayException, BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { PluginDataSource } from '../entities/plugin-data-source.entity.js'
@@ -145,7 +145,7 @@ export class RecipeUpdateService {
 
   private async prepareDiff(pluginId: string): Promise<{ plugin: Plugin, upstream: ParsedPlugin, contentHash: string, mode: RecipeUpdateMode, items: UpdateItem[] }> {
     const plugin = await this.loadPluginWithSourceRecipe(pluginId)
-    const upstream = await this.fetchUpstream(plugin.sourceRecipeId!)
+    const upstream = await this.importerService.importFromRecipe(plugin.sourceRecipeId!)
     const contentHash = computeRecipeContentHash(upstream)
     const { mode, items } = diffRecipeUpdate(this.snapshotOf(plugin), toComparablePlugin(plugin), parsedToComparable(upstream))
     return { plugin, upstream, contentHash, mode, items }
@@ -218,23 +218,6 @@ export class RecipeUpdateService {
       throw new NotFoundException(`Plugin ${pluginId} was not imported from a Recipe`)
     }
     return plugin
-  }
-
-  // Importer errors are plain `Error`s describing the recipe content/strategy
-  // (OAuth, unsupported strategy, malformed archive) or the download itself
-  // failing (recipe deleted, network issue) — the former are the caller's to
-  // fix (400), the latter is the upstream Recipe being unreachable (502).
-  private async fetchUpstream(recipeId: string): Promise<ParsedPlugin> {
-    try {
-      return await this.importerService.importFromRecipe(recipeId)
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to fetch the Recipe'
-      if (message.startsWith('Failed to download Recipe archive')) {
-        throw new BadGatewayException(message)
-      }
-      throw new BadRequestException(message)
-    }
   }
 
   private missingRequiredFieldAssignments(items: UpdateItem[], assignments: DevicePlugin[]): AssignmentsMissingRequiredField[] {

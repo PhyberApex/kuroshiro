@@ -4,8 +4,9 @@ import type { PluginTemplate } from '../entities/plugin-template.entity.js'
 import type { Plugin } from '../entities/plugin.entity.js'
 import type { PluginsService } from '../plugins.service.js'
 import type { ParsedPlugin, PluginImporterService } from '../services/plugin-importer.service.js'
-import { BadGatewayException, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ApiException } from '../../errors/api.exception.js'
 import { makeDevice, makeDevicePlugin, makePlugin, makePluginDataSource, makePluginField, makePluginTemplate } from '../../test/fixtures.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
 import { asService } from '../../test/mockService.js'
@@ -70,18 +71,12 @@ describe('recipeUpdateService', () => {
       await expect(service.checkForUpdate('1')).rejects.toThrow(NotFoundException)
     })
 
-    it('maps a download failure to a 502', async () => {
+    it('answers the importer\'s refusal as it is', async () => {
+      const refusal = new ApiException(422, 'recipe-not-found', 'TRMNL has no Recipe 150460.', { id: '150460' })
       pluginRepo.findOne.mockResolvedValue(makePlugin({ sourceRecipeId: '150460' }))
-      mockImporter.importFromRecipe.mockRejectedValue(new Error('Failed to download Recipe archive: Not Found'))
+      mockImporter.importFromRecipe.mockRejectedValue(refusal)
 
-      await expect(service.checkForUpdate('1')).rejects.toThrow(BadGatewayException)
-    })
-
-    it('maps any other importer error to a 400', async () => {
-      pluginRepo.findOne.mockResolvedValue(makePlugin({ sourceRecipeId: '150460' }))
-      mockImporter.importFromRecipe.mockRejectedValue(new Error('OAuth recipes aren\'t supported yet'))
-
-      await expect(service.checkForUpdate('1')).rejects.toThrow(BadRequestException)
+      await expect(service.checkForUpdate('1')).rejects.toBe(refusal)
     })
 
     it('returns a two-way diff when the plugin has no snapshot', async () => {

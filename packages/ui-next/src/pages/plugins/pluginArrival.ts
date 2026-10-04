@@ -1,3 +1,4 @@
+import type { PluginImportOrigin } from 'kuroshiro-shared'
 import type { Router } from 'vue-router'
 import { pluginPath } from './pluginPaths'
 
@@ -16,7 +17,7 @@ export type PluginArrival = (
   /** `source` is the name of the Plugin it is a copy of. */
   | { how: 'duplicated', source: string }
   /** `name` is the Recipe's name, the file's name or `owner/repository`. */
-  | { how: 'imported', origin: 'recipe' | 'file' | 'github', name: string, hasTransform: boolean }
+  | { how: 'imported', origin: PluginImportOrigin['type'], name: string, hasTransform: boolean }
   /** After a Recipe Update Check: how many Update Items were applied or skipped, and the Recipe's name. */
   | { how: 'applied', updateItems: number, recipe: string }
   | { how: 'skipped', updateItems: number, recipe: string }

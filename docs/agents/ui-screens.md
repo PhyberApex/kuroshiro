@@ -330,6 +330,8 @@ So a section's test is "edit, press Save Plugin, assert `faked.saves`". `__test_
 | `addPluginOrigin.ts` | Where the admin came from, kept by the route's `beforeEnter` for "Cancel" |
 | `addPlugin.ts` | The page's pure parts, and those of the two ways of building: the draft, its problems and what is sent |
 | `BuildPluginForm.vue`, `BuildWebhookMerge.vue` | "Build a Poll Plugin" and "Build a Webhook Plugin": one form, told its `kind`, so a name typed for one way stays for the other |
+| `ImportRecipeForm.vue`, `ImportFileForm.vue`, `ImportGithubForm.vue` | The three ways of importing, one form each. `ImportedBefore.vue` is the line "You already have {Plugin} from this Recipe" |
+| `importPlugin.ts` | What the three share: `useImportPlugin(wording)`, and the pure parts under it (`importTrouble`, `importArrival`, `enteredRecipe`, `importedBefore`) |
 
 A way's form is a `form` whose submit adds the Plugin, with an `AddPluginFoot` as its last child:
 
@@ -345,6 +347,25 @@ A way's form is a `form` whose submit adds the Plugin, with an `AddPluginFoot` a
 - It sends `device.value?.id` with the request and, once the Plugin exists, sets what makes `changed` false, awaits `nextTick()` and calls `openPluginPage(router, plugin.id, { how: …, device: device.value })`.
 - A refusal of one field goes under that field (`fieldErrorsOf`); any other becomes `failure`. What was entered stays.
 - `createPlugin(input)` (`src/api/plugins.ts`) is `POST /api/plugins`: a name and a Plugin Kind in, the `PluginDetail` out.
+
+**A way that imports** answers `PluginImportResult` (`plugin`, `origin`, `hasTransform`) from `importRecipe(input)`, `importPluginFile(file, deviceId?)` or `importGithubPlugin(input)`, and stands on `useImportPlugin(wording)`:
+
+```ts
+const importing = useImportPlugin({
+  upstream: 'trmnl.com',                                    // named in the notice when it does not answer; a file import has none
+  aboutEntry: { 'recipe-oauth': true, 'import-no-plugin': 'This Recipe holds no template, so there is nothing to import.' },
+})
+watch(entered, importing.clear)
+
+function add() {
+  if (problem) return importing.refuse(problem)             // refused in the browser: nothing is sent
+  return importing.run(deviceId => importRecipe({ recipe, deviceId }))
+}
+```
+
+- `run` sends, and on success opens the Plugin's page with the arrival `imported`, carrying the origin, `hasTransform` and the carried Device.
+- `importing.trouble` says why nothing was imported, by where the form shows it: `entered` under the field (a code listed in `aboutEntry`, worded by the form or, with `true`, by `refusalWording.ts`), `unanswered` as a `Notice` with "Try again" (`upstream-unreachable`), `failure` for the foot (anything else, as "Not imported. …").
+- `recipeIdOf(text)` and `githubRepositoryOf(text)` of `kuroshiro-shared` read a Recipe's id and a repository's `owner/repository` exactly as the server does, so the browser refuses what the server would.
 
 ## The Alerts page and an Alert's words
 

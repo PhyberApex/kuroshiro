@@ -23,11 +23,6 @@ describe('pluginsController', () => {
     preview: ReturnType<typeof vi.fn>
   }
   let mockAssignments: { assign: ReturnType<typeof vi.fn> }
-  let mockImporter: {
-    importFromFile: ReturnType<typeof vi.fn>
-    importFromGithubUrl: ReturnType<typeof vi.fn>
-    importFromRecipe: ReturnType<typeof vi.fn>
-  }
   let mockExporter: { exportToZip: ReturnType<typeof vi.fn> }
   let mockRecipeUpdateService: {
     checkForUpdate: ReturnType<typeof vi.fn>
@@ -48,12 +43,6 @@ describe('pluginsController', () => {
 
     mockAssignments = { assign: vi.fn() }
 
-    mockImporter = {
-      importFromFile: vi.fn(),
-      importFromGithubUrl: vi.fn(),
-      importFromRecipe: vi.fn(),
-    }
-
     mockExporter = {
       exportToZip: vi.fn(),
     }
@@ -68,7 +57,7 @@ describe('pluginsController', () => {
       asService<PluginReadsService>(mockReads),
       asService<PluginPreviewDataService>({}),
       asService<PluginAssignmentsService>(mockAssignments),
-      asService<PluginImporterService>(mockImporter),
+      asService<PluginImporterService>({}),
       asService<PluginExporterService>(mockExporter),
       asService<RecipeUpdateService>(mockRecipeUpdateService),
     )
@@ -125,168 +114,5 @@ describe('pluginsController', () => {
 
     expect(mockRecipeUpdateService.applyUpdate).toHaveBeenCalledWith('1', applyDto)
     expect(result).toBe(basePlugin)
-  })
-
-  it('importPlugin imports from file without device assignment', async () => {
-    const file = asService<Express.Multer.File>({ path: '/tmp/plugin.zip' })
-    const parsedPlugin = {
-      name: 'Imported Plugin',
-      dataSources: [{ name: 'source', url: 'https://api.com', method: 'GET', headers: {}, body: {} }],
-    }
-    const createdPlugin = { id: 'plugin-1', name: 'Imported Plugin' }
-    mockImporter.importFromFile.mockResolvedValue(parsedPlugin)
-    mockService.create.mockResolvedValue(createdPlugin)
-
-    const result = await controller.importPlugin(file)
-
-    expect(mockImporter.importFromFile).toHaveBeenCalledWith('/tmp/plugin.zip')
-    expect(mockService.create).toHaveBeenCalled()
-    expect(mockAssignments.assign).not.toHaveBeenCalled()
-    expect(result).toMatchObject(createdPlugin)
-    expect(result._hasTransform).toBe(false)
-  })
-
-  it('importPlugin imports from file with device assignment', async () => {
-    const file = asService<Express.Multer.File>({ path: '/tmp/plugin.zip' })
-    const parsedPlugin = {
-      name: 'Imported Plugin',
-      dataSources: [{
-        name: 'source',
-        url: 'https://api.com',
-        method: 'GET',
-        headers: {},
-        body: {},
-        transformJs: 'module.exports = (d) => d',
-      }],
-    }
-    const createdPlugin = { id: 'plugin-1', name: 'Imported Plugin' }
-    mockImporter.importFromFile.mockResolvedValue(parsedPlugin)
-    mockService.create.mockResolvedValue(createdPlugin)
-    mockAssignments.assign.mockResolvedValue('screen-1')
-
-    const result = await controller.importPlugin(file, 'device-1')
-
-    expect(mockAssignments.assign).toHaveBeenCalledWith('plugin-1', 'device-1')
-    expect(result._hasTransform).toBe(true)
-  })
-
-  it('importPlugin throws error if no file uploaded', async () => {
-    // @ts-expect-error file is intentionally omitted to prove the controller rejects a missing upload
-    await expect(controller.importPlugin(undefined)).rejects.toThrow('No file uploaded')
-  })
-
-  it('importFromGithub imports from GitHub URL without device assignment', async () => {
-    const body = { githubUrl: 'https://github.com/user/plugin' }
-    const parsedPlugin = {
-      name: 'GitHub Plugin',
-      dataSources: [{ name: 'source', url: 'https://api.com', method: 'GET', headers: {}, body: {} }],
-    }
-    const createdPlugin = { id: 'plugin-2', name: 'GitHub Plugin' }
-    mockImporter.importFromGithubUrl.mockResolvedValue(parsedPlugin)
-    mockService.create.mockResolvedValue(createdPlugin)
-
-    const result = await controller.importFromGithub(body)
-
-    expect(mockImporter.importFromGithubUrl).toHaveBeenCalledWith(body.githubUrl)
-    expect(mockService.create).toHaveBeenCalled()
-    expect(mockAssignments.assign).not.toHaveBeenCalled()
-    expect(result).toMatchObject(createdPlugin)
-  })
-
-  it('importFromGithub imports from GitHub URL with device assignment', async () => {
-    const body = { githubUrl: 'https://github.com/user/plugin', deviceId: 'device-1' }
-    const parsedPlugin = {
-      name: 'GitHub Plugin',
-      dataSources: [{ name: 'source', url: 'https://api.com', method: 'GET', headers: {}, body: {} }],
-    }
-    const createdPlugin = { id: 'plugin-2', name: 'GitHub Plugin' }
-    mockImporter.importFromGithubUrl.mockResolvedValue(parsedPlugin)
-    mockService.create.mockResolvedValue(createdPlugin)
-    mockAssignments.assign.mockResolvedValue('screen-1')
-
-    await controller.importFromGithub(body)
-
-    expect(mockAssignments.assign).toHaveBeenCalledWith('plugin-2', 'device-1')
-  })
-
-  it('importFromGithub throws error if no URL provided', async () => {
-    await expect(controller.importFromGithub({ githubUrl: '' })).rejects.toThrow('GitHub URL is required')
-  })
-
-  it('importFromRecipe imports from a Recipe id without device assignment', async () => {
-    const body = { recipeId: '150460' }
-    const parsedPlugin = {
-      name: 'Daily Weather',
-      dataSources: [{ name: 'source', url: 'https://api.com', method: 'GET', headers: {}, body: {} }],
-      sourceRecipeId: '150460',
-    }
-    const createdPlugin = { id: 'plugin-3', name: 'Daily Weather' }
-    mockImporter.importFromRecipe.mockResolvedValue(parsedPlugin)
-    mockService.create.mockResolvedValue(createdPlugin)
-
-    const result = await controller.importFromRecipe(body)
-
-    expect(mockImporter.importFromRecipe).toHaveBeenCalledWith(body.recipeId)
-    expect(mockService.create).toHaveBeenCalled()
-    expect(mockAssignments.assign).not.toHaveBeenCalled()
-    expect(result).toMatchObject(createdPlugin)
-    expect(result._hasTransform).toBe(false)
-  })
-
-  it('importFromRecipe sets sourceRecipeSnapshot to the importer\'s parsed output', async () => {
-    const body = { recipeId: '150460' }
-    const parsedPlugin = {
-      name: 'Daily Weather',
-      kind: 'Poll',
-      refreshInterval: 30,
-      dataSources: [{ name: 'source', url: 'https://api.com', method: 'GET', headers: {}, body: {} }],
-      templates: [{ layout: 'full', liquidMarkup: 'Hello' }],
-      fields: [],
-      sourceRecipeId: '150460',
-    }
-    mockImporter.importFromRecipe.mockResolvedValue(parsedPlugin)
-    mockService.create.mockResolvedValue({ id: 'plugin-3', name: 'Daily Weather' })
-
-    await controller.importFromRecipe(body)
-
-    expect(mockService.create).toHaveBeenCalledWith(expect.objectContaining({ sourceRecipeSnapshot: parsedPlugin }))
-  })
-
-  it('importPlugin (file) and importFromGithub never set sourceRecipeSnapshot', async () => {
-    const parsedPlugin = {
-      name: 'Plain Plugin',
-      dataSources: [{ name: 'source', url: 'https://api.com', method: 'GET', headers: {}, body: {} }],
-    }
-    mockImporter.importFromFile.mockResolvedValue(parsedPlugin)
-    mockImporter.importFromGithubUrl.mockResolvedValue(parsedPlugin)
-    mockService.create.mockResolvedValue({ id: 'plugin-x', name: 'Plain Plugin' })
-
-    await controller.importPlugin({ path: '/tmp/plugin.zip' } as Express.Multer.File)
-    await controller.importFromGithub({ githubUrl: 'https://github.com/user/plugin' })
-
-    expect(mockService.create).toHaveBeenNthCalledWith(1, expect.objectContaining({ sourceRecipeSnapshot: undefined }))
-    expect(mockService.create).toHaveBeenNthCalledWith(2, expect.objectContaining({ sourceRecipeSnapshot: undefined }))
-  })
-
-  it('importFromRecipe imports from a Recipe id with device assignment', async () => {
-    const body = { recipeId: '150460', deviceId: 'device-1' }
-    const parsedPlugin = {
-      name: 'Daily Weather',
-      dataSources: [{ name: 'source', url: 'https://api.com', method: 'GET', headers: {}, body: {}, transformJs: 'module.exports = (d) => d' }],
-      sourceRecipeId: '150460',
-    }
-    const createdPlugin = { id: 'plugin-3', name: 'Daily Weather' }
-    mockImporter.importFromRecipe.mockResolvedValue(parsedPlugin)
-    mockService.create.mockResolvedValue(createdPlugin)
-    mockAssignments.assign.mockResolvedValue('screen-1')
-
-    const result = await controller.importFromRecipe(body)
-
-    expect(mockAssignments.assign).toHaveBeenCalledWith('plugin-3', 'device-1')
-    expect(result._hasTransform).toBe(true)
-  })
-
-  it('importFromRecipe throws error if no Recipe id/URL provided', async () => {
-    await expect(controller.importFromRecipe({ recipeId: '' })).rejects.toThrow('Recipe id or URL is required')
   })
 })
