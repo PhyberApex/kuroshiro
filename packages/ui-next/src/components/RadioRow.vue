@@ -19,6 +19,11 @@ defineProps<{
   force?: Partial<Record<T, string>>
 }>()
 
+defineSlots<{
+  /** What a choice holds, between its row and the next: the checkboxes that say which ones "Only these" means. */
+  under?: (props: { choice: RadioChoice<T> }) => unknown
+}>()
+
 const model = defineModel<T>()
 
 const id = useId()
@@ -36,23 +41,24 @@ function describedBy(choice: RadioChoice<T>, index: number) {
     :disabled="disabled"
     @update:model-value="model = $event as T"
   >
-    <RadioGroupItem
-      v-for="(choice, index) in choices"
-      :key="choice.value"
-      class="row"
-      :value="choice.value"
-      :disabled="choice.disabled"
-      :aria-labelledby="`${id}-${index}-name`"
-      :aria-describedby="describedBy(choice, index)"
-      :data-force="force?.[choice.value]"
-    >
-      <span class="dot" />
-      <span class="title">
-        <span :id="`${id}-${index}-name`" class="name">{{ choice.label }}</span>
-        <code v-if="choice.code" :id="`${id}-${index}-code`" class="code">{{ choice.code }}</code>
-      </span>
-      <span v-if="choice.hint" :id="`${id}-${index}-hint`" class="hint">{{ choice.hint }}</span>
-    </RadioGroupItem>
+    <template v-for="(choice, index) in choices" :key="choice.value">
+      <RadioGroupItem
+        class="row"
+        :value="choice.value"
+        :disabled="choice.disabled"
+        :aria-labelledby="`${id}-${index}-name`"
+        :aria-describedby="describedBy(choice, index)"
+        :data-force="force?.[choice.value]"
+      >
+        <span class="dot" />
+        <span class="title">
+          <span :id="`${id}-${index}-name`" class="name">{{ choice.label }}</span>
+          <code v-if="choice.code" :id="`${id}-${index}-code`" class="code">{{ choice.code }}</code>
+        </span>
+        <span v-if="choice.hint" :id="`${id}-${index}-hint`" class="hint">{{ choice.hint }}</span>
+      </RadioGroupItem>
+      <slot name="under" :choice="choice" />
+    </template>
   </RadioGroupRoot>
 </template>
 

@@ -5,9 +5,11 @@ import SpecimenRow from '@/gallery/SpecimenRow.vue'
 import Field from './Field.vue'
 import NumberInput from './NumberInput.vue'
 import Textarea from './Textarea.vue'
+import TextInput from './TextInput.vue'
 
 const rate = ref<number | null>(900)
 const tooShort = ref<number | null>(12)
+const label = ref('')
 const html = ref('<div class="note">\n  Back at 6\n</div>')
 </script>
 
@@ -21,6 +23,11 @@ const html = ref('<div class="note">\n  Back at 6\n</div>')
     <Specimen caption="error">
       <Field v-slot="{ control }" label="Refresh rate" hint="Seconds between two polls." error="The shortest refresh rate is 60 seconds.">
         <NumberInput v-model="tooShort" v-bind="control" />
+      </Field>
+    </Specimen>
+    <Specimen caption="optional">
+      <Field v-slot="{ control }" label="Label" optional hint="Without one the file's name is used.">
+        <TextInput v-model="label" v-bind="control" prose />
       </Field>
     </Specimen>
     <Specimen caption="around a textarea">

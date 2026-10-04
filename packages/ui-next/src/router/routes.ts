@@ -69,8 +69,8 @@ export const routes: RouteRecordRaw[] = [
     redirect: '/instance/settings',
     children: [
       instancePage('settings', 'Instance Settings', () => import('@/pages/instance/InstanceSettingsPage.vue')),
-      notBuiltYetUnderInstance('firmware', 'Firmware'),
-      notBuiltYetUnderInstance('firmware/upload', 'Upload Firmware'),
+      instancePage('firmware', 'Firmware', () => import('@/pages/instance/FirmwarePage.vue')),
+      { path: 'firmware/upload', component: () => import('@/pages/instance/UploadFirmwarePage.vue') },
       notBuiltYetUnderInstance('models', 'Device Models and Palettes'),
       notBuiltYetUnderInstance('archive', 'Configuration Archive'),
       notBuiltYetUnderInstance('housekeeping', 'Housekeeping'),
