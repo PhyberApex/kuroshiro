@@ -88,11 +88,14 @@ const frameStyle = computed(() => ({
 
 <style scoped>
 @layer components {
+  /*
+  Clipped square: the plate's outline is painted over the frame's corners, and a rounded clip of a scaled frame is
+  antialiased differently from one run to the next, which no screenshot baseline survives.
+  */
   .drawing {
     position: relative;
     place-self: stretch;
     overflow: hidden;
-    border-radius: var(--radius-plate);
   }
 
   /* The panel does not follow the theme, so neither does what is drawn for it. */

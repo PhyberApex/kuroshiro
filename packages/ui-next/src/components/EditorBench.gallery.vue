@@ -32,7 +32,9 @@ const scrolling = { kind: 'honest', text: 'What stands under the plate scrolls w
           />
         </template>
         <template #plate>
-          <PreviewPlate name="Preview of Weather on the bench" :document="drawing" :width="800" :height="480" />
+          <div class="plate-place">
+            <PreviewPlate name="Preview of Weather on the bench" :document="drawing" :width="800" :height="480" />
+          </div>
         </template>
         <p v-for="line in underThePlate" :key="line.text" :class="line.kind">
           {{ line.text }}
@@ -48,7 +50,9 @@ const scrolling = { kind: 'honest', text: 'What stands under the plate scrolls w
             <CodeEditor v-model="inTheWindow" mode="liquid" size="full-window" aria-label="Template of Weather in the full window" />
           </template>
           <template #plate>
-            <PreviewPlate name="Preview of Weather in the full window" :document="drawing" :width="800" :height="480" />
+            <div class="plate-place narrow">
+              <PreviewPlate name="Preview of Weather in the full window" :document="drawing" :width="800" :height="480" />
+            </div>
           </template>
           <p v-for="line in [...underThePlate, scrolling]" :key="line.text" :class="line.kind">
             {{ line.text }}
@@ -70,9 +74,27 @@ const scrolling = { kind: 'honest', text: 'What stands under the plate scrolls w
     height: 22rem;
   }
 
+  /*
+  Widths that make the 800 by 480 plate a whole number of pixels high. The edge of a scaled frame that lands on a
+  fraction of a pixel is antialiased differently from one run to the next, which no screenshot baseline survives.
+  */
+  .plate-place {
+    width: 25rem;
+  }
+
+  .plate-place.narrow {
+    width: 22.5rem;
+  }
+
   @media (max-width: 820px) {
     .window {
       height: auto;
+    }
+
+    .plate-place,
+    .plate-place.narrow {
+      width: 20.9375rem;
+      max-width: 100%;
     }
   }
 
