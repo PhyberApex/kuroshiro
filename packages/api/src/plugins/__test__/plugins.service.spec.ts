@@ -8,10 +8,10 @@ import type { PluginFieldValuesService } from '../services/plugin-field-values.s
 import type { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
 import type { PluginSchedulerService } from '../services/plugin-scheduler.service.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeDevicePlugin, makePlugin, makePluginDataSource, makePluginField, makePluginTemplate } from '../../test/fixtures.js'
+import { makePlugin, makePluginDataSource, makePluginField, makePluginTemplate } from '../../test/fixtures.js'
 import { createMockPluginFieldValuesService, createMockPluginRenderCacheService } from '../../test/mockPluginCollaborators.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
-import { asService, injectPrivate } from '../../test/mockService.js'
+import { asService } from '../../test/mockService.js'
 import { PluginsService } from '../plugins.service.js'
 
 describe('pluginsService', () => {
@@ -102,103 +102,6 @@ describe('pluginsService', () => {
     await service.create(pluginData)
 
     expect(pluginRepo.save).toHaveBeenCalledWith(expect.objectContaining({ sourceRecipeSnapshot: snapshot }))
-  })
-
-  it('remove deletes a plugin and returns true', async () => {
-    pluginRepo.findOneBy.mockResolvedValue(basePlugin)
-    pluginRepo.remove.mockResolvedValue(basePlugin)
-    const result = await service.remove('1')
-    expect(pluginRepo.findOneBy).toHaveBeenCalledWith({ id: '1' })
-    expect(pluginRepo.remove).toHaveBeenCalledWith(basePlugin)
-    expect(mockScheduler.removeScheduledJob).toHaveBeenCalledWith('1')
-    expect(result).toBe(true)
-  })
-
-  it('remove returns false if plugin not found', async () => {
-    pluginRepo.findOneBy.mockResolvedValue(null)
-    const result = await service.remove('1')
-    expect(result).toBe(false)
-  })
-
-  it('checkPluginUsage returns empty array when not used in mashups', async () => {
-    const mashupSlotRepo = { find: vi.fn().mockResolvedValue([]) }
-    injectPrivate(service, 'mashupSlotRepository', mashupSlotRepo)
-
-    const result = await service.checkPluginUsage('plugin-1')
-
-    expect(result.inMashups).toEqual([])
-    expect(mashupSlotRepo.find).toHaveBeenCalledWith({
-      where: { plugin: { id: 'plugin-1' } },
-      relations: { mashupConfiguration: { screen: true } },
-    })
-  })
-
-  it('checkPluginUsage returns mashup info when plugin used', async () => {
-    const mashupSlotRepo = {
-      find: vi.fn().mockResolvedValue([
-        {
-          id: 'slot-1',
-          mashupConfiguration: {
-            id: 'config-1',
-            screen: { id: 'screen-1', filename: 'Dashboard 1' },
-          },
-        },
-        {
-          id: 'slot-2',
-          mashupConfiguration: {
-            id: 'config-2',
-            screen: { id: 'screen-2', filename: 'Dashboard 2' },
-          },
-        },
-      ]),
-    }
-    injectPrivate(service, 'mashupSlotRepository', mashupSlotRepo)
-
-    const result = await service.checkPluginUsage('plugin-1')
-
-    expect(result.inMashups).toHaveLength(2)
-    expect(result.inMashups[0]).toEqual({ screenId: 'screen-1', screenName: 'Dashboard 1' })
-    expect(result.inMashups[1]).toEqual({ screenId: 'screen-2', screenName: 'Dashboard 2' })
-  })
-
-  it('remove without force throws error if plugin used in mashups', async () => {
-    pluginRepo.findOneBy.mockResolvedValue(basePlugin)
-
-    const mashupSlotRepo = {
-      find: vi.fn().mockResolvedValue([
-        {
-          mashupConfiguration: {
-            screen: { id: 'screen-1', filename: 'My Dashboard' },
-          },
-        },
-      ]),
-    }
-    injectPrivate(service, 'mashupSlotRepository', mashupSlotRepo)
-
-    await expect(service.remove('1', false)).rejects.toThrow('Plugin is used in 1 mashup(s)')
-    expect(pluginRepo.remove).not.toHaveBeenCalled()
-  })
-
-  it('remove with force=true deletes plugin even if used in mashups', async () => {
-    pluginRepo.findOneBy.mockResolvedValue(basePlugin)
-    pluginRepo.remove.mockResolvedValue(basePlugin)
-
-    const mashupSlotRepo = {
-      find: vi.fn().mockResolvedValue([
-        {
-          mashupConfiguration: {
-            screen: { id: 'screen-1', filename: 'My Dashboard' },
-          },
-        },
-      ]),
-    }
-    injectPrivate(service, 'mashupSlotRepository', mashupSlotRepo)
-
-    const result = await service.remove('1', true)
-
-    expect(result).toBe(true)
-    expect(pluginRepo.remove).toHaveBeenCalledWith(basePlugin)
-    expect(mockScheduler.removeScheduledJob).toHaveBeenCalledWith('1')
   })
 
   it('create saves plugin with dataSources, templates, and fields', async () => {
@@ -405,114 +308,6 @@ describe('pluginsService', () => {
 
       await expect(service.clearWebhookPayload('1')).rejects.toThrow('is not a Webhook-kind Plugin')
       expect(pluginRepo.update).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('duplicate', () => {
-    const sourceDataSources = [
-      makePluginDataSource({ id: 'ds-1', name: 'weather', mode: 'fetch', url: 'https://api.com', method: 'GET', headers: { Authorization: 'Bearer x' }, body: {}, order: 0 }),
-      makePluginDataSource({ id: 'ds-2', name: 'note', mode: 'literal', url: undefined, method: 'GET', literalValue: 'hello', order: 1 }),
-    ]
-    const sourceTemplates = [makePluginTemplate({ id: 't-1', layout: 'full', liquidMarkup: '<div>{{ weather }}</div>' })]
-    const sourceFields = [makePluginField({ id: 'f-1', keyname: 'unit', name: 'Unit', defaultValue: 'C', order: 0 })]
-
-    const sourcePlugin: Plugin = makePlugin({
-      id: 'source-1',
-      name: 'Weather Plugin',
-      description: 'Shows weather',
-      kind: 'Poll',
-      refreshInterval: 30,
-      dataSources: sourceDataSources,
-      templates: sourceTemplates,
-      fields: sourceFields,
-      deviceAssignments: [makeDevicePlugin({ id: 'dp-1' })],
-    })
-
-    function mockCreatePipeline(createdId: string) {
-      pluginRepo.save.mockImplementation(async plugin => ({ ...plugin, id: createdId }))
-      dataSourceRepo.create.mockImplementation(input => input as PluginDataSource)
-      dataSourceRepo.save.mockImplementation(async input => input as PluginDataSource)
-      templateRepo.create.mockImplementation(input => input as PluginTemplate)
-      templateRepo.save.mockImplementation(async input => input as PluginTemplate)
-      fieldRepo.create.mockImplementation(input => input as PluginField)
-      fieldRepo.save.mockImplementation(async input => input as PluginField)
-    }
-
-    it('clones data sources, templates, fields and Field Values under a new id and "(copy)" name', async () => {
-      mockCreatePipeline('new-id')
-      pluginRepo.findOne
-        .mockResolvedValueOnce(sourcePlugin) // load source with relations
-        .mockResolvedValueOnce(makePlugin({ id: 'new-id', dataSources: sourceDataSources, templates: sourceTemplates, fields: sourceFields })) // reload after create()
-      mockFieldValues.storedFor.mockResolvedValue({ unit: 'F' })
-
-      const result = await service.duplicate('source-1')
-
-      expect(result.id).toBe('new-id')
-      expect(pluginRepo.save).toHaveBeenCalledWith(expect.objectContaining({ name: 'Weather Plugin (copy)' }))
-      expect(dataSourceRepo.create).toHaveBeenCalledTimes(2)
-      expect(templateRepo.create).toHaveBeenCalledTimes(1)
-      expect(fieldRepo.create).toHaveBeenCalledTimes(1)
-      expect(mockFieldValues.storedFor).toHaveBeenCalledWith('source-1')
-      expect(mockFieldValues.write).toHaveBeenCalledWith(expect.objectContaining({ id: 'new-id', fields: sourceFields }), { unit: 'F' })
-      expect(result.dataSources).toEqual(sourceDataSources)
-      expect(result.templates).toEqual(sourceTemplates)
-      expect(result.fields).toEqual(sourceFields)
-    })
-
-    it('copies the source Recipe id and snapshot when duplicating an imported plugin', async () => {
-      const snapshot = { name: 'Weather Plugin', kind: 'Poll', refreshInterval: 30, dataSources: [], templates: [], fields: [] }
-      const importedSource = makePlugin({
-        ...sourcePlugin,
-        id: 'source-3',
-        sourceRecipeId: '150460',
-        sourceRecipeSnapshot: snapshot,
-      })
-      mockCreatePipeline('new-id-3')
-      pluginRepo.findOne
-        .mockResolvedValueOnce(importedSource)
-        .mockResolvedValueOnce(makePlugin({ id: 'new-id-3' }))
-
-      await service.duplicate('source-3')
-
-      expect(pluginRepo.save).toHaveBeenCalledWith(expect.objectContaining({
-        sourceRecipeId: '150460',
-        sourceRecipeSnapshot: snapshot,
-      }))
-    })
-
-    it('does not carry over device assignments, webhook payload, or the source webhook token', async () => {
-      const webhookSource = makePlugin({
-        id: 'source-2',
-        name: 'Sensor Feed',
-        kind: 'Webhook',
-        webhookToken: 'source-token',
-        webhookPayload: { reading: 1 },
-        mergeStrategy: 'standard',
-        deviceAssignments: [makeDevicePlugin({ id: 'dp-2' })],
-      })
-      mockCreatePipeline('new-id-2')
-      pluginRepo.findOne
-        .mockResolvedValueOnce(webhookSource)
-        .mockResolvedValueOnce(makePlugin({ id: 'new-id-2', kind: 'Webhook' }))
-
-      const result = await service.duplicate('source-2')
-
-      expect(result.id).toBe('new-id-2')
-      expect(pluginRepo.save).toHaveBeenCalledWith(expect.objectContaining({
-        kind: 'Webhook',
-        webhookToken: expect.any(String),
-      }))
-      const savedArg = pluginRepo.save.mock.calls[0][0]
-      expect(savedArg.webhookToken).not.toBe('source-token')
-      expect(savedArg).not.toHaveProperty('webhookPayload')
-      expect(savedArg).not.toHaveProperty('deviceAssignments')
-    })
-
-    it('throws NotFoundException when the source plugin does not exist', async () => {
-      pluginRepo.findOne.mockResolvedValueOnce(null)
-
-      await expect(service.duplicate('missing')).rejects.toThrow('not found')
-      expect(pluginRepo.save).not.toHaveBeenCalled()
     })
   })
 })

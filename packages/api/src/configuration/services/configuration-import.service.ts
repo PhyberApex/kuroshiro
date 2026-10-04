@@ -69,6 +69,19 @@ interface TransactionRepos {
   instanceSettings: Repository<InstanceSettings>
 }
 
+/** Whether a Plugin's `src/settings.yml` has Data Sources for the importer to read: a Webhook-kind Plugin's has none, and a Poll-kind Plugin's may list none. */
+function listsDataSources(settingsYaml: string): boolean {
+  try {
+    const settings = yaml.load(settingsYaml) as { strategy?: unknown, data_sources?: unknown } | null
+    const listsNone = Array.isArray(settings?.data_sources) && settings.data_sources.length === 0
+    return !(settings?.strategy === 'webhook' || listsNone)
+  }
+  catch {
+    // Unreadable YAML is the importer's to refuse, with its own message.
+    return true
+  }
+}
+
 @Injectable()
 export class ConfigurationImportService {
   private readonly logger = new Logger(ConfigurationImportService.name)
@@ -372,17 +385,18 @@ export class ConfigurationImportService {
   }
 
   /**
-   * Extracts a `plugins/<id>/` folder into its own in-memory `.trmnlp` zip. The per-Plugin
-   * exporter omits `src/settings.yml` entirely when the Plugin has no Data Sources (e.g.
-   * every Webhook-kind Plugin), so a placeholder settings file is synthesized to satisfy
-   * `parseZip`'s manifest+settings precondition — its content is never read for data
-   * sources: `hasSettings` also drives `upsertPlugin` to pass `forcedDataSources: []`
-   * rather than touching `PluginImporterService`'s shared parsing rules for real uploads.
+   * Extracts a `plugins/<id>/` folder into its own in-memory `.trmnlp` zip. A Plugin without
+   * Data Sources (every Webhook-kind Plugin) has a `src/settings.yml` that lists none, or, in
+   * an archive of an older Kuroshiro, no such file at all; a placeholder is synthesized then to
+   * satisfy `parseZip`'s manifest+settings precondition. `hasDataSources` drives `upsertPlugin`
+   * to pass `forcedDataSources: []` rather than touching `PluginImporterService`'s shared
+   * parsing rules for real uploads.
    */
-  private extractPluginZip(zip: AdmZip, pluginId: string): { zip: AdmZip, hasSettings: boolean } {
+  private extractPluginZip(zip: AdmZip, pluginId: string): { zip: AdmZip, hasDataSources: boolean } {
     const prefix = `plugins/${pluginId}/`
     const sub = new AdmZip()
     let hasSettings = false
+    let hasDataSources = false
 
     for (const entry of zip.getEntries()) {
       if (entry.isDirectory || !entry.entryName.startsWith(prefix)) {
@@ -391,6 +405,7 @@ export class ConfigurationImportService {
       const relativePath = entry.entryName.slice(prefix.length)
       if (relativePath === 'src/settings.yml') {
         hasSettings = true
+        hasDataSources = listsDataSources(entry.getData().toString('utf8'))
       }
       sub.addFile(relativePath, entry.getData())
     }
@@ -399,7 +414,7 @@ export class ConfigurationImportService {
       sub.addFile('src/settings.yml', Buffer.from(yaml.dump({}), 'utf8'))
     }
 
-    return { zip: sub, hasSettings }
+    return { zip: sub, hasDataSources }
   }
 
   private async upsertPlugin(repos: TransactionRepos, zip: AdmZip, entry: PluginManifestEntry, counts: ImportCounts, warnings: string[]): Promise<void> {
@@ -413,8 +428,8 @@ export class ConfigurationImportService {
       }
     }
 
-    const { zip: subZip, hasSettings } = this.extractPluginZip(zip, entry.id)
-    const parsed = this.pluginImporter.parseZip(subZip, entry.id, hasSettings ? undefined : [])
+    const { zip: subZip, hasDataSources } = this.extractPluginZip(zip, entry.id)
+    const parsed = this.pluginImporter.parseZip(subZip, entry.id, hasDataSources ? undefined : [])
 
     const plugin = existing ?? repos.plugin.create({ id: entry.id })
     plugin.name = parsed.name

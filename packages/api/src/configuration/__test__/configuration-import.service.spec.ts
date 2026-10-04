@@ -447,6 +447,26 @@ describe('configurationImportService', () => {
     expect(pluginIds).toEqual(['existing-plugin'])
   })
 
+  it('imports a Plugin whose src/settings.yml has no Data Sources: a Webhook-kind Plugin, and a Poll-kind Plugin that lists none', async () => {
+    const entry = { sourceRecipeId: null, dataSources: [], fields: [] }
+    const buffer = buildArchive({
+      plugins: [
+        { ...entry, id: 'plugin-webhook', kind: 'Webhook', mergeStrategy: 'stream', streamLimit: 12, webhookToken: 'token-A', templates: [{ id: 'tpl-A', layout: 'full' }] },
+        { ...entry, id: 'plugin-poll', kind: 'Poll', mergeStrategy: null, streamLimit: null, webhookToken: null, templates: [{ id: 'tpl-B', layout: 'full' }] },
+      ],
+      pluginFolders: {
+        'plugin-webhook': { manifest: { name: 'Doorbell', custom_fields: [] }, settings: { strategy: 'webhook', merge_strategy: 'stream', stream_limit: 12 }, templates: { full: 'A content' } },
+        'plugin-poll': { manifest: { name: 'Clock', custom_fields: [] }, settings: { strategy: 'polling', refresh_interval: 30, data_sources: [] }, templates: { full: 'B content' } },
+      },
+    })
+
+    const summary = await service.importFromZip(buffer)
+
+    expect(summary.created.plugins).toBe(2)
+    expect(backing.get('Plugin')!.get('plugin-poll')).toMatchObject({ name: 'Clock', kind: 'Poll', refreshInterval: 30 })
+    expect(backing.get('Plugin')!.get('plugin-webhook')).toMatchObject({ name: 'Doorbell', kind: 'Webhook', mergeStrategy: 'stream', streamLimit: 12 })
+  })
+
   it('resolves an unknown Device Model, Palette, or Firmware reference to null with a warning instead of failing', async () => {
     const buffer = buildArchive({
       devices: [makeDeviceEntry({ deviceModelName: 'missing_model', paletteId: 'missing-palette', targetFirmwareId: 'missing-firmware' })],

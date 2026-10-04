@@ -46,7 +46,8 @@ function polledDataSources(plugin: Plugin): PluginDataSource[] {
   return isPolled(plugin) ? inOrder(plugin.dataSources) : []
 }
 
-function toPluginPlaces(mashupScreens: Screen[]): PluginPlace[] {
+/** The Mashups among the given Screens, each once, by name and then by Device. */
+export function toPluginPlaces(mashupScreens: Screen[]): PluginPlace[] {
   const byScreen = new Map(mashupScreens.map(screen => [screen.id, screen]))
   return [...byScreen.values()]
     .map(screen => ({ screenId: screen.id, name: screen.filename ?? '', deviceId: screen.device.id, deviceName: screen.device.name }))

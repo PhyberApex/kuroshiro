@@ -20,6 +20,7 @@ export const API_ERROR_CODES = [
   'plugin-not-found',
   'assignment-not-found',
   'plugin-already-assigned',
+  'plugin-in-mashup',
   'image-fetch-failed',
   'image-unreadable',
   'order-not-a-permutation',
