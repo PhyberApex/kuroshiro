@@ -34,15 +34,15 @@ async function showUnassigned() {
       </RouterLink>
     </template>
     <template #standing>
-      <span class="said" :class="{ failed: assigning.failure }" role="status">
-        <template v-if="assignment">
-          Assigned · <b class="place">{{ assignedStanding(assignment) }}</b>
-        </template>
-        <template v-else-if="assigning.failure">
+      <template v-if="assignment">
+        Assigned · <b class="place">{{ assignedStanding(assignment) }}</b>
+      </template>
+      <template v-else-if="!assigning.failure">
+        Not assigned
+      </template>
+      <span class="failed" role="status">
+        <template v-if="!assignment && assigning.failure">
           <Icon name="problem" class="mark" />{{ notAssignedSentence(assigning.failure.reason) }}
-        </template>
-        <template v-else>
-          Not assigned
         </template>
       </span>
       <Button v-if="!assignment && assigning.failure" variant="quiet" @click="assigning.assign">
@@ -64,10 +64,6 @@ async function showUnassigned() {
     text-underline-offset: 3px;
   }
 
-  .said {
-    display: inline;
-  }
-
   .place,
   .failed {
     color: var(--color-ink);
@@ -81,7 +77,7 @@ async function showUnassigned() {
     vertical-align: -0.0625rem;
   }
 
-  .said + .button {
+  .failed + .button {
     margin-left: var(--space-3);
   }
 
