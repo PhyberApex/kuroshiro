@@ -41,3 +41,24 @@ export function usePluginFormPart<Draft>(part: PluginFormPart<Draft>, reveal?: R
 
 /** The id of the control that edits the field at `path`, which "Show the first" focuses: `dataSources.2.url` is `plugin-dataSources-2-url`. */
 export const fieldId = (path: string) => `plugin-${path.replaceAll('.', '-')}`
+
+const WAIT_FOR_FIELD_MS = 3000
+
+/**
+ * The control that edits the field at `path`, once it is in the page: a row that was just opened
+ * renders a tick later, and a code editor is fetched before it is there. A `reveal` that opens such
+ * a field awaits this, so that "Show the first" finds it. Answers nothing after three seconds.
+ */
+export function fieldArrived(path: string) {
+  const deadline = Date.now() + WAIT_FOR_FIELD_MS
+  return new Promise<HTMLElement | null>((resolve) => {
+    const look = () => {
+      const control = document.getElementById(fieldId(path))
+      if (control || Date.now() > deadline)
+        resolve(control)
+      else
+        requestAnimationFrame(look)
+    }
+    look()
+  })
+}

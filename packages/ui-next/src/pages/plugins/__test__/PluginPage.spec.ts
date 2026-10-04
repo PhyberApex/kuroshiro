@@ -531,7 +531,8 @@ describe('the Plugin page', () => {
 
       const main = screen.getByRole('main').element()
       expect(elementsInSealColour(main).length).toBeGreaterThan(0)
-      expect(elementsInSealColour(main).every(element => problemLine('forecast')!.contains(element))).toBe(true)
+      const whereTheAlertShows = [problemLine('forecast')!, screen.getByRole('button', { name: 'forecast', exact: true }).element().closest('li')!]
+      expect(elementsInSealColour(main).every(element => whereTheAlertShows.some(place => place.contains(element)))).toBe(true)
     })
 
     it('names the one required Plugin Field that is empty', async () => {
