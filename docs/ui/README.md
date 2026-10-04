@@ -1,6 +1,6 @@
 # Admin UI spec
 
-The design spec for the admin UI rebuilt from zero in `packages/ui-next`. It is the output of the wayfinder map [Admin UI rebuild from zero](https://github.com/PhyberApex/kuroshiro/issues/1074) and the reference every build issue is written against.
+The design spec for the admin UI rebuilt from zero in `packages/ui`. It is the output of the wayfinder map [Admin UI rebuild from zero](https://github.com/PhyberApex/kuroshiro/issues/1074) and the reference every build issue is written against.
 
 | Surface | Spec |
 |---|---|

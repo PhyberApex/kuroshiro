@@ -1,10 +1,10 @@
 # Building a screen of the admin UI
 
-What every screen of `packages/ui-next` stands on: the shell, the router, the API client and the shared page patterns of [`docs/ui/README.md`](../ui/README.md#patterns-every-surface-shares). Copy from here; do not rebuild any of it in a page. How a screen is tested is in [`ui-testing.md`](./ui-testing.md).
+What every screen of `packages/ui` stands on: the shell, the router, the API client and the shared page patterns of [`docs/ui/README.md`](../ui/README.md#patterns-every-surface-shares). Copy from here; do not rebuild any of it in a page. How a screen is tested is in [`ui-testing.md`](./ui-testing.md).
 
 ## Where things live
 
-| Folder of `packages/ui-next/src/` | Holds |
+| Folder of `packages/ui/src/` | Holds |
 | --- | --- |
 | `api/` | The client core (`client.ts`), the refusal wording (`refusalWording.ts`) and one file per resource group with one typed function per endpoint, named like the files of `packages/shared/src/api/` |
 | `reads/` | `sharedReads.ts`: the reads made once for the whole app |

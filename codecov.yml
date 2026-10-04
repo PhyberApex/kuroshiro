@@ -17,7 +17,7 @@ flag_management:
         - packages/api/
     - name: ui
       paths:
-        - packages/ui-next/
+        - packages/ui/
 
 comment:
   layout: "reach,diff,flags,tree"

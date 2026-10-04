@@ -27,8 +27,9 @@ export type AlertDetails = LowBatteryDetails | OfflineDetails | FetchFailingDeta
 
 // A Device-subject Alert carries deviceId/deviceName; a Data-Source-subject
 // Alert (data-source-fetch-failing) carries pluginId/pluginName/dataSourceId/
-// dataSourceName instead — never both (ADR-0025). The subject keys stay
-// optional rather than null because the old UI reads this type as it is.
+// dataSourceName instead — never both (ADR-0025). The subject keys are
+// optional rather than null, an exception to the read-model shape rules of
+// docs/agents/api-contract.md.
 export interface AlertSummary {
   id: string
   kind: AlertKind

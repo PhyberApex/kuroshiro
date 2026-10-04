@@ -14,7 +14,7 @@ from fontTools.ttLib import TTFont
 from fontTools.varLib.instancer import instantiateVariableFont
 
 ROOT = Path(__file__).resolve().parent
-SEAL_SOURCE = ROOT.parent / "packages/ui-next/src/components/sealDrawing.ts"
+SEAL_SOURCE = ROOT.parent / "packages/ui/src/components/sealDrawing.ts"
 WORDMARK = "Kuroshiro"
 WEIGHT, WIDTH = 800, 68
 FONT_SIZE = 44

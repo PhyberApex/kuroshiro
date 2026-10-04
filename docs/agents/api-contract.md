@@ -1,6 +1,6 @@
 # Admin API contract
 
-`packages/shared` is the admin API's wire contract (ADR-0033). The API answers in its types, and `packages/ui-next` types its API client and its fixture builders with the same ones. The packaging rules of ADR-0020 stand: source-only, one barrel, a `devDependency` inlined by tsup and Vite, and entities and migrations may only `import type` from it.
+`packages/shared` is the admin API's wire contract (ADR-0033). The API answers in its types, and `packages/ui` types its API client and its fixture builders with the same ones. The packaging rules of ADR-0020 stand: source-only, one barrel, a `devDependency` inlined by tsup and Vite, and entities and migrations may only `import type` from it.
 
 ## Where the types live
 
