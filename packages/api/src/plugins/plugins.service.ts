@@ -5,6 +5,7 @@ import type { PluginDataSourceDto } from './dto/plugin-data-source.dto.js'
 import type { PluginFieldDto } from './dto/plugin-field.dto.js'
 import type { PluginTemplateDto } from './dto/plugin-template.dto.js'
 import type { UpdateDataSourceDto, UpdatePluginDto, UpdateTemplateDto } from './dto/update-plugin.dto.js'
+import type { WholePluginDto } from './dto/whole-plugin.dto.js'
 import type { PluginKindFields } from './plugin-kind-fields.js'
 import type { PluginWithFieldValues } from './services/plugin-field-values.service.js'
 import { BadRequestException, HttpStatus, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common'
@@ -22,9 +23,11 @@ import { Plugin } from './entities/plugin.entity.js'
 import { dataSourceModeViolation } from './plugin-data-source-mode.js'
 import { pluginKindFieldViolation } from './plugin-kind-fields.js'
 import { toPluginPlaces } from './plugin.mapper.js'
+import { PluginAssignmentsService } from './services/plugin-assignments.service.js'
 import { PluginFieldValuesService } from './services/plugin-field-values.service.js'
 import { PluginRenderCacheService } from './services/plugin-render-cache.service.js'
 import { PluginSchedulerService } from './services/plugin-scheduler.service.js'
+import { STARTER_TEMPLATE } from './starter-template.js'
 
 // A `literal` Data Source is never fetched, so one switched to it starts over (ADR-0025).
 const NO_FETCH_OUTCOME = { fetchFailureStreak: 0, lastFetchAttemptAt: null, lastFetchSucceededAt: null, lastFetchError: null }
@@ -51,6 +54,7 @@ export class PluginsService implements OnModuleInit {
     private readonly scheduler: PluginSchedulerService,
     private readonly renderCache: PluginRenderCacheService,
     private readonly fieldValues: PluginFieldValuesService,
+    private readonly assignments: PluginAssignmentsService,
   ) {}
 
   async onModuleInit() {
@@ -90,8 +94,46 @@ export class PluginsService implements OnModuleInit {
     return withValues
   }
 
+  /** The same service reading and writing inside the transaction `manager` runs. */
+  private within(manager: EntityManager): PluginsService {
+    return new PluginsService(
+      manager.getRepository(Plugin),
+      manager.getRepository(Screen),
+      manager.getRepository(PluginDataSource),
+      manager.getRepository(PluginTemplate),
+      manager.getRepository(PluginField),
+      this.scheduler,
+      this.renderCache,
+      this.fieldValues.within(manager),
+      this.assignments.within(manager),
+    )
+  }
+
+  /**
+   * Builds a Plugin from a name and a Plugin Kind, with the starter Template, and answers its id.
+   * With `deviceId` it joins the end of that Device's Order. All of it happens or none of it.
+   */
+  async build({ deviceId, ...plugin }: CreatePluginDto): Promise<string> {
+    const built = await this.pluginRepository.manager.transaction(async (manager) => {
+      const transaction = this.within(manager)
+      const created = await transaction.createUnscheduled({ ...plugin, templates: [{ layout: 'full', liquidMarkup: STARTER_TEMPLATE }] })
+      if (deviceId)
+        await transaction.assignments.assign(created.id, deviceId)
+      return created
+    })
+    this.schedule(built, `Scheduled new plugin: ${built.name}`)
+    return built.id
+  }
+
   /** `snapshotTakenAt` says when the Recipe Snapshot being saved was taken, for one taken before this call. */
-  async create(pluginData: CreatePluginDto, { snapshotTakenAt }: { snapshotTakenAt?: Date | null } = {}): Promise<PluginWithFieldValues> {
+  async create(pluginData: WholePluginDto, { snapshotTakenAt }: { snapshotTakenAt?: Date | null } = {}): Promise<PluginWithFieldValues> {
+    const created = await this.createUnscheduled(pluginData, snapshotTakenAt)
+    this.schedule(created, `Scheduled new plugin: ${created.name}`)
+
+    return this.withFieldValues(created)
+  }
+
+  private async createUnscheduled(pluginData: WholePluginDto, snapshotTakenAt?: Date | null): Promise<Plugin> {
     const { dataSources, templates, fields, fieldValues, ...basicFields } = pluginData
 
     this.logger.debug(`Creating plugin with data: ${JSON.stringify({ dataSources, templates, fields, basicFields })}`)
@@ -119,9 +161,8 @@ export class PluginsService implements OnModuleInit {
 
     const created = await this.reloadPlugin(savedPlugin.id)
     await this.fieldValues.write(created, fieldValues)
-    this.schedule(created, `Scheduled new plugin: ${created.name}`)
 
-    return this.withFieldValues(created)
+    return created
   }
 
   async duplicate(id: string): Promise<PluginWithFieldValues> {
@@ -133,7 +174,7 @@ export class PluginsService implements OnModuleInit {
     )
   }
 
-  private buildDuplicateDto(source: Plugin): CreatePluginDto {
+  private buildDuplicateDto(source: Plugin): WholePluginDto {
     return {
       name: `${source.name} (copy)`,
       description: source.description ?? undefined,
@@ -178,7 +219,7 @@ export class PluginsService implements OnModuleInit {
     }
   }
 
-  private buildPluginToSave(basicFields: Omit<CreatePluginDto, 'dataSources' | 'templates' | 'fields'>, kind: PluginKind, snapshotTakenAt: Date) {
+  private buildPluginToSave(basicFields: Omit<WholePluginDto, 'dataSources' | 'templates' | 'fields'>, kind: PluginKind, snapshotTakenAt: Date) {
     return {
       name: basicFields.name,
       description: basicFields.description,

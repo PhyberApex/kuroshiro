@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { isUUID } from 'class-validator'
-import { Repository } from 'typeorm'
+import { EntityManager, Repository } from 'typeorm'
 import { Device } from '../../devices/devices.entity.js'
 import { ApiException } from '../../errors/api.exception.js'
 import { closeGapInOrder, joinEndOfOrder } from '../../screens/screen-order.js'
@@ -19,6 +19,11 @@ export class PluginAssignmentsService {
     @InjectRepository(DevicePlugin)
     private readonly devicePluginRepository: Repository<DevicePlugin>,
   ) {}
+
+  /** The same service reading and writing inside the transaction `manager` runs. */
+  within(manager: EntityManager): PluginAssignmentsService {
+    return new PluginAssignmentsService(manager.getRepository(Plugin), manager.getRepository(Device), manager.getRepository(DevicePlugin))
+  }
 
   /** Puts the Plugin on the Device as a Plugin Screen at the end of its Order and answers that Screen's id. */
   async assign(pluginId: string, deviceId: string): Promise<string> {

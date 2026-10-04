@@ -4,6 +4,7 @@ import type { PluginDataSource } from '../entities/plugin-data-source.entity.js'
 import type { PluginField } from '../entities/plugin-field.entity.js'
 import type { PluginTemplate } from '../entities/plugin-template.entity.js'
 import type { Plugin } from '../entities/plugin.entity.js'
+import type { PluginAssignmentsService } from '../services/plugin-assignments.service.js'
 import type { PluginFieldValuesService } from '../services/plugin-field-values.service.js'
 import type { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
 import type { PluginSchedulerService } from '../services/plugin-scheduler.service.js'
@@ -49,6 +50,7 @@ describe('pluginsService', () => {
       asService<PluginSchedulerService>(mockScheduler),
       asService<PluginRenderCacheService>(mockRenderCache),
       asService<PluginFieldValuesService>(mockFieldValues),
+      asService<PluginAssignmentsService>({}),
     )
   })
 

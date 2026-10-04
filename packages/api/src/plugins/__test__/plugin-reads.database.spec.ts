@@ -76,6 +76,7 @@ describe('the Plugin reads, GET /api/plugins and GET /api/plugins/:id, against a
     const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
     refresh = new PluginRefreshService(renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
     scheduler = new PluginSchedulerService(refresh)
+    assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
     plugins = new PluginsService(
       database.getRepository(Plugin),
       database.getRepository(Screen),
@@ -85,8 +86,8 @@ describe('the Plugin reads, GET /api/plugins and GET /api/plugins/:id, against a
       scheduler,
       renderCache,
       fieldValues,
+      assignments,
     )
-    assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
     const reads = new PluginReadsService(database.getRepository(Plugin), database.getRepository(Screen), database.getRepository(Alert), fieldValues, config)
 
     http = await createHttpTestApp({

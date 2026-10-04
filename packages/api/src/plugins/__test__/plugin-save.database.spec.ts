@@ -69,6 +69,7 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
     const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
     const refresh = new PluginRefreshService(renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
     scheduler = new PluginSchedulerService(refresh)
+    assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
     plugins = new PluginsService(
       database.getRepository(Plugin),
       database.getRepository(Screen),
@@ -78,8 +79,8 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
       scheduler,
       renderCache,
       fieldValues,
+      assignments,
     )
-    assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
 
     http = await createHttpTestApp({
       controllers: [PluginsController],

@@ -84,6 +84,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
     const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
     const refresh = new PluginRefreshService(renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
     scheduler = new PluginSchedulerService(refresh)
+    assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
     plugins = new PluginsService(
       database.getRepository(Plugin),
       database.getRepository(Screen),
@@ -93,8 +94,8 @@ describe('what a Plugin renders from, and with which Template, against a real da
       scheduler,
       renderCache,
       fieldValues,
+      assignments,
     )
-    assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
     webhookIngest = new WebhookIngestService(database.getRepository(Plugin), refresh)
 
     deviceSensors = new DeviceSensorsService(database.getRepository(DeviceSensor))
