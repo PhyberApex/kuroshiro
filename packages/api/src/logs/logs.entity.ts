@@ -1,3 +1,4 @@
+import type { LogLevel } from 'kuroshiro-shared'
 import type { Relation } from 'typeorm'
 import type { Device } from '../devices/devices.entity.js'
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
@@ -9,6 +10,12 @@ export class LogEntry {
 
   @Column({ type: 'text' })
   entry: string
+
+  @Column({ type: 'text' })
+  level: LogLevel
+
+  @Column({ type: 'text' })
+  message: string
 
   @Column({ type: 'timestamptz' })
   date: Date

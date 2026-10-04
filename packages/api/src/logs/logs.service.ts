@@ -5,6 +5,7 @@ import { Repository } from 'typeorm'
 import { Device } from '../devices/devices.entity.js'
 import { CreateLogDto } from './dto/create-log.dto.js'
 import { LogEntry } from './logs.entity.js'
+import { parseLogEntry } from './parse-log-entry.js'
 
 const MIN_PLAUSIBLE_UNIX_SECONDS = Date.UTC(2020, 0, 1) / 1000
 const MAX_FUTURE_SKEW_SECONDS = 24 * 60 * 60
@@ -57,23 +58,16 @@ export class LogsService {
       }
       else {
         this.logger.debug(`Writing log entry with id: ${logId} for device ${device.id}.`)
+        const { level, message } = parseLogEntry(entry)
         await this.logsRepository.save({
           entry: JSON.stringify(entry),
+          level,
+          message,
           date: resolveLogDate(entry),
           device,
           logId,
         })
       }
     }
-  }
-
-  async getByDevice(deviceId: string): Promise<LogEntry[]> {
-    this.logger.log(`Fetching logs for device ${deviceId}`)
-    return this.logsRepository.find({ where: { device: { id: deviceId } }, order: { date: 'ASC' } })
-  }
-
-  async clearLogsByDeviceId(deviceId: string) {
-    this.logger.log(`Clearing logs for device ${deviceId}`)
-    await this.logsRepository.delete({ device: { id: deviceId } })
   }
 }
