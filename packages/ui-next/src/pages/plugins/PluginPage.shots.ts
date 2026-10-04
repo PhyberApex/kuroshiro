@@ -34,11 +34,13 @@ describe('the Plugin page', () => {
 
     await expect.element(screen.getByRole('link', { name: '1 Alert firing' })).toBeVisible()
     await expect.element(screen.getByRole('link', { name: 'Kitchen', exact: true })).toBeVisible()
-    await screen.getByRole('button', { name: 'Duplicate, export or delete Weather' }).click()
-    await screen.getByRole('button', { name: 'Name and description' }).click()
-    await screen.getByRole('textbox', { name: 'Name' }).fill('Weather at home')
+    // Opened by its fragment and left by `blur()`: the shot files share one pointer, and a click here would leave it hovering in another file's shot.
+    await screen.router.push({ hash: '#name' })
+    const name = screen.getByRole('textbox', { name: 'Name' })
+    await name.fill('Weather at home')
     await expect.element(screen.getByRole('region', { name: 'Unsaved changes' })).toBeVisible()
-    await screen.getByRole('heading', { name: 'Weather', level: 1 }).click()
+    ;(name.element() as HTMLElement).blur()
+    window.scrollTo(0, 0)
     await expectPageScreenshots('plugin-page')
   })
 })
