@@ -1,11 +1,16 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends Fact">
 import type { Fact } from './fact'
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import LoadingMark from './LoadingMark.vue'
 
 const props = defineProps<{
-  facts: Fact[]
+  facts: T[]
+}>()
+
+defineSlots<{
+  /** In place of a fact's value as text, for one that is more than words: a time with its tooltip. */
+  value?: (props: { fact: T }) => unknown
 }>()
 
 const said = computed(() => props.facts.filter(fact => fact.value?.trim()))
@@ -20,11 +25,13 @@ const said = computed(() => props.facts.filter(fact => fact.value?.trim()))
       <dd class="value">
         <LoadingMark v-if="fact.pending" decorative />
         <RouterLink v-if="fact.to" class="link" :to="fact.to">
-          {{ fact.value }}
+          <slot name="value" :fact="fact">
+            {{ fact.value }}
+          </slot>
         </RouterLink>
-        <template v-else>
+        <slot v-else name="value" :fact="fact">
           {{ fact.value }}
-        </template>
+        </slot>
       </dd>
     </div>
   </dl>

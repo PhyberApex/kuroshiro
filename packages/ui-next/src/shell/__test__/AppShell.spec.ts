@@ -328,8 +328,13 @@ describe('the shell on a phone', () => {
 describe('the shell\'s reads', () => {
   it('asks for the firing Alerts again when the window regains the focus', async () => {
     fakeShellReads()
+    const answered: string[] = []
+    api.events.on('response:mocked', ({ request }) => answered.push(new URL(request.url).pathname))
     const screen = await mountApp({ at: '/plugins' })
     await expect.element(bar(screen).getByRole('link', { name: 'Kitchen' })).toBeVisible()
+    // A read that is still under way is not asked again, so the first answers are waited for.
+    await expect.poll(() => answered).toEqual(expect.arrayContaining(['/api/alerts', '/api/devices']))
+    api.events.removeAllListeners()
 
     fakeShellReads({ alerts: buildAlertsList({ active: [buildAlert()] }), devices: devicesNamed('Pantry') })
     window.dispatchEvent(new Event('focus'))
