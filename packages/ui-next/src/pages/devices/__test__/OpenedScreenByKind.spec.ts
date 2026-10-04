@@ -11,6 +11,7 @@ import { buildInstanceFacts } from '@/testing/fixtures/instance'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import { elementsInSealColour } from '@/testing/sealColour'
 import { resetViewport, resizeTo } from '@/testing/viewport'
+import { holdTabVisible } from '@/testing/visibility'
 import { fakeKitchen, imagePath, kitchenScreen, lines, openedRow, RENDERED_AT, SCREENS_OF_EVERY_KIND, words } from './screensViewHarness'
 
 afterEach(() => resetViewport())
@@ -337,6 +338,7 @@ describe('a Mashup Screen', () => {
   })
 
   it('shows the rendering plate after a Slot Change until the Mashup is rendered again', async () => {
+    holdTabVisible()
     const faked = fakeKitchen()
     const { screen, source } = await openedWeekend()
     await expect.element(screen.getByRole('img', { name: 'Weekend board, as rendered for Kitchen', exact: true })).toBeVisible()
