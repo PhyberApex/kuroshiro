@@ -32,7 +32,7 @@ function add() {
   <form class="add-html-screen" novalidate @submit.prevent="add">
     <ScreenNameField v-model="draft.name" :error="addition.problems.name" />
     <Field v-slot="{ control }" class="markup" label="HTML" :error="addition.problems.html">
-      <CodeEditor v-model="draft.html" v-bind="control" aria-label="HTML" mode="html" />
+      <CodeEditor v-model="draft.html" v-bind="control" aria-label="HTML" mode="html" @save="add" />
     </Field>
     <HtmlPreview :device="device" :html="draft.html" name="Preview of the new Screen" />
     <AddScreenFoot :running="addition.running" :changed="changed" :failure="addition.failure" />

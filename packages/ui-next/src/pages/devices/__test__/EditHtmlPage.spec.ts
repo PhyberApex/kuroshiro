@@ -1,52 +1,37 @@
-import { delay, http, HttpResponse } from 'msw'
+import { delay, http } from 'msw'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { expectAccessible } from '@/testing/a11y'
 import { api, apiErrorResponse, apiUrl } from '@/testing/api/server'
 import { mountApp } from '@/testing/app'
 import { arrived } from '@/testing/arrivals'
-import { buildDeviceModel, buildDeviceModelList, buildPalette } from '@/testing/fixtures/device-models'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import { resetViewport, resizeTo } from '@/testing/viewport'
+import { codeIn, fakeHtmlPreviewLibrary, previewed, typeAtEnd } from './htmlScreenHarness'
 import { fakeKitchen, kitchenScreen, openedRow, SCREENS_OF_EVERY_KIND } from './screensViewHarness'
 
 type Mounted = Awaited<ReturnType<typeof mountApp>>
 
 const FRIDGE_NOTE = kitchenScreen({ id: 'fridge', name: 'Fridge note', order: 6, kind: 'html', plugin: null, html: '<p>Back at six.</p>\n<p>{{ soup }}</p>' })
 
-function fakeModels() {
-  api.use(
-    http.get(apiUrl('device-models'), () => HttpResponse.json(buildDeviceModelList({ models: [buildDeviceModel({ cssClasses: ['screen--og_plus', 'screen--md'] })] }))),
-    http.get(apiUrl('device-models/palettes'), () => HttpResponse.json([buildPalette()])),
-  )
-}
-
 function fakeFridgeNote() {
   const faked = fakeKitchen({ screens: [...SCREENS_OF_EVERY_KIND, FRIDGE_NOTE] })
-  fakeModels()
+  fakeHtmlPreviewLibrary()
   return faked
 }
 
 const editor = (screen: Mounted) => screen.getByRole('textbox', { name: 'HTML of Fridge note', exact: true })
 
-const code = (screen: Mounted) => [...editor(screen).element().querySelectorAll('.cm-line')].map(line => line.textContent).join('\n')
+const code = (screen: Mounted) => codeIn(editor(screen))
 
-/** Types at the end of the markup. The editor closes an HTML tag itself, so a test types words. */
-async function type(screen: Mounted, keys: string) {
-  await editor(screen).click()
-  await userEvent.keyboard(`{Control>}{End}{/Control}${keys}`)
-}
-
-/** The document the preview plate drew last. */
-const previewed = () => [...document.querySelectorAll('iframe')].at(-1)?.srcdoc ?? ''
+const type = (screen: Mounted, keys: string) => typeAtEnd(editor(screen), keys)
 
 const saveHtml = (screen: Mounted) => screen.getByRole('button', { name: 'Save HTML' })
 
 const path = (screen: Mounted) => screen.router.currentRoute.value.fullPath
 
-async function mountEditHtml(screenId = 'fridge') {
-  const screen = await mountApp({ at: `/devices/kitchen/screens/${screenId}/html` })
-  return screen
+function mountEditHtml(screenId = 'fridge') {
+  return mountApp({ at: `/devices/kitchen/screens/${screenId}/html` })
 }
 
 async function mountFridgeNote() {
@@ -178,18 +163,6 @@ describe('edit HTML', () => {
 
     await expect.poll(() => path(screen)).toBe('/devices/kitchen?screen=fridge')
     expect(faked.writes).toEqual([{ method: 'PATCH', path: 'screens/fridge', body: { html: '<p>Back at six.</p>\n<p>{{ soup }}</p> Soup' } }])
-  })
-
-  it('sends no empty markup', async () => {
-    const faked = fakeFridgeNote()
-    const screen = await mountFridgeNote()
-
-    await editor(screen).click()
-    await userEvent.keyboard('{Control>}a{/Control}{Backspace}')
-    await saveHtml(screen).click()
-
-    await expect.element(screen.getByText('Not saved. Write the HTML this Screen is rendered from.')).toBeVisible()
-    expect(faked.writes).toEqual([])
   })
 
   it.each([['a File Screen', 'photo'], ['a Screen that does not exist', 'gone']])('shows the empty state and no editor for %s', async (_, screenId) => {

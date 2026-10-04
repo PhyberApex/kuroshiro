@@ -22,7 +22,6 @@ defineProps<{
 }>()
 
 defineEmits<{
-  /** "Try again" was pressed. */
   retry: []
 }>()
 

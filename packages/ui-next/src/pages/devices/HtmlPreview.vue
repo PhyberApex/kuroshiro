@@ -4,8 +4,8 @@ import { computed, onBeforeUnmount, ref, useId, watch } from 'vue'
 import { listDeviceModels, listPalettes } from '@/api/device-models'
 import Notice from '@/components/Notice.vue'
 import PreviewPlate from '@/components/PreviewPlate.vue'
+import { honestLine, targetFacts } from '@/pages/plugins/pluginTemplateWording'
 import { useLoad } from '@/patterns/useLoad'
-import { honestLine, targetFacts } from '../plugins/pluginTemplateWording'
 import { htmlScreenDocument, shellTargetOf } from './htmlPreview'
 import { rendersFor } from './screenSourceWording'
 
@@ -36,6 +36,7 @@ const sizing = useLoad(async () => {
 const target = computed(() => sizing.data && shellTargetOf(props.device, sizing.data.models, sizing.data.palettes))
 const panel = computed(() => target.value?.model ?? props.device.deviceModel ?? USUAL_PANEL)
 const madeFor = computed(() => rendersFor(props.device))
+const worded = computed(() => target.value && { ...target.value, device: props.device })
 
 const drawn = ref(props.html)
 let pause: ReturnType<typeof setTimeout> | undefined
@@ -69,12 +70,12 @@ onBeforeUnmount(() => clearTimeout(pause))
     />
     <template v-if="facts">
       <p :id="headingId" class="facts">
-        Preview for {{ device.name }}<template v-if="target">
-          · <span class="mono">{{ targetFacts({ ...target, device }) }}</span>
+        Preview for {{ device.name }}<template v-if="worded">
+          · <span class="mono">{{ targetFacts(worded) }}</span>
         </template>
       </p>
-      <p v-if="target" class="honest">
-        {{ honestLine({ ...target, device }, 'full') }}
+      <p v-if="worded" class="honest">
+        {{ honestLine(worded, 'full') }}
       </p>
     </template>
   </div>

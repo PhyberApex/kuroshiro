@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { holdPreviewLibrary } from '@/pages/plugins/__test__/pluginPageHarness'
 import { mountApp } from '@/testing/app'
 import { arrived } from '@/testing/arrivals'
 import { expectPageScreenshots } from '@/testing/screenshots'
-import { holdPreviewLibrary } from '../plugins/__test__/pluginPageHarness'
 import { fakeKitchen, kitchenScreen, SCREENS_OF_EVERY_KIND } from './__test__/screensViewHarness'
 
 const FRIDGE_NOTE = kitchenScreen({

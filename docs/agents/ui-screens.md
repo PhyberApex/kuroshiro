@@ -120,11 +120,13 @@ const { device, listed, name, path } = useDeviceFrame() // from '@/pages/devices
 - The shortcut to a new Plugin is `addPluginPath(way, deviceId)`, which carries the Device to Add a Plugin.
 - The HTML kind's markup is a `CodeEditor` in HTML mode inside its `Field`, named "HTML" by `aria-label`.
 - The preview's frame loads TRMNL's framework from `usetrmnl.com`, so a spec asserts the frame's `srcdoc` and a shot of the HTML kind holds the plate in its rendering state (`holdPreviewLibrary()` of `pages/plugins/__test__/pluginPageHarness.ts`).
+- The page's two columns are `ChoiceBesideForm` (`#choice` and the default slot) and a form's foot is `AddFormFoot`, both in `@/patterns/` and shared with Add a Plugin. `BackLink` is the link back of a `TitleLine`, for a page under a frame that has the title line.
 
 ### Edit HTML
 
-`/devices/:deviceId/screens/:screenId/html` is `EditHtmlPage.vue`: the back link, the Device joined with its Screens (`listScreens`; the admin API has no read of one Screen), and "No HTML Screen here" for an id that is no HTML Screen of the Device. `EditHtmlForm.vue` is the form: the heading, `EditorBench` with the `CodeEditor` (`mode="html"`, named "HTML of {Screen}", Ctrl or Cmd S saves) and `HtmlPreview` with `facts`, and `AddFormFoot` with "Save HTML", `retryable` for "Try again" beside a refused save, and the guard. A save sends `{ html }` alone through `updateScreen` and opens the Screens view at `?screen={id}`, as "Cancel" does.
-- The page's two columns are `ChoiceBesideForm` (`#choice` and the default slot) and a form's foot is `AddFormFoot`, both in `@/patterns/` and shared with Add a Plugin. `BackLink` is the link back of a `TitleLine`, for a page under a frame that has the title line.
+`/devices/:deviceId/screens/:screenId/html` is `EditHtmlPage.vue`: the back link, the Device joined with its Screens (`listScreens`; the admin API has no read of one Screen), and "No HTML Screen here" for an id that is no HTML Screen of the Device. `EditHtmlForm.vue` is the form: the heading, `EditorBench` with the `CodeEditor` (`mode="html"`, named "HTML of {Screen}", Ctrl or Cmd S saves) and `HtmlPreview` with `facts`, and `AddFormFoot` with "Save HTML", `retryable` for "Try again" beside a refused save, and the guard. A save sends `{ html }` alone through `updateScreen` and opens the Screens view at `?screen={id}`, as "Cancel" does. HTML is never invalid in the browser: an empty save is the server's to refuse.
+
+`__test__/htmlScreenHarness.ts` is what the specs of both HTML forms share: `fakeHtmlPreviewLibrary()`, `previewed()` (the newest frame's `srcdoc`), `codeIn(editor)` and `typeAtEnd(editor, keys)`.
 
 ### The Logs page
 

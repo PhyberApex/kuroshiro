@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { holdPreviewLibrary } from '@/pages/plugins/__test__/pluginPageHarness'
 import { arrived } from '@/testing/arrivals'
 import { buildPluginSummary } from '@/testing/fixtures/plugins'
 import { expectPageScreenshots } from '@/testing/screenshots'
-import { holdPreviewLibrary } from '../plugins/__test__/pluginPageHarness'
 import { mountAddScreen } from './__test__/addScreenHarness'
 import { fakeKitchen } from './__test__/screensViewHarness'
 

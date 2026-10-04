@@ -36,10 +36,6 @@ async function save() {
   if (saving.value)
     return
   failure.value = undefined
-  if (!html.value.trim()) {
-    failure.value = notSavedSentence('Write the HTML this Screen is rendered from.')
-    return
-  }
   saving.value = true
   try {
     const answered = await updateScreen(props.screen.id, { html: html.value })
