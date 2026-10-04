@@ -46,6 +46,15 @@ const chosen = ref<File | null>(new File([new Uint8Array(640 * 1024)], 'kitchen-
         />
       </div>
     </Specimen>
+    <Specimen caption="worded by its place" wide>
+      <div class="sized">
+        <FileDrop
+          :accept="['.bin']"
+          :max-bytes="TEN_MEGABYTES"
+          :wording="{ prompt: 'Drop a .bin here, up to 10 MB.' }"
+        />
+      </div>
+    </Specimen>
     <Specimen caption="a file is chosen" wide>
       <div class="sized">
         <FileDrop

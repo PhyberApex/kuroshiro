@@ -19,6 +19,8 @@ defineSlots<{
 const MISSING_FILE = 'Its file is missing, so it cannot be pushed. Delete it and upload it again.'
 
 const headed = computed(() => headedFor(props.firmware))
+const goesOut = computed(() => headed.value.goesOutTo.length > 0)
+const runs = computed(() => headed.value.runningOn.length > 0)
 const arrived = computed(() => props.firmware.uploadedAt
   ? { how: 'Uploaded', at: props.firmware.uploadedAt }
   : props.firmware.syncedAt ? { how: 'Synced', at: props.firmware.syncedAt } : undefined)
@@ -27,12 +29,12 @@ const arrived = computed(() => props.firmware.uploadedAt
 <template>
   <LibraryRow :name="firmware.version" mono :problem="firmware.filePresent ? undefined : MISSING_FILE">
     <p>{{ whatItIs(firmware, models) }}</p>
-    <p v-if="headed.goesOutTo.length > 0 || headed.runningOn.length > 0">
-      <b v-if="headed.goesOutTo.length > 0" class="goes-out">Goes out to <DeviceNames :devices="headed.goesOutTo" /> at the next poll</b>
-      <template v-if="headed.goesOutTo.length > 0 && headed.runningOn.length > 0">
+    <p v-if="goesOut || runs">
+      <b v-if="goesOut" class="goes-out">Goes out to <DeviceNames :devices="headed.goesOutTo" /> at the next poll</b>
+      <template v-if="goesOut && runs">
         {{ ' · ' }}
       </template>
-      <span v-if="headed.runningOn.length > 0">Running on <DeviceNames :devices="headed.runningOn" /></span>
+      <span v-if="runs">Running on <DeviceNames :devices="headed.runningOn" /></span>
     </p>
     <template #end>
       <span v-if="arrived" class="arrived">{{ arrived.how }} <RelativeTime :at="arrived.at" /></span>

@@ -26,8 +26,11 @@ const page = useLoad(async () => {
 const switchedTo = ref<boolean>()
 const autoUpdateOn = computed(() => switchedTo.value ?? page.data?.autoUpdateOn ?? false)
 
-const sync = useTrmnlSync(syncFirmware, page.reload)
-const outcome = computed(() => sync.result && syncOutcome(sync.result, autoUpdateOn.value))
+/** Worded by the switch as it stood when the sync was asked for, which is what decided whether a Device was given the Firmware. */
+const sync = useTrmnlSync(async () => {
+  const on = autoUpdateOn.value
+  return syncOutcome(await syncFirmware(), on)
+}, page.reload)
 </script>
 
 <template>
@@ -38,7 +41,7 @@ const outcome = computed(() => sync.result && syncOutcome(sync.result, autoUpdat
           Upload Firmware
         </RouterLink>
       </Button>
-      <Button variant="primary" :disabled="sync.running" @click="sync.sync">
+      <Button variant="primary" :disabled="sync.running || !page.data" @click="sync.sync">
         Sync from TRMNL
       </Button>
     </template>
@@ -55,7 +58,7 @@ const outcome = computed(() => sync.result && syncOutcome(sync.result, autoUpdat
         <TrmnlSyncOutcome
           :running="sync.running"
           asking="Asking TRMNL for the newest official Firmware"
-          :outcome="outcome"
+          :outcome="sync.result"
           :failed="sync.failed"
           :reason="sync.reason"
           @retry="sync.sync"
@@ -72,7 +75,10 @@ const outcome = computed(() => sync.result && syncOutcome(sync.result, autoUpdat
 
 <style scoped>
 @layer components {
+  /* A version is short and the date at a row's right is long: the room goes to what the Firmware is. The skeleton keeps the same column. */
   .body {
+    --library-name-width: 7rem;
+
     margin-top: var(--space-3);
   }
 

@@ -27,7 +27,7 @@ const earlier = computed(() => props.library.firmware.filter(firmware => firmwar
     <template v-if="library.lastSync" #aside>
       <span class="checked">Checked TRMNL <RelativeTime :at="library.lastSync.ranAt" /></span>
     </template>
-    <ul class="rows">
+    <ul>
       <FirmwareRow v-for="firmware in available" :key="firmware.id" :firmware="firmware" :models="models">
         <template v-if="firmware.kind === 'custom'" #actions>
           <FirmwareDeletion :firmware="firmware" @deleted="$emit('deleted')" />
@@ -40,7 +40,7 @@ const earlier = computed(() => props.library.firmware.filter(firmware => firmwar
     <p class="replaced">
       {{ earlierNote(newestOfficialVersion(library.firmware)) }}
     </p>
-    <ul class="rows earlier-rows">
+    <ul class="earlier-rows">
       <FirmwareRow v-for="firmware in earlier" :key="firmware.id" :firmware="firmware" :models="models" />
     </ul>
   </TuckedSection>
@@ -56,11 +56,6 @@ const earlier = computed(() => props.library.firmware.filter(firmware => firmwar
   .replaced,
   .last {
     color: var(--color-ink-soft);
-  }
-
-  /* A version is short, and the date at the right is long: the room goes to what the Firmware is. */
-  .rows {
-    --library-name-width: 7rem;
   }
 
   .checked {

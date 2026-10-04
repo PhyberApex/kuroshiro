@@ -227,15 +227,38 @@ describe('the Firmware page', () => {
       await expect.poll(() => syncLine(screen)).toBe('Synced 1.8.0. No Device it fits is free to take it.')
     })
 
+    it('keeps the outcome as it was worded when the switch is flipped afterwards', async () => {
+      const faked = fakeFirmware()
+      faked.syncAnswer = NEW
+      const screen = await mountLoadedFirmware()
+
+      await syncButton(screen).click()
+      await expect.poll(() => syncLine(screen)).toBe('Synced 1.8.0. No Device is given it until you choose it as that Device\'s target.')
+      await screen.getByRole('switch', { name: 'Firmware Auto-Update' }).click()
+      await expect.poll(() => faked.settingsWrites).toHaveLength(1)
+
+      expect(syncLine(screen)).toBe('Synced 1.8.0. No Device is given it until you choose it as that Device\'s target.')
+    })
+
+    it('cannot be asked for before the page has loaded', async () => {
+      fakeFirmware()
+      api.use(http.get(apiUrl('firmware'), () => new Promise<never>(() => {})))
+      const screen = await mountFirmware()
+
+      await expect.element(syncButton(screen)).toBeDisabled()
+    })
+
     it('says with the server\'s reason that it could not sync, and syncs on "Try again"', async () => {
       const faked = fakeFirmware()
       faked.syncAnswer = apiErrorResponse({ statusCode: 502, code: 'upstream-unreachable', details: { reason: 'usetrmnl.com did not answer within 15 seconds.' } })
       const screen = await mountLoadedFirmware()
+      faked.library = { ...faked.library, lastSync: { ranAt: NOW, ok: false, error: 'usetrmnl.com did not answer within 15 seconds.' } }
 
       await syncButton(screen).click()
 
       const notice = screen.getByRole('alert')
       await expect.element(notice).toHaveTextContent('Could not sync from TRMNL. usetrmnl.com did not answer within 15 seconds.')
+      await expect.element(screen.getByText('Checked TRMNL just now')).toBeVisible()
       expect(syncLine(screen)).toBe('')
       await expect.element(syncButton(screen)).toBeEnabled()
 

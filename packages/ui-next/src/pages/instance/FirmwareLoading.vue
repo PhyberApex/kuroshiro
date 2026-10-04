@@ -7,8 +7,9 @@ const ROW_WIDTHS = ['62%', '48%', '56%']
 <template>
   <div class="skeleton" aria-hidden="true">
     <div v-for="width in ROW_WIDTHS" :key="width" class="skeleton-row">
-      <WashBar width="60%" />
+      <WashBar width="70%" />
       <WashBar :width="width" />
+      <WashBar class="end" width="100%" />
     </div>
   </div>
 </template>
@@ -17,7 +18,7 @@ const ROW_WIDTHS = ['62%', '48%', '56%']
 @layer components {
   .skeleton-row {
     display: grid;
-    grid-template-columns: 9.5rem minmax(0, 1fr);
+    grid-template-columns: var(--library-name-width) minmax(0, 1fr) 7rem;
     align-items: center;
     gap: var(--space-4);
     min-height: 3.25rem;
@@ -29,6 +30,10 @@ const ROW_WIDTHS = ['62%', '48%', '56%']
       grid-template-columns: minmax(0, 1fr);
       align-content: center;
       gap: var(--space-2);
+    }
+
+    .skeleton-row .end {
+      display: none;
     }
   }
 }

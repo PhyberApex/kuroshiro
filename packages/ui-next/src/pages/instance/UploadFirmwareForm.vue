@@ -62,7 +62,7 @@ async function upload() {
     await router.push(FIRMWARE_PATH)
   }
   catch (error) {
-    problems.value = uploadRefusedAt(error, draft.version.trim())
+    problems.value = uploadRefusedAt(error, draft)
     if (Object.keys(problems.value).length === 0)
       failure.value = `Not uploaded. ${failureReason(error) ?? 'Something went wrong.'}`
   }

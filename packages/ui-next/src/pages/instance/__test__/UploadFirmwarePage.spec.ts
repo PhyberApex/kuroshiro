@@ -179,7 +179,7 @@ describe('upload Firmware', () => {
       await fillIn(screen)
       await upload(screen).click()
 
-      await expect.element(screen.getByText('That file is larger than the 8 MB this Instance accepts.')).toBeVisible()
+      await expect.element(screen.getByText('This file is 2 KB. A Firmware can be up to 8 MB.')).toBeVisible()
     })
 
     it('of any other kind is said beside the buttons', async () => {

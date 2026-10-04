@@ -10,10 +10,10 @@ function whyNotSynced(error: unknown) {
 
 /**
  * A sync with TRMNL an admin starts from a page: `sync()` runs it, and what came of it stays
- * until the page is left. `synced` is called with the answer of a sync that worked, to read
- * again what the sync changed.
+ * until the page is left. `reread` is called after a sync, whether it worked or not, to read
+ * again what it changed: the server records a failed sync too.
  */
-export function useTrmnlSync<Result>(run: () => Promise<Result>, synced: (result: Result) => unknown = () => {}) {
+export function useTrmnlSync<Result>(run: () => Promise<Result>, reread: () => unknown) {
   const running = ref(false)
   const result = shallowRef<Result>()
   const failed = ref(false)
@@ -27,12 +27,13 @@ export function useTrmnlSync<Result>(run: () => Promise<Result>, synced: (result
     result.value = undefined
     try {
       const answer = await run()
-      await synced(answer)
+      await reread()
       result.value = answer
     }
     catch (error) {
       failed.value = true
       reason.value = whyNotSynced(error)
+      void reread()
     }
     finally {
       running.value = false

@@ -1,5 +1,6 @@
 import type { UploadFirmwareInput } from 'kuroshiro-shared'
 import { fieldErrorsOf, isRefusal } from '@/api/client'
+import { formatBytes } from '@/components/fileRules'
 import { listed } from '@/pages/plugins/pluginWording'
 
 /** Whether a Firmware is offered to some Device Models or to every one. */
@@ -43,14 +44,21 @@ function unknownModels(names: unknown) {
     : `This Instance does not know the Device Models ${listed(unknown)}. Untick them, or sync the Device Models from TRMNL.`
 }
 
+/** The server found the file too large: worded as the drop zone words it, with the limit the server names. */
+function tooLarge(file: File | null, limitBytes: unknown, fallback: string) {
+  return file && typeof limitBytes === 'number'
+    ? `This file is ${formatBytes(file.size)}. A Firmware can be up to ${formatBytes(limitBytes)}.`
+    : fallback
+}
+
 /** The field a refused upload is about, with the refusal worded for it. Empty for a refusal that is about no field. */
-export function uploadRefusedAt(error: unknown, version: string): UploadProblems {
+export function uploadRefusedAt(error: unknown, { file, version }: FirmwareDraft): UploadProblems {
   if (isRefusal(error, 'firmware-version-taken'))
-    return { version: `There is already a Firmware ${version}. Give this one a version that tells them apart.` }
+    return { version: `There is already a Firmware ${version.trim()}. Give this one a version that tells them apart.` }
   if (isRefusal(error, 'device-model-unknown'))
     return { fits: unknownModels(error.details.names) ?? error.message }
   if (isRefusal(error, 'upload-too-large'))
-    return { file: error.message }
+    return { file: tooLarge(file, error.details.limitBytes, error.message) }
   const { version: versionRefused } = fieldErrorsOf(error)
   return versionRefused ? { version: versionRefused } : {}
 }
