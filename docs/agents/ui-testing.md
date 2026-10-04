@@ -211,6 +211,8 @@ await expect.element(screen.getByRole('heading', { name: 'Devices' })).toBeVisib
 await expectPageScreenshots('devices')
 ```
 
+A page's shot reaches its state without a click where it can: by the address (`?screen=`, a fragment that opens a tucked section), by `fill` and by `blur()` (`PluginPage.shots.ts`). The shot files run side by side and appear to share one pointer: with clicks in the Plugin page's shot, a phone shot of another file (`ScreenRow.shots.ts`, `EditorBench.shots.ts`) came out with a hovered element and failed in CI, a different one in each run, and stopped failing once the clicks were gone.
+
 The shots hold the shell, so wait for what the shell loads as well (a Device's name in the bar) before shooting. The shell's own baselines (`src/shell/AppShell.shots.ts`) mount a stand-in page, so they do not change when a page lands.
 
 ## The real-API suite

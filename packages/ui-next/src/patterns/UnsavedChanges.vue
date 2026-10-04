@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
-import { onBeforeRouteLeave } from 'vue-router'
+import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import Confirmation from '@/components/Confirmation.vue'
 
 const props = defineProps<{
@@ -21,16 +21,42 @@ function settle(leave: boolean) {
   answer = undefined
 }
 
-onBeforeRouteLeave(() => {
-  if (!props.when)
-    return true
-  // A route change asked for while the question is open replaces the one it was asked about.
+function ask() {
+  // A question asked while one is open replaces the one it was asked about.
   settle(false)
   asking.value = true
   return new Promise<boolean>((resolve) => {
     answer = resolve
   })
-})
+}
+
+/** Held while an action the admin already chose to leave for is running, so that its navigation is not asked about again. */
+let leaving = false
+
+const mayLeave = () => !props.when || leaving || ask()
+
+onBeforeRouteLeave(mayLeave)
+// Another record of the same route (another Plugin's page) is a way out too; a query or a fragment is the same page.
+onBeforeRouteUpdate((to, from) => to.path === from.path || mayLeave())
+
+/**
+ * For an action that counts as leaving without being a route change of its own (duplicating,
+ * exporting): asks first while there are unsaved changes, and runs `action` unless the admin
+ * keeps editing.
+ */
+async function leaveFor(action: () => unknown) {
+  if (props.when && !(await ask()))
+    return
+  leaving = true
+  try {
+    await action()
+  }
+  finally {
+    leaving = false
+  }
+}
+
+defineExpose({ leaveFor })
 
 function closed(open: boolean) {
   asking.value = open
