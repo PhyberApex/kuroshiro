@@ -37,6 +37,18 @@ import TuckedSection from './TuckedSection.vue'
     </Specimen>
   </SpecimenRow>
 
+  <SpecimenRow title="With a note beside the title">
+    <Specimen caption="what is inside, said before it is opened" wide>
+      <div class="stretch">
+        <TuckedSection title="Data" note="14 names, fetched 4 min ago" heading="h3">
+          <p class="lede">
+            Every name the template can read.
+          </p>
+        </TuckedSection>
+      </div>
+    </Specimen>
+  </SpecimenRow>
+
   <SpecimenRow title="Opened by the address">
     <Specimen caption="an address ending in #gallery-plugin-fields opens it" wide>
       <div class="stretch">

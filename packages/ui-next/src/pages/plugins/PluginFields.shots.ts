@@ -8,7 +8,7 @@ import { buildInstanceSettings } from '@/testing/fixtures/instance'
 import { buildPluginDetail, buildPluginField } from '@/testing/fixtures/plugins'
 import { expectPageScreenshots } from '@/testing/screenshots'
 import { freezeTime } from '@/testing/time'
-import { holdPreviewLibrary } from './__test__/pluginPageHarness'
+import { fakePreviewData, holdPreviewLibrary } from './__test__/pluginPageHarness'
 
 const field = (keyname: string, label: string, overrides: Partial<PluginFieldRead>) => buildPluginField({ id: keyname, keyname, label, ...overrides })
 
@@ -47,6 +47,7 @@ describe('the Field Values and the Plugin Fields of a Plugin', () => {
       http.get(apiUrl('plugins/weather'), () => HttpResponse.json(weather)),
     )
     holdPreviewLibrary()
+    fakePreviewData()
     const screen = await mountApp({ at: '/plugins/weather#fields' })
 
     await expect.element(screen.getByRole('link', { name: 'Kitchen', exact: true }).first()).toBeVisible()

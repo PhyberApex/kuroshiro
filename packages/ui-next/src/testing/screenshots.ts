@@ -23,6 +23,15 @@ export async function expectScreenshot(target: Locator, name: string) {
   }
 }
 
+/**
+ * Compares what the window shows with its baseline, at the size the window has: for a view that fills the window and
+ * scrolls inside itself, which growing the viewport to the document's height would stretch.
+ */
+export async function expectWindowScreenshot(name: string) {
+  await document.fonts.ready
+  await expect.element(page.elementLocator(document.body)).toMatchScreenshot(name)
+}
+
 const VIEWPORT_NAMES = Object.keys(VIEWPORTS) as ViewportName[]
 
 /** Takes the four shots of the mounted page: phone and desktop width, each in light and dark. */

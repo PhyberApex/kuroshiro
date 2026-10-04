@@ -37,7 +37,7 @@ All in `packages/ui-next/src/testing/`. The specs in `src/testing/__test__/` are
 - **Events** come from `vitest/browser`: `await locator.click()`, `await userEvent.keyboard('{Tab}')`. They are real pointer and keyboard events, which is what Reka UI needs. Assert with `await expect.element(locator).toBeVisible()`, which retries.
 - **`expectAccessible()`** (`a11y.ts`) runs axe-core at WCAG 2.1 AA on what is mounted, in light and in dark, and fails on any violation.
 - **`expectNoHorizontalOverflow()`** (`overflow.ts`) fails if the page scrolls sideways at 375, 768 or 1280 px and names the elements that stick out.
-- **`expectPageScreenshots(name)`** and **`expectScreenshot(locator, name)`** (`screenshots.ts`), for `*.shots.ts` files only.
+- **`expectPageScreenshots(name)`**, **`expectScreenshot(locator, name)`** and **`expectWindowScreenshot(name)`** (`screenshots.ts`), for `*.shots.ts` files only. The last one shoots what the window shows at the size it has, for a view that fills the window and scrolls inside itself (the Template section's full window); scroll the page to the top first.
 
 - **`withCoarsePointer(body)`** and **`withMotionAllowed(body)`** (`media.ts`) run `body` as on a touch screen (a control is 44 px high) or with motion allowed, and put the browser back afterwards.
 - **`pressAndHold(key)`** (`keys.ts`) presses a key down, waits a tick and lets go. A Reka radio group (`SegmentedFilter`, `RadioRow`, `LayoutPicker`) chooses the radio an arrow key moved to only while the key is still down a tick later, so `userEvent.keyboard('{ArrowRight}')` moves the focus and chooses nothing.
@@ -107,7 +107,7 @@ A request to the admin API that no handler fakes fails as a network error and is
 export const buildInstanceSettings = defineBuilder<InstanceSettingsResponse>(() => ({ ...every key... }))
 ```
 
-and is called as `build<ReadModel>(overrides?)`. There are builders for the Instance facts and Instance Settings (`instance.ts`), a Device's summary, its detail, a Device Log entry and a page of them (`devices.ts`), a Device Model, a Palette and the Device Model list (`device-models.ts`), a Firmware and the Firmware list (`firmware.ts`), an Alert and the Alerts list (`alerts.ts`), a Screen and its Schedule (`screens.ts`), a Plugin's summary, its detail, a Plugin Field, a Mashup it fills a slot in and what an import answers (`plugins.ts`) and a refusal (`errors.ts`). The type always comes from `kuroshiro-shared` and every key is spelled out, so a reshaped read model fails `pnpm type-check` in its builder. A builder lands with the UI slice that first reads its endpoint. Defaults are plausible values in the vocabulary of `CONTEXT.md`, not `foo`.
+and is called as `build<ReadModel>(overrides?)`. There are builders for the Instance facts and Instance Settings (`instance.ts`), a Device's summary, its detail, a Device Log entry and a page of them (`devices.ts`), a Device Model, a Palette and the Device Model list (`device-models.ts`), a Firmware and the Firmware list (`firmware.ts`), an Alert and the Alerts list (`alerts.ts`), a Screen and its Schedule (`screens.ts`), a Plugin's summary, its detail, a Plugin Field, a Mashup it fills a slot in, what an import answers and the data of a preview (`plugins.ts`) and a refusal (`errors.ts`). The type always comes from `kuroshiro-shared` and every key is spelled out, so a reshaped read model fails `pnpm type-check` in its builder. A builder lands with the UI slice that first reads its endpoint. Defaults are plausible values in the vocabulary of `CONTEXT.md`, not `foo`.
 
 ## The gallery
 
@@ -160,7 +160,7 @@ A state that needs a pointer, a key press or a narrow window is shown in the gal
 - **`SaveBar` has two roots**, the status region and the `section`, because a wrapper would be what the bar sticks to. It is `position: sticky`, so it must be a direct child of the page's column, and on a phone it stands `--bar-height` above the window's edge, where the bottom tabs are.
 - **`Confirmation`** is controlled with `v-model:open` and has no trigger of its own; Reka gives the focus back to whatever had it. With an `action`, its `confirmLabel` is required and, in development and in the specs, it throws without one, as `IconButton` does without a label. It runs `action` itself: the caller does not close it. Without an `action` it has nothing to confirm: it only says why something cannot be done yet, has the safe choice alone, and takes a link to where the obstacle is removed in `#also`.
 - **`RowMenu`** takes `items`, each an action (`select`) or a link (`to`); link items need a router. A Reka `as-child` trigger works around `IconButton` as it is. Its `#trigger` slot takes one worded button in place of the more icon ("Add a template"). An item's `hint` stands beside its label and describes it without being part of its name, and an action's `afterClose` runs once the menu has closed, in place of giving the focus back to the menu's button, for an action that moves the focus itself.
-- **`TuckedSection`** opens when the address names its `id` as the fragment. It reads the router's route where there is one (a routed navigation fires no `hashchange`) and the window otherwise (`urlFragment.ts`).
+- **`TuckedSection`** takes `note`, which stands beside the title, softer, and is part of what the trigger is called ("Data 14 names, fetched 4 min ago"). It opens when the address names its `id` as the fragment. It reads the router's route where there is one (a routed navigation fires no `hashchange`) and the window otherwise (`urlFragment.ts`).
 - **`ProblemLines`** is the one primitive here that paints in the seal colour, and only on a line of `kind: 'alert'`. `elementsInSealColour(root)` (`src/testing/sealColour.ts`) lists what is painted in it; a component that reports any other trouble asserts that it is empty.
 - **An opening animation** sits inside `@media (prefers-reduced-motion: no-preference)`, so the specs and the shots see none. A spec asserts both sides: `animation-name` is `none`, and inside `withMotionAllowed` it is not.
 - **Under a Reka part** (`AlertDialogContent`, `AlertDialogOverlay`, `CollapsibleContent`), pass `as-child` and your own element: it carries the scoped style id, and a fixed layer sets its own `z-index` in its CSS.
@@ -232,6 +232,8 @@ Specs drive the UI with Playwright (`chromium.launch()`, `page.goto(baseUrl)`) a
 Every spec file shares that one Instance. `firstRun.spec.ts` runs first, on the empty Instance, and the other files after it, one at a time; any other journey must not assume that no other Device exists.
 
 `somethingIsWrong.spec.ts` waits for an Alert Sweep, which runs every 5 minutes on the clock, so it takes up to that long; nothing triggers a Sweep from outside.
+
+`buildingAPlugin.spec.ts` puts text into a code editor with `page.keyboard.insertText`, which the editor takes as one piece, so it closes no bracket and no tag by itself.
 
 The suite holds one test per primary journey of [Primary journeys and the story each screen tells](https://github.com/PhyberApex/kuroshiro/issues/1078), plus `smoke.spec.ts`. It is not the place for broad coverage; that is the page specs' job.
 

@@ -2,12 +2,12 @@
 import type { TemplateSize } from 'kuroshiro-shared'
 import type { PreviewChoice } from './previewTarget'
 import type { PreviewSource } from './useTemplatePreview'
-import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { listDeviceModels, listPalettes } from '@/api/device-models'
+import { previewPluginData } from '@/api/plugins'
+import Button from '@/components/Button.vue'
 import CodeEditor from '@/components/CodeEditor.vue'
 import EditorBench from '@/components/EditorBench.vue'
-import Notice from '@/components/Notice.vue'
-import PreviewPlate from '@/components/PreviewPlate.vue'
 import PageSection from '@/patterns/PageSection.vue'
 import { useLoad } from '@/patterns/useLoad'
 import { useDevices } from '@/reads/sharedReads'
@@ -15,9 +15,15 @@ import { fieldArrived, fieldId, usePluginFormPart, usePluginPage } from './plugi
 import { templatePaths, templatesPart, withTemplateAdded } from './pluginTemplates'
 import { editorName } from './pluginTemplateWording'
 import { startingChoice, targetOf } from './previewTarget'
-import { formContext } from './templateContext'
+import ScheduledRenderFailure from './ScheduledRenderFailure.vue'
+import { heldWithForm } from './templateContext'
+import { scheduledFailure } from './templateData'
+import TemplateData from './TemplateData.vue'
 import TemplateLine from './TemplateLine.vue'
+import TemplatePlate from './TemplatePlate.vue'
 import TemplatePreviewFor from './TemplatePreviewFor.vue'
+import { TEMPLATE_WINDOW_FOOT, useTemplateWindow, useWindowTaken } from './templateWindow'
+import { usePreviewData } from './usePreviewData'
 import { useTemplatePreview } from './useTemplatePreview'
 
 const { plugin, form, save } = usePluginPage()
@@ -60,23 +66,45 @@ const library = computed(() => needs.data && devices.data && { devices: devices.
 const picked = ref<PreviewChoice>()
 const choice = computed({
   get: () => {
-    const start = startingChoice(plugin.value.assignments, library.value?.devices ?? [])
-    const deviceGone = picked.value?.deviceId != null && !library.value?.devices.some(device => device.id === picked.value?.deviceId)
+    const start = startingChoice(plugin.value.assignments, devices.data ?? [])
+    const deviceGone = picked.value?.deviceId != null && !devices.data?.some(device => device.id === picked.value?.deviceId)
     return !picked.value || deviceGone ? start : picked.value
   },
   set: next => (picked.value = next),
 })
 const target = computed(() => library.value && targetOf(choice.value, library.value))
+const previewDevice = computed(() => devices.data?.find(device => device.id === choice.value.deviceId))
 
-/** What the Template reads. It is made of the form alone here; the data the server fetches takes its place. */
-const context = computed(() => formContext(plugin.value, form.unsaved))
+// The sections below this one join the form as they are mounted, and the first fetch sends all of it.
+const formStands = ref(false)
+onMounted(() => (formStands.value = true))
 
-const preview = useTemplatePreview((): PreviewSource | undefined => needs.data && target.value && {
+/** The data is fetched for the Device the preview is for, which is known once the Devices are. */
+const fetched = usePreviewData(
+  () => formStands.value && devices.data
+    ? { deviceId: previewDevice.value?.id ?? null, name: form.unsaved.name, dataSources: form.unsaved.dataSources, fieldValues: form.unsaved.fieldValues }
+    : undefined,
+  input => previewPluginData(plugin.value.id, input),
+)
+
+/** What the Template reads: the data the server fetched last, with the form's name and Field Values as they stand now. */
+const data = computed(() => fetched.held.value && heldWithForm(fetched.held.value, plugin.value, form.unsaved))
+
+const preview = useTemplatePreview((): PreviewSource | undefined => needs.data && target.value && data.value && {
   markup: markup.value,
   size: row.value.size,
-  context: context.value,
+  context: data.value.context,
   target: target.value,
   render: needs.data.previewOf,
+})
+
+const completionData = computed(() => data.value && !Array.isArray(data.value.context) ? data.value.context : {})
+
+/** Why the plate has no drawing yet: the Device Models or the first data are on their way. A fetch that failed says so under the plate. */
+const waitingFor = computed(() => {
+  if (!target.value)
+    return 'Loading the preview'
+  return fetched.fetching.value ? 'Fetching the data' : undefined
 })
 
 /** What stops a save at this Template once one was tried: the form's own check, or what the server refused it with. */
@@ -101,6 +129,36 @@ const unparsed = computed(() => rows.value
   .map(candidate => candidate.size))
 
 const editor = useTemplateRef('editor')
+
+const templateWindow = useTemplateWindow()
+const inWindow = templateWindow.open
+const title = computed(() => inWindow.value ? `Template of ${plugin.value.name}` : 'Template')
+
+function toggleWindow() {
+  return inWindow.value ? templateWindow.leave() : templateWindow.enter()
+}
+const section = useTemplateRef('section')
+useWindowTaken(() => section.value?.$el, inWindow)
+
+/** "Data" is closed on the page and open in the full window, until the admin says otherwise in either. */
+const dataOpenIn = ref({ page: false, window: true })
+const dataOpen = computed({
+  get: () => dataOpenIn.value[inWindow.value ? 'window' : 'page'],
+  set: open => (dataOpenIn.value[inWindow.value ? 'window' : 'page'] = open),
+})
+
+const failedRender = computed(() => scheduledFailure(plugin.value.lastScheduledRender))
+const failedTemplateStands = computed(() => rows.value.some(candidate => candidate.size === failedRender.value?.size))
+
+/** "Go to line {n}" of the scheduled render's failure: chooses the Template that failed and puts the cursor there. */
+async function goToFailedLine(line: number) {
+  const failed = failedRender.value
+  if (!failed)
+    return
+  chosen.value = failed.size
+  await nextTick()
+  editor.value?.goToLine(line)
+}
 
 function add(size: TemplateSize) {
   part.draft.rows = withTemplateAdded(rows.value, size)
@@ -129,7 +187,19 @@ async function reveal(problemPath: string) {
 </script>
 
 <template>
-  <PageSection id="template" title="Template">
+  <PageSection
+    id="template"
+    ref="section"
+    class="template-section"
+    :class="{ 'template-window': inWindow }"
+    :title="title"
+  >
+    <template v-if="templateWindow.offered.value" #actions>
+      <Button @click="toggleWindow">
+        {{ inWindow ? 'Back to the page' : 'Full window' }}
+      </Button>
+    </template>
+    <ScheduledRenderFailure v-if="failedRender" :failure="failedRender" :reachable="failedTemplateStands" @go-to-line="goToFailedLine" />
     <TemplateLine
       v-model:chosen="chosen"
       :rows="rows"
@@ -139,42 +209,49 @@ async function reveal(problemPath: string) {
       @remove="setRemoved($event, true)"
       @put-back="setRemoved($event, false)"
     />
-    <EditorBench class="template-bench">
+    <EditorBench class="template-bench" :full-window="inWindow">
       <template #editor>
         <CodeEditor
           :id="path && fieldId(path)"
           ref="editor"
           v-model="markup"
           mode="liquid"
+          :size="inWindow ? 'full-window' : 'bench'"
           :document="row.size"
           :aria-label="editorName(plugin.name, row.size)"
           :read-only="row.removed"
           :strip-note="row.removed ? 'This template is removed when you save.' : undefined"
           :invalid="invalid"
           :problem="problem"
-          :completion-data="Array.isArray(context) ? {} : context"
+          :completion-data="completionData"
           :kuroshiro-filters="needs.data?.filters"
           @save="save"
         />
       </template>
       <template #plate>
-        <Notice v-if="needs.failure && !needs.data" title="Could not load the preview." :reason="needs.failure.reason" action="Try again" @act="needs.reload" />
-        <p v-else-if="library && !target" class="none">
-          No preview: this Instance holds no Device Model with a Palette to draw it for.
-        </p>
-        <PreviewPlate
-          v-else
-          :name="`Preview of ${plugin.name}`"
+        <TemplatePlate
+          :plugin-name="plugin.name"
+          :load-failure="needs.data ? undefined : needs.failure?.reason"
+          :nothing-to-draw-for="library !== undefined && !target"
+          :model="target?.model"
           :document="preview.document.value"
-          :width="target?.model.width ?? 800"
-          :height="target?.model.height ?? 480"
           :not-drawn="preview.problem.value !== null"
-          :rendering="!target"
-          rendering-note="Loading the preview"
+          :waiting-for="waitingFor"
+          :has-data="data !== undefined"
+          @retry="needs.reload"
         />
       </template>
       <TemplatePreviewFor v-if="library && target" v-model:choice="choice" :library="library" :target="target" :size="row.size" />
+      <TemplateData
+        v-model:open="dataOpen"
+        :data="data"
+        :fetching="fetched.fetching.value"
+        :failure="fetched.failure.value"
+        :device-name="previewDevice?.name ?? null"
+        @fetch="fetched.fetchAgain"
+      />
     </EditorBench>
+    <div :id="TEMPLATE_WINDOW_FOOT" class="window-foot" />
   </PageSection>
 </template>
 
@@ -185,9 +262,40 @@ async function reveal(problemPath: string) {
     margin-top: var(--space-3);
   }
 
-  .none {
-    color: var(--color-ink-soft);
-    font-size: var(--text-sm);
+  /*
+  The full window: the section covers everything under the bar, and lies under the bar's own layer so that the bar's
+  menus and the save bar at its foot stand on it. It is the same element as on the page, so nothing in it starts anew.
+  */
+  .template-section.template-window {
+    position: fixed;
+    inset: var(--bar-height) 0 0;
+    z-index: calc(var(--layer-bar) - 1);
+    display: flex;
+    flex-direction: column;
+    margin-top: 0;
+    padding: var(--space-5) var(--gutter) 0;
+    background: var(--color-paper);
+  }
+
+  .template-window .template-bench {
+    flex: 1 1 0;
+    grid-template-rows: minmax(0, 1fr);
+    height: auto;
+  }
+
+  /* Where the page's save bar stands in the full window. It is in the page from the start, so the bar finds it. */
+  .window-foot {
+    display: none;
+  }
+
+  .template-window .window-foot {
+    display: block;
+    flex: none;
+    min-height: var(--space-5);
+  }
+
+  .window-foot :deep(.save-bar) {
+    margin-top: var(--space-4);
   }
 }
 </style>

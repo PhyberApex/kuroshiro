@@ -1,4 +1,4 @@
-import type { CreatePluginInput, ImportGithubPluginInput, ImportRecipeInput, PluginDetail, PluginImportResult, PluginSummary, UpdatePluginInput } from 'kuroshiro-shared'
+import type { CreatePluginInput, ImportGithubPluginInput, ImportRecipeInput, PluginDetail, PluginImportResult, PluginSummary, PreviewData, PreviewDataInput, UpdatePluginInput } from 'kuroshiro-shared'
 import { apiDownload, apiGet, apiSend } from './client'
 
 /** Every Plugin as a row of the list, by name whatever its case. */
@@ -49,6 +49,15 @@ export function importGithubPlugin(input: ImportGithubPluginInput) {
  */
 export function updatePlugin(pluginId: string, input: UpdatePluginInput) {
   return apiSend<PluginDetail>('PATCH', `plugins/${pluginId}`, input)
+}
+
+/**
+ * The data a preview of the Plugin draws against, built from the form as it stands: it runs the Data Sources it is
+ * sent, stores nothing and moves no Fetch Failure Streak. A Data Source that fails answers its error marker, and a
+ * password Field Value reads as dots wherever it occurs. Refused with `device-not-found` for a Device that is gone.
+ */
+export function previewPluginData(pluginId: string, input: PreviewDataInput) {
+  return apiSend<PreviewData>('POST', `plugins/${pluginId}/preview-data`, input)
 }
 
 /** Answers the copy, "{Plugin} (copy)", which is on no Device. */
