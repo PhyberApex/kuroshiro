@@ -45,7 +45,7 @@ describe('the Data Sources of a Plugin', () => {
     const screen = await mountApp({ at: '/plugins/weather?source=forecast' })
 
     await expect.element(screen.getByRole('link', { name: '1 Alert firing' })).toBeVisible()
-    await expect.element(screen.getByRole('link', { name: 'Kitchen', exact: true })).toBeVisible()
+    await expect.element(screen.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Kitchen', exact: true })).toBeVisible()
     await expect.element(screen.getByRole('textbox', { name: 'Headers' })).toBeVisible()
     await arrived()
     window.scrollTo(0, 0)

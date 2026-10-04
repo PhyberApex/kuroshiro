@@ -37,7 +37,7 @@ describe('the Plugin page', () => {
     await openPluginPage(screen.router, 'weather', { how: 'imported', origin: 'recipe', name: 'Weather report', hasTransform: true, device: { id: '3f6c1c1e-9d0a-4f39-8a53-0c2f0a1d7b11', name: 'Kitchen' } })
 
     await expect.element(screen.getByRole('link', { name: '1 Alert firing' })).toBeVisible()
-    await expect.element(screen.getByRole('link', { name: 'Kitchen', exact: true })).toBeVisible()
+    await expect.element(screen.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Kitchen', exact: true })).toBeVisible()
     // Opened by its fragment and left by `blur()`: the shot files share one pointer, and a click here would leave it hovering in another file's shot.
     await screen.router.push({ hash: '#name' })
     const name = screen.getByRole('textbox', { name: 'Name' })
