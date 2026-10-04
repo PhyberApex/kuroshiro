@@ -156,6 +156,28 @@ export interface PluginFieldInput {
   order?: number
 }
 
+export interface CreatePollPluginInput {
+  kind: 'Poll'
+  /** Not empty; stored trimmed. */
+  name: string
+  /** The Device the new Plugin is assigned to at once, at the end of its Order. */
+  deviceId?: string
+}
+
+export interface CreateWebhookPluginInput {
+  kind: 'Webhook'
+  /** Not empty; stored trimmed. */
+  name: string
+  mergeStrategy: MergeStrategy
+  /** A whole number of at least 1. Required with `stream`, refused with any other Merge Strategy. */
+  streamLimit?: number
+  /** The Device the new Plugin is assigned to at once, at the end of its Order. */
+  deviceId?: string
+}
+
+/** What a Plugin is built from. It starts with one `full` Template, the starter, and for Poll a refresh interval of 15 minutes. */
+export type CreatePluginInput = CreatePollPluginInput | CreateWebhookPluginInput
+
 /** A key left out keeps what is stored. Each collection is the whole set. */
 export interface UpdatePluginInput {
   name?: string

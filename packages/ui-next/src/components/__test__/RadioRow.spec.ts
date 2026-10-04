@@ -36,6 +36,22 @@ describe('radio row', () => {
     await expect.element(group.getByRole('radio', { name: 'Mashup', exact: true })).not.toBeChecked()
   })
 
+  it('shows the code of a row beside its name in mono, and describes the row by it without renaming it', async () => {
+    const choices: RadioChoice<string>[] = [
+      { value: 'standard', label: 'Replace', code: 'standard', hint: 'Each POST replaces the Webhook Payload.' },
+      { value: 'deep_merge', label: 'Deep merge', code: 'deep_merge' },
+    ]
+    const { screen } = await mountRows('standard', { choices })
+
+    await expect.element(screen.getByRole('radio', { name: 'Replace', exact: true })).toHaveAccessibleDescription('standard Each POST replaces the Webhook Payload.')
+    await expect.element(screen.getByRole('radio', { name: 'Deep merge', exact: true })).toHaveAccessibleDescription('deep_merge')
+    const name = screen.getByText('Deep merge', { exact: true }).element().getBoundingClientRect()
+    const code = screen.getByText('deep_merge', { exact: true }).element()
+    expect(getComputedStyle(code).fontFamily).toBe(getComputedStyle(document.documentElement).getPropertyValue('--font-mono').trim())
+    expect(code.getBoundingClientRect().left).toBeGreaterThan(name.right)
+    expect(Math.abs(code.getBoundingClientRect().bottom - name.bottom)).toBeLessThan(4)
+  })
+
   it('can start with nothing chosen, and chooses a row on a click anywhere on it', async () => {
     const { screen, onUpdate } = await mountRows(undefined)
 

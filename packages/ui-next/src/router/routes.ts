@@ -1,4 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router'
+import { keepAddPluginOrigin } from '@/pages/plugins/addPluginOrigin'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -58,7 +59,7 @@ export const routes: RouteRecordRaw[] = [
   { path: '/connect', component: () => import('@/pages/devices/ConnectPage.vue') },
 
   { path: '/plugins', component: () => import('@/pages/plugins/PluginsListPage.vue') },
-  notBuiltYet('/plugins/new', 'Add a Plugin'),
+  { path: '/plugins/new', component: () => import('@/pages/plugins/AddPluginPage.vue'), beforeEnter: keepAddPluginOrigin },
   { path: '/plugins/:pluginId', component: () => import('@/pages/plugins/PluginPage.vue') },
   notBuiltYet('/plugins/:pluginId/update', 'Recipe Update Check'),
 

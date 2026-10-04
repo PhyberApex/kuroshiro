@@ -5,6 +5,8 @@ import { useId } from 'vue'
 export interface RadioChoice<T extends string> {
   value: T
   label: string
+  /** The value as an API or a document spells it, beside the name in mono: `deep_merge`. */
+  code?: string
   /** One line of explanation under the name. */
   hint?: string
   disabled?: boolean
@@ -20,6 +22,11 @@ defineProps<{
 const model = defineModel<T>()
 
 const id = useId()
+
+function describedBy(choice: RadioChoice<T>, index: number) {
+  const ids = [choice.code && `${id}-${index}-code`, choice.hint && `${id}-${index}-hint`].filter(Boolean)
+  return ids.length > 0 ? ids.join(' ') : undefined
+}
 </script>
 
 <template>
@@ -36,11 +43,14 @@ const id = useId()
       :value="choice.value"
       :disabled="choice.disabled"
       :aria-labelledby="`${id}-${index}-name`"
-      :aria-describedby="choice.hint ? `${id}-${index}-hint` : undefined"
+      :aria-describedby="describedBy(choice, index)"
       :data-force="force?.[choice.value]"
     >
       <span class="dot" />
-      <span :id="`${id}-${index}-name`" class="name">{{ choice.label }}</span>
+      <span class="title">
+        <span :id="`${id}-${index}-name`" class="name">{{ choice.label }}</span>
+        <code v-if="choice.code" :id="`${id}-${index}-code`" class="code">{{ choice.code }}</code>
+      </span>
       <span v-if="choice.hint" :id="`${id}-${index}-hint`" class="hint">{{ choice.hint }}</span>
     </RadioGroupItem>
   </RadioGroupRoot>
@@ -85,9 +95,22 @@ const id = useId()
     background: var(--color-ink);
   }
 
-  .name {
+  .title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 var(--space-2);
     grid-column: 2;
+  }
+
+  .name {
     font-weight: var(--weight-semibold);
+  }
+
+  .code {
+    color: var(--color-ink-soft);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
   }
 
   .hint {

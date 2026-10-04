@@ -73,7 +73,6 @@ const KNOWN_EXCEPTIONS: string[] = [
   'DeviceModelsController.createPalette',
   'PluginsController.applyRecipeUpdate',
   'PluginsController.clearWebhookPayload',
-  'PluginsController.create',
   'PluginsController.importFromGithub',
   'PluginsController.importFromRecipe',
   'PluginsController.importPlugin',

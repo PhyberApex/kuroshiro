@@ -16,6 +16,7 @@ describe('pluginsController', () => {
   let mockService: {
     findById: ReturnType<typeof vi.fn>
     create: ReturnType<typeof vi.fn>
+    build: ReturnType<typeof vi.fn>
     update: ReturnType<typeof vi.fn>
     duplicate: ReturnType<typeof vi.fn>
     remove: ReturnType<typeof vi.fn>
@@ -38,6 +39,7 @@ describe('pluginsController', () => {
     mockService = {
       findById: vi.fn(),
       create: vi.fn(),
+      build: vi.fn(),
       update: vi.fn(),
       duplicate: vi.fn(),
       remove: vi.fn(),
@@ -80,14 +82,17 @@ describe('pluginsController', () => {
     refreshInterval: 15,
   })
 
-  it('create creates a new plugin', async () => {
+  it('create builds the Plugin, then answers it as a read gives it', async () => {
     const createDto = { name: 'Weather Plugin', kind: 'Poll' as const }
-    mockService.create.mockResolvedValue(basePlugin)
+    const detail = { id: '1', name: 'Weather Plugin' }
+    mockService.build.mockResolvedValue('1')
+    mockReads.detail.mockResolvedValue(detail)
 
     const result = await controller.create(createDto)
 
-    expect(mockService.create).toHaveBeenCalledWith(createDto)
-    expect(result).toBe(basePlugin)
+    expect(mockService.build).toHaveBeenCalledWith(createDto)
+    expect(mockReads.detail).toHaveBeenCalledWith('1')
+    expect(result).toBe(detail)
   })
 
   it('update saves the Plugin, then answers it as a read gives it', async () => {

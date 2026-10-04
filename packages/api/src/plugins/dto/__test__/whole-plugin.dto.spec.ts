@@ -2,7 +2,7 @@ import type { ValidationError } from 'class-validator'
 import { plainToInstance } from 'class-transformer'
 import { validate } from 'class-validator'
 import { describe, expect, it } from 'vitest'
-import { CreatePluginDto } from '../create-plugin.dto.js'
+import { WholePluginDto } from '../whole-plugin.dto.js'
 
 function flattenConstraints(errors: ValidationError[]): string[] {
   return errors.flatMap(error => [
@@ -12,13 +12,13 @@ function flattenConstraints(errors: ValidationError[]): string[] {
 }
 
 async function violations(payload: Record<string, unknown>): Promise<string[]> {
-  const errors = await validate(plainToInstance(CreatePluginDto, payload))
+  const errors = await validate(plainToInstance(WholePluginDto, payload))
   return flattenConstraints(errors)
 }
 
-describe('create-plugin dto', () => {
+describe('whole-plugin dto', () => {
   it('creates dto with basic fields', () => {
-    const dto = new CreatePluginDto()
+    const dto = new WholePluginDto()
     dto.name = 'Weather Plugin'
     dto.description = 'Shows weather data'
     dto.refreshInterval = 30
@@ -33,7 +33,7 @@ describe('create-plugin dto', () => {
 
     await expect(violations({ name: 'Plugin', sourceRecipeSnapshot: snapshot })).resolves.toEqual([])
 
-    const dto = plainToInstance(CreatePluginDto, { name: 'Plugin', sourceRecipeSnapshot: snapshot })
+    const dto = plainToInstance(WholePluginDto, { name: 'Plugin', sourceRecipeSnapshot: snapshot })
     expect(dto.sourceRecipeSnapshot).toEqual(snapshot)
   })
 
@@ -44,7 +44,7 @@ describe('create-plugin dto', () => {
   })
 
   it('includes optional dataSources array', () => {
-    const dto = new CreatePluginDto()
+    const dto = new WholePluginDto()
     dto.dataSources = [
       {
         name: 'weather',
@@ -62,7 +62,7 @@ describe('create-plugin dto', () => {
   })
 
   it('includes optional templates array', () => {
-    const dto = new CreatePluginDto()
+    const dto = new WholePluginDto()
     dto.templates = [
       { layout: 'full', liquidMarkup: 'Template' },
     ]
@@ -72,7 +72,7 @@ describe('create-plugin dto', () => {
   })
 
   it('includes optional fields array', () => {
-    const dto = new CreatePluginDto()
+    const dto = new WholePluginDto()
     dto.fields = [
       { keyname: 'api_key', fieldType: 'password', name: 'API Key', required: true },
     ]
@@ -135,7 +135,7 @@ describe('create-plugin dto', () => {
 
   describe('plugin kind', () => {
     it('defaults to Poll', () => {
-      expect(plainToInstance(CreatePluginDto, { name: 'Weather Plugin' }).kind).toBe('Poll')
+      expect(plainToInstance(WholePluginDto, { name: 'Weather Plugin' }).kind).toBe('Poll')
     })
 
     it('accepts Poll and Webhook', async () => {
