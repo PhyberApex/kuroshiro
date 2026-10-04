@@ -16,7 +16,7 @@ import AlertsWatched from './AlertsWatched.vue'
 import ResolvedAlerts from './ResolvedAlerts.vue'
 
 const alerts = useAlerts()
-const settings = useLoad(getInstanceSettings, { fresh: true })
+const settings = useLoad(getInstanceSettings)
 const instanceFacts = useInstanceFacts()
 const now = useNow()
 
@@ -39,9 +39,9 @@ const page: Load<AlertsPageData> = reactive({
   },
 })
 
-const told = computed((): AlertTold | undefined => settings.data && { now: now.value, lowBatteryPercent: settings.data.lowBatteryPercent.value })
+const toldWith = (thresholds: InstanceSettingsResponse): AlertTold => ({ now: now.value, lowBatteryPercent: thresholds.lowBatteryPercent.value })
 
-/** The widths of the three bars of each loading row: where the Alert, its subject and why will be. */
+/** The widths of the three bars of each loading row: where the Alert, its subject and why will be. The fourth cell, the time, stays empty. */
 const LOADING_ROWS = [
   { kind: '70%', subject: '60%', why: '70%' },
   { kind: '70%', subject: '54%', why: '64%' },
@@ -52,17 +52,15 @@ const LOADING_ROWS = [
   <TitleLine title="Alerts" />
   <LoadBody :load="page" loading="Loading Alerts" failed="Could not load the Alerts.">
     <template #default="{ data }">
-      <template v-if="told">
-        <ul v-if="data.alerts.active.length > 0" class="firing-alerts" aria-label="Firing Alerts">
-          <AlertRow v-for="alert in data.alerts.active" :key="alert.id" :alert="alert" :told="told" />
-        </ul>
-        <p v-else class="none-firing">
-          <Icon name="check" />
-          No Alert is firing.
-        </p>
-        <AlertsWatched :settings="data.settings" :notifications-set-up="data.facts.notifications.configured" />
-        <ResolvedAlerts :alerts="data.alerts.resolved" :told="told" />
-      </template>
+      <ul v-if="data.alerts.active.length > 0" class="firing-alerts" aria-label="Firing Alerts">
+        <AlertRow v-for="alert in data.alerts.active" :key="alert.id" :alert="alert" :told="toldWith(data.settings)" />
+      </ul>
+      <p v-else class="none-firing">
+        <Icon name="check" />
+        No Alert is firing.
+      </p>
+      <AlertsWatched :settings="data.settings" :notifications-set-up="data.facts.notifications.configured" />
+      <ResolvedAlerts :alerts="data.alerts.resolved" :told="toldWith(data.settings)" />
     </template>
     <template #skeleton>
       <div class="firing-alerts" aria-hidden="true">
@@ -70,6 +68,7 @@ const LOADING_ROWS = [
           <WashBar :width="widths.kind" />
           <WashBar :width="widths.subject" />
           <WashBar :width="widths.why" />
+          <span />
         </div>
       </div>
     </template>
@@ -94,7 +93,7 @@ const LOADING_ROWS = [
 
   .loading-row {
     display: grid;
-    grid-template-columns: 11.5rem minmax(0, 14rem) minmax(0, 1fr);
+    grid-template-columns: 11.5rem minmax(0, 14rem) minmax(0, 1fr) auto;
     align-items: center;
     gap: var(--space-4);
     min-height: 3.25rem;

@@ -58,7 +58,7 @@ describe('why a resolved Alert fired', () => {
     expect(words(alertWhy({ ...fetch, details: { streak: 1, lastError: null } }, TOLD))).toBe('1 fetch failed in a row')
   })
 
-  it('says nothing for an Alert that holds no cause: one resolved before the cause was kept', () => {
+  it('says nothing for an Alert whose details are not a cause of its kind', () => {
     expect(alertWhy(alert({ resolvedAt, details: null }), TOLD)).toEqual([])
     expect(alertWhy(alert({ ...FETCH, resolvedAt, details: { streak: 0, lastError: null } }), TOLD)).toEqual([])
     expect(alertWhy(alert({ kind: 'device-offline', openedAt: at(3, 2, 10), resolvedAt, details: { lastSeen: at(3, 8, 55) } }), TOLD)).toEqual([])

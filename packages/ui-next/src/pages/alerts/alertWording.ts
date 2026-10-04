@@ -124,7 +124,7 @@ function fetchWhy(details: AlertDetails, firing: boolean) {
 
 /**
  * Why an Alert fires, or why a resolved one fired, from its kind and the cause it keeps.
- * An Alert that holds no cause of its kind (one resolved before the cause was kept) says nothing.
+ * An Alert whose `details` are not a cause of its kind says nothing.
  */
 export function alertWhy({ kind, details, openedAt, resolvedAt }: AlertSummary, told: AlertTold): Sentence {
   if (details === null)
