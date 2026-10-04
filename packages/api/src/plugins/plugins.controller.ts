@@ -74,13 +74,16 @@ export class PluginsController {
   }
 
   @Delete(':id/webhook-payload')
-  async clearWebhookPayload(@Param('id') id: string) {
-    return this.pluginsService.clearWebhookPayload(id)
+  async clearWebhookPayload(@Param('id') id: string): Promise<PluginDetail> {
+    await this.pluginsService.clearWebhookPayload(id)
+    return this.pluginReads.detail(id)
   }
 
   @Post(':id/webhook-token')
-  async regenerateWebhookToken(@Param('id') id: string) {
-    return this.pluginsService.regenerateWebhookToken(id)
+  @HttpCode(HttpStatus.OK)
+  async regenerateWebhookToken(@Param('id') id: string): Promise<PluginDetail> {
+    await this.pluginsService.regenerateWebhookToken(id)
+    return this.pluginReads.detail(id)
   }
 
   @Delete(':id')

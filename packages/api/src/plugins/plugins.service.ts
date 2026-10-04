@@ -8,7 +8,7 @@ import type { UpdateDataSourceDto, UpdatePluginDto, UpdateTemplateDto } from './
 import type { WholePluginDto } from './dto/whole-plugin.dto.js'
 import type { PluginKindFields } from './plugin-kind-fields.js'
 import type { PluginWithFieldValues } from './services/plugin-field-values.service.js'
-import { BadRequestException, HttpStatus, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common'
+import { BadRequestException, HttpStatus, Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { isUUID } from 'class-validator'
 import { checkTemplate } from 'kuroshiro-shared'
@@ -563,33 +563,29 @@ export class PluginsService implements OnModuleInit {
     }
   }
 
-  async clearWebhookPayload(id: string): Promise<Plugin> {
+  /** Empties the Webhook Payload and renders the Plugin again without it, as a POST would with its data. */
+  async clearWebhookPayload(id: string): Promise<void> {
     const plugin = await this.requireWebhookPlugin(id)
 
-    await this.pluginRepository.update(id, { webhookPayload: null })
+    await this.pluginRepository.update(id, { webhookPayload: null, payloadReceivedAt: null })
     this.logger.log(`Cleared webhook payload for plugin: ${plugin.name}`)
 
-    return { ...plugin, webhookPayload: null }
+    await this.scheduler.runTick({ ...plugin, webhookPayload: null, payloadReceivedAt: null })
   }
 
-  async regenerateWebhookToken(id: string): Promise<Plugin> {
+  async regenerateWebhookToken(id: string): Promise<void> {
     const plugin = await this.requireWebhookPlugin(id)
-    const webhookToken = generateApikey()
 
-    await this.pluginRepository.update(id, { webhookToken })
+    await this.pluginRepository.update(id, { webhookToken: generateApikey() })
     this.logger.log(`Regenerated webhook token for plugin: ${plugin.name}`)
-
-    return { ...plugin, webhookToken }
   }
 
   private async requireWebhookPlugin(id: string): Promise<Plugin> {
-    const plugin = await this.pluginRepository.findOneBy({ id })
-    if (!plugin) {
-      throw new NotFoundException(`Plugin ${id} not found`)
-    }
-    if (plugin.kind !== 'Webhook') {
-      throw new BadRequestException(`Plugin "${plugin.name}" is not a Webhook-kind Plugin`)
-    }
+    const plugin = isUUID(id) ? await this.findPluginWithRelations(id, { templates: true }) : null
+    if (!plugin)
+      throw pluginNotFound(id)
+    if (plugin.kind !== 'Webhook')
+      throw new ApiException(HttpStatus.BAD_REQUEST, 'plugin-not-webhook', `Plugin "${plugin.name}" is not a Webhook-kind Plugin`, { id })
     return plugin
   }
 

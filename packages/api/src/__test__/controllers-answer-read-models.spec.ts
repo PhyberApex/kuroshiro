@@ -71,8 +71,6 @@ export class WidgetsController {
  */
 const KNOWN_EXCEPTIONS: string[] = [
   'DeviceModelsController.createPalette',
-  'PluginsController.clearWebhookPayload',
-  'PluginsController.regenerateWebhookToken',
 ]
 
 describe('admin controllers answer read models, never entities (ADR-0033)', () => {

@@ -295,21 +295,5 @@ describe('pluginsService', () => {
         dataSources: [{ name: 'source', mode: 'fetch', url: 'https://api.example.com' }],
       })).rejects.toThrow('A Webhook-kind Plugin cannot have Data Sources')
     })
-
-    it('regenerateWebhookToken issues a new token', async () => {
-      pluginRepo.findOneBy.mockResolvedValue({ ...webhookPlugin })
-
-      const result = await service.regenerateWebhookToken('1')
-
-      expect(result.webhookToken).not.toBe('token-abc')
-      expect(pluginRepo.update).toHaveBeenCalledWith('1', { webhookToken: result.webhookToken })
-    })
-
-    it('clearWebhookPayload rejects a poll-kind plugin', async () => {
-      pluginRepo.findOneBy.mockResolvedValue({ ...basePlugin })
-
-      await expect(service.clearWebhookPayload('1')).rejects.toThrow('is not a Webhook-kind Plugin')
-      expect(pluginRepo.update).not.toHaveBeenCalled()
-    })
   })
 })

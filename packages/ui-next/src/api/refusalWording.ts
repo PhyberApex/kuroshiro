@@ -60,6 +60,7 @@ const REFUSAL_WORDING: Record<ApiErrorCode, Wording> = {
   'assignment-not-found': 'That Plugin is not on this Device.',
   'plugin-already-assigned': 'That Plugin is already on this Device.',
   'plugin-in-mashup': 'That Plugin fills a slot in a Mashup. Give the slot another Plugin, or delete the Mashup.',
+  'plugin-not-webhook': 'That Plugin is not a Webhook-kind Plugin, so it has no Webhook Payload or Webhook Token.',
   'image-fetch-failed': imageFetchFailed,
   'image-unreadable': 'This file is not an image Kuroshiro can read. Use PNG, JPEG, BMP, GIF, TIFF or WebP.',
   'order-not-a-permutation': 'The Order has to name every Screen once.',

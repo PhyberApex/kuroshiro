@@ -5,6 +5,7 @@ import type { DeviceModelsService } from '../../device-models/device-models.serv
 import type { FallbackScreensService } from '../../device-models/fallback-screens.service.js'
 import type { FirmwareService } from '../../firmware/firmware.service.js'
 import type { HttpTestApp } from '../../test/httpApp.js'
+import { getRepositoryToken } from '@nestjs/typeorm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Alert } from '../../alerts/entities/alert.entity.js'
 import { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
@@ -26,6 +27,7 @@ import { PluginFieldValue } from '../entities/plugin-field-value.entity.js'
 import { PluginField } from '../entities/plugin-field.entity.js'
 import { PluginTemplate } from '../entities/plugin-template.entity.js'
 import { Plugin } from '../entities/plugin.entity.js'
+import { WebhookPluginGuard } from '../guards/webhook-plugin.guard.js'
 import { PluginsController } from '../plugins.controller.js'
 import { PluginsService } from '../plugins.service.js'
 import { DataSourceFetchOutcomeService } from '../services/data-source-fetch-outcome.service.js'
@@ -45,6 +47,7 @@ import { PluginTemplateContextService } from '../services/plugin-template-contex
 import { PluginTransformService } from '../services/plugin-transform.service.js'
 import { RecipeUpdateService } from '../services/recipe-update.service.js'
 import { WebhookIngestService } from '../services/webhook-ingest.service.js'
+import { WebhookIngestController } from '../webhook-ingest.controller.js'
 
 vi.mock('../../device-models/render-html-to-png.js', () => ({ renderHtmlToPng: vi.fn().mockResolvedValue(undefined) }))
 
@@ -119,8 +122,11 @@ describe('what a Plugin renders from, and with which Template, against a real da
     await vi.waitFor(() => expect(Reflect.get(display, 'mashupRenderer')).toBeDefined())
 
     http = await createHttpTestApp({
-      controllers: [PluginsController],
+      controllers: [PluginsController, WebhookIngestController],
       providers: [
+        { provide: getRepositoryToken(Plugin), useValue: database.getRepository(Plugin) },
+        { provide: WebhookIngestService, useValue: webhookIngest },
+        WebhookPluginGuard,
         { provide: PluginsService, useValue: plugins },
         { provide: PluginReadsService, useValue: new PluginReadsService(database.getRepository(Plugin), database.getRepository(Screen), database.getRepository(Alert), fieldValues, config) },
         { provide: PluginPreviewDataService, useValue: new PluginPreviewDataService(database.getRepository(Plugin), database.getRepository(Device), deviceSensors, templateContext) },
@@ -555,6 +561,66 @@ describe('what a Plugin renders from, and with which Template, against a real da
 
       expect(response.status).toBe(400)
       expect((await response.json() as ApiError).code).toBe('validation')
+    })
+  })
+
+  describe('a Webhook-kind Plugin\'s Webhook Payload and Webhook Token', () => {
+    async function refusalOf(response: Response): Promise<{ status: number, code: string }> {
+      return { status: response.status, code: (await response.json() as ApiError).code }
+    }
+
+    it('clears the Webhook Payload and when it was received, answers the Plugin and renders it again without data', async () => {
+      const plugin = await createWebhookPlugin({ mergeStrategy: 'stream', streamLimit: 3, templates: [{ layout: 'full', liquidMarkup: '<p>Reading: {{ reading }}</p>' }] })
+      await assignments.assign(plugin.id, (await addDevice('Kitchen')).id)
+      await webhookIngest.ingest(await loadForRender(plugin.id), { reading: 4 })
+      expect(await cachedOutput(plugin.id)).toBe('<p>Reading: 4</p>')
+      const before = await read(plugin.id)
+
+      const response = await http.request(`/api/plugins/${plugin.id}/webhook-payload`, { method: 'DELETE' })
+
+      expect(response.status).toBe(200)
+      const answered = await response.json() as PluginDetail
+      expect(answered).toEqual(await read(plugin.id))
+      expect(answered.webhook).toEqual({ ...before.webhook, payload: null, payloadReceivedAt: null })
+      expect(await cachedOutput(plugin.id)).toBe('<p>Reading: </p>')
+    })
+
+    it('regenerates the Webhook Token, answers the Plugin with the new URL, and refuses a POST to the old one', async () => {
+      const plugin = await createWebhookPlugin()
+      const before = await read(plugin.id)
+
+      const response = await http.request(`/api/plugins/${plugin.id}/webhook-token`, { method: 'POST' })
+
+      expect(response.status).toBe(200)
+      const answered = await response.json() as PluginDetail
+      expect(answered).toEqual(await read(plugin.id))
+      expect(answered.webhook?.token).not.toBe(before.webhook?.token)
+      expect(answered.webhook?.url).toBe(`https://kuroshiro.example/api/webhook/${answered.webhook?.token}`)
+      expect((await http.postJson(`/api/webhook/${before.webhook?.token}`, { reading: 1 })).status).toBe(401)
+      expect((await http.postJson(`/api/webhook/${answered.webhook?.token}`, { reading: 2 })).status).toBe(201)
+      expect((await read(plugin.id)).webhook?.payload).toEqual({ reading: 2 })
+    })
+
+    it.each([
+      ['DELETE', 'webhook-payload'],
+      ['POST', 'webhook-token'],
+    ])('answers %s %s with 400 plugin-not-webhook for a Poll-kind Plugin, and 404 plugin-not-found for a Plugin that does not exist', async (method, path) => {
+      const poll = await createPollPlugin()
+
+      expect(await refusalOf(await http.request(`/api/plugins/${poll.id}/${path}`, { method }))).toEqual({ status: 400, code: 'plugin-not-webhook' })
+      for (const id of [UNKNOWN_ID, 'nonsense'])
+        expect(await refusalOf(await http.request(`/api/plugins/${id}/${path}`, { method }))).toEqual({ status: 404, code: 'plugin-not-found' })
+    })
+
+    it('serves a new Webhook-kind Plugin, assigned before its first POST, its Template rendered without data', async () => {
+      const plugin = await createWebhookPlugin({ templates: [{ layout: 'full', liquidMarkup: '<p>Reading: {{ reading }}</p>' }] })
+      const device = await addDevice('Kitchen')
+      await assignments.assign(plugin.id, device.id)
+
+      const answer = await display.getCurrentImage({ 'id': device.mac, 'access-token': device.apikey })
+
+      expect(answer.image_url).not.toMatch(/^http:\/\/api\/screens\//)
+      expect(await cachedOutput(plugin.id)).toBe('<p>Reading: </p>')
     })
   })
 
