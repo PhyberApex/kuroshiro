@@ -297,6 +297,10 @@ describe('reading and importing a Configuration Archive, against a real database
       expect(await refused(archive)).toMatchObject({ statusCode: 422, code: 'archive-record-refused', details: { entity: 'Plugin', id: DOORBELL } })
     })
 
+    it('a list that holds something other than records', async () => {
+      expect(await refused(buildArchive({ manifest: manifest(), devices: [null] }))).toMatchObject({ statusCode: 400, code: 'archive-not-configuration' })
+    })
+
     it('an upload without a file', async () => {
       const response = await http.request(path, { method: 'POST', body: new FormData() })
 

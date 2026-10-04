@@ -30,7 +30,7 @@ export interface FakedArchive {
   devicesAfterImport: DeviceSummary[]
   /** What reading an archive answers: what importing it would do, or a refusal. */
   checkAnswer: ImportCheck | Response
-  /** What the import answers. */
+  /** What importing one answers: what it did, or a refusal. */
   importAnswer: ConfigurationImportSummary | Response
   /** While set, neither is answered until it resolves. */
   holding?: Promise<unknown>

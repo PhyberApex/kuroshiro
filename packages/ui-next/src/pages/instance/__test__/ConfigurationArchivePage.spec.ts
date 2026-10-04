@@ -1,12 +1,13 @@
 import type { Screen } from '@/pages/devices/__test__/deviceSettingsHarness'
-import { HttpResponse } from 'msw'
+import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { held, words } from '@/pages/devices/__test__/deviceSettingsHarness'
 import { catchDownloads } from '@/pages/plugins/__test__/pluginPageHarness'
 import { exactTime } from '@/patterns/time'
 import { expectAccessible } from '@/testing/a11y'
-import { apiErrorResponse, apiUrl } from '@/testing/api/server'
+import { api, apiErrorResponse, apiUrl } from '@/testing/api/server'
+import { mountApp } from '@/testing/app'
 import { buildImportCheck, buildImportSummary } from '@/testing/fixtures/configuration'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import { archiveFile, fakeArchive, mountArchive, REDACTED_WARNING_LINES, REDACTED_WARNINGS } from './configurationArchiveHarness'
@@ -164,10 +165,11 @@ describe('configuration Archive', () => {
       await expect.element(importing(screen).getByRole('link', { name: 'Devices' })).toHaveAttribute('href', '/devices')
       await expect.element(importing(screen).getByRole('link', { name: 'Plugins' })).toHaveAttribute('href', '/plugins')
       await expect.element(screen.getByRole('banner').getByRole('link', { name: 'Hallway' })).toBeVisible()
-      await expect.element(importing(screen).getByText('Made for a fresh Instance. This one already has 2 Devices, so read what an import would change before you confirm it.', { exact: false })).toBeVisible()
+      expect(importing(screen).getByText('Made for a fresh Instance', { exact: false }).elements()).toEqual([])
 
       await importing(screen).getByRole('button', { name: 'Import another' }).click()
 
+      await expect.element(importing(screen).getByText('Made for a fresh Instance. This one already has 2 Devices, so read what an import would change before you confirm it.', { exact: false })).toBeVisible()
       await expect.element(importing(screen).getByText(DROP_HERE)).toBeVisible()
       await expect.element(fileInput(screen)).toHaveFocus()
     })
@@ -269,6 +271,16 @@ describe('configuration Archive', () => {
       await choose(screen, archiveFile('huge.zip', 2 * 1024 * 1024))
       await expect.element(importing(screen).getByText('This file is 2 MB. A Configuration Archive can be up to 1 MB.')).toBeVisible()
       expect(faked.sent).toEqual([])
+    })
+
+    it('says so in place of the drop zone when the Instance cannot be loaded', async () => {
+      fakeArchive()
+      api.use(http.get(apiUrl('devices'), () => apiErrorResponse({ statusCode: 500, code: 'internal' })))
+      const screen = await mountApp({ at: '/instance/archive' })
+
+      await expect.element(importing(screen).getByRole('alert')).toHaveTextContent('Could not load the Instance. Something went wrong on the server.')
+      expect(fileInput(screen).elements()).toEqual([])
+      await expect.element(exporting(screen).getByRole('button', { name: 'Export redacted' })).toBeVisible()
     })
 
     it('does not import twice when the button is pressed again while the import runs', async () => {

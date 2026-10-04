@@ -31,38 +31,41 @@ function withNames(count: string, devices: Ref[]) {
   return devices.length > 0 ? `${count} (${listed(devices.map(device => device.name))})` : count
 }
 
-function screens(counts: ImportCounts) {
-  const count = counted(counts.screens ?? 0, 'Screen')
+const screens = (counts: ImportCounts) => counted(counts.screens ?? 0, 'Screen')
+
+function screensWithSchedules(counts: ImportCounts) {
   if (!counts.schedules)
-    return count
-  return counts.screens === 1 ? `${count} with its Schedule` : `${count} with their Schedules`
+    return screens(counts)
+  return counts.screens === 1 ? `${screens(counts)} with its Schedule` : `${screens(counts)} with their Schedules`
 }
 
-/** The kinds a summary counts, in its order. The rows under a Plugin and under a Screen are counted with the record they belong to. */
-const SUMMARY_KINDS: Array<{ key: string, word: (counts: ImportCounts, devices: Ref[]) => string }> = [
-  { key: 'devices', word: (counts, devices) => withNames(counted(counts.devices ?? 0, 'Device'), devices) },
-  { key: 'plugins', word: counts => counted(counts.plugins ?? 0, 'Plugin') },
-  { key: 'screens', word: screens },
-  { key: 'mashupConfigurations', word: counts => counted(counts.mashupConfigurations ?? 0, 'Mashup') },
-  { key: 'palettes', word: counts => counted(counts.palettes ?? 0, 'custom Palette') },
-  { key: 'firmware', word: counts => counted(counts.firmware ?? 0, 'custom Firmware', 'custom Firmware') },
-]
+type KindWording = (counts: ImportCounts, devices: Ref[]) => string
 
-function kindsOf(counts: ImportCounts, devices: Ref[]) {
-  return SUMMARY_KINDS.filter(({ key }) => (counts[key] ?? 0) > 0).map(({ word }) => word(counts, devices))
+/** The kinds a summary counts, in its order, each with how it is worded. The rows under a Plugin and under a Screen are counted with the record they belong to. */
+const SUMMARY_KINDS = {
+  devices: (counts, devices) => withNames(counted(counts.devices ?? 0, 'Device'), devices),
+  plugins: counts => counted(counts.plugins ?? 0, 'Plugin'),
+  screens,
+  mashupConfigurations: counts => counted(counts.mashupConfigurations ?? 0, 'Mashup'),
+  palettes: counts => counted(counts.palettes ?? 0, 'custom Palette'),
+  firmware: counts => counted(counts.firmware ?? 0, 'custom Firmware', 'custom Firmware'),
+} satisfies Record<string, KindWording>
+
+function kindsOf(kinds: Record<string, KindWording>, counts: ImportCounts, devices: Ref[]) {
+  return Object.entries(kinds).filter(([key]) => (counts[key] ?? 0) > 0).map(([, word]) => word(counts, devices))
 }
 
 function recordsIn(counts: ImportCounts) {
-  return SUMMARY_KINDS.reduce((sum, { key }) => sum + (counts[key] ?? 0), 0)
+  return Object.keys(SUMMARY_KINDS).reduce((sum, key) => sum + (counts[key] ?? 0), 0)
 }
 
 export function addsLine({ adds, devices }: Pick<ImportCheck, 'adds' | 'devices'>) {
-  return kindsOf(adds, devices.added).join(', ') || 'Nothing'
+  return kindsOf({ ...SUMMARY_KINDS, screens: screensWithSchedules }, adds, devices.added).join(', ') || 'Nothing'
 }
 
 /** Nothing when the archive overwrites nothing: the summary then has no "Overwrites". */
 export function overwritesLine({ overwrites, devices }: Pick<ImportCheck, 'overwrites' | 'devices'>) {
-  const kinds = kindsOf(overwrites, devices.overwritten)
+  const kinds = kindsOf(SUMMARY_KINDS, overwrites, devices.overwritten)
   if (kinds.length === 0)
     return undefined
   return recordsIn(overwrites) === 1

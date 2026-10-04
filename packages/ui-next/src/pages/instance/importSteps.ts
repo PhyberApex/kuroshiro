@@ -20,7 +20,7 @@ type ImportStep
  */
 export function useImportSteps(version: () => string) {
   const step = ref<ImportStep>({ at: 'choose' })
-  const shared = [useDevices(), useAlerts(), useInstanceFacts()]
+  const shellReads = [useDevices(), useAlerts(), useInstanceFacts()]
 
   async function read(file: File) {
     step.value = { at: 'reading', file }
@@ -33,18 +33,19 @@ export function useImportSteps(version: () => string) {
   }
 
   async function confirm() {
-    const reading = step.value
-    if (reading.at !== 'read' || reading.importing)
+    const current = step.value
+    if (current.at !== 'read' || current.importing)
       return
-    step.value = { ...reading, importing: true }
+    step.value = { ...current, importing: true }
     try {
-      step.value = { at: 'imported', summary: await importConfiguration(reading.file) }
-      // An import changes almost everything the shell shows: the bar's Devices, the Alerts, the Instance facts.
-      await Promise.all(shared.map(load => load.reload()))
+      step.value = { at: 'imported', summary: await importConfiguration(current.file) }
     }
     catch (error) {
       step.value = { at: 'refused', notice: refusalNotice(error, version(), 'imported') }
+      return
     }
+    // An import changes almost everything the shell shows: the bar's Devices, the Alerts, the Instance facts.
+    await Promise.all(shellReads.map(load => load.reload()))
   }
 
   function startOver() {

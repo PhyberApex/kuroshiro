@@ -25,6 +25,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
 import { BOOLEAN_SETTING_KEYS, CONFIGURATION_REDACTION_SENTINEL, SETTING_KEYS } from 'kuroshiro-shared'
+import { QueryFailedError } from 'typeorm'
 import { DeviceModel } from '../../device-models/entities/device-model.entity.js'
 import { Palette } from '../../device-models/entities/palette.entity.js'
 import { Device } from '../../devices/devices.entity.js'
@@ -48,6 +49,7 @@ import generateApikey from '../../utils/generateApikey.js'
 import { resolveAppPath } from '../../utils/pathHelper.js'
 import { CONFIG_SCHEMA_VERSION, PREVIOUS_CONFIG_SCHEMA_VERSION } from '../schema-version.js'
 import { CONFIG_ARCHIVE_FILES } from '../types.js'
+import { toImportCheck } from './import-check.mapper.js'
 
 /** What one run over an archive has done so far. A check runs the same import and is rolled back at its end. */
 interface ImportRun {
@@ -74,6 +76,27 @@ interface ArchiveContents {
 
 /** Thrown at the end of a check's transaction, so that the database rolls back everything the check did. */
 class CheckFinished extends Error {}
+
+/** A record of the archive that this Instance cannot take, for a reason the database does not give. */
+class RecordRefused extends Error {}
+
+const POSTGRES_DATA_EXCEPTION = '22'
+const POSTGRES_INTEGRITY_VIOLATION = '23'
+
+/** Whether a failed query failed over the row it was given: a value of the wrong shape, or a constraint. */
+function isRefusedRow(error: unknown): error is QueryFailedError {
+  const code = error instanceof QueryFailedError ? (error.driverError as { code?: unknown } | undefined)?.code : undefined
+  return typeof code === 'string' && [POSTGRES_DATA_EXCEPTION, POSTGRES_INTEGRITY_VIOLATION].includes(code.slice(0, 2))
+}
+
+/** A refusal about the archive as a whole, which says more than the record it surfaced at. */
+function isArchiveRefusal(error: unknown): boolean {
+  return error instanceof ApiException && (error.code === 'archive-not-zip' || error.code === 'archive-not-configuration')
+}
+
+function isRecordRefusal(error: unknown): error is Error {
+  return !isArchiveRefusal(error) && (error instanceof RecordRefused || error instanceof ApiException || isRefusedRow(error))
+}
 
 function notAZip(): ApiException {
   return new ApiException(HttpStatus.BAD_REQUEST, 'archive-not-zip', 'The file is not a .zip that can be read.')
@@ -135,19 +158,7 @@ export class ConfigurationImportService {
   async checkZip(buffer: Buffer): Promise<ImportCheck> {
     const archive = this.readArchive(buffer)
     const run = await this.run(archive, true)
-    return {
-      archive: {
-        kuroshiroVersion: typeof archive.manifest.kuroshiroVersion === 'string' ? archive.manifest.kuroshiroVersion : null,
-        exportedAt: typeof archive.manifest.exportedAt === 'string' ? archive.manifest.exportedAt : null,
-        schemaVersion: archive.manifest.schemaVersion,
-        redacted: archive.manifest.redacted === true,
-      },
-      adds: run.created,
-      overwrites: run.updated,
-      devices: run.devices,
-      settings: { overridden: [...SETTING_KEYS, ...BOOLEAN_SETTING_KEYS].filter(key => archive.settings[key] != null).length },
-      warnings: run.warnings,
-    }
+    return toImportCheck(archive.manifest, archive.settings, run)
   }
 
   private readArchive(buffer: Buffer): ArchiveContents {
@@ -263,15 +274,20 @@ export class ConfigurationImportService {
     await repo.save(row)
   }
 
-  /** Runs one record's upsert, and if it throws, refuses the whole archive naming the record that broke the transaction (ADR-0021). */
+  /**
+   * Runs one record's upsert, and when the record is what failed, refuses the whole archive naming it (ADR-0021).
+   * Anything else that goes wrong there (a lost connection, a bug) is not the archive's fault and is thrown on as it is.
+   */
   private async withEntryContext<T>(entity: string, id: string | null, fn: () => Promise<T>): Promise<T> {
     try {
       return await fn()
     }
     catch (error) {
-      const reason = error instanceof Error ? error.message : String(error)
+      if (!isRecordRefusal(error)) {
+        throw error
+      }
       const record = id === null ? entity : `${entity} ${id}`
-      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'archive-record-refused', `${record} could not be imported: ${reason}`, { entity, id, reason })
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'archive-record-refused', `${record} could not be imported: ${error.message}`, { entity, id, reason: error.message })
     }
   }
 
@@ -315,7 +331,7 @@ export class ConfigurationImportService {
     if (!entry) {
       throw notAConfigurationArchive(`${filename} not found`)
     }
-    const text = this.readEntry(entry)
+    const text = this.readEntry(entry).toString('utf8')
     try {
       return JSON.parse(text)
     }
@@ -324,9 +340,9 @@ export class ConfigurationImportService {
     }
   }
 
-  private readEntry(entry: AdmZip.IZipEntry): string {
+  private readEntry(entry: AdmZip.IZipEntry): Buffer {
     try {
-      return entry.getData().toString('utf8')
+      return entry.getData()
     }
     catch {
       throw notAZip()
@@ -335,8 +351,8 @@ export class ConfigurationImportService {
 
   private readList<T>(zip: AdmZip, filename: string): T[] {
     const list = this.readJson(zip, filename)
-    if (!Array.isArray(list)) {
-      throw notAConfigurationArchive(`${filename} is not a list`)
+    if (!Array.isArray(list) || !list.every(entry => isRecord(entry) && typeof entry.id === 'string')) {
+      throw notAConfigurationArchive(`${filename} is not a list of records with an id`)
     }
     return list as T[]
   }
@@ -513,9 +529,9 @@ export class ConfigurationImportService {
       const relativePath = entry.entryName.slice(prefix.length)
       if (relativePath === 'src/settings.yml') {
         hasSettings = true
-        hasDataSources = listsDataSources(entry.getData().toString('utf8'))
+        hasDataSources = listsDataSources(this.readEntry(entry).toString('utf8'))
       }
-      sub.addFile(relativePath, entry.getData())
+      sub.addFile(relativePath, this.readEntry(entry))
     }
 
     if (!hasSettings) {
@@ -565,7 +581,7 @@ export class ConfigurationImportService {
     }
     const holder = await repo.findOneBy({ webhookToken })
     if (holder && holder.id !== pluginId) {
-      throw new Error(`its Webhook Token is already in use by a different Plugin (${holder.id})`)
+      throw new RecordRefused(`its Webhook Token is already in use by a different Plugin (${holder.id})`)
     }
   }
 
@@ -706,8 +722,8 @@ export class ConfigurationImportService {
 
     const screen = await this.saveScreenRow(repos, entry, deviceId, run)
 
-    if (entry.type === 'file' && !run.checkOnly) {
-      await this.restoreScreenImage(zip, entry.id, deviceId)
+    if (entry.type === 'file') {
+      await this.restoreScreenImage(zip, entry.id, deviceId, run)
     }
 
     if (entry.schedule) {
@@ -775,13 +791,18 @@ export class ConfigurationImportService {
     }
   }
 
-  private async restoreScreenImage(zip: AdmZip, screenId: string, deviceId: string): Promise<void> {
+  /** A check reads the image as an import does, so that an archive whose image cannot be read is refused by both, and stops before the write, which a rollback would not undo. */
+  private async restoreScreenImage(zip: AdmZip, screenId: string, deviceId: string, run: ImportRun): Promise<void> {
     const imageEntry = zip.getEntries().find(e => !e.isDirectory && e.entryName.startsWith(`screens/${screenId}/`))
     if (!imageEntry) {
       return
     }
+    const image = this.readEntry(imageEntry)
+    if (run.checkOnly) {
+      return
+    }
     const destDir = resolveAppPath('public', 'screens', 'devices', deviceId)
     await fs.promises.mkdir(destDir, { recursive: true })
-    await fs.promises.writeFile(path.join(destDir, `${screenId}.png`), imageEntry.getData())
+    await fs.promises.writeFile(path.join(destDir, `${screenId}.png`), image)
   }
 }

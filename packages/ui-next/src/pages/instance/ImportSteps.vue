@@ -1,19 +1,20 @@
 <script setup lang="ts">
-import { computed, nextTick, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, useId, useTemplateRef, watch } from 'vue'
 import FileDrop from '@/components/FileDrop.vue'
 import { formatBytes } from '@/components/fileRules'
 import Notice from '@/components/Notice.vue'
 import LoadingLine from '@/patterns/LoadingLine.vue'
+import { madeFor } from './configurationArchiveWording'
 import ImportOutcome from './ImportOutcome.vue'
 import { useImportSteps } from './importSteps'
 import ImportSummary from './ImportSummary.vue'
 
 const props = defineProps<{
-  /** The Instance has no Device: there is nothing an import could leave. */
-  fresh: boolean
+  /** How many Devices the Instance has. One without any is fresh: what an import is made for. */
+  deviceCount: number
   /** The largest archive the Instance takes. */
   maxBytes: number
-  /** This Kuroshiro's version. */
+  /** Of this Kuroshiro, which a refusal names. */
   version: string
 }>()
 
@@ -27,7 +28,7 @@ const fileWording = computed(() => ({
 }))
 
 const stage = useTemplateRef('stage')
-const fileInputId = 'configuration-archive-file'
+const fileInputId = useId()
 
 /** Each step takes the place of the one before, and the control that had the focus goes with it: the focus follows to the new step, or back to the file input. */
 watch(() => step.value.at, async (at) => {
@@ -40,6 +41,9 @@ watch(() => step.value.at, async (at) => {
 </script>
 
 <template>
+  <p v-if="step.at !== 'imported'" class="made-for">
+    {{ madeFor(deviceCount) }}
+  </p>
   <div ref="stage" class="stage" tabindex="-1">
     <FileDrop
       v-if="step.at === 'choose'"
@@ -59,7 +63,7 @@ watch(() => step.value.at, async (at) => {
       v-if="step.at === 'read'"
       :file-name="step.file.name"
       :check="step.check"
-      :fresh="fresh"
+      :fresh="deviceCount === 0"
       :importing="step.importing"
       @confirm="confirm"
       @cancel="startOver"
@@ -77,6 +81,12 @@ watch(() => step.value.at, async (at) => {
 
 <style scoped>
 @layer components {
+  .made-for {
+    max-width: var(--measure);
+    color: var(--color-ink-soft);
+    text-wrap: pretty;
+  }
+
   .stage {
     margin-top: var(--space-4);
   }

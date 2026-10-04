@@ -69,6 +69,10 @@ describe('configuration archive wording', () => {
       expect(overwritesLine(buildImportCheck({ overwrites: { plugins: 1 }, devices: { added: [], overwritten: [] } }))).toBe('1 Plugin that is already here under the same id. What you changed on it since the export is lost.')
     })
 
+    it('counts Screens without their Schedules, which the example of the spec does not name', () => {
+      expect(overwritesLine(buildImportCheck({ overwrites: { screens: 5, schedules: 2 }, devices: { added: [], overwritten: [] } }))).toBe('5 Screens that are already here under the same id. What you changed on them since the export is lost.')
+    })
+
     it('is nothing when it overwrites nothing', () => {
       expect(overwritesLine(buildImportCheck({ overwrites: {}, devices: { added: [], overwritten: [] } }))).toBeUndefined()
     })
