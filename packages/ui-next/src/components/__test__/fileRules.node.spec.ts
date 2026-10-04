@@ -36,4 +36,16 @@ describe('file rules', () => {
     expect(refusalOf({ name: 'kitchen.png', size: 13_002_342 }, IMAGES))
       .toBe('kitchen.png is 12.4 MB. The largest file allowed is 10 MB.')
   })
+
+  it('words a refusal as its place words it, given the file\'s size', () => {
+    const firmware = {
+      accept: ['.bin'],
+      maxBytes: 8 * MEGABYTE,
+      formats: 'BIN',
+      wording: { wrongType: 'A Firmware file ends in .bin.', tooLarge: (size: string) => `This file is ${size}. A Firmware can be up to 8 MB.` },
+    }
+
+    expect(refusalOf({ name: 'firmware.zip', size: 12 }, firmware)).toBe('A Firmware file ends in .bin.')
+    expect(refusalOf({ name: 'firmware.bin', size: 13_002_342 }, firmware)).toBe('This file is 12.4 MB. A Firmware can be up to 8 MB.')
+  })
 })

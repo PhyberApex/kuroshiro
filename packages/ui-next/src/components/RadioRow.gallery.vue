@@ -3,11 +3,13 @@ import type { RadioChoice } from './RadioRow.vue'
 import { ref } from 'vue'
 import Specimen from '@/gallery/Specimen.vue'
 import SpecimenRow from '@/gallery/SpecimenRow.vue'
+import Checkbox from './Checkbox.vue'
 import RadioRow from './RadioRow.vue'
 
 type Kind = 'plugin' | 'mashup' | 'link' | 'file' | 'html'
 type WhileAsleep = 'keep' | 'sleep-image'
 type MergeStrategy = 'standard' | 'deep_merge'
+type Fits = 'some' | 'all'
 
 const kinds: RadioChoice<Kind>[] = [
   { value: 'plugin', label: 'Plugin', hint: 'One of your Plugins, rendered for this Device. Checked.' },
@@ -25,7 +27,13 @@ const whileAsleep: RadioChoice<WhileAsleep>[] = [
   { value: 'sleep-image', label: 'Show the sleep image' },
 ]
 
+const fits: RadioChoice<Fits>[] = [
+  { value: 'some', label: 'Only these Device Models', hint: 'It is offered to Devices of these Device Models only.' },
+  { value: 'all', label: 'Every Device Model', hint: 'Nothing stops it from being pushed to a Device it was not built for.' },
+]
+
 const kind = ref<Kind>('plugin')
+const fit = ref<Fits>('some')
 const asleep = ref<WhileAsleep>('keep')
 const mergeStrategy = ref<MergeStrategy>('standard')
 </script>
@@ -51,12 +59,35 @@ const mergeStrategy = ref<MergeStrategy>('standard')
       <RadioRow v-model="asleep" class="rows" :choices="whileAsleep" aria-label="While asleep" disabled />
     </Specimen>
   </SpecimenRow>
+
+  <SpecimenRow title="With what a choice holds under it">
+    <Specimen caption="between its row and the next" wide>
+      <RadioRow v-model="fit" class="rows" :choices="fits" aria-label="Fits">
+        <template #under="{ choice }">
+          <div v-if="choice.value === 'some' && fit === 'some'" class="held">
+            <Checkbox :model-value="true">
+              TRMNL OG
+            </Checkbox>
+            <Checkbox>TRMNL X</Checkbox>
+          </div>
+        </template>
+      </RadioRow>
+    </Specimen>
+  </SpecimenRow>
 </template>
 
 <style scoped>
 @layer components {
   .rows {
     width: 100%;
+  }
+
+  .held {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-6);
+    padding-left: calc(var(--icon) + var(--space-3));
+    border-bottom: var(--rule);
   }
 }
 </style>

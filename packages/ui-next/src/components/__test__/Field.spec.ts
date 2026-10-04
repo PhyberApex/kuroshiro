@@ -9,7 +9,7 @@ import Field from '../Field.vue'
 import NumberInput from '../NumberInput.vue'
 
 const RefreshRate = defineComponent({
-  props: { hint: String, error: String, id: String },
+  props: { hint: String, error: String, id: String, optional: Boolean },
   setup: props => () => h(Field, { label: 'Refresh rate', ...props }, {
     default: ({ control }: { control: object }) => h(NumberInput, { modelValue: 12, ...control }),
   }),
@@ -27,6 +27,12 @@ describe('field', () => {
     await screen.getByText('Refresh rate').click()
 
     await expect.element(screen.getByRole('spinbutton', { name: 'Refresh rate' })).toHaveFocus()
+  })
+
+  it('marks a control that may be left empty as optional, in its label', async () => {
+    const screen = await mount(RefreshRate, { props: { optional: true } })
+
+    await expect.element(screen.getByRole('spinbutton', { name: 'Refresh rate optional' })).toBeVisible()
   })
 
   it('describes the control with its hint', async () => {

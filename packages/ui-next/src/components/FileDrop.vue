@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { FileWording } from './fileRules'
 import { computed, ref, useAttrs, useId } from 'vue'
 import Button from './Button.vue'
 import FieldError from './FieldError.vue'
@@ -16,6 +17,8 @@ const props = withDefaults(defineProps<{
   prompt?: string
   /** The accepted types as the admin reads them: "PNG, JPEG or WebP". Left out, they are read off `accept`. */
   formats?: string
+  /** The prompt and the two refusals as the place's spec words them, in place of the sentences built from `prompt` and `formats`. */
+  wording?: FileWording
   disabled?: boolean
   invalid?: boolean
   /** Holds the dragging-over state, for the gallery. */
@@ -37,6 +40,7 @@ const rules = computed(() => ({
   accept: props.accept,
   maxBytes: props.maxBytes,
   formats: props.formats ?? formatNames(props.accept),
+  wording: props.wording,
 }))
 
 const refusal = ref<string>()
@@ -88,6 +92,9 @@ function onDragLeave(event: DragEvent) {
         </template>
         <template v-else-if="model">
           <span class="name">{{ model.name }}</span> <span>{{ formatBytes(model.size) }}</span>
+        </template>
+        <template v-else-if="wording?.prompt">
+          {{ wording.prompt }}
         </template>
         <template v-else>
           {{ prompt }} {{ rules.formats }}, up to {{ formatBytes(maxBytes) }}.

@@ -1,6 +1,7 @@
 import type { RadioChoice } from '../RadioRow.vue'
 import { describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
+import { h } from 'vue'
 import { expectAccessible } from '@/testing/a11y'
 import { pressAndHold } from '@/testing/keys'
 import { withCoarsePointer } from '@/testing/media'
@@ -34,6 +35,17 @@ describe('radio row', () => {
     await expect.element(group.getByRole('radio', { name: 'Plugin', exact: true })).toHaveAccessibleDescription('One of your Plugins, rendered for this Device')
     await expect.element(group.getByRole('radio', { name: 'External link', exact: true })).toHaveAccessibleDescription('')
     await expect.element(group.getByRole('radio', { name: 'Mashup', exact: true })).not.toBeChecked()
+  })
+
+  it('renders what a choice holds under its row, between that row and the next', async () => {
+    const screen = await mount(RadioRow, {
+      props: { choices: KINDS, modelValue: 'plugin' },
+      attrs: { 'aria-label': 'Kind' },
+      slots: { under: ({ choice }: { choice: RadioChoice<string> }) => choice.value === 'plugin' ? h('p', 'Which Plugin?') : undefined },
+    })
+
+    const group = screen.getByRole('radiogroup', { name: 'Kind' }).element()
+    expect([...group.children].map(child => child.getAttribute('role') ?? child.textContent)).toEqual(['radio', 'Which Plugin?', 'radio', 'radio'])
   })
 
   it('shows the code of a row beside its name in mono, and describes the row by it without renaming it', async () => {
