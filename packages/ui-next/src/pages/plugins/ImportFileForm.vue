@@ -15,7 +15,7 @@ const problemId = useId()
 const file = ref<File | null>(null)
 
 const importing = useImportPlugin({
-  entered: {
+  aboutEntry: {
     'import-not-zip': true,
     'import-no-plugin': true,
     'import-legacy-format': true,

@@ -8,6 +8,9 @@ describe('reading a Recipe id', () => {
     ['https://trmnl.com/recipes/41120', '41120'],
     ['https://usetrmnl.com/recipes/41120/install?ref=x', '41120'],
     ['trmnl.com/recipes/7', '7'],
+    ['041120', '41120'],
+    ['https://trmnl.com/recipes/007', '7'],
+    ['0', '0'],
   ])('reads “%s” as %s', (entered, id) => {
     expect(recipeIdOf(entered)).toBe(id)
   })

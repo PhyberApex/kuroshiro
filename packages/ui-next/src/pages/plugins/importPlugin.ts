@@ -1,4 +1,4 @@
-import type { ApiErrorCode, PluginImportResult, PluginSummary } from 'kuroshiro-shared'
+import type { ApiErrorCode, PluginImportOrigin, PluginImportResult, PluginSummary } from 'kuroshiro-shared'
 import type { CarriedDevice } from './addPlugin'
 import type { PluginArrival } from './pluginArrival'
 import type { Sentence } from '@/pages/devices/sentence'
@@ -13,11 +13,12 @@ import { useAddPluginPage } from './addPluginPage'
 import { openPluginPage } from './pluginArrival'
 import { pluginPath } from './pluginPaths'
 
-/** What is wrong with a Recipe as entered, or nothing when its id can be read. */
-export function recipeProblem(entered: string) {
-  if (!entered.trim())
-    return 'Enter a Recipe\'s address or its id.'
-  return recipeIdOf(entered) ? undefined : NOT_A_RECIPE
+/** The id of the Recipe that was entered, or what is wrong with what was entered. */
+export function enteredRecipe(entered: string): { id: string, problem?: undefined } | { id?: undefined, problem: string } {
+  const id = recipeIdOf(entered)
+  if (id)
+    return { id }
+  return { problem: entered.trim() ? NOT_A_RECIPE : 'Enter a Recipe\'s address or its id.' }
 }
 
 /** The Plugins that came from the Recipe, as the sentence under the Recipe field; none, no sentence. */
@@ -36,7 +37,7 @@ export interface ImportWording {
   /** The site the way downloads from, named when it does not answer: "trmnl.com". A way that downloads nothing leaves it out. */
   upstream?: string
   /** The refusals that are about what was entered: each with its sentence for this way, or `true` where the refusal's own wording stands. */
-  entered: Partial<Record<ApiErrorCode, string | true>>
+  aboutEntry: Partial<Record<ApiErrorCode, string | true>>
 }
 
 /** Why nothing was imported, by where the form says it. */
@@ -49,9 +50,9 @@ export interface ImportTrouble {
   failure?: string
 }
 
-export function importTrouble(error: unknown, { upstream, entered }: ImportWording): ImportTrouble {
+export function importTrouble(error: unknown, { upstream, aboutEntry }: ImportWording): ImportTrouble {
   if (isRefusal(error)) {
-    const wording = entered[error.code]
+    const wording = aboutEntry[error.code]
     if (wording)
       return { entered: wording === true ? error.message : wording }
     if (upstream && error.code === 'upstream-unreachable')
@@ -60,9 +61,19 @@ export function importTrouble(error: unknown, { upstream, entered }: ImportWordi
   return { failure: `Not imported. ${failureReason(error) ?? 'Something went wrong.'}` }
 }
 
+function originName(origin: PluginImportOrigin) {
+  switch (origin.type) {
+    case 'recipe':
+      return origin.name
+    case 'file':
+      return origin.fileName
+    case 'github':
+      return origin.repository
+  }
+}
+
 export function importArrival({ origin, hasTransform }: PluginImportResult, device?: CarriedDevice): PluginArrival {
-  const name = origin.type === 'recipe' ? origin.name : origin.type === 'file' ? origin.fileName : origin.repository
-  return { how: 'imported', origin: origin.type, name, hasTransform, device }
+  return { how: 'imported', origin: origin.type, name: originName(origin), hasTransform, device }
 }
 
 /** What the forms of the three ways of importing share: the import under way, its trouble, and the Plugin's page once it worked. */

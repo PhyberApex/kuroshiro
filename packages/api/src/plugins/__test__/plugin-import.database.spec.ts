@@ -322,6 +322,21 @@ describe('importing a Plugin, against a real database', () => {
       expect(result.plugin).toMatchObject({ kind: 'Webhook', webhook: { mergeStrategy: 'deep_merge', streamLimit: null } })
     })
 
+    it.each([undefined, null, 0, 2.5, 'twelve'])('refuses a stream whose Stream Limit is %s with 422, not a server error', async (stream_limit) => {
+      const settings = yaml.dump({ strategy: 'webhook', merge_strategy: 'stream', stream_limit })
+
+      const refusal = await refused(await upload(zipOf({ ...WEATHER_FILES, 'src/settings.yml': settings }), 'feed.zip'), 422)
+
+      expect(refusal.code).toBe('unprocessable')
+      expect(await listed()).toEqual([])
+    })
+
+    it('imports a Plugin that TRMNL exported with a webhook strategy as a Webhook-kind Plugin that replaces its payload', async () => {
+      const result = await imported(await upload(zipOf({ ...WEATHER_FILES, 'src/settings.yml': yaml.dump({ strategy: 'webhook' }) }), 'feed.zip'))
+
+      expect(result.plugin).toMatchObject({ kind: 'Webhook', dataSources: [], webhook: { mergeStrategy: 'standard', streamLimit: null } })
+    })
+
     it('assigns the Plugin to the Device it carries, as its last Screen, and leaves the Active Screen alone', async () => {
       const kitchen = await addKitchenWithTwoScreens()
       const [welcome, notes] = await screensOf(kitchen)

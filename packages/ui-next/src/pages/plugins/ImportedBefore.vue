@@ -36,6 +36,11 @@ const parts = computed(() => importedBefore(props.plugins))
     font-weight: var(--weight-medium);
   }
 
+  /* The region is there before its sentence. Empty, it takes no room in the form's grid. */
+  .imported-before:empty {
+    display: none;
+  }
+
   .mark {
     margin-top: calc((1lh - var(--icon)) / 2);
   }

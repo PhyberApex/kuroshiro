@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { recipeIdOf } from 'kuroshiro-shared'
 import { computed, ref, watch } from 'vue'
 import { importRecipe, listPlugins } from '@/api/plugins'
 import Field from '@/components/Field.vue'
@@ -8,14 +7,14 @@ import TextInput from '@/components/TextInput.vue'
 import { useLoad } from '@/patterns/useLoad'
 import AddPluginFoot from './AddPluginFoot.vue'
 import ImportedBefore from './ImportedBefore.vue'
-import { recipeProblem, useImportPlugin } from './importPlugin'
+import { enteredRecipe, useImportPlugin } from './importPlugin'
 
 const entered = ref('')
-const recipeId = computed(() => recipeIdOf(entered.value))
+const recipe = computed(() => enteredRecipe(entered.value))
 
 const importing = useImportPlugin({
   upstream: 'trmnl.com',
-  entered: {
+  aboutEntry: {
     'recipe-id-invalid': true,
     'recipe-not-found': true,
     'recipe-oauth': true,
@@ -28,16 +27,15 @@ watch(entered, importing.clear)
 
 // The line about an earlier import is a courtesy: when the Plugins cannot be read it is left out and the import goes on.
 const plugins = useLoad(listPlugins)
-const fromThisRecipe = computed(() => recipeId.value && !importing.trouble.entered
-  ? (plugins.data ?? []).filter(plugin => plugin.sourceRecipeId === recipeId.value)
+const fromThisRecipe = computed(() => recipe.value.id && !importing.trouble.entered
+  ? (plugins.data ?? []).filter(plugin => plugin.sourceRecipeId === recipe.value.id)
   : [])
 
 function add() {
-  const problem = recipeProblem(entered.value)
-  const recipe = recipeId.value
-  if (problem || !recipe)
-    return importing.refuse(problem ?? '')
-  return importing.run(deviceId => importRecipe({ recipe, ...(deviceId ? { deviceId } : {}) }))
+  const { id, problem } = recipe.value
+  if (problem !== undefined)
+    return importing.refuse(problem)
+  return importing.run(deviceId => importRecipe({ recipe: id, deviceId }))
 }
 </script>
 
@@ -72,10 +70,6 @@ function add() {
 
   .import-recipe .recipe {
     max-width: none;
-  }
-
-  .import-recipe .imported-before:empty {
-    display: none;
   }
 
   .browse {

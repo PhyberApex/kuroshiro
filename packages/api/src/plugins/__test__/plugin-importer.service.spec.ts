@@ -60,7 +60,7 @@ describe('pluginImporterService', () => {
     const tempZipPath = path.join('/tmp', `test-${Date.now()}.zip`)
     await fs.promises.writeFile(tempZipPath, zip.toBuffer())
 
-    const result = await service.importFromUpload({ buffer: fs.readFileSync(tempZipPath), originalname: path.basename(tempZipPath) })
+    const result = await service.importFromUpload({ buffer: fs.readFileSync(tempZipPath), originalname: path.basename(tempZipPath) }).plugin
 
     await fs.promises.unlink(tempZipPath)
 
@@ -93,7 +93,7 @@ describe('pluginImporterService', () => {
     const tempZipPath = path.join('/tmp', `test-${Date.now()}.zip`)
     await fs.promises.writeFile(tempZipPath, zip.toBuffer())
 
-    const result = await service.importFromUpload({ buffer: fs.readFileSync(tempZipPath), originalname: path.basename(tempZipPath) })
+    const result = await service.importFromUpload({ buffer: fs.readFileSync(tempZipPath), originalname: path.basename(tempZipPath) }).plugin
 
     await fs.promises.unlink(tempZipPath)
 
@@ -121,7 +121,7 @@ describe('pluginImporterService', () => {
     const tempZipPath = path.join('/tmp', `test-${Date.now()}.zip`)
     await fs.promises.writeFile(tempZipPath, zip.toBuffer())
 
-    const result = await service.importFromUpload({ buffer: fs.readFileSync(tempZipPath), originalname: path.basename(tempZipPath) })
+    const result = await service.importFromUpload({ buffer: fs.readFileSync(tempZipPath), originalname: path.basename(tempZipPath) }).plugin
 
     await fs.promises.unlink(tempZipPath)
 
@@ -185,7 +185,7 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'test-plugin.zip')
       zip.writeZip(tmpPath)
 
-      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) })
+      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) }).plugin
 
       expect(result.name).toBe('Test Plugin')
       expect(result.description).toBe('Test Description')
@@ -220,7 +220,7 @@ describe('pluginImporterService', () => {
       zip.addFile('.trmnlp.yml', Buffer.from('name: Test', 'utf8'))
       zip.addFile('src/full.liquid', Buffer.from('<p>Hi</p>', 'utf8'))
 
-      const result = service.importFromUpload({ buffer: zip.toBuffer(), originalname: 'test.zip' })
+      const result = service.importFromUpload({ buffer: zip.toBuffer(), originalname: 'test.zip' }).plugin
 
       expect(result).toMatchObject({ name: 'Test', kind: 'Poll', dataSources: [] })
     })
@@ -289,7 +289,7 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'test-terminus.zip')
       zip.writeZip(tmpPath)
 
-      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) })
+      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) }).plugin
 
       expect(result.name).toBe('Terminus Plugin')
       expect(result.refreshInterval).toBe(45)
@@ -319,7 +319,7 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'test-transform.zip')
       zip.writeZip(tmpPath)
 
-      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) })
+      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) }).plugin
 
       expect(result.dataSources[0].transformJs).toBe('module.exports = (data) => data')
 
@@ -342,7 +342,7 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'my-cool-plugin.zip')
       zip.writeZip(tmpPath)
 
-      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) })
+      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) }).plugin
 
       expect(result.name).toBe('my cool plugin')
 
@@ -367,7 +367,7 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'multi-layout.zip')
       zip.writeZip(tmpPath)
 
-      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) })
+      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) }).plugin
 
       expect(result.templates).toHaveLength(3)
       expect(result.templates.find(t => t.layout === 'full')).toBeTruthy()
@@ -405,7 +405,7 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'test-multi-source.zip')
       zip.writeZip(tmpPath)
 
-      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) })
+      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) }).plugin
 
       fs.unlinkSync(tmpPath)
 
@@ -431,7 +431,7 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'test-literal-source.zip')
       zip.writeZip(tmpPath)
 
-      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) })
+      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) }).plugin
 
       fs.unlinkSync(tmpPath)
 
@@ -458,7 +458,7 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'test-unnamed-sources.zip')
       zip.writeZip(tmpPath)
 
-      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) })
+      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) }).plugin
 
       fs.unlinkSync(tmpPath)
 

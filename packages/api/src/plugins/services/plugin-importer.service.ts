@@ -143,6 +143,9 @@ interface RecipeSettings extends TerminusSettings {
   static_data?: JsonObject | null
 }
 
+/** A Plugin read from a Recipe, tied to it by the Recipe's id. */
+export type RecipePlugin = ParsedPlugin & { sourceRecipeId: string }
+
 export interface ParsedDataSource {
   name: string
   mode: 'fetch' | 'literal'
@@ -185,13 +188,13 @@ export interface ParsedPlugin {
 export class PluginImporterService {
   private readonly logger = new Logger(PluginImporterService.name)
 
-  /** Reads an uploaded `.trmnlp` zip, which is held in memory. */
-  importFromUpload(file: { buffer: Buffer, originalname: string } | undefined): ParsedPlugin {
+  /** Reads an uploaded `.trmnlp` zip, which is held in memory, and answers it with the file's name. */
+  importFromUpload(file: { buffer: Buffer, originalname: string } | undefined): { plugin: ParsedPlugin, fileName: string } {
     const zip = file && /\.zip$/i.test(file.originalname) ? openZip(file.buffer) : null
     if (!file || !zip) {
       throw new ApiException(HttpStatus.BAD_REQUEST, 'import-not-zip', 'A Plugin is imported from a .zip file.')
     }
-    return withFullTemplate(this.parseZip(zip, file.originalname.replace(/\.zip$/i, '')))
+    return { plugin: withFullTemplate(this.parseZip(zip, file.originalname.replace(/\.zip$/i, ''))), fileName: file.originalname }
   }
 
   /** Reads the Plugin at the root of a public repository's branch `main`, and answers it with `owner/repository`. */
@@ -228,7 +231,7 @@ export class PluginImporterService {
     }
   }
 
-  /** Parses a `.trmnlp` zip already in memory (e.g. a `plugins/<id>/` folder extracted from a Configuration Archive) through the same manifest/settings/template mapping `importFromFile` uses, without a round trip through disk. */
+  /** Parses a `.trmnlp` zip already in memory (e.g. a `plugins/<id>/` folder extracted from a Configuration Archive) through the same manifest/settings/template mapping an uploaded one gets. */
   parseZip(zip: AdmZip, fallbackName: string, forcedDataSources?: ParsedDataSource[]): ParsedPlugin {
     const zipEntries = zip.getEntries()
 
@@ -306,7 +309,7 @@ export class PluginImporterService {
     return this.buildParsedPlugin(manifest, settings, templates, fallbackName, transformJs ?? undefined, forcedDataSources)
   }
 
-  async importFromRecipe(recipeIdOrUrl: string): Promise<ParsedPlugin> {
+  async importFromRecipe(recipeIdOrUrl: string): Promise<RecipePlugin> {
     const recipeId = recipeIdOf(recipeIdOrUrl)
     if (!recipeId) {
       throw new ApiException(HttpStatus.BAD_REQUEST, 'recipe-id-invalid', 'A Recipe is named by its id or by an address holding recipes/{id}.')
@@ -320,7 +323,7 @@ export class PluginImporterService {
     return this.importFromRecipeArchive(archive, recipeId)
   }
 
-  async importFromRecipeArchive(archiveBuffer: Buffer, recipeId: string): Promise<ParsedPlugin> {
+  async importFromRecipeArchive(archiveBuffer: Buffer, recipeId: string): Promise<RecipePlugin> {
     const entries = openZip(archiveBuffer)?.getEntries()
     const settingsEntry = entries?.find(entry => entry.entryName === 'settings.yml')
     if (!entries || !settingsEntry) {
@@ -358,7 +361,7 @@ export class PluginImporterService {
   // Data Source named 'source', matching the existing single-implicit-source
   // naming convention (issue #794 / ADR-0018). Nothing fetches for a literal
   // source, so a `transform.js` alongside it has nothing to transform.
-  private importStaticRecipe(entries: AdmZip.IZipEntry[], settingsContent: string, recipeSettings: RecipeSettings, recipeId: string): ParsedPlugin {
+  private importStaticRecipe(entries: AdmZip.IZipEntry[], settingsContent: string, recipeSettings: RecipeSettings, recipeId: string): RecipePlugin {
     const hasTransform = entries.some(entry =>
       entry.entryName === 'transform.js' || entry.entryName.endsWith('/transform.js'),
     )
@@ -445,9 +448,13 @@ export class PluginImporterService {
   // An archive of TRMNL's own names the strategy alone, which is a Webhook Payload replaced at every POST.
   private resolveMerge(settings: TerminusSettings): Pick<ParsedPlugin, 'mergeStrategy' | 'streamLimit'> {
     const mergeStrategy = MERGE_STRATEGIES.find(strategy => strategy === settings.merge_strategy) ?? 'standard'
-    return mergeStrategy === 'stream' && typeof settings.stream_limit === 'number'
-      ? { mergeStrategy, streamLimit: settings.stream_limit }
-      : { mergeStrategy }
+    if (mergeStrategy !== 'stream')
+      return { mergeStrategy }
+    const streamLimit = settings.stream_limit
+    if (typeof streamLimit !== 'number' || !Number.isInteger(streamLimit) || streamLimit < 1) {
+      throw importRefused('unprocessable', 'The Merge Strategy "stream" needs a "stream_limit" that is a whole number of 1 or more.')
+    }
+    return { mergeStrategy, streamLimit }
   }
 
   // Name can be in manifest, settings, or use filename fallback

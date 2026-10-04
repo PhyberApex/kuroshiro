@@ -14,10 +14,9 @@ import type {
   RecipeUpdateMode,
   UpdateItem,
 } from './recipe-update-diff.js'
-import { BadGatewayException, BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { ApiException } from '../../errors/api.exception.js'
 import { PluginDataSource } from '../entities/plugin-data-source.entity.js'
 import { PluginField } from '../entities/plugin-field.entity.js'
 import { PluginTemplate } from '../entities/plugin-template.entity.js'
@@ -146,7 +145,7 @@ export class RecipeUpdateService {
 
   private async prepareDiff(pluginId: string): Promise<{ plugin: Plugin, upstream: ParsedPlugin, contentHash: string, mode: RecipeUpdateMode, items: UpdateItem[] }> {
     const plugin = await this.loadPluginWithSourceRecipe(pluginId)
-    const upstream = await this.fetchUpstream(plugin.sourceRecipeId!)
+    const upstream = await this.importerService.importFromRecipe(plugin.sourceRecipeId!)
     const contentHash = computeRecipeContentHash(upstream)
     const { mode, items } = diffRecipeUpdate(this.snapshotOf(plugin), toComparablePlugin(plugin), parsedToComparable(upstream))
     return { plugin, upstream, contentHash, mode, items }
@@ -219,25 +218,6 @@ export class RecipeUpdateService {
       throw new NotFoundException(`Plugin ${pluginId} was not imported from a Recipe`)
     }
     return plugin
-  }
-
-  // The importer refuses with a coded `ApiException` that says why (the Recipe is gone, TRMNL did not
-  // answer, OAuth, an unsupported strategy), which is answered as it is. Anything else is sorted by its
-  // message into the upstream being unreachable (502) and the caller's to fix (400).
-  private async fetchUpstream(recipeId: string): Promise<ParsedPlugin> {
-    try {
-      return await this.importerService.importFromRecipe(recipeId)
-    }
-    catch (error) {
-      if (error instanceof ApiException) {
-        throw error
-      }
-      const message = error instanceof Error ? error.message : 'Failed to fetch the Recipe'
-      if (message.startsWith('Failed to download Recipe archive')) {
-        throw new BadGatewayException(message)
-      }
-      throw new BadRequestException(message)
-    }
   }
 
   private missingRequiredFieldAssignments(items: UpdateItem[], assignments: DevicePlugin[]): AssignmentsMissingRequiredField[] {

@@ -91,26 +91,26 @@ export class PluginsController {
   @Post('import')
   @UseInterceptors(LimitedFileInterceptor('file', UPLOAD_LIMITS.pluginImportBytes))
   async importPlugin(@UploadedFile() file: Express.Multer.File | undefined, @Body('deviceId') deviceId?: string): Promise<PluginImportResult> {
-    const parsed = this.importerService.importFromUpload(file)
-    return this.imported(parsed, { type: 'file', fileName: file!.originalname }, deviceId)
+    const { plugin, fileName } = this.importerService.importFromUpload(file)
+    return this.answerImport(plugin, { type: 'file', fileName }, deviceId)
   }
 
   @Post('import-github')
   async importFromGithub(@Body() { githubUrl, deviceId }: ImportGithubPluginDto): Promise<PluginImportResult> {
     const { plugin, repository } = await this.importerService.importFromGithubUrl(githubUrl)
-    return this.imported(plugin, { type: 'github', repository }, deviceId)
+    return this.answerImport(plugin, { type: 'github', repository }, deviceId)
   }
 
   @Post('import-recipe')
   async importFromRecipe(@Body() { recipe, deviceId }: ImportRecipeDto): Promise<PluginImportResult> {
     const parsed = await this.importerService.importFromRecipe(recipe)
-    return this.imported(parsed, { type: 'recipe', id: parsed.sourceRecipeId!, name: parsed.name }, deviceId)
+    return this.answerImport(parsed, { type: 'recipe', id: parsed.sourceRecipeId, name: parsed.name }, deviceId)
   }
 
-  private async imported(parsed: ParsedPlugin, origin: PluginImportOrigin, deviceId?: string): Promise<PluginImportResult> {
+  private async answerImport(parsed: ParsedPlugin, origin: PluginImportOrigin, deviceId?: string): Promise<PluginImportResult> {
     // Only a Recipe import keeps what it read as the Recipe Snapshot.
     const sourceRecipeSnapshot = parsed.sourceRecipeId ? { ...parsed } : undefined
-    const id = await this.pluginsService.import({ ...parsed, sourceRecipeSnapshot }, deviceId || undefined)
+    const id = await this.pluginsService.createOnDevice({ ...parsed, sourceRecipeSnapshot }, deviceId || undefined)
     return {
       plugin: await this.pluginReads.detail(id),
       origin,

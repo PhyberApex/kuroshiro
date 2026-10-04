@@ -328,7 +328,7 @@ So a section's test is "edit, press Save Plugin, assert `faked.saves`". `__test_
 | `addPlugin.ts` | The page's pure parts, and those of the two ways of building: the draft, its problems and what is sent |
 | `BuildPluginForm.vue`, `BuildWebhookMerge.vue` | "Build a Poll Plugin" and "Build a Webhook Plugin": one form, told its `kind`, so a name typed for one way stays for the other |
 | `ImportRecipeForm.vue`, `ImportFileForm.vue`, `ImportGithubForm.vue` | The three ways of importing, one form each. `ImportedBefore.vue` is the line "You already have {Plugin} from this Recipe" |
-| `importPlugin.ts` | What the three share: `useImportPlugin(wording)`, and the pure parts under it (`importTrouble`, `importArrival`, `recipeProblem`, `importedBefore`) |
+| `importPlugin.ts` | What the three share: `useImportPlugin(wording)`, and the pure parts under it (`importTrouble`, `importArrival`, `enteredRecipe`, `importedBefore`) |
 
 A way's form is a `form` whose submit adds the Plugin, with an `AddPluginFoot` as its last child:
 
@@ -350,18 +350,18 @@ A way's form is a `form` whose submit adds the Plugin, with an `AddPluginFoot` a
 ```ts
 const importing = useImportPlugin({
   upstream: 'trmnl.com',                                    // named in the notice when it does not answer; a file import has none
-  entered: { 'recipe-oauth': true, 'import-no-plugin': 'This Recipe holds no template, so there is nothing to import.' },
+  aboutEntry: { 'recipe-oauth': true, 'import-no-plugin': 'This Recipe holds no template, so there is nothing to import.' },
 })
 watch(entered, importing.clear)
 
 function add() {
   if (problem) return importing.refuse(problem)             // refused in the browser: nothing is sent
-  return importing.run(deviceId => importRecipe({ recipe, ...(deviceId ? { deviceId } : {}) }))
+  return importing.run(deviceId => importRecipe({ recipe, deviceId }))
 }
 ```
 
 - `run` sends, and on success opens the Plugin's page with the arrival `imported`, carrying the origin, `hasTransform` and the carried Device.
-- `importing.trouble` says why nothing was imported, by where the form shows it: `entered` under the field (a code listed in `entered`, worded by the form or, with `true`, by `refusalWording.ts`), `unanswered` as a `Notice` with "Try again" (`upstream-unreachable`), `failure` for the foot (anything else, as "Not imported. …").
+- `importing.trouble` says why nothing was imported, by where the form shows it: `entered` under the field (a code listed in `aboutEntry`, worded by the form or, with `true`, by `refusalWording.ts`), `unanswered` as a `Notice` with "Try again" (`upstream-unreachable`), `failure` for the foot (anything else, as "Not imported. …").
 - `recipeIdOf(text)` and `githubRepositoryOf(text)` of `kuroshiro-shared` read a Recipe's id and a repository's `owner/repository` exactly as the server does, so the browser refuses what the server would.
 
 ## The Alerts page and an Alert's words

@@ -13,7 +13,7 @@ const entered = ref('')
 
 const importing = useImportPlugin({
   upstream: 'github.com',
-  entered: {
+  aboutEntry: {
     'github-url-invalid': true,
     'github-repo-not-found': true,
     'import-no-plugin': 'This repository holds no Plugin at its root.',
@@ -25,7 +25,7 @@ function add() {
   const githubUrl = entered.value.trim()
   if (!githubRepositoryOf(githubUrl))
     return importing.refuse(NOT_A_REPOSITORY)
-  return importing.run(deviceId => importGithubPlugin({ githubUrl, ...(deviceId ? { deviceId } : {}) }))
+  return importing.run(deviceId => importGithubPlugin({ githubUrl, deviceId }))
 }
 </script>
 

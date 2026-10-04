@@ -118,14 +118,10 @@ export class PluginsService implements OnModuleInit {
   }
 
   /**
-   * Creates the Plugin an importer read and answers its id. With `deviceId` it joins the end of
-   * that Device's Order. All of it happens or none of it.
+   * Creates a whole Plugin, such as an importer read, and answers its id. With `deviceId` it joins
+   * the end of that Device's Order. All of it happens or none of it.
    */
-  async import(plugin: WholePluginDto, deviceId?: string): Promise<string> {
-    return this.createOnDevice(plugin, deviceId)
-  }
-
-  private async createOnDevice(plugin: WholePluginDto, deviceId: string | undefined): Promise<string> {
+  async createOnDevice(plugin: WholePluginDto, deviceId: string | undefined): Promise<string> {
     const created = await this.pluginRepository.manager.transaction(async (manager) => {
       const transaction = this.within(manager)
       const unscheduled = await transaction.createUnscheduled(plugin)

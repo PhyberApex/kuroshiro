@@ -201,12 +201,11 @@ export function githubRepositoryOf(entered: string): string | null {
   return match ? `${match[1]}/${match[2]}` : null
 }
 
-/** The Recipe id in what was entered: the digits alone, or an address holding `recipes/{digits}`. */
+/** The Recipe id in what was entered: the digits alone, or an address holding `recipes/{digits}`. Zeros in front are not part of an id. */
 export function recipeIdOf(entered: string): string | null {
   const text = entered.trim()
-  if (/^\d+$/.test(text))
-    return text
-  return /recipes\/(\d+)/.exec(text)?.[1] ?? null
+  const digits = /^\d+$/.test(text) ? text : /recipes\/(\d+)/.exec(text)?.[1]
+  return digits?.replace(/^0+(?=\d)/, '') ?? null
 }
 
 /** Where an imported Plugin came from. A Recipe's `name` is the name the Recipe gave the Plugin. */
