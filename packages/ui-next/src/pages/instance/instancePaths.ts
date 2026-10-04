@@ -9,3 +9,4 @@ export const HOUSEKEEPING_PATH = instancePagePath('housekeeping')
 /** The sections of Instance Settings other pages link to, each by the fragment it answers to. */
 export const ALERT_RULES_PATH = `${instancePagePath('settings')}#alert-rules`
 export const NOTIFICATIONS_PATH = `${instancePagePath('settings')}#notifications`
+export const RETENTION_PATH = `${instancePagePath('settings')}#retention`

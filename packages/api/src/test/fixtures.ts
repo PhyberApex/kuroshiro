@@ -54,6 +54,8 @@ export function makeLogEntry(overrides: Partial<LogEntry> = {}): LogEntry {
   return {
     id: 'log-1',
     entry: 'test log entry',
+    level: 'info',
+    message: 'test log entry',
     date: FIXED_DATE,
     logId: 1,
     device: makeDevice(),

@@ -88,6 +88,15 @@ const { device, listed, name, path } = useDeviceFrame() // from '@/pages/devices
 
 `ScreensInOrder` takes `reload`, which reads the Screens again: call it after any write to a Screen. A new Screen is opened by navigating to `{path}?screen={id}`, which also scrolls to its row.
 
+### The Logs page
+
+`DeviceLogsPage.vue` is the Logs tab, in parts: the page holds the address (`?level=problems&q=…`) and the confirmation, `deviceLog.ts` the Device Log itself, `deviceLogWording.ts` every word of it, and `DeviceLogBar`, `DeviceLogEntries`, `DeviceLogEntryRow`, `DeviceLogFoot` and `DeviceLogLoading` draw.
+
+- **It is the one list that is not whole and not `fresh`.** `useDeviceLog(deviceId, filter)` loads the first 50 with `useLoad`, keyed by the Device, the filter and the search, appends older pages by `nextCursor`, and counts what arrived since with `listDeviceLogs(id, { after: newestCursor, limit: 0 })` every 30 seconds and on focus (`usePolling`). New entries join the list only when asked for, except into an empty Device Log.
+- An answer that lands after the filter, the search or the first page has changed is dropped: copy the `firstPages` counter for any read made beside a `useLoad`.
+- The search field holds what is typed; the address holds what is searched for, 300 ms after typing stops and from `DEVICE_LOG_SEARCH_MIN_LENGTH` characters on.
+- `RETENTION_PATH` (`pages/instance/instancePaths.ts`) is where the Retention ages are set; the age itself is `getInstanceSettings()`'s `deviceLogRetentionDays.value`, where 0 is Retention not pruning.
+
 ## The Instance frame
 
 Every Instance page is a child route of `/instance`, whose component is `pages/instance/InstanceFrame.vue`. The frame renders the title line "Instance", the page list at the left (a row of tabs that scrolls sideways on a phone, running from one edge of the window to the other), the chosen page beside it, and under the list Appearance and "Kuroshiro {version}", which move to the foot of the page on a phone. `/instance` redirects to `/instance/settings`. It loads nothing: an Instance page reads what it shows itself. A page that shows Instance facts beside a load of its own joins the two into one `Load` for `LoadBody`, so that either one's failure is the page's notice (`InstanceSettingsPage.vue`).
@@ -372,7 +381,7 @@ export function updateDevice(deviceId: string, input: UpdateDeviceInput) {
 }
 ```
 
-`src/api/devices.ts` has `listDevices`, `getDevice`, `createDevice` (refused with `device-mac-taken`) and `updateDevice`. `src/api/instance.ts` has `getInstanceFacts`, `getInstanceSettings` and `updateInstanceSettings`; `src/api/alerts.ts` has `listAlerts` and `sendTestNotification` (refused with `notifications-off` or `notification-failed`).
+`src/api/devices.ts` has `listDevices`, `getDevice`, `createDevice` (refused with `device-mac-taken`), `updateDevice`, `listDeviceLogs` and `clearDeviceLogs`. `src/api/instance.ts` has `getInstanceFacts`, `getInstanceSettings` and `updateInstanceSettings`; `src/api/alerts.ts` has `listAlerts` and `sendTestNotification` (refused with `notifications-off` or `notification-failed`).
 
 - `apiGet<T>(path, query?)` and `apiSend<T>(method, path, body?)` from `@/api/client`. The path has no leading slash and no `api/`. `body` is a shared `…Input` type, sent as JSON, or a `FormData` for an upload. A 204 answers `undefined`.
 - Types come from `kuroshiro-shared`. Send only what the `…Input` type declares: the server refuses undeclared keys, so a read model sent back as a write is refused.

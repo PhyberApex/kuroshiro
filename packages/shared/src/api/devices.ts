@@ -136,3 +136,65 @@ export interface UpdateDeviceInput {
   /** `true` is refused with 409 `firmware-push-without-target` or `firmware-push-mirrored`. */
   updateFirmware?: boolean
 }
+
+export const LOG_LEVELS = ['error', 'warning', 'info', 'debug'] as const
+export type LogLevel = typeof LOG_LEVELS[number]
+
+export interface DeviceLogSource {
+  file: string
+  line: number | null
+}
+
+/** What the Device said about itself with the entry. `null` is a fact it did not send. */
+export interface DeviceLogStatus {
+  wifiRssi: number | null
+  wifiStatus: string | null
+  batteryVoltage: number | null
+  freeHeapSize: number | null
+  wakeReason: string | null
+}
+
+export interface DeviceLogEntry {
+  id: string
+  at: string
+  level: LogLevel
+  message: string
+  source: DeviceLogSource | null
+  status: DeviceLogStatus | null
+  firmwareVersion: string | null
+  /** Every further field the firmware sent, under the firmware's own name. */
+  extras: Record<string, unknown>
+}
+
+export interface DeviceLogPage {
+  /** Newest first. */
+  entries: DeviceLogEntry[]
+  /** Every entry of the Device Log. */
+  total: number
+  /** The entries `level` and `q` match; with `after`, only those newer than it. */
+  matching: number
+  /** Pass as `before` for the next page; `null` at the end. */
+  nextCursor: string | null
+  /** The newest entry of the Device Log. Pass as `after` to count or load what arrived since; `null` while the Device Log is empty. */
+  newestCursor: string | null
+}
+
+export const DEVICE_LOG_LEVEL_FILTERS = ['all', 'problems'] as const
+/** `problems` is `error` and `warning`. */
+export type DeviceLogLevelFilter = typeof DEVICE_LOG_LEVEL_FILTERS[number]
+
+export const DEVICE_LOG_PAGE_SIZE = 50
+export const DEVICE_LOG_PAGE_SIZE_MAX = 200
+export const DEVICE_LOG_SEARCH_MIN_LENGTH = 2
+
+export interface DeviceLogsQuery {
+  /** 0 to `DEVICE_LOG_PAGE_SIZE_MAX`, `DEVICE_LOG_PAGE_SIZE` when absent. 0 answers the counts and no entry. */
+  limit?: number
+  /** A cursor: only entries older than it. */
+  before?: string
+  /** A cursor: only entries newer than it. */
+  after?: string
+  level?: DeviceLogLevelFilter
+  /** At least `DEVICE_LOG_SEARCH_MIN_LENGTH` characters, matched against the message whatever its case. */
+  q?: string
+}
