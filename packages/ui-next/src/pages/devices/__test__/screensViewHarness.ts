@@ -1,4 +1,4 @@
-import type { DeviceDetail, InstanceFacts, PluginSummary, ScheduleInput, ScreenRead, UpdateMashupInput, UpdateScreenInput } from 'kuroshiro-shared'
+import type { AssignPluginInput, CreateMashupInput, CreateScreenInput, DeviceDetail, InstanceFacts, PluginSummary, ScheduleInput, ScreenRead, UpdateMashupInput, UpdateScreenInput } from 'kuroshiro-shared'
 import type { mountApp } from '@/testing/app'
 import { MASHUP_LAYOUTS } from 'kuroshiro-shared'
 import { http, HttpResponse } from 'msw'
@@ -46,6 +46,26 @@ function scheduled(screen: ScreenRead, input: ScheduleInput): ScreenRead {
   return { ...screen, schedule, state: schedule.enabled ? stateWithoutSchedule : 'scheduleOff' }
 }
 
+/** The id every Screen the fake adds is given. */
+export const NEW_SCREEN_ID = 'new-screen'
+
+/** What `POST /api/screens` was sent, an upload with its file's name in place of the file. */
+async function createInputOf(request: Request) {
+  if (!request.headers.get('Content-Type')?.startsWith('multipart/form-data'))
+    return await request.json() as CreateScreenInput
+  const form = await request.formData()
+  return Object.fromEntries([...form].map(([key, value]) => [key, value instanceof File ? value.name : value])) as unknown as CreateScreenInput & { file: string }
+}
+
+/** What a new Screen is made from, as the server answers it for the kind that was sent. */
+function sourceOf(input: CreateScreenInput & { file?: string }): Partial<ScreenRead> {
+  if (input.kind === 'external')
+    return { external: { url: input.url, fetchManual: String(input.fetchManual) === 'true' } }
+  if (input.kind === 'html')
+    return { html: input.html }
+  return { file: { originalName: input.file ?? null, width: 1600, height: 960, bytes: 421_888, uploadedAt: NOW } }
+}
+
 /** A write the page made: its method, its path under `/api/` and what it sent. An upload is recorded by its file's name. */
 export interface Write {
   method: string
@@ -87,6 +107,17 @@ export function fakeKitchen({
     faked.device = { ...faked.device, screenCount: faked.screens.length }
     return new HttpResponse(null, { status: 204 })
   }
+  const added = (screen: Parameters<typeof buildScreen>[0]) => {
+    const created = kitchenScreen({ id: NEW_SCREEN_ID, order: faked.screens.length + 1, state: null, imagePath: imagePath(NEW_SCREEN_ID), plugin: null, schedule: null, ...screen })
+    faked.screens = [...faked.screens, created]
+    faked.device = { ...faked.device, screenCount: faked.screens.length }
+    return HttpResponse.json(created, { status: 201 })
+  }
+  const slotsOf = ({ layout, pluginIds }: Pick<CreateMashupInput, 'layout' | 'pluginIds'>) =>
+    MASHUP_LAYOUTS.find(known => known.id === layout)!.slots.map((slot, index) => {
+      const plugin = plugins.find(known => known.id === pluginIds[index])!
+      return { ...slot, pluginId: plugin.id, pluginName: plugin.name }
+    })
   const uploadedName = async (request: Request) => ((await request.formData()).get('file') as File).name
 
   freezeTime(NOW)
@@ -96,6 +127,22 @@ export function fakeKitchen({
     http.get(apiUrl('devices/kitchen'), () => HttpResponse.json(faked.device)),
     http.get(apiUrl('devices/kitchen/screens'), () => HttpResponse.json(faked.screens)),
     http.get(apiUrl('plugins'), () => HttpResponse.json(plugins)),
+    http.post(apiUrl('screens'), async ({ request }) => {
+      const body = await createInputOf(request)
+      faked.writes.push({ method: 'POST', path: 'screens', body })
+      return added({ name: body.name.trim(), kind: body.kind, ...sourceOf(body) })
+    }),
+    http.post(apiUrl('mashup'), async ({ request }) => {
+      const body = await request.json() as CreateMashupInput
+      faked.writes.push({ method: 'POST', path: 'mashup', body })
+      return added({ name: body.name.trim(), kind: 'mashup', mashup: { layout: body.layout, slots: slotsOf(body) } })
+    }),
+    http.post(apiUrl('plugins/:pluginId/assign'), async ({ request, params }) => {
+      const body = await request.json() as AssignPluginInput
+      const plugin = plugins.find(known => known.id === params.pluginId)!
+      faked.writes.push({ method: 'POST', path: `plugins/${plugin.id}/assign`, body })
+      return added({ name: plugin.name, kind: 'plugin', plugin: { id: plugin.id, name: plugin.name, kind: plugin.kind, requiredFieldEmpty: plugin.needsValues, fetchAlertFiring: false } })
+    }),
     http.patch(apiUrl('screens/:id'), async ({ request, params }) => {
       const body = await request.json() as UpdateScreenInput
       const { name, html, ...external } = body
@@ -129,12 +176,8 @@ export function fakeKitchen({
       const body = await request.json() as UpdateMashupInput
       faked.writes.push({ method: 'PATCH', path: `mashup/${params.id}`, body })
       return answerChanged(String(params.id), (screen) => {
-        const layout = MASHUP_LAYOUTS.find(known => known.id === (body.layout ?? screen.mashup?.layout))!
-        const slots = layout.slots.map((slot, index) => {
-          const plugin = plugins.find(known => known.id === body.pluginIds[index])!
-          return { ...slot, pluginId: plugin.id, pluginName: plugin.name }
-        })
-        return { ...screen, mashup: { layout: layout.id, slots } }
+        const layout = body.layout ?? screen.mashup!.layout
+        return { ...screen, mashup: { layout, slots: slotsOf({ layout, pluginIds: body.pluginIds }) } }
       })
     }),
     ...(['post', 'patch'] as const).map(method => http[method](apiUrl('screens/:id/schedule'), async ({ request, params }) => {

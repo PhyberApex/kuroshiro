@@ -38,3 +38,9 @@ export function carriedOver(pluginIds: (string | null)[], layout: MashupLayout):
 export function withoutSlot(pluginIds: (string | null)[], layout: MashupLayout) {
   return pluginIds.slice(layoutChoice(layout).slotCount).flatMap(id => id ?? [])
 }
+
+/** The placed Plugins with one of them in a slot. A Plugin fills one slot at most, so it leaves the slot it was in. */
+export function placedIn(placed: (string | null)[], slot: number, pluginId: string): (string | null)[] {
+  const elsewhere = placed.map(held => held === pluginId ? null : held)
+  return Array.from({ length: Math.max(elsewhere.length, slot + 1) }, (_, index) => index === slot ? pluginId : elsewhere[index] ?? null)
+}

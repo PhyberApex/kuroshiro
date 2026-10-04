@@ -10,7 +10,7 @@ What every screen of `packages/ui-next` stands on: the shell, the router, the AP
 | `reads/` | `sharedReads.ts`: the reads made once for the whole app |
 | `router/` | `routes.ts` (every route) and `index.ts` (`createAppRouter`, the scroll behaviour) |
 | `shell/` | The bar, the phone's bottom tabs, the demo line, the page column |
-| `patterns/` | The shared page patterns: `TitleLine`, `LoadBody`, `LoadingLine`, `WashBar`, `MissingPage`, `RelativeTime`, `UnsavedChanges`, `PageSection`, `ReadRow`, `useLoad`, `usePolling`, `useNow`, `usePageTitle`, `useNarrowWindow`, `time.ts` |
+| `patterns/` | The shared page patterns: `TitleLine`, `BackLink`, `LoadBody`, `LoadingLine`, `WashBar`, `MissingPage`, `RelativeTime`, `UnsavedChanges`, `PageSection`, `ReadRow`, `ChoiceBesideForm`, `AddFormFoot`, `useLoad`, `usePolling`, `useNow`, `usePageTitle`, `useNarrowWindow`, `time.ts` |
 | `pages/` | One component per route, `<Name>Page.vue`, in a folder per surface (`pages/devices/`, `pages/plugins/`, `pages/instance/`). The three pages at its top are the shell's own: the landing route, the unknown route and "not built yet" |
 | `components/` | The primitives |
 
@@ -87,16 +87,39 @@ const { device, listed, name, path } = useDeviceFrame() // from '@/pages/devices
 | `ScheduleEditor.vue` | What fills `#schedule`: "Add a Schedule" for a Screen without one, otherwise the heading with `ScheduleSwitch`, `ScheduleControls` (the weekdays, `ScheduleHours`, `ScheduleDates`, the timezone line and the one save state they share) and `ScheduleRemoval` |
 | `ScheduleSwitch.vue` | The Schedule's switch with its own save state, on the row and in the editor's heading. Each of the two follows what the other saved |
 | `scheduleEditing.ts` | The pure rules of the editor: no stored weekday means every day, what a pair of times or dates sends (`changedOfPair`: only the ends that changed, and nothing while one is empty), today in the server's timezone (`dateInZone`), the timezone line |
-| `screenNaming.ts` | `screenName(name)`: a Screen saved without a name reads "Unnamed Screen" everywhere. `possessive(name)` for "{Device}'s" |
+| `screenNaming.ts` | `screenName(name)`: a Screen saved without a name reads "Unnamed Screen" everywhere. `screenNameProblem(name)` is "A Screen needs a name." `possessive(name)` for "{Device}'s" |
 | `ScreenSource.vue` | What fills `#source`: the kind as a heading over one component per kind, `PluginScreenSource`, `MashupScreenSource`, `FileScreenSource`, `ExternalScreenSource` and `HtmlScreenSource`. It emits `rerendering` when a write leaves the Screen's image behind (a Slot Change), on which the preview shows the rendering plate until `renderedAt` moves |
 | `ScreenRename.vue`, `ScreenRemoval.vue` | "Rename" as the `InlineEdit` in the row's `#rename` slot, and "Delete Screen" or "Unassign Plugin" with its confirmation, which emits `removed` |
-| `mashupLayouts.ts` | `MASHUP_LAYOUT_CHOICES`: the seven layouts with the names and slot names of [devices.md](../ui/devices.md#by-kind), built from `MASHUP_LAYOUTS` and ready for `LayoutPicker`. `layoutChoice(id)`, and `carriedOver` and `withoutSlot` for a change of layout |
+| `mashupLayouts.ts` | `MASHUP_LAYOUT_CHOICES`: the seven layouts with the names and slot names of [devices.md](../ui/devices.md#by-kind), built from `MASHUP_LAYOUTS` and ready for `LayoutPicker`. `layoutChoice(id)`, `placedIn` for a Plugin put in a slot, and `carriedOver` and `withoutSlot` for a change of layout |
 | `MashupSlots.vue`, `MashupLayoutChange.vue` | One select per slot, a Plugin in another slot disabled (`slotNames`, `pluginIds` with `null` for an empty slot, `plugins`; emits `change`), and the layout form built on it |
 | `ReplaceFile.vue` | The drop zone, the preview beside the current image and "Replace image" |
 | `InPlaceForm.vue` | The frame of a small form that opens in place of what it changes, named by its `title`, with the `#buttons` slot for its row of buttons, the primary one first |
-| `screenSourceWording.ts` | The pure wording: a File's facts line, the Plugin sentence, what a removal loses and keeps by kind, `isWebAddress`, the line of a Plugin without a slot |
+| `screenSourceWording.ts` | The pure wording: a File's facts line, `rendersFor(device)` ("{Device Model}, {Palette}"), the Plugin sentence, what a removal loses and keeps by kind, `isWebAddress`, the line of a Plugin without a slot |
+| `fetchChoices.ts`, `imageFiles.ts` | What an opened Screen and Add Screen both offer: the two fetch choices of an External link with their lines, and the endings and names of the six image formats for a `FileDrop` |
 
 `ScreensInOrder` takes `reload`, which reads the Screens again: call it after any write to a Screen. A write that adds or removes a Screen also calls `useDeviceFrame().device.reload()`, because the Device counts its Screens. A form that opens in place gives the focus to its first control when it opens and back to the button that opened it when it closes. A new Screen is opened by navigating to `{path}?screen={id}`, which also scrolls to its row.
+
+### Add Screen
+
+`/devices/:deviceId/screens/new` is one page for every kind of Screen ([devices.md, "Add Screen"](../ui/devices.md#add-screen)), built like Add a Plugin: the kinds as a radio row and the chosen kind's form beside it. `?kind=plugin|mashup|link|file|html` names the kind; one the page does not know, or the File kind in demo mode, falls back to the first.
+
+| File | Holds |
+| --- | --- |
+| `AddScreenPage.vue` | The route's component: the back link, the heading, the radio row and the chosen kind's form, which it hands the `device` once the frame has loaded it |
+| `addScreenKinds.ts` | `ADD_SCREEN_KINDS`, the kinds in the radio row's order. **A kind is one entry here and one form component** |
+| `addScreen.ts` | The page's pure parts, with a node spec: the kinds as they are offered, a Plugin as a choice, the search, which Plugin is checked, a File Screen's name from its file |
+| `addScreenForm.ts` | `useAddScreen(fields?, notAdded?)`: `create(request, found?, refusedAt?)` sends nothing while `found` holds a problem at one of `fields`, runs the request and, once the Screen exists, opens the Screens view at `?screen={id}` and reads the Device again. `problems` goes to the fields (the browser's, then the server's by `fieldErrorsOf`, then what `refusedAt(error)` words for one field); `running`, `added` and `failure` go to the foot |
+| `AddScreenFoot.vue` | How every kind's form ends: the primary button (`button`, `running`, `disabled`), "Cancel", the failure, the "Joins the end of the Order" line and "Leave without saving?" while `changed` |
+| `AddPluginScreen.vue`, `NoPluginToAssign.vue`, `AddMashupScreen.vue`, `AddExternalScreen.vue`, `AddFileScreen.vue`, `AddHtmlScreen.vue` | One form per kind |
+| `ScreenNameField.vue` | "Name", as every kind but Plugin has it |
+| `HtmlPreview.vue`, `htmlPreview.ts` | The live preview of an HTML Screen, which Edit HTML shows too: `device`, `html` and `name` in, and it reads the Device Models and Palettes itself, wraps the markup in the screen shell the server renders with (`htmlScreenDocument`) and draws it in a `PreviewPlate` 200 ms after the typing pauses |
+
+- `src/api/screens.ts` has `createScreen` (External link and HTML), `createFileScreen` (multipart), `createMashup` and `assignPlugin`. Each answers the new `ScreenRead`, which is last in the Order and never the Active Screen.
+- The forms are kept alive, so what was entered for one kind is still there after a look at another. Only the form in view asks "Leave without saving?".
+- Which Plugins are already on the Device is read off `PluginSummary.devices`, so the page does not read the Screens.
+- The shortcut to a new Plugin is `addPluginPath(way, deviceId)`, which carries the Device to Add a Plugin.
+- The preview's frame loads TRMNL's framework from `usetrmnl.com`, so a spec asserts the frame's `srcdoc` and no shot holds the HTML kind.
+- The page's two columns are `ChoiceBesideForm` (`#choice` and the default slot) and a form's foot is `AddFormFoot`, both in `@/patterns/` and shared with Add a Plugin. `BackLink` is the link back of a `TitleLine`, for a page under a frame that has the title line.
 
 ### The Logs page
 
@@ -199,7 +222,7 @@ A write that adds a record and then leaves the page navigates first and reloads 
 
 | File | Holds |
 | --- | --- |
-| `pluginPaths.ts` | `PLUGINS_PATH`, `pluginPath(id)` and `addPluginPath(way)` (`/plugins/new?way=poll`) |
+| `pluginPaths.ts` | `PLUGINS_PATH`, `pluginPath(id)` and `addPluginPath(way, deviceId?)` (`/plugins/new?way=poll`, with `&device=` for a Plugin that is assigned once it exists) |
 | `pluginArrival.ts` | `PluginArrival`, what just happened to a Plugin (`created`, `duplicated`, `imported`, `applied`, `skipped`, each with an optional `device` it was assigned to). A page that opens a Plugin's page after an action calls `openPluginPage(router, pluginId, arrival)`; the Plugin page calls `takePluginArrival(pluginId)` once and words it as a line shown once. It is held in memory, so a reload shows no line |
 | `pluginActions.ts` | `useDuplicatePlugin()` (`duplicate(plugin)`, `duplicating`, `failure`; opens the copy's page carrying `duplicated`) and `useExportPlugin()` (`download(plugin)`, and `exported`, the Plugin whose control reads "Exported" for 2 seconds) |
 | `PluginDeletion.vue` | "Delete Plugin": mount it with a `DeletablePlugin` (`v-if`), and it is open. It asks, or says why a Plugin in a Mashup cannot be deleted yet, also when the server refuses with `plugin-in-mashup`. It emits `deleted`, then `closed`, on which the caller unmounts it |
@@ -354,7 +377,7 @@ So a section's test is "edit, press Save Plugin, assert `faked.saves`". `__test_
 | `AddPluginPage.vue` | The route's component: the title line, the line about the carried Device, the radio row and the chosen way's form |
 | `addPluginWays.ts` | `ADD_PLUGIN_WAYS`, the ways in the radio row's order. **Adding a way is one entry here and one form component** |
 | `addPluginPage.ts` | `useAddPluginPage()`, what the page hands a way's form: `device`, the Device the address carries (`?device=`, an id of no Device carries nothing), and `cancelTo` |
-| `AddPluginFoot.vue` | How every way's form ends: the primary button (`button`, `running`), "Cancel", the failure (`failure`, a whole sentence: "Not created. …"), the one line in `ink-soft` as its slot, and "Leave without saving?" while `changed` |
+| `AddPluginFoot.vue` | How every way's form ends: the primary button (`button`, `running`), "Cancel", the failure (`failure`, a whole sentence: "Not created. …"), the one line in `ink-soft` as its slot, and "Leave without saving?" while `changed`. It is `AddFormFoot` of `@/patterns/` with the page's "Cancel" |
 | `addPluginOrigin.ts` | Where the admin came from, kept by the route's `beforeEnter` for "Cancel" |
 | `addPlugin.ts` | The page's pure parts, and those of the two ways of building: the draft, its problems and what is sent |
 | `BuildPluginForm.vue`, `BuildWebhookMerge.vue` | "Build a Poll Plugin" and "Build a Webhook Plugin": one form, told its `kind`, so a name typed for one way stays for the other |
@@ -473,7 +496,7 @@ export function updateDevice(deviceId: string, input: UpdateDeviceInput) {
 }
 ```
 
-`src/api/devices.ts` has `listDevices`, `getDevice`, `createDevice` (refused with `device-mac-taken`), `updateDevice`, `deleteDevice`, `listDeviceLogs` and `clearDeviceLogs`. `src/api/instance.ts` has `getInstanceFacts`, `getInstanceSettings` and `updateInstanceSettings`; `src/api/alerts.ts` has `listAlerts` and `sendTestNotification` (refused with `notifications-off` or `notification-failed`). `src/api/screens.ts` has `listScreens`, `reorderScreens`, `updateScreen`, `previewScreenImage`, `replaceScreenImage`, `refreshScreen`, `deleteScreen`, `updateMashup` (by the Screen's id), `unassignPlugin`, and `createSchedule`, `updateSchedule` and `removeSchedule`, which answer the owning Screen.
+`src/api/devices.ts` has `listDevices`, `getDevice`, `createDevice` (refused with `device-mac-taken`), `updateDevice`, `deleteDevice`, `listDeviceLogs` and `clearDeviceLogs`. `src/api/instance.ts` has `getInstanceFacts`, `getInstanceSettings` and `updateInstanceSettings`; `src/api/alerts.ts` has `listAlerts` and `sendTestNotification` (refused with `notifications-off` or `notification-failed`). `src/api/screens.ts` has `listScreens`, `reorderScreens`, `createScreen`, `createFileScreen`, `createMashup`, `assignPlugin`, `updateScreen`, `previewScreenImage`, `replaceScreenImage`, `refreshScreen`, `deleteScreen`, `updateMashup` (by the Screen's id), `unassignPlugin`, and `createSchedule`, `updateSchedule` and `removeSchedule`, which answer the owning Screen.
 
 - `apiGet<T>(path, query?)` and `apiSend<T>(method, path, body?)` from `@/api/client`. The path has no leading slash and no `api/`. `body` is a shared `…Input` type, sent as JSON, or a `FormData` for an upload. A 204 answers `undefined`.
 - Types come from `kuroshiro-shared`. Send only what the `…Input` type declares: the server refuses undeclared keys, so a read model sent back as a write is refused.

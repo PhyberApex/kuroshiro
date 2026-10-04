@@ -9,6 +9,7 @@ import FieldError from '@/components/FieldError.vue'
 import FileDrop from '@/components/FileDrop.vue'
 import Plate from '@/components/Plate.vue'
 import ResultLine from '@/components/ResultLine.vue'
+import { IMAGE_ENDINGS, IMAGE_FORMATS } from './imageFiles'
 import InPlaceForm from './InPlaceForm.vue'
 import { screenName } from './screenNaming'
 
@@ -25,9 +26,6 @@ const emit = defineEmits<{
   /** The form is done with: the image was replaced, or the current one is kept. */
   close: []
 }>()
-
-/** The endings of the six formats the server reads. */
-const IMAGE_ENDINGS = ['.png', '.jpg', '.jpeg', '.bmp', '.gif', '.tif', '.tiff', '.webp']
 
 const inputId = useId()
 const keep = useTemplateRef('keep')
@@ -136,7 +134,7 @@ onBeforeUnmount(() => {
         :accept="IMAGE_ENDINGS"
         :max-bytes="maxBytes"
         prompt="Drop an image here."
-        formats="PNG, JPEG, BMP, GIF, TIFF or WebP"
+        :formats="IMAGE_FORMATS"
         :disabled="converting"
         :invalid="Boolean(problem)"
       />

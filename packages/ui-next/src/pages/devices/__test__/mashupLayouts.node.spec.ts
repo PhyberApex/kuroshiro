@@ -1,6 +1,6 @@
 import { MASHUP_LAYOUTS } from 'kuroshiro-shared'
 import { describe, expect, it } from 'vitest'
-import { carriedOver, layoutChoice, MASHUP_LAYOUT_CHOICES, withoutSlot } from '../mashupLayouts'
+import { carriedOver, layoutChoice, MASHUP_LAYOUT_CHOICES, placedIn, withoutSlot } from '../mashupLayouts'
 
 describe('the Mashup layouts as the admin reads them', () => {
   it('names every layout the API knows, in the API\'s order', () => {
@@ -35,5 +35,16 @@ describe('changing a Mashup\'s layout', () => {
     expect(carriedOver(['weather', 'calendar', 'trains'], '1Tx1B')).toEqual(['weather', 'calendar'])
     expect(withoutSlot(['weather', 'calendar', 'trains'], '1Tx1B')).toEqual(['trains'])
     expect(withoutSlot(['weather', 'calendar'], '2x2')).toEqual([])
+  })
+})
+
+describe('placing a Plugin in a slot', () => {
+  it('fills the slot and leaves the others as they are', () => {
+    expect(placedIn(['weather', null], 1, 'calendar')).toEqual(['weather', 'calendar'])
+    expect(placedIn([], 2, 'calendar')).toEqual([null, null, 'calendar'])
+  })
+
+  it('takes the Plugin out of the slot it was in, since it fills one slot at most', () => {
+    expect(placedIn(['weather', 'calendar', 'bins'], 0, 'bins')).toEqual(['bins', 'calendar', null])
   })
 })

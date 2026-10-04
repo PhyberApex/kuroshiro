@@ -95,7 +95,7 @@ api.use(http.get(apiUrl('settings'), () => HttpResponse.json(buildInstanceSettin
 api.use(http.get(apiUrl('devices/42'), () => apiErrorResponse({ statusCode: 404, code: 'not-found' })))
 ```
 
-`src/pages/devices/__test__/screensViewHarness.ts` fakes a whole Device for a spec of its Screens view: `fakeKitchen({ device, screens, plugins, instance })` answers the reads and every write an opened Screen makes, changes `screens` as the server would and keeps each write in `writes` (`{ method, path, body }`, an upload by its file's name). `SCREENS_OF_EVERY_KIND` is one Screen per kind, and `openedRow(screen, name)` the opened row's region. A test that needs a refusal adds its own handler after calling it.
+`src/pages/devices/__test__/screensViewHarness.ts` fakes a whole Device for a spec of its Screens view: `fakeKitchen({ device, screens, plugins, instance })` answers the reads and every write an opened Screen makes, changes `screens` as the server would and keeps each write in `writes` (`{ method, path, body }`, an upload by its file's name). `SCREENS_OF_EVERY_KIND` is one Screen per kind, and `openedRow(screen, name)` the opened row's region. A test that needs a refusal adds its own handler after calling it. It answers the three requests that add a Screen too (`POST screens`, `POST mashup`, `POST plugins/:id/assign`), each with a Screen whose id is `NEW_SCREEN_ID`; `addScreenHarness.ts` beside it has `mountAddScreen(kind?)` and `OPENED_ON_THE_NEW_SCREEN`, the address a form leaves for.
 
 A request to the admin API that no handler fakes fails as a network error and is named on the console. That is the "failed request" state for free when you want it, and a loud miss when you do not.
 
@@ -226,7 +226,7 @@ The shots hold the shell, so wait for what the shell loads as well (a Device's n
 
 `packages/ui-next/real-api/`. Its global setup builds the API and the UI, lays them out as the image does, starts the API against an empty Postgres and hands the specs `inject('baseUrl')`. Without `KUROSHIRO_DB_HOST` it starts and removes a throwaway `postgres:18-alpine` container; with it (as in CI) it uses that database, which must be empty.
 
-Specs drive the UI with Playwright (`chromium.launch()`, `page.goto(baseUrl)`) and play the Device with `connectDevice(baseUrl, { mac, model })` from `devicePlayer.ts`: it calls `/api/setup`, and the returned Device has `setup` (the answer), `display(report?)` for a poll and `log(entries)`.
+Specs drive the UI with Playwright (`chromium.launch()`, `page.goto(baseUrl)`) and play the Device with `connectDevice(baseUrl, { mac, model })` from `devicePlayer.ts`: it calls `/api/setup`, and the returned Device has `setup` (the answer), `display(report?)` for a poll and `log(entries)`. `screensOfDevice.ts` has `addFileScreen(baseUrl, deviceId, name)`, which gives a Device a Screen without the UI, and `screenStates(page)`, the Screen State each row of the Screens view words.
 
 Every spec file shares that one Instance. `firstRun.spec.ts` runs first, on the empty Instance, and the other files after it, one at a time; any other journey must not assume that no other Device exists.
 

@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import RadioRow from '@/components/RadioRow.vue'
 import { devicePath } from '@/pages/devices/devicePaths'
 import { possessive } from '@/pages/devices/screenNaming'
+import ChoiceBesideForm from '@/patterns/ChoiceBesideForm.vue'
 import TitleLine from '@/patterns/TitleLine.vue'
 import { useDevices } from '@/reads/sharedReads'
 import { carriedDevice, carryingSettled, chosenWay } from './addPlugin'
@@ -42,18 +43,17 @@ function choose(way?: AddPluginWay) {
   <p v-if="device" class="carried">
     It is assigned to {{ device.name }} as soon as it exists, at the end of the Order.
   </p>
-  <div class="add-plugin">
-    <RadioRow
-      class="ways"
-      :model-value="chosen.way"
-      :choices="ways"
-      aria-label="Way to add a Plugin"
-      @update:model-value="choose"
-    />
-    <div class="way-form">
-      <component :is="chosen.form" v-if="settled" v-bind="chosen.props" />
-    </div>
-  </div>
+  <ChoiceBesideForm>
+    <template #choice>
+      <RadioRow
+        :model-value="chosen.way"
+        :choices="ways"
+        aria-label="Way to add a Plugin"
+        @update:model-value="choose"
+      />
+    </template>
+    <component :is="chosen.form" v-if="settled" v-bind="chosen.props" />
+  </ChoiceBesideForm>
 </template>
 
 <style scoped>
@@ -63,28 +63,6 @@ function choose(way?: AddPluginWay) {
     margin-top: calc(-1 * var(--space-2));
     margin-bottom: var(--space-4);
     color: var(--color-ink-soft);
-  }
-
-  .add-plugin {
-    display: grid;
-    grid-template-columns: 17rem minmax(0, 34rem);
-    align-items: start;
-    gap: var(--space-8) var(--space-12);
-    border-top: var(--rule-heavy);
-  }
-
-  .way-form {
-    padding-top: var(--space-3);
-  }
-
-  @media (max-width: 820px) {
-    .add-plugin {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    .way-form {
-      padding-top: 0;
-    }
   }
 }
 </style>
