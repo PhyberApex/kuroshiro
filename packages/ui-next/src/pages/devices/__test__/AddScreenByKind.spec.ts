@@ -24,6 +24,14 @@ const fetching = (screen: Mounted, name: string) => screen.getByRole('radiogroup
 const layout = (screen: Mounted, name: string) => screen.getByRole('radiogroup', { name: 'Layout' }).getByRole('radio', { name, exact: true })
 const slot = (screen: Mounted, name: string) => screen.getByRole('combobox', { name, exact: true })
 const htmlField = (screen: Mounted) => screen.getByRole('textbox', { name: 'HTML', exact: true })
+const htmlCode = (screen: Mounted) => [...htmlField(screen).element().querySelectorAll('.cm-line')].map(line => line.textContent).join('\n')
+
+/** Types at the end of the markup in the code editor. It closes an HTML tag itself, so a test types words. */
+async function typeHtml(screen: Mounted, keys: string) {
+  await htmlField(screen).click()
+  await userEvent.keyboard(`{Control>}{End}{/Control}${keys}`)
+}
+
 const fileInput = (screen: Mounted) => screen.getByLabelText('Choose file')
 
 async function fill(screen: Mounted, slotName: string, pluginName: string) {
@@ -274,11 +282,12 @@ describe('add Screen, by kind', () => {
       const screen = await mountAddScreen('html')
 
       await nameField(screen).fill('Fridge note')
-      await htmlField(screen).fill('<h1>Milk, eggs</h1>\n')
+      await typeHtml(screen, 'Milk, eggs{Enter}')
+      expect(document.querySelector('textarea')).toBeNull()
       await addScreen(screen).click()
 
       await expect.poll(() => path(screen)).toBe(OPENED_ON_THE_NEW_SCREEN)
-      expect(faked.writes).toEqual([{ method: 'POST', path: 'screens', body: { kind: 'html', deviceId: 'kitchen', name: 'Fridge note', html: '<h1>Milk, eggs</h1>\n' } }])
+      expect(faked.writes).toEqual([{ method: 'POST', path: 'screens', body: { kind: 'html', deviceId: 'kitchen', name: 'Fridge note', html: 'Milk, eggs\n' } }])
       await openedRow(screen, 'Fridge note')
     })
 
@@ -288,11 +297,12 @@ describe('add Screen, by kind', () => {
       const screen = await mountAddScreen('html')
 
       await expect.element(screen.getByText('as Kitchen renders it: TRMNL OG (2-bit), Greyscale, 4 levels')).toBeVisible()
-      await htmlField(screen).fill('<h1>Milk</h1>')
-      await expect.poll(previewed).toContain('<div class="screen screen--og_plus screen--md screen--2bit" style="--screen-w: 800px;"><div class="view view--full"><h1>Milk</h1></div></div>')
+      await typeHtml(screen, 'Milk')
+      await expect.poll(previewed).toContain('<div class="screen screen--og_plus screen--md screen--2bit" style="--screen-w: 800px;"><div class="view view--full">Milk</div></div>')
 
-      await htmlField(screen).fill('<h1>Milk, eggs</h1>')
-      await expect.poll(previewed).toContain('<div class="view view--full"><h1>Milk, eggs</h1></div>')
+      await typeHtml(screen, ', eggs')
+      await expect.poll(previewed).toContain('<div class="view view--full">Milk, eggs</div>')
+      expect(htmlCode(screen)).toBe('Milk, eggs')
       await expect.element(screen.getByRole('group', { name: 'Preview of the new Screen' })).toBeVisible()
     })
 
@@ -301,7 +311,7 @@ describe('add Screen, by kind', () => {
       fakeModels()
       const screen = await mountAddScreen('html')
 
-      await htmlField(screen).fill('  ')
+      await typeHtml(screen, '  ')
       await addScreen(screen).click()
 
       await expect.element(nameField(screen)).toHaveAccessibleDescription('A Screen needs a name.')
@@ -316,7 +326,7 @@ describe('add Screen, by kind', () => {
 
       await expect.element(screen.getByText('Could not load the preview.')).toBeVisible()
       await nameField(screen).fill('Fridge note')
-      await htmlField(screen).fill('<h1>Milk</h1>')
+      await typeHtml(screen, 'Milk')
       await addScreen(screen).click()
 
       await expect.poll(() => faked.writes.length).toBe(1)

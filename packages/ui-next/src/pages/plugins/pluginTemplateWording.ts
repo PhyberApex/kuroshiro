@@ -31,12 +31,15 @@ export const SIZE_IS: Record<TemplateSize, string> = {
   quadrant: `${SLOT_IS.quadrant}.`,
 }
 
+/** A target as its words need it: the Device by its name only. */
+type WordedTarget = Pick<PreviewTarget, 'model' | 'palette'> & { device: { name: string } | null }
+
 export const editorName = (pluginName: string, size: TemplateSize) => `Template of ${pluginName}, ${SIZE_NAMES[size]}`
 
 export const removedSentence = (size: TemplateSize) => `Removed when you save. A ${SIZE_NAMES[size].toLowerCase()} slot then shows the full template.`
 
 /** "TRMNL OG (2-bit) · 800 × 480 · 4 Grays (2-bit)", or the size alone under the selects that already name the rest. */
-export function targetFacts({ device, model, palette }: PreviewTarget) {
+export function targetFacts({ device, model, palette }: WordedTarget) {
   const size = `${model.width} × ${model.height}`
   return device ? `${model.label} · ${size} · ${palette.name}` : size
 }
@@ -48,7 +51,7 @@ function shadesOf({ colors, grays }: PaletteRead) {
 }
 
 /** What the plate is not: the image dithered to the Palette, which only the Device shows. */
-export function honestLine({ device, palette }: PreviewTarget, size: TemplateSize) {
+export function honestLine({ device, palette }: WordedTarget, size: TemplateSize) {
   const slot = size === 'full' ? '' : `, in ${SLOT_IS[size]}; the other slots are left empty here`
   return `Your browser draws this. ${device?.name ?? 'The Device'} shows it in ${shadesOf(palette)}${slot}.`
 }

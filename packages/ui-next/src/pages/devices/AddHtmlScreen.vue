@@ -2,8 +2,8 @@
 import type { DeviceDetail } from 'kuroshiro-shared'
 import { computed, reactive } from 'vue'
 import { createScreen } from '@/api/screens'
+import CodeEditor from '@/components/CodeEditor.vue'
 import Field from '@/components/Field.vue'
-import Textarea from '@/components/Textarea.vue'
 import AddScreenFoot from './AddScreenFoot.vue'
 import { useAddScreen } from './addScreenForm'
 import HtmlPreview from './HtmlPreview.vue'
@@ -32,7 +32,7 @@ function add() {
   <form class="add-html-screen" novalidate @submit.prevent="add">
     <ScreenNameField v-model="draft.name" :error="addition.problems.name" />
     <Field v-slot="{ control }" class="markup" label="HTML" :error="addition.problems.html">
-      <Textarea v-model="draft.html" v-bind="control" class="code" spellcheck="false" autocapitalize="off" autocomplete="off" />
+      <CodeEditor v-model="draft.html" v-bind="control" aria-label="HTML" mode="html" />
     </Field>
     <HtmlPreview :device="device" :html="draft.html" name="Preview of the new Screen" />
     <AddScreenFoot :running="addition.running" :changed="changed" :failure="addition.failure" />
@@ -49,12 +49,6 @@ function add() {
   .field.markup {
     justify-items: stretch;
     max-width: none;
-  }
-
-  /* The textarea is not its component's root, so it does not carry this component's scope. */
-  .markup :deep(.code) {
-    min-height: 14rem;
-    font-size: var(--text-xs);
   }
 }
 </style>

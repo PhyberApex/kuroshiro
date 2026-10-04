@@ -5,6 +5,7 @@ import { listDeviceModels, listPalettes } from '@/api/device-models'
 import Notice from '@/components/Notice.vue'
 import PreviewPlate from '@/components/PreviewPlate.vue'
 import { useLoad } from '@/patterns/useLoad'
+import { honestLine, targetFacts } from '../plugins/pluginTemplateWording'
 import { htmlScreenDocument, shellTargetOf } from './htmlPreview'
 import { rendersFor } from './screenSourceWording'
 
@@ -15,6 +16,8 @@ const props = defineProps<{
   html: string
   /** The accessible name of the drawing: "Preview of Fridge note". */
   name: string
+  /** The bench's wording: the facts and what the plate is not, under it, in place of the label above it that Add Screen's form has. */
+  facts?: boolean
 }>()
 
 /** How long the typing has to pause before the markup is drawn again. */
@@ -46,7 +49,7 @@ onBeforeUnmount(() => clearTimeout(pause))
 
 <template>
   <div class="html-preview" role="group" :aria-labelledby="headingId">
-    <p :id="headingId" class="heading">
+    <p v-if="!facts" :id="headingId" class="heading">
       <span class="label">Preview</span>
       {{ ' ' }}
       <span v-if="madeFor" class="for">as {{ device.name }} renders it: {{ madeFor }}</span>
@@ -64,6 +67,16 @@ onBeforeUnmount(() => clearTimeout(pause))
       :rendering="!target"
       rendering-note="Loading the preview"
     />
+    <template v-if="facts">
+      <p :id="headingId" class="facts">
+        Preview for {{ device.name }}<template v-if="target">
+          · <span class="mono">{{ targetFacts({ ...target, device }) }}</span>
+        </template>
+      </p>
+      <p v-if="target" class="honest">
+        {{ honestLine({ ...target, device }, 'full') }}
+      </p>
+    </template>
   </div>
 </template>
 
@@ -78,9 +91,22 @@ onBeforeUnmount(() => clearTimeout(pause))
   }
 
   .for,
-  .none {
+  .none,
+  .facts,
+  .honest {
     color: var(--color-ink-soft);
     font-size: var(--text-sm);
+  }
+
+  .facts,
+  .honest {
+    margin-top: var(--space-2);
+    text-wrap: pretty;
+  }
+
+  .mono {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
   }
 }
 </style>
