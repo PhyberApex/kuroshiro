@@ -1,6 +1,7 @@
 import type { CleanupResult, MissingImageFinding, RetentionAges, RetentionRunResult, StorageCheck, StorageFinding, StorageFindingGroup } from 'kuroshiro-shared'
 import { formatBytes } from '@/components/fileRules'
 import { SCREEN_KIND_LABELS } from '@/components/screenRows'
+import { screenName } from '@/pages/devices/screenNaming'
 import { listed } from '@/patterns/listed'
 import { deviceLogEntriesNote, resolvedAlertsNote } from './instanceSettingWording'
 
@@ -54,7 +55,7 @@ export function screenImagesSentence({ files, bytes }: StorageCheck['screenImage
   return files === 0 ? 'No Screen image is stored yet.' : `Screen images take ${formatBytes(bytes)} in ${counted(files, FILE)}.`
 }
 
-const screenOnDevice = ({ screen }: MissingImageFinding) => `The Screen “${screen.name || 'Unnamed Screen'}” on ${screen.deviceName}`
+const screenOnDevice = ({ screen }: MissingImageFinding) => `The Screen “${screenName(screen.name)}” on ${screen.deviceName}`
 
 function screensSentence(screens: MissingImageFinding[]) {
   const [only] = screens
@@ -88,7 +89,7 @@ export function findingLine(finding: StorageFinding): { what: string, detail: st
   switch (finding.group) {
     case 'missingImage': {
       const { name, kind, deviceName, order } = finding.screen
-      return { what: `${name || 'Unnamed Screen'}, ${withArticle(SCREEN_KIND_LABELS[kind])} Screen on ${deviceName}`, detail: `Order ${order}`, path: false }
+      return { what: `${screenName(name)}, ${withArticle(SCREEN_KIND_LABELS[kind])} Screen on ${deviceName}`, detail: `Order ${order}`, path: false }
     }
     case 'deletedDeviceFolder':
       return { what: finding.path, detail: `${formatBytes(finding.bytes)} · ${counted(finding.files, FILE)}`, path: true }
@@ -123,7 +124,7 @@ export function staysLines(groups: FindingGroup[], ticked: StorageFindingGroup[]
   const leftAlone = ticked.includes('missingImage') ? [] : screensOf(groups)
   return [
     'Every Screen that has its image, and every Device.',
-    ...leftAlone.map(({ screen }) => `The Screen “${screen.name || 'Unnamed Screen'}”, at whose turn ${screen.deviceName} shows the error Fallback Screen.`),
+    ...leftAlone.map(({ screen }) => `The Screen “${screenName(screen.name)}”, at whose turn ${screen.deviceName} shows the error Fallback Screen.`),
   ]
 }
 

@@ -138,6 +138,28 @@ describe('the stored-files check and its cleanup, against a real database and re
       ])
     })
 
+    it('counts in the Screen image totals only what no finding names, in the folders of registered Devices', async () => {
+      await storeOneOfEveryFileGroup()
+
+      expect((await check()).screenImages).toEqual({ files: 1, bytes: 10 })
+    })
+
+    it('passes over a file that goes while it is being checked', async () => {
+      await seedScreenWithImage(1)
+      const vanishing = await store(inDeviceFolder(device.id, 'tmp-vanishing'))
+      const stat = fs.promises.stat
+      const statSpy = vi.spyOn(fs.promises, 'stat').mockImplementation(async (file, ...rest) => {
+        if (String(file) === vanishing)
+          throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+        return stat(file, ...rest)
+      })
+
+      const answer = await check()
+      statSpy.mockRestore()
+
+      expect(answer).toMatchObject({ screenImages: { files: 1, bytes: 10 }, findings: [] })
+    })
+
     it('answers no absolute path', async () => {
       await storeOneOfEveryFileGroup()
       await seedScreen(2)

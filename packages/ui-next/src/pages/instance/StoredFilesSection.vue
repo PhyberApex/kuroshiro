@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import type { StorageFinding } from 'kuroshiro-shared'
 import type { StoredFiles } from './storedFiles'
-import { computed } from 'vue'
+import { computed, nextTick, useTemplateRef } from 'vue'
 import Button from '@/components/Button.vue'
 import Notice from '@/components/Notice.vue'
 import ResultLine from '@/components/ResultLine.vue'
@@ -14,6 +15,14 @@ const props = defineProps<{
 }>()
 
 const state = computed(() => props.storedFiles.state)
+const checkAgain = useTemplateRef<{ $el: HTMLElement }>('checkAgain')
+
+/** The rows and the button that held the focus go with the clean-up, so the focus waits on "Check again". */
+async function cleanUp(findingIds: string[], findings: StorageFinding[]) {
+  await props.storedFiles.cleanUp(findingIds, findings)
+  await nextTick()
+  checkAgain.value?.$el.focus()
+}
 const checked = computed(() => state.value.step === 'checked' ? state.value.check : undefined)
 const found = computed(() => (checked.value?.findings.length ?? 0) > 0)
 
@@ -36,7 +45,7 @@ const said = computed(() => {
 <template>
   <InstanceSection id="stored-files" title="Stored files">
     <template #aside>
-      <Button :loading="state.step === 'checking'" @click="storedFiles.check">
+      <Button ref="checkAgain" :loading="state.step === 'checking'" @click="storedFiles.check">
         Check again
       </Button>
     </template>
@@ -62,7 +71,7 @@ const said = computed(() => {
         <p class="totals">
           {{ screenImagesSentence(checked.screenImages) }} Checked <RelativeTime :at="checked.checkedAt" />.
         </p>
-        <StoredFindings :check="checked" :clean-up="storedFiles.cleanUp" />
+        <StoredFindings :check="checked" :clean-up="cleanUp" />
       </template>
     </div>
   </InstanceSection>

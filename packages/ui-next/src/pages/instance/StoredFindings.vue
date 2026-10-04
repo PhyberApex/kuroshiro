@@ -24,6 +24,7 @@ const asking = ref(false)
 
 watch(() => props.check, () => {
   ticked.value = tickedOnACheck()
+  open.value = undefined
 })
 
 function tick(group: StorageFindingGroup, on: boolean) {

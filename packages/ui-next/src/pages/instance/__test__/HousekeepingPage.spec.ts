@@ -217,6 +217,7 @@ describe('housekeeping', () => {
       await expect.poll(() => statusOf(storedFiles(screen))).toBe('Cleaned up. Removed 5 files and 1 folder, 3.8 MB.')
       expect(fake.cleanups).toEqual([CHECK.findings.filter(finding => finding.group !== 'missingImage').map(finding => finding.id)])
       expect(fake.checked).toBe(2)
+      await expect.element(storedFiles(screen).getByRole('button', { name: 'Check again' })).toHaveFocus()
       await expect.element(tick(screen, SCREENS)).not.toBeChecked()
       expect(tick(screen, FILE_GROUPS[0]!).elements()).toEqual([])
     })

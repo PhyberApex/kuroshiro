@@ -37,6 +37,7 @@ export type StorageFindingGroup = StorageFinding['group']
 
 export interface StorageCheck {
   checkedAt: string
+  /** What the folders of registered Devices hold that no finding names. */
   screenImages: { files: number, bytes: number }
   findings: StorageFinding[]
 }

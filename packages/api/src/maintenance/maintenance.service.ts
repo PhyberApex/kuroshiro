@@ -98,7 +98,8 @@ export class MaintenanceService {
 
     this.logger.log(`Stored-files check complete. ${findings.length} finding(s)`)
 
-    const stored = folders.flatMap(folder => folder.files)
+    const named = new Set(findings.flatMap(finding => 'path' in finding ? [finding.path] : []))
+    const stored = known.flatMap(folder => folder.files).filter(file => !named.has(file.path))
     return {
       checkedAt: new Date().toISOString(),
       screenImages: { files: stored.length, bytes: stored.reduce((sum, file) => sum + file.bytes, 0) },
@@ -238,8 +239,9 @@ export class MaintenanceService {
       const entryPath = `${folderPath}/${entry.name}`
       if (entry.isDirectory())
         return deep ? this.listFiles(path.join(folder, entry.name), entryPath, true) : []
-      const stat = await fs.promises.stat(path.join(folder, entry.name))
-      return [{ name: entry.name, path: entryPath, bytes: stat.size, modifiedAtMs: stat.mtimeMs }]
+      // A render's temporary file can go between listing the folder and reading its size.
+      const stat = await fs.promises.stat(path.join(folder, entry.name)).catch(() => undefined)
+      return stat ? [{ name: entry.name, path: entryPath, bytes: stat.size, modifiedAtMs: stat.mtimeMs }] : []
     }))
     return files.flat()
   }
