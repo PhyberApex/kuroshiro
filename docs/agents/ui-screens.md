@@ -144,7 +144,7 @@ const { device, listed, name, path } = useDeviceFrame() // from '@/pages/devices
 
 Every Instance page is a child route of `/instance`, whose component is `pages/instance/InstanceFrame.vue`. The frame renders the title line "Instance", the page list at the left (a row of tabs that scrolls sideways on a phone, running from one edge of the window to the other), the chosen page beside it, and under the list Appearance and "Kuroshiro {version}", which move to the foot of the page on a phone. `/instance` redirects to `/instance/settings`. It loads nothing: an Instance page reads what it shows itself. A page that shows Instance facts beside a load of its own joins the two into one `Load` for `LoadBody` with `joinLoads({ settings, facts: useInstanceFacts() })` (`@/patterns/`), so that either one's failure is the page's notice (`InstanceSettingsPage.vue`).
 
-To build a page under it, swap its `notBuiltYetUnderInstance('firmware', 'Firmware')` line in `router/routes.ts` for
+A page of the list is registered in `router/routes.ts` as
 
 ```ts
 instancePage('firmware', 'Firmware', () => import('@/pages/instance/FirmwarePage.vue')),
@@ -229,7 +229,7 @@ The Firmware page (`FirmwarePage.vue`) is the worked example of an Instance page
 | `useImportSteps(version)` (`importSteps.ts`) | The four steps as one `step` (`choose`, `reading`, `read`, `imported`, `refused`): `read(file)` calls `checkConfigurationImport`, which changes nothing; `confirm()` calls `importConfiguration` with the file that was read and then reloads the shared reads; `startOver()` goes back to choosing |
 | `ImportSteps`, `ImportSummary`, `ImportOutcome` | The drop zone, "Reading {file}", the summary with its buttons, "Imported." with "To do now", and the notice of a refusal. Each step takes the place of the one before, so the focus is moved to the step, or back to the file input |
 | `configurationArchiveWording.ts` | Every sentence, with a node spec: the summary's lines from an `ImportCheck`, `wordWarning(warning)` for each kind of `ImportWarning`, and `refusalNotice(error, version, notDone?)` for the notice |
-| `SummaryList`, `SummaryRow` (`@/components/`) | A `dl` of label and value on rules: one `SummaryRow` per `label`, its value in the default slot and `problems`, lines drawn with the problem icon. The Device Simulator is to show its answer in it |
+| `SummaryList`, `SummaryRow` (`@/components/`) | A `dl` of label and value on rules: one `SummaryRow` per `label`, its value in the default slot and `problems`, lines drawn with the problem icon. The Device Simulator shows its answer in it too |
 | `__test__/configurationArchiveHarness.ts` | `fakeArchive({ devices, check, summary, archiveUploadBytes })` answers the check and the import (`checkAnswer`, `importAnswer`, `holding`, and `sent`, every archive the server was sent), `mountArchive()`, `archiveFile()` |
 
 - A summary counts six kinds (Devices, Plugins, Screens, Mashups, custom Palettes, custom Firmware). The rows under a Plugin or a Screen that the server also counts (`dataSources`, `templates`, `schedules`, …) are not counted as records.
@@ -251,6 +251,22 @@ The Firmware page (`FirmwarePage.vue`) is the worked example of an Instance page
 - Every clean-up starts from the check on the screen: a group's finding ids are sent, never paths, and the server acts only on ids its own check still holds.
 - The Screens group (`missingImage`) is never ticked when a check arrives, because cleaning it up deletes Screens.
 - `src/api/maintenance.ts` has `checkStoredFiles`, `cleanUpStoredFiles`, `getRetentionStatus` and `runRetention({ dryRun })`; the fixtures are `buildStorageCheck` (one finding in every group, the Screen Holiday photo on Kitchen) and `buildRetentionStatus`.
+
+### The Device Simulator
+
+`DeviceSimulatorPage.vue` plays a Device against this Instance's own Device API: it calls `/api/setup` and `/api/display` from the browser exactly as the firmware does, so every call has its real effect on the Instance (a poll moves the Rotation on, sets `lastSeen` and the last-served record, takes what is pending and can resolve the offline Alert; setup with a new MAC address registers a Device). Those routes are `@OutsideAdminApi()` and must not change.
+
+| Part | Is |
+| --- | --- |
+| `src/api/deviceCalls.ts` | The client of the two Device-facing calls, apart from the admin client: `callSetup(headers)` and `pollDisplay(headers)` send the Device's headers and answer `{ answered }` or `{ refused }`, the status and reason of Nest's own `{ statusCode, message, error }` body. Only a failed network rejects (`ServerUnreachable`) |
+| `deviceSimulator.ts` | `provideDeviceSimulator(choice)` in `SimulatorBench` and `useSimulator()` in its parts: the chosen Device (`NOT_REGISTERED` for "A Device that is not registered"), its `DeviceDetail` (kept fresh, for `reported`, `pending` and `sensors`), the MAC address, `report` (the six inputs), `outcome` and `poll()` and `setup()`. A call reads the Device just before it for its MAC address and API key, which the page never shows, and the Devices afterwards |
+| `simulatorWording.ts` | Every sentence, with a node spec: the report and its headers (an empty input sends nothing), the `Sensors` header from the Device's readings (a poll without it removes them), what a call does and what is pending, "Shows" and the answer's rows |
+| `SimulatorControls`, `SimulatorReports`, `SimulatorCalls`, `SimulatorAnswer`, `SimulatorPolled` | The right column (select, MAC address, the tucked inputs, the sentence and the buttons with the confirmation) and the left (the `EmptyPlate`, the setup line, the polled image with its `SummaryList` and code block, or a refusal's `Notice`) |
+| `__test__/simulatorHarness.ts` | `fakeSimulator({ devices, screens })` answers the Devices, one Device, its Screens and both Device-facing routes as the server would (a poll takes what is pending and moves the Rotation on; setup with an unknown MAC address adds a Device), keeps `polls` and `setups` (each call's headers), and takes `refuseNextPoll`; `mountSimulator(at?)`. Left out, the Devices are `PLAYED_KITCHEN` (three Screens), `PLAYED_HALLWAY` and Study |
+
+- `?device=` chooses the Device, otherwise the first by name, otherwise one that is not registered; choosing writes it back to the address.
+- Setup for a registered Device sends its MAC address alone, so it changes nothing; for one that is not registered it also sends the Firmware version and Model the inputs hold. Whether setup registered a Device is told by its friendly id, which the Devices did not hold before.
+- The browser sends its own `User-Agent`, which the server keeps as the Device's; nothing on the admin UI shows it.
 
 ## A list page
 

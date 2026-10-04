@@ -30,11 +30,6 @@ function instancePage(path: string, label: string, component: LazyPage): RouteRe
   return { path, component, meta: { instancePage: label } }
 }
 
-/** A page under the Instance frame that is not built yet. The frame leaves it out of its page list until it is an `instancePage`. */
-function notBuiltYetUnderInstance(path: string, title: string): RouteRecordRaw {
-  return { path, component: () => import('@/pages/instance/InstanceNotBuiltYetPage.vue'), meta: { notBuiltYet: title } }
-}
-
 /**
  * Every route of the four route tables of `docs/ui/`. A built page is
  * `{ path, component: () => import('@/pages/…Page.vue') }`; a `notBuiltYet` line stands in for one that is not.
@@ -74,7 +69,7 @@ export const routes: RouteRecordRaw[] = [
       instancePage('models', 'Device Models and Palettes', () => import('@/pages/instance/DeviceModelsPage.vue')),
       instancePage('archive', 'Configuration Archive', () => import('@/pages/instance/ConfigurationArchivePage.vue')),
       instancePage('housekeeping', 'Housekeeping', () => import('@/pages/instance/HousekeepingPage.vue')),
-      notBuiltYetUnderInstance('simulator', 'Device Simulator'),
+      instancePage('simulator', 'Device Simulator', () => import('@/pages/instance/DeviceSimulatorPage.vue')),
     ],
   },
 
