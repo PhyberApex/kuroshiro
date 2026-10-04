@@ -33,6 +33,8 @@ export const API_ERROR_CODES = [
   'firmware-push-pending',
   'upstream-unreachable',
   'template-full-missing',
+  'notifications-off',
+  'notification-failed',
 ] as const
 
 export type ApiErrorCode = typeof API_ERROR_CODES[number]

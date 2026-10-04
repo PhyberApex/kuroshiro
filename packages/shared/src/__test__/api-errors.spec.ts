@@ -37,6 +37,8 @@ const wording: Record<ApiErrorCode, string> = {
   'firmware-push-pending': 'A Firmware push is waiting for the Device.',
   'upstream-unreachable': 'TRMNL did not answer.',
   'template-full-missing': 'A Plugin needs its full Template.',
+  'notifications-off': 'Notifications are off on this Instance.',
+  'notification-failed': 'Apprise did not accept it.',
 }
 
 function wordingBySwitch(code: ApiErrorCode): string {
@@ -65,12 +67,14 @@ function wordingBySwitch(code: ApiErrorCode): string {
     case 'firmware-push-mirrored':
     case 'firmware-push-pending':
     case 'template-full-missing':
+    case 'notifications-off':
     case 'conflict':
     case 'payload-too-large':
     case 'unprocessable':
       return 'The server refused.'
     case 'bad-gateway':
     case 'upstream-unreachable':
+    case 'notification-failed':
     case 'service-unavailable':
     case 'internal':
       return 'The server failed.'

@@ -4,6 +4,7 @@ import './styles/index.css'
 
 // eslint-disable-next-line perfectionist/sort-imports -- index.css declares the cascade layer order, so it has to load before any component's styles
 import App from './App.vue'
+import { applyStoredAppearance } from './pages/instance/appearance'
 import { sharedReads } from './reads/sharedReads'
 import { basePathOf, createAppRouter } from './router'
 
@@ -20,6 +21,8 @@ function mountAdminUi() {
     .use(sharedReads)
     .mount('#app')
 }
+
+applyStoredAppearance()
 
 if (galleryRequested)
   void mountGallery()

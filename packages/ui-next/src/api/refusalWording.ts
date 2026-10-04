@@ -46,6 +46,8 @@ const REFUSAL_WORDING: Record<ApiErrorCode, Wording> = {
   'firmware-push-pending': 'A Firmware push is waiting for the Device.',
   'upstream-unreachable': 'TRMNL did not answer.',
   'template-full-missing': 'A Plugin needs its full Template.',
+  'notifications-off': 'Notifications are off on this Instance.',
+  'notification-failed': 'Apprise did not accept it. Check that the Apprise sidecar is running, and its logs.',
 }
 
 /** A code this build does not know, from a newer server, falls back on the server's own sentence. */
