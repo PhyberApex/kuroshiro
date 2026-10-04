@@ -1,9 +1,17 @@
 import type { Response } from 'express'
-import { BadRequestException, Controller, Get, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common'
+import type { ConfigurationImportSummary, ImportCheck } from 'kuroshiro-shared'
+import { BadRequestException, Controller, Get, HttpCode, HttpStatus, Post, Query, Res, UploadedFile, UseInterceptors } from '@nestjs/common'
 import { LimitedFileInterceptor } from '../uploads/limited-file-interceptor.js'
 import { UPLOAD_LIMITS } from '../uploads/upload-limits.js'
 import { ConfigurationExportService } from './services/configuration-export.service.js'
 import { ConfigurationImportService } from './services/configuration-import.service.js'
+
+function uploaded(file: Express.Multer.File | undefined): Express.Multer.File {
+  if (!file) {
+    throw new BadRequestException('No file uploaded')
+  }
+  return file
+}
 
 @Controller('config')
 export class ConfigurationController {
@@ -31,10 +39,15 @@ export class ConfigurationController {
 
   @Post('import')
   @UseInterceptors(LimitedFileInterceptor('file', UPLOAD_LIMITS.archiveUploadBytes))
-  async importConfiguration(@UploadedFile() file?: Express.Multer.File) {
-    if (!file) {
-      throw new BadRequestException('No file uploaded')
-    }
-    return this.importService.importFromZip(file.buffer)
+  async importConfiguration(@UploadedFile() file?: Express.Multer.File): Promise<ConfigurationImportSummary> {
+    return this.importService.importFromZip(uploaded(file).buffer)
+  }
+
+  /** Reads an archive and answers what importing it would do, without importing it. */
+  @Post('import/check')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(LimitedFileInterceptor('file', UPLOAD_LIMITS.archiveUploadBytes))
+  async checkConfigurationImport(@UploadedFile() file?: Express.Multer.File): Promise<ImportCheck> {
+    return this.importService.checkZip(uploaded(file).buffer)
   }
 }

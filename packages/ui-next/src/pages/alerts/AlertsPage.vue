@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import type { AlertsList, InstanceFacts, InstanceSettingsResponse } from 'kuroshiro-shared'
 import type { AlertTold } from './alertWording'
-import type { Load } from '@/patterns/useLoad'
-import { computed, reactive } from 'vue'
 import { getInstanceSettings } from '@/api/instance'
 import Icon from '@/components/Icon.vue'
+import { joinLoads } from '@/patterns/joinLoads'
 import LoadBody from '@/patterns/LoadBody.vue'
 import TitleLine from '@/patterns/TitleLine.vue'
 import { useLoad } from '@/patterns/useLoad'
@@ -27,17 +26,7 @@ interface AlertsPageData {
 }
 
 /** The page words the Alerts with the thresholds and says whether they are announced, so it waits for all three and any one's failure is its notice. */
-const page: Load<AlertsPageData> = reactive({
-  data: computed(() => alerts.data && settings.data && instanceFacts.data
-    ? { alerts: alerts.data, settings: settings.data, facts: instanceFacts.data }
-    : undefined),
-  waiting: computed(() => alerts.waiting || settings.waiting || instanceFacts.waiting),
-  failure: computed(() => alerts.failure ?? settings.failure ?? instanceFacts.failure),
-  missing: false,
-  reload: async () => {
-    await Promise.all([alerts.reload(), settings.reload(), instanceFacts.reload()])
-  },
-})
+const page = joinLoads<AlertsPageData>({ alerts, settings, facts: instanceFacts })
 
 const toldWith = (thresholds: InstanceSettingsResponse): AlertTold => ({ now: now.value, lowBatteryPercent: thresholds.lowBatteryPercent.value })
 

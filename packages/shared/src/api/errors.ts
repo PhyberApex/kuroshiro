@@ -49,6 +49,10 @@ export const API_ERROR_CODES = [
   'recipe-oauth',
   'recipe-strategy-unsupported',
   'recipe-static-transform',
+  'archive-not-zip',
+  'archive-not-configuration',
+  'archive-schema-version',
+  'archive-record-refused',
 ] as const
 
 export type ApiErrorCode = typeof API_ERROR_CODES[number]

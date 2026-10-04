@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import type { DeviceDetail } from 'kuroshiro-shared'
 import type { SettingsReference } from './deviceSettings'
-import type { Load } from '@/patterns/useLoad'
-import { computed, reactive } from 'vue'
 import { listDeviceModels, listPalettes } from '@/api/device-models'
 import { listFirmware } from '@/api/firmware'
 import { getInstanceSettings } from '@/api/instance'
+import { joinLoads } from '@/patterns/joinLoads'
 import LoadBody from '@/patterns/LoadBody.vue'
 import { useLoad } from '@/patterns/useLoad'
 import { useDeviceFrame } from './deviceFrame'
@@ -27,15 +26,7 @@ const reference = useLoad<SettingsReference>(async () => {
   return { models, palettes, firmware, firmwareAutoUpdate: settings.firmwareAutoUpdate.value }
 })
 
-const page: Load<{ device: DeviceDetail, reference: SettingsReference }> = reactive({
-  data: computed(() => device.data && reference.data ? { device: device.data, reference: reference.data } : undefined),
-  waiting: computed(() => device.waiting || reference.waiting),
-  failure: computed(() => device.failure ?? reference.failure),
-  missing: false,
-  reload: async () => {
-    await Promise.all([device.reload(), reference.reload()])
-  },
-})
+const page = joinLoads<{ device: DeviceDetail, reference: SettingsReference }>({ device, reference })
 </script>
 
 <template>

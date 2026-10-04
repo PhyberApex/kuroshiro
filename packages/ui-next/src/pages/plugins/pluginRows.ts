@@ -1,6 +1,6 @@
 import type { PluginSummary } from 'kuroshiro-shared'
 import { FIRING_ALERT_LABELS } from '@/pages/alerts/alertLabels'
-import { listed } from './pluginWording'
+import { listed } from '@/patterns/listed'
 
 /** What a row's state column says: an Alert (the only state in the seal colour), a problem, or a note that is nothing to fix. */
 export interface PluginRowState {
