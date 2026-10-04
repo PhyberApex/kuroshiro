@@ -57,9 +57,9 @@ export const routes: RouteRecordRaw[] = [
   },
   { path: '/connect', component: () => import('@/pages/devices/ConnectPage.vue') },
 
-  notBuiltYet('/plugins', 'Plugins'),
+  { path: '/plugins', component: () => import('@/pages/plugins/PluginsListPage.vue') },
   notBuiltYet('/plugins/new', 'Add a Plugin'),
-  notBuiltYet('/plugins/:pluginId', 'Plugin'),
+  { path: '/plugins/:pluginId', component: () => import('@/pages/plugins/PluginPage.vue') },
   notBuiltYet('/plugins/:pluginId/update', 'Recipe Update Check'),
 
   {

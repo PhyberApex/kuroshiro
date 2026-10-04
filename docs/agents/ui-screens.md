@@ -164,6 +164,26 @@ Connect a Device asks for the Devices every 3 seconds: `usePolling(ask, everyMs)
 
 A write that adds a record and then leaves the page navigates first and reloads the shared read afterwards (`RegisterByHand.vue`), so the page it leaves does not see the new record.
 
+## The Plugins surface
+
+`pages/plugins/` holds the Plugins list and what the other Plugin pages build on:
+
+| File | Holds |
+| --- | --- |
+| `pluginPaths.ts` | `PLUGINS_PATH`, `pluginPath(id)` and `addPluginPath(way)` (`/plugins/new?way=poll`) |
+| `pluginArrival.ts` | `PluginArrival`, what just happened to a Plugin (`created`, `duplicated`, `imported`, `applied`, `skipped`, each with an optional `device` it was assigned to). A page that opens a Plugin's page after an action calls `openPluginPage(router, pluginId, arrival)`; the Plugin page calls `takePluginArrival(pluginId)` once and words it as a line shown once. It is held in memory, so a reload shows no line |
+| `pluginActions.ts` | `useDuplicatePlugin()` (`duplicate(plugin)`, `duplicating`, `failure`; opens the copy's page carrying `duplicated`) and `useExportPlugin()` (`download(plugin)`, and `exported`, the Plugin whose control reads "Exported" for 2 seconds) |
+| `PluginDeletion.vue` | "Delete Plugin": mount it with a `DeletablePlugin` (`v-if`), and it is open. It asks, or says why a Plugin in a Mashup cannot be deleted yet, also when the server refuses with `plugin-in-mashup`. It emits `deleted`, then `closed`, on which the caller unmounts it |
+| `pluginWording.ts` | `listed(names)` ("Kitchen, Hallway and Study") and the sentences of the two dialogs |
+| `pluginRows.ts` | A row's kind, where it shows and its state with their precedence; the search, the filter and the count line |
+| `PluginsListPage.vue`, `PluginsFilterBar.vue`, `PluginRows.vue`, `PluginRowStateCell.vue`, `NoPluginsYet.vue` | The list in parts: the page holds the load, the address and the actions; the others draw |
+| `PluginPage.vue` | The stand-in for the Plugin page: the back link, the name, "No Plugin here" |
+
+- `GET /api/plugins` comes ordered by name; the list does not sort again.
+- A row's fetch Alert is `PluginSummary.fetchAlertFiring`; the list does not read the Alerts.
+- The shell's shared reads hold no Plugin, so after a write only the page's own load needs `reload()`.
+- A view's search and filter live in the address: read them from `route.query` and write them with `router.replace`, which keeps the scroll position.
+
 ## Loading what a page shows
 
 ```ts
@@ -233,6 +253,7 @@ export function updateDevice(deviceId: string, input: UpdateDeviceInput) {
 - `apiGet<T>(path, query?)` and `apiSend<T>(method, path, body?)` from `@/api/client`. The path has no leading slash and no `api/`. `body` is a shared `…Input` type, sent as JSON, or a `FormData` for an upload. A 204 answers `undefined`.
 - Types come from `kuroshiro-shared`. Send only what the `…Input` type declares: the server refuses undeclared keys, so a read model sent back as a write is refused.
 - A page calls these functions and never `fetch`.
+- **A file the server answers** (an export) is downloaded by the browser itself: `apiDownload(path)` from `@/api/client`, wrapped in the group's file (`exportPlugin(id)`). The file's name is the server's.
 
 ### Failures and their wording
 

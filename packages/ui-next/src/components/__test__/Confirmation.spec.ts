@@ -224,6 +224,37 @@ describe('confirmation', () => {
     })
   })
 
+  it('has the safe choice alone when there is nothing to confirm, and a link beside it when one is given', async () => {
+    const Refusing = defineComponent(() => {
+      const open = ref(false)
+      return () => [
+        h('button', { onClick: () => (open.value = true) }, 'Delete Plugin…'),
+        h(ConfirmationComponent, {
+          'title': 'Weather cannot be deleted yet',
+          'safeLabel': 'Close',
+          'open': open.value,
+          'onUpdate:open': (next: boolean) => (open.value = next),
+        }, {
+          default: () => 'It fills a slot in the Mashup Weekend board on Kitchen.',
+          also: () => h('a', { href: '#weekend-board' }, 'Open the Mashup'),
+        }),
+      ]
+    })
+    const screen = await mount(Refusing)
+    await userEvent.keyboard('{Tab}{Enter}')
+    const dialog = screen.getByRole('alertdialog', { name: 'Weather cannot be deleted yet' })
+
+    await expect.element(dialog).toHaveAccessibleDescription('It fills a slot in the Mashup Weekend board on Kitchen.')
+    expect(dialog.getByRole('button').elements().map(button => button.textContent?.trim())).toEqual(['Close'])
+    await expect.element(dialog.getByRole('button', { name: 'Close' })).toHaveFocus()
+    await expect.element(dialog.getByRole('link', { name: 'Open the Mashup' })).toBeVisible()
+    await expectAccessible(dialog.element())
+
+    await userEvent.keyboard('{Enter}')
+
+    await expect.element(dialog).not.toBeInTheDocument()
+  })
+
   it('fits a phone', async () => {
     const { dialog } = await open()
 

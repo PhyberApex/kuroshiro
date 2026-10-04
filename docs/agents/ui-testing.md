@@ -72,6 +72,10 @@ Two fast presses of an arrow key in an open Reka `Select` both start from the sa
 
 `userEvent.dragAndDrop` onto a target below the window's edge drops nothing: drag onto a row that is in view.
 
+A download (`apiDownload`) is a click on a link with a `download` attribute. A spec catches it with a capturing `click` listener on `document` that calls `preventDefault()` and keeps the link's `href` (`PluginsListPage.spec.ts`).
+
+While a dialog or a menu is open, the rest of the page is hidden from assistive technology, so `getByRole` finds nothing outside it: read the page under an open layer from the DOM.
+
 `userEvent.upload(input, file)` chooses a file in a native file input; a drop is a `DragEvent` dispatched with a `DataTransfer` holding the file (`FileDrop.spec.ts`).
 
 ## Faking the API
@@ -97,7 +101,7 @@ A request to the admin API that no handler fakes fails as a network error and is
 export const buildInstanceSettings = defineBuilder<InstanceSettingsResponse>(() => ({ ...every key... }))
 ```
 
-and is called as `build<ReadModel>(overrides?)`. There are builders for the Instance facts and Instance Settings (`instance.ts`), a Device's summary and its detail (`devices.ts`), an Alert and the Alerts list (`alerts.ts`), a Screen and its Schedule (`screens.ts`) and a refusal (`errors.ts`). The type always comes from `kuroshiro-shared` and every key is spelled out, so a reshaped read model fails `pnpm type-check` in its builder. A builder lands with the UI slice that first reads its endpoint. Defaults are plausible values in the vocabulary of `CONTEXT.md`, not `foo`.
+and is called as `build<ReadModel>(overrides?)`. There are builders for the Instance facts and Instance Settings (`instance.ts`), a Device's summary and its detail (`devices.ts`), an Alert and the Alerts list (`alerts.ts`), a Screen and its Schedule (`screens.ts`), a Plugin's summary, its detail and a Mashup it fills a slot in (`plugins.ts`) and a refusal (`errors.ts`). The type always comes from `kuroshiro-shared` and every key is spelled out, so a reshaped read model fails `pnpm type-check` in its builder. A builder lands with the UI slice that first reads its endpoint. Defaults are plausible values in the vocabulary of `CONTEXT.md`, not `foo`.
 
 ## The gallery
 
@@ -148,7 +152,7 @@ A state that needs a pointer, a key press or a narrow window is shown in the gal
 - **`save` rejects with an `Error`** whose `message` is the sentence the admin reads; `failureReason.ts` reads it. `Confirmation`'s `action` is worded the same way. Wording an `ApiError` by its `code` is the API client's job, not a primitive's.
 - **A live region is in the page before it says anything.** `SaveState` and `SaveBar` render their `role="status"` element empty and fill it, and so does a `ResultLine` that is mounted without its sentence (mount it with the button that starts the action, and give it the sentence once the action runs). `LineShownOnce` arrives with its text, after the navigation that caused it; a button ("Try again", "Dismiss") sits beside the region, never in it. So a spec asserts on the region that was already there (`expect(screen.getByRole('status').element()).toBe(region)`).
 - **`SaveBar` has two roots**, the status region and the `section`, because a wrapper would be what the bar sticks to. It is `position: sticky`, so it must be a direct child of the page's column, and on a phone it stands `--bar-height` above the window's edge, where the bottom tabs are.
-- **`Confirmation`** is controlled with `v-model:open` and has no trigger of its own; Reka gives the focus back to whatever had it. Its `confirmLabel` is required and, in development and in the specs, it throws without one, as `IconButton` does without a label. It runs `action` itself: the caller does not close it.
+- **`Confirmation`** is controlled with `v-model:open` and has no trigger of its own; Reka gives the focus back to whatever had it. With an `action`, its `confirmLabel` is required and, in development and in the specs, it throws without one, as `IconButton` does without a label. It runs `action` itself: the caller does not close it. Without an `action` it has nothing to confirm: it only says why something cannot be done yet, has the safe choice alone, and takes a link to where the obstacle is removed in `#also`.
 - **`RowMenu`** takes `items`, each an action (`select`) or a link (`to`); link items need a router. A Reka `as-child` trigger works around `IconButton` as it is.
 - **`TuckedSection`** opens when the address names its `id` as the fragment. It reads the router's route where there is one (a routed navigation fires no `hashchange`) and the window otherwise (`urlFragment.ts`).
 - **`ProblemLines`** is the one primitive here that paints in the seal colour, and only on a line of `kind: 'alert'`. `elementsInSealColour(root)` (`src/testing/sealColour.ts`) lists what is painted in it; a component that reports any other trouble asserts that it is empty.

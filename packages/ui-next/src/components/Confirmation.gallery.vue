@@ -8,6 +8,7 @@ import Confirmation from './Confirmation.vue'
 // An open confirmation hides the rest of the page from assistive technology and holds the focus, so it is shown closed here; Confirmation.shots.ts holds its open states.
 const deleting = ref(false)
 const clearing = ref(false)
+const refusing = ref(false)
 
 const SERVER_DELAY_MS = 900
 const afterAWhile = () => new Promise(resolve => setTimeout(resolve, SERVER_DELAY_MS))
@@ -54,6 +55,19 @@ async function refuse() {
         </template>
         <template #stays>
           Nothing else changes. New entries arrive with the next poll.
+        </template>
+      </Confirmation>
+    </Specimen>
+    <Specimen caption="closed; it has nothing to confirm">
+      <Button @click="refusing = true">
+        Delete Plugin
+      </Button>
+      <Confirmation v-model:open="refusing" title="Weather cannot be deleted yet" safe-label="Close">
+        It fills a slot in the Mashup Weekend board on Kitchen. Give that slot another Plugin, or delete the Mashup. Then Weather can be deleted.
+        <template #also>
+          <Button as-child>
+            <a href="#confirmation">Open the Mashup</a>
+          </Button>
         </template>
       </Confirmation>
     </Specimen>

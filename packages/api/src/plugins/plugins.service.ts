@@ -1,6 +1,5 @@
-import type { ApiErrorField, PluginKind } from 'kuroshiro-shared'
+import type { ApiErrorField, PluginInMashupDetails, PluginKind } from 'kuroshiro-shared'
 import type { EntityManager, FindOptionsRelations } from 'typeorm'
-import type { MashupSlot } from '../mashup/entities/mashup-slot.entity.js'
 import type { CreatePluginDto } from './dto/create-plugin.dto.js'
 import type { PluginDataSourceDto } from './dto/plugin-data-source.dto.js'
 import type { PluginFieldDto } from './dto/plugin-field.dto.js'
@@ -13,6 +12,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { isUUID } from 'class-validator'
 import { Repository } from 'typeorm'
 import { ApiException, ValidationException } from '../errors/api.exception.js'
+import { closeGapInOrder } from '../screens/screen-order.js'
 import { Screen } from '../screens/screens.entity.js'
 import generateApikey from '../utils/generateApikey.js'
 import { PluginDataSource } from './entities/plugin-data-source.entity.js'
@@ -21,6 +21,7 @@ import { PluginTemplate } from './entities/plugin-template.entity.js'
 import { Plugin } from './entities/plugin.entity.js'
 import { dataSourceModeViolation } from './plugin-data-source-mode.js'
 import { pluginKindFieldViolation } from './plugin-kind-fields.js'
+import { toPluginPlaces } from './plugin.mapper.js'
 import { PluginFieldValuesService } from './services/plugin-field-values.service.js'
 import { PluginRenderCacheService } from './services/plugin-render-cache.service.js'
 import { PluginSchedulerService } from './services/plugin-scheduler.service.js'
@@ -28,11 +29,13 @@ import { PluginSchedulerService } from './services/plugin-scheduler.service.js'
 // A `literal` Data Source is never fetched, so one switched to it starts over (ADR-0025).
 const NO_FETCH_OUTCOME = { fetchFailureStreak: 0, lastFetchAttemptAt: null, lastFetchSucceededAt: null, lastFetchError: null }
 
+function pluginNotFound(id: string): ApiException {
+  return new ApiException(HttpStatus.NOT_FOUND, 'plugin-not-found', 'Plugin not found', { id })
+}
+
 @Injectable()
 export class PluginsService implements OnModuleInit {
   private readonly logger = new Logger(PluginsService.name)
-
-  private mashupSlotRepository: Repository<MashupSlot>
 
   constructor(
     @InjectRepository(Plugin)
@@ -48,18 +51,7 @@ export class PluginsService implements OnModuleInit {
     private readonly scheduler: PluginSchedulerService,
     private readonly renderCache: PluginRenderCacheService,
     private readonly fieldValues: PluginFieldValuesService,
-  ) {
-    // Lazy injection to avoid circular dependency with MashupModule
-    setTimeout(() => {
-      try {
-        this.mashupSlotRepository = this.pluginRepository.manager.getRepository('MashupSlot')
-      }
-      catch {
-        // MashupSlot might not be registered yet during tests or initialization
-        this.logger.debug('MashupSlot repository not available')
-      }
-    }, 0)
-  }
+  ) {}
 
   async onModuleInit() {
     this.logger.log('Initializing plugin scheduler...')
@@ -83,6 +75,14 @@ export class PluginsService implements OnModuleInit {
       relations: { dataSources: true, templates: true, fields: true, deviceAssignments: { device: true } },
     })
     return plugin && this.withFieldValues(plugin)
+  }
+
+  /** The Plugin with its Data Sources, Templates and Plugin Fields: what a copy and an export are made from. */
+  async requireWhole(id: string): Promise<Plugin> {
+    const plugin = isUUID(id) ? await this.findPluginWithRelations(id, { dataSources: true, templates: true, fields: true }) : null
+    if (!plugin)
+      throw pluginNotFound(id)
+    return plugin
   }
 
   private async withFieldValues(plugin: Plugin): Promise<PluginWithFieldValues> {
@@ -125,10 +125,7 @@ export class PluginsService implements OnModuleInit {
   }
 
   async duplicate(id: string): Promise<PluginWithFieldValues> {
-    const source = await this.findPluginWithRelations(id, { dataSources: true, templates: true, fields: true })
-    if (!source) {
-      throw new NotFoundException(`Plugin ${id} not found`)
-    }
+    const source = await this.requireWhole(id)
 
     return this.create(
       { ...this.buildDuplicateDto(source), fieldValues: await this.fieldValues.storedFor(id) },
@@ -287,7 +284,7 @@ export class PluginsService implements OnModuleInit {
         ? await manager.findOne(Plugin, { where: { id }, relations: { dataSources: true, templates: true, fields: true } })
         : null
       if (!plugin)
-        throw new ApiException(HttpStatus.NOT_FOUND, 'plugin-not-found', 'Plugin not found', { id })
+        throw pluginNotFound(id)
 
       const { dataSources, templates, fields, fieldValues, ...basicFields } = pluginData
 
@@ -552,44 +549,33 @@ export class PluginsService implements OnModuleInit {
     }
   }
 
-  async checkPluginUsage(id: string): Promise<{ inMashups: Array<{ screenId: string, screenName: string }> }> {
-    if (!this.mashupSlotRepository) {
-      return { inMashups: [] }
-    }
+  /**
+   * Deletes the Plugin with its assignments and its Plugin Screens, and closes the gap each
+   * of those leaves in its Device's Order. Refused while a Mashup holds the Plugin in a slot.
+   */
+  async remove(id: string): Promise<void> {
+    const plugin = isUUID(id) ? await this.pluginRepository.findOneBy({ id }) : null
+    if (!plugin)
+      throw pluginNotFound(id)
 
-    const mashupsWithPlugin = await this.mashupSlotRepository.find({
-      where: { plugin: { id } },
-      relations: { mashupConfiguration: { screen: true } },
+    await this.pluginRepository.manager.transaction(async (manager) => {
+      const screens = manager.getRepository(Screen)
+      const mashups = toPluginPlaces(await screens.find({
+        where: { type: 'mashup', mashupConfiguration: { slots: { plugin: { id } } } },
+        relations: { device: true },
+      }))
+      if (mashups.length > 0) {
+        const details: PluginInMashupDetails = { mashups }
+        throw new ApiException(HttpStatus.CONFLICT, 'plugin-in-mashup', 'The Plugin fills a slot in a Mashup.', { ...details })
+      }
+
+      const pluginScreens = await screens.find({ where: { plugin: { id } }, relations: { device: true } })
+      await manager.getRepository(Plugin).remove(plugin)
+      for (const deviceId of new Set(pluginScreens.map(screen => screen.device.id)))
+        await closeGapInOrder(manager, deviceId)
     })
 
-    return {
-      inMashups: mashupsWithPlugin.map(slot => ({
-        screenId: slot.mashupConfiguration.screen.id,
-        screenName: slot.mashupConfiguration.screen.filename ?? 'Untitled Screen',
-      })),
-    }
-  }
-
-  async remove(id: string, force = false): Promise<boolean> {
-    const plugin = await this.pluginRepository.findOneBy({ id })
-    if (!plugin)
-      return false
-
-    // Check if plugin is used in mashups
-    if (!force) {
-      const usage = await this.checkPluginUsage(id)
-      if (usage.inMashups.length > 0) {
-        this.logger.warn(`Plugin ${id} is used in ${usage.inMashups.length} mashup(s)`)
-        throw new BadRequestException(
-          `Plugin is used in ${usage.inMashups.length} mashup(s). Mashups: ${usage.inMashups.map(m => m.screenName).join(', ')}`,
-        )
-      }
-    }
-
     this.scheduler.removeScheduledJob(id)
-    this.logger.log(`Removed scheduled job for plugin: ${plugin.name}`)
-
-    await this.pluginRepository.remove(plugin)
-    return true
+    this.logger.log(`Deleted plugin: ${plugin.name}`)
   }
 }

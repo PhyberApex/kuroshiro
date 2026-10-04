@@ -17,11 +17,14 @@ const props = withDefaults(defineProps<{
   /** Names the thing: "Delete Weekend board?" */
   title: string
   /** The confirming button repeats the action's name ("Delete Screen"). There is no default: it is never "OK" or "Yes". */
-  confirmLabel: string
+  confirmLabel?: string
   /** The safe choice, which has the focus when the confirmation opens: "Keep Screen". */
   safeLabel?: string
-  /** What confirming does. While it runs the confirming button shows the loading mark; if it fails, the confirmation stays open and says why. */
-  action: () => unknown
+  /**
+   * What confirming does. While it runs the confirming button shows the loading mark; if it fails, the confirmation stays open and says why.
+   * Left out, there is nothing to confirm: the dialog only says why something cannot be done yet, and has the safe choice alone.
+   */
+  action?: () => unknown
 }>(), {
   safeLabel: 'Cancel',
 })
@@ -38,9 +41,11 @@ defineSlots<{
   lost?: () => unknown
   /** What stays. */
   stays?: () => unknown
+  /** Beside the safe choice of a dialog with nothing to confirm: a link to where the obstacle is removed. */
+  also?: () => unknown
 }>()
 
-if (import.meta.env.DEV && !props.confirmLabel?.trim())
+if (import.meta.env.DEV && props.action && !props.confirmLabel?.trim())
   throw new Error('A Confirmation needs a confirmLabel: the confirming button repeats the action\'s name.')
 
 const open = defineModel<boolean>('open', { default: false })
@@ -57,7 +62,7 @@ async function confirm() {
   running.value = true
   failure.value = undefined
   try {
-    await props.action()
+    await props.action?.()
     open.value = false
     emit('confirmed')
   }
@@ -112,7 +117,8 @@ function close(event: Event) {
                 {{ safeLabel }}
               </Button>
             </AlertDialogCancel>
-            <Button :loading="running" @click="confirm">
+            <slot v-if="!action" name="also" />
+            <Button v-if="action" :loading="running" @click="confirm">
               {{ confirmLabel }}
             </Button>
           </div>

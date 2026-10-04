@@ -199,8 +199,16 @@ describe('pluginExporterService', () => {
     const entries = zip.getEntries()
 
     expect(entries.some(e => e.entryName === '.trmnlp.yml')).toBe(true)
-    expect(entries.some(e => e.entryName === 'src/settings.yml')).toBe(false)
+    expect(yaml.load(zip.readAsText('src/settings.yml'))).toEqual({ strategy: 'polling', refresh_interval: 15, data_sources: [] })
     expect(entries.some(e => e.entryName === 'src/full.liquid')).toBe(true)
+  })
+
+  it('says a Webhook-kind Plugin is one, with its Merge Strategy and its Stream Limit, which only Stream has', async () => {
+    const plugin = makePlugin({ name: 'Doorbell', kind: 'Webhook', mergeStrategy: 'deep_merge', streamLimit: null, templates: [], fields: [] })
+
+    const zip = new AdmZip(await service.exportToZip(plugin))
+
+    expect(yaml.load(zip.readAsText('src/settings.yml'))).toEqual({ strategy: 'webhook', merge_strategy: 'deep_merge', stream_limit: null })
   })
 
   it('handles plugin without templates', async () => {

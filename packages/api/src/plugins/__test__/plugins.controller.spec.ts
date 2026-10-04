@@ -1,4 +1,3 @@
-import type { Response } from 'express'
 import type { PluginsService } from '../plugins.service.js'
 import type { PluginAssignmentsService } from '../services/plugin-assignments.service.js'
 import type { PluginExporterService } from '../services/plugin-exporter.service.js'
@@ -6,7 +5,6 @@ import type { PluginImporterService } from '../services/plugin-importer.service.
 import type { PluginPreviewDataService } from '../services/plugin-preview-data.service.js'
 import type { PluginReadsService } from '../services/plugin-reads.service.js'
 import type { RecipeUpdateService } from '../services/recipe-update.service.js'
-import { Buffer } from 'node:buffer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makePlugin } from '../../test/fixtures.js'
 import { asService } from '../../test/mockService.js'
@@ -104,16 +102,6 @@ describe('pluginsController', () => {
     expect(result).toBe(detail)
   })
 
-  it('duplicate duplicates a plugin', async () => {
-    const duplicated = { ...basePlugin, id: '2', name: 'Weather Plugin (copy)' }
-    mockService.duplicate.mockResolvedValue(duplicated)
-
-    const result = await controller.duplicate('1')
-
-    expect(mockService.duplicate).toHaveBeenCalledWith('1')
-    expect(result).toBe(duplicated)
-  })
-
   it('checkRecipeUpdate delegates to the recipe update service', async () => {
     const preview = { contentHash: 'abc', mode: 'three-way' as const, items: [], assignmentsMissingRequiredField: [] }
     mockRecipeUpdateService.checkForUpdate.mockResolvedValue(preview)
@@ -132,15 +120,6 @@ describe('pluginsController', () => {
 
     expect(mockRecipeUpdateService.applyUpdate).toHaveBeenCalledWith('1', applyDto)
     expect(result).toBe(basePlugin)
-  })
-
-  it('remove deletes a plugin', async () => {
-    mockService.remove.mockResolvedValue(true)
-
-    const result = await controller.remove('1')
-
-    expect(mockService.remove).toHaveBeenCalledWith('1')
-    expect(result).toEqual({ success: true })
   })
 
   it('importPlugin imports from file without device assignment', async () => {
@@ -304,39 +283,5 @@ describe('pluginsController', () => {
 
   it('importFromRecipe throws error if no Recipe id/URL provided', async () => {
     await expect(controller.importFromRecipe({ recipeId: '' })).rejects.toThrow('Recipe id or URL is required')
-  })
-
-  it('exportPlugin exports plugin as ZIP', async () => {
-    const plugin = { id: '1', name: 'Test Plugin' }
-    const zipBuffer = Buffer.from('zip-content')
-    mockService.findById.mockResolvedValue(plugin)
-    mockExporter.exportToZip.mockResolvedValue(zipBuffer)
-
-    const res = asService<Response>({
-      setHeader: vi.fn(),
-      send: vi.fn(),
-    })
-
-    await controller.exportPlugin('1', res)
-
-    expect(mockService.findById).toHaveBeenCalledWith('1')
-    expect(mockExporter.exportToZip).toHaveBeenCalledWith(plugin)
-    expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'application/zip')
-    expect(res.setHeader).toHaveBeenCalledWith('Content-Disposition', 'attachment; filename="Test Plugin.trmnlp.zip"')
-    expect(res.send).toHaveBeenCalledWith(zipBuffer)
-  })
-
-  it('exportPlugin returns 404 if plugin not found', async () => {
-    mockService.findById.mockResolvedValue(null)
-
-    const res = asService<Response>({
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
-    })
-
-    await controller.exportPlugin('1', res)
-
-    expect(res.status).toHaveBeenCalledWith(404)
-    expect(res.json).toHaveBeenCalledWith({ message: 'Plugin not found' })
   })
 })
