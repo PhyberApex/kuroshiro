@@ -1,22 +1,9 @@
 import type { PluginFieldRead } from 'kuroshiro-shared'
 import { describe, expect, it } from 'vitest'
-import { buildPluginDetail } from '@/testing/fixtures/plugins'
-import { creditOf, enteredFields, fieldControl, fieldValueNote, isOn, pluginFieldValues, valuesAmong } from '../pluginFieldValues'
+import { buildPluginDetail, buildPluginField } from '@/testing/fixtures/plugins'
+import { creditOf, fieldControl, fieldsWithRow, fieldValueNote, isOn, pluginFieldValues, valuesAmong } from '../pluginFieldValues'
 
-function field(keyname: string, overrides: Partial<PluginFieldRead> = {}): PluginFieldRead {
-  return {
-    id: `${keyname}-id`,
-    keyname,
-    label: keyname,
-    type: 'string',
-    helpText: null,
-    default: null,
-    required: false,
-    order: 0,
-    options: null,
-    ...overrides,
-  }
-}
+const field = (keyname: string, overrides: Partial<PluginFieldRead> = {}) => buildPluginField({ id: `${keyname}-id`, keyname, label: keyname, ...overrides })
 
 const WEATHER = buildPluginDetail({
   fields: [field('location'), field('units', { type: 'select', default: 'metric' }), field('api_key', { type: 'password' }), field('author_bio', { type: 'author_bio' })],
@@ -64,6 +51,15 @@ describe('the Field Values of the Plugin\'s form', () => {
 
     it('lose the value of a keyname that is gone: a changed keyname starts its Field Value over', () => {
       expect(valuesAmong(['place', 'units'], { location: 'Marktplatz', units: '' }, saved)).toEqual({ units: '' })
+    })
+
+    it('hold no empty value for a keyname with nothing to clear, so a stored password is kept', () => {
+      expect(valuesAmong(['location', 'api_key', 'station'], { location: '', api_key: '', station: '' }, saved)).toEqual({ location: '' })
+    })
+
+    it('hold an empty value for a stored password whose Plugin Field is no password any more, which clears it at the save', () => {
+      expect(valuesAmong(['location', 'api_key'], { location: 'Lindenplatz' }, saved, ['api_key'])).toEqual({ location: 'Lindenplatz', api_key: '' })
+      expect(valuesAmong(['location', 'api_key'], { location: 'Lindenplatz', api_key: 'in the open' }, saved, ['api_key'])).toEqual({ location: 'Lindenplatz', api_key: 'in the open' })
     })
 
     it('take the saved value of a keyname that is back', () => {
@@ -134,6 +130,6 @@ describe('the Field Values of the Plugin\'s form', () => {
       { keyname: 'units', name: 'Units' },
     ]
 
-    expect(enteredFields(fields).map(field => field.name)).toEqual(['Location', 'Units'])
+    expect(fieldsWithRow(fields).map(field => field.name)).toEqual(['Location', 'Units'])
   })
 })

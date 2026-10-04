@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import type { PluginFieldInput } from 'kuroshiro-shared'
 import { computed, watch } from 'vue'
 import PageSection from '@/patterns/PageSection.vue'
 import FieldValueRow from './FieldValueRow.vue'
-import { pluginFields } from './pluginFields'
-import { creditOf, enteredFields, pluginFieldValues, valuesAmong } from './pluginFieldValues'
+import { creditOf, fieldsWithRow, isSecretStored, pluginFieldValues, valuesAmong } from './pluginFieldValues'
 import { usePluginFormPart, usePluginPage } from './pluginPage'
 
 const { plugin, form } = usePluginPage()
@@ -11,28 +11,25 @@ const { plugin, form } = usePluginPage()
 const part = usePluginFormPart(pluginFieldValues)
 
 /** The Plugin Fields as the form holds them, so one that is added, renamed, retyped, moved or removed shows here before it is saved. */
-const fields = computed(() => form.unsaved.fields ?? pluginFields.toInput(pluginFields.read(plugin.value)).fields ?? [])
-const rows = computed(() => enteredFields(fields.value))
+const fields = computed(() => form.unsaved.fields ?? [])
+const rows = computed(() => fieldsWithRow(fields.value))
 const credit = computed(() => creditOf(fields.value))
 
-function isSecretStored(keyname: string) {
-  const stored = plugin.value.fieldValues[keyname]
-  return stored?.secret === true && stored.set
-}
+const keepsSecret = (field: PluginFieldInput) => field.fieldType === 'password' && isSecretStored(plugin.value, field.keyname)
 
-/**
- * An emptied value with nothing saved under its keyname leaves the draft, so it is not sent: that keeps a stored
- * password whose replacement was taken back, and makes no change of a new Plugin Field that was typed in and emptied.
- */
+const keynames = computed(() => rows.value.map(field => field.keyname))
+const clearedSecrets = computed(() => rows.value
+  .filter(field => field.fieldType !== 'password' && isSecretStored(plugin.value, field.keyname))
+  .map(field => field.keyname))
+
+const valuesWith = (entered: Record<string, string>) => valuesAmong(keynames.value, entered, part.saved.values, clearedSecrets.value)
+
 function enter(keyname: string, value: string) {
-  if (value === '' && !(keyname in part.saved.values))
-    delete part.draft.values[keyname]
-  else
-    part.draft.values[keyname] = value
+  part.draft.values = valuesWith({ ...part.draft.values, [keyname]: value })
 }
 
-watch(() => rows.value.map(field => field.keyname).join('\n'), () => {
-  const values = valuesAmong(rows.value.map(field => field.keyname), part.draft.values, part.saved.values)
+watch(() => JSON.stringify([keynames.value, clearedSecrets.value]), () => {
+  const values = valuesWith(part.draft.values)
   if (JSON.stringify(values) !== JSON.stringify(part.draft.values))
     part.draft.values = values
 })
@@ -45,7 +42,7 @@ watch(() => rows.value.map(field => field.keyname).join('\n'), () => {
       :key="field.keyname"
       :model-value="part.draft.values[field.keyname] ?? ''"
       :field="field"
-      :secret-stored="isSecretStored(field.keyname)"
+      :secret-stored="keepsSecret(field)"
       @update:model-value="enter(field.keyname, $event)"
     />
     <template #under>

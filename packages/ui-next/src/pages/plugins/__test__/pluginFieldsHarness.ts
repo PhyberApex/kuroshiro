@@ -1,24 +1,11 @@
 import type { FieldValueRead, PluginDetail, PluginFieldRead, UpdatePluginInput } from 'kuroshiro-shared'
 import type { Mounted } from './pluginPageHarness'
-import { buildPluginDetail } from '@/testing/fixtures/plugins'
+import { buildPluginDetail, buildPluginField } from '@/testing/fixtures/plugins'
 import { fakePlugin, saveBar } from './pluginPageHarness'
 
 /** What the specs of the Field Values and of the Plugin Fields share: a Plugin with Plugin Fields, and a server that saves them. */
 
-export function field(keyname: string, overrides: Partial<PluginFieldRead> = {}): PluginFieldRead {
-  return {
-    id: `${keyname}-id`,
-    keyname,
-    label: keyname,
-    type: 'string',
-    helpText: null,
-    default: null,
-    required: false,
-    order: 0,
-    options: null,
-    ...overrides,
-  }
-}
+export const field = (keyname: string, overrides: Partial<PluginFieldRead> = {}) => buildPluginField({ id: `${keyname}-id`, keyname, label: keyname, ...overrides })
 
 export const LOCATION = field('location', { label: 'Location', required: true, helpText: 'A place name or a postcode.' })
 export const UNITS = field('units', {

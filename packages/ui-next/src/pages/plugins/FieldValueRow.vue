@@ -9,7 +9,7 @@ import { fieldId } from './pluginPage'
 /** One Plugin Field as a row of the Field Values: its label, the control of its type, the note at the right and its help text. */
 const props = defineProps<{
   field: PluginFieldInput
-  /** Whether the server holds a password for it. */
+  /** Whether the server holds a password for it that a save without a new one keeps. */
   secretStored: boolean
 }>()
 
@@ -56,7 +56,7 @@ const describedBy = computed(() => [
 
 <style scoped>
 @layer components {
-  /* The grid of a Setting row, which a section of rows on any page shares. */
+  /* The grid of a Setting row, drawn here because that row's label has no place for "required" under it. */
   .field-value-row {
     display: grid;
     grid-template-columns: var(--setting-label-width, 12.5rem) minmax(0, 1fr) auto;

@@ -1,23 +1,10 @@
 import type { PluginFieldRead } from 'kuroshiro-shared'
 import type { PluginFieldDraft } from '../pluginFields'
 import { describe, expect, it } from 'vitest'
-import { buildPluginDetail } from '@/testing/fixtures/plugins'
+import { buildPluginDetail, buildPluginField } from '@/testing/fixtures/plugins'
 import { addedPluginField, fieldPaths, inOrderOf, pluginFields, typeName } from '../pluginFields'
 
-function field(overrides: Partial<PluginFieldRead>): PluginFieldRead {
-  return {
-    id: 'location-id',
-    keyname: 'location',
-    label: 'Location',
-    type: 'string',
-    helpText: null,
-    default: null,
-    required: false,
-    order: 0,
-    options: null,
-    ...overrides,
-  }
-}
+const field = (overrides: Partial<PluginFieldRead>) => buildPluginField({ id: 'location-id', ...overrides })
 
 const LOCATION = field({ helpText: 'A place name or a postcode.', required: true })
 const UNITS = field({
@@ -99,6 +86,19 @@ describe('the Plugin Fields of the Plugin\'s form', () => {
         { label: 'Scientific', value: 'Scientific' },
         { label: 'Imperial', value: 'imperial' },
       ])
+    })
+
+    it('keeps the value of an option that was given another label in its place', () => {
+      const [units] = drafted([UNITS])
+      const { fields } = pluginFields.toInput({ rows: [{ ...units!, options: 'Metric (°C)\nImperial' }] })
+
+      expect(fields![0]!.options).toEqual([{ label: 'Metric (°C)', value: 'metric' }, { label: 'Imperial', value: 'imperial' }])
+    })
+
+    it('keeps two options of one label apart', () => {
+      const twice = field({ type: 'select', options: [{ label: 'Auto', value: 'auto' }, { label: 'Auto', value: 'auto_night' }] })
+
+      expect(pluginFields.toInput({ rows: drafted([twice]) }).fields![0]!.options).toEqual([{ label: 'Auto', value: 'auto' }, { label: 'Auto', value: 'auto_night' }])
     })
 
     it('sends no default for a Password', () => {

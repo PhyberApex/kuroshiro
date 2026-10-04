@@ -10,12 +10,11 @@ export interface FieldValuesDraft {
   values: Record<string, string>
 }
 
-const isEntered = (plugin: PluginDetail, keyname: string) => plugin.fieldValues[keyname]?.secret === false
-
 function shownValues(plugin: PluginDetail): Record<string, string> {
-  return Object.fromEntries(plugin.fields
-    .filter(field => field.type !== CREDIT_TYPE && isEntered(plugin, field.keyname))
-    .map(field => [field.keyname, (plugin.fieldValues[field.keyname] as { value: string | null }).value ?? '']))
+  return Object.fromEntries(plugin.fields.flatMap((field) => {
+    const stored = plugin.fieldValues[field.keyname]
+    return field.type === CREDIT_TYPE || stored?.secret !== false ? [] : [[field.keyname, stored.value ?? '']]
+  }))
 }
 
 /** By keyname in a fixed order, so that two drafts holding the same values send the same. */
@@ -30,14 +29,23 @@ export const pluginFieldValues: PluginFormPart<FieldValuesDraft> = {
   toInput: draft => ({ fieldValues: sentValues(draft.values) }),
 }
 
+/** Whether the server holds a password under the keyname. Its value never reaches the browser. */
+export function isSecretStored(plugin: PluginDetail, keyname: string) {
+  const stored = plugin.fieldValues[keyname]
+  return stored?.secret === true && stored.set
+}
+
 /**
- * The values for the Plugin Fields as the form holds them now: the value of a keyname that is gone goes with it, as
- * the server drops it at the save, and a keyname that is back has its saved value again.
+ * The values for the Plugin Fields as the form holds them now. The value of a keyname that is gone goes with it, as
+ * the server drops it at the save, and a keyname that is back has its saved value again. An empty value is held only
+ * where a save has something to clear: a saved value, or a stored password named in `cleared` because its Plugin Field
+ * is no password any more and would be read back. Anywhere else nothing is sent, which keeps a stored password.
  */
-export function valuesAmong(keynames: string[], entered: Record<string, string>, saved: Record<string, string>): Record<string, string> {
+export function valuesAmong(keynames: string[], entered: Record<string, string>, saved: Record<string, string>, cleared: string[] = []): Record<string, string> {
   return Object.fromEntries(keynames.flatMap((keyname) => {
-    const value = entered[keyname] ?? saved[keyname]
-    return value === undefined ? [] : [[keyname, value]]
+    const value = entered[keyname] ?? saved[keyname] ?? ''
+    const clears = keyname in saved || cleared.includes(keyname)
+    return value === '' && !clears ? [] : [[keyname, value]]
   }))
 }
 
@@ -78,7 +86,7 @@ export function creditOf(fields: PluginFieldInput[]) {
 }
 
 /** The Plugin Fields that get a row: every one that is an input, once per keyname, in their order. */
-export function enteredFields(fields: PluginFieldInput[]) {
+export function fieldsWithRow(fields: PluginFieldInput[]) {
   return fields.filter((field, index) => field.fieldType !== CREDIT_TYPE
     && field.keyname !== ''
     && fields.findIndex(other => other.keyname === field.keyname) === index)

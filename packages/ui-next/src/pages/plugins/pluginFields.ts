@@ -14,7 +14,7 @@ export interface PluginFieldDraft extends FormRow {
   default: string
   /** The options' labels, one per line. */
   options: string
-  /** The options as they are saved: a line that is still one of their labels keeps that option's value. */
+  /** The options as they are saved, whose values the lines keep. */
   storedOptions: PluginFieldOption[] | null
   helpText: string
   required: boolean
@@ -61,8 +61,19 @@ function draftOf(field: PluginFieldRead): PluginFieldDraft {
 
 const linesOf = (text: string) => text.split('\n').map(line => line.trim()).filter(Boolean)
 
+/**
+ * The options the lines stand for. A line keeps the value of the saved option it still is: the one in its place, or
+ * one of its label. While no line was added or taken away, a line with another label is its place's option relabelled.
+ */
 function enteredOptions(row: PluginFieldDraft): PluginFieldOption[] {
-  return linesOf(row.options).map(label => row.storedOptions?.find(option => option.label === label) ?? { label, value: label })
+  const stored = row.storedOptions ?? []
+  const labels = linesOf(row.options)
+  const relabelled = labels.length === stored.length
+  return labels.map((label, place) => {
+    const inPlace = stored[place]
+    const kept = inPlace?.label === label ? inPlace : stored.find(option => option.label === label)
+    return kept ?? { label, value: relabelled ? inPlace!.value : label }
+  })
 }
 
 function inputOf(row: PluginFieldDraft, order: number): PluginFieldInput {

@@ -4,24 +4,11 @@ import { describe, expect, it } from 'vitest'
 import { api, apiUrl } from '@/testing/api/server'
 import { fakeShellReads, mountApp } from '@/testing/app'
 import { buildInstanceSettings } from '@/testing/fixtures/instance'
-import { buildPluginDetail } from '@/testing/fixtures/plugins'
+import { buildPluginDetail, buildPluginField } from '@/testing/fixtures/plugins'
 import { expectPageScreenshots } from '@/testing/screenshots'
 import { freezeTime } from '@/testing/time'
 
-function field(keyname: string, label: string, overrides: Partial<PluginFieldRead>): PluginFieldRead {
-  return {
-    id: keyname,
-    keyname,
-    label,
-    type: 'string',
-    helpText: null,
-    default: null,
-    required: false,
-    order: 0,
-    options: null,
-    ...overrides,
-  }
-}
+const field = (keyname: string, label: string, overrides: Partial<PluginFieldRead>) => buildPluginField({ id: keyname, keyname, label, ...overrides })
 
 const weather = buildPluginDetail({
   id: 'weather',

@@ -171,6 +171,37 @@ describe('the Plugin Fields of a Plugin', () => {
       expect(faked.saves[0]!.fieldValues).toEqual({ place: 'Marktplatz' })
     })
 
+    it('of a stored password to another type clears the password at the save, so it is never read back', async () => {
+      const faked = fakeWeather([API_KEY], { api_key: 'stored-secret' })
+      const screen = await mountOpened(1)
+      const opened = await open(screen, 'api_key')
+
+      await opened.getByRole('combobox', { name: 'Type' }).click()
+      await screen.getByRole('option', { name: 'Single-line text' }).click()
+
+      await expect.element(screen.getByRole('textbox', { name: 'API key' })).toHaveValue('')
+      expect(read(document.querySelector('#values .note'))).toBe('Empty')
+      await save(screen)
+
+      await expect.poll(() => faked.saves.map(sent => sent.fieldValues)).toEqual([{ api_key: null }])
+      expect(faked.saves[0]!.fields![0]!.fieldType).toBe('string')
+    })
+
+    it('of a stored password to another type and back keeps the password', async () => {
+      fakeWeather([API_KEY], { api_key: 'stored-secret' })
+      const screen = await mountOpened(1)
+      const opened = await open(screen, 'api_key')
+
+      await opened.getByRole('combobox', { name: 'Type' }).click()
+      await screen.getByRole('option', { name: 'Single-line text' }).click()
+      await expect.element(screen.getByRole('textbox', { name: 'API key' })).toBeVisible()
+      await opened.getByRole('combobox', { name: 'Type' }).click()
+      await screen.getByRole('option', { name: 'Password' }).click()
+
+      await expect.element(screen.getByRole('button', { name: 'Replace API key' })).toBeVisible()
+      await expect.element(saveBar(screen).getByRole('button', { name: 'Save Plugin' })).not.toBeInTheDocument()
+    })
+
     it('to a Select lists the options it was given under Field Values', async () => {
       fakeWeather([LOCATION])
       const screen = await mountOpened(1)
