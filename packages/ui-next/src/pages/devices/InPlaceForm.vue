@@ -6,6 +6,12 @@ defineProps<{
   title: string
 }>()
 
+defineSlots<{
+  default?: () => unknown
+  /** The primary button first, then the one that closes the form. */
+  buttons?: () => unknown
+}>()
+
 const titleId = useId()
 </script>
 
@@ -15,6 +21,9 @@ const titleId = useId()
       {{ title }}
     </p>
     <slot />
+    <div class="buttons">
+      <slot name="buttons" />
+    </div>
   </div>
 </template>
 
@@ -31,6 +40,13 @@ const titleId = useId()
 
   .title {
     font-weight: var(--weight-medium);
+  }
+
+  .buttons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
   }
 }
 </style>

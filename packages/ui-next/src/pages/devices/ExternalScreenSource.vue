@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { ScreenRead } from 'kuroshiro-shared'
 import type { RadioChoice } from '@/components/RadioRow.vue'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { IMAGE_NOT_FETCHED } from '@/api/refusalWording'
 import { refreshScreen, updateScreen } from '@/api/screens'
 import Button from '@/components/Button.vue'
 import { failureReason } from '@/components/failureReason'
@@ -56,6 +57,9 @@ watch(() => props.external.fetchManual, (saved) => {
     choice.value = choiceOf(saved)
 })
 
+/** A save that failed says why under the field, like an address that is refused before it is sent. */
+const urlError = computed(() => urlProblem.value ?? (urlSave.status === 'failed' ? urlSave.reason : undefined))
+
 function commitUrl() {
   urlProblem.value = isWebAddress(url.value) ? undefined : 'Enter an address that starts with http:// or https://.'
   if (!urlProblem.value)
@@ -77,7 +81,7 @@ async function refresh() {
     await props.reload()
   }
   catch (error) {
-    urlProblem.value = failureReason(error) ?? 'Kuroshiro could not fetch an image from this address.'
+    urlProblem.value = failureReason(error) ?? IMAGE_NOT_FETCHED
   }
   finally {
     refreshing.value = false
@@ -86,10 +90,12 @@ async function refresh() {
 </script>
 
 <template>
-  <Field v-slot="{ control }" class="address" label="Image URL" :error="urlProblem">
-    <TextInput v-model="url" v-bind="control" type="url" inputmode="url" spellcheck="false" wide @update:model-value="urlProblem = undefined" @commit="commitUrl" />
-    <SaveState :status="urlSave.status" :reason="urlSave.reason" @retry="urlSave.retry" />
-  </Field>
+  <div class="fetching">
+    <Field v-slot="{ control }" class="address" label="Image URL" :error="urlError">
+      <TextInput v-model="url" v-bind="control" type="url" inputmode="url" spellcheck="false" wide @update:model-value="urlProblem = undefined" @commit="commitUrl" />
+    </Field>
+    <SaveState :status="urlSave.status" @retry="urlSave.retry" />
+  </div>
   <div class="fetching">
     <RadioRow :model-value="choice" :choices="FETCH_CHOICES" aria-label="Fetching" @update:model-value="choose" />
     <SaveState :status="choiceSave.status" :reason="choiceSave.reason" @retry="choiceSave.retry" />

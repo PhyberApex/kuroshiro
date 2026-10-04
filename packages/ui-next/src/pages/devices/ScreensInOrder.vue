@@ -110,7 +110,8 @@ const frame = useDeviceFrame()
 const heading = useTemplateRef('heading')
 
 /** The Device counts its Screens, so it is read again too. The removed row held the focus, which the heading takes. */
-async function showWithout() {
+async function showWithoutRemoved() {
+  open.value = undefined
   await Promise.all([props.reload(), frame.device.reload()])
   await nextTick()
   heading.value?.focus()
@@ -191,7 +192,7 @@ const pausedNote = computed(() => sentence(
               </Button>
             </template>
             <template #actionsAfter>
-              <ScreenRemoval :screen="item" :device="device" @removed="showWithout" />
+              <ScreenRemoval :screen="item" :device="device" @removed="showWithoutRemoved" />
             </template>
           </OpenedScreen>
         </ScreenRow>

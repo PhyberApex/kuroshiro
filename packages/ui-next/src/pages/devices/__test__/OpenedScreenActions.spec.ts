@@ -118,6 +118,7 @@ describe('deleting and unassigning', () => {
     await screen.getByRole('button', { name: 'Delete Screen' }).click()
 
     await expect.poll(rowNames).not.toContain('Weekend board')
+    expect(screen.router.currentRoute.value.query.screen).toBeUndefined()
     expect(faked.writes).toEqual([{ method: 'DELETE', path: 'screens/weekend' }])
   })
 

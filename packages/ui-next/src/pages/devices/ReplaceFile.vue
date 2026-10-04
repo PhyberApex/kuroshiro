@@ -38,6 +38,7 @@ const converted = ref<string>()
 const converting = ref(false)
 const replacing = ref(false)
 const problem = ref<string>()
+let isGone = false
 
 function dropConverted() {
   if (converted.value)
@@ -53,7 +54,7 @@ watch(chosen, async (file) => {
   converting.value = true
   try {
     const image = await previewScreenImage(props.screen.id, file)
-    if (chosen.value !== file)
+    if (isGone || chosen.value !== file)
       return
     converted.value = URL.createObjectURL(image)
     await nextTick()
@@ -90,7 +91,10 @@ async function replace() {
 }
 
 onMounted(() => document.getElementById(inputId)?.focus())
-onBeforeUnmount(dropConverted)
+onBeforeUnmount(() => {
+  isGone = true
+  dropConverted()
+})
 </script>
 
 <template>
@@ -124,14 +128,6 @@ onBeforeUnmount(dropConverted)
         The current image is deleted. The Screen keeps its name, its Order and its Schedule.
       </p>
       <FieldError :message="problem" />
-      <div class="buttons">
-        <Button variant="primary" :loading="replacing" @click="replace">
-          Replace image
-        </Button>
-        <Button ref="keep" variant="quiet" :disabled="replacing" @click="$emit('close')">
-          Keep the current image
-        </Button>
-      </div>
     </template>
     <template v-else>
       <FileDrop
@@ -150,11 +146,19 @@ onBeforeUnmount(dropConverted)
           Converting {{ chosen.name }} for {{ device.name }}
         </template>
       </ResultLine>
-      <div class="buttons">
-        <Button variant="quiet" @click="$emit('close')">
-          Cancel
+    </template>
+    <template #buttons>
+      <template v-if="chosen && converted">
+        <Button variant="primary" :loading="replacing" @click="replace">
+          Replace image
         </Button>
-      </div>
+        <Button ref="keep" variant="quiet" :disabled="replacing" @click="$emit('close')">
+          Keep the current image
+        </Button>
+      </template>
+      <Button v-else variant="quiet" @click="$emit('close')">
+        Cancel
+      </Button>
     </template>
   </InPlaceForm>
 </template>
@@ -177,13 +181,6 @@ onBeforeUnmount(dropConverted)
   .note {
     color: var(--color-ink-soft);
     font-size: var(--text-sm);
-  }
-
-  .buttons {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-2) var(--space-4);
   }
 }
 </style>

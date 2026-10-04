@@ -46,7 +46,7 @@ function place(slot: number, pluginId: string) {
   placed.value = Array.from({ length: Math.max(elsewhere.length, slot + 1) }, (_, index) => index === slot ? pluginId : elsewhere[index] ?? null)
 }
 
-async function save() {
+async function saveLayout() {
   saving.value = true
   problem.value = undefined
   try {
@@ -66,20 +66,20 @@ onMounted(() => (form.value?.$el as HTMLElement | undefined)?.querySelector<HTML
 
 <template>
   <InPlaceForm ref="form" title="Change layout">
-    <LayoutPicker :model-value="layout" class="compact" :layouts="MASHUP_LAYOUT_CHOICES" aria-label="Layout" @update:model-value="id => layout = id as MashupLayout" />
+    <LayoutPicker :model-value="layout" :layouts="MASHUP_LAYOUT_CHOICES" aria-label="Layout" @update:model-value="id => layout = id as MashupLayout" />
     <MashupSlots :slot-names="chosen.slotNames" :plugin-ids="inSlots" :plugins="plugins" @change="place" />
     <p v-if="withoutSlotLine" class="note">
       {{ withoutSlotLine }}
     </p>
     <FieldError :message="problem" />
-    <div class="buttons">
-      <Button variant="primary" :disabled="!isFilled" :loading="saving" @click="save">
+    <template #buttons>
+      <Button variant="primary" :disabled="!isFilled" :loading="saving" @click="saveLayout">
         Save layout
       </Button>
       <Button variant="quiet" :disabled="saving" @click="$emit('close')">
         Cancel
       </Button>
-    </div>
+    </template>
   </InPlaceForm>
 </template>
 
@@ -88,13 +88,6 @@ onMounted(() => (form.value?.$el as HTMLElement | undefined)?.querySelector<HTML
   .note {
     color: var(--color-ink-soft);
     font-size: var(--text-sm);
-  }
-
-  .buttons {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-2) var(--space-4);
   }
 }
 </style>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DeviceDetail, ScreenRead } from 'kuroshiro-shared'
 import { computed, nextTick, ref, useId, useTemplateRef } from 'vue'
+import { NOT_IN_DEMO } from '@/api/refusalWording'
 import Button from '@/components/Button.vue'
 import { useInstanceFacts } from '@/reads/sharedReads'
 import ReplaceFile from './ReplaceFile.vue'
@@ -49,7 +50,7 @@ async function close() {
       <Button ref="opener" :disabled="inDemo || !instance.data" :aria-describedby="inDemo ? demoNoteId : undefined" @click="replacing = true">
         Replace file
       </Button>
-      <span v-if="inDemo" :id="demoNoteId" class="facts">Not available in the demo.</span>
+      <span v-if="inDemo" :id="demoNoteId" class="facts">{{ NOT_IN_DEMO }}</span>
     </div>
   </template>
 </template>

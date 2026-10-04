@@ -186,7 +186,9 @@ describe('an External link Screen', () => {
     await url.fill('https://harbour.example/gone.jpg')
     await userEvent.keyboard('{Enter}')
 
-    await expect.element(source.getByText('Not saved. Kuroshiro could not fetch an image from this address. The image could not be fetched: 404.')).toBeVisible()
+    await expect.element(source.getByText('Kuroshiro could not fetch an image from this address. 404.')).toBeVisible()
+    await expect.element(url).toHaveAttribute('aria-invalid', 'true')
+    await expect.element(source.getByText('Not saved.', { exact: true })).toBeVisible()
     await expect.element(url).toHaveValue('https://harbour.example/gone.jpg')
     await source.getByRole('button', { name: 'Try again' }).click()
 
@@ -362,6 +364,22 @@ describe('a Mashup Screen', () => {
 
     await expect.element(source.getByText('Saved')).toBeVisible()
     expect(faked.writes).toEqual([{ method: 'PATCH', path: 'mashup/weekend', body: { pluginIds: ['bins', 'calendar'] } }])
+  })
+
+  it('drops a Slot Change that was not saved when the layout form is opened and cancelled', async () => {
+    const faked = fakeKitchen()
+    api.use(http.patch(apiUrl('mashup/weekend'), () => apiErrorResponse({ statusCode: 500, code: 'internal' })))
+    const { screen, source } = await openedWeekend()
+
+    await choose(screen, source.getByRole('combobox', { name: 'Left', exact: true }), 'Bin day')
+    await expect.element(source.getByRole('button', { name: 'Try again' })).toBeVisible()
+    await source.getByRole('button', { name: 'Change layout' }).click()
+    await source.getByRole('button', { name: 'Cancel' }).click()
+
+    await expect.element(source.getByRole('button', { name: 'Change layout' })).toHaveFocus()
+    expect(slots(source.element())).toEqual([['Left', 'Weather'], ['Right', 'Calendar']])
+    expect(source.getByRole('button', { name: 'Try again' }).query()).toBeNull()
+    expect(faked.writes).toEqual([])
   })
 
   it('"Change layout" carries the Plugins over, starts a new slot at "Choose" and saves the layout with the whole list once every slot is filled', async () => {

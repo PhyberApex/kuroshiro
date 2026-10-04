@@ -90,7 +90,7 @@ const { device, listed, name, path } = useDeviceFrame() // from '@/pages/devices
 | `mashupLayouts.ts` | `MASHUP_LAYOUT_CHOICES`: the seven layouts with the names and slot names of [devices.md](../ui/devices.md#by-kind), built from `MASHUP_LAYOUTS` and ready for `LayoutPicker`. `layoutChoice(id)`, and `carriedOver` and `withoutSlot` for a change of layout |
 | `MashupSlots.vue`, `MashupLayoutChange.vue` | One select per slot, a Plugin in another slot disabled (`slotNames`, `pluginIds` with `null` for an empty slot, `plugins`; emits `change`), and the layout form built on it |
 | `ReplaceFile.vue` | The drop zone, the preview beside the current image and "Replace image" |
-| `InPlaceForm.vue` | The frame of a small form that opens in place of what it changes, named by its `title` |
+| `InPlaceForm.vue` | The frame of a small form that opens in place of what it changes, named by its `title`, with the `#buttons` slot for its row of buttons, the primary one first |
 | `screenSourceWording.ts` | The pure wording: a File's facts line, the Plugin sentence, what a removal loses and keeps by kind, `isWebAddress`, the line of a Plugin without a slot |
 
 `ScreensInOrder` takes `reload`, which reads the Screens again: call it after any write to a Screen. A write that adds or removes a Screen also calls `useDeviceFrame().device.reload()`, because the Device counts its Screens. A form that opens in place gives the focus to its first control when it opens and back to the button that opened it when it closes. A new Screen is opened by navigating to `{path}?screen={id}`, which also scrolls to its row.

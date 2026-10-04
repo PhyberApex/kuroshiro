@@ -54,9 +54,9 @@ const LOST_WITH_THE_SCREEN: Record<Exclude<ScreenKind, 'plugin'>, string> = {
 }
 
 /** A Plugin Assignment is unassigned; every other Screen is deleted. */
-export function removalWording(screen: Pick<ScreenRead, 'kind' | 'name'>, device: Pick<DeviceDetail, 'name'>): RemovalWording {
+export function removalWording(screen: Pick<ScreenRead, 'kind' | 'name' | 'plugin'>, device: Pick<DeviceDetail, 'name'>): RemovalWording {
   const name = screenName(screen.name)
-  if (screen.kind === 'plugin') {
+  if (screen.kind === 'plugin' && screen.plugin) {
     return {
       action: 'Unassign Plugin',
       title: `Unassign ${name} from ${device.name}?`,
@@ -67,7 +67,7 @@ export function removalWording(screen: Pick<ScreenRead, 'kind' | 'name'>, device
   return {
     action: 'Delete Screen',
     title: `Delete ${name}?`,
-    lost: `The Screen, its Schedule and ${LOST_WITH_THE_SCREEN[screen.kind]}.`,
+    lost: screen.kind === 'plugin' ? 'The Screen and its Schedule.' : `The Screen, its Schedule and ${LOST_WITH_THE_SCREEN[screen.kind]}.`,
     stays: screen.kind === 'mashup' ? 'The Plugins in its slots.' : `${possessive(device.name)} other Screens, which move up in the Order.`,
   }
 }

@@ -20,7 +20,7 @@ const asking = ref(false)
 const wording = computed(() => removalWording(props.screen, props.device))
 
 function remove() {
-  return props.screen.plugin
+  return props.screen.kind === 'plugin' && props.screen.plugin
     ? unassignPlugin(props.screen.plugin.id, props.device.id)
     : deleteScreen(props.screen.id)
 }

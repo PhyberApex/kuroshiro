@@ -68,11 +68,15 @@ describe('the API client', () => {
   })
 
   it('adds the server\'s reason to an image that could not be fetched, which only the server knows', async () => {
-    api.use(http.post(apiUrl('screens/7/refresh'), () => apiErrorResponse({ statusCode: 422, code: 'image-fetch-failed', message: 'The address did not answer with an image Kuroshiro can read.' })))
+    const refusedWith = async (message: string) => {
+      api.use(http.post(apiUrl('screens/7/refresh'), () => apiErrorResponse({ statusCode: 422, code: 'image-fetch-failed', message })))
+      return (await failureOf(apiSend('POST', 'screens/7/refresh')) as Error).message
+    }
 
-    const failure = await failureOf(apiSend('POST', 'screens/7/refresh'))
-
-    expect((failure as Error).message).toBe('Kuroshiro could not fetch an image from this address. The address did not answer with an image Kuroshiro can read.')
+    expect(await refusedWith('The address did not answer with an image Kuroshiro can read.'))
+      .toBe('Kuroshiro could not fetch an image from this address. The address did not answer with an image Kuroshiro can read.')
+    expect(await refusedWith('The image could not be fetched: Request failed with status code 404'))
+      .toBe('Kuroshiro could not fetch an image from this address. Request failed with status code 404')
   })
 
   it('names the limit of an upload that is too large', async () => {

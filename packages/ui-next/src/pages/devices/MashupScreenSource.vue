@@ -42,9 +42,10 @@ async function save(input: UpdateMashupInput) {
 const entered = ref(savedIds.value)
 const slotSave = useSaveAsChanged(pluginIds => save({ pluginIds }), entered)
 
-watch(savedIds, (saved) => {
-  if (slotSave.status !== 'saving')
-    entered.value = saved
+// The ids as one string: the Screens are new objects after every read that changed any of them.
+watch(() => savedIds.value.join(), () => {
+  if (slotSave.status === 'idle' || slotSave.status === 'saved')
+    entered.value = savedIds.value
 })
 
 function changeSlot(slot: number, pluginId: string) {
@@ -54,7 +55,9 @@ function changeSlot(slot: number, pluginId: string) {
 
 const changingLayout = ref(false)
 
+/** The form starts from the Mashup as it is saved, so a Slot Change that was not saved is dropped with it. */
 async function closeLayoutChange() {
+  slotSave.reset()
   entered.value = savedIds.value
   changingLayout.value = false
   await nextTick()

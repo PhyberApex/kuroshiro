@@ -10,10 +10,18 @@ function uploadTooLarge({ details }: ApiError) {
     : 'That file is larger than this Instance accepts.'
 }
 
-/** The one refusal whose reason only the server knows: what the address answered, or that it did not answer. */
+export const IMAGE_NOT_FETCHED = 'Kuroshiro could not fetch an image from this address.'
+
+/**
+ * The one refusal whose reason only the server knows: what the address answered, or that it did not answer.
+ * The server opens a download's failure with words that say what the sentence here already says.
+ */
 function imageFetchFailed({ message }: ApiError) {
-  return ['Kuroshiro could not fetch an image from this address.', message].filter(Boolean).join(' ')
+  const reason = message.replace(/^The image could not be fetched:\s*/, '')
+  return [IMAGE_NOT_FETCHED, reason].filter(Boolean).join(' ')
 }
+
+export const NOT_IN_DEMO = 'Not available in the demo.'
 
 /**
  * The sentence the admin reads for each code the admin API refuses with. Typed by the
@@ -42,7 +50,7 @@ const REFUSAL_WORDING: Record<ApiErrorCode, Wording> = {
   'image-fetch-failed': imageFetchFailed,
   'image-unreadable': 'This file is not an image Kuroshiro can read. Use PNG, JPEG, BMP, GIF, TIFF or WebP.',
   'order-not-a-permutation': 'The Order has to name every Screen once.',
-  'demo-mode': 'Not available in the demo.',
+  'demo-mode': NOT_IN_DEMO,
   'upload-too-large': uploadTooLarge,
   'firmware-version-taken': 'There is already a Firmware with that version.',
   'device-model-unknown': 'This Instance does not know that Device Model.',
