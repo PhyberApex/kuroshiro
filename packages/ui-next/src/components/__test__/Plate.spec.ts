@@ -143,6 +143,14 @@ describe('plate', () => {
     })
   })
 
+  it('says what it is waiting for when it is told', async () => {
+    const screen = await mount(Plate, { props: { name: NAME, rendering: true, renderingNote: 'Fetching the data' } })
+
+    await expect.element(screen.getByRole('img', { name: `${NAME}: fetching the data` })).toBeVisible()
+    await expect.element(screen.getByText('Fetching the data')).toBeVisible()
+    expect(screen.getByText('Rendering').elements()).toEqual([])
+  })
+
   it('is rendering for as long as it has no image', async () => {
     const screen = await mount(Plate, { props: { name: NAME, src: null, size: 'row' } })
 

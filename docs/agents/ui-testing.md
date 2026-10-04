@@ -20,7 +20,7 @@ The root `pnpm test` runs the first one. CI (`.github/workflows/checks.yml`) run
 | File | Runs in | For |
 | --- | --- | --- |
 | `src/**/*.spec.ts` | Chromium (Vitest browser mode) | A component, a page, anything that touches the DOM |
-| `src/**/*.node.spec.ts` | Node | Pure logic |
+| `src/**/*.node.spec.ts`, `scripts/**/*.node.spec.ts` | Node | Pure logic |
 | `src/**/*.shots.ts` | Chromium, inside the pinned image only | Screenshot baselines |
 | `real-api/**/*.spec.ts` | Node, driving Chromium through Playwright | The journeys against the real API |
 
@@ -161,6 +161,20 @@ A state that needs a pointer, a key press or a narrow window is shown in the gal
 - **`CodeBlock`** takes `code`, `copy` for the button, `copyValue` when "Copy" writes more than is shown, and `foldAfter` (a number of lines). `useCopied` and `CopyFaces` are the state and the two faces of a "Copy" button, shared with `CopyValue`.
 - **`DayHeading`** is an `li` for the list it stands in. **`NumberedSteps`** is an `ol` whose slot holds the `li`s.
 - **A class on a component's root can be matched by an ancestor's class in another component's scoped CSS.** `Plate`'s size class `row` sits inside the gallery's `.row`. So a rule that hangs on a state or size class names the root with it: `.plate.row .note`, not `.row .note`.
+
+### The code editor, the preview plate and the bench
+
+- **`CodeEditor`** is CodeMirror 6 behind a shell. `mode` (`liquid`, `html`, `json`, `javascript`) and `size` (`bench`, `full-window`, `code-input`) are read once; it takes `v-model`, `read-only`, `invalid`, `strip-note`, `problem`, `completion-data`, `kuroshiro-filters` and `document`, emits `save`, `blur` and (JSON only) `validity`, and exposes `focus()` and `goToLine(n)`. It throws without `aria-label` or `aria-labelledby`: the element that is typed in is a `div`, which a `label`'s `for` does not name, so inside a `Field` it still needs one of the two. `id` and every `aria-*` attribute go to that element, anything else to the frame.
+- **Every `@codemirror/*` import lives in `codeEditorView.ts` and what it imports** (`codeEditorTheme.ts`, `codeEditorLanguage.ts`), which the shell fetches with `import()`. `vite build` fails when a module of `@codemirror/*` or `@lezer/*` would be fetched by the entry or by any other dynamic import, a route's chunk included (`scripts/firstLoad.ts`). Until the editor is there its frame is a `wash` block with `aria-busy="true"`.
+- **CodeMirror writes its styles outside the cascade layers**, so its look is a CodeMirror theme built from the tokens (`codeEditorTheme.ts`), not scoped CSS. An unlayered `!important` loses to a layered one, so the theme cannot outbid `base.css` that way.
+- **A spec waits for the editor** with `await expect.element(screen.getByRole('textbox', { name })).toBeVisible()` and reads the code from `.cm-line` elements. In `userEvent.keyboard`, `{{` types one `{`. Completion is asked for with `{Control>} {/Control}` and read from `.cm-tooltip-autocomplete li`; `getByRole('option')` does not find its options.
+- **`document`** names the text's document. When it changes, the document that leaves keeps its undo history and cursor; pass the new document's text in the same update.
+- **`problem`** is `{ message, line }`, which is what `checkTemplate` of `kuroshiro-shared` answers, with an optional `from` and `to` (offsets into the text) for a narrower mark. A problem without a line is worded in the strip only.
+- **`PreviewPlate`** takes a complete HTML `document` and the Device Model's `width` and `height`, and draws it in an `iframe` with `sandbox="allow-scripts"`. Keep passing the last document while `not-drawn` is set; `rendering` (with `rendering-note`) shows the dither. While a new document loads, the `div` inside the plate has `aria-busy="true"` and the old drawing stays.
+- **A `PreviewPlate` that is shot** stands in a place whose width makes the plate a whole number of pixels high (`EditorBench.gallery.vue`): the edge of a scaled frame on a fraction of a pixel is antialiased differently from run to run.
+- **`EditorBench`** is layout only: the slots `#editor`, `#plate` and the default one for what sits under the plate. `full-window` fills the height of its place, which the caller sizes.
+- **`arrived(root)`** (`src/testing/arrivals.ts`) resolves once no `div` under `root` is `aria-busy`: an editor is fetched and a frame loads after the page is mounted. `gallery.shots.ts` awaits it before every shot, and a spec that mounts a gallery file holding either awaits it before `expectAccessible()`.
+- **`CodeEditor` is not a field control** in the sense of "Field components": its frame holds the strip as well as what is typed in, so it draws the control border itself instead of wearing `.control`, and it has `read-only` where a control has `disabled`. `pending` holds the `wash` block for the gallery.
 
 Three things Reka UI does not do for you:
 

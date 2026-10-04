@@ -22,6 +22,8 @@ const props = withDefaults(defineProps<{
   passedOver?: boolean
   /** The dither of an image that is still being rendered. */
   rendering?: boolean
+  /** What the plate is waiting for, in place of "Rendering": "Fetching the data". */
+  renderingNote?: string
   /** The error state. An image that cannot be loaded puts the plate in it by itself. */
   failed?: boolean
   /** Loads the image only as it scrolls into view. */
@@ -60,6 +62,10 @@ const WITHOUT_IMAGE = {
   failed: { said: 'no image yet', words: 'No image yet' },
 } as const
 
+const withoutImage = computed(() => props.renderingNote
+  ? { ...WITHOUT_IMAGE, rendering: { said: props.renderingNote.toLowerCase(), words: props.renderingNote } }
+  : WITHOUT_IMAGE)
+
 const state = computed(() => {
   if (holdsSlot.value)
     return 'held'
@@ -79,7 +85,7 @@ const frame = computed(() => {
     return {}
   if (state.value === 'held')
     return { 'role': 'group', 'aria-label': props.name }
-  return { 'role': 'img', 'aria-label': `${props.name}: ${WITHOUT_IMAGE[state.value].said}` }
+  return { 'role': 'img', 'aria-label': `${props.name}: ${withoutImage.value[state.value].said}` }
 })
 
 const stampCount = ref(0)
@@ -113,7 +119,7 @@ function takeImageSize(event: Event) {
     <span v-else class="note" aria-hidden="true">
       <LoadingMark v-if="state === 'rendering'" decorative />
       <Icon v-else name="problem" />
-      <span class="words">{{ WITHOUT_IMAGE[state].words }}</span>
+      <span class="words">{{ withoutImage[state].words }}</span>
     </span>
     <Seal
       v-if="sealed"
