@@ -10,6 +10,7 @@ import { buildInstanceFacts } from '@/testing/fixtures/instance'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import { elementsInSealColour } from '@/testing/sealColour'
 import { resetViewport, resizeTo } from '@/testing/viewport'
+import { holdTabVisible } from '@/testing/visibility'
 
 const devicesNamed = (...names: string[]) => names.map((name, index) => buildDeviceSummary({ id: `device-${index + 1}`, name }))
 
@@ -327,6 +328,7 @@ describe('the shell on a phone', () => {
 
 describe('the shell\'s reads', () => {
   it('asks for the firing Alerts again when the window regains the focus', async () => {
+    holdTabVisible()
     fakeShellReads()
     const answered: string[] = []
     api.events.on('response:mocked', ({ request }) => answered.push(new URL(request.url).pathname))
@@ -344,6 +346,7 @@ describe('the shell\'s reads', () => {
   })
 
   it('changes nothing in the page for an identical answer', async () => {
+    holdTabVisible()
     fakeShellReads({ alerts: buildAlertsList({ active: [buildAlert()] }) })
     const screen = await mountApp({ at: '/plugins' })
     await expect.element(screen.getByRole('link', { name: '1 Alert firing' })).toBeVisible()
