@@ -83,7 +83,7 @@ const outOfRange = ref(0)
             kept for <NumberInput v-model="keptDays" v-bind="control" :min="0" /> days
           </template>
           <template #source>
-            From <code>KUROSHIRO_DEVICE_LOG_RETENTION_DAYS</code>
+            From <code class="variable">KUROSHIRO_DEVICE_LOG_RETENTION_DAYS</code>
           </template>
           <template #note>
             0 keeps them until you clear a Device's Logs.
@@ -142,6 +142,11 @@ const outOfRange = ref(0)
 @layer components {
   .rows {
     justify-self: stretch;
+  }
+
+  .variable {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
   }
 }
 </style>
