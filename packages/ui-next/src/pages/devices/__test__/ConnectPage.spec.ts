@@ -69,6 +69,16 @@ const main = (screen: Screen) => screen.getByRole('main')
 const blocks = (screen: Screen) => [...main(screen).element().querySelectorAll('.called-in')]
 const listening = (screen: Screen) => words(main(screen).element().querySelector('.listening'))
 
+/** Resolves once the page has the Devices that were there when it opened, which is what a Device that calls in is told from. */
+async function hasOpened(screen: Screen, { devices }: Faked) {
+  const [first] = devices ?? []
+  if (first)
+    await expect.element(screen.getByRole('banner').getByRole('link', { name: first.name })).toBeVisible()
+  else
+    await expect.element(screen.getByRole('heading', { level: 1, name: 'Connect your Device' })).toBeVisible()
+  expect(listening(screen)).toBe('Waiting for a Device to call in')
+}
+
 async function openByHand(screen: Screen) {
   await screen.getByRole('button', { name: 'Register a Device by hand' }).click()
   await expect.element(screen.getByRole('button', { name: 'Register Device' })).toBeVisible()
@@ -149,7 +159,7 @@ describe('connect a Device', () => {
   it('shows a block for a Device that calls in after the page opened, and a second block for a second one', async () => {
     const faked = fakeInstance({ devices: [KITCHEN] })
     const screen = await mountApp({ at: '/connect' })
-    await expect.poll(() => listening(screen)).toBe('Waiting for a Device to call in')
+    await hasOpened(screen, faked)
 
     faked.devices = [KITCHEN, calledIn('new-1', '4F2A1C')]
 
@@ -174,7 +184,7 @@ describe('connect a Device', () => {
   it('names a Device that called in, saving as changed, and opens it under its new name', async () => {
     const faked = fakeInstance()
     const screen = await mountApp({ at: '/connect' })
-    await expect.poll(() => listening(screen)).toBe('Waiting for a Device to call in')
+    await hasOpened(screen, faked)
     faked.devices = [calledIn('new-1', '4F2A1C')]
     const name = screen.getByRole('textbox', { name: 'Name' })
     await expect.element(name).toHaveValue('4F2A1C')
@@ -190,7 +200,7 @@ describe('connect a Device', () => {
   it('does not send an empty name for a Device that called in', async () => {
     const faked = fakeInstance()
     const screen = await mountApp({ at: '/connect' })
-    await expect.poll(() => listening(screen)).toBe('Waiting for a Device to call in')
+    await hasOpened(screen, faked)
     faked.devices = [calledIn('new-1', '4F2A1C')]
     const name = screen.getByRole('textbox', { name: 'Name' })
     await expect.element(name).toHaveValue('4F2A1C')
@@ -206,7 +216,7 @@ describe('connect a Device', () => {
   it('says that the server is not answering on the waiting line, and keeps asking until it does', async () => {
     const faked = fakeInstance({ devices: [KITCHEN] })
     const screen = await mountApp({ at: '/connect' })
-    await expect.poll(() => listening(screen)).toBe('Waiting for a Device to call in')
+    await hasOpened(screen, faked)
 
     faked.devices = null
 
@@ -338,7 +348,7 @@ describe('connect a Device', () => {
   it('is accessible in both themes and does not overflow at phone, tablet or desktop width, with a Device that called in and the form open', async () => {
     const faked = fakeInstance({ serverUrl: 'http://localhost:3000', serverUrlIsLoopback: true })
     const screen = await mountApp({ at: '/connect' })
-    await expect.poll(() => listening(screen)).toBe('Waiting for a Device to call in')
+    await hasOpened(screen, faked)
     faked.devices = [calledIn('new-1', '4F2A1C')]
     await expect.poll(() => blocks(screen).length, WITHIN_A_FEW_POLLS).toBe(1)
     await openByHand(screen)

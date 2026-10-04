@@ -30,9 +30,11 @@ describe('connect a Device', () => {
     let devices: DeviceSummary[] = []
     api.use(http.get(apiUrl('devices'), () => HttpResponse.json(devices)))
     const screen = await mountApp({ at: '/connect' })
-    await expect.element(screen.getByText('Waiting for a Device to call in')).toBeVisible()
+    await expect.element(screen.getByRole('heading', { level: 1, name: 'Connect your Device' })).toBeVisible()
 
     devices = [calledIn]
+    // Asks at once, as a window that regains the focus does, instead of waiting for the page's timer.
+    window.dispatchEvent(new Event('focus'))
 
     await expect.element(screen.getByRole('link', { name: 'Open 4F2A1C' })).toBeVisible()
     await expect.element(screen.getByRole('banner').getByRole('link', { name: '4F2A1C' })).toBeVisible()
