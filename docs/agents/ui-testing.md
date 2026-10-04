@@ -1,8 +1,8 @@
 # Testing the admin UI
 
-How `packages/ui-next` is tested, decided in [Test strategy for the new UI](https://github.com/PhyberApex/kuroshiro/issues/1083). Everything that renders runs in real Chromium; the old `packages/ui` specs are a reference for behaviour only and are never ported.
+How `packages/ui` is tested, decided in [Test strategy for the new UI](https://github.com/PhyberApex/kuroshiro/issues/1083). Everything that renders runs in real Chromium.
 
-All commands run from `packages/ui-next` (or with `pnpm --filter kuroshiro-ui-next <script>`).
+All commands run from `packages/ui` (or with `pnpm --filter kuroshiro-ui <script>`).
 
 | Command | What it runs | Needs |
 | --- | --- | --- |
@@ -28,7 +28,7 @@ Specs sit in a `__test__` folder beside what they test. There is no jsdom.
 
 ## The helpers
 
-All in `packages/ui-next/src/testing/`. The specs in `src/testing/__test__/` are one worked example of each.
+All in `packages/ui/src/testing/`. The specs in `src/testing/__test__/` are one worked example of each.
 
 - **`mount(Component, { props, slots, theme })`** and **`mountPage({ routes, at, theme })`** (`mount.ts`). Both return the `vitest-browser-vue` screen (`getByRole`, `getByText`, ...) and are awaited. `mountPage` builds a test router over the routes you pass and opens it at `at`; it also returns `router`. The tokens, the reset and the faces are already loaded by the setup file, in the order the app loads them. The theme is `light` unless you pass `dark`.
 - **`mountApp({ at, theme })`** and **`fakeShellReads({ instance, devices, alerts })`** (`app.ts`) are how a screen is mounted: the whole app, shell and real routes, opened at `at`, returning the screen and `router`. The shell reads the Instance facts, the Devices and the Alerts on every page, so call `fakeShellReads()` first; left out, each argument is an ordinary Instance with one Device, Kitchen, and no Alert firing. `mountApp` also takes `routes`, stand-in routes for a spec of the shell itself. `mountPage` is for a component that needs a router but is not a route of the app; it installs the shared reads too, and each asks the API only once something uses it.
@@ -205,7 +205,7 @@ Baselines are the `*-chromium-linux.png` files in `__screenshots__/` folders bes
 
 - The comparison is as good as exact: one grey level of one pixel is forgiven, because Chromium antialiases a rounded corner at the edge of a shot a level lighter or darker from run to run. Two levels of grey fail, so a token that changes by more than a hair is still caught.
 - A new or changed shot: run `pnpm test:screenshots:update`, look at the PNGs, commit them.
-- A failing comparison writes the actual image and the diff under `packages/ui-next/.vitest/attachments/`; CI uploads that folder as the `ui-screenshot-diffs` artifact.
+- A failing comparison writes the actual image and the diff under `packages/ui/.vitest/attachments/`; CI uploads that folder as the `ui-screenshot-diffs` artifact.
 - A new gallery section moves every section below it, and a section that lands on another fraction of a pixel is shot a pixel taller or shorter with its text antialiased differently. So a PR that adds a primitive rewrites the gallery baselines after it in the page too; say so in the description.
 - **A PR that changes a baseline says why in its description**, baseline by baseline or by group ("every section: `--space-3` grew"). A baseline that changed for no stated reason is a regression until explained.
 - Bumping `playwright` changes the image and the browser. Regenerate the baselines in the same PR and say so.
@@ -226,7 +226,7 @@ The shots hold the shell, so wait for what the shell loads as well (a Device's n
 
 ## The real-API suite
 
-`packages/ui-next/real-api/`. Its global setup builds the API and the UI, lays them out as the image does, starts the API against an empty Postgres and hands the specs `inject('baseUrl')`. Without `KUROSHIRO_DB_HOST` it starts and removes a throwaway `postgres:18-alpine` container; with it (as in CI) it uses that database, which must be empty.
+`packages/ui/real-api/`. Its global setup builds the API and the UI, lays them out as the image does, starts the API against an empty Postgres and hands the specs `inject('baseUrl')`. Without `KUROSHIRO_DB_HOST` it starts and removes a throwaway `postgres:18-alpine` container; with it (as in CI) it uses that database, which must be empty.
 
 Specs drive the UI with Playwright (`chromium.launch()`, `page.goto(baseUrl)`) and play the Device with `connectDevice(baseUrl, { mac, model })` from `devicePlayer.ts`: it calls `/api/setup`, and the returned Device has `setup` (the answer), `display(report?)` for a poll and `log(entries)`. `screensOfDevice.ts` has `addFileScreen(baseUrl, deviceId, name)`, which gives a Device a Screen without the UI, and `screenStates(page)`, the Screen State each row of the Screens view words.
 

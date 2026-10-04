@@ -15,8 +15,6 @@
 
 **Kuroshiro** is an open-source BYOS (Bring Your Own Server) solution for the [TRMNL](https://usetrmnl.com/) ecosystem. Our goal is to give you more flexibility and control over your TRMNL experience, whether you're self-hosting for fun, learning, or customization. Kuroshiro bundles a [NestJS](https://nestjs.com/) API and a [Vue.js](https://vuejs.org/) UI into a single Docker image, ready to run alongside your own Postgres database.
 
-> **The `:next` image has an incomplete admin UI.** While the [Admin UI rebuild from zero](https://github.com/PhyberApex/kuroshiro/issues/1074) runs, the `:next` image ships an admin UI that is unfinished and may be broken. Run `:latest`.
-
 ---
 
 ## ⚠️ Alpha Notice
@@ -35,7 +33,7 @@
 
 Kuroshiro is for anyone who wants to experiment, self-host, and shape their own TRMNL experience:
 - **Self-hosted**: Your data, your rules, your server.
-- **All-in-one**: API (NestJS) + UI (Vue 3 + Vuetify) bundled together.
+- **All-in-one**: API (NestJS) + admin UI (Vue 3 + Reka UI) bundled together.
 - **Plug & Play**: Just add Postgres and go!
 - **Fun to use**: Modern, intuitive, and built for tinkerers and pros alike.
 
@@ -52,7 +50,7 @@ Kuroshiro is for anyone who wants to experiment, self-host, and shape their own 
 - **Plugins**: Poll external APIs (with multiple named Data Sources per plugin) or accept pushed Webhooks, render them with Liquid, or import a Recipe straight from trmnl.com.
 - **Firmware Management**: Official releases sync automatically, or push a custom OTA build, with per-Device-Model compatibility checks so you can't flash the wrong binary.
 - **Alerts**: A periodic sweep watches for low battery Devices, offline Devices, and failing Data Source fetches, and notifies you via an [Apprise](https://github.com/caronc/apprise-api) sidecar—supporting dozens of notification channels.
-- **Virtual Device**: Test without hardware—because why not?
+- **Device Simulator**: Poll as any Device without hardware—because why not?
 
 ---
 
@@ -83,7 +81,7 @@ The short version: Kuroshiro trades Terminus's multi-user accounts and device-gr
 Want to see Kuroshiro in action before diving in? We've got you covered! Check out our live demo at [kuroshiro-demo.phyberapex.de](https://kuroshiro-demo.phyberapex.de/) where you can:
 
 - **Explore the interface** - Navigate through device management, screen creation, and all the core features
-- **Test virtual devices** - Play around with the virtual device feature to see how screens render
+- **Try the Device Simulator** - Poll as a Device to see how screens render
 - **Try screen creation** - ~~Upload images~~ (This is not supported in the demo), add external links, or craft custom HTML screens
 - **See real-time updates** - Watch how the system handles device communication and screen management
 
@@ -114,10 +112,11 @@ Kuroshiro is built on a modern, robust tech stack designed for performance, deve
 ### UI
 
 [![Vue.js](https://img.shields.io/badge/Vue.js-4FC08D?logo=vuedotjs&logoColor=fff)](https://vuejs.org/)
-[![Vuetify](https://img.shields.io/badge/Vuetify-1867C0?logo=vuetify&logoColor=fff)](https://vuetifyjs.com/)
+[![Reka UI](https://img.shields.io/badge/Reka_UI-10B981?logoColor=fff)](https://reka-ui.com/)
+[![CodeMirror](https://img.shields.io/badge/CodeMirror-D30707?logo=codemirror&logoColor=fff)](https://codemirror.net/)
 [![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=fff)](https://vite.dev/)
 
-**Frontend excellence:** **Vue 3** delivers reactive, component-based UI development with incredible performance and developer ergonomics. **Vuetify** provides beautiful Material Design components out of the box, ensuring a polished, accessible interface. **Vite** powers our build process with instant hot module replacement and optimized production builds.
+**Frontend excellence:** **Vue 3** delivers reactive, component-based UI development with incredible performance and developer ergonomics. **Reka UI** supplies headless, accessible primitives that Kuroshiro styles with its own design tokens, and **CodeMirror** is the editor for Liquid templates, HTML, JSON and JavaScript. **Vite** powers our build process with instant hot module replacement and optimized production builds.
 
 ---
 
@@ -126,14 +125,14 @@ Kuroshiro is built on a modern, robust tech stack designed for performance, deve
 We're constantly working to make Kuroshiro even better! Here's what's on our roadmap, organized by priority:
 
 ### 🔥 High Priority
-- [ ] **Device Logs Viewer** - View logs directly from your TRMNL devices for better debugging and monitoring
+- [x] **Device Logs Viewer** - View logs directly from your TRMNL devices for better debugging and monitoring
 - [x] **Refresh Rate UI Controls** - Adjust device refresh rates directly from the web interface
 - [x] **Screen Reordering** - Drag-and-drop screens into the order you want them to play
 - [x] **Sleep Mode** - Per-Device night window that pauses rotation and lets the Device sleep through it instead of polling on its usual cadence
 
 ### 🎯 Medium Priority  
 - [x] **Liquid Template Syntax** - Plugins render with Liquid, including Data Sources and Mashups; HTML Screens are still raw HTML
-- [x] **Maintenance Dashboard** - Clean up unused images, manage disk space, and manage Firmware
+- [x] **Housekeeping** - Clean up unused images and stored files, and prune old Alerts and Device Logs; Firmware has a page of its own
 - [x] **Recipes Support** - Import any TRMNL Recipe from trmnl.com straight into a Poll Plugin
 - [x] **Screen Mashups** - Combine multiple plugin screens into custom layouts (7 layouts supported!)
 - [x] **Screen Playlists** - Gate any Screen to a recurring day/time Schedule so rotation skips it outside that window
@@ -150,24 +149,21 @@ We're constantly working to make Kuroshiro even better! Here's what's on our roa
 
 ## Screenshots
 
-Overview
+These are pages of the admin UI with sample data, taken from its screenshot tests.
+
+The Devices list
 <p align="center">
-  <img src="graphics/screenshots/screenshot_overview.png" />
+  <img src="packages/ui/src/pages/devices/__screenshots__/DevicesListPage.shots.ts/devices-list-desktop-light-chromium-linux.png" />
 </p>
 
-Device Details
+A Device's Screens
 <p align="center">
-  <img src="graphics/screenshots/screenshot_device_details.png" />
+  <img src="packages/ui/src/pages/devices/__screenshots__/DeviceScreensPage.shots.ts/device-screens-desktop-light-chromium-linux.png" />
 </p>
 
-Virtual Device
+A Plugin
 <p align="center">
-  <img src="graphics/screenshots/screenshot_virtual_device.png" />
-</p>
-
-HTML Preview
-<p align="center">
-  <img src="graphics/screenshots/screenshot_html_render.png" />
+  <img src="packages/ui/src/pages/plugins/__screenshots__/PluginPage.shots.ts/plugin-page-desktop-light-chromium-linux.png" />
 </p>
 
 ---
@@ -175,8 +171,6 @@ HTML Preview
 ## 🐳 Dockerized & Ready to Roll
 
 Kuroshiro is built for Docker. Just bring your own Postgres database and you're set!
-
-> **The `:next` image has an incomplete admin UI.** While the [Admin UI rebuild from zero](https://github.com/PhyberApex/kuroshiro/issues/1074) runs, the `:next` image ships an admin UI that is unfinished and may be broken. Run `:latest`.
 
 We build these tags automatically:
 
@@ -193,8 +187,7 @@ For local hacking or deployment inspiration, check out [`docker-compose.yml`](./
 ## 📦 Packages
 
 - [`packages/api`](./packages/api) — The NestJS backend
-- [`packages/ui-next`](./packages/ui-next) — The Vue 3 + Reka UI frontend the image serves
-- [`packages/ui`](./packages/ui) — The previous Vue 3 + Vuetify frontend, kept as a read-only reference outside the workspace
+- [`packages/ui`](./packages/ui) — The Vue 3 + Reka UI admin UI the image serves
 - [`packages/shared`](./packages/shared) — The admin API's request and response types, and code that is identical in the API and UI
 
 ---
@@ -228,7 +221,7 @@ postgres:18-alpine
 If you enable mirroring and provide the MAC and apikey, Kuroshiro fetches the current screen (`api/current_screen`) from the official server—mirroring always takes priority. If the given MAC to mirror matches with the one of the device itself we are entering "proxy-mode" where we get the current display from the actual endpoint (`display`) and forward all the headers back and forth.
 
 ### Screens Managed by Kuroshiro
-Images are generated for the device's **Device Model** (panel size, colour depth, rotation), which Kuroshiro resolves from what the firmware reports (`Model` header, then reported width×height) and which you can override per device under *Advanced*. The model list is synced from the official TRMNL server (`/api/models`) on startup and daily, with a bundled snapshot as offline fallback — see *Maintenance → Device Models*. Devices without a resolved model render as a TRMNL OG (800×480).
+Images are generated for the device's **Device Model** (panel size, colour depth, rotation), which Kuroshiro resolves from what the firmware reports (`Model` header, then reported width×height) and which you can override in the Device's Settings. The model list is synced from the official TRMNL server (`/api/models`) on startup and daily, with a bundled snapshot as offline fallback — see *Instance → Device Models and Palettes*. Devices without a resolved model render as a TRMNL OG (800×480).
 
 #### Uploaded Screens
 Upload a file and Kuroshiro uses ImageMagick to fit it onto the device's panel (letterboxed, rotated if the model needs it) and dither it to the device's palette — 1-bit, 4 or 16 grays, or the colours of a colour panel. The original is kept, so switching a device's model or palette re-generates the image from the source.
@@ -237,7 +230,7 @@ Upload a file and Kuroshiro uses ImageMagick to fit it onto the device's panel (
 Provide a URL and Kuroshiro fetches, converts, and serves it. Cache it for speed, or fetch fresh every time—your choice!
 
 #### HTML Screens
-Provide HTML you can make use of the [TRMNL framework](https://usetrmnl.com/framework). You can use the tool "HTML Preview" to help generate HTML.
+Provide HTML you can make use of the [TRMNL framework](https://usetrmnl.com/framework). The HTML editor previews it for the Device as you type.
 
 #### Mashup Screens
 Combine multiple plugin outputs into a single screen using one of 7 available layouts:
@@ -269,7 +262,7 @@ Don't want to build a Plugin from scratch? Paste a Recipe's id or [trmnl.com/rec
 
 ## 🔧 Firmware & Device Models
 
-Kuroshiro tracks the official TRMNL model list and the latest official firmware automatically (synced daily, with a bundled snapshot as offline fallback), or you can upload a custom `.bin` build of your own. Every Firmware carries a SHA-256 checksum and an optional set of compatible Device Models, so assigning one to a Device is blocked outright if it doesn't match that Device's hardware—no accidental bricking. Pushes are always explicit: pick a Firmware for a Device under *Maintenance*, and it's served on that Device's next poll. Custom colour Palettes (admin-created, within one of TRMNL's fixed colour families) sit alongside the official ones synced from TRMNL, so you're not limited to whatever's officially curated for a given Device Model. To refresh the bundled fallback snapshot from the live TRMNL API, run `pnpm --filter kuroshiro-api snapshot:device-models`.
+Kuroshiro tracks the official TRMNL model list and the latest official firmware automatically (synced daily, with a bundled snapshot as offline fallback), or you can upload a custom `.bin` build of your own. Every Firmware carries a SHA-256 checksum and an optional set of compatible Device Models, so assigning one to a Device is blocked outright if it doesn't match that Device's hardware—no accidental bricking. Pushes are always explicit: pick a Firmware in the Device's Settings, and it's served on that Device's next poll. Custom colour Palettes (admin-created, within one of TRMNL's fixed colour families) sit alongside the official ones synced from TRMNL, so you're not limited to whatever's officially curated for a given Device Model. To refresh the bundled fallback snapshot from the live TRMNL API, run `pnpm --filter kuroshiro-api snapshot:device-models`.
 
 ---
 
@@ -289,13 +282,13 @@ Delivery goes through the [`apprise-api`](https://github.com/caronc/apprise-api)
 | `KUROSHIRO_ALERT_RETENTION_DAYS` | `90` | Age (in days) after which a resolved Alert is pruned by the daily Retention job. `0` disables Alert pruning. |
 | `KUROSHIRO_DEVICE_LOG_RETENTION_DAYS` | `30` | Age (in days) after which a Device Log entry is pruned by the daily Retention job. `0` disables Device Log pruning. |
 
-The three threshold variables and the two Retention variables above are only fallbacks: each is an Instance Setting an admin can override (`PATCH /api/settings`; the Maintenance page's Settings card edits the three thresholds), and an override wins over the environment variable until it is cleared. A Retention age of `0` disables pruning for that age whether it comes from an override or from the environment. See [ADR-0027](docs/adr/0027-instance-settings-typed-single-row-persisted-over-env-in-the-archive.md).
+The three threshold variables and the two Retention variables above are only fallbacks: each is an Instance Setting an admin can override (`PATCH /api/settings`, or the admin UI's Instance Settings page), and an override wins over the environment variable until it is cleared. A Retention age of `0` disables pruning for that age whether it comes from an override or from the environment. See [ADR-0027](docs/adr/0027-instance-settings-typed-single-row-persisted-over-env-in-the-archive.md).
 
 To run the sidecar alongside Kuroshiro, uncomment the `apprise-api` service in [`docker-compose.yml`](./docker-compose.yml) and point `KUROSHIRO_APPRISE_URL` at it (e.g. `http://apprise-api:8000`), then configure your notification channels in its own persisted config under the `kuroshiro` key (or whatever `KUROSHIRO_APPRISE_KEY` is set to).
 
-The Maintenance page's Alerts card shows every active Alert plus anything resolved in the last 7 days, with a **Send test Notification** button that exercises the real delivery path (a synthetic success Notification, not a real Alert) so you can confirm Apprise is wired up correctly without waiting for a real condition to fire.
+The Alerts page shows every active Alert plus anything resolved in the last 7 days, and Instance Settings has a **Send a Test Notification** button that exercises the real delivery path (a synthetic success Notification, not a real Alert) so you can confirm Apprise is wired up correctly without waiting for a real condition to fire.
 
-A daily Retention job (same 4am schedule as the Device Model and Firmware syncs) prunes resolved Alerts and Device Log entries older than their Retention age (the Instance Setting, else `KUROSHIRO_ALERT_RETENTION_DAYS`/`KUROSHIRO_DEVICE_LOG_RETENTION_DAYS`, else the default); active Alerts are never touched regardless of age. Every run, scheduled, manual or dry, reads the ages afresh, so a saved override applies without a restart, and saving one never triggers a run. The Maintenance page's Retention card shows the effective ages and the last run's time and counts (lost on restart — it isn't persisted), and lets you trigger a run on demand, previewing the counts via a dry run before you confirm.
+A daily Retention job (same 4am schedule as the Device Model and Firmware syncs) prunes resolved Alerts and Device Log entries older than their Retention age (the Instance Setting, else `KUROSHIRO_ALERT_RETENTION_DAYS`/`KUROSHIRO_DEVICE_LOG_RETENTION_DAYS`, else the default); active Alerts are never touched regardless of age. Every run, scheduled, manual or dry, reads the ages afresh, so a saved override applies without a restart, and saving one never triggers a run. The Housekeeping page shows the effective ages and the last run's time and counts (lost on restart — it isn't persisted), and lets you trigger a run on demand, counting what is old enough before you confirm.
 
 ---
 

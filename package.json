@@ -15,7 +15,7 @@
   "scripts": {
     "dev": "dotenv -- concurrently -k -n FRONTEND,BACKEND -c blue,green \"pnpm run dev:ui\" \"pnpm run dev:api\"",
     "dev:api": "pnpm --filter ./packages/api start:dev",
-    "dev:ui": "wait-on tcp:3000 && pnpm --filter ./packages/ui-next dev",
+    "dev:ui": "wait-on tcp:3000 && pnpm --filter ./packages/ui dev",
     "format": "pnpm run -r lint:fix",
     "test": "pnpm run -r test",
     "test:coverage": "pnpm run -r test:coverage",

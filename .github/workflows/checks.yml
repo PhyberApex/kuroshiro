@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Install Chromium for the UI's browser-mode tests
-        run: pnpm --filter kuroshiro-ui-next exec playwright install --with-deps --only-shell chromium
+        run: pnpm --filter kuroshiro-ui exec playwright install --with-deps --only-shell chromium
       - name: Lint
         run: pnpm run lint
       - name: Type Check
@@ -47,13 +47,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Compare screenshots with their baselines in the pinned Playwright image
-        run: pnpm --filter kuroshiro-ui-next run test:screenshots
+        run: pnpm --filter kuroshiro-ui run test:screenshots
       - name: Upload the shots that differ
         if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: ui-screenshot-diffs
-          path: packages/ui-next/.vitest/attachments
+          path: packages/ui/.vitest/attachments
           include-hidden-files: true
           if-no-files-found: ignore
 
@@ -86,7 +86,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Install Chromium
-        run: pnpm --filter kuroshiro-ui-next exec playwright install --with-deps --only-shell chromium
+        run: pnpm --filter kuroshiro-ui exec playwright install --with-deps --only-shell chromium
       # The API converts every Screen image with `magick`, as the image has it; the runner only offers ImageMagick 6.
       - name: Install ImageMagick 7
         env:
@@ -100,7 +100,7 @@ jobs:
           sudo chmod +x /usr/local/bin/magick
           magick -version
       - name: Drive the built UI against the real API and Postgres
-        run: pnpm --filter kuroshiro-ui-next run test:real-api
+        run: pnpm --filter kuroshiro-ui run test:real-api
         env:
           KUROSHIRO_DB_HOST: localhost
           KUROSHIRO_DB_PORT: 5432

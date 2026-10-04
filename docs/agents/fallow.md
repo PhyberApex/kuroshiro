@@ -24,9 +24,8 @@ Rules for touching the baselines:
 
 ## Known false positives already handled in `.fallowrc.jsonc`
 
-- `pg` (TypeORM loads the driver reflectively) and `jiti` (ESLint loads `packages/ui-next/eslint.config.ts` through it) are in `ignoreDependencies`.
-- `entry` and `dynamicallyLoaded` name what `packages/ui-next` loads outside the import graph: the screenshot config and its `*.shots.ts` files, the real-API suite's global setup, the gallery sections (`*.gallery.vue`, collected with `import.meta.glob`) and the browser tests' setup file.
-- `packages/ui/**` is in `ignorePatterns`: the old admin UI is a read-only reference outside the pnpm workspace.
+- `pg` (TypeORM loads the driver reflectively) and `jiti` (ESLint loads `packages/ui/eslint.config.ts` through it) are in `ignoreDependencies`.
+- `entry` and `dynamicallyLoaded` name what `packages/ui` loads outside the import graph: the screenshot config and its `*.shots.ts` files, the real-API suite's global setup, the gallery sections (`*.gallery.vue`, collected with `import.meta.glob`) and the browser tests' setup file.
 - `packages/api/src/devices/display.ts` and `displayScreen.ts` are wire-format classes for the TRMNL firmware; `unused-class-members` is off for them.
 - Migrations and the generated TRMNL snapshot are excluded from duplication and health scoring.
-- `packages/ui-next/real-api/**` is excluded from health scoring like every other test file: it holds the real-API suite and the environment its global setup starts, which no unit test covers.
+- `packages/ui/real-api/**` is excluded from health scoring like every other test file: it holds the real-API suite and the environment its global setup starts, which no unit test covers.

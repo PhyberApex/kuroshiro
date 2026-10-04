@@ -6,14 +6,6 @@
         "count": 1
       }
     },
-    "packages/api/src/mashup/mashup.service.ts": {
-      "complexity_moderate": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
     "packages/api/src/plugins/plugins.service.ts": {
       "crap_moderate": {
         "count": 1
@@ -21,5 +13,28 @@
     }
   },
   "runtime_coverage_findings": [],
-  "target_keys": []
+  "target_keys": [
+    "packages/api/src/device-models/device-models.service.ts:high impact",
+    "packages/api/src/devices/devices.service.ts:high impact",
+    "packages/api/src/configuration/services/configuration-export.service.ts:high impact",
+    "packages/ui/src/pages/devices/deviceSettings.ts:high impact",
+    "packages/ui/src/pages/plugins/pluginPageWording.ts:high impact",
+    "packages/ui/src/pages/instance/deviceSimulator.ts:high impact",
+    "packages/ui/src/components/failureReason.ts:high impact",
+    "packages/ui/src/pages/devices/screenNaming.ts:high impact",
+    "packages/api/src/plugins/plugin-field-values.ts:high impact",
+    "packages/ui/src/pages/devices/devicePaths.ts:high impact",
+    "packages/ui/src/pages/plugins/pluginRows.ts:high impact",
+    "packages/ui/src/patterns/joinLoads.ts:high impact",
+    "packages/ui/src/components/navItem.ts:high impact",
+    "packages/ui/src/pages/plugins/recipeUpdate.ts:high impact",
+    "packages/ui/src/pages/devices/sentence.ts:high impact",
+    "packages/ui/src/pages/plugins/pluginDataSources.ts:high impact",
+    "packages/ui/src/pages/instance/deviceModelsWording.ts:high impact",
+    "packages/ui/src/pages/plugins/templateData.ts:high impact",
+    "packages/ui/src/pages/devices/scheduleEditing.ts:high impact",
+    "packages/ui/src/pages/devices/deviceLogWording.ts:high impact",
+    "packages/ui/src/pages/instance/simulatorWording.ts:high impact",
+    "packages/ui/src/pages/instance/firmwareWording.ts:high impact"
+  ]
 }

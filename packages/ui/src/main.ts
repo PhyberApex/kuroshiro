@@ -1,16 +1,30 @@
-import { createPinia } from 'pinia'
 import { createApp } from 'vue'
+import { createWebHistory } from 'vue-router'
 
 import App from './App.vue'
-import vuetify from './plugins/vuetify'
-import router from './router'
 
-import './assets/transitions.css'
+import { sharedReads } from './reads/sharedReads'
+import { basePathOf, createAppRouter } from './router'
+import { applyStoredAppearance } from './shell/appearance'
+import './styles/index.css'
 
-const app = createApp(App)
+// The DEV guard is replaced with `false` in a production build, which drops the gallery from the bundle.
+const galleryRequested = import.meta.env.DEV && window.location.pathname.endsWith('/gallery')
 
-app.use(createPinia())
-app.use(router)
-app.use(vuetify)
+async function mountGallery() {
+  createApp((await import('./gallery/GalleryPage.vue')).default).mount('#app')
+}
 
-app.mount('#app')
+function mountAdminUi() {
+  createApp(App)
+    .use(createAppRouter(createWebHistory(basePathOf(document.baseURI))))
+    .use(sharedReads)
+    .mount('#app')
+}
+
+applyStoredAppearance()
+
+if (galleryRequested)
+  void mountGallery()
+else
+  mountAdminUi()

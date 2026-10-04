@@ -8,6 +8,7 @@
     "backend_family": "",
     "completeness": "complete"
   },
+  "identity": "dc1",
   "unused_files": [],
   "unused_exports": [],
   "unused_types": [],
@@ -17,6 +18,7 @@
   "unused_dev_dependencies": [],
   "circular_dependencies": [],
   "re_export_cycles": [],
+  "package_cycles": [],
   "unused_optional_dependencies": [],
   "unused_enum_members": [],
   "unused_class_members": [],
