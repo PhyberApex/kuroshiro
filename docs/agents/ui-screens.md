@@ -199,19 +199,24 @@ A boolean Setting (Firmware Auto-Update) is a `SettingRow` with a `Switch` and `
 
 ### A library and its sync with TRMNL
 
-The Firmware page (`FirmwarePage.vue`) is the worked example of an Instance page that lists what was synced from TRMNL; Device Models and Palettes is built the same way.
+The Firmware page (`FirmwarePage.vue`) is the worked example of an Instance page that lists what was synced from TRMNL; Device Models and Palettes (`DeviceModelsPage.vue`) is built the same way.
 
 | Part | Is |
 | --- | --- |
 | `LibraryRow` (`@/components/`) | One row of a library, an `li` for a `ul`: `name` (with `mono` for a version), the default slot for what it is (one `p` per line), `problem` for the line with the problem icon, `#end` for the date and the actions, `#form` for a form open under it. The rows carry their own rule below; the first one stands on the section heading's. `--library-name-width` on the list sets the name column (9.5 rem unless set) |
 | `useTrmnlSync(run, reread)` (`trmnlSync.ts`) | A sync an admin starts: `sync()`, `running`, `result` (what `run` answered, kept until the page is left), `failed` and `reason` (`details.reason` of `upstream-unreachable`, otherwise the failure's own sentence). `reread` is called after a sync, working or failing, because the server records both as `lastSync`: hand it the page's `reload`. The Firmware page's `run` answers the sentence itself, worded by the switch as it stood when the sync was asked for |
 | `TrmnlSyncOutcome` | The line under the lede: `running` with `asking` ("Asking TRMNL for …"), `outcome` (the sentence of a sync that worked), and the notice "Could not sync from TRMNL." with `reason` and "Try again" (`@retry`). Its `ResultLine` is in the page before it says anything; a spec reads it at `.sync-line` |
-| `DeviceNames` | Devices in a sentence ("Kitchen, Hallway and Study"), each a link to its Firmware settings |
+| `DeviceNames` | Devices in a sentence ("Kitchen, Hallway and Study"), each a link to the `section` of its Settings that the sentence is about (`firmware`, `display`: a key of `SETTINGS_SECTIONS`) |
+| `LibraryLoading` | The skeleton of a library: three rows in `LibraryRow`'s columns |
+| `Swatches` (`@/components/`) | A Palette's colours as a row of 14 px squares, `aria-hidden`: say what they are in words beside it. `swatchColours(palette)` (`deviceModelsWording.ts`) gives a Palette's colours, or its greys from black to white for one without |
+| `paletteFamilies.ts` | `PALETTE_FAMILIES`, the five colour Palette Families in a select's order (`frameworkClass`, the short `id`, the `name` in words), and `paletteFamilyName(frameworkClass)` |
 | `firmwareWording.ts`, `uploadFirmware.ts` | The pure wording of the Firmware page and the rules of Upload Firmware, each with a node spec |
 
 - The page reads the library, the Device Models and the Instance Settings in one `useLoad` (`Promise.all`), and reads them again after a sync and after a delete.
 - "Checked TRMNL {when}" is `lastSync.ranAt` in a `RelativeTime`, in the section's `#aside`; no `lastSync`, no aside.
 - `src/api/firmware.ts` has `listFirmware`, `syncFirmware`, `uploadFirmware(file, input)` (multipart; the Device Models go as a JSON string) and `deleteFirmware`.
+- Device Models and Palettes reads `listDeviceModels()` and `listPalettes()` in one `useLoad` and syncs with `syncDeviceModels()` (`src/api/device-models.ts`). Its parts: `CustomPalettes` (the section an admin makes things in; comments mark where "Add a custom Palette", its form and a row's "Edit" and "Delete" go), `DeviceModelLibrary` (the Device Models in use, then `OtherDeviceModels` and `TrmnlPalettes`, both tucked), `DeviceModelRow`, `PaletteRow` and the pure `deviceModelsWording.ts`. `__test__/deviceModelsHarness.ts` has `fakeDeviceModels({ models, palettes, lastSync, devices })`, `mountLoadedDeviceModels(at?)` and the fixtures `DEVICE_MODELS`, `TRMNL_PALETTES`, `KOBO_AURA` (a deprecated Device Model) and `UNUSED` (an Instance without a Device).
+- A sync that failed keeps what was loaded, so its notice says where that is from: `seenFrom(models, now)` reads the newest `syncedAt`, because `lastSync` is the failed run by then.
 - Upload Firmware (`UploadFirmwarePage.vue`, `UploadFirmwareForm.vue`, `FirmwareFits.vue`) is a form that ends in `AddFormFoot`. `FileDrop` takes `wording` for a place whose spec words the prompt and the two refusals itself, `Field` takes `optional`, and `RadioRow` has the `#under` slot (handed `choice`) for what a choice holds between its row and the next.
 - `__test__/firmwareHarness.ts` fakes it all for a spec: `fakeFirmware({ firmware, lastSync, settings, models })` answers the reads and takes the Settings change, the sync (`syncAnswer`, `holding`), the upload and the delete as the server would; `mountFirmware()`, `mountUpload()` and `rowsOf(list)`, which reads the rows cell by cell.
 
