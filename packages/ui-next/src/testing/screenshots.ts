@@ -29,7 +29,17 @@ export async function expectScreenshot(target: Locator, name: string) {
  */
 export async function expectWindowScreenshot(name: string) {
   await document.fonts.ready
-  await expect.element(page.elementLocator(document.body)).toMatchScreenshot(name)
+  // A shot of an element is the page clipped to its box, so a transparent element over the whole window shoots exactly
+  // what the window shows; the body may reach below it, where nothing is painted.
+  const window = document.createElement('div')
+  window.style.cssText = 'position: fixed; inset: 0; pointer-events: none; z-index: 2147483647'
+  document.body.append(window)
+  try {
+    await expect.element(page.elementLocator(window)).toMatchScreenshot(name)
+  }
+  finally {
+    window.remove()
+  }
 }
 
 const VIEWPORT_NAMES = Object.keys(VIEWPORTS) as ViewportName[]
