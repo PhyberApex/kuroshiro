@@ -33,7 +33,7 @@ import { STARTER_TEMPLATE } from './starter-template.js'
 // A `literal` Data Source is never fetched, so one switched to it starts over (ADR-0025).
 const NO_FETCH_OUTCOME = { fetchFailureStreak: 0, lastFetchAttemptAt: null, lastFetchSucceededAt: null, lastFetchError: null }
 
-function pluginNotFound(id: string): ApiException {
+export function pluginNotFound(id: string): ApiException {
   return new ApiException(HttpStatus.NOT_FOUND, 'plugin-not-found', 'Plugin not found', { id })
 }
 
@@ -359,9 +359,9 @@ export class PluginsService implements OnModuleInit {
    * Runs once a save is committed, so a failure here is logged and the save
    * still answers. The scheduler's job holds the Plugin as it was loaded, so
    * it is replaced on every save, and the tick started here is not awaited: a
-   * save does not wait for a Data Source.
+   * save does not wait for a Data Source. Applying a Recipe Update Check ends here too.
    */
-  private async refreshRendersAfterSave(id: string): Promise<void> {
+  async refreshRendersAfterSave(id: string): Promise<void> {
     try {
       await this.invalidateRenderCaches(id)
 
@@ -507,20 +507,9 @@ export class PluginsService implements OnModuleInit {
     return this.persistFields(repository, plugin, fields, plugin.fields)
   }
 
-  // Public: also called by RecipeUpdateService, whose Recipe Update apply
-  // writes Data Sources, Templates and Plugin Fields itself (ADR-0030's
-  // whole-item apply does not fit `update()`), and needs the same cache
-  // invalidation and rescheduling afterwards.
   async invalidateRenderCaches(pluginId: string): Promise<void> {
     await this.screenRepository.update({ plugin: { id: pluginId } }, { cachedPluginOutput: null })
     await this.renderCache.invalidateMashupCaches(pluginId)
-  }
-
-  async rescheduleAfterUpdate(id: string): Promise<void> {
-    const fullPlugin = await this.findPluginWithRelations(id, { dataSources: true, templates: true })
-    if (fullPlugin) {
-      this.schedule(fullPlugin, `Rescheduled plugin: ${fullPlugin.name}`)
-    }
   }
 
   private assertDataSourceModeFields(dataSources: PluginDataSourceDto[]): void {

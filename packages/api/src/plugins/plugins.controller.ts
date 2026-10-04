@@ -1,5 +1,5 @@
 import type { Response } from 'express'
-import type { PluginDetail, PluginImportOrigin, PluginImportResult, PluginSummary, PreviewData } from 'kuroshiro-shared'
+import type { PluginDetail, PluginImportOrigin, PluginImportResult, PluginSummary, PreviewData, RecipeUpdatePreview } from 'kuroshiro-shared'
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Res, UploadedFile, UseInterceptors } from '@nestjs/common'
 import { LimitedFileInterceptor } from '../uploads/limited-file-interceptor.js'
 import { UPLOAD_LIMITS } from '../uploads/upload-limits.js'
@@ -63,13 +63,14 @@ export class PluginsController {
   }
 
   @Get(':id/recipe-update')
-  async checkRecipeUpdate(@Param('id') id: string) {
+  async checkRecipeUpdate(@Param('id') id: string): Promise<RecipeUpdatePreview> {
     return this.recipeUpdateService.checkForUpdate(id)
   }
 
   @Post(':id/recipe-update/apply')
-  async applyRecipeUpdate(@Param('id') id: string, @Body() applyDto: ApplyRecipeUpdateDto) {
-    return this.recipeUpdateService.applyUpdate(id, applyDto)
+  async applyRecipeUpdate(@Param('id') id: string, @Body() applyDto: ApplyRecipeUpdateDto): Promise<PluginDetail> {
+    await this.recipeUpdateService.applyUpdate(id, applyDto)
+    return this.pluginReads.detail(id)
   }
 
   @Delete(':id/webhook-payload')

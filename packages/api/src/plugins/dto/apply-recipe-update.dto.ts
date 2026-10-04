@@ -1,7 +1,7 @@
-import type { UpdateItemType } from '../services/recipe-update-diff.js'
+import type { ApplyRecipeUpdateInput, UpdateItemType } from 'kuroshiro-shared'
 import { Type } from 'class-transformer'
 import { IsArray, IsIn, IsString, ValidateNested } from 'class-validator'
-import { UPDATE_ITEM_TYPES } from '../services/recipe-update-diff.js'
+import { UPDATE_ITEM_TYPES } from 'kuroshiro-shared'
 
 class RecipeUpdateSelectionDto {
   @IsIn(UPDATE_ITEM_TYPES)
@@ -11,7 +11,7 @@ class RecipeUpdateSelectionDto {
   key: string
 }
 
-export class ApplyRecipeUpdateDto {
+export class ApplyRecipeUpdateDto implements ApplyRecipeUpdateInput {
   @IsString()
   contentHash: string
 

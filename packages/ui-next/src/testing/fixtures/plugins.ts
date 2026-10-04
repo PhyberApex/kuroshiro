@@ -1,4 +1,4 @@
-import type { PluginDetail, PluginFieldRead, PluginImportResult, PluginPlace, PluginSummary, PreviewData } from 'kuroshiro-shared'
+import type { PluginDetail, PluginFieldRead, PluginImportResult, PluginPlace, PluginSummary, PreviewData, RecipeUpdatePreview, UpdateItem } from 'kuroshiro-shared'
 import { defineBuilder } from './defineBuilder'
 
 export const buildPluginPlace = defineBuilder<PluginPlace>(() => ({
@@ -105,4 +105,23 @@ export const buildPreviewData = defineBuilder<PreviewData>(() => ({
   ],
   fetchedAt: '2026-10-03T07:35:00.000Z',
   webhookPayloadReceivedAt: null,
+}))
+
+export const buildUpdateItem = defineBuilder<UpdateItem>(() => ({
+  itemType: 'refreshInterval',
+  key: 'refreshInterval',
+  kind: 'changed',
+  conflict: false,
+  snapshot: 15,
+  local: 15,
+  upstream: 30,
+}))
+
+export const buildRecipeUpdatePreview = defineBuilder<RecipeUpdatePreview>(() => ({
+  recipe: { id: '41120', name: 'Weather' },
+  snapshotTakenAt: '2026-09-12T08:00:00.000Z',
+  contentHash: '9f2c41d07ab35e68',
+  mode: 'three-way',
+  items: [buildUpdateItem()],
+  requiredFieldsLeftEmpty: [],
 }))
