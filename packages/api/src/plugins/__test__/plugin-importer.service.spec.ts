@@ -60,7 +60,7 @@ describe('pluginImporterService', () => {
     const tempZipPath = path.join('/tmp', `test-${Date.now()}.zip`)
     await fs.promises.writeFile(tempZipPath, zip.toBuffer())
 
-    const result = await service.importFromFile(tempZipPath)
+    const result = await service.importFromUpload({ buffer: fs.readFileSync(tempZipPath), originalname: path.basename(tempZipPath) }).plugin
 
     await fs.promises.unlink(tempZipPath)
 
@@ -93,7 +93,7 @@ describe('pluginImporterService', () => {
     const tempZipPath = path.join('/tmp', `test-${Date.now()}.zip`)
     await fs.promises.writeFile(tempZipPath, zip.toBuffer())
 
-    const result = await service.importFromFile(tempZipPath)
+    const result = await service.importFromUpload({ buffer: fs.readFileSync(tempZipPath), originalname: path.basename(tempZipPath) }).plugin
 
     await fs.promises.unlink(tempZipPath)
 
@@ -121,7 +121,7 @@ describe('pluginImporterService', () => {
     const tempZipPath = path.join('/tmp', `test-${Date.now()}.zip`)
     await fs.promises.writeFile(tempZipPath, zip.toBuffer())
 
-    const result = await service.importFromFile(tempZipPath)
+    const result = await service.importFromUpload({ buffer: fs.readFileSync(tempZipPath), originalname: path.basename(tempZipPath) }).plugin
 
     await fs.promises.unlink(tempZipPath)
 
@@ -146,7 +146,7 @@ describe('pluginImporterService', () => {
     const tempZipPath = path.join('/tmp', `test-${Date.now()}.zip`)
     await fs.promises.writeFile(tempZipPath, zip.toBuffer())
 
-    await expect(service.importFromFile(tempZipPath)).rejects.toThrow('At least one .liquid template file is required')
+    expect(() => service.importFromUpload({ buffer: fs.readFileSync(tempZipPath), originalname: path.basename(tempZipPath) })).toThrow('At least one .liquid template file is required')
 
     await fs.promises.unlink(tempZipPath)
   })
@@ -185,7 +185,7 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'test-plugin.zip')
       zip.writeZip(tmpPath)
 
-      const result = await service.importFromFile(tmpPath)
+      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) }).plugin
 
       expect(result.name).toBe('Test Plugin')
       expect(result.description).toBe('Test Description')
@@ -210,21 +210,19 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'test-no-manifest.zip')
       zip.writeZip(tmpPath)
 
-      await expect(service.importFromFile(tmpPath)).rejects.toThrow('.trmnlp.yml manifest not found')
+      expect(() => service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) })).toThrow('.trmnlp.yml manifest not found')
 
       fs.unlinkSync(tmpPath)
     })
 
-    it('throws error if settings.yml is missing', async () => {
+    it('reads a ZIP without src/settings.yml as a Poll-kind Plugin without Data Sources', () => {
       const zip = new AdmZip()
       zip.addFile('.trmnlp.yml', Buffer.from('name: Test', 'utf8'))
+      zip.addFile('src/full.liquid', Buffer.from('<p>Hi</p>', 'utf8'))
 
-      const tmpPath = path.join(import.meta.dirname, 'test-no-settings.zip')
-      zip.writeZip(tmpPath)
+      const result = service.importFromUpload({ buffer: zip.toBuffer(), originalname: 'test.zip' }).plugin
 
-      await expect(service.importFromFile(tmpPath)).rejects.toThrow('src/settings.yml not found')
-
-      fs.unlinkSync(tmpPath)
+      expect(result).toMatchObject({ name: 'Test', kind: 'Poll', dataSources: [] })
     })
 
     it('rejects a manifest.yml that is a YAML scalar instead of an object', async () => {
@@ -236,7 +234,7 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'test-scalar-manifest.zip')
       zip.writeZip(tmpPath)
 
-      await expect(service.importFromFile(tmpPath)).rejects.toThrow('Invalid manifest.yml')
+      expect(() => service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) })).toThrow('Invalid manifest.yml')
 
       fs.unlinkSync(tmpPath)
     })
@@ -250,7 +248,7 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'test-array-manifest.zip')
       zip.writeZip(tmpPath)
 
-      await expect(service.importFromFile(tmpPath)).rejects.toThrow('Invalid manifest.yml')
+      expect(() => service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) })).toThrow('Invalid manifest.yml')
 
       fs.unlinkSync(tmpPath)
     })
@@ -264,7 +262,7 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'test-array-settings.zip')
       zip.writeZip(tmpPath)
 
-      await expect(service.importFromFile(tmpPath)).rejects.toThrow('Invalid settings.yml')
+      expect(() => service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) })).toThrow('Invalid settings.yml')
 
       fs.unlinkSync(tmpPath)
     })
@@ -291,7 +289,7 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'test-terminus.zip')
       zip.writeZip(tmpPath)
 
-      const result = await service.importFromFile(tmpPath)
+      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) }).plugin
 
       expect(result.name).toBe('Terminus Plugin')
       expect(result.refreshInterval).toBe(45)
@@ -321,7 +319,7 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'test-transform.zip')
       zip.writeZip(tmpPath)
 
-      const result = await service.importFromFile(tmpPath)
+      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) }).plugin
 
       expect(result.dataSources[0].transformJs).toBe('module.exports = (data) => data')
 
@@ -344,7 +342,7 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'my-cool-plugin.zip')
       zip.writeZip(tmpPath)
 
-      const result = await service.importFromFile(tmpPath)
+      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) }).plugin
 
       expect(result.name).toBe('my cool plugin')
 
@@ -369,7 +367,7 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'multi-layout.zip')
       zip.writeZip(tmpPath)
 
-      const result = await service.importFromFile(tmpPath)
+      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) }).plugin
 
       expect(result.templates).toHaveLength(3)
       expect(result.templates.find(t => t.layout === 'full')).toBeTruthy()
@@ -383,7 +381,7 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'test.txt')
       fs.writeFileSync(tmpPath, 'not a valid format')
 
-      await expect(service.importFromFile(tmpPath)).rejects.toThrow('Unsupported file format')
+      expect(() => service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) })).toThrow('A Plugin is imported from a .zip file.')
 
       fs.unlinkSync(tmpPath)
     })
@@ -407,7 +405,7 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'test-multi-source.zip')
       zip.writeZip(tmpPath)
 
-      const result = await service.importFromFile(tmpPath)
+      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) }).plugin
 
       fs.unlinkSync(tmpPath)
 
@@ -433,7 +431,7 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'test-literal-source.zip')
       zip.writeZip(tmpPath)
 
-      const result = await service.importFromFile(tmpPath)
+      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) }).plugin
 
       fs.unlinkSync(tmpPath)
 
@@ -460,7 +458,7 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'test-unnamed-sources.zip')
       zip.writeZip(tmpPath)
 
-      const result = await service.importFromFile(tmpPath)
+      const result = await service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) }).plugin
 
       fs.unlinkSync(tmpPath)
 
@@ -483,7 +481,7 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'test-broken-source.zip')
       zip.writeZip(tmpPath)
 
-      await expect(service.importFromFile(tmpPath)).rejects.toThrow('missing an "endpoint"')
+      expect(() => service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) })).toThrow('is missing an "endpoint"')
 
       fs.unlinkSync(tmpPath)
     })
@@ -503,7 +501,7 @@ describe('pluginImporterService', () => {
       const tmpPath = path.join(import.meta.dirname, 'test-legacy-data-source.zip')
       zip.writeZip(tmpPath)
 
-      await expect(service.importFromFile(tmpPath)).rejects.toThrow('legacy single-data-source format')
+      expect(() => service.importFromUpload({ buffer: fs.readFileSync(tmpPath), originalname: path.basename(tmpPath) })).toThrow('legacy single-data-source format')
 
       fs.unlinkSync(tmpPath)
     })

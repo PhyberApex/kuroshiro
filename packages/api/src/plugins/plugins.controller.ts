@@ -1,15 +1,14 @@
 import type { Response } from 'express'
-import type { PluginDetail, PluginSummary, PreviewData } from 'kuroshiro-shared'
+import type { PluginDetail, PluginImportOrigin, PluginImportResult, PluginSummary, PreviewData } from 'kuroshiro-shared'
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Res, UploadedFile, UseInterceptors } from '@nestjs/common'
-import { diskStorage } from 'multer'
 import { LimitedFileInterceptor } from '../uploads/limited-file-interceptor.js'
 import { UPLOAD_LIMITS } from '../uploads/upload-limits.js'
 import { attachmentDisposition } from '../utils/contentDisposition.js'
 import { ApplyRecipeUpdateDto } from './dto/apply-recipe-update.dto.js'
 import { CreatePluginDto } from './dto/create-plugin.dto.js'
+import { ImportGithubPluginDto, ImportRecipeDto } from './dto/import-plugin.dto.js'
 import { PreviewDataDto } from './dto/preview-data.dto.js'
 import { UpdatePluginDto } from './dto/update-plugin.dto.js'
-import { WholePluginDto } from './dto/whole-plugin.dto.js'
 import { PluginsService } from './plugins.service.js'
 import { PluginAssignmentsService } from './services/plugin-assignments.service.js'
 import { PluginExporterService } from './services/plugin-exporter.service.js'
@@ -90,64 +89,32 @@ export class PluginsController {
   }
 
   @Post('import')
-  @UseInterceptors(
-    LimitedFileInterceptor('file', UPLOAD_LIMITS.pluginImportBytes, {
-      storage: diskStorage({
-        destination: './uploads',
-        filename: (req, file, cb) => {
-          const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`
-          cb(null, `${file.fieldname}-${uniqueSuffix}${file.originalname}`)
-        },
-      }),
-    }),
-  )
-  async importPlugin(@UploadedFile() file: Express.Multer.File, @Body('deviceId') deviceId?: string) {
-    if (!file) {
-      throw new Error('No file uploaded')
-    }
-
-    const parsedPlugin = await this.importerService.importFromFile(file.path)
-    return this.createPluginFromImport(parsedPlugin, deviceId)
+  @UseInterceptors(LimitedFileInterceptor('file', UPLOAD_LIMITS.pluginImportBytes))
+  async importPlugin(@UploadedFile() file: Express.Multer.File | undefined, @Body('deviceId') deviceId?: string): Promise<PluginImportResult> {
+    const { plugin, fileName } = this.importerService.importFromUpload(file)
+    return this.answerImport(plugin, { type: 'file', fileName }, deviceId)
   }
 
   @Post('import-github')
-  async importFromGithub(@Body() body: { githubUrl: string, deviceId?: string }) {
-    if (!body.githubUrl) {
-      throw new Error('GitHub URL is required')
-    }
-
-    const parsedPlugin = await this.importerService.importFromGithubUrl(body.githubUrl)
-    return this.createPluginFromImport(parsedPlugin, body.deviceId)
+  async importFromGithub(@Body() { githubUrl, deviceId }: ImportGithubPluginDto): Promise<PluginImportResult> {
+    const { plugin, repository } = await this.importerService.importFromGithubUrl(githubUrl)
+    return this.answerImport(plugin, { type: 'github', repository }, deviceId)
   }
 
   @Post('import-recipe')
-  async importFromRecipe(@Body() body: { recipeId: string, deviceId?: string }) {
-    if (!body.recipeId) {
-      throw new Error('Recipe id or URL is required')
-    }
-
-    const parsedPlugin = await this.importerService.importFromRecipe(body.recipeId)
-    return this.createPluginFromImport(parsedPlugin, body.deviceId)
+  async importFromRecipe(@Body() { recipe, deviceId }: ImportRecipeDto): Promise<PluginImportResult> {
+    const parsed = await this.importerService.importFromRecipe(recipe)
+    return this.answerImport(parsed, { type: 'recipe', id: parsed.sourceRecipeId, name: parsed.name }, deviceId)
   }
 
-  private async createPluginFromImport(parsedPlugin: ParsedPlugin, deviceId?: string) {
-    const createDto: WholePluginDto = {
-      ...parsedPlugin,
-      isActive: false,
-      order: 1,
-      // Only a Recipe import sets sourceRecipeId — File and GitHub imports never do.
-      sourceRecipeSnapshot: parsedPlugin.sourceRecipeId ? { ...parsedPlugin } : undefined,
-    }
-
-    const plugin = await this.pluginsService.create(createDto)
-
-    if (deviceId)
-      await this.assignments.assign(plugin.id, deviceId)
-
-    // Return plugin with security warning if transform.js exists
+  private async answerImport(parsed: ParsedPlugin, origin: PluginImportOrigin, deviceId?: string): Promise<PluginImportResult> {
+    // Only a Recipe import keeps what it read as the Recipe Snapshot.
+    const sourceRecipeSnapshot = parsed.sourceRecipeId ? { ...parsed } : undefined
+    const id = await this.pluginsService.createOnDevice({ ...parsed, sourceRecipeSnapshot }, deviceId || undefined)
     return {
-      ...plugin,
-      _hasTransform: !!parsedPlugin.dataSources?.some(source => source.transformJs),
+      plugin: await this.pluginReads.detail(id),
+      origin,
+      hasTransform: parsed.dataSources.some(source => Boolean(source.transformJs)),
     }
   }
 

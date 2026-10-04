@@ -1,4 +1,4 @@
-import type { PluginDetail, PluginPlace, PluginSummary } from 'kuroshiro-shared'
+import type { PluginDetail, PluginImportResult, PluginPlace, PluginSummary } from 'kuroshiro-shared'
 import { defineBuilder } from './defineBuilder'
 
 export const buildPluginPlace = defineBuilder<PluginPlace>(() => ({
@@ -61,4 +61,17 @@ export const buildPluginDetail = defineBuilder<PluginDetail>(() => ({
   }],
   mashups: [],
   lastScheduledRender: { at: '2026-10-03T07:30:00.000Z', error: null },
+}))
+
+export const buildPluginImportResult = defineBuilder<PluginImportResult>(() => ({
+  plugin: buildPluginDetail({
+    id: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+    name: 'Moon Phase',
+    description: 'Tonight\'s moon',
+    assignments: [],
+    lastScheduledRender: null,
+    recipe: { id: '41120', name: 'Moon Phase', importedAt: '2026-10-03T07:35:00.000Z', snapshotTakenAt: '2026-10-03T07:35:00.000Z' },
+  }),
+  origin: { type: 'recipe', id: '41120', name: 'Moon Phase' },
+  hasTransform: false,
 }))

@@ -42,6 +42,16 @@ const wording: Record<ApiErrorCode, string> = {
   'template-full-missing': 'A Plugin needs its full Template.',
   'notifications-off': 'Notifications are off on this Instance.',
   'notification-failed': 'Apprise did not accept it.',
+  'import-not-zip': 'That file is not a .zip.',
+  'import-no-plugin': 'That holds no Plugin.',
+  'import-legacy-format': 'That Plugin was exported in a format no longer read.',
+  'github-url-invalid': 'That is not the address of a GitHub repository.',
+  'github-repo-not-found': 'GitHub has no public repository at that address.',
+  'recipe-id-invalid': 'That is not a Recipe address or id.',
+  'recipe-not-found': 'TRMNL has no such Recipe.',
+  'recipe-oauth': 'That Recipe signs in with OAuth.',
+  'recipe-strategy-unsupported': 'That Recipe does not poll or hold fixed data.',
+  'recipe-static-transform': 'That Recipe holds fixed data and a transform.',
 }
 
 function wordingBySwitch(code: ApiErrorCode): string {
@@ -74,6 +84,16 @@ function wordingBySwitch(code: ApiErrorCode): string {
     case 'firmware-push-pending':
     case 'template-full-missing':
     case 'notifications-off':
+    case 'import-not-zip':
+    case 'import-no-plugin':
+    case 'import-legacy-format':
+    case 'github-url-invalid':
+    case 'github-repo-not-found':
+    case 'recipe-id-invalid':
+    case 'recipe-not-found':
+    case 'recipe-oauth':
+    case 'recipe-strategy-unsupported':
+    case 'recipe-static-transform':
     case 'conflict':
     case 'payload-too-large':
     case 'unprocessable':

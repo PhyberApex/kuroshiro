@@ -114,15 +114,23 @@ export class PluginsService implements OnModuleInit {
    * With `deviceId` it joins the end of that Device's Order. All of it happens or none of it.
    */
   async build({ deviceId, ...plugin }: CreatePluginDto): Promise<string> {
-    const built = await this.pluginRepository.manager.transaction(async (manager) => {
+    return this.createOnDevice({ ...plugin, templates: [{ layout: 'full', liquidMarkup: STARTER_TEMPLATE }] }, deviceId)
+  }
+
+  /**
+   * Creates a whole Plugin, such as an importer read, and answers its id. With `deviceId` it joins
+   * the end of that Device's Order. All of it happens or none of it.
+   */
+  async createOnDevice(plugin: WholePluginDto, deviceId: string | undefined): Promise<string> {
+    const created = await this.pluginRepository.manager.transaction(async (manager) => {
       const transaction = this.within(manager)
-      const created = await transaction.createUnscheduled({ ...plugin, templates: [{ layout: 'full', liquidMarkup: STARTER_TEMPLATE }] })
+      const unscheduled = await transaction.createUnscheduled(plugin)
       if (deviceId)
-        await transaction.assignments.assign(created.id, deviceId)
-      return created
+        await transaction.assignments.assign(unscheduled.id, deviceId)
+      return unscheduled
     })
-    this.schedule(built, `Scheduled new plugin: ${built.name}`)
-    return built.id
+    this.schedule(created, `Scheduled new plugin: ${created.name}`)
+    return created.id
   }
 
   /** `snapshotTakenAt` says when the Recipe Snapshot being saved was taken, for one taken before this call. */
