@@ -20,7 +20,7 @@ function fieldValuesOf(plugin: PluginDetail, fields: ContextField[], entered: Re
   return Object.fromEntries(fields.map(({ keyname, fieldType, defaultValue }) => {
     const stored = plugin.fieldValues[keyname]
     const untouchedSecret = !(keyname in entered) && stored?.secret === true && stored.set
-    const value = untouchedSecret ? HIDDEN_FIELD_VALUE : entered[keyname] || defaultValue || ''
+    const value = untouchedSecret ? HIDDEN_FIELD_VALUE : entered[keyname] ?? defaultValue ?? ''
     return [keyname, value && fieldType === PASSWORD_TYPE ? HIDDEN_FIELD_VALUE : value]
   }))
 }

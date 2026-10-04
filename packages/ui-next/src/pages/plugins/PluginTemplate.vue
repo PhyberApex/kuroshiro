@@ -79,24 +79,24 @@ const preview = useTemplatePreview((): PreviewSource | undefined => needs.data &
   render: needs.data.previewOf,
 })
 
-/** What the server said about this Template when it refused a save, until the Template is edited. */
-const refused = computed(() => part.problems.find(problem => problem.path === path.value))
+/** What stops a save at this Template once one was tried: the form's own check, or what the server refused it with. */
+const saveProblem = computed(() => part.problems.find(found => found.path === path.value))
 
 const problem = computed(() => {
   if (row.value.removed)
     return null
-  return preview.problem.value?.problem ?? (refused.value ? { message: refused.value.message, line: refused.value.line ?? null } : null)
+  return preview.problem.value?.problem ?? (saveProblem.value ? { message: saveProblem.value.message, line: saveProblem.value.line ?? null } : null)
 })
 
-const invalid = computed(() => !row.value.removed && (preview.problem.value?.stopsSave === true || refused.value !== undefined))
+const invalid = computed(() => !row.value.removed && (preview.problem.value?.stopsSave === true || saveProblem.value !== undefined))
 
 /** The chosen Template is marked as it is shown in the editor, with the pause that typing gets; any other one as it stands. */
 const unparsed = computed(() => rows.value
   .filter((candidate, index) => {
     if (candidate === row.value)
       return invalid.value
-    const refusedByServer = part.errors[paths.value[index] ?? ''] !== undefined
-    return !candidate.removed && (refusedByServer || needs.data?.checkTemplate(candidate.liquidMarkup) != null)
+    const stopsSave = part.errors[paths.value[index] ?? ''] !== undefined
+    return !candidate.removed && (stopsSave || needs.data?.checkTemplate(candidate.liquidMarkup) != null)
   })
   .map(candidate => candidate.size))
 
@@ -108,9 +108,9 @@ function add(size: TemplateSize) {
 }
 
 function setRemoved(size: TemplateSize, removed: boolean) {
-  const removedRow = rows.value.find(candidate => candidate.size === size)
-  if (removedRow)
-    removedRow.removed = removed
+  const changed = rows.value.find(candidate => candidate.size === size)
+  if (changed)
+    changed.removed = removed
 }
 
 /** "Show the first": chooses the Template with the problem and puts the cursor at its place. */

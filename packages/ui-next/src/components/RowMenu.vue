@@ -32,9 +32,9 @@ defineSlots<{
 const hintIdPrefix = useId()
 const hintId = (item: RowMenuItem, index: number) => item.hint ? `${hintIdPrefix}-hint-${index}` : undefined
 
-// Also what a disabled link is drawn as: an item that leads nowhere, so a press cannot follow it.
 let afterClose: (() => void) | undefined
 
+// Also what a disabled link is drawn as: an item that leads nowhere, so a press cannot follow it.
 function runAction(item: RowMenuItem) {
   if (!('select' in item))
     return
@@ -42,7 +42,7 @@ function runAction(item: RowMenuItem) {
   item.select()
 }
 
-function giveFocusBack(event: Event) {
+function leaveFocusToAction(event: Event) {
   if (!afterClose)
     return
   event.preventDefault()
@@ -64,7 +64,7 @@ function giveFocusBack(event: Event) {
         :side-offset="OPTION_LIST_GAP"
         :collision-padding="8"
         :style="OPTION_LIST_LAYER"
-        @close-auto-focus="giveFocusBack"
+        @close-auto-focus="leaveFocusToAction"
       >
         <SelectOptions prose>
           <template v-for="(item, index) in items" :key="item.label">

@@ -213,6 +213,17 @@ describe('the Template section of the Plugin page', () => {
       await expect.element(size(screen, 'Quadrant')).toBeChecked()
     })
 
+    it('focuses the editor on the last size that was missing, when the menu goes with it', async () => {
+      fakeWeather({ templates: [TWO[0]!, { size: 'half_horizontal', liquidMarkup: '<p>wide</p>' }, { size: 'half_vertical', liquidMarkup: '<p>tall</p>' }] })
+      const screen = await mountTemplate()
+
+      await screen.getByRole('button', { name: 'Add a template', exact: true }).click()
+      await screen.getByRole('menuitem', { name: 'Quadrant' }).click()
+
+      await expect.element(editor(screen, 'Quadrant')).toHaveFocus()
+      expect(document.querySelector('#template .template-line [aria-haspopup="menu"]')).toBeNull()
+    })
+
     it('leaves a removed Template out of the save, and the segment goes with it', async () => {
       const faked = fakeWeather({ templates: TWO })
       const screen = await mountTemplate()
@@ -375,6 +386,23 @@ describe('the Template section of the Plugin page', () => {
       await expect.poll(strip).toContain('Tab indents.')
       expect(note()).toBeUndefined()
       await expect.element(editor(screen)).not.toHaveAttribute('aria-invalid')
+    })
+
+    it('keeps the pause of a Template that is being typed when a Field Value changes meanwhile', async () => {
+      fakeWeather({
+        templates: [TWO[0]!],
+        fields: [buildPluginField({ id: 'location', keyname: 'location', label: 'Location' })],
+        fieldValues: { location: { secret: false, value: 'Lindenplatz' } },
+      })
+      const screen = await mountTemplate()
+      await expect.poll(drawn).toContain('<p>full</p>')
+
+      await type(screen, '{Enter}{{% if rain')
+      await screen.getByRole('textbox', { name: 'Location' }).fill('Marktplatz')
+      await new Promise(resolve => setTimeout(resolve, 150))
+
+      expect(strip()).toContain('Tab indents.')
+      await expect.poll(strip).toContain('not closed')
     })
 
     it('blocks the save, counts in the save bar, and "Show the first" chooses that Template and puts the cursor at the place', async () => {

@@ -64,12 +64,15 @@ export function useTemplatePreview(source: () => PreviewSource | undefined) {
     }, PROBLEM_AFTER_MS)
   }
 
-  function drawAtOnce(another: boolean) {
-    typing = false
-    stopTimers()
-    // The problem of the Template that leaves names a line of that one.
-    if (another)
+  /** What is drawn with or for changed. Typing that is under way keeps its pause, unless another Template is shown. */
+  function drawAtOnce(anotherTemplate: boolean) {
+    clearTimeout(drawTimer)
+    if (anotherTemplate) {
+      typing = false
+      clearTimeout(problemTimer)
+      // The problem of the Template that leaves names a line of that one.
       problem.value = null
+    }
     void draw()
   }
 
