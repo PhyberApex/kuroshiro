@@ -14,7 +14,8 @@ export function kindAndOrigin({ kind, sourceRecipeId }: PluginSummary) {
   return sourceRecipeId === null ? `${kind} Plugin` : `${kind} Plugin · from a Recipe`
 }
 
-export function whereItShows({ devices, mashups }: PluginSummary) {
+/** Where a Plugin shows, from the names of the Devices it is assigned to and the Mashups it fills a slot in. */
+export function whereItShows({ devices, mashups }: { devices: Array<{ name: string }>, mashups: PluginSummary['mashups'] }) {
   if (devices.length > MOST_DEVICES_NAMED)
     return `On ${devices.length} Devices`
   if (devices.length > 0)

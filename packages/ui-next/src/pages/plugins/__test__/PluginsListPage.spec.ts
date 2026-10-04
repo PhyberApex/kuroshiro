@@ -1,6 +1,6 @@
 import type { PluginPlace, PluginSummary } from 'kuroshiro-shared'
 import { delay, http, HttpResponse } from 'msw'
-import { describe, expect, it, onTestFinished } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { expectAccessible } from '@/testing/a11y'
 import { api, apiErrorResponse, apiUrl } from '@/testing/api/server'
 import { fakeShellReads, mountApp } from '@/testing/app'
@@ -8,7 +8,7 @@ import { buildDeviceSummary } from '@/testing/fixtures/devices'
 import { buildPluginDetail, buildPluginPlace, buildPluginSummary } from '@/testing/fixtures/plugins'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import { elementsInSealColour } from '@/testing/sealColour'
-import { takePluginArrival } from '../pluginArrival'
+import { catchDownloads } from './pluginPageHarness'
 
 const device = (name: string) => ({ id: name.toLowerCase(), name })
 const KITCHEN = device('Kitchen')
@@ -62,20 +62,6 @@ const rowText = (name: string) => [...row(name).children].slice(1, 4).map(cell =
 async function choose(screen: Mounted, plugin: string, action: 'Duplicate' | 'Export' | 'Delete Plugin') {
   await screen.getByRole('button', { name: `More actions for ${plugin}` }).click()
   await screen.getByRole('menuitem', { name: action }).click()
-}
-
-/** Catches what the page has the browser download, in place of the download. */
-function catchDownloads() {
-  const addresses: string[] = []
-  const hold = (event: MouseEvent) => {
-    if (event.target instanceof HTMLAnchorElement && event.target.hasAttribute('download')) {
-      event.preventDefault()
-      addresses.push(event.target.href)
-    }
-  }
-  document.addEventListener('click', hold, true)
-  onTestFinished(() => document.removeEventListener('click', hold, true))
-  return addresses
 }
 
 function refuseDeletionFor(pluginId: string, mashups: PluginPlace[]) {
@@ -252,7 +238,7 @@ describe('the Plugins list', () => {
   })
 
   describe('duplicating a Plugin', () => {
-    it('makes the copy and opens its page, carrying that it was duplicated and from what', async () => {
+    it('makes the copy and opens its page, which says that it is a copy and of what', async () => {
       fakePlugins()
       const copy = buildPluginDetail({ id: 'weather-copy', name: 'Weather (copy)', assignments: [] })
       api.use(
@@ -266,8 +252,7 @@ describe('the Plugins list', () => {
       await expect.element(screen.getByRole('heading', { name: 'Weather (copy)', level: 1 })).toBeVisible()
       await expect.element(screen.getByRole('link', { name: 'All Plugins' })).toHaveAttribute('href', '/plugins')
       expect(screen.router.currentRoute.value.path).toBe('/plugins/weather-copy')
-      expect(takePluginArrival('weather-copy')).toEqual({ how: 'duplicated', source: 'Weather' })
-      expect(takePluginArrival('weather-copy')).toBeUndefined()
+      await expect.element(screen.getByText('A copy of Weather. It is not on a Device yet.')).toBeVisible()
     })
 
     it('says why when the copy could not be made, and tries again on request', async () => {
