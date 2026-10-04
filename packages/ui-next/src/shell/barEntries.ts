@@ -22,6 +22,7 @@ const LONGEST_NAME = 16
 export const CONNECT_PATH = '/connect'
 export const DEVICES_PATH = '/devices'
 export const ALERTS_PATH = '/alerts'
+export const PLUGINS_PATH = '/plugins'
 
 const devicePath = (device: NamedDevice) => `${DEVICES_PATH}/${device.id}`
 
@@ -40,7 +41,7 @@ export function namedDeviceEntries(devices: NamedDevice[]): BarEntry[] {
 export const DEVICES_ENTRY: BarEntry = { label: 'Devices', to: DEVICES_PATH, alsoCurrentOn: [CONNECT_PATH] }
 
 export const SECTION_ENTRIES: BarEntry[] = [
-  { label: 'Plugins', to: '/plugins' },
+  { label: 'Plugins', to: PLUGINS_PATH },
   { label: 'Instance', to: '/instance' },
 ]
 

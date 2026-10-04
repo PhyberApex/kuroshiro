@@ -107,3 +107,13 @@ export function apiSend<T = void>(method: WriteMethod, path: string, body?: obje
     body: JSON.stringify(body),
   })
 }
+
+/** Has the browser download what `GET /api/{path}` answers as a file, under the name the server gives it. */
+export function apiDownload(path: string) {
+  const link = document.createElement('a')
+  link.href = apiAddress(path).href
+  link.download = ''
+  document.body.append(link)
+  link.click()
+  link.remove()
+}
