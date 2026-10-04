@@ -103,6 +103,13 @@ export interface DeviceDetail extends DeviceSummary {
   screenCount: number
 }
 
+export interface CreateDeviceInput {
+  /** Non-empty after trim. */
+  name: string
+  /** Matches `MAC_ADDRESS_PATTERN`. Stored upper-case. */
+  mac: string
+}
+
 /** Every key is optional: an absent key leaves its field alone. `null` clears a nullable field. */
 export interface UpdateDeviceInput {
   /** Non-empty after trim. */

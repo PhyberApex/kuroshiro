@@ -14,6 +14,7 @@ export const API_ERROR_CODES = [
   'service-unavailable',
   'internal',
   'device-not-found',
+  'device-mac-taken',
   'screen-not-found',
   'screen-field-not-for-kind',
   'plugin-not-found',

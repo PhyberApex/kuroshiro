@@ -2,7 +2,6 @@ import type { DeviceReadsService } from '../device-reads.service.js'
 import type { DevicesService } from '../devices.service.js'
 import type { CreateDeviceDto } from '../dto/create-device.dto.js'
 import type { UpdateDeviceDto } from '../dto/update-device.dto.js'
-import { BadRequestException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { asService } from '../../test/mockService.js'
 import { DevicesController } from '../devices.controller.js'
@@ -26,18 +25,14 @@ describe('devicesController', () => {
     controller = new DevicesController(asService<DevicesService>(service), asService<DeviceReadsService>(reads))
   })
 
-  it('add creates a device with valid MAC', async () => {
+  it('add answers the registered device through the reads', async () => {
     const dto: CreateDeviceDto = { mac: 'AA:BB:CC:DD:EE:FF', name: 'name' }
-    const device = { id: '1', ...dto }
-    service.create.mockResolvedValue(device)
-    const result = await controller.add(dto)
+    const detail = { id: '1', ...dto }
+    service.create.mockResolvedValue({ id: '1' })
+    reads.detail.mockResolvedValue(detail)
+    await expect(controller.add(dto)).resolves.toBe(detail)
     expect(service.create).toHaveBeenCalledWith(dto)
-    expect(result).toBe(device)
-  })
-
-  it('add throws BadRequestException for invalid MAC', async () => {
-    const dto: CreateDeviceDto = { mac: 'invalid-mac', name: 'name' }
-    await expect(controller.add(dto)).rejects.toThrow(BadRequestException)
+    expect(reads.detail).toHaveBeenCalledWith('1')
   })
 
   it('delete removes a device if found', async () => {

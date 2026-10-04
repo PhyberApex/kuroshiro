@@ -63,6 +63,8 @@ RUN apk add --no-cache \
 # not be reintroduced here.
 COPY --from=api-build /prod/api/node_modules ./node_modules
 COPY --from=api-build /app/packages/api/dist ./dist
+# The api reads its own version from the package.json beside dist/ (Instance facts, Configuration Archive).
+COPY --from=api-build /app/packages/api/package.json ./package.json
 COPY --from=ui-build /app/packages/ui-next/dist ./public
 # The static last-resort Fallback Screens belong to the api and are served at
 # /screens/<kind>.png whatever the UI stage ships.

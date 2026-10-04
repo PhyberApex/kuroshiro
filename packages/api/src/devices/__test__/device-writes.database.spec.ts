@@ -87,6 +87,41 @@ describe('the Device write and delete against a real database', () => {
     return database.getRepository(Device).findOneByOrFail({ id })
   }
 
+  describe('post', () => {
+    it('answers 201 with the Device Detail of a Device that has not called in, its MAC address upper-case', async () => {
+      const response = await http.postJson('/api/devices', { name: '  Hallway  ', mac: 'aa:bb:cc:dd:ee:0f' })
+
+      expect(response.status).toBe(201)
+      const created = await response.json() as DeviceDetail
+      expect(created).toMatchObject({ name: 'Hallway', mac: 'AA:BB:CC:DD:EE:0F', lastSeenAt: null })
+      expect(await (await http.request(`/api/devices/${created.id}`)).json()).toEqual(created)
+    })
+
+    it('refuses a MAC address already registered in another letter case with 409 device-mac-taken', async () => {
+      await registerDevice({ mac: 'aa:bb:cc:dd:ee:01' })
+
+      const response = await http.postJson('/api/devices', { name: 'Hallway', mac: 'AA:BB:CC:DD:EE:01' })
+
+      expect(response.status).toBe(409)
+      expect(await response.json()).toMatchObject({ code: 'device-mac-taken' })
+      expect(await http.request('/api/devices').then(list => list.json())).toHaveLength(1)
+    })
+
+    it.each(['', '   '])('refuses %j as a name with the field named', async (name) => {
+      const response = await http.postJson('/api/devices', { name, mac: 'AA:BB:CC:DD:EE:0F' })
+
+      expect(response.status).toBe(400)
+      expect(await response.json()).toMatchObject({ code: 'validation', fields: [{ path: 'name' }] })
+    })
+
+    it.each(['AA:BB:CC:DD:EE', 'AABBCCDDEEFF', 'GG:BB:CC:DD:EE:0F'])('refuses %j as a MAC address with the field named', async (mac) => {
+      const response = await http.postJson('/api/devices', { name: 'Hallway', mac })
+
+      expect(response.status).toBe(400)
+      expect(await response.json()).toMatchObject({ code: 'validation', fields: [{ path: 'mac' }] })
+    })
+  })
+
   describe('patch', () => {
     it('answers the whole Device Detail with only the sent field changed', async () => {
       const device = await registerDevice()
