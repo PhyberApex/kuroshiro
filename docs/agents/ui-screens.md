@@ -197,6 +197,7 @@ A write that adds a record and then leaves the page navigates first and reloads 
 | `pluginRows.ts` | A row's kind, where it shows and its state with their precedence; the search, the filter and the count line |
 | `PluginsListPage.vue`, `PluginsFilterBar.vue`, `PluginRows.vue`, `PluginRowStateCell.vue`, `NoPluginsYet.vue` | The list in parts: the page holds the load, the address and the actions; the others draw |
 | `PluginPage.vue`, `PluginFrame.vue`, `PluginOpened.vue`, `pluginForm.ts`, `pluginPage.ts` | The Plugin page, its frame and its one form: see "The Plugin page" below |
+| `AddPluginPage.vue`, `addPluginWays.ts`, `AddPluginFoot.vue` | Add a Plugin and its ways: see "Add a Plugin" below |
 
 - `GET /api/plugins` comes ordered by name; the list does not sort again.
 - A row's fetch Alert is `PluginSummary.fetchAlertFiring`; the list does not read the Alerts.
@@ -253,7 +254,10 @@ export const pluginNaming: PluginFormPart<{ name: string, description: string }>
   keys: ['name', 'description'],
   read: plugin => ({ name: plugin.name, description: plugin.description ?? '' }),
   toInput: draft => ({ name: draft.name.trim(), description: draft.description.trim() || null }),
-  validate: draft => draft.name.trim() ? [] : [{ path: 'name', message: 'A Plugin needs a name.' }],
+  validate: (draft) => {
+    const message = pluginNameProblem(draft.name) // 'A Plugin needs a name.', which Add a Plugin says too
+    return message ? [{ path: 'name', message }] : []
+  },
 }
 ```
 
@@ -312,6 +316,35 @@ A section with a part that lives in a `TuckedSection` or a row registers in the 
 So a section's test is "edit, press Save Plugin, assert `faked.saves`". `__test__/examples/StandInSection.vue` is a section in forty lines, and `StandInPluginPage.vue` shows a frame mounted with sections of a test's choosing (`mountPage`).
 
 - The arrival line is taken once per page (`takePluginArrival` in `PluginFrame`), so a spec reaches it by mounting the app elsewhere and calling `openPluginPage(screen.router, id, arrival)`.
+
+### Add a Plugin
+
+`/plugins/new` is one page for every way of adding a Plugin ([plugins.md, "Add a Plugin"](../ui/plugins.md#add-a-plugin)): the ways as a radio row, and the chosen way's form beside it. `?way=` names the way; one the page does not know falls back to the first.
+
+| File | Holds |
+| --- | --- |
+| `AddPluginPage.vue` | The route's component: the title line, the line about the carried Device, the radio row and the chosen way's form |
+| `addPluginWays.ts` | `ADD_PLUGIN_WAYS`, the ways in the radio row's order. **Adding a way is one entry here and one form component** |
+| `addPluginPage.ts` | `useAddPluginPage()`, what the page hands a way's form: `device`, the Device the address carries (`?device=`, an id of no Device carries nothing), and `cancelTo` |
+| `AddPluginFoot.vue` | How every way's form ends: the primary button (`button`, `running`), "Cancel", the failure (`failure`, a whole sentence: "Not created. …"), the one line in `ink-soft` as its slot, and "Leave without saving?" while `changed` |
+| `addPluginOrigin.ts` | Where the admin came from, kept by the route's `beforeEnter` for "Cancel" |
+| `addPlugin.ts` | The page's pure parts, and those of the two ways of building: the draft, its problems and what is sent |
+| `BuildPluginForm.vue`, `BuildWebhookMerge.vue` | "Build a Poll Plugin" and "Build a Webhook Plugin": one form, told its `kind`, so a name typed for one way stays for the other |
+
+A way's form is a `form` whose submit adds the Plugin, with an `AddPluginFoot` as its last child:
+
+```vue
+<form novalidate @submit.prevent="add">
+  …the way's fields…
+  <AddPluginFoot button="Import Recipe" :running="importing" :changed="changed" :failure="failure">
+    Imports as a Poll Plugin you can edit. Nothing updates by itself afterwards.
+  </AddPluginFoot>
+</form>
+```
+
+- It sends `device.value?.id` with the request and, once the Plugin exists, sets what makes `changed` false, awaits `nextTick()` and calls `openPluginPage(router, plugin.id, { how: …, device: device.value })`.
+- A refusal of one field goes under that field (`fieldErrorsOf`); any other becomes `failure`. What was entered stays.
+- `createPlugin(input)` (`src/api/plugins.ts`) is `POST /api/plugins`: a name and a Plugin Kind in, the `PluginDetail` out.
 
 ## The Alerts page and an Alert's words
 

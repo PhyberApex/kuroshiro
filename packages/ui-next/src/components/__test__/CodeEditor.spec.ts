@@ -53,12 +53,15 @@ function completionsOf(screen: Screen) {
   ].filter(Boolean).join(' · '))
 }
 
+/**
+ * Answers a reader, not a list: the editor also completes while typing, so the list on show
+ * may still be the one of an earlier keystroke. Callers poll the reader for what they expect.
+ */
 async function completionsAfter(typed: string, props: Record<string, unknown> = {}) {
   const { screen } = await mountFocused({ completionData: DATA, kuroshiroFilters: ['date_short', 'yesno'], ...props })
   await pressed(typed)
   await pressed('{Control>} {/Control}')
-  await expect.poll(() => completionsOf(screen).length).toBeGreaterThan(0)
-  return completionsOf(screen)
+  return () => completionsOf(screen)
 }
 
 const codeOf = (screen: Screen) => [...screen.container.querySelectorAll('.cm-line')].map(line => line.textContent).join('\n')
@@ -217,37 +220,37 @@ describe('code editor: typing', () => {
 
 describe('code editor: completion', () => {
   it('offers the names of the data with their kinds inside {{ }}', async () => {
-    expect(await completionsAfter('{{{{ ')).toEqual(expect.arrayContaining(['location · string', 'forecast · object']))
+    await expect.poll(await completionsAfter('{{{{ ')).toEqual(expect.arrayContaining(['location · string', 'forecast · object']))
   })
 
   it('offers the keys under a path after a dot', async () => {
-    expect(await completionsAfter('{{{{ forecast.current.')).toEqual(['summary · string', 'temperature · number'])
+    await expect.poll(await completionsAfter('{{{{ forecast.current.')).toEqual(['summary · string', 'temperature · number'])
   })
 
   it('offers first, last and size for a list', async () => {
-    expect(await completionsAfter('{{{{ forecast.hourly.')).toEqual(['first', 'last', 'size'])
+    await expect.poll(await completionsAfter('{{{{ forecast.hourly.')).toEqual(['first', 'last', 'size'])
   })
 
   it('offers Liquid\'s filters after a pipe and marks the given ones "Kuroshiro"', async () => {
     const offered = await completionsAfter('{{{{ location | ')
 
-    expect(offered).toEqual(expect.arrayContaining(['date_short · Kuroshiro', 'yesno · Kuroshiro', 'upcase', 'default']))
-    expect(offered.filter(filter => filter.endsWith('Kuroshiro'))).toHaveLength(2)
+    await expect.poll(offered).toEqual(expect.arrayContaining(['date_short · Kuroshiro', 'yesno · Kuroshiro', 'upcase', 'default']))
+    expect(offered().filter(filter => filter.endsWith('Kuroshiro'))).toHaveLength(2)
   })
 
   it('offers Liquid\'s tags after {%', async () => {
-    expect(await completionsAfter('{{% ')).toEqual(expect.arrayContaining(['if', 'for', 'assign']))
+    await expect.poll(await completionsAfter('{{% ')).toEqual(expect.arrayContaining(['if', 'for', 'assign']))
   })
 
   it('offers the names inside a tag too', async () => {
-    expect(await completionsAfter('{{% if ')).toEqual(expect.arrayContaining(['location · string']))
+    await expect.poll(await completionsAfter('{{% if ')).toEqual(expect.arrayContaining(['location · string']))
   })
 
   it('offers HTML\'s own tags in the HTML mode, and none of the data', async () => {
     const offered = await completionsAfter('<', { mode: 'html' })
 
-    expect(offered).toEqual(expect.arrayContaining(['div', 'span']))
-    expect(offered.join(' ')).not.toContain('forecast')
+    await expect.poll(offered).toEqual(expect.arrayContaining(['div', 'span']))
+    expect(offered().join(' ')).not.toContain('forecast')
   })
 
   it('offers nothing of Liquid in the HTML mode', async () => {
@@ -264,7 +267,7 @@ describe('code editor: completion', () => {
   it('offers only the language\'s keywords in JavaScript', async () => {
     const offered = await completionsAfter('function transform(input) {{ retu', { mode: 'javascript', size: 'code-input' })
 
-    expect(offered).toEqual(['return'])
+    await expect.poll(offered).toEqual(['return'])
   })
 
   it('offers nothing in JavaScript for a name of the code', async () => {

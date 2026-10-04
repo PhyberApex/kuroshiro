@@ -17,6 +17,7 @@ import { PluginTemplate } from '../entities/plugin-template.entity.js'
 import { Plugin as PluginEntity } from '../entities/plugin.entity.js'
 import { PluginsService } from '../plugins.service.js'
 import { DataSourceFetchOutcomeService } from '../services/data-source-fetch-outcome.service.js'
+import { PluginAssignmentsService } from '../services/plugin-assignments.service.js'
 import { PluginDataResolverService } from '../services/plugin-data-resolver.service.js'
 import { PluginFieldValuesService } from '../services/plugin-field-values.service.js'
 import { PluginRefreshService } from '../services/plugin-refresh.service.js'
@@ -104,6 +105,7 @@ describe('webhook ingest integration', () => {
         { provide: getRepositoryToken(PluginTemplate), useValue: {} },
         { provide: getRepositoryToken(PluginField), useValue: {} },
         { provide: PluginFieldValuesService, useValue: createMockPluginFieldValuesService() },
+        { provide: PluginAssignmentsService, useValue: {} },
         { provide: getRepositoryToken(MashupSlotEntity), useValue: mashupSlotRepo },
         { provide: PluginDataResolverService, useValue: {} },
         { provide: PluginSchedulerService, useValue: { schedulePlugin: vi.fn(), removeScheduledJob: vi.fn() } },

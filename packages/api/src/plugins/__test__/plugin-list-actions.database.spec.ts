@@ -60,6 +60,7 @@ describe('deleting, duplicating and exporting a Plugin, against a real database'
     const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
     const refresh = new PluginRefreshService(renderCache, new PluginTemplateContextService(fieldValues, resolver), new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
     scheduler = new PluginSchedulerService(refresh)
+    assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
     plugins = new PluginsService(
       database.getRepository(Plugin),
       database.getRepository(Screen),
@@ -69,8 +70,8 @@ describe('deleting, duplicating and exporting a Plugin, against a real database'
       scheduler,
       renderCache,
       fieldValues,
+      assignments,
     )
-    assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
 
     http = await createHttpTestApp({
       controllers: [PluginsController],

@@ -68,6 +68,7 @@ describe('field values against a real database', () => {
     const refresh = new PluginRefreshService(renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
 
     scheduler = new PluginSchedulerService(refresh)
+    assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
     plugins = new PluginsService(
       database.getRepository(Plugin),
       database.getRepository(Screen),
@@ -77,9 +78,9 @@ describe('field values against a real database', () => {
       scheduler,
       renderCache,
       fieldValues,
+      assignments,
     )
     pluginReads = new PluginReadsService(database.getRepository(Plugin), database.getRepository(Screen), database.getRepository(Alert), fieldValues, asService<ConfigService>({ getOrThrow: () => 'https://kuroshiro.example' }))
-    assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
     const deviceSensors = asService<DeviceSensorsService>({ findForDevice: async () => [] })
     mashupRenderer = new MashupRendererService(renderer, config, deviceSensors, templateContext)
     previewData = new PluginPreviewDataService(database.getRepository(Plugin), database.getRepository(Device), deviceSensors, templateContext)

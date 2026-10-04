@@ -9,6 +9,7 @@ import { ApplyRecipeUpdateDto } from './dto/apply-recipe-update.dto.js'
 import { CreatePluginDto } from './dto/create-plugin.dto.js'
 import { PreviewDataDto } from './dto/preview-data.dto.js'
 import { UpdatePluginDto } from './dto/update-plugin.dto.js'
+import { WholePluginDto } from './dto/whole-plugin.dto.js'
 import { PluginsService } from './plugins.service.js'
 import { PluginAssignmentsService } from './services/plugin-assignments.service.js'
 import { PluginExporterService } from './services/plugin-exporter.service.js'
@@ -40,8 +41,8 @@ export class PluginsController {
   }
 
   @Post()
-  async create(@Body() createPluginDto: CreatePluginDto) {
-    return this.pluginsService.create(createPluginDto)
+  async create(@Body() createPluginDto: CreatePluginDto): Promise<PluginDetail> {
+    return this.pluginReads.detail(await this.pluginsService.build(createPluginDto))
   }
 
   @Patch(':id')
@@ -130,7 +131,7 @@ export class PluginsController {
   }
 
   private async createPluginFromImport(parsedPlugin: ParsedPlugin, deviceId?: string) {
-    const createDto: CreatePluginDto = {
+    const createDto: WholePluginDto = {
       ...parsedPlugin,
       isActive: false,
       order: 1,

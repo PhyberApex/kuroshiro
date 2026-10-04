@@ -68,7 +68,7 @@ Two fast presses of an arrow key in an open Reka `Select` both start from the sa
 
 **`holdTabVisible()`** (`visibility.ts`) holds `document.visibilityState` at `visible` for the test. Spec files run side by side and the tab that takes the shots is never in front, so a page that only asks while its tab is visible (`usePolling`, so anything `fresh` and Connect a Device) asks in some runs and not in others. A spec or a shot that waits for such a poll calls it before mounting (`ConnectPage.spec.ts`).
 
-`expect.poll` gives up after one second, far sooner than `expect.element`. An assertion that waits for a real timer of the page (Connect a Device asks every 3 seconds) passes `expect.poll` a `timeout`.
+`expect.poll` gives up after five seconds here (`vitest.browser.ts` raises Vitest's one second, which a save followed by a navigation outran on a loaded CI runner). An assertion that waits for a real timer of the page (Connect a Device asks every 3 seconds) passes `expect.poll` a longer `timeout`.
 
 `userEvent.dragAndDrop` onto a target below the window's edge drops nothing: drag onto a row that is in view.
 
@@ -148,7 +148,7 @@ A state that needs a pointer, a key press or a narrow window is shown in the gal
 
 - **`Switch`** is labelled by its default slot and has the `#status` slot beside it for the save state. `saving` and `error` are its own looks while that state runs; it stays pressable in both. Where motion is reduced, saving is a hollow thumb instead of a blinking one, which is also what the baselines show.
 - **`WeekdayToggle`** holds its days as a Schedule does: an array of numbers where 0 is Sunday, given back in ascending order.
-- **`SegmentedFilter`**, **`RadioRow`** and **`LayoutPicker`** are Reka radio groups over a list of choices passed as a prop. Their name comes from an `aria-label` or `aria-labelledby` attribute, which lands on the group. `LayoutPicker` draws the layouts it is given; `layoutDrawing.ts` only knows how each known id arranges its slots.
+- **`SegmentedFilter`**, **`RadioRow`** and **`LayoutPicker`** are Reka radio groups over a list of choices passed as a prop. Their name comes from an `aria-label` or `aria-labelledby` attribute, which lands on the group. A `RadioRow` choice's `code` (a Merge Strategy's API value) stands beside its name in mono and describes the row, in front of its `hint`, without being part of its name. `LayoutPicker` draws the layouts it is given; `layoutDrawing.ts` only knows how each known id arranges its slots.
 - **`Tabs`** and **`PageList`** take `label` (the name of the `nav`) and `items`, a list of `NavItem` (`{ label, to }`). They render `RouterLink`s, so they need a router: `mountPage` in a spec, and in a gallery file `RouteStage` from `src/gallery/`, which gives what is inside it a router of its own at the path `at`, so a specimen has a current link and a pressed link does not leave the gallery.
 - The current link (`aria-current="page"`) is the item whose path the current route is at, or the nearest item above it (`useCurrentNavItem` in `navItem.ts`). So `/instance/firmware/upload` keeps "Firmware" current, and `/devices/7/settings` is "Settings" and not the Screens view at `/devices/7`. It compares paths, not route records, so it does not care how the routes are nested.
 
