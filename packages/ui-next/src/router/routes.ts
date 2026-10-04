@@ -15,19 +15,31 @@ function notBuiltYet(path: string, title: string): RouteRecordRaw {
   }
 }
 
+/** A page under the Device frame that is not built yet. The frame has the title line, so the stand-in has none. */
+function notBuiltYetUnderDevice(path: string): RouteRecordRaw {
+  return { path, component: () => import('@/pages/devices/DeviceNotBuiltYetPage.vue') }
+}
+
 /**
  * Every route of the four route tables of `docs/ui/`. A built page is
  * `{ path, component: () => import('@/pages/…Page.vue') }`; a `notBuiltYet` line stands in for one that is not.
+ * The pages of one Device are the children of the Device frame, which loads the Device and has its title line and tabs.
  */
 export const routes: RouteRecordRaw[] = [
   { path: '/', component: () => import('@/pages/LandingPage.vue') },
 
   notBuiltYet('/devices', 'Devices'),
-  notBuiltYet('/devices/:deviceId', 'Screens'),
-  notBuiltYet('/devices/:deviceId/screens/new', 'Add Screen'),
-  notBuiltYet('/devices/:deviceId/screens/:screenId/html', 'Edit HTML'),
-  notBuiltYet('/devices/:deviceId/settings', 'Settings'),
-  notBuiltYet('/devices/:deviceId/logs', 'Logs'),
+  {
+    path: '/devices/:deviceId',
+    component: () => import('@/pages/devices/DeviceFrame.vue'),
+    children: [
+      { path: '', component: () => import('@/pages/devices/DeviceScreensPage.vue') },
+      notBuiltYetUnderDevice('screens/new'),
+      notBuiltYetUnderDevice('screens/:screenId/html'),
+      notBuiltYetUnderDevice('settings'),
+      notBuiltYetUnderDevice('logs'),
+    ],
+  },
   notBuiltYet('/connect', 'Connect a Device'),
 
   notBuiltYet('/plugins', 'Plugins'),

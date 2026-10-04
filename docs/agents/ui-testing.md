@@ -11,7 +11,7 @@ All commands run from `packages/ui-next` (or with `pnpm --filter kuroshiro-ui-ne
 | `pnpm test:coverage` | The same, with the lcov report Codecov's `ui` flag reads | |
 | `pnpm test:screenshots` | Compares every shot with its committed baseline | Docker |
 | `pnpm test:screenshots:update` | Rewrites the baselines | Docker |
-| `pnpm test:real-api` | Builds the API and the UI and drives them against Postgres | Docker (or a Postgres named by `KUROSHIRO_DB_*`), Chromium |
+| `pnpm test:real-api` | Builds the API and the UI and drives them against Postgres | Docker (or a Postgres named by `KUROSHIRO_DB_*`), Chromium, and ImageMagick 7 (`magick`) for a journey that adds a Screen |
 
 The root `pnpm test` runs the first one. CI (`.github/workflows/checks.yml`) runs all three kinds.
 
@@ -32,7 +32,8 @@ All in `packages/ui-next/src/testing/`. The specs in `src/testing/__test__/` are
 
 - **`mount(Component, { props, slots, theme })`** and **`mountPage({ routes, at, theme })`** (`mount.ts`). Both return the `vitest-browser-vue` screen (`getByRole`, `getByText`, ...) and are awaited. `mountPage` builds a test router over the routes you pass and opens it at `at`; it also returns `router`. The tokens, the reset and the faces are already loaded by the setup file, in the order the app loads them. The theme is `light` unless you pass `dark`.
 - **`mountApp({ at, theme })`** and **`fakeShellReads({ instance, devices, alerts })`** (`app.ts`) are how a screen is mounted: the whole app, shell and real routes, opened at `at`, returning the screen and `router`. The shell reads the Instance facts, the Devices and the Alerts on every page, so call `fakeShellReads()` first; left out, each argument is an ordinary Instance with one Device, Kitchen, and no Alert firing. `mountApp` also takes `routes`, stand-in routes for a spec of the shell itself. `mountPage` is for a component that needs a router but is not a route of the app; it installs the shared reads too, and each asks the API only once something uses it.
-- **`freezeTime('2026-10-03T07:35:00.000Z')`** (`time.ts`) holds `Date` for the rest of the test, so a relative time reads the same on every run. A page with a `RelativeTime` calls it before mounting, in its spec and in its shots.
+- **`freezeTime('2026-10-03T07:35:00.000Z')`** (`time.ts`) holds `Date` for the rest of the test, so a relative time reads the same on every run. A page with a `RelativeTime` calls it before mounting, in its spec and in its shots. The held clock still creeps on by a millisecond every few real ones: Vue drops an event that is not later than the moment its listener was attached, so on a clock that stood quite still a `Button` would never fire.
+- **`fakeScreenImages()`** (`images.ts`) answers every Screen image a page asks for (`/screens/…`) with one drawing, so a `Plate` shows an image and not its error state. Call it before mounting a page that shows Screen images.
 - **Events** come from `vitest/browser`: `await locator.click()`, `await userEvent.keyboard('{Tab}')`. They are real pointer and keyboard events, which is what Reka UI needs. Assert with `await expect.element(locator).toBeVisible()`, which retries.
 - **`expectAccessible()`** (`a11y.ts`) runs axe-core at WCAG 2.1 AA on what is mounted, in light and in dark, and fails on any violation.
 - **`expectNoHorizontalOverflow()`** (`overflow.ts`) fails if the page scrolls sideways at 375, 768 or 1280 px and names the elements that stick out.
@@ -65,6 +66,8 @@ A Reka popper layer is parked off screen until it is placed, and `click({ force:
 
 Two fast presses of an arrow key in an open Reka `Select` both start from the same option, because Reka moves the focus in a timeout. Press once, assert where the focus is, press again.
 
+`userEvent.dragAndDrop` onto a target below the window's edge drops nothing: drag onto a row that is in view.
+
 `userEvent.upload(input, file)` chooses a file in a native file input; a drop is a `DragEvent` dispatched with a `DataTransfer` holding the file (`FileDrop.spec.ts`).
 
 ## Faking the API
@@ -90,7 +93,7 @@ A request to the admin API that no handler fakes fails as a network error and is
 export const buildInstanceSettings = defineBuilder<InstanceSettingsResponse>(() => ({ ...every key... }))
 ```
 
-and is called as `build<ReadModel>(overrides?)`. There are builders for the Instance facts and Instance Settings (`instance.ts`), a Device's summary (`devices.ts`), an Alert and the Alerts list (`alerts.ts`), a Screen and its Schedule (`screens.ts`) and a refusal (`errors.ts`). The type always comes from `kuroshiro-shared` and every key is spelled out, so a reshaped read model fails `pnpm type-check` in its builder. A builder lands with the UI slice that first reads its endpoint. Defaults are plausible values in the vocabulary of `CONTEXT.md`, not `foo`.
+and is called as `build<ReadModel>(overrides?)`. There are builders for the Instance facts and Instance Settings (`instance.ts`), a Device's summary and its detail (`devices.ts`), an Alert and the Alerts list (`alerts.ts`), a Screen and its Schedule (`screens.ts`) and a refusal (`errors.ts`). The type always comes from `kuroshiro-shared` and every key is spelled out, so a reshaped read model fails `pnpm type-check` in its builder. A builder lands with the UI slice that first reads its endpoint. Defaults are plausible values in the vocabulary of `CONTEXT.md`, not `foo`.
 
 ## The gallery
 
@@ -152,7 +155,7 @@ A state that needs a pointer, a key press or a narrow window is shown in the gal
 
 - **`Seal`** picks its drawing from `size`: 黒白 from 20 px up, 白 alone below. `colour` is `seal` or `ink`. Its characters are cut in `--seal-ground`, which is paper unless what it sits on sets it, as `Plate` does. `stamps` lands it once when it is mounted; to stamp again, mount it anew with a `key`.
 - **`Plate`** needs `name` and throws without one, as `IconButton` does. It takes the `src` as it is: the caller resolves an app-relative image path against `document.baseURI`. Without `src` (a Screen never rendered) or with `rendering` it is the dither; `failed`, or an image that cannot be loaded, is the error state. `width` and `height` are the Device Model's panel and set the frame's shape before the image is known; left out, the frame takes the image's own ratio. `sealed` puts the seal on it and `stampKey` (the Active Screen's id) stamps it when it changes. The seal hangs over the frame by up to 14 px, so the place it stands in leaves that room above and to the right. The default slot replaces the image and makes the frame a `group` with the same name.
-- **`FactRows`** takes `facts` (`Fact` in `fact.ts`): a fact with no `value` is left out, `alert` is the label a firing Alert replaces the row's with, `pending` adds the loading mark, `to` makes the value a link (which needs a router).
+- **`FactRows`** takes `facts` (`Fact` in `fact.ts`): a fact with no `value` is left out, `alert` is the label a firing Alert replaces the row's with, `pending` adds the loading mark, `to` makes the value a link (which needs a router). The `#value` slot, handed the `fact`, stands in place of a value that is more than words, such as a `RelativeTime`; the fact still needs its `value`, which decides whether the row is shown.
 - **`ScreenRows` and `ScreenRow`** are one accordion. `ScreenRows` takes `items` (each with `id` and `name`), renders its default slot once per item and holds `v-model:open`; a `ScreenRow` outside one throws. The row's `state` (a `ScreenState` or `null`) decides its look and whether Rotation passes it over; the `#thumbnail` slot is handed `active` and `passedOver` for the `Plate` in it. The whole line opens the row except where a slot holds a control of its own. Its slots are `#thumbnail`, `#schedule`, `#state` (the words beside the seal, for a qualifier such as "Active Screen, paused") and the default one, the opened row. `SCREEN_KIND_LABELS` and `SCREEN_STATE_LABELS` (`screenRows.ts`) word the wire values.
 - **Reordering** is `sortable` on `ScreenRows`. The list is controlled: it emits `reorder` with every id in the new order and shows that order once `items` holds it, so the owner takes the order at once and, when the save is rejected, hands `items` back as they were, which the list announces. With `useSaveAsChanged`, which leaves the value as entered after a failed save, that is one `watch` on its `status`. Pointer dragging is `@atlaskit/pragmatic-drag-and-drop`, which rides the browser's own drag and drop: in a spec, `userEvent.dragAndDrop(grip, target, { targetPosition })` drops for real, and a state in the middle of a drag is reached by dispatching `DragEvent`s (`ScreenRow.spec.ts`). The lifted and landing looks are held still for the gallery with `force`.
 - **`CodeBlock`** takes `code`, `copy` for the button, `copyValue` when "Copy" writes more than is shown, and `foldAfter` (a number of lines). `useCopied` and `CopyFaces` are the state and the two faces of a "Copy" button, shared with `CopyValue`.
@@ -207,6 +210,8 @@ The shots hold the shell, so wait for what the shell loads as well (a Device's n
 `packages/ui-next/real-api/`. Its global setup builds the API and the UI, lays them out as the image does, starts the API against an empty Postgres and hands the specs `inject('baseUrl')`. Without `KUROSHIRO_DB_HOST` it starts and removes a throwaway `postgres:18-alpine` container; with it (as in CI) it uses that database, which must be empty.
 
 Specs drive the UI with Playwright (`chromium.launch()`, `page.goto(baseUrl)`) and play the Device with `connectDevice(baseUrl, { mac, model })` from `devicePlayer.ts`: it calls `/api/setup`, and the returned Device has `setup` (the answer), `display(report?)` for a poll and `log(entries)`.
+
+Every spec file shares that one Instance. `smoke.spec.ts` runs first, on the empty Instance, and the other files after it, one at a time; a journey must not assume that no other Device exists.
 
 The suite holds one test per primary journey of [Primary journeys and the story each screen tells](https://github.com/PhyberApex/kuroshiro/issues/1078), plus `smoke.spec.ts`. It is not the place for broad coverage; that is the page specs' job.
 
