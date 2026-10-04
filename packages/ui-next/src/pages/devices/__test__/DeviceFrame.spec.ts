@@ -43,6 +43,7 @@ describe('the Device page frame', () => {
   it.each([
     ['/devices/kitchen', 'Screens'],
     ['/devices/kitchen/screens/new', 'Screens'],
+    ['/devices/kitchen/screens/notes/html', 'Screens'],
     ['/devices/kitchen/settings', 'Settings'],
     ['/devices/kitchen/logs', 'Logs'],
   ])('at %s marks "%s" as the current view', async (at, current) => {
@@ -55,12 +56,12 @@ describe('the Device page frame', () => {
     expect(currentTabs(screen)).toEqual([current])
   })
 
-  it('opens a stub under the tabs that are not built yet, with the frame around it', async () => {
+  it('holds a page under the Screens tab with the frame around it and without "Add Screen"', async () => {
     fakeShellReads({ devices: devicesNamed('Kitchen') })
     fakeKitchen()
     const screen = await mountApp({ at: '/devices/kitchen/screens/notes/html' })
 
-    await expect.element(screen.getByRole('heading', { name: 'Not built yet' })).toBeVisible()
+    await expect.element(screen.getByRole('heading', { level: 2, name: 'No HTML Screen here' })).toBeVisible()
     await expect.element(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Kitchen')
     expect(screen.getByRole('link', { name: 'Add Screen' }).elements()).toEqual([])
   })
