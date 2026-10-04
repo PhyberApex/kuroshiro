@@ -9,6 +9,7 @@ import { AlertsModule } from './alerts/alerts.module.js'
 import { Alert } from './alerts/entities/alert.entity.js'
 import config from './config/config.js'
 import { ConfigurationModule } from './configuration/configuration.module.js'
+import { CustomPalettesModule } from './device-models/custom-palettes.module.js'
 import { DeviceModelsModule } from './device-models/device-models.module.js'
 import { DeviceModel } from './device-models/entities/device-model.entity.js'
 import { Palette } from './device-models/entities/palette.entity.js'
@@ -77,6 +78,7 @@ const conf = config()
     ScreensModule,
     LogsModule,
     DeviceModelsModule,
+    CustomPalettesModule,
     FirmwareModule,
     DevicesModule,
     PluginsModule,

@@ -5,7 +5,7 @@ import { toDeviceModelList, toDeviceModelRead, toPaletteRead } from '../device-m
 
 describe('the Device Model read model', () => {
   it('names every key, with absent values as null', () => {
-    const read = toDeviceModelRead({ ...OG_PLUS, description: undefined, imageSizeLimit: undefined }, { paletteIds: ['bw'], usedBy: [] })
+    const read = toDeviceModelRead({ ...OG_PLUS, description: undefined, imageSizeLimit: undefined }, { paletteIds: ['bw'], defaultPaletteId: 'bw', usedBy: [] })
 
     expect(JSON.parse(JSON.stringify(read))).toEqual({
       name: 'og_plus',
@@ -22,6 +22,7 @@ describe('the Device Model read model', () => {
       mimeType: 'image/png',
       kind: 'trmnl',
       paletteIds: ['bw'],
+      defaultPaletteId: 'bw',
       cssClasses: ['screen--og_plus', 'screen--md', 'screen--density-1x'],
       cssVariables: { '--screen-w': '800px', '--screen-h': '480px' },
       imageSizeLimit: null,
@@ -34,7 +35,7 @@ describe('the Device Model read model', () => {
   it('serializes the sync time and names the Devices by name, ignoring case', () => {
     const devices = [makeDevice({ id: 'd1', name: 'kitchen', apikey: 'secret' }), makeDevice({ id: 'd2', name: 'Attic' })]
 
-    const read = toDeviceModelRead({ ...OG_PLUS, syncedAt: new Date('2026-10-01T04:00:00.000Z') }, { paletteIds: [], usedBy: devices })
+    const read = toDeviceModelRead({ ...OG_PLUS, syncedAt: new Date('2026-10-01T04:00:00.000Z') }, { paletteIds: [], defaultPaletteId: null, usedBy: devices })
 
     expect(read.syncedAt).toBe('2026-10-01T04:00:00.000Z')
     expect(read.usedBy).toEqual([{ id: 'd2', name: 'Attic' }, { id: 'd1', name: 'kitchen' }])

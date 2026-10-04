@@ -29,6 +29,7 @@ export const buildDeviceModel = defineBuilder<DeviceModelRead>(() => ({
   mimeType: 'image/png',
   kind: 'trmnl',
   paletteIds: ['5c9e2f7a-3b1d-4e8f-a6c4-0d2b7e9f1a3c'],
+  defaultPaletteId: '5c9e2f7a-3b1d-4e8f-a6c4-0d2b7e9f1a3c',
   cssClasses: ['screen--og_plus'],
   cssVariables: {},
   imageSizeLimit: null,

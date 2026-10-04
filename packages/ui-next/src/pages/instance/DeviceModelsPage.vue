@@ -46,7 +46,7 @@ const now = useNow()
           :reason="whyNotSynced(sync.reason, data.list.models, now)"
           @retry="sync.sync"
         />
-        <CustomPalettes :palettes="data.palettes" />
+        <CustomPalettes :palettes="data.palettes" :models="data.list.models" @changed="page.reload" />
         <DeviceModelLibrary :list="data.list" :palettes="data.palettes" />
         <p class="last">
           Kuroshiro syncs both from TRMNL when it starts and every day at 04:00, server time. Without a connection it uses the list it was shipped with.

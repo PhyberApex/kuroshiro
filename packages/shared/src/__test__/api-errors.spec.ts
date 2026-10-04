@@ -57,6 +57,9 @@ const wording: Record<ApiErrorCode, string> = {
   'archive-not-configuration': 'That is not a Configuration Archive.',
   'archive-schema-version': 'That archive was made with another archive version.',
   'archive-record-refused': 'The database refused a record of that archive.',
+  'palette-name-taken': 'There is already a custom Palette with that name.',
+  'palette-not-custom': 'Only a custom Palette can be changed.',
+  'palette-in-use': 'A Device uses that Palette.',
 }
 
 function wordingBySwitch(code: ApiErrorCode): string {
@@ -104,6 +107,9 @@ function wordingBySwitch(code: ApiErrorCode): string {
     case 'archive-not-configuration':
     case 'archive-schema-version':
     case 'archive-record-refused':
+    case 'palette-name-taken':
+    case 'palette-not-custom':
+    case 'palette-in-use':
     case 'conflict':
     case 'payload-too-large':
     case 'unprocessable':

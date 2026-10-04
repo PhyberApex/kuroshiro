@@ -9,7 +9,6 @@ import { SyncRunService } from '../../sync-runs/sync-run.service.js'
 import { jsonResponse, stubFetch } from '../../test/fetch.js'
 import { createHttpTestApp } from '../../test/httpApp.js'
 import { createTestDatabase } from '../../test/testDatabase.js'
-import { CustomPalettesService } from '../custom-palettes.service.js'
 import { DeviceModelReadsService } from '../device-model-reads.service.js'
 import { DeviceModelSyncService } from '../device-model-sync.service.js'
 import { DeviceModelsController } from '../device-models.controller.js'
@@ -49,7 +48,6 @@ describe('the Device Model and Palette reads, against a real database', () => {
       providers: [
         { provide: DeviceModelReadsService, useValue: reads },
         { provide: DeviceModelSyncService, useValue: syncService },
-        { provide: CustomPalettesService, useValue: {} },
         { provide: getRepositoryToken(Device), useValue: database.getRepository(Device) },
       ],
     })
@@ -59,7 +57,7 @@ describe('the Device Model and Palette reads, against a real database', () => {
     await database.query(`TRUNCATE "device", "device_model", "palette", "sync_run" CASCADE`)
     await database.getRepository(Palette).save([
       { id: 'bw', name: 'Black & White', kind: 'official', grays: 2, frameworkClass: 'screen--1bit' },
-      { id: 'red', name: 'Red', kind: 'official', grays: 2, frameworkClass: RED_FAMILY },
+      { id: 'red', name: 'Red', kind: 'official', grays: 2, colors: ['#000000', '#FF0000', '#FFFFFF'], frameworkClass: RED_FAMILY },
       { id: 'custom-red', name: 'My Red', kind: 'custom', grays: 2, colors: ['#ff0000', '#ffffff', '#000000'], frameworkClass: RED_FAMILY },
       { id: 'custom-yellow', name: 'My Yellow', kind: 'custom', grays: 2, colors: ['#ffff00', '#ffffff', '#000000'], frameworkClass: YELLOW_FAMILY },
     ])
@@ -126,6 +124,12 @@ describe('the Device Model and Palette reads, against a real database', () => {
 
       expect(list.find(m => m.name === 'og_bwr')?.usedBy.map(d => d.name)).toEqual(['Attic', 'kitchen'])
       expect(list.find(m => m.name === 'og_png')?.usedBy.map(d => d.name)).toEqual(['Cellar'])
+    })
+
+    it('names each Device Model\'s default Palette: the richest of TRMNL\'s curated ones, never a custom one', async () => {
+      const { models: list } = await models()
+
+      expect(list.map(model => [model.name, model.defaultPaletteId])).toEqual([['og_png', 'bw'], ['og_bwr', 'red']])
     })
 
     it('answers no last sync before the first one', async () => {

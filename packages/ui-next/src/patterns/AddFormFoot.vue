@@ -27,7 +27,7 @@ defineEmits<{
 
 defineSlots<{
   /** The one line under the buttons: what the admin should know before adding. */
-  default: () => unknown
+  default?: () => unknown
   /** What leaving loses: "What you entered for the new Plugin." */
   lost: () => unknown
 }>()
@@ -55,7 +55,7 @@ defineSlots<{
         Try again
       </Button>
     </div>
-    <p class="know">
+    <p v-if="$slots.default" class="know">
       <slot />
     </p>
   </div>
