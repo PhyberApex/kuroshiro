@@ -1,4 +1,4 @@
-import type { AlertKind } from 'kuroshiro-shared'
+import type { AlertDetails, AlertKind } from 'kuroshiro-shared'
 import type { Relation } from 'typeorm'
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { Device } from '../../devices/devices.entity.js'
@@ -33,5 +33,5 @@ export class Alert {
   resolutionNotifiedAt?: Date | null
 
   @Column('jsonb', { nullable: true })
-  details?: Record<string, unknown> | null
+  details?: AlertDetails | null
 }

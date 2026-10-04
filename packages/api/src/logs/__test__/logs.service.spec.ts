@@ -136,16 +136,4 @@ describe('logsService', () => {
       expect(logsRepo.save).not.toHaveBeenCalled()
     })
   })
-
-  it('getByDevice returns logs for a device', async () => {
-    const logs = [makeLogEntry({ logId: 1 })]
-    logsRepo.find.mockResolvedValue(logs)
-    const result = await service.getByDevice('dev')
-    expect(result).toBe(logs)
-  })
-
-  it('clearLogsByDeviceId clears logs for a device', async () => {
-    await service.clearLogsByDeviceId('dev')
-    expect(logsRepo.delete).toHaveBeenCalledOnce()
-  })
 })

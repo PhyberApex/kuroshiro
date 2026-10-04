@@ -111,16 +111,15 @@ describe('offlineRule', () => {
   })
 
   it('builds the opened and resolved notification content', () => {
-    const device = makeDevice({ name: 'Kitchen Display', mac: 'AA:BB:CC:DD:EE:FF' })
-    const details = { lastSeen: '2026-01-01T10:00:00.000Z' }
-    expect(offlineRule.openedNotification(device, details)).toEqual({
+    const device = makeDevice({ name: 'Kitchen Display', mac: 'AA:BB:CC:DD:EE:FF', lastSeen: new Date('2026-01-01T12:00:00.000Z') })
+    expect(offlineRule.openedNotification(device)).toEqual({
       title: 'Kuroshiro: Kitchen Display is offline',
-      body: 'Kitchen Display (AA:BB:CC:DD:EE:FF) was last seen 2026-01-01T10:00:00.000Z.',
+      body: 'Kitchen Display (AA:BB:CC:DD:EE:FF) was last seen 2026-01-01T12:00:00.000Z.',
       type: 'failure',
     })
-    expect(offlineRule.resolvedNotification(device, details)).toEqual({
+    expect(offlineRule.resolvedNotification(device)).toEqual({
       title: 'Kuroshiro: Kitchen Display back online',
-      body: 'Kitchen Display (AA:BB:CC:DD:EE:FF) was last seen 2026-01-01T10:00:00.000Z.',
+      body: 'Kitchen Display (AA:BB:CC:DD:EE:FF) was last seen 2026-01-01T12:00:00.000Z.',
       type: 'success',
     })
   })

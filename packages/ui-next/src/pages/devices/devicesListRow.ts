@@ -1,6 +1,6 @@
 import type { CurrentScreenStory, CurrentScreenTold, PlateState } from './currentScreenStory'
 import type { Sentence } from './sentence'
-import { DEVICE_ALERT_LABELS } from './deviceFacts'
+import { FIRING_ALERT_LABELS } from '@/pages/alerts/alertLabels'
 import { sentence, strong } from './sentence'
 
 /** The states in which the story's heading is the name of the Screen whose image is on the Device. */
@@ -22,7 +22,7 @@ export type RowFact
 export function rowFacts({ device, alerts }: Pick<CurrentScreenTold, 'device' | 'alerts'>): RowFact[] {
   const firing = ALERTS_IN_ROW_ORDER
     .filter(kind => alerts.some(alert => alert.kind === kind))
-    .map((kind): RowFact => ({ kind: 'alert', text: DEVICE_ALERT_LABELS[kind] }))
+    .map((kind): RowFact => ({ kind: 'alert', text: FIRING_ALERT_LABELS[kind] }))
   if (device.lastSeenAt === null)
     return [...firing, { kind: 'words', text: 'Has not called in yet' }]
   return [

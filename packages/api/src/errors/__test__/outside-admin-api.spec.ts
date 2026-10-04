@@ -43,7 +43,7 @@ describe('the endpoints outside the admin API behind the global pipe and filter'
   let http: HttpTestApp
   const displayService = { getCurrentImage: vi.fn(), getCurrentImageWithoutProgressing: vi.fn() }
   const setupService = { setupDevice: vi.fn() }
-  const logsService = { addLogToDevice: vi.fn(), getByDevice: vi.fn(), clearLogsByDeviceId: vi.fn() }
+  const logsService = { addLogToDevice: vi.fn() }
   const ingestService = { ingest: vi.fn(), readPayload: vi.fn() }
   const pluginRepository = { findOne: vi.fn() }
   const metricsService = { render: vi.fn() }
@@ -144,14 +144,6 @@ describe('the endpoints outside the admin API behind the global pipe and filter'
       ],
     })
     expect(logsService.addLogToDevice).not.toHaveBeenCalled()
-  })
-
-  it('answers the admin routes of the log controller in the envelope', async () => {
-    logsService.getByDevice.mockRejectedValue(new NotFoundException('Device not found'))
-
-    const response = await http.request('/api/log/device/device-1')
-
-    expect(await response.json()).toEqual({ statusCode: 404, code: 'not-found', message: 'Device not found' })
   })
 
   it('hands a Webhook body to the ingest untouched', async () => {

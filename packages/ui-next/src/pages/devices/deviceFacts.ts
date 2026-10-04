@@ -1,6 +1,7 @@
 import type { AlertKind, DeviceDetail, DeviceSensorKind, SleepState } from 'kuroshiro-shared'
 import type { DeviceTold } from './currentScreenStory'
 import type { Fact } from '@/components/fact'
+import { FIRING_ALERT_LABELS } from '@/pages/alerts/alertLabels'
 import { exactTime, relativeTime } from '@/patterns/time'
 import { deviceSettingsPath } from './devicePaths'
 
@@ -9,12 +10,6 @@ export interface DeviceFact extends Fact {
   at?: string
   lead?: string
 }
-
-/** What a firing Alert on a Device is called where the Device's facts are shown. */
-export const DEVICE_ALERT_LABELS = {
-  'device-offline': 'Alert: offline',
-  'device-low-battery': 'Alert: battery low',
-} as const satisfies Partial<Record<AlertKind, string>>
 
 const SENSOR_LABELS: Record<DeviceSensorKind, string> = {
   temperature: 'Temperature',
@@ -41,7 +36,7 @@ function lastSeenOf({ lastSeenAt }: DeviceDetail, offline: boolean, now: Date): 
   return {
     label: 'Last seen',
     value: seen && `${lead}${relativeTime(seen, now) ?? exactTime(seen)}`,
-    alert: offline ? DEVICE_ALERT_LABELS['device-offline'] : undefined,
+    alert: offline ? FIRING_ALERT_LABELS['device-offline'] : undefined,
     at: lastSeenAt ?? undefined,
     lead,
   }
@@ -68,7 +63,7 @@ export function deviceFacts({ device, alerts, now }: DeviceTold): DeviceFact[] {
     {
       label: 'Battery',
       value: device.batteryPercent === null ? null : `${device.batteryPercent} %`,
-      alert: firing('device-low-battery') ? DEVICE_ALERT_LABELS['device-low-battery'] : undefined,
+      alert: firing('device-low-battery') ? FIRING_ALERT_LABELS['device-low-battery'] : undefined,
     },
     { label: 'Signal', value: signalOf(device.rssi) },
     { label: 'Sleep Mode', value: sleepModeOf(device.sleep, device.isMirrored) },

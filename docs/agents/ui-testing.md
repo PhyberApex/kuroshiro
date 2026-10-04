@@ -107,7 +107,7 @@ A request to the admin API that no handler fakes fails as a network error and is
 export const buildInstanceSettings = defineBuilder<InstanceSettingsResponse>(() => ({ ...every key... }))
 ```
 
-and is called as `build<ReadModel>(overrides?)`. There are builders for the Instance facts and Instance Settings (`instance.ts`), a Device's summary and its detail (`devices.ts`), an Alert and the Alerts list (`alerts.ts`), a Screen and its Schedule (`screens.ts`), a Plugin's summary, its detail and a Mashup it fills a slot in (`plugins.ts`) and a refusal (`errors.ts`). The type always comes from `kuroshiro-shared` and every key is spelled out, so a reshaped read model fails `pnpm type-check` in its builder. A builder lands with the UI slice that first reads its endpoint. Defaults are plausible values in the vocabulary of `CONTEXT.md`, not `foo`.
+and is called as `build<ReadModel>(overrides?)`. There are builders for the Instance facts and Instance Settings (`instance.ts`), a Device's summary, its detail, a Device Log entry and a page of them (`devices.ts`), an Alert and the Alerts list (`alerts.ts`), a Screen and its Schedule (`screens.ts`), a Plugin's summary, its detail and a Mashup it fills a slot in (`plugins.ts`) and a refusal (`errors.ts`). The type always comes from `kuroshiro-shared` and every key is spelled out, so a reshaped read model fails `pnpm type-check` in its builder. A builder lands with the UI slice that first reads its endpoint. Defaults are plausible values in the vocabulary of `CONTEXT.md`, not `foo`.
 
 ## The gallery
 
@@ -228,6 +228,8 @@ The shots hold the shell, so wait for what the shell loads as well (a Device's n
 Specs drive the UI with Playwright (`chromium.launch()`, `page.goto(baseUrl)`) and play the Device with `connectDevice(baseUrl, { mac, model })` from `devicePlayer.ts`: it calls `/api/setup`, and the returned Device has `setup` (the answer), `display(report?)` for a poll and `log(entries)`.
 
 Every spec file shares that one Instance. `firstRun.spec.ts` runs first, on the empty Instance, and the other files after it, one at a time; any other journey must not assume that no other Device exists.
+
+`somethingIsWrong.spec.ts` waits for an Alert Sweep, which runs every 5 minutes on the clock, so it takes up to that long; nothing triggers a Sweep from outside.
 
 The suite holds one test per primary journey of [Primary journeys and the story each screen tells](https://github.com/PhyberApex/kuroshiro/issues/1078), plus `smoke.spec.ts`. It is not the place for broad coverage; that is the page specs' job.
 

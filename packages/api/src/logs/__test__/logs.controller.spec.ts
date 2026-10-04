@@ -2,15 +2,12 @@ import type { CreateLogDto } from '../dto/create-log.dto.js'
 import type { LogsService } from '../logs.service.js'
 import { HTTP_CODE_METADATA } from '@nestjs/common/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeLogEntry } from '../../test/fixtures.js'
 import { asService } from '../../test/mockService.js'
 import { LogsController } from '../logs.controller.js'
 
 function createMockService() {
   return {
     addLogToDevice: vi.fn(),
-    getByDevice: vi.fn(),
-    clearLogsByDeviceId: vi.fn(),
   }
 }
 
@@ -32,18 +29,5 @@ describe('logsController (unit)', () => {
 
   it('consumeLog answers 204 No Content', () => {
     expect(Reflect.getMetadata(HTTP_CODE_METADATA, LogsController.prototype.consumeLog)).toBe(204)
-  })
-
-  it('getLogsByDevice returns logs for a device', async () => {
-    const logs = [makeLogEntry()]
-    service.getByDevice.mockResolvedValue(logs)
-    const result = await controller.getLogsByDevice('dev')
-    expect(service.getByDevice).toHaveBeenCalledWith('dev')
-    expect(result).toBe(logs)
-  })
-
-  it('clearLogs calls the service', async () => {
-    await controller.clearLogs('dev')
-    expect(service.clearLogsByDeviceId).toHaveBeenCalledWith('dev')
   })
 })

@@ -1,4 +1,4 @@
-import type { AlertKind } from 'kuroshiro-shared'
+import type { AlertDetails, AlertKind } from 'kuroshiro-shared'
 import type { FindOptionsRelations } from 'typeorm'
 import type { Device } from '../../devices/devices.entity.js'
 import type { PluginDataSource } from '../../plugins/entities/plugin-data-source.entity.js'
@@ -15,7 +15,8 @@ export interface AlertEvaluation {
   /** True when the Rule has nothing to say this Sweep — an existing Alert (if any) is left untouched. */
   skip?: boolean
   active: boolean
-  details?: Record<string, unknown>
+  /** The cause, when `active`: what the Alert keeps as its `details`. */
+  details?: AlertDetails
 }
 
 export interface NotificationContent {
@@ -50,8 +51,9 @@ export interface AlertRule {
   toAlertSubject: (subject: unknown) => Partial<Alert>
   /** `hasActiveAlert` lets a Rule apply hysteresis around its own open/resolve boundary. */
   evaluate: (subject: unknown, context: AlertRuleContext, hasActiveAlert: boolean) => AlertEvaluation
-  openedNotification: (subject: unknown, details: Record<string, unknown>) => NotificationContent
-  resolvedNotification: (subject: unknown, details: Record<string, unknown>) => NotificationContent
+  /** Both Notifications are worded from the subject as it is when they are sent; an Alert's `details` are the cause it fired with, not the recovery. */
+  openedNotification: (subject: unknown) => NotificationContent
+  resolvedNotification: (subject: unknown) => NotificationContent
 }
 
 /** The subject-plumbing fields shared by every Device-scoped Rule (low battery, offline) — only `evaluate`/the two Notification builders differ between them. */

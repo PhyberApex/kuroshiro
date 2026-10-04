@@ -346,6 +346,7 @@ describe('the shell\'s reads', () => {
   })
 
   it('changes nothing in the page for an identical answer', async () => {
+    holdTabVisible()
     fakeShellReads({ alerts: buildAlertsList({ active: [buildAlert()] }) })
     const screen = await mountApp({ at: '/plugins' })
     await expect.element(screen.getByRole('link', { name: '1 Alert firing' })).toBeVisible()

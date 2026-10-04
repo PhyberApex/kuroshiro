@@ -95,6 +95,15 @@ const { device, listed, name, path } = useDeviceFrame() // from '@/pages/devices
 
 `ScreensInOrder` takes `reload`, which reads the Screens again: call it after any write to a Screen. A write that adds or removes a Screen also calls `useDeviceFrame().device.reload()`, because the Device counts its Screens. A form that opens in place gives the focus to its first control when it opens and back to the button that opened it when it closes. A new Screen is opened by navigating to `{path}?screen={id}`, which also scrolls to its row.
 
+### The Logs page
+
+`DeviceLogsPage.vue` is the Logs tab, in parts: the page holds the address (`?level=problems&q=…`) and the confirmation, `deviceLog.ts` the Device Log itself, `deviceLogWording.ts` every word of it, and `DeviceLogBar`, `DeviceLogEntries`, `DeviceLogEntryRow`, `DeviceLogFoot` and `DeviceLogLoading` draw.
+
+- **It is the one list that is not whole and not `fresh`.** `useDeviceLog(deviceId, filter)` loads the first 50 with `useLoad`, keyed by the Device, the filter and the search, appends older pages by `nextCursor`, and counts what arrived since with `listDeviceLogs(id, { after: newestCursor, limit: 0 })` every 30 seconds and on focus (`usePolling`). New entries join the list only when asked for, except into an empty Device Log.
+- An answer that lands after the filter, the search or the first page has changed is dropped: copy the `firstPages` counter for any read made beside a `useLoad`.
+- The search field holds what is typed; the address holds what is searched for, 300 ms after typing stops and from `DEVICE_LOG_SEARCH_MIN_LENGTH` characters on.
+- `RETENTION_PATH` (`pages/instance/instancePaths.ts`) is where the Retention ages are set; the age itself is `getInstanceSettings()`'s `deviceLogRetentionDays.value`, where 0 is Retention not pruning.
+
 ## The Instance frame
 
 Every Instance page is a child route of `/instance`, whose component is `pages/instance/InstanceFrame.vue`. The frame renders the title line "Instance", the page list at the left (a row of tabs that scrolls sideways on a phone, running from one edge of the window to the other), the chosen page beside it, and under the list Appearance and "Kuroshiro {version}", which move to the foot of the page on a phone. `/instance` redirects to `/instance/settings`. It loads nothing: an Instance page reads what it shows itself. A page that shows Instance facts beside a load of its own joins the two into one `Load` for `LoadBody`, so that either one's failure is the page's notice (`InstanceSettingsPage.vue`).
@@ -162,7 +171,7 @@ A boolean Setting (Firmware Auto-Update) is a `SettingRow` with a `Switch` and `
 - The mark that says "this leads on" is an inline `svg` drawn pointing right. Do not turn the chevron icon with `rotate`: a rotated mark makes the baselines flaky.
 - A list has no empty state of its own when its spec sends "none" elsewhere (the Devices list redirects); otherwise the `EmptyState` goes in the default slot.
 - A line of facts joined by " · " writes the separators into the template (`v-for` with `index > 0`), not into CSS `content`, so a spec and a screen reader read them.
-- A firing Alert in a row is the only red: the label with its square, as `FactRows` draws it. `devicesListRow.ts` words the two Device Alerts ("Alert: offline", "Alert: battery low").
+- A firing Alert in a row is the only red: the label with its square, as `FactRows` draws it. `devicesListRow.ts` words the two Device Alerts ("Alert: offline", "Alert: battery low") from `FIRING_ALERT_LABELS`.
 - What a Device shows comes from `currentScreenStory`, which takes a `DeviceSummary` (pass `screens: []` when the Screens are not loaded): its `heading` names the plate (`On {Device}: {heading}`) and `whatItShows(story)` words the line.
 
 ## Waiting for something to happen
@@ -301,6 +310,20 @@ So a section's test is "edit, press Save Plugin, assert `faked.saves`". `__test_
 
 - The arrival line is taken once per page (`takePluginArrival` in `PluginFrame`), so a spec reaches it by mounting the app elsewhere and calling `openPluginPage(screen.router, id, arrival)`.
 
+## The Alerts page and an Alert's words
+
+`pages/alerts/` holds the Alerts page (`/alerts`) and the words every surface uses for an Alert:
+
+| File | Holds |
+| --- | --- |
+| `alertLabels.ts` | `FIRING_ALERT_LABELS` ("Alert: battery low") and `RESOLVED_ALERT_LABELS` ("Battery low"), by Alert kind. A Device's facts and a Plugin's row state read the firing ones from here |
+| `alertWording.ts` | `alertWhy(alert, { now, lowBatteryPercent })`, the sentence that says why an Alert fires or, once it has `resolvedAt`, why it fired, from the `details` the server keeps; `alertSubject(alert)`, the name and the link of its Device or of its Plugin's Data Source; `sinceWhen`, `firedFor` and `duration` |
+| `AlertRow.vue` | One Alert as a row of four cells, red only while it fires |
+
+- The page reads the shared `useAlerts()`, which already holds the firing Alerts and those resolved in the last 7 days, capped at 50. It fetches nothing of its own but the Instance Settings, for the thresholds.
+- An Alert's `details` are the cause as of the last Alert Sweep while it fired. An Alert that resolved before the server kept the cause may hold details of its recovery, or none: `alertWhy` answers an empty sentence for those.
+- `ALERT_RULES_PATH` and `NOTIFICATIONS_PATH` (`pages/instance/instancePaths.ts`) are the two sections of Instance Settings other pages link to.
+
 ## Loading what a page shows
 
 ```ts
@@ -365,7 +388,7 @@ export function updateDevice(deviceId: string, input: UpdateDeviceInput) {
 }
 ```
 
-`src/api/devices.ts` has `listDevices`, `getDevice`, `createDevice` (refused with `device-mac-taken`) and `updateDevice`. `src/api/instance.ts` has `getInstanceFacts`, `getInstanceSettings` and `updateInstanceSettings`; `src/api/alerts.ts` has `listAlerts` and `sendTestNotification` (refused with `notifications-off` or `notification-failed`). `src/api/screens.ts` has `listScreens`, `reorderScreens`, `updateScreen`, `previewScreenImage`, `replaceScreenImage`, `refreshScreen`, `deleteScreen`, `updateMashup` (by the Screen's id) and `unassignPlugin`.
+`src/api/devices.ts` has `listDevices`, `getDevice`, `createDevice` (refused with `device-mac-taken`), `updateDevice`, `listDeviceLogs` and `clearDeviceLogs`. `src/api/instance.ts` has `getInstanceFacts`, `getInstanceSettings` and `updateInstanceSettings`; `src/api/alerts.ts` has `listAlerts` and `sendTestNotification` (refused with `notifications-off` or `notification-failed`). `src/api/screens.ts` has `listScreens`, `reorderScreens`, `updateScreen`, `previewScreenImage`, `replaceScreenImage`, `refreshScreen`, `deleteScreen`, `updateMashup` (by the Screen's id) and `unassignPlugin`.
 
 - `apiGet<T>(path, query?)` and `apiSend<T>(method, path, body?)` from `@/api/client`. The path has no leading slash and no `api/`. `body` is a shared `…Input` type, sent as JSON, or a `FormData` for an upload. A 204 answers `undefined`.
 - Types come from `kuroshiro-shared`. Send only what the `…Input` type declares: the server refuses undeclared keys, so a read model sent back as a write is refused.

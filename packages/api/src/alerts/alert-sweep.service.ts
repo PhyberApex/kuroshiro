@@ -1,4 +1,5 @@
 import type { OnApplicationBootstrap } from '@nestjs/common'
+import type { AlertDetails } from 'kuroshiro-shared'
 import type { Repository } from 'typeorm'
 import type { AlertRule, AlertRuleContext, SweepSubjects } from './rules/alert-rule.js'
 import { Injectable, Logger } from '@nestjs/common'
@@ -99,38 +100,38 @@ export class AlertSweepService implements OnApplicationBootstrap {
       if (existing)
         await this.retryOpenedNotification(rule, subject, existing, evaluation.details)
       else
-        await this.openAlert(rule, subject, evaluation.details ?? {})
+        await this.openAlert(rule, subject, evaluation.details)
     }
     else if (existing) {
-      await this.resolveAlert(rule, subject, existing, evaluation.details ?? {})
+      await this.resolveAlert(rule, subject, existing)
     }
   }
 
-  private async openAlert(rule: AlertRule, subject: unknown, details: Record<string, unknown>): Promise<void> {
+  private async openAlert(rule: AlertRule, subject: unknown, details: AlertDetails | undefined): Promise<void> {
     const now = new Date()
-    const alert = await this.alertRepository.save(this.alertRepository.create({ kind: rule.kind, ...rule.toAlertSubject(subject), openedAt: now, details }))
-    const sent = await this.sender.send(rule.openedNotification(subject, details))
+    const alert = await this.alertRepository.save(this.alertRepository.create({ kind: rule.kind, ...rule.toAlertSubject(subject), openedAt: now, details: details ?? null }))
+    const sent = await this.sender.send(rule.openedNotification(subject))
     if (sent)
       await this.alertRepository.update(alert.id, { notifiedAt: now })
   }
 
-  private async retryOpenedNotification(rule: AlertRule, subject: unknown, alert: Alert, details?: Record<string, unknown>): Promise<void> {
+  private async retryOpenedNotification(rule: AlertRule, subject: unknown, alert: Alert, details?: AlertDetails): Promise<void> {
     if (details) {
-      // TypeORM's QueryDeepPartialEntity can't distribute over Record<string,
-      // unknown> against a union-typed value — see webhook-ingest.service.ts.
+      // TypeORM's QueryDeepPartialEntity can't distribute over a union-typed value — see webhook-ingest.service.ts.
       await this.alertRepository.update(alert.id, { details } as Parameters<typeof this.alertRepository.update>[1])
     }
     if (alert.notifiedAt)
       return
-    const sent = await this.sender.send(rule.openedNotification(subject, details ?? alert.details ?? {}))
+    const sent = await this.sender.send(rule.openedNotification(subject))
     if (sent)
       await this.alertRepository.update(alert.id, { notifiedAt: new Date() })
   }
 
-  private async resolveAlert(rule: AlertRule, subject: unknown, alert: Alert, details: Record<string, unknown>): Promise<void> {
+  /** Leaves `details` alone: a resolved Alert keeps the cause it last fired with. */
+  private async resolveAlert(rule: AlertRule, subject: unknown, alert: Alert): Promise<void> {
     const now = new Date()
-    await this.alertRepository.update(alert.id, { resolvedAt: now, details } as Parameters<typeof this.alertRepository.update>[1])
-    const sent = await this.sender.send(rule.resolvedNotification(subject, details))
+    await this.alertRepository.update(alert.id, { resolvedAt: now })
+    const sent = await this.sender.send(rule.resolvedNotification(subject))
     if (sent)
       await this.alertRepository.update(alert.id, { resolutionNotifiedAt: now })
   }
@@ -148,7 +149,7 @@ export class AlertSweepService implements OnApplicationBootstrap {
       const subject = rule.subjectFromAlert(alert)
       if (subject === undefined)
         continue
-      const sent = await this.sender.send(rule.resolvedNotification(subject, alert.details ?? {}))
+      const sent = await this.sender.send(rule.resolvedNotification(subject))
       if (sent)
         await this.alertRepository.update(alert.id, { resolutionNotifiedAt: new Date() })
     }

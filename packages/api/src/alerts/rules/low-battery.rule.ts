@@ -17,23 +17,25 @@ export const lowBatteryRule: AlertRule = {
       return { skip: true, active: hasActiveAlert }
 
     const threshold = hasActiveAlert ? context.lowBatteryPercent + RESOLVE_HYSTERESIS_PERCENT : context.lowBatteryPercent
-    return { active: percent < threshold, details: { percent } }
+    const active = percent < threshold
+    return active ? { active, details: { percent } } : { active }
   },
 
-  openedNotification(subject, details) {
+  openedNotification(subject) {
     const device = subject as Device
     return {
       title: `Kuroshiro: ${device.name} battery low`,
-      body: `${device.name} (${device.mac}) is at ${details.percent}%.`,
+      body: `${device.name} (${device.mac}) is at ${batteryPercentFromVoltage(device.batteryVoltage)}%.`,
       type: 'warning',
     }
   },
 
-  resolvedNotification(subject, details) {
+  resolvedNotification(subject) {
     const device = subject as Device
+    const percent = batteryPercentFromVoltage(device.batteryVoltage)
     return {
       title: `Kuroshiro: ${device.name} battery recovered`,
-      body: `${device.name} (${device.mac}) is at ${details.percent}%.`,
+      body: percent === undefined ? `${device.name} (${device.mac}) is no longer low on battery.` : `${device.name} (${device.mac}) is at ${percent}%.`,
       type: 'success',
     }
   },

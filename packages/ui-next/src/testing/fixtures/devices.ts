@@ -1,4 +1,4 @@
-import type { DeviceDetail, DeviceSummary } from 'kuroshiro-shared'
+import type { DeviceDetail, DeviceLogEntry, DeviceLogPage, DeviceSummary } from 'kuroshiro-shared'
 import { defineBuilder } from './defineBuilder'
 
 export const buildDeviceSummary = defineBuilder<DeviceSummary>(() => ({
@@ -40,3 +40,26 @@ export const buildDeviceDetail = defineBuilder<DeviceDetail>(() => ({
   sensors: [],
   screenCount: 1,
 }))
+
+export const buildDeviceLogEntry = defineBuilder<DeviceLogEntry>(() => ({
+  id: '8a1f0c52-6f0e-4b3a-9c1d-2e7b5a4d3c10',
+  at: '2026-10-03T07:31:10.000Z',
+  level: 'info',
+  message: 'display poll, served Calendar (Order 2)',
+  source: { file: 'src/bl_main.cpp', line: 412 },
+  status: { wifiRssi: -61, wifiStatus: 'connected', batteryVoltage: 3.42, freeHeapSize: 141000, wakeReason: 'timer' },
+  firmwareVersion: '1.7.8',
+  extras: {},
+}))
+
+/** One page of a Device Log. Left out, the counts are those of a Device Log that holds `entries` and nothing more. */
+export function buildDeviceLogPage({ entries = [buildDeviceLogEntry()], ...overrides }: Partial<DeviceLogPage> = {}): DeviceLogPage {
+  return {
+    entries,
+    total: entries.length,
+    matching: entries.length,
+    nextCursor: null,
+    newestCursor: entries[0] ? `cursor-${entries[0].id}` : null,
+    ...overrides,
+  }
+}

@@ -34,11 +34,14 @@ describe('dataSourceFetchFailingRule', () => {
     expect(dataSourceFetchFailingRule.evaluate(source, context, false).active).toBe(false)
   })
 
-  it('resolves a stale active alert once its source is switched to literal mode, without blanking its details', () => {
+  it('resolves a stale active alert once its source is switched to literal mode', () => {
     const source = makePluginDataSource({ mode: 'literal', fetchFailureStreak: 0 })
-    const evaluation = dataSourceFetchFailingRule.evaluate(source, context, true)
-    expect(evaluation.active).toBe(false)
-    expect(evaluation.details).toEqual({ streak: 0, lastError: null })
+    expect(dataSourceFetchFailingRule.evaluate(source, context, true)).toEqual({ active: false })
+  })
+
+  it('carries no details once the streak is gone: the Alert keeps the cause it fired with', () => {
+    const source = makePluginDataSource({ fetchFailureStreak: 0 })
+    expect(dataSourceFetchFailingRule.evaluate(source, context, true)).toEqual({ active: false })
   })
 
   it('carries the streak and last error in details', () => {
@@ -51,10 +54,11 @@ describe('dataSourceFetchFailingRule', () => {
       name: 'Weather API',
       url: 'https://api.example.com/weather?key=super-secret',
       plugin: { id: 'plugin-1', name: 'Weather Dashboard' } as never,
+      fetchFailureStreak: 3,
+      lastFetchError: 'HTTP error! status: 500',
     })
-    const details = { streak: 3, lastError: 'HTTP error! status: 500' }
 
-    const opened = dataSourceFetchFailingRule.openedNotification(source, details)
+    const opened = dataSourceFetchFailingRule.openedNotification(source)
     expect(opened).toEqual({
       title: 'Kuroshiro: Weather Dashboard / Weather API fetch failing',
       body: '3 consecutive failed scheduled fetches. Last error: HTTP error! status: 500.',
@@ -63,7 +67,7 @@ describe('dataSourceFetchFailingRule', () => {
     expect(opened.title).not.toContain('example.com')
     expect(opened.body).not.toContain('example.com')
 
-    const resolved = dataSourceFetchFailingRule.resolvedNotification(source, details)
+    const resolved = dataSourceFetchFailingRule.resolvedNotification(source)
     expect(resolved).toEqual({
       title: 'Kuroshiro: Weather Dashboard / Weather API fetch recovered',
       body: 'The last scheduled fetch for Weather Dashboard / Weather API succeeded.',
