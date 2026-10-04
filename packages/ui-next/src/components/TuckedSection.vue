@@ -6,6 +6,8 @@ import { useUrlFragment } from './urlFragment'
 
 const props = withDefaults(defineProps<{
   title: string
+  /** What stands beside the title, softer: "14 names, fetched 4 min ago". It is part of what the trigger is called. */
+  note?: string
   /** The anchor of the section. An address that ends in `#` and this id opens it. */
   id?: string
   /** The heading the title is, by where the section sits in the page's outline. */
@@ -31,7 +33,13 @@ watch(fragment, (named) => {
     <component :is="heading" class="heading">
       <CollapsibleTrigger as-child>
         <button type="button" class="trigger" :data-force="force">
-          <span class="title">{{ title }}</span>
+          <span class="said">
+            <span class="title">{{ title }}</span>
+            <template v-if="note">
+              {{ ' ' }}
+              <span class="note">{{ note }}</span>
+            </template>
+          </span>
           <Icon name="chevron" class="chevron" />
         </button>
       </CollapsibleTrigger>
@@ -71,7 +79,23 @@ watch(fragment, (named) => {
     font-weight: var(--weight-semibold);
   }
 
+  .said {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 var(--space-3);
+    min-width: 0;
+    text-align: left;
+  }
+
+  .note {
+    color: var(--color-ink-soft);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-regular);
+  }
+
   .chevron {
+    flex: none;
     color: var(--color-ink-soft);
     transition:
       rotate var(--duration-move) var(--ease-out),

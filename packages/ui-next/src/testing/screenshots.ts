@@ -23,6 +23,25 @@ export async function expectScreenshot(target: Locator, name: string) {
   }
 }
 
+/**
+ * Compares what the window shows with its baseline, at the size the window has: for a view that fills the window and
+ * scrolls inside itself, which growing the viewport to the document's height would stretch.
+ */
+export async function expectWindowScreenshot(name: string) {
+  await document.fonts.ready
+  // A shot of an element is the page clipped to its box, so a transparent element over the whole window shoots exactly
+  // what the window shows; the body may reach below it, where nothing is painted.
+  const wholeWindow = document.createElement('div')
+  wholeWindow.style.cssText = 'position: fixed; inset: 0; pointer-events: none; z-index: 2147483647'
+  document.body.append(wholeWindow)
+  try {
+    await expect.element(page.elementLocator(wholeWindow)).toMatchScreenshot(name)
+  }
+  finally {
+    wholeWindow.remove()
+  }
+}
+
 const VIEWPORT_NAMES = Object.keys(VIEWPORTS) as ViewportName[]
 
 /** Takes the four shots of the mounted page: phone and desktop width, each in light and dark. */

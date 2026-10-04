@@ -191,7 +191,7 @@ describe('the Data Sources of a Plugin', () => {
       const screen = await mountPlugin()
 
       await expect.element(nameOf(screen, 'forecast')).toBeVisible()
-      expect(screen.getByRole('heading', { level: 3 }).elements().map(read)).toEqual(['forecast', 'air', 'tides', 'trains', 'pollen', 'holidays'])
+      expect([...document.querySelectorAll('#data h3')].map(read)).toEqual(['forecast', 'air', 'tides', 'trains', 'pollen', 'holidays'])
       expect(whatOf(screen, 'forecast')).toBe('GET api.open-meteo.com/v1/forecast?latitude={{ latitude }}&longitude={{ longitude }}')
       expect(whatOf(screen, 'air')).toBe('POST air.test/now')
       expect(whatOf(screen, 'holidays')).toBe('literal · a fixed value')
@@ -335,7 +335,7 @@ describe('the Data Sources of a Plugin', () => {
           { name: 'tides', mode: 'fetch', method: 'GET', url: 'https://tides.test/v2/station/4411', headers: {}, transformJs: null },
         ],
       }])
-      await expect.poll(() => screen.getByRole('heading', { level: 3 }).elements().map(read)).toEqual(['forecast', 'holidays', 'tides'])
+      await expect.poll(() => [...document.querySelectorAll('#data h3')].map(read)).toEqual(['forecast', 'holidays', 'tides'])
       await expect.poll(() => saveBar(screen).getByRole('button', { name: 'Save Plugin' }).elements()).toEqual([])
     })
 
@@ -393,7 +393,7 @@ describe('the Data Sources of a Plugin', () => {
 
       await opened(screen, 'source').getByRole('button', { name: 'Remove Data Source' }).click()
 
-      await expect.poll(() => screen.getByRole('heading', { level: 3 }).elements().map(read)).toEqual(['forecast'])
+      await expect.poll(() => [...document.querySelectorAll('#data h3')].map(read)).toEqual(['forecast'])
       await expect.poll(() => saveBar(screen).getByRole('button', { name: 'Save Plugin' }).elements()).toEqual([])
     })
 

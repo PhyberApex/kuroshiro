@@ -11,6 +11,7 @@ import { changedSentence, createPluginForm, lostSentence, thingsToFix } from './
 import PluginOnceLines from './PluginOnceLines.vue'
 import { fieldId, providePluginPage } from './pluginPage'
 import { arrivalLine, pluginFacts, pluginProblems, savedLine } from './pluginPageWording'
+import { TEMPLATE_WINDOW_FOOT, useTemplateWindow } from './templateWindow'
 
 /** The Plugin page once its Plugin is there: what it says about the Plugin, the sections and the one form they join. */
 const props = defineProps<{
@@ -34,6 +35,8 @@ const form = createPluginForm(props.plugin, input => updatePlugin(props.plugin.i
 watch(() => props.plugin, fresh => form.refresh(fresh))
 
 const leaving = useTemplateRef('leaving')
+
+const templateWindow = useTemplateWindow()
 
 const savedAt = ref<Date>()
 
@@ -62,6 +65,9 @@ async function showFirst() {
   const path = await form.showFirst()
   if (!path)
     return
+  // In the Template section's full window only that section can be reached: a field of another one is on the page.
+  if (templateWindow.open.value && !path.startsWith('templates.'))
+    await templateWindow.leave()
   await nextTick()
   const control = document.getElementById(fieldId(path))
   control?.scrollIntoView({ block: 'center' })
@@ -77,20 +83,23 @@ async function showFirst() {
   <div class="tucked">
     <slot name="tucked" :plugin="plugin" />
   </div>
-  <SaveBar
-    :changed="form.changed"
-    save-label="Save Plugin"
-    cancel-label="Discard changes"
-    :saving="form.saving"
-    :invalid="form.problems.length > 0 ? thingsToFix(form.problems.length) : undefined"
-    :failed="form.failure !== undefined"
-    :reason="form.failure"
-    @save="save"
-    @cancel="form.discard"
-    @show-first="showFirst"
-  >
-    {{ changedSentence(form.changedKeys, { previewed: form.previewed }) }}
-  </SaveBar>
+  <!-- In the Template section's full window the bar stands at the foot of the window, which that section renders. -->
+  <Teleport defer :to="`#${TEMPLATE_WINDOW_FOOT}`" :disabled="!templateWindow.open.value">
+    <SaveBar
+      :changed="form.changed"
+      save-label="Save Plugin"
+      cancel-label="Discard changes"
+      :saving="form.saving"
+      :invalid="form.problems.length > 0 ? thingsToFix(form.problems.length) : undefined"
+      :failed="form.failure !== undefined"
+      :reason="form.failure"
+      @save="save"
+      @cancel="form.discard"
+      @show-first="showFirst"
+    >
+      {{ changedSentence(form.changedKeys, { previewed: form.previewed }) }}
+    </SaveBar>
+  </Teleport>
   <UnsavedChanges ref="leaving" :when="form.changed">
     <template #lost>
       {{ lostSentence(plugin.name, form.changedKeys) }}
