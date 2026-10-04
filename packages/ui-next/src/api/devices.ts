@@ -1,4 +1,4 @@
-import type { CreateDeviceInput, DeviceDetail, DeviceSummary, UpdateDeviceInput } from 'kuroshiro-shared'
+import type { CreateDeviceInput, DeviceDetail, DeviceLogPage, DeviceLogsQuery, DeviceSummary, UpdateDeviceInput } from 'kuroshiro-shared'
 import { apiGet, apiSend } from './client'
 
 const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
@@ -19,4 +19,14 @@ export function createDevice(input: CreateDeviceInput) {
 
 export function updateDevice(deviceId: string, input: UpdateDeviceInput) {
   return apiSend<DeviceDetail>('PATCH', `devices/${deviceId}`, input)
+}
+
+/** One page of a Device Log, newest first. `after` with `limit: 0` answers only the counts of what arrived since. */
+export function listDeviceLogs(deviceId: string, query: DeviceLogsQuery = {}) {
+  return apiGet<DeviceLogPage>(`devices/${deviceId}/logs`, { ...query })
+}
+
+/** Clears the whole Device Log. */
+export function clearDeviceLogs(deviceId: string) {
+  return apiSend('DELETE', `devices/${deviceId}/logs`)
 }
