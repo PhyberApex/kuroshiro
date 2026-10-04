@@ -10,7 +10,7 @@ What every screen of `packages/ui-next` stands on: the shell, the router, the AP
 | `reads/` | `sharedReads.ts`: the reads made once for the whole app |
 | `router/` | `routes.ts` (every route) and `index.ts` (`createAppRouter`, the scroll behaviour) |
 | `shell/` | The bar, the phone's bottom tabs, the demo line, the page column |
-| `patterns/` | The shared page patterns: `TitleLine`, `LoadBody`, `LoadingLine`, `WashBar`, `MissingPage`, `RelativeTime`, `UnsavedChanges`, `useLoad`, `usePolling`, `useNow`, `usePageTitle`, `useNarrowWindow`, `time.ts` |
+| `patterns/` | The shared page patterns: `TitleLine`, `LoadBody`, `LoadingLine`, `WashBar`, `MissingPage`, `RelativeTime`, `UnsavedChanges`, `PageSection`, `ReadRow`, `useLoad`, `usePolling`, `useNow`, `usePageTitle`, `useNarrowWindow`, `time.ts` |
 | `pages/` | One component per route, `<Name>Page.vue`, in a folder per surface (`pages/devices/`, `pages/plugins/`, `pages/instance/`). The three pages at its top are the shell's own: the landing route, the unknown route and "not built yet" |
 | `components/` | The primitives |
 
@@ -107,6 +107,16 @@ const { device, listed, name, path } = useDeviceFrame() // from '@/pages/devices
 - The search field holds what is typed; the address holds what is searched for, 300 ms after typing stops and from `DEVICE_LOG_SEARCH_MIN_LENGTH` characters on.
 - `RETENTION_PATH` (`pages/instance/instancePaths.ts`) is where the Retention ages are set; the age itself is `getInstanceSettings()`'s `deviceLogRetentionDays.value`, where 0 is Retention not pruning.
 
+### The Settings page
+
+`DeviceSettingsPage.vue` is the Settings tab: the Device from the frame joined with one read of its own (the Device Models, the Palettes, the Firmware library and whether Firmware Auto-Update is on), and one component per section, each a `PageSection` with `rows` or a `TuckedSection`. `SETTINGS_SECTIONS` (`deviceSettings.ts`) holds the fragment each answers to: `#display`, `#sleep-mode`, `#firmware`, `#mirroring`, `#identity`, `#special-functions`, `#reset`.
+
+- **A row that saves as changed** is `useDeviceSetting(saved, toInput)` (`deviceSetting.ts`): `entered` is what the control holds and follows `saved`, the value on the Device, except while its own save is under way or has failed; `commit()` sends what `toInput(entered)` answers and nothing when that is `undefined` (unchanged, or not valid). Its `status`, `reason` and `retry` go to the `SettingRow`.
+- **A write without a value** ("Update now", "Trigger") is `useDeviceWrite()`: `send(input)` with the same state. Both send only the fields they are given, read the Device again once the server has them, and the Devices too after a rename.
+- `deviceSettings.ts` holds the pure rules, with a node spec: the refresh rate in a number and a unit, Sleep Mode's hours as seconds of day (`secondsOfDay`, the one place), which Device Models, Palettes and Firmware a select offers, and what the three Mirroring rows send (`mirroringInput`).
+- `__test__/deviceSettingsHarness.ts` fakes it all for a spec: `fakeKitchenSettings({ device, models, palettes, firmware, settings })` answers the reads and changes the Device on every write as the server would, keeping each body in `writes`; `mountSettings(fragment?)`, `rowOf`, `noteOf`, `sideOf`, `stateOf`, `choose` and `offeredBy` read and drive the rows.
+- `src/api/device-models.ts` has `listDeviceModels` and `listPalettes`, `src/api/firmware.ts` has `listFirmware`; their fixture builders are `buildDeviceModel`, `buildPalette` and `buildFirmware`.
+
 ## The Instance frame
 
 Every Instance page is a child route of `/instance`, whose component is `pages/instance/InstanceFrame.vue`. The frame renders the title line "Instance", the page list at the left (a row of tabs that scrolls sideways on a phone, running from one edge of the window to the other), the chosen page beside it, and under the list Appearance and "Kuroshiro {version}", which move to the foot of the page on a phone. `/instance` redirects to `/instance/settings`. It loads nothing: an Instance page reads what it shows itself. A page that shows Instance facts beside a load of its own joins the two into one `Load` for `LoadBody`, so that either one's failure is the page's notice (`InstanceSettingsPage.vue`).
@@ -142,12 +152,12 @@ A page under the frame renders only its body, as a list of roots:
 | --- | --- |
 | `InstancePageHeading` | The page's heading line: its name as an `h2` at `title-sm` on the 2 px ink rule, the `#actions` slot at its right. It does not rename the browser tab, which reads "Instance" |
 | `InstanceSection` | A section of a page: `title` as an `h3` at `text-lg`, weight 600, on a 1 px rule, the `#aside` slot at its right (a link, a button, a fact), and `id`, which is what a fragment names (`/instance/settings#retention`). It sets `--space-10` above itself; the first one under a lede takes `--space-8` |
-| `InstanceReadRow` | A row that is read and not edited, or that holds the button of an action: `label`, the default slot, `#side` at the right and `#note` under it. It shares the Setting row's grid |
+| `ReadRow` (`@/patterns/`) | A row that is read and not edited, or that holds the button of an action: `label`, the default slot, `#side` at the right and `#note` under it. It shares the Setting row's grid, and Device Settings uses it too |
 | `InstanceSettingRow` | One numeric Instance Setting (see below) |
 | `instancePaths.ts` | `instancePagePath('firmware')` and the paths other pages link to |
 | `@/shell/appearance.ts` | Not in this folder, because it holds for the whole app: `useAppearance()` and `applyStoredAppearance()`, which `main.ts` calls before the app mounts. The choice is `data-theme` on the root and `kuroshiro:appearance` in `localStorage`; "system" removes the attribute |
 
-- The frame sets `--setting-label-width` to 11 rem, which `SettingRow` and `InstanceReadRow` read: the page beside the list is narrower than a whole column.
+- The frame sets `--setting-label-width` to 11 rem, which `SettingRow` and `ReadRow` read: the page beside the list is narrower than a whole column.
 - `useNarrowWindow()` (`@/patterns/`) says whether the window is below 820 px. It is for what CSS cannot do: the frame uses it to render Appearance and the version at one place in the page's order, not two.
 - A spec of an Instance page clears `localStorage`'s `kuroshiro:appearance` if it chooses a side (`InstanceFrame.spec.ts`).
 
@@ -216,7 +226,7 @@ A write that adds a record and then leaves the page navigates first and reloads 
 | `pluginForm.ts` | The one form, as a plain module with a node spec: `createPluginForm`, `PluginFormPart`, and the save bar's wording |
 | `pluginPage.ts` | `usePluginPage()`, `usePluginFormPart(part, reveal?)` and `fieldId(path)` |
 | `pluginPageWording.ts` | The facts line, the four problem lines, the arrival lines, "Saved at {hh:mm}", the paragraph over duplicate, export and delete |
-| `PluginSection.vue` | A section's frame: `<PluginSection id="data" title="Data Sources">` is the `h2` on the 2 px rule with the `#actions` slot at its right, answering to `#data` |
+| `@/patterns/PageSection.vue` | A section's frame, shared with Device Settings: `<PageSection id="data" title="Data Sources">` is the `h2` on the 2 px rule with the `#actions` slot at its right, answering to `#data`. `rows` is for a section of Setting rows, which start at the heading's rule and end on one of their own, with `#under` for what is said about the whole section |
 | `pluginNaming.ts`, `PluginNaming.vue` | "Name and description": the worked example of a section that joins the form |
 | `PluginActions.vue` | "Duplicate, export or delete {Plugin}": the worked example of a section that acts at once |
 
@@ -235,7 +245,7 @@ A write that adds a record and then leaves the page navigates first and reloads 
 </PluginFrame>
 ```
 
-A section's root is a `PluginSection` (or a `TuckedSection` in `#tucked`) with the `id` its fragment names. It renders only its body: no title line, no loading state, no save button.
+A section's root is a `PageSection` (or a `TuckedSection` in `#tucked`) with the `id` its fragment names. It renders only its body: no title line, no loading state, no save button.
 
 **What a section is handed**: `const { plugin, form, reload, leaveFor } = usePluginPage()`.
 
@@ -424,7 +434,7 @@ export function updateDevice(deviceId: string, input: UpdateDeviceInput) {
 }
 ```
 
-`src/api/devices.ts` has `listDevices`, `getDevice`, `createDevice` (refused with `device-mac-taken`), `updateDevice`, `listDeviceLogs` and `clearDeviceLogs`. `src/api/instance.ts` has `getInstanceFacts`, `getInstanceSettings` and `updateInstanceSettings`; `src/api/alerts.ts` has `listAlerts` and `sendTestNotification` (refused with `notifications-off` or `notification-failed`). `src/api/screens.ts` has `listScreens`, `reorderScreens`, `updateScreen`, `previewScreenImage`, `replaceScreenImage`, `refreshScreen`, `deleteScreen`, `updateMashup` (by the Screen's id), `unassignPlugin`, and `createSchedule`, `updateSchedule` and `removeSchedule`, which answer the owning Screen.
+`src/api/devices.ts` has `listDevices`, `getDevice`, `createDevice` (refused with `device-mac-taken`), `updateDevice`, `deleteDevice`, `listDeviceLogs` and `clearDeviceLogs`. `src/api/instance.ts` has `getInstanceFacts`, `getInstanceSettings` and `updateInstanceSettings`; `src/api/alerts.ts` has `listAlerts` and `sendTestNotification` (refused with `notifications-off` or `notification-failed`). `src/api/screens.ts` has `listScreens`, `reorderScreens`, `updateScreen`, `previewScreenImage`, `replaceScreenImage`, `refreshScreen`, `deleteScreen`, `updateMashup` (by the Screen's id), `unassignPlugin`, and `createSchedule`, `updateSchedule` and `removeSchedule`, which answer the owning Screen.
 
 - `apiGet<T>(path, query?)` and `apiSend<T>(method, path, body?)` from `@/api/client`. The path has no leading slash and no `api/`. `body` is a shared `…Input` type, sent as JSON, or a `FormData` for an upload. A 204 answers `undefined`.
 - Types come from `kuroshiro-shared`. Send only what the `…Input` type declares: the server refuses undeclared keys, so a read model sent back as a write is refused.

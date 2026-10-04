@@ -52,7 +52,7 @@ export const routes: RouteRecordRaw[] = [
       { path: '', component: () => import('@/pages/devices/DeviceScreensPage.vue') },
       notBuiltYetUnderDevice('screens/new'),
       notBuiltYetUnderDevice('screens/:screenId/html'),
-      notBuiltYetUnderDevice('settings'),
+      { path: 'settings', component: () => import('@/pages/devices/DeviceSettingsPage.vue') },
       { path: 'logs', component: () => import('@/pages/devices/DeviceLogsPage.vue') },
     ],
   },
