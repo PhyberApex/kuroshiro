@@ -39,21 +39,12 @@ describe('the Instance frame', () => {
     await expect.element(screen.getByRole('banner').getByRole('link', { name: 'Instance' })).toHaveAttribute('aria-current', 'page')
   })
 
-  it('lists the Instance pages that are built, the open one current', async () => {
+  it('lists the Instance pages in the spec\'s order, the open one current', async () => {
     const screen = await mountInstance()
     const pages = screen.getByRole('navigation', { name: 'Instance' })
 
-    expect(pages.getByRole('link').elements().map(link => link.textContent?.trim())).toEqual(['Instance Settings', 'Firmware', 'Device Models and Palettes', 'Configuration Archive', 'Housekeeping'])
+    expect(pages.getByRole('link').elements().map(link => link.textContent?.trim())).toEqual(['Instance Settings', 'Firmware', 'Device Models and Palettes', 'Configuration Archive', 'Housekeeping', 'Device Simulator'])
     await expect.element(pages.getByRole('link', { name: 'Instance Settings' })).toHaveAttribute('aria-current', 'page')
-  })
-
-  it('keeps "Instance" current in the bar and the frame around a page that is not built yet', async () => {
-    const screen = await mountInstance('/instance/simulator')
-
-    await expect.element(screen.getByRole('heading', { level: 2, name: 'Device Simulator' })).toBeVisible()
-    await expect.element(screen.getByText('Not built yet')).toBeVisible()
-    await expect.element(screen.getByRole('banner').getByRole('link', { name: 'Instance' })).toHaveAttribute('aria-current', 'page')
-    await expect.element(screen.getByRole('navigation', { name: 'Instance' })).toBeVisible()
   })
 
   it('shows the version the Instance facts carry under the list', async () => {
@@ -114,7 +105,7 @@ describe('the Instance frame', () => {
   })
 
   it('is accessible and does not overflow', async () => {
-    await mountInstance('/instance/simulator')
+    await mountInstance()
 
     await expectAccessible()
     await expectNoHorizontalOverflow()
