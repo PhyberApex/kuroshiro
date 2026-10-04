@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { DeviceDetail, ScreenRead } from 'kuroshiro-shared'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { imageUrl } from '@/api/client'
 import { reorderScreens } from '@/api/screens'
@@ -12,10 +12,14 @@ import ScreenRow from '@/components/ScreenRow.vue'
 import { isPassedOver, movedBy, SCREEN_KIND_LABELS } from '@/components/screenRows'
 import ScreenRows from '@/components/ScreenRows.vue'
 import { useSaveAsChanged } from '@/components/useSaveAsChanged'
+import { useDeviceFrame } from './deviceFrame'
 import { addScreenPath, deviceSettingsPath } from './devicePaths'
 import OpenedScreen from './OpenedScreen.vue'
 import ScheduleSummary from './ScheduleSummary.vue'
 import { possessive, screenName } from './screenNaming'
+import ScreenRemoval from './ScreenRemoval.vue'
+import ScreenRename from './ScreenRename.vue'
+import ScreenSource from './ScreenSource.vue'
 import { screenStateWords } from './screenWording'
 import { linkTo, sentence } from './sentence'
 import SentenceLine from './SentenceLine.vue'
@@ -49,6 +53,7 @@ const isMany = computed(() => props.screens.length >= MANY_SCREENS)
 const rows = computed(() => inEnteredOrder(props.screens, entered.value).map(screen => ({
   ...screen,
   name: screenName(screen.name),
+  savedName: screen.name,
   stateWords: screenStateWords(screen, props.device),
 })))
 
@@ -81,6 +86,37 @@ const open = computed({
   set: id => void router.replace({ query: { ...route.query, screen: id || undefined } }),
 })
 
+/** The Screen whose name is being edited in its row. */
+const renaming = ref<string>()
+
+watch(open, () => {
+  renaming.value = undefined
+})
+
+function setRenaming(screenId: string, isRenaming: boolean) {
+  renaming.value = isRenaming ? screenId : undefined
+}
+
+/** The Screens changed since their image was rendered, each with when that image was rendered. */
+const outdatedImages = ref<Record<string, string | null>>({})
+
+function awaitRendering(screen: ScreenRead) {
+  outdatedImages.value = { ...outdatedImages.value, [screen.id]: screen.renderedAt }
+}
+
+const isOutdated = (screen: ScreenRead) => screen.id in outdatedImages.value && outdatedImages.value[screen.id] === screen.renderedAt
+
+const frame = useDeviceFrame()
+const heading = useTemplateRef('heading')
+
+/** The Device counts its Screens, so it is read again too. The removed row held the focus, which the heading takes. */
+async function showWithoutRemoved() {
+  open.value = undefined
+  await Promise.all([props.reload(), frame.device.reload()])
+  await nextTick()
+  heading.value?.focus()
+}
+
 const rowId = (screenId: string) => `screen-${screenId}`
 
 onMounted(() => {
@@ -108,7 +144,7 @@ const pausedNote = computed(() => sentence(
   </EmptyState>
   <section v-else class="screens-in-order" aria-labelledby="screens-in-order-heading">
     <div class="heading-line">
-      <h2 class="heading">
+      <h2 ref="heading" class="heading" tabindex="-1">
         <span id="screens-in-order-heading">Screens in Order</span> <span v-if="isMany" class="count">{{ screens.length }}</span>
       </h2>
       <SaveState :status="orderSave.status" :reason="orderSave.reason" @retry="orderSave.retry" />
@@ -124,7 +160,11 @@ const pausedNote = computed(() => sentence(
           :kind="SCREEN_KIND_LABELS[item.kind]"
           :state="item.state"
           :passed-over="device.isMirrored || undefined"
+          :renaming="renaming === item.id"
         >
+          <template v-if="item.kind !== 'plugin'" #rename>
+            <ScreenRename :screen-id="item.id" :name="item.savedName" :reload="reload" :editing="renaming === item.id" @update:editing="isRenaming => setRenaming(item.id, isRenaming)" />
+          </template>
           <template #thumbnail>
             <Plate
               :name="`${item.name}, as last rendered`"
@@ -142,7 +182,19 @@ const pausedNote = computed(() => sentence(
           <template #state>
             <span>{{ item.stateWords.words }}<span v-if="item.stateWords.qualifier" class="qualifier"> · {{ item.stateWords.qualifier }}</span></span>
           </template>
-          <OpenedScreen :screen="item" :screens="rows" :device="device" :jumps="isMany" @move="by => move(item.id, by)" />
+          <OpenedScreen :screen="item" :screens="rows" :device="device" :jumps="isMany" :rendering="isOutdated(item)" @move="by => move(item.id, by)">
+            <template #source>
+              <ScreenSource :screen="item" :device="device" :reload="reload" @rerendering="awaitRendering(item)" />
+            </template>
+            <template v-if="item.kind !== 'plugin'" #actionsBefore>
+              <Button variant="quiet" :disabled="renaming === item.id" @click="setRenaming(item.id, true)">
+                Rename
+              </Button>
+            </template>
+            <template #actionsAfter>
+              <ScreenRemoval :screen="item" :device="device" @removed="showWithoutRemoved" />
+            </template>
+          </OpenedScreen>
         </ScreenRow>
       </template>
     </ScreenRows>

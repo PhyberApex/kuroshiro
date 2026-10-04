@@ -85,8 +85,15 @@ const { device, listed, name, path } = useDeviceFrame() // from '@/pages/devices
 | `ScreensInOrder.vue` | The rows, reordering and its save, `?screen=`. The Schedule switch joins `ScheduleSummary` in the row's `#schedule` slot |
 | `OpenedScreen.vue` | The body of an opened row: the "why" sentences, the preview and the move actions. Its slots are where the other parts mount, filled where `ScreensInOrder.vue` renders it: `#schedule` (the Schedule editor), `#source` (what the Screen is made from), `#actionsBefore` ("Rename") and `#actionsAfter` (the destructive button) |
 | `screenNaming.ts` | `screenName(name)`: a Screen saved without a name reads "Unnamed Screen" everywhere. `possessive(name)` for "{Device}'s" |
+| `ScreenSource.vue` | What fills `#source`: the kind as a heading over one component per kind, `PluginScreenSource`, `MashupScreenSource`, `FileScreenSource`, `ExternalScreenSource` and `HtmlScreenSource`. It emits `rerendering` when a write leaves the Screen's image behind (a Slot Change), on which the preview shows the rendering plate until `renderedAt` moves |
+| `ScreenRename.vue`, `ScreenRemoval.vue` | "Rename" as the `InlineEdit` in the row's `#rename` slot, and "Delete Screen" or "Unassign Plugin" with its confirmation, which emits `removed` |
+| `mashupLayouts.ts` | `MASHUP_LAYOUT_CHOICES`: the seven layouts with the names and slot names of [devices.md](../ui/devices.md#by-kind), built from `MASHUP_LAYOUTS` and ready for `LayoutPicker`. `layoutChoice(id)`, and `carriedOver` and `withoutSlot` for a change of layout |
+| `MashupSlots.vue`, `MashupLayoutChange.vue` | One select per slot, a Plugin in another slot disabled (`slotNames`, `pluginIds` with `null` for an empty slot, `plugins`; emits `change`), and the layout form built on it |
+| `ReplaceFile.vue` | The drop zone, the preview beside the current image and "Replace image" |
+| `InPlaceForm.vue` | The frame of a small form that opens in place of what it changes, named by its `title`, with the `#buttons` slot for its row of buttons, the primary one first |
+| `screenSourceWording.ts` | The pure wording: a File's facts line, the Plugin sentence, what a removal loses and keeps by kind, `isWebAddress`, the line of a Plugin without a slot |
 
-`ScreensInOrder` takes `reload`, which reads the Screens again: call it after any write to a Screen. A new Screen is opened by navigating to `{path}?screen={id}`, which also scrolls to its row.
+`ScreensInOrder` takes `reload`, which reads the Screens again: call it after any write to a Screen. A write that adds or removes a Screen also calls `useDeviceFrame().device.reload()`, because the Device counts its Screens. A form that opens in place gives the focus to its first control when it opens and back to the button that opened it when it closes. A new Screen is opened by navigating to `{path}?screen={id}`, which also scrolls to its row.
 
 ### The Logs page
 
@@ -414,11 +421,12 @@ export function updateDevice(deviceId: string, input: UpdateDeviceInput) {
 }
 ```
 
-`src/api/devices.ts` has `listDevices`, `getDevice`, `createDevice` (refused with `device-mac-taken`), `updateDevice`, `listDeviceLogs` and `clearDeviceLogs`. `src/api/instance.ts` has `getInstanceFacts`, `getInstanceSettings` and `updateInstanceSettings`; `src/api/alerts.ts` has `listAlerts` and `sendTestNotification` (refused with `notifications-off` or `notification-failed`).
+`src/api/devices.ts` has `listDevices`, `getDevice`, `createDevice` (refused with `device-mac-taken`), `updateDevice`, `listDeviceLogs` and `clearDeviceLogs`. `src/api/instance.ts` has `getInstanceFacts`, `getInstanceSettings` and `updateInstanceSettings`; `src/api/alerts.ts` has `listAlerts` and `sendTestNotification` (refused with `notifications-off` or `notification-failed`). `src/api/screens.ts` has `listScreens`, `reorderScreens`, `updateScreen`, `previewScreenImage`, `replaceScreenImage`, `refreshScreen`, `deleteScreen`, `updateMashup` (by the Screen's id) and `unassignPlugin`.
 
 - `apiGet<T>(path, query?)` and `apiSend<T>(method, path, body?)` from `@/api/client`. The path has no leading slash and no `api/`. `body` is a shared `…Input` type, sent as JSON, or a `FormData` for an upload. A 204 answers `undefined`.
 - Types come from `kuroshiro-shared`. Send only what the `…Input` type declares: the server refuses undeclared keys, so a read model sent back as a write is refused.
 - A page calls these functions and never `fetch`.
+- **An image the server answers to an upload** (a preview that stores nothing) is `apiSendForImage(method, path, formData)`, which answers a `Blob`; show it through `URL.createObjectURL` and revoke the address when it is replaced or the component goes (`ReplaceFile.vue`).
 - **A file the server answers** (an export) is downloaded by the browser itself: `apiDownload(path)` from `@/api/client`, wrapped in the group's file (`exportPlugin(id)`). The file's name is the server's.
 
 ### Failures and their wording
@@ -437,6 +445,7 @@ const nameSave = useSaveAsChanged(name => updateDevice(deviceId, { name }).then(
 ```
 
 - `REFUSAL_WORDING` is typed `Record<ApiErrorCode, …>`: a code added to `API_ERROR_CODES` fails type-check until it is worded there. The slice that adds a code adds its general wording.
+- `image-fetch-failed` is the one refusal that carries the server's own sentence after its wording, because only the server knows why an address gave no image.
 - **A refusal that `docs/ui/` words more exactly for one place** is caught there: `isRefusal(error, 'firmware-version-taken')` narrows to `ApiRefusal`, which carries `code`, `statusCode`, `details` and `fields`.
 - **Validation**: `fieldErrorsOf(error)` gives `{ [path]: message }` for a `validation` refusal (and `{}` for anything else), to hand each `Field` its `error`. The browser checks first; the server's messages are a fallback.
 - `isUnreachable(error)` tells the second kind.

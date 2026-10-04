@@ -17,6 +17,8 @@ const props = defineProps<{
   device: DeviceDetail
   /** Whether the Screen can jump to the top and to the end of the Order, as on a Device with many Screens. */
   jumps?: boolean
+  /** What the Screen is made from has changed since its image was rendered, so the preview shows the rendering plate. */
+  rendering?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -93,6 +95,7 @@ watch(place, async () => {
         :src="screen.imagePath && imageUrl(screen.imagePath)"
         :width="device.deviceModel?.width"
         :height="device.deviceModel?.height"
+        :rendering="rendering"
       />
       <figcaption class="caption">
         <template v-if="caption">
