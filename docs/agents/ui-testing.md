@@ -74,6 +74,10 @@ Two fast presses of an arrow key in an open Reka `Select` both start from the sa
 
 A download (`apiDownload`) is a click on a link with a `download` attribute. A spec catches it with a capturing `click` listener on `document` that calls `preventDefault()` and keeps the link's `href` (`PluginsListPage.spec.ts`).
 
+A select's trigger is a typed-in control, so a refresh that arrives while it has the focus is held back: blur it before asking for a refresh that the test waits for.
+
+`textContent` reads what `v-show` hides and joins blocks without a space; where that matters, read each child by itself and leave out the ones `checkVisibility()` says are hidden.
+
 While a dialog or a menu is open, the rest of the page is hidden from assistive technology, so `getByRole` finds nothing outside it: read the page under an open layer from the DOM.
 
 `userEvent.upload(input, file)` chooses a file in a native file input; a drop is a `DragEvent` dispatched with a `DataTransfer` holding the file (`FileDrop.spec.ts`).
@@ -90,6 +94,8 @@ MSW answers at the network boundary; nothing in the UI is mocked. `src/testing/a
 api.use(http.get(apiUrl('settings'), () => HttpResponse.json(buildInstanceSettings())))
 api.use(http.get(apiUrl('devices/42'), () => apiErrorResponse({ statusCode: 404, code: 'not-found' })))
 ```
+
+`src/pages/devices/__test__/screensViewHarness.ts` fakes a whole Device for a spec of its Screens view: `fakeKitchen({ device, screens, plugins, instance })` answers the reads and every write an opened Screen makes, changes `screens` as the server would and keeps each write in `writes` (`{ method, path, body }`, an upload by its file's name). `SCREENS_OF_EVERY_KIND` is one Screen per kind, and `openedRow(screen, name)` the opened row's region. A test that needs a refusal adds its own handler after calling it.
 
 A request to the admin API that no handler fakes fails as a network error and is named on the console. That is the "failed request" state for free when you want it, and a loud miss when you do not.
 

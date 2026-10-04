@@ -2,7 +2,7 @@ import type { InstanceFacts } from 'kuroshiro-shared'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { api, apiErrorResponse, apiUrl } from '@/testing/api/server'
-import { apiGet, apiSend, fieldErrorsOf, imageUrl, isRefusal, isUnreachable } from '../client'
+import { apiGet, apiSend, apiSendForImage, fieldErrorsOf, imageUrl, isRefusal, isUnreachable } from '../client'
 
 const failureOf = (request: Promise<unknown>) => request.then(() => undefined, (error: unknown) => error)
 
@@ -53,6 +53,26 @@ describe('the API client', () => {
     expect(isRefusal(failure, 'device-not-found')).toBe(true)
     expect(isRefusal(failure, 'plugin-not-found')).toBe(false)
     expect(isUnreachable(failure)).toBe(false)
+  })
+
+  it('answers the image a preview gives back, and a refusal of one as any other', async () => {
+    api.use(http.post(apiUrl('screens/7/image-preview'), () => new HttpResponse('png', { headers: { 'Content-Type': 'image/png' } }), { once: true }))
+    const image = await apiSendForImage('POST', 'screens/7/image-preview', new FormData())
+    expect(image.type).toBe('image/png')
+    expect(await image.text()).toBe('png')
+
+    api.use(http.post(apiUrl('screens/7/image-preview'), () => apiErrorResponse({ statusCode: 400, code: 'image-unreadable' })))
+    const failure = await failureOf(apiSendForImage('POST', 'screens/7/image-preview', new FormData()))
+    expect(isRefusal(failure, 'image-unreadable')).toBe(true)
+    expect((failure as Error).message).toBe('This file is not an image Kuroshiro can read. Use PNG, JPEG, BMP, GIF, TIFF or WebP.')
+  })
+
+  it('adds the server\'s reason to an image that could not be fetched, which only the server knows', async () => {
+    api.use(http.post(apiUrl('screens/7/refresh'), () => apiErrorResponse({ statusCode: 422, code: 'image-fetch-failed', message: 'The address did not answer with an image Kuroshiro can read.' })))
+
+    const failure = await failureOf(apiSend('POST', 'screens/7/refresh'))
+
+    expect((failure as Error).message).toBe('Kuroshiro could not fetch an image from this address. The address did not answer with an image Kuroshiro can read.')
   })
 
   it('names the limit of an upload that is too large', async () => {

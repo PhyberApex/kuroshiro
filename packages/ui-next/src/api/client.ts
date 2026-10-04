@@ -79,11 +79,14 @@ async function answerOf<T>(response: Response): Promise<T> {
   throw isApiError(body) ? new ApiRefusal(body) : new ServerUnreachable()
 }
 
-async function request<T>(address: URL, init: RequestInit): Promise<T> {
-  const response = await fetch(address, init).catch(() => {
+function answered(address: URL, init: RequestInit): Promise<Response> {
+  return fetch(address, init).catch(() => {
     throw new ServerUnreachable()
   })
-  return answerOf<T>(response)
+}
+
+async function request<T>(address: URL, init: RequestInit): Promise<T> {
+  return answerOf<T>(await answered(address, init))
 }
 
 /** Reads `GET /api/{path}`. Rejects with an `ApiRefusal` or a `ServerUnreachable`. */
@@ -106,6 +109,12 @@ export function apiSend<T = void>(method: WriteMethod, path: string, body?: obje
     headers: { ...headers, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
+}
+
+/** Uploads to `/api/{path}` where the server answers an image and stores nothing: a preview. A refusal still comes in the error envelope. */
+export async function apiSendForImage(method: WriteMethod, path: string, body: FormData): Promise<Blob> {
+  const response = await answered(apiAddress(path), { method, body })
+  return response.ok ? response.blob() : answerOf<Blob>(response)
 }
 
 /** Has the browser download what `GET /api/{path}` answers as a file, under the name the server gives it. */

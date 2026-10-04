@@ -6,6 +6,7 @@ import { screenArt } from '@/gallery/screenArt'
 import Specimen from '@/gallery/Specimen.vue'
 import SpecimenRow from '@/gallery/SpecimenRow.vue'
 import { buildSchedule, buildScreen } from '@/testing/fixtures/screens'
+import InlineEdit from './InlineEdit.vue'
 import Plate from './Plate.vue'
 import RowMenu from './RowMenu.vue'
 import ScreenRow from './ScreenRow.vue'
@@ -31,6 +32,8 @@ const openHeld = ref('trains')
 const mirrored = looks.value.slice(0, 2).map(screen => ({ ...screen, state: null }))
 
 const dragged = looks.value.slice(0, 4).map(screen => ({ ...screen, state: null }))
+
+const renamed = looks.value.slice(4, 5)
 
 const sources = [
   { id: 'forecast', name: 'forecast' },
@@ -116,6 +119,25 @@ const hours = (screen: ScreenRead) => screen.schedule?.startTime ? `${screen.sch
           <ScreenRow :value="item.id" :name="item.name" :kind="SCREEN_KIND_LABELS[item.kind]">
             <template #thumbnail>
               <Plate :name="item.name" :src="image" size="row" lazy />
+            </template>
+          </ScreenRow>
+        </template>
+      </ScreenRows>
+    </Specimen>
+  </SpecimenRow>
+  <SpecimenRow title="Renaming">
+    <Specimen caption="the Inline edit in the place of the name and the kind" wide>
+      <ScreenRows class="stretch" :items="renamed" sortable>
+        <template #default="{ item }">
+          <ScreenRow :value="item.id" :name="item.name" :kind="SCREEN_KIND_LABELS[item.kind]" :state="item.state" renaming>
+            <template #thumbnail="{ passedOver }">
+              <Plate :name="item.name" :src="image" size="row" :passed-over="passedOver" lazy />
+            </template>
+            <template #rename>
+              <InlineEdit editing :value="item.name" :label="`Name of ${item.name}`" />
+            </template>
+            <template #schedule>
+              <span class="summary">{{ hours(item) }}</span>
             </template>
           </ScreenRow>
         </template>

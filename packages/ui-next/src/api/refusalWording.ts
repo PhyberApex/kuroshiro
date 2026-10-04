@@ -10,6 +10,11 @@ function uploadTooLarge({ details }: ApiError) {
     : 'That file is larger than this Instance accepts.'
 }
 
+/** The one refusal whose reason only the server knows: what the address answered, or that it did not answer. */
+function imageFetchFailed({ message }: ApiError) {
+  return ['Kuroshiro could not fetch an image from this address.', message].filter(Boolean).join(' ')
+}
+
 /**
  * The sentence the admin reads for each code the admin API refuses with. Typed by the
  * union, so a code added to `API_ERROR_CODES` fails type-check here until it is worded.
@@ -34,10 +39,10 @@ const REFUSAL_WORDING: Record<ApiErrorCode, Wording> = {
   'assignment-not-found': 'That Plugin is not on this Device.',
   'plugin-already-assigned': 'That Plugin is already on this Device.',
   'plugin-in-mashup': 'That Plugin fills a slot in a Mashup. Give the slot another Plugin, or delete the Mashup.',
-  'image-fetch-failed': 'The image could not be fetched.',
-  'image-unreadable': 'That file is not an image Kuroshiro can read.',
+  'image-fetch-failed': imageFetchFailed,
+  'image-unreadable': 'This file is not an image Kuroshiro can read. Use PNG, JPEG, BMP, GIF, TIFF or WebP.',
   'order-not-a-permutation': 'The Order has to name every Screen once.',
-  'demo-mode': 'Not available in demo mode.',
+  'demo-mode': 'Not available in the demo.',
   'upload-too-large': uploadTooLarge,
   'firmware-version-taken': 'There is already a Firmware with that version.',
   'device-model-unknown': 'This Instance does not know that Device Model.',

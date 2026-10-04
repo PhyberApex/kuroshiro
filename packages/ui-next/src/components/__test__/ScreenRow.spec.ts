@@ -480,6 +480,28 @@ describe('reordering screen rows', () => {
     })
   })
 
+  it('gives the place of the name and the kind to what `#rename` holds while it is renamed, and keeps the opened row\'s name', async () => {
+    const renaming = ref(false)
+    const screen = await mount(defineComponent(() => () => h(ScreenRows<ScreenRead>, { items: SCREENS.slice(0, 1), open: 'calendar' }, {
+      default: ({ item }: { item: ScreenRead }) => h(ScreenRow, { value: item.id, name: item.name, kind: 'Plugin', renaming: renaming.value }, {
+        rename: () => h('input', { 'aria-label': 'Name of Calendar' }),
+        default: () => h('p', 'Inside Calendar'),
+      }),
+    })))
+    const input = screen.getByRole('textbox', { name: 'Name of Calendar' })
+
+    await expect.element(triggerOf(screen, 'Calendar')).toBeVisible()
+    expect(screen.container.querySelector('input')!.checkVisibility()).toBe(false)
+    await expect.element(screen.getByText('Plugin')).toBeVisible()
+
+    renaming.value = true
+
+    await expect.element(input).toBeVisible()
+    await expect.poll(() => screen.container.querySelector('h3')!.checkVisibility()).toBe(false)
+    await expect.element(screen.getByText('Plugin')).not.toBeVisible()
+    await expect.element(screen.getByRole('region', { name: 'Calendar' })).toBeVisible()
+  })
+
   it('is accessible and does not overflow in every state', async () => {
     await mount(ScreenRowGallery)
 
