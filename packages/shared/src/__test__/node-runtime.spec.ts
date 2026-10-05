@@ -1,9 +1,8 @@
 import { execFileSync } from 'node:child_process'
 import process from 'node:process'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-const barrel = fileURLToPath(new URL('../index.ts', import.meta.url))
+const barrel = new URL('../index.ts', import.meta.url).href
 
 // `pnpm dev:api` runs the API's compiled output under plain Node, which loads this
 // package's TypeScript sources through Node's own type stripping, without a bundler.

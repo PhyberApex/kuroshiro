@@ -8,7 +8,7 @@ import { lazyModulesInFirstLoad } from './scripts/firstLoad.ts'
 
 const DEV_ONLY_SOURCES = ['/src/gallery/', '/src/testing/']
 
-const API_ORIGIN = `http://localhost:${process.env.KUROSHIRO_PORT || 3000}`
+const API_ORIGIN = `http://localhost:${Number.parseInt(process.env.KUROSHIRO_PORT || '', 10) || 3000}`
 
 /** Fails the production build if a module of the gallery or of the test harness made it into the bundle. */
 function keepDevOnlySourcesOutOfTheBundle(): Plugin {
