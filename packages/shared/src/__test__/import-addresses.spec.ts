@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { githubRepositoryOf, recipeIdOf } from '../api/plugins'
+import { githubRepositoryOf, recipeIdOf } from '../api/plugins.ts'
 
 describe('reading a Recipe id', () => {
   it.each([

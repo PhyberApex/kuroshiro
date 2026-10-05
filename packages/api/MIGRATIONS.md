@@ -8,7 +8,7 @@ The API uses TypeORM migrations to manage database schema changes. Migrations ru
 
 ## How It Works
 
-- **Automatic Migration**: When the API starts, it automatically runs any pending migrations
+- **Automatic Migration**: When the API starts, `bootstrap()` in `src/main.ts` runs any pending migrations from `dist/src/migrations` before it listens. In dev, `nest start` compiles them there; the Docker image ships them there and its entrypoint also runs `typeorm migration:run` before starting the app
 - **Safe**: TypeORM tracks which migrations have run in the `migrations` table
 - **Idempotent**: Running the app multiple times won't re-run migrations
 - **Version Control**: All migrations are committed to git with the code
@@ -26,8 +26,9 @@ pnpm migration:generate src/migrations/DescriptiveName
 # Create a blank migration file for custom changes
 pnpm migration:create src/migrations/DescriptiveName
 
-# Manually run pending migrations (usually not needed - they run at startup)
-pnpm migration:run
+# Manually run pending migrations (usually not needed - they run at startup).
+# Reads the compiled dist/src/migrations, so compile them first.
+pnpm build:migrations && pnpm migration:run
 
 # Show migration status
 pnpm migration:show
@@ -92,7 +93,7 @@ export class AddNewFieldToDevice1733155300000 implements MigrationInterface {
 ### 5. Test the Migration
 
 ```bash
-# Restart the dev server - migrations run at startup
+# Restart the dev server (`pnpm dev:api` from the repo root) - migrations run at startup
 pnpm start:dev
 ```
 

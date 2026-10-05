@@ -1,7 +1,7 @@
-import type { ScreenShellTarget } from '../screen-shell'
+import type { ScreenShellTarget } from '../screen-shell.ts'
 import { describe, expect, it } from 'vitest'
-import { screenClasses, screenStyle, viewFull, wrapInScreenShell } from '../screen-shell'
-import { SCREEN_SHELL_FIXTURE_BODY, SCREEN_SHELL_FIXTURE_EXPECTED, SCREEN_SHELL_FIXTURE_MODEL, SCREEN_SHELL_FIXTURE_PALETTE } from './screen-shell.fixture'
+import { screenClasses, screenStyle, viewFull, wrapInScreenShell } from '../screen-shell.ts'
+import { SCREEN_SHELL_FIXTURE_BODY, SCREEN_SHELL_FIXTURE_EXPECTED, SCREEN_SHELL_FIXTURE_MODEL, SCREEN_SHELL_FIXTURE_PALETTE } from './screen-shell.fixture.ts'
 
 const V2: ScreenShellTarget = {
   model: { cssClasses: ['screen--v2', 'screen--lg', 'screen--density-2x'], cssVariables: { '--screen-w': '1040px', '--screen-h': '780px' } },

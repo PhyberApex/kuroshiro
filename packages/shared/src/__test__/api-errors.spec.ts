@@ -1,6 +1,6 @@
-import type { ApiErrorCode } from '../api/errors'
+import type { ApiErrorCode } from '../api/errors.ts'
 import { describe, expect, it } from 'vitest'
-import { API_ERROR_CODES } from '../api/errors'
+import { API_ERROR_CODES } from '../api/errors.ts'
 
 /**
  * Stands in for the UI's wording table. Typed by the union, so a code added to

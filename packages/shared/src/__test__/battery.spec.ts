@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { batteryPercentFromVoltage } from '../battery'
+import { batteryPercentFromVoltage } from '../battery.ts'
 
 describe('batteryPercentFromVoltage', () => {
   it('maps 4.2V and above to 100%', () => {

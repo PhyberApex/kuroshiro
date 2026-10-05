@@ -1,5 +1,5 @@
-import type { RetentionAgeKey } from './instance.js'
-import type { ScreenKind } from './screens.js'
+import type { RetentionAgeKey } from './instance.ts'
+import type { ScreenKind } from './screens.ts'
 
 /** A leftover file, by its path below the storage folder (`devices/{deviceId}/{file}`, `uploads/{file}`). */
 export interface StoredFileFinding {
