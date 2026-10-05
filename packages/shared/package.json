@@ -1,6 +1,6 @@
 {
   "name": "kuroshiro-shared",
-  "version": "0.17.1",
+  "version": "0.17.2",
   "private": true,
   "packageManager": "pnpm@12.7.0",
   "exports": {
