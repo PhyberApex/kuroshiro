@@ -1,4 +1,4 @@
-import type { PluginKind } from './plugins'
+import type { PluginKind } from './plugins.ts'
 
 export type ScreenKind = 'plugin' | 'mashup' | 'external' | 'file' | 'html'
 

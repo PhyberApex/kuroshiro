@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { checkTemplate, createLiquidEngine, KUROSHIRO_FILTERS, renderLiquid, templateProblemOf } from '../liquid'
+import { checkTemplate, createLiquidEngine, KUROSHIRO_FILTERS, renderLiquid, templateProblemOf } from '../liquid.ts'
 
 describe('kuroshiro liquid filters', () => {
   it('date_short formats dates', async () => {

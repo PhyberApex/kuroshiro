@@ -1,4 +1,4 @@
-import type { DeviceReference, SyncRun } from './firmware'
+import type { DeviceReference, SyncRun } from './firmware.ts'
 
 export type PaletteKind = 'official' | 'custom'
 

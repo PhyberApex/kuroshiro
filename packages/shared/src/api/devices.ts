@@ -1,4 +1,4 @@
-import type { SensorReading } from '../sensor'
+import type { SensorReading } from '../sensor.ts'
 
 export const SPECIAL_FUNCTIONS = ['identify', 'sleep', 'add_wifi', 'restart_playlist', 'rewind', 'send_to_me'] as const
 export type SpecialFunction = typeof SPECIAL_FUNCTIONS[number]

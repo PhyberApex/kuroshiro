@@ -209,10 +209,12 @@ Everything else under `/app/public` ships with the image or is a cache Kuroshiro
 
 1. **Clone** this repo
 2. **Install** dependencies: `pnpm install`
-3. **Create** a `.env` file (use `env.example` and replace `${MY_IP}`)
+3. **Create** a `.env` file (copy `.env.example` and replace `{YOUR_IP}`)
 4. **Run Kuroshiro**:
    - With Docker: `docker-compose up` (full local stack)
    - Or, start Postgres manually and run: `pnpm run dev`
+
+`pnpm run dev` starts the API on `KUROSHIRO_PORT` (`3000` when unset) and, once that port answers, the admin UI's Vite dev server on [http://localhost:5173](http://localhost:5173), which proxies `/api` and `/screens` to the same port. The API runs pending migrations every time it starts, in dev as in the image.
 
 To start postgres in docker you can run
 ```
