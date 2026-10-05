@@ -437,7 +437,7 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 1. Instance facts beyond those already asked for: whether Notifications are set up and the Apprise address without its key, and the server's version.
 2. Reading a Configuration Archive without importing it: what it would add and overwrite by kind, with the names of the Devices, the Instance Settings it holds, its manifest, and the warnings an import would give.
 3. On each warning of an import, a kind and the record it is about, so the page can word it. Today a warning is a sentence.
-4. Updating a custom Palette. ADR-0014 calls them freely editable; only create and delete exist.
+4. Updating a custom Palette. ADR-0035 calls them freely editable; only create and delete exist.
 5. On a Firmware: whether its file is present, and the Devices that target it with whether a push is pending.
 6. On a Firmware sync: the Devices Firmware Auto-Update assigned, by id and name. Today it is a count.
 7. On an Alert: why it fired, kept after it resolves. Today the details are overwritten on every Alert Sweep and at resolve, so a resolved fetch Alert reads a streak of 0 and no error.
@@ -471,7 +471,7 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 - **The Test Notification lives under Instance Settings,** with the state of Apprise, not on the Alerts page. ADR-0024 put the button on the Alerts surface; here the Alerts page links to it.
 - **The cleanup has no dry run.** The old page defaulted to a dry run and then asked again. The list of findings is the preview and the confirmation names what is lost.
 - **A Configuration Import is read before it is confirmed.** The old dialog imported on its one button.
-- **Custom Palettes can be edited,** as ADR-0014 intended.
+- **Custom Palettes can be edited,** as ADR-0035 intended.
 - **"Virtual Device"** is the Device Simulator, after the glossary; **"Maintenance"** is gone as a page and as a word: its six cards are five Instance pages and the Alerts page.
 - **The Device Simulator fills in what the Device last reported.** The old page sent its own defaults, so every simulated poll overwrote the Device's battery, signal and Firmware version.
 - **Earlier official Firmware is shown,** tucked. The old list left deprecated rows out.

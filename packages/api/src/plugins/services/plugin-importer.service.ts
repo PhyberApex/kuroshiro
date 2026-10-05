@@ -139,7 +139,7 @@ interface RecipeSettings extends TerminusSettings {
   description?: string
   oauth_enabled?: boolean
   // Terminus schema: `maybe :hash` — a `strategy: static` recipe's fixed
-  // payload (issue #794 / ADR-0018)
+  // payload (issue #794 / ADR-0037)
   static_data?: JsonObject | null
 }
 
@@ -359,7 +359,7 @@ export class PluginImporterService {
   // A `strategy: static` Recipe carries its fixed payload as `static_data`
   // instead of a `polling_*` endpoint — it imports as a single `literal`-mode
   // Data Source named 'source', matching the existing single-implicit-source
-  // naming convention (issue #794 / ADR-0018). Nothing fetches for a literal
+  // naming convention (issue #794 / ADR-0037). Nothing fetches for a literal
   // source, so a `transform.js` alongside it has nothing to transform.
   private importStaticRecipe(entries: AdmZip.IZipEntry[], settingsContent: string, recipeSettings: RecipeSettings, recipeId: string): RecipePlugin {
     const hasTransform = entries.some(entry =>
