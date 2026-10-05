@@ -14,6 +14,7 @@ const NEXT_POLL = clockTime(new Date(KITCHEN.nextPollAt!))
 
 const target = (screen: Screen) => screen.getByRole('combobox', { name: 'Target Firmware' })
 const updateNow = (screen: Screen) => screen.getByRole('button', { name: 'Update now' })
+const cancelPush = (screen: Screen) => screen.getByRole('button', { name: 'Cancel push' })
 const pendingLine = (screen: Screen) => words(rowOf(screen, 'Target Firmware')?.querySelector('.pending'))
 const section = () => document.getElementById('firmware')
 
@@ -91,6 +92,29 @@ describe('the Firmware of a Device', () => {
 
     await expect.element(screen.getByRole('option', { name: 'None' })).toHaveAttribute('aria-disabled', 'true')
     await expect.element(screen.getByRole('option', { name: 'None' })).toHaveAccessibleDescription('A push is pending')
+  })
+
+  it('has no "Cancel push" while there is no pending push', async () => {
+    fakeKitchenSettings({ device: { ...KITCHEN, targetFirmware: OFFICIAL } })
+    const screen = await mountSettings()
+
+    expect(cancelPush(screen).elements()).toEqual([])
+  })
+
+  it('cancels a pending push: it stops the push, keeps the target and un-disables "Update now" and "None"', async () => {
+    const faked = fakeKitchenSettings({ device: { ...KITCHEN, targetFirmware: OFFICIAL, pending: { ...KITCHEN.pending, firmwarePush: true } } })
+    const screen = await mountSettings()
+
+    await expect.element(cancelPush(screen)).toBeEnabled()
+    await cancelPush(screen).click()
+
+    await expect.poll(() => cancelPush(screen).elements()).toEqual([])
+    expect(faked.writes).toEqual([{ updateFirmware: false }])
+    expect(pendingLine(screen)).toBe('')
+    await expect.element(target(screen)).toHaveTextContent('1.7.9 · official')
+    await expect.element(updateNow(screen)).toBeEnabled()
+    await target(screen).click()
+    await expect.element(screen.getByRole('option', { name: 'None' })).not.toHaveAttribute('aria-disabled')
   })
 
   it('says "at the next poll" without a time once that moment has passed', async () => {

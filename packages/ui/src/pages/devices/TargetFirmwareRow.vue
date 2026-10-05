@@ -44,8 +44,11 @@ const goesOut = computed(() => {
   <SettingRow label="Target Firmware" :status="saveState.status" :reason="saveState.reason" @retry="saveState.retry">
     <template #default="{ control }">
       <Select v-bind="control" class="target" :model-value="target.entered" :options="options" @update:model-value="target.choose($event ?? NO_TARGET)" />
-      <Button :disabled="pushPending || !device.targetFirmware || target.saving" :loading="push.status === 'saving'" @click="push.send({ updateFirmware: true })">
+      <Button :disabled="pushPending || !device.targetFirmware || target.saving" :loading="push.status === 'saving' && !pushPending" @click="push.send({ updateFirmware: true })">
         Update now
+      </Button>
+      <Button v-if="pushPending" :loading="push.status === 'saving'" @click="push.send({ updateFirmware: false })">
+        Cancel push
       </Button>
       <ResultLine class="pending" :running="pushPending">
         <template v-if="pushPending" #default>
