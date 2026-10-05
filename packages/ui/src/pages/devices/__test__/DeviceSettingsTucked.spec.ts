@@ -166,6 +166,40 @@ describe('reset or delete a Device', () => {
     await expect.element(screen.getByRole('button', { name: 'Device Reset' })).toBeDisabled()
   })
 
+  it('has no "Cancel Device Reset" while there is no pending Device Reset', async () => {
+    fakeKitchenSettings()
+    const screen = await mountSettings('#reset')
+
+    expect(screen.getByRole('button', { name: 'Cancel Device Reset' }).elements()).toEqual([])
+  })
+
+  it('cancels a pending Device Reset: it stops the reset and un-disables "Device Reset"', async () => {
+    const faked = fakeKitchenSettings({ device: { ...KITCHEN, pending: { ...KITCHEN.pending, deviceReset: true } } })
+    const screen = await mountSettings('#reset')
+    const cancel = () => screen.getByRole('button', { name: 'Cancel Device Reset' })
+
+    await expect.element(cancel()).toBeEnabled()
+    await cancel().click()
+
+    await expect.poll(() => cancel().elements()).toEqual([])
+    expect(faked.writes).toEqual([{ resetDevice: false }])
+    expect(screen.getByText(`Device Reset pending, reaches Kitchen around ${NEXT_POLL}`).elements()).toEqual([])
+    await expect.element(screen.getByRole('button', { name: 'Device Reset' })).toBeEnabled()
+  })
+
+  it('words a refused cancel and offers to try again, with the reset still pending', async () => {
+    const faked = fakeKitchenSettings({ device: { ...KITCHEN, pending: { ...KITCHEN.pending, deviceReset: true } } })
+    faked.refusing = apiErrorResponse({ statusCode: 500, code: 'internal' })
+    const screen = await mountSettings('#reset')
+
+    await screen.getByRole('button', { name: 'Cancel Device Reset' }).click()
+
+    await expect.element(screen.getByText('Not saved. Something went wrong on the server.')).toBeVisible()
+    await expect.element(screen.getByRole('button', { name: 'Try again' })).toBeVisible()
+    await expect.element(screen.getByRole('button', { name: 'Cancel Device Reset' })).toBeEnabled()
+    await expect.element(screen.getByText(`Device Reset pending, reaches Kitchen around ${NEXT_POLL}`)).toBeVisible()
+  })
+
   it('never reaches a Proxied Device, so the Device Reset is disabled', async () => {
     fakeKitchenSettings({ device: PROXIED })
     const screen = await mountSettings('#reset')
