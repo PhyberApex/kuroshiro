@@ -656,6 +656,17 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
       expect(stored.renderSignal).toBeNull()
     })
 
+    it('clears a remembered Render Signal of a plain plugin Screen directly assigned the Plugin', async () => {
+      const plugin = await createPollPlugin()
+      const screenId = await assignments.assign(plugin.id, (await addDevice('Kitchen')).id)
+      await database.getRepository(Screen).update(screenId, { cachedPluginOutput: '<p>stale</p>', renderSignal: 'skip' })
+
+      await saved(plugin.id, { name: 'Forecast' })
+
+      const stored = await database.getRepository(Screen).findOneByOrFail({ id: screenId })
+      expect(stored.renderSignal).toBeNull()
+    })
+
     it('renders a Webhook-kind Plugin again for its Screen after a rename', async () => {
       const plugin = await createWebhookPlugin()
       await assignments.assign(plugin.id, (await addDevice('Kitchen')).id)
