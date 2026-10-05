@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.2](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.17.1...kuroshiro-v0.17.2) (2026-10-05)
+
+
+### Bug Fixes
+
+* **api:** refuse Liquid partials so a Template cannot read files from the server ([#1295](https://github.com/PhyberApex/kuroshiro/issues/1295)) ([0394f5a](https://github.com/PhyberApex/kuroshiro/commit/0394f5a27231e430dae34af73135fe660f94bb32)), closes [#1260](https://github.com/PhyberApex/kuroshiro/issues/1260)
+
 ## [0.17.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.17.0...kuroshiro-v0.17.1) (2026-09-30)
 
 
