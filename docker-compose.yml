@@ -29,6 +29,7 @@ services:
     environment:
       KUROSHIRO_PORT: ${KUROSHIRO_PORT}
       KUROSHIRO_API_URL: ${KUROSHIRO_API_URL}
+      KUROSHIRO_DEMO_MODE: ${KUROSHIRO_DEMO_MODE}
       KUROSHIRO_DB_HOST: db
       KUROSHIRO_DB_PORT: 5432
       KUROSHIRO_DB_USER: ${KUROSHIRO_DB_USER}
@@ -38,10 +39,14 @@ services:
       KUROSHIRO_APPRISE_KEY: ${KUROSHIRO_APPRISE_KEY}
       KUROSHIRO_ALERT_LOW_BATTERY_PERCENT: ${KUROSHIRO_ALERT_LOW_BATTERY_PERCENT}
       KUROSHIRO_ALERT_OFFLINE_MULTIPLIER: ${KUROSHIRO_ALERT_OFFLINE_MULTIPLIER}
+      KUROSHIRO_ALERT_FETCH_FAILURES: ${KUROSHIRO_ALERT_FETCH_FAILURES}
       KUROSHIRO_ALERT_RETENTION_DAYS: ${KUROSHIRO_ALERT_RETENTION_DAYS}
       KUROSHIRO_DEVICE_LOG_RETENTION_DAYS: ${KUROSHIRO_DEVICE_LOG_RETENTION_DAYS}
+# Device images and Firmware binaries live on the container's filesystem; mount both
+# to keep them when the container is recreated (see "Persisting data" in the README).
 #    volumes:
 #      - kuroshiro_data:/app/public/screens/devices
+#      - kuroshiro_firmware:/app/public/firmware
 # Uncomment to enable Alert notifications (see the "Alerts" section of the README)
 # and point KUROSHIRO_APPRISE_URL above at http://apprise-api:8000.
 #  apprise-api:
@@ -54,4 +59,5 @@ services:
 volumes:
   postgres_data:
   kuroshiro_data:
+  kuroshiro_firmware:
   apprise_data:

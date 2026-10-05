@@ -8,6 +8,42 @@ const DEFAULT_FETCH_FAILURE_THRESHOLD = 3
 const DEFAULT_ALERT_RETENTION_DAYS = 90
 const DEFAULT_DEVICE_LOG_RETENTION_DAYS = 30
 
+const ENV_VARS = {
+  port: 'KUROSHIRO_PORT',
+  apiUrl: 'KUROSHIRO_API_URL',
+  demoMode: 'KUROSHIRO_DEMO_MODE',
+  dbHost: 'KUROSHIRO_DB_HOST',
+  dbPort: 'KUROSHIRO_DB_PORT',
+  dbName: 'KUROSHIRO_DB_DB',
+  dbUser: 'KUROSHIRO_DB_USER',
+  dbPassword: 'KUROSHIRO_DB_PASSWORD',
+  appriseUrl: 'KUROSHIRO_APPRISE_URL',
+  appriseKey: 'KUROSHIRO_APPRISE_KEY',
+} as const
+
+const KNOWN_ENV_VARS = new Set<string>([...Object.values(ENV_VARS), ...Object.values(SETTING_ENV_VARS)])
+
+const RENAMED_ENV_VARS: Record<string, string> = {
+  KUROSHIRO_POSTGRES_PORT: ENV_VARS.dbPort,
+  KUROSHIRO_POSTGRES_USER: ENV_VARS.dbUser,
+  KUROSHIRO_POSTGRES_PASSWORD: ENV_VARS.dbPassword,
+  KUROSHIRO_POSTGRES_DB: ENV_VARS.dbName,
+  KUROSHIRO_API_PORT: ENV_VARS.port,
+}
+
+function unknownEnvVarWarning(name: string): string {
+  const ignored = `${name} is set but Kuroshiro does not read it; it is ignored`
+  const replacement = RENAMED_ENV_VARS[name]
+  return replacement ? `${ignored}. Use ${replacement} instead` : ignored
+}
+
+/** Lists one warning per `KUROSHIRO_*` variable in `env` that no setting reads, since a misspelt or outdated name otherwise silently falls back to the default. */
+export function unknownEnvVarWarnings(env: Record<string, string | undefined>): string[] {
+  return Object.keys(env)
+    .filter(name => name.startsWith('KUROSHIRO_') && !KNOWN_ENV_VARS.has(name))
+    .map(unknownEnvVarWarning)
+}
+
 interface ParsedIntEnv {
   value: number
   source: FallbackSource
@@ -34,19 +70,19 @@ export default () => {
   const deviceLogRetentionDays = parseIntEnv(SETTING_ENV_VARS.deviceLogRetentionDays, DEFAULT_DEVICE_LOG_RETENTION_DAYS)
 
   return {
-    port: Number.parseInt(process.env.KUROSHIRO_PORT || '', 10) || 3000,
-    api_url: process.env.KUROSHIRO_API_URL || 'http://localhost:5173',
-    demo_mode: process.env.KUROSHIRO_DEMO_MODE === 'true' || false,
+    port: Number.parseInt(process.env[ENV_VARS.port] || '', 10) || 3000,
+    api_url: process.env[ENV_VARS.apiUrl] || 'http://localhost:5173',
+    demo_mode: process.env[ENV_VARS.demoMode] === 'true' || false,
     database: {
-      host: process.env.KUROSHIRO_DB_HOST || 'localhost',
-      port: Number.parseInt(process.env.KUROSHIRO_DB_PORT || '5432', 10),
-      database: process.env.KUROSHIRO_DB_DB || 'test',
-      user: process.env.KUROSHIRO_DB_USER || 'root',
-      password: process.env.KUROSHIRO_DB_PASSWORD || 'root',
+      host: process.env[ENV_VARS.dbHost] || 'localhost',
+      port: Number.parseInt(process.env[ENV_VARS.dbPort] || '5432', 10),
+      database: process.env[ENV_VARS.dbName] || 'test',
+      user: process.env[ENV_VARS.dbUser] || 'root',
+      password: process.env[ENV_VARS.dbPassword] || 'root',
     },
     alerts: {
-      appriseUrl: process.env.KUROSHIRO_APPRISE_URL || undefined,
-      appriseKey: process.env.KUROSHIRO_APPRISE_KEY || 'kuroshiro',
+      appriseUrl: process.env[ENV_VARS.appriseUrl] || undefined,
+      appriseKey: process.env[ENV_VARS.appriseKey] || 'kuroshiro',
       lowBatteryPercent: lowBatteryPercent.value,
       lowBatteryPercentSource: lowBatteryPercent.source,
       offlineMultiplier: offlineMultiplier.value,

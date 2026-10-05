@@ -1,6 +1,6 @@
 import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import config from '../config.js'
+import config, { unknownEnvVarWarnings } from '../config.js'
 
 const ENV_KEYS = [
   'KUROSHIRO_PORT',
@@ -202,5 +202,35 @@ describe('config', () => {
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('KUROSHIRO_DEVICE_LOG_RETENTION_DAYS'))
 
     warnSpy.mockRestore()
+  })
+})
+
+describe('unknownEnvVarWarnings', () => {
+  it('names a KUROSHIRO_ variable the config does not read', () => {
+    expect(unknownEnvVarWarnings({ KUROSHIRO_DB_HOSTNAME: 'db' })).toEqual([
+      'KUROSHIRO_DB_HOSTNAME is set but Kuroshiro does not read it; it is ignored',
+    ])
+  })
+
+  it('stays quiet for every variable the config reads and for variables outside the KUROSHIRO_ prefix', () => {
+    const env = Object.fromEntries([...ENV_KEYS, 'NODE_ENV', 'POSTGRES_USER'].map(name => [name, 'set']))
+
+    expect(unknownEnvVarWarnings(env)).toEqual([])
+  })
+
+  it('names the replacement of a variable an older Kuroshiro read', () => {
+    expect(unknownEnvVarWarnings({
+      KUROSHIRO_POSTGRES_USER: 'root',
+      KUROSHIRO_POSTGRES_PASSWORD: 'root',
+      KUROSHIRO_POSTGRES_DB: 'kuroshiro',
+      KUROSHIRO_POSTGRES_PORT: '5432',
+      KUROSHIRO_API_PORT: '3000',
+    })).toEqual([
+      'KUROSHIRO_POSTGRES_USER is set but Kuroshiro does not read it; it is ignored. Use KUROSHIRO_DB_USER instead',
+      'KUROSHIRO_POSTGRES_PASSWORD is set but Kuroshiro does not read it; it is ignored. Use KUROSHIRO_DB_PASSWORD instead',
+      'KUROSHIRO_POSTGRES_DB is set but Kuroshiro does not read it; it is ignored. Use KUROSHIRO_DB_DB instead',
+      'KUROSHIRO_POSTGRES_PORT is set but Kuroshiro does not read it; it is ignored. Use KUROSHIRO_DB_PORT instead',
+      'KUROSHIRO_API_PORT is set but Kuroshiro does not read it; it is ignored. Use KUROSHIRO_PORT instead',
+    ])
   })
 })
