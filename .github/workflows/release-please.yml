@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - release/**
 
 jobs:
   release-please:
@@ -13,3 +14,4 @@ jobs:
         uses: googleapis/release-please-action@v5
         with:
           token: ${{ secrets.GH_PAT }}
+          target-branch: ${{ github.ref_name }}
