@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { DeviceDetail, FirmwareRead } from 'kuroshiro-shared'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import Button from '@/components/Button.vue'
 import ResultLine from '@/components/ResultLine.vue'
 import Select from '@/components/Select.vue'
@@ -25,6 +25,14 @@ const target = useDeviceSetting(savedTarget, chosen =>
 
 const push = useDeviceWrite()
 
+/** "Update now" and "Cancel push" share one write; its loading mark stands on the button that sent it. */
+const sentBy = ref<'update' | 'cancel'>('update')
+
+function sendPush(updateFirmware: boolean) {
+  sentBy.value = updateFirmware ? 'update' : 'cancel'
+  push.send({ updateFirmware })
+}
+
 /** The row has one save state: the push's while it has something to say, the target's otherwise. */
 const saveState = computed(() => push.status === 'idle' ? target : push)
 
@@ -44,8 +52,11 @@ const goesOut = computed(() => {
   <SettingRow label="Target Firmware" :status="saveState.status" :reason="saveState.reason" @retry="saveState.retry">
     <template #default="{ control }">
       <Select v-bind="control" class="target" :model-value="target.entered" :options="options" @update:model-value="target.choose($event ?? NO_TARGET)" />
-      <Button :disabled="pushPending || !device.targetFirmware || target.saving" :loading="push.status === 'saving'" @click="push.send({ updateFirmware: true })">
+      <Button :disabled="pushPending || !device.targetFirmware || target.saving" :loading="push.status === 'saving' && sentBy === 'update'" @click="sendPush(true)">
         Update now
+      </Button>
+      <Button v-if="pushPending" :loading="push.status === 'saving' && sentBy === 'cancel'" @click="sendPush(false)">
+        Cancel push
       </Button>
       <ResultLine class="pending" :running="pushPending">
         <template v-if="pushPending" #default>
