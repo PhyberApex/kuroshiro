@@ -50,7 +50,8 @@ describe('the Recipe of a Plugin', () => {
     await expect.element(screen.getByRole('link', { name: '41120', exact: true })).toHaveAttribute('href', 'https://trmnl.com/recipes/41120')
   })
 
-  it('asks about unsaved changes before the check opens', async () => {
+  // Mounts the full Plugin page, then opens an accordion section and a route guard dialog in turn; under coverage in CI, alongside the other packages' own coverage runs, it has run past the default 15 s.
+  it('asks about unsaved changes before the check opens', { timeout: 30_000 }, async () => {
     fakePlugin(fromRecipe())
     api.use(http.get(apiUrl('plugins/weather/recipe-update'), async () => {
       await delay('infinite')
@@ -70,7 +71,8 @@ describe('the Recipe of a Plugin', () => {
     expect(screen.router.currentRoute.value.path).toBe('/plugins/weather/update')
   })
 
-  it('is accessible and does not overflow', async () => {
+  // Mounts the full Plugin page and runs axe over it; under coverage in CI, alongside the other packages' own coverage runs, it has run past the default 15 s.
+  it('is accessible and does not overflow', { timeout: 30_000 }, async () => {
     fakePlugin(fromRecipe())
     const screen = await mountPlugin()
     await expect.element(screen.getByRole('heading', { name: 'Recipe', level: 2 })).toBeVisible()
