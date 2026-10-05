@@ -3,6 +3,8 @@ set -e
 
 echo "🎀 starting kuroshiro..."
 
+node /app/dist/check-env.js
+
 # run migrations
 echo "✨ running migrations..."
 npx typeorm migration:run -d /app/dist/src/config/typeorm.config.js
