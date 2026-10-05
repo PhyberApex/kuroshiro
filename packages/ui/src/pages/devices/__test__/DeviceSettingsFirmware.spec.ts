@@ -136,6 +136,18 @@ describe('the Firmware of a Device', () => {
     expect(pendingLine(screen)).toBe('')
   })
 
+  it('words a refused cancel and offers to try again, with the push still pending', async () => {
+    const faked = fakeKitchenSettings({ device: { ...KITCHEN, targetFirmware: OFFICIAL, pending: { ...KITCHEN.pending, firmwarePush: true } } })
+    faked.refusing = apiErrorResponse({ statusCode: 500, code: 'internal' })
+    const screen = await mountSettings()
+
+    await cancelPush(screen).click()
+
+    await expect.poll(() => stateOf(screen, 'Target Firmware')).toBe('Not saved. Something went wrong on the server.')
+    await expect.element(screen.getByRole('button', { name: 'Try again' })).toBeVisible()
+    await expect.element(cancelPush(screen)).toBeEnabled()
+  })
+
   it('is off while Mirroring', async () => {
     fakeKitchenSettings({ device: { ...KITCHEN, isMirrored: true, mirror: { enabled: true, mac: 'A4:CF:12:9B:01:7E', apikeySet: true } } })
     const screen = await mountSettings()
