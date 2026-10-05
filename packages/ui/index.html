@@ -6,6 +6,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light dark">
+    <!-- The first place a cascade layer is named fixes its order, and a build can put component styles ahead of styles/index.css. -->
+    <style>@layer reset, base, components;</style>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <title>Kuroshiro</title>
   </head>
