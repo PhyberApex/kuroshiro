@@ -182,7 +182,7 @@ We build these tags automatically:
 
 For local hacking or deployment inspiration, check out [`docker-compose.yml`](./docker-compose.yml). It spins up everything you need—API, UI, and Postgres—so you can get started in seconds.
 
-The container listens on `KUROSHIRO_PORT` (`3000` when unset). [`.env.example`](./.env.example) lists every `KUROSHIRO_*` variable Kuroshiro reads; at startup it logs a warning for any other `KUROSHIRO_*` variable it finds, naming the replacement of an outdated one (such as `KUROSHIRO_POSTGRES_USER`, now `KUROSHIRO_DB_USER`), since an ignored variable otherwise falls back to its default without a word.
+The container listens on `KUROSHIRO_PORT` (`3000` when unset). [`.env.example`](./.env.example) lists every `KUROSHIRO_*` variable Kuroshiro reads; at startup it logs a warning for any other `KUROSHIRO_*` variable it finds, naming the replacement of an outdated one (such as `KUROSHIRO_DB_USER` for `KUROSHIRO_POSTGRES_USER`), since an ignored variable otherwise falls back to its default without a word. The image's entrypoint logs it before running migrations, so it shows even when the database settings are the ones that are wrong.
 
 ### Persisting data
 
@@ -190,7 +190,7 @@ Besides the Postgres database, Kuroshiro keeps files the database points at on t
 
 | Path in the container | What lives there |
 |---|---|
-| `/app/public/screens/devices` | Every Device's Screen images: uploaded and fetched images, their originals, rendered Plugin and Mashup Screens, mirrored screens |
+| `/app/public/screens/devices` | Every Device's Screen images: uploaded and fetched images, their originals, rendered Plugin and Mashup Screens, the mirrored image of a mirrored Device |
 | `/app/public/firmware` | Firmware binaries, both uploaded custom builds and the synced official one. The daily sync does not download a version it has already recorded again, so a lost binary stays lost until the next official release |
 
 Everything else under `/app/public` ships with the image or is a cache Kuroshiro redraws on demand (Fallback Screens, palette colour maps). Uploads are held in memory, so nothing needs mounting for them; an `/app/uploads` folder only exists on instances that ran an older version, and Housekeeping offers to clear it.

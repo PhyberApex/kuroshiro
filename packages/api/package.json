@@ -5,7 +5,7 @@
   "private": true,
   "packageManager": "pnpm@12.8.2",
   "scripts": {
-    "build": "tsup src/main.ts && pnpm run build:migrations",
+    "build": "tsup && pnpm run build:migrations",
     "build:migrations": "tsc -p tsconfig.migrations.json",
     "start:dev": "node scripts/copy_static_screens.mjs && nest start --watch --preserveWatchOutput",
     "start:debug": "nest start --debug --watch",

@@ -18,14 +18,15 @@ import { Plugin } from '../plugins/entities/plugin.entity.js'
 import { Schedule } from '../schedule/schedule.entity.js'
 import { Screen } from '../screens/screens.entity.js'
 import { InstanceSettings } from '../settings/entities/instance-settings.entity.js'
+import { ENV_VARS } from './env-vars.js'
 
 const AppDataSource = new DataSource({
   type: 'postgres',
-  host: process.env.KUROSHIRO_DB_HOST || 'localhost',
-  port: Number.parseInt(process.env.KUROSHIRO_DB_PORT || '5432', 10),
-  username: process.env.KUROSHIRO_DB_USER || 'root',
-  password: process.env.KUROSHIRO_DB_PASSWORD || 'root',
-  database: process.env.KUROSHIRO_DB_DB || 'test',
+  host: process.env[ENV_VARS.dbHost] || 'localhost',
+  port: Number.parseInt(process.env[ENV_VARS.dbPort] || '5432', 10),
+  username: process.env[ENV_VARS.dbUser] || 'root',
+  password: process.env[ENV_VARS.dbPassword] || 'root',
+  database: process.env[ENV_VARS.dbName] || 'test',
   entities: [Device, DeviceModel, Palette, DeviceSensor, Screen, LogEntry, Plugin, DevicePlugin, PluginDataSource, PluginTemplate, PluginField, PluginFieldValue, MashupConfiguration, MashupSlot, Schedule, Firmware, Alert, InstanceSettings],
   migrations: ['dist/src/migrations/*.js'],
   migrationsTableName: 'migrations',

@@ -1,10 +1,9 @@
 import type { NestExpressApplication } from '@nestjs/platform-express'
-import process from 'node:process'
 import { Logger } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { DataSource } from 'typeorm'
 import { AppModule } from './app.module.js'
-import config, { unknownEnvVarWarnings } from './config/config.js'
+import config, { logUnknownEnvVars } from './config/config.js'
 import { registerErrorEnvelope } from './errors/register-error-envelope.js'
 import { LoggingInterceptor } from './interceptors/logging.interceptor.js'
 import { ingressBasePathMiddleware } from './middleware/ingress-base-path.middleware.js'
@@ -13,8 +12,8 @@ import { resolveAppPath } from './utils/pathHelper.js'
 import 'reflect-metadata'
 
 async function bootstrap() {
+  logUnknownEnvVars()
   const logger = new Logger('bootstrap')
-  unknownEnvVarWarnings(process.env).forEach(warning => logger.warn(warning))
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bodyParser: false })
   registerBodyParsers(app)
   app.use(ingressBasePathMiddleware(resolveAppPath('public')))

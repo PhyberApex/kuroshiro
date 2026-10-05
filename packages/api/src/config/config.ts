@@ -1,6 +1,8 @@
 import type { FallbackSource } from 'kuroshiro-shared'
 import process from 'node:process'
+import { Logger } from '@nestjs/common'
 import { SETTING_ENV_VARS } from 'kuroshiro-shared'
+import { ENV_VARS, RENAMED_ENV_VARS } from './env-vars.js'
 
 const DEFAULT_LOW_BATTERY_PERCENT = 20
 const DEFAULT_OFFLINE_MULTIPLIER = 3
@@ -8,28 +10,7 @@ const DEFAULT_FETCH_FAILURE_THRESHOLD = 3
 const DEFAULT_ALERT_RETENTION_DAYS = 90
 const DEFAULT_DEVICE_LOG_RETENTION_DAYS = 30
 
-const ENV_VARS = {
-  port: 'KUROSHIRO_PORT',
-  apiUrl: 'KUROSHIRO_API_URL',
-  demoMode: 'KUROSHIRO_DEMO_MODE',
-  dbHost: 'KUROSHIRO_DB_HOST',
-  dbPort: 'KUROSHIRO_DB_PORT',
-  dbName: 'KUROSHIRO_DB_DB',
-  dbUser: 'KUROSHIRO_DB_USER',
-  dbPassword: 'KUROSHIRO_DB_PASSWORD',
-  appriseUrl: 'KUROSHIRO_APPRISE_URL',
-  appriseKey: 'KUROSHIRO_APPRISE_KEY',
-} as const
-
 const KNOWN_ENV_VARS = new Set<string>([...Object.values(ENV_VARS), ...Object.values(SETTING_ENV_VARS)])
-
-const RENAMED_ENV_VARS: Record<string, string> = {
-  KUROSHIRO_POSTGRES_PORT: ENV_VARS.dbPort,
-  KUROSHIRO_POSTGRES_USER: ENV_VARS.dbUser,
-  KUROSHIRO_POSTGRES_PASSWORD: ENV_VARS.dbPassword,
-  KUROSHIRO_POSTGRES_DB: ENV_VARS.dbName,
-  KUROSHIRO_API_PORT: ENV_VARS.port,
-}
 
 function unknownEnvVarWarning(name: string): string {
   const ignored = `${name} is set but Kuroshiro does not read it; it is ignored`
@@ -37,11 +18,16 @@ function unknownEnvVarWarning(name: string): string {
   return replacement ? `${ignored}. Use ${replacement} instead` : ignored
 }
 
-/** Lists one warning per `KUROSHIRO_*` variable in `env` that no setting reads, since a misspelt or outdated name otherwise silently falls back to the default. */
 export function unknownEnvVarWarnings(env: Record<string, string | undefined>): string[] {
   return Object.keys(env)
     .filter(name => name.startsWith('KUROSHIRO_') && !KNOWN_ENV_VARS.has(name))
     .map(unknownEnvVarWarning)
+}
+
+/** A misspelt or outdated variable name otherwise falls back to the default without a word. */
+export function logUnknownEnvVars(): void {
+  const logger = new Logger('config')
+  unknownEnvVarWarnings(process.env).forEach(warning => logger.warn(warning))
 }
 
 interface ParsedIntEnv {

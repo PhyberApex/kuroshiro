@@ -1,0 +1,20 @@
+export const ENV_VARS = {
+  port: 'KUROSHIRO_PORT',
+  apiUrl: 'KUROSHIRO_API_URL',
+  demoMode: 'KUROSHIRO_DEMO_MODE',
+  dbHost: 'KUROSHIRO_DB_HOST',
+  dbPort: 'KUROSHIRO_DB_PORT',
+  dbName: 'KUROSHIRO_DB_DB',
+  dbUser: 'KUROSHIRO_DB_USER',
+  dbPassword: 'KUROSHIRO_DB_PASSWORD',
+  appriseUrl: 'KUROSHIRO_APPRISE_URL',
+  appriseKey: 'KUROSHIRO_APPRISE_KEY',
+} as const
+
+export const RENAMED_ENV_VARS: Record<string, string> = {
+  KUROSHIRO_POSTGRES_PORT: ENV_VARS.dbPort,
+  KUROSHIRO_POSTGRES_USER: ENV_VARS.dbUser,
+  KUROSHIRO_POSTGRES_PASSWORD: ENV_VARS.dbPassword,
+  KUROSHIRO_POSTGRES_DB: ENV_VARS.dbName,
+  KUROSHIRO_API_PORT: ENV_VARS.port,
+}
