@@ -317,8 +317,13 @@ A daily Retention job (same 4am schedule as the Device Model and Firmware syncs)
 | `kuroshiro_device_rssi_dbm` | gauge | `device`, `friendly_id` | Last reported Wi-Fi signal strength. Omitted for a Device with no or non-numeric reading. |
 | `kuroshiro_device_last_seen_timestamp_seconds` | gauge | `device`, `friendly_id` | The Device's `lastSeen` as a Unix timestamp (compute `time() - x` for staleness). No sample for a Device that never polled. |
 | `kuroshiro_alerts_active` | gauge | `kind` | Count of currently active Alerts per `AlertKind` — every known kind is emitted, 0 included, so a series never vanishes. |
+| `kuroshiro_device_sensor_carbon_dioxide_ppm` | gauge | `device`, `friendly_id` | Device's last reported carbon dioxide Sensor reading, in ppm. Omitted for a Device with no such reading, or one reported in a different unit. |
+| `kuroshiro_device_sensor_humidity_percent` | gauge | `device`, `friendly_id` | Device's last reported humidity Sensor reading, in %. Omitted for a Device with no such reading, or one reported in a different unit. |
+| `kuroshiro_device_sensor_pressure_hpa` | gauge | `device`, `friendly_id` | Device's last reported pressure Sensor reading, in hPa. Omitted for a Device with no such reading, or one reported in a different unit. |
+| `kuroshiro_device_sensor_temperature_celsius` | gauge | `device`, `friendly_id` | Device's last reported temperature Sensor reading, in °C. Omitted for a Device with no such reading, or one reported in a different unit. |
+| `kuroshiro_data_source_fetch_failure_streak` | gauge | `plugin`, `plugin_id`, `data_source` | Consecutive failed scheduled fetches for a `fetch`-mode Data Source (0 included). `literal`-mode Data Sources emit no sample. |
 
-`device` is the Device's `name` and `friendly_id` its `friendlyId`; the MAC address is never used as a label. Like the Device-facing routes (`/display`, `/current_screen`), `/metrics` sits outside the `/api` prefix and has no authentication of its own — if you want it private, keep it off your reverse proxy.
+`device` is the Device's `name` and `friendly_id` its `friendlyId`; the MAC address is never used as a label. Each Sensor gauge is named after the unit official firmware reports for that kind (fixed in code, not device-configurable) — a reading sent in any other unit is omitted rather than converted. `plugin`/`data_source` are the Plugin's and Data Source's `name`; `plugin_id` disambiguates two Plugins that happen to share a name. Like the Device-facing routes (`/display`, `/current_screen`), `/metrics` sits outside the `/api` prefix and has no authentication of its own — if you want it private, keep it off your reverse proxy.
 
 ---
 

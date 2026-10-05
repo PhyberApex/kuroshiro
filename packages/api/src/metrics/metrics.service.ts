@@ -1,4 +1,4 @@
-import type { AlertKind } from 'kuroshiro-shared'
+import type { AlertKind, DeviceSensorKind } from 'kuroshiro-shared'
 import type { Repository } from 'typeorm'
 import type { MetricFamily } from './prometheus-format.js'
 import { Injectable } from '@nestjs/common'
@@ -6,11 +6,28 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { ALERT_KIND_LABELS } from 'kuroshiro-shared'
 import { IsNull } from 'typeorm'
 import { Alert } from '../alerts/entities/alert.entity.js'
+import { DeviceSensor } from '../device-sensors/entities/device-sensor.entity.js'
 import { Device } from '../devices/devices.entity.js'
+import { PluginDataSource } from '../plugins/entities/plugin-data-source.entity.js'
 import { renderPrometheusText } from './prometheus-format.js'
 
 type MetricsDevice = Pick<Device, 'name' | 'friendlyId' | 'batteryVoltage' | 'rssi' | 'lastSeen'>
 type MetricsAlert = Pick<Alert, 'kind'>
+type MetricsSensor = Pick<DeviceSensor, 'kind' | 'value' | 'unit'> & { device: Pick<Device, 'name' | 'friendlyId'> }
+type MetricsDataSource = Pick<PluginDataSource, 'name' | 'mode' | 'fetchFailureStreak'> & { plugin: Pick<PluginDataSource['plugin'], 'id' | 'name'> }
+
+/**
+ * Firmware-reported unit per Sensor kind (ADR-0018: `unit` is device-reported,
+ * not a Kuroshiro constant) — fixed here only to name each metric and to spot
+ * a reading reported in some other unit, which is omitted rather than
+ * converted.
+ */
+const EXPECTED_SENSOR_UNITS: Record<DeviceSensorKind, { label: string, unit: string, metricName: string }> = {
+  carbon_dioxide: { label: 'carbon dioxide', unit: 'ppm', metricName: 'kuroshiro_device_sensor_carbon_dioxide_ppm' },
+  humidity: { label: 'humidity', unit: '%', metricName: 'kuroshiro_device_sensor_humidity_percent' },
+  pressure: { label: 'pressure', unit: 'hPa', metricName: 'kuroshiro_device_sensor_pressure_hpa' },
+  temperature: { label: 'temperature', unit: 'C', metricName: 'kuroshiro_device_sensor_temperature_celsius' },
+}
 
 /** `undefined` for an unset or non-numeric field — `batteryVoltage`/`rssi` are optional strings, and a Device with neither should emit no sample rather than 0 or NaN. */
 function parseFiniteNumber(value: string | null | undefined): number | undefined {
@@ -34,10 +51,14 @@ export class MetricsService {
     private readonly deviceRepository: Repository<Device>,
     @InjectRepository(Alert)
     private readonly alertRepository: Repository<Alert>,
+    @InjectRepository(DeviceSensor)
+    private readonly sensorRepository: Repository<DeviceSensor>,
+    @InjectRepository(PluginDataSource)
+    private readonly dataSourceRepository: Repository<PluginDataSource>,
   ) {}
 
   async render(): Promise<string> {
-    const [devices, activeAlerts] = await Promise.all([
+    const [devices, activeAlerts, sensors, dataSources] = await Promise.all([
       this.deviceRepository.find({
         select: { name: true, friendlyId: true, batteryVoltage: true, rssi: true, lastSeen: true },
         loadEagerRelations: false,
@@ -46,6 +67,17 @@ export class MetricsService {
         where: { resolvedAt: IsNull() },
         select: { kind: true },
       }),
+      this.sensorRepository.find({
+        select: { kind: true, value: true, unit: true, device: { name: true, friendlyId: true } },
+        relations: { device: true },
+        loadEagerRelations: false,
+      }),
+      this.dataSourceRepository.find({
+        where: { mode: 'fetch' },
+        select: { name: true, mode: true, fetchFailureStreak: true, plugin: { id: true, name: true } },
+        relations: { plugin: true },
+        loadEagerRelations: false,
+      }),
     ])
 
     return renderPrometheusText([
@@ -53,6 +85,8 @@ export class MetricsService {
       this.rssiFamily(devices),
       this.lastSeenFamily(devices),
       this.activeAlertsFamily(activeAlerts),
+      ...this.sensorFamilies(sensors),
+      this.fetchFailureStreakFamily(dataSources),
     ])
   }
 
@@ -98,6 +132,33 @@ export class MetricsService {
       help: 'Count of currently active Alerts, by kind.',
       type: 'gauge',
       samples: [...counts.entries()].map(([kind, value]) => ({ labels: { kind }, value })),
+    }
+  }
+
+  /** One family per Sensor kind (ADR fixed unit table) — a reading reported in any other unit is omitted rather than converted. */
+  private sensorFamilies(sensors: MetricsSensor[]): MetricFamily[] {
+    return Object.entries(EXPECTED_SENSOR_UNITS).map(([kind, { label, unit, metricName }]) => ({
+      name: metricName,
+      help: `Device's last reported ${label} Sensor reading, in ${unit}. Omitted for a Device with no reading of this kind, or one reported in a different unit.`,
+      type: 'gauge' as const,
+      samples: sensors
+        .filter(sensor => sensor.kind === kind && sensor.unit === unit)
+        .map(sensor => ({ labels: deviceLabels(sensor.device), value: sensor.value })),
+    }))
+  }
+
+  /** `mode` is also filtered at the query level — re-checked here so a `literal`-mode Data Source never emits a sample regardless of how it was fetched (ADR-0025: it carries no meaningful streak). */
+  private fetchFailureStreakFamily(dataSources: MetricsDataSource[]): MetricFamily {
+    return {
+      name: 'kuroshiro_data_source_fetch_failure_streak',
+      help: 'Consecutive failed scheduled fetches for a `fetch`-mode Data Source. `literal`-mode Data Sources emit no sample.',
+      type: 'gauge',
+      samples: dataSources
+        .filter(dataSource => dataSource.mode === 'fetch')
+        .map(dataSource => ({
+          labels: { plugin: dataSource.plugin.name, plugin_id: dataSource.plugin.id, data_source: dataSource.name },
+          value: dataSource.fetchFailureStreak,
+        })),
     }
   }
 }
