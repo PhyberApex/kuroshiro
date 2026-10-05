@@ -1169,12 +1169,14 @@ describe('deviceDisplayService', () => {
   describe('render-signal-gated rotation', () => {
     const signalDevice = makeDevice({ ...baseDevice, apikey: 'token', id: '1', mirrorEnabled: false })
 
-    /** A `plugin` or `html` Screen; `skip` embeds the marker `primePuppeteer` reads back as the flag. */
+    /** A `plugin`, `html` or `mashup` Screen; `skip` embeds the marker `primePuppeteer` reads back as the flag. */
     function renderedScreen(overrides: Partial<Screen> & { id: string, order: number }, skip: boolean): Screen {
       const body = skip ? `<p>x</p><script>${SKIP_MARKER} = true</script>` : '<p>x</p>'
       const base = overrides.type === 'plugin'
         ? { plugin: makePlugin({ id: `${overrides.id}-plugin` }), cachedPluginOutput: body, html: null }
-        : { type: 'html' as const, html: body }
+        : overrides.type === 'mashup'
+          ? { mashupConfiguration: makeMashupConfiguration({ id: `${overrides.id}-mashup` }), cachedPluginOutput: body, html: null }
+          : { type: 'html' as const, html: body }
       return makeScreen({ device: signalDevice, isActive: false, fetchManual: false, externalLink: null, filename: 'x', generatedAt: new Date('2026-08-21T00:00:00'), ...base, ...overrides })
     }
 
@@ -1185,6 +1187,8 @@ describe('deviceDisplayService', () => {
       screenRepo.findOne.mockImplementation(async options => byId.get((options.where as { id: string }).id) ?? null)
       configService.get.mockReturnValue('http://api')
       fileExists.mockResolvedValue(false)
+      // Bypasses the constructor's lazy (setTimeout-deferred) injection, which never fires under fake timers.
+      injectPrivate(service, 'mashupRenderer', { renderMashup: vi.fn() })
     }
 
     beforeEach(() => {
@@ -1196,7 +1200,7 @@ describe('deviceDisplayService', () => {
       vi.useRealTimers()
     })
 
-    it.each(['plugin', 'html'] as const)('skips a %s Screen that sets the flag and shows the next eligible one instead', async (type) => {
+    it.each(['plugin', 'html', 'mashup'] as const)('skips a %s Screen that sets the flag and shows the next eligible one instead', async (type) => {
       primeRotation([
         renderedScreen({ id: 'screen1', order: 1, type }, true),
         renderedScreen({ id: 'screen2', order: 2, type }, false),
@@ -1250,8 +1254,8 @@ describe('deviceDisplayService', () => {
       expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('screen2.png'), expect.anything(), expect.anything(), expect.anything())
     })
 
-    it('does not launch Chrome for a plugin Screen whose Render Signal is already remembered as skip', async () => {
-      primeRotation([renderedScreen({ id: 'screen1', order: 1, type: 'plugin', renderSignal: 'skip' }, false)])
+    it.each(['plugin', 'mashup'] as const)('does not launch Chrome for a %s Screen whose Render Signal is already remembered as skip', async (type) => {
+      primeRotation([renderedScreen({ id: 'screen1', order: 1, type, renderSignal: 'skip' }, false)])
 
       const result = await service.getCurrentImage(headers)
 
