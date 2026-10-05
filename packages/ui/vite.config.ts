@@ -4,6 +4,7 @@ import { fileURLToPath, URL } from 'node:url'
 
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
+import { layerOrderProblem } from './scripts/cssLayers.ts'
 import { lazyModulesInFirstLoad } from './scripts/firstLoad.ts'
 
 const DEV_ONLY_SOURCES = ['/src/gallery/', '/src/testing/']
@@ -38,11 +39,26 @@ function keepTheEditorOutOfEveryFirstLoad(): Plugin {
   }
 }
 
+/** Fails the production build if the built page could let the reset layer override the components. */
+function declareTheLayerOrderFirst(): Plugin {
+  return {
+    name: 'kuroshiro:layer-order',
+    apply: 'build',
+    enforce: 'post',
+    generateBundle(_options, bundle) {
+      const page = bundle['index.html']
+      const problem = page?.type === 'asset' ? layerOrderProblem(String(page.source)) : 'The build emitted no index.html.'
+      if (problem)
+        this.error(problem)
+    },
+  }
+}
+
 export default defineConfig({
   // Relative asset URLs resolve against the <base href> the API injects into
   // index.html, so the same build works at / and under an ingress prefix.
   base: './',
-  plugins: [vue(), keepDevOnlySourcesOutOfTheBundle(), keepTheEditorOutOfEveryFirstLoad()],
+  plugins: [vue(), keepDevOnlySourcesOutOfTheBundle(), keepTheEditorOutOfEveryFirstLoad(), declareTheLayerOrderFirst()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

@@ -125,6 +125,8 @@ Primitives live flat in `src/components/`, named as the component inventory name
 | `src/components/IconButton.gallery.vue` | Its gallery section: every state of the inventory |
 | `src/components/__test__/IconButton.spec.ts` | Its spec; the last test mounts the gallery file and calls `expectAccessible()` and `expectNoHorizontalOverflow()` |
 
+The layers are ordered `reset, base, components`, so a component's styles win over the reset. The first place a layer is named fixes that order, and a production build can put a component's CSS ahead of `styles/index.css`, so `index.html` names the order in an inline `<style>` before any stylesheet. `vite build` fails if the built page does not (`scripts/cssLayers.ts`). Tests mount components without `index.html` and get the order from `styles/index.css`, so neither the specs nor the screenshots would show this.
+
 A gallery file is rows of specimens: `SpecimenRow` (an optional `title`) holding one `Specimen` per state, whose `caption` is the state's name. Both are in `src/gallery/`.
 
 A state that needs a pointer, a key press or a narrow window is shown in the gallery in one of these ways:
