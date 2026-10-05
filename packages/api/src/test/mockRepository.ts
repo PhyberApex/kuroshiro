@@ -50,14 +50,6 @@ export function asRepository<T extends ObjectLiteral>(mock: MockRepository<T>): 
   return mock as unknown as Repository<T>
 }
 
-/** Pulls the `id` out of a `{ where: { id } }` find-options object, for specs whose mock `findOne`/`find` filters by id. Returns `undefined` for an array/absent `where`, which no spec in this codebase currently passes. */
-export function whereId<T extends ObjectLiteral>(options: FindOneOptions<T> | FindManyOptions<T>): string | undefined {
-  const where = options.where
-  if (!where || Array.isArray(where))
-    return undefined
-  return (where as { id?: string }).id
-}
-
 /** A `MockRepository<T>` whose `.manager` supports the two `EntityManager` members this codebase's transactions actually use: getting a scoped repository, and running a callback "in" a transaction (here, just invoking it — there's no real DB to isolate). */
 export interface MockTransactionalRepository<T extends ObjectLiteral> extends MockRepository<T> {
   manager: {
