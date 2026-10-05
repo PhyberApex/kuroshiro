@@ -1,5 +1,5 @@
-import type { DataSourceLiteralValue, DataSourceMode } from '../data-source'
-import type { ScreenState, TemplateSize } from './screens'
+import type { DataSourceLiteralValue, DataSourceMode } from '../data-source.ts'
+import type { ScreenState, TemplateSize } from './screens.ts'
 
 export const PLUGIN_KINDS = ['Poll', 'Webhook'] as const
 export type PluginKind = typeof PLUGIN_KINDS[number]

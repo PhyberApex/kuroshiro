@@ -1,4 +1,5 @@
 import type { Plugin } from 'vite'
+import process from 'node:process'
 import { fileURLToPath, URL } from 'node:url'
 
 import vue from '@vitejs/plugin-vue'
@@ -6,6 +7,8 @@ import { defineConfig } from 'vite'
 import { lazyModulesInFirstLoad } from './scripts/firstLoad.ts'
 
 const DEV_ONLY_SOURCES = ['/src/gallery/', '/src/testing/']
+
+const API_ORIGIN = `http://localhost:${Number.parseInt(process.env.KUROSHIRO_PORT || '', 10) || 3000}`
 
 /** Fails the production build if a module of the gallery or of the test harness made it into the bundle. */
 function keepDevOnlySourcesOutOfTheBundle(): Plugin {
@@ -47,8 +50,8 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'http://localhost:3001',
-      '/screens': 'http://localhost:3001',
+      '/api': API_ORIGIN,
+      '/screens': API_ORIGIN,
     },
   },
 })

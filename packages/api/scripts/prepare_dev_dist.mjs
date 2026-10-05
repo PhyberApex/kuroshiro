@@ -6,8 +6,12 @@ import { fileURLToPath } from 'node:url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+// `nest start` runs the API from dist/src, so resolveAppPath() looks for public/ and
+// package.json in dist/, where the image has them beside its bundle.
 const srcDir = path.resolve(__dirname, '../assets/screens')
 const destDir = path.resolve(__dirname, '../dist/public/screens')
+const packageJsonPath = path.resolve(__dirname, '../package.json')
+const devPackageJsonPath = path.resolve(__dirname, '../dist/package.json')
 
 function copyDirSync(src, dest) {
   if (!fs.existsSync(dest)) {
@@ -33,3 +37,5 @@ if (!fs.existsSync(srcDir)) {
 
 copyDirSync(srcDir, destDir)
 console.log(`Copied screens from ${srcDir} to ${destDir}`)
+fs.copyFileSync(packageJsonPath, devPackageJsonPath)
+console.log(`Copied ${packageJsonPath} to ${devPackageJsonPath}`)

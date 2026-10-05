@@ -6,6 +6,7 @@
     "experimentalDecorators": true,
     "module": "nodenext",
     "moduleResolution": "nodenext",
+    "rewriteRelativeImportExtensions": true,
     "types": ["node", "multer"],
     "strictPropertyInitialization": false,
     "declaration": true,
