@@ -5,7 +5,7 @@ import type { MigrationInterface, QueryRunner } from 'typeorm'
  * Each row gets a required, per-Plugin-unique `name`, used as its
  * top-level Liquid variable key, and an `order` for the list's sequence.
  * Pre-existing rows are backfilled with the placeholder name `source` at
- * order 0 (ADR-0004) so they satisfy the new constraints; plugin authors
+ * order 0 (ADR-0034) so they satisfy the new constraints; plugin authors
  * update their template's field references to the namespaced form
  * afterward.
  */

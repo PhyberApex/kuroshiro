@@ -22,6 +22,7 @@
     "lint": "pnpm run -r lint",
     "lint:fix": "pnpm run -r lint:fix",
     "type-check": "pnpm run -r type-check",
+    "adr:check": "node scripts/check-adr-numbers.mjs",
     "build": "pnpm run -r type-check",
     "fallow": "fallow",
     "fallow:ci": "fallow dead-code --baseline .fallow-baselines/dead-code.baseline.json --fail-on-issues && fallow dupes --baseline .fallow-baselines/dupes.baseline.json --fail-on-issues && fallow health --baseline .fallow-baselines/health.baseline.json --fail-on-issues",
