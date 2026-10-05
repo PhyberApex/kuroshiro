@@ -80,11 +80,11 @@ describe('pluginRenderCacheService', () => {
     })
     expect(mockScreenRepo.update).toHaveBeenCalledWith(
       { id: 'screen-1' },
-      { cachedPluginOutput: null },
+      { cachedPluginOutput: null, renderSignal: null },
     )
     expect(mockScreenRepo.update).toHaveBeenCalledWith(
       { id: 'screen-2' },
-      { cachedPluginOutput: null },
+      { cachedPluginOutput: null, renderSignal: null },
     )
   })
 

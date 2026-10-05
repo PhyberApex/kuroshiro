@@ -106,6 +106,14 @@ describe('a Device\'s Screens, GET /api/devices/:id/screens, against a real data
     expect(screens[1]).toMatchObject({ state: 'upNext', renderSignal: null })
   })
 
+  it('carries a Screen\'s remembered Render Signal, and the Screen State it causes', async () => {
+    await addScreen(1, { renderSignal: 'skip' })
+
+    const screens = await readScreens()
+
+    expect(screens[0]).toMatchObject({ state: 'skipping', renderSignal: 'skip' })
+  })
+
   it('answers an empty list for a Device without Screens', async () => {
     expect(await readScreens()).toEqual([])
   })

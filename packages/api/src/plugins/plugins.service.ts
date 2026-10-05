@@ -508,7 +508,7 @@ export class PluginsService implements OnModuleInit {
   }
 
   async invalidateRenderCaches(pluginId: string): Promise<void> {
-    await this.screenRepository.update({ plugin: { id: pluginId } }, { cachedPluginOutput: null })
+    await this.screenRepository.update({ plugin: { id: pluginId } }, { cachedPluginOutput: null, renderSignal: null })
     await this.renderCache.invalidateMashupCaches(pluginId)
   }
 

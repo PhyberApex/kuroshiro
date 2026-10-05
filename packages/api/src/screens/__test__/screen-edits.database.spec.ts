@@ -201,6 +201,14 @@ describe('editing a Screen, against a real database', () => {
       expect(await response.json()).toMatchObject({ html: '<h1>Changed</h1>', name: 'Screen 1' })
     })
 
+    it('clears a remembered Render Signal when the HTML Screen\'s markup changes', async () => {
+      const screen = await seedScreen(1, { renderSignal: 'skip' })
+
+      await patch(screen.id, { html: '<h1>Changed</h1>' })
+
+      expect((await stored(screen.id)).renderSignal).toBeNull()
+    })
+
     it('saves the URL of an External link fetched on every poll without fetching it', async () => {
       const screen = await seedScreen(1, { type: 'external', html: null, externalLink: 'http://a.local/a.png' })
 
@@ -447,7 +455,7 @@ describe('editing a Screen, against a real database', () => {
 
   describe('pATCH /api/mashup/:id', () => {
     async function seedMashup(layout: string, plugins: Plugin[]): Promise<Screen> {
-      const screen = await seedScreen(1, { type: 'mashup', html: null, filename: 'Board', cachedPluginOutput: '<p>cached</p>' })
+      const screen = await seedScreen(1, { type: 'mashup', html: null, filename: 'Board', cachedPluginOutput: '<p>cached</p>', renderSignal: 'skip' })
       const configuration = await database.getRepository(MashupConfiguration).save({ layout, screen })
       const slots = layout === '1Lx1R'
         ? [['left', 'view--half_vertical'], ['right', 'view--half_vertical']]
@@ -473,6 +481,7 @@ describe('editing a Screen, against a real database', () => {
       expect(response.status).toBe(200)
       expect(await response.json()).toMatchObject({ id: screen.id, name: 'Board', mashup: { layout: '1Lx1R', slots: [{ pluginName: 'Plugin 1' }, { pluginName: 'Plugin 3' }] } })
       expect((await stored(screen.id)).cachedPluginOutput).toBeNull()
+      expect((await stored(screen.id)).renderSignal).toBeNull()
     })
 
     it('changes the layout together with a full slot list', async () => {
