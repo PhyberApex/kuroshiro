@@ -1,12 +1,29 @@
+import type { FS } from 'liquidjs'
 import { Injectable } from '@nestjs/common'
 import { Liquid } from 'liquidjs'
+
+function refusePartial(name: string): never {
+  throw new Error(`A template cannot render "${name}": Kuroshiro has no partials.`)
+}
+
+/**
+ * Where `{% render %}`, `{% include %}` and `{% layout %}` look for their file: nowhere. Left to itself the engine reads
+ * the server's disk relative to its working directory.
+ */
+const noPartials: FS = {
+  exists: async () => true,
+  existsSync: () => true,
+  readFile: async name => refusePartial(name),
+  readFileSync: refusePartial,
+  resolve: (_directory, name) => name,
+}
 
 @Injectable()
 export class PluginRendererService {
   private liquid: Liquid
 
   constructor() {
-    this.liquid = new Liquid()
+    this.liquid = new Liquid({ fs: noPartials, relativeReference: false })
     this.registerCustomFilters()
   }
 

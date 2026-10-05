@@ -8,6 +8,12 @@ describe('pluginRendererService', () => {
     service = new PluginRendererService()
   })
 
+  it('refuses to render a file from the server\'s disk', async () => {
+    await expect(service.render('{% render "package.json" %}', {})).rejects.toThrow('A template cannot render "package.json": Kuroshiro has no partials.')
+    await expect(service.render('{% include "package.json" %}', {})).rejects.toThrow('Kuroshiro has no partials.')
+    await expect(service.render('{% layout "package.json" %}body', {})).rejects.toThrow('Kuroshiro has no partials.')
+  })
+
   it('renders a simple liquid template with data', async () => {
     const template = '<div>Temperature: {{ temperature }}°C</div>'
     const data = { temperature: 25 }
