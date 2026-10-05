@@ -22,8 +22,8 @@ describe('the gallery', () => {
       .toHaveAttribute('href', '#tokens')
   })
 
-  // The page holds every primitive in every state, so axe has more to read with each one that lands; under coverage in CI it passed the default 15 s.
-  it('is accessible in both themes', { timeout: 60_000 }, async () => {
+  // The page holds every primitive in every state, so axe has more to read with each one that lands; under coverage in CI, alongside the other packages' own coverage runs, it has run past 60 s.
+  it('is accessible in both themes', { timeout: 120_000 }, async () => {
     await mount(GalleryPage)
 
     await expectAccessible()
