@@ -645,13 +645,15 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
 
     it('clears the cached output of a Mashup holding the Plugin in a slot', async () => {
       const plugin = await createPollPlugin()
-      const screen = await database.getRepository(Screen).save({ type: 'mashup', filename: 'Morning', order: 1, isActive: false, fetchManual: false, generatedAt: new Date(), cachedPluginOutput: '<div>stale</div>', device: await addDevice('Kitchen') })
+      const screen = await database.getRepository(Screen).save({ type: 'mashup', filename: 'Morning', order: 1, isActive: false, fetchManual: false, generatedAt: new Date(), cachedPluginOutput: '<div>stale</div>', renderSignal: 'skip', device: await addDevice('Kitchen') })
       const configuration = await database.getRepository(MashupConfiguration).save({ layout: '1Lx1R', screen })
       await database.getRepository(MashupSlot).save({ position: 'left', size: 'view--half_vertical', order: 0, plugin: { id: plugin.id }, mashupConfiguration: configuration })
 
       await saved(plugin.id, { name: 'Forecast' })
 
-      expect((await database.getRepository(Screen).findOneByOrFail({ id: screen.id })).cachedPluginOutput).toBeNull()
+      const stored = await database.getRepository(Screen).findOneByOrFail({ id: screen.id })
+      expect(stored.cachedPluginOutput).toBeNull()
+      expect(stored.renderSignal).toBeNull()
     })
 
     it('renders a Webhook-kind Plugin again for its Screen after a rename', async () => {

@@ -5,9 +5,9 @@ import type { Screen } from './screens.entity.js'
 import { nextRotationAt } from '../devices/next-poll.js'
 import { screenStatesOf } from '../schedule/rotation.js'
 
-/** A Screen stores no Render Signal, so none is read. */
-export function renderSignalOf(_screen: Screen): RenderSignal | null {
-  return null
+/** The Render Signal last observed for the Screen, remembered until its cached output changes. */
+export function renderSignalOf(screen: Screen): RenderSignal | null {
+  return screen.renderSignal ?? null
 }
 
 /**

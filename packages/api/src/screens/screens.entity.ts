@@ -1,3 +1,4 @@
+import type { RenderSignal } from 'kuroshiro-shared'
 import type { Relation } from 'typeorm'
 import type { Device } from '../devices/devices.entity.js'
 import type { MashupConfiguration } from '../mashup/entities/mashup-configuration.entity.js'
@@ -49,6 +50,10 @@ export class Screen {
 
   @Column({ type: 'text', nullable: true })
   cachedPluginOutput?: string | null
+
+  /** The latest Render Signal observed for this Screen, cleared whenever its cached output is written or invalidated. */
+  @Column({ type: 'text', nullable: true })
+  renderSignal?: RenderSignal | null
 
   @ManyToOne('Device', { onDelete: 'CASCADE' })
   device: Relation<Device>

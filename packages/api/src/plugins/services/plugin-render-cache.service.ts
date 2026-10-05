@@ -57,6 +57,7 @@ export class PluginRenderCacheService {
       { plugin: { id: plugin.id } },
       {
         cachedPluginOutput: rendered,
+        renderSignal: null,
         generatedAt: new Date(),
       },
     )
@@ -78,7 +79,7 @@ export class PluginRenderCacheService {
       for (const slot of mashupsWithPlugin) {
         await this.screenRepository.update(
           { id: slot.mashupConfiguration.screen.id },
-          { cachedPluginOutput: null },
+          { cachedPluginOutput: null, renderSignal: null },
         )
       }
 

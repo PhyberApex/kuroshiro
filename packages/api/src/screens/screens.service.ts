@@ -100,7 +100,7 @@ export class ScreensService {
 
     const changes: QueryDeepPartialEntity<Screen> = {
       ...(input.name !== undefined && { filename: input.name }),
-      ...(input.html !== undefined && { html: input.html }),
+      ...(input.html !== undefined && { html: input.html, renderSignal: null }),
       ...(screen.type === 'external' && await this.changeExternalLink(screen, input)),
     }
     if (Object.keys(changes).length > 0)

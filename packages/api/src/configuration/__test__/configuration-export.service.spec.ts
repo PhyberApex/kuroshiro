@@ -325,6 +325,18 @@ describe('configurationExportService', () => {
     expect(screensJson[0].schedule.id).toBe('schedule-1')
   })
 
+  it('leaves a Screen\'s remembered Render Signal out of screens.json, being runtime state', async () => {
+    const device = makeDevice({ id: 'device-1' })
+    const screen = makeScreen({ id: 'screen-1', device, renderSignal: 'skip' })
+    screenRepo.find.mockResolvedValue([screen])
+
+    const buffer = await service.exportToZip()
+    const zip = new AdmZip(buffer)
+    const screensJson = JSON.parse(zip.getEntry('screens.json')!.getData().toString('utf8'))
+
+    expect(screensJson[0]).not.toHaveProperty('renderSignal')
+  })
+
   it('writes a Plugin\'s Field Values, secrets included, on its plugins.json entry and none on the assignments.json entry', async () => {
     const device = makeDevice({ id: 'device-1' })
     const plugin = makePlugin({

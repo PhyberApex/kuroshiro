@@ -66,7 +66,7 @@ export class MashupService {
       await slots.remove(configuration.slots)
       await configurations.update({ id: configuration.id }, { layout })
       await this.buildSlots(layoutConfig, plugins, configuration, slots)
-      await manager.getRepository(Screen).update({ id: screenId }, { cachedPluginOutput: null })
+      await manager.getRepository(Screen).update({ id: screenId }, { cachedPluginOutput: null, renderSignal: null })
     })
     this.logger.log(`Mashup updated: ${screenId}`)
     return screenId

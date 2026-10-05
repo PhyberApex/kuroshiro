@@ -751,6 +751,7 @@ export class ConfigurationImportService {
     screen.isActive = false
     screen.generatedAt = new Date()
     screen.cachedPluginOutput = null
+    screen.renderSignal = null
     const saved = await repos.screen.save(screen)
     this.bump(run, 'screens', !existing)
     return saved
