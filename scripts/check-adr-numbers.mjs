@@ -3,6 +3,7 @@ import process from 'node:process'
 
 const ADR_DIR = 'docs/adr'
 const NUMBER_PREFIX = /^(\d+)-/
+const DUPLICATE_ADR_NUMBER_EXIT_CODE = 1
 
 const filenames = readdirSync(ADR_DIR).filter(name => name.endsWith('.md'))
 
@@ -17,12 +18,12 @@ for (const filename of filenames) {
   filenamesByNumber.set(number, group)
 }
 
-const duplicates = [...filenamesByNumber.values()].filter(group => group.length > 1)
+const duplicates = [...filenamesByNumber.entries()].filter(([, group]) => group.length > 1)
 
 if (duplicates.length > 0) {
-  for (const group of duplicates)
-    console.error(`Duplicate ADR number ${group[0].match(NUMBER_PREFIX)[1]}: ${group.join(', ')}`)
-  process.exit(1)
+  for (const [number, group] of duplicates)
+    console.error(`Duplicate ADR number ${number}: ${group.join(', ')}`)
+  process.exit(DUPLICATE_ADR_NUMBER_EXIT_CODE)
 }
 
 console.log(`No duplicate ADR numbers across ${filenames.length} files in ${ADR_DIR}.`)
