@@ -52,7 +52,7 @@ import { CONFIG_SCHEMA_VERSION, PREVIOUS_CONFIG_SCHEMA_VERSION } from '../schema
 import { CONFIG_ARCHIVE_FILES } from '../types.js'
 import { toImportCheck } from './import-check.mapper.js'
 
-/** A file-type Screen's image, held back until the transaction commits (ADR-0021): a rollback must not leave a written image for a row the database undid. */
+/** A file-type Screen's image, held back until the transaction commits: a rollback must not leave a written image for a row the database undid. */
 interface PendingImageWrite {
   destPath: string
   image: Buffer
@@ -832,7 +832,7 @@ export class ConfigurationImportService {
 
   /**
    * A check reads the image as an import does, so that an archive whose image cannot be read is refused by both.
-   * An import defers the write itself until its transaction commits (ADR-0021): queuing it here, before the row
+   * An import defers the write itself until its transaction commits: queuing it here, before the row
    * is even known to stick, would leave it on disk after a later record's refusal rolls the row back.
    */
   private restoreScreenImage(zip: AdmZip, screenId: string, deviceId: string, run: ImportRun): void {
