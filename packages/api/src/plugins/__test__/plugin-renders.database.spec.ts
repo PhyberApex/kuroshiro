@@ -221,7 +221,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
   }
 
   describe('one context for every render', () => {
-    it('gives the scheduler tick, the on-demand render, a Mashup slot and the preview\'s data the same context, with sensors only where there is a Device', async () => {
+    it('gives the scheduler tick and the on-demand render the same Sensor-less context a Mashup slot and the preview keep the polling Device\'s own Sensors for', async () => {
       vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-10-01T10:00:00.000Z') })
       const plugin = await createPollPlugin({ fields: [{ keyname: 'city', name: 'City' }], fieldValues: { city: 'Berlin' } })
       const device = await addDevice('Kitchen')
@@ -239,20 +239,24 @@ describe('what a Plugin renders from, and with which Template, against a real da
       const [tick] = contextsGivenToTheTemplate()
       const preview = await previewData(plugin.id, { deviceId: device.id })
 
-      const expected = {
+      const sharedRenderExpected = {
         city: 'Berlin',
         weather: { temperature: 21 },
-        sensors: { temperature: { value: 21.5, unit: 'C' } },
+        sensors: {},
         trmnl: {
           system: { timestamp_utc: 1790848800 },
           plugin_settings: { instance_name: 'Weather', strategy: 'polling', dark_mode: 'no', no_screen_padding: 'no', custom_fields_values: { city: 'Berlin' } },
           user: { id: 'kuroshiro-user', locale: 'en' },
         },
       }
-      expect(onDemand).toEqual(expected)
-      expect(mashupSlot).toEqual(expected)
-      expect(preview.context).toEqual(expected)
-      expect(tick).toEqual({ ...expected, sensors: {} })
+      // A Mashup slot and the device-scoped preview are each rendered for one specific
+      // Device and stored (or returned) only for that Device, so they keep its Sensors
+      // — unlike the shared Plugin Screen cache this issue (#1121) is scoped to.
+      const deviceScopedExpected = { ...sharedRenderExpected, sensors: { temperature: { value: 21.5, unit: 'C' } } }
+      expect(onDemand).toEqual(sharedRenderExpected)
+      expect(mashupSlot).toEqual(deviceScopedExpected)
+      expect(preview.context).toEqual(deviceScopedExpected)
+      expect(tick).toEqual(sharedRenderExpected)
     })
 
     it('lets a Webhook-kind Plugin\'s render read trmnl beside its Webhook Payload', async () => {

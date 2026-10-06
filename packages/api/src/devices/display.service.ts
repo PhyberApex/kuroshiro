@@ -699,7 +699,7 @@ export class DeviceDisplayService {
 
     // No render is cached yet: a Poll-kind Plugin fetches now, a Webhook-kind one renders what it has received, or nothing.
     try {
-      const renderedHtml = await this.renderPluginHtml(plugin, screen, device)
+      const renderedHtml = await this.renderPluginHtml(plugin, screen)
       return renderedHtml ? await this.renderBodyToScreenPng(viewFull(renderedHtml), screen, device, honorRenderSignal) : null
     }
     catch (err) {
@@ -735,15 +735,20 @@ export class DeviceDisplayService {
     }
   }
 
-  private async renderPluginHtml(plugin: Plugin, screen: Screen, device: Device): Promise<string | null> {
+  /**
+   * `sensors` is always `[]` here, matching the scheduler tick, save-triggered
+   * refresh and Webhook ingest: this render's output is cached and then shared
+   * by every Device the Plugin is assigned to, so the polling Device's own
+   * Sensor readings must not leak into it.
+   */
+  private async renderPluginHtml(plugin: Plugin, screen: Screen): Promise<string | null> {
     this.logger.log(`No cache, rendering plugin ${plugin.id} on-demand for screen ${screen.id}`)
 
     const fullTemplate = templateOfSize(plugin.templates, 'full')
     if (!fullTemplate)
       return null
 
-    const sensors = await this.deviceSensors.findForDevice(device.id)
-    const { context } = await this.pluginTemplateContext.contextFor(plugin, sensors)
+    const { context } = await this.pluginTemplateContext.contextFor(plugin, [])
 
     const renderedHtml = await this.pluginRenderer.render(fullTemplate.liquidMarkup, context)
     await this.cachePluginOutput(screen, renderedHtml)

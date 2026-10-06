@@ -16,7 +16,7 @@ import { NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMockDeviceSensorsService, primeMockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService.js'
 import { jsonResponse, stubFetch } from '../../test/fetch.js'
-import { makeDevice, makeFirmware, makeMashupConfiguration, makeMashupSlot, makePlugin, makePluginDataSource, makePluginTemplate, makeSchedule, makeScreen } from '../../test/fixtures.js'
+import { makeDevice, makeDeviceSensor, makeFirmware, makeMashupConfiguration, makeMashupSlot, makePlugin, makePluginDataSource, makePluginTemplate, makeSchedule, makeScreen } from '../../test/fixtures.js'
 import { createMockDeviceModelsService, createMockFallbackScreensService, GRAY_4, GRAY_16, OG_PLUS, primeMockDeviceModelsService, primeMockFallbackScreensService, V2 } from '../../test/mockDeviceModelsService.js'
 import { createPluginTemplateContextService } from '../../test/mockPluginCollaborators.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
@@ -300,6 +300,19 @@ describe('deviceDisplayService', () => {
       expect(render).toHaveBeenCalledWith('{{ city }}', { city: 'Berlin', sensors: {}, trmnl: expect.objectContaining({ plugin_settings: expect.objectContaining({ instance_name: 'Clock' }) }) })
       const html: string = puppeteerPage.setContent.mock.calls[0][0]
       expect(html).toContain('<div class="view view--full"><b>Berlin</b></div>')
+    })
+
+    it('renders a Poll-kind Plugin on demand with no Device Sensors, even though the polling Device has readings', async () => {
+      const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS })
+      const plugin = makePlugin({ id: 'p1', name: 'Clock', dataSources: [], templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '{{ sensors }}' })] })
+      primeRotation({ id: 'screen2', type: 'plugin', order: 2, plugin, filename: 'x' }, device)
+      deviceSensors.findForDevice.mockResolvedValue([makeDeviceSensor({ kind: 'temperature', value: 21.5, unit: 'C' })])
+      const render = vi.fn().mockResolvedValue('<b></b>')
+      injectPrivate(service, 'pluginRenderer', { render })
+
+      await service.getCurrentImage(headers)
+
+      expect(render).toHaveBeenCalledWith('{{ sensors }}', expect.objectContaining({ sensors: {} }))
     })
 
     it('fetches and renders with the Plugin\'s Field Values, in both address forms, when rendering on demand', async () => {
