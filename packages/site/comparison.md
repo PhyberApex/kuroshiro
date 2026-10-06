@@ -1,6 +1,12 @@
+---
+sidebar: false
+aside: false
+pageClass: comparison-page
+---
+
 # Kuroshiro vs. the rest
 
-Kuroshiro isn't the only way to run a TRMNL: the device also works with the official [trmnl.com](https://trmnl.com/) cloud, and with [Terminus](https://github.com/usetrmnl/terminus), the other open-source, self-hosted BYOS. Here's how they line up today:
+Kuroshiro isn't the only way to run a TRMNL: the device also works with the official [trmnl.com](https://trmnl.com/) cloud, and with a handful of open-source, self-hosted BYOS servers, [Terminus](https://github.com/usetrmnl/terminus) being TRMNL's flagship one. Here's how Kuroshiro lines up against the two in depth:
 
 | | **Kuroshiro** | [**Terminus**](https://github.com/usetrmnl/terminus) | **Official TRMNL Cloud** |
 |---|---|---|---|
@@ -17,6 +23,36 @@ Kuroshiro isn't the only way to run a TRMNL: the device also works with the offi
 | Sleep Mode | Per-Device night window that parks the Device until the window ends, with an optional dedicated sleep Screen | Supported | Supported |
 
 The short version: Kuroshiro trades Terminus's multi-user accounts and device-grouped playlists for a simpler single-admin, single-container deployment, while going further than either self-hosted option on per-Device-Model firmware safety and mixed fetch/literal Data Sources within one Plugin.
+
+## Every BYOS at a glance
+
+TRMNL keeps a [feature matrix of BYOS implementations](https://docs.trmnl.com/go/diy/byos). Here it is with Kuroshiro added, turned on its side so every server fits next to the others.
+
+🟢 supported · 🟡 partially supported · 🔴 not supported or not implemented · ⚪️ unknown
+
+<div class="byos-matrix">
+
+| | **Kuroshiro**<small>NestJS / Vue</small> | [**Terminus**](https://github.com/usetrmnl/terminus)<small>Ruby / Hanami</small> | [**LaraPaper**](https://github.com/usetrmnl/larapaper)<small>PHP / Laravel</small> | [**Inker**](https://github.com/usetrmnl/inker)<small>JavaScript</small> | [**BYOS Next.js**](https://github.com/usetrmnl/byos_next)<small>JavaScript / Next.js</small> | [**BYOS FastAPI**](https://github.com/usetrmnl/byos_fastapi)<small>Python / FastAPI</small> | [**BYOS Django**](https://github.com/usetrmnl/byos_django)<small>Python / Django</small> | [**BYOS Phoenix**](https://github.com/usetrmnl/byos_phoenix)<small>Elixir / Phoenix</small> |
+|---|---|---|---|---|---|---|---|---|
+| Dashboard | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🔴 | 🔴 |
+| Auto-Provisioning | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | ⚪️ | 🔴 | 🔴 |
+| Devices | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 |
+| JSON Data API | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🔴 | 🟢 | 🟢 |
+| Image Previews | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 |
+| Playlists | 🟢¹ | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🔴 | 🟢 |
+| Plugins | 🟢 | 🟢 | 🟢 | 🟢 | 🔴 | 🟢 | 🔴 | 🔴 |
+| Recipes | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | ⚪️ | 🔴 | 🔴 |
+| Sensors | 🟢 | 🟢 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 |
+| Docker | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🔴 | 🟢 | 🔴 |
+| Test Suite | 🟢 | 🟢 | 🟢 | 🟢 | 🔴 | 🔴 | 🔴 | 🔴 |
+| Maintained | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🔴 | 🔴 | 🔴 |
+| Semantic Versioning | 🟢 | 🟢 | 🔴 | ⚪️ | 🟢 | ⚪️ | ⚪️ | ⚪️ |
+
+</div>
+
+¹ As a per-Device Rotation of Screens, each gated by its own day/time Schedule, rather than named playlists shared between Devices.
+
+The other servers' columns are TRMNL's own assessment as of October 2026; the Kuroshiro column is ours.
 
 ## Why it works the way it does
 
