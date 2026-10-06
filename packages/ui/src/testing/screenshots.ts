@@ -2,6 +2,7 @@ import type { Locator } from 'vitest/browser'
 import type { ViewportName } from './viewport'
 import { expect } from 'vitest'
 import { page } from 'vitest/browser'
+import { scrollSettled } from './paint'
 import { forceTheme, THEMES } from './theme'
 import { resetViewport, resizeTo, VIEWPORTS } from './viewport'
 
@@ -16,6 +17,7 @@ export async function expectScreenshot(target: Locator, name: string) {
   // A shot is clipped to the viewport, so the viewport grows to hold the whole document first.
   await resizeTo(width, Math.max(height, document.documentElement.scrollHeight))
   try {
+    await scrollSettled()
     await expect.element(target).toMatchScreenshot(name)
   }
   finally {
@@ -35,6 +37,7 @@ export async function expectWindowScreenshot(name: string) {
   wholeWindow.style.cssText = 'position: fixed; inset: 0; pointer-events: none; z-index: 2147483647'
   document.body.append(wholeWindow)
   try {
+    await scrollSettled()
     await expect.element(page.elementLocator(wholeWindow)).toMatchScreenshot(name)
   }
   finally {
