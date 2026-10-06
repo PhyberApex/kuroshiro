@@ -272,6 +272,19 @@ describe('the Recipe Update Check, against a real database', () => {
       ])
     })
 
+    it('shows no Update Items for a "none" strategy Recipe right after import (issue #1261)', async () => {
+      const noneSettings = { strategy: 'none', polling_url: '', static_data: '' }
+      upstreamAnswers(() => recipeZip(noneSettings))
+      const importResponse = await http.postJson('/api/plugins/import-recipe', { recipe: '41120' })
+      expect(importResponse.status).toBe(201)
+      const plugin = ((await importResponse.json()) as PluginImportResult).plugin
+
+      upstreamAnswers(() => recipeZip(noneSettings))
+      const preview = await check(plugin.id)
+
+      expect(preview.items).toEqual([])
+    })
+
     it('answers 422 recipe-not-found, naming the id, when TRMNL no longer has the Recipe', async () => {
       const plugin = await importMoonPhase()
       upstreamAnswers(() => new Response(null, { status: 404 }))

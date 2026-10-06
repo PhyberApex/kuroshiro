@@ -232,6 +232,55 @@ describe('pluginImporterService recipe import', () => {
       await expect(service.importFromRecipeArchive(archive, '1')).rejects.toThrow(/strategy/i)
     })
 
+    it('rejects a "plugin_merge" strategy recipe, naming the value', async () => {
+      const settings = { name: 'Merge Recipe', strategy: 'plugin_merge' }
+      const archive = buildFlatRecipeArchive(settings)
+
+      const service = new PluginImporterService()
+      await expect(service.importFromRecipeArchive(archive, '1')).rejects.toThrow(/plugin_merge/)
+    })
+
+    it('imports a "none" strategy recipe, shaped like DWD Rainradar (#1261), as a Poll plugin with zero Data Sources', async () => {
+      const settings = {
+        name: 'DWD Rainradar',
+        strategy: 'none',
+        polling_url: '',
+        static_data: '',
+        custom_fields: [
+          { keyname: 'station', field_type: 'string', name: 'Station', default_value: 'Hamburg' },
+        ],
+      }
+      const archive = buildFlatRecipeArchive(settings, {
+        'full.liquid': '<img src="{{ station }}.png">',
+        'half_horizontal.liquid': 'Half H',
+        'half_vertical.liquid': 'Half V',
+        'quadrant.liquid': 'Quad',
+        'shared.liquid': '{% template main %}shared{% endtemplate %}',
+      })
+
+      const service = new PluginImporterService()
+      const result = await service.importFromRecipeArchive(archive, '490885')
+
+      expect(result.kind).toBe('Poll')
+      expect(result.dataSources).toEqual([])
+      expect(result.templates).toHaveLength(4)
+      expect(result.templates.map(t => t.layout).sort()).toEqual(['full', 'half_horizontal', 'half_vertical', 'quadrant'])
+      expect(result.fields).toHaveLength(1)
+      expect(result.fields[0]).toMatchObject({ keyname: 'station', defaultValue: 'Hamburg' })
+      expect(result.sourceRecipeId).toBe('490885')
+    })
+
+    it('rejects a "none" strategy recipe that also carries a transform.js', async () => {
+      const settings = { name: 'None Recipe', strategy: 'none' }
+      const archive = buildFlatRecipeArchive(settings, {
+        'full.liquid': '<div>No data</div>',
+        'transform.js': 'module.exports = (data) => data',
+      })
+
+      const service = new PluginImporterService()
+      await expect(service.importFromRecipeArchive(archive, '1')).rejects.toThrow(/transform\.js/i)
+    })
+
     it('falls back to an empty object when polling_headers is malformed JSON', async () => {
       const settings = { name: 'Bad Headers', strategy: 'polling', polling_url: 'https://api.example.com', polling_headers: 'not json{{{' }
       const archive = buildFlatRecipeArchive(settings)

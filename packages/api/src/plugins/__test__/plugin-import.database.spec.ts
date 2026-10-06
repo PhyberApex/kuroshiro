@@ -555,13 +555,22 @@ describe('importing a Plugin, against a real database', () => {
       expect(refusal.code).toBe('recipe-oauth')
     })
 
-    it.each(['webhook', 'none', undefined])('answers 422 recipe-strategy-unsupported for a Recipe of strategy "%s"', async (strategy) => {
+    it.each(['webhook', 'plugin_merge', undefined])('answers 422 recipe-strategy-unsupported for a Recipe of strategy "%s"', async (strategy) => {
       upstreamAnswers(() => zipResponse(recipeSettings({ strategy })))
 
       const refusal = await refused(await http.postJson('/api/plugins/import-recipe', { recipe: '41120' }), 422)
 
-      expect(refusal).toMatchObject({ code: 'recipe-strategy-unsupported', details: { strategy: strategy ?? 'none' } })
+      expect(refusal).toMatchObject({ code: 'recipe-strategy-unsupported', details: { strategy: strategy ?? 'unknown' } })
       expect(await listed()).toEqual([])
+    })
+
+    it('imports a "none" strategy Recipe as a Poll-kind Plugin with zero Data Sources, scheduled like any other', async () => {
+      upstreamAnswers(() => zipResponse(recipeSettings({ strategy: 'none', polling_url: '', static_data: '' })))
+
+      const result = await imported(await http.postJson('/api/plugins/import-recipe', { recipe: '41120' }))
+
+      expect(result.plugin).toMatchObject({ kind: 'Poll', dataSources: [], recipe: { id: '41120', name: 'Moon Phase' } })
+      expect(scheduler.hasScheduledJob(result.plugin.id)).toBe(true)
     })
 
     it('answers 422 recipe-static-transform for fixed data with a transform', async () => {
@@ -570,6 +579,15 @@ describe('importing a Plugin, against a real database', () => {
       const refusal = await refused(await http.postJson('/api/plugins/import-recipe', { recipe: '41120' }), 422)
 
       expect(refusal.code).toBe('recipe-static-transform')
+      expect(refusal.message).toEqual(expect.stringContaining('transform'))
+    })
+
+    it('answers 422 recipe-none-transform for no data source with a transform', async () => {
+      upstreamAnswers(() => zipResponse({ ...recipeSettings({ strategy: 'none' }), 'transform.js': 'function transform(input) { return input }' }))
+
+      const refusal = await refused(await http.postJson('/api/plugins/import-recipe', { recipe: '41120' }), 422)
+
+      expect(refusal.code).toBe('recipe-none-transform')
       expect(refusal.message).toEqual(expect.stringContaining('transform'))
     })
 

@@ -341,9 +341,13 @@ export class PluginImporterService {
       return this.importStaticRecipe(entries, settingsContent, recipeSettings, recipeId)
     }
 
+    if (recipeSettings.strategy === 'none') {
+      return this.importNoneRecipe(entries, settingsContent, recipeSettings, recipeId)
+    }
+
     if (recipeSettings.strategy !== 'polling') {
-      const strategy = recipeSettings.strategy ?? 'none'
-      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'recipe-strategy-unsupported', `The Recipe's strategy "${strategy}" is not supported; only "polling" and "static" Recipes can be imported.`, { strategy })
+      const strategy = recipeSettings.strategy ?? 'unknown'
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'recipe-strategy-unsupported', `The Recipe's strategy "${strategy}" is not supported; only "polling", "static" and "none" Recipes can be imported.`, { strategy })
     }
 
     const reshapedZip = this.reshapeRecipeArchive(entries, settingsContent, recipeSettings)
@@ -377,6 +381,28 @@ export class PluginImporterService {
 
     const reshapedZip = this.reshapeRecipeArchive(entries, settingsContent, recipeSettings)
     const parsed = withFullTemplate(this.parseZip(reshapedZip, `recipe-${recipeId}`, [staticDataSource]))
+
+    return {
+      ...parsed,
+      fields: parsed.fields.map(field => field.fieldType === 'author_bio' ? { ...field, required: false } : field),
+      sourceRecipeId: recipeId,
+    }
+  }
+
+  // A `strategy: none` Recipe has no data source at all: it renders only
+  // from its Template, Plugin Fields and the `trmnl` object, the same shape
+  // a Poll-kind Plugin without Data Sources already renders (issue #1207 /
+  // #1261). A transform.js alongside it has nothing to transform.
+  private importNoneRecipe(entries: AdmZip.IZipEntry[], settingsContent: string, recipeSettings: RecipeSettings, recipeId: string): RecipePlugin {
+    const hasTransform = entries.some(entry =>
+      entry.entryName === 'transform.js' || entry.entryName.endsWith('/transform.js'),
+    )
+    if (hasTransform) {
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'recipe-none-transform', 'The Recipe has no data source and a transform.js, which has nothing to transform.')
+    }
+
+    const reshapedZip = this.reshapeRecipeArchive(entries, settingsContent, recipeSettings)
+    const parsed = withFullTemplate(this.parseZip(reshapedZip, `recipe-${recipeId}`, []))
 
     return {
       ...parsed,

@@ -20,6 +20,7 @@ const importing = useImportPlugin({
     'recipe-oauth': true,
     'recipe-strategy-unsupported': true,
     'recipe-static-transform': true,
+    'recipe-none-transform': true,
     'import-no-plugin': 'This Recipe holds no template, so there is nothing to import.',
   },
 })
