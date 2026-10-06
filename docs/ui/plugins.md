@@ -308,6 +308,8 @@ Three tucked sections, closed by default ([render][plugin-fields]).
 
 **Name and description.** "Name" (required: "A Plugin needs a name."; the title and the bar follow on save) and "Description", a two-line text input with the placeholder "What this Plugin shows. Only you read it." A Recipe brings its own description.
 
+**Framework version** (ADR-0041). An optional text input under the description, placeholder "{3.4.0}, this Instance's", hint "Leave empty to follow this Instance's version. TRMNL lists its versions under [releases](https://trmnl.com/framework/releases)." A value must be an exact version: "Use a version such as 3.3.1." It is part of the form, and the template editor's preview draws with it as soon as it is valid. A Recipe that names a version brings it.
+
 **Duplicate, export or delete {Plugin}.** One paragraph, then three plain buttons: "A duplicate is a second Plugin with the same template, Data Sources, Plugin Fields and Field Values, on no Device. An export is a .zip with the template, the Data Sources as written, headers included, and the Plugin Fields, without Field Values. Deleting removes {Plugin} from this Instance and from {Devices}." For a Webhook-kind Plugin: "the same template, Merge Strategy, Plugin Fields and Field Values, on no Device, with its own Webhook URL", and the export sentence leaves out the Data Sources.
 
 ### Duplicate, export, delete

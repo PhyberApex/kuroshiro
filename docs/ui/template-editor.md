@@ -80,6 +80,7 @@ A Plugin has one to four Templates, one per size: `full`, `half_horizontal`, `ha
 - **What it is not.** The Device shows an image dithered to its Palette; the plate shows what a browser draws before that step. One line under the plate says so (below), and offers the device preview.
 - **The device preview** (ADR-0040). On request, the server draws the plate's own HTML as the Device would get it and the plate shows that image instead. Any change to what it was drawn from (the Template, a Field Value, the data, the Device, Device Model or Palette) puts the live browser drawing back.
 - **A Template of a slot size** is drawn in its slot of a Mashup, the other slots empty: Half horizontal at the top of two rows, Half vertical at the left of two columns, Quadrant at the top left of four.
+- **The framework version** is the Plugin's Framework Version for the full size, and this Instance's for a slot size, because a Mashup loads one framework for all its slots (ADR-0041). The facts line (below) ends with "· framework {3.4.0}", and for a slot size with a Plugin that names its own version, "· framework {3.4.0}, this Instance's, as in a Mashup".
 
 **Under the plate**, in this order:
 

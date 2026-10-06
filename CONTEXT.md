@@ -72,6 +72,10 @@ _Avoid_: DevicePlugin (the entity name), install, uninstall, remove, detach
 One named input a Plugin declares for the admin to fill in — a key, a label, a type (single-line text, multi-line text, number, on/off, password, or a select with its options), an optional default and whether it is required. Part of the Plugin: it arrives with a Recipe or `.trmnlp` import, or the admin authors it on the Plugin. A type Kuroshiro has no control for is treated as single-line text; the `author_bio` type is a read-only credit, never an input.
 _Avoid_: Custom field, form field (TRMNL's terms), setting, Plugin Configuration, variable
 
+**Framework Version**:
+The exact release (`X.Y.Z`) of TRMNL's framework CSS and JS a render loads. The Instance pins one, moved forward by a reviewed PR when TRMNL releases; a Plugin may pin its own, which every drawing of it uses — except inside a Mashup, which loads the Instance's for all its slots. Never `latest` (ADR-0041).
+_Avoid_: Framework (bare, for the version), design system version, `latest`
+
 **Field Value**:
 What the admin entered for one Plugin Field, falling back to the Plugin Field's default when nothing was entered. Belongs to the Plugin, not to a Plugin Assignment: every Device and every Mashup slot showing the Plugin renders with the same Field Values, and showing it with different values means duplicating the Plugin. Available to the Plugin's templates and to its Data Sources' url, headers and body. A password-type Field Value is a secret. A required Plugin Field with neither a Field Value nor a default marks the Plugin as needing values but never stops it saving, being assigned or rendering.
 _Avoid_: Plugin Variable (a removed concept), per-Device value, override, custom field value, config
