@@ -77,8 +77,10 @@ A Plugin has one to four Templates, one per size: `full`, `half_horizontal`, `ha
 
 - **Where it is rendered.** In the browser. The Liquid engine and Kuroshiro's filters move to `packages/shared`, so the browser and the server run the same code against the same data. Nothing goes to the server while a Template is typed.
 - **When.** 300 ms after the last keystroke, and at once when a Field Value, the Device or the Template changes. The new drawing replaces the old one when it is ready; the plate is never blank in between.
-- **What it is not.** The Device shows an image dithered to its Palette; the plate shows what a browser draws before that step. One line under the plate says so (below).
+- **What it is not.** The Device shows an image dithered to its Palette; the plate shows what a browser draws before that step. One line under the plate says so (below), and offers the device preview.
+- **The device preview** (ADR-0040). On request, the server draws the plate's own HTML as the Device would get it and the plate shows that image instead. Any change to what it was drawn from (the Template, a Field Value, the data, the Device, Device Model or Palette) puts the live browser drawing back.
 - **A Template of a slot size** is drawn in its slot of a Mashup, the other slots empty: Half horizontal at the top of two rows, Half vertical at the left of two columns, Quadrant at the top left of four.
+- **The framework version** is the Plugin's Framework Version for the full size, and this Instance's for a slot size, because a Mashup loads one framework for all its slots (ADR-0041). The facts line (below) ends with "· framework {3.4.0}", and for a slot size with a Plugin that names its own version, "· framework {3.4.0}, this Instance's, as in a Mashup".
 
 **Under the plate**, in this order:
 
@@ -87,7 +89,11 @@ A Plugin has one to four Templates, one per size: `full`, `half_horizontal`, `ha
    - With no Devices there is no first select, only "Preview for" and the two selects, starting at TRMNL OG (2-bit) and 4 Grays.
    - The choice is the admin's for this visit. It is not saved and not part of the form.
 2. **The facts**, in mono `ink-soft`: "{Device Model} · {width} × {height} · {Palette}" for a Device; "{width} × {height}" for a chosen Device Model, whose name the selects already show.
-3. **The honest line**, in `ink-soft`: "Your browser draws this. {Device} shows it in {4 grays}." ("The Device" when none is chosen.) For a slot size it goes on: ", in {a quarter of a Mashup}; the other slots are left empty here."
+3. **The honest line**, in `ink-soft`: "Your browser draws this. {Device} shows it in {4 grays}." ("The Device" when none is chosen.) For a slot size it goes on: ", in {a quarter of a Mashup}; the other slots are left empty here." It ends with a plain button, "See it as {Device} shows it" ("See it as the Device shows it" when none is chosen).
+   - While drawing: the plate keeps the browser drawing, with the loading mark and "Drawing it as {Device} shows it"; the button is disabled.
+   - Drawn: the plate shows the image, and the line reads "As {Device} shows it, in {4 grays}, drawn at {hh:mm}." with "Back to the browser drawing". When the content raised a Render Signal, a second line: "This content asks to be skipped." or "This content asks to keep its previous image."
+   - Busy (another device preview is being drawn): "Another preview is being drawn. Try again in a moment."
+   - Failed: "Could not draw it as {Device} shows it." with "Try again"; the browser drawing stays.
 4. **Notices about the data**, when there are any (see Problems).
 5. **Data**, a tucked section.
 
@@ -236,7 +242,7 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 
 **Decided on the agent's own call; the maintainer may want to overturn them**
 
-- The preview is a browser's drawing, not the dithered image the Device gets. A true image would be a new server endpoint and a new capability, so it is filed for triage as [Preview a Plugin as the dithered image the Device shows](https://github.com/PhyberApex/kuroshiro/issues/1111) and left out.
+- The live preview is a browser's drawing, not the dithered image the Device gets; the dithered image is drawn on request (ADR-0040, [#1111](https://github.com/PhyberApex/kuroshiro/issues/1111)).
 - Liquid runs in the browser from shared code. The alternative, a server round trip per keystroke, is slower and would make the server parse half-typed Templates.
 - A Plugin with one Template shows no size control, only one sentence and a quiet action.
 - A new Template starts as a copy of Full, not empty.

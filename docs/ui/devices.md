@@ -111,12 +111,14 @@ A heading "Screens in Order" on a 2 px ink rule, then one row per Screen. A row,
 3. **Not today.** The Schedule's weekdays or its dates exclude today.
 4. **Not at this hour.**
 5. **Skipping.** The Screen raised a `skip` Render Signal.
-6. **Up next.** The Screen Rotation turns to at the next poll. During Sleep Mode's window: "Up next at {wake time}".
+6. **Up next.** The Screen Rotation turns to at the next poll. During Sleep Mode's window: "Up next at {wake time}". When it is the Picked Screen it gains the qualifier "picked by hand" in `ink-soft`, as "Up next · picked by hand".
 7. No state: the Screen waits its turn.
 
 This settles the precedence the glossary ticket left open: the admin's own Schedule comes before the content's Render Signal, because the Schedule is what the admin can change and because a Screen outside its Schedule is not rendered, so its Render Signal is not current. When a Schedule reason and Skipping both apply, the opened row says both.
 
 **Holding image** is not a Screen State. A Screen that raised a `hold` Render Signal still takes its turn, so it keeps its state and gains a qualifier in `ink-soft`: "Active Screen · holding image", "Up next · holding image", or "Holding image" alone when it carries no state. This replaces the chip of [#1071](https://github.com/PhyberApex/kuroshiro/issues/1071); its two labels, "Skipping" and "Holding image", are kept.
+
+**Show next** (ADR-0038). An opened row whose Screen Rotation could show at the next poll, and that is neither the Active Screen nor Up next, offers "Show next". It makes the Screen the Picked Screen, which then reads "Up next · picked by hand"; picking another Screen replaces it. The picked row offers "Back to Order" instead, which clears the pick. Neither confirms. On a mirrored or Proxied Device neither is offered.
 
 **Reordering.**
 
@@ -147,6 +149,7 @@ Opened, a row shows, in this order ([render][screens-mashup], [phone][phone-scre
    | Active Screen | "On the Device since the {hh:mm} poll." |
    | Active Screen, paused | "On hold while {Device} is in Sleep Mode." |
    | Up next | "Shows at the next poll, around {hh:mm}." |
+   | Up next, picked by hand | "Picked by hand: shows at the next poll, around {hh:mm}. Rotation then carries on in Order from it." |
    | Schedule off | "Its Schedule is switched off, so Rotation passes over it. The days and hours are kept." |
    | Not today, by weekday | "Its Schedule leaves out {Thursdays}, so Rotation passes over it today." |
    | Not today, by dates | "Its Schedule only runs from {1 March} to {31 August}, so Rotation passes over it." |
@@ -264,6 +267,7 @@ The form ends with the primary button, "Cancel" (back to the Screens view) and t
 - A form: "Save HTML" (primary), "Cancel", and "{Device} shows the change when this Screen's turn next comes." Markup is not saved as it is typed, since half-written HTML would reach the Device.
 - Leaving with unsaved changes asks: "Leave without saving?" · Lost: "Your changes to {Screen}'s HTML." · "Leave" / "Keep editing".
 - The code editor is the one of [template-editor.md](./template-editor.md), in its HTML mode. The drawings here show a mono textarea.
+- The preview offers the device preview of [template-editor.md](./template-editor.md) the same way, for the Screen's Device (ADR-0040).
 
 ## Settings
 
@@ -312,7 +316,7 @@ Under the section: "{Device} shows the image of a Device on TRMNL's own server i
 
 Three tucked sections, closed by default.
 
-**Identity and credentials.** Friendly id (mono). MAC address as a Copy value. API key as a Copy value that shows only its last four characters until "Reveal", which becomes "Hide"; "Copy" copies the whole key either way. None of the three can be changed here.
+**Identity and credentials.** Friendly id (mono). MAC address as a Copy value. API key as a Copy value that shows only its last four characters until "Reveal", which becomes "Hide"; "Copy" copies the whole key either way. Under the API key, a plain button "Regenerate now" (ADR-0039), for a Device that will not call in again; the other way to a new key is the Device Reset below. It confirms: "Give {Device} a new API key now?" · "{Device} stops working at once. Its polls are refused until someone holds its button for 15 seconds and sets it up again. To have it reset itself first, use Device Reset with a new API key instead." · Lost: "The current API key, everywhere it is used." · Stays: "{Device}, its Screens, Schedules and Device Log." · "Regenerate now". Not offered on a Proxied Device. The friendly id and MAC address cannot be changed here.
 
 **Special Functions.** "A one-shot command that reaches {Device} at its next poll and fires once. The `sleep` Special Function is separate from Sleep Mode." Then one row per Special Function, its name in mono, what it does, and "Trigger":
 
@@ -329,7 +333,7 @@ Three tucked sections, closed by default.
 
 **Reset or delete {Device}.** "A Device Reset makes {Device} erase its Wi-Fi credentials and this server's URL at its next poll, so someone has to set it up by hand again. Nothing here is lost. Deleting removes {Device}, its {n} Screens, their Schedules and its Device Log from this Instance." Then two plain buttons.
 
-- **Device Reset** ([render][confirm-reset]). "Reset {Device}?" · "At its next poll, around {hh:mm}, {Device} erases what it has stored and restarts into Wi-Fi setup. You need to be at the Device afterwards and enter the Wi-Fi and this server's URL again." · Lost: "On the Device: its Wi-Fi credentials, its API key and this server's URL." · Stays: "Everything here: {Device}, its Screens, Schedules and Device Log. It gets the same API key back." · "Device Reset". Afterwards the button is disabled beside "Device Reset pending, reaches {Device} around {hh:mm}". On a Proxied Device the button is disabled, under: "{Device} is a Proxied Device, so a Device Reset triggered here never reaches it."
+- **Device Reset** ([render][confirm-reset]). "Reset {Device}?" · "At its next poll, around {hh:mm}, {Device} erases what it has stored and restarts into Wi-Fi setup. You need to be at the Device afterwards and enter the Wi-Fi and this server's URL again." · Lost: "On the Device: its Wi-Fi credentials, its API key and this server's URL." · Stays: "Everything here: {Device}, its Screens, Schedules and Device Log. It gets the same API key back." · a checkbox, unchecked, "Also give {Device} a new API key" (ADR-0039); checked, the Stays line ends "It gets a new API key when it is set up again." instead · "Device Reset". Afterwards the button is disabled beside "Device Reset pending, reaches {Device} around {hh:mm}", or "Device Reset pending, with a new API key, reaches {Device} around {hh:mm}". On a Proxied Device the button is disabled, under: "{Device} is a Proxied Device, so a Device Reset triggered here never reaches it."
 - **Delete {Device}** ([render][confirm-delete-device]). "Delete {Device}?" · Lost: "{Device}, its {n} Screens with their Schedules and uploaded images, and its Device Log." · Stays: "Your Plugins. The Device itself keeps working until it next polls and is then registered again as a new Device." · "Delete {Device}". Afterwards `/` opens.
 
 **Loading:** the section headings with `wash` bars for the rows and "Loading {Device}'s Settings". **Failed:** the notice "Could not load {Device}'s Settings."
@@ -493,7 +497,6 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 - The bar names Devices up to four and collapses to "Devices" from five, or sooner when the names do not fit.
 - Devices are ordered by name.
 - Screen State precedence: Schedule reasons before Skipping.
-- "Holding image" is a qualifier, not a seventh Screen State.
 - Nothing collapses on a Device with many Screens.
 - Removing a Schedule confirms; so does removing the sleep image.
 - The refresh rate is limited to 1 minute through 24 hours.

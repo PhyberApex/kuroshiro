@@ -50,10 +50,11 @@ export function asRepository<T extends ObjectLiteral>(mock: MockRepository<T>): 
   return mock as unknown as Repository<T>
 }
 
-/** A `MockRepository<T>` whose `.manager` supports the two `EntityManager` members this codebase's transactions actually use: getting a scoped repository, and running a callback "in" a transaction (here, just invoking it — there's no real DB to isolate). */
+/** A `MockRepository<T>` whose `.manager` supports the `EntityManager` members this codebase's transactions actually use: getting a scoped repository, running a raw query (e.g. a row lock), and running a callback "in" a transaction (here, just invoking it — there's no real DB to isolate). */
 export interface MockTransactionalRepository<T extends ObjectLiteral> extends MockRepository<T> {
   manager: {
     getRepository: Mock<(target?: unknown) => MockTransactionalRepository<T>>
+    query: Mock<(query: string, parameters?: unknown[]) => Promise<unknown>>
     transaction: Mock<(cb: (manager: MockTransactionalRepository<T>['manager']) => Promise<void>) => Promise<void>>
   }
 }
@@ -62,6 +63,7 @@ export function createMockTransactionalRepository<T extends ObjectLiteral>(): Mo
   const repo = createMockRepository<T>() as MockTransactionalRepository<T>
   repo.manager = {
     getRepository: vi.fn(() => repo),
+    query: vi.fn(),
     transaction: vi.fn(async cb => cb(repo.manager)),
   }
   return repo

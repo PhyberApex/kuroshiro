@@ -15,4 +15,5 @@ ADR-0021 exported every secret in plaintext and left "opt-in secret redaction" a
 - `containsSecrets` and `redacted` are mutually exclusive on the manifest: an archive is one or the other, never both.
 - The export UI and the `X-Kuroshiro-Contains-Secrets` response header reflect the choice: the credentials warning and the header are only present when the archive actually contains secrets.
 - Data Source `url` and `body` remain a leak vector on a redacted archive; the UI copy names them so an admin who embeds a key in a query string is not misled.
+- ADR-0039 extends "keep the target's value" to every archive for a Device's `apikey`: Configuration Import never overwrites an existing Device's key, redacted or not, so restoring an older archive cannot bring back a key that was regenerated.
 - Follow-ups that stay additive: sentinel handling in the per-Plugin `.trmnlp` importer, a per-field "was redacted" marker richer than the sentinel, prompting for secrets at import time.

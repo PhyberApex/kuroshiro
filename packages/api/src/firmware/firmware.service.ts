@@ -10,6 +10,7 @@ import { In, Repository } from 'typeorm'
 import { DeviceModel } from '../device-models/entities/device-model.entity.js'
 import { Device } from '../devices/devices.entity.js'
 import { ApiException } from '../errors/api.exception.js'
+import { isUniqueViolation } from '../errors/unique-violation.js'
 import { uploadTooLarge } from '../uploads/limited-file-interceptor.js'
 import { UPLOAD_LIMITS } from '../uploads/upload-limits.js'
 import { fileExists } from '../utils/fileExists.js'
@@ -69,7 +70,16 @@ export class FirmwareService {
       label: input.label ?? file.originalname,
       uploadedAt: new Date(),
     })
-    const saved = await this.firmwareRepository.save(firmware)
+    let saved: Firmware
+    try {
+      saved = await this.firmwareRepository.save(firmware)
+    }
+    catch (err) {
+      await fs.promises.unlink(this.filePath(id)).catch(() => {})
+      if (!isUniqueViolation(err, 'UQ_firmware_version'))
+        throw err
+      throw new ApiException(409, 'firmware-version-taken', `There is already a Firmware ${input.version}.`, { version: input.version })
+    }
     this.logger.log(`Uploaded custom firmware ${saved.id} (${saved.version})`)
     return saved
   }

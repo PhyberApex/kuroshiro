@@ -37,8 +37,12 @@ What a Device is showing right now, as far as the server knows — the Active Sc
 _Avoid_: Active Screen (the Screen whose turn it is — the Current Screen is the image, and may not come from a Screen at all), on the panel (say "on the Device"), preview
 
 **Rotation**:
-The cycle through a Device's Screens in `order`, one step per `/display` poll — skipping any Screen currently ineligible per its Schedule, if it has one, and any Screen whose render raises a `skip` Render Signal.
+The cycle through a Device's Screens in `order`, one step per `/display` poll — skipping any Screen currently ineligible per its Schedule, if it has one, and any Screen whose render raises a `skip` Render Signal. A Picked Screen replaces one step's Order.
 _Avoid_: Cycling, playlist (see Schedule below — the concept "playlist" usually points at is Schedule, not Rotation)
+
+**Picked Screen**:
+The Screen an admin asked Rotation to turn to at the Device's next poll ("Show next"), one per Device. It overrides Order once and never a Schedule or a `skip` Render Signal; a pick its Schedule or Render Signal shuts out by poll time is dropped. The poll that serves it clears it, and Rotation continues in Order from it. Runtime state, not exported (ADR-0038).
+_Avoid_: Pinned Screen, forced Screen
 
 **Schedule**:
 A set of day/time constraints (weekday selection, daily time-of-day window — may cross midnight — optional active date range) plus an independent enabled/disabled toggle, attached to at most one per Screen, that gates whether that Screen is eligible to become the Active Screen. A Screen with no Schedule is always eligible; a disabled Schedule makes its Screen ineligible outright regardless of the day/time rules, without discarding them (soft-hide). Time-of-day windows are evaluated in the server's local timezone — Devices have no timezone of their own. Applies uniformly to every Screen type, including Mashup. Distinct from Rotation, which orders currently-eligible Screens — Schedule only narrows eligibility, it never reorders. A Screen needing more than one window (e.g. two separate times of day) needs a second Screen with its own Schedule, not a compound rule on one Schedule.
@@ -67,6 +71,10 @@ _Avoid_: DevicePlugin (the entity name), install, uninstall, remove, detach
 **Plugin Field**:
 One named input a Plugin declares for the admin to fill in — a key, a label, a type (single-line text, multi-line text, number, on/off, password, or a select with its options), an optional default and whether it is required. Part of the Plugin: it arrives with a Recipe or `.trmnlp` import, or the admin authors it on the Plugin. A type Kuroshiro has no control for is treated as single-line text; the `author_bio` type is a read-only credit, never an input.
 _Avoid_: Custom field, form field (TRMNL's terms), setting, Plugin Configuration, variable
+
+**Framework Version**:
+The exact release (`X.Y.Z`) of TRMNL's framework CSS and JS a render loads. The Instance pins one, moved forward by a reviewed PR when TRMNL releases; a Plugin may pin its own, which every drawing of it uses — except inside a Mashup, which loads the Instance's for all its slots. Never `latest` (ADR-0041).
+_Avoid_: Framework (bare, for the version), design system version, `latest`
 
 **Field Value**:
 What the admin entered for one Plugin Field, falling back to the Plugin Field's default when nothing was entered. Belongs to the Plugin, not to a Plugin Assignment: every Device and every Mashup slot showing the Plugin renders with the same Field Values, and showing it with different values means duplicating the Plugin. Available to the Plugin's templates and to its Data Sources' url, headers and body. A password-type Field Value is a secret. A required Plugin Field with neither a Field Value nor a default marks the Plugin as needing values but never stops it saving, being assigned or rendering.
@@ -145,7 +153,7 @@ A one-shot command an admin triggers on a Device — `identify`, `sleep`, `add_w
 _Avoid_: Special function toggle, device action, command
 
 **Device Reset**:
-A one-shot command an admin triggers on a Device, delivered on its next `/display` poll, that makes the Device erase its Wi-Fi credentials and everything else it has stored — API key and server URL included — and restart into Wi-Fi setup. Nothing on the server is lost and the Device gets its same API key back, but it does not return until someone sets it up by hand again. Separate from Special Function, and dropped on a Proxied Device, where TRMNL's answer decides.
+A one-shot command an admin triggers on a Device, delivered on its next `/display` poll, that makes the Device erase its Wi-Fi credentials and everything else it has stored — API key and server URL included — and restart into Wi-Fi setup. Nothing on the server is lost and the Device gets its same API key back, unless the admin chose to give it a new one with the Reset (ADR-0039), but it does not return until someone sets it up by hand again. Separate from Special Function, and dropped on a Proxied Device, where TRMNL's answer decides.
 _Avoid_: Reset (bare), factory reset, reboot, restart, `reset_firmware` (bare, in prose — reserve for the response field)
 
 **Sleep Mode**:

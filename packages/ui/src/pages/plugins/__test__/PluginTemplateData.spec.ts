@@ -506,6 +506,10 @@ describe('the fetched data of the Template section', () => {
       await editor(screen, 'Quadrant').click()
       await userEvent.keyboard('{Control>}z{/Control}')
       await expect.poll(() => code(screen, 'Quadrant')).toBe('<p>quarter</p>')
+      // usePreviewData debounces a Field Value or Data Source change by 800 ms (FETCHED_AFTER_MS); reading the
+      // count right away only proves none has landed *yet*, which a loaded runner can still cross before this
+      // line. Outlasting the debounce first proves the count the Template's undo/redo leave is a settled one.
+      await pause(900)
       expect(faked.previews).toHaveLength(2)
     })
 

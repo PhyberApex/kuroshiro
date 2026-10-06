@@ -13,6 +13,7 @@
     "test:screenshots": "node scripts/screenshots.mjs",
     "test:screenshots:update": "node scripts/screenshots.mjs --update",
     "test:real-api": "vitest run --config vitest.real-api.config.ts",
+    "showcase:screenshots": "vitest run --config vitest.showcase.config.ts",
     "lint": "eslint",
     "lint:fix": "eslint --fix"
   },

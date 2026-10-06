@@ -1,0 +1,23 @@
+{
+  "name": "kuroshiro-site",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview",
+    "type-check": "vue-tsc --noEmit -p tsconfig.json",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "catalog:",
+    "@fontsource-variable/archivo": "catalog:",
+    "@fontsource-variable/jetbrains-mono": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitepress": "catalog:",
+    "vue": "catalog:",
+    "vue-tsc": "catalog:"
+  }
+}
