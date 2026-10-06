@@ -44,7 +44,7 @@ describe('the Firmware page', () => {
 
       await expect.element(screen.getByText('Checked TRMNL 3 h ago')).toBeVisible()
       await expect.element(screen.getByText('Every Firmware a Device can be pushed to. Which one a Device gets is chosen in that Device\'s Settings.')).toBeVisible()
-      await expect.element(screen.getByText('Kuroshiro asks TRMNL for the newest official Firmware when it starts and every day at 04:00, server time. TRMNL publishes one for the TRMNL OG only; any other Device Model needs an upload.')).toBeVisible()
+      await expect.element(screen.getByText('Kuroshiro asks TRMNL for the newest official Firmware when it starts and every day at 04:00, server time. TRMNL\'s update feed only carries Firmware for the TRMNL OG; any other Device Model needs an upload.')).toBeVisible()
     })
 
     it('says nothing about a check where TRMNL was never asked', async () => {

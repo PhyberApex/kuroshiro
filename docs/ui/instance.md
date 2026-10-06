@@ -128,7 +128,7 @@ Section heading "Available Firmware", with "Checked TRMNL {when}" at its right. 
 
 Under the rows, tucked and closed: "Earlier official Firmware ({n})". "Replaced by {newest version} and no longer offered as a target. A Device that already targets one keeps it." Then the deprecated rows, without actions.
 
-Last line: "Kuroshiro asks TRMNL for the newest official Firmware when it starts and every day at 04:00, server time. TRMNL publishes one for the TRMNL OG only; any other Device Model needs an upload."
+Last line: "Kuroshiro asks TRMNL for the newest official Firmware when it starts and every day at 04:00, server time. TRMNL's update feed only carries Firmware for the TRMNL OG; any other Device Model needs an upload."
 
 ### Sync from TRMNL
 
