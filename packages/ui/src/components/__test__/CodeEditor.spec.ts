@@ -554,7 +554,14 @@ describe('code editor: its frame', () => {
     const { screen } = await mountEditor({ modelValue: 'one\n{{ a_much_longer_second_line_of_the_template }}\nthree' })
     const tops = (selector: string) => [...screen.container.querySelectorAll(selector)].map(element => Math.round(element.getBoundingClientRect().top))
 
-    expect(tops('.cm-lineNumbers .cm-gutterElement').slice(1)).toEqual(tops('.cm-line'))
+    // CodeMirror measures the wrapped long line's height against the frame's width once it is laid
+    // out, so right after mount the gutter's numbers and the lines can still be at their pre-measure
+    // positions; poll both together so neither side is read from a stale, pre-measure layout.
+    await expect.poll(() => {
+      const gutterTops = tops('.cm-lineNumbers .cm-gutterElement').slice(1)
+      const lineTops = tops('.cm-line')
+      return gutterTops.length === lineTops.length && gutterTops.every((top, index) => top === lineTops[index])
+    }).toBe(true)
   })
 
   it('shows the focus ring around its frame while the focus is in the code', async () => {
