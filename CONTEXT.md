@@ -149,7 +149,7 @@ A one-shot command an admin triggers on a Device — `identify`, `sleep`, `add_w
 _Avoid_: Special function toggle, device action, command
 
 **Device Reset**:
-A one-shot command an admin triggers on a Device, delivered on its next `/display` poll, that makes the Device erase its Wi-Fi credentials and everything else it has stored — API key and server URL included — and restart into Wi-Fi setup. Nothing on the server is lost and the Device gets its same API key back, but it does not return until someone sets it up by hand again. Separate from Special Function, and dropped on a Proxied Device, where TRMNL's answer decides.
+A one-shot command an admin triggers on a Device, delivered on its next `/display` poll, that makes the Device erase its Wi-Fi credentials and everything else it has stored — API key and server URL included — and restart into Wi-Fi setup. Nothing on the server is lost and the Device gets its same API key back, unless the admin chose to give it a new one with the Reset (ADR-0039), but it does not return until someone sets it up by hand again. Separate from Special Function, and dropped on a Proxied Device, where TRMNL's answer decides.
 _Avoid_: Reset (bare), factory reset, reboot, restart, `reset_firmware` (bare, in prose — reserve for the response field)
 
 **Sleep Mode**:
