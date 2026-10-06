@@ -25,3 +25,22 @@ export async function settled() {
   await nextFrame()
   await transitionsEnded()
 }
+
+/**
+ * Resolves once no element's scroll position moves between two frames in a row, up to ten
+ * frames. A nav row that scrolls a current link into view (`PageList`) does it from a
+ * `ResizeObserver`, which reacts to a viewport resize on its own schedule: on a loaded CI
+ * runner it can still be correcting a frame or two after `settled()` already returned, so a
+ * shot taken right then catches it mid-scroll.
+ */
+export async function scrollSettled() {
+  const positions = () => Array.from(document.querySelectorAll('*'), el => el.scrollLeft).join(',')
+  let last = positions()
+  for (let i = 0; i < 10; i++) {
+    await nextFrame()
+    const next = positions()
+    if (next === last)
+      return
+    last = next
+  }
+}
