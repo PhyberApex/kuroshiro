@@ -267,6 +267,7 @@ The form ends with the primary button, "Cancel" (back to the Screens view) and t
 - A form: "Save HTML" (primary), "Cancel", and "{Device} shows the change when this Screen's turn next comes." Markup is not saved as it is typed, since half-written HTML would reach the Device.
 - Leaving with unsaved changes asks: "Leave without saving?" · Lost: "Your changes to {Screen}'s HTML." · "Leave" / "Keep editing".
 - The code editor is the one of [template-editor.md](./template-editor.md), in its HTML mode. The drawings here show a mono textarea.
+- The preview offers the device preview of [template-editor.md](./template-editor.md) the same way, for the Screen's Device (ADR-0040).
 
 ## Settings
 
