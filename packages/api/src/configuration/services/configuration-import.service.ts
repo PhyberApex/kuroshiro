@@ -165,7 +165,7 @@ export class ConfigurationImportService {
     return { created, updated, warnings }
   }
 
-  /** What `importFromZip` would do with the same archive: it is that import, rolled back, minus the one thing a rollback does not undo, a File Screen's image written to disk. */
+  /** What `importFromZip` would do with the same archive, rolled back: a `file`-type Screen's image is still read to validate it, but writing it to disk is skipped for a check and, for a real import, deferred until its transaction commits. */
   async checkZip(buffer: Buffer): Promise<ImportCheck> {
     const archive = this.readArchive(buffer)
     const run = await this.run(archive, true)
