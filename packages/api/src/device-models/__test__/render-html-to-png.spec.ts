@@ -31,7 +31,7 @@ describe('renderHtmlToPng', () => {
     puppeteerPage.setViewport.mockResolvedValue(undefined)
     puppeteerPage.setContent.mockResolvedValue(undefined)
     puppeteerPage.screenshot.mockResolvedValue(new Uint8Array())
-    puppeteerPage.evaluate.mockResolvedValue(false)
+    puppeteerPage.evaluate.mockResolvedValue({ skip: false, hold: false })
     puppeteerLaunch.mockResolvedValue({ newPage: vi.fn().mockResolvedValue(puppeteerPage), close: vi.fn() })
   })
 
@@ -44,7 +44,7 @@ describe('renderHtmlToPng', () => {
   })
 
   it('reports skip and still converts when not honoring the signal', async () => {
-    puppeteerPage.evaluate.mockResolvedValue(true)
+    puppeteerPage.evaluate.mockResolvedValue({ skip: true, hold: false })
 
     const result = await renderHtmlToPng('<html></html>', TARGET, '/out/screen.png', logger)
 
@@ -54,7 +54,7 @@ describe('renderHtmlToPng', () => {
   })
 
   it('reports skip and leaves the output untouched when honoring the signal', async () => {
-    puppeteerPage.evaluate.mockResolvedValue(true)
+    puppeteerPage.evaluate.mockResolvedValue({ skip: true, hold: false })
 
     const result = await renderHtmlToPng('<html></html>', TARGET, '/out/screen.png', logger, {}, { honorRenderSignal: true })
 
@@ -63,8 +63,36 @@ describe('renderHtmlToPng', () => {
     expect(convertToPng).not.toHaveBeenCalled()
   })
 
+  it('reports hold and still converts when not honoring the signal', async () => {
+    puppeteerPage.evaluate.mockResolvedValue({ skip: false, hold: true })
+
+    const result = await renderHtmlToPng('<html></html>', TARGET, '/out/screen.png', logger)
+
+    expect(result).toBe('hold')
+    expect(puppeteerPage.screenshot).toHaveBeenCalledOnce()
+    expect(convertToPng).toHaveBeenCalled()
+  })
+
+  it('reports hold and leaves the output untouched when honoring the signal', async () => {
+    puppeteerPage.evaluate.mockResolvedValue({ skip: false, hold: true })
+
+    const result = await renderHtmlToPng('<html></html>', TARGET, '/out/screen.png', logger, {}, { honorRenderSignal: true })
+
+    expect(result).toBe('hold')
+    expect(puppeteerPage.screenshot).not.toHaveBeenCalled()
+    expect(convertToPng).not.toHaveBeenCalled()
+  })
+
+  it('reports skip, not hold, when the page sets both flags', async () => {
+    puppeteerPage.evaluate.mockResolvedValue({ skip: true, hold: true })
+
+    const result = await renderHtmlToPng('<html></html>', TARGET, '/out/screen.png', logger, {}, { honorRenderSignal: true })
+
+    expect(result).toBe('skip')
+  })
+
   it('still renders normally when honoring the signal but none is raised', async () => {
-    puppeteerPage.evaluate.mockResolvedValue(false)
+    puppeteerPage.evaluate.mockResolvedValue({ skip: false, hold: false })
 
     const result = await renderHtmlToPng('<html></html>', TARGET, '/out/screen.png', logger, {}, { honorRenderSignal: true })
 
@@ -76,7 +104,7 @@ describe('renderHtmlToPng', () => {
   it('closes the browser whether or not the signal was honored', async () => {
     const close = vi.fn()
     puppeteerLaunch.mockResolvedValue({ newPage: vi.fn().mockResolvedValue(puppeteerPage), close })
-    puppeteerPage.evaluate.mockResolvedValue(true)
+    puppeteerPage.evaluate.mockResolvedValue({ skip: true, hold: false })
 
     await renderHtmlToPng('<html></html>', TARGET, '/out/screen.png', logger, {}, { honorRenderSignal: true })
 

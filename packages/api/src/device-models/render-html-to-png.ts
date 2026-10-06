@@ -10,24 +10,32 @@ import { convertToPng } from '../utils/imageUtils.js'
 
 export interface RenderHtmlToPngOptions {
   /**
-   * Whether a `skip` Render Signal should leave `outputPath` untouched. Only
-   * the `/display` poll's Rotation evaluates the signal (ADR-0031); every
-   * other caller renders unconditionally, as it always has.
+   * Whether a `skip` or `hold` Render Signal should leave `outputPath`
+   * untouched. Only the `/display` poll's Rotation evaluates the signal
+   * (ADR-0031); every other caller renders unconditionally, as it always has.
    */
   honorRenderSignal?: boolean
 }
 
-/** `window.TRMNL_SKIP_DISPLAY` read at the page's `load` event, the moment the screenshot is taken. */
+/**
+ * TRMNL's own pair of JS flags, read at the page's `load` event, the moment
+ * the screenshot is taken: `window.TRMNL_SKIP_DISPLAY` raises `skip`,
+ * `window.TRMNL_SKIP_SCREEN_GENERATION` raises `hold`. `skip` wins when a
+ * page sets both (ADR-0031).
+ */
 async function readRenderSignal(page: Page): Promise<RenderSignal | null> {
-  const skipDisplay = await page.evaluate(() => Boolean((window as unknown as { TRMNL_SKIP_DISPLAY?: unknown }).TRMNL_SKIP_DISPLAY))
-  return skipDisplay ? 'skip' : null
+  const { skip, hold } = await page.evaluate(() => {
+    const flags = window as unknown as { TRMNL_SKIP_DISPLAY?: unknown, TRMNL_SKIP_SCREEN_GENERATION?: unknown }
+    return { skip: Boolean(flags.TRMNL_SKIP_DISPLAY), hold: Boolean(flags.TRMNL_SKIP_SCREEN_GENERATION) }
+  })
+  return skip ? 'skip' : hold ? 'hold' : null
 }
 
 /**
  * Screenshots an already-shelled HTML document at the render target's native
  * pixel size and converts the screenshot to the target's PNG at `outputPath`,
  * reporting the Render Signal observed at the same moment. `honorRenderSignal`
- * leaves `outputPath` as it was on a `skip`, instead of overwriting it.
+ * leaves `outputPath` as it was on a `skip` or `hold`, instead of overwriting it.
  */
 export async function renderHtmlToPng(html: string, target: DeviceRenderTarget, outputPath: string, logger: Logger, conversion: ConversionOptions = {}, options: RenderHtmlToPngOptions = {}): Promise<RenderSignal | null> {
   const { default: puppeteer } = await import('puppeteer')
@@ -39,7 +47,7 @@ export async function renderHtmlToPng(html: string, target: DeviceRenderTarget, 
     await page.setContent(html, { waitUntil: 'load' })
     await page.evaluate(() => document.fonts.ready)
     const renderSignal = await readRenderSignal(page)
-    if (renderSignal === 'skip' && options.honorRenderSignal)
+    if (renderSignal && options.honorRenderSignal)
       return renderSignal
 
     const image: Uint8Array = await page.screenshot()

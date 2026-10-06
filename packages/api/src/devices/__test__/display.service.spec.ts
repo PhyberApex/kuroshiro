@@ -26,8 +26,9 @@ import { Display } from '../display.js'
 import { DeviceDisplayService } from '../display.service.js'
 import { DisplayScreen } from '../displayScreen.js'
 
-const { fileExists, puppeteerPage, puppeteerLaunch } = vi.hoisted(() => ({
+const { fileExists, fileModifiedAt, puppeteerPage, puppeteerLaunch } = vi.hoisted(() => ({
   fileExists: vi.fn(),
+  fileModifiedAt: vi.fn(),
   puppeteerPage: {
     setViewport: vi.fn(),
     setContent: vi.fn(),
@@ -39,6 +40,10 @@ const { fileExists, puppeteerPage, puppeteerLaunch } = vi.hoisted(() => ({
 
 vi.mock('../../utils/fileExists.js', () => ({
   fileExists,
+}))
+
+vi.mock('../../utils/fileModifiedAt.js', () => ({
+  fileModifiedAt,
 }))
 
 vi.mock('node:fs', () => ({
@@ -60,13 +65,18 @@ vi.mock('puppeteer', () => ({
 
 /** Embedded in a Screen's `html` or cached output so the mocked page "sets" `window.TRMNL_SKIP_DISPLAY`. */
 const SKIP_MARKER = 'window.TRMNL_SKIP_DISPLAY'
+/** Embedded the same way to fake `window.TRMNL_SKIP_SCREEN_GENERATION`. */
+const HOLD_MARKER = 'window.TRMNL_SKIP_SCREEN_GENERATION'
 
 function primePuppeteer() {
   puppeteerPage.setViewport.mockResolvedValue(undefined)
   puppeteerPage.setContent.mockResolvedValue(undefined)
   puppeteerPage.screenshot.mockResolvedValue(new Uint8Array())
-  // No real browser runs, so the flag read is faked from the HTML just handed to `setContent`.
-  puppeteerPage.evaluate.mockImplementation(() => Promise.resolve(String(puppeteerPage.setContent.mock.calls.at(-1)?.[0] ?? '').includes(SKIP_MARKER)))
+  // No real browser runs, so the flags read back are faked from the HTML just handed to `setContent`.
+  puppeteerPage.evaluate.mockImplementation(() => {
+    const html = String(puppeteerPage.setContent.mock.calls.at(-1)?.[0] ?? '')
+    return Promise.resolve({ skip: html.includes(SKIP_MARKER), hold: html.includes(HOLD_MARKER) })
+  })
   puppeteerLaunch.mockResolvedValue({ newPage: vi.fn().mockResolvedValue(puppeteerPage), close: vi.fn() })
 }
 
@@ -1169,9 +1179,13 @@ describe('deviceDisplayService', () => {
   describe('render-signal-gated rotation', () => {
     const signalDevice = makeDevice({ ...baseDevice, apikey: 'token', id: '1', mirrorEnabled: false })
 
-    /** A `plugin`, `html` or `mashup` Screen; `skip` embeds the marker `primePuppeteer` reads back as the flag. */
-    function renderedScreen(overrides: Partial<Screen> & { id: string, order: number }, skip: boolean): Screen {
-      const body = skip ? `<p>x</p><script>${SKIP_MARKER} = true</script>` : '<p>x</p>'
+    /** A `plugin`, `html` or `mashup` Screen; the signal embeds the marker(s) `primePuppeteer` reads back as the flag(s). */
+    function renderedScreen(overrides: Partial<Screen> & { id: string, order: number }, signal: 'skip' | 'hold' | 'both' | null): Screen {
+      const body = signal === 'both'
+        ? `<p>x</p><script>${SKIP_MARKER} = true; ${HOLD_MARKER} = true</script>`
+        : signal
+          ? `<p>x</p><script>${signal === 'skip' ? SKIP_MARKER : HOLD_MARKER} = true</script>`
+          : '<p>x</p>'
       const base = overrides.type === 'plugin'
         ? { plugin: makePlugin({ id: `${overrides.id}-plugin` }), cachedPluginOutput: body, html: null }
         : overrides.type === 'mashup'
@@ -1187,6 +1201,7 @@ describe('deviceDisplayService', () => {
       screenRepo.findOne.mockImplementation(async options => byId.get((options.where as { id: string }).id) ?? null)
       configService.get.mockReturnValue('http://api')
       fileExists.mockResolvedValue(false)
+      fileModifiedAt.mockResolvedValue(new Date('2026-08-21T00:00:00'))
       // Bypasses the constructor's lazy (setTimeout-deferred) injection, which never fires under fake timers.
       injectPrivate(service, 'mashupRenderer', { renderMashup: vi.fn() })
     }
@@ -1202,8 +1217,8 @@ describe('deviceDisplayService', () => {
 
     it.each(['plugin', 'html', 'mashup'] as const)('skips a %s Screen that sets the flag and shows the next eligible one instead', async (type) => {
       primeRotation([
-        renderedScreen({ id: 'screen1', order: 1, type }, true),
-        renderedScreen({ id: 'screen2', order: 2, type }, false),
+        renderedScreen({ id: 'screen1', order: 1, type }, 'skip'),
+        renderedScreen({ id: 'screen2', order: 2, type }, null),
       ])
 
       const result = await service.getCurrentImage(headers)
@@ -1215,9 +1230,9 @@ describe('deviceDisplayService', () => {
 
     it('wraps past the end of the rotation to find a Screen that does not skip', async () => {
       primeRotation([
-        renderedScreen({ id: 'screen1', order: 1, type: 'plugin' }, false),
-        renderedScreen({ id: 'screen2', order: 2, type: 'plugin', isActive: true }, false),
-        renderedScreen({ id: 'screen3', order: 3, type: 'plugin' }, true),
+        renderedScreen({ id: 'screen1', order: 1, type: 'plugin' }, null),
+        renderedScreen({ id: 'screen2', order: 2, type: 'plugin', isActive: true }, null),
+        renderedScreen({ id: 'screen3', order: 3, type: 'plugin' }, 'skip'),
       ])
 
       const result = await service.getCurrentImage(headers)
@@ -1227,8 +1242,8 @@ describe('deviceDisplayService', () => {
 
     it('returns the no screen image and leaves nothing active when every eligible Screen skips', async () => {
       primeRotation([
-        renderedScreen({ id: 'screen1', order: 1, type: 'plugin' }, true),
-        renderedScreen({ id: 'screen2', order: 2, type: 'html' }, true),
+        renderedScreen({ id: 'screen1', order: 1, type: 'plugin' }, 'skip'),
+        renderedScreen({ id: 'screen2', order: 2, type: 'html' }, 'skip'),
       ])
 
       const result = await service.getCurrentImage(headers)
@@ -1241,8 +1256,8 @@ describe('deviceDisplayService', () => {
 
     it('does not overwrite the skipped Screen\'s stored image', async () => {
       primeRotation([
-        renderedScreen({ id: 'screen1', order: 1, type: 'plugin' }, true),
-        renderedScreen({ id: 'screen2', order: 2, type: 'plugin' }, false),
+        renderedScreen({ id: 'screen1', order: 1, type: 'plugin' }, 'skip'),
+        renderedScreen({ id: 'screen2', order: 2, type: 'plugin' }, null),
       ])
 
       await service.getCurrentImage(headers)
@@ -1255,7 +1270,7 @@ describe('deviceDisplayService', () => {
     })
 
     it.each(['plugin', 'mashup'] as const)('does not launch Chrome for a %s Screen whose Render Signal is already remembered as skip', async (type) => {
-      primeRotation([renderedScreen({ id: 'screen1', order: 1, type, renderSignal: 'skip' }, false)])
+      primeRotation([renderedScreen({ id: 'screen1', order: 1, type, renderSignal: 'skip' }, null)])
 
       const result = await service.getCurrentImage(headers)
 
@@ -1264,7 +1279,7 @@ describe('deviceDisplayService', () => {
     })
 
     it('evaluates a raw html Screen fresh on every poll, even though its last verdict was skip', async () => {
-      primeRotation([renderedScreen({ id: 'screen1', order: 1, type: 'html', renderSignal: 'skip' }, false)])
+      primeRotation([renderedScreen({ id: 'screen1', order: 1, type: 'html', renderSignal: 'skip' }, null)])
 
       const result = await service.getCurrentImage(headers)
 
@@ -1275,14 +1290,119 @@ describe('deviceDisplayService', () => {
 
     it('never renders a schedule-ineligible Screen to look for a signal', async () => {
       primeRotation([
-        renderedScreen({ id: 'screen1', order: 1, type: 'plugin', schedule: makeSchedule({ enabled: false }) }, true),
-        renderedScreen({ id: 'screen2', order: 2, type: 'plugin' }, false),
+        renderedScreen({ id: 'screen1', order: 1, type: 'plugin', schedule: makeSchedule({ enabled: false }) }, 'skip'),
+        renderedScreen({ id: 'screen2', order: 2, type: 'plugin' }, null),
       ])
 
       const result = await service.getCurrentImage(headers)
 
       expect(result.image_url).toBe('http://api/screens/devices/1/screen2.png')
       expect(puppeteerLaunch).toHaveBeenCalledOnce()
+    })
+
+    it.each(['plugin', 'html', 'mashup'] as const)('holds a %s Screen that sets the flag: Active on its turn, serving the stored image unchanged', async (type) => {
+      primeRotation([renderedScreen({ id: 'screen1', order: 1, type }, 'hold')])
+      fileExists.mockResolvedValue(true)
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.image_url).toBe('http://api/screens/devices/1/screen1.png')
+      expect(result.filename).toBe(`x_${new Date('2026-08-21T00:00:00').toISOString()}`)
+      // The screenshot never happens: honouring the signal returns before one is taken.
+      expect(puppeteerPage.screenshot).not.toHaveBeenCalled()
+      expect(screenRepo.update).toHaveBeenCalledWith({ id: 'screen1' }, { isActive: true, renderSignal: 'hold' })
+    })
+
+    it('holds a Screen with no stored image yet: still Active, serving the noScreen fallback', async () => {
+      primeRotation([renderedScreen({ id: 'screen1', order: 1, type: 'plugin' }, 'hold')])
+      fileExists.mockResolvedValue(false)
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.filename).toBe('noScreen.png')
+      expect(result.image_url).toBe('http://api/screens/noScreen.png')
+      expect(screenRepo.update).toHaveBeenCalledWith({ id: 'screen1' }, { isActive: true, renderSignal: 'hold' })
+    })
+
+    it('treats a Screen that sets both flags as skip, not hold', async () => {
+      primeRotation([
+        renderedScreen({ id: 'screen1', order: 1, type: 'plugin' }, 'both'),
+        renderedScreen({ id: 'screen2', order: 2, type: 'plugin' }, null),
+      ])
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.image_url).toBe('http://api/screens/devices/1/screen2.png')
+      expect(screenRepo.update).toHaveBeenCalledWith({ id: 'screen1' }, { renderSignal: 'skip' })
+    })
+
+    it.each(['plugin', 'mashup'] as const)('does not launch Chrome for a %s Screen whose Render Signal is already remembered as hold, serving the stored image', async (type) => {
+      primeRotation([renderedScreen({ id: 'screen1', order: 1, type, renderSignal: 'hold' }, null)])
+      fileExists.mockResolvedValue(true)
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.image_url).toBe('http://api/screens/devices/1/screen1.png')
+      expect(puppeteerLaunch).not.toHaveBeenCalled()
+      expect(screenRepo.update).toHaveBeenCalledWith({ id: 'screen1' }, { isActive: true, renderSignal: 'hold' })
+    })
+
+    it('evaluates a raw html Screen fresh on every poll, even though its last verdict was hold', async () => {
+      primeRotation([renderedScreen({ id: 'screen1', order: 1, type: 'html', renderSignal: 'hold' }, null)])
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(puppeteerLaunch).toHaveBeenCalled()
+      expect(result.image_url).toBe('http://api/screens/devices/1/screen1.png')
+      expect(screenRepo.update).toHaveBeenCalledWith({ id: 'screen1' }, expect.objectContaining({ isActive: true, renderSignal: null }))
+    })
+
+    it('names a freshly held Screen\'s filename by when its image was last written, not by the cache refresh that triggered this hold', async () => {
+      const screen = renderedScreen({ id: 'screen1', order: 1, type: 'plugin', generatedAt: new Date('2026-08-21T06:00:00') }, 'hold')
+      primeRotation([screen])
+      fileExists.mockResolvedValue(true)
+      fileModifiedAt.mockResolvedValue(new Date('2026-08-20T00:00:00'))
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.filename).toBe(`x_${new Date('2026-08-20T00:00:00').toISOString()}`)
+    })
+
+    it('keeps the filename stable across a cache refresh that holds again', async () => {
+      const screen = renderedScreen({ id: 'screen1', order: 1, type: 'plugin' }, 'hold')
+      primeRotation([screen])
+      fileExists.mockResolvedValue(true)
+      // The stored image file is never rewritten while held, so its mtime never advances.
+      fileModifiedAt.mockResolvedValue(new Date('2026-08-20T00:00:00'))
+
+      const first = await service.getCurrentImage(headers)
+      // An external cache writer (scheduler tick, Webhook, Plugin edit) refreshes the
+      // content and clears the remembered verdict; the render it triggers at this
+      // Screen's next turn holds again.
+      screen.renderSignal = null
+      screen.cachedPluginOutput = `<p>y</p><script>${HOLD_MARKER} = true</script>`
+      const second = await service.getCurrentImage(headers)
+
+      expect(first.filename).toBe(`x_${new Date('2026-08-20T00:00:00').toISOString()}`)
+      expect(second.filename).toBe(first.filename)
+    })
+
+    it('regenerates the image and changes the filename once the content stops setting the flag', async () => {
+      const screen = renderedScreen({ id: 'screen1', order: 1, type: 'plugin', generatedAt: new Date('2026-08-21T06:00:00') }, 'hold')
+      primeRotation([screen])
+      fileExists.mockResolvedValue(true)
+      fileModifiedAt.mockResolvedValue(new Date('2026-08-20T00:00:00'))
+
+      const held = await service.getCurrentImage(headers)
+      // An external cache writer refreshes the content, now without the flag, bumping generatedAt.
+      screen.renderSignal = null
+      screen.generatedAt = new Date('2026-08-21T09:00:00')
+      screen.cachedPluginOutput = '<p>y</p>'
+      const resumed = await service.getCurrentImage(headers)
+
+      expect(held.filename).toBe(`x_${new Date('2026-08-20T00:00:00').toISOString()}`)
+      expect(resumed.filename).toBe(`x_${new Date('2026-08-21T09:00:00').toISOString()}`)
+      expect(screenRepo.update).toHaveBeenCalledWith({ id: 'screen1' }, expect.objectContaining({ isActive: true, renderSignal: null }))
     })
   })
 

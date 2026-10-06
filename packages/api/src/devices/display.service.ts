@@ -23,6 +23,7 @@ import { PluginTemplateContextService } from '../plugins/services/plugin-templat
 import { nextEligibleScreen } from '../schedule/rotation.js'
 import { Screen } from '../screens/screens.entity.js'
 import { fileExists } from '../utils/fileExists.js'
+import { fileModifiedAt } from '../utils/fileModifiedAt.js'
 import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { convertToPng, downloadImage } from '../utils/imageUtils.js'
 import { parseHeaderInt } from '../utils/parseHeaderInt.js'
@@ -57,9 +58,11 @@ interface ScreenImage {
 const RENDER_FAILED = Symbol('render failed')
 /** A `skip` Render Signal observed while honouring it: the Screen is left out of Rotation, its stored image untouched. */
 const RENDER_SKIPPED = Symbol('render skipped')
+/** A `hold` Render Signal observed while honouring it: the screenshot is discarded, the Screen's stored image untouched. */
+const RENDER_HELD = Symbol('render held')
 
-/** A rendered image's URL, `null` when the Screen has nothing to render from, or `RENDER_FAILED`/`RENDER_SKIPPED`. */
-type RenderOutcome = string | null | typeof RENDER_FAILED | typeof RENDER_SKIPPED
+/** A rendered image's URL, `null` when the Screen has nothing to render from, or `RENDER_FAILED`/`RENDER_SKIPPED`/`RENDER_HELD`. */
+type RenderOutcome = string | null | typeof RENDER_FAILED | typeof RENDER_SKIPPED | typeof RENDER_HELD
 
 export interface TrmnlScreenResponse {
   action?: string
@@ -225,19 +228,19 @@ export class DeviceDisplayService {
         served: servedNoScreen(screens.length),
       }
     }
-    const { screen: nextScreen, imgUrl, served } = shown
+    const { screen: nextScreen, imgUrl, served, filename, renderSignal } = shown
     nextScreen.isActive = true
-    nextScreen.renderSignal = null
+    nextScreen.renderSignal = renderSignal
     // A partial update, not `.save()`: rendering may just have written this Screen's
     // cached output or generatedAt, and `.save()` would overwrite them with this
     // in-memory copy's stale values from before the render ran.
-    await this.screenRepository.update({ id: nextScreen.id }, { isActive: true, renderSignal: null })
+    await this.screenRepository.update({ id: nextScreen.id }, { isActive: true, renderSignal })
     this.logger.log(`Returning screen ${nextScreen.id} for device ${device.id}`)
 
     return {
       display: new Display({
         action: report.specialFunction,
-        filename: `${nextScreen.filename}_${nextScreen.generatedAt.toISOString()}`,
+        filename,
         firmware_url: report.firmwareUrl,
         image_url: imgUrl,
         refresh_rate: device.refreshRate,
@@ -252,9 +255,11 @@ export class DeviceDisplayService {
 
   /**
    * A raw `html` Screen re-evaluates its Render Signal on every poll it comes
-   * up in, so a stale stored `skip` never excludes it without rendering; a
-   * `plugin` or Mashup Screen's stored verdict is remembered instead, so
-   * Rotation's pure pick (ADR-0031) passes over it without launching Chrome.
+   * up in, so a stale stored `skip` or `hold` never excludes or short-circuits
+   * it without rendering; a `plugin` or Mashup Screen's stored verdict is
+   * remembered instead, so Rotation's pure pick (ADR-0031) passes over a
+   * remembered `skip` without launching Chrome, and `pickAndRenderScreen`
+   * serves a remembered `hold`'s stored image without launching it either.
    */
   private gatingRenderSignalOf(screen: Screen): RenderSignal | null {
     return screen.type === 'html' ? null : (screen.renderSignal ?? null)
@@ -264,9 +269,11 @@ export class DeviceDisplayService {
    * Tries Rotation's picked Screen in Order, retrying with the next eligible
    * one whenever Chrome observes a fresh `skip` this poll, until one is shown
    * or every eligible Screen has been tried. Bounded by the Device's Screen
-   * count (ADR-0031: no cap on Chrome launches within one poll).
+   * count (ADR-0031: no cap on Chrome launches within one poll). A `hold` —
+   * remembered, or freshly observed this poll — keeps this Screen's turn
+   * instead of retrying the next one, serving its stored image unchanged.
    */
-  private async pickAndRenderScreen(screens: Screen[], device: Device, now: Date): Promise<{ screen: Screen, imgUrl: string, served: Served } | null> {
+  private async pickAndRenderScreen(screens: Screen[], device: Device, now: Date): Promise<{ screen: Screen, imgUrl: string, served: Served, filename: string, renderSignal: RenderSignal | null } | null> {
     const byId = new Map(screens.map(screen => [screen.id, screen]))
     const rotationScreens: RotationScreen[] = screens.map(screen => ({
       id: screen.id,
@@ -281,14 +288,50 @@ export class DeviceDisplayService {
         return null
       const screen = byId.get(candidate.id)!
 
+      if (this.gatingRenderSignalOf(screen) === 'hold')
+        return await this.holdScreen(screen, device)
+
       const outcome = await this.generateScreenImage(screen, device, true)
-      if (outcome !== RENDER_SKIPPED)
-        return { screen, imgUrl: outcome.imgUrl, served: outcome.served }
+      if (outcome === RENDER_HELD) {
+        await this.screenRepository.update({ id: screen.id }, { renderSignal: 'hold' })
+        screen.renderSignal = 'hold'
+        return await this.holdScreen(screen, device)
+      }
+      if (outcome !== RENDER_SKIPPED) {
+        return {
+          screen,
+          renderSignal: null,
+          imgUrl: outcome.imgUrl,
+          served: outcome.served,
+          filename: `${screen.filename}_${screen.generatedAt.toISOString()}`,
+        }
+      }
 
       await this.screenRepository.update({ id: screen.id }, { renderSignal: 'skip' })
       candidate.renderSignal = 'skip'
     }
     return null
+  }
+
+  /** A `hold` Screen is never a reason to retry the next one: it keeps its turn either way. */
+  private async holdScreen(screen: Screen, device: Device): Promise<{ screen: Screen, renderSignal: RenderSignal | null, imgUrl: string, served: Served, filename: string }> {
+    return { screen, renderSignal: 'hold', ...await this.heldScreenImage(screen, device) }
+  }
+
+  /**
+   * A `hold` Screen's own stored image, named by the image file's own write
+   * time — not `generatedAt`, which a cache refresh that holds again moves on
+   * without the stored image changing to match, and would send the Device
+   * redrawing an identical image under a new name (ADR-0031) — or the
+   * `noScreen` fallback for a Screen that has never produced one yet.
+   */
+  private async heldScreenImage(screen: Screen, device: Device): Promise<{ imgUrl: string, served: Served, filename: string }> {
+    const imagePath = this.screenImagePath(device, screen)
+    if (await fileExists(imagePath)) {
+      const writtenAt = await fileModifiedAt(imagePath)
+      return { imgUrl: this.screenImageUrl(device, screen), served: servedScreen(screen.id), filename: `${screen.filename}_${writtenAt.toISOString()}` }
+    }
+    return { imgUrl: await this.fallbackImageUrl({ kind: 'noScreen' }, device), served: servedFallback('noScreen', 'noneEligible', screen.id), filename: 'noScreen.png' }
   }
 
   /**
@@ -531,9 +574,10 @@ export class DeviceDisplayService {
    * The Screen's image, the error Fallback Screen when it could not be made
    * (a render that failed, an External link that could not be fetched, or a
    * Screen with nothing to render from whose stored image is missing), or
-   * `RENDER_SKIPPED` when `honorRenderSignal` is honouring a live `skip`.
+   * `RENDER_SKIPPED`/`RENDER_HELD` when `honorRenderSignal` is honouring a
+   * live `skip`/`hold`.
    */
-  private async generateScreenImage(screen: Screen, device: Device, honorRenderSignal: boolean): Promise<ScreenImage | typeof RENDER_SKIPPED> {
+  private async generateScreenImage(screen: Screen, device: Device, honorRenderSignal: boolean): Promise<ScreenImage | typeof RENDER_SKIPPED | typeof RENDER_HELD> {
     let outcome = screen.type === 'mashup'
       ? await this.renderMashupScreen(screen, device, honorRenderSignal)
       : await this.renderPluginOrHtmlScreen(screen, device, honorRenderSignal)
@@ -546,15 +590,17 @@ export class DeviceDisplayService {
 
     if (outcome === RENDER_SKIPPED)
       return RENDER_SKIPPED
+    if (outcome === RENDER_HELD)
+      return RENDER_HELD
 
     return typeof outcome === 'string'
       ? { imgUrl: outcome, served: servedScreen(screen.id) }
       : { imgUrl: await this.fallbackImageUrl({ kind: 'error', cause: 'render', screenName: await this.nameOf(screen) }, device), served: servedFallback('error', 'renderFailed', screen.id) }
   }
 
-  /** `generateScreenImage` only returns `RENDER_SKIPPED` when it was asked to honour the signal. */
-  private assertRendered(outcome: ScreenImage | typeof RENDER_SKIPPED): ScreenImage {
-    if (outcome === RENDER_SKIPPED)
+  /** `generateScreenImage` only returns `RENDER_SKIPPED`/`RENDER_HELD` when it was asked to honour the signal. */
+  private assertRendered(outcome: ScreenImage | typeof RENDER_SKIPPED | typeof RENDER_HELD): ScreenImage {
+    if (outcome === RENDER_SKIPPED || outcome === RENDER_HELD)
       throw new Error('A Render Signal should only be observed by the /display Rotation path')
     return outcome
   }
@@ -709,14 +755,17 @@ export class DeviceDisplayService {
    * Screenshots screen body markup (a `.view` or `.mashup` element) inside the
    * device's model shell at the model's native pixel size and converts it to
    * the device's PNG. `honorRenderSignal` leaves the stored image untouched
-   * and answers `RENDER_SKIPPED` on a `skip` Render Signal (ADR-0031);
-   * otherwise the signal is observed but has no effect, as outside `/display`.
+   * and answers `RENDER_SKIPPED`/`RENDER_HELD` on a live `skip`/`hold` Render
+   * Signal (ADR-0031); otherwise the signal is observed but has no effect, as
+   * outside `/display`.
    */
-  private async renderBodyToScreenPng(bodyHtml: string, screen: Screen, device: Device, honorRenderSignal: boolean): Promise<string | typeof RENDER_SKIPPED> {
+  private async renderBodyToScreenPng(bodyHtml: string, screen: Screen, device: Device, honorRenderSignal: boolean): Promise<string | typeof RENDER_SKIPPED | typeof RENDER_HELD> {
     const target = await this.deviceModels.renderTargetFor(device)
     const renderSignal = await renderHtmlToPng(wrapInScreenShell(target, bodyHtml), target, this.screenImagePath(device, screen), this.logger, {}, { honorRenderSignal })
     if (honorRenderSignal && renderSignal === 'skip')
       return RENDER_SKIPPED
+    if (honorRenderSignal && renderSignal === 'hold')
+      return RENDER_HELD
     return this.screenImageUrl(device, screen)
   }
 
