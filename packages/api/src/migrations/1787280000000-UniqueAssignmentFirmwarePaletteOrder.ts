@@ -1,5 +1,7 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm'
+import * as fs from 'node:fs'
 import { Logger } from '@nestjs/common'
+import { resolveAppPath } from '../utils/pathHelper.js'
 
 const logger = new Logger('UniqueAssignmentFirmwarePaletteOrder1787280000000')
 
@@ -12,7 +14,8 @@ const logger = new Logger('UniqueAssignmentFirmwarePaletteOrder1787280000000')
  * Existing data may already hold duplicates the checks let through, so `up`
  * resolves them first, the way the maintainer decided for each:
  * - Plugin Assignment: keeps the Assignment whose Screen is first in the
- *   Order, deletes the others with their Screens, then closes the gap.
+ *   Order, deletes the others with their Screens and their Screens' stored
+ *   images, then closes the gap.
  * - Firmware: keeps a custom row over an official-synced one, then the
  *   earliest by `uploadedAt`/`syncedAt` (both null for the other kind,
  *   `COALESCE` compares them on one timeline), then `id`; repoints any
@@ -64,7 +67,7 @@ export class UniqueAssignmentFirmwarePaletteOrder1787280000000 implements Migrat
         ORDER BY dp2."pluginId", dp2."deviceId", s2."order" ASC
       )
     `)
-    const dropped: Array<{ devicePluginId: string, deviceId: string }> = await queryRunner.query(`SELECT "devicePluginId", "deviceId" FROM "_dup_plugin_assignment"`)
+    const dropped: Array<{ devicePluginId: string, screenId: string, deviceId: string }> = await queryRunner.query(`SELECT "devicePluginId", "screenId", "deviceId" FROM "_dup_plugin_assignment"`)
     if (dropped.length > 0) {
       await queryRunner.query(`DELETE FROM "screen" WHERE id IN (SELECT "screenId" FROM "_dup_plugin_assignment")`)
       await queryRunner.query(`DELETE FROM "device_plugin" WHERE id IN (SELECT "devicePluginId" FROM "_dup_plugin_assignment")`)
@@ -77,9 +80,15 @@ export class UniqueAssignmentFirmwarePaletteOrder1787280000000 implements Migrat
         ) numbered
         WHERE numbered.id = s.id AND numbered.rn != s."order"
       `)
-      logger.log(`Deduplicated ${dropped.length} racing Plugin Assignment(s): ${dropped.map(row => row.devicePluginId).join(', ')}`)
+      await Promise.all(dropped.map(row => this.deleteScreenImage(row.deviceId, row.screenId)))
+      logger.log(`Deduplicated ${dropped.length} racing Plugin Assignment(s), with their Screens' images: ${dropped.map(row => row.devicePluginId).join(', ')}`)
     }
     await queryRunner.query(`DROP TABLE "_dup_plugin_assignment"`)
+  }
+
+  /** A Plugin Screen's rendered image, if one was ever written; same path as `ScreensService` writes and reads it at. */
+  private async deleteScreenImage(deviceId: string, screenId: string): Promise<void> {
+    await fs.promises.unlink(resolveAppPath('public', 'screens', 'devices', deviceId, `${screenId}.png`)).catch(() => {})
   }
 
   private async dedupeFirmwareVersions(queryRunner: QueryRunner): Promise<void> {

@@ -1,8 +1,18 @@
 import type { DataSource, QueryRunner } from 'typeorm'
+import * as fs from 'node:fs'
+import * as path from 'node:path'
 import { DataSource as TypeOrmDataSource } from 'typeorm'
 import { PGliteDriver } from 'typeorm-pglite'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { UniqueAssignmentFirmwarePaletteOrder1787280000000 } from '../1787280000000-UniqueAssignmentFirmwarePaletteOrder.js'
+import { resolveAppPath } from '../../utils/pathHelper.js'
+
+vi.mock('../../utils/pathHelper.js', async () => {
+  const os = await import('node:os')
+  const { join } = await import('node:path')
+  const root = join(os.tmpdir(), `kuroshiro-unique-migration-${process.pid}`)
+  return { resolveAppPath: (...segments: string[]) => join(root, ...segments) }
+})
 
 describe('the unique Assignment, Firmware, Palette name and Screen Order migration', () => {
   let dataSource: DataSource
@@ -18,12 +28,25 @@ describe('the unique Assignment, Firmware, Palette name and Screen Order migrati
     await queryRunner.query(`CREATE TABLE "screen" ("id" uuid PRIMARY KEY, "deviceId" uuid NOT NULL, "order" int NOT NULL, "devicePluginId" uuid)`)
     await queryRunner.query(`CREATE TABLE "firmware" ("id" uuid PRIMARY KEY, "version" text NOT NULL, "kind" text NOT NULL, "uploadedAt" timestamptz, "syncedAt" timestamptz)`)
     await queryRunner.query(`CREATE TABLE "palette" ("id" text PRIMARY KEY, "name" text NOT NULL, "kind" text NOT NULL)`)
+    await fs.promises.rm(resolveAppPath(), { recursive: true, force: true })
   })
 
   afterEach(async () => {
     await queryRunner.release()
     await dataSource.destroy()
+    await fs.promises.rm(resolveAppPath(), { recursive: true, force: true })
   })
+
+  async function storeScreenImage(deviceId: string, screenId: string): Promise<string> {
+    const file = resolveAppPath('public', 'screens', 'devices', deviceId, `${screenId}.png`)
+    await fs.promises.mkdir(path.dirname(file), { recursive: true })
+    await fs.promises.writeFile(file, 'x')
+    return file
+  }
+
+  async function exists(file: string): Promise<boolean> {
+    return fs.promises.access(file).then(() => true, () => false)
+  }
 
   async function device(id: string, targetFirmwareId: string | null = null): Promise<void> {
     await queryRunner.query(`INSERT INTO "device" ("id", "targetFirmwareId") VALUES ('${id}', ${targetFirmwareId ? `'${targetFirmwareId}'` : 'NULL'})`)
@@ -72,6 +95,20 @@ describe('the unique Assignment, Firmware, Palette name and Screen Order migrati
         { id: '20000000-0000-4000-8000-000000000002', order: 1 },
         { id: '20000000-0000-4000-8000-000000000003', order: 2 },
       ])
+    })
+
+    it('deletes the dropped Screens\' stored images, keeping the one it kept', async () => {
+      await device(DEVICE)
+      await plugin(PLUGIN)
+      await assignment('10000000-0000-4000-8000-000000000001', PLUGIN, DEVICE, '20000000-0000-4000-8000-000000000001', 2)
+      await assignment('10000000-0000-4000-8000-000000000002', PLUGIN, DEVICE, '20000000-0000-4000-8000-000000000002', 1)
+      const droppedImage = await storeScreenImage(DEVICE, '20000000-0000-4000-8000-000000000001')
+      const keptImage = await storeScreenImage(DEVICE, '20000000-0000-4000-8000-000000000002')
+
+      await migration.up(queryRunner)
+
+      expect(await exists(droppedImage)).toBe(false)
+      expect(await exists(keptImage)).toBe(true)
     })
 
     it('leaves a single Assignment per Plugin and Device as it is', async () => {
