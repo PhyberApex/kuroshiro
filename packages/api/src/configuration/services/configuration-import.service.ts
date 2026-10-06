@@ -63,6 +63,8 @@ interface ImportRun {
   pluginsWithDroppedValues: Set<string>
   /** The id of every Plugin this run created or updated, for scheduling once the transaction commits. */
   upsertedPluginIds: Set<string>
+  /** A file-type Screen's image, held back until the transaction commits (ADR-0021): a rollback must not leave a written image for a row the database undid. */
+  pendingImageWrites: Array<{ destPath: string, image: Buffer }>
 }
 
 interface ArchiveContents {
@@ -195,6 +197,7 @@ export class ConfigurationImportService {
         ? this.pluginsWithLegacyValues(archive.plugins, archive.assignments)
         : new Set(),
       upsertedPluginIds: new Set(),
+      pendingImageWrites: [],
     }
 
     try {
@@ -245,12 +248,21 @@ export class ConfigurationImportService {
       }
     }
 
-    // A check's transaction is rolled back in full, so nothing it touched is real: the scheduler must not hear about it.
+    // A check's transaction is rolled back in full, so nothing it touched is real: neither the disk nor the scheduler must hear about it.
     if (!checkOnly) {
+      await this.writePendingImages(run.pendingImageWrites)
       await this.scheduleUpsertedPlugins(run.upsertedPluginIds)
     }
 
     return run
+  }
+
+  /** Writes every file-type Screen's image only once the transaction holding its row has committed, so a rollback leaves none of them behind. */
+  private async writePendingImages(writes: Array<{ destPath: string, image: Buffer }>): Promise<void> {
+    for (const { destPath, image } of writes) {
+      await fs.promises.mkdir(path.dirname(destPath), { recursive: true })
+      await fs.promises.writeFile(destPath, image)
+    }
   }
 
   /** Reloads each Plugin with the relations a scheduled tick reads before scheduling: `upsertPlugin`'s own entity never gets its Data Sources relation back from `save`, and the scheduler's timer closes over whatever Plugin object it is given. */
@@ -744,7 +756,7 @@ export class ConfigurationImportService {
     const screen = await this.saveScreenRow(repos, entry, deviceId, run)
 
     if (entry.type === 'file') {
-      await this.restoreScreenImage(zip, entry.id, deviceId, run)
+      this.restoreScreenImage(zip, entry.id, deviceId, run)
     }
 
     if (entry.schedule) {
@@ -813,8 +825,12 @@ export class ConfigurationImportService {
     }
   }
 
-  /** A check reads the image as an import does, so that an archive whose image cannot be read is refused by both, and stops before the write, which a rollback would not undo. */
-  private async restoreScreenImage(zip: AdmZip, screenId: string, deviceId: string, run: ImportRun): Promise<void> {
+  /**
+   * A check reads the image as an import does, so that an archive whose image cannot be read is refused by both.
+   * An import defers the write itself until its transaction commits (ADR-0021): queuing it here, before the row
+   * is even known to stick, would leave it on disk after a later record's refusal rolls the row back.
+   */
+  private restoreScreenImage(zip: AdmZip, screenId: string, deviceId: string, run: ImportRun): void {
     const imageEntry = zip.getEntries().find(e => !e.isDirectory && e.entryName.startsWith(`screens/${screenId}/`))
     if (!imageEntry) {
       return
@@ -824,7 +840,6 @@ export class ConfigurationImportService {
       return
     }
     const destDir = resolveAppPath('public', 'screens', 'devices', deviceId)
-    await fs.promises.mkdir(destDir, { recursive: true })
-    await fs.promises.writeFile(path.join(destDir, `${screenId}.png`), image)
+    run.pendingImageWrites.push({ destPath: path.join(destDir, `${screenId}.png`), image })
   }
 }
