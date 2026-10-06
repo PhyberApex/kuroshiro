@@ -80,6 +80,10 @@ const REFUSAL_WORDING: Record<ApiErrorCode, Wording> = {
   'upload-too-large': uploadTooLarge,
   'firmware-version-taken': 'There is already a Firmware with that version.',
   'device-model-unknown': 'This Instance does not know that Device Model.',
+  'palette-unknown': 'This Instance does not know that Palette.',
+  'palette-not-for-model': 'That Palette does not belong to that Device Model.',
+  // Worded on the page itself ("Another preview is being drawn. Try again in a moment."), so the server's sentence stands here.
+  'device-preview-busy': ({ message }) => message,
   'firmware-not-custom': 'Only a custom Firmware can be deleted.',
   'firmware-push-without-target': 'Choose a target Firmware before updating.',
   'firmware-push-mirrored': 'A mirrored Device is not given Firmware.',

@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import type { DeviceDetail } from 'kuroshiro-shared'
+import { viewFull } from 'kuroshiro-shared'
 import { computed, onBeforeUnmount, ref, useId, watch } from 'vue'
 import { listDeviceModels, listPalettes } from '@/api/device-models'
 import Notice from '@/components/Notice.vue'
 import PreviewPlate from '@/components/PreviewPlate.vue'
-import { honestLine, targetFacts } from '@/pages/plugins/pluginTemplateWording'
+import DevicePreviewLines from '@/pages/plugins/DevicePreviewLines.vue'
+import { devicePreviewDrawingLine, targetFacts } from '@/pages/plugins/pluginTemplateWording'
+import { useDevicePreview } from '@/pages/plugins/useDevicePreview'
 import { useLoad } from '@/patterns/useLoad'
 import { htmlScreenDocument, shellTargetOf } from './htmlPreview'
 import { rendersFor } from './screenSourceWording'
@@ -16,7 +19,7 @@ const props = defineProps<{
   html: string
   /** The accessible name of the drawing: "Preview of Fridge note". */
   name: string
-  /** The bench's wording: the facts and what the plate is not, under it, in place of the label above it that Add Screen's form has. */
+  /** The bench's wording: the facts and what the plate is not, under it, in place of the label above it that Add Screen's form has. The device preview (ADR-0040) is offered only here. */
   facts?: boolean
 }>()
 
@@ -46,6 +49,14 @@ watch(() => props.html, (html) => {
   pause = setTimeout(() => (drawn.value = html), DRAWN_AFTER_MS)
 })
 onBeforeUnmount(() => clearTimeout(pause))
+
+/** Offered only with `facts`: Add Screen's HTML kind, which has no saved Screen yet, is out of scope for the device preview. */
+const devicePreview = useDevicePreview(() => props.facts && target.value
+  ? { html: viewFull(drawn.value), deviceModelName: target.value.model.name, paletteId: target.value.palette.id, width: target.value.model.width, height: target.value.model.height }
+  : undefined)
+
+const shownDocument = computed(() => devicePreview.state.value.status === 'drawn' ? devicePreview.state.value.document : (target.value ? htmlScreenDocument(target.value, drawn.value) : null))
+const drawingNote = computed(() => devicePreview.state.value.status === 'drawing' ? devicePreviewDrawingLine(props.device) : undefined)
 </script>
 
 <template>
@@ -61,12 +72,13 @@ onBeforeUnmount(() => clearTimeout(pause))
     </p>
     <PreviewPlate
       v-else
-      :name="name"
-      :document="target ? htmlScreenDocument(target, drawn) : null"
+      :name="devicePreview.state.value.status === 'drawn' ? `${name} as ${device.name} shows it` : name"
+      :document="shownDocument"
       :width="panel.width"
       :height="panel.height"
       :rendering="!target"
       rendering-note="Loading the preview"
+      :drawing-note="drawingNote"
     />
     <template v-if="facts">
       <p :id="headingId" class="facts">
@@ -74,9 +86,14 @@ onBeforeUnmount(() => clearTimeout(pause))
           · <span class="mono">{{ targetFacts(worded) }}</span>
         </template>
       </p>
-      <p v-if="worded" class="honest">
-        {{ honestLine(worded, 'full') }}
-      </p>
+      <DevicePreviewLines
+        v-if="worded"
+        :target="worded"
+        size="full"
+        :device-preview="devicePreview.state.value"
+        @draw="devicePreview.draw"
+        @back-to-browser="devicePreview.backToBrowser"
+      />
     </template>
   </div>
 </template>
@@ -93,14 +110,12 @@ onBeforeUnmount(() => clearTimeout(pause))
 
   .for,
   .none,
-  .facts,
-  .honest {
+  .facts {
     color: var(--color-ink-soft);
     font-size: var(--text-sm);
   }
 
-  .facts,
-  .honest {
+  .facts {
     margin-top: var(--space-2);
     text-wrap: pretty;
   }

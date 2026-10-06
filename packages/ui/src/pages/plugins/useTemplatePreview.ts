@@ -21,6 +21,8 @@ export interface PreviewSource extends PreviewInput {
  */
 export function useTemplatePreview(source: () => PreviewSource | undefined) {
   const document = shallowRef<string | null>(null)
+  /** The last drawing's body alone, without the screen shell: what a device preview request sends (ADR-0040). */
+  const body = shallowRef<string | null>(null)
   const problem = shallowRef<ShownProblem | null>(null)
 
   let found: ShownProblem | null = null
@@ -39,6 +41,7 @@ export function useTemplatePreview(source: () => PreviewSource | undefined) {
       return
     if ('document' in outcome) {
       document.value = outcome.document
+      body.value = outcome.body
       found = null
       problem.value = null
     }
@@ -92,5 +95,5 @@ export function useTemplatePreview(source: () => PreviewSource | undefined) {
 
   onScopeDispose(stopTimers)
 
-  return { document, problem }
+  return { document, body, problem }
 }

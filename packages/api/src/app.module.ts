@@ -11,6 +11,7 @@ import config from './config/config.js'
 import { ConfigurationModule } from './configuration/configuration.module.js'
 import { CustomPalettesModule } from './device-models/custom-palettes.module.js'
 import { DeviceModelsModule } from './device-models/device-models.module.js'
+import { DevicePreviewModule } from './device-models/device-preview.module.js'
 import { DeviceModel } from './device-models/entities/device-model.entity.js'
 import { Palette } from './device-models/entities/palette.entity.js'
 import { DeviceSensor } from './device-sensors/entities/device-sensor.entity.js'
@@ -79,6 +80,7 @@ const conf = config()
     LogsModule,
     DeviceModelsModule,
     CustomPalettesModule,
+    DevicePreviewModule,
     FirmwareModule,
     DevicesModule,
     PluginsModule,

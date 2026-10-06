@@ -117,6 +117,16 @@ export async function apiSendForImage(method: WriteMethod, path: string, body: F
   return response.ok ? response.blob() : answerOf<Blob>(response)
 }
 
+/** As {@link apiSendForImage}, with a JSON body instead of a `FormData` upload, and the response's own headers alongside the image. */
+export async function apiSendForImageWithHeaders(method: WriteMethod, path: string, body: object): Promise<{ blob: Blob, headers: Headers }> {
+  const response = await sent(apiAddress(path), {
+    method,
+    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  return response.ok ? { blob: await response.blob(), headers: response.headers } : answerOf(response)
+}
+
 /** Has the browser download what `GET /api/{path}` answers as a file, under the name the server gives it. */
 export function apiDownload(path: string, query?: Query) {
   const link = document.createElement('a')

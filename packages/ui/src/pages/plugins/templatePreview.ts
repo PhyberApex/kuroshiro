@@ -17,7 +17,7 @@ export interface PreviewInput {
 }
 
 export type PreviewOutcome
-  = | { document: string }
+  = | { document: string, /** The body alone, what a device preview request sends (ADR-0040): `document` without the screen shell. */ body: string }
     /** `stopsSave`: the Template does not parse. One that parses and fails against this data may render with the next. */
     | { problem: TemplateProblem, stopsSave: boolean }
 
@@ -41,7 +41,8 @@ export async function previewOf({ markup, size, context, target }: PreviewInput)
   if (unparsed)
     return { problem: unparsed, stopsSave: true }
   try {
-    return { document: wrapInScreenShell(target, bodyOf(size, await renderLiquid(markup, context))) }
+    const body = bodyOf(size, await renderLiquid(markup, context))
+    return { document: wrapInScreenShell(target, body), body }
   }
   catch (error) {
     return { problem: templateProblemOf(error), stopsSave: false }

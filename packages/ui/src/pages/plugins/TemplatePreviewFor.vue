@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { TemplateSize } from 'kuroshiro-shared'
 import type { PreviewChoice, PreviewLibrary, PreviewTarget } from './previewTarget'
+import type { DevicePreviewState } from './useDevicePreview'
 import { computed, useId } from 'vue'
 import Select from '@/components/Select.vue'
-import { honestLine, targetFacts } from './pluginTemplateWording'
+import DevicePreviewLines from './DevicePreviewLines.vue'
+import { targetFacts } from './pluginTemplateWording'
 import { palettesOf } from './previewTarget'
 
 /** What sits under the plate: which Device or Device Model the preview is for, its facts, and what the plate is not. */
@@ -12,6 +14,12 @@ const props = defineProps<{
   target: PreviewTarget
   /** The size of the Template that is drawn. */
   size: TemplateSize
+  devicePreview: DevicePreviewState
+}>()
+
+const emit = defineEmits<{
+  drawDevicePreview: []
+  backToBrowser: []
 }>()
 
 const choice = defineModel<PreviewChoice>('choice', { required: true })
@@ -62,9 +70,13 @@ const chosenPalette = computed({
     <p class="facts">
       {{ targetFacts(target) }}
     </p>
-    <p class="honest">
-      {{ honestLine(target, size) }}
-    </p>
+    <DevicePreviewLines
+      :target="target"
+      :size="size"
+      :device-preview="devicePreview"
+      @draw="emit('drawDevicePreview')"
+      @back-to-browser="emit('backToBrowser')"
+    />
   </div>
 </template>
 
@@ -83,17 +95,12 @@ const chosenPalette = computed({
     font-weight: var(--weight-medium);
   }
 
-  .facts,
-  .honest {
+  .facts {
     margin-top: var(--space-2);
     color: var(--color-ink-soft);
-    font-size: var(--text-sm);
-    text-wrap: pretty;
-  }
-
-  .facts {
     font-family: var(--font-mono);
     font-size: var(--text-xs);
+    text-wrap: pretty;
   }
 }
 </style>

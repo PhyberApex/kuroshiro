@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import type { DeviceModelRead } from 'kuroshiro-shared'
+import type { DevicePreviewState } from './useDevicePreview'
+import { computed } from 'vue'
 import Notice from '@/components/Notice.vue'
 import PreviewPlate from '@/components/PreviewPlate.vue'
+import { devicePreviewDrawingLine } from './pluginTemplateWording'
 
 /** The plate of the Template section, or why there is none: what it is drawn with could not be loaded, or the Instance holds nothing to draw it for. */
-defineProps<{
+const props = defineProps<{
   pluginName: string
   /** Why the Liquid engine or the Device Models could not be loaded, as a sentence. */
   loadFailure: string | undefined
@@ -17,11 +20,19 @@ defineProps<{
   /** What the plate has no drawing for yet. It is in its rendering state while this or the Device Model is missing. */
   waitingFor: string | undefined
   hasData: boolean
+  /** The device preview's own drawing (ADR-0040), which replaces the live browser drawing once it lands. */
+  devicePreview: DevicePreviewState
+  /** The Device the device preview is for, by name only, for "Drawing it as {Device} shows it". */
+  deviceName: string | null
 }>()
 
 defineEmits<{
   retry: []
 }>()
+
+/** The device preview's own PNG once it is drawn; the live browser drawing at every other time, kept while it draws, is busy or has failed. */
+const shownDocument = computed(() => props.devicePreview.status === 'drawn' ? props.devicePreview.document : props.document)
+const drawingNote = computed(() => props.devicePreview.status === 'drawing' ? devicePreviewDrawingLine(props.deviceName ? { name: props.deviceName } : null) : undefined)
 </script>
 
 <template>
@@ -31,13 +42,14 @@ defineEmits<{
   </p>
   <PreviewPlate
     v-else
-    :name="`Preview of ${pluginName}`"
-    :document="document"
+    :name="devicePreview.status === 'drawn' ? `Preview of ${pluginName} as ${deviceName ?? 'the Device'} shows it` : `Preview of ${pluginName}`"
+    :document="shownDocument"
     :width="model?.width ?? 800"
     :height="model?.height ?? 480"
-    :not-drawn="notDrawn"
+    :not-drawn="devicePreview.status === 'drawn' ? false : notDrawn"
     :rendering="!model || !hasData"
     :rendering-note="waitingFor"
+    :drawing-note="drawingNote"
   />
 </template>
 
