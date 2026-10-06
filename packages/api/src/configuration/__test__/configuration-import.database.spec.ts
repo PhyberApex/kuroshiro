@@ -23,6 +23,8 @@ const HALLWAY = '22222222-2222-4222-8222-222222222222'
 const WEATHER = '33333333-3333-4333-8333-333333333333'
 const DOORBELL = '44444444-4444-4444-8444-444444444444'
 const PHOTO_SCREEN = '55555555-5555-4555-8555-555555555555'
+const PHOTO_SCREEN_2 = '55555555-5555-4555-8555-555555555556'
+const BAD_SCREEN = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaab'
 const FIRMWARE = '66666666-6666-4666-8666-666666666666'
 const PALETTE = '77777777-7777-4777-8777-777777777777'
 const UNKNOWN_PALETTE = '88888888-8888-4888-8888-888888888888'
@@ -277,15 +279,22 @@ describe('reading and importing a Configuration Archive, against a real database
       })
     })
 
-    it('a record the database refuses, naming it', async () => {
+    // Two file-type Screens are processed (and would have had their image written) before the refused record rolls the whole import back;
+    // `refused()` already asserts `writeFile` was never called, which catches an orphaned image left behind by a rolled-back transaction.
+    it('a record the database refuses, naming it, leaving no image on disk for the file-type Screens processed before it', async () => {
       const archive = buildArchive({
         manifest: manifest(),
-        screens: [{ id: PHOTO_SCREEN, deviceId: NO_DEVICE, type: 'html', order: 1, filename: 'Note', externalLink: null, html: '<p>Hi</p>', fetchManual: false, pluginId: null, devicePluginId: null, schedule: null, mashupConfiguration: null }],
+        screens: [
+          { id: PHOTO_SCREEN, deviceId: KITCHEN, type: 'file', order: 1, filename: 'Photo', externalLink: null, html: null, fetchManual: false, pluginId: null, devicePluginId: null, schedule: null, mashupConfiguration: null },
+          { id: PHOTO_SCREEN_2, deviceId: KITCHEN, type: 'file', order: 2, filename: 'Photo 2', externalLink: null, html: null, fetchManual: false, pluginId: null, devicePluginId: null, schedule: null, mashupConfiguration: null },
+          { id: BAD_SCREEN, deviceId: NO_DEVICE, type: 'html', order: 3, filename: 'Note', externalLink: null, html: '<p>Hi</p>', fetchManual: false, pluginId: null, devicePluginId: null, schedule: null, mashupConfiguration: null },
+        ],
+        screenImages: { [PHOTO_SCREEN]: 'png-bytes-1', [PHOTO_SCREEN_2]: 'png-bytes-2' },
       })
 
       const refusal = await refused(archive)
 
-      expect(refusal).toMatchObject({ statusCode: 422, code: 'archive-record-refused', details: { entity: 'Screen', id: PHOTO_SCREEN } })
+      expect(refusal).toMatchObject({ statusCode: 422, code: 'archive-record-refused', details: { entity: 'Screen', id: BAD_SCREEN } })
       expect(refusal.details?.reason).toEqual(expect.any(String))
     })
 
