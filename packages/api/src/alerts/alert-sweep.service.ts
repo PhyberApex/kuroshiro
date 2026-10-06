@@ -127,9 +127,19 @@ export class AlertSweepService implements OnApplicationBootstrap {
       await this.alertRepository.update(alert.id, { notifiedAt: new Date() })
   }
 
-  /** Leaves `details` alone: a resolved Alert keeps the cause it last fired with. */
+  /**
+   * Leaves `details` alone: a resolved Alert keeps the cause it last fired with.
+   * With no sender configured there is nothing to deliver, so the resolution
+   * is marked notified immediately instead of left pending — mirroring
+   * ADR-0022's "enabling delivery later doesn't burst-notify" intent for
+   * resolutions, not just active Alerts.
+   */
   private async resolveAlert(rule: AlertRule, subject: unknown, alert: Alert): Promise<void> {
     const now = new Date()
+    if (!this.sender.isConfigured()) {
+      await this.alertRepository.update(alert.id, { resolvedAt: now, resolutionNotifiedAt: now })
+      return
+    }
     await this.alertRepository.update(alert.id, { resolvedAt: now })
     const sent = await this.sender.send(rule.resolvedNotification(subject))
     if (sent)

@@ -27,7 +27,7 @@ describe('alertSweepService', () => {
   let alertRepo: ReturnType<typeof createMockRepository<Alert>>
   let deviceRepo: ReturnType<typeof createMockRepository<Device>>
   let dataSourceRepo: ReturnType<typeof createMockRepository<PluginDataSource>>
-  let sender: { send: ReturnType<typeof vi.fn> }
+  let sender: { send: ReturnType<typeof vi.fn>, isConfigured: ReturnType<typeof vi.fn> }
   let service: AlertSweepService
 
   beforeEach(() => {
@@ -37,7 +37,7 @@ describe('alertSweepService', () => {
     dataSourceRepo = createMockRepository<PluginDataSource>()
     alertRepo.find.mockResolvedValue([])
     dataSourceRepo.find.mockResolvedValue([])
-    sender = { send: vi.fn().mockResolvedValue(false) }
+    sender = { send: vi.fn().mockResolvedValue(false), isConfigured: vi.fn().mockReturnValue(true) }
     service = new AlertSweepService(asRepository(alertRepo), asRepository(deviceRepo), asRepository(dataSourceRepo), sender as unknown as NotificationSenderService, makeSettingsService())
   })
 
@@ -115,6 +115,34 @@ describe('alertSweepService', () => {
       expect(alertRepo.update).toHaveBeenCalledWith('alert-1', expect.objectContaining({ resolvedAt: expect.any(Date) }))
       expect(sender.send).toHaveBeenCalledWith(expect.objectContaining({ title: expect.stringContaining('recovered') }))
       expect(alertRepo.update).toHaveBeenCalledWith('alert-1', expect.objectContaining({ resolutionNotifiedAt: expect.any(Date) }))
+    })
+
+    it('marks a resolution notified immediately, without calling the sender, when no sender is configured', async () => {
+      const device = makeDevice({ id: 'device-1', batteryVoltage: '4.2', lastSeen: new Date() }) // 100%, well clear
+      const existing = makeAlert({ id: 'alert-1', kind: 'device-low-battery', device, notifiedAt: new Date() })
+      deviceRepo.find.mockResolvedValue([device])
+      alertRepo.find.mockImplementation(async options => (whereKind(options) === 'device-low-battery' ? [existing] : []))
+      sender.isConfigured.mockReturnValue(false)
+
+      await service.sweep()
+
+      expect(sender.send).not.toHaveBeenCalled()
+      expect(alertRepo.update).toHaveBeenCalledWith('alert-1', expect.objectContaining({ resolvedAt: expect.any(Date), resolutionNotifiedAt: expect.any(Date) }))
+    })
+
+    it('still attempts delivery and leaves the resolution pending when a sender is configured but delivery fails', async () => {
+      const device = makeDevice({ id: 'device-1', batteryVoltage: '4.2', lastSeen: new Date() })
+      const existing = makeAlert({ id: 'alert-1', kind: 'device-low-battery', device, notifiedAt: new Date() })
+      deviceRepo.find.mockResolvedValue([device])
+      alertRepo.find.mockImplementation(async options => (whereKind(options) === 'device-low-battery' ? [existing] : []))
+      sender.isConfigured.mockReturnValue(true)
+      sender.send.mockResolvedValue(false)
+
+      await service.sweep()
+
+      expect(sender.send).toHaveBeenCalledWith(expect.objectContaining({ title: expect.stringContaining('recovered') }))
+      expect(alertRepo.update).toHaveBeenCalledWith('alert-1', expect.objectContaining({ resolvedAt: expect.any(Date) }))
+      expect(alertRepo.update).not.toHaveBeenCalledWith('alert-1', expect.objectContaining({ resolutionNotifiedAt: expect.anything() }))
     })
 
     it('never opens or resolves for a device with no reported battery voltage', async () => {
