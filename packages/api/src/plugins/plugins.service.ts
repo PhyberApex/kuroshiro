@@ -64,12 +64,10 @@ export class PluginsService implements OnModuleInit {
       relations: { dataSources: true, templates: true },
     })
 
-    // A timer counts from now, so without a tick at start an Instance restarted
-    // more often than a refresh interval would never run that Plugin.
     for (const plugin of plugins) {
-      this.schedule(plugin, `Scheduled plugin: ${plugin.name}`)
+      this.scheduler.scheduleAtBoot(plugin)
       if (this.scheduler.hasScheduledJob(plugin.id)) {
-        void this.scheduler.runTick(plugin)
+        this.logger.log(`Scheduled plugin: ${plugin.name}`)
       }
     }
   }

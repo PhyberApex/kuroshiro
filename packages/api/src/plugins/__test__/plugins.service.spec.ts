@@ -23,7 +23,7 @@ describe('pluginsService', () => {
   let templateRepo: ReturnType<typeof createMockRepository<PluginTemplate>>
   let fieldRepo: ReturnType<typeof createMockRepository<PluginField>>
   let mockFieldValues: ReturnType<typeof createMockPluginFieldValuesService>
-  let mockScheduler: { schedulePlugin: ReturnType<typeof vi.fn>, removeScheduledJob: ReturnType<typeof vi.fn>, hasScheduledJob: ReturnType<typeof vi.fn> }
+  let mockScheduler: { schedulePlugin: ReturnType<typeof vi.fn>, scheduleAtBoot: ReturnType<typeof vi.fn>, removeScheduledJob: ReturnType<typeof vi.fn>, hasScheduledJob: ReturnType<typeof vi.fn> }
   let mockRenderCache: MockPluginRenderCacheService
 
   beforeEach(() => {
@@ -36,6 +36,7 @@ describe('pluginsService', () => {
 
     mockScheduler = {
       schedulePlugin: vi.fn(),
+      scheduleAtBoot: vi.fn(),
       removeScheduledJob: vi.fn(),
       hasScheduledJob: vi.fn(),
     }
@@ -294,6 +295,22 @@ describe('pluginsService', () => {
         mergeStrategy: 'standard',
         dataSources: [{ name: 'source', mode: 'fetch', url: 'https://api.example.com' }],
       })).rejects.toThrow('A Webhook-kind Plugin cannot have Data Sources')
+    })
+  })
+
+  describe('onModuleInit', () => {
+    it('schedules every loaded Plugin at boot, deciding whether each one is due', async () => {
+      const poll = makePlugin({ id: '1', name: 'Weather' })
+      const webhook = makePlugin({ id: '2', name: 'Sensor Feed', kind: 'Webhook' })
+      pluginRepo.find.mockResolvedValue([poll, webhook])
+      mockScheduler.hasScheduledJob.mockImplementation((id: string) => id === '1')
+
+      await service.onModuleInit()
+
+      expect(pluginRepo.find).toHaveBeenCalledWith({ relations: { dataSources: true, templates: true } })
+      expect(mockScheduler.scheduleAtBoot).toHaveBeenCalledWith(poll)
+      expect(mockScheduler.scheduleAtBoot).toHaveBeenCalledWith(webhook)
+      expect(mockScheduler.schedulePlugin).not.toHaveBeenCalled()
     })
   })
 })
