@@ -1,5 +1,6 @@
 import type { Repository } from 'typeorm'
 import type { Plugin } from '../../plugins/entities/plugin.entity.js'
+import type { PluginSchedulerService } from '../../plugins/services/plugin-scheduler.service.js'
 import { Buffer } from 'node:buffer'
 import { CONFIGURATION_REDACTION_SENTINEL } from 'kuroshiro-shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -110,6 +111,7 @@ describe('configurationImportService', () => {
   let manager: ReturnType<typeof createFakeManager>['manager']
   let backing: ReturnType<typeof createFakeManager>['backing']
   let service: ConfigurationImportService
+  let scheduler: { schedulePlugin: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     fsMock.mkdir.mockReset().mockResolvedValue(undefined)
@@ -118,8 +120,24 @@ describe('configurationImportService', () => {
     const fake = createFakeManager()
     manager = fake.manager
     backing = fake.backing
-    const pluginRepository = { manager } as unknown as Repository<Plugin>
-    service = new ConfigurationImportService(pluginRepository, new PluginImporterService())
+    // Mirrors the real Repository#findOne enough to reload a Plugin with its Data Sources and Templates, the way the service does before scheduling it.
+    const findOne = vi.fn(async ({ where, relations }: { where: { id: string }, relations?: Record<string, boolean> }) => {
+      const row = backing.get('Plugin')!.get(where.id)
+      if (!row) {
+        return null
+      }
+      const plugin: FakeRow = { ...row }
+      if (relations?.dataSources) {
+        plugin.dataSources = [...backing.get('PluginDataSource')!.values()].filter(ds => (ds.plugin as { id?: string } | undefined)?.id === where.id)
+      }
+      if (relations?.templates) {
+        plugin.templates = [...backing.get('PluginTemplate')!.values()].filter(t => (t.plugin as { id?: string } | undefined)?.id === where.id)
+      }
+      return plugin
+    })
+    const pluginRepository = { manager, findOne } as unknown as Repository<Plugin>
+    scheduler = { schedulePlugin: vi.fn() }
+    service = new ConfigurationImportService(pluginRepository, new PluginImporterService(), scheduler as unknown as PluginSchedulerService)
   })
 
   it('rejects an archive with no manifest.json, without starting a transaction', async () => {
@@ -791,5 +809,111 @@ describe('configurationImportService', () => {
 
     expect(fsMock.mkdir).toHaveBeenCalledWith(expect.stringContaining('device-1'), { recursive: true })
     expect(fsMock.writeFile).toHaveBeenCalledWith(expect.stringContaining('screen-1.png'), Buffer.from('png-bytes'))
+  })
+
+  describe('scheduling a Plugin an import creates or updates', () => {
+    const pollArchive = (overrides: Record<string, unknown> = {}) => buildArchive({
+      plugins: [{
+        id: 'plugin-1',
+        kind: 'Poll',
+        mergeStrategy: null,
+        streamLimit: null,
+        webhookToken: null,
+        sourceRecipeId: null,
+        dataSources: [{ id: 'ds-1', name: 'source' }],
+        templates: [{ id: 'tpl-1', layout: 'full' }],
+        fields: [],
+      }],
+      pluginFolders: {
+        'plugin-1': {
+          manifest: { name: 'Test Plugin', description: '', custom_fields: [] },
+          settings: { refresh_interval: 15, data_sources: [{ name: 'source', endpoint: 'https://api.example.com', method: 'GET', headers: {}, body: {} }] },
+          templates: { full: 'Hello' },
+        },
+      },
+      ...overrides,
+    })
+
+    it('hands a newly created Poll-kind Plugin to the scheduler once the import commits, with its Data Sources attached', async () => {
+      await service.importFromZip(pollArchive())
+
+      expect(scheduler.schedulePlugin).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+        id: 'plugin-1',
+        kind: 'Poll',
+        refreshInterval: 15,
+        templates: [expect.objectContaining({ layout: 'full' })],
+        dataSources: [expect.objectContaining({ name: 'source' })],
+      }))
+    })
+
+    it('reschedules an existing Plugin under its new refreshInterval instead of leaving the old schedule running', async () => {
+      await service.importFromZip(pollArchive())
+      scheduler.schedulePlugin.mockClear()
+
+      const buffer = buildArchive({
+        plugins: [{
+          id: 'plugin-1',
+          kind: 'Poll',
+          mergeStrategy: null,
+          streamLimit: null,
+          webhookToken: null,
+          sourceRecipeId: null,
+          dataSources: [{ id: 'ds-1', name: 'source' }],
+          templates: [{ id: 'tpl-1', layout: 'full' }],
+          fields: [],
+        }],
+        pluginFolders: {
+          'plugin-1': {
+            manifest: { name: 'Test Plugin', description: '', custom_fields: [] },
+            settings: { refresh_interval: 90, data_sources: [{ name: 'source', endpoint: 'https://api.example.com', method: 'GET', headers: {}, body: {} }] },
+            templates: { full: 'Hello' },
+          },
+        },
+      })
+
+      await service.importFromZip(buffer)
+
+      expect(scheduler.schedulePlugin).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ id: 'plugin-1', refreshInterval: 90 }))
+    })
+
+    it('hands a Webhook-kind Plugin to the scheduler too, which leaves it unscheduled for polling', async () => {
+      const buffer = buildArchive({
+        plugins: [{
+          id: 'plugin-webhook',
+          kind: 'Webhook',
+          mergeStrategy: 'standard',
+          streamLimit: null,
+          webhookToken: 'token-A',
+          sourceRecipeId: null,
+          dataSources: [],
+          templates: [{ id: 'tpl-A', layout: 'full' }],
+          fields: [],
+        }],
+        pluginFolders: {
+          'plugin-webhook': { manifest: { name: 'Doorbell', custom_fields: [] }, settings: { strategy: 'webhook' }, templates: { full: 'Ring' } },
+        },
+      })
+
+      await service.importFromZip(buffer)
+
+      expect(scheduler.schedulePlugin).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ id: 'plugin-webhook', kind: 'Webhook' }))
+    })
+
+    it('never schedules anything while checking an archive, since the check rolls its transaction back in full', async () => {
+      await service.checkZip(pollArchive())
+
+      expect(scheduler.schedulePlugin).not.toHaveBeenCalled()
+      expect(backing.get('Plugin')!.size).toBe(0)
+    })
+
+    it('leaves a Plugin the archive never mentions untouched: the scheduler is not called for it', async () => {
+      backing.get('Plugin')!.set('untouched-plugin', { id: 'untouched-plugin', name: 'Untouched', kind: 'Poll', refreshInterval: 15 })
+
+      await service.importFromZip(pollArchive())
+
+      for (const call of scheduler.schedulePlugin.mock.calls) {
+        expect((call[0] as { id: string }).id).not.toBe('untouched-plugin')
+      }
+    })
   })
 })
