@@ -308,8 +308,10 @@ export class RecipeUpdateService {
     }
 
     if (existing) {
+      const previousFieldType = existing.fieldType
       Object.assign(existing, fields)
       await this.fieldRepository.save(existing)
+      await this.fieldValues.clearFieldsRetypedFromPassword([{ previousFieldType, field: existing }])
     }
     else {
       const created = this.fieldRepository.create({ ...fields, keyname: item.key, plugin })

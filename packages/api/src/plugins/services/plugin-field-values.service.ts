@@ -6,7 +6,7 @@ import { EntityManager, In, Repository } from 'typeorm'
 import { ApiException } from '../../errors/api.exception.js'
 import { PluginFieldValue } from '../entities/plugin-field-value.entity.js'
 import { PluginField } from '../entities/plugin-field.entity.js'
-import { fieldValueViews, needsValues, resolveFieldValues } from '../plugin-field-values.js'
+import { fieldValueViews, isSecretField, needsValues, resolveFieldValues } from '../plugin-field-values.js'
 
 export type FieldValueWrites = Record<string, string | null>
 
@@ -103,6 +103,21 @@ export class PluginFieldValuesService {
     }
 
     return changes.length > 0
+  }
+
+  /**
+   * Drops the stored value of each Plugin Field a save or a Recipe Update apply
+   * just retyped away from password: a password is never readable back
+   * (ADR-0032), so a value left on the row would answer in plain text once the
+   * field's type says it is no secret. A field whose type was already
+   * non-password, or that is still password, is left untouched.
+   */
+  async clearFieldsRetypedFromPassword(changed: Array<{ previousFieldType: string, field: Pick<PluginField, 'id' | 'fieldType'> }>): Promise<void> {
+    const retyped = changed.filter(({ previousFieldType, field }) => isSecretField({ fieldType: previousFieldType }) && !isSecretField(field))
+    if (retyped.length === 0)
+      return
+
+    await this.fieldValueRepository.delete({ field: { id: In(retyped.map(({ field }) => field.id)) } })
   }
 
   private async store(plugin: Pick<Plugin, 'id'>, field: PluginField, value: string | undefined): Promise<void> {

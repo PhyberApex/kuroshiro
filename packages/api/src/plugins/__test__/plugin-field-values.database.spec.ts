@@ -321,6 +321,58 @@ describe('field values against a real database', () => {
       expect(await fieldValues.storedFor(plugin.id)).toEqual({ city: 'Paris', api_key: 's3cret' })
     })
 
+    it('drops the stored value when a save retypes a password Plugin Field to something else', async () => {
+      const plugin = await createWeatherPlugin({ fieldValues: { city: 'Berlin', api_key: 's3cret' } })
+
+      await save(plugin.id, {
+        fields: [
+          { keyname: 'city', name: 'City', fieldType: 'string', required: true, order: 1 },
+          { keyname: 'api_key', name: 'API key', fieldType: 'string', order: 2 },
+        ],
+      })
+
+      const detail = await pluginReads.detail(plugin.id)
+      expect(detail.fieldValues.api_key).toEqual({ secret: false, value: null })
+      expect(await fieldValues.storedFor(plugin.id)).toEqual({ city: 'Berlin' })
+      expect(await database.getRepository(PluginFieldValue).count({ where: { plugin: { id: plugin.id } } })).toBe(1)
+    })
+
+    it('stores a value sent in the same save that retypes a password Plugin Field away', async () => {
+      const plugin = await createWeatherPlugin({ fieldValues: { city: 'Berlin', api_key: 's3cret' } })
+
+      const updated = await save(plugin.id, {
+        fields: [
+          { keyname: 'city', name: 'City', fieldType: 'string', required: true, order: 1 },
+          { keyname: 'api_key', name: 'API key', fieldType: 'string', order: 2 },
+        ],
+        fieldValues: { api_key: 'visible' },
+      })
+
+      expect(updated.fieldValues.api_key).toEqual({ value: 'visible', isSet: true })
+      expect(await fieldValues.storedFor(plugin.id)).toEqual({ city: 'Berlin', api_key: 'visible' })
+    })
+
+    it('keeps the stored value of a Plugin Field retyped to password from something else', async () => {
+      const plugin = await createWeatherPlugin({
+        fields: [
+          { keyname: 'city', name: 'City', fieldType: 'string', required: true, order: 1 },
+          { keyname: 'api_key', name: 'API key', fieldType: 'string', order: 2 },
+        ],
+        fieldValues: { city: 'Berlin', api_key: 's3cret' },
+      })
+
+      await save(plugin.id, {
+        fields: [
+          { keyname: 'city', name: 'City', fieldType: 'string', required: true, order: 1 },
+          { keyname: 'api_key', name: 'API key', fieldType: 'password', order: 2 },
+        ],
+      })
+
+      const detail = await pluginReads.detail(plugin.id)
+      expect(detail.fieldValues.api_key).toEqual({ secret: true, set: true })
+      expect(await fieldValues.storedFor(plugin.id)).toEqual({ city: 'Berlin', api_key: 's3cret' })
+    })
+
     it('keeps the value of a Plugin Field whose label changed and drops the value of a removed one', async () => {
       const plugin = await createWeatherPlugin({ fieldValues: { city: 'Berlin', api_key: 's3cret' } })
       const cityFieldId = plugin.fields.find(field => field.keyname === 'city')!.id
@@ -390,6 +442,33 @@ describe('field values against a real database', () => {
 
       expect(updated.fields).toEqual([expect.objectContaining({ keyname: 'city', name: 'Town' })])
       expect(updated.fieldValues).toEqual({ city: { value: 'Berlin', isSet: true } })
+      expect(await fieldValues.storedFor(plugin.id)).toEqual({ city: 'Berlin' })
+    })
+
+    it('drops the stored value when an applied Update Item retypes a password Plugin Field away', async () => {
+      const recipe = {
+        name: 'Weather',
+        kind: 'Poll' as const,
+        refreshInterval: 15,
+        dataSources: [],
+        templates: [{ layout: 'full', liquidMarkup: '{{ city }}' }],
+        fields: [
+          { keyname: 'city', fieldType: 'string', name: 'City', required: true, order: 1 },
+          { keyname: 'api_key', fieldType: 'password', name: 'API key', required: false, order: 2 },
+        ],
+        sourceRecipeId: '150460',
+      }
+      const plugin = await plugins.create({ ...recipe, sourceRecipeSnapshot: { ...recipe }, fieldValues: { city: 'Berlin', api_key: 's3cret' } })
+      mockImporter.importFromRecipe.mockResolvedValue({ ...recipe, fields: [recipe.fields[0], { ...recipe.fields[1], fieldType: 'string' }] })
+
+      const { contentHash } = await recipeUpdate.checkForUpdate(plugin.id)
+      await recipeUpdate.applyUpdate(plugin.id, {
+        contentHash,
+        apply: [{ itemType: 'field', key: 'api_key' }],
+      })
+
+      const detail = await pluginReads.detail(plugin.id)
+      expect(detail.fieldValues.api_key).toEqual({ secret: false, value: null })
       expect(await fieldValues.storedFor(plugin.id)).toEqual({ city: 'Berlin' })
     })
   })
