@@ -1,8 +1,8 @@
 import type { RenderSignal } from 'kuroshiro-shared'
 import type { FallbackScreenRequest } from '../device-models/fallback-screen-templates.js'
-import type { MashupRendererService } from '../mashup/services/mashup-renderer.service.js'
 import type { Plugin } from '../plugins/entities/plugin.entity.js'
 import type { RotationScreen } from '../schedule/rotation.js'
+import type { RenderOutcome } from '../screens/render-outcome.js'
 import type { DisplayRequestHeadersDto } from './dto/display-request-headers.dto.js'
 import type { Served } from './last-served.js'
 import * as fs from 'node:fs'
@@ -10,17 +10,18 @@ import * as path from 'node:path'
 import { Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
-import { viewFull, wrapInScreenShell } from 'kuroshiro-shared'
+import { viewFull } from 'kuroshiro-shared'
 import { Repository } from 'typeorm'
 import { DeviceModelsService } from '../device-models/device-models.service.js'
 import { FallbackScreensService } from '../device-models/fallback-screens.service.js'
-import { renderHtmlToPng } from '../device-models/render-html-to-png.js'
 import { DeviceSensorsService } from '../device-sensors/device-sensors.service.js'
 import { FirmwareService } from '../firmware/firmware.service.js'
+import { ScreenRenderService } from '../mashup/services/screen-render.service.js'
 import { templateOfSize } from '../plugins/plugin-templates.js'
 import { PluginRendererService } from '../plugins/services/plugin-renderer.service.js'
 import { PluginTemplateContextService } from '../plugins/services/plugin-template-context.service.js'
 import { nextEligibleScreen } from '../schedule/rotation.js'
+import { RENDER_FAILED, RENDER_HELD, RENDER_SKIPPED } from '../screens/render-outcome.js'
 import { Screen } from '../screens/screens.entity.js'
 import { fileExists } from '../utils/fileExists.js'
 import { fileModifiedAt } from '../utils/fileModifiedAt.js'
@@ -55,15 +56,6 @@ interface ScreenImage {
   served: Served
 }
 
-const RENDER_FAILED = Symbol('render failed')
-/** A `skip` Render Signal observed while honouring it: the Screen is left out of Rotation, its stored image untouched. */
-const RENDER_SKIPPED = Symbol('render skipped')
-/** A `hold` Render Signal observed while honouring it: the screenshot is discarded, the Screen's stored image untouched. */
-const RENDER_HELD = Symbol('render held')
-
-/** A rendered image's URL, `null` when the Screen has nothing to render from, or `RENDER_FAILED`/`RENDER_SKIPPED`/`RENDER_HELD`. */
-type RenderOutcome = string | null | typeof RENDER_FAILED | typeof RENDER_SKIPPED | typeof RENDER_HELD
-
 export interface TrmnlScreenResponse {
   action?: string
   filename: string
@@ -78,7 +70,6 @@ export interface TrmnlScreenResponse {
 @Injectable()
 export class DeviceDisplayService {
   private readonly logger = new Logger(DeviceDisplayService.name)
-  private mashupRenderer: MashupRendererService
 
   constructor(
     @InjectRepository(Device)
@@ -92,23 +83,8 @@ export class DeviceDisplayService {
     private pluginRenderer: PluginRendererService,
     private deviceSensors: DeviceSensorsService,
     private pluginTemplateContext: PluginTemplateContextService,
-  ) {
-    // Lazy injection to avoid circular dependency
-    setTimeout(async () => {
-      try {
-        const { MashupRendererService } = await import('../mashup/services/mashup-renderer.service.js')
-        // Get it from the module (this is a workaround for circular deps)
-        this.mashupRenderer = new MashupRendererService(
-          this.pluginRenderer,
-          this.deviceSensors,
-          this.pluginTemplateContext,
-        )
-      }
-      catch {
-        this.logger.debug('MashupRendererService not available')
-      }
-    }, 0)
-  }
+    private screenRender: ScreenRenderService,
+  ) {}
 
   async getCurrentImage(headers: DisplayRequestHeadersDto): Promise<Display> {
     this.logger.log(`Display request for MAC: ${headers.id}`)
@@ -578,7 +554,7 @@ export class DeviceDisplayService {
    */
   private async generateScreenImage(screen: Screen, device: Device, honorRenderSignal: boolean): Promise<ScreenImage | typeof RENDER_SKIPPED | typeof RENDER_HELD> {
     let outcome = screen.type === 'mashup'
-      ? await this.renderMashupScreen(screen, device, honorRenderSignal)
+      ? await this.screenRender.renderMashupScreen(screen, device, honorRenderSignal)
       : await this.renderPluginOrHtmlScreen(screen, device, honorRenderSignal)
 
     if (screen.externalLink && !screen.fetchManual)
@@ -612,50 +588,6 @@ export class DeviceDisplayService {
     return withPlugin?.plugin?.name ?? screen.filename ?? null
   }
 
-  private async renderMashupScreen(screen: Screen, device: Device, honorRenderSignal: boolean): Promise<RenderOutcome> {
-    try {
-      const screenWithMashup = await this.screenRepository.findOne({
-        where: { id: screen.id },
-        relations: {
-          mashupConfiguration: {
-            slots: {
-              plugin: {
-                dataSources: true,
-                templates: true,
-              },
-            },
-          },
-        },
-      })
-
-      if (!screenWithMashup?.mashupConfiguration || !this.mashupRenderer)
-        return null
-
-      let renderedHtml: string
-      if (screenWithMashup.cachedPluginOutput) {
-        this.logger.log(`Using cached mashup output for screen ${screen.id}`)
-        renderedHtml = screenWithMashup.cachedPluginOutput
-      }
-      else {
-        renderedHtml = await this.renderMashupOnDemand(screen, screenWithMashup.mashupConfiguration, device)
-      }
-
-      return await this.renderBodyToScreenPng(renderedHtml, screen, device, honorRenderSignal)
-    }
-    catch (err) {
-      const message = getErrorMessage(err)
-      this.logger.error(`Failed to render mashup: ${message}`)
-      return RENDER_FAILED
-    }
-  }
-
-  private async renderMashupOnDemand(screen: Screen, mashupConfiguration: NonNullable<Screen['mashupConfiguration']>, device: Device): Promise<string> {
-    this.logger.log(`Rendering mashup ${mashupConfiguration.id} for screen ${screen.id}`)
-    const renderedHtml = await this.mashupRenderer.renderMashup(mashupConfiguration, device)
-    await this.cachePluginOutput(screen, renderedHtml)
-    return renderedHtml
-  }
-
   private async renderPluginOrHtmlScreen(screen: Screen, device: Device, honorRenderSignal: boolean): Promise<RenderOutcome> {
     // Load plugin relationship if needed
     const screenWithPlugin = await this.screenRepository.findOne({
@@ -673,7 +605,7 @@ export class DeviceDisplayService {
 
   private async renderHtmlScreen(html: string, screen: Screen, device: Device, honorRenderSignal: boolean): Promise<RenderOutcome> {
     try {
-      return await this.renderBodyToScreenPng(viewFull(html), screen, device, honorRenderSignal)
+      return await this.screenRender.renderBodyToScreenPng(viewFull(html), screen, device, honorRenderSignal)
     }
     catch (err) {
       this.logger.error(`Failed to render HTML screen: ${getErrorMessage(err)}`)
@@ -688,7 +620,7 @@ export class DeviceDisplayService {
     if (screenWithPlugin.cachedPluginOutput) {
       try {
         this.logger.log(`Using cached plugin output for plugin ${plugin.id}, screen ${screen.id}`)
-        return await this.renderBodyToScreenPng(viewFull(screenWithPlugin.cachedPluginOutput), screen, device, honorRenderSignal)
+        return await this.screenRender.renderBodyToScreenPng(viewFull(screenWithPlugin.cachedPluginOutput), screen, device, honorRenderSignal)
       }
       catch (err) {
         const message = getErrorMessage(err)
@@ -700,7 +632,7 @@ export class DeviceDisplayService {
     // No render is cached yet: a Poll-kind Plugin fetches now, a Webhook-kind one renders what it has received, or nothing.
     try {
       const renderedHtml = await this.renderPluginHtml(plugin, screen)
-      return renderedHtml ? await this.renderBodyToScreenPng(viewFull(renderedHtml), screen, device, honorRenderSignal) : null
+      return renderedHtml ? await this.screenRender.renderBodyToScreenPng(viewFull(renderedHtml), screen, device, honorRenderSignal) : null
     }
     catch (err) {
       const message = getErrorMessage(err)
@@ -753,24 +685,6 @@ export class DeviceDisplayService {
     const renderedHtml = await this.pluginRenderer.render(fullTemplate.liquidMarkup, context)
     await this.cachePluginOutput(screen, renderedHtml)
     return renderedHtml
-  }
-
-  /**
-   * Screenshots screen body markup (a `.view` or `.mashup` element) inside the
-   * device's model shell at the model's native pixel size and converts it to
-   * the device's PNG. `honorRenderSignal` leaves the stored image untouched
-   * and answers `RENDER_SKIPPED`/`RENDER_HELD` on a live `skip`/`hold` Render
-   * Signal (ADR-0031); otherwise the signal is observed but has no effect, as
-   * outside `/display`.
-   */
-  private async renderBodyToScreenPng(bodyHtml: string, screen: Screen, device: Device, honorRenderSignal: boolean): Promise<string | typeof RENDER_SKIPPED | typeof RENDER_HELD> {
-    const target = await this.deviceModels.renderTargetFor(device)
-    const renderSignal = await renderHtmlToPng(wrapInScreenShell(target, bodyHtml), target, this.screenImagePath(device, screen), this.logger, {}, { honorRenderSignal })
-    if (honorRenderSignal && renderSignal === 'skip')
-      return RENDER_SKIPPED
-    if (honorRenderSignal && renderSignal === 'hold')
-      return RENDER_HELD
-    return this.screenImageUrl(device, screen)
   }
 
   private async cachePluginOutput(screen: Screen, renderedHtml: string): Promise<void> {

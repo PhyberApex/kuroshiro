@@ -18,6 +18,7 @@ import { DeviceDisplayService } from '../../devices/display.service.js'
 import { MashupConfiguration } from '../../mashup/entities/mashup-configuration.entity.js'
 import { MashupSlot } from '../../mashup/entities/mashup-slot.entity.js'
 import { MashupRendererService } from '../../mashup/services/mashup-renderer.service.js'
+import { ScreenRenderService } from '../../mashup/services/screen-render.service.js'
 import { Screen } from '../../screens/screens.entity.js'
 import { stubFetch } from '../../test/fetch.js'
 import { createHttpTestApp } from '../../test/httpApp.js'
@@ -110,6 +111,12 @@ describe('what a Plugin renders from, and with which Template, against a real da
     primeMockDeviceModelsService(deviceModels)
     primeMockFallbackScreensService(fallbackScreens)
     mashupRenderer = new MashupRendererService(renderer, deviceSensors, templateContext)
+    const screenRender = new ScreenRenderService(
+      database.getRepository(Screen),
+      config,
+      asService<DeviceModelsService>(deviceModels),
+      mashupRenderer,
+    )
     display = new DeviceDisplayService(
       database.getRepository(Device),
       database.getRepository(Screen),
@@ -120,9 +127,8 @@ describe('what a Plugin renders from, and with which Template, against a real da
       renderer,
       deviceSensors,
       templateContext,
+      screenRender,
     )
-    // The display service builds its Mashup renderer on a later turn of the event loop.
-    await vi.waitFor(() => expect(Reflect.get(display, 'mashupRenderer')).toBeDefined())
 
     http = await createHttpTestApp({
       controllers: [PluginsController, WebhookIngestController],

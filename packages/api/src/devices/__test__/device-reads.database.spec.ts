@@ -4,6 +4,7 @@ import type { DataSource } from 'typeorm'
 import type { DeviceModelsService } from '../../device-models/device-models.service.js'
 import type { FallbackScreensService } from '../../device-models/fallback-screens.service.js'
 import type { FirmwareService } from '../../firmware/firmware.service.js'
+import type { ScreenRenderService } from '../../mashup/services/screen-render.service.js'
 import type { PluginRendererService } from '../../plugins/services/plugin-renderer.service.js'
 import type { ScreensService } from '../../screens/screens.service.js'
 import type { HttpTestApp } from '../../test/httpApp.js'
@@ -63,6 +64,7 @@ describe('the Device reads against a real database', () => {
             asService<PluginRendererService>({}),
             deviceSensors,
             createPluginTemplateContextService(),
+            asService<ScreenRenderService>({}),
           ),
         },
       ],

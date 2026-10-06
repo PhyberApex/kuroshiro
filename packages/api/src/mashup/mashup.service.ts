@@ -13,6 +13,7 @@ import { Screen } from '../screens/screens.entity.js'
 import { MASHUP_LAYOUT_CONFIG } from './constants/layouts.js'
 import { MashupConfiguration } from './entities/mashup-configuration.entity.js'
 import { MashupSlot } from './entities/mashup-slot.entity.js'
+import { ScreenRenderService } from './services/screen-render.service.js'
 
 @Injectable()
 export class MashupService {
@@ -29,6 +30,7 @@ export class MashupService {
     private readonly mashupSlotRepository: Repository<MashupSlot>,
     @InjectRepository(Plugin)
     private readonly pluginRepository: Repository<Plugin>,
+    private readonly screenRender: ScreenRenderService,
   ) {}
 
   /** Adds a Mashup at the end of the Device's Order and answers its Screen's id. */
@@ -45,6 +47,7 @@ export class MashupService {
       return screen.id
     })
     this.logger.log(`Mashup created with id: ${screenId}`)
+    void this.screenRender.renderAfterSave(screenId)
     return screenId
   }
 
@@ -69,6 +72,7 @@ export class MashupService {
       await manager.getRepository(Screen).update({ id: screenId }, { cachedPluginOutput: null, renderSignal: null })
     })
     this.logger.log(`Mashup updated: ${screenId}`)
+    void this.screenRender.renderAfterSave(screenId)
     return screenId
   }
 
