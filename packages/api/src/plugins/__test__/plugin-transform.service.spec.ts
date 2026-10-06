@@ -62,19 +62,18 @@ describe('pluginTransformService', () => {
     expect(result.items[1].processed).toBe(true)
   })
 
-  it('returns raw data on transformation error', () => {
+  it('propagates the error on transformation failure', () => {
     const transformJs = `
       module.exports = function(data) {
         throw new Error('Transform failed');
       };
     `
     const rawData = { value: 42 }
-    const result = service.transform(transformJs, rawData)
 
-    expect(result).toEqual({ value: 42 })
+    expect(() => service.transform(transformJs, rawData)).toThrow('Transform failed')
   })
 
-  it('handles timeout for long-running transforms', () => {
+  it('propagates the error on timeout for long-running transforms', () => {
     const transformJs = `
       module.exports = function(data) {
         while(true) {} // Infinite loop
@@ -82,9 +81,8 @@ describe('pluginTransformService', () => {
       };
     `
     const rawData = { value: 42 }
-    const result = service.transform(transformJs, rawData)
 
-    expect(result).toEqual({ value: 42 })
+    expect(() => service.transform(transformJs, rawData)).toThrow()
   }, 10000)
 
   it('provides console.log in sandbox', () => {
@@ -100,7 +98,7 @@ describe('pluginTransformService', () => {
     expect(result.logged).toBe(true)
   })
 
-  it('prevents access to unsafe APIs', () => {
+  it('propagates the error when an unsafe API is blocked', () => {
     const transformJs = `
       module.exports = function(data) {
         const fs = require('fs'); // Should fail
@@ -108,8 +106,7 @@ describe('pluginTransformService', () => {
       };
     `
     const rawData = { value: 42 }
-    const result = service.transform(transformJs, rawData)
 
-    expect(result).toEqual({ value: 42 })
+    expect(() => service.transform(transformJs, rawData)).toThrow()
   })
 })

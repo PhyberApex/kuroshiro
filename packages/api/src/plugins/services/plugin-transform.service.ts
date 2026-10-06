@@ -49,8 +49,7 @@ export class PluginTransformService {
     catch (error) {
       const message = getErrorMessage(error)
       this.logger.error(`Transform execution failed: ${message}`)
-      this.logger.warn('Returning raw data without transformation')
-      return rawData
+      throw error
     }
   }
 }
