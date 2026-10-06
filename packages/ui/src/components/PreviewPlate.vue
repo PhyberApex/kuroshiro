@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 import Icon from './Icon.vue'
+import LoadingMark from './LoadingMark.vue'
 import Plate from './Plate.vue'
 
 const props = defineProps<{
@@ -17,6 +18,8 @@ const props = defineProps<{
   rendering?: boolean
   /** What the plate is waiting for while it is rendering: "Fetching the data". */
   renderingNote?: string
+  /** The drawing is kept while something else draws over it, with the loading mark: "Drawing it as {Device} shows it" (ADR-0040). */
+  drawingNote?: string
 }>()
 
 interface Drawing {
@@ -80,6 +83,10 @@ const frameStyle = computed(() => ({
         <p v-if="notDrawn" class="note">
           <Icon name="problem" />
           {{ hasDrawing ? 'Not drawn. This is the last drawing.' : 'Not drawn.' }}
+        </p>
+        <p v-else-if="drawingNote" class="note">
+          <LoadingMark decorative />
+          {{ drawingNote }}
         </p>
       </div>
     </template>

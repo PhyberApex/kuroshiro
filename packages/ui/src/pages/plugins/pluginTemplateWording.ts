@@ -1,5 +1,6 @@
-import type { PaletteRead, TemplateSize } from 'kuroshiro-shared'
+import type { DevicePreviewSignal, PaletteRead, TemplateSize } from 'kuroshiro-shared'
 import type { PreviewTarget } from './previewTarget'
+import { clockTime } from '@/patterns/time'
 
 export const SIZE_NAMES: Record<TemplateSize, string> = {
   full: 'Full',
@@ -32,7 +33,7 @@ export const SIZE_IS: Record<TemplateSize, string> = {
 }
 
 /** A target as its words need it: the Device by its name only. */
-type WordedTarget = Pick<PreviewTarget, 'model' | 'palette'> & { device: { name: string } | null }
+export type WordedTarget = Pick<PreviewTarget, 'model' | 'palette'> & { device: { name: string } | null }
 
 export const editorName = (pluginName: string, size: TemplateSize) => `Template of ${pluginName}, ${SIZE_NAMES[size]}`
 
@@ -55,3 +56,31 @@ export function honestLine({ device, palette }: WordedTarget, size: TemplateSize
   const slot = size === 'full' ? '' : `, in ${SLOT_IS[size]}; the other slots are left empty here`
   return `Your browser draws this. ${device?.name ?? 'The Device'} shows it in ${shadesOf(palette)}${slot}.`
 }
+
+const deviceOrThe = (device: { name: string } | null) => device?.name ?? 'the Device'
+
+/** The honest line's button: "See it as {Device} shows it" (ADR-0040). */
+export const devicePreviewButton = (device: { name: string } | null) => `See it as ${deviceOrThe(device)} shows it`
+
+/** While the device preview is being drawn. */
+/** Takes the Device's name alone: the plate only ever has that, whether it holds a full Device (Edit HTML) or just a choice of name (the Template editor). */
+export const devicePreviewDrawingLine = (name: string | null) => `Drawing it as ${name ?? 'the Device'} shows it`
+
+/** Once it is drawn: "As {Device} shows it, in {4 grays}, drawn at {hh:mm}." */
+export function devicePreviewDrawnLine({ device, palette }: WordedTarget, drawnAt: Date) {
+  return `As ${deviceOrThe(device)} shows it, in ${shadesOf(palette)}, drawn at ${clockTime(drawnAt)}.`
+}
+
+/** A Render Signal the content raised while the device preview was drawn; nothing for `none`. */
+export function devicePreviewSignalLine(signal: DevicePreviewSignal): string | null {
+  if (signal === 'skip')
+    return 'This content asks to be skipped.'
+  if (signal === 'hold')
+    return 'This content asks to keep its previous image.'
+  return null
+}
+
+export const DEVICE_PREVIEW_BUSY_LINE = 'Another preview is being drawn. Try again in a moment.'
+
+/** A failure other than the busy refusal: "Could not draw it as {Device} shows it." */
+export const devicePreviewFailedLine = (device: { name: string } | null) => `Could not draw it as ${deviceOrThe(device)} shows it.`

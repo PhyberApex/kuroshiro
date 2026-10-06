@@ -15,7 +15,7 @@ async function bodyOf(markup: string, size: Parameters<typeof previewOf>[0]['siz
   const outcome = await preview(markup, size)
   if (!('document' in outcome))
     throw new Error(`Not drawn: ${outcome.problem.message}`)
-  return /<div class="screen [^>]*>([\s\S]*)<\/div>\s*<\/body>/.exec(outcome.document)![1]
+  return outcome.body
 }
 
 describe('the preview of a Template', () => {
@@ -32,6 +32,7 @@ describe('the preview of a Template', () => {
     <div class="screen screen--og_plus screen--md screen--2bit" style="--screen-w: 800px;"><div class="view view--full"><span class="title">Weather in LINDENPLATZ</span></div></div>
   </body>
 </html>`,
+      body: '<div class="view view--full"><span class="title">Weather in LINDENPLATZ</span></div>',
     })
   })
 

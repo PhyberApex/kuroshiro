@@ -1,4 +1,4 @@
-import { delay, http } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { expectAccessible } from '@/testing/a11y'
@@ -215,5 +215,80 @@ describe('edit HTML', () => {
 
     await expectAccessible()
     await expectNoHorizontalOverflow()
+  })
+
+  describe('the device preview (ADR-0040)', () => {
+    const seeItButton = (screen: Mounted) => screen.getByRole('button', { name: 'See it as Kitchen shows it' })
+    const honest = () => document.querySelector('.html-preview .honest')?.textContent
+
+    it('draws it, then shows the image with the Render Signal none raises no second line', async () => {
+      fakeFridgeNote()
+      let release = () => {}
+      api.use(http.post(apiUrl('device-preview'), async () => {
+        await new Promise<void>(resolve => (release = resolve))
+        return new HttpResponse('png-bytes', { headers: { 'Content-Type': 'image/png', 'X-Render-Signal': 'none' } })
+      }))
+      const screen = await mountFridgeNote()
+      await expect.poll(previewed).toContain('<p>Back at six.</p>')
+
+      await seeItButton(screen).click()
+
+      await expect.element(screen.getByText('Drawing it as Kitchen shows it')).toBeVisible()
+      await expect.element(seeItButton(screen)).toHaveAttribute('aria-busy', 'true')
+
+      release()
+
+      await expect.poll(() => previewed()).toContain('<img src="data:image/png')
+      await expect.poll(honest).toMatch(/^As Kitchen shows it, in 4 grays, drawn at \d{2}:\d{2}\.$/)
+      expect(document.querySelector('.html-preview .honest + .honest')).toBeNull()
+      await expect.element(screen.getByRole('button', { name: 'Back to the browser drawing' })).toBeVisible()
+    })
+
+    it('reports a skip or hold Render Signal as a second line', async () => {
+      fakeFridgeNote()
+      api.use(http.post(apiUrl('device-preview'), () => new HttpResponse('png', { headers: { 'Content-Type': 'image/png', 'X-Render-Signal': 'skip' } })))
+      const screen = await mountFridgeNote()
+
+      await seeItButton(screen).click()
+
+      await expect.element(screen.getByText('This content asks to be skipped.')).toBeVisible()
+    })
+
+    it('reads 429 as busy, and any other failure as "Could not draw it", offering "Try again"', async () => {
+      fakeFridgeNote()
+      let busy = true
+      api.use(http.post(apiUrl('device-preview'), () => busy
+        ? apiErrorResponse({ statusCode: 429, code: 'device-preview-busy' })
+        : apiErrorResponse({ statusCode: 500, code: 'internal' })))
+      const screen = await mountFridgeNote()
+
+      await seeItButton(screen).click()
+      await expect.element(screen.getByText('Another preview is being drawn. Try again in a moment.')).toBeVisible()
+
+      busy = false
+      await seeItButton(screen).click()
+      await expect.element(screen.getByText('Could not draw it as Kitchen shows it.')).toBeVisible()
+      await expect.element(screen.getByRole('button', { name: 'Try again' })).toBeVisible()
+    })
+
+    it('drops the device preview back to the browser drawing on an edit, and on "Back to the browser drawing"', async () => {
+      fakeFridgeNote()
+      api.use(http.post(apiUrl('device-preview'), () => new HttpResponse('png', { headers: { 'Content-Type': 'image/png' } })))
+      const screen = await mountFridgeNote()
+      await seeItButton(screen).click()
+      await expect.poll(() => previewed()).toContain('<img src="data:image/png')
+
+      await type(screen, ' Soup')
+
+      await expect.poll(honest).toBe('Your browser draws this. Kitchen shows it in 4 grays.')
+      await expect.poll(previewed).not.toContain('<img src="data:image/png')
+
+      await seeItButton(screen).click()
+      await expect.poll(() => previewed()).toContain('<img src="data:image/png')
+      await screen.getByRole('button', { name: 'Back to the browser drawing' }).click()
+
+      await expect.poll(honest).toBe('Your browser draws this. Kitchen shows it in 4 grays.')
+      await expect.poll(previewed).not.toContain('<img src="data:image/png')
+    })
   })
 })

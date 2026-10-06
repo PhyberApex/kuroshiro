@@ -1,6 +1,7 @@
 export * from './api/alerts.ts'
 export * from './api/configuration.ts'
 export * from './api/device-models.ts'
+export * from './api/device-preview.ts'
 export * from './api/devices.ts'
 export * from './api/errors.ts'
 export * from './api/firmware.ts'
