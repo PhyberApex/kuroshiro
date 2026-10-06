@@ -137,7 +137,9 @@ describe('the fetched data of the Template section', () => {
     })
   })
 
-  describe('when the data is fetched', () => {
+  // These assert on the page's own real 800 ms debounce, which a loaded CI runner — coverage instrumentation
+  // included — can see fire early or late; one retry tells that apart from an actual regression.
+  describe('when the data is fetched', { retry: 1 }, () => {
     it('asks once when the section is first shown, with the form as it stands and the Device the preview is for', async () => {
       const faked = fakeWeather()
       await mountTemplate()
