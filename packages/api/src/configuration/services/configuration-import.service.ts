@@ -41,6 +41,7 @@ import { PluginField } from '../../plugins/entities/plugin-field.entity.js'
 import { PluginTemplate } from '../../plugins/entities/plugin-template.entity.js'
 import { Plugin } from '../../plugins/entities/plugin.entity.js'
 import { PluginImporterService } from '../../plugins/services/plugin-importer.service.js'
+import { PluginSchedulerService } from '../../plugins/services/plugin-scheduler.service.js'
 import { Schedule } from '../../schedule/schedule.entity.js'
 import { Screen } from '../../screens/screens.entity.js'
 import { INSTANCE_SETTINGS_ID, InstanceSettings } from '../../settings/entities/instance-settings.entity.js'
@@ -60,6 +61,8 @@ interface ImportRun {
   devices: { added: Ref[], overwritten: Ref[] }
   /** The Plugins of a schemaVersion 2 archive that held Plugin Variables or per-Assignment Field Values, which have nowhere to go (ADR-0032). */
   pluginsWithDroppedValues: Set<string>
+  /** The id of every Plugin this run created or updated, for scheduling once the transaction commits. */
+  upsertedPluginIds: Set<string>
 }
 
 interface ArchiveContents {
@@ -147,6 +150,7 @@ export class ConfigurationImportService {
     @InjectRepository(Plugin)
     private readonly pluginRepository: Repository<Plugin>,
     private readonly pluginImporter: PluginImporterService,
+    private readonly pluginScheduler: PluginSchedulerService,
   ) {}
 
   async importFromZip(buffer: Buffer): Promise<ConfigurationImportSummary> {
@@ -190,6 +194,7 @@ export class ConfigurationImportService {
       pluginsWithDroppedValues: archive.manifest.schemaVersion === PREVIOUS_CONFIG_SCHEMA_VERSION
         ? this.pluginsWithLegacyValues(archive.plugins, archive.assignments)
         : new Set(),
+      upsertedPluginIds: new Set(),
     }
 
     try {
@@ -240,7 +245,22 @@ export class ConfigurationImportService {
       }
     }
 
+    // A check's transaction is rolled back in full, so nothing it touched is real: the scheduler must not hear about it.
+    if (!checkOnly) {
+      await this.scheduleUpsertedPlugins(run.upsertedPluginIds)
+    }
+
     return run
+  }
+
+  /** Reloads each Plugin with the relations a scheduled tick reads before scheduling: `upsertPlugin`'s own entity never gets its Data Sources relation back from `save`, and the scheduler's timer closes over whatever Plugin object it is given. */
+  private async scheduleUpsertedPlugins(pluginIds: Set<string>): Promise<void> {
+    for (const id of pluginIds) {
+      const plugin = await this.pluginRepository.findOne({ where: { id }, relations: { dataSources: true, templates: true } })
+      if (plugin) {
+        this.pluginScheduler.schedulePlugin(plugin)
+      }
+    }
   }
 
   private reposFor(manager: EntityManager): TransactionRepos {
@@ -573,6 +593,7 @@ export class ConfigurationImportService {
     await this.upsertPluginTemplates(repos.template, saved, parsed.templates, entry.templates, run)
     const fields = await this.upsertPluginFields(repos.field, saved, parsed.fields, entry.fields, run)
     await this.upsertFieldValues(repos.fieldValue, saved, fields, entry.fieldValues, ref, run)
+    run.upsertedPluginIds.add(saved.id)
   }
 
   private async assertWebhookTokenFree(repo: Repository<Plugin>, pluginId: string, webhookToken: string | null): Promise<void> {

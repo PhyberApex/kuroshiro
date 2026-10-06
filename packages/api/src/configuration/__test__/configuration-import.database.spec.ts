@@ -1,5 +1,6 @@
 import type { ApiError, ConfigurationImportSummary, ImportCheck } from 'kuroshiro-shared'
 import type { DataSource } from 'typeorm'
+import type { PluginSchedulerService } from '../../plugins/services/plugin-scheduler.service.js'
 import type { HttpTestApp } from '../../test/httpApp.js'
 import { Buffer } from 'node:buffer'
 import * as fs from 'node:fs'
@@ -153,6 +154,7 @@ describe('reading and importing a Configuration Archive, against a real database
   let http: HttpTestApp
   const writeFile = vi.spyOn(fs.promises, 'writeFile').mockResolvedValue(undefined)
   const mkdir = vi.spyOn(fs.promises, 'mkdir').mockResolvedValue(undefined)
+  const scheduler = { schedulePlugin: vi.fn() }
 
   beforeAll(async () => {
     database = await createTestDatabase()
@@ -160,7 +162,7 @@ describe('reading and importing a Configuration Archive, against a real database
       controllers: [ConfigurationController],
       providers: [
         { provide: ConfigurationExportService, useValue: {} },
-        { provide: ConfigurationImportService, useValue: new ConfigurationImportService(database.getRepository(Plugin), new PluginImporterService()) },
+        { provide: ConfigurationImportService, useValue: new ConfigurationImportService(database.getRepository(Plugin), new PluginImporterService(), scheduler as unknown as PluginSchedulerService) },
       ],
     })
   })
@@ -169,6 +171,7 @@ describe('reading and importing a Configuration Archive, against a real database
     await database.synchronize(true)
     writeFile.mockClear()
     mkdir.mockClear()
+    scheduler.schedulePlugin.mockClear()
     await database.getRepository(Device).save({ id: KITCHEN, name: 'Kitchen', friendlyId: 'KITCHN', mac: 'AA:BB:CC:00:00:01', apikey: 'kitchen-key' })
   })
 
@@ -317,5 +320,20 @@ describe('reading and importing a Configuration Archive, against a real database
     expect(check.warnings.map(warning => warning.kind)).not.toContain('header-redacted')
     expect(check.warnings.map(warning => warning.kind)).not.toContain('device-apikey-redacted')
     expect(check.adds).toEqual({})
+  })
+
+  it('hands every Plugin an import creates or updates to the scheduler once it commits, but never on a check', async () => {
+    const checked = await http.request('/api/config/import/check', upload(redactedArchive()))
+    expect(checked.status).toBe(200)
+    expect(scheduler.schedulePlugin).not.toHaveBeenCalled()
+
+    const imported = await http.request('/api/config/import', upload(redactedArchive()))
+
+    expect(imported.status).toBe(201)
+    expect(scheduler.schedulePlugin).toHaveBeenCalledTimes(2)
+    const scheduledById = new Map(scheduler.schedulePlugin.mock.calls.map(call => [(call[0] as { id: string }).id, call[0] as { dataSources: unknown[] }]))
+    expect([...scheduledById.keys()].sort()).toEqual([DOORBELL, WEATHER].sort())
+    // The scheduler's timer closes over this exact object for every future tick, so it must carry the relations a tick reads, not just the bare row `save` returns.
+    expect(scheduledById.get(WEATHER)?.dataSources).toEqual([expect.objectContaining({ id: WEATHER_SOURCE, name: 'forecast' })])
   })
 })
