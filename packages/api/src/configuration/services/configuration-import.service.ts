@@ -40,6 +40,7 @@ import { PluginFieldValue } from '../../plugins/entities/plugin-field-value.enti
 import { PluginField } from '../../plugins/entities/plugin-field.entity.js'
 import { PluginTemplate } from '../../plugins/entities/plugin-template.entity.js'
 import { Plugin } from '../../plugins/entities/plugin.entity.js'
+import { isSecretField } from '../../plugins/plugin-field-values.js'
 import { PluginImporterService } from '../../plugins/services/plugin-importer.service.js'
 import { PluginSchedulerService } from '../../plugins/services/plugin-scheduler.service.js'
 import { Schedule } from '../../schedule/schedule.entity.js'
@@ -608,7 +609,7 @@ export class ConfigurationImportService {
 
     await this.upsertPluginDataSources(repos.dataSource, saved, parsed.dataSources, entry.dataSources, ref, run)
     await this.upsertPluginTemplates(repos.template, saved, parsed.templates, entry.templates, run)
-    const fields = await this.upsertPluginFields(repos.field, saved, parsed.fields, entry.fields, run)
+    const fields = await this.upsertPluginFields(repos.field, repos.fieldValue, saved, parsed.fields, entry.fields, run)
     await this.upsertFieldValues(repos.fieldValue, saved, fields, entry.fieldValues, ref, run)
     run.upsertedPluginIds.add(saved.id)
   }
@@ -690,27 +691,42 @@ export class ConfigurationImportService {
     }
   }
 
-  private async upsertPluginFields(repo: Repository<PluginField>, plugin: Plugin, parsedFields: ParsedPlugin['fields'], manifestEntries: PluginManifestField[], run: ImportRun): Promise<PluginField[]> {
+  private async upsertPluginFields(repo: Repository<PluginField>, fieldValueRepo: Repository<PluginFieldValue>, plugin: Plugin, parsedFields: ParsedPlugin['fields'], manifestEntries: PluginManifestField[], run: ImportRun): Promise<PluginField[]> {
     const idByKeyname = new Map(manifestEntries.map(e => [e.keyname, e.id]))
     const saved: PluginField[] = []
 
     for (const parsedField of parsedFields) {
       const id = idByKeyname.get(parsedField.keyname) ?? randomUUID()
-      const existing = await repo.findOneBy({ id })
-      const field = existing ?? repo.create({ id })
-      field.keyname = parsedField.keyname
-      field.fieldType = parsedField.fieldType
-      field.name = parsedField.name
-      field.description = parsedField.description
-      field.defaultValue = parsedField.defaultValue
-      field.options = parsedField.options ?? null
-      field.required = parsedField.required
-      field.order = parsedField.order
-      field.plugin = plugin
-      saved.push(await repo.save(field))
-      this.bump(run, 'fields', !existing)
+      const { field, isNew, retypedFromPassword } = await this.upsertPluginField(repo, plugin, parsedField, id)
+      saved.push(field)
+      this.bump(run, 'fields', isNew)
+      if (retypedFromPassword) {
+        // The archive's own `fieldValues` write runs after this and may re-set the keyname
+        // (upsertFieldValues), so a stale password Field Value left by a retype doesn't
+        // answer in plain text (ADR-0032).
+        await fieldValueRepo.delete({ field: { id: field.id } })
+      }
     }
+
     return saved
+  }
+
+  private async upsertPluginField(repo: Repository<PluginField>, plugin: Plugin, parsedField: ParsedPlugin['fields'][number], id: string): Promise<{ field: PluginField, isNew: boolean, retypedFromPassword: boolean }> {
+    const existing = await repo.findOneBy({ id })
+    const field = existing ?? repo.create({ id })
+    const previousFieldType = existing?.fieldType
+    field.keyname = parsedField.keyname
+    field.fieldType = parsedField.fieldType
+    field.name = parsedField.name
+    field.description = parsedField.description
+    field.defaultValue = parsedField.defaultValue
+    field.options = parsedField.options ?? null
+    field.required = parsedField.required
+    field.order = parsedField.order
+    field.plugin = plugin
+    const saved = await repo.save(field)
+    const retypedFromPassword = previousFieldType !== undefined && isSecretField({ fieldType: previousFieldType }) && !isSecretField(saved)
+    return { field: saved, isNew: !existing, retypedFromPassword }
   }
 
   /** A redacted (password-type) Field Value keeps the target Plugin Field's value when one is stored, otherwise the Plugin Field is left without a value (ADR-0028, ADR-0032). */
