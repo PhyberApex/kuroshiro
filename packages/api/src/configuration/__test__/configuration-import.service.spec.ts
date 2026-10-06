@@ -84,6 +84,14 @@ function createFakeManager() {
         table.set(id, saved)
         return saved
       }),
+      // Only the `{ relation: { id } }` shape the import deletes a Field Value by.
+      delete: vi.fn(async (where: Record<string, unknown>) => {
+        for (const [id, row] of [...table.entries()]) {
+          if (Object.entries(where).every(([key, value]) => isRelationReference(value) ? (row[key] as { id?: string } | undefined)?.id === value.id : row[key] === value)) {
+            table.delete(id)
+          }
+        }
+      }),
     }
   }
 
@@ -633,6 +641,23 @@ describe('configurationImportService', () => {
 
     expect(storedFieldValues()).toEqual({})
     expect(summary.warnings).toEqual([{ kind: 'field-value-without-field', plugin: { id: 'plugin-1', name: 'Test Plugin' }, keyname: 'town' }])
+  })
+
+  // A stale password Field Value must not survive an import that retypes its Plugin Field away from
+  // password, even when the archive's own fieldValues has no entry for that keyname to overwrite it with.
+  it('drops a stored Field Value when an import retypes its Plugin Field away from password, with no fieldValues entry to replace it', async () => {
+    backing.get('Plugin')!.set('plugin-1', { id: 'plugin-1', name: 'Test Plugin', kind: 'Poll', refreshInterval: 15 })
+    backing.get('PluginField')!.set('field-key', { id: 'field-key', keyname: 'api_key', fieldType: 'password' })
+    backing.get('PluginFieldValue')!.set('value-1', { id: 'value-1', value: 'real-secret', field: { id: 'field-key' }, plugin: { id: 'plugin-1' } })
+
+    const { plugins, pluginFolders } = fieldValuePlugin({ city: 'Berlin' })
+    ;(pluginFolders['plugin-1'].manifest.custom_fields as Array<{ keyname: string, field_type: string }>)
+      .find(field => field.keyname === 'api_key')!
+      .field_type = 'string'
+
+    await service.importFromZip(buildArchive({ plugins, pluginFolders }))
+
+    expect(storedFieldValues()).toEqual({ 'field-city': 'Berlin' })
   })
 
   describe('a previous-version (schemaVersion 2) archive', () => {

@@ -504,7 +504,15 @@ export class PluginsService implements OnModuleInit {
       await repository.remove(removed)
     }
 
-    return this.persistFields(repository, plugin, fields, plugin.fields)
+    // Captured before persistFields mutates the kept fields in place, so a
+    // type change away from password is still visible to compare against.
+    const previousTypeByKeyname = new Map(plugin.fields.map(field => [field.keyname, field.fieldType]))
+    const saved = await this.persistFields(repository, plugin, fields, plugin.fields)
+    await this.fieldValues.within(manager).clearFieldsRetypedFromPassword(
+      saved.map(field => ({ previousFieldType: previousTypeByKeyname.get(field.keyname) ?? field.fieldType, field })),
+    )
+
+    return saved
   }
 
   async invalidateRenderCaches(pluginId: string): Promise<void> {
