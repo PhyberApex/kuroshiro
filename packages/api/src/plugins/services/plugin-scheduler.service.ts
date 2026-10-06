@@ -12,7 +12,7 @@ const MAX_SPREAD_WINDOW_MS = 5 * MINUTE_MS
 /**
  * The most recent fetch attempt behind a Plugin's render: its own last scheduled render, or a
  * Data Source's last fetch attempt where that is later (a tick that threw before recording the
- * render still moved a Data Source's streak). `null` if the Plugin was never attempted.
+ * render still moved a Data Source's streak, ADR-0025). `null` if the Plugin was never attempted.
  */
 function lastAttemptAt(plugin: Plugin): Date | null {
   const attempts = [plugin.lastScheduledRenderAt, ...(plugin.dataSources ?? []).map(source => source.lastFetchAttemptAt)]

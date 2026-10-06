@@ -166,6 +166,7 @@ describe('pluginSchedulerService', () => {
 
     afterEach(() => {
       vi.useRealTimers()
+      vi.restoreAllMocks()
     })
 
     function makeDuePlugin(overrides: Partial<Plugin> = {}): Plugin {
