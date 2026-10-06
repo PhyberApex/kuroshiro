@@ -254,6 +254,8 @@ Shown only when the Plugin has Plugin Fields ([render][plugin-needs]). A heading
 | `author_bio` | no row. Its text is a line in `ink-soft` under the section. |
 | Anything else | text input |
 
+An On or off Field Value reaches a template as the text `"true"` or `"false"`, not a real boolean. A template compares it as text, `{% if show_wind == "true" %}`, since `{% if show_wind %}` is true even when it is off.
+
 The note at the right reads "The default" while the value equals the Plugin Field's default, "Set. A secret is never shown again." for a stored password, and for a required Plugin Field with neither a value nor a default the problem icon and "Empty", with the doubled ink border on the control. An empty required Plugin Field never stops a save.
 
 Under the rows: "Every Device and every Mashup shows {Plugin} with these values. To show it with other values somewhere, duplicate the Plugin." The Plugin Fields themselves are edited in the tucked section "Plugin Fields".
