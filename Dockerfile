@@ -11,6 +11,7 @@ COPY packages/shared ./packages/shared
 # absent from the build context, so every manifest is present and --filter keeps the
 # install to this stage's own dependency subtree.
 COPY packages/api/package.json ./packages/api/package.json
+COPY packages/site/package.json ./packages/site/package.json
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 RUN corepack enable && pnpm install --frozen-lockfile --filter kuroshiro-ui...
 RUN pnpm --filter ./packages/ui build
@@ -22,6 +23,7 @@ ENV PUPPETEER_SKIP_DOWNLOAD=true
 COPY packages/api ./packages/api
 COPY packages/shared ./packages/shared
 COPY packages/ui/package.json ./packages/ui/package.json
+COPY packages/site/package.json ./packages/site/package.json
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 RUN corepack enable && pnpm install --frozen-lockfile --filter kuroshiro-api...
 RUN pnpm --filter ./packages/api run build && pnpm --filter ./packages/api run build:migrations
