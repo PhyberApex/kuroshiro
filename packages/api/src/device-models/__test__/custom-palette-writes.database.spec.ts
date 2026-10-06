@@ -41,14 +41,17 @@ async function writeStandInFile(destination: string): Promise<void> {
 describe('creating, changing and deleting a custom Palette, against a real database', () => {
   let database: DataSource
   let http: HttpTestApp
+  let customPalettes: CustomPalettesService
   const devicesWithImages: string[] = []
 
   beforeAll(async () => {
     database = await createTestDatabase()
+    // `synchronize` cannot express a partial, case-insensitive index from a plain entity decorator; this mirrors what the migration adds in production.
+    await database.query(`CREATE UNIQUE INDEX "UQ_palette_custom_name" ON "palette" (lower("name")) WHERE "kind" = 'custom'`)
     const deviceModels = new DeviceModelsService(database.getRepository(DeviceModel), database.getRepository(Palette))
     const reads = new DeviceModelReadsService(database.getRepository(Device), deviceModels, new SyncRunService(database.getRepository(SyncRun)))
     const screens = new ScreensService(database.getRepository(Screen), database.getRepository(Device), asService<ConfigService>({ get: () => false }), deviceModels)
-    const customPalettes = new CustomPalettesService(database.getRepository(Palette), database.getRepository(Device), deviceModels, screens)
+    customPalettes = new CustomPalettesService(database.getRepository(Palette), database.getRepository(Device), deviceModels, screens)
 
     http = await createHttpTestApp({
       controllers: [CustomPalettesController],
@@ -134,6 +137,21 @@ describe('creating, changing and deleting a custom Palette, against a real datab
       expect(response.status).toBe(409)
       expect(await response.json()).toMatchObject({ code: 'palette-name-taken' })
       expect(await database.getRepository(Palette).countBy({ kind: 'custom' })).toBe(1)
+    })
+
+    it('refuses with palette-name-taken when another create wins a race the up-front check missed', async () => {
+      const assertNameFree = vi.spyOn(customPalettes as unknown as { assertNameFree: (name: string) => Promise<void> }, 'assertNameFree')
+      assertNameFree.mockImplementationOnce(async () => {
+        // The other request's write, landing between this one's check and its own write.
+        await database.getRepository(Palette).save({ id: 'other-soft-red', name: 'soft RED', kind: 'custom', grays: 2, colors: SOFT_RED.colors, frameworkClass: RED_FAMILY })
+      })
+
+      const response = await send('POST', '/api/device-models/palettes', SOFT_RED)
+
+      expect(response.status).toBe(409)
+      expect(await response.json()).toMatchObject({ code: 'palette-name-taken' })
+      expect(await database.getRepository(Palette).countBy({ kind: 'custom' })).toBe(2)
+      assertNameFree.mockRestore()
     })
 
     it('takes the name of one of TRMNL\'s Palettes, which is not a custom one', async () => {

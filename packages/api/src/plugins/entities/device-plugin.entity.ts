@@ -1,8 +1,9 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm'
 import { Device } from '../../devices/devices.entity.js'
 import { Plugin } from './plugin.entity.js'
 
 @Entity()
+@Unique('UQ_device_plugin_plugin_device', ['plugin', 'device'])
 export class DevicePlugin {
   @PrimaryGeneratedColumn('uuid')
   id: string

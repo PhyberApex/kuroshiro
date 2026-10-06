@@ -58,6 +58,7 @@ describe('adding, deleting and reordering a Device\'s Screens, against a real da
   let database: DataSource
   let http: HttpTestApp
   let device: Device
+  let assignmentsService: PluginAssignmentsService
   const config = { get: vi.fn() }
 
   beforeAll(async () => {
@@ -101,7 +102,7 @@ describe('adding, deleting and reordering a Device\'s Screens, against a real da
         },
         {
           provide: PluginAssignmentsService,
-          useValue: new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin)),
+          useValue: (assignmentsService = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))),
         },
       ],
     })
@@ -429,6 +430,23 @@ describe('adding, deleting and reordering a Device\'s Screens, against a real da
       expect(response.status).toBe(409)
       expect(await response.json()).toMatchObject({ code: 'plugin-already-assigned' })
       expect(await readScreens()).toHaveLength(1)
+    })
+
+    it('answers 409 plugin-already-assigned when a second assignment wins a race the up-front check missed', async () => {
+      const plugin = await seedPlugin('Weather')
+      const findAssignment = vi.spyOn(assignmentsService as unknown as { findAssignment: (pluginId: string, deviceId: string) => Promise<unknown> }, 'findAssignment')
+      findAssignment.mockImplementationOnce(async () => {
+        // The other request's write, landing between this one's check and its own write.
+        await database.getRepository(DevicePlugin).save({ plugin: { id: plugin.id }, device: { id: device.id } })
+        return null
+      })
+
+      const response = await http.postJson(`/api/plugins/${plugin.id}/assign`, { deviceId: device.id })
+
+      expect(response.status).toBe(409)
+      expect(await response.json()).toMatchObject({ code: 'plugin-already-assigned' })
+      expect(await database.getRepository(DevicePlugin).count()).toBe(1)
+      findAssignment.mockRestore()
     })
   })
 

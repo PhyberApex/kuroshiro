@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { ILike, Not, Repository } from 'typeorm'
 import { Device } from '../devices/devices.entity.js'
 import { ApiException } from '../errors/api.exception.js'
+import { isUniqueViolation } from '../errors/unique-violation.js'
 import { ScreensService } from '../screens/screens.service.js'
 import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { DeviceModelsService } from './device-models.service.js'
@@ -45,7 +46,12 @@ export class CustomPalettesService {
       deprecated: false,
       syncedAt: null,
     })
-    return (await this.paletteRepository.save(palette)).id
+    try {
+      return (await this.paletteRepository.save(palette)).id
+    }
+    catch (err) {
+      throw this.asNameTaken(err, input.name)
+    }
   }
 
   /** Changes a custom Palette, then converts the stored images of every Device using it again. */
@@ -59,7 +65,12 @@ export class CustomPalettesService {
         usedBy: users.map(({ id: deviceId, name }) => ({ id: deviceId, name })),
       })
     }
-    await this.paletteRepository.save(Object.assign(palette, changes))
+    try {
+      await this.paletteRepository.save(Object.assign(palette, changes))
+    }
+    catch (err) {
+      throw this.asNameTaken(err, changes.name ?? palette.name)
+    }
     // Read again: the Devices loaded before the save carry the Palette as it was, and the conversion reads its colours off the Device.
     await this.reconvert(await this.devicesUsing(id))
   }
@@ -90,7 +101,16 @@ export class CustomPalettesService {
   private async assertNameFree(name: string, ownId?: string): Promise<void> {
     const taken = await this.paletteRepository.existsBy({ kind: 'custom', name: ILike(literally(name)), ...(ownId ? { id: Not(ownId) } : {}) })
     if (taken)
-      throw new ApiException(HttpStatus.CONFLICT, 'palette-name-taken', 'There is already a custom Palette with that name.', { name })
+      throw this.nameTaken(name)
+  }
+
+  /** A race against `assertNameFree`'s check, caught on the write it lost: anything else is rethrown as it was. */
+  private asNameTaken(err: unknown, name: string): unknown {
+    return isUniqueViolation(err, 'UQ_palette_custom_name') ? this.nameTaken(name) : err
+  }
+
+  private nameTaken(name: string): ApiException {
+    return new ApiException(HttpStatus.CONFLICT, 'palette-name-taken', 'There is already a custom Palette with that name.', { name })
   }
 
   private devicesUsing(paletteId: string): Promise<Device[]> {

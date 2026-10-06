@@ -4,6 +4,7 @@ import { isUUID } from 'class-validator'
 import { EntityManager, Repository } from 'typeorm'
 import { Device } from '../../devices/devices.entity.js'
 import { ApiException } from '../../errors/api.exception.js'
+import { isUniqueViolation } from '../../errors/unique-violation.js'
 import { closeGapInOrder, joinEndOfOrder } from '../../screens/screen-order.js'
 import { Screen } from '../../screens/screens.entity.js'
 import { DevicePlugin } from '../entities/device-plugin.entity.js'
@@ -34,11 +35,18 @@ export class PluginAssignmentsService {
     if (await this.findAssignment(pluginId, deviceId))
       throw new ApiException(HttpStatus.CONFLICT, 'plugin-already-assigned', 'The Plugin is already assigned to this Device.', { pluginId, deviceId })
 
-    return this.devicePluginRepository.manager.transaction(async (manager) => {
-      const assignment = await manager.getRepository(DevicePlugin).save({ plugin: { id: pluginId }, device: { id: deviceId } })
-      const screen = await joinEndOfOrder(manager, deviceId, { type: 'plugin', plugin: { id: pluginId }, devicePluginId: assignment.id })
-      return screen.id
-    })
+    try {
+      return await this.devicePluginRepository.manager.transaction(async (manager) => {
+        const assignment = await manager.getRepository(DevicePlugin).save({ plugin: { id: pluginId }, device: { id: deviceId } })
+        const screen = await joinEndOfOrder(manager, deviceId, { type: 'plugin', plugin: { id: pluginId }, devicePluginId: assignment.id })
+        return screen.id
+      })
+    }
+    catch (err) {
+      if (!isUniqueViolation(err, 'UQ_device_plugin_plugin_device'))
+        throw err
+      throw new ApiException(HttpStatus.CONFLICT, 'plugin-already-assigned', 'The Plugin is already assigned to this Device.', { pluginId, deviceId })
+    }
   }
 
   async unassign(pluginId: string, deviceId: string): Promise<void> {
