@@ -113,7 +113,8 @@ export class ScreenRenderService {
     return renderedHtml
   }
 
-  private async cachePluginOutput(screen: Screen, renderedHtml: string): Promise<void> {
+  /** Shared with `DeviceDisplayService`'s Plugin/HTML branches: the same cache-then-render-body shape, just reached from a different outcome. */
+  async cachePluginOutput(screen: Screen, renderedHtml: string): Promise<void> {
     const generatedAt = new Date()
     await this.screenRepository.update({ id: screen.id }, { cachedPluginOutput: renderedHtml, renderSignal: null, generatedAt })
     screen.generatedAt = generatedAt

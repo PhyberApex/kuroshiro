@@ -683,15 +683,8 @@ export class DeviceDisplayService {
     const { context } = await this.pluginTemplateContext.contextFor(plugin, [])
 
     const renderedHtml = await this.pluginRenderer.render(fullTemplate.liquidMarkup, context)
-    await this.cachePluginOutput(screen, renderedHtml)
+    await this.screenRender.cachePluginOutput(screen, renderedHtml)
     return renderedHtml
-  }
-
-  private async cachePluginOutput(screen: Screen, renderedHtml: string): Promise<void> {
-    const generatedAt = new Date()
-    await this.screenRepository.update({ id: screen.id }, { cachedPluginOutput: renderedHtml, renderSignal: null, generatedAt })
-    screen.generatedAt = generatedAt
-    screen.renderSignal = null
   }
 
   private screenImagePath(device: Device, screen: Screen): string {
