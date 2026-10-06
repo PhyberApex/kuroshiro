@@ -89,3 +89,36 @@ html:not(.dark) .themed-shot .dark,
 .dark .themed-shot .light {
   display: none;
 }
+
+/* Comparison tables need more room than VitePress's reading-width column gives a doc page. */
+.Layout.comparison-page .VPDoc:not(.has-sidebar) .container,
+.Layout.comparison-page .VPDoc:not(.has-sidebar) .content,
+.Layout.comparison-page .VPDoc:not(.has-sidebar) .content-container {
+  max-width: 1152px;
+}
+
+.comparison-page .vp-doc table {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.comparison-page .vp-doc td:first-child {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.byos-matrix th:not(:first-child),
+.byos-matrix td:not(:first-child) {
+  text-align: center;
+}
+
+.byos-matrix th small {
+  display: block;
+  font-weight: 400;
+  color: var(--vp-c-text-2);
+}
+
+.byos-matrix th:nth-child(2),
+.byos-matrix td:nth-child(2) {
+  background-color: var(--vp-c-brand-soft);
+}
