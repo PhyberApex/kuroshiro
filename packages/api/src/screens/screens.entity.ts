@@ -39,6 +39,10 @@ export class Screen {
   @Column({ type: 'int', nullable: true })
   fileBytes?: number | null
 
+  /** When a File Screen's current image was uploaded; untouched by a re-conversion. */
+  @Column({ type: 'timestamptz', nullable: true })
+  fileUploadedAt?: Date | null
+
   @Column({ type: 'boolean', default: false })
   isActive: boolean
 
