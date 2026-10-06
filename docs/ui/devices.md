@@ -111,12 +111,14 @@ A heading "Screens in Order" on a 2 px ink rule, then one row per Screen. A row,
 3. **Not today.** The Schedule's weekdays or its dates exclude today.
 4. **Not at this hour.**
 5. **Skipping.** The Screen raised a `skip` Render Signal.
-6. **Up next.** The Screen Rotation turns to at the next poll. During Sleep Mode's window: "Up next at {wake time}".
+6. **Up next.** The Screen Rotation turns to at the next poll. During Sleep Mode's window: "Up next at {wake time}". When it is the Picked Screen it gains the qualifier "picked by hand" in `ink-soft`, as "Up next · picked by hand".
 7. No state: the Screen waits its turn.
 
 This settles the precedence the glossary ticket left open: the admin's own Schedule comes before the content's Render Signal, because the Schedule is what the admin can change and because a Screen outside its Schedule is not rendered, so its Render Signal is not current. When a Schedule reason and Skipping both apply, the opened row says both.
 
 **Holding image** is not a Screen State. A Screen that raised a `hold` Render Signal still takes its turn, so it keeps its state and gains a qualifier in `ink-soft`: "Active Screen · holding image", "Up next · holding image", or "Holding image" alone when it carries no state. This replaces the chip of [#1071](https://github.com/PhyberApex/kuroshiro/issues/1071); its two labels, "Skipping" and "Holding image", are kept.
+
+**Show next** (ADR-0038). An opened row whose Screen Rotation could show at the next poll, and that is neither the Active Screen nor Up next, offers "Show next". It makes the Screen the Picked Screen, which then reads "Up next · picked by hand"; picking another Screen replaces it. The picked row offers "Back to Order" instead, which clears the pick. Neither confirms. On a mirrored or Proxied Device neither is offered.
 
 **Reordering.**
 
@@ -147,6 +149,7 @@ Opened, a row shows, in this order ([render][screens-mashup], [phone][phone-scre
    | Active Screen | "On the Device since the {hh:mm} poll." |
    | Active Screen, paused | "On hold while {Device} is in Sleep Mode." |
    | Up next | "Shows at the next poll, around {hh:mm}." |
+   | Up next, picked by hand | "Picked by hand: shows at the next poll, around {hh:mm}. Rotation then carries on in Order from it." |
    | Schedule off | "Its Schedule is switched off, so Rotation passes over it. The days and hours are kept." |
    | Not today, by weekday | "Its Schedule leaves out {Thursdays}, so Rotation passes over it today." |
    | Not today, by dates | "Its Schedule only runs from {1 March} to {31 August}, so Rotation passes over it." |

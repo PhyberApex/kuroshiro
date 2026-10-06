@@ -309,6 +309,31 @@ describe('what a Plugin renders from, and with which Template, against a real da
     })
   })
 
+  // A `strategy: none` Recipe imports as exactly this shape: a Poll-kind
+  // Plugin with no Data Sources, tied to the Recipe (issue #1261).
+  describe('a Plugin with no Data Sources, as a "none" strategy Recipe imports', () => {
+    it('renders on a scheduler tick and on /display from its Template, Fields and trmnl alone', async () => {
+      const plugin = await createPollPlugin({
+        dataSources: [],
+        sourceRecipeId: '490885',
+        fields: [{ keyname: 'station', name: 'Station' }],
+        fieldValues: { station: 'Hamburg' },
+        templates: [{ layout: 'full', liquidMarkup: '{{ station }} ({{ trmnl.plugin_settings.instance_name }})' }],
+      })
+      const device = await addDevice('Kitchen')
+      await assignments.assign(plugin.id, device.id)
+
+      await schedulerTick(plugin.id)
+
+      expect(await cachedOutput(plugin.id)).toBe('Hamburg (Weather)')
+
+      const answer = await display.getCurrentImage({ 'id': device.mac, 'access-token': device.apikey })
+
+      expect(answer.image_url).not.toMatch(/^http:\/\/api\/screens\//)
+      expect(dataSourceFetches()).toEqual([])
+    })
+  })
+
   describe('a scheduled render that fails', () => {
     // Liquid parses a `render` of a partial no Plugin has, and fails on it only when rendering.
     const FAILS_ON_LINE_2 = '<p>Weather</p>\n{% render "header" %}'

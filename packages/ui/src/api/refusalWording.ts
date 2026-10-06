@@ -32,6 +32,18 @@ function recipeNotFound({ details }: ApiError) {
 
 const NOT_A_CONFIGURATION_ARCHIVE = 'This is not a Configuration Archive. It has to be the .zip a Configuration Export made.'
 
+// `none` imports instead of being refused (issue #1261); what remains refused
+// is worded from `details.strategy`, since "gets its data pushed" is wrong
+// for `plugin_merge` and for a strategy this build does not know either.
+function recipeStrategyUnsupported({ details }: ApiError): string {
+  const strategy = details?.strategy
+  if (strategy === 'webhook')
+    return 'This Recipe gets its data pushed by TRMNL. Kuroshiro can only import Recipes that poll or hold fixed data. Build a Webhook Plugin instead.'
+  if (strategy === 'plugin_merge')
+    return 'This Recipe combines other TRMNL plugins, which Kuroshiro cannot import.'
+  return 'This Recipe\'s strategy is not one Kuroshiro can import.'
+}
+
 export const NOT_IN_DEMO = 'Not available in the demo.'
 
 /**
@@ -85,9 +97,10 @@ const REFUSAL_WORDING: Record<ApiErrorCode, Wording> = {
   'recipe-id-invalid': NOT_A_RECIPE,
   'recipe-not-found': recipeNotFound,
   'recipe-oauth': 'This Recipe signs in to another service with OAuth, which Kuroshiro cannot do.',
-  'recipe-strategy-unsupported': 'This Recipe gets its data pushed by TRMNL. Kuroshiro can only import Recipes that poll or hold fixed data. Build a Webhook Plugin instead.',
-  // docs/ui/ has no sentence for it, so the server's own stands.
+  'recipe-strategy-unsupported': recipeStrategyUnsupported,
+  // docs/ui/ has no sentence for either, so the server's own stands.
   'recipe-static-transform': ({ message }) => message,
+  'recipe-none-transform': ({ message }) => message,
   'plugin-not-from-recipe': 'This Plugin was not imported from a Recipe, so there is nothing to check.',
   'recipe-changed': 'The Recipe changed again since it was compared. Run the check again.',
   'archive-not-zip': NOT_A_CONFIGURATION_ARCHIVE,

@@ -154,6 +154,110 @@ describe('pluginSchedulerService', () => {
     })
   })
 
+  describe('scheduleAtBoot', () => {
+    const MINUTE = 60_000
+    const now = new Date('2026-01-01T00:00:00.000Z')
+
+    beforeEach(() => {
+      vi.useFakeTimers()
+      vi.setSystemTime(now)
+      mockRenderCache.renderAndCache.mockResolvedValue(undefined)
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+      vi.restoreAllMocks()
+    })
+
+    function makeDuePlugin(overrides: Partial<Plugin> = {}): Plugin {
+      return makePlugin({
+        id: 'plugin-1',
+        refreshInterval: 15,
+        dataSources: [makePluginDataSource({ name: 'source', mode: 'literal', literalValue: { n: 1 } })],
+        templates: [makePluginTemplate({ layout: 'full', liquidMarkup: 'Test' })],
+        ...overrides,
+      })
+    }
+
+    it('gives a Plugin whose last render is within its interval no tick at boot, ticking first at the remainder and every interval after', async () => {
+      const plugin = makeDuePlugin({ refreshInterval: 15, lastScheduledRenderAt: new Date(now.getTime() - 2 * MINUTE) })
+
+      service.scheduleAtBoot(plugin)
+
+      await vi.advanceTimersByTimeAsync(13 * MINUTE - 1)
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledTimes(0)
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledTimes(1)
+
+      await vi.advanceTimersByTimeAsync(15 * MINUTE)
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledTimes(2)
+    })
+
+    it('ticks a never-rendered Plugin within the spreading window after boot', async () => {
+      vi.spyOn(Math, 'random').mockReturnValue(0.5)
+      const plugin = makeDuePlugin()
+
+      service.scheduleAtBoot(plugin)
+
+      // window = min(15 min, 5 min) = 5 min; delay = 0.5 * 5 min
+      await vi.advanceTimersByTimeAsync(2.5 * MINUTE - 1)
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledTimes(0)
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledTimes(1)
+    })
+
+    it('ticks a Plugin last rendered longer ago than its interval within the spreading window after boot', async () => {
+      vi.spyOn(Math, 'random').mockReturnValue(0)
+      const plugin = makeDuePlugin({ refreshInterval: 15, lastScheduledRenderAt: new Date(now.getTime() - 20 * MINUTE) })
+
+      service.scheduleAtBoot(plugin)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledTimes(1)
+    })
+
+    it('treats a Data Source\'s later fetch attempt as the last attempt, where that is later than the stored render', async () => {
+      const plugin = makeDuePlugin({
+        refreshInterval: 15,
+        lastScheduledRenderAt: new Date(now.getTime() - 20 * MINUTE),
+        dataSources: [makePluginDataSource({ name: 'source', mode: 'fetch', url: 'https://example.com', lastFetchAttemptAt: new Date(now.getTime() - 2 * MINUTE) })],
+      })
+
+      service.scheduleAtBoot(plugin)
+
+      await vi.advanceTimersByTimeAsync(13 * MINUTE - 1)
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledTimes(0)
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not spread 20 due Plugins\' boot ticks into the same event-loop turn', async () => {
+      let call = 0
+      vi.spyOn(Math, 'random').mockImplementation(() => (call++ % 20) / 20)
+
+      const plugins = Array.from({ length: 20 }, (_, index) => makeDuePlugin({ id: `plugin-${index}` }))
+      for (const plugin of plugins)
+        service.scheduleAtBoot(plugin)
+
+      await vi.advanceTimersByTimeAsync(0)
+      expect(mockRenderCache.renderAndCache.mock.calls.length).toBeLessThan(20)
+
+      await vi.advanceTimersByTimeAsync(5 * MINUTE)
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledTimes(20)
+    })
+
+    it('does not schedule a Plugin without a Template', () => {
+      const plugin = makePlugin({ id: 'plugin-1', refreshInterval: 15 })
+
+      service.scheduleAtBoot(plugin)
+
+      expect(service.hasScheduledJob('plugin-1')).toBe(false)
+    })
+  })
+
   it('schedules multiple plugins independently', () => {
     const plugin1 = makePlugin({
       id: 'plugin-1',

@@ -80,7 +80,9 @@ Each form ends with its primary button, "Cancel" (back to where the admin came f
     | Neither digits nor an address holding `recipes/{digits}` | "This is not a Recipe address or id. It looks like https://trmnl.com/recipes/41120, or 41120." |
     | TRMNL has no such Recipe | "TRMNL has no Recipe {id}." |
     | The Recipe signs in to another service | "This Recipe signs in to another service with OAuth, which Kuroshiro cannot do." |
-    | The Recipe is fed by a webhook or anything else that is not polling or static | "This Recipe gets its data pushed by TRMNL. Kuroshiro can only import Recipes that poll or hold fixed data. Build a Webhook Plugin instead." |
+    | The Recipe is fed by a webhook | "This Recipe gets its data pushed by TRMNL. Kuroshiro can only import Recipes that poll or hold fixed data. Build a Webhook Plugin instead." |
+    | The Recipe combines other TRMNL plugins | "This Recipe combines other TRMNL plugins, which Kuroshiro cannot import." |
+    | Anything else Kuroshiro does not recognize as a strategy it can import | "This Recipe's strategy is not one Kuroshiro can import." |
     | TRMNL does not answer | "trmnl.com did not answer. Nothing was imported." with "Try again" |
 
 - **File.** A drop zone: "Drop a .zip here: a Plugin as Kuroshiro or TRMNL exports it." and "Choose file". Once a file is chosen its name replaces the sentence. Button "Import Plugin". Line: "Imports as a Poll Plugin. Field Values are not part of a file, so you enter them afterwards." A file that holds no Plugin: "This .zip holds no Plugin. It needs a .trmnlp.yml and at least one .liquid template."
@@ -253,6 +255,8 @@ Shown only when the Plugin has Plugin Fields ([render][plugin-needs]). A heading
 | Password | when a value is stored: twelve dots and "Replace", which swaps in an empty password input. Otherwise a password input with the placeholder "Not set". The stored secret is never sent to the browser. |
 | `author_bio` | no row. Its text is a line in `ink-soft` under the section. |
 | Anything else | text input |
+
+An On or off Field Value reaches a template as the text `"true"` or `"false"`, not a real boolean. A template compares it as text, `{% if show_wind == "true" %}`, since `{% if show_wind %}` is true even when it is off.
 
 The note at the right reads "The default" while the value equals the Plugin Field's default, "Set. A secret is never shown again." for a stored password, and for a required Plugin Field with neither a value nor a default the problem icon and "Empty", with the doubled ink border on the control. An empty required Plugin Field never stops a save.
 

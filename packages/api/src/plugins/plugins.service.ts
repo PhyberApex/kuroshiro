@@ -64,14 +64,8 @@ export class PluginsService implements OnModuleInit {
       relations: { dataSources: true, templates: true, fields: true },
     })
 
-    // A timer counts from now, so without a tick at start an Instance restarted
-    // more often than a refresh interval would never run that Plugin.
-    for (const plugin of plugins) {
-      this.schedule(plugin, `Scheduled plugin: ${plugin.name}`)
-      if (this.scheduler.hasScheduledJob(plugin.id)) {
-        void this.scheduler.runTick(plugin)
-      }
-    }
+    for (const plugin of plugins)
+      this.schedule(plugin, `Scheduled plugin: ${plugin.name}`, p => this.scheduler.scheduleAtBoot(p))
   }
 
   async findById(id: string): Promise<PluginWithFieldValues | null> {
@@ -320,8 +314,8 @@ export class PluginsService implements OnModuleInit {
     return plugin
   }
 
-  private schedule(plugin: Plugin, message: string): void {
-    this.scheduler.schedulePlugin(plugin)
+  private schedule(plugin: Plugin, message: string, scheduleWith: (plugin: Plugin) => void = p => this.scheduler.schedulePlugin(p)): void {
+    scheduleWith(plugin)
     if (this.scheduler.hasScheduledJob(plugin.id)) {
       this.logger.log(message)
     }
@@ -504,7 +498,15 @@ export class PluginsService implements OnModuleInit {
       await repository.remove(removed)
     }
 
-    return this.persistFields(repository, plugin, fields, plugin.fields)
+    // Captured before persistFields mutates the kept fields in place, so a
+    // type change away from password is still visible to compare against.
+    const previousTypeByKeyname = new Map(plugin.fields.map(field => [field.keyname, field.fieldType]))
+    const saved = await this.persistFields(repository, plugin, fields, plugin.fields)
+    await this.fieldValues.within(manager).clearFieldsRetypedFromPassword(
+      saved.map(field => ({ previousFieldType: previousTypeByKeyname.get(field.keyname) ?? field.fieldType, field })),
+    )
+
+    return saved
   }
 
   async invalidateRenderCaches(pluginId: string): Promise<void> {

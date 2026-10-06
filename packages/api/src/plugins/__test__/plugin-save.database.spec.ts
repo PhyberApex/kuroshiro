@@ -630,16 +630,17 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
       expect(scheduler.hasScheduledJob(webhook.id)).toBe(false)
     })
 
-    it('schedules every Poll-kind Plugin when the Instance starts, and runs each once at start', async () => {
+    it('schedules every Poll-kind Plugin when the Instance starts, and ticks a due one', async () => {
+      vi.spyOn(Math, 'random').mockReturnValue(0)
       const poll = await createPollPlugin()
       await createWebhookPlugin()
       scheduler.onModuleDestroy()
 
       await plugins.onModuleInit()
+      await vi.waitFor(() => expect(backgroundTicks).toHaveLength(1))
       await backgroundTicksDone()
 
       expect(scheduler.hasScheduledJob(poll.id)).toBe(true)
-      expect(backgroundTicks).toHaveLength(1)
       expect((await read(poll.id)).lastScheduledRender).toEqual({ at: expect.any(String), error: null })
     })
 

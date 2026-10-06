@@ -141,8 +141,11 @@ describe('add a Plugin by importing', () => {
       ['TRMNL has no such Recipe', { statusCode: 422, code: 'recipe-not-found', details: { id: '41120' } }, 'TRMNL has no Recipe 41120.'],
       ['the Recipe signs in to another service', { statusCode: 422, code: 'recipe-oauth' }, 'This Recipe signs in to another service with OAuth, which Kuroshiro cannot do.'],
       ['the Recipe is fed by a webhook', { statusCode: 422, code: 'recipe-strategy-unsupported', details: { strategy: 'webhook' } }, 'This Recipe gets its data pushed by TRMNL. Kuroshiro can only import Recipes that poll or hold fixed data. Build a Webhook Plugin instead.'],
+      ['the Recipe combines other TRMNL plugins', { statusCode: 422, code: 'recipe-strategy-unsupported', details: { strategy: 'plugin_merge' } }, 'This Recipe combines other TRMNL plugins, which Kuroshiro cannot import.'],
+      ['the Recipe\'s strategy is one this build does not know', { statusCode: 422, code: 'recipe-strategy-unsupported', details: { strategy: 'unknown' } }, 'This Recipe\'s strategy is not one Kuroshiro can import.'],
       ['the server reads no id either', { statusCode: 400, code: 'recipe-id-invalid' }, 'This is not a Recipe address or id. It looks like https://trmnl.com/recipes/41120, or 41120.'],
       ['a refusal the spec has no words for', { statusCode: 422, code: 'recipe-static-transform', message: 'The Recipe holds fixed data and a transform.js, which has nothing to transform.' }, 'The Recipe holds fixed data and a transform.js, which has nothing to transform.'],
+      ['the Recipe has no data source and a transform.js', { statusCode: 422, code: 'recipe-none-transform', message: 'The Recipe has no data source and a transform.js, which has nothing to transform.' }, 'The Recipe has no data source and a transform.js, which has nothing to transform.'],
       ['the Recipe holds no template', { statusCode: 422, code: 'import-no-plugin' }, 'This Recipe holds no template, so there is nothing to import.'],
     ])('says under the field that %s, and keeps what was entered', async (_cause, refusal, message) => {
       const faked = fakeImporting({ answer: refuseWith(refusal) })

@@ -37,8 +37,12 @@ What a Device is showing right now, as far as the server knows — the Active Sc
 _Avoid_: Active Screen (the Screen whose turn it is — the Current Screen is the image, and may not come from a Screen at all), on the panel (say "on the Device"), preview
 
 **Rotation**:
-The cycle through a Device's Screens in `order`, one step per `/display` poll — skipping any Screen currently ineligible per its Schedule, if it has one, and any Screen whose render raises a `skip` Render Signal.
+The cycle through a Device's Screens in `order`, one step per `/display` poll — skipping any Screen currently ineligible per its Schedule, if it has one, and any Screen whose render raises a `skip` Render Signal. A Picked Screen replaces one step's Order.
 _Avoid_: Cycling, playlist (see Schedule below — the concept "playlist" usually points at is Schedule, not Rotation)
+
+**Picked Screen**:
+The Screen an admin asked Rotation to turn to at the Device's next poll ("Show next"), one per Device. It overrides Order once and never a Schedule or a `skip` Render Signal; a pick its Schedule or Render Signal shuts out by poll time is dropped. The poll that serves it clears it, and Rotation continues in Order from it. Runtime state, not exported (ADR-0038).
+_Avoid_: Pinned Screen, forced Screen
 
 **Schedule**:
 A set of day/time constraints (weekday selection, daily time-of-day window — may cross midnight — optional active date range) plus an independent enabled/disabled toggle, attached to at most one per Screen, that gates whether that Screen is eligible to become the Active Screen. A Screen with no Schedule is always eligible; a disabled Schedule makes its Screen ineligible outright regardless of the day/time rules, without discarding them (soft-hide). Time-of-day windows are evaluated in the server's local timezone — Devices have no timezone of their own. Applies uniformly to every Screen type, including Mashup. Distinct from Rotation, which orders currently-eligible Screens — Schedule only narrows eligibility, it never reorders. A Screen needing more than one window (e.g. two separate times of day) needs a second Screen with its own Schedule, not a compound rule on one Schedule.
