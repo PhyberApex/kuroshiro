@@ -1,3 +1,4 @@
+import type { PluginRenderContext } from './plugin-template-context.service.js'
 import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
@@ -62,7 +63,7 @@ export class PluginRefreshService {
     await this.fetchOutcome.recordOutcomes(plugin.dataSources ?? [], hiddenSourceData)
   }
 
-  private async renderPoll(plugin: Plugin, context: object | null, { scheduled, isSuperseded }: RefreshOptions): Promise<void> {
+  private async renderPoll(plugin: Plugin, context: PluginRenderContext['context'], { scheduled, isSuperseded }: RefreshOptions): Promise<void> {
     if (this.dropAsSuperseded(plugin.id, isSuperseded, 'render'))
       return
 
