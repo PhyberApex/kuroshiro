@@ -1,4 +1,3 @@
-import type { ConfigService } from '@nestjs/config'
 import type { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
 import type { PluginRendererService } from '../../plugins/services/plugin-renderer.service.js'
 import type { MockPluginRendererService } from '../../test/mockPluginCollaborators.js'
@@ -15,7 +14,6 @@ function makeRenderer(pluginRenderer: MockPluginRendererService): MashupRenderer
 
   return new MashupRendererService(
     asService<PluginRendererService>(pluginRenderer),
-    asService<ConfigService>({ get: vi.fn().mockReturnValue('http://localhost:3000') }),
     asService<DeviceSensorsService>(deviceSensors),
     createPluginTemplateContextService(),
   )
@@ -75,7 +73,7 @@ describe('mashup Integration Tests', () => {
     expect(html).toContain('Meeting at 2pm')
   })
 
-  it('renders the other slots with an error placeholder standing in for the one that fails', async () => {
+  it('renders the other slots as usual, with the failing slot drawing its Plugin\'s name instead', async () => {
     pluginRenderer.render = vi.fn().mockResolvedValue('<div class="plugin-calendar">Meeting at 2pm</div>')
 
     const renderer = makeRenderer(pluginRenderer)
@@ -104,8 +102,34 @@ describe('mashup Integration Tests', () => {
 
     const html = await renderer.renderMashup(mockMashupConfig, mockDevice)
 
-    expect(html).toContain('error.png')
+    expect(html).not.toContain('error.png')
+    expect(html).toContain('Weather Plugin')
+    expect(html).toContain('could not be shown.')
+    expect(html).toContain('Next try on its next turn in Rotation.')
     expect(html).toContain('class="plugin-calendar"')
     expect(html).toContain('Meeting at 2pm')
+  })
+
+  it('still renders the Mashup shell, each slot drawing its own Plugin, when every slot fails', async () => {
+    const renderer = makeRenderer(pluginRenderer)
+
+    const mockMashupConfig = makeMashupConfiguration({
+      id: 'config-1',
+      layout: '1Lx1R',
+      slots: [
+        makeMashupSlot({ id: 'slot-1', position: 'L', size: 'view--half_vertical', order: 0, plugin: makePlugin({ id: 'plugin-1', name: 'Weather Plugin', kind: 'Webhook', templates: [] }) }),
+        makeMashupSlot({ id: 'slot-2', position: 'R', size: 'view--half_vertical', order: 1, plugin: makePlugin({ id: 'plugin-2', name: 'Calendar Plugin', kind: 'Webhook', templates: [] }) }),
+      ],
+    })
+
+    const mockDevice = makeDevice({ id: 'device-1', width: 800, height: 480 })
+
+    const html = await renderer.renderMashup(mockMashupConfig, mockDevice)
+
+    expect(html).toContain('class="mashup mashup--1Lx1R"')
+    expect(html).not.toContain('error.png')
+    expect(html).toContain('Weather Plugin')
+    expect(html).toContain('Calendar Plugin')
+    expect(html.match(/could not be shown\./g)).toHaveLength(2)
   })
 })

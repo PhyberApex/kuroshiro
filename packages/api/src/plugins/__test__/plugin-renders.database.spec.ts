@@ -106,7 +106,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
     const fallbackScreens = createMockFallbackScreensService()
     primeMockDeviceModelsService(deviceModels)
     primeMockFallbackScreensService(fallbackScreens)
-    mashupRenderer = new MashupRendererService(renderer, config, deviceSensors, templateContext)
+    mashupRenderer = new MashupRendererService(renderer, deviceSensors, templateContext)
     display = new DeviceDisplayService(
       database.getRepository(Device),
       database.getRepository(Screen),

@@ -82,7 +82,7 @@ describe('field values against a real database', () => {
     )
     pluginReads = new PluginReadsService(database.getRepository(Plugin), database.getRepository(Screen), database.getRepository(Alert), fieldValues, asService<ConfigService>({ getOrThrow: () => 'https://kuroshiro.example' }))
     const deviceSensors = asService<DeviceSensorsService>({ findForDevice: async () => [] })
-    mashupRenderer = new MashupRendererService(renderer, config, deviceSensors, templateContext)
+    mashupRenderer = new MashupRendererService(renderer, deviceSensors, templateContext)
     previewData = new PluginPreviewDataService(database.getRepository(Plugin), database.getRepository(Device), deviceSensors, templateContext)
     webhookIngest = new WebhookIngestService(database.getRepository(Plugin), refresh)
     mockImporter = { importFromRecipe: vi.fn() }

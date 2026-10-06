@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common'
-import { ConfigModule } from '@nestjs/config'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { DeviceSensorsModule } from '../device-sensors/device-sensors.module.js'
 import { Device } from '../devices/devices.entity.js'
@@ -25,7 +24,6 @@ import { MashupRendererService } from './services/mashup-renderer.service.js'
     PluginsModule,
     ScreensModule,
     DeviceSensorsModule,
-    ConfigModule,
   ],
   controllers: [MashupController],
   providers: [MashupService, MashupRendererService],

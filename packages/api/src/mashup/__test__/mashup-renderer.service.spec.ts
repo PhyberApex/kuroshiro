@@ -1,4 +1,3 @@
-import type { ConfigService } from '@nestjs/config'
 import type { MockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService.js'
 import type { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
 import type { Plugin } from '../../plugins/entities/plugin.entity.js'
@@ -20,17 +19,12 @@ describe('mashupRendererService', () => {
   let pluginDataFetcher: MockPluginDataFetcherService
   let pluginRenderer: MockPluginRendererService
   let pluginTransformer: MockPluginTransformService
-  let configService: { get: ReturnType<typeof vi.fn> }
   let deviceSensors: MockDeviceSensorsService
 
   beforeEach(() => {
     pluginDataFetcher = createMockPluginDataFetcherService()
     pluginRenderer = createMockPluginRendererService()
     pluginTransformer = createMockPluginTransformService()
-
-    configService = {
-      get: vi.fn().mockReturnValue('http://api'),
-    }
 
     deviceSensors = createMockDeviceSensorsService()
     primeMockDeviceSensorsService(deviceSensors)
@@ -42,7 +36,6 @@ describe('mashupRendererService', () => {
 
     service = new MashupRendererService(
       asService<PluginRendererService>(pluginRenderer),
-      asService<ConfigService>(configService),
       asService<DeviceSensorsService>(deviceSensors),
       createPluginTemplateContextService({}, pluginDataResolver),
     )
@@ -172,13 +165,16 @@ describe('mashupRendererService', () => {
     expect(pluginDataFetcher.fetchData).not.toHaveBeenCalled()
   })
 
-  it('falls back to the error placeholder when a slot\'s Plugin has no Template', async () => {
+  it('draws the failed Plugin\'s name and wording in its slot when it has no Template', async () => {
     const device = makeDevice({ id: 'device-1', width: 800, height: 480 })
     const plugin = makePlugin({ id: 'plugin-1', name: 'Draft Plugin', dataSources: [makePluginDataSource({ name: 'source' })], templates: [] })
 
     const result = await service.renderMashup(draftSlotConfiguration(plugin), device)
 
-    expect(result).toContain('error.png')
+    expect(result).not.toContain('error.png')
+    expect(result).toContain('Draft Plugin')
+    expect(result).toContain('could not be shown.')
+    expect(result).toContain('Next try on its next turn in Rotation.')
     expect(pluginDataFetcher.fetchData).not.toHaveBeenCalled()
   })
 
