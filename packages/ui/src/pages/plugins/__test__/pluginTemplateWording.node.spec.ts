@@ -67,7 +67,7 @@ describe('the words of the Template section', () => {
     })
 
     it('names the Device while drawing', () => {
-      expect(devicePreviewDrawingLine(kitchen)).toBe('Drawing it as Kitchen shows it')
+      expect(devicePreviewDrawingLine(kitchen.name)).toBe('Drawing it as Kitchen shows it')
       expect(devicePreviewDrawingLine(null)).toBe('Drawing it as the Device shows it')
     })
 

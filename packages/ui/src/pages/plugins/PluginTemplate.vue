@@ -23,7 +23,7 @@ import TemplateLine from './TemplateLine.vue'
 import TemplatePlate from './TemplatePlate.vue'
 import TemplatePreviewFor from './TemplatePreviewFor.vue'
 import { TEMPLATE_WINDOW_FOOT, useTemplateWindow, useWindowTaken } from './templateWindow'
-import { useDevicePreview } from './useDevicePreview'
+import { devicePreviewSourceOf, useDevicePreview } from './useDevicePreview'
 import { usePreviewData } from './usePreviewData'
 import { useTemplatePreview } from './useTemplatePreview'
 
@@ -101,7 +101,7 @@ const preview = useTemplatePreview((): PreviewSource | undefined => needs.data &
 
 /** What a device preview request draws (ADR-0040): the last rendered body, for the chosen Device Model and Palette. Any change to it drops a device preview back to the live browser drawing. */
 const devicePreview = useDevicePreview(() => target.value && preview.body.value !== null
-  ? { html: preview.body.value, deviceModelName: target.value.model.name, paletteId: target.value.palette.id, width: target.value.model.width, height: target.value.model.height }
+  ? devicePreviewSourceOf(target.value, preview.body.value)
   : undefined)
 
 const completionData = computed(() => data.value && !Array.isArray(data.value.context) ? data.value.context : {})

@@ -7,7 +7,7 @@ import Notice from '@/components/Notice.vue'
 import PreviewPlate from '@/components/PreviewPlate.vue'
 import DevicePreviewLines from '@/pages/plugins/DevicePreviewLines.vue'
 import { devicePreviewDrawingLine, targetFacts } from '@/pages/plugins/pluginTemplateWording'
-import { useDevicePreview } from '@/pages/plugins/useDevicePreview'
+import { devicePreviewSourceOf, useDevicePreview } from '@/pages/plugins/useDevicePreview'
 import { useLoad } from '@/patterns/useLoad'
 import { htmlScreenDocument, shellTargetOf } from './htmlPreview'
 import { rendersFor } from './screenSourceWording'
@@ -52,11 +52,11 @@ onBeforeUnmount(() => clearTimeout(pause))
 
 /** Offered only with `facts`: Add Screen's HTML kind, which has no saved Screen yet, is out of scope for the device preview. */
 const devicePreview = useDevicePreview(() => props.facts && target.value
-  ? { html: viewFull(drawn.value), deviceModelName: target.value.model.name, paletteId: target.value.palette.id, width: target.value.model.width, height: target.value.model.height }
+  ? devicePreviewSourceOf(target.value, viewFull(drawn.value))
   : undefined)
 
 const shownDocument = computed(() => devicePreview.state.value.status === 'drawn' ? devicePreview.state.value.document : (target.value ? htmlScreenDocument(target.value, drawn.value) : null))
-const drawingNote = computed(() => devicePreview.state.value.status === 'drawing' ? devicePreviewDrawingLine(props.device) : undefined)
+const drawingNote = computed(() => devicePreview.state.value.status === 'drawing' ? devicePreviewDrawingLine(props.device.name) : undefined)
 </script>
 
 <template>

@@ -12,6 +12,17 @@ export interface DevicePreviewSource {
   height: number
 }
 
+/** The Device Model and Palette a device preview is drawn for, as both callers (the Template editor and Edit HTML) already hold it. */
+export interface DevicePreviewTarget {
+  model: { name: string, width: number, height: number }
+  palette: { id: string }
+}
+
+/** Builds the source from a target and the body HTML already drawn for it, so both callers assemble it the same way. */
+export function devicePreviewSourceOf(target: DevicePreviewTarget, html: string): DevicePreviewSource {
+  return { html, deviceModelName: target.model.name, paletteId: target.palette.id, width: target.model.width, height: target.model.height }
+}
+
 export type DevicePreviewState
   = | { status: 'idle' }
     | { status: 'drawing' }

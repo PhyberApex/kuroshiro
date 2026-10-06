@@ -63,7 +63,8 @@ const deviceOrThe = (device: { name: string } | null) => device?.name ?? 'the De
 export const devicePreviewButton = (device: { name: string } | null) => `See it as ${deviceOrThe(device)} shows it`
 
 /** While the device preview is being drawn. */
-export const devicePreviewDrawingLine = (device: { name: string } | null) => `Drawing it as ${deviceOrThe(device)} shows it`
+/** Takes the Device's name alone: the plate only ever has that, whether it holds a full Device (Edit HTML) or just a choice of name (the Template editor). */
+export const devicePreviewDrawingLine = (name: string | null) => `Drawing it as ${name ?? 'the Device'} shows it`
 
 /** Once it is drawn: "As {Device} shows it, in {4 grays}, drawn at {hh:mm}." */
 export function devicePreviewDrawnLine({ device, palette }: WordedTarget, drawnAt: Date) {

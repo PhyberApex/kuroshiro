@@ -32,7 +32,7 @@ defineEmits<{
 
 /** The device preview's own PNG once it is drawn; the live browser drawing at every other time, kept while it draws, is busy or has failed. */
 const shownDocument = computed(() => props.devicePreview.status === 'drawn' ? props.devicePreview.document : props.document)
-const drawingNote = computed(() => props.devicePreview.status === 'drawing' ? devicePreviewDrawingLine(props.deviceName ? { name: props.deviceName } : null) : undefined)
+const drawingNote = computed(() => props.devicePreview.status === 'drawing' ? devicePreviewDrawingLine(props.deviceName) : undefined)
 </script>
 
 <template>
