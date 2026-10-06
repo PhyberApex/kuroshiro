@@ -10,7 +10,7 @@ import { AlertSweepService } from '../alert-sweep.service.js'
 import { Alert } from '../entities/alert.entity.js'
 
 const send = vi.fn<NotificationSenderService['send']>(async () => true)
-const sender = { send } as unknown as NotificationSenderService
+const sender = { send, isConfigured: () => true } as unknown as NotificationSenderService
 const settings = { resolveThresholds: async () => ({ lowBatteryPercent: 20, offlineMultiplier: 3, fetchFailureThreshold: 3 }) } as unknown as InstanceSettingsService
 
 describe('what an Alert keeps of its cause, against a real database', () => {
@@ -81,5 +81,24 @@ describe('what an Alert keeps of its cause, against a real database', () => {
     await sweep.sweep()
 
     expect(send).toHaveBeenLastCalledWith(expect.objectContaining({ title: 'Kuroshiro: Kitchen battery recovered', body: 'Kitchen (AA:BB:CC:DD:EE:01) is at 100%.' }))
+  })
+
+  it('does not retry a resolution notification once a sender is configured later, for an Alert that resolved with none configured', async () => {
+    const unconfiguredSend = vi.fn<NotificationSenderService['send']>(async () => false)
+    const unconfigured = { send: unconfiguredSend, isConfigured: () => false } as unknown as NotificationSenderService
+    const sweepWithoutSender = new AlertSweepService(database.getRepository(Alert), database.getRepository(Device), database.getRepository(PluginDataSource), unconfigured, settings)
+    const device = await database.getRepository(Device).save({ name: 'Kitchen', mac: 'AA:BB:CC:DD:EE:01', apikey: 'key-1', friendlyId: 'K1', batteryVoltage: '3.0', lastSeen: new Date() } as Device)
+    await sweepWithoutSender.sweep()
+    await database.getRepository(Device).update(device.id, { batteryVoltage: '4.2' })
+    await sweepWithoutSender.sweep()
+
+    const resolved = await onlyAlert()
+    expect(resolved.resolvedAt).not.toBeNull()
+    expect(resolved.resolutionNotifiedAt).not.toBeNull()
+
+    send.mockClear()
+    await sweep.sweep() // a sender is now configured
+
+    expect(send).not.toHaveBeenCalled()
   })
 })
