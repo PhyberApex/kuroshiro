@@ -11,7 +11,7 @@ ADR-0008 cut conditional skip logic from Schedule v1 as "a plugin-rendering-cont
 - **`hold` keeps the Screen in Rotation.** It takes its turn and becomes the Active Screen, but its stored image is served without being regenerated. A held Screen with no stored image yet shows the `noScreen` fallback rather than adding a fallback kind. When a page raises both, `skip` wins: a Screen that is out of Rotation has no turn in which to hold.
 - **The flag is read at the page's `load` event**, the moment the screenshot is taken. No extra wait is added.
 - **Only `/display` evaluates it.** Current Screen and Sleep Mode's frozen image keep serving the Active Screen's stored image; a signal that appears while a Screen is Active takes effect on the next `/display` poll.
-- **The admin sees the verdict as a read-only chip on the Device's Screen list** ("Skipping" or "Holding image"). Without it a Screen that never reaches the Device looks broken. There is no manual override or clear action.
+- **The admin sees the verdict, read-only, on the Device's Screen list.** `skip` is the Screen State "Skipping"; `hold` is the qualifier "holding image" on whatever state the Screen already has, because a held Screen still takes its turn. The opened row explains either in a sentence (`docs/ui/devices.md`). Without it a Screen that never reaches the Device looks broken. There is no manual override or clear action.
 
 ## Considered and rejected
 

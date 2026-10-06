@@ -493,7 +493,6 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 - The bar names Devices up to four and collapses to "Devices" from five, or sooner when the names do not fit.
 - Devices are ordered by name.
 - Screen State precedence: Schedule reasons before Skipping.
-- "Holding image" is a qualifier, not a seventh Screen State.
 - Nothing collapses on a Device with many Screens.
 - Removing a Schedule confirms; so does removing the sleep image.
 - The refresh rate is limited to 1 minute through 24 hours.
