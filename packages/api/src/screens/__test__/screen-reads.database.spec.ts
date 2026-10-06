@@ -240,7 +240,16 @@ describe('a Device\'s Screens, GET /api/devices/:id/screens, against a real data
 
     const [screen] = await readScreens()
 
-    expect(screen.file).toEqual({ originalName: null, width: null, height: null, bytes: null, uploadedAt: '2026-03-01T09:30:00.000Z' })
+    expect(screen.file).toEqual({ originalName: null, width: null, height: null, bytes: null, uploadedAt: null })
+  })
+
+  it('reads a File Screen\'s upload time apart from its render time, which a re-conversion alone does not move', async () => {
+    await addScreen(1, { type: 'file', filename: 'Photo', html: null, fileUploadedAt: new Date('2026-02-15T08:00:00.000Z') })
+
+    const [screen] = await readScreens()
+
+    expect(screen.file).toMatchObject({ uploadedAt: '2026-02-15T08:00:00.000Z' })
+    expect(screen.renderedAt).toBe('2026-03-01T09:30:00.000Z')
   })
 
   it('no longer answers GET /api/screens/device/:deviceId', async () => {

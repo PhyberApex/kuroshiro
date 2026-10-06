@@ -26,7 +26,7 @@ import { Screen } from './screens.entity.js'
 
 interface StagedPaths { originalPath: string, imagePath: string }
 
-type FileFacts = Pick<Screen, 'fileOriginalName' | 'fileWidth' | 'fileHeight' | 'fileBytes'>
+type FileFacts = Pick<Screen, 'fileOriginalName' | 'fileWidth' | 'fileHeight' | 'fileBytes' | 'fileUploadedAt'>
 
 const EDITABLE_FIELDS: Record<Screen['type'], ReadonlyArray<keyof UpdateScreenDto>> = {
   external: ['name', 'url', 'fetchManual'],
@@ -216,7 +216,7 @@ export class ScreensService {
     try {
       const { width, height } = await readImageSize(staged.originalPath, this.logger)
       await convertToPng(staged.originalPath, staged.imagePath, target, this.logger)
-      return { fileOriginalName: file.originalname, fileWidth: width, fileHeight: height, fileBytes: file.size }
+      return { fileOriginalName: file.originalname, fileWidth: width, fileHeight: height, fileBytes: file.size, fileUploadedAt: new Date() }
     }
     catch (err) {
       throw this.refuseImage(err, HttpStatus.BAD_REQUEST, 'image-unreadable', 'The file is not an image Kuroshiro can read.')

@@ -264,6 +264,7 @@ describe('adding, deleting and reordering a Device\'s Screens, against a real da
       const screen: ScreenRead = await response.json()
       expect(screen).toMatchObject({ kind: 'file', name: 'Holiday', file: { originalName: 'holiday.jpg', width: 1600, height: 960, bytes: 'raw-upload'.length } })
       expect(screen.imagePath).toContain(`${screen.id}.png`)
+      expect(screen.file?.uploadedAt).toEqual(expect.any(String))
     })
 
     it('answers 400 image-unreadable and leaves no Screen and no file behind for an upload that is not an image', async () => {

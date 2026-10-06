@@ -1,11 +1,17 @@
 import type { ConfigService } from '@nestjs/config'
-import type { PaletteRead } from 'kuroshiro-shared'
+import type { PaletteRead, ScreenRead } from 'kuroshiro-shared'
 import type { DataSource } from 'typeorm'
 import type { HttpTestApp } from '../../test/httpApp.js'
 import * as fs from 'node:fs'
 import path from 'node:path'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { Alert } from '../../alerts/entities/alert.entity.js'
 import { Device } from '../../devices/devices.entity.js'
+import { PluginFieldValue } from '../../plugins/entities/plugin-field-value.entity.js'
+import { PluginField } from '../../plugins/entities/plugin-field.entity.js'
+import { PluginFieldValuesService } from '../../plugins/services/plugin-field-values.service.js'
+import { DeviceScreensController } from '../../screens/device-screens.controller.js'
+import { ScreenReadsService } from '../../screens/screen-reads.service.js'
 import { Screen } from '../../screens/screens.entity.js'
 import { ScreensService } from '../../screens/screens.service.js'
 import { SyncRun } from '../../sync-runs/entities/sync-run.entity.js'
@@ -49,12 +55,16 @@ describe('creating, changing and deleting a custom Palette, against a real datab
     const reads = new DeviceModelReadsService(database.getRepository(Device), deviceModels, new SyncRunService(database.getRepository(SyncRun)))
     const screens = new ScreensService(database.getRepository(Screen), database.getRepository(Device), asService<ConfigService>({ get: () => false }), deviceModels)
     const customPalettes = new CustomPalettesService(database.getRepository(Palette), database.getRepository(Device), deviceModels, screens)
+    const fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
+    const screenReads = new ScreenReadsService(database.getRepository(Screen), database.getRepository(Device), database.getRepository(Alert), fieldValues)
 
     http = await createHttpTestApp({
-      controllers: [CustomPalettesController],
+      controllers: [CustomPalettesController, DeviceScreensController],
       providers: [
         { provide: CustomPalettesService, useValue: customPalettes },
         { provide: DeviceModelReadsService, useValue: reads },
+        { provide: ScreenReadsService, useValue: screenReads },
+        { provide: ScreensService, useValue: screens },
       ],
     })
   })
@@ -93,7 +103,7 @@ describe('creating, changing and deleting a custom Palette, against a real datab
       deviceModel: { name: 'og_bwr' },
       palette: { id: 'study-panel' },
     } as Device)
-    const screen = await database.getRepository(Screen).save({ type: 'file', filename: 'Photo', order: 1, isActive: true, fetchManual: false, generatedAt: new Date('2026-10-01T09:30:00.000Z'), device })
+    const screen = await database.getRepository(Screen).save({ type: 'file', filename: 'Photo', order: 1, isActive: true, fetchManual: false, generatedAt: new Date('2026-10-01T09:30:00.000Z'), fileUploadedAt: new Date('2026-09-15T08:00:00.000Z'), device })
     devicesWithImages.push(device.id)
     await writeStandInFile(resolveAppPath('public', 'screens', 'devices', device.id, `${screen.id}.png`))
     return { device, screen }
@@ -101,6 +111,12 @@ describe('creating, changing and deleting a custom Palette, against a real datab
 
   function send(method: string, route: string, body?: unknown): Promise<Response> {
     return http.request(route, { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })
+  }
+
+  async function readScreens(deviceId: string): Promise<ScreenRead[]> {
+    const response = await http.request(`/api/devices/${deviceId}/screens`)
+    expect(response.status).toBe(200)
+    return response.json()
   }
 
   const paletteOf = async (deviceId: string) => (await database.getRepository(Device).findOneByOrFail({ id: deviceId })).palette
@@ -170,6 +186,19 @@ describe('creating, changing and deleting a custom Palette, against a real datab
       expect(response.status).toBe(200)
       expect(changed).toMatchObject({ id: 'study-panel', name: 'Study panel', colors: ['#000000', '#FFFFFF', '#C0392B', '#D8C13A'], usedBy: [{ id: device.id, name: 'Study' }] })
       expect(conversions()).toEqual([{ file: `${screen.id}.png`, palette: 'study-panel', colors: ['#000000', '#FFFFFF', '#C0392B', '#D8C13A'] }])
+    })
+
+    it('keeps a File Screen\'s file.uploadedAt through the re-conversion a Palette colour change causes, while renderedAt moves', async () => {
+      const { device } = await studyOnTheCustomPalette()
+      const [before] = await readScreens(device.id)
+
+      const response = await send('PATCH', '/api/device-models/palettes/study-panel', { colors: ['#000000', '#FFFFFF', '#C0392B', '#D8C13A'] })
+      expect(response.status).toBe(200)
+
+      const [after] = await readScreens(device.id)
+      expect(before.file?.uploadedAt).toBe('2026-09-15T08:00:00.000Z')
+      expect(after.file?.uploadedAt).toBe(before.file?.uploadedAt)
+      expect(after.renderedAt).not.toBe(before.renderedAt)
     })
 
     it('renames a Palette, and keeps its own name in another letter case', async () => {

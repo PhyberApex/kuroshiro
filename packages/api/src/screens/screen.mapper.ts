@@ -4,7 +4,7 @@ import type { ScreenStateRead } from '../schedule/rotation.js'
 import type { Schedule } from '../schedule/schedule.entity.js'
 import type { Screen } from './screens.entity.js'
 import { MASHUP_LAYOUTS } from 'kuroshiro-shared'
-import { toImagePath, toIsoString } from '../utils/readModel.js'
+import { toImagePath, toIsoString, toIsoStringOrNull } from '../utils/readModel.js'
 
 export interface ScreenFacts {
   deviceId: string
@@ -67,7 +67,7 @@ function toFileRead(screen: Screen): ScreenRead['file'] {
     width: screen.fileWidth ?? null,
     height: screen.fileHeight ?? null,
     bytes: screen.fileBytes ?? null,
-    uploadedAt: toIsoString(screen.generatedAt),
+    uploadedAt: toIsoStringOrNull(screen.fileUploadedAt),
   }
 }
 

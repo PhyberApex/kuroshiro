@@ -193,6 +193,16 @@ describe('editing a Screen, against a real database', () => {
       expect(plugin.name).toBe('Weather')
     })
 
+    it('renames a File Screen without moving its render time or its upload time', async () => {
+      const uploadedAt = new Date('2026-02-15T08:00:00.000Z')
+      const screen = await seedScreen(1, { type: 'file', html: null, filename: 'Old', fileUploadedAt: uploadedAt })
+      await seedFiles(screen)
+
+      const response = await patch(screen.id, { name: 'New' })
+
+      expect(await response.json()).toMatchObject({ name: 'New', renderedAt: CREATED_AT.toISOString(), file: { uploadedAt: uploadedAt.toISOString() } })
+    })
+
     it('saves the markup of an HTML Screen', async () => {
       const screen = await seedScreen(1)
 
@@ -341,7 +351,7 @@ describe('editing a Screen, against a real database', () => {
 
   describe('pUT /api/screens/:id/image', () => {
     it('swaps the image and the file facts, keeping id, name, Order and Schedule, with a new image version', async () => {
-      const screen = await seedScreen(2, { type: 'file', html: null, filename: 'Holiday', fileOriginalName: 'old.jpg', fileWidth: 10, fileHeight: 10, fileBytes: 5 })
+      const screen = await seedScreen(2, { type: 'file', html: null, filename: 'Holiday', fileOriginalName: 'old.jpg', fileWidth: 10, fileHeight: 10, fileBytes: 5, fileUploadedAt: new Date('2026-01-01T00:00:00.000Z') })
       await database.getRepository(Schedule).save({ screen, startTime: '08:00', endTime: '18:00' })
       await seedFiles(screen)
       const before: ScreenRead = (await (await http.request(`/api/devices/${device.id}/screens`)).json())[0]
@@ -353,6 +363,7 @@ describe('editing a Screen, against a real database', () => {
       const after: ScreenRead = await response.json()
       expect(after).toMatchObject({ id: screen.id, name: 'Holiday', order: 2, schedule: before.schedule, file: { originalName: 'new.jpg', width: 800, height: 480, bytes: 'replacement'.length } })
       expect(after.imagePath).not.toBe(before.imagePath)
+      expect(after.file?.uploadedAt).not.toBe(before.file?.uploadedAt)
       expect(await fileContents(screen, 'png')).toBe('image')
       expect(await fileContents(screen, 'original')).toBe('replacement')
       expect(await filesOfDevice()).toHaveLength(2)

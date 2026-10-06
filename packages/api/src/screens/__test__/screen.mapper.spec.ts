@@ -4,6 +4,7 @@ import { makeMashupConfiguration, makeMashupSlot, makePlugin, makeSchedule, make
 import { toScreenRead } from '../screen.mapper.js'
 
 const RENDERED_AT = new Date('2026-03-01T09:30:00.000Z')
+const UPLOADED_AT = new Date('2026-02-15T08:00:00.000Z')
 
 const WAITING_ITS_TURN: ScreenFacts = {
   deviceId: 'device-1',
@@ -16,7 +17,7 @@ const WAITING_ITS_TURN: ScreenFacts = {
 
 describe('toScreenRead', () => {
   it('reads a File Screen with every key present and what does not apply as null', () => {
-    const screen = makeScreen({ id: 'screen-photo', type: 'file', filename: 'Photo', order: 2, generatedAt: RENDERED_AT })
+    const screen = makeScreen({ id: 'screen-photo', type: 'file', filename: 'Photo', order: 2, generatedAt: RENDERED_AT, fileUploadedAt: UPLOADED_AT })
 
     expect(JSON.parse(JSON.stringify(toScreenRead(screen, WAITING_ITS_TURN)))).toEqual({
       id: 'screen-photo',
@@ -33,15 +34,21 @@ describe('toScreenRead', () => {
       plugin: null,
       mashup: null,
       external: null,
-      file: { originalName: null, width: null, height: null, bytes: null, uploadedAt: '2026-03-01T09:30:00.000Z' },
+      file: { originalName: null, width: null, height: null, bytes: null, uploadedAt: '2026-02-15T08:00:00.000Z' },
       html: null,
     })
   })
 
   it('reads the facts stored at upload on a File Screen', () => {
-    const screen = makeScreen({ type: 'file', fileOriginalName: 'holiday.jpg', fileWidth: 4032, fileHeight: 3024, fileBytes: 2_480_113 })
+    const screen = makeScreen({ type: 'file', fileOriginalName: 'holiday.jpg', fileWidth: 4032, fileHeight: 3024, fileBytes: 2_480_113, fileUploadedAt: UPLOADED_AT })
 
-    expect(toScreenRead(screen, WAITING_ITS_TURN).file).toMatchObject({ originalName: 'holiday.jpg', width: 4032, height: 3024, bytes: 2_480_113 })
+    expect(toScreenRead(screen, WAITING_ITS_TURN).file).toMatchObject({ originalName: 'holiday.jpg', width: 4032, height: 3024, bytes: 2_480_113, uploadedAt: '2026-02-15T08:00:00.000Z' })
+  })
+
+  it('reads a File Screen whose upload time was never stored as null, unlike its render time', () => {
+    const screen = makeScreen({ type: 'file', generatedAt: RENDERED_AT })
+
+    expect(toScreenRead(screen, WAITING_ITS_TURN).file).toMatchObject({ uploadedAt: null })
   })
 
   it('carries the Screen State, its cause and the Render Signal it is given', () => {
