@@ -2,10 +2,8 @@ import type { ArgumentsHost, ExceptionFilter } from '@nestjs/common'
 import type { Response } from 'express'
 import type { ApiError, ApiErrorCode } from 'kuroshiro-shared'
 import { Catch, HttpException, Logger } from '@nestjs/common'
-import { QueryFailedError } from 'typeorm'
 import { ApiException, ValidationException } from './api.exception.js'
-
-const POSTGRES_UNIQUE_VIOLATION = '23505'
+import { isUniqueViolation } from './unique-violation.js'
 
 const GENERIC_CODE_BY_STATUS: Record<number, ApiErrorCode> = {
   400: 'bad-request',
@@ -28,11 +26,6 @@ function messageOf(exception: HttpException): string {
   if (Array.isArray(message))
     return message.join('; ')
   return typeof message === 'string' ? message : exception.message
-}
-
-function isUniqueViolation(exception: unknown): boolean {
-  return exception instanceof QueryFailedError
-    && (exception.driverError as { code?: unknown } | undefined)?.code === POSTGRES_UNIQUE_VIOLATION
 }
 
 /**

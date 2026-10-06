@@ -50,6 +50,7 @@ function newestAnswer(): (url: string) => Response {
 describe('the Firmware reads and writes, against a real database', () => {
   let database: DataSource
   let http: HttpTestApp
+  let firmwareService: FirmwareService
   let autoUpdate = false
   let deviceCount = 0
 
@@ -58,7 +59,7 @@ describe('the Firmware reads and writes, against a real database', () => {
     database = await createTestDatabase()
     const firmwareRepository = database.getRepository(Firmware)
     const syncRuns = new SyncRunService(database.getRepository(SyncRun))
-    const firmwareService = new FirmwareService(firmwareRepository, database.getRepository(DeviceModel), asService<ConfigService>({ get: () => 'http://kuroshiro.example' }))
+    firmwareService = new FirmwareService(firmwareRepository, database.getRepository(DeviceModel), asService<ConfigService>({ get: () => 'http://kuroshiro.example' }))
     const reads = new FirmwareReadsService(database.getRepository(Device), firmwareService, syncRuns)
     const autoUpdateService = new FirmwareAutoUpdateService(
       database.getRepository(Device),
@@ -208,6 +209,15 @@ describe('the Firmware reads and writes, against a real database', () => {
 
       expect(result.assigned).toEqual([{ id: device.id, name: 'Hallway' }])
     })
+
+    it('inserts nothing when a custom Firmware already holds the version, not just the newest official one', async () => {
+      await addFirmware({ kind: 'custom', version: '1.6.0', uploadedAt: new Date(), syncedAt: null })
+
+      const result: FirmwareSyncResult = await (await sync()).json()
+
+      expect(result).toMatchObject({ inserted: false, version: '1.6.0' })
+      expect(await firmwareRows()).toBe(1)
+    })
   })
 
   describe('listing', () => {
@@ -284,6 +294,22 @@ describe('the Firmware reads and writes, against a real database', () => {
       expect(await response.json()).toMatchObject({ code: 'firmware-version-taken', details: { version: '1.5.0' } })
       expect(await firmwareRows()).toBe(1)
       expect(fs.readdirSync(firmwareDirectory)).toHaveLength(1)
+    })
+
+    it('refuses with 409 firmware-version-taken, and stores nothing, when another upload wins a race the up-front check missed', async () => {
+      const assertVersionFree = vi.spyOn(firmwareService as unknown as { assertVersionFree: (version: string) => Promise<void> }, 'assertVersionFree')
+      assertVersionFree.mockImplementationOnce(async () => {
+        // The other request's write, landing between this one's check and its own write.
+        await addFirmware({ version: '1.5.0' })
+      })
+
+      const response = await upload(uploadForm({ version: '1.5.0' }))
+
+      expect(response.status).toBe(409)
+      expect(await response.json()).toMatchObject({ code: 'firmware-version-taken', details: { version: '1.5.0' } })
+      expect(await firmwareRows()).toBe(1)
+      expect(fs.readdirSync(firmwareDirectory)).toHaveLength(1)
+      assertVersionFree.mockRestore()
     })
 
     it('refuses a Device Model the Instance does not know with 400 device-model-unknown, and stores nothing', async () => {

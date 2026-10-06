@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import cron from 'node-cron'
 import { Repository } from 'typeorm'
 import { TRMNL_API_URL } from '../device-models/trmnl-payloads.js'
+import { isUniqueViolation } from '../errors/unique-violation.js'
 import { SyncRunService } from '../sync-runs/sync-run.service.js'
 import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { Firmware } from './entities/firmware.entity.js'
@@ -76,10 +77,10 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
   private async runSync(ranAt: Date): Promise<FirmwareSyncResult> {
     this.logger.log('Syncing firmware from TRMNL')
     const payload = await this.fetchLatest()
-    const newest = await this.firmwareRepository.findOne({ where: { kind: 'official-synced' }, order: { syncedAt: 'DESC' } })
-    if (newest && newest.version === payload.version) {
-      this.logger.log(`Firmware ${payload.version} already synced, nothing to do`)
-      return { ranAt: ranAt.toISOString(), inserted: false, version: payload.version, assigned: [] }
+    const noop = { ranAt: ranAt.toISOString(), inserted: false, version: payload.version, assigned: [] }
+    if (await this.firmwareRepository.existsBy({ version: payload.version })) {
+      this.logger.log(`Firmware ${payload.version} already exists, nothing to sync`)
+      return noop
     }
 
     const binary = await this.downloadBinary(payload.url)
@@ -100,9 +101,19 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
       syncedAt,
     })
 
-    if (newest)
-      await this.firmwareRepository.update({ kind: 'official-synced', deprecated: false }, { deprecated: true })
-    await this.firmwareRepository.insert(newFirmware)
+    try {
+      await this.firmwareRepository.manager.transaction(async (manager) => {
+        await manager.getRepository(Firmware).update({ kind: 'official-synced', deprecated: false }, { deprecated: true })
+        await manager.getRepository(Firmware).insert(newFirmware)
+      })
+    }
+    catch (err) {
+      if (!isUniqueViolation(err, 'UQ_firmware_version'))
+        throw err
+      await fs.promises.unlink(filePath).catch(() => {})
+      this.logger.log(`Firmware ${payload.version} was inserted elsewhere first, nothing to do`)
+      return noop
+    }
 
     const assigned = await this.autoUpdateService.applyPolicy(newFirmware)
 

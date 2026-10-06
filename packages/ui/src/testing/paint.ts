@@ -26,15 +26,28 @@ export async function settled() {
   await transitionsEnded()
 }
 
+function hasHorizontalScroller() {
+  return Array.from(document.querySelectorAll('*')).some(el => el.scrollWidth > el.clientWidth)
+}
+
 /**
  * Resolves once no element's scroll position moves between two frames in a row, up to ten
  * frames. A nav row that scrolls a current link into view (`PageList`) does it from a
  * `ResizeObserver`, which reacts to a viewport resize on its own schedule: on a loaded CI
- * runner it can still be correcting a frame or two after `settled()` already returned, so a
- * shot taken right then catches it mid-scroll.
+ * runner its callback can still be pending a few frames after a resize, so comparing right
+ * away catches a read from before the callback ran rather than after — indistinguishable
+ * from "already settled". Where the page holds nothing that overflows sideways (most shots),
+ * there is nothing a callback could still be correcting, so that read is trusted at once, as
+ * before. Where it does, a short unconditional wait first gives a late callback room to run
+ * before the first reading is taken, so "no change since entry" means the scroll already
+ * landed rather than that the observer has not fired yet.
  */
 export async function scrollSettled() {
   const positions = () => Array.from(document.querySelectorAll('*'), el => el.scrollLeft).join(',')
+  if (hasHorizontalScroller()) {
+    for (let i = 0; i < 6; i++)
+      await nextFrame()
+  }
   let last = positions()
   for (let i = 0; i < 10; i++) {
     await nextFrame()
