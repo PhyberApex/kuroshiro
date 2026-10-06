@@ -100,7 +100,6 @@ export class DeviceDisplayService {
         // Get it from the module (this is a workaround for circular deps)
         this.mashupRenderer = new MashupRendererService(
           this.pluginRenderer,
-          this.configService,
           this.deviceSensors,
           this.pluginTemplateContext,
         )

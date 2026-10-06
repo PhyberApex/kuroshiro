@@ -3,12 +3,12 @@ import type { Device } from '../../devices/devices.entity.js'
 import type { MashupConfiguration } from '../entities/mashup-configuration.entity.js'
 import type { MashupSlot } from '../entities/mashup-slot.entity.js'
 import { Injectable, Logger } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
 import { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
 import { templateOfSize, templateSizeOfSlot } from '../../plugins/plugin-templates.js'
 import { PluginRendererService } from '../../plugins/services/plugin-renderer.service.js'
 import { PluginTemplateContextService } from '../../plugins/services/plugin-template-context.service.js'
 import { getErrorMessage } from '../../utils/getErrorMessage.js'
+import { MASHUP_SLOT_ERROR_STYLE, mashupSlotErrorHtml } from '../mashup-slot-error-template.js'
 
 @Injectable()
 export class MashupRendererService {
@@ -16,7 +16,6 @@ export class MashupRendererService {
 
   constructor(
     private readonly pluginRenderer: PluginRendererService,
-    private readonly configService: ConfigService,
     private readonly deviceSensors: DeviceSensorsService,
     private readonly pluginTemplateContext: PluginTemplateContextService,
   ) {}
@@ -26,6 +25,7 @@ export class MashupRendererService {
 
     const slotHtmls: Array<{ slot: MashupSlot, html: string }> = []
     const sensors = await this.deviceSensors.findForDevice(device.id)
+    let anySlotFailed = false
 
     // Render each slot (with error handling for partial renders)
     for (const slot of mashupConfig.slots) {
@@ -36,15 +36,15 @@ export class MashupRendererService {
       catch (err) {
         const message = getErrorMessage(err)
         this.logger.error(`Failed to render plugin ${slot.plugin.id} in slot ${slot.id}: ${message}`)
-        const errorHtml = this.errorPlaceholder(slot.plugin.name)
-        slotHtmls.push({ slot, html: errorHtml })
+        anySlotFailed = true
+        slotHtmls.push({ slot, html: mashupSlotErrorHtml(slot.plugin.name) })
       }
     }
 
     // Sort by order
     slotHtmls.sort((a, b) => a.slot.order - b.slot.order)
 
-    return this.buildMashupHtml(mashupConfig.layout, slotHtmls)
+    return this.buildMashupHtml(mashupConfig.layout, slotHtmls, anySlotFailed)
   }
 
   private async renderSlot(slot: MashupSlot, sensors: DeviceSensor[]): Promise<string> {
@@ -61,20 +61,14 @@ export class MashupRendererService {
     return await this.pluginRenderer.render(template.liquidMarkup, context)
   }
 
-  private buildMashupHtml(layout: string, slotHtmls: Array<{ slot: MashupSlot, html: string }>): string {
+  private buildMashupHtml(layout: string, slotHtmls: Array<{ slot: MashupSlot, html: string }>, anySlotFailed: boolean): string {
     const viewsHtml = slotHtmls.map(({ slot, html }) =>
       `<div class="view ${slot.size}">${html}</div>`,
     ).join('\n    ')
+    const style = anySlotFailed ? `<style>${MASHUP_SLOT_ERROR_STYLE}</style>` : ''
 
-    return `<div class="mashup mashup--${layout}">
+    return `${style}<div class="mashup mashup--${layout}">
     ${viewsHtml}
     </div>`
-  }
-
-  private errorPlaceholder(_pluginName: string): string {
-    const apiUrl = this.configService.get<string>('api_url')
-    return `<div style="display: flex; align-items: center; justify-content: center; height: 100%;">
-    <img src="${apiUrl}/screens/error.png" style="max-width: 100%; height: auto;" alt="Plugin error" />
-  </div>`
   }
 }
