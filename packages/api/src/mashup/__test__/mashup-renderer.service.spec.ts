@@ -221,13 +221,15 @@ describe('mashupRendererService', () => {
     expect(pluginDataFetcher.fetchData).not.toHaveBeenCalled()
   })
 
-  it('falls back to the error placeholder when a Webhook-kind Plugin has no matching Template', async () => {
+  it('draws the failed Plugin\'s name in its slot when a Webhook-kind Plugin has no matching Template', async () => {
     const device = makeDevice({ id: 'device-1', width: 800, height: 480 })
     const plugin = makePlugin({ id: 'plugin-1', name: 'Feed', kind: 'Webhook', webhookPayload: { reading: 42 }, templates: [] })
 
     const result = await service.renderMashup(draftSlotConfiguration(plugin), device)
 
-    expect(result).toContain('error.png')
+    expect(result).not.toContain('error.png')
+    expect(result).toContain('Feed')
+    expect(result).toContain('could not be shown.')
     expect(pluginRenderer.render).not.toHaveBeenCalled()
   })
 
