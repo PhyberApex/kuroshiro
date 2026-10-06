@@ -90,6 +90,8 @@ export function wordWarning(warning: ImportWarning): string {
   switch (warning.kind) {
     case 'device-apikey-redacted':
       return `${possessive(warning.device.name)} API key was redacted. ${warning.device.name} gets a new one and has to be set up again.`
+    case 'device-apikeys-kept':
+      return 'Existing Devices kept their current API keys.'
     case 'webhook-token-redacted':
       return `The Webhook Token of ${warning.plugin.name} was redacted. It gets a new Webhook URL; whatever posts to it needs the new one.`
     case 'header-redacted':

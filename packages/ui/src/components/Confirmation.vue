@@ -41,6 +41,8 @@ defineSlots<{
   lost?: () => unknown
   /** What stays. */
   stays?: () => unknown
+  /** An extra control the confirmation asks for, below what is lost and what stays. */
+  extra?: () => unknown
   /** Beside the safe choice of a dialog with nothing to confirm: a link to where the obstacle is removed. */
   also?: () => unknown
 }>()
@@ -110,6 +112,9 @@ function close(event: Event) {
               </dl>
             </div>
           </AlertDialogDescription>
+          <div v-if="$slots.extra" class="extra">
+            <slot name="extra" />
+          </div>
           <FieldError class="failure" :message="failure" />
           <div class="buttons">
             <AlertDialogCancel as-child>
@@ -186,6 +191,10 @@ function close(event: Event) {
 
   .failure:not(:empty) {
     margin-top: var(--space-2);
+  }
+
+  .extra {
+    margin-top: var(--space-3);
   }
 
   .buttons {

@@ -150,7 +150,7 @@ describe('the facts', () => {
       batteryPercent: null,
       sensors: [{ kind: 'temperature', value: 21.4, unit: '°C' }, { kind: 'carbon_dioxide', value: 612, unit: 'ppm' }],
       reported: { ...kitchen().reported, width: 1872, height: 1404 },
-      pending: { specialFunction: 'identify', deviceReset: false, firmwarePush: false },
+      pending: { specialFunction: 'identify', deviceReset: false, deviceResetNewApikey: false, firmwarePush: false },
     }) })
     const screen = await mountApp({ at: '/devices/kitchen' })
 

@@ -35,7 +35,7 @@ export const buildDeviceDetail = defineBuilder<DeviceDetail>(() => ({
   palette: { id: '5c9e2f7a-3b1d-4e8f-a6c4-0d2b7e9f1a3c', name: 'Greyscale, 4 levels', kind: 'official' },
   mirror: { enabled: false, mac: null, apikeySet: false },
   targetFirmware: null,
-  pending: { specialFunction: null, deviceReset: false, firmwarePush: false },
+  pending: { specialFunction: null, deviceReset: false, deviceResetNewApikey: false, firmwarePush: false },
   sleepImagePath: null,
   sensors: [],
   screenCount: 1,

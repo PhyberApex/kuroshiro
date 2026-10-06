@@ -96,6 +96,7 @@ describe('configuration archive wording', () => {
   it('words every warning by its kind', () => {
     const warnings: ImportWarning[] = [
       { kind: 'device-apikey-redacted', device: HALLWAY },
+      { kind: 'device-apikeys-kept' },
       { kind: 'webhook-token-redacted', plugin: { id: 'doorbell', name: 'Doorbell note' } },
       { kind: 'header-redacted', plugin: { id: 'trains', name: 'Train departures' }, dataSource: 'departures', header: 'Authorization' },
       { kind: 'mirror-apikey-redacted', device: HALLWAY },
@@ -110,6 +111,7 @@ describe('configuration archive wording', () => {
 
     expect(warnings.map(wordWarning)).toEqual([
       'Hallway\'s API key was redacted. Hallway gets a new one and has to be set up again.',
+      'Existing Devices kept their current API keys.',
       'The Webhook Token of Doorbell note was redacted. It gets a new Webhook URL; whatever posts to it needs the new one.',
       'A header of Train departures · departures was redacted and is left out. Enter it on the Plugin\'s page.',
       'Hallway\'s mirror API key was redacted. Mirroring is off for Hallway until you enter it.',

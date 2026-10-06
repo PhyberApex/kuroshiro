@@ -64,6 +64,7 @@ const REFUSAL_WORDING: Record<ApiErrorCode, Wording> = {
   'internal': 'Something went wrong on the server.',
   'device-not-found': 'That Device does not exist.',
   'device-mac-taken': 'A Device with this MAC address is already registered.',
+  'device-proxied': 'TRMNL answers a Proxied Device\'s polls, so its API key is not rotated here.',
   'screen-not-found': 'That Screen does not exist.',
   'screen-field-not-for-kind': 'A Screen of that kind has no such setting.',
   'schedule-not-found': 'That Screen has no Schedule. It may have been removed.',

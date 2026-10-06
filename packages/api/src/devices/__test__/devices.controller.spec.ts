@@ -11,6 +11,7 @@ function createMockService() {
     create: vi.fn(),
     remove: vi.fn(),
     update: vi.fn(),
+    regenerateApikey: vi.fn(),
   }
 }
 
@@ -59,5 +60,19 @@ describe('devicesController', () => {
   it('update answers device-not-found if the device does not exist', async () => {
     service.update.mockResolvedValue(null)
     await expect(controller.update('1', { name: 'Pantry' })).rejects.toMatchObject({ code: 'device-not-found', status: 404 })
+  })
+
+  it('regenerateApikey answers the rotated device through the reads', async () => {
+    const detail = { id: '1', apikey: 'new-key' }
+    service.regenerateApikey.mockResolvedValue({ id: '1' })
+    reads.detail.mockResolvedValue(detail)
+    await expect(controller.regenerateApikey('1')).resolves.toBe(detail)
+    expect(service.regenerateApikey).toHaveBeenCalledWith('1')
+    expect(reads.detail).toHaveBeenCalledWith('1')
+  })
+
+  it('regenerateApikey answers device-not-found if the device does not exist', async () => {
+    service.regenerateApikey.mockResolvedValue(null)
+    await expect(controller.regenerateApikey('1')).rejects.toMatchObject({ code: 'device-not-found', status: 404 })
   })
 })

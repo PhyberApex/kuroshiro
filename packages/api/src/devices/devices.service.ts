@@ -11,6 +11,7 @@ import { FirmwareService } from '../firmware/firmware.service.js'
 import { ScreensService } from '../screens/screens.service.js'
 import generateApikey from '../utils/generateApikey.js'
 import generateFriendlyName from '../utils/generateFriendlyName.js'
+import { isProxied } from './device.mapper.js'
 import { Device } from './devices.entity.js'
 import { CreateDeviceDto } from './dto/create-device.dto.js'
 
@@ -43,7 +44,11 @@ export class DevicesService {
       return null
     const { deviceModelName, paletteId, targetFirmwareId, ...attributes } = changes
     const pushWasPending = dbDevice.updateFirmware
+    this.assertResetNewApikeyAllowed(dbDevice, changes.resetDeviceNewApikey)
     Object.assign(dbDevice, attributes)
+    // Cancelling the Reset cancels the rotation it was carrying with it (ADR-0039).
+    if (changes.resetDevice === false)
+      dbDevice.resetDeviceNewApikey = false
     this.assertSleepWindowConfigured(dbDevice)
     const before = { model: dbDevice.deviceModel?.name, palette: dbDevice.palette?.id }
     await this.applyModelChange(dbDevice, deviceModelName)
@@ -62,6 +67,26 @@ export class DevicesService {
       return false
     await this.deviceRepository.remove(dbDevice)
     return true
+  }
+
+  /** Rotates `apikey` at once, for a Device that is lost, stolen or will not call in again (ADR-0039). Refused on a Proxied Device. */
+  async regenerateApikey(id: string): Promise<Device | null> {
+    const dbDevice = await this.findByIdOrNull(id)
+    if (!dbDevice)
+      return null
+    this.assertNotProxied(dbDevice)
+    dbDevice.apikey = generateApikey()
+    return this.deviceRepository.save(dbDevice)
+  }
+
+  private assertResetNewApikeyAllowed(device: Device, resetDeviceNewApikey: boolean | undefined): void {
+    if (resetDeviceNewApikey)
+      this.assertNotProxied(device)
+  }
+
+  private assertNotProxied(device: Device): void {
+    if (isProxied(device))
+      throw new ApiException(HttpStatus.CONFLICT, 'device-proxied', 'TRMNL answers a Proxied Device\'s polls, so its API key is not rotated here.', { id: device.id })
   }
 
   /** A Device that registered itself through `/api/setup` keeps the letter case it sent, so the comparison ignores it. */

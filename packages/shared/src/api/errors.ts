@@ -15,6 +15,7 @@ export const API_ERROR_CODES = [
   'internal',
   'device-not-found',
   'device-mac-taken',
+  'device-proxied',
   'screen-not-found',
   'screen-field-not-for-kind',
   'schedule-not-found',

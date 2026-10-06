@@ -31,7 +31,7 @@ const cancel = useDeviceWrite()
       <DeviceDeletion :device="device" />
       <ResultLine :running="device.pending.deviceReset">
         <template v-if="device.pending.deviceReset" #default>
-          Device Reset pending, {{ reachesDevice(device, now) }}
+          Device Reset pending{{ device.pending.deviceResetNewApikey ? ', with a new API key,' : ',' }} {{ reachesDevice(device, now) }}
         </template>
       </ResultLine>
       <Button v-if="device.pending.deviceReset" variant="quiet" :loading="cancel.status === 'saving'" @click="cancel.send({ resetDevice: false })">

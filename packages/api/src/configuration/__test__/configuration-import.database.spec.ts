@@ -138,6 +138,7 @@ const REDACTED_ARCHIVE_WARNINGS = [
   { kind: 'field-value-redacted', plugin: weather, keyname: 'api_key', label: 'API key' },
   { kind: 'field-value-without-field', plugin: weather, keyname: 'town' },
   { kind: 'webhook-token-redacted', plugin: { id: DOORBELL, name: 'Doorbell note' } },
+  { kind: 'device-apikeys-kept' },
   { kind: 'device-apikey-redacted', device: hallway },
   { kind: 'device-model-unknown', device: hallway, deviceModel: 'inky_impression_99' },
   { kind: 'palette-unknown', device: hallway, paletteId: UNKNOWN_PALETTE },
@@ -244,6 +245,7 @@ describe('reading and importing a Configuration Archive, against a real database
     expect((await imported.json() as ConfigurationImportSummary).warnings).toEqual([
       { kind: 'previous-version-values-dropped', plugin: weather },
       { kind: 'previous-version-values-dropped', plugin: { id: DOORBELL, name: 'Doorbell note' } },
+      { kind: 'device-apikeys-kept' },
     ])
   })
 

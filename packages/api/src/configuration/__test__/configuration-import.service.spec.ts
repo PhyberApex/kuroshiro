@@ -695,7 +695,7 @@ describe('configurationImportService', () => {
     })
   })
 
-  it('keeps an existing Device\'s mirrorApikey when the archive holds the sentinel, with no warning', async () => {
+  it('keeps an existing Device\'s mirrorApikey when the archive holds the sentinel, with only the apikey-kept note', async () => {
     backing.get('Device')!.set('device-1', {
       id: 'device-1',
       name: 'Old',
@@ -714,7 +714,7 @@ describe('configurationImportService', () => {
 
     const device = [...backing.get('Device')!.values()][0]
     expect(device.mirrorApikey).toBe('real-mirror-key')
-    expect(summary.warnings).toEqual([])
+    expect(summary.warnings).toEqual([{ kind: 'device-apikeys-kept' }])
   })
 
   it('unsets a brand-new Device\'s mirrorApikey with a warning when the archive holds the sentinel', async () => {
@@ -727,7 +727,7 @@ describe('configurationImportService', () => {
     expect(summary.warnings).toEqual([{ kind: 'mirror-apikey-redacted', device: { id: 'device-1', name: 'Device 1' } }])
   })
 
-  it('keeps an existing Device\'s apikey with no warning when the archive holds the sentinel and the row exists by id', async () => {
+  it('keeps an existing Device\'s apikey, with only the apikey-kept note, when the archive holds the sentinel and the row exists by id', async () => {
     backing.get('Device')!.set('device-1', {
       id: 'device-1',
       name: 'Old',
@@ -745,7 +745,59 @@ describe('configurationImportService', () => {
 
     const device = [...backing.get('Device')!.values()][0]
     expect(device.apikey).toBe('existing-key')
+    expect(summary.warnings).toEqual([{ kind: 'device-apikeys-kept' }])
+  })
+
+  it('keeps an existing Device\'s apikey, with only the apikey-kept note, when the archive holds a plain key and the row exists by id', async () => {
+    backing.get('Device')!.set('device-1', {
+      id: 'device-1',
+      name: 'Old',
+      friendlyId: 'OLD1',
+      mac: 'AA:BB:CC:DD:EE:FF',
+      apikey: 'existing-key',
+      refreshRate: 300,
+      sleepModeEnabled: false,
+      sleepScreenEnabled: false,
+    })
+
+    const buffer = buildArchive({ devices: [makeDeviceEntry({ apikey: 'archived-key' })] })
+
+    const summary = await service.importFromZip(buffer)
+
+    const device = [...backing.get('Device')!.values()][0]
+    expect(device.apikey).toBe('existing-key')
+    expect(summary.warnings).toEqual([{ kind: 'device-apikeys-kept' }])
+  })
+
+  it('takes the archive\'s plain apikey for a brand-new Device', async () => {
+    const buffer = buildArchive({ devices: [makeDeviceEntry({ apikey: 'archived-key' })] })
+
+    const summary = await service.importFromZip(buffer)
+
+    const device = [...backing.get('Device')!.values()][0]
+    expect(device.apikey).toBe('archived-key')
     expect(summary.warnings).toEqual([])
+  })
+
+  it('keeps hardware re-attached by mac its own live apikey, with only the apikey-kept note, even against a plain archived key', async () => {
+    backing.get('Device')!.set('device-1', {
+      id: 'device-1',
+      name: 'Old',
+      friendlyId: 'OLD1',
+      mac: 'AA:BB:CC:DD:EE:FF',
+      apikey: 'live-key',
+      refreshRate: 300,
+      sleepModeEnabled: false,
+      sleepScreenEnabled: false,
+    })
+
+    const buffer = buildArchive({ devices: [makeDeviceEntry({ id: 'device-2', apikey: 'archived-key', mac: 'AA:BB:CC:DD:EE:FF' })] })
+
+    const summary = await service.importFromZip(buffer)
+
+    const device = [...backing.get('Device')!.values()][0]
+    expect(device.apikey).toBe('live-key')
+    expect(summary.warnings).toEqual([{ kind: 'device-apikeys-kept' }])
   })
 
   it('generates a fresh apikey with a warning for a brand-new Device when the archive holds the sentinel', async () => {

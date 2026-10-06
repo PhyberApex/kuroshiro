@@ -267,8 +267,14 @@ describe('toDeviceDetail', () => {
     const waiting = toDeviceDetail(makeDevice({ specialFunction: 'rewind', resetDevice: true, updateFirmware: true }), facts)
     const idle = toDeviceDetail(makeDevice({ specialFunction: 'none' }), facts)
 
-    expect(waiting.pending).toEqual({ specialFunction: 'rewind', deviceReset: true, firmwarePush: true })
-    expect(idle.pending).toEqual({ specialFunction: null, deviceReset: false, firmwarePush: false })
+    expect(waiting.pending).toEqual({ specialFunction: 'rewind', deviceReset: true, deviceResetNewApikey: false, firmwarePush: true })
+    expect(idle.pending).toEqual({ specialFunction: null, deviceReset: false, deviceResetNewApikey: false, firmwarePush: false })
+  })
+
+  it('states whether the pending Device Reset also carries a new API key', () => {
+    const detail = toDeviceDetail(makeDevice({ resetDevice: true, resetDeviceNewApikey: true }), facts)
+
+    expect(detail.pending.deviceResetNewApikey).toBe(true)
   })
 
   it('folds in the Sensor readings and counts the Screens', () => {
@@ -321,7 +327,7 @@ describe('toDeviceDetail', () => {
       palette: null,
       mirror: { enabled: false, mac: null, apikeySet: false },
       targetFirmware: null,
-      pending: { specialFunction: 'identify', deviceReset: false, firmwarePush: false },
+      pending: { specialFunction: 'identify', deviceReset: false, deviceResetNewApikey: false, firmwarePush: false },
       sleepImagePath: null,
       sensors: [],
       screenCount: 0,

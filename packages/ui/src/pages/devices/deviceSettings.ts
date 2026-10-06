@@ -133,6 +133,16 @@ export function maskedKey(key: string) {
 
 export const screensCounted = (count: number) => `${count} ${count === 1 ? 'Screen' : 'Screens'}`
 
+/** "Regenerate now" (ADR-0039): for a Device that is lost, stolen or will not call in again. */
+export function regenerateApikeyWording(device: string) {
+  return {
+    title: `Give ${device} a new API key now?`,
+    what: `${device} stops working at once. Its polls are refused until someone holds its button for 15 seconds and sets it up again. To have it reset itself first, use Device Reset with a new API key instead.`,
+    lost: 'The current API key, everywhere it is used.',
+    stays: `${device}, its Screens, Schedules and Device Log.`,
+  }
+}
+
 /** The four Special Functions a Device Kuroshiro targets acts on, in the order they are offered. */
 export const OFFERED_SPECIAL_FUNCTIONS = [
   { name: 'identify', does: 'Shows the Device\'s identification screen once' },

@@ -24,6 +24,7 @@ import { nextEligibleScreen } from '../schedule/rotation.js'
 import { Screen } from '../screens/screens.entity.js'
 import { fileExists } from '../utils/fileExists.js'
 import { fileModifiedAt } from '../utils/fileModifiedAt.js'
+import generateApikey from '../utils/generateApikey.js'
 import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { convertToPng, downloadImage } from '../utils/imageUtils.js'
 import { parseHeaderInt } from '../utils/parseHeaderInt.js'
@@ -179,6 +180,10 @@ export class DeviceDisplayService {
     // Handling reset
     const resetDevice = device.resetDevice
     device.resetDevice = false
+    // Rotated after this poll authenticated with the old key, so the Device wipes itself before /api/setup hands out the new one (ADR-0039).
+    if (resetDevice && device.resetDeviceNewApikey)
+      device.apikey = generateApikey()
+    device.resetDeviceNewApikey = false
     // A Special Function fires once: this response acknowledges it, the next poll gets 'none'
     const specialFunction = device.specialFunction ?? 'none'
     device.specialFunction = 'none'

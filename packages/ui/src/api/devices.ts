@@ -21,6 +21,11 @@ export function updateDevice(deviceId: string, input: UpdateDeviceInput) {
   return apiSend<DeviceDetail>('PATCH', `devices/${deviceId}`, input)
 }
 
+/** Rotates the Device's API key at once. Refused with 409 `device-proxied` on a Proxied Device. */
+export function regenerateApikey(deviceId: string) {
+  return apiSend<DeviceDetail>('POST', `devices/${deviceId}/apikey`)
+}
+
 /** One page of a Device Log, newest first. `after` with `limit: 0` answers only the counts of what arrived since. */
 export function listDeviceLogs(deviceId: string, query: DeviceLogsQuery = {}) {
   return apiGet<DeviceLogPage>(`devices/${deviceId}/logs`, { ...query })

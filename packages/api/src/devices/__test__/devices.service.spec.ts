@@ -235,6 +235,49 @@ describe('devicesService', () => {
     })
   })
 
+  describe('resetDeviceNewApikey', () => {
+    it('refuses it with device-proxied for a Proxied Device', async () => {
+      repo.findOneBy.mockResolvedValue(makeDevice({ ...baseDevice, mirrorEnabled: true, mirrorMac: baseDevice.mac }))
+      await expect(service.update(DEVICE_ID, { resetDevice: true, resetDeviceNewApikey: true })).rejects.toMatchObject({ code: 'device-proxied' })
+      expect(repo.save).not.toHaveBeenCalled()
+    })
+
+    it('allows it for a mirrored but not Proxied Device', async () => {
+      repo.findOneBy.mockResolvedValue(makeDevice({ ...baseDevice, mirrorEnabled: true, mirrorMac: 'other-mac' }))
+      repo.save.mockImplementation(async device => device as Device)
+      const result = (await service.update(DEVICE_ID, { resetDevice: true, resetDeviceNewApikey: true }))!
+      expect(result.resetDeviceNewApikey).toBe(true)
+    })
+
+    it('is cleared together with resetDevice when the Reset is cancelled', async () => {
+      repo.findOneBy.mockResolvedValue(makeDevice({ ...baseDevice, resetDevice: true, resetDeviceNewApikey: true }))
+      repo.save.mockImplementation(async device => device as Device)
+      const result = (await service.update(DEVICE_ID, { resetDevice: false }))!
+      expect(result.resetDeviceNewApikey).toBe(false)
+    })
+  })
+
+  describe('regenerateApikey', () => {
+    it('rotates the apikey and saves it', async () => {
+      repo.findOneBy.mockResolvedValue(makeDevice({ ...baseDevice, apikey: 'old-key' }))
+      repo.save.mockImplementation(async device => device as Device)
+      const result = (await service.regenerateApikey(DEVICE_ID))!
+      expect(result.apikey).not.toBe('old-key')
+      expect(repo.save).toHaveBeenCalledWith(expect.objectContaining({ apikey: result.apikey }))
+    })
+
+    it('refuses it with device-proxied for a Proxied Device', async () => {
+      repo.findOneBy.mockResolvedValue(makeDevice({ ...baseDevice, mirrorEnabled: true, mirrorMac: baseDevice.mac }))
+      await expect(service.regenerateApikey(DEVICE_ID)).rejects.toMatchObject({ code: 'device-proxied' })
+      expect(repo.save).not.toHaveBeenCalled()
+    })
+
+    it('returns null if device not found', async () => {
+      repo.findOneBy.mockResolvedValue(null)
+      await expect(service.regenerateApikey(DEVICE_ID)).resolves.toBeNull()
+    })
+  })
+
   it('remove deletes a device and returns true', async () => {
     repo.findOneBy.mockResolvedValue(baseDevice)
     repo.remove.mockResolvedValue(baseDevice)

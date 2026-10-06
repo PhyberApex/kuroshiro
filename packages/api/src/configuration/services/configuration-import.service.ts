@@ -476,7 +476,6 @@ export class ConfigurationImportService {
   private async upsertDevice(repos: TransactionRepos, entry: DeviceManifestEntry, run: ImportRun): Promise<string> {
     let device = await repos.device.findOneBy({ id: entry.id })
     let wasCreated = !device
-    let reattachedByMac = false
 
     // Re-attach to hardware that already registered under a different id (ADR-0021).
     if (!device) {
@@ -484,7 +483,6 @@ export class ConfigurationImportService {
       if (macMatch) {
         device = macMatch
         wasCreated = false
-        reattachedByMac = true
       }
     }
 
@@ -497,11 +495,14 @@ export class ConfigurationImportService {
     device.name = entry.name
     device.friendlyId = entry.friendlyId
     device.mac = entry.mac
-    // Hardware re-attached by mac already holds its own live apikey (minted by DeviceSetupService);
-    // overwriting it with the archived value would desync the DB from what the physical device sends,
-    // breaking its next /display poll. Only a brand-new or exact-id-match row takes the archived apikey.
-    if (!reattachedByMac) {
-      device.apikey = this.resolveDeviceApikey(entry, device, wasCreated, ref, run)
+    // An existing Device, matched by id or re-attached by mac, keeps its own stored apikey:
+    // it is the Device's live credential, and an archive — redacted or not — never un-revokes
+    // a key rotated since the export (ADR-0039 extends ADR-0028's redaction-only rule to every archive).
+    if (wasCreated) {
+      device.apikey = this.resolveDeviceApikey(entry, ref, run)
+    }
+    else {
+      this.noteApikeyKept(run)
     }
     device.refreshRate = entry.refreshRate
     device.deviceModel = await this.resolveDeviceModel(repos.deviceModel, entry.deviceModelName, ref, run)
@@ -530,12 +531,19 @@ export class ConfigurationImportService {
     return fallback()
   }
 
-  /** A redacted apikey keeps the target row's value when one exists; a brand-new Device gets a freshly minted one, as auto-registration would (ADR-0028). */
-  private resolveDeviceApikey(entry: DeviceManifestEntry, device: Device, wasCreated: boolean, ref: Ref, run: ImportRun): string {
+  /** Only called for a brand-new Device. A redacted apikey gets a freshly minted one, as auto-registration would (ADR-0028). */
+  private resolveDeviceApikey(entry: DeviceManifestEntry, ref: Ref, run: ImportRun): string {
     if (entry.apikey !== CONFIGURATION_REDACTION_SENTINEL) {
       return entry.apikey
     }
-    return this.resolveRedactedField(!wasCreated, device.apikey, () => generateApikey(), { kind: 'device-apikey-redacted', device: ref }, run)
+    run.warnings.push({ kind: 'device-apikey-redacted', device: ref })
+    return generateApikey()
+  }
+
+  /** Once per import: an existing Device never takes the archive's apikey, so its admin is told it kept its own (ADR-0039). */
+  private noteApikeyKept(run: ImportRun): void {
+    if (!run.warnings.some(warning => warning.kind === 'device-apikeys-kept'))
+      run.warnings.push({ kind: 'device-apikeys-kept' })
   }
 
   /** A redacted mirrorApikey keeps the target row's value when one is set, otherwise falls back to unset (ADR-0028). */

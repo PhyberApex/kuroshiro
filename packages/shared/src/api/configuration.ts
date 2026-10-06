@@ -10,6 +10,7 @@ export interface Ref {
  */
 export type ImportWarning
   = | { kind: 'device-apikey-redacted', device: Ref }
+    | { kind: 'device-apikeys-kept' }
     | { kind: 'mirror-apikey-redacted', device: Ref }
     | { kind: 'webhook-token-redacted', plugin: Ref }
     | { kind: 'header-redacted', plugin: Ref, dataSource: string, header: string }

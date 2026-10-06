@@ -688,6 +688,36 @@ describe('deviceDisplayService', () => {
 
       expect(result.reset_firmware).toBe(false)
     })
+
+    describe('rotating the apikey with the reset', () => {
+      it('rotates the apikey and clears the rotation flag, authenticated with the old key', async () => {
+        primeNoScreen(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, resetDevice: true, resetDeviceNewApikey: true }))
+
+        const result = await service.getCurrentImage(headers)
+
+        expect(result.reset_firmware).toBe(true)
+        expect(deviceRepo.findOneBy).toHaveBeenCalledWith({ mac: 'mac' })
+        expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ resetDevice: false, resetDeviceNewApikey: false }))
+        const [saved] = deviceRepo.save.mock.calls[0]
+        expect(saved.apikey).not.toBe('token')
+      })
+
+      it('leaves the apikey unchanged when the reset does not carry the option', async () => {
+        primeNoScreen(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, resetDevice: true, resetDeviceNewApikey: false }))
+
+        await service.getCurrentImage(headers)
+
+        expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ apikey: 'token' }))
+      })
+
+      it('leaves the apikey unchanged and still clears the flag when the option is set without a pending reset', async () => {
+        primeNoScreen(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, resetDevice: false, resetDeviceNewApikey: true }))
+
+        await service.getCurrentImage(headers)
+
+        expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ apikey: 'token', resetDeviceNewApikey: false }))
+      })
+    })
   })
 
   describe('firmware push', () => {

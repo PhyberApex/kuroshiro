@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { DeviceDetail } from 'kuroshiro-shared'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { updateDevice } from '@/api/devices'
 import Button from '@/components/Button.vue'
+import Checkbox from '@/components/Checkbox.vue'
 import Confirmation from '@/components/Confirmation.vue'
 import { useNow } from '@/patterns/useNow'
 import { nextPollTime } from './currentScreenStory'
@@ -15,8 +16,14 @@ const props = defineProps<{
 const frame = useDeviceFrame()
 const now = useNow()
 const asking = ref(false)
+const newApikey = ref(false)
 
-const reset = () => updateDevice(props.device.id, { resetDevice: true })
+watch(asking, (isOpen) => {
+  if (isOpen)
+    newApikey.value = false
+})
+
+const reset = () => updateDevice(props.device.id, newApikey.value ? { resetDevice: true, resetDeviceNewApikey: true } : { resetDevice: true })
 
 function whenItErases() {
   const around = nextPollTime(props.device, now.value)
@@ -34,7 +41,12 @@ function whenItErases() {
       On the Device: its Wi-Fi credentials, its API key and this server's URL.
     </template>
     <template #stays>
-      Everything here: {{ device.name }}, its Screens, Schedules and Device Log. It gets the same API key back.
+      Everything here: {{ device.name }}, its Screens, Schedules and Device Log. {{ newApikey ? 'It gets a new API key when it is set up again.' : 'It gets the same API key back.' }}
+    </template>
+    <template #extra>
+      <Checkbox v-model="newApikey">
+        Also give {{ device.name }} a new API key
+      </Checkbox>
     </template>
   </Confirmation>
 </template>

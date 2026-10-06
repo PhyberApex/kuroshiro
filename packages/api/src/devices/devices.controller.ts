@@ -56,6 +56,15 @@ export class DevicesController {
     return this.deviceReads.detail(id)
   }
 
+  /** Rotates the Device's API key at once. Refused with 409 `device-proxied` on a Proxied Device. */
+  @Post(':id/apikey')
+  @HttpCode(HttpStatus.OK)
+  async regenerateApikey(@Param('id') id: string): Promise<DeviceDetail> {
+    if (!(await this.devicesService.regenerateApikey(id)))
+      throw this.deviceNotFound(id)
+    return this.deviceReads.detail(id)
+  }
+
   private deviceNotFound(id: string): ApiException {
     this.logger.warn(`Device not found: ${id}`)
     return new ApiException(HttpStatus.NOT_FOUND, 'device-not-found', 'Device not found', { id })

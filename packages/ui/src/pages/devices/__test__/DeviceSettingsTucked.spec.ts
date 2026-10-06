@@ -1,4 +1,4 @@
-import { http } from 'msw'
+import { http, HttpResponse } from 'msw'
 import { describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { clockTime } from '@/patterns/time'
@@ -69,6 +69,44 @@ describe('identity and credentials', () => {
     expect(rowOf(screen, 'API key')?.querySelector('input')).toBeNull()
     await expectAccessible()
     await expectNoHorizontalOverflow()
+  })
+
+  it('regenerates the API key now behind a confirmation that says what breaks, then reveals the new one', async () => {
+    const faked = fakeKitchenSettings()
+    let regenerated = 0
+    api.use(http.post(apiUrl('devices/kitchen/apikey'), () => {
+      regenerated += 1
+      faked.device = { ...faked.device, apikey: 'new-key-z9a1' }
+      return HttpResponse.json(faked.device)
+    }))
+    const screen = await mountSettings('#identity')
+    const shown = () => words(rowOf(screen, 'API key')?.querySelector('code'))
+
+    await screen.getByRole('button', { name: 'Regenerate now' }).click()
+
+    await expect.element(screen.getByRole('alertdialog', { name: 'Give Kitchen a new API key now?' })).toBeVisible()
+    expect(dialogSays()).toEqual({
+      title: 'Give Kitchen a new API key now?',
+      body: 'Kitchen stops working at once. Its polls are refused until someone holds its button for 15 seconds and sets it up again. To have it reset itself first, use Device Reset with a new API key instead.',
+      outcome: [
+        'Lost The current API key, everywhere it is used.',
+        'Stays Kitchen, its Screens, Schedules and Device Log.',
+      ],
+    })
+    expect(regenerated).toBe(0)
+
+    await screen.getByRole('alertdialog').getByRole('button', { name: 'Regenerate now' }).click()
+
+    expect(regenerated).toBe(1)
+    await expect.poll(shown).toBe('new-key-z9a1')
+    await expect.element(screen.getByRole('button', { name: 'Hide' })).toBeVisible()
+  })
+
+  it('does not offer "Regenerate now" on a Proxied Device', async () => {
+    fakeKitchenSettings({ device: PROXIED })
+    const screen = await mountSettings('#identity')
+
+    expect(screen.getByRole('button', { name: 'Regenerate now' }).elements()).toEqual([])
   })
 })
 
@@ -164,6 +202,43 @@ describe('reset or delete a Device', () => {
     await expect.element(screen.getByText(`Device Reset pending, reaches Kitchen around ${NEXT_POLL}`)).toBeVisible()
     expect(faked.writes).toEqual([{ resetDevice: true }])
     await expect.element(screen.getByRole('button', { name: 'Device Reset' })).toBeDisabled()
+  })
+
+  it('offers to also give the Device a new API key, unchecked, which changes the Stays line and is sent only when checked', async () => {
+    const faked = fakeKitchenSettings()
+    const screen = await mountSettings('#reset')
+
+    await screen.getByRole('button', { name: 'Device Reset' }).click()
+
+    await expect.element(screen.getByRole('checkbox', { name: 'Also give Kitchen a new API key' })).not.toBeChecked()
+    expect(dialogSays().outcome).toEqual([
+      'Lost On the Device: its Wi-Fi credentials, its API key and this server\'s URL.',
+      'Stays Everything here: Kitchen, its Screens, Schedules and Device Log. It gets the same API key back.',
+    ])
+
+    await screen.getByRole('checkbox', { name: 'Also give Kitchen a new API key' }).click()
+
+    expect(dialogSays().outcome).toEqual([
+      'Lost On the Device: its Wi-Fi credentials, its API key and this server\'s URL.',
+      'Stays Everything here: Kitchen, its Screens, Schedules and Device Log. It gets a new API key when it is set up again.',
+    ])
+
+    await screen.getByRole('alertdialog').getByRole('button', { name: 'Device Reset' }).click()
+
+    await expect.element(screen.getByText(`Device Reset pending, with a new API key, reaches Kitchen around ${NEXT_POLL}`)).toBeVisible()
+    expect(faked.writes).toEqual([{ resetDevice: true, resetDeviceNewApikey: true }])
+  })
+
+  it('resets the checkbox each time the confirmation is opened again', async () => {
+    fakeKitchenSettings()
+    const screen = await mountSettings('#reset')
+
+    await screen.getByRole('button', { name: 'Device Reset' }).click()
+    await screen.getByRole('checkbox', { name: 'Also give Kitchen a new API key' }).click()
+    await screen.getByRole('button', { name: 'Cancel' }).click()
+    await screen.getByRole('button', { name: 'Device Reset' }).click()
+
+    await expect.element(screen.getByRole('checkbox', { name: 'Also give Kitchen a new API key' })).not.toBeChecked()
   })
 
   it('has no "Cancel Device Reset" while there is no pending Device Reset', async () => {

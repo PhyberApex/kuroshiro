@@ -66,7 +66,7 @@ describe('what is pending for a Device', () => {
   it('names a Firmware push by its version, a Device Reset and a Special Function by its name', () => {
     const device = buildDeviceDetail({
       targetFirmware: FIRMWARE_1_8_0,
-      pending: { firmwarePush: true, deviceReset: true, specialFunction: 'identify' },
+      pending: { firmwarePush: true, deviceReset: true, deviceResetNewApikey: false, specialFunction: 'identify' },
     })
 
     expect(pendingTaken(device)).toEqual(['the Firmware push of 1.8.0', 'the Device Reset', 'the Special Function identify'])
@@ -74,7 +74,7 @@ describe('what is pending for a Device', () => {
   })
 
   it('words the one thing that is lost', () => {
-    const device = buildDeviceDetail({ pending: { firmwarePush: false, deviceReset: true, specialFunction: null } })
+    const device = buildDeviceDetail({ pending: { firmwarePush: false, deviceReset: true, deviceResetNewApikey: false, specialFunction: null } })
 
     expect(pendingLost(device)).toBe('The pending Device Reset. The simulator takes it and the Device never gets it.')
   })
@@ -89,14 +89,14 @@ describe('what a call does', () => {
   })
 
   it('names in ink what is pending', () => {
-    const consequence = callConsequence(buildDeviceDetail({ targetFirmware: FIRMWARE_1_8_0, pending: { firmwarePush: true, deviceReset: false, specialFunction: null } }))
+    const consequence = callConsequence(buildDeviceDetail({ targetFirmware: FIRMWARE_1_8_0, pending: { firmwarePush: true, deviceReset: false, deviceResetNewApikey: false, specialFunction: null } }))
 
     expect(words(consequence)).toBe('A poll here is a real poll. It moves Kitchen\'s Rotation on by one Screen, counts as Kitchen having been seen, and takes the Firmware push of 1.8.0, which then never reaches the Device.')
     expect(strongOf(consequence)).toEqual(['A poll here is a real poll.', 'the Firmware push of 1.8.0'])
   })
 
   it('names several pending things together', () => {
-    const consequence = callConsequence(buildDeviceDetail({ pending: { firmwarePush: false, deviceReset: true, specialFunction: 'rewind' } }))
+    const consequence = callConsequence(buildDeviceDetail({ pending: { firmwarePush: false, deviceReset: true, deviceResetNewApikey: false, specialFunction: 'rewind' } }))
 
     expect(words(consequence)).toContain('and takes the Device Reset and the Special Function rewind, which then never reach the Device.')
   })

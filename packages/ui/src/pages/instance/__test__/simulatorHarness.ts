@@ -110,7 +110,7 @@ function polled(device: DeviceDetail, screens: ScreenRead[]): { answer: DisplayA
     ...device,
     currentScreen: shown,
     lastSeenAt: '2026-10-03T07:35:00.000Z',
-    pending: { firmwarePush: false, deviceReset: false, specialFunction: null },
+    pending: { firmwarePush: false, deviceReset: false, deviceResetNewApikey: false, specialFunction: null },
   }
   return { answer, after }
 }
