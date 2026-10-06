@@ -14,7 +14,8 @@ const apiDir = resolve(uiDir, '../api')
 // It sits under the API's own `dist/`, which is already ignored and resolves the API's node_modules.
 const stageDir = resolve(apiDir, 'dist/real-api')
 
-function build() {
+/** Builds the API and the UI and stages them the way the image lays them out. */
+export function buildApi() {
   // Vitest runs this with NODE_ENV=test, under which Vite would build the UI in development mode.
   const env = { ...process.env, NODE_ENV: 'production' }
   execFileSync('pnpm', ['run', 'build'], { cwd: apiDir, env, stdio: 'inherit' })
@@ -27,7 +28,7 @@ function build() {
   cpSync(resolve(apiDir, 'assets/screens'), resolve(stageDir, 'public/screens'), { recursive: true })
 }
 
-async function freePort() {
+export async function freePort() {
   const server = createServer().listen(0, '127.0.0.1')
   await once(server, 'listening')
   const { port } = server.address() as AddressInfo
@@ -41,10 +42,11 @@ export interface RunningApi {
   stop: () => Promise<void>
 }
 
-/** Builds the API and the UI, then runs them the way the image does: one process serving both. */
-export async function startApi(databaseEnv: Record<string, string>): Promise<RunningApi> {
-  build()
-  const port = await freePort()
+/**
+ * Runs the staged build the way the image does: one process serving both the API and the UI.
+ * `publicUrl` is the address the Instance tells Devices and admins about, its own address unless given.
+ */
+export async function runApi(databaseEnv: Record<string, string>, port: number, publicUrl?: string): Promise<RunningApi> {
   const baseUrl = `http://127.0.0.1:${port}/`
   const output: string[] = []
   const api = spawn(process.execPath, [resolve(stageDir, 'dist/main.js')], {
@@ -55,7 +57,7 @@ export async function startApi(databaseEnv: Record<string, string>): Promise<Run
       ...databaseEnv,
       NODE_ENV: 'production',
       KUROSHIRO_PORT: String(port),
-      KUROSHIRO_API_URL: baseUrl.replace(/\/$/, ''),
+      KUROSHIRO_API_URL: publicUrl ?? baseUrl.replace(/\/$/, ''),
     },
   })
   api.stdout.on('data', chunk => output.push(String(chunk)))
@@ -76,4 +78,10 @@ export async function startApi(databaseEnv: Record<string, string>): Promise<Run
     throw new Error(`The API did not come up (exit: ${api.exitCode ?? api.signalCode ?? 'still running after a minute'}):\n${output.join('')}`)
   }
   return { baseUrl, stop }
+}
+
+/** Builds the API and the UI, then runs them on a free port. */
+export async function startApi(databaseEnv: Record<string, string>): Promise<RunningApi> {
+  buildApi()
+  return runApi(databaseEnv, await freePort())
 }

@@ -1,0 +1,91 @@
+:root {
+  --vp-font-family-base: 'Archivo Variable', system-ui, sans-serif;
+  --vp-font-family-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+
+  --kuroshiro-paper: #fff;
+  --kuroshiro-ink: #121212;
+  --kuroshiro-line: #d9d9d9;
+  --kuroshiro-wash: #f1f1f1;
+  --kuroshiro-seal: #c4242f;
+
+  --vp-c-brand-1: var(--kuroshiro-seal);
+  --vp-c-brand-2: #a81e28;
+  --vp-c-brand-3: var(--kuroshiro-seal);
+  --vp-c-brand-soft: rgb(196 36 47 / 0.12);
+
+  --vp-c-bg: var(--kuroshiro-paper);
+  --vp-c-bg-alt: var(--kuroshiro-wash);
+  --vp-c-text-1: var(--kuroshiro-ink);
+  --vp-c-divider: var(--kuroshiro-line);
+
+  --vp-button-brand-bg: var(--kuroshiro-ink);
+  --vp-button-brand-hover-bg: #3d3d3d;
+  --vp-button-brand-active-bg: #3d3d3d;
+  --vp-button-brand-text: var(--kuroshiro-paper);
+  --vp-button-brand-hover-text: var(--kuroshiro-paper);
+  --vp-button-brand-active-text: var(--kuroshiro-paper);
+
+  --vp-home-hero-name-color: var(--kuroshiro-ink);
+  --vp-home-hero-image-background-image: none;
+}
+
+.dark {
+  --kuroshiro-paper: #121212;
+  --kuroshiro-ink: #f4f4f4;
+  --kuroshiro-line: #363636;
+  --kuroshiro-wash: #1f1f1f;
+  --kuroshiro-seal: #e5484d;
+
+  --vp-c-brand-2: #ff6b70;
+  --vp-c-brand-soft: rgb(229 72 77 / 0.16);
+  --vp-button-brand-hover-bg: #cfcfcf;
+  --vp-button-brand-active-bg: #cfcfcf;
+}
+
+.VPHero .name,
+.VPHero .text,
+.vp-doc h1,
+.vp-doc h2 {
+  font-stretch: 75%;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+
+.VPHero .image-src {
+  max-width: 100%;
+  max-height: none;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 3px;
+}
+
+@media (min-width: 960px) {
+  .VPHero .image-container {
+    width: 560px;
+    height: 360px;
+  }
+}
+
+.VPFeature {
+  border-radius: 3px;
+}
+
+.themed-shot {
+  margin: 24px 0;
+}
+
+.themed-shot img {
+  width: 100%;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 3px;
+}
+
+.themed-shot figcaption {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--vp-c-text-2);
+}
+
+html:not(.dark) .themed-shot .dark,
+.dark .themed-shot .light {
+  display: none;
+}

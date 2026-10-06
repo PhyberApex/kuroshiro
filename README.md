@@ -15,6 +15,10 @@
 
 **Kuroshiro** is an open-source BYOS (Bring Your Own Server) solution for the [TRMNL](https://usetrmnl.com/) ecosystem. Our goal is to give you more flexibility and control over your TRMNL experience, whether you're self-hosting for fun, learning, or customization. Kuroshiro bundles a [NestJS](https://nestjs.com/) API and a [Vue.js](https://vuejs.org/) UI into a single Docker image, ready to run alongside your own Postgres database.
 
+<p align="center">
+  <a href="https://phyberapex.github.io/kuroshiro/"><b>Take the tour on the showcase site</b></a> · <a href="https://kuroshiro-demo.phyberapex.de/"><b>Try the live demo</b></a>
+</p>
+
 ---
 
 ## ⚠️ Alpha Notice
@@ -85,6 +89,8 @@ Want to see Kuroshiro in action before diving in? We've got you covered! Check o
 - **Try screen creation** - ~~Upload images~~ (This is not supported in the demo), add external links, or craft custom HTML screens
 - **See real-time updates** - Watch how the system handles device communication and screen management
 
+For a guided walk through every feature with screenshots, see the [showcase site](https://phyberapex.github.io/kuroshiro/).
+
 > **Note:** The demo will reset once a day, so you can explore freely without worrying about breaking anything. It's the perfect playground to get a feel for Kuroshiro before setting up your own instance!
 
 ---
@@ -149,21 +155,46 @@ We're constantly working to make Kuroshiro even better! Here's what's on our roa
 
 ## Screenshots
 
-These are pages of the admin UI with sample data, taken from its screenshot tests.
+Pages of the admin UI with sample data. For a guided tour of every area, visit the [showcase site](https://phyberapex.github.io/kuroshiro/tour/).
 
 The Devices list
 <p align="center">
-  <img src="packages/ui/src/pages/devices/__screenshots__/DevicesListPage.shots.ts/devices-list-desktop-light-chromium-linux.png" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="packages/site/public/screenshots/devices-dark.png" />
+    <img src="packages/site/public/screenshots/devices-light.png" alt="The Devices list" />
+  </picture>
 </p>
 
-A Device's Screens
+A Device's Screens, in their Order and with their Schedules
 <p align="center">
-  <img src="packages/ui/src/pages/devices/__screenshots__/DeviceScreensPage.shots.ts/device-screens-desktop-light-chromium-linux.png" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="packages/site/public/screenshots/device-screens-dark.png" />
+    <img src="packages/site/public/screenshots/device-screens-light.png" alt="A Device's Screens, in their Order and with their Schedules" />
+  </picture>
 </p>
 
-A Plugin
+The HTML editor, previewing a Screen for its Device as you type
 <p align="center">
-  <img src="packages/ui/src/pages/plugins/__screenshots__/PluginPage.shots.ts/plugin-page-desktop-light-chromium-linux.png" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="packages/site/public/screenshots/html-editor-dark.png" />
+    <img src="packages/site/public/screenshots/html-editor-light.png" alt="The HTML editor, previewing a Screen for its Device as you type" />
+  </picture>
+</p>
+
+A Plugin: its Template with a live preview, Data Sources and source Recipe
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="packages/site/public/screenshots/plugin-dark.png" />
+    <img src="packages/site/public/screenshots/plugin-light.png" alt="A Plugin: its Template with a live preview, Data Sources and source Recipe" />
+  </picture>
+</p>
+
+The Alerts page
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="packages/site/public/screenshots/alerts-dark.png" />
+    <img src="packages/site/public/screenshots/alerts-light.png" alt="The Alerts page" />
+  </picture>
 </p>
 
 ---
@@ -202,6 +233,7 @@ Everything else under `/app/public` ships with the image or is a cache Kuroshiro
 - [`packages/api`](./packages/api) — The NestJS backend
 - [`packages/ui`](./packages/ui) — The Vue 3 + Reka UI admin UI the image serves
 - [`packages/shared`](./packages/shared) — The admin API's request and response types, and code that is identical in the API and UI
+- [`packages/site`](./packages/site) — The [showcase site](https://phyberapex.github.io/kuroshiro/) (VitePress), deployed to GitHub Pages; run it with `pnpm --filter kuroshiro-site dev`
 
 ---
 
