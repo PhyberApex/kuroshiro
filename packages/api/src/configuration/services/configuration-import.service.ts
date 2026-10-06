@@ -52,6 +52,12 @@ import { CONFIG_SCHEMA_VERSION, PREVIOUS_CONFIG_SCHEMA_VERSION } from '../schema
 import { CONFIG_ARCHIVE_FILES } from '../types.js'
 import { toImportCheck } from './import-check.mapper.js'
 
+/** A file-type Screen's image, held back until the transaction commits (ADR-0021): a rollback must not leave a written image for a row the database undid. */
+interface PendingImageWrite {
+  destPath: string
+  image: Buffer
+}
+
 /** What one run over an archive has done so far. A check runs the same import and is rolled back at its end. */
 interface ImportRun {
   checkOnly: boolean
@@ -63,8 +69,7 @@ interface ImportRun {
   pluginsWithDroppedValues: Set<string>
   /** The id of every Plugin this run created or updated, for scheduling once the transaction commits. */
   upsertedPluginIds: Set<string>
-  /** A file-type Screen's image, held back until the transaction commits (ADR-0021): a rollback must not leave a written image for a row the database undid. */
-  pendingImageWrites: Array<{ destPath: string, image: Buffer }>
+  pendingImageWrites: PendingImageWrite[]
 }
 
 interface ArchiveContents {
@@ -258,7 +263,7 @@ export class ConfigurationImportService {
   }
 
   /** Writes every file-type Screen's image only once the transaction holding its row has committed, so a rollback leaves none of them behind. */
-  private async writePendingImages(writes: Array<{ destPath: string, image: Buffer }>): Promise<void> {
+  private async writePendingImages(writes: PendingImageWrite[]): Promise<void> {
     for (const { destPath, image } of writes) {
       await fs.promises.mkdir(path.dirname(destPath), { recursive: true })
       await fs.promises.writeFile(destPath, image)
