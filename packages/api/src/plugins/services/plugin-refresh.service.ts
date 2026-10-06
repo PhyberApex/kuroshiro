@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Plugin } from '../entities/plugin.entity.js'
+import { hideSecretsIn, secretValues } from '../plugin-field-values.js'
 import { DataSourceFetchOutcomeService } from './data-source-fetch-outcome.service.js'
 import { PluginRenderCacheService, TemplateRenderError } from './plugin-render-cache.service.js'
 import { PluginTemplateContextService } from './plugin-template-context.service.js'
@@ -25,7 +26,7 @@ export class PluginRefreshService {
   async refresh(plugin: Plugin, { scheduled }: { scheduled: boolean } = { scheduled: false }): Promise<void> {
     // The cache entry is shared across Devices, so there is no single Device
     // to scope sensors to here.
-    const { context, sourceData } = await this.pluginTemplateContext.contextFor(plugin, [])
+    const { context, sourceData, resolvedFieldValues } = await this.pluginTemplateContext.contextFor(plugin, [])
 
     if (plugin.kind === 'Webhook') {
       await this.renderCache.renderAndCache(plugin, context)
@@ -34,8 +35,12 @@ export class PluginRefreshService {
 
     // Only a scheduled render moves a Fetch Failure Streak (ADR-0025). Recorded
     // before the render so a render failure below can never lose the outcome.
+    // A fetch error can quote a password Field Value (the request itself still
+    // used the real one); hidden here, so the one writer of lastFetchError never
+    // stores it (unlike `context`, which keeps the real value for the render).
     if (scheduled) {
-      await this.fetchOutcome.recordOutcomes(plugin.dataSources ?? [], sourceData)
+      const hiddenSourceData = hideSecretsIn(sourceData, secretValues(plugin.fields ?? [], resolvedFieldValues))
+      await this.fetchOutcome.recordOutcomes(plugin.dataSources ?? [], hiddenSourceData)
     }
 
     try {

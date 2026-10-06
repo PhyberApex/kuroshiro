@@ -47,6 +47,13 @@ export interface PluginRenderContext {
   context: Record<string, unknown> | unknown[]
   /** By keyname, as `context` holds them. */
   fieldValues: Record<string, string>
+  /**
+   * By keyname, with no password hidden: for a caller that must hide a
+   * secret somewhere `contextFor` does not (e.g. a scheduled fetch's error
+   * before it is stored), so it does not resolve the Plugin's Field Values a
+   * second time.
+   */
+  resolvedFieldValues: Record<string, string>
   /** Each Data Source's result or error marker by name; empty for a Webhook-kind Plugin. */
   sourceData: Record<string, unknown>
 }
@@ -83,12 +90,12 @@ export class PluginTemplateContextService {
 
     if (plugin.kind === 'Webhook') {
       const payload = plugin.webhookPayload
-      return { context: Array.isArray(payload) ? payload : { ...withoutData, ...payload }, fieldValues, sourceData: {} }
+      return { context: Array.isArray(payload) ? payload : { ...withoutData, ...payload }, fieldValues, resolvedFieldValues: resolved, sourceData: {} }
     }
 
     const fetched = await this.dataResolver.resolveAll(unsaved.dataSources ?? plugin.dataSources ?? [], fetchContext)
     const sourceData = hideSecretsIn(fetched, secretValues(hideSecretsOf, resolved))
-    return { context: { ...withoutData, ...sourceData }, fieldValues, sourceData }
+    return { context: { ...withoutData, ...sourceData }, fieldValues, resolvedFieldValues: resolved, sourceData }
   }
 
   private withoutData(instanceName: string, fieldValues: Record<string, string>, sensors: DeviceSensor[]): PluginTemplateContext {

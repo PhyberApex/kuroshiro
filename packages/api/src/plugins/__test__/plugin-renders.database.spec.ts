@@ -188,7 +188,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
   }
 
   function loadForRender(pluginId: string): Promise<Plugin> {
-    return database.getRepository(Plugin).findOneOrFail({ where: { id: pluginId }, relations: { dataSources: true, templates: true } })
+    return database.getRepository(Plugin).findOneOrFail({ where: { id: pluginId }, relations: { dataSources: true, templates: true, fields: true } })
   }
 
   async function schedulerTick(pluginId: string): Promise<void> {
@@ -355,6 +355,57 @@ describe('what a Plugin renders from, and with which Template, against a real da
       const after = await read(plugin.id)
       expect(after.dataSources[0].fetchFailureStreak).toBe(1)
       expect(after.updatedAt).toBe(before.updatedAt)
+    })
+
+    it('hides a password Field Value a scheduled fetch\'s failure quotes from the URL, both at the database and from GET /api/plugins/:id, while fetching with the real one', async () => {
+      const plugin = await createPollPlugin({
+        dataSources: [{ name: 'weather', mode: 'fetch', url: 'https://api.example.com/v1?key={{ api_key }}' }],
+        fields: [{ keyname: 'api_key', name: 'API key', fieldType: 'password' }],
+        fieldValues: { api_key: 'hunter2' },
+      })
+      dataSourceAnswer = (url) => {
+        throw new TypeError(`Failed to parse URL from ${url}`)
+      }
+
+      await schedulerTick(plugin.id)
+
+      const [source] = (await read(plugin.id)).dataSources
+      expect(source.lastFetchError).toBe('Failed to parse URL from https://api.example.com/v1?key=••••••••')
+      const stored = await database.getRepository(PluginDataSource).findOneByOrFail({ id: source.id })
+      expect(stored.lastFetchError).toBe('Failed to parse URL from https://api.example.com/v1?key=••••••••')
+      expect(dataSourceFetches()[0][0]).toBe('https://api.example.com/v1?key=hunter2')
+    })
+
+    it('hides a password Field Value a scheduled fetch\'s failure quotes from a header value', async () => {
+      const plugin = await createPollPlugin({
+        dataSources: [{ name: 'weather', mode: 'fetch', url: 'https://api.example.com/weather', headers: { 'X-Key': '{{ api_key }}' } }],
+        fields: [{ keyname: 'api_key', name: 'API key', fieldType: 'password' }],
+        fieldValues: { api_key: 'hunter2' },
+      })
+      dataSourceAnswer = (_url, init) => {
+        const sent = (init?.headers as Record<string, string> | undefined)?.['X-Key']
+        throw new TypeError(`Headers.append: "${sent}" is an invalid header value.`)
+      }
+
+      await schedulerTick(plugin.id)
+
+      const [source] = (await read(plugin.id)).dataSources
+      expect(source.lastFetchError).toBe('Headers.append: "••••••••" is an invalid header value.')
+    })
+
+    it('leaves a Field Value that is not password-type visible in the stored error', async () => {
+      const plugin = await createPollPlugin({
+        dataSources: [{ name: 'weather', mode: 'fetch', url: 'https://api.example.com/v1?city={{ city }}' }],
+        fields: [{ keyname: 'city', name: 'City', fieldType: 'string' }],
+        fieldValues: { city: 'Berlin' },
+      })
+      dataSourceAnswer = (url) => {
+        throw new TypeError(`Failed to parse URL from ${url}`)
+      }
+
+      await schedulerTick(plugin.id)
+
+      expect((await read(plugin.id)).dataSources[0].lastFetchError).toBe('Failed to parse URL from https://api.example.com/v1?city=Berlin')
     })
   })
 

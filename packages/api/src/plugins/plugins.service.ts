@@ -61,7 +61,7 @@ export class PluginsService implements OnModuleInit {
   async onModuleInit() {
     this.logger.log('Initializing plugin scheduler...')
     const plugins = await this.pluginRepository.find({
-      relations: { dataSources: true, templates: true },
+      relations: { dataSources: true, templates: true, fields: true },
     })
 
     // A timer counts from now, so without a tick at start an Instance restarted
@@ -365,7 +365,7 @@ export class PluginsService implements OnModuleInit {
     try {
       await this.invalidateRenderCaches(id)
 
-      const plugin = await this.findPluginWithRelations(id, { dataSources: true, templates: true })
+      const plugin = await this.findPluginWithRelations(id, { dataSources: true, templates: true, fields: true })
       if (!plugin)
         return
 
