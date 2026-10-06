@@ -24,6 +24,8 @@ function lastAttemptAt(plugin: Plugin): Date | null {
 @Injectable()
 export class PluginSchedulerService implements OnModuleDestroy {
   private scheduledJobs: Map<string, NodeJS.Timeout> = new Map()
+  /** The number of the newest tick started for a Plugin, so an older one in flight can tell it is superseded. */
+  private generations: Map<string, number> = new Map()
   private readonly logger = new Logger(PluginSchedulerService.name)
 
   constructor(private readonly pluginRefresh: PluginRefreshService) {}
@@ -72,14 +74,29 @@ export class PluginSchedulerService implements OnModuleDestroy {
     return Math.min(Math.max(plugin.refreshInterval, 1) * MINUTE_MS, LONGEST_TIMER_DELAY_MS)
   }
 
-  /** One scheduler tick, outside the timer. It never rejects: a failed tick is logged. */
+  /**
+   * One scheduler tick, outside the timer. It never rejects: a failed tick is logged. A tick
+   * that started for an older state of the Plugin never overwrites what a tick started later
+   * for it writes, even if this one finishes last: it takes the next generation number for the
+   * Plugin, and `PluginRefreshService` drops its writes once a later tick has taken a new one.
+   */
   async runTick(plugin: Plugin): Promise<void> {
+    const generation = this.nextGeneration(plugin.id)
     try {
-      await this.pluginRefresh.refresh(plugin, { scheduled: true })
+      await this.pluginRefresh.refresh(plugin, {
+        scheduled: true,
+        isSuperseded: () => this.generations.get(plugin.id) !== generation,
+      })
     }
     catch (error) {
       this.logger.error(`Error executing plugin ${plugin.id}`, error)
     }
+  }
+
+  private nextGeneration(pluginId: string): number {
+    const next = (this.generations.get(pluginId) ?? 0) + 1
+    this.generations.set(pluginId, next)
+    return next
   }
 
   removeScheduledJob(pluginId: string): void {

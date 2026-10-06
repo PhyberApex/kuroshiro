@@ -7,6 +7,7 @@ import { makePlugin, makePluginDataSource, makePluginField } from '../../test/fi
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
 import { asService } from '../../test/mockService.js'
 import { PluginRefreshService } from '../services/plugin-refresh.service.js'
+import { TemplateRenderError } from '../services/plugin-render-cache.service.js'
 
 describe('pluginRefreshService', () => {
   let renderCache: { renderAndCache: ReturnType<typeof vi.fn> }
@@ -100,5 +101,61 @@ describe('pluginRefreshService', () => {
     await expect(service.refresh(plugin, { scheduled: true })).resolves.toBeUndefined()
 
     expect(fetchOutcome.recordOutcomes).toHaveBeenCalledWith(plugin.dataSources, sourceData)
+  })
+
+  describe('a tick superseded by a newer one for the same Plugin', () => {
+    function stubContext(sourceData: unknown = {}) {
+      templateContext.contextFor.mockResolvedValue({ context: {}, fieldValues: {}, resolvedFieldValues: {}, sourceData })
+    }
+
+    it('still records the Fetch Failure Streak, but drops the render and the scheduled-render record', async () => {
+      const plugin = makePlugin({ dataSources: [makePluginDataSource({ name: 'weather' })] })
+      stubContext({ weather: { temp: 1 } })
+
+      await service.refresh(plugin, { scheduled: true, isSuperseded: () => true })
+
+      expect(fetchOutcome.recordOutcomes).toHaveBeenCalledTimes(1)
+      expect(renderCache.renderAndCache).not.toHaveBeenCalled()
+      expect(pluginRepo.update).not.toHaveBeenCalled()
+    })
+
+    it('drops the failed-render record when a newer tick starts while this one is still rendering', async () => {
+      const plugin = makePlugin({ dataSources: [makePluginDataSource({ name: 'weather' })] })
+      stubContext()
+      let supersededAfterRenderStarted = false
+      renderCache.renderAndCache.mockImplementation(async () => {
+        supersededAfterRenderStarted = true
+        throw new TemplateRenderError('full', new Error('bad template'))
+      })
+
+      await expect(service.refresh(plugin, { scheduled: true, isSuperseded: () => supersededAfterRenderStarted })).rejects.toThrow(TemplateRenderError)
+
+      expect(pluginRepo.update).not.toHaveBeenCalled()
+    })
+
+    it('drops the successful-render record when a newer tick starts while this one is still rendering', async () => {
+      const plugin = makePlugin({ dataSources: [makePluginDataSource({ name: 'weather' })] })
+      stubContext()
+      let supersededAfterRenderStarted = false
+      renderCache.renderAndCache.mockImplementation(async () => {
+        supersededAfterRenderStarted = true
+      })
+
+      await service.refresh(plugin, { scheduled: true, isSuperseded: () => supersededAfterRenderStarted })
+
+      expect(renderCache.renderAndCache).toHaveBeenCalledTimes(1)
+      expect(pluginRepo.update).not.toHaveBeenCalled()
+    })
+
+    it('renders and records as usual when never superseded', async () => {
+      const plugin = makePlugin({ dataSources: [makePluginDataSource({ name: 'weather' })] })
+      stubContext()
+      renderCache.renderAndCache.mockResolvedValue(undefined)
+
+      await service.refresh(plugin, { scheduled: true, isSuperseded: () => false })
+
+      expect(renderCache.renderAndCache).toHaveBeenCalledTimes(1)
+      expect(pluginRepo.update).toHaveBeenCalledTimes(1)
+    })
   })
 })

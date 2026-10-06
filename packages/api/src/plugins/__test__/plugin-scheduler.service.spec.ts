@@ -11,6 +11,7 @@ import { asRepository, createMockRepository } from '../../test/mockRepository.js
 import { asService } from '../../test/mockService.js'
 import { PluginDataResolverService } from '../services/plugin-data-resolver.service.js'
 import { PluginRefreshService } from '../services/plugin-refresh.service.js'
+import { TemplateRenderError } from '../services/plugin-render-cache.service.js'
 import { PluginSchedulerService } from '../services/plugin-scheduler.service.js'
 
 describe('pluginSchedulerService', () => {
@@ -595,6 +596,80 @@ describe('pluginSchedulerService', () => {
       await service.runTick(plugin)
 
       expect(mockFetchOutcome.recordOutcomes).toHaveBeenCalledWith(dataSources, expect.objectContaining({ weather: { temp: 25 } }))
+    })
+  })
+
+  describe('two overlapping ticks for the same Plugin', () => {
+    function makeOverlapPlugin(): Plugin {
+      return makePlugin({
+        id: 'plugin-1',
+        refreshInterval: 15,
+        dataSources: [makePluginDataSource({ name: 'weather', url: 'https://api.example.com/weather', method: 'GET' })],
+        templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '{{ weather.temp }}' })],
+      })
+    }
+
+    it('keeps the later tick\'s render, though the earlier tick\'s Data Source resolves after the later one\'s', async () => {
+      const plugin = makeOverlapPlugin()
+      let resolveEarlier: (value: unknown) => void
+      let resolveLater: (value: unknown) => void
+      const earlierFetch = new Promise((resolve) => {
+        resolveEarlier = resolve
+      })
+      const laterFetch = new Promise((resolve) => {
+        resolveLater = resolve
+      })
+      mockDataFetcher.fetchData.mockImplementationOnce(() => earlierFetch).mockImplementationOnce(() => laterFetch)
+      mockRenderCache.renderAndCache.mockResolvedValue(undefined)
+
+      service.schedulePlugin(plugin)
+      const earlierTick = service.runTick(plugin)
+      const laterTick = service.runTick(plugin)
+      await vi.waitFor(() => expect(mockDataFetcher.fetchData).toHaveBeenCalledTimes(2))
+
+      resolveLater!({ temp: 20 })
+      await vi.waitFor(() => expect(mockRenderCache.renderAndCache).toHaveBeenCalledTimes(1))
+      resolveEarlier!({ temp: 10 })
+      await Promise.all([earlierTick, laterTick])
+
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledTimes(1)
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(plugin, expect.objectContaining({ weather: { temp: 20 } }))
+      expect(mockPluginRepo.update).toHaveBeenCalledTimes(1)
+    })
+
+    it('drops the earlier tick\'s failed-render record once it fails after the later tick already succeeded', async () => {
+      const plugin = makeOverlapPlugin()
+      mockDataFetcher.fetchData.mockResolvedValue({ temp: 10 })
+      let rejectEarlierRender: (error: unknown) => void
+      const earlierRender = new Promise((_resolve, reject) => {
+        rejectEarlierRender = reject
+      })
+      mockRenderCache.renderAndCache.mockImplementationOnce(() => earlierRender).mockImplementationOnce(async () => undefined)
+
+      service.schedulePlugin(plugin)
+      const earlierTick = service.runTick(plugin)
+      await vi.waitFor(() => expect(mockRenderCache.renderAndCache).toHaveBeenCalledTimes(1))
+
+      const laterTick = service.runTick(plugin)
+      await laterTick
+      expect(mockPluginRepo.update).toHaveBeenCalledTimes(1)
+      expect(mockPluginRepo.update).toHaveBeenCalledWith('plugin-1', expect.objectContaining({ lastScheduledRenderError: null }))
+
+      rejectEarlierRender!(new TemplateRenderError('full', new Error('bad template')))
+      await earlierTick
+
+      expect(mockPluginRepo.update).toHaveBeenCalledTimes(1)
+    })
+
+    it('still moves the Fetch Failure Streak for both ticks', async () => {
+      const plugin = makeOverlapPlugin()
+      mockDataFetcher.fetchData.mockResolvedValue({ temp: 10 })
+      mockRenderCache.renderAndCache.mockResolvedValue(undefined)
+
+      service.schedulePlugin(plugin)
+      await Promise.all([service.runTick(plugin), service.runTick(plugin)])
+
+      expect(mockFetchOutcome.recordOutcomes).toHaveBeenCalledTimes(2)
     })
   })
 })

@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common'
+import type { PluginRenderContext } from './plugin-template-context.service.js'
+import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Plugin } from '../entities/plugin.entity.js'
@@ -6,6 +7,16 @@ import { hideSecretsIn, secretValues } from '../plugin-field-values.js'
 import { DataSourceFetchOutcomeService } from './data-source-fetch-outcome.service.js'
 import { PluginRenderCacheService, TemplateRenderError } from './plugin-render-cache.service.js'
 import { PluginTemplateContextService } from './plugin-template-context.service.js'
+
+export interface RefreshOptions {
+  scheduled: boolean
+  /**
+   * Answers whether a tick for a newer state of the Plugin has since started, checked just
+   * before each write a scheduled render makes. Left unset (the preview, a Webhook ingest) by
+   * every caller that never runs two renders of the same Plugin concurrently.
+   */
+  isSuperseded?: () => boolean
+}
 
 /**
  * Re-renders a Plugin into the cache shared by every Screen it is assigned
@@ -15,6 +26,8 @@ import { PluginTemplateContextService } from './plugin-template-context.service.
  */
 @Injectable()
 export class PluginRefreshService {
+  private readonly logger = new Logger(PluginRefreshService.name)
+
   constructor(
     private readonly renderCache: PluginRenderCacheService,
     private readonly pluginTemplateContext: PluginTemplateContextService,
@@ -23,7 +36,7 @@ export class PluginRefreshService {
     private readonly pluginRepository: Repository<Plugin>,
   ) {}
 
-  async refresh(plugin: Plugin, { scheduled }: { scheduled: boolean } = { scheduled: false }): Promise<void> {
+  async refresh(plugin: Plugin, { scheduled, isSuperseded }: RefreshOptions = { scheduled: false }): Promise<void> {
     // The cache entry is shared across Devices, so there is no single Device
     // to scope sensors to here.
     const { context, sourceData, resolvedFieldValues } = await this.pluginTemplateContext.contextFor(plugin, [])
@@ -38,24 +51,41 @@ export class PluginRefreshService {
     // A fetch error can quote a password Field Value (the request itself still
     // used the real one); hidden here, so the one writer of lastFetchError never
     // stores it (unlike `context`, which keeps the real value for the render).
-    if (scheduled) {
-      const hiddenSourceData = hideSecretsIn(sourceData, secretValues(plugin.fields ?? [], resolvedFieldValues))
-      await this.fetchOutcome.recordOutcomes(plugin.dataSources ?? [], hiddenSourceData)
-    }
+    // Every scheduled tick records its own fetch attempt, superseded or not: each was a real fetch.
+    if (scheduled)
+      await this.recordFetchOutcome(plugin, sourceData, resolvedFieldValues)
+
+    await this.renderPoll(plugin, context, { scheduled, isSuperseded })
+  }
+
+  private async recordFetchOutcome(plugin: Plugin, sourceData: Record<string, unknown>, resolvedFieldValues: Record<string, string>): Promise<void> {
+    const hiddenSourceData = hideSecretsIn(sourceData, secretValues(plugin.fields ?? [], resolvedFieldValues))
+    await this.fetchOutcome.recordOutcomes(plugin.dataSources ?? [], hiddenSourceData)
+  }
+
+  private async renderPoll(plugin: Plugin, context: PluginRenderContext['context'], { scheduled, isSuperseded }: RefreshOptions): Promise<void> {
+    if (this.dropAsSuperseded(plugin.id, isSuperseded, 'render'))
+      return
 
     try {
       await this.renderCache.renderAndCache(plugin, context)
     }
     catch (error) {
-      if (scheduled && error instanceof TemplateRenderError) {
+      if (scheduled && error instanceof TemplateRenderError && !this.dropAsSuperseded(plugin.id, isSuperseded, 'failed-render record'))
         await this.recordScheduledRender(plugin.id, error)
-      }
       throw error
     }
 
-    if (scheduled) {
+    if (scheduled && !this.dropAsSuperseded(plugin.id, isSuperseded, 'successful-render record'))
       await this.recordScheduledRender(plugin.id, null)
-    }
+  }
+
+  /** Whether a later tick for the Plugin has since started, logged where it drops a write this one would otherwise make. */
+  private dropAsSuperseded(pluginId: string, isSuperseded: (() => boolean) | undefined, whatThisDrops: string): boolean {
+    if (!isSuperseded?.())
+      return false
+    this.logger.debug(`Dropping ${whatThisDrops} for plugin ${pluginId}: a newer tick has since started`)
+    return true
   }
 
   /**
