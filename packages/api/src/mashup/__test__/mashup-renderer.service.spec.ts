@@ -182,6 +182,59 @@ describe('mashupRendererService', () => {
     expect(pluginDataFetcher.fetchData).not.toHaveBeenCalled()
   })
 
+  it('renders a Webhook-kind Plugin from its Webhook Payload in its slot', async () => {
+    const device = makeDevice({ id: 'device-1', width: 800, height: 480 })
+    const plugin = makePlugin({
+      id: 'plugin-1',
+      name: 'Feed',
+      kind: 'Webhook',
+      webhookPayload: { reading: 42 },
+      templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '<div>{{ reading }}</div>' })],
+    })
+    pluginRenderer.render.mockResolvedValue('<div>42</div>')
+
+    const result = await service.renderMashup(draftSlotConfiguration(plugin), device)
+
+    expect(result).toContain('<div>42</div>')
+    expect(result).not.toContain('error.png')
+    expect(pluginDataFetcher.fetchData).not.toHaveBeenCalled()
+    expect(pluginRenderer.render).toHaveBeenCalledWith(
+      '<div>{{ reading }}</div>',
+      expect.objectContaining({ reading: 42 }),
+    )
+  })
+
+  it.each([
+    ['never POSTed to', undefined],
+    ['cleared', null],
+  ])('renders a Webhook-kind Plugin with an empty Webhook Payload (%s) from just trmnl and Field Values', async (_scenario, webhookPayload) => {
+    const device = makeDevice({ id: 'device-1', width: 800, height: 480 })
+    const plugin = makePlugin({
+      id: 'plugin-1',
+      name: 'Feed',
+      kind: 'Webhook',
+      webhookPayload,
+      templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '<div>{{ trmnl.plugin_settings.instance_name }}</div>' })],
+    })
+    pluginRenderer.render.mockResolvedValue('<div>Feed</div>')
+
+    const result = await service.renderMashup(draftSlotConfiguration(plugin), device)
+
+    expect(result).toContain('<div>Feed</div>')
+    expect(result).not.toContain('error.png')
+    expect(pluginDataFetcher.fetchData).not.toHaveBeenCalled()
+  })
+
+  it('falls back to the error placeholder when a Webhook-kind Plugin has no matching Template', async () => {
+    const device = makeDevice({ id: 'device-1', width: 800, height: 480 })
+    const plugin = makePlugin({ id: 'plugin-1', name: 'Feed', kind: 'Webhook', webhookPayload: { reading: 42 }, templates: [] })
+
+    const result = await service.renderMashup(draftSlotConfiguration(plugin), device)
+
+    expect(result).toContain('error.png')
+    expect(pluginRenderer.render).not.toHaveBeenCalled()
+  })
+
   it('should build correct HTML structure for 2x2 layout', async () => {
     const device = makeDevice({ id: 'device-1', width: 800, height: 480 })
 

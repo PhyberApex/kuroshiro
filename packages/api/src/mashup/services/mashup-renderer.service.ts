@@ -6,7 +6,6 @@ import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
 import { templateOfSize, templateSizeOfSlot } from '../../plugins/plugin-templates.js'
-import { isRenderablePollPlugin } from '../../plugins/renderable-poll-plugin.js'
 import { PluginRendererService } from '../../plugins/services/plugin-renderer.service.js'
 import { PluginTemplateContextService } from '../../plugins/services/plugin-template-context.service.js'
 import { getErrorMessage } from '../../utils/getErrorMessage.js'
@@ -50,10 +49,6 @@ export class MashupRendererService {
 
   private async renderSlot(slot: MashupSlot, sensors: DeviceSensor[]): Promise<string> {
     const plugin = slot.plugin
-
-    if (!isRenderablePollPlugin(plugin)) {
-      throw new Error('Plugin is not a Poll-kind Plugin with a Template')
-    }
 
     const template = templateOfSize(plugin.templates, templateSizeOfSlot(slot.size))
     if (!template) {
