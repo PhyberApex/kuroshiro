@@ -6,6 +6,7 @@ import { Buffer } from 'node:buffer'
 import * as fs from 'node:fs'
 import path from 'node:path'
 import { ConfigService } from '@nestjs/config'
+import { Repository } from 'typeorm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Alert } from '../../alerts/entities/alert.entity.js'
 import { Device } from '../../devices/devices.entity.js'
@@ -63,6 +64,8 @@ describe('adding, deleting and reordering a Device\'s Screens, against a real da
 
   beforeAll(async () => {
     database = await createTestDatabase()
+    // `synchronize` cannot express a deferrable constraint from a plain entity decorator; this mirrors what the migration adds in production.
+    await database.query(`ALTER TABLE "screen" ADD CONSTRAINT "UQ_screen_device_order" UNIQUE ("deviceId", "order") DEFERRABLE INITIALLY DEFERRED`)
     const deviceModels = createMockDeviceModelsService()
     primeMockDeviceModelsService(deviceModels)
     const fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
@@ -225,6 +228,22 @@ describe('adding, deleting and reordering a Device\'s Screens, against a real da
 
       expect(response.status).toBe(201)
       expect(await response.json()).toMatchObject({ kind: 'html', name: 'Note', html: '<p>New</p>', external: null, file: null, order: 1 })
+    })
+
+    it('answers 409 instead of a duplicate Order when another add wins a race the row lock did not prevent', async () => {
+      await seedScreen(1, { filename: 'First' })
+      const maximum = vi.spyOn(Repository.prototype, 'maximum')
+      maximum.mockImplementationOnce(async () => {
+        // The other request's add, landing between this one's lock and its own read of the maximum: what the row lock in joinEndOfOrder exists to rule out. The deferred UNIQUE constraint is the backstop if it ever doesn't.
+        await seedScreen(2, { filename: 'Other' })
+        return 1
+      })
+
+      const response = await postHtmlScreen({ name: 'Mine' })
+
+      expect(response.status).toBe(409)
+      expect((await readScreens()).map(screen => screen.name)).toEqual(['First', 'Other'])
+      maximum.mockRestore()
     })
 
     it('answers the ScreenRead of an External link fetched on every poll without fetching it', async () => {
@@ -432,12 +451,13 @@ describe('adding, deleting and reordering a Device\'s Screens, against a real da
       expect(await readScreens()).toHaveLength(1)
     })
 
-    it('answers 409 plugin-already-assigned when a second assignment wins a race the up-front check missed', async () => {
+    it('answers 409 plugin-already-assigned when a second assignment wins a race the up-front check missed, with one Screen', async () => {
       const plugin = await seedPlugin('Weather')
       const findAssignment = vi.spyOn(assignmentsService as unknown as { findAssignment: (pluginId: string, deviceId: string) => Promise<unknown> }, 'findAssignment')
       findAssignment.mockImplementationOnce(async () => {
-        // The other request's write, landing between this one's check and its own write.
-        await database.getRepository(DevicePlugin).save({ plugin: { id: plugin.id }, device: { id: device.id } })
+        // The other request's full assign(), landing between this one's check and its own write.
+        const assignment = await database.getRepository(DevicePlugin).save({ plugin: { id: plugin.id }, device: { id: device.id } })
+        await database.getRepository(Screen).save({ type: 'plugin', devicePluginId: assignment.id, order: 1, isActive: false, fetchManual: false, generatedAt: CREATED_AT, device, plugin })
         return null
       })
 
@@ -446,6 +466,7 @@ describe('adding, deleting and reordering a Device\'s Screens, against a real da
       expect(response.status).toBe(409)
       expect(await response.json()).toMatchObject({ code: 'plugin-already-assigned' })
       expect(await database.getRepository(DevicePlugin).count()).toBe(1)
+      expect(await readScreens()).toHaveLength(1)
       findAssignment.mockRestore()
     })
   })

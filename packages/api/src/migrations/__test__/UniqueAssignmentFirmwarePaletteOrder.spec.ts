@@ -166,7 +166,7 @@ describe('the unique Assignment, Firmware, Palette name and Screen Order migrati
       await palette('p1', 'Ink', 'custom')
       await migration.up(queryRunner)
 
-      await expect(palette('p2', 'INK', 'custom')).rejects.toThrow(/UQ_palette_custom_name/)
+      await expect(palette('p2', 'INK', 'custom')).rejects.toThrow(/UQ_palette_name_custom/)
       await expect(palette('p3', 'Ink', 'official')).resolves.toBeUndefined()
     })
   })

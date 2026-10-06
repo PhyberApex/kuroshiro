@@ -38,7 +38,7 @@ export class UniqueAssignmentFirmwarePaletteOrder1787280000000 implements Migrat
     await queryRunner.query(`ALTER TABLE "firmware" ADD CONSTRAINT "UQ_firmware_version" UNIQUE ("version")`)
 
     await this.dedupeCustomPaletteNames(queryRunner)
-    await queryRunner.query(`CREATE UNIQUE INDEX "UQ_palette_custom_name" ON "palette" (lower("name")) WHERE "kind" = 'custom'`)
+    await queryRunner.query(`CREATE UNIQUE INDEX "UQ_palette_name_custom" ON "palette" (lower("name")) WHERE "kind" = 'custom'`)
 
     await this.dedupeScreenOrders(queryRunner)
     await queryRunner.query(`ALTER TABLE "screen" ADD CONSTRAINT "UQ_screen_device_order" UNIQUE ("deviceId", "order") DEFERRABLE INITIALLY DEFERRED`)
@@ -46,7 +46,7 @@ export class UniqueAssignmentFirmwarePaletteOrder1787280000000 implements Migrat
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`ALTER TABLE "screen" DROP CONSTRAINT "UQ_screen_device_order"`)
-    await queryRunner.query(`DROP INDEX "UQ_palette_custom_name"`)
+    await queryRunner.query(`DROP INDEX "UQ_palette_name_custom"`)
     await queryRunner.query(`ALTER TABLE "firmware" DROP CONSTRAINT "UQ_firmware_version"`)
     await queryRunner.query(`ALTER TABLE "device_plugin" DROP CONSTRAINT "UQ_device_plugin_plugin_device"`)
   }

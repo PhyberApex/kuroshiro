@@ -106,7 +106,7 @@ export class CustomPalettesService {
 
   /** A race against `assertNameFree`'s check, caught on the write it lost: anything else is rethrown as it was. */
   private asNameTaken(err: unknown, name: string): unknown {
-    return isUniqueViolation(err, 'UQ_palette_custom_name') ? this.nameTaken(name) : err
+    return isUniqueViolation(err, 'UQ_palette_name_custom') ? this.nameTaken(name) : err
   }
 
   private nameTaken(name: string): ApiException {

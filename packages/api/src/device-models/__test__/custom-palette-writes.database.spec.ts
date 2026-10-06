@@ -47,7 +47,7 @@ describe('creating, changing and deleting a custom Palette, against a real datab
   beforeAll(async () => {
     database = await createTestDatabase()
     // `synchronize` cannot express a partial, case-insensitive index from a plain entity decorator; this mirrors what the migration adds in production.
-    await database.query(`CREATE UNIQUE INDEX "UQ_palette_custom_name" ON "palette" (lower("name")) WHERE "kind" = 'custom'`)
+    await database.query(`CREATE UNIQUE INDEX "UQ_palette_name_custom" ON "palette" (lower("name")) WHERE "kind" = 'custom'`)
     const deviceModels = new DeviceModelsService(database.getRepository(DeviceModel), database.getRepository(Palette))
     const reads = new DeviceModelReadsService(database.getRepository(Device), deviceModels, new SyncRunService(database.getRepository(SyncRun)))
     const screens = new ScreensService(database.getRepository(Screen), database.getRepository(Device), asService<ConfigService>({ get: () => false }), deviceModels)
