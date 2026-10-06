@@ -1,12 +1,15 @@
 import type { ConfigService } from '@nestjs/config'
 import type { ApiError, PluginDetail, PreviewData, PreviewDataInput } from 'kuroshiro-shared'
 import type { DataSource } from 'typeorm'
+import type { NotificationSenderService } from '../../alerts/notification-sender.service.js'
 import type { DeviceModelsService } from '../../device-models/device-models.service.js'
 import type { FallbackScreensService } from '../../device-models/fallback-screens.service.js'
 import type { FirmwareService } from '../../firmware/firmware.service.js'
+import type { InstanceSettingsService } from '../../settings/instance-settings.service.js'
 import type { HttpTestApp } from '../../test/httpApp.js'
 import { getRepositoryToken } from '@nestjs/typeorm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { AlertSweepService } from '../../alerts/alert-sweep.service.js'
 import { Alert } from '../../alerts/entities/alert.entity.js'
 import { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
 import { DeviceSensor } from '../../device-sensors/entities/device-sensor.entity.js'
@@ -188,7 +191,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
   }
 
   function loadForRender(pluginId: string): Promise<Plugin> {
-    return database.getRepository(Plugin).findOneOrFail({ where: { id: pluginId }, relations: { dataSources: true, templates: true } })
+    return database.getRepository(Plugin).findOneOrFail({ where: { id: pluginId }, relations: { dataSources: true, templates: true, fields: true } })
   }
 
   async function schedulerTick(pluginId: string): Promise<void> {
@@ -380,6 +383,85 @@ describe('what a Plugin renders from, and with which Template, against a real da
       const after = await read(plugin.id)
       expect(after.dataSources[0].fetchFailureStreak).toBe(1)
       expect(after.updatedAt).toBe(before.updatedAt)
+    })
+
+    it('hides a password Field Value a scheduled fetch\'s failure quotes from the URL, both at the database and from GET /api/plugins/:id, while fetching with the real one', async () => {
+      const plugin = await createPollPlugin({
+        dataSources: [{ name: 'weather', mode: 'fetch', url: 'https://api.example.com/v1?key={{ api_key }}' }],
+        fields: [{ keyname: 'api_key', name: 'API key', fieldType: 'password' }],
+        fieldValues: { api_key: 'hunter2' },
+      })
+      dataSourceAnswer = (url) => {
+        throw new TypeError(`Failed to parse URL from ${url}`)
+      }
+
+      await schedulerTick(plugin.id)
+
+      const [source] = (await read(plugin.id)).dataSources
+      expect(source.lastFetchError).toBe('Failed to parse URL from https://api.example.com/v1?key=••••••••')
+      const stored = await database.getRepository(PluginDataSource).findOneByOrFail({ id: source.id })
+      expect(stored.lastFetchError).toBe('Failed to parse URL from https://api.example.com/v1?key=••••••••')
+      expect(dataSourceFetches()[0][0]).toBe('https://api.example.com/v1?key=hunter2')
+    })
+
+    it('hides a password Field Value a scheduled fetch\'s failure quotes from a header value', async () => {
+      const plugin = await createPollPlugin({
+        dataSources: [{ name: 'weather', mode: 'fetch', url: 'https://api.example.com/weather', headers: { 'X-Key': '{{ api_key }}' } }],
+        fields: [{ keyname: 'api_key', name: 'API key', fieldType: 'password' }],
+        fieldValues: { api_key: 'hunter2' },
+      })
+      dataSourceAnswer = (_url, init) => {
+        const sent = (init?.headers as Record<string, string> | undefined)?.['X-Key']
+        throw new TypeError(`Headers.append: "${sent}" is an invalid header value.`)
+      }
+
+      await schedulerTick(plugin.id)
+
+      const [source] = (await read(plugin.id)).dataSources
+      expect(source.lastFetchError).toBe('Headers.append: "••••••••" is an invalid header value.')
+    })
+
+    it('hides a password Field Value from the data-source-fetch-failing Alert\'s details and its Notification, once the Fetch Failure Streak opens it', async () => {
+      const plugin = await createPollPlugin({
+        dataSources: [{ name: 'weather', mode: 'fetch', url: 'https://api.example.com/v1?key={{ api_key }}' }],
+        fields: [{ keyname: 'api_key', name: 'API key', fieldType: 'password' }],
+        fieldValues: { api_key: 'hunter2' },
+      })
+      dataSourceAnswer = (url) => {
+        throw new TypeError(`Failed to parse URL from ${url}`)
+      }
+
+      await schedulerTick(plugin.id)
+
+      const send = vi.fn<NotificationSenderService['send']>(async () => true)
+      const sender = { send, isConfigured: () => true } as unknown as NotificationSenderService
+      const settings = { resolveThresholds: async () => ({ lowBatteryPercent: 20, offlineMultiplier: 3, fetchFailureThreshold: 1 }) } as unknown as InstanceSettingsService
+      const sweep = new AlertSweepService(database.getRepository(Alert), database.getRepository(Device), database.getRepository(PluginDataSource), sender, settings)
+
+      await sweep.sweep()
+
+      const alert = await database.getRepository(Alert).findOneByOrFail({ kind: 'data-source-fetch-failing' })
+      expect(alert.details).toEqual({ streak: 1, lastError: 'Failed to parse URL from https://api.example.com/v1?key=••••••••' })
+
+      expect(send).toHaveBeenCalledTimes(1)
+      const [notification] = send.mock.calls[0]
+      expect(notification.body).toContain('••••••••')
+      expect(notification.body).not.toContain('hunter2')
+    })
+
+    it('leaves a Field Value that is not password-type visible in the stored error', async () => {
+      const plugin = await createPollPlugin({
+        dataSources: [{ name: 'weather', mode: 'fetch', url: 'https://api.example.com/v1?city={{ city }}' }],
+        fields: [{ keyname: 'city', name: 'City', fieldType: 'string' }],
+        fieldValues: { city: 'Berlin' },
+      })
+      dataSourceAnswer = (url) => {
+        throw new TypeError(`Failed to parse URL from ${url}`)
+      }
+
+      await schedulerTick(plugin.id)
+
+      expect((await read(plugin.id)).dataSources[0].lastFetchError).toBe('Failed to parse URL from https://api.example.com/v1?city=Berlin')
     })
   })
 

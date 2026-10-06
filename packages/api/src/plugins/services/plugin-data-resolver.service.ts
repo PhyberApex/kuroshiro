@@ -58,7 +58,9 @@ export class PluginDataResolverService {
       }
       else {
         const message = result.reason?.message || String(result.reason)
-        this.logger.warn(`Data source "${name}" failed: ${message}`)
+        // Never logged: the message can quote a password Field Value, same as the resolved
+        // URL/headers/body renderLiquid refuses to log (PluginDataFetcherService.renderLiquid).
+        this.logger.warn(`Data source "${name}" failed`)
         data[name] = { error: true, message }
       }
     })

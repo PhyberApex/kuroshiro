@@ -307,7 +307,7 @@ describe('pluginsService', () => {
 
       await service.onModuleInit()
 
-      expect(pluginRepo.find).toHaveBeenCalledWith({ relations: { dataSources: true, templates: true } })
+      expect(pluginRepo.find).toHaveBeenCalledWith({ relations: { dataSources: true, templates: true, fields: true } })
       expect(mockScheduler.scheduleAtBoot).toHaveBeenCalledWith(poll)
       expect(mockScheduler.scheduleAtBoot).toHaveBeenCalledWith(webhook)
       expect(mockScheduler.schedulePlugin).not.toHaveBeenCalled()

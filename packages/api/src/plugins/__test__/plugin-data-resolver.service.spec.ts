@@ -1,5 +1,6 @@
 import type { ConfigService } from '@nestjs/config'
 import type { PluginRendererService } from '../services/plugin-renderer.service.js'
+import { Logger } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makePluginDataSource } from '../../test/fixtures.js'
 import { asService } from '../../test/mockService.js'
@@ -62,5 +63,15 @@ describe('pluginDataResolverService', () => {
   it('resolves an empty array of data sources to an empty object', async () => {
     const data = await service.resolveAll([])
     expect(data).toEqual({})
+  })
+
+  it('never logs the failure message, which can quote a password Field Value', async () => {
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+    vi.spyOn(dataFetcher, 'fetchOrLiteral').mockRejectedValue(new Error('Failed to parse URL from not a url/hunter2'))
+
+    await service.resolveAll([makePluginDataSource({ name: 'weather' })])
+
+    expect(warn).toHaveBeenCalledWith('Data source "weather" failed')
+    expect(warn.mock.calls.flat().join(' ')).not.toContain('hunter2')
   })
 })

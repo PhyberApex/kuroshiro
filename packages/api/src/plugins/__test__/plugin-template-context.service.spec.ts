@@ -60,6 +60,15 @@ describe('pluginTemplateContextService', () => {
     expect(resolveAll).toHaveBeenCalledWith(withSource.dataSources, expect.objectContaining({ city: 'Berlin' }))
   })
 
+  it('exposes the resolved Field Values unhidden, so a caller that must hide a secret elsewhere does not resolve them twice', async () => {
+    const fields = [makePluginField({ keyname: 'api_key', fieldType: 'password' })]
+
+    const { resolvedFieldValues } = await createPluginTemplateContextService({ api_key: 'hunter2', city: 'Berlin' })
+      .contextFor(plugin, [], {}, { hideSecretsOf: fields })
+
+    expect(resolvedFieldValues).toEqual({ api_key: 'hunter2', city: 'Berlin' })
+  })
+
   it('lays a Webhook-kind Plugin\'s Webhook Payload keys over trmnl, its Field Values and sensors, and fetches nothing', async () => {
     const webhook = makePlugin({ name: 'Feed', kind: 'Webhook', webhookPayload: { reading: 4 } })
     const resolveAll = vi.fn()

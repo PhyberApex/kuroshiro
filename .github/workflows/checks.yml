@@ -8,6 +8,7 @@ on:
 jobs:
   checks:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -37,6 +38,7 @@ jobs:
   ui-screenshots:
     name: UI screenshots
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -62,6 +64,7 @@ jobs:
   ui-real-api:
     name: UI against the real API
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:18-alpine
