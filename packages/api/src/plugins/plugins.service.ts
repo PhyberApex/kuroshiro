@@ -64,14 +64,8 @@ export class PluginsService implements OnModuleInit {
       relations: { dataSources: true, templates: true },
     })
 
-    // A timer counts from now, so without a tick at start an Instance restarted
-    // more often than a refresh interval would never run that Plugin.
-    for (const plugin of plugins) {
-      this.schedule(plugin, `Scheduled plugin: ${plugin.name}`)
-      if (this.scheduler.hasScheduledJob(plugin.id)) {
-        void this.scheduler.runTick(plugin)
-      }
-    }
+    for (const plugin of plugins)
+      this.schedule(plugin, `Scheduled plugin: ${plugin.name}`, p => this.scheduler.scheduleAtBoot(p))
   }
 
   async findById(id: string): Promise<PluginWithFieldValues | null> {
@@ -320,8 +314,8 @@ export class PluginsService implements OnModuleInit {
     return plugin
   }
 
-  private schedule(plugin: Plugin, message: string): void {
-    this.scheduler.schedulePlugin(plugin)
+  private schedule(plugin: Plugin, message: string, scheduleWith: (plugin: Plugin) => void = p => this.scheduler.schedulePlugin(p)): void {
+    scheduleWith(plugin)
     if (this.scheduler.hasScheduledJob(plugin.id)) {
       this.logger.log(message)
     }
