@@ -315,7 +315,6 @@ export class ConfigurationImportService {
     await repo.save(row)
   }
 
-  /** Throws `RecordRefused`, naming the key, value and `SETTING_BOUNDS`, for the first present Setting that `settingViolation` refuses. */
   private assertSettingsWithinBounds(entry: InstanceSettingsManifestEntry): void {
     for (const key of [...SETTING_KEYS, ...BOOLEAN_SETTING_KEYS]) {
       const value = entry[key]
