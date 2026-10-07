@@ -29,7 +29,7 @@
 
 ## 🤖 AI Disclaimer
 
-> **Heads up!** Kuroshiro is developed with substantial help from AI coding agents. Issues and pull requests may be triaged, commented on, or authored by an AI agent, with a human maintainer reviewing before anything is merged.
+> **Heads up!** Kuroshiro is developed with heavy use of AI coding tools. Issues and pull requests may be triaged, commented on, or authored by an AI agent, with a human maintainer reviewing before anything is merged. AI-assisted contributions are welcome too; see the [AI policy](CONTRIBUTING.md#ai-policy) for the ground rules.
 
 ---
 
@@ -60,7 +60,7 @@ Kuroshiro is for anyone who wants to experiment, self-host, and shape their own 
 
 ## ⚖️ Kuroshiro vs. the rest of the TRMNL ecosystem
 
-Kuroshiro isn't the only way to run a TRMNL: the device also works with the official [trmnl.com](https://trmnl.com/) cloud, and with [Terminus](https://github.com/usetrmnl/terminus)—the other open-source, self-hosted BYOS. Here's how they line up today:
+Kuroshiro isn't the only way to run a TRMNL: the device also works with the official [trmnl.com](https://trmnl.com/) cloud, and with a handful of open-source, self-hosted BYOS servers, [Terminus](https://github.com/usetrmnl/terminus) being TRMNL's flagship one. Here's how Kuroshiro lines up against the two in depth:
 
 | | **Kuroshiro** | [**Terminus**](https://github.com/usetrmnl/terminus) | **Official TRMNL Cloud** |
 |---|---|---|---|
@@ -76,7 +76,33 @@ Kuroshiro isn't the only way to run a TRMNL: the device also works with the offi
 | Sensors | Device-attached Qwiic sensors (CO₂/humidity/pressure/temperature), exposed to Plugin templates | Device-attached *and* server-attached (Raspberry Pi) sensors | — |
 | Sleep Mode | Per-Device night window that parks the Device until the window ends, with an optional dedicated sleep Screen | Supported | Supported |
 
-The short version: Kuroshiro trades Terminus's multi-user accounts and device-grouped playlists for a simpler single-admin, single-container deployment, while going further than either self-hosted option on per-Device-Model firmware safety and mixed fetch/literal Data Sources within one Plugin. See [`docs/adr`](./docs/adr) for the design decisions (and prior-art comparisons) behind each of these.
+The short version: Kuroshiro trades Terminus's multi-user accounts and device-grouped playlists for a simpler single-admin, single-container deployment, while going further than either self-hosted option on per-Device-Model firmware safety and mixed fetch/literal Data Sources within one Plugin.
+
+### Every BYOS at a glance
+
+TRMNL keeps a [feature matrix of BYOS implementations](https://docs.trmnl.com/go/diy/byos). Here it is with Kuroshiro added, turned on its side so every server fits next to the others.
+
+🟢 supported · 🟡 partially supported · 🔴 not supported or not implemented · ⚪️ unknown
+
+| | **Kuroshiro**<br><sub>NestJS / Vue</sub> | [**Terminus**](https://github.com/usetrmnl/terminus)<br><sub>Ruby / Hanami</sub> | [**LaraPaper**](https://github.com/usetrmnl/larapaper)<br><sub>PHP / Laravel</sub> | [**Inker**](https://github.com/usetrmnl/inker)<br><sub>JavaScript</sub> | [**BYOS Next.js**](https://github.com/usetrmnl/byos_next)<br><sub>JavaScript / Next.js</sub> | [**BYOS FastAPI**](https://github.com/usetrmnl/byos_fastapi)<br><sub>Python / FastAPI</sub> | [**BYOS Django**](https://github.com/usetrmnl/byos_django)<br><sub>Python / Django</sub> | [**BYOS Phoenix**](https://github.com/usetrmnl/byos_phoenix)<br><sub>Elixir / Phoenix</sub> |
+|---|---|---|---|---|---|---|---|---|
+| Dashboard | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🔴 | 🔴 |
+| Auto-Provisioning | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | ⚪️ | 🔴 | 🔴 |
+| Devices | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 |
+| JSON Data API | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🔴 | 🟢 | 🟢 |
+| Image Previews | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 |
+| Playlists | 🟢¹ | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🔴 | 🟢 |
+| Plugins | 🟢 | 🟢 | 🟢 | 🟢 | 🔴 | 🟢 | 🔴 | 🔴 |
+| Recipes | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | ⚪️ | 🔴 | 🔴 |
+| Sensors | 🟢 | 🟢 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 |
+| Docker | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🔴 | 🟢 | 🔴 |
+| Test Suite | 🟢 | 🟢 | 🟢 | 🟢 | 🔴 | 🔴 | 🔴 | 🔴 |
+| Maintained | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🔴 | 🔴 | 🔴 |
+| Semantic Versioning | 🟢 | 🟢 | 🔴 | ⚪️ | 🟢 | ⚪️ | ⚪️ | ⚪️ |
+
+¹ As a per-Device Rotation of Screens, each gated by its own day/time Schedule, rather than named playlists shared between Devices.
+
+The other servers' columns are TRMNL's own assessment as of October 2026; the Kuroshiro column is ours. See [`docs/adr`](./docs/adr) for the design decisions (and prior-art comparisons) behind both tables.
 
 ---
 
@@ -361,13 +387,7 @@ A daily Retention job (same 4am schedule as the Device Model and Firmware syncs)
 
 ## 🤝 Contribute & Make Kuroshiro Even Better!
 
-We love contributions! Jump in:
-- Open issues or join discussions for bugs, ideas, or questions
-- Fork, branch, and submit pull requests (PRs)—all PRs welcome!
-- Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) and code style
-- Run all tests before submitting a PR
-- `pnpm fallow:ci` runs in CI and fails on new dead code, duplication, or complexity hotspots; see [docs/agents/fallow.md](docs/agents/fallow.md) for how the baselines work
-- **We use [release-please](https://github.com/googleapis/release-please)!** Use [Conventional Commits](https://www.conventionalcommits.org/) for your commit messages to enable automatic versioning and changelogs.
+We love contributions! Bug reports, ideas, questions, and pull requests are all welcome. Before you jump in, please read the [Contributing Guide](CONTRIBUTING.md) (including our [AI policy](CONTRIBUTING.md#ai-policy)) and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ### Contributors
 
