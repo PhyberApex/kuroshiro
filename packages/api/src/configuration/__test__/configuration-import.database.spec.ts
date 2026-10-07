@@ -309,6 +309,15 @@ describe('reading and importing a Configuration Archive, against a real database
       expect(await refused(archive)).toMatchObject({ statusCode: 422, code: 'archive-record-refused', details: { entity: 'Plugin', id: DOORBELL } })
     })
 
+    it('an Instance Setting outside SETTING_BOUNDS, naming the key, with nothing written', async () => {
+      const archive = buildArchive({ manifest: manifest(), settings: { alertRetentionDays: -5 } })
+
+      const refusal = await refused(archive)
+
+      expect(refusal).toMatchObject({ statusCode: 422, code: 'archive-record-refused', details: { entity: 'Instance Settings', id: null } })
+      expect(refusal.details?.reason).toContain('alertRetentionDays')
+    })
+
     it('a list that holds something other than records', async () => {
       expect(await refused(buildArchive({ manifest: manifest(), devices: [null] }))).toMatchObject({ statusCode: 400, code: 'archive-not-configuration' })
     })
