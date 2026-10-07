@@ -168,7 +168,7 @@ describe('an External link Screen', () => {
 
   it('shows the server\'s reason under the field when "Refresh image" cannot fetch, and keeps the earlier image', async () => {
     fakeKitchen()
-    api.use(http.post(apiUrl('screens/webcam/refresh'), () => apiErrorResponse({ statusCode: 422, code: 'image-fetch-failed', message: 'The address did not answer with an image Kuroshiro can read.' })))
+    api.use(http.post(apiUrl('screens/webcam/refresh'), () => apiErrorResponse({ statusCode: 422, code: 'image-fetch-failed', message: 'The address did not answer with an image Kuroshiro can read.', details: { reason: 'The address did not answer with an image Kuroshiro can read.' } })))
     const { screen, source, url } = await openedWebcam()
 
     await source.getByRole('button', { name: 'Refresh image' }).click()
@@ -181,7 +181,7 @@ describe('an External link Screen', () => {
 
   it('keeps the address that was entered when its fetch fails, says why and saves on "Try again"', async () => {
     const faked = fakeKitchen()
-    api.use(http.patch(apiUrl('screens/webcam'), () => apiErrorResponse({ statusCode: 422, code: 'image-fetch-failed', message: 'The image could not be fetched: 404.' }), { once: true }))
+    api.use(http.patch(apiUrl('screens/webcam'), () => apiErrorResponse({ statusCode: 422, code: 'image-fetch-failed', message: 'The image could not be fetched: 404.', details: { reason: '404.' } }), { once: true }))
     const { source, url } = await openedWebcam()
 
     await url.fill('https://harbour.example/gone.jpg')

@@ -199,13 +199,15 @@ export class ScreensService {
       await downloadImage(url, staged.originalPath, this.logger)
     }
     catch (err) {
-      throw this.refuseImage(err, HttpStatus.UNPROCESSABLE_ENTITY, 'image-fetch-failed', `The image could not be fetched: ${getErrorMessage(err)}`)
+      const reason = getErrorMessage(err)
+      throw this.refuseImage(err, HttpStatus.UNPROCESSABLE_ENTITY, 'image-fetch-failed', `The image could not be fetched: ${reason}`, { reason })
     }
     try {
       await convertToPng(staged.originalPath, staged.imagePath, target, this.logger)
     }
     catch (err) {
-      throw this.refuseImage(err, HttpStatus.UNPROCESSABLE_ENTITY, 'image-fetch-failed', 'The address did not answer with an image Kuroshiro can read.')
+      const reason = 'The address did not answer with an image Kuroshiro can read.'
+      throw this.refuseImage(err, HttpStatus.UNPROCESSABLE_ENTITY, 'image-fetch-failed', reason, { reason })
     }
   }
 
@@ -224,9 +226,9 @@ export class ScreensService {
   }
 
   /** Builds the refusal of an image; the cause goes to the log, not to the client. */
-  private refuseImage(cause: unknown, status: HttpStatus, code: ApiErrorCode, message: string): ApiException {
+  private refuseImage(cause: unknown, status: HttpStatus, code: ApiErrorCode, message: string, details?: Record<string, unknown>): ApiException {
     this.logger.error(`Refusing an image (${code}): ${getErrorMessage(cause)}`)
-    return new ApiException(status, code, message)
+    return new ApiException(status, code, message, details)
   }
 
   async delete(id: string): Promise<void> {
