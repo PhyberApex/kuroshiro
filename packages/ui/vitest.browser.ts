@@ -64,10 +64,6 @@ export function chromiumProject(test: ProjectTestOptions & { name: string }): Te
       testTimeout: 30_000,
       // A click that saves and then navigates takes longer than Vitest's one second on a loaded CI runner.
       expect: { poll: { timeout: 5000 } },
-      // A spec that asserts on a page's own real setTimeout (a debounced fetch, a poll) can see it fire early or
-      // late when a loaded CI runner — coverage instrumentation included — stretches the gap around it; one retry
-      // tells apart that from an actual regression.
-      retry: 1,
       ...test,
       browser: {
         enabled: true,
