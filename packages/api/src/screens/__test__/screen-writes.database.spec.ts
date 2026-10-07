@@ -1,6 +1,7 @@
 import type { ScreenRead } from 'kuroshiro-shared'
 import type { DataSource, DeepPartial } from 'typeorm'
 import type { DeviceModelsService } from '../../device-models/device-models.service.js'
+import type { ScreenRenderService } from '../../mashup/services/screen-render.service.js'
 import type { HttpTestApp } from '../../test/httpApp.js'
 import { Buffer } from 'node:buffer'
 import * as fs from 'node:fs'
@@ -101,6 +102,7 @@ describe('adding, deleting and reordering a Device\'s Screens, against a real da
             database.getRepository(MashupConfiguration),
             database.getRepository(MashupSlot),
             database.getRepository(Plugin),
+            asService<ScreenRenderService>({ renderAfterSave: vi.fn().mockResolvedValue(undefined) }),
           ),
         },
         {

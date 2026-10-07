@@ -4,6 +4,7 @@ import type { FallbackScreensService } from '../../device-models/fallback-screen
 import type { MockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService.js'
 import type { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
 import type { FirmwareService } from '../../firmware/firmware.service.js'
+import type { MashupRendererService } from '../../mashup/services/mashup-renderer.service.js'
 import type { PluginRendererService } from '../../plugins/services/plugin-renderer.service.js'
 import type { Schedule } from '../../schedule/schedule.entity.js'
 import type { Screen } from '../../screens/screens.entity.js'
@@ -15,6 +16,7 @@ import { promises as fs } from 'node:fs'
 import { NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMockDeviceSensorsService, primeMockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService.js'
+import { ScreenRenderService } from '../../mashup/services/screen-render.service.js'
 import { jsonResponse, stubFetch } from '../../test/fetch.js'
 import { makeDevice, makeDeviceSensor, makeFirmware, makeMashupConfiguration, makeMashupSlot, makePlugin, makePluginDataSource, makePluginTemplate, makeSchedule, makeScreen } from '../../test/fixtures.js'
 import { createMockDeviceModelsService, createMockFallbackScreensService, GRAY_4, GRAY_16, OG_PLUS, primeMockDeviceModelsService, primeMockFallbackScreensService, V2 } from '../../test/mockDeviceModelsService.js'
@@ -84,6 +86,7 @@ const mockFetch = stubFetch()
 
 describe('deviceDisplayService', () => {
   let service: DeviceDisplayService
+  let screenRender: ScreenRenderService
   let deviceRepo: ReturnType<typeof createMockRepository<Device>>
   let screenRepo: ReturnType<typeof createMockRepository<Screen>>
   let configService: { get: ReturnType<typeof vi.fn> }
@@ -100,6 +103,12 @@ describe('deviceDisplayService', () => {
     fallbackScreens = createMockFallbackScreensService()
     firmwareService = { verifyChecksum: vi.fn(), fileUrl: vi.fn() }
     deviceSensors = createMockDeviceSensorsService()
+    screenRender = new ScreenRenderService(
+      asRepository(screenRepo),
+      asService<ConfigService>(configService),
+      asService<DeviceModelsService>(deviceModels),
+      asService<MashupRendererService>({}),
+    )
     service = new DeviceDisplayService(
       asRepository(deviceRepo),
       asRepository(screenRepo),
@@ -110,6 +119,7 @@ describe('deviceDisplayService', () => {
       asService<PluginRendererService>({}),
       asService<DeviceSensorsService>(deviceSensors),
       createPluginTemplateContextService(),
+      screenRender,
     )
     vi.resetAllMocks()
     primeMockDeviceModelsService(deviceModels)
@@ -343,7 +353,7 @@ describe('deviceDisplayService', () => {
     it('places cached mashup markup directly inside the shell', async () => {
       const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS })
       primeRotation({ id: 'screen2', type: 'mashup', order: 2, cachedPluginOutput: '<div class="mashup mashup--1Lx1R">m</div>', mashupConfiguration: makeMashupConfiguration({ id: 'c' }), filename: 'x' }, device)
-      injectPrivate(service, 'mashupRenderer', { renderMashup: vi.fn() })
+      injectPrivate(screenRender, 'mashupRenderer', { renderMashup: vi.fn() })
 
       await service.getCurrentImage(headers)
 
@@ -977,7 +987,7 @@ describe('deviceDisplayService', () => {
       const mockMashupRenderer = {
         renderMashup: vi.fn().mockResolvedValue('<html>Mashup HTML</html>'),
       }
-      injectPrivate(service, 'mashupRenderer', mockMashupRenderer)
+      injectPrivate(screenRender, 'mashupRenderer', mockMashupRenderer)
 
       const result = await service.getCurrentImage({ ...headers, width: '800', height: '480' })
 
@@ -1036,7 +1046,7 @@ describe('deviceDisplayService', () => {
       const mockMashupRenderer = {
         renderMashup: vi.fn().mockRejectedValue(new Error('Render failed')),
       }
-      injectPrivate(service, 'mashupRenderer', mockMashupRenderer)
+      injectPrivate(screenRender, 'mashupRenderer', mockMashupRenderer)
 
       const result = await service.getCurrentImage({ ...headers, width: '800', height: '480' })
 
@@ -1215,8 +1225,7 @@ describe('deviceDisplayService', () => {
       configService.get.mockReturnValue('http://api')
       fileExists.mockResolvedValue(false)
       fileModifiedAt.mockResolvedValue(new Date('2026-08-21T00:00:00'))
-      // Bypasses the constructor's lazy (setTimeout-deferred) injection, which never fires under fake timers.
-      injectPrivate(service, 'mashupRenderer', { renderMashup: vi.fn() })
+      injectPrivate(screenRender, 'mashupRenderer', { renderMashup: vi.fn() })
     }
 
     beforeEach(() => {
@@ -1634,7 +1643,7 @@ describe('deviceDisplayService', () => {
         name: 'the error Fallback Screen, for a Mashup that failed to render',
         prime: () => {
           primeNext({ type: 'mashup', mashupConfiguration: makeMashupConfiguration({ id: 'config-1', slots: [] }) })
-          injectPrivate(service, 'mashupRenderer', { renderMashup: vi.fn().mockRejectedValue(new Error('Render failed')) })
+          injectPrivate(screenRender, 'mashupRenderer', { renderMashup: vi.fn().mockRejectedValue(new Error('Render failed')) })
         },
         answer: errorAnswer,
         record: renderFailedRecord,
