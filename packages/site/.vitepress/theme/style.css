@@ -58,10 +58,29 @@
   border-radius: 3px;
 }
 
+/* VitePress sizes the hero image for a square logo; a wide screenshot needs to shrink with the column instead of overflowing into the heading. */
 @media (min-width: 960px) {
+  .VPHero .main {
+    flex: 1 1 592px;
+    min-width: 0;
+  }
+
+  .VPHero .image {
+    flex: 1 1 400px;
+    min-width: 0;
+    margin-left: 48px;
+  }
+
   .VPHero .image-container {
-    width: 560px;
-    height: 360px;
+    width: 100%;
+    max-width: 560px;
+    height: auto;
+    transform: none;
+  }
+
+  .VPHero .image-src {
+    position: static;
+    transform: none;
   }
 }
 
