@@ -90,8 +90,7 @@ describe('the Firmware of a Device', () => {
 
     await target(screen).click()
 
-    await expect.element(screen.getByRole('option', { name: 'None' })).toHaveAttribute('aria-disabled', 'true')
-    await expect.element(screen.getByRole('option', { name: 'None' })).toHaveAccessibleDescription('A push is pending')
+    await expect.element(screen.getByRole('option', { name: 'None A push is pending', exact: true })).toHaveAttribute('aria-disabled', 'true')
   })
 
   it('has no "Cancel push" while there is no pending push', async () => {
