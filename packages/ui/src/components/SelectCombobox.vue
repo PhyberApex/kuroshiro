@@ -27,10 +27,11 @@ const props = defineProps<{
 
 const model = defineModel<T | null>({ default: null })
 
-// An option is named by its label alone and described by its reason, as in the plain list.
+// An option is named by everything it shows, its reason included, as in the plain list.
 const idPrefix = useId()
 const labelId = (index: number) => `${idPrefix}-label-${index}`
 const reasonId = (index: number) => `${idPrefix}-reason-${index}`
+const nameIds = (option: SelectOption<T>, index: number) => option.reason ? `${labelId(index)} ${reasonId(index)}` : labelId(index)
 
 function labelOf(value: T | null | undefined) {
   return props.options.find(option => option.value === value)?.label ?? ''
@@ -78,10 +79,9 @@ function labelOf(value: T | null | undefined) {
             :text-value="option.label"
             :disabled="option.disabled"
             :aria-disabled="option.disabled || undefined"
-            :aria-labelledby="labelId(index)"
-            :aria-describedby="option.reason ? reasonId(index) : undefined"
+            :aria-labelledby="nameIds(option, index)"
           >
-            <span :id="labelId(index)">{{ option.label }}</span>
+            <span :id="labelId(index)">{{ option.label }}</span>{{ ' ' }}
             <span v-if="option.reason" :id="reasonId(index)" class="reason">{{ option.reason }}</span>
             <ComboboxItemIndicator><Icon name="check" /></ComboboxItemIndicator>
           </ComboboxItem>

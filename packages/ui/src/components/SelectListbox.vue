@@ -19,8 +19,14 @@ const model = defineModel<T | null>({ default: null })
 
 const chosen = computed(() => props.options.find(option => option.value === model.value))
 
-const reasonIdPrefix = useId()
-const reasonId = (index: number) => `${reasonIdPrefix}-reason-${index}`
+/*
+An option is named by everything it shows: its label and, when it has one, its reason. Reka names
+it by its label alone, which only the option's own element, under `as-child`, can override.
+*/
+const idPrefix = useId()
+const labelId = (index: number) => `${idPrefix}-label-${index}`
+const reasonId = (index: number) => `${idPrefix}-reason-${index}`
+const nameIds = (option: SelectOption<T>, index: number) => option.reason ? `${labelId(index)} ${reasonId(index)}` : labelId(index)
 </script>
 
 <template>
@@ -43,15 +49,16 @@ const reasonId = (index: number) => `${reasonIdPrefix}-reason-${index}`
           <SelectItem
             v-for="(option, index) in options"
             :key="option.value"
-            class="option"
+            as-child
             :value="option.value"
             :text-value="option.label"
             :disabled="option.disabled"
-            :aria-describedby="option.reason ? reasonId(index) : undefined"
           >
-            <SelectItemText>{{ option.label }}</SelectItemText>
-            <span v-if="option.reason" :id="reasonId(index)" class="reason">{{ option.reason }}</span>
-            <SelectItemIndicator><Icon name="check" /></SelectItemIndicator>
+            <div class="option" :aria-labelledby="nameIds(option, index)">
+              <SelectItemText><span :id="labelId(index)">{{ option.label }}</span></SelectItemText>{{ ' ' }}
+              <span v-if="option.reason" :id="reasonId(index)" class="reason">{{ option.reason }}</span>
+              <SelectItemIndicator><Icon name="check" /></SelectItemIndicator>
+            </div>
           </SelectItem>
         </SelectOptions>
       </SelectContent>
