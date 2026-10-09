@@ -57,7 +57,7 @@ catalog:
   jiti: 2.7.0
   js-yaml: ^5.0.0
   liquidjs: ^10.25.5
-  msw: 2.15.0
+  msw: 3.0.2
   multer: ^2.1.1
   node-cron: ^4.2.1
   pg: 8.23.1

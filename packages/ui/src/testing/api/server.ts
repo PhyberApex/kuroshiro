@@ -27,10 +27,26 @@ export function apiErrorResponse(overrides: Partial<ApiError> = {}) {
   return HttpResponse.json(error, { status: error.statusCode })
 }
 
+const ONE_WAY_WORKER_MESSAGES = new Set(['MOCKING_ENABLED', 'INTEGRITY_CHECK_RESPONSE', 'KEEPALIVE_RESPONSE', 'CLIENT_CLOSED'])
+
+/**
+ * MSW's worker keeps each of these messages open until the page answers it, which MSW's own
+ * page side never does. Chromium terminates a worker whose message stays open for five minutes,
+ * and the restarted worker has forgotten every page, so requests then reach the real network
+ * (mswjs/msw#2801). Answering them lets the worker finish each message.
+ */
+function answerOneWayWorkerMessages() {
+  navigator.serviceWorker.addEventListener('message', (event: MessageEvent) => {
+    if (ONE_WAY_WORKER_MESSAGES.has(event.data?.type))
+      event.ports[0]?.postMessage(null)
+  })
+}
+
 export function startFakedApi() {
+  answerOneWayWorkerMessages()
   return api.start({
     quiet: true,
     serviceWorker: { url: '/mockServiceWorker.js' },
-    onUnhandledRequest: 'bypass',
+    onUnhandledFrame: 'bypass',
   })
 }
