@@ -139,6 +139,20 @@ describe('page list', () => {
     }
   })
 
+  it('keeps the current page in view in the row when the links widen, as when the face loads', async () => {
+    await onPhone(async () => {
+      const screen = await mountList('/instance/housekeeping')
+      const nav = screen.getByRole('navigation', { name: 'Instance' }).element()
+      const housekeeping = screen.getByRole('link', { name: 'Housekeeping' }).element()
+      await expect.poll(() => isInView(housekeeping, nav)).toBe(true)
+
+      for (const link of screen.getByRole('link').elements())
+        link.style.letterSpacing = '4px'
+
+      await expect.poll(() => isInView(housekeeping, nav)).toBe(true)
+    })
+  })
+
   it('is a 44 px target at a coarse pointer, and in the row', async () => {
     const screen = await mountList('/instance/settings')
     const link = screen.getByRole('link', { name: 'Firmware' }).element()

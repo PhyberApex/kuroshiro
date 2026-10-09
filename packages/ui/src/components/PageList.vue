@@ -95,8 +95,10 @@ watchEffect((onCleanup) => {
       scrollbar-width: none;
     }
 
+    /* As wide as its links, so the observer sees them widen. */
     .pages {
       display: flex;
+      width: max-content;
       gap: var(--space-5);
       margin-left: 0;
     }
