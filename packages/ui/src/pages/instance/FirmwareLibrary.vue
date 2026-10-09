@@ -46,7 +46,7 @@ const earlier = computed(() => props.library.firmware.filter(firmware => firmwar
   </TuckedSection>
 
   <p class="last">
-    Kuroshiro asks TRMNL for the newest official Firmware when it starts and every day at 04:00, server time. TRMNL's update feed only carries Firmware for the TRMNL OG; any other Device Model needs an upload.
+    Kuroshiro asks TRMNL for the newest official Firmware when it starts and every day at 04:00, server time. TRMNL's update feed only carries Firmware for the TRMNL OG (1-bit) and TRMNL OG (2-bit); any other Device Model, TRMNL OG (B/W/R/Y) included, needs an upload.
   </p>
 </template>
 

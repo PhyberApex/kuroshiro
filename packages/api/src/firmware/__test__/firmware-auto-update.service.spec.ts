@@ -12,7 +12,7 @@ describe('firmwareAutoUpdateService', () => {
   let settingsService: { resolveFirmwareAutoUpdate: ReturnType<typeof vi.fn> }
   let service: FirmwareAutoUpdateService
 
-  const officialFirmware = makeFirmware({ id: 'fw-official', version: '1.5.6', kind: 'official-synced', compatibleModels: ['og_png', 'og_plus', 'og_bwry'] })
+  const officialFirmware = makeFirmware({ id: 'fw-official', version: '1.5.6', kind: 'official-synced', compatibleModels: ['og_png', 'og_plus'] })
 
   beforeEach(() => {
     deviceRepo = createMockRepository<Device>()

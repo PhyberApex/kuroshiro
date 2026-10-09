@@ -79,7 +79,7 @@ describe('firmwareSyncService', () => {
         version: '1.5.6',
         kind: 'official-synced',
         checksum: expect.any(String),
-        compatibleModels: ['og_png', 'og_plus', 'og_bwry'],
+        compatibleModels: ['og_png', 'og_plus'],
         deprecated: false,
       }))
       expect(autoUpdateService.applyPolicy).toHaveBeenCalledWith(expect.objectContaining({ version: '1.5.6', kind: 'official-synced' }))
@@ -94,9 +94,29 @@ describe('firmwareSyncService', () => {
 
       expect(mockFetch).toHaveBeenCalledTimes(1)
       expect(firmwareRepo.insert).not.toHaveBeenCalled()
-      expect(firmwareRepo.update).not.toHaveBeenCalled()
+      expect(firmwareRepo.update).not.toHaveBeenCalledWith(expect.anything(), { deprecated: true })
       expect(autoUpdateService.applyPolicy).not.toHaveBeenCalled()
       expect(result).toEqual({ ranAt: expect.any(String), inserted: false, version: '1.5.6', assigned: [] })
+    })
+
+    it('realigns already-synced official rows to the current compatible models, even when the version is unchanged', async () => {
+      mockFetch.mockResolvedValueOnce(jsonResponse(latestPayload))
+      firmwareRepo.existsBy.mockResolvedValue(true)
+
+      await service.sync()
+
+      expect(firmwareRepo.update).toHaveBeenCalledWith({ kind: 'official-synced' }, { compatibleModels: ['og_png', 'og_plus'] })
+    })
+
+    it('never declares the synced OG binary compatible with OG B/W/R/Y Devices', async () => {
+      mockFetch
+        .mockResolvedValueOnce(jsonResponse(latestPayload))
+        .mockResolvedValueOnce(binaryResponse())
+
+      await service.sync()
+
+      expect(firmwareRepo.insert).toHaveBeenCalledWith(expect.objectContaining({ compatibleModels: expect.not.arrayContaining(['og_bwry']) }))
+      expect(firmwareRepo.update).not.toHaveBeenCalledWith(expect.anything(), { compatibleModels: expect.arrayContaining(['og_bwry']) })
     })
 
     it('inserts on the first-ever sync, when there is no previous official-synced row to deprecate', async () => {
