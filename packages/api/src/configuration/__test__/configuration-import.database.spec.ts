@@ -13,7 +13,7 @@ import { PluginImporterService } from '../../plugins/services/plugin-importer.se
 import { createHttpTestApp } from '../../test/httpApp.js'
 import { createTestDatabase } from '../../test/testDatabase.js'
 import { ConfigurationController } from '../configuration.controller.js'
-import { CONFIG_SCHEMA_VERSION, PREVIOUS_CONFIG_SCHEMA_VERSION } from '../schema-version.js'
+import { CONFIG_SCHEMA_VERSION, LEGACY_CONFIG_SCHEMA_VERSIONS } from '../schema-version.js'
 import { ConfigurationExportService } from '../services/configuration-export.service.js'
 import { ConfigurationImportService } from '../services/configuration-import.service.js'
 import { buildArchive, makeDeviceEntry } from './archive.js'
@@ -226,9 +226,9 @@ describe('reading and importing a Configuration Archive, against a real database
     expect(check.archive.redacted).toBe(true)
   })
 
-  it('names a Plugin of a previous-version archive whose Plugin Variables or per-Assignment Field Values are dropped', async () => {
+  it.each([...LEGACY_CONFIG_SCHEMA_VERSIONS])('names a Plugin of a version %i archive whose Plugin Variables or per-Assignment Field Values are dropped', async (schemaVersion) => {
     const archive = buildArchive({
-      manifest: manifest({ schemaVersion: PREVIOUS_CONFIG_SCHEMA_VERSION, redacted: undefined, containsSecrets: true }),
+      manifest: manifest({ schemaVersion, redacted: undefined, containsSecrets: true }),
       plugins: [
         weatherEntry({ fieldValues: undefined, variables: [{ key: 'unit', value: 'metric' }] }),
         { ...DOORBELL_ENTRY, webhookToken: 'doorbell-token', fieldValues: undefined },
@@ -245,6 +245,78 @@ describe('reading and importing a Configuration Archive, against a real database
       { kind: 'previous-version-values-dropped', plugin: weather },
       { kind: 'previous-version-values-dropped', plugin: { id: DOORBELL, name: 'Doorbell note' } },
     ])
+  })
+
+  /** An archive in the shape Configuration Export of Kuroshiro 0.17.x writes: no settings.json, no Recipe Snapshot, Plugin Variables on the Plugin and Field Values on the Assignment. */
+  function v1Archive(): Buffer {
+    return buildArchive({
+      manifest: { kuroshiroVersion: '0.17.1', schemaVersion: 1, exportedAt: EXPORTED_AT, containsSecrets: true },
+      palettes: [{ id: PALETTE, name: 'Warm red', kind: 'custom', grays: 2, colors: ['#000000', '#ffffff'], frameworkClass: 'screen--1bit', grayscaleBitDepth: 1, deprecated: false }],
+      firmware: [],
+      plugins: [
+        {
+          id: WEATHER,
+          kind: 'Poll',
+          mergeStrategy: null,
+          streamLimit: null,
+          webhookToken: null,
+          sourceRecipeId: null,
+          dataSources: [{ id: WEATHER_SOURCE, name: 'forecast' }],
+          templates: [{ id: WEATHER_TEMPLATE, layout: 'full' }],
+          fields: [{ id: WEATHER_KEY_FIELD, keyname: 'api_key' }],
+          variables: [{ id: '12121212-1212-4212-8212-121212121212', key: 'unit', value: 'metric', isSecret: false }],
+        },
+        { id: DOORBELL, kind: 'Webhook', mergeStrategy: 'deep_merge', streamLimit: null, webhookToken: 'doorbell-token', sourceRecipeId: null, dataSources: [], templates: [{ id: DOORBELL_TEMPLATE, layout: 'full' }], fields: [], variables: [] },
+      ],
+      pluginFolders: {
+        [WEATHER]: {
+          manifest: { name: 'Weather', description: '', custom_fields: [{ keyname: 'api_key', field_type: 'password', name: 'API key', description: '', default_value: '', optional: false }] },
+          settings: { refresh_interval: 15, data_sources: [{ name: 'forecast', endpoint: 'https://api.example.com', method: 'GET', headers: { Authorization: 'Bearer secret' }, body: {} }] },
+          templates: { full: 'Hello' },
+        },
+        [DOORBELL]: { manifest: { name: 'Doorbell note', description: '', custom_fields: [] }, templates: { full: 'Ring' } },
+      },
+      devices: [makeDeviceEntry({ id: HALLWAY, name: 'Hallway', friendlyId: 'HALLWY', mac: 'AA:BB:CC:00:00:02', apikey: 'hallway-key', paletteId: PALETTE })],
+      assignments: [{ id: WEATHER_ASSIGNMENT, deviceId: HALLWAY, pluginId: WEATHER, order: 1, isActive: true, fieldValues: [{ id: '13131313-1313-4313-8313-131313131313', fieldId: WEATHER_KEY_FIELD, value: 'weather-key' }] }],
+      screens: [{
+        id: PHOTO_SCREEN,
+        deviceId: HALLWAY,
+        type: 'file',
+        order: 2,
+        filename: 'Photo',
+        externalLink: null,
+        html: null,
+        fetchManual: false,
+        pluginId: null,
+        devicePluginId: null,
+        schedule: { id: '14141414-1414-4414-8414-141414141414', enabled: true, weekdays: [1, 2, 3], startTime: '08:00', endTime: '18:00', startDate: null, endDate: null },
+        mashupConfiguration: null,
+      }],
+      screenImages: { [PHOTO_SCREEN]: 'png-bytes' },
+      settings: null,
+    })
+  }
+
+  it('reads and imports an archive exported by Kuroshiro 0.17.x, leaving out its Plugin Variables and per-Assignment Field Values with a warning', async () => {
+    const checked = await http.request('/api/config/import/check', upload(v1Archive()))
+
+    expect(checked.status).toBe(200)
+    const check = await checked.json() as ImportCheck
+    expect(check).toEqual({
+      archive: { kuroshiroVersion: '0.17.1', exportedAt: EXPORTED_AT, schemaVersion: 1, redacted: false },
+      adds: { palettes: 1, plugins: 2, dataSources: 1, templates: 2, fields: 1, devices: 1, assignments: 1, screens: 1, schedules: 1 },
+      overwrites: {},
+      devices: { added: [hallway], overwritten: [] },
+      settings: { overridden: 0 },
+      warnings: [{ kind: 'previous-version-values-dropped', plugin: weather }],
+    })
+
+    const imported = await http.request('/api/config/import', upload(v1Archive()))
+
+    expect(imported.status).toBe(201)
+    expect(await imported.json() as ConfigurationImportSummary).toEqual({ created: check.adds, updated: check.overwrites, warnings: check.warnings })
+    expect(await database.getRepository(PluginDataSource).findOneBy({ id: WEATHER_SOURCE })).toMatchObject({ headers: { Authorization: 'Bearer secret' } })
+    expect(await database.getRepository(Plugin).findOneBy({ id: DOORBELL })).toMatchObject({ webhookToken: 'doorbell-token', sourceRecipeSnapshot: null })
   })
 
   describe.each(['/api/config/import', '/api/config/import/check'])('%s refuses', (path) => {
@@ -271,11 +343,19 @@ describe('reading and importing a Configuration Archive, against a real database
       expect(await refused(buildArchive({ manifest: manifest(), settings: null }))).toMatchObject({ statusCode: 400, code: 'archive-not-configuration' })
     })
 
-    it('another archive version, naming both', async () => {
-      expect(await refused(buildArchive({ manifest: manifest({ schemaVersion: 1 }) }))).toMatchObject({
+    it.each([0, CONFIG_SCHEMA_VERSION + 1])('an archive of version %i, naming both', async (schemaVersion) => {
+      expect(await refused(buildArchive({ manifest: manifest({ schemaVersion }) }))).toMatchObject({
         statusCode: 400,
         code: 'archive-schema-version',
-        details: { archive: 1, expected: CONFIG_SCHEMA_VERSION },
+        details: { archive: schemaVersion, expected: CONFIG_SCHEMA_VERSION },
+      })
+    })
+
+    it('an archive that does not say its version', async () => {
+      expect(await refused(buildArchive({ manifest: manifest({ schemaVersion: undefined }) }))).toMatchObject({
+        statusCode: 400,
+        code: 'archive-schema-version',
+        details: { archive: null, expected: CONFIG_SCHEMA_VERSION },
       })
     })
 

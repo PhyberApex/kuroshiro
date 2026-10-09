@@ -54,7 +54,7 @@ export interface PluginManifestEntry {
   fieldValues: Record<string, string>
 }
 
-// Carried only by a schemaVersion 2 archive; Configuration Import ignores both
+// Carried only by a schemaVersion 1 or 2 archive; Configuration Import ignores both
 // with a warning (ADR-0032): Plugin Variables, and Field Values per Assignment.
 export interface LegacyPluginManifestFields {
   variables?: unknown[]

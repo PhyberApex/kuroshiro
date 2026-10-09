@@ -10,7 +10,7 @@ Triage of issue #1025 lifted the "configuration is environment variables only" c
 
 ## Consequences
 
-- The archive `schemaVersion` goes from 1 to 2, so archives exported before this change are refused on import (ADR-0021 has no archive migrations).
+- The archive `schemaVersion` goes from 1 to 2, so archives exported before this change are refused on import (ADR-0021 has no archive migrations). _(Superseded in part by ADR-0032's 2026-10-09 addendum: a version 1 archive imports as one with no overridden Instance Settings.)_
 - A deployment that sets a `KUROSHIRO_ALERT_*` variable after an admin saved an override sees no effect until the override is cleared. The admin surface names each Setting's fallback source so this is discoverable.
 - A saved threshold applies from the next Alert Sweep; saving never triggers one, keeping the Sweep the only place Alerts are decided (ADR-0022).
 - Apprise URL and key stay environment-only: they are deployment wiring and a secret, not tuning.
