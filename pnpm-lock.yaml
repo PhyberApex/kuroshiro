@@ -304,7 +304,7 @@ catalogs:
       version: 2.7.0
     js-yaml:
       specifier: ^5.0.0
-      version: 5.4.2
+      version: 5.4.3
     liquidjs:
       specifier: ^10.25.5
       version: 10.30.0
@@ -444,7 +444,7 @@ importers:
         version: 5.2.1(supports-color@10.2.2)
       js-yaml:
         specifier: 'catalog:'
-        version: 5.4.2
+        version: 5.4.3
       liquidjs:
         specifier: 'catalog:'
         version: 10.30.0
@@ -4141,8 +4141,8 @@ packages:
     resolution: {integrity: sha512-1td788aAnnZ5qs7V2QIRl1owjtYpbKt749Y3xauqQgwIIGF/xXWz1wMTEBx5O3LK3lXLVuqXPdPxj2BoFHaW9Q==}
     hasBin: true
 
-  js-yaml@5.4.2:
-    resolution: {integrity: sha512-m+aqu+LwO1O6sIopafj8HUVl5aawITwZQe/yHpMCKjaWBaA/d07B/QdMb3529REftiU+RMMHL3Vlsw3hON7vWg==}
+  js-yaml@5.4.3:
+    resolution: {integrity: sha512-yzzNtgczwgoVHNigCyKTXcQJU4Y8t/ikU4UxXW0BvrLfHTGWZhsNcOT2s/a7vn81/4KqVnNmHjaUEPlvWnNwVw==}
     hasBin: true
 
   jsdoc-type-pratt-parser@9.0.0:
@@ -9436,7 +9436,7 @@ snapshots:
       argparse: 2.0.1
     optional: true
 
-  js-yaml@5.4.2:
+  js-yaml@5.4.3:
     dependencies:
       argparse: 2.0.1
 
