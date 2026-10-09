@@ -23,8 +23,10 @@ interface TrmnlFirmwarePayload {
 }
 
 // TRMNL's public firmware endpoint only ever returns the OG binary (see
-// docs/adr/0015-firmware-compatibility-enforced-og-only-sync.md).
-const OFFICIAL_SYNC_COMPATIBLE_MODELS = ['og_png', 'og_plus', 'og_bwry']
+// docs/adr/0015-firmware-compatibility-enforced-og-only-sync.md). `og_bwry` is left out
+// because OTA with that binary fails or loops on OG B/W/R/Y Devices
+// (usetrmnl/trmnl-firmware#538).
+const OFFICIAL_SYNC_COMPATIBLE_MODELS = ['og_png', 'og_plus']
 
 const DAILY_AT_4AM = '0 4 * * *'
 const TRMNL_FETCH_TIMEOUT_MS = 15_000
@@ -76,6 +78,7 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
 
   private async runSync(ranAt: Date): Promise<FirmwareSyncResult> {
     this.logger.log('Syncing firmware from TRMNL')
+    await this.realignOfficialCompatibility()
     const payload = await this.fetchLatest()
     const noop = { ranAt: ranAt.toISOString(), inserted: false, version: payload.version, assigned: [] }
     if (await this.firmwareRepository.existsBy({ version: payload.version })) {
@@ -124,6 +127,14 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
       version: payload.version,
       assigned: assigned.map(toDeviceReference),
     }
+  }
+
+  /**
+   * Official-synced rows aren't admin-editable, so their compatibility is whatever this
+   * service currently declares; rows synced under an older declaration catch up here.
+   */
+  private async realignOfficialCompatibility(): Promise<void> {
+    await this.firmwareRepository.update({ kind: 'official-synced' }, { compatibleModels: OFFICIAL_SYNC_COMPATIBLE_MODELS })
   }
 
   private async fetchLatest(): Promise<TrmnlFirmwarePayload> {
