@@ -49,7 +49,7 @@ import { INSTANCE_SETTINGS_ID, InstanceSettings } from '../../settings/entities/
 import { fileExists } from '../../utils/fileExists.js'
 import generateApikey from '../../utils/generateApikey.js'
 import { resolveAppPath } from '../../utils/pathHelper.js'
-import { CONFIG_SCHEMA_VERSION, PREVIOUS_CONFIG_SCHEMA_VERSION } from '../schema-version.js'
+import { CONFIG_SCHEMA_VERSION, FIRST_CONFIG_SCHEMA_VERSION_WITH_SETTINGS, IMPORTABLE_CONFIG_SCHEMA_VERSIONS, LEGACY_CONFIG_SCHEMA_VERSIONS } from '../schema-version.js'
 import { CONFIG_ARCHIVE_FILES } from '../types.js'
 import { toImportCheck } from './import-check.mapper.js'
 
@@ -66,7 +66,7 @@ interface ImportRun {
   updated: ImportCounts
   warnings: ImportWarning[]
   devices: { added: Ref[], overwritten: Ref[] }
-  /** The Plugins of a schemaVersion 2 archive that held Plugin Variables or per-Assignment Field Values, which have nowhere to go (ADR-0032). */
+  /** The Plugins of a legacy-version archive that held Plugin Variables or per-Assignment Field Values, which have nowhere to go (ADR-0032). */
   pluginsWithDroppedValues: Set<string>
   /** The id of every Plugin this run created or updated, for scheduling once the transaction commits. */
   upsertedPluginIds: Set<string>
@@ -187,7 +187,7 @@ export class ConfigurationImportService {
       assignments: this.readList(zip, CONFIG_ARCHIVE_FILES.assignments),
       palettes: this.readList(zip, CONFIG_ARCHIVE_FILES.palettes),
       firmware: this.readList(zip, CONFIG_ARCHIVE_FILES.firmware),
-      settings: this.readSettings(zip),
+      settings: manifest.schemaVersion < FIRST_CONFIG_SCHEMA_VERSION_WITH_SETTINGS ? {} : this.readSettings(zip),
     }
   }
 
@@ -199,7 +199,7 @@ export class ConfigurationImportService {
       updated: {},
       warnings: [],
       devices: { added: [], overwritten: [] },
-      pluginsWithDroppedValues: archive.manifest.schemaVersion === PREVIOUS_CONFIG_SCHEMA_VERSION
+      pluginsWithDroppedValues: LEGACY_CONFIG_SCHEMA_VERSIONS.has(archive.manifest.schemaVersion)
         ? this.pluginsWithLegacyValues(archive.plugins, archive.assignments)
         : new Set(),
       upsertedPluginIds: new Set(),
@@ -347,7 +347,7 @@ export class ConfigurationImportService {
   }
 
   private assertSchemaVersion(manifest: ConfigurationManifest): void {
-    if (manifest.schemaVersion !== CONFIG_SCHEMA_VERSION && manifest.schemaVersion !== PREVIOUS_CONFIG_SCHEMA_VERSION) {
+    if (!IMPORTABLE_CONFIG_SCHEMA_VERSIONS.has(manifest.schemaVersion)) {
       throw new ApiException(
         HttpStatus.BAD_REQUEST,
         'archive-schema-version',

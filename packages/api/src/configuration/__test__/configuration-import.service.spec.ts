@@ -166,13 +166,15 @@ describe('configurationImportService', () => {
     expect(manager.transaction).not.toHaveBeenCalled()
   })
 
-  it('rejects a pre-Instance-Settings (schemaVersion 1) archive with the existing mismatch message', async () => {
+  it.each([
+    ['0', { schemaVersion: 0 }],
+    ['missing', {}],
+  ])('rejects an archive whose schemaVersion is %s, without starting a transaction', async (_label, version) => {
     const buffer = buildArchive({
-      manifest: { kuroshiroVersion: '0.16.0', schemaVersion: 1, exportedAt: new Date().toISOString(), containsSecrets: true },
-      settings: null,
+      manifest: { kuroshiroVersion: '0.13.0', exportedAt: new Date().toISOString(), containsSecrets: true, ...version },
     })
 
-    await expect(service.importFromZip(buffer)).rejects.toThrow(new RegExp(`1.*${CONFIG_SCHEMA_VERSION}`))
+    await expect(service.importFromZip(buffer)).rejects.toMatchObject({ code: 'archive-schema-version' })
     expect(manager.transaction).not.toHaveBeenCalled()
   })
 
@@ -692,6 +694,67 @@ describe('configurationImportService', () => {
       expect(storedFieldValues()).toEqual({})
       expect(summary.created.variables).toBeUndefined()
       expect(summary.warnings).toEqual([{ kind: 'previous-version-values-dropped', plugin: { id: 'plugin-1', name: 'Test Plugin' } }])
+    })
+  })
+
+  describe('an archive exported by Kuroshiro 0.17.x (schemaVersion 1)', () => {
+    const v1Manifest = { kuroshiroVersion: '0.17.1', schemaVersion: 1, exportedAt: new Date().toISOString(), containsSecrets: true }
+
+    function v1Archive(variables: unknown[], assignmentFieldValues: unknown[]) {
+      return buildArchive({
+        manifest: v1Manifest,
+        plugins: [{
+          id: 'plugin-1',
+          kind: 'Poll',
+          mergeStrategy: null,
+          streamLimit: null,
+          webhookToken: null,
+          sourceRecipeId: null,
+          dataSources: [{ id: 'ds-1', name: 'forecast' }],
+          templates: [{ id: 'tpl-1', layout: 'full' }],
+          fields: [{ id: 'field-city', keyname: 'city' }],
+          variables,
+        }],
+        pluginFolders: {
+          'plugin-1': {
+            manifest: {
+              name: 'Test Plugin',
+              description: '',
+              custom_fields: [{ keyname: 'city', field_type: 'string', name: 'City', description: '', default_value: '', optional: false }],
+            },
+            settings: { refresh_interval: 15, data_sources: [{ name: 'forecast', endpoint: 'https://api.example.com', method: 'GET', headers: {}, body: {} }] },
+            templates: { full: 'Hello' },
+          },
+        },
+        devices: [makeDeviceEntry()],
+        assignments: [{ id: 'dp-1', deviceId: 'device-1', pluginId: 'plugin-1', order: 0, isActive: true, fieldValues: assignmentFieldValues }],
+        settings: null,
+      })
+    }
+
+    it('imports without a warning when it held no Plugin Variables and no per-Assignment Field Values', async () => {
+      const summary = await service.importFromZip(v1Archive([], []))
+
+      expect(summary.created).toMatchObject({ plugins: 1, dataSources: 1, templates: 1, fields: 1, devices: 1, assignments: 1 })
+      expect(summary.warnings).toEqual([])
+    })
+
+    it('ignores its Plugin Variables and per-Assignment Field Values, with one warning for the Plugin that held them', async () => {
+      const summary = await service.importFromZip(v1Archive(
+        [{ id: 'var-1', key: 'SECRET', value: 'x', isSecret: true }],
+        [{ id: 'fv-1', fieldId: 'field-city', value: 'Tokyo' }],
+      ))
+
+      expect(storedFieldValues()).toEqual({})
+      expect(summary.warnings).toEqual([{ kind: 'previous-version-values-dropped', plugin: { id: 'plugin-1', name: 'Test Plugin' } }])
+    })
+
+    it('reads its missing settings.json as no overridden Instance Settings, clearing the overrides here', async () => {
+      backing.get('InstanceSettings')!.set(1 as unknown as string, { id: 1 as unknown as string, lowBatteryPercent: 15, firmwareAutoUpdate: true })
+
+      await service.importFromZip(v1Archive([], []))
+
+      expect([...backing.get('InstanceSettings')!.values()]).toEqual([{ id: 1, lowBatteryPercent: null, offlineMultiplier: null, fetchFailureThreshold: null, alertRetentionDays: null, deviceLogRetentionDays: null, firmwareAutoUpdate: null }])
     })
   })
 
