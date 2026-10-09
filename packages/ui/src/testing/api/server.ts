@@ -31,6 +31,6 @@ export function startFakedApi() {
   return api.start({
     quiet: true,
     serviceWorker: { url: '/mockServiceWorker.js' },
-    onUnhandledRequest: 'bypass',
+    onUnhandledFrame: 'bypass',
   })
 }
