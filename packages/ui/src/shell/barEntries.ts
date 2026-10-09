@@ -8,7 +8,7 @@ export interface NamedDevice {
 
 export interface BarEntry {
   label: string
-  /** The whole name, when `label` is a cut one: the link's tooltip and accessible name. */
+  /** The whole name, when `label` is a cut one: the link's tooltip, and its accessible name in place of the cut one. */
   fullName?: string
   to: string
   /** Other paths the entry is current on, beside `to` and what is under it. */

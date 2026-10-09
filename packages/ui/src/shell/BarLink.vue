@@ -13,8 +13,9 @@ defineProps<{
 
 <template>
   <Tooltip v-if="entry.fullName" :text="entry.fullName" :open="tooltipOpen || undefined">
-    <RouterLink class="bar-link" :to="entry.to" :aria-label="entry.fullName" :aria-current="current ? 'page' : undefined">
-      {{ entry.label }}
+    <RouterLink class="bar-link" :to="entry.to" :aria-current="current ? 'page' : undefined">
+      <span aria-hidden="true">{{ entry.label }}</span>
+      <span class="visually-hidden">{{ entry.fullName }}</span>
     </RouterLink>
   </Tooltip>
   <RouterLink v-else class="bar-link" :to="entry.to" :aria-current="current ? 'page' : undefined">

@@ -22,8 +22,8 @@ type Screen = Awaited<ReturnType<typeof mountApp>>
 
 const bar = (screen: Screen) => screen.getByRole('banner').getByRole('navigation', { name: 'Main' })
 const currentLinks = (screen: Screen) => [...bar(screen).element().querySelectorAll('a[aria-current="page"]')]
-const shownText = (link: { element: () => Element }) => link.element().textContent?.trim()
-const linkNames = (screen: Screen) => bar(screen).getByRole('link').elements().map(link => link.getAttribute('aria-label') ?? link.textContent?.trim())
+const shownText = (link: { element: () => Element }) => (link.element().querySelector('[aria-hidden="true"]') ?? link.element()).textContent?.trim()
+const linkNames = (screen: Screen) => bar(screen).getByRole('link').elements().map(link => link.querySelector('.visually-hidden')?.textContent ?? link.textContent?.trim())
 
 describe('the bar', () => {
   it('links the seal and wordmark to the landing route', async () => {
@@ -81,7 +81,7 @@ describe('the bar', () => {
     const screen = await mountApp({ at: '/plugins' })
 
     await expect.poll(() => shownText(bar(screen).getByRole('link', { name: 'Kitchen by a bar' }))).toBe('Kitchen by a bar')
-    expect(bar(screen).getByRole('link', { name: 'Kitchen by a bar' }).element().hasAttribute('aria-label')).toBe(false)
+    expect(bar(screen).getByRole('link', { name: 'Kitchen by a bar' }).element().querySelector('.visually-hidden')).toBeNull()
   })
 
   it('falls back to the single "Devices" entry when four names do not fit on one line, and never wraps or scrolls', async () => {

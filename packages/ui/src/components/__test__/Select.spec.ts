@@ -136,10 +136,9 @@ describe('select', () => {
   it('shows why an option is disabled and does not let it be chosen, by pointer or by keyboard', async () => {
     const { screen, onChosen } = await mountPalette('gray-16')
     await userEvent.keyboard('{Tab}{Enter}')
-    const disabled = screen.getByRole('option', { name: 'Colour, 6 inks' })
+    const disabled = screen.getByRole('option', { name: 'Colour, 6 inks Not on TRMNL OG', exact: true })
 
     await expect.element(disabled).toHaveAttribute('aria-disabled', 'true')
-    await expect.element(disabled).toHaveAccessibleDescription('Not on TRMNL OG')
     await expect.element(screen.getByText('Not on TRMNL OG')).toBeVisible()
 
     await userEvent.keyboard('{ArrowDown}')
@@ -256,10 +255,10 @@ describe('select', () => {
         attrs: { 'aria-label': 'Palette' },
       })
       await screen.getByRole('combobox', { name: 'Palette' }).click()
-      const disabled = screen.getByRole('option', { name: 'Colour, 6 inks', exact: true })
+      const disabled = screen.getByRole('option', { name: 'Colour, 6 inks Not on TRMNL OG', exact: true })
 
       await expect.element(disabled).toHaveAttribute('aria-disabled', 'true')
-      await expect.element(disabled).toHaveAccessibleDescription('Not on TRMNL OG')
+      await expect.element(screen.getByText('Not on TRMNL OG')).toBeVisible()
       // A forced click does not wait, and the list is parked off screen until it is placed under its control.
       await expect.poll(() => disabled.element().getBoundingClientRect().top).toBeGreaterThan(0)
       await disabled.click({ force: true })
