@@ -172,7 +172,7 @@ export async function mountUpload() {
 
 /** A cell's lines, joined by a space: `textContent` alone joins two paragraphs without one. */
 function cellSays(cell: Element) {
-  const lines = [...cell.querySelectorAll(':scope > p')]
+  const lines = [...cell.querySelectorAll(':scope > :is(p, ul)')]
   return lines.length > 0 ? lines.map(words).join(' ') : words(cell)
 }
 

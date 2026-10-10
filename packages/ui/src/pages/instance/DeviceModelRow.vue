@@ -20,13 +20,16 @@ const supported = computed(() => paletteLabels(props.model, props.palettes))
     <p>
       <span class="size">{{ imageSize(model) }}</span>
       <template v-if="supported.length > 0">
-        {{ ' · ' }}<ul class="palettes">
-          <li v-for="(palette, index) in supported" :key="palette.id">
-            {{ palette.label }}{{ index < supported.length - 1 ? ', ' : '' }}
-          </li>
-        </ul>
+        {{ ' · ' }}
       </template>
     </p>
+    <ul v-if="supported.length > 0" class="palettes">
+      <li v-for="(palette, index) in supported" :key="palette.id">
+        <template v-if="index > 0">
+          {{ ', ' }}
+        </template>{{ palette.label }}
+      </li>
+    </ul>
     <template v-if="model.usedBy.length > 0" #end>
       <span><DeviceNames :devices="model.usedBy" section="display" /></span>
     </template>
@@ -39,11 +42,15 @@ const supported = computed(() => paletteLabels(props.model, props.palettes))
     font-family: var(--font-mono);
   }
 
+  /* A ul cannot nest in the size's p, so it is kept on the same line beside it instead. */
+  p {
+    display: inline;
+  }
+
   .palettes {
     display: inline;
     padding: 0;
     margin: 0;
-    list-style: none;
   }
 
   .palettes li {
