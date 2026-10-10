@@ -54,12 +54,24 @@ describe('what a confirmation says is lost and what stays', () => {
   })
 
   it('words a Plugin Screen as unassigning', () => {
-    expect(removalWording(buildScreen({ kind: 'plugin', name: 'Weather' }), kitchen)).toEqual({
+    expect(removalWording(buildScreen({
+      kind: 'plugin',
+      name: 'Weather',
+      plugin: { id: 'weather', name: 'Weather', kind: 'Poll', requiredFieldEmpty: false, fetchAlertFiring: false },
+    }), kitchen)).toEqual({
       action: 'Unassign Plugin',
       title: 'Unassign Weather from Kitchen?',
       lost: 'This Screen on Kitchen and its Schedule.',
       stays: 'The Plugin Weather, with its template, its Data Sources and its place in any Mashup.',
     })
+  })
+
+  it('says a Webhook-kind Plugin Screen keeps its Webhook URL, not its Data Sources', () => {
+    expect(removalWording(buildScreen({
+      kind: 'plugin',
+      name: 'Doorbell',
+      plugin: { id: 'doorbell', name: 'Doorbell', kind: 'Webhook', requiredFieldEmpty: false, fetchAlertFiring: false },
+    }), kitchen).stays).toBe('The Plugin Doorbell, with its template, its Webhook URL and its place in any Mashup.')
   })
 })
 

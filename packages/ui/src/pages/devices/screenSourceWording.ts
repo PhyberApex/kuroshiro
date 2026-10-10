@@ -1,6 +1,7 @@
 import type { DeviceDetail, ScreenKind, ScreenPluginReference, ScreenRead } from 'kuroshiro-shared'
 import type { Sentence } from './sentence'
 import { formatBytes } from '@/components/fileRules'
+import { unassignWording } from '@/pages/plugins/pluginDevices'
 import { pluginPath } from '@/pages/plugins/pluginPaths'
 import { listed } from '@/patterns/listed'
 import { clockTime, exactTime, relativeTime } from '@/patterns/time'
@@ -62,12 +63,7 @@ const LOST_WITH_THE_SCREEN: Record<Exclude<ScreenKind, 'plugin'>, string> = {
 export function removalWording(screen: Pick<ScreenRead, 'kind' | 'name' | 'plugin'>, device: Pick<DeviceDetail, 'name'>): RemovalWording {
   const name = screenName(screen.name)
   if (screen.kind === 'plugin' && screen.plugin) {
-    return {
-      action: 'Unassign Plugin',
-      title: `Unassign ${name} from ${device.name}?`,
-      lost: `This Screen on ${device.name} and its Schedule.`,
-      stays: `The Plugin ${name}, with its template, its Data Sources and its place in any Mashup.`,
-    }
+    return { action: 'Unassign Plugin', ...unassignWording(screen.plugin, device.name) }
   }
   return {
     action: 'Delete Screen',

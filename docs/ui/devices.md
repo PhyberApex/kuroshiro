@@ -227,7 +227,7 @@ A row of quiet buttons, then the destructive one as a plain button:
 - **Rename** (every kind but Plugin; [render][screens-rename]). The name in the row becomes a text input holding the name, selected, with "Save" (primary) and "Cancel". Enter saves, Escape cancels, and focus returns to "Rename". An empty name is refused: "A Screen needs a name."
 - **Move up**, **Move down**, and from nine Screens on **Move to top**, **Move to end**. Disabled at the ends.
 - **Delete Screen** (every kind but Plugin; [render][confirm-delete]). "Delete {Screen}?" · Lost, by kind: "The Screen, its Schedule and the uploaded image." / "The Screen, its Schedule and the Mashup's layout." / "The Screen, its Schedule and the HTML written for it." / "The Screen, its Schedule and the link." · Stays: "{Device}'s other Screens, which move up in the Order." or for a Mashup "The Plugins in its slots." · "Delete Screen".
-- **Unassign Plugin** (Plugin only; [render][confirm-unassign]). "Unassign {Plugin} from {Device}?" · Lost: "This Screen on {Device} and its Schedule." · Stays: "The Plugin {Plugin}, with its template, its Data Sources and its place in any Mashup." · "Unassign Plugin".
+- **Unassign Plugin** (Plugin only; [render][confirm-unassign]). "Unassign {Plugin} from {Device}?" · Lost: "This Screen on {Device} and its Schedule." · Stays: "The Plugin {Plugin}, with its template, its Data Sources and its place in any Mashup." (for a Webhook-kind Plugin "its Webhook URL" in place of "its Data Sources") · "Unassign Plugin".
 
 Deleting or unassigning the Active Screen leaves the plate as it is until the Device's next poll.
 
