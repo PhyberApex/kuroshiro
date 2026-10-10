@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { Alert } from '../alerts/entities/alert.entity.js'
+import { DeviceModelsModule } from '../device-models/device-models.module.js'
 import { Device } from '../devices/devices.entity.js'
 import { LogEntry } from '../logs/logs.entity.js'
 import { Screen } from '../screens/screens.entity.js'
@@ -11,7 +12,7 @@ import { MaintenanceService } from './maintenance.service.js'
 import { RetentionService } from './retention.service.js'
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Device, Screen, Alert, LogEntry]), SettingsModule, ScreensModule],
+  imports: [TypeOrmModule.forFeature([Device, Screen, Alert, LogEntry]), SettingsModule, ScreensModule, DeviceModelsModule],
   controllers: [MaintenanceController],
   providers: [MaintenanceService, RetentionService],
 })

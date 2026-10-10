@@ -1,11 +1,14 @@
 import type { ConfigService } from '@nestjs/config'
 import type { CleanupResult, StorageCheck, StorageFinding } from 'kuroshiro-shared'
 import type { DataSource, DeepPartial } from 'typeorm'
-import type { DeviceModelsService } from '../../device-models/device-models.service.js'
 import type { HttpTestApp } from '../../test/httpApp.js'
 import * as fs from 'node:fs'
 import path from 'node:path'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { DeviceModelsService } from '../../device-models/device-models.service.js'
+import { DeviceModel } from '../../device-models/entities/device-model.entity.js'
+import { Palette } from '../../device-models/entities/palette.entity.js'
+import { FALLBACK_SCREEN_TEMPLATE_VERSION } from '../../device-models/fallback-screen-templates.js'
 import { Device } from '../../devices/devices.entity.js'
 import { Screen } from '../../screens/screens.entity.js'
 import { ScreensService } from '../../screens/screens.service.js'
@@ -34,16 +37,17 @@ describe('the stored-files check and its cleanup, against a real database and re
 
   beforeAll(async () => {
     database = await createTestDatabase()
+    const deviceModels = new DeviceModelsService(database.getRepository(DeviceModel), database.getRepository(Palette))
     const screens = new ScreensService(
       database.getRepository(Screen),
       database.getRepository(Device),
       asService<ConfigService>({ get: vi.fn() }),
-      asService<DeviceModelsService>({}),
+      deviceModels,
     )
     http = await createHttpTestApp({
       controllers: [MaintenanceController],
       providers: [
-        { provide: MaintenanceService, useValue: new MaintenanceService(database.getRepository(Device), database.getRepository(Screen), screens) },
+        { provide: MaintenanceService, useValue: new MaintenanceService(database.getRepository(Device), database.getRepository(Screen), screens, deviceModels) },
         { provide: RetentionService, useValue: {} },
       ],
     })
@@ -107,6 +111,24 @@ describe('the stored-files check and its cleanup, against a real database and re
       tempFile: await store(inDeviceFolder(device.id, 'tmp-source'), { bytes: 30, old: true }),
       folderFile: await store(inDeviceFolder(GONE_DEVICE_ID, 'left.png'), { bytes: 20 }),
       oldUpload: await store(['uploads', 'abc123'], { bytes: 50, old: true }),
+    }
+  }
+
+  const inFallbackFolder = (version: number | string, pair: string, file: string) => ['public', 'screens', 'fallback', `v${version}`, pair, file]
+
+  /** A Device Model and Palette resolved by the test Device, a stale file of an older template version in its folder, and one of a pair no Device resolves to. */
+  async function storeStaleFallbackFiles() {
+    const model = await database.getRepository(DeviceModel).save({ name: 'fallback_model', label: 'Fallback model', width: 800, height: 480, colors: 2, bitDepth: 1, scaleFactor: 1, kind: 'trmnl', paletteIds: ['fallback_palette'] })
+    const palette = await database.getRepository(Palette).save({ id: 'fallback_palette', name: 'Fallback palette', kind: 'official', grays: 2, frameworkClass: 'screen--1bit' })
+    device = await database.getRepository(Device).save({ ...device, deviceModel: model, palette })
+    const usedPair = `${model.name}-${palette.id}`
+    const unusedPair = 'unused_model-unused_palette'
+    return {
+      usedPair,
+      unusedPair,
+      oldVersion: await store(inFallbackFolder(1, usedPair, 'error-aaa.png'), { bytes: 15 }),
+      used: await store(inFallbackFolder(FALLBACK_SCREEN_TEMPLATE_VERSION, usedPair, 'error-bbb.png'), { bytes: 25 }),
+      unused: await store(inFallbackFolder(FALLBACK_SCREEN_TEMPLATE_VERSION, unusedPair, 'error-ccc.png'), { bytes: 35 }),
     }
   }
 
@@ -222,6 +244,29 @@ describe('the stored-files check and its cleanup, against a real database and re
 
       expect(byGroup((await check()).findings, 'missingImage')).toEqual([])
     })
+
+    it('lists a Fallback Screen render of an older template version or of a Device Model and Palette pair no Device uses, not the pair a Device still uses', async () => {
+      const { usedPair, unusedPair } = await storeStaleFallbackFiles()
+
+      const { findings } = await check()
+
+      const stale = byGroup(findings, 'oldFallbackRender').map(({ id: _id, ...finding }) => finding)
+      expect(stale).toHaveLength(2)
+      expect(stale).toEqual(expect.arrayContaining([
+        { group: 'oldFallbackRender', path: `fallback/v1/${usedPair}/error-aaa.png`, bytes: 15 },
+        { group: 'oldFallbackRender', path: `fallback/v${FALLBACK_SCREEN_TEMPLATE_VERSION}/${unusedPair}/error-ccc.png`, bytes: 35 },
+      ]))
+      expect(stale.flatMap(finding => 'path' in finding ? [finding.path] : [])).not.toContain(`fallback/v${FALLBACK_SCREEN_TEMPLATE_VERSION}/${usedPair}/error-bbb.png`)
+    })
+
+    it('leaves the Screen image totals unaffected by Fallback Screen renders', async () => {
+      await seedScreenWithImage(1)
+      const before = (await check()).screenImages
+
+      await storeStaleFallbackFiles()
+
+      expect((await check()).screenImages).toEqual(before)
+    })
   })
 
   describe('pOST /api/maintenance/cleanup', () => {
@@ -300,6 +345,21 @@ describe('the stored-files check and its cleanup, against a real database and re
       const remaining = await database.getRepository(Screen).find({ where: { device: { id: device.id } }, order: { order: 'ASC' } })
       expect(remaining.map(screen => [screen.filename, screen.order])).toEqual([['First', 1], ['Last', 2]])
       expect(await exists(resolveAppPath(...inDeviceFolder(device.id, `${broken.id}.original`)))).toBe(false)
+    })
+
+    it('deletes a stale Fallback Screen render and the folder it leaves empty, keeping the pair a Device still uses', async () => {
+      const { unusedPair, oldVersion, used, unused } = await storeStaleFallbackFiles()
+      const ids = byGroup((await check()).findings, 'oldFallbackRender').map(finding => finding.id)
+
+      const answer = await cleanUp(ids)
+
+      expect(answer).toEqual({ removed: { files: 2, folders: 3, screens: 0, bytes: 50 }, failed: [] })
+      expect(await Promise.all([oldVersion, unused].map(exists))).toEqual([false, false])
+      expect(await exists(used)).toBe(true)
+      expect(await exists(resolveAppPath('public', 'screens', 'fallback', 'v1'))).toBe(false)
+      expect(await exists(resolveAppPath('public', 'screens', 'fallback', `v${FALLBACK_SCREEN_TEMPLATE_VERSION}`, unusedPair))).toBe(false)
+      expect(await exists(resolveAppPath('public', 'screens', 'fallback', `v${FALLBACK_SCREEN_TEMPLATE_VERSION}`))).toBe(true)
+      expect(byGroup((await check()).findings, 'oldFallbackRender')).toEqual([])
     })
 
     it.each([

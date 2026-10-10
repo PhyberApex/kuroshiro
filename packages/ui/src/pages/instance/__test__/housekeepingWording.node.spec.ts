@@ -62,6 +62,18 @@ describe('the stored-files check in words', () => {
       .toBe('2 Screens and their Schedules. Their images are already gone, so their Devices show the error Fallback Screen at their turn today.')
   })
 
+  it('groups a stale Fallback Screen render as its own group, worded one or several', () => {
+    const first: StorageFinding = { id: 'oldFallbackRender:fallback/v1/og_bwr-bw/error-abc123.png', group: 'oldFallbackRender', path: 'fallback/v1/og_bwr-bw/error-abc123.png', bytes: 51_200 }
+    const second: StorageFinding = { id: 'oldFallbackRender:fallback/v2/og_bwr-bw/error-def456.png', group: 'oldFallbackRender', path: 'fallback/v2/og_bwr-bw/error-def456.png', bytes: 10_240 }
+    const [fallbackGroup] = findingGroups([first])
+
+    expect(fallbackGroup).toMatchObject({ group: 'oldFallbackRender', name: 'Stale Fallback Screen renders', count: '1 file', size: '50 KB' })
+    expect(openedSentence(fallbackGroup!)).toBe('Fallback Screen drawn for an older look, or for a Device Model and Palette no Device uses.')
+    expect(openedSentence(findingGroups([first, second])[0]!))
+      .toBe('2 Fallback Screens drawn for an older look, or for a Device Model and Palette no Device uses.')
+    expect(findingLine(first)).toEqual({ what: 'fallback/v1/og_bwr-bw/error-abc123.png', detail: '50 KB', path: true })
+  })
+
   it('says under the rows what happens to a Screen whose image is missing', () => {
     expect(screensLine(groups, ['unusedImage'])).toBe('A Screen whose image is missing is left alone unless you tick it.')
     expect(screensLine(groups, ['missingImage'])).toBe('Cleaning up deletes 1 Screen.')
