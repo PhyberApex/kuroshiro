@@ -4,7 +4,7 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h, ref } from 'vue'
 import { expectAccessible } from '@/testing/a11y'
 import { buildScreen } from '@/testing/fixtures/screens'
-import { withCoarsePointer, withMotionAllowed } from '@/testing/media'
+import { isFirefox, withCoarsePointer, withMotionAllowed } from '@/testing/media'
 import { mount } from '@/testing/mount'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import { elementsInSealColour } from '@/testing/sealColour'
@@ -137,7 +137,9 @@ describe('screen row', () => {
     await screen.getByRole('button', { name: 'Fetch Weather' }).click()
     await userEvent.keyboard('{Enter}')
 
-    expect(onFetch.mock.calls).toEqual([['Weather'], ['Weather']])
+    // Firefox's keyboard automation resolves before the native Enter-triggers-click default
+    // action lands, so the second call can arrive a tick after `userEvent.keyboard` returns.
+    await expect.poll(() => onFetch.mock.calls).toEqual([['Weather'], ['Weather']])
     await expect.element(triggerOf(screen, 'Weather')).toHaveAttribute('aria-expanded', 'false')
   })
 
@@ -217,10 +219,13 @@ describe('screen row', () => {
     await expect.element(screen.getByText('Inside Calendar')).toBeVisible()
     expect(getComputedStyle(body()).animationName).toBe('none')
 
-    await withMotionAllowed(async () => {
-      expect(getComputedStyle(body()).animationName).not.toBe('none')
-      expect(getComputedStyle(body()).animationDuration).toBe('0.2s')
-    })
+    // Allowing motion rides a CDP session, which Firefox, running this spec for its drag coverage, has none of.
+    if (!isFirefox) {
+      await withMotionAllowed(async () => {
+        expect(getComputedStyle(body()).animationName).not.toBe('none')
+        expect(getComputedStyle(body()).animationDuration).toBe('0.2s')
+      })
+    }
   })
 
   it('has no grip, no Order and no announcements in a list that is not sortable', async () => {
@@ -266,7 +271,8 @@ describe('reordering screen rows', () => {
 
     await userEvent.keyboard(key)
 
-    expect(onReorder.mock.calls).toEqual([[['weather', 'weekend', 'calendar', 'trains']]])
+    // Same Firefox keyboard-automation lag as above: the drop's `reorder` can land a tick late.
+    await expect.poll(() => onReorder.mock.calls).toEqual([[['weather', 'weekend', 'calendar', 'trains']]])
     await expect.element(grip).toHaveAttribute('aria-pressed', 'false')
     await expect.element(grip).toHaveFocus()
     expect(namesOf(screen)).toEqual(['Weather', 'Weekend board', 'Calendar', 'Train departures'])
@@ -367,10 +373,14 @@ describe('reordering screen rows', () => {
     const many = Array.from({ length: 40 }, (_, index) => buildScreen({ id: `screen-${index}`, name: `Screen ${index + 1}` }))
     const screen = await mount(listOf({ screens: many }))
     const grip = gripOf(screen, 'Screen 1').element()
+    const row = rowOf(screen, 'Screen 1')
     const nearTheBottom = { clientX: 40, clientY: window.innerHeight - 4, bubbles: true, cancelable: true }
     expect(window.scrollY).toBe(0)
 
-    grip.dispatchEvent(new DragEvent('dragstart', { ...nearTheBottom, clientY: grip.getBoundingClientRect().top + 4, dataTransfer: new DataTransfer() }))
+    // The row, not the grip, is the `draggable` element (the grip is only its `dragHandle`), so a real
+    // drag's `dragstart` targets the row, over a point inside the grip, which the handle check reads.
+    const gripRect = grip.getBoundingClientRect()
+    row.dispatchEvent(new DragEvent('dragstart', { ...nearTheBottom, clientX: gripRect.left + 4, clientY: gripRect.top + 4, dataTransfer: new DataTransfer() }))
     try {
       await expect.poll(() => {
         document.body.dispatchEvent(new DragEvent('dragover', { ...nearTheBottom, dataTransfer: new DataTransfer() }))
@@ -378,7 +388,7 @@ describe('reordering screen rows', () => {
       }).toBeGreaterThan(0)
     }
     finally {
-      grip.dispatchEvent(new DragEvent('dragend', { bubbles: true }))
+      row.dispatchEvent(new DragEvent('dragend', { bubbles: true }))
       window.scrollTo(0, 0)
     }
   })
@@ -465,7 +475,8 @@ describe('reordering screen rows', () => {
     await expect.element(screen.getByRole('status')).toHaveTextContent('Calendar, Order 2 of 4')
   })
 
-  it('has 44 px targets at a coarse pointer: the line, the grip and the move buttons', async () => {
+  // Touch emulation rides a CDP session, which Firefox, running this spec for its drag coverage, has none of.
+  it.skipIf(isFirefox)('has 44 px targets at a coarse pointer: the line, the grip and the move buttons', async () => {
     const screen = await mount(listOf({ sortable: true }))
     const grip = gripOf(screen, 'Train departures').element()
 

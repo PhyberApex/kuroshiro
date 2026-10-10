@@ -10,7 +10,7 @@ import { buildAlert, buildAlertsList } from '@/testing/fixtures/alerts'
 import { buildDeviceDetail, buildDeviceSummary } from '@/testing/fixtures/devices'
 import { buildSchedule, buildScreen } from '@/testing/fixtures/screens'
 import { fakeScreenImages } from '@/testing/images'
-import { withMotionAllowed } from '@/testing/media'
+import { isFirefox, withMotionAllowed } from '@/testing/media'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import { elementsInSealColour } from '@/testing/sealColour'
 import { freezeTime } from '@/testing/time'
@@ -428,7 +428,8 @@ describe('an opened row', () => {
     await expect.element(screen.getByRole('region', { name: 'Screen 12', exact: true })).toBeVisible()
     const barBottom = document.querySelector('[data-shell-bar]')!.getBoundingClientRect().bottom
     await expect.poll(() => window.scrollY).toBeGreaterThan(0)
-    await expect.poll(() => Math.round(rowOf('Screen 12').getBoundingClientRect().top - barBottom)).toBe(16)
+    // Chromium and Firefox round `scrollIntoView`'s target position a pixel apart.
+    await expect.poll(() => Math.abs(rowOf('Screen 12').getBoundingClientRect().top - barBottom - 16)).toBeLessThanOrEqual(1)
   })
 
   it.each([
@@ -549,7 +550,9 @@ describe('loading and fresh data', () => {
     await expect.element(screen.getByRole('img', { name: 'On Kitchen: Harbour photo' })).toBeVisible()
     await expect.poll(() => sealOf().classList.contains('stamps')).toBe(true)
     expect(getComputedStyle(sealOf()).animationName).toBe('none')
-    await withMotionAllowed(async () => expect(getComputedStyle(sealOf()).animationName).not.toBe('none'))
+    // Allowing motion rides a CDP session, which Firefox, running this spec for its drag coverage, has none of.
+    if (!isFirefox)
+      await withMotionAllowed(async () => expect(getComputedStyle(sealOf()).animationName).not.toBe('none'))
     const stamped = sealOf()
 
     refresh()

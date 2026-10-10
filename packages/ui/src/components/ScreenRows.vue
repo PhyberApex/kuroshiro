@@ -199,8 +199,11 @@ function attach(id: string, row: HTMLElement) {
   const targetUnder = (targets: { data: Record<string | symbol, unknown> }[]) => targets[0]?.data as unknown as DropTargetData | undefined
 
   const detach = combine(
+    // The row carries `draggable`, not the grip: Firefox does not reliably start a native
+    // drag from a `<button>`, and `dragHandle` still limits where the drag may start from.
     draggable({
-      element: grip,
+      element: row,
+      dragHandle: grip,
       getInitialData: () => ({ list: listKey, id }),
       onGenerateDragPreview({ nativeSetDragImage, location }) {
         const { left, top } = row.getBoundingClientRect()
