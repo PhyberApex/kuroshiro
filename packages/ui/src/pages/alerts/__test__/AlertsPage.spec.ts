@@ -211,7 +211,10 @@ describe('the Alerts page', () => {
 
     answer = [OFFLINE_FIRING, BATTERY_FIRING]
     window.dispatchEvent(new Event('focus'))
-    await expect.poll(() => rowsOf(screen, FIRING).map(({ kind }) => kind)).toEqual(['Alert: offline', 'Alert: battery low'])
+    // The second focus triggers another real fetch-then-render round trip; on a loaded CI runner under
+    // coverage, that has taken past the default 5 s poll before both rows land.
+    await expect.poll(() => rowsOf(screen, FIRING).map(({ kind }) => kind), { timeout: 15_000 })
+      .toEqual(['Alert: offline', 'Alert: battery low'])
     await expect.element(screen.getByRole('banner').getByRole('link', { name: '2 Alerts firing' })).toHaveAttribute('aria-current', 'page')
   })
 

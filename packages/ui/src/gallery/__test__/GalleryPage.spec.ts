@@ -15,7 +15,9 @@ describe('the gallery', () => {
     await expect.element(tokens.getByText('--color-seal')).toBeVisible()
   })
 
-  it('links to each section from its contents', async () => {
+  // Mounting the full gallery, with every primitive in every state, competes with the other packages' own
+  // coverage runs; on a loaded CI runner that has taken past the default 30 s before the link even renders.
+  it('links to each section from its contents', { timeout: 120_000 }, async () => {
     const screen = await mount(GalleryPage)
 
     await expect.element(screen.getByRole('navigation', { name: 'Sections' }).getByRole('link', { name: 'Tokens' }))
