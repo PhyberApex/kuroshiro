@@ -162,6 +162,45 @@ describe('the Field Values of a Plugin', () => {
     })
   })
 
+  describe('"Clear"', () => {
+    it('shows for a select Field Value that is set, and empties it so the default applies again', async () => {
+      const faked = fakeWeather([UNITS], { units: 'imperial' })
+      const screen = await mountPlugin()
+
+      await expect.element(screen.getByRole('combobox', { name: 'Units' })).toHaveTextContent('Imperial')
+      await screen.getByRole('button', { name: 'Clear Units' }).click()
+
+      await expect.element(screen.getByRole('combobox', { name: 'Units' })).toHaveTextContent('Metric')
+      await expect.poll(() => noteOf(screen, 'Units')).toBe('The default')
+      expect(screen.getByRole('button', { name: 'Clear Units' }).query()).toBeNull()
+
+      await save(screen)
+      await expect.poll(() => faked.saves).toEqual([{ fieldValues: { units: null } }])
+    })
+
+    it('shows for an on/off Field Value that is set, and empties it so the default applies again', async () => {
+      const faked = fakeWeather([field('alerts', { type: 'boolean', default: 'true', label: 'Alerts' })], { alerts: 'false' })
+      const screen = await mountPlugin()
+
+      await expect.element(screen.getByRole('switch', { name: 'Alerts' })).not.toBeChecked()
+      await screen.getByRole('button', { name: 'Clear Alerts' }).click()
+
+      await expect.element(screen.getByRole('switch', { name: 'Alerts' })).toBeChecked()
+      await expect.poll(() => noteOf(screen, 'Alerts')).toBe('The default')
+      expect(screen.getByRole('button', { name: 'Clear Alerts' }).query()).toBeNull()
+
+      await save(screen)
+      await expect.poll(() => faked.saves).toEqual([{ fieldValues: { alerts: null } }])
+    })
+
+    it('is absent while the value is already empty, and for text, number or password rows', async () => {
+      fakeWeather([UNITS, SHOW_WIND, LOCATION, field('days', { type: 'number' }), API_KEY])
+      const screen = await mountPlugin()
+
+      expect(screen.getByRole('button', { name: /^Clear /i }).query()).toBeNull()
+    })
+  })
+
   describe('a password', () => {
     it('that is stored shows dots and "Replace", and is left out of a save that did not touch it', async () => {
       const faked = fakeWeather([LOCATION, API_KEY], { location: 'Lindenplatz', api_key: 'stored-secret' })
@@ -244,7 +283,7 @@ describe('the Field Values of a Plugin', () => {
   })
 
   it('is accessible and does not scroll sideways', async () => {
-    fakeWeather([LOCATION, UNITS, SHOW_WIND, API_KEY, field('greeting', { type: 'text', label: 'Greeting' }), field('days', { type: 'number', label: 'Days' }), field('token', { type: 'password', label: 'Token' })], { api_key: 'stored-secret' }, { needsValues: true })
+    fakeWeather([LOCATION, UNITS, SHOW_WIND, API_KEY, field('greeting', { type: 'text', label: 'Greeting' }), field('days', { type: 'number', label: 'Days' }), field('token', { type: 'password', label: 'Token' })], { api_key: 'stored-secret', units: 'imperial', show_wind: 'true' }, { needsValues: true })
     const screen = await mountPlugin()
 
     await expect.element(section(screen)).toBeVisible()

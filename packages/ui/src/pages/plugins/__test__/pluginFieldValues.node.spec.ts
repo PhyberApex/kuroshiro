@@ -1,7 +1,7 @@
 import type { PluginFieldRead } from 'kuroshiro-shared'
 import { describe, expect, it } from 'vitest'
 import { buildPluginDetail, buildPluginField } from '@/testing/fixtures/plugins'
-import { creditOf, fieldControl, fieldsWithRow, fieldValueNote, isOn, pluginFieldValues, valuesAmong } from '../pluginFieldValues'
+import { creditOf, fieldControl, fieldsWithRow, fieldValueNote, isClearable, isOn, pluginFieldValues, valuesAmong } from '../pluginFieldValues'
 
 const field = (keyname: string, overrides: Partial<PluginFieldRead> = {}) => buildPluginField({ id: `${keyname}-id`, keyname, label: keyname, ...overrides })
 
@@ -107,6 +107,15 @@ describe('the Field Values of the Plugin\'s form', () => {
       expect(fieldValueNote({ fieldType: 'password', required: true }, { entered: '', secretStored: false })).toBe('Empty')
       expect(fieldValueNote(required, { entered: 'Lindenplatz', secretStored: false })).toBeUndefined()
     })
+  })
+
+  it('offers "Clear" for a select or on/off Field Value that holds a value, never for another type or an empty value', () => {
+    expect(isClearable('select', 'imperial')).toBe(true)
+    expect(isClearable('boolean', 'true')).toBe(true)
+    expect(isClearable('select', '')).toBe(false)
+    expect(isClearable('boolean', '')).toBe(false)
+    expect(isClearable('string', 'Lindenplatz')).toBe(false)
+    expect(isClearable('password', 'hunter2')).toBe(false)
   })
 
   it('reads a switch as on for the value true, and for the default while there is no value', () => {

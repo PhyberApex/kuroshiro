@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { PluginFieldInput } from 'kuroshiro-shared'
 import { computed } from 'vue'
+import Button from '@/components/Button.vue'
 import Icon from '@/components/Icon.vue'
 import FieldValueControl from './FieldValueControl.vue'
-import { fieldControl, fieldValueNote } from './pluginFieldValues'
+import { fieldControl, fieldValueNote, isClearable } from './pluginFieldValues'
 import { fieldId } from './pluginPage'
 
 /** One Plugin Field as a row of the Field Values: its label, the control of its type, the note at the right and its help text. */
@@ -19,12 +20,17 @@ const id = computed(() => fieldId(`fieldValues.${props.field.keyname}`))
 const label = computed(() => props.field.name || props.field.keyname)
 const note = computed(() => fieldValueNote(props.field, { entered: entered.value, secretStored: props.secretStored }))
 const empty = computed(() => note.value === 'Empty')
+const clearable = computed(() => isClearable(props.field.fieldType, entered.value))
 
 const describedBy = computed(() => [
   props.field.required && `${id.value}-required`,
-  note.value && `${id.value}-note`,
+  note.value && !clearable.value && `${id.value}-note`,
   props.field.description && `${id.value}-help`,
 ].filter(Boolean).join(' ') || undefined)
+
+function clear() {
+  entered.value = ''
+}
 </script>
 
 <template>
@@ -44,7 +50,12 @@ const describedBy = computed(() => [
         :aria-describedby="describedBy"
       />
     </div>
-    <p v-if="note" :id="`${id}-note`" class="note" :class="{ empty }">
+    <p v-if="clearable" class="note">
+      <Button variant="quiet" @click="clear">
+        Clear {{ label }}
+      </Button>
+    </p>
+    <p v-else-if="note" :id="`${id}-note`" class="note" :class="{ empty }">
       <Icon v-if="empty" name="problem" />
       {{ note }}
     </p>
