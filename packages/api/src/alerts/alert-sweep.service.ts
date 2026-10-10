@@ -3,6 +3,7 @@ import type { AlertDetails } from 'kuroshiro-shared'
 import type { Repository } from 'typeorm'
 import type { AlertRule, AlertRuleContext, SweepSubjects } from './rules/alert-rule.js'
 import { Injectable, Logger } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
 import cron from 'node-cron'
 import { IsNull, Not } from 'typeorm'
@@ -12,8 +13,6 @@ import { InstanceSettingsService } from '../settings/instance-settings.service.j
 import { Alert } from './entities/alert.entity.js'
 import { NotificationSenderService } from './notification-sender.service.js'
 import { ALERT_RULES } from './rules/index.js'
-
-const EVERY_FIVE_MINUTES = '*/5 * * * *'
 
 /**
  * Evaluates every Alert Rule against persisted state on a schedule — the
@@ -37,11 +36,13 @@ export class AlertSweepService implements OnApplicationBootstrap {
     private readonly dataSourceRepository: Repository<PluginDataSource>,
     private readonly sender: NotificationSenderService,
     private readonly settingsService: InstanceSettingsService,
+    private readonly configService: ConfigService,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
     void this.sweep().catch(err => this.logger.warn(`Initial alert sweep skipped: ${err.message}`))
-    cron.schedule(EVERY_FIVE_MINUTES, () => {
+    const { sweepCron } = this.configService.get<{ sweepCron: string }>('alerts')!
+    cron.schedule(sweepCron, () => {
       void this.sweep().catch(err => this.logger.warn(`Scheduled alert sweep failed: ${err.message}`))
     })
   }

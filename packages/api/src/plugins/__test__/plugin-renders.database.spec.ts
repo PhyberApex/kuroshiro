@@ -442,7 +442,8 @@ describe('what a Plugin renders from, and with which Template, against a real da
       const send = vi.fn<NotificationSenderService['send']>(async () => true)
       const sender = { send, isConfigured: () => true } as unknown as NotificationSenderService
       const settings = { resolveThresholds: async () => ({ lowBatteryPercent: 20, offlineMultiplier: 3, fetchFailureThreshold: 1 }) } as unknown as InstanceSettingsService
-      const sweep = new AlertSweepService(database.getRepository(Alert), database.getRepository(Device), database.getRepository(PluginDataSource), sender, settings)
+      const sweepConfig = asService<ConfigService>({ get: (key: string) => (key === 'alerts' ? { sweepCron: '*/5 * * * *' } : undefined) })
+      const sweep = new AlertSweepService(database.getRepository(Alert), database.getRepository(Device), database.getRepository(PluginDataSource), sender, settings, sweepConfig)
 
       await sweep.sweep()
 

@@ -1,3 +1,4 @@
+import type { ConfigService } from '@nestjs/config'
 import type { FindManyOptions } from 'typeorm'
 import type { Device } from '../../devices/devices.entity.js'
 import type { PluginDataSource } from '../../plugins/entities/plugin-data-source.entity.js'
@@ -23,6 +24,10 @@ function makeSettingsService(overrides: Partial<{ lowBatteryPercent: number, off
   return asService<InstanceSettingsService>({ resolveThresholds: vi.fn().mockResolvedValue(thresholds) })
 }
 
+function makeConfigService(sweepCron = '*/5 * * * *'): ConfigService {
+  return asService<ConfigService>({ get: (key: string) => (key === 'alerts' ? { sweepCron } : undefined) })
+}
+
 describe('alertSweepService', () => {
   let alertRepo: ReturnType<typeof createMockRepository<Alert>>
   let deviceRepo: ReturnType<typeof createMockRepository<Device>>
@@ -38,14 +43,21 @@ describe('alertSweepService', () => {
     alertRepo.find.mockResolvedValue([])
     dataSourceRepo.find.mockResolvedValue([])
     sender = { send: vi.fn().mockResolvedValue(false), isConfigured: vi.fn().mockReturnValue(true) }
-    service = new AlertSweepService(asRepository(alertRepo), asRepository(deviceRepo), asRepository(dataSourceRepo), sender as unknown as NotificationSenderService, makeSettingsService())
+    service = new AlertSweepService(asRepository(alertRepo), asRepository(deviceRepo), asRepository(dataSourceRepo), sender as unknown as NotificationSenderService, makeSettingsService(), makeConfigService())
   })
 
   describe('onApplicationBootstrap', () => {
-    it('runs a sweep immediately and schedules one every 5 minutes', async () => {
+    it('runs a sweep immediately and schedules one on the configured schedule', async () => {
       deviceRepo.find.mockResolvedValue([])
       await service.onApplicationBootstrap()
       expect(cronMock.schedule).toHaveBeenCalledWith('*/5 * * * *', expect.any(Function))
+    })
+
+    it('schedules the sweep on whatever cron schedule the config resolves to', async () => {
+      deviceRepo.find.mockResolvedValue([])
+      service = new AlertSweepService(asRepository(alertRepo), asRepository(deviceRepo), asRepository(dataSourceRepo), sender as unknown as NotificationSenderService, makeSettingsService(), makeConfigService('*/5 * * * * *'))
+      await service.onApplicationBootstrap()
+      expect(cronMock.schedule).toHaveBeenCalledWith('*/5 * * * * *', expect.any(Function))
     })
   })
 
