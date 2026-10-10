@@ -71,6 +71,8 @@ Two fast presses of an arrow key in an open Reka `Select` both start from the sa
 
 `expect.poll` gives up after five seconds here (`vitest.browser.ts` raises Vitest's one second, which a save followed by a navigation outran on a loaded CI runner). An assertion that waits for a real timer of the page (Connect a Device asks every 3 seconds) passes `expect.poll` a longer `timeout`.
 
+`vitest.browser.ts` raises the browser project's `testTimeout` to 30s, past Vitest's 15s browser-mode default, for the same reason: v8 coverage instrumentation slows every page script down on a loaded CI runner. It also pins `hookTimeout` at 30s, which is already Vitest's browser-mode default (the 10s default `packages/api` guards against in #1248/#1252 is node mode's), so `beforeAll` — which starts the faked API behind that same coverage slowdown — keeps that budget even if the default ever changes. The gallery's two heaviest tests (mounting every primitive in every state for `expectAccessible()` and for the contents link) take that further still, to 120s, with their own `{ timeout }` on the test.
+
 `userEvent.dragAndDrop` onto a target below the window's edge drops nothing: drag onto a row that is in view.
 
 A download (`apiDownloadChecked`) fetches the file, then clicks a link to an object URL with a `download` attribute. `catchDownloads()` (`pluginPageHarness.ts`) spies on `URL.createObjectURL` to keep each `Blob` by the address it was given, and catches the click with a capturing `document` listener that calls `preventDefault()`, keeping the link's `download` name and, from the spy's map, the `Blob` (`PluginsListPage.spec.ts`). A spec also fakes the export's own `GET`, since it is now a real request: an unhandled one fails as a network error.
