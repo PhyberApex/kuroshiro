@@ -78,6 +78,7 @@ These hold on every page so that no surface spec has to repeat them.
 ### Time
 
 - Times within the last day are relative ("4 min ago") with the exact time in a tooltip; older ones are a date and time. All of them are in the browser's timezone, except a Schedule's and Sleep Mode's hours, which are in the server's timezone and say so.
+- A relative time's tooltip opens on hover, on keyboard focus (closing on Escape or on blur) and on a tap (a second tap or a tap elsewhere closes it); the exact time is also the relative time's accessible description, open or closed. One already inside a link or a button stays unfocusable by itself, so it never nests a second interactive element in one.
 
 ### Phone
 
