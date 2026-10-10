@@ -25,9 +25,7 @@ const supported = computed(() => paletteLabels(props.model, props.palettes))
     </p>
     <ul v-if="supported.length > 0" class="palettes">
       <li v-for="(palette, index) in supported" :key="palette.id">
-        <template v-if="index > 0">
-          {{ ', ' }}
-        </template>{{ palette.label }}
+        <span v-if="index > 0" aria-hidden="true">{{ ', ' }}</span>{{ palette.label }}
       </li>
     </ul>
     <template v-if="model.usedBy.length > 0" #end>
