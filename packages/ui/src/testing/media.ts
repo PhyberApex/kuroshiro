@@ -1,6 +1,9 @@
 import { cdp } from 'vitest/browser'
 import { settled } from './paint'
 
+/** `withCoarsePointer` and `withMotionAllowed` ride the CDP session Playwright opens for Chromium; Firefox has none. */
+export const isFirefox = navigator.userAgent.includes('Firefox')
+
 /**
  * Runs `body` as on a touch screen, where `(pointer: coarse)` matches and a control is
  * 44 px high. Pointer events still come from the mouse.

@@ -4,7 +4,7 @@ import { userEvent } from 'vitest/browser'
 import { defineComponent, h, ref } from 'vue'
 import { expectAccessible } from '@/testing/a11y'
 import { buildScreen } from '@/testing/fixtures/screens'
-import { withCoarsePointer, withMotionAllowed } from '@/testing/media'
+import { isFirefox, withCoarsePointer, withMotionAllowed } from '@/testing/media'
 import { mount } from '@/testing/mount'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import { elementsInSealColour } from '@/testing/sealColour'
@@ -217,10 +217,13 @@ describe('screen row', () => {
     await expect.element(screen.getByText('Inside Calendar')).toBeVisible()
     expect(getComputedStyle(body()).animationName).toBe('none')
 
-    await withMotionAllowed(async () => {
-      expect(getComputedStyle(body()).animationName).not.toBe('none')
-      expect(getComputedStyle(body()).animationDuration).toBe('0.2s')
-    })
+    // Allowing motion rides a CDP session, which Firefox, running this spec for its drag coverage, has none of.
+    if (!isFirefox) {
+      await withMotionAllowed(async () => {
+        expect(getComputedStyle(body()).animationName).not.toBe('none')
+        expect(getComputedStyle(body()).animationDuration).toBe('0.2s')
+      })
+    }
   })
 
   it('has no grip, no Order and no announcements in a list that is not sortable', async () => {
@@ -469,7 +472,8 @@ describe('reordering screen rows', () => {
     await expect.element(screen.getByRole('status')).toHaveTextContent('Calendar, Order 2 of 4')
   })
 
-  it('has 44 px targets at a coarse pointer: the line, the grip and the move buttons', async () => {
+  // Touch emulation rides a CDP session, which Firefox, running this spec for its drag coverage, has none of.
+  it.skipIf(isFirefox)('has 44 px targets at a coarse pointer: the line, the grip and the move buttons', async () => {
     const screen = await mount(listOf({ sortable: true }))
     const grip = gripOf(screen, 'Train departures').element()
 
