@@ -12,11 +12,11 @@ defineProps<{
   <ul v-if="lines.length > 0" class="problem-lines">
     <li v-for="line in lines" :key="line.text" class="line">
       <span class="said" :class="line.kind">
-        <span v-if="line.kind === 'alert'" class="square" aria-hidden="true" />
+        <span v-if="line.kind === 'alert'" class="seal-chip" aria-hidden="true" />
         <Icon v-else name="problem" class="mark" />
         <span>{{ line.text }}</span>
       </span>
-      <RouterLink v-if="line.link" class="link" :to="line.link.to">
+      <RouterLink v-if="line.link" class="link row-link" :to="line.link.to">
         {{ line.link.label }}
       </RouterLink>
     </li>
@@ -51,35 +51,13 @@ defineProps<{
     color: var(--color-seal);
   }
 
-  .square {
-    flex: none;
-    width: var(--space-2);
-    height: var(--space-2);
-    margin: calc((1lh - var(--space-2)) / 2) var(--space-1) 0;
-    background: var(--color-seal);
-  }
-
   .problem-lines .mark {
     margin-top: calc((1lh - var(--icon)) / 2);
   }
 
   .link {
     font-weight: var(--weight-medium);
-    text-underline-offset: 3px;
     white-space: nowrap;
-    transition: color var(--duration-quick) var(--ease-out);
-  }
-
-  .link:hover {
-    color: var(--color-ink-hover);
-  }
-
-  @media (pointer: coarse) {
-    .link {
-      display: inline-flex;
-      align-items: center;
-      min-height: var(--hit-target);
-    }
   }
 }
 </style>
