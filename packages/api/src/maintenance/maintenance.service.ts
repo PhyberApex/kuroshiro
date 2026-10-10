@@ -6,6 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { DeviceModelsService } from '../device-models/device-models.service.js'
 import { FALLBACK_SCREEN_TEMPLATE_VERSION } from '../device-models/fallback-screen-templates.js'
+import { fallbackRenderPairFolder } from '../device-models/fallback-screens.service.js'
 import { Device } from '../devices/devices.entity.js'
 import { Screen } from '../screens/screens.entity.js'
 import { ScreensService } from '../screens/screens.service.js'
@@ -254,8 +255,7 @@ export class MaintenanceService {
     const files = await this.listFiles(resolveAppPath('public', 'screens', FALLBACK_FOLDER), FALLBACK_FOLDER, true)
     const currentPrefix = `${FALLBACK_FOLDER}/v${FALLBACK_SCREEN_TEMPLATE_VERSION}/`
     const inUse = new Set(await Promise.all(devices.map(async (device) => {
-      const target = await this.deviceModelsService.renderTargetFor(device)
-      return `${target.model.name}-${target.palette.id}`
+      return fallbackRenderPairFolder(await this.deviceModelsService.renderTargetFor(device))
     })))
 
     return files
