@@ -62,6 +62,9 @@ export function browserProject(test: ProjectTestOptions & { name: string }, brow
       // v8 coverage instrumentation slows every page script down, so the default 15s budget
       // can run out mid-click on a loaded CI runner before the spec itself does anything slow.
       testTimeout: 30_000,
+      // `beforeAll` starts the faked API behind that same slowdown, so it can outrun the 10s
+      // hook default on a loaded CI runner too (see #1248/#1252 for the API's own version of this).
+      hookTimeout: 30_000,
       // A click that saves and then navigates takes longer than Vitest's one second on a loaded CI runner.
       expect: { poll: { timeout: 5000 } },
       ...test,
