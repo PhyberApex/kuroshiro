@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildDeviceModel, buildPalette } from '@/testing/fixtures/device-models'
-import { customPalettesByName, imageSize, inUseAndOthers, modelsMatching, noneCalled, othersTitle, paletteNames, swatchColours, syncOutcome, whyNotSynced } from '../deviceModelsWording'
+import { customPalettesByName, imageSize, inUseAndOthers, modelsMatching, noneCalled, othersTitle, paletteLabels, swatchColours, syncOutcome, whyNotSynced } from '../deviceModelsWording'
 import { PALETTE_FAMILIES, paletteFamilyName } from '../paletteFamilies'
 
 const KITCHEN = { id: 'kitchen', name: 'Kitchen' }
@@ -89,14 +89,29 @@ describe('device models wording', () => {
       expect(imageSize(X)).toBe('1872 × 1404')
     })
 
-    it('names the Palettes a Device Model supports, in the Device Model\'s order', () => {
+    it('labels the Palettes a Device Model supports, in the Device Model\'s order', () => {
       const palettes = [
         buildPalette({ id: 'gray-4', name: '4 Grays (2-bit)' }),
         buildPalette({ id: 'bw', name: 'Black & White (1-bit)' }),
         buildPalette({ id: 'gray-16', name: '16 Grays (4-bit)' }),
       ]
 
-      expect(paletteNames(buildDeviceModel({ paletteIds: ['bw', 'gray-4', 'gone'] }), palettes)).toBe('Black & White (1-bit), 4 Grays (2-bit)')
+      expect(paletteLabels(buildDeviceModel({ paletteIds: ['bw', 'gray-4', 'gone'] }), palettes)).toEqual([
+        { id: 'bw', label: 'Black & White (1-bit)' },
+        { id: 'gray-4', label: '4 Grays (2-bit)' },
+      ])
+    })
+
+    it('marks a custom Palette "· custom", the same mark Device Settings uses', () => {
+      const palettes = [
+        buildPalette({ id: 'bw', name: 'Black & White (1-bit)' }),
+        buildPalette({ id: 'study-panel', name: 'Study panel, measured', kind: 'custom' }),
+      ]
+
+      expect(paletteLabels(buildDeviceModel({ paletteIds: ['bw', 'study-panel'] }), palettes)).toEqual([
+        { id: 'bw', label: 'Black & White (1-bit)' },
+        { id: 'study-panel', label: 'Study panel, measured · custom' },
+      ])
     })
   })
 

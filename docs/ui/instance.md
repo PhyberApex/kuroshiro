@@ -203,7 +203,7 @@ Section heading "Custom Palettes", with "Add a custom Palette" at its right. Thi
 
 Section heading "Device Models", with "{N} from TRMNL, checked {when}" at its right.
 
-- **The Device Models in use,** one row each: the label at weight 600; its size in mono and the names of the Palettes it supports; at the right the Devices that use it, by name. A deprecated one adds, with the problem icon: "TRMNL no longer lists this Device Model."
+- **The Device Models in use,** one row each: the label at weight 600; its size in mono and the names of the Palettes it supports, each a separate item so a comma inside a custom Palette's name is never mistaken for one between names, and a custom Palette marked "· custom"; at the right the Devices that use it, by name. A deprecated one adds, with the problem icon: "TRMNL no longer lists this Device Model."
 - With no Device: "No Device uses one yet. A Device is given its Device Model from what it reports at its first poll."
 - Tucked, closed: "The other {n} Device Models" ("All {N} Device Models" when none is in use). A search field, "Find a Device Model", filtering by label as it is typed, and the same rows. Nothing here can be edited.
 - Tucked, closed: "TRMNL's Palettes ({n})". "Synced from TRMNL and not editable. Each Device Model lists the ones it supports." One row each: the name, its swatches and its id in mono, and the Devices that use it.

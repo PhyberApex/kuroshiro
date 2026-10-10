@@ -62,9 +62,18 @@ describe('the Device Models and Palettes page', () => {
       const section = screen.getByRole('region', { name: 'Device Models' })
 
       expect(rowsOf(section.element())).toEqual([
-        ['Seeed reTerminal E1002', '800 × 480 · Black & White (1-bit), Color (6 colors), Study panel, measured', 'Study'],
+        ['Seeed reTerminal E1002', '800 × 480 · Black & White (1-bit), Color (6 colors), Study panel, measured · custom', 'Study'],
         ['TRMNL OG', '800 × 480 · Black & White (1-bit), 4 Grays (2-bit)', 'Hallway and Kitchen'],
       ])
+    })
+
+    it('lists a Device Model\'s Palettes as separate items, so assistive technology counts them', async () => {
+      fakeDeviceModels()
+      const screen = await mountLoadedDeviceModels()
+      const [seeed] = screen.getByRole('region', { name: 'Device Models' }).element().querySelectorAll('.library-row')
+
+      expect([...seeed!.querySelectorAll('.palettes li')]).toHaveLength(3)
+      expect(words(seeed!.querySelector('.palettes')!)).toBe('Black & White (1-bit), Color (6 colors), Study panel, measured · custom')
     })
 
     it('leads from a Device it names to where that Device\'s Device Model and Palette are chosen', async () => {

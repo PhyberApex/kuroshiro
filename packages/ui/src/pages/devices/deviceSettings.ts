@@ -54,7 +54,8 @@ export function deviceModelOptions(models: DeviceModelRead[], assigned: string |
     .map(model => ({ value: model.name, label: `${model.label} · ${model.width} × ${model.height}` }))
 }
 
-const paletteLabel = ({ name, kind }: Pick<PaletteRead, 'name' | 'kind'>) => kind === 'custom' ? `${name} · custom` : name
+/** A Palette's label: its name, marked "· custom" where it is one so a free-text name is never mistaken for an official one. */
+export const paletteLabel = ({ name, kind }: Pick<PaletteRead, 'name' | 'kind'>) => kind === 'custom' ? `${name} · custom` : name
 
 /** The Palettes a Device on `model` can be set to, in the Device Model's order, and the assigned one whatever the Device Model lists. */
 export function paletteOptions(model: DeviceModelRead | undefined, palettes: PaletteRead[], assigned: DeviceDetail['palette']): SelectOption[] {
