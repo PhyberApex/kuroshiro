@@ -2,9 +2,12 @@ import type { RouteRecordRaw } from 'vue-router'
 import { delay, http, HttpResponse } from 'msw'
 import { describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
+import { h } from 'vue'
+import RelativeTime from '@/patterns/RelativeTime.vue'
 import { expectAccessible } from '@/testing/a11y'
 import { api, apiErrorResponse, apiUrl } from '@/testing/api/server'
 import { buildDeviceSummary } from '@/testing/fixtures/devices'
+import { withCoarsePointer } from '@/testing/media'
 import { mount, mountPage } from '@/testing/mount'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import { elementsInSealColour } from '@/testing/sealColour'
@@ -260,6 +263,107 @@ describe('a time', () => {
     const screen = await mount(TimesExample, { props: { at: '2026-09-28T12:00:00.000Z' } })
 
     await expect.element(screen.getByText(/^28 Sept? 2026, \d\d:00$/)).toBeVisible()
+  })
+
+  it('opens its tooltip on keyboard focus with the exact time, and closes it on Escape', async () => {
+    freezeTime('2026-10-03T07:35:00.000Z')
+    const at = '2026-10-03T07:31:00.000Z'
+    const screen = await mount(TimesExample, { props: { at } })
+    const exact = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' }).format(new Date(at))
+
+    await userEvent.keyboard('{Tab}')
+
+    await expect.element(screen.getByText('4 min ago')).toHaveFocus()
+    await expect.element(screen.getByRole('tooltip', { includeHidden: true })).toHaveTextContent(`3 Oct 2026, ${exact}`)
+
+    await userEvent.keyboard('{Escape}')
+
+    await expect.element(screen.getByRole('tooltip', { includeHidden: true })).not.toBeInTheDocument()
+    await expect.element(screen.getByText('4 min ago')).toHaveFocus()
+  })
+
+  it('shows the exact time on a tap, inside a coarse pointer, and hides it on a second tap', async () => {
+    freezeTime('2026-10-03T07:35:00.000Z')
+    const at = '2026-10-03T07:31:00.000Z'
+    const screen = await mount(TimesExample, { props: { at } })
+    const exact = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' }).format(new Date(at))
+
+    await withCoarsePointer(async () => {
+      await screen.getByText('4 min ago').click()
+      await expect.element(screen.getByRole('tooltip', { includeHidden: true })).toHaveTextContent(`3 Oct 2026, ${exact}`)
+
+      await screen.getByText('4 min ago').click()
+      await expect.element(screen.getByRole('tooltip', { includeHidden: true })).not.toBeInTheDocument()
+    })
+  })
+
+  it('hides the exact time shown by a tap when the admin taps elsewhere', async () => {
+    freezeTime('2026-10-03T07:35:00.000Z')
+    const at = '2026-10-03T07:31:00.000Z'
+    const screen = await mount({
+      render: () => h('div', [h(RelativeTime, { at }), h('button', { type: 'button' }, 'Elsewhere')]),
+    })
+
+    await withCoarsePointer(async () => {
+      await screen.getByText('4 min ago').click()
+      await expect.element(screen.getByRole('tooltip', { includeHidden: true })).toBeInTheDocument()
+
+      await screen.getByRole('button', { name: 'Elsewhere' }).click()
+
+      await expect.element(screen.getByRole('tooltip', { includeHidden: true })).not.toBeInTheDocument()
+
+      await screen.getByText('4 min ago').click()
+
+      await expect.element(screen.getByRole('tooltip', { includeHidden: true })).toBeInTheDocument()
+    })
+  })
+
+  it('has the exact time as its accessible description while no tooltip is open', async () => {
+    freezeTime('2026-10-03T07:35:00.000Z')
+    const at = '2026-10-03T07:31:00.000Z'
+    const screen = await mount(TimesExample, { props: { at } })
+    const exact = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' }).format(new Date(at))
+
+    await expect.element(screen.getByRole('tooltip', { includeHidden: true })).not.toBeInTheDocument()
+    await expect.element(screen.getByText('4 min ago')).toHaveAccessibleDescription(`3 Oct 2026, ${exact}`)
+  })
+
+  it('is not focusable by itself inside a link or a button, and still describes the exact time', async () => {
+    freezeTime('2026-10-03T07:35:00.000Z')
+    const at = '2026-10-03T07:31:00.000Z'
+    const exact = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' }).format(new Date(at))
+    const screen = await mount({
+      render: () => h('div', [
+        h('a', { href: '#' }, ['Kitchen ', h(RelativeTime, { at })]),
+        h('button', { type: 'button' }, ['Kitchen ', h(RelativeTime, { at })]),
+      ]),
+    })
+
+    await expect.element(screen.getByRole('link')).not.toHaveFocus()
+    await userEvent.keyboard('{Tab}')
+    await expect.element(screen.getByRole('link')).toHaveFocus()
+    await userEvent.keyboard('{Tab}')
+    await expect.element(screen.getByRole('button')).toHaveFocus()
+
+    for (const time of screen.getByText('4 min ago').elements()) {
+      expect(time.textContent).toBe('4 min ago')
+      expect(time).not.toHaveAttribute('tabindex')
+      expect(time).toHaveAccessibleDescription(`3 Oct 2026, ${exact}`)
+    }
+  })
+
+  it('does not toggle its own tooltip on a tap inside a link or a button, which a tap already activates', async () => {
+    freezeTime('2026-10-03T07:35:00.000Z')
+    const at = '2026-10-03T07:31:00.000Z'
+    const screen = await mount({
+      render: () => h('a', { href: '#', onClick: (event: Event) => event.preventDefault() }, ['Kitchen ', h(RelativeTime, { at })]),
+    })
+
+    await withCoarsePointer(async () => {
+      await screen.getByText('4 min ago').click()
+
+      await expect.element(screen.getByRole('tooltip', { includeHidden: true })).not.toBeInTheDocument()
+    })
   })
 
   it('moves on as time passes', async () => {

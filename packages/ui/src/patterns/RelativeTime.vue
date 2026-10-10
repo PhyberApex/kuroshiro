@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
 import Tooltip from '@/components/Tooltip.vue'
 import { exactTime, relativeTime } from './time'
 import { useNow } from './useNow'
@@ -13,11 +13,44 @@ const now = useNow()
 const instant = computed(() => new Date(props.at))
 const relative = computed(() => relativeTime(instant.value, now.value))
 const exact = computed(() => exactTime(instant.value))
+
+const trigger = useTemplateRef<HTMLElement>('trigger')
+
+/** A RelativeTime already sitting in a link or a button (fifteen of them do) stays unfocusable, so it never nests a second interactive element in one. */
+const inInteractive = ref(false)
+
+const tapped = ref(false)
+
+/** Reka's tooltip does not open on a touch pointer, so a tap toggles it open itself, holding `Tooltip`'s `open` prop; nested in a link or a button, a tap already activates that instead, so it stays off there too. */
+function toggleOnTap() {
+  if (!inInteractive.value && window.matchMedia('(pointer: coarse)').matches)
+    tapped.value = !tapped.value
+}
+
+function closeOnOutsideTap(event: PointerEvent) {
+  if (tapped.value && trigger.value && !trigger.value.contains(event.target as Node))
+    tapped.value = false
+}
+
+onMounted(() => {
+  inInteractive.value = !!trigger.value?.closest('a, button')
+  document.addEventListener('pointerdown', closeOnOutsideTap)
+})
+onUnmounted(() => document.removeEventListener('pointerdown', closeOnOutsideTap))
 </script>
 
 <template>
-  <Tooltip v-if="relative" :text="exact">
-    <time class="relative-time" :datetime="at">{{ relative }}</time>
+  <Tooltip v-if="relative" :text="exact" :open="tapped || undefined">
+    <!-- aria-describedby would otherwise repeat the exact time while open; aria-description says it open or closed -->
+    <time
+      ref="trigger"
+      class="relative-time"
+      :tabindex="inInteractive ? undefined : 0"
+      :aria-describedby="undefined"
+      :aria-description="exact"
+      :datetime="at"
+      @click="toggleOnTap"
+    >{{ relative }}</time>
   </Tooltip>
   <time v-else class="relative-time" :datetime="at">{{ exact }}</time>
 </template>
