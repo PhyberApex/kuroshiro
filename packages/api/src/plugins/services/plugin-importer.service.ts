@@ -7,6 +7,9 @@ import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
 import { githubRepositoryOf, MERGE_STRATEGIES, recipeIdOf } from 'kuroshiro-shared'
 import { ApiException } from '../../errors/api.exception.js'
+import { uploadTooLarge } from '../../uploads/limited-file-interceptor.js'
+import { UPLOAD_LIMITS } from '../../uploads/upload-limits.js'
+import { downloadLimited, DownloadTooLargeError } from '../../utils/downloadLimited.js'
 import { isPlainObject } from '../../utils/json.js'
 import { parseFieldOptions } from '../plugin-field-options.js'
 
@@ -219,14 +222,16 @@ export class PluginImporterService {
   /** What the address holds, or `null` when the upstream says there is nothing there. */
   private async download(url: string, upstream: string): Promise<Buffer | null> {
     try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) })
-      if (response.status === 404)
+      const { status, ok, buffer } = await downloadLimited(url, { limitBytes: UPLOAD_LIMITS.pluginImportBytes, timeoutMs: DOWNLOAD_TIMEOUT_MS })
+      if (status === 404)
         return null
-      if (!response.ok)
-        throw new Error(`it answered ${response.status}`)
-      return Buffer.from(await response.arrayBuffer())
+      if (!ok)
+        throw new Error(`it answered ${status}`)
+      return buffer
     }
     catch (error) {
+      if (error instanceof DownloadTooLargeError)
+        throw uploadTooLarge(error.limitBytes)
       throw upstreamUnreachable(upstream, error instanceof Error ? error.message : String(error))
     }
   }

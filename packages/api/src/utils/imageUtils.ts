@@ -6,7 +6,11 @@ import buffer from 'node:buffer'
 import { execFile } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
+import { UPLOAD_LIMITS } from '../uploads/upload-limits.js'
+import { downloadLimited, DownloadTooLargeError } from './downloadLimited.js'
 import { resolveAppPath } from './pathHelper.js'
+
+const DOWNLOAD_TIMEOUT_MS = 30_000
 
 // Maps magic-byte signatures to the ImageMagick format prefix used when invoking magick.
 // Only raster image formats that make sense on an e-ink display are permitted.
@@ -32,12 +36,19 @@ function detectImageFormat(buf: buffer.Buffer): string {
 
 export async function downloadImage(url: string, dest: string, logger: Logger) {
   logger.log(`Downloading image from ${url} to ${dest}`)
-  const res = await fetch(url)
-  if (!res.ok)
-    throw new Error(`Failed to fetch image: ${res.statusText}`)
-  const imgBuffer = buffer.Buffer.from(await res.arrayBuffer())
+  let download
+  try {
+    download = await downloadLimited(url, { limitBytes: UPLOAD_LIMITS.imageUploadBytes, timeoutMs: DOWNLOAD_TIMEOUT_MS })
+  }
+  catch (error) {
+    if (error instanceof DownloadTooLargeError)
+      throw new Error(`The image is larger than ${error.limitBytes} bytes.`)
+    throw error
+  }
+  if (!download.ok)
+    throw new Error(`Failed to fetch image: ${download.statusText}`)
   await fs.promises.mkdir(path.dirname(dest), { recursive: true })
-  await fs.promises.writeFile(dest, imgBuffer)
+  await fs.promises.writeFile(dest, download.buffer)
   logger.log(`Image downloaded to ${dest}`)
 }
 
