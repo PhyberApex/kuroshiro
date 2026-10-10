@@ -1,4 +1,4 @@
-import type { DeviceModelRead, DeviceReference, FirmwareRead, FirmwareSyncResult } from 'kuroshiro-shared'
+import type { DeviceModelRead, DeviceReference, FirmwareRead, FirmwareSyncResult, SyncRun } from 'kuroshiro-shared'
 import { listed } from '@/patterns/listed'
 
 type ModelLabelled = Pick<DeviceModelRead, 'name' | 'label'>
@@ -35,6 +35,13 @@ export function autoUpdateNote(on: boolean, newestVersion: string | undefined) {
     ? `It starts with the next official Firmware; Devices are not caught up to ${newestVersion} now.`
     : 'It starts with the next official Firmware.'
   return `Each new official Firmware becomes the target of every Device it fits, except a mirrored Device and one with a push already pending. ${startsWith}`
+}
+
+/** What the Available Firmware aside says of the last sync, before the time it ran; nothing where TRMNL was never asked. */
+export function checkedNote(lastSync: SyncRun | null) {
+  if (!lastSync)
+    return undefined
+  return lastSync.ok ? 'Checked TRMNL' : 'Last check of TRMNL failed'
 }
 
 /** What a sync that worked came to, by whether Firmware Auto-Update was on when it ran. */

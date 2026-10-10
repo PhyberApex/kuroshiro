@@ -7,6 +7,7 @@ import { expectAccessible } from '@/testing/a11y'
 import { api, apiErrorResponse, apiUrl } from '@/testing/api/server'
 import { buildFirmware } from '@/testing/fixtures/firmware'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
+import { elementsInSealColour } from '@/testing/sealColour'
 import { AUTO_UPDATE_ON, DEVICES, EARLIER, fakeFirmware, mountFirmware, mountLoadedFirmware, NOW, OFFICIAL, rowsOf } from './firmwareHarness'
 
 const at = (iso: string) => exactTime(new Date(iso))
@@ -53,6 +54,16 @@ describe('the Firmware page', () => {
 
       await expect.element(screen.getByRole('region', { name: 'Available Firmware' })).toBeVisible()
       expect(screen.getByText('Checked TRMNL', { exact: false }).elements()).toEqual([])
+    })
+
+    it('says that the last check of TRMNL failed, not that it was checked, and shows nothing red', async () => {
+      fakeFirmware({ lastSync: { ranAt: '2026-10-03T04:00:00.000Z', ok: false, error: 'TRMNL did not answer' } })
+      const screen = await mountFirmware()
+
+      await expect.element(screen.getByText('Last check of TRMNL failed 3 h ago')).toBeVisible()
+      expect(screen.getByText('Checked TRMNL', { exact: false }).elements()).toEqual([])
+      expect(elementsInSealColour(screen.getByRole('main').element())).toEqual([])
+      await expectAccessible()
     })
 
     it('tucks the deprecated ones away as earlier official Firmware, without actions', async () => {
@@ -258,7 +269,7 @@ describe('the Firmware page', () => {
 
       const notice = screen.getByRole('alert')
       await expect.element(notice).toHaveTextContent('Could not sync from TRMNL. usetrmnl.com did not answer within 15 seconds.')
-      await expect.element(screen.getByText('Checked TRMNL just now')).toBeVisible()
+      await expect.element(screen.getByText('Last check of TRMNL failed just now')).toBeVisible()
       expect(syncLine(screen)).toBe('')
       await expect.element(syncButton(screen)).toBeEnabled()
 

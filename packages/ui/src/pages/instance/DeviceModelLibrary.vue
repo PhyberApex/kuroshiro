@@ -3,7 +3,7 @@ import type { DeviceModelList, PaletteRead } from 'kuroshiro-shared'
 import { computed } from 'vue'
 import RelativeTime from '@/patterns/RelativeTime.vue'
 import DeviceModelRow from './DeviceModelRow.vue'
-import { inUseAndOthers, othersTitle } from './deviceModelsWording'
+import { checkedNote, inUseAndOthers, othersTitle } from './deviceModelsWording'
 import InstanceSection from './InstanceSection.vue'
 import OtherDeviceModels from './OtherDeviceModels.vue'
 import TrmnlPalettes from './TrmnlPalettes.vue'
@@ -21,7 +21,7 @@ const official = computed(() => props.palettes.filter(palette => palette.kind ==
   <InstanceSection id="device-models" title="Device Models">
     <template #aside>
       <span class="from-trmnl">
-        {{ list.models.length }} from TRMNL<template v-if="list.lastSync">, checked <RelativeTime :at="list.lastSync.ranAt" /></template>
+        {{ list.models.length }} from TRMNL<template v-if="list.lastSync">, {{ checkedNote(list.lastSync) }} <RelativeTime :at="list.lastSync.ranAt" /></template>
       </span>
     </template>
     <ul v-if="byUse.inUse.length > 0" class="in-use">

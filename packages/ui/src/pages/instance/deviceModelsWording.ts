@@ -1,4 +1,4 @@
-import type { DeviceModelRead, DeviceModelSyncResult, PaletteRead } from 'kuroshiro-shared'
+import type { DeviceModelRead, DeviceModelSyncResult, PaletteRead, SyncRun } from 'kuroshiro-shared'
 import { paletteLabel } from '@/pages/devices/deviceSettings'
 import { exactTime, relativeTime } from '@/patterns/time'
 
@@ -61,6 +61,13 @@ export function imageSize({ width, height }: Pick<DeviceModelRead, 'width' | 'he
 /** The Palettes a Device on `model` can be set to, labelled "· custom" for a custom one, in the Device Model's order. */
 export function paletteLabels({ paletteIds }: Pick<DeviceModelRead, 'paletteIds'>, palettes: PaletteRead[]) {
   return paletteIds.flatMap(id => palettes.filter(palette => palette.id === id)).map(palette => ({ id: palette.id, label: paletteLabel(palette) }))
+}
+
+/** What follows "{N} from TRMNL," in the Device Models heading aside, before the time of the last sync; nothing where TRMNL was never asked. */
+export function checkedNote(lastSync: SyncRun | null) {
+  if (!lastSync)
+    return undefined
+  return lastSync.ok ? 'checked' : 'last check failed'
 }
 
 /** What a sync came to: what TRMNL lists now, and how many of the Device Models as they stand after it TRMNL has dropped. */
