@@ -7,6 +7,18 @@ import { forceTheme, THEMES } from './theme'
 import { resetViewport, resizeTo, VIEWPORTS } from './viewport'
 
 /**
+ * Held at `0deg` for every shot: a rotated edge rasters a few pixels differently from one run to the
+ * next, which no screenshot baseline survives. The seal itself is a computed-style spec's job to guard.
+ */
+function holdSealStraight() {
+  document.documentElement.style.setProperty('--seal-tilt', '0deg')
+}
+
+function releaseSealTilt() {
+  document.documentElement.style.removeProperty('--seal-tilt')
+}
+
+/**
  * Compares one element with its committed baseline `<name>-chromium-linux.png`, once the
  * faces it uses have loaded. Only `*.shots.ts` files call this: they run inside the pinned
  * Playwright image and nowhere else.
@@ -14,6 +26,7 @@ import { resetViewport, resizeTo, VIEWPORTS } from './viewport'
 export async function expectScreenshot(target: Locator, name: string) {
   const { innerWidth: width, innerHeight: height } = window
   await document.fonts.ready
+  holdSealStraight()
   // A shot is clipped to the viewport, so the viewport grows to hold the whole document first.
   await resizeTo(width, Math.max(height, document.documentElement.scrollHeight))
   try {
@@ -22,6 +35,7 @@ export async function expectScreenshot(target: Locator, name: string) {
   }
   finally {
     await resizeTo(width, height)
+    releaseSealTilt()
   }
 }
 
@@ -31,6 +45,7 @@ export async function expectScreenshot(target: Locator, name: string) {
  */
 export async function expectWindowScreenshot(name: string) {
   await document.fonts.ready
+  holdSealStraight()
   // A shot of an element is the page clipped to its box, so a transparent element over the whole window shoots exactly
   // what the window shows; the body may reach below it, where nothing is painted.
   const wholeWindow = document.createElement('div')
@@ -42,6 +57,7 @@ export async function expectWindowScreenshot(name: string) {
   }
   finally {
     wholeWindow.remove()
+    releaseSealTilt()
   }
 }
 

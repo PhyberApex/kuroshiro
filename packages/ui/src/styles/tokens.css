@@ -13,6 +13,9 @@ preference is followed with no script and `data-theme` on the root forces one si
   --color-line: light-dark(#d9d9d9, #363636);
   --color-wash: light-dark(#f1f1f1, #1f1f1f);
   --color-seal: light-dark(#c4242f, #e5484d);
+  /* A hand-pressed hanko sits askew. The screenshot setup holds it straight: a rotated edge rasters a few pixels
+  differently from one run to the next, which no baseline survives. */
+  --seal-tilt: -4deg;
   --color-scrim: light-dark(rgb(18 18 18 / 0.45), rgb(0 0 0 / 0.7));
   /* A Screen image is what the panel shows, so it does not follow the theme. */
   --color-plate: #fff;
