@@ -1,4 +1,5 @@
 import type { DeviceModelRead, DeviceModelSyncResult, PaletteRead, SyncRun } from 'kuroshiro-shared'
+import { paletteLabel } from '@/pages/devices/deviceSettings'
 import { exactTime, relativeTime } from '@/patterns/time'
 
 const MOST_GREYS_SHOWN = 8
@@ -57,9 +58,9 @@ export function imageSize({ width, height }: Pick<DeviceModelRead, 'width' | 'he
   return `${width} × ${height}`
 }
 
-/** The names of the Palettes a Device on `model` can be set to, in the Device Model's order. */
-export function paletteNames({ paletteIds }: Pick<DeviceModelRead, 'paletteIds'>, palettes: PaletteRead[]) {
-  return paletteIds.flatMap(id => palettes.filter(palette => palette.id === id)).map(palette => palette.name).join(', ')
+/** The Palettes a Device on `model` can be set to, labelled "· custom" for a custom one, in the Device Model's order. */
+export function paletteLabels({ paletteIds }: Pick<DeviceModelRead, 'paletteIds'>, palettes: PaletteRead[]) {
+  return paletteIds.flatMap(id => palettes.filter(palette => palette.id === id)).map(palette => ({ id: palette.id, label: paletteLabel(palette) }))
 }
 
 /** What follows "{N} from TRMNL," in the Device Models heading aside, before the time of the last sync; nothing where TRMNL was never asked. */

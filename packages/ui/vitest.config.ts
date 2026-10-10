@@ -43,11 +43,14 @@ export default mergeConfig(viteConfig, defineConfig({
       }),
       // Pointer dragging rides the browser's own drag and drop, and Firefox has a long history of
       // not starting a native drag from a `<button>`, so the drag specs run there too (#1277).
+      // They run one file at a time: three Firefox instances fighting for the runner's CPU can
+      // starve a keyboard event past even the 30s test timeout, not just the usual tick or two.
       ...(coverageRun
         ? []
         : [browserProject({
             name: 'firefox',
             include: DRAG_SPECS,
+            fileParallelism: false,
           }, 'firefox')]),
     ],
   },

@@ -9,6 +9,13 @@ import { elementsInSealColour } from '@/testing/sealColour'
 import { DEVICE_MODELS, fakeDeviceModels, KOBO_AURA, MODELS_PATH, mountDeviceModels, mountLoadedDeviceModels, TRMNL_PALETTES, UNUSED } from './deviceModelsHarness'
 import { DEVICES, NOW, rowsOf } from './firmwareHarness'
 
+/** A list item's own text, with its decorative `aria-hidden` separator stripped: what a screen reader announces for it. */
+function itemText(li: Element) {
+  const clone = li.cloneNode(true) as Element
+  clone.querySelectorAll('[aria-hidden="true"]').forEach(hidden => hidden.remove())
+  return words(clone)
+}
+
 const main = (screen: Screen) => screen.getByRole('main').element()
 const tucked = (screen: Screen, id: string) => main(screen).querySelector(`#${id}`)
 const section = (screen: Screen) => screen.getByRole('region', { name: 'Custom Palettes' }).element()
@@ -63,9 +70,21 @@ describe('the Device Models and Palettes page', () => {
       const section = screen.getByRole('region', { name: 'Device Models' })
 
       expect(rowsOf(section.element())).toEqual([
-        ['Seeed reTerminal E1002', '800 × 480 · Black & White (1-bit), Color (6 colors), Study panel, measured', 'Study'],
+        ['Seeed reTerminal E1002', '800 × 480 · Black & White (1-bit), Color (6 colors), Study panel, measured · custom', 'Study'],
         ['TRMNL OG', '800 × 480 · Black & White (1-bit), 4 Grays (2-bit)', 'Hallway and Kitchen'],
       ])
+    })
+
+    it('lists a Device Model\'s Palettes as separate items, so assistive technology counts them', async () => {
+      fakeDeviceModels()
+      const screen = await mountLoadedDeviceModels()
+      const [seeed] = screen.getByRole('region', { name: 'Device Models' }).element().querySelectorAll('.library-row')
+
+      const items = [...seeed!.querySelectorAll('.palettes li')]
+      expect(items).toHaveLength(3)
+      expect(words(seeed!.querySelector('.palettes')!)).toBe('Black & White (1-bit), Color (6 colors), Study panel, measured · custom')
+      // Each item's own text excludes the visual ", " separator, so a screen reader announces the Palette alone, not a leading comma.
+      expect(items.map(itemText)).toEqual(['Black & White (1-bit)', 'Color (6 colors)', 'Study panel, measured · custom'])
     })
 
     it('leads from a Device it names to where that Device\'s Device Model and Palette are chosen', async () => {
