@@ -28,6 +28,7 @@ const brokenHeaders = ref(BROKEN_HEADERS_JSON)
 const body = ref('')
 const longBody = ref(JSON.stringify({ stations: Array.from({ length: 12 }, (_, index) => `Lindenplatz ${index + 1}`) }, null, 2))
 const transform = ref(TRANSFORM_JAVASCRIPT)
+const CHUNK_FAILURE = new Error('offline')
 </script>
 
 <template>
@@ -68,6 +69,9 @@ const transform = ref(TRANSFORM_JAVASCRIPT)
     </Specimen>
     <Specimen caption="until the editor has been fetched">
       <CodeEditor class="state" mode="liquid" pending aria-label="Template on its way" />
+    </Specimen>
+    <Specimen caption="the editor's chunk could not be fetched">
+      <CodeEditor class="state" mode="liquid" :chunk-failure="CHUNK_FAILURE" aria-label="Template that could not be loaded" />
     </Specimen>
   </SpecimenRow>
   <SpecimenRow title="HTML and the full window">

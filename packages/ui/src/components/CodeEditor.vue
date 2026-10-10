@@ -3,6 +3,7 @@ import type { CodeEditorMode, CodeEditorSize, CodeProblem, CodeValidity } from '
 import type { CodeEditor } from './codeEditorView'
 import { computed, onBeforeUnmount, onMounted, ref, useAttrs, useTemplateRef, watch } from 'vue'
 import CodeEditorStrip from './CodeEditorStrip.vue'
+import Notice from './Notice.vue'
 
 defineOptions({ inheritAttrs: false })
 
@@ -27,6 +28,8 @@ const props = withDefaults(defineProps<{
   document?: string
   /** Holds the block shown while the editor is fetched, for the gallery. */
   pending?: boolean
+  /** Makes the next fetch of the editor's chunk fail with this, in place of running it. For a spec and the gallery, not another caller. */
+  chunkFailure?: Error
 }>(), {
   size: 'bench',
   problem: null,
@@ -66,32 +69,45 @@ const typedInAttrs = computed<Record<string, string>>(() => ({
 const frame = useTemplateRef('frame')
 const host = useTemplateRef('host')
 const editor = ref<CodeEditor>()
+const failed = ref(false)
 let unmounted = false
 
 const hasStrip = computed(() => props.size !== 'code-input')
 
 const completion = computed(() => ({ data: props.completionData, filters: props.kuroshiroFilters }))
 
-onMounted(async () => {
-  if (props.pending)
-    return
-  const { createCodeEditor } = await import('./codeEditorView')
-  if (unmounted)
-    return
-  editor.value = createCodeEditor({
-    parent: host.value!,
-    text: text.value,
-    document: props.document,
-    mode: props.mode,
-    size: props.size,
-    readOnly: props.readOnly,
-    attributes: typedInAttrs.value,
-    completion: completion.value,
-    problem: props.problem,
-    onChange: value => text.value = value,
-    onSave: () => emit('save'),
-    onValidity: validity => emit('validity', validity),
-  })
+async function fetchEditor() {
+  try {
+    if (props.chunkFailure)
+      throw props.chunkFailure
+    const { createCodeEditor } = await import('./codeEditorView')
+    if (unmounted)
+      return
+    failed.value = false
+    editor.value = createCodeEditor({
+      parent: host.value!,
+      text: text.value,
+      document: props.document,
+      mode: props.mode,
+      size: props.size,
+      readOnly: props.readOnly,
+      attributes: typedInAttrs.value,
+      completion: completion.value,
+      problem: props.problem,
+      onChange: value => text.value = value,
+      onSave: () => emit('save'),
+      onValidity: validity => emit('validity', validity),
+    })
+  }
+  catch {
+    if (!unmounted)
+      failed.value = true
+  }
+}
+
+onMounted(() => {
+  if (!props.pending)
+    fetchEditor()
 })
 
 onBeforeUnmount(() => {
@@ -126,13 +142,20 @@ defineExpose({
   <div
     ref="frame"
     class="code-editor"
-    :class="[size, { 'is-loading': !editor }]"
+    :class="[size, { 'is-loading': !editor && !failed }]"
     :data-invalid="invalid || undefined"
-    :aria-busy="(!editor && !pending) || undefined"
+    :aria-busy="(!editor && !pending && !failed) || undefined"
     v-bind="frameAttrs"
     @focusout="reportFocusLeaving"
   >
-    <div ref="host" class="host" />
+    <Notice
+      v-if="failed"
+      title="The code editor could not be loaded."
+      reason="Kuroshiro's server is not answering. If Kuroshiro was updated meanwhile, reload the page."
+      action="Try again"
+      @act="fetchEditor"
+    />
+    <div v-show="!failed" ref="host" class="host" />
     <CodeEditorStrip
       v-if="hasStrip && editor"
       :mode="mode"
