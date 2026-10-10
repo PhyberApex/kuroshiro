@@ -18,6 +18,11 @@ export interface FallbackScreenDevice {
   sleepEndTime?: number | null
 }
 
+/** The folder a Device Model and Palette pair's Fallback Screens are cached under, below the template version. */
+export function fallbackRenderPairFolder(target: DeviceRenderTarget): string {
+  return `${target.model.name}-${target.palette.id}`
+}
+
 /**
  * Serves the four Fallback Screens, each drawn for one Device at its render
  * target's size and Palette on first use and cached under
@@ -36,7 +41,7 @@ export class FallbackScreensService {
     try {
       const html = fallbackScreenHtml(request, this.factsFor(device), target.model)
       const sheetHash = createHash('sha256').update(html).digest('hex').slice(0, 16)
-      const relativePath = ['screens', 'fallback', `v${FALLBACK_SCREEN_TEMPLATE_VERSION}`, `${target.model.name}-${target.palette.id}`, `${request.kind}-${sheetHash}.png`]
+      const relativePath = ['screens', 'fallback', `v${FALLBACK_SCREEN_TEMPLATE_VERSION}`, fallbackRenderPairFolder(target), `${request.kind}-${sheetHash}.png`]
       const outputPath = resolveAppPath('public', ...relativePath)
       if (await this.isMissing(outputPath))
         await renderHtmlToPng(html, target, outputPath, this.logger, { dither: false })

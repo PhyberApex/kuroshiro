@@ -293,10 +293,11 @@ Section heading "Stored files", with "Check again" at its right. The check runs 
   | "Folders of deleted Devices" | folders | "The image folder of a Device that is no longer registered." |
   | "Temporary files older than a day" | files | "{N} leftovers of renders that did not finish." |
   | "Uploads older than a day" | files | "{N} uploaded files that were never turned into a Screen." |
+  | "Stale Fallback Screen renders" | files | "Fallback Screen drawn for an older look, or for a Device Model and Palette no Device uses." |
   | "Screens whose image is missing" | Screens | "The Screen “{name}” on {Device} and its Schedule. Its image is already gone, so {Device} shows the error Fallback Screen at its turn today." |
 
   A row is a checkbox, the group's name, its count, its size, and a chevron. It opens in place and lists what it holds: paths below the storage folder in mono with their sizes, or for Screens "{name}, a {kind} Screen on {Device}" and its Order.
-- **What is ticked.** The four groups of files are ticked. "Screens whose image is missing" is not: cleaning it up deletes Screens. Under the rows, at the left: "A Screen whose image is missing is left alone unless you tick it.", or once ticked "Cleaning up deletes {n} Screens."
+- **What is ticked.** The five groups of files are ticked. "Screens whose image is missing" is not: cleaning it up deletes Screens. Under the rows, at the left: "A Screen whose image is missing is left alone unless you tick it.", or once ticked "Cleaning up deletes {n} Screens."
 - **"Clean up {n} groups"** (primary), disabled with nothing ticked. It confirms ([render][confirm-cleanup]): "Clean up {n} groups?" · Lost: each ticked group as "{Group}: {count}, {size}.", and for Screens "The Screen “{name}” on {Device} and its Schedule." · Stays: "Every Screen that has its image, and every Device." and, while the Screens group is not ticked, "The Screen “{name}”, at whose turn {Device} shows the error Fallback Screen." · "Clean up".
 - **Afterwards:** "**Cleaned up.** Removed {n} files and {m} folders, {size}. Nothing to clean up. Screen images take {size} in {n} files." Anything the server could not remove is a notice above it: "**{n} could not be removed.**" with the server's reasons, and those findings stay listed.
 - There is no dry run. The list is what would be removed, and the confirmation says it again.

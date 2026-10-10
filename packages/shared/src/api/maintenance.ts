@@ -4,7 +4,7 @@ import type { ScreenKind } from './screens.ts'
 /** A leftover file, by its path below the storage folder (`devices/{deviceId}/{file}`, `uploads/{file}`). */
 export interface StoredFileFinding {
   id: string
-  group: 'unusedImage' | 'tempFile' | 'oldUpload'
+  group: 'unusedImage' | 'tempFile' | 'oldUpload' | 'oldFallbackRender'
   path: string
   bytes: number
 }

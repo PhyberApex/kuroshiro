@@ -4,6 +4,9 @@ import * as path from 'node:path'
 import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
+import { DeviceModelsService } from '../device-models/device-models.service.js'
+import { FALLBACK_SCREEN_TEMPLATE_VERSION } from '../device-models/fallback-screen-templates.js'
+import { fallbackRenderPairFolder } from '../device-models/fallback-screens.service.js'
 import { Device } from '../devices/devices.entity.js'
 import { Screen } from '../screens/screens.entity.js'
 import { ScreensService } from '../screens/screens.service.js'
@@ -30,6 +33,7 @@ interface DeviceFolder {
 
 const DEVICES_FOLDER = 'devices'
 const UPLOADS_FOLDER = 'uploads'
+const FALLBACK_FOLDER = 'fallback'
 
 const SYSTEM_FILES = new Set([
   'noScreen.png',
@@ -74,6 +78,7 @@ export class MaintenanceService {
     @InjectRepository(Screen)
     private screenRepository: Repository<Screen>,
     private readonly screensService: ScreensService,
+    private readonly deviceModelsService: DeviceModelsService,
   ) {}
 
   /** The stored-files check: what the storage folders hold that nothing uses, and the Screens whose stored image is gone. */
@@ -93,6 +98,7 @@ export class MaintenanceService {
       ...deleted.map(folder => this.toDeletedDeviceFolderFinding(folder)).sort(byPath),
       ...known.flatMap(folder => folder.ownFiles.filter(file => isTempFile(file.name) && oldEnough(file)).map(file => toFileFinding('tempFile', file))).sort(byPath),
       ...(await this.listFiles(resolveAppPath(UPLOADS_FOLDER), UPLOADS_FOLDER)).filter(oldEnough).map(file => toFileFinding('oldUpload', file)).sort(byPath),
+      ...(await this.findOldFallbackRenders(devices)).sort(byPath),
       ...await this.findScreensMissingTheirImage(screens),
     ]
 
@@ -154,9 +160,27 @@ export class MaintenanceService {
     else {
       await fs.promises.unlink(this.storedAt(finding.path))
       removed.files++
+      if (finding.group === 'oldFallbackRender')
+        removed.folders += await this.removeEmptyAncestors(this.storedAt(finding.path))
     }
     removed.bytes += finding.bytes
     this.logger.log(`Removed ${finding.path}`)
+  }
+
+  /** Removes the folders a removed file leaves empty, up to (not including) the storage folder itself. */
+  private async removeEmptyAncestors(filePath: string): Promise<number> {
+    const stopAt = resolveAppPath('public', 'screens')
+    let removed = 0
+    let folder = path.dirname(filePath)
+    while (folder !== stopAt) {
+      const entries = await fs.promises.readdir(folder).catch(() => null)
+      if (entries === null || entries.length > 0)
+        break
+      await fs.promises.rmdir(folder).catch(() => {})
+      removed++
+      folder = path.dirname(folder)
+    }
+    return removed
   }
 
   /** Worded without the error's own message, which names the absolute path. */
@@ -220,6 +244,28 @@ export class MaintenanceService {
     }
 
     return findings
+  }
+
+  /**
+   * Fallback Screens cached for an older template version, or for a Device
+   * Model and Palette pair no Device currently resolves to (the same
+   * resolution the Device poll uses).
+   */
+  private async findOldFallbackRenders(devices: Device[]): Promise<StoredFileFinding[]> {
+    const files = await this.listFiles(resolveAppPath('public', 'screens', FALLBACK_FOLDER), FALLBACK_FOLDER, true)
+    const currentPrefix = `${FALLBACK_FOLDER}/v${FALLBACK_SCREEN_TEMPLATE_VERSION}/`
+    const inUse = new Set(await Promise.all(devices.map(async (device) => {
+      return fallbackRenderPairFolder(await this.deviceModelsService.renderTargetFor(device))
+    })))
+
+    return files
+      .filter((file) => {
+        if (!file.path.startsWith(currentPrefix))
+          return true
+        const pair = file.path.slice(currentPrefix.length).split('/')[0]
+        return pair === undefined || !inUse.has(pair)
+      })
+      .map(file => toFileFinding('oldFallbackRender', file))
   }
 
   private async listDeviceFolders(): Promise<DeviceFolder[]> {

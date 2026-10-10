@@ -1,3 +1,4 @@
+import type { StorageFinding } from 'kuroshiro-shared'
 import type { Locator } from 'vitest/browser'
 import type { Screen } from '@/pages/devices/__test__/deviceSettingsHarness'
 import { describe, expect, it } from 'vitest'
@@ -17,6 +18,8 @@ const SCREENS = 'Screens whose image is missing'
 const CHECK = buildStorageCheck()
 const NOTHING_FOUND = buildStorageCheck({ screenImages: { files: 212, bytes: 19_293_798 }, findings: [] })
 const ONLY_THE_SCREEN = buildStorageCheck({ findings: CHECK.findings.filter(finding => finding.group === 'missingImage') })
+const FALLBACK_FINDING: StorageFinding = { id: 'oldFallbackRender:fallback/v1/og_bwr-bw/error-abc.png', group: 'oldFallbackRender', path: 'fallback/v1/og_bwr-bw/error-abc.png', bytes: 51_200 }
+const WITH_STALE_FALLBACK_RENDER = buildStorageCheck({ findings: [...CHECK.findings, FALLBACK_FINDING] })
 
 const storedFiles = (screen: Screen) => screen.getByRole('region', { name: 'Stored files' })
 const retention = (screen: Screen) => screen.getByRole('region', { name: 'Retention' })
@@ -99,6 +102,20 @@ describe('housekeeping', () => {
       const screens = storedFiles(screen).getByRole('region', { name: SCREENS })
       await expect.element(screens.getByText('The Screen “Holiday photo” on Kitchen and its Schedule. Its image is already gone, so Kitchen shows the error Fallback Screen at its turn today.')).toBeVisible()
       expect([...screens.element().querySelectorAll('li')].map(words)).toEqual(['Holiday photo, a File Screen on Kitchen Order 4'])
+    })
+
+    it('lists a stale Fallback Screen render as its own group, worded and ticked like the other file groups', async () => {
+      const { screen } = await openHousekeeping({ checks: [WITH_STALE_FALLBACK_RENDER] })
+      await waitForTheFindings(screen)
+      const name = 'Stale Fallback Screen renders'
+
+      await expect.element(tick(screen, name)).toBeChecked()
+      expect(rowsOf(screen)).toContain(`${name} 1 file 50 KB`)
+
+      await group(screen, name).click()
+      const opened = storedFiles(screen).getByRole('region', { name })
+      await expect.element(opened.getByText('Fallback Screen drawn for an older look, or for a Device Model and Palette no Device uses.')).toBeVisible()
+      expect([...opened.element().querySelectorAll('li')].map(words)).toEqual(['fallback/v1/og_bwr-bw/error-abc.png 50 KB'])
     })
 
     it('says it is checking while the check runs, and checks again on "Check again"', async () => {

@@ -24,6 +24,7 @@ const GROUPS: { group: StorageFindingGroup, name: string, noun: Noun }[] = [
   { group: 'deletedDeviceFolder', name: 'Folders of deleted Devices', noun: FOLDER },
   { group: 'tempFile', name: 'Temporary files older than a day', noun: FILE },
   { group: 'oldUpload', name: 'Uploads older than a day', noun: FILE },
+  { group: 'oldFallbackRender', name: 'Stale Fallback Screen renders', noun: FILE },
   { group: 'missingImage', name: 'Screens whose image is missing', noun: SCREEN },
 ]
 
@@ -77,6 +78,8 @@ export function openedSentence({ group, findings }: FindingGroup) {
       return one ? '1 leftover of a render that did not finish.' : `${count} leftovers of renders that did not finish.`
     case 'oldUpload':
       return one ? '1 uploaded file that was never turned into a Screen.' : `${count} uploaded files that were never turned into a Screen.`
+    case 'oldFallbackRender':
+      return one ? 'Fallback Screen drawn for an older look, or for a Device Model and Palette no Device uses.' : `${count} Fallback Screens drawn for an older look, or for a Device Model and Palette no Device uses.`
     case 'missingImage':
       return screensSentence(findings.filter(isScreen))
   }
