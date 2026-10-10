@@ -10,15 +10,13 @@ import FieldError from '@/components/FieldError.vue'
 import AddFormFoot from '@/patterns/AddFormFoot.vue'
 import { useDeviceFrame } from './deviceFrame'
 import HtmlPreview from './HtmlPreview.vue'
-import { possessive, screenName } from './screenNaming'
+import { htmlProblem, possessive, screenName } from './screenNaming'
 
 const props = defineProps<{
   device: DeviceDetail
   /** An HTML Screen of the Device. */
   screen: ScreenRead
 }>()
-
-const EMPTY_HTML_MESSAGE = 'Write the HTML this Screen is rendered from.'
 
 const router = useRouter()
 const { path } = useDeviceFrame()
@@ -40,11 +38,9 @@ const openedRow = computed(() => `${path.value}?screen=${props.screen.id}`)
 async function save() {
   if (saving.value)
     return
-  if (html.value.trim() === '') {
-    emptyError.value = EMPTY_HTML_MESSAGE
+  emptyError.value = htmlProblem(html.value)
+  if (emptyError.value)
     return
-  }
-  emptyError.value = undefined
   failure.value = undefined
   saving.value = true
   try {

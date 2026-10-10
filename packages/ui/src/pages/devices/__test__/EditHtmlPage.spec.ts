@@ -7,7 +7,7 @@ import { mountApp } from '@/testing/app'
 import { arrived } from '@/testing/arrivals'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import { resetViewport, resizeTo } from '@/testing/viewport'
-import { codeIn, fakeHtmlPreviewLibrary, previewed, replaceAll, typeAtEnd } from './htmlScreenHarness'
+import { clearAndType, codeIn, fakeHtmlPreviewLibrary, previewed, typeAtEnd } from './htmlScreenHarness'
 import { fakeKitchen, kitchenScreen, openedRow, SCREENS_OF_EVERY_KIND } from './screensViewHarness'
 
 type Mounted = Awaited<ReturnType<typeof mountApp>>
@@ -54,9 +54,9 @@ describe('edit HTML', () => {
     fakeFridgeNote()
     const screen = await mountFridgeNote()
 
-    await expect.element(screen.getByText('Preview for Kitchen · TRMNL OG (2-bit) · 800 × 480 · Greyscale, 4 levels')).toBeVisible()
+    await expect.element(screen.getByText('as Kitchen renders it: TRMNL OG (2-bit), Greyscale, 4 levels')).toBeVisible()
     await expect.element(screen.getByText('Your browser draws this. Kitchen shows it in 4 grays.')).toBeVisible()
-    await expect.element(screen.getByRole('group', { name: 'Preview for Kitchen · TRMNL OG (2-bit) · 800 × 480 · Greyscale, 4 levels' })).toBeVisible()
+    await expect.element(screen.getByRole('group', { name: 'Preview as Kitchen renders it: TRMNL OG (2-bit), Greyscale, 4 levels' })).toBeVisible()
   })
 
   it('previews the markup as it is typed, in the screen shell, and sends nothing', async () => {
@@ -87,14 +87,14 @@ describe('edit HTML', () => {
     const faked = fakeFridgeNote()
     const screen = await mountFridgeNote()
 
-    await replaceAll(editor(screen), '  ')
+    await clearAndType(editor(screen), '  ')
     await saveHtml(screen).click()
 
     await expect.element(editor(screen)).toHaveAccessibleDescription('Write the HTML this Screen is rendered from.')
     expect(editor(screen).element().closest('.code-editor')).toHaveAttribute('data-invalid')
     expect(faked.writes).toEqual([])
 
-    await replaceAll(editor(screen), 'Milk')
+    await clearAndType(editor(screen), 'Milk')
     await saveHtml(screen).click()
 
     await expect.poll(() => path(screen)).toBe('/devices/kitchen?screen=fridge')
