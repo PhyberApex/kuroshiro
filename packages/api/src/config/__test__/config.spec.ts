@@ -18,6 +18,7 @@ const ENV_KEYS = [
   'KUROSHIRO_ALERT_FETCH_FAILURES',
   'KUROSHIRO_ALERT_RETENTION_DAYS',
   'KUROSHIRO_DEVICE_LOG_RETENTION_DAYS',
+  'KUROSHIRO_ALERT_SWEEP_CRON',
 ] as const
 
 describe('config', () => {
@@ -58,6 +59,7 @@ describe('config', () => {
         offlineMultiplierSource: 'default',
         fetchFailureThreshold: 3,
         fetchFailureThresholdSource: 'default',
+        sweepCron: '*/5 * * * *',
       },
       retention: {
         alertRetentionDays: 90,
@@ -84,6 +86,7 @@ describe('config', () => {
     process.env.KUROSHIRO_ALERT_FETCH_FAILURES = '4'
     process.env.KUROSHIRO_ALERT_RETENTION_DAYS = '120'
     process.env.KUROSHIRO_DEVICE_LOG_RETENTION_DAYS = '14'
+    process.env.KUROSHIRO_ALERT_SWEEP_CRON = '*/5 * * * * *'
 
     expect(config()).toEqual({
       port: 8080,
@@ -105,6 +108,7 @@ describe('config', () => {
         offlineMultiplierSource: 'env',
         fetchFailureThreshold: 4,
         fetchFailureThresholdSource: 'env',
+        sweepCron: '*/5 * * * * *',
       },
       retention: {
         alertRetentionDays: 120,
@@ -158,10 +162,25 @@ describe('config', () => {
       offlineMultiplierSource: 'default',
       fetchFailureThreshold: 3,
       fetchFailureThresholdSource: 'default',
+      sweepCron: '*/5 * * * *',
     })
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('KUROSHIRO_ALERT_LOW_BATTERY_PERCENT'))
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('KUROSHIRO_ALERT_OFFLINE_MULTIPLIER'))
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('KUROSHIRO_ALERT_FETCH_FAILURES'))
+
+    warnSpy.mockRestore()
+  })
+
+  it('defaults the Alert Sweep schedule to every 5 minutes', () => {
+    expect(config().alerts.sweepCron).toBe('*/5 * * * *')
+  })
+
+  it('falls back to the default Alert Sweep schedule and logs a warning when the cron expression is invalid', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    process.env.KUROSHIRO_ALERT_SWEEP_CRON = 'not-a-cron-expression'
+
+    expect(config().alerts.sweepCron).toBe('*/5 * * * *')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('KUROSHIRO_ALERT_SWEEP_CRON'))
 
     warnSpy.mockRestore()
   })

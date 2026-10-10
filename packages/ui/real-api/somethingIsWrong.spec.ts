@@ -6,9 +6,9 @@ import { connectDevice } from './devicePlayer.ts'
 
 const baseUrl = inject('baseUrl')
 
-/** The Alert Sweep runs every 5 minutes on the clock, so an Alert fires up to that long after its cause. */
-const ONE_ALERT_SWEEP_MS = 5 * 60_000
-const SWEEP_MARGIN_MS = 30_000
+/** The real-API stage sets the Alert Sweep's schedule to every 5 seconds (`KUROSHIRO_ALERT_SWEEP_CRON`), so an Alert fires within a few sweeps of its cause. */
+const ALERT_POLL_TIMEOUT_MS = 15_000
+const TEST_TIMEOUT_MS = 30_000
 
 /** 10 % by the shared voltage function, below the built-in threshold of 20 %. */
 const LOW_BATTERY_VOLTAGE = '3.12'
@@ -36,7 +36,7 @@ describe('something is wrong', () => {
     await page.goto(new URL(`devices/${id}`, baseUrl).href)
     await page.getByRole('heading', { level: 1, name }).waitFor()
 
-    await expect.poll(async () => (await firingAlerts()).some(alert => alert.deviceId === id), { timeout: ONE_ALERT_SWEEP_MS + SWEEP_MARGIN_MS, interval: 5_000 }).toBe(true)
+    await expect.poll(async () => (await firingAlerts()).some(alert => alert.deviceId === id), { timeout: ALERT_POLL_TIMEOUT_MS, interval: 1_000 }).toBe(true)
     // The shell asks again when the window regains the focus; the suite's own types have no DOM to say so in.
     await page.evaluate('window.dispatchEvent(new Event("focus"))')
 
@@ -51,5 +51,5 @@ describe('something is wrong', () => {
     await page.getByRole('heading', { level: 1, name }).waitFor()
     await page.getByRole('main').getByText('Alert: battery low').waitFor()
     await page.close()
-  }, ONE_ALERT_SWEEP_MS + 2 * SWEEP_MARGIN_MS)
+  }, TEST_TIMEOUT_MS)
 })

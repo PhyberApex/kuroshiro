@@ -1,3 +1,4 @@
+import type { ConfigService } from '@nestjs/config'
 import type { DataSource } from 'typeorm'
 import type { InstanceSettingsService } from '../../settings/instance-settings.service.js'
 import type { NotificationSenderService } from '../notification-sender.service.js'
@@ -12,6 +13,7 @@ import { Alert } from '../entities/alert.entity.js'
 const send = vi.fn<NotificationSenderService['send']>(async () => true)
 const sender = { send, isConfigured: () => true } as unknown as NotificationSenderService
 const settings = { resolveThresholds: async () => ({ lowBatteryPercent: 20, offlineMultiplier: 3, fetchFailureThreshold: 3 }) } as unknown as InstanceSettingsService
+const config = { get: (key: string) => (key === 'alerts' ? { sweepCron: '*/5 * * * *' } : undefined) } as unknown as ConfigService
 
 describe('what an Alert keeps of its cause, against a real database', () => {
   let database: DataSource
@@ -19,7 +21,7 @@ describe('what an Alert keeps of its cause, against a real database', () => {
 
   beforeAll(async () => {
     database = await createTestDatabase()
-    sweep = new AlertSweepService(database.getRepository(Alert), database.getRepository(Device), database.getRepository(PluginDataSource), sender, settings)
+    sweep = new AlertSweepService(database.getRepository(Alert), database.getRepository(Device), database.getRepository(PluginDataSource), sender, settings, config)
   })
 
   beforeEach(async () => {
@@ -86,7 +88,7 @@ describe('what an Alert keeps of its cause, against a real database', () => {
   it('does not retry a resolution notification once a sender is configured later, for an Alert that resolved with none configured', async () => {
     const unconfiguredSend = vi.fn<NotificationSenderService['send']>(async () => false)
     const unconfigured = { send: unconfiguredSend, isConfigured: () => false } as unknown as NotificationSenderService
-    const sweepWithoutSender = new AlertSweepService(database.getRepository(Alert), database.getRepository(Device), database.getRepository(PluginDataSource), unconfigured, settings)
+    const sweepWithoutSender = new AlertSweepService(database.getRepository(Alert), database.getRepository(Device), database.getRepository(PluginDataSource), unconfigured, settings, config)
     const device = await database.getRepository(Device).save({ name: 'Kitchen', mac: 'AA:BB:CC:DD:EE:01', apikey: 'key-1', friendlyId: 'K1', batteryVoltage: '3.0', lastSeen: new Date() } as Device)
     await sweepWithoutSender.sweep()
     await database.getRepository(Device).update(device.id, { batteryVoltage: '4.2' })

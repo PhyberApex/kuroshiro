@@ -11,3 +11,5 @@ Grilling issue #1006 (a generic alerting system, starting with low-battery Devic
 - Adding an Alert Rule means adding an evaluator the Sweep calls plus a `kind` value — never touching a controller.
 - Notification latency is bounded by the Sweep interval, not by when the condition became true. Accepted: e-ink Devices poll on minute-scale cadences anyway.
 - Anyone wanting alerting must run a second container. Documented in the README alongside the `KUROSHIRO_APPRISE_*` variables.
+
+_Addendum (#1270):_ the 5-minute interval above is this ADR's default, not a fixed constant — `KUROSHIRO_ALERT_SWEEP_CRON` overrides it (validated, falls back to the default). Added so the real-API CI journey that waits on a Sweep can run it every few seconds instead of waiting on the clock; no operator needs to touch it.

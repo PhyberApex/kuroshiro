@@ -9,6 +9,7 @@ export const ENV_VARS = {
   dbPassword: 'KUROSHIRO_DB_PASSWORD',
   appriseUrl: 'KUROSHIRO_APPRISE_URL',
   appriseKey: 'KUROSHIRO_APPRISE_KEY',
+  alertSweepCron: 'KUROSHIRO_ALERT_SWEEP_CRON',
 } as const
 
 export const RENAMED_ENV_VARS: Record<string, string> = {

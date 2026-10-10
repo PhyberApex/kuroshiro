@@ -58,6 +58,8 @@ export async function runApi(databaseEnv: Record<string, string>, port: number, 
       NODE_ENV: 'production',
       KUROSHIRO_PORT: String(port),
       KUROSHIRO_API_URL: publicUrl ?? baseUrl.replace(/\/$/, ''),
+      // Every 5 seconds instead of the default every 5 minutes, so journeys that wait on an Alert Sweep don't wait minutes for it.
+      KUROSHIRO_ALERT_SWEEP_CRON: '*/5 * * * * *',
     },
   })
   api.stdout.on('data', chunk => output.push(String(chunk)))

@@ -2,6 +2,7 @@ import type { FallbackSource } from 'kuroshiro-shared'
 import process from 'node:process'
 import { Logger } from '@nestjs/common'
 import { SETTING_ENV_VARS } from 'kuroshiro-shared'
+import cron from 'node-cron'
 import { ENV_VARS, RENAMED_ENV_VARS } from './env-vars.js'
 
 const DEFAULT_LOW_BATTERY_PERCENT = 20
@@ -9,6 +10,7 @@ const DEFAULT_OFFLINE_MULTIPLIER = 3
 const DEFAULT_FETCH_FAILURE_THRESHOLD = 3
 const DEFAULT_ALERT_RETENTION_DAYS = 90
 const DEFAULT_DEVICE_LOG_RETENTION_DAYS = 30
+const DEFAULT_ALERT_SWEEP_CRON = '*/5 * * * *'
 
 const KNOWN_ENV_VARS = new Set<string>([...Object.values(ENV_VARS), ...Object.values(SETTING_ENV_VARS)])
 
@@ -48,6 +50,18 @@ function parseIntEnv(name: string, defaultValue: number): ParsedIntEnv {
   return { value: parsed, source: 'env' }
 }
 
+/** Falls back to `defaultValue` (with a logged warning) for an unset or invalid cron expression — `node-cron` accepts an optional seconds field, so this also validates the seconds-level schedule the real-API CI journey sets. */
+function parseCronEnv(name: string, defaultValue: string): string {
+  const raw = process.env[name]
+  if (!raw)
+    return defaultValue
+  if (!cron.validate(raw)) {
+    console.warn(`${name} is not a valid cron expression ("${raw}"), falling back to ${defaultValue}`)
+    return defaultValue
+  }
+  return raw
+}
+
 export default () => {
   const lowBatteryPercent = parseIntEnv(SETTING_ENV_VARS.lowBatteryPercent, DEFAULT_LOW_BATTERY_PERCENT)
   const offlineMultiplier = parseIntEnv(SETTING_ENV_VARS.offlineMultiplier, DEFAULT_OFFLINE_MULTIPLIER)
@@ -75,6 +89,7 @@ export default () => {
       offlineMultiplierSource: offlineMultiplier.source,
       fetchFailureThreshold: fetchFailureThreshold.value,
       fetchFailureThresholdSource: fetchFailureThreshold.source,
+      sweepCron: parseCronEnv(ENV_VARS.alertSweepCron, DEFAULT_ALERT_SWEEP_CRON),
     },
     retention: {
       alertRetentionDays: alertRetentionDays.value,
