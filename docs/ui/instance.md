@@ -118,7 +118,7 @@ One row above the library: a switch, "On" or "Off", saving as changed.
 
 ### Available Firmware
 
-Section heading "Available Firmware", with "Checked TRMNL {when}" at its right. One row per Firmware that is not deprecated, newest first:
+Section heading "Available Firmware", with "Checked TRMNL {when}" at its right, or "Last check of TRMNL failed {when}" when the last sync did not work. One row per Firmware that is not deprecated, newest first:
 
 - **The version**, in mono at weight 600.
 - **What it is**, in `ink-soft`: "Official" or "Custom · {label}", then "Fits {Device Models, by label}" or "Fits every Device Model".
@@ -201,7 +201,7 @@ Section heading "Custom Palettes", with "Add a custom Palette" at its right. Thi
 
 ### Device Models
 
-Section heading "Device Models", with "{N} from TRMNL, checked {when}" at its right.
+Section heading "Device Models", with "{N} from TRMNL, checked {when}" at its right, or "{N} from TRMNL, last check failed {when}" when the last sync did not work.
 
 - **The Device Models in use,** one row each: the label at weight 600; its size in mono and the names of the Palettes it supports; at the right the Devices that use it, by name. A deprecated one adds, with the problem icon: "TRMNL no longer lists this Device Model."
 - With no Device: "No Device uses one yet. A Device is given its Device Model from what it reports at its first poll."

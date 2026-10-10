@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildDeviceModel } from '@/testing/fixtures/device-models'
 import { buildFirmware } from '@/testing/fixtures/firmware'
-import { autoUpdateNote, deletionWording, earlierNote, headedFor, newestOfficialVersion, syncOutcome, whatItIs } from '../firmwareWording'
+import { autoUpdateNote, checkedNote, deletionWording, earlierNote, headedFor, newestOfficialVersion, syncOutcome, whatItIs } from '../firmwareWording'
 
 const MODELS = [
   buildDeviceModel({ name: 'og_png', label: 'TRMNL OG (1-bit)' }),
@@ -62,6 +62,20 @@ describe('firmware wording', () => {
 
     it('leaves the catching up out where there is no official Firmware yet', () => {
       expect(autoUpdateNote(true, undefined)).toBe('Each new official Firmware becomes the target of every Device it fits, except a mirrored Device and one with a push already pending. It starts with the next official Firmware.')
+    })
+  })
+
+  describe('when TRMNL was last checked', () => {
+    it('says TRMNL was checked where the last sync worked', () => {
+      expect(checkedNote({ ranAt: '2026-10-03T04:00:00.000Z', ok: true, error: null })).toBe('Checked TRMNL')
+    })
+
+    it('says the last check failed where it did not work', () => {
+      expect(checkedNote({ ranAt: '2026-10-03T04:00:00.000Z', ok: false, error: 'TRMNL did not answer' })).toBe('Last check of TRMNL failed')
+    })
+
+    it('says nothing where TRMNL was never asked', () => {
+      expect(checkedNote(null)).toBeUndefined()
     })
   })
 

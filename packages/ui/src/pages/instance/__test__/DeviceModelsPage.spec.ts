@@ -5,6 +5,7 @@ import { held, words } from '@/pages/devices/__test__/deviceSettingsHarness'
 import { expectAccessible } from '@/testing/a11y'
 import { api, apiErrorResponse, apiUrl } from '@/testing/api/server'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
+import { elementsInSealColour } from '@/testing/sealColour'
 import { DEVICE_MODELS, fakeDeviceModels, KOBO_AURA, MODELS_PATH, mountDeviceModels, mountLoadedDeviceModels, TRMNL_PALETTES, UNUSED } from './deviceModelsHarness'
 import { DEVICES, NOW, rowsOf } from './firmwareHarness'
 
@@ -87,6 +88,16 @@ describe('the Device Models and Palettes page', () => {
       const screen = await mountLoadedDeviceModels()
 
       await expect.element(screen.getByText('7 from TRMNL', { exact: true })).toBeVisible()
+    })
+
+    it('says that the last check of TRMNL failed, not that it was checked, and shows nothing red', async () => {
+      fakeDeviceModels({ lastSync: { ranAt: '2026-10-03T04:00:00.000Z', ok: false, error: 'TRMNL did not answer' } })
+      const screen = await mountLoadedDeviceModels()
+
+      await expect.element(screen.getByText('7 from TRMNL, last check failed 3 h ago')).toBeVisible()
+      expect(screen.getByText('checked', { exact: false }).elements()).toEqual([])
+      expect(elementsInSealColour(screen.getByRole('main').element())).toEqual([])
+      await expectAccessible()
     })
 
     it('says of a deprecated Device Model in use that TRMNL no longer lists it', async () => {
@@ -535,6 +546,7 @@ describe('the Device Models and Palettes page', () => {
       await syncButton(screen).click()
 
       await expect.element(screen.getByRole('alert')).toHaveTextContent('Could not sync from TRMNL. usetrmnl.com did not answer within 15 seconds. What you see is from 3 h ago.')
+      await expect.element(screen.getByText('7 from TRMNL, last check failed just now')).toBeVisible()
       expect(syncLine(screen)).toBe('')
       expect(rowsOf(screen.getByRole('region', { name: 'Device Models' }).element()).map(([label]) => label)).toEqual(['Seeed reTerminal E1002', 'TRMNL OG'])
       expect(rowsOf(screen.getByRole('region', { name: 'Custom Palettes' }).element())).toHaveLength(2)
