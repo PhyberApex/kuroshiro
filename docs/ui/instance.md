@@ -226,7 +226,7 @@ Lede: "One .zip holding what you built on this Instance: Devices, Screens with t
 
 ### Configuration Export
 
-Two rows, each a name, what it is for and its own button. Either button starts the download at once and reads "Download started" for 2 seconds.
+Two rows, each a name, what it is for and its own button. Either button fetches its archive and saves it once it has arrived, showing the loading mark while it runs and reading "Download started" for 2 seconds on success. A refusal or no answer leaves the button as it was and shows "The Configuration Archive could not be exported. {reason}" with "Try again".
 
 - **"With its secrets"**, button "Export" (primary). "The archive to restore from. Devices keep their API keys, so they go on polling a restored Instance without being set up again." Then, with the problem icon and in ink, before the button is pressed and not after: "Holds every Device API key, mirror API key, Webhook Token, Data Source header and password Field Value as written. Keep it like a password."
 - **"Redacted Archive"**, button "Export redacted". "The same with every secret replaced by a placeholder. Safe to share or to keep in a repository. Restored onto a fresh Instance, each Device and Webhook sender has to be set up again."

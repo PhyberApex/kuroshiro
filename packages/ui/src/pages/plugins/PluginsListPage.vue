@@ -59,6 +59,8 @@ function showAll() {
 
 /** What an action of the row menu makes of the row's state column while it runs or has just run. */
 function rowState(plugin: PluginSummary): PluginRowState | undefined {
+  if (exporting.exporting?.id === plugin.id)
+    return { kind: 'note', text: 'Exporting' }
   if (exporting.exported?.id === plugin.id)
     return { kind: 'note', text: 'Exported' }
   if (duplication.duplicating?.id === plugin.id)
@@ -109,6 +111,14 @@ const rows = computed<ShownPlugin[]>(() => shown.value.map(plugin => ({ plugin, 
         action="Try again"
         @act="duplication.duplicate(duplication.failure.plugin)"
       />
+      <Notice
+        v-if="exporting.failure"
+        class="not-exported"
+        title="Not exported."
+        :reason="exporting.failure.reason"
+        action="Try again"
+        @act="exporting.download(exporting.failure.plugin)"
+      />
       <PluginsFilterBar v-model:query="query" v-model:show="show" :searchable="offersSearch" :filterable="offersFilter" />
       <p class="count">
         {{ counted }}
@@ -140,7 +150,8 @@ const rows = computed<ShownPlugin[]>(() => shown.value.map(plugin => ({ plugin, 
 
 <style scoped>
 @layer components {
-  .not-duplicated {
+  .not-duplicated,
+  .not-exported {
     margin-bottom: var(--space-6);
   }
 

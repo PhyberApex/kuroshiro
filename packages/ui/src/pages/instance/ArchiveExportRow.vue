@@ -2,6 +2,8 @@
 import { onScopeDispose, ref, useId } from 'vue'
 import { exportConfiguration } from '@/api/configuration'
 import Button from '@/components/Button.vue'
+import { failureReason } from '@/components/failureReason'
+import Notice from '@/components/Notice.vue'
 
 const props = defineProps<{
   /** What this export is called: "With its secrets". */
@@ -23,13 +25,27 @@ const STARTED_FOR_MS = 2000
 
 const nameId = useId()
 const started = ref(false)
+const downloading = ref(false)
+const failure = ref<string>()
 let forgetting: ReturnType<typeof setTimeout> | undefined
 
-function download() {
-  exportConfiguration({ redacted: props.redacted ?? false })
-  started.value = true
-  clearTimeout(forgetting)
-  forgetting = setTimeout(() => (started.value = false), STARTED_FOR_MS)
+async function download() {
+  if (downloading.value)
+    return
+  downloading.value = true
+  failure.value = undefined
+  try {
+    await exportConfiguration({ redacted: props.redacted ?? false })
+    started.value = true
+    clearTimeout(forgetting)
+    forgetting = setTimeout(() => (started.value = false), STARTED_FOR_MS)
+  }
+  catch (error) {
+    failure.value = failureReason(error) ?? 'That did not work.'
+  }
+  finally {
+    downloading.value = false
+  }
 }
 
 onScopeDispose(() => clearTimeout(forgetting))
@@ -42,8 +58,16 @@ onScopeDispose(() => clearTimeout(forgetting))
         {{ name }}
       </h4>
       <slot />
+      <Notice
+        v-if="failure"
+        class="not-exported"
+        title="The Configuration Archive could not be exported."
+        :reason="failure"
+        action="Try again"
+        @act="download"
+      />
     </div>
-    <Button :variant="primary ? 'primary' : 'plain'" @click="download">
+    <Button :variant="primary ? 'primary' : 'plain'" :loading="downloading" @click="download">
       {{ started ? 'Download started' : button }}
     </Button>
   </div>
@@ -76,6 +100,11 @@ onScopeDispose(() => clearTimeout(forgetting))
     color: var(--color-ink);
     font-size: var(--text-md);
     font-weight: var(--weight-semibold);
+  }
+
+  .not-exported {
+    margin-top: var(--space-1);
+    border: 0;
   }
 
   @media (max-width: 820px) {

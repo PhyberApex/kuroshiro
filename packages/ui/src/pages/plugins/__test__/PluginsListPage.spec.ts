@@ -8,7 +8,7 @@ import { buildDeviceSummary } from '@/testing/fixtures/devices'
 import { buildPluginDetail, buildPluginPlace, buildPluginSummary } from '@/testing/fixtures/plugins'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import { elementsInSealColour } from '@/testing/sealColour'
-import { catchDownloads } from './pluginPageHarness'
+import { catchDownloads, exportZipResponse } from './pluginPageHarness'
 
 const device = (name: string) => ({ id: name.toLowerCase(), name })
 const KITCHEN = device('Kitchen')
@@ -33,13 +33,22 @@ interface Faked {
   plugins: PluginSummary[]
   /** The ids the page asked the server to delete. */
   deleted: string[]
+  /** Every address the page fetched for an export, in order. */
+  exports: string[]
 }
 
 /** Fakes what the list reads. What it holds is read on every request, so a test changes it and asks for a refresh. */
 function fakePlugins(plugins: PluginSummary[] = TEN): Faked {
-  const faked: Faked = { plugins, deleted: [] }
+  const faked: Faked = { plugins, deleted: [], exports: [] }
   fakeShellReads({ devices: [KITCHEN, HALLWAY, STUDY].map(({ id, name }) => buildDeviceSummary({ id, name })) })
-  api.use(http.get(apiUrl('plugins'), () => HttpResponse.json(faked.plugins)))
+  api.use(
+    http.get(apiUrl('plugins'), () => HttpResponse.json(faked.plugins)),
+    http.get(apiUrl('plugins/:id/export'), ({ request, params }) => {
+      faked.exports.push(request.url)
+      const plugin = faked.plugins.find(({ id }) => id === params.id)
+      return plugin ? exportZipResponse(`${plugin.name}.trmnlp.zip`) : apiErrorResponse({ statusCode: 404, code: 'plugin-not-found' })
+    }),
+  )
   return faked
 }
 
@@ -277,20 +286,58 @@ describe('the Plugins list', () => {
   })
 
   describe('exporting a Plugin', () => {
-    it('downloads the Plugin from the server and reads "Exported" in the row for 2 seconds', async () => {
+    it('reads "Exporting" in the row while the download runs', async () => {
       fakePlugins()
+      let release = () => {}
+      const holding = new Promise<void>(resolve => (release = resolve))
+      api.use(http.get(apiUrl('plugins/bins/export'), async () => {
+        await holding
+        return exportZipResponse('Bin day.trmnlp.zip')
+      }, { once: true }))
+      const screen = await mountList()
+
+      await choose(screen, 'Bin day', 'Export')
+
+      await expect.poll(() => rowText('Bin day')[2]).toBe('Exporting')
+
+      release()
+
+      await expect.poll(() => rowText('Bin day')[2]).toBe('Exported')
+    })
+
+    it('downloads the Plugin from the server and reads "Exported" in the row for 2 seconds', async () => {
+      const faked = fakePlugins()
       const downloads = catchDownloads()
       const screen = await mountList()
 
       await choose(screen, 'Bin day', 'Export')
 
-      expect(downloads).toEqual([apiUrl('plugins/bins/export')])
+      expect(faked.exports).toEqual([apiUrl('plugins/bins/export')])
       await expect.poll(() => rowText('Bin day')[2]).toBe('Exported')
       await expect.element(screen.getByRole('status').filter({ hasText: 'Exported Bin day.' })).toBeInTheDocument()
+      expect(downloads).toEqual([{ filename: 'Bin day.trmnlp.zip', blob: expect.any(Blob) }])
 
       const exportedAt = performance.now()
       await expect.poll(() => rowText('Bin day')[2], { timeout: 4000 }).toBe('The last fetch failed')
       expect(performance.now() - exportedAt).toBeGreaterThan(1500)
+    })
+
+    it('says why when the Plugin could not be exported, and does not read "Exported"', async () => {
+      fakePlugins()
+      const downloads = catchDownloads()
+      api.use(http.get(apiUrl('plugins/bins/export'), () => apiErrorResponse({ statusCode: 404, code: 'plugin-not-found' }), { once: true }))
+      const screen = await mountList()
+
+      await choose(screen, 'Bin day', 'Export')
+
+      await expect.element(screen.getByRole('alert')).toHaveTextContent('Not exported. That Plugin does not exist.')
+      expect(rowText('Bin day')[2]).not.toBe('Exported')
+      expect(downloads).toEqual([])
+
+      await screen.getByRole('button', { name: 'Try again' }).click()
+
+      await expect.poll(() => rowText('Bin day')[2]).toBe('Exported')
+      await expect.element(screen.getByRole('alert')).not.toBeInTheDocument()
     })
   })
 

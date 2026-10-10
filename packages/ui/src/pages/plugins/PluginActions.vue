@@ -50,11 +50,19 @@ async function openList() {
       action="Try again"
       @act="duplicate"
     />
+    <Notice
+      v-if="exporting.failure"
+      class="not-exported"
+      title="Not exported."
+      :reason="exporting.failure.reason"
+      action="Try again"
+      @act="download"
+    />
     <div class="buttons">
       <Button :loading="duplication.duplicating !== undefined" @click="duplicate">
         Duplicate
       </Button>
-      <Button @click="download">
+      <Button :loading="exporting.exporting !== undefined" @click="download">
         {{ exporting.exported ? 'Exported' : 'Export' }}
       </Button>
       <Button @click="deleting = true">
@@ -74,7 +82,8 @@ async function openList() {
     max-width: var(--measure);
   }
 
-  .not-duplicated {
+  .not-duplicated,
+  .not-exported {
     margin-top: var(--space-3);
   }
 

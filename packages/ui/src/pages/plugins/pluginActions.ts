@@ -37,19 +37,37 @@ export function useDuplicatePlugin() {
 
 const EXPORTED_FOR_MS = 2000
 
-/** "Export": starts the download, and names the Plugin as `exported` for the 2 seconds its control reads "Exported". */
+/**
+ * "Export": fetches the file and has the browser save it, naming the Plugin as `exporting`
+ * while that runs and as `exported` for the 2 seconds its control reads "Exported" afterwards.
+ * A refusal leaves `failure` instead, with the reason to show beside "Try again".
+ */
 export function useExportPlugin() {
+  const exporting = ref<NamedPlugin>()
   const exported = ref<NamedPlugin>()
+  const failure = ref<{ plugin: NamedPlugin, reason: string }>()
   let forgetting: ReturnType<typeof setTimeout> | undefined
 
-  function download(plugin: NamedPlugin) {
-    exportPlugin(plugin.id)
-    exported.value = plugin
-    clearTimeout(forgetting)
-    forgetting = setTimeout(() => (exported.value = undefined), EXPORTED_FOR_MS)
+  async function download(plugin: NamedPlugin) {
+    if (exporting.value)
+      return
+    exporting.value = plugin
+    failure.value = undefined
+    try {
+      await exportPlugin(plugin.id)
+      exported.value = plugin
+      clearTimeout(forgetting)
+      forgetting = setTimeout(() => (exported.value = undefined), EXPORTED_FOR_MS)
+    }
+    catch (error) {
+      failure.value = { plugin, reason: failureReason(error) ?? 'That did not work.' }
+    }
+    finally {
+      exporting.value = undefined
+    }
   }
 
   onScopeDispose(() => clearTimeout(forgetting))
 
-  return reactive({ exported, download })
+  return reactive({ exporting, exported, failure, download })
 }

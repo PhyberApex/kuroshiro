@@ -1,6 +1,6 @@
 import type { DeviceModelRead, PaletteRead, PluginDetail, PreviewData, PreviewDataInput, PreviewName, UpdatePluginInput } from 'kuroshiro-shared'
 import { delay, http, HttpResponse } from 'msw'
-import { expect, onTestFinished } from 'vitest'
+import { expect, onTestFinished, vi } from 'vitest'
 import { api, apiUrl } from '@/testing/api/server'
 import { fakeShellReads, mountApp } from '@/testing/app'
 import { buildDeviceModel, buildDeviceModelList, buildPalette } from '@/testing/fixtures/device-models'
@@ -13,6 +13,13 @@ import { holdTabVisible } from '@/testing/visibility'
 /** What the specs of the Plugin page and of its sections share: the faked Plugin, the mounted page and the save bar. */
 
 export const WEATHER = buildPluginDetail({ id: 'weather', name: 'Weather' })
+
+/** A faked export's answer: a small `Blob` under `filename`, as the server names it in `Content-Disposition`. */
+export function exportZipResponse(filename: string) {
+  return new HttpResponse(new Blob(['a zip, as far as this spec cares']), {
+    headers: { 'Content-Disposition': `attachment; filename="${filename}"` },
+  })
+}
 
 const KITCHEN = { id: buildDeviceSummary().id, name: 'Kitchen' }
 
@@ -31,6 +38,8 @@ export interface Faked {
   fetched: Record<string, unknown>
   /** The Sensors of the Devices the preview may be for, by the Device's id. */
   sensors: Record<string, Record<string, { value: number, unit: string }>>
+  /** Every address the page fetched for an export, in order. */
+  exports: string[]
 }
 
 const HIDDEN_FIELD_VALUE = '••••••••'
@@ -96,7 +105,7 @@ function withScalarsSaved(plugin: PluginDetail, { name, description, refreshInte
  * its own `answer`, which maps what was sent to the read model.
  */
 export function fakePlugin(plugin: PluginDetail = WEATHER, answer = withScalarsSaved): Faked {
-  const faked: Faked = { plugin, saves: [], previews: [], fetched: {}, sensors: {} }
+  const faked: Faked = { plugin, saves: [], previews: [], fetched: {}, sensors: {}, exports: [] }
   fakeShellReads()
   fakePreviewLibrary()
   api.use(
@@ -112,6 +121,10 @@ export function fakePlugin(plugin: PluginDetail = WEATHER, answer = withScalarsS
       const input = await request.json() as PreviewDataInput
       faked.previews.push(input)
       return HttpResponse.json(previewDataOf(faked, input))
+    }),
+    http.get(apiUrl(`plugins/${plugin.id}/export`), ({ request }) => {
+      faked.exports.push(request.url)
+      return exportZipResponse(`${faked.plugin.name}.trmnlp.zip`)
     }),
   )
   return faked
@@ -159,16 +172,37 @@ export const refresh = () => window.dispatchEvent(new Event('focus'))
 
 export const saveBar = (screen: Mounted) => screen.getByRole('region', { name: 'Unsaved changes' })
 
-/** Catches what the page has the browser download, in place of the download. */
-export function catchDownloads() {
-  const addresses: string[] = []
+export interface CaughtDownload {
+  /** The name the server gave the file, from its `Content-Disposition`. */
+  filename: string
+  /** What was saved. */
+  blob: Blob
+}
+
+/**
+ * Catches what the page has the browser save, in place of the download: the object URL an
+ * export built from a `Blob` is a dead end to assert on by itself, so this keeps the `Blob` each
+ * one was built from, by the address `apiDownloadChecked` then clicks.
+ */
+export function catchDownloads(): CaughtDownload[] {
+  const downloads: CaughtDownload[] = []
+  const blobs = new Map<string, Blob>()
+  const createObjectURL = URL.createObjectURL.bind(URL)
+  const spy = vi.spyOn(URL, 'createObjectURL').mockImplementation((blob) => {
+    const url = createObjectURL(blob as Blob)
+    blobs.set(url, blob as Blob)
+    return url
+  })
   const hold = (event: MouseEvent) => {
     if (event.target instanceof HTMLAnchorElement && event.target.hasAttribute('download')) {
       event.preventDefault()
-      addresses.push(event.target.href)
+      downloads.push({ filename: event.target.download, blob: blobs.get(event.target.href)! })
     }
   }
   document.addEventListener('click', hold, true)
-  onTestFinished(() => document.removeEventListener('click', hold, true))
-  return addresses
+  onTestFinished(() => {
+    document.removeEventListener('click', hold, true)
+    spy.mockRestore()
+  })
+  return downloads
 }

@@ -1,9 +1,9 @@
 import type { ConfigurationImportSummary, ImportCheck } from 'kuroshiro-shared'
-import { apiDownload, apiSend } from './client'
+import { apiDownloadChecked, apiSend } from './client'
 
 /** Downloads the Configuration Archive, or with `redacted` the Redacted Archive, as `kuroshiro-config-{time}.zip`. */
 export function exportConfiguration({ redacted }: { redacted: boolean }) {
-  apiDownload('config/export', { redact: redacted || undefined })
+  return apiDownloadChecked('config/export', { redact: redacted || undefined })
 }
 
 function archiveForm(file: File) {

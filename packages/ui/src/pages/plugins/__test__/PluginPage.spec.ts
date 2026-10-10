@@ -366,7 +366,7 @@ describe('the Plugin page', () => {
     })
 
     it('asks before exporting, and exports at once when nothing was changed, the button reading "Exported"', async () => {
-      fakePlugin()
+      const faked = fakePlugin()
       const downloads = catchDownloads()
       const screen = await mountPlugin()
 
@@ -374,7 +374,8 @@ describe('the Plugin page', () => {
       await screen.getByRole('button', { name: 'Export' }).click()
 
       await expect.element(screen.getByRole('button', { name: 'Exported' })).toBeVisible()
-      expect(downloads).toEqual([apiUrl('plugins/weather/export')])
+      expect(faked.exports).toEqual([apiUrl('plugins/weather/export')])
+      expect(downloads).toEqual([{ filename: 'Weather.trmnlp.zip', blob: expect.any(Blob) }])
       await expect.element(screen.getByRole('button', { name: 'Export', exact: true }), { timeout: 4000 }).toBeVisible()
 
       await rename(screen, 'Forecast')
@@ -383,6 +384,25 @@ describe('the Plugin page', () => {
       await expect.element(screen.getByRole('alertdialog', { name: 'Leave without saving?' })).toBeVisible()
       await screen.getByRole('alertdialog').getByRole('button', { name: 'Keep editing' }).click()
       expect(downloads).toHaveLength(1)
+    })
+
+    it('says why when the export failed, with "Try again", and does not read "Exported"', async () => {
+      fakePlugin()
+      const downloads = catchDownloads()
+      api.use(http.get(apiUrl('plugins/weather/export'), () => apiErrorResponse({ statusCode: 404, code: 'plugin-not-found' }), { once: true }))
+      const screen = await mountPlugin()
+
+      await openActions(screen)
+      await screen.getByRole('button', { name: 'Export' }).click()
+
+      await expect.element(screen.getByRole('alert')).toHaveTextContent('Not exported. That Plugin does not exist.')
+      expect(screen.getByRole('button', { name: 'Exported' }).elements()).toEqual([])
+      expect(downloads).toEqual([])
+
+      await screen.getByRole('button', { name: 'Try again' }).click()
+
+      await expect.element(screen.getByRole('button', { name: 'Exported' })).toBeVisible()
+      await expect.element(screen.getByRole('alert')).not.toBeInTheDocument()
     })
   })
 

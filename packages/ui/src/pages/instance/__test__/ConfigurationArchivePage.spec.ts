@@ -56,7 +56,7 @@ describe('configuration Archive', () => {
 
   describe('configuration Export', () => {
     it('warns of the secrets before the button is pressed, and downloads the archive at once', async () => {
-      fakeArchive()
+      const faked = fakeArchive()
       const downloads = catchDownloads()
       const screen = await mountArchive()
       const row = exporting(screen).getByRole('group', { name: 'With its secrets' })
@@ -67,14 +67,15 @@ describe('configuration Archive', () => {
 
       await row.getByRole('button', { name: 'Export', exact: true }).click()
 
-      expect(downloads).toEqual([apiUrl('config/export')])
       await expect.element(row.getByRole('button', { name: 'Download started' })).toBeVisible()
+      expect(faked.exports).toEqual([apiUrl('config/export')])
+      expect(downloads).toEqual([{ filename: 'kuroshiro-config-2026-10-10T00-00-00-000Z.zip', blob: expect.any(Blob) }])
       await expect.element(exporting(screen).getByRole('button', { name: 'Export redacted' })).toBeVisible()
       await expect.element(row.getByRole('button', { name: 'Export', exact: true })).toBeVisible()
     })
 
     it('downloads a Redacted Archive from its own button, and says what neither archive holds', async () => {
-      fakeArchive()
+      const faked = fakeArchive()
       const downloads = catchDownloads()
       const screen = await mountArchive()
       const row = exporting(screen).getByRole('group', { name: 'Redacted Archive' })
@@ -82,9 +83,42 @@ describe('configuration Archive', () => {
       await expect.element(row.getByText('The same with every secret replaced by a placeholder. Safe to share or to keep in a repository. Restored onto a fresh Instance, each Device and Webhook sender has to be set up again.')).toBeVisible()
       await row.getByRole('button', { name: 'Export redacted' }).click()
 
-      expect(downloads).toEqual([`${apiUrl('config/export')}?redact=true`])
       await expect.element(row.getByRole('button', { name: 'Download started' })).toBeVisible()
+      expect(faked.exports).toEqual([`${apiUrl('config/export')}?redact=true`])
+      expect(downloads).toHaveLength(1)
       await expect.element(exporting(screen).getByText('Not in either: rendered images, Webhook Payloads, Sensor readings, Device Logs, Alerts, the files of custom Firmware and anything synced from TRMNL. A File Screen\'s image is included.')).toBeVisible()
+    })
+
+    it('says why when the archive could not be exported, and does not read "Download started"', async () => {
+      fakeArchive()
+      const downloads = catchDownloads()
+      api.use(http.get(apiUrl('config/export'), () => apiErrorResponse({ statusCode: 500, code: 'internal' }), { once: true }))
+      const screen = await mountArchive()
+      const row = exporting(screen).getByRole('group', { name: 'With its secrets' })
+
+      await row.getByRole('button', { name: 'Export', exact: true }).click()
+
+      await expect.element(row.getByRole('alert')).toHaveTextContent('The Configuration Archive could not be exported. Something went wrong on the server.')
+      expect(row.getByRole('button', { name: 'Download started' }).elements()).toEqual([])
+      expect(downloads).toEqual([])
+
+      await row.getByRole('button', { name: 'Try again' }).click()
+
+      await expect.element(row.getByRole('button', { name: 'Download started' })).toBeVisible()
+      await expect.element(row.getByRole('alert')).not.toBeInTheDocument()
+    })
+
+    it('says so when the server does not answer at all', async () => {
+      fakeArchive()
+      const downloads = catchDownloads()
+      api.use(http.get(apiUrl('config/export'), () => HttpResponse.error(), { once: true }))
+      const screen = await mountArchive()
+      const row = exporting(screen).getByRole('group', { name: 'With its secrets' })
+
+      await row.getByRole('button', { name: 'Export', exact: true }).click()
+
+      await expect.element(row.getByRole('alert')).toHaveTextContent('The Configuration Archive could not be exported. Kuroshiro\'s server is not answering.')
+      expect(downloads).toEqual([])
     })
   })
 

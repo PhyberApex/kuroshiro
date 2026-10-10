@@ -73,7 +73,7 @@ Two fast presses of an arrow key in an open Reka `Select` both start from the sa
 
 `userEvent.dragAndDrop` onto a target below the window's edge drops nothing: drag onto a row that is in view.
 
-A download (`apiDownload`) is a click on a link with a `download` attribute. A spec catches it with a capturing `click` listener on `document` that calls `preventDefault()` and keeps the link's `href` (`PluginsListPage.spec.ts`).
+A download (`apiDownloadChecked`) fetches the file, then clicks a link to an object URL with a `download` attribute. `catchDownloads()` (`pluginPageHarness.ts`) spies on `URL.createObjectURL` to keep each `Blob` by the address it was given, and catches the click with a capturing `document` listener that calls `preventDefault()`, keeping the link's `download` name and, from the spy's map, the `Blob` (`PluginsListPage.spec.ts`). A spec also fakes the export's own `GET`, since it is now a real request: an unhandled one fails as a network error.
 
 A select's trigger is a typed-in control, so a refresh that arrives while it has the focus is held back: blur it before asking for a refresh that the test waits for.
 
