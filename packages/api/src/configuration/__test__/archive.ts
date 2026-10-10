@@ -17,7 +17,7 @@ export function buildArchive(options: {
   assignments?: unknown[]
   palettes?: unknown[]
   firmware?: unknown[]
-  settings?: Record<string, number | boolean> | null
+  settings?: Record<string, unknown> | null
   pluginFolders?: Record<string, PluginFolder>
   screenImages?: Record<string, string>
 } = {}): Buffer {

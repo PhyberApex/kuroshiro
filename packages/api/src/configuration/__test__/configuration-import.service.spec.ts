@@ -480,6 +480,44 @@ describe('configurationImportService', () => {
     expect([...backing.get('InstanceSettings')!.values()]).toEqual([{ id: 1, lowBatteryPercent: null, offlineMultiplier: null, fetchFailureThreshold: null, alertRetentionDays: 0, deviceLogRetentionDays: null, firmwareAutoUpdate: null }])
   })
 
+  describe('an Instance Setting that violates SETTING_BOUNDS', () => {
+    it('refuses a negative Retention age, naming the key, with nothing written', async () => {
+      const buffer = buildArchive({ settings: { alertRetentionDays: -5 } })
+
+      await expect(service.importFromZip(buffer)).rejects.toMatchObject({
+        code: 'archive-record-refused',
+        details: { entity: 'Instance Settings', id: null, reason: expect.stringContaining('alertRetentionDays') },
+      })
+      expect(backing.get('InstanceSettings')!.size).toBe(0)
+    })
+
+    it.each([
+      ['lowBatteryPercent', 101],
+      ['offlineMultiplier', 1],
+      ['fetchFailureThreshold', 1.5],
+      ['deviceLogRetentionDays', '30'],
+      ['firmwareAutoUpdate', 'yes'],
+    ])('refuses %s of %j, naming the key', async (key, value) => {
+      const buffer = buildArchive({ settings: { [key]: value } })
+
+      await expect(service.importFromZip(buffer)).rejects.toMatchObject({
+        code: 'archive-record-refused',
+        details: { entity: 'Instance Settings', id: null, reason: expect.stringContaining(key) },
+      })
+    })
+
+    it('rolls back every other record the same import wrote', async () => {
+      const buffer = buildArchive({
+        palettes: [{ id: 'palette-1', name: 'Warm red', kind: 'custom', grays: 2, colors: ['#000000'], frameworkClass: 'screen--1bit', grayscaleBitDepth: 1, deprecated: false }],
+        settings: { alertRetentionDays: -5 },
+      })
+
+      await expect(service.importFromZip(buffer)).rejects.toThrow(/alertRetentionDays/)
+
+      expect(backing.get('Palette')!.size).toBe(0)
+    })
+  })
+
   it('keeps a Data Source\'s existing header value when the archive holds the sentinel and a value exists, with no warning', async () => {
     backing.get('Plugin')!.set('plugin-1', { id: 'plugin-1', name: 'Test Plugin', kind: 'Poll', refreshInterval: 15 })
     backing.get('PluginDataSource')!.set('ds-1', { id: 'ds-1', name: 'source', headers: { Authorization: 'Bearer real-token' } })

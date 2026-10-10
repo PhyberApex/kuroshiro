@@ -46,6 +46,7 @@ import { PluginSchedulerService } from '../../plugins/services/plugin-scheduler.
 import { Schedule } from '../../schedule/schedule.entity.js'
 import { Screen } from '../../screens/screens.entity.js'
 import { INSTANCE_SETTINGS_ID, InstanceSettings } from '../../settings/entities/instance-settings.entity.js'
+import { settingViolation } from '../../settings/setting-violation.js'
 import { fileExists } from '../../utils/fileExists.js'
 import generateApikey from '../../utils/generateApikey.js'
 import { resolveAppPath } from '../../utils/pathHelper.js'
@@ -301,8 +302,10 @@ export class ConfigurationImportService {
     }
   }
 
-  /** Replaces the whole Instance Settings row from the archive (ADR-0027): a Setting absent from `entry` is cleared on the target. */
+  /** Replaces the whole Instance Settings row from the archive (ADR-0027): a Setting absent from `entry` is cleared on the target. Refuses before writing anything if a present Setting fails `SETTING_BOUNDS`. */
   private async replaceInstanceSettings(repo: Repository<InstanceSettings>, entry: InstanceSettingsManifestEntry): Promise<void> {
+    this.assertSettingsWithinBounds(entry)
+
     const existing = await repo.findOneBy({ id: INSTANCE_SETTINGS_ID })
     const row = existing ?? repo.create({ id: INSTANCE_SETTINGS_ID })
     for (const key of SETTING_KEYS)
@@ -310,6 +313,19 @@ export class ConfigurationImportService {
     for (const key of BOOLEAN_SETTING_KEYS)
       row[key] = entry[key] ?? null
     await repo.save(row)
+  }
+
+  private assertSettingsWithinBounds(entry: InstanceSettingsManifestEntry): void {
+    for (const key of [...SETTING_KEYS, ...BOOLEAN_SETTING_KEYS]) {
+      const value = entry[key]
+      if (value === undefined || value === null) {
+        continue
+      }
+      const violation = settingViolation(key, value)
+      if (violation) {
+        throw new RecordRefused(violation)
+      }
+    }
   }
 
   /**
