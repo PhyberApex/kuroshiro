@@ -260,7 +260,7 @@ An On or off Field Value reaches a template as the text `"true"` or `"false"`, n
 
 The note at the right reads "The default" while the value equals the Plugin Field's default, "Set. A secret is never shown again." for a stored password, and for a required Plugin Field with neither a value nor a default the problem icon and "Empty", with the doubled ink border on the control. An empty required Plugin Field never stops a save.
 
-A select or on/off Field Value that holds an explicit value shows "Clear {label}" (quiet) in the note's place at the right, instead of the note. Pressing it empties the value, so the note reads "The default" or "Empty" as above and the control falls back to the Plugin Field's default. Text, number and password Field Values are emptied in their own control instead, so they never show "Clear".
+A select or On or off Field Value that holds an explicit value shows "Clear {label}" (quiet) in the note's place at the right, instead of the note. Pressing it empties the value, so the note reads "The default" or "Empty" as above and the control falls back to the Plugin Field's default. Text, number and password Field Values are emptied in their own control instead, so they never show "Clear".
 
 Under the rows: "Every Device and every Mashup shows {Plugin} with these values. To show it with other values somewhere, duplicate the Plugin." The Plugin Fields themselves are edited in the tucked section "Plugin Fields".
 

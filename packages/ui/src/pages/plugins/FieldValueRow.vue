@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { PluginFieldInput } from 'kuroshiro-shared'
-import { computed } from 'vue'
+import { computed, nextTick } from 'vue'
 import Button from '@/components/Button.vue'
 import Icon from '@/components/Icon.vue'
 import FieldValueControl from './FieldValueControl.vue'
@@ -28,8 +28,11 @@ const describedBy = computed(() => [
   props.field.description && `${id.value}-help`,
 ].filter(Boolean).join(' ') || undefined)
 
-function clear() {
+async function clear() {
   entered.value = ''
+  // "Clear" leaves with the value it cleared. The control takes the focus once it holds the default, so leaving it saves nothing.
+  await nextTick()
+  document.getElementById(id.value)?.focus()
 }
 </script>
 

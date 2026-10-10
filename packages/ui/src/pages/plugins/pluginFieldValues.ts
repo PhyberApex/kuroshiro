@@ -62,7 +62,11 @@ const CONTROLS: Record<string, FieldControl> = {
 /** The control a Plugin Field's value is entered with. A type Kuroshiro has no control for is single-line text. */
 export const fieldControl = (type: string | undefined): FieldControl => CONTROLS[type ?? ''] ?? 'text'
 
-/** Whether a Field Value holds an explicit value its control can empty with "Clear": a select or on/off one, never text, number or password. */
+/**
+ * Whether a Field Value holds an explicit value its control can empty with "Clear": a select or On or off one, never
+ * text, number or password. True even where the value chosen is the Plugin Field's default, since it is still an
+ * explicit choice and not "no value".
+ */
 export function isClearable(type: string | undefined, entered: string) {
   const control = fieldControl(type)
   return (control === 'select' || control === 'switch') && entered !== ''

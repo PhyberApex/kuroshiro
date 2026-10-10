@@ -199,6 +199,26 @@ describe('the Field Values of a Plugin', () => {
 
       expect(screen.getByRole('button', { name: /^Clear /i }).query()).toBeNull()
     })
+
+    it('reads "Empty" for a required select Field Value with no default, and sends null', async () => {
+      const faked = fakeWeather([field('zone', { type: 'select', label: 'Zone', required: true, options: [{ label: 'North', value: 'north' }, { label: 'South', value: 'south' }] })], { zone: 'north' })
+      const screen = await mountPlugin()
+
+      await screen.getByRole('button', { name: 'Clear Zone' }).click()
+
+      await expect.poll(() => noteOf(screen, 'Zone')).toBe('Empty')
+      await save(screen)
+      await expect.poll(() => faked.saves).toEqual([{ fieldValues: { zone: null } }])
+    })
+
+    it('leaves the focus on the control once it is cleared', async () => {
+      fakeWeather([UNITS], { units: 'imperial' })
+      const screen = await mountPlugin()
+
+      await screen.getByRole('button', { name: 'Clear Units' }).click()
+
+      await expect.element(screen.getByRole('combobox', { name: 'Units' })).toHaveFocus()
+    })
   })
 
   describe('a password', () => {
