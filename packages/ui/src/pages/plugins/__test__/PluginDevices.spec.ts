@@ -262,6 +262,47 @@ describe('the Devices of a Plugin', () => {
     expect(faked.saves).toEqual([])
   })
 
+  it('shows the notice when the Devices cannot be loaded, and the rows once "Try again" works', async () => {
+    fakeWeather()
+    api.use(http.get(apiUrl('devices'), () => apiErrorResponse({ statusCode: 500, code: 'internal' }), { once: true }))
+    const screen = await mountPlugin()
+
+    await expect.element(screen.getByRole('alert')).toHaveTextContent('Could not load the Devices. Something went wrong on the server.')
+    await expectAccessible()
+
+    await screen.getByRole('button', { name: 'Try again' }).click()
+
+    await expect.poll(rows).toEqual([
+      ['Hallway', 'Not assigned', 'Assign to Hallway'],
+      ['Kitchen', 'Assigned · Order 2 of 6', 'Unassign'],
+      ['Study', 'Not assigned', 'Assign to Study'],
+    ])
+    expect(screen.getByRole('alert').query()).toBeNull()
+  })
+
+  it('still shows a Mashup row while the Devices read has failed', async () => {
+    fakeWeather({ mashups: [buildPluginPlace({ screenId: 'board', name: 'Weekend board', deviceId: 'kitchen', deviceName: 'Kitchen' })] })
+    api.use(http.get(apiUrl('devices'), () => apiErrorResponse({ statusCode: 500, code: 'internal' })))
+    const screen = await mountPlugin()
+
+    await expect.element(screen.getByRole('alert')).toBeVisible()
+    await expect.poll(() => rows()[0]).toEqual(['Weekend board', 'A Mashup on Kitchen. Weather fills one of its slots.', 'Open the Mashup'])
+    await expect.element(screen.getByRole('link', { name: 'Open the Mashup' })).toHaveAttribute('href', '/devices/kitchen?screen=board')
+  })
+
+  it('shows the loading line, not a bare heading, while the Devices read is held', async () => {
+    fakeWeather()
+    api.use(http.get(apiUrl('devices'), async () => {
+      await delay('infinite')
+      return HttpResponse.json([])
+    }))
+    const screen = await mountPlugin()
+
+    await expect.element(screen.getByText('Loading the Devices')).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Devices' }).query()).toBeTruthy()
+    expect(rows()).toEqual([])
+  })
+
   it('assigns and unassigns on a phone, with touch targets of 44 px', async () => {
     const faked = fakeWeather()
     fakeAssign(faked)
