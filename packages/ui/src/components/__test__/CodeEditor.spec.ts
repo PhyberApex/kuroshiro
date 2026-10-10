@@ -523,6 +523,34 @@ describe('code editor: a document each', () => {
   })
 })
 
+describe('code editor: a failed fetch of its chunk', () => {
+  it('shows the failed-load notice with no aria-busy when the chunk cannot be fetched', async () => {
+    const screen = await mount(CodeEditor, { props: { 'mode': 'liquid', 'aria-label': NAME, 'chunkFailure': new Error('network') } })
+
+    await expect.element(screen.getByRole('alert')).toHaveTextContent(
+      'The code editor could not be loaded. Kuroshiro\'s server is not answering. If Kuroshiro was updated meanwhile, reload the page.',
+    )
+    await expect.element(frameOf(screen)).not.toHaveAttribute('aria-busy')
+    expect(screen.getByRole('textbox').elements()).toEqual([])
+    expect(elementsInSealColour(screen.container)).toEqual([])
+    await expectAccessible()
+  })
+
+  it('shows the editor with the held text once "Try again" fetches it', async () => {
+    const screen = await mount(CodeEditor, { props: { 'modelValue': 'kept', 'mode': 'liquid', 'aria-label': NAME, 'chunkFailure': new Error('network') } })
+    await expect.element(screen.getByRole('button', { name: 'Try again' })).toBeVisible()
+    await screen.rerender({ chunkFailure: undefined })
+
+    await screen.getByRole('button', { name: 'Try again' }).click()
+
+    const editor = screen.getByRole('textbox', { name: NAME })
+    await expect.element(editor).toBeVisible()
+    await expect.element(editor).toHaveTextContent('kept')
+    expect(screen.getByRole('alert').elements()).toEqual([])
+    await expect.element(frameOf(screen)).not.toHaveAttribute('aria-busy')
+  })
+})
+
 describe('code editor: its frame', () => {
   it('holds its place with a wash block until the editor has been fetched', async () => {
     const screen = await mount(CodeEditor, { props: { 'mode': 'liquid', 'aria-label': NAME, 'pending': true } })
@@ -626,33 +654,5 @@ describe('code editor: its frame', () => {
 
     await expectAccessible()
     await expectNoHorizontalOverflow()
-  })
-})
-
-describe('code editor: a failed fetch of its chunk', () => {
-  it('shows the failed-load notice with no aria-busy when the chunk cannot be fetched', async () => {
-    const screen = await mount(CodeEditor, { props: { 'mode': 'liquid', 'aria-label': NAME, 'chunkFailure': new Error('network') } })
-
-    await expect.element(screen.getByRole('alert')).toHaveTextContent(
-      'The code editor could not be loaded. Kuroshiro\'s server is not answering. If Kuroshiro was updated meanwhile, reload the page.',
-    )
-    await expect.element(frameOf(screen)).not.toHaveAttribute('aria-busy')
-    expect(screen.getByRole('textbox').elements()).toEqual([])
-    expect(elementsInSealColour(screen.container)).toEqual([])
-    await expectAccessible()
-  })
-
-  it('shows the editor with the held text once "Try again" fetches it', async () => {
-    const screen = await mount(CodeEditor, { props: { 'modelValue': 'kept', 'mode': 'liquid', 'aria-label': NAME, 'chunkFailure': new Error('network') } })
-    await expect.element(screen.getByRole('button', { name: 'Try again' })).toBeVisible()
-    await screen.rerender({ chunkFailure: undefined })
-
-    await screen.getByRole('button', { name: 'Try again' }).click()
-
-    const editor = screen.getByRole('textbox', { name: NAME })
-    await expect.element(editor).toBeVisible()
-    await expect.element(editor).toHaveTextContent('kept')
-    expect(screen.getByRole('alert').elements()).toEqual([])
-    await expect.element(frameOf(screen)).not.toHaveAttribute('aria-busy')
   })
 })
