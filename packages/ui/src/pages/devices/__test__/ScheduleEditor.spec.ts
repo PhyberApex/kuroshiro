@@ -419,6 +419,10 @@ describe('the Schedule editor', () => {
       const days = editor.getByRole('group', { name: 'Days' }).getByRole('button').elements()
       expect(days.filter(day => day.getBoundingClientRect().width < 44).map(day => day.getAttribute('aria-label'))).toEqual([])
       await editor.getByRole('button', { name: 'Saturday' }).click()
+      // Waits for the Saturday save to land before the next one starts, so a loaded CI runner
+      // can't let the two saves overlap and coalesce into one (the growing-entry behaviour
+      // `useSaveAsChanged` relies on for a change made *during* a save).
+      await expect.poll(() => faked.writes).toEqual([patch({ weekdays: [1, 2, 3, 4, 5, 6] })])
       await editor.getByRole('checkbox', { name: 'All day' }).click()
       await expectNoHorizontalOverflow()
     })
