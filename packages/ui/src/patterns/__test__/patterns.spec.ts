@@ -352,6 +352,20 @@ describe('a time', () => {
     }
   })
 
+  it('does not toggle its own tooltip on a tap inside a link or a button, which a tap already activates', async () => {
+    freezeTime('2026-10-03T07:35:00.000Z')
+    const at = '2026-10-03T07:31:00.000Z'
+    const screen = await mount({
+      render: () => h('a', { href: '#', onClick: (event: Event) => event.preventDefault() }, ['Kitchen ', h(RelativeTime, { at })]),
+    })
+
+    await withCoarsePointer(async () => {
+      await screen.getByText('4 min ago').click()
+
+      await expect.element(screen.getByRole('tooltip', { includeHidden: true })).not.toBeInTheDocument()
+    })
+  })
+
   it('moves on as time passes', async () => {
     vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'], now: new Date('2026-10-03T07:35:00.000Z') })
     try {

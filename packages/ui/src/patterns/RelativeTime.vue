@@ -18,15 +18,12 @@ const trigger = useTemplateRef<HTMLElement>('trigger')
 
 /** A RelativeTime already sitting in a link or a button (fifteen of them do) stays unfocusable, so it never nests a second interactive element in one. */
 const inInteractive = ref(false)
-onMounted(() => {
-  inInteractive.value = !!trigger.value?.closest('a, button')
-})
 
 const tapped = ref(false)
 
-/** Reka's tooltip does not open on a touch pointer, so a tap toggles it open itself, holding `Tooltip`'s `open` prop. */
+/** Reka's tooltip does not open on a touch pointer, so a tap toggles it open itself, holding `Tooltip`'s `open` prop; nested in a link or a button, a tap already activates that instead, so it stays off there too. */
 function toggleOnTap() {
-  if (window.matchMedia('(pointer: coarse)').matches)
+  if (!inInteractive.value && window.matchMedia('(pointer: coarse)').matches)
     tapped.value = !tapped.value
 }
 
@@ -35,16 +32,21 @@ function closeOnOutsideTap(event: PointerEvent) {
     tapped.value = false
 }
 
-onMounted(() => document.addEventListener('pointerdown', closeOnOutsideTap))
+onMounted(() => {
+  inInteractive.value = !!trigger.value?.closest('a, button')
+  document.addEventListener('pointerdown', closeOnOutsideTap)
+})
 onUnmounted(() => document.removeEventListener('pointerdown', closeOnOutsideTap))
 </script>
 
 <template>
   <Tooltip v-if="relative" :text="exact" :open="tapped || undefined">
+    <!-- aria-describedby would otherwise repeat the exact time while open; aria-description says it open or closed -->
     <time
       ref="trigger"
       class="relative-time"
       :tabindex="inInteractive ? undefined : 0"
+      :aria-describedby="undefined"
       :aria-description="exact"
       :datetime="at"
       @click="toggleOnTap"
