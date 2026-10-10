@@ -1,3 +1,4 @@
+import process from 'node:process'
 import { defineConfig, mergeConfig } from 'vitest/config'
 import viteConfig from './vite.config.ts'
 import { browserProject } from './vitest.browser.ts'
@@ -8,6 +9,11 @@ const DRAG_SPECS = [
   'src/pages/devices/__test__/DeviceScreensPage.spec.ts',
   'src/pages/plugins/__test__/PluginFields.spec.ts',
 ]
+
+// `@vitest/coverage-v8` refuses to start at all while any project runs a non-Chromium instance,
+// so the Firefox project sits out a coverage run; the drag specs still run there, uncounted, in
+// the plain `browser` project below.
+const coverageRun = process.argv.includes('--coverage')
 
 export default mergeConfig(viteConfig, defineConfig({
   test: {
@@ -37,10 +43,12 @@ export default mergeConfig(viteConfig, defineConfig({
       }),
       // Pointer dragging rides the browser's own drag and drop, and Firefox has a long history of
       // not starting a native drag from a `<button>`, so the drag specs run there too (#1277).
-      browserProject({
-        name: 'firefox',
-        include: DRAG_SPECS,
-      }, 'firefox'),
+      ...(coverageRun
+        ? []
+        : [browserProject({
+            name: 'firefox',
+            include: DRAG_SPECS,
+          }, 'firefox')]),
     ],
   },
 }))

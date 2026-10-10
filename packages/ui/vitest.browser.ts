@@ -68,8 +68,9 @@ export function browserProject(test: ProjectTestOptions & { name: string }, brow
       browser: {
         enabled: true,
         // Reduced motion collapses the duration tokens, so no assertion or shot lands mid-transition.
-        // The clipboard is granted so a spec can read back what a control copied.
-        provider: playwright({ contextOptions: { reducedMotion: 'reduce', permissions: ['clipboard-read', 'clipboard-write'] } }),
+        // The clipboard is granted so a spec can read back what a control copied; Firefox has no such
+        // permission to grant (`browser.newContext` throws "Unknown permission: clipboard-read" there).
+        provider: playwright({ contextOptions: { reducedMotion: 'reduce', permissions: browser === 'chromium' ? ['clipboard-read', 'clipboard-write'] : [] } }),
         headless: true,
         screenshotFailures: false,
         instances: [{ browser }],
