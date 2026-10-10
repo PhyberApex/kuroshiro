@@ -93,6 +93,7 @@ describe('plate', () => {
     const sealed = await mount(Plate, { props: { name: NAME, src: imageOf(800, 480), size: 'current', sealed: true } })
     const seal = sealed.container.querySelector('svg')!
     expect(seal).toHaveAttribute('aria-hidden', 'true')
+    // The computed width, not the bounding rect: the seal's tilt widens its rotated bounding box.
     expect(getComputedStyle(seal).width).toBe('56px')
     expect(getComputedStyle(seal.querySelector('path')!).fill).toBe('rgb(255, 255, 255)')
     const red = elementsInSealColour(sealed.container)
