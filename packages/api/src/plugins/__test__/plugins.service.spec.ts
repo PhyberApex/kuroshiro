@@ -241,6 +241,31 @@ describe('pluginsService', () => {
     expect(result).toMatchObject(createdPlugin)
   })
 
+  it('create defaults an omitted Plugin Kind to Poll', async () => {
+    pluginRepo.save.mockResolvedValue(basePlugin)
+    pluginRepo.findOne.mockResolvedValue(basePlugin)
+
+    await service.create({ name: 'Weather Plugin' })
+
+    expect(pluginRepo.save).toHaveBeenCalledWith(expect.objectContaining({ kind: 'Poll' }))
+  })
+
+  it('create rejects a Stream Limit on a Poll-kind plugin', async () => {
+    await expect(service.create({ name: 'Plugin', kind: 'Poll', streamLimit: 10 }))
+      .rejects
+      .toThrow('A Poll-kind Plugin cannot have a Stream Limit')
+
+    expect(pluginRepo.save).not.toHaveBeenCalled()
+  })
+
+  it('create rejects a Webhook Token, which only Kuroshiro issues', async () => {
+    await expect(service.create({ name: 'Plugin', kind: 'Poll', webhookToken: 'token-abc' }))
+      .rejects
+      .toThrow('The Webhook Token is issued by Kuroshiro and cannot be set directly')
+
+    expect(pluginRepo.save).not.toHaveBeenCalled()
+  })
+
   it('create rejects a data source named "trmnl"', async () => {
     pluginRepo.save.mockResolvedValue(basePlugin)
 

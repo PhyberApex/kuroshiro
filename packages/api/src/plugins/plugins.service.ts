@@ -3,11 +3,10 @@ import type { EntityManager, FindOptionsRelations } from 'typeorm'
 import type { CreatePluginDto } from './dto/create-plugin.dto.js'
 import type { PluginDataSourceDto } from './dto/plugin-data-source.dto.js'
 import type { PluginFieldDto } from './dto/plugin-field.dto.js'
-import type { PluginTemplateDto } from './dto/plugin-template.dto.js'
 import type { UpdateDataSourceDto, UpdatePluginDto, UpdateTemplateDto } from './dto/update-plugin.dto.js'
-import type { WholePluginDto } from './dto/whole-plugin.dto.js'
 import type { PluginKindFields } from './plugin-kind-fields.js'
 import type { PluginWithFieldValues } from './services/plugin-field-values.service.js'
+import type { PluginTemplateInput, WholePluginInput } from './whole-plugin-input.js'
 import { BadRequestException, HttpStatus, Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { isUUID } from 'class-validator'
@@ -116,7 +115,7 @@ export class PluginsService implements OnModuleInit {
    * Creates a whole Plugin, such as an importer read, and answers its id. With `deviceId` it joins
    * the end of that Device's Order. All of it happens or none of it.
    */
-  async createOnDevice(plugin: WholePluginDto, deviceId: string | undefined): Promise<string> {
+  async createOnDevice(plugin: WholePluginInput, deviceId: string | undefined): Promise<string> {
     const created = await this.pluginRepository.manager.transaction(async (manager) => {
       const transaction = this.within(manager)
       const unscheduled = await transaction.createUnscheduled(plugin)
@@ -129,14 +128,14 @@ export class PluginsService implements OnModuleInit {
   }
 
   /** `snapshotTakenAt` says when the Recipe Snapshot being saved was taken, for one taken before this call. */
-  async create(pluginData: WholePluginDto, { snapshotTakenAt }: { snapshotTakenAt?: Date | null } = {}): Promise<PluginWithFieldValues> {
+  async create(pluginData: WholePluginInput, { snapshotTakenAt }: { snapshotTakenAt?: Date | null } = {}): Promise<PluginWithFieldValues> {
     const created = await this.createUnscheduled(pluginData, snapshotTakenAt)
     this.schedule(created, `Scheduled new plugin: ${created.name}`)
 
     return this.withFieldValues(created)
   }
 
-  private async createUnscheduled(pluginData: WholePluginDto, snapshotTakenAt?: Date | null): Promise<Plugin> {
+  private async createUnscheduled(pluginData: WholePluginInput, snapshotTakenAt?: Date | null): Promise<Plugin> {
     const { dataSources, templates, fields, fieldValues, ...basicFields } = pluginData
 
     this.logger.debug(`Creating plugin with data: ${JSON.stringify({ dataSources, templates, fields, basicFields })}`)
@@ -177,7 +176,7 @@ export class PluginsService implements OnModuleInit {
     )
   }
 
-  private buildDuplicateDto(source: Plugin): WholePluginDto {
+  private buildDuplicateDto(source: Plugin): WholePluginInput {
     return {
       name: `${source.name} (copy)`,
       description: source.description ?? undefined,
@@ -222,7 +221,7 @@ export class PluginsService implements OnModuleInit {
     }
   }
 
-  private buildPluginToSave(basicFields: Omit<WholePluginDto, 'dataSources' | 'templates' | 'fields'>, kind: PluginKind, snapshotTakenAt: Date) {
+  private buildPluginToSave(basicFields: Omit<WholePluginInput, 'dataSources' | 'templates' | 'fields'>, kind: PluginKind, snapshotTakenAt: Date) {
     return {
       name: basicFields.name,
       description: basicFields.description,
@@ -249,7 +248,7 @@ export class PluginsService implements OnModuleInit {
     await this.persistDataSources(plugin, dataSources)
   }
 
-  private async createTemplates(plugin: Plugin, templates: PluginTemplateDto[] | undefined): Promise<void> {
+  private async createTemplates(plugin: Plugin, templates: PluginTemplateInput[] | undefined): Promise<void> {
     if (!templates || !Array.isArray(templates) || templates.length === 0)
       return
 
