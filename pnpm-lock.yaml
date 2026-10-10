@@ -308,6 +308,9 @@ catalogs:
     liquidjs:
       specifier: ^10.25.5
       version: 10.30.0
+    msw:
+      specifier: 3.0.2
+      version: 3.0.2
     multer:
       specifier: ^2.1.1
       version: 2.4.0
@@ -376,7 +379,7 @@ catalogs:
       version: 3.3.11
 
 overrides:
-  msw: 3.0.2
+  '@vitest/mocker>msw': 3.0.2
 
 importers:
 
@@ -674,7 +677,7 @@ importers:
         specifier: workspace:*
         version: link:../shared
       msw:
-        specifier: 3.0.2
+        specifier: 'catalog:'
         version: 3.0.2(@types/node@24.19.1)(graphql@16.14.2)(supports-color@10.2.2)(typescript@6.0.3)(vite@8.3.3(@types/node@24.19.1)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
       playwright:
         specifier: 'catalog:'
