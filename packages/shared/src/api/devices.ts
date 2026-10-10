@@ -43,7 +43,7 @@ export interface CurrentMirroredScreen {
   fetchedAt: string
 }
 
-/** The Screen the last poll served was deleted since: the Device's own panel still shows that Screen's last image, but the server no longer has it to name or serve until the Device's next poll. */
+/** The Screen the last poll served was deleted since: the Device still shows that Screen's last image, but the server no longer has it to name or serve until the Device's next poll. */
 export interface CurrentDeletedScreen {
   kind: 'deletedScreen'
   imagePath: null
