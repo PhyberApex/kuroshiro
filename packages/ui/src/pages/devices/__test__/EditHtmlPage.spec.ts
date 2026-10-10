@@ -7,7 +7,7 @@ import { mountApp } from '@/testing/app'
 import { arrived } from '@/testing/arrivals'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import { resetViewport, resizeTo } from '@/testing/viewport'
-import { codeIn, fakeHtmlPreviewLibrary, previewed, typeAtEnd } from './htmlScreenHarness'
+import { codeIn, fakeHtmlPreviewLibrary, previewed, replaceAll, typeAtEnd } from './htmlScreenHarness'
 import { fakeKitchen, kitchenScreen, openedRow, SCREENS_OF_EVERY_KIND } from './screensViewHarness'
 
 type Mounted = Awaited<ReturnType<typeof mountApp>>
@@ -81,6 +81,24 @@ describe('edit HTML', () => {
     expect(faked.writes).toEqual([{ method: 'PATCH', path: 'screens/fridge', body: { html: '<p>Back at six.</p>\n<p>{{ soup }}</p> Soup' } }])
     await openedRow(screen, 'Fridge note')
     await expect.element(screen.getByRole('alertdialog')).not.toBeInTheDocument()
+  })
+
+  it('blocks "Save HTML" on empty markup, checked in the browser, and clears once markup is written again', async () => {
+    const faked = fakeFridgeNote()
+    const screen = await mountFridgeNote()
+
+    await replaceAll(editor(screen), '  ')
+    await saveHtml(screen).click()
+
+    await expect.element(editor(screen)).toHaveAccessibleDescription('Write the HTML this Screen is rendered from.')
+    expect(editor(screen).element().closest('.code-editor')).toHaveAttribute('data-invalid')
+    expect(faked.writes).toEqual([])
+
+    await replaceAll(editor(screen), 'Milk')
+    await saveHtml(screen).click()
+
+    await expect.poll(() => path(screen)).toBe('/devices/kitchen?screen=fridge')
+    expect(faked.writes).toEqual([{ method: 'PATCH', path: 'screens/fridge', body: { html: 'Milk' } }])
   })
 
   it('saves with Ctrl S in the editor', async () => {

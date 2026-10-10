@@ -32,6 +32,22 @@ describe('lowBatteryRule', () => {
     expect(evaluation.active).toBe(false)
   })
 
+  it('resolves a high threshold at 100% instead of a resolve point above it', () => {
+    const highContext = { ...context, lowBatteryPercent: 96 }
+    const stillLow = makeDevice({ batteryVoltage: '4.16' }) // 97%
+    expect(lowBatteryRule.evaluate(stillLow, highContext, true).active).toBe(true)
+    const full = makeDevice({ batteryVoltage: '4.2' }) // 100%
+    expect(lowBatteryRule.evaluate(full, highContext, true).active).toBe(false)
+  })
+
+  it('resolves a threshold of 100 once the battery reads 100%, which never happened before capping', () => {
+    const maxContext = { ...context, lowBatteryPercent: 100 }
+    const notQuite = makeDevice({ batteryVoltage: '4.188' }) // 99%
+    expect(lowBatteryRule.evaluate(notQuite, maxContext, true).active).toBe(true)
+    const full = makeDevice({ batteryVoltage: '4.2' }) // 100%
+    expect(lowBatteryRule.evaluate(full, maxContext, true).active).toBe(false)
+  })
+
   it('skips a device with no reported voltage, whether or not an alert is already active', () => {
     const device = makeDevice({ batteryVoltage: undefined })
     expect(lowBatteryRule.evaluate(device, context, false).skip).toBe(true)

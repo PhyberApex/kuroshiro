@@ -10,14 +10,18 @@ export const SETTING_RANGE_MESSAGES: Record<SettingKey, string> = {
 }
 
 const LOW_BATTERY_RESOLVES_ABOVE = 5
+const MAX_BATTERY_PERCENT = 100
 const EXAMPLE_INTERVAL_MINUTES = 15
 const SECONDS_PER_MINUTE = 60
 
 const toOneDecimal = (count: number) => Number(count.toFixed(1))
 const minutes = (count: number) => `${toOneDecimal(count)} ${toOneDecimal(count) === 1 ? 'minute' : 'minutes'}`
 
+/** Where a firing low-battery Alert resolves, as the server works it out: {@link LOW_BATTERY_RESOLVES_ABOVE} above the threshold, capped at 100. */
+export const resolvesAbove = (percent: number) => Math.min(percent + LOW_BATTERY_RESOLVES_ABOVE, MAX_BATTERY_PERCENT)
+
 export function batteryLowNote(percent: number) {
-  return `Fires when a Device's battery is below ${percent} %, and resolves once it is back at ${percent + LOW_BATTERY_RESOLVES_ABOVE} %.`
+  return `Fires when a Device's battery is below ${percent} %, and resolves once it is back at ${resolvesAbove(percent)} %.`
 }
 
 /** The one Device of an Instance that has exactly one: the Offline row is worded with its refresh rate. */

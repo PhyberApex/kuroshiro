@@ -4,6 +4,10 @@ import { batteryPercentFromVoltage } from 'kuroshiro-shared'
 import { deviceSubjectFields } from './alert-rule.js'
 
 const RESOLVE_HYSTERESIS_PERCENT = 5
+const MAX_BATTERY_PERCENT = 100
+
+/** Where a firing low-battery Alert resolves: {@link RESOLVE_HYSTERESIS_PERCENT} above the threshold, capped at 100 so a threshold of 96 or more can still resolve. */
+const resolvesAbove = (lowBatteryPercent: number) => Math.min(lowBatteryPercent + RESOLVE_HYSTERESIS_PERCENT, MAX_BATTERY_PERCENT)
 
 export const lowBatteryRule: AlertRule = {
   kind: 'device-low-battery',
@@ -16,7 +20,7 @@ export const lowBatteryRule: AlertRule = {
     if (percent === undefined)
       return { skip: true, active: hasActiveAlert }
 
-    const threshold = hasActiveAlert ? context.lowBatteryPercent + RESOLVE_HYSTERESIS_PERCENT : context.lowBatteryPercent
+    const threshold = hasActiveAlert ? resolvesAbove(context.lowBatteryPercent) : context.lowBatteryPercent
     const active = percent < threshold
     return active ? { active, details: { percent } } : { active }
   },

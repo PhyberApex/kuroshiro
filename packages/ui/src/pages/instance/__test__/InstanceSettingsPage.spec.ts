@@ -92,6 +92,15 @@ describe('instance Settings', () => {
       await expect.element(screen.getByRole('main').getByRole('link', { name: 'Alerts', exact: true })).toHaveAttribute('href', '/alerts')
     })
 
+    it('caps the resolve point at 100 % for a threshold of 96 or more', async () => {
+      fakeSettings()
+      const screen = await mountSettings()
+
+      await enter(screen, 'Battery low', '96')
+
+      await expect.poll(() => noteOf(screen, 'Battery low')).toBe('Fires when a Device\'s battery is below 96 %, and resolves once it is back at 100 %.')
+    })
+
     it('sends a threshold entered in range alone and reads "Set here" with the way back', async () => {
       const patches = fakeSettings()
       const screen = await mountSettings()
