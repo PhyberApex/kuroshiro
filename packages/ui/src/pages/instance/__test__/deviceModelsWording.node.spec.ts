@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildDeviceModel, buildPalette } from '@/testing/fixtures/device-models'
-import { customPalettesByName, imageSize, inUseAndOthers, modelsMatching, noneCalled, othersTitle, paletteNames, swatchColours, syncOutcome, whyNotSynced } from '../deviceModelsWording'
+import { checkedNote, customPalettesByName, imageSize, inUseAndOthers, modelsMatching, noneCalled, othersTitle, paletteNames, swatchColours, syncOutcome, whyNotSynced } from '../deviceModelsWording'
 import { PALETTE_FAMILIES, paletteFamilyName } from '../paletteFamilies'
 
 const KITCHEN = { id: 'kitchen', name: 'Kitchen' }
@@ -97,6 +97,20 @@ describe('device models wording', () => {
       ]
 
       expect(paletteNames(buildDeviceModel({ paletteIds: ['bw', 'gray-4', 'gone'] }), palettes)).toBe('Black & White (1-bit), 4 Grays (2-bit)')
+    })
+  })
+
+  describe('when TRMNL was last checked', () => {
+    it('says "checked" where the last sync worked', () => {
+      expect(checkedNote({ ranAt: '2026-10-03T04:00:00.000Z', ok: true, error: null })).toBe('checked')
+    })
+
+    it('says the last check failed where it did not work', () => {
+      expect(checkedNote({ ranAt: '2026-10-03T04:00:00.000Z', ok: false, error: 'TRMNL did not answer' })).toBe('last check failed')
+    })
+
+    it('says nothing where TRMNL was never asked', () => {
+      expect(checkedNote(null)).toBeUndefined()
     })
   })
 

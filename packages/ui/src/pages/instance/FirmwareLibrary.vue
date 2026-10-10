@@ -5,7 +5,7 @@ import TuckedSection from '@/components/TuckedSection.vue'
 import RelativeTime from '@/patterns/RelativeTime.vue'
 import FirmwareDeletion from './FirmwareDeletion.vue'
 import FirmwareRow from './FirmwareRow.vue'
-import { earlierNote, newestOfficialVersion } from './firmwareWording'
+import { checkedNote, earlierNote, newestOfficialVersion } from './firmwareWording'
 import InstanceSection from './InstanceSection.vue'
 
 const props = defineProps<{
@@ -25,7 +25,7 @@ const earlier = computed(() => props.library.firmware.filter(firmware => firmwar
 <template>
   <InstanceSection id="available" title="Available Firmware">
     <template v-if="library.lastSync" #aside>
-      <span class="checked">Checked TRMNL <RelativeTime :at="library.lastSync.ranAt" /></span>
+      <span class="checked">{{ checkedNote(library.lastSync) }} <RelativeTime :at="library.lastSync.ranAt" /></span>
     </template>
     <ul>
       <FirmwareRow v-for="firmware in available" :key="firmware.id" :firmware="firmware" :models="models">
