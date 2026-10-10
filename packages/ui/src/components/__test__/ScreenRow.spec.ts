@@ -367,10 +367,14 @@ describe('reordering screen rows', () => {
     const many = Array.from({ length: 40 }, (_, index) => buildScreen({ id: `screen-${index}`, name: `Screen ${index + 1}` }))
     const screen = await mount(listOf({ screens: many }))
     const grip = gripOf(screen, 'Screen 1').element()
+    const row = rowOf(screen, 'Screen 1')
     const nearTheBottom = { clientX: 40, clientY: window.innerHeight - 4, bubbles: true, cancelable: true }
     expect(window.scrollY).toBe(0)
 
-    grip.dispatchEvent(new DragEvent('dragstart', { ...nearTheBottom, clientY: grip.getBoundingClientRect().top + 4, dataTransfer: new DataTransfer() }))
+    // The row, not the grip, is the `draggable` element (the grip is only its `dragHandle`), so a real
+    // drag's `dragstart` targets the row, over a point inside the grip, which the handle check reads.
+    const gripRect = grip.getBoundingClientRect()
+    row.dispatchEvent(new DragEvent('dragstart', { ...nearTheBottom, clientX: gripRect.left + 4, clientY: gripRect.top + 4, dataTransfer: new DataTransfer() }))
     try {
       await expect.poll(() => {
         document.body.dispatchEvent(new DragEvent('dragover', { ...nearTheBottom, dataTransfer: new DataTransfer() }))
@@ -378,7 +382,7 @@ describe('reordering screen rows', () => {
       }).toBeGreaterThan(0)
     }
     finally {
-      grip.dispatchEvent(new DragEvent('dragend', { bubbles: true }))
+      row.dispatchEvent(new DragEvent('dragend', { bubbles: true }))
       window.scrollTo(0, 0)
     }
   })

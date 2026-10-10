@@ -1,6 +1,13 @@
 import { defineConfig, mergeConfig } from 'vitest/config'
 import viteConfig from './vite.config.ts'
-import { chromiumProject } from './vitest.browser.ts'
+import { browserProject } from './vitest.browser.ts'
+
+/** The specs that drag a row by its grip, which are the ones a Firefox regression of #1277 would catch. */
+const DRAG_SPECS = [
+  'src/components/__test__/ScreenRow.spec.ts',
+  'src/pages/devices/__test__/DeviceScreensPage.spec.ts',
+  'src/pages/plugins/__test__/PluginFields.spec.ts',
+]
 
 export default mergeConfig(viteConfig, defineConfig({
   test: {
@@ -23,11 +30,17 @@ export default mergeConfig(viteConfig, defineConfig({
           include: ['src/**/*.node.spec.ts', 'scripts/**/*.node.spec.ts'],
         },
       },
-      chromiumProject({
+      browserProject({
         name: 'browser',
         include: ['src/**/*.spec.ts'],
         exclude: ['src/**/*.node.spec.ts'],
       }),
+      // Pointer dragging rides the browser's own drag and drop, and Firefox has a long history of
+      // not starting a native drag from a `<button>`, so the drag specs run there too (#1277).
+      browserProject({
+        name: 'firefox',
+        include: DRAG_SPECS,
+      }, 'firefox'),
     ],
   },
 }))

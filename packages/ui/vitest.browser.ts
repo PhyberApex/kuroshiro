@@ -25,8 +25,8 @@ function mockServiceWorker(): Plugin {
 
 type ProjectTestOptions = NonNullable<TestProjectInlineConfiguration['test']>
 
-/** A Vitest project that runs its specs in real Chromium with the tokens, the faces and the faked API loaded. */
-export function chromiumProject(test: ProjectTestOptions & { name: string }): TestProjectInlineConfiguration {
+/** A Vitest project that runs its specs in a real browser with the tokens, the faces and the faked API loaded. */
+export function browserProject(test: ProjectTestOptions & { name: string }, browser: 'chromium' | 'firefox' = 'chromium'): TestProjectInlineConfiguration {
   return {
     extends: true,
     plugins: [mockServiceWorker()],
@@ -72,7 +72,7 @@ export function chromiumProject(test: ProjectTestOptions & { name: string }): Te
         provider: playwright({ contextOptions: { reducedMotion: 'reduce', permissions: ['clipboard-read', 'clipboard-write'] } }),
         headless: true,
         screenshotFailures: false,
-        instances: [{ browser: 'chromium' }],
+        instances: [{ browser }],
         viewport: { width: 1280, height: 800 },
         ...test.browser,
       },

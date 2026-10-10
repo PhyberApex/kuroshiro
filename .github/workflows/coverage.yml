@@ -23,6 +23,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Install Chromium for the UI's browser-mode tests
         run: pnpm --filter kuroshiro-ui exec playwright install --with-deps --only-shell chromium
+      - name: Install Firefox for the UI's drag specs
+        run: pnpm --filter kuroshiro-ui exec playwright install --with-deps firefox
       - name: Test
         run: pnpm run test:coverage
 

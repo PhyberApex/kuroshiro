@@ -1,7 +1,7 @@
 import process from 'node:process'
 import { defineConfig, mergeConfig } from 'vitest/config'
 import viteConfig from './vite.config.ts'
-import { chromiumProject } from './vitest.browser.ts'
+import { browserProject } from './vitest.browser.ts'
 
 // Font rendering differs between machines, so a baseline is only ever written or compared
 // inside the pinned Playwright image that scripts/screenshots.mjs starts.
@@ -11,7 +11,7 @@ if (!process.env.KUROSHIRO_SCREENSHOT_IMAGE)
 export default mergeConfig(viteConfig, defineConfig({
   test: {
     projects: [
-      chromiumProject({
+      browserProject({
         name: 'screenshots',
         include: ['src/**/*.shots.ts'],
         browser: {
