@@ -102,7 +102,7 @@ function choose(weekdays: Weekday[]) {
 
   @media (pointer: coarse) {
     .day {
-      width: 2.5rem;
+      width: var(--hit-target);
       height: var(--hit-target);
     }
   }

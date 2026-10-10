@@ -84,13 +84,15 @@ describe('weekday toggle', () => {
     expect(onUpdate).not.toHaveBeenCalled()
   })
 
-  it('is 32 px square, and a 44 px high target at a coarse pointer', async () => {
+  it('is 32 px square, and a 44 px square target at a coarse pointer', async () => {
     const { screen } = await mountDays([])
     const monday = screen.getByRole('button', { name: 'Monday' })
 
     await expect.element(monday).toHaveStyle({ width: '32px', height: '32px' })
     await withCoarsePointer(async () => {
-      expect(monday.element().getBoundingClientRect().height).toBe(44)
+      const box = monday.element().getBoundingClientRect()
+      expect(box.width).toBeGreaterThanOrEqual(44)
+      expect(box.height).toBeGreaterThanOrEqual(44)
     })
   })
 

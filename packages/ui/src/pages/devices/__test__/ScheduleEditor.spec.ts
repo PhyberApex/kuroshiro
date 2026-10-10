@@ -416,8 +416,11 @@ describe('the Schedule editor', () => {
       ]
       expect(targets).toHaveLength(7 + 1 + 4 + 3)
       expect(targets.filter(target => target.getBoundingClientRect().height < 44).map(words)).toEqual([])
+      const days = editor.getByRole('group', { name: 'Days' }).getByRole('button').elements()
+      expect(days.filter(day => day.getBoundingClientRect().width < 44).map(day => day.getAttribute('aria-label'))).toEqual([])
       await editor.getByRole('button', { name: 'Saturday' }).click()
       await editor.getByRole('checkbox', { name: 'All day' }).click()
+      await expectNoHorizontalOverflow()
     })
 
     await expect.poll(() => faked.writes).toEqual([patch({ weekdays: [1, 2, 3, 4, 5, 6] }), patch({ startTime: null, endTime: null })])
