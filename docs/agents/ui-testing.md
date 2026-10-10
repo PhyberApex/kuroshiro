@@ -71,7 +71,7 @@ Two fast presses of an arrow key in an open Reka `Select` both start from the sa
 
 `expect.poll` gives up after five seconds here (`vitest.browser.ts` raises Vitest's one second, which a save followed by a navigation outran on a loaded CI runner). An assertion that waits for a real timer of the page (Connect a Device asks every 3 seconds) passes `expect.poll` a longer `timeout`.
 
-`vitest.browser.ts` also raises the browser project's `testTimeout` and `hookTimeout` to 30s, past Vitest's 15s and 10s browser-mode defaults, for the same reason: v8 coverage instrumentation slows every page script down on a loaded CI runner. The gallery's two heaviest tests (mounting every primitive in every state for `expectAccessible()` and for the contents link) take that further still, to 120s, with their own `{ timeout }` on the test.
+`vitest.browser.ts` raises the browser project's `testTimeout` to 30s, past Vitest's 15s browser-mode default, for the same reason: v8 coverage instrumentation slows every page script down on a loaded CI runner. It also pins `hookTimeout` at 30s, which is already Vitest's browser-mode default (the 10s default `packages/api` guards against in #1248/#1252 is node mode's), so `beforeAll` — which starts the faked API behind that same coverage slowdown — keeps that budget even if the default ever changes. The gallery's two heaviest tests (mounting every primitive in every state for `expectAccessible()` and for the contents link) take that further still, to 120s, with their own `{ timeout }` on the test.
 
 `userEvent.dragAndDrop` onto a target below the window's edge drops nothing: drag onto a row that is in view.
 
