@@ -14,6 +14,7 @@ import { stubFetch } from '../../test/fetch.js'
 import { createHttpTestApp } from '../../test/httpApp.js'
 import { asService } from '../../test/mockService.js'
 import { createTestDatabase } from '../../test/testDatabase.js'
+import { UPLOAD_LIMITS } from '../../uploads/upload-limits.js'
 import { DevicePlugin } from '../entities/device-plugin.entity.js'
 import { PluginDataSource } from '../entities/plugin-data-source.entity.js'
 import { PluginFieldValue } from '../entities/plugin-field-value.entity.js'
@@ -434,6 +435,14 @@ describe('importing a Plugin, against a real database', () => {
       const refusal = await refused(await http.postJson('/api/plugins/import-github', { githubUrl: 'https://github.com/usetrmnl/weather-plugin' }), 502)
 
       expect(refusal).toMatchObject({ code: 'upstream-unreachable', details: { reason } })
+    })
+
+    it('answers 413 upload-too-large naming the plugin import limit for an archive over it, not upstream-unreachable', async () => {
+      upstreamAnswers(() => new Response(null, { status: 200, headers: { 'content-length': String(UPLOAD_LIMITS.pluginImportBytes + 1) } }))
+
+      const refusal = await refused(await http.postJson('/api/plugins/import-github', { githubUrl: 'https://github.com/usetrmnl/weather-plugin' }), 413)
+
+      expect(refusal).toMatchObject({ code: 'upload-too-large', details: { limitBytes: UPLOAD_LIMITS.pluginImportBytes } })
     })
 
     it('assigns the Plugin to the Device it carries, as its last Screen, and leaves the Active Screen alone', async () => {

@@ -1,8 +1,12 @@
 import type { Logger } from '@nestjs/common'
+import type { Server } from 'node:http'
+import type { AddressInfo } from 'node:net'
 import { Buffer } from 'node:buffer'
+import * as http from 'node:http'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeDeviceModel, makePalette } from '../../test/fixtures.js'
 import { asService } from '../../test/mockService.js'
+import { UPLOAD_LIMITS } from '../../uploads/upload-limits.js'
 import { convertToPng, downloadImage, paletteConversion, readImageSize } from '../imageUtils.js'
 
 type ExecFileCallback = (error: Error | null, stdout: string, stderr: string) => void
@@ -296,37 +300,59 @@ describe('imageUtils', () => {
   })
 
   describe('downloadImage', () => {
-    const mockFetch = vi.fn()
+    let server: Server | undefined
 
-    beforeEach(() => {
-      globalThis.fetch = mockFetch
+    afterEach(async () => {
+      if (!server)
+        return
+      await new Promise<void>(resolve => server!.close(() => resolve()))
+      server = undefined
     })
 
-    it('downloads and saves image successfully', async () => {
-      const mockBuffer = Buffer.from('image data')
-      mockFetch.mockResolvedValue({
-        ok: true,
-        arrayBuffer: async () => mockBuffer,
+    function listen(handler: http.RequestListener): Promise<string> {
+      return new Promise((resolve) => {
+        server = http.createServer(handler)
+        server.listen(0, () => {
+          const { port } = server!.address() as AddressInfo
+          resolve(`http://127.0.0.1:${port}/image.jpg`)
+        })
       })
+    }
 
-      await downloadImage('http://example.com/image.jpg', '/dest/image.jpg', mockLogger)
+    it('downloads and saves image successfully', async () => {
+      const url = await listen((_req, res) => res.end('image data'))
 
-      expect(mockFetch).toHaveBeenCalledWith('http://example.com/image.jpg')
+      await downloadImage(url, '/dest/image.jpg', mockLogger)
+
       expect(mockFs.promises.mkdir).toHaveBeenCalledWith('/dest', { recursive: true })
-      expect(mockFs.promises.writeFile).toHaveBeenCalledWith('/dest/image.jpg', expect.any(Buffer))
-      expect(mockLogger.log).toHaveBeenCalledWith('Downloading image from http://example.com/image.jpg to /dest/image.jpg')
+      expect(mockFs.promises.writeFile).toHaveBeenCalledWith('/dest/image.jpg', Buffer.from('image data'))
+      expect(mockLogger.log).toHaveBeenCalledWith(`Downloading image from ${url} to /dest/image.jpg`)
       expect(mockLogger.log).toHaveBeenCalledWith('Image downloaded to /dest/image.jpg')
     })
 
     it('throws error when fetch fails', async () => {
-      mockFetch.mockResolvedValue({
-        ok: false,
-        statusText: 'Not Found',
+      const url = await listen((_req, res) => {
+        res.statusCode = 404
+        res.statusMessage = 'Not Found'
+        res.end()
       })
 
-      await expect(downloadImage('http://example.com/missing.jpg', '/dest/image.jpg', mockLogger))
+      await expect(downloadImage(url, '/dest/image.jpg', mockLogger))
         .rejects
         .toThrow('Failed to fetch image: Not Found')
+    })
+
+    it('throws naming the limit when the image is larger than it, without reading the body', async () => {
+      const url = await listen((_req, res) => {
+        res.setHeader('content-length', String(UPLOAD_LIMITS.imageUploadBytes + 1))
+        res.write('a')
+        // Never finishes writing the declared body: this must reject from the Content-Length check alone.
+      })
+
+      await expect(downloadImage(url, '/dest/image.jpg', mockLogger))
+        .rejects
+        .toThrow(`The image is larger than ${UPLOAD_LIMITS.imageUploadBytes} bytes.`)
+      expect(mockFs.promises.writeFile).not.toHaveBeenCalled()
     })
   })
 })
