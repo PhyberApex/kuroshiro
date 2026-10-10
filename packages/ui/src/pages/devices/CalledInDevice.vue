@@ -51,7 +51,7 @@ function saveName() {
     <Plate
       size="list"
       :name="`What ${device.name} shows`"
-      :src="imageUrl(device.currentScreen.imagePath)"
+      :src="device.currentScreen.imagePath && imageUrl(device.currentScreen.imagePath)"
       :width="device.deviceModel?.width"
       :height="device.deviceModel?.height"
     />

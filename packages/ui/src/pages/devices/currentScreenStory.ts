@@ -1,4 +1,4 @@
-import type { AlertSummary, CurrentFallbackScreen, CurrentMirroredScreen, CurrentScreenOfRotation, DeviceDetail, DeviceSummary, FallbackReason, ScreenRead } from 'kuroshiro-shared'
+import type { AlertSummary, CurrentDeletedScreen, CurrentFallbackScreen, CurrentMirroredScreen, CurrentScreenOfRotation, DeviceDetail, DeviceSummary, FallbackReason, ScreenRead } from 'kuroshiro-shared'
 import type { Sentence } from './sentence'
 import { clockTime } from '@/patterns/time'
 import { deviceSettingsPath } from './devicePaths'
@@ -17,6 +17,7 @@ export type PlateState
     | 'mirrorFailed'
     | 'offline'
     | 'neverPolled'
+    | 'deletedScreen'
 
 export interface CurrentScreenStory {
   state: PlateState
@@ -175,6 +176,16 @@ const FALLBACK_STORIES: Record<FallbackReason, (told: Told<CurrentFallbackScreen
   }),
 }
 
+function deletedScreen({ device, now }: Told<CurrentDeletedScreen>): CurrentScreenStory {
+  const nextPoll = nextPollTime(device, now)
+  return {
+    state: 'deletedScreen',
+    heading: 'The Screen was deleted',
+    sentences: [sentence(`The Screen ${device.name} shows was deleted. At its next poll${nextPoll ? `, around ${nextPoll},` : ','} it moves on.`)],
+    sealed: false,
+  }
+}
+
 function mirroredImage({ device, current }: Told<CurrentMirroredScreen>): CurrentScreenStory {
   const fetched = `, fetched at ${pollOf(current.fetchedAt)}.`
   return {
@@ -200,5 +211,7 @@ export function currentScreenStory(told: CurrentScreenTold): CurrentScreenStory 
     return screenOfRotation({ ...told, current })
   if (current.kind === 'mirror')
     return mirroredImage({ ...told, current })
+  if (current.kind === 'deletedScreen')
+    return deletedScreen({ ...told, current })
   return { ...FALLBACK_STORIES[current.reason]({ ...told, current }), sealed: false }
 }

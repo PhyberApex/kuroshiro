@@ -40,6 +40,7 @@ const ATTIC = buildDeviceSummary({
   currentScreen: { kind: 'mirror', proxied: false, mirrorMac: 'A4:C1:38:00:00:01', imagePath: imagePath('mirror'), fetchedAt: SEEN_AT },
 })
 const CELLAR = buildDeviceSummary({ id: 'cellar', name: 'Cellar', lastSeenAt: null, nextPollAt: null, batteryPercent: null, rssi: null, currentScreen: fallback('welcome', 'neverPolled') })
+const GARAGE = buildDeviceSummary({ id: 'garage', name: 'Garage', lastSeenAt: SEEN_AT, batteryPercent: 42, currentScreen: { kind: 'deletedScreen', imagePath: null, servedAt: SEEN_AT } })
 
 type Screen = Awaited<ReturnType<typeof mountApp>>
 
@@ -82,6 +83,14 @@ describe('the Devices list', () => {
     expect(saidOf(screen, 'Hallway').shows).toBe('Asleep until 06:00')
     expect(saidOf(screen, 'Study').shows).toBe('No Screens yet')
     expect(saidOf(screen, 'Attic').shows).toBe('Mirrored from TRMNL')
+  })
+
+  it('says the Screen it shows was deleted, and requests no image for it', async () => {
+    const screen = await mountList([KITCHEN, GARAGE])
+
+    await expect.poll(() => rows(screen).length).toBe(2)
+    expect(saidOf(screen, 'Garage').shows).toBe('The Screen was deleted')
+    expect(rowOf(screen, 'Garage').querySelector('.image')).toBeNull()
   })
 
   it('gives each Device its facts, a firing Alert first and alone in red', async () => {

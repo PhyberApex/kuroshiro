@@ -114,6 +114,17 @@ describe('the plate and its column', () => {
     expect(red.every(element => element.closest('.fact.alert') !== null)).toBe(true)
   })
 
+  it('says the Screen it shows was deleted, and requests no image for it', async () => {
+    fakeKitchen({ device: kitchen({
+      currentScreen: { kind: 'deletedScreen', imagePath: null, servedAt: SERVED_AT },
+    }) })
+    const screen = await mountApp({ at: '/devices/kitchen' })
+
+    await expect.element(screen.getByRole('heading', { level: 2, name: 'The Screen was deleted' })).toBeVisible()
+    expect(words(hero(screen).element())).toContain(`The Screen Kitchen shows was deleted. At its next poll, around ${nextPoll}, it moves on.`)
+    expect(hero(screen).element().querySelector('img')).toBeNull()
+  })
+
   it('says why a Device with failed Mirroring shows the error Fallback Screen, and links to Settings', async () => {
     fakeKitchen({ device: kitchen({
       isMirrored: true,

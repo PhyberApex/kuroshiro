@@ -144,8 +144,18 @@ describe('toDeviceSummary', () => {
       expect(currentScreenOf(device)).toMatchObject({ kind: 'mirror', proxied: true, mirrorMac: 'AA:BB:CC:DD:EE:FF' })
     })
 
-    it('falls back to the no-screen Fallback Screen when the served Screen was deleted since', () => {
-      expect(currentScreenOf(polledDevice(), null)).toMatchObject({ kind: 'fallback', fallback: 'noScreen', reason: 'noScreens', screenId: null, servedAt: '2026-03-01T10:00:00.000Z' })
+    it('reads as the deleted-Screen kind, with no image path, when the served Screen was deleted since', () => {
+      expect(currentScreenOf(polledDevice(), null)).toEqual({
+        kind: 'deletedScreen',
+        imagePath: null,
+        servedAt: '2026-03-01T10:00:00.000Z',
+      })
+    })
+
+    it('reads as the deleted-Screen kind even when the Device has other Screens left', () => {
+      const device = polledDevice({ lastServedScreenId: 'screen-gone' })
+
+      expect(currentScreenOf(device, null)).toMatchObject({ kind: 'deletedScreen', imagePath: null })
     })
 
     it('reads as waiting for the first poll when a Device polled before anything was recorded', () => {

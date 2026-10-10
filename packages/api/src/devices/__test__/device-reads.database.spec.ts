@@ -160,6 +160,20 @@ describe('the Device reads against a real database', () => {
       expect(screenCount).toBe(0)
     })
 
+    it('reads the deleted-Screen kind, with no image path, when the served Screen is deleted since', async () => {
+      const device = await register('Kitchen')
+      const weather = await addScreen(device, 'Weather')
+
+      await poll(device)
+      const { lastSeenAt } = await readDetail(device.id)
+      await database.getRepository(Screen).delete({ id: weather.id })
+
+      const { currentScreen, screenCount } = await readDetail(device.id)
+
+      expect(currentScreen).toEqual({ kind: 'deletedScreen', imagePath: null, servedAt: lastSeenAt })
+      expect(screenCount).toBe(0)
+    })
+
     it('folds the Sensor readings the Device reported into the read', async () => {
       const device = await register('Kitchen')
 

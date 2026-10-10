@@ -31,7 +31,7 @@ const facts = computed(() => deviceFacts(told.value))
       <Plate
         size="current"
         :name="`On ${device.name}: ${story.heading}`"
-        :src="imageUrl(device.currentScreen.imagePath)"
+        :src="device.currentScreen.imagePath && imageUrl(device.currentScreen.imagePath)"
         :width="device.deviceModel?.width"
         :height="device.deviceModel?.height"
         :sealed="story.sealed"
