@@ -7,6 +7,7 @@ import FieldError from '@/components/FieldError.vue'
 import FileDrop from '@/components/FileDrop.vue'
 import { useInstanceFacts } from '@/reads/sharedReads'
 import { nameFromFile } from './addScreen'
+import { useReportScreenFormChanged } from './addScreenChanged'
 import AddScreenFoot from './AddScreenFoot.vue'
 import { useAddScreen } from './addScreenForm'
 import { IMAGE_ENDINGS, IMAGE_FORMATS } from './imageFiles'
@@ -32,6 +33,7 @@ const file = ref<File | null>(null)
 const maxBytes = computed(() => facts.data?.limits.imageUploadBytes)
 const convertedFor = computed(() => rendersFor(props.device))
 const changed = computed(() => !addition.added && (name.value.trim() !== '' || file.value !== null))
+useReportScreenFormChanged(changed)
 
 watch(file, (chosen) => {
   addition.problems = { ...addition.problems, file: undefined }
@@ -75,7 +77,7 @@ function add() {
         It is converted for {{ convertedFor }}.
       </p>
     </div>
-    <AddScreenFoot :running="addition.running" :changed="changed" :failure="addition.failure" />
+    <AddScreenFoot :running="addition.running" :changed="changed" :failure="addition.failure" :guarded="false" />
   </form>
 </template>
 

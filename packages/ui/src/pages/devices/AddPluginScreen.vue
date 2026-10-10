@@ -9,6 +9,7 @@ import { addPluginPath } from '@/pages/plugins/pluginPaths'
 import LoadBody from '@/patterns/LoadBody.vue'
 import { useLoad } from '@/patterns/useLoad'
 import { pluginChoices, pluginsCalled, preselected } from './addScreen'
+import { useReportScreenFormChanged } from './addScreenChanged'
 import AddScreenFoot from './AddScreenFoot.vue'
 import { useAddScreen } from './addScreenForm'
 import NoPluginToAssign from './NoPluginToAssign.vue'
@@ -36,6 +37,7 @@ const shortcut = computed(() => sentence(
   `; it is assigned to ${props.device.name} when you save it.`,
 ))
 const changed = computed(() => !addition.added && (picked.value !== undefined || query.value.trim() !== ''))
+useReportScreenFormChanged(changed)
 
 function assign() {
   const pluginId = chosen.value
@@ -56,7 +58,7 @@ function assign() {
         No Plugin is called “{{ query.trim() }}”.
       </p>
       <SentenceLine class="shortcut" :sentence="shortcut" />
-      <AddScreenFoot button="Assign Plugin" :running="addition.running" :disabled="!chosen" :changed="changed" :failure="addition.failure" />
+      <AddScreenFoot button="Assign Plugin" :running="addition.running" :disabled="!chosen" :changed="changed" :failure="addition.failure" :guarded="false" />
     </form>
   </LoadBody>
 </template>

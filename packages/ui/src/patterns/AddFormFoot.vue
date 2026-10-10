@@ -4,7 +4,7 @@ import Button from '@/components/Button.vue'
 import ResultLine from '@/components/ResultLine.vue'
 import UnsavedChanges from './UnsavedChanges.vue'
 
-defineProps<{
+withDefaults(defineProps<{
   /** The name of the primary button, which submits the form the foot stands in: "Create Plugin". */
   button: string
   /** The record is being added: the button shows the loading mark. */
@@ -19,7 +19,13 @@ defineProps<{
   cancelTo: string
   /** A failure comes with "Try again", for a form whose failure is a refused save that may go through as it stands. */
   retryable?: boolean
-}>()
+  /** Whether this form asks "Leave without saving?" on its own. False where a page holds one guard for every form it can show at once (Add Screen's kinds). */
+  guarded?: boolean
+  /** Query keys whose change counts as leaving even while the path stays the same, passed through to `UnsavedChanges`. */
+  leavesOnQuery?: string[]
+}>(), {
+  guarded: true,
+})
 
 defineEmits<{
   retry: []
@@ -59,7 +65,7 @@ defineSlots<{
       <slot />
     </p>
   </div>
-  <UnsavedChanges :when="changed">
+  <UnsavedChanges v-if="guarded" :when="changed" :leaves-on-query="leavesOnQuery">
     <template #lost>
       <slot name="lost" />
     </template>

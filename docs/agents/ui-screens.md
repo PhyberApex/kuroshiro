@@ -106,13 +106,14 @@ const { device, listed, name, path } = useDeviceFrame() // from '@/pages/devices
 | `addScreenKinds.ts` | `ADD_SCREEN_KINDS`, the kinds in the radio row's order. **A kind is one entry here and one form component** |
 | `addScreen.ts` | The page's pure parts, with a node spec: the kinds as they are offered, a Plugin as a choice, the search, which Plugin is checked, a File Screen's name from its file |
 | `addScreenForm.ts` | `useAddScreen(fields?, notAdded?)`: `create(request, found?, refusedAt?)` sends nothing while `found` holds a problem at one of `fields`, runs the request and, once the Screen exists, opens the Screens view at `?screen={id}` and reads the Device again. `problems` goes to the fields (the browser's, then the server's by `fieldErrorsOf`, then what `refusedAt(error)` words for one field); `running`, `added` and `failure` go to the foot |
-| `AddScreenFoot.vue` | How every kind's form ends: the primary button (`button`, `running`, `disabled`), "Cancel", the failure, the "Joins the end of the Order" line and "Leave without saving?" while `changed` |
+| `AddScreenFoot.vue` | How every kind's form ends: the primary button (`button`, `running`, `disabled`), "Cancel", the failure and the "Joins the end of the Order" line. Its own "Leave without saving?" is off (`guarded={false}`); the page asks once for every kind |
+| `addScreenChanged.ts` | `provideScreenFormsChanged()` and `useReportScreenFormChanged(changed)`: a kind's form reports its `changed` to the page in place of a guard of its own, so `AddScreenPage` can ask about every kind's kept-alive form, not only the one in view |
 | `AddPluginScreen.vue`, `NoPluginToAssign.vue`, `AddMashupScreen.vue`, `AddExternalScreen.vue`, `AddFileScreen.vue`, `AddHtmlScreen.vue` | One form per kind |
 | `ScreenNameField.vue` | "Name", as every kind but Plugin has it |
 | `HtmlPreview.vue`, `htmlPreview.ts` | The live preview of an HTML Screen, which Edit HTML shows too: `device`, `html` and `name` in, and it reads the Device Models and Palettes itself, wraps the markup in the screen shell the server renders with (`htmlScreenDocument`) and draws it in a `PreviewPlate` 200 ms after the typing pauses. Add Screen labels it above ("Preview as {Device} renders it"); with `facts` it has the bench's wording under the plate instead, the facts line and the honest line of the Template section (`targetFacts`, `honestLine`) |
 
 - `src/api/screens.ts` has `createScreen` (External link and HTML), `createFileScreen` (multipart), `createMashup` and `assignPlugin`. Each answers the new `ScreenRead`, which is last in the Order and never the Active Screen.
-- The forms are kept alive, so what was entered for one kind is still there after a look at another. Only the form in view asks "Leave without saving?".
+- The forms are kept alive, so what was entered for one kind is still there after a look at another, and leaving the page asks about any kind's unsaved form, not only the one in view.
 - Which Plugins are already on the Device is read off `PluginSummary.devices`, so the page does not read the Screens.
 - The shortcut to a new Plugin is `addPluginPath(way, deviceId)`, which carries the Device to Add a Plugin.
 - The HTML kind's markup is a `CodeEditor` in HTML mode inside its `Field`, named "HTML" by `aria-label`.
@@ -685,7 +686,15 @@ A view with a primary button and "Cancel" renders the guard once, anywhere in it
 
 While `when` is true, a route change opens "Leave without saving?" with "Keep editing" (focused) and "Leave", and the browser asks before the page is unloaded. After a save, let `when` turn false and `await nextTick()` before navigating away, so the guard has seen it.
 
-A change of the path within the same route (another Plugin's page) asks too; a change of the query or the fragment does not. For an action that counts as leaving without being a route change, take a template ref of the guard and call `leaveFor(action)`: it asks first, runs `action` unless the admin keeps editing, and does not ask again about a navigation `action` makes.
+A change of the path within the same route (another Plugin's page) asks too; a change of the query or the fragment does not. Where a query key picks which form is open (`?palette=`), name it in `leavesOnQuery` so that switching it to another value asks too, while the key going away (Cancel, a save) does not:
+
+```vue
+<UnsavedChanges :when="changed" :leaves-on-query="['palette']">
+```
+
+For an action that counts as leaving without being a route change, take a template ref of the guard and call `leaveFor(action)`: it asks first, runs `action` unless the admin keeps editing, and does not ask again about a navigation `action` makes.
+
+Where several forms can hold changes at once and only one is shown (Add Screen's kinds, kept alive while another is chosen), one guard at the page covers them all: each form reports its `changed` with `useReportScreenFormChanged` (`addScreenChanged.ts`) instead of rendering a guard of its own. `AddFormFoot`'s `guarded` prop, false there, turns its own `UnsavedChanges` off so it is not asked about twice.
 
 ## Tests of a page
 

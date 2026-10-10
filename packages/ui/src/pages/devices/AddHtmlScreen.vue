@@ -4,6 +4,7 @@ import { computed, reactive } from 'vue'
 import { createScreen } from '@/api/screens'
 import CodeEditor from '@/components/CodeEditor.vue'
 import Field from '@/components/Field.vue'
+import { useReportScreenFormChanged } from './addScreenChanged'
 import AddScreenFoot from './AddScreenFoot.vue'
 import { useAddScreen } from './addScreenForm'
 import HtmlPreview from './HtmlPreview.vue'
@@ -19,6 +20,7 @@ const addition = useAddScreen(['name', 'html'])
 const draft = reactive({ name: '', html: '' })
 
 const changed = computed(() => !addition.added && (draft.name.trim() !== '' || draft.html.trim() !== ''))
+useReportScreenFormChanged(changed)
 
 function add() {
   void addition.create(() => createScreen({ kind: 'html', deviceId: props.device.id, name: draft.name.trim(), html: draft.html }), {
@@ -35,7 +37,7 @@ function add() {
       <CodeEditor v-model="draft.html" v-bind="control" aria-label="HTML" mode="html" @save="add" />
     </Field>
     <HtmlPreview :device="device" :html="draft.html" name="Preview of the new Screen" />
-    <AddScreenFoot :running="addition.running" :changed="changed" :failure="addition.failure" />
+    <AddScreenFoot :running="addition.running" :changed="changed" :failure="addition.failure" :guarded="false" />
   </form>
 </template>
 

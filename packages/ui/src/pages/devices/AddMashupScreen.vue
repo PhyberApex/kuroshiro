@@ -6,6 +6,7 @@ import { createMashup } from '@/api/screens'
 import LayoutPicker from '@/components/LayoutPicker.vue'
 import LoadBody from '@/patterns/LoadBody.vue'
 import { useLoad } from '@/patterns/useLoad'
+import { useReportScreenFormChanged } from './addScreenChanged'
 import AddScreenFoot from './AddScreenFoot.vue'
 import { useAddScreen } from './addScreenForm'
 import { carriedOver, layoutChoice, MASHUP_LAYOUT_CHOICES, placedIn } from './mashupLayouts'
@@ -34,6 +35,7 @@ const placed = ref<(string | null)[]>([])
 const inSlots = computed(() => carriedOver(placed.value, layout.value))
 const isFilled = computed(() => name.value.trim() !== '' && inSlots.value.every(pluginId => pluginId !== null))
 const changed = computed(() => !addition.added && (name.value.trim() !== '' || layout.value !== FIRST_LAYOUT || placed.value.some(Boolean)))
+useReportScreenFormChanged(changed)
 
 // The button is disabled without a name, so a name that was entered and cleared again is said to be missing as it is cleared.
 watch(name, () => (nameProblem.value = screenNameProblem(name.value)))
@@ -69,7 +71,7 @@ function add() {
           Any Plugin can fill a slot, whether or not it is assigned to {{ device.name }}. A Plugin fills one slot at most.
         </p>
       </div>
-      <AddScreenFoot :running="addition.running" :disabled="!isFilled" :changed="changed" :failure="addition.failure" />
+      <AddScreenFoot :running="addition.running" :disabled="!isFilled" :changed="changed" :failure="addition.failure" :guarded="false" />
     </form>
   </LoadBody>
 </template>

@@ -369,6 +369,72 @@ describe('the Device Models and Palettes page', () => {
     })
   })
 
+  describe('switching which custom Palette\'s form is open', () => {
+    const newForm = (screen: Screen) => screen.getByRole('form', { name: 'New custom Palette' })
+    const editForm = (screen: Screen, name: string) => screen.getByRole('form', { name: `Edit ${name}` })
+
+    it('asks before leaving the new Palette form for an existing one, and keeps both on "Keep editing"', async () => {
+      fakeDeviceModels()
+      const screen = await mountLoadedDeviceModels(`${MODELS_PATH}?palette=new`)
+      await newForm(screen).getByRole('textbox', { name: 'Name' }).fill('Hallway panel')
+
+      await screen.getByRole('link', { name: 'Edit Soft red' }).click()
+
+      const question = screen.getByRole('alertdialog', { name: 'Leave without saving?' })
+      await expect.element(question).toBeVisible()
+      await expect.element(question.getByText('What you entered for the new Palette.')).toBeVisible()
+      await expect.element(question.getByRole('button', { name: 'Keep editing' })).toHaveFocus()
+      expect(screen.router.currentRoute.value.fullPath).toBe(`${MODELS_PATH}?palette=new`)
+
+      await question.getByRole('button', { name: 'Keep editing' }).click()
+
+      await expect.element(question).not.toBeInTheDocument()
+      await expect.element(newForm(screen).getByRole('textbox', { name: 'Name' })).toHaveValue('Hallway panel')
+      expect(screen.router.currentRoute.value.fullPath).toBe(`${MODELS_PATH}?palette=new`)
+    })
+
+    it('opens the other Palette\'s form on "Leave"', async () => {
+      fakeDeviceModels()
+      const screen = await mountLoadedDeviceModels(`${MODELS_PATH}?palette=new`)
+      await newForm(screen).getByRole('textbox', { name: 'Name' }).fill('Hallway panel')
+
+      await screen.getByRole('link', { name: 'Edit Soft red' }).click()
+      await screen.getByRole('alertdialog').getByRole('button', { name: 'Leave' }).click()
+
+      await expect.element(editForm(screen, 'Soft red')).toBeVisible()
+      expect(screen.getByRole('form').elements()).toHaveLength(1)
+      expect(screen.router.currentRoute.value.fullPath).toBe(`${MODELS_PATH}?palette=soft-red`)
+    })
+
+    it('asks before leaving an edited Palette\'s form for "Add a custom Palette", naming that Palette', async () => {
+      fakeDeviceModels()
+      const screen = await mountLoadedDeviceModels(`${MODELS_PATH}?palette=soft-red`)
+      await editForm(screen, 'Soft red').getByRole('textbox', { name: 'Name' }).fill('Softer red')
+
+      await screen.getByRole('link', { name: 'Add a custom Palette' }).click()
+
+      const question = screen.getByRole('alertdialog', { name: 'Leave without saving?' })
+      await expect.element(question).toBeVisible()
+      await expect.element(question.getByText('Your changes to the Palette Soft red.')).toBeVisible()
+      expect(screen.router.currentRoute.value.fullPath).toBe(`${MODELS_PATH}?palette=soft-red`)
+
+      await question.getByRole('button', { name: 'Leave' }).click()
+
+      await expect.element(newForm(screen)).toBeVisible()
+      expect(screen.router.currentRoute.value.fullPath).toBe(`${MODELS_PATH}?palette=new`)
+    })
+
+    it('does not ask when switching forms without changes', async () => {
+      fakeDeviceModels()
+      const screen = await mountLoadedDeviceModels(`${MODELS_PATH}?palette=new`)
+
+      await screen.getByRole('link', { name: 'Edit Soft red' }).click()
+
+      await expect.element(editForm(screen, 'Soft red')).toBeVisible()
+      expect(screen.getByRole('alertdialog').elements()).toEqual([])
+    })
+  })
+
   describe('deleting a custom Palette', () => {
     const lostAndStays = (dialog: Element) => [...dialog.querySelectorAll('dl > div')].map(line => [...line.children].map(words).join(' '))
 
