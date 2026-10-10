@@ -86,7 +86,9 @@ describe('editor bench', () => {
   // coverage runs; on a loaded CI runner that has taken past the default 30 s before they settle.
   it('is accessible and does not overflow in every state', { timeout: 120_000 }, async () => {
     const screen = await mount(EditorBenchGallery)
-    await arrived(screen.container)
+    // Every CodeMirror editor fetching and drawing at once has outrun even the default 5 s poll
+    // on a loaded CI runner under coverage; give it the same headroom as the test itself.
+    await arrived(screen.container, 60_000)
 
     await expectAccessible()
     await expectNoHorizontalOverflow()

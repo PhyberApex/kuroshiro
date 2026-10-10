@@ -58,7 +58,9 @@ describe('save state', () => {
     expect(elementsInSealColour(screen.container)).toEqual([])
   })
 
-  it('saves a control\'s commit and shows what came of it', async () => {
+  // Two full save round trips (debounce, fetch, rerender) back to back have outrun the default
+  // 30 s test budget on a loaded CI runner under coverage before the second fill even starts.
+  it('saves a control\'s commit and shows what came of it', { timeout: 60_000 }, async () => {
     const screen = await mount(SaveStateGallery)
     const name = screen.getByRole('textbox', { name: 'Name of the Device' })
     const state = () => screen.getByRole('status').last()
