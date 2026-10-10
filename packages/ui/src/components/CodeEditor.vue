@@ -28,7 +28,7 @@ const props = withDefaults(defineProps<{
   document?: string
   /** Holds the block shown while the editor is fetched, for the gallery. */
   pending?: boolean
-  /** Makes the next fetch of the editor's chunk fail with this, in place of running it. For a spec, not a caller. */
+  /** Makes the next fetch of the editor's chunk fail with this, in place of running it. For a spec and the gallery, not another caller. */
   chunkFailure?: Error
 }>(), {
   size: 'bench',
