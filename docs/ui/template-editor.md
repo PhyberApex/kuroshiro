@@ -68,6 +68,7 @@ A Plugin has one to four Templates, one per size: `full`, `half_horizontal`, `ha
   - after `{%`: Liquid's tags.
 - **The strip** under the code, on a 1 px rule, `text-xs` in `ink-soft`: at the left "`Tab` indents. `Esc` then `Tab` moves on."; at the right the mode ("Liquid and HTML", "HTML"). When there is a problem the strip holds it instead (see Problems).
 - The editor is named for a screen reader: "Template of {Plugin}, {size}".
+- **If the editor's own chunk cannot be fetched** (offline, or a new Kuroshiro version deployed while the tab was open), the frame shows "**The code editor could not be loaded.** Kuroshiro's server is not answering. If Kuroshiro was updated meanwhile, reload the page." and "Try again", in place of the `wash` block; the frame is no longer busy. "Try again" fetches it again and, once it arrives, shows the editor with the text the form still holds.
 
 ### The preview
 
