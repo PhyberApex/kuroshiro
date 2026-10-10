@@ -12,13 +12,10 @@ function uploadTooLarge({ details }: ApiError) {
 
 export const IMAGE_NOT_FETCHED = 'Kuroshiro could not fetch an image from this address.'
 
-/**
- * The one refusal whose reason only the server knows: what the address answered, or that it did not answer.
- * The server opens a download's failure with words that say what the sentence here already says.
- */
-function imageFetchFailed({ message }: ApiError) {
-  const reason = message.replace(/^The image could not be fetched:\s*/, '')
-  return [IMAGE_NOT_FETCHED, reason].filter(Boolean).join(' ')
+/** The one refusal whose reason only the server knows: what the address answered, or that it did not answer. */
+function imageFetchFailed({ details }: ApiError) {
+  const reason = details?.reason
+  return [IMAGE_NOT_FETCHED, typeof reason === 'string' ? reason : undefined].filter(Boolean).join(' ')
 }
 
 export const NOT_A_RECIPE = 'This is not a Recipe address or id. It looks like https://trmnl.com/recipes/41120, or 41120.'

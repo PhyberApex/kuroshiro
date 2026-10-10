@@ -85,7 +85,7 @@ describe('add Screen, by kind', () => {
       fakeKitchen()
       api.use(http.post(apiUrl('screens'), async () => {
         await delay(50)
-        return apiErrorResponse({ statusCode: 422, code: 'image-fetch-failed', message: 'The image could not be fetched: the address answered 404.' })
+        return apiErrorResponse({ statusCode: 422, code: 'image-fetch-failed', message: 'The image could not be fetched: the address answered 404.', details: { reason: 'the address answered 404.' } })
       }))
       const screen = await mountAddScreen('link')
 

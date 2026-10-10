@@ -67,15 +67,15 @@ describe('the API client', () => {
     expect((failure as Error).message).toBe('This file is not an image Kuroshiro can read. Use PNG, JPEG, BMP, GIF, TIFF or WebP.')
   })
 
-  it('adds the server\'s reason to an image that could not be fetched, which only the server knows', async () => {
-    const refusedWith = async (message: string) => {
-      api.use(http.post(apiUrl('screens/7/refresh'), () => apiErrorResponse({ statusCode: 422, code: 'image-fetch-failed', message })))
+  it('adds the server\'s reason to an image that could not be fetched, from details.reason and not from the message', async () => {
+    const refusedWith = async (reason: string) => {
+      api.use(http.post(apiUrl('screens/7/refresh'), () => apiErrorResponse({ statusCode: 422, code: 'image-fetch-failed', message: 'An unrelated server sentence for the logs.', details: { reason } })))
       return (await failureOf(apiSend('POST', 'screens/7/refresh')) as Error).message
     }
 
     expect(await refusedWith('The address did not answer with an image Kuroshiro can read.'))
       .toBe('Kuroshiro could not fetch an image from this address. The address did not answer with an image Kuroshiro can read.')
-    expect(await refusedWith('The image could not be fetched: Request failed with status code 404'))
+    expect(await refusedWith('Request failed with status code 404'))
       .toBe('Kuroshiro could not fetch an image from this address. Request failed with status code 404')
   })
 

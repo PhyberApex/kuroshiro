@@ -266,15 +266,15 @@ describe('adding, deleting and reordering a Device\'s Screens, against a real da
     })
 
     it.each([
-      ['the fetch', () => vi.mocked(downloadImage).mockRejectedValue(new Error('Failed to fetch image: Not Found'))],
-      ['the conversion', () => vi.mocked(convertToPng).mockRejectedValue(new Error('Unsupported or unrecognised image format'))],
-    ])('answers 422 image-fetch-failed and leaves no Screen and no file behind when %s of a kept External link fails', async (_step, fail) => {
+      ['the fetch', () => vi.mocked(downloadImage).mockRejectedValue(new Error('Failed to fetch image: Not Found')), 'Failed to fetch image: Not Found'],
+      ['the conversion', () => vi.mocked(convertToPng).mockRejectedValue(new Error('Unsupported or unrecognised image format')), 'The address did not answer with an image Kuroshiro can read.'],
+    ])('answers 422 image-fetch-failed with details.reason and leaves no Screen and no file behind when %s of a kept External link fails', async (_step, fail, reason) => {
       fail()
 
       const response = await http.postJson('/api/screens', { deviceId: device.id, kind: 'external', name: 'Poster', url: 'https://example.com/poster.png', fetchManual: true })
 
       expect(response.status).toBe(422)
-      expect(await response.json()).toMatchObject({ statusCode: 422, code: 'image-fetch-failed' })
+      expect(await response.json()).toMatchObject({ statusCode: 422, code: 'image-fetch-failed', details: { reason } })
       expect(await readScreens()).toEqual([])
       expect(await filesOfDevice()).toEqual([])
     })
