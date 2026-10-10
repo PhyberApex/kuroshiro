@@ -238,7 +238,9 @@ describe('edit HTML', () => {
 
       release()
 
-      await expect.poll(() => previewed()).toContain('<img src="data:image/png')
+      // Turning the response into the data: URL shown in the preview is a real FileReader round trip; on a
+      // loaded CI runner under coverage, that has taken past the default 1 s poll.
+      await expect.poll(() => previewed(), { timeout: 5000 }).toContain('<img src="data:image/png')
       await expect.poll(honest).toMatch(/^As Kitchen shows it, in 4 grays, drawn at \d{2}:\d{2}\.$/)
       expect(document.querySelector('.html-preview .honest + .honest')).toBeNull()
       await expect.element(screen.getByRole('button', { name: 'Back to the browser drawing' })).toBeVisible()

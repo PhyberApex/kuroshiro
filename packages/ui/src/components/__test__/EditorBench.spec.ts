@@ -82,7 +82,9 @@ describe('editor bench', () => {
     expect(getComputedStyle(column).overflowY).toBe('auto')
   })
 
-  it('is accessible and does not overflow in every state', async () => {
+  // Mounting the gallery's CodeMirror editors in every state competes with the other packages' own
+  // coverage runs; on a loaded CI runner that has taken past the default 30 s before they settle.
+  it('is accessible and does not overflow in every state', { timeout: 120_000 }, async () => {
     const screen = await mount(EditorBenchGallery)
     await arrived(screen.container)
 
