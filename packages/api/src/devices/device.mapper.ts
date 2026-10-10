@@ -75,6 +75,10 @@ function toFallbackScreen(image: ServedImage, fallback: FallbackKind, reason: Fa
   return { kind: 'fallback', fallback, reason, screenId, imagePath: toImagePath(image.path, image.at), servedAt: toIsoString(image.at) }
 }
 
+function toDeletedScreen(image: ServedImage): CurrentScreen {
+  return { kind: 'deletedScreen', imagePath: null, servedAt: toIsoString(image.at) }
+}
+
 function toCurrentScreen(device: Device, servedScreen: DeviceSummaryFacts['servedScreen']): CurrentScreen {
   const image = servedImageOf(device)
   if (!image)
@@ -83,10 +87,10 @@ function toCurrentScreen(device: Device, servedScreen: DeviceSummaryFacts['serve
     return toMirroredScreen(device, image)
   if (device.lastServedKind === 'fallback')
     return toFallbackScreen(image, device.lastServedFallback ?? 'error', device.lastServedReason ?? 'renderFailed', device.lastServedScreenId ?? null)
-  // A Screen deleted since it was served leaves the Device without one to name until its next poll.
+  // The Screen the last poll served was deleted since: its image is still on the Device, but the server cannot name it until the next poll.
   return servedScreen
     ? toScreenOfRotation(device, image, servedScreen)
-    : toFallbackScreen(image, 'noScreen', 'noScreens', null)
+    : toDeletedScreen(image)
 }
 
 function toClockTimeOrNull(secondsOfDay: number | null | undefined): string | null {

@@ -139,6 +139,12 @@ describe('what a poll showed', () => {
     expect(showsOf(fallback('sleep'), [])).toBe('The sleep Fallback Screen')
   })
 
+  it('says the Screen it showed was deleted', () => {
+    const device = buildDeviceDetail({ currentScreen: { kind: 'deletedScreen', imagePath: null, servedAt: '2026-10-03T07:31:00.000Z' } })
+
+    expect(showsOf(device, screens)).toBe('The Screen it showed, since deleted')
+  })
+
   it('says a mirrored image comes from TRMNL', () => {
     const device = buildDeviceDetail({ currentScreen: { kind: 'mirror', proxied: false, mirrorMac: 'B0:B2:1C:00:00:01', imagePath: '/x.png', fetchedAt: '2026-10-03T07:31:00.000Z' } })
 

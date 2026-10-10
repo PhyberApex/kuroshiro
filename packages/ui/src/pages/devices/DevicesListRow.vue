@@ -28,7 +28,7 @@ const facts = computed(() => rowFacts(props))
     <Plate
       size="list"
       :name="`On ${device.name}: ${story.heading}`"
-      :src="imageUrl(device.currentScreen.imagePath)"
+      :src="device.currentScreen.imagePath && imageUrl(device.currentScreen.imagePath)"
       :width="device.deviceModel?.width"
       :height="device.deviceModel?.height"
       lazy

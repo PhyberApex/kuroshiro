@@ -185,6 +185,21 @@ describe('what the plate shows and the sentences beside it', () => {
     ])
   })
 
+  it('the Screen it shows was deleted: no image, and when it moves on', () => {
+    const device = kitchen({ currentScreen: { kind: 'deletedScreen', imagePath: null, servedAt: at(7, 31) } })
+    const story = currentScreenStory({ device, screens: SCREENS, alerts: [], now: NOW })
+
+    expect(story).toMatchObject({ state: 'deletedScreen', heading: 'The Screen was deleted', sealed: false })
+    expect(said(story.sentences)).toEqual(['The Screen Kitchen shows was deleted. At its next poll, around 07:46, it moves on.'])
+  })
+
+  it('leaves the time out once the moment of the next poll has passed', () => {
+    const device = kitchen({ nextPollAt: at(7, 34), currentScreen: { kind: 'deletedScreen', imagePath: null, servedAt: at(7, 31) } })
+    const story = currentScreenStory({ device, screens: SCREENS, alerts: [], now: NOW })
+
+    expect(said(story.sentences)).toEqual(['The Screen Kitchen shows was deleted. At its next poll, it moves on.'])
+  })
+
   it('never polled', () => {
     const device = kitchen({ lastSeenAt: null, nextPollAt: null, currentScreen: fallback('welcome', 'neverPolled') })
     const story = currentScreenStory({ device, screens: [], alerts: [], now: NOW })

@@ -125,6 +125,8 @@ export function showsOf({ currentScreen }: { currentScreen: CurrentScreen }, scr
     return `The ${FALLBACK_NAMES[currentScreen.fallback]} Fallback Screen`
   if (currentScreen.kind === 'mirror')
     return currentScreen.proxied ? 'This Device\'s own image on TRMNL' : `The image of the TRMNL Device ${currentScreen.mirrorMac}`
+  if (currentScreen.kind === 'deletedScreen')
+    return 'The Screen it showed, since deleted'
   const index = screens.findIndex(screen => screen.id === currentScreen.screenId)
   const name = screenName(screens[index]?.name ?? currentScreen.name)
   return index < 0 ? name : `${name}, Order ${index + 1} of ${screens.length}`
