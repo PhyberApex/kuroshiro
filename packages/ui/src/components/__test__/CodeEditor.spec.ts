@@ -372,7 +372,7 @@ describe('code editor: problems', () => {
 
     await expect.element(editor).toHaveAttribute('aria-invalid', 'true')
     await expect.poll(() => getComputedStyle(frameOf(screen)).boxShadow).toContain('inset')
-    expect(getComputedStyle(frameOf(screen)).borderColor).toBe(INK)
+    await expect.poll(() => getComputedStyle(frameOf(screen)).borderColor).toBe(INK)
     expect(elementsInSealColour(screen.container)).toEqual([])
   })
 
