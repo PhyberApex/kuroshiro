@@ -1,6 +1,7 @@
 import type { ConfigurationImportSummary, DeviceSummary, ImportCheck, ImportWarning } from 'kuroshiro-shared'
 import { http, HttpResponse } from 'msw'
 import { expect } from 'vitest'
+import { exportZipResponse } from '@/pages/plugins/__test__/pluginPageHarness'
 import { api, apiUrl } from '@/testing/api/server'
 import { fakeShellReads, mountApp } from '@/testing/app'
 import { buildImportCheck, buildImportSummary } from '@/testing/fixtures/configuration'
@@ -36,6 +37,8 @@ export interface FakedArchive {
   holding?: Promise<unknown>
   /** Every archive the server was sent, in order: what was asked of it and the file's name. */
   sent: { asked: 'check' | 'import', file: string | undefined }[]
+  /** Every address the page fetched for an export, in order. */
+  exports: string[]
 }
 
 interface Faked {
@@ -51,7 +54,7 @@ const HALLWAY = buildDeviceSummary({ id: 'd1f0a8c2-5b7e-4f3a-9c1d-2e4f6a8b0c1d',
 
 /** Fakes an Instance with one Device, Kitchen, and the two routes an import calls. */
 export function fakeArchive({ devices = [KITCHEN], check = buildImportCheck(), summary = buildImportSummary(), archiveUploadBytes = 256 * 1024 * 1024 }: Faked = {}): FakedArchive {
-  const faked: FakedArchive = { devices, devicesAfterImport: [HALLWAY, KITCHEN], checkAnswer: check, importAnswer: summary, sent: [] }
+  const faked: FakedArchive = { devices, devicesAfterImport: [HALLWAY, KITCHEN], checkAnswer: check, importAnswer: summary, sent: [], exports: [] }
 
   async function taken(request: Request, asked: 'check' | 'import') {
     const file = (await request.formData()).get('file')
@@ -70,6 +73,10 @@ export function fakeArchive({ devices = [KITCHEN], check = buildImportCheck(), s
     http.get(apiUrl('devices'), () => HttpResponse.json(faked.devices)),
     http.post(apiUrl('config/import/check'), ({ request }) => taken(request, 'check')),
     http.post(apiUrl('config/import'), ({ request }) => taken(request, 'import')),
+    http.get(apiUrl('config/export'), ({ request }) => {
+      faked.exports.push(request.url)
+      return exportZipResponse('kuroshiro-config-2026-10-10T00-00-00-000Z.zip')
+    }),
   )
   return faked
 }

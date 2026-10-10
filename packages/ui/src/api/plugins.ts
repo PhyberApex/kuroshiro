@@ -1,5 +1,5 @@
 import type { ApplyRecipeUpdateInput, CreatePluginInput, ImportGithubPluginInput, ImportRecipeInput, PluginDetail, PluginImportResult, PluginSummary, PreviewData, PreviewDataInput, RecipeUpdatePreview, UpdatePluginInput } from 'kuroshiro-shared'
-import { apiDownload, apiGet, apiSend } from './client'
+import { apiDownloadChecked, apiGet, apiSend } from './client'
 
 /** Every Plugin as a row of the list, by name whatever its case. */
 export function listPlugins() {
@@ -80,9 +80,9 @@ export function deletePlugin(pluginId: string) {
   return apiSend('DELETE', `plugins/${pluginId}`)
 }
 
-/** Downloads the Plugin as `{Plugin}.trmnlp.zip`. */
+/** Downloads the Plugin as `{Plugin}.trmnlp.zip`. Refused with `plugin-not-found` for a Plugin that is gone. */
 export function exportPlugin(pluginId: string) {
-  apiDownload(`plugins/${pluginId}/export`)
+  return apiDownloadChecked(`plugins/${pluginId}/export`)
 }
 
 /**

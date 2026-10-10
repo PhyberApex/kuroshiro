@@ -226,7 +226,7 @@ The Firmware page (`FirmwarePage.vue`) is the worked example of an Instance page
 
 ### The Configuration Archive
 
-`ConfigurationArchivePage.vue` is two sections. `ConfigurationExport` is two `ArchiveExportRow`s, each a browser download (`exportConfiguration({ redacted })`), which cannot report a failure: the button reads "Download started" for 2 seconds whatever the server answers. `ConfigurationImport` waits for the Devices and the Instance facts and renders `ImportSteps`.
+`ConfigurationArchivePage.vue` is two sections. `ConfigurationExport` is two `ArchiveExportRow`s, each fetching its archive (`exportConfiguration({ redacted })`) and saving it once it has arrived: the button shows the loading mark while that runs and reads "Download started" for 2 seconds on success. A refusal shows "The Configuration Archive could not be exported. {reason}" with "Try again", and the button stays as it was. `ConfigurationImport` waits for the Devices and the Instance facts and renders `ImportSteps`.
 
 | Part | Is |
 | --- | --- |
@@ -299,7 +299,7 @@ A write that adds a record and then leaves the page navigates first and reloads 
 | --- | --- |
 | `pluginPaths.ts` | `PLUGINS_PATH`, `pluginPath(id)` and `addPluginPath(way, deviceId?)` (`/plugins/new?way=poll`, with `&device=` for a Plugin that is assigned once it exists) |
 | `pluginArrival.ts` | `PluginArrival`, what just happened to a Plugin (`created`, `duplicated`, `imported`, `applied`, `skipped`, each with an optional `device` it was assigned to). A page that opens a Plugin's page after an action calls `openPluginPage(router, pluginId, arrival)`; the Plugin page calls `takePluginArrival(pluginId)` once and words it as a line shown once. It is held in memory, so a reload shows no line |
-| `pluginActions.ts` | `useDuplicatePlugin()` (`duplicate(plugin)`, `duplicating`, `failure`; opens the copy's page carrying `duplicated`) and `useExportPlugin()` (`download(plugin)`, and `exported`, the Plugin whose control reads "Exported" for 2 seconds) |
+| `pluginActions.ts` | `useDuplicatePlugin()` (`duplicate(plugin)`, `duplicating`, `failure`; opens the copy's page carrying `duplicated`) and `useExportPlugin()` (`download(plugin)`, `exporting` while it fetches the file, `exported`, the Plugin whose control reads "Exported" for 2 seconds, and `failure` for a refusal) |
 | `PluginDeletion.vue` | "Delete Plugin": mount it with a `DeletablePlugin` (`v-if`), and it is open. It asks, or says why a Plugin in a Mashup cannot be deleted yet, also when the server refuses with `plugin-in-mashup`. It emits `deleted`, then `closed`, on which the caller unmounts it |
 | `pluginWording.ts` | The sentences of the two dialogs. `listed(names)` ("Kitchen, Hallway and Study") is in `@/patterns/listed` |
 | `pluginRows.ts` | A row's kind, where it shows and its state with their precedence; the search, the filter and the count line |
@@ -474,7 +474,7 @@ A section with a part that lives in a `TuckedSection` or a row registers in the 
 | `saveBar(screen)` | The save bar's region: `saveBar(screen).getByRole('button', { name: 'Save Plugin' })`, `saveBar(screen).getByText('Unsaved changes to the name.')` (the whole sentence) |
 | `refresh()` | The 30-second re-read, now. Blur the control first: a re-read is held back while a typed-in control has the focus |
 | `clock(iso)` | The `{hh:mm}` of a sentence, in the browser's timezone |
-| `catchDownloads()` | Holds every download the page starts and returns their addresses |
+| `catchDownloads()` | Holds every file the page saves, in place of the download: each one's filename and the `Blob` it was built from |
 
 So a section's test is "edit, press Save Plugin, assert `faked.saves`". `__test__/examples/StandInSection.vue` is a section in forty lines, and `StandInPluginPage.vue` shows a frame mounted with sections of a test's choosing (`mountPage`).
 
@@ -634,7 +634,7 @@ export function updateDevice(deviceId: string, input: UpdateDeviceInput) {
 - Types come from `kuroshiro-shared`. Send only what the `…Input` type declares: the server refuses undeclared keys, so a read model sent back as a write is refused.
 - A page calls these functions and never `fetch`.
 - **An image the server answers to an upload** (a preview that stores nothing) is `apiSendForImage(method, path, formData)`, which answers a `Blob`; show it through `URL.createObjectURL` and revoke the address when it is replaced or the component goes (`ReplaceFile.vue`).
-- **A file the server answers** (an export) is downloaded by the browser itself: `apiDownload(path, query?)` from `@/api/client`, wrapped in the group's file (`exportPlugin(id)`). The file's name is the server's.
+- **A file the server answers** (an export) is fetched and then saved from an object URL: `apiDownloadChecked(path, query?)` from `@/api/client`, wrapped in the group's file (`exportPlugin(id)`). It rejects with an `ApiRefusal` or a `ServerUnreachable` like any other call, without saving anything. The file's name is the server's, from its `Content-Disposition`.
 
 ### Failures and their wording
 

@@ -127,12 +127,33 @@ export async function apiSendForImageWithHeaders(method: WriteMethod, path: stri
   return response.ok ? { blob: await response.blob(), headers: response.headers } : answerOf(response)
 }
 
-/** Has the browser download what `GET /api/{path}` answers as a file, under the name the server gives it. */
-export function apiDownload(path: string, query?: Query) {
+/** The name a `Content-Disposition: attachment` header gives the download, from its `filename*` or, absent that, its `filename`. */
+function downloadName(headers: Headers): string {
+  const disposition = headers.get('Content-Disposition') ?? ''
+  const utf8 = /filename\*=UTF-8''([^;]+)/i.exec(disposition)?.[1]
+  if (utf8)
+    return decodeURIComponent(utf8)
+  return /filename="([^"]*)"/.exec(disposition)?.[1] ?? ''
+}
+
+function save(blob: Blob, filename: string) {
   const link = document.createElement('a')
-  link.href = apiAddress(path, query).href
-  link.download = ''
+  link.href = URL.createObjectURL(blob)
+  link.download = filename
   document.body.append(link)
   link.click()
   link.remove()
+  URL.revokeObjectURL(link.href)
+}
+
+/**
+ * Fetches what `GET /api/{path}` answers as a file, then has the browser save it from an
+ * object URL under the name the server gives it. Rejects with an `ApiRefusal` or a
+ * `ServerUnreachable`, without saving anything.
+ */
+export async function apiDownloadChecked(path: string, query?: Query): Promise<void> {
+  const response = await sent(apiAddress(path, query), {})
+  if (!response.ok)
+    return answerOf(response)
+  save(await response.blob(), downloadName(response.headers))
 }
