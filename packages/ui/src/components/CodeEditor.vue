@@ -80,8 +80,7 @@ async function fetchEditor() {
   try {
     if (props.chunkFailure)
       throw props.chunkFailure
-    const chunk = await import('./codeEditorView')
-    const { createCodeEditor } = chunk
+    const { createCodeEditor } = await import('./codeEditorView')
     if (unmounted)
       return
     failed.value = false
