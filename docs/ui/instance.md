@@ -61,7 +61,7 @@ Section heading "Alert Rules", with the link "Alerts" at its right.
 
 | Row | Control | Under the row | Range message |
 |---|---|---|---|
-| Battery low | "below {n} %" | "Fires when a Device's battery is below {n} %, and resolves once it is back at {n + 5} %." | "Enter a whole number from 1 to 100." |
+| Battery low | "below {n} %" | "Fires when a Device's battery is below {n} %, and resolves once it is back at {min(n + 5, 100)} %." | "Enter a whole number from 1 to 100." |
 | Offline | "after {n} missed polls" | "Fires when a Device has not polled for {n} times its refresh rate. {Device} polls every {m} minutes, so that is {n × m} minutes without a poll. Sleep Mode's window does not count." With no Device or several, the middle sentence is "For a Device polling every 15 minutes that is {n × 15} minutes without a poll." | "Enter a whole number, 2 or more." |
 | Fetch Failure Streak | "of {n} failed fetches" | "An Alert fires when the streak reaches {n}. A Plugin that fetches every 15 minutes gets there after {n × 15} minutes." The first sentence is the Plugin page's, word for word. | "Enter a whole number, 1 or more." |
 
@@ -177,7 +177,7 @@ Pressing it disables the button and shows one line under the lede, which stays u
 **For:** custom Palettes, and looking up what Kuroshiro knows about a panel.
 
 - Action on the heading line: "Sync from TRMNL" (plain).
-- Lede: "What Kuroshiro knows about panels. A Device Model sets an image's size, a Palette the greys or colours it is reduced to. Which ones a Device uses is chosen in that Device's Settings."
+- Lede: "What Kuroshiro knows about Device Models and Palettes. A Device Model sets an image's size, a Palette the greys or colours it is reduced to. Which ones a Device uses is chosen in that Device's Settings."
 
 ### Custom Palettes
 
@@ -292,7 +292,7 @@ Section heading "Stored files", with "Check again" at its right. The check runs 
   | "Images no Screen uses" | files | "{N} image files left behind by Screens that were deleted or replaced." |
   | "Folders of deleted Devices" | folders | "The image folder of a Device that is no longer registered." |
   | "Temporary files older than a day" | files | "{N} leftovers of renders that did not finish." |
-  | "Uploads older than a day" | files | "{N} uploaded files that were never turned into a Screen." |
+  | "Old uploads" | files | "{N} files an earlier version of Kuroshiro left in the uploads folder. Nothing reads them." |
   | "Stale Fallback Screen renders" | files | "Fallback Screen drawn for an older look, or for a Device Model and Palette no Device uses." |
   | "Screens whose image is missing" | Screens | "The Screen “{name}” on {Device} and its Schedule. Its image is already gone, so {Device} shows the error Fallback Screen at its turn today." |
 
@@ -360,7 +360,7 @@ The simulator has no loading state of its own beyond the Devices in its select.
 - **Firing,** newest first, straight under the title. A row, left to right:
   - **The Alert,** in red with the red square, in the words the Device and Plugin specs use: "Alert: battery low", "Alert: offline", "Alert: a Data Source keeps failing".
   - **Its subject,** a link: the Device by name, opening its Screens view; or "{Plugin} · {Data Source}" with the Data Source's name in mono, opening `/plugins/:pluginId?source=:name`.
-  - **Why,** in `ink-soft`: "Battery at {n} %, below {threshold} %" · "Last seen {when}, {duration} ago" · "{n} fetches failed in a row. The last answer: {error}" with the error in mono.
+  - **Why,** in `ink-soft`: "Battery at {n} %, below {threshold} %", or while the battery has risen back above the threshold but not yet to where the Alert resolves, "Battery at {n} %, not yet back at {resolve} %" · "Last seen {when}, {duration} ago" · "{n} fetches failed in a row. The last answer: {error}" with the error in mono.
   - **Since when,** at the right: "since 08:10", "since yesterday, 21:35".
 - **Nothing firing:** one line in place of the list, with the check icon: "No Alert is firing."
 - **What is watched,** under the list, in `ink-soft`: "Every 5 minutes Kuroshiro checks each Device for a battery below {n} % and for {n} missed polls, and each Data Source for a Fetch Failure Streak of {n}. An Alert resolves by itself once its cause is gone; there is nothing to dismiss." and the link "Change the Alert Rules".

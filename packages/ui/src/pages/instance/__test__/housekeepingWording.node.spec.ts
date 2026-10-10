@@ -43,7 +43,7 @@ describe('the stored-files check in words', () => {
       ['Images no Screen uses', '2 files', '252 KB'],
       ['Folders of deleted Devices', '1 folder', '1.3 MB'],
       ['Temporary files older than a day', '1 file', '40 KB'],
-      ['Uploads older than a day', '2 files', '2.2 MB'],
+      ['Old uploads', '2 files', '2.2 MB'],
       ['Screens whose image is missing', '1 Screen', undefined],
     ])
     expect(findingGroups(check.findings.slice(4)).map(group => group.group)).toEqual(['oldUpload', 'missingImage'])
@@ -55,7 +55,7 @@ describe('the stored-files check in words', () => {
       '2 image files left behind by Screens that were deleted or replaced.',
       'The image folder of a Device that is no longer registered.',
       '1 leftover of a render that did not finish.',
-      '2 uploaded files that were never turned into a Screen.',
+      '2 files an earlier version of Kuroshiro left in the uploads folder. Nothing reads them.',
       'The Screen “Holiday photo” on Kitchen and its Schedule. Its image is already gone, so Kitchen shows the error Fallback Screen at its turn today.',
     ])
     expect(openedSentence(findingGroups([screen('A', 'Kitchen', 1), screen('B', 'Hallway', 2)])[0]!))
@@ -92,7 +92,7 @@ describe('the stored-files check in words', () => {
       'Images no Screen uses: 2 files, 252 KB.',
       'Folders of deleted Devices: 1 folder, 1.3 MB.',
       'Temporary files older than a day: 1 file, 40 KB.',
-      'Uploads older than a day: 2 files, 2.2 MB.',
+      'Old uploads: 2 files, 2.2 MB.',
       'The Screen “Holiday photo” on Kitchen and its Schedule.',
     ])
   })

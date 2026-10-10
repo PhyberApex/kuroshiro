@@ -23,3 +23,9 @@ export async function typeAtEnd(editor: Locator, keys: string) {
   await editor.click()
   await userEvent.keyboard(`{Control>}{End}{/Control}${keys}`)
 }
+
+/** Selects all of a code editor's markup and types over it, or empties it when given no keys. */
+export async function clearAndType(editor: Locator, keys = '') {
+  await editor.click()
+  await userEvent.keyboard(`{Control>}a{/Control}{Backspace}${keys}`)
+}

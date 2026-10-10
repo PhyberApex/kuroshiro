@@ -86,7 +86,7 @@ A Plugin has one to four Templates, one per size: `full`, `half_horizontal`, `ha
 **Under the plate**, in this order:
 
 1. **"Preview for"** and a select of the Devices by name, then "Another Device Model". It starts as [plugins.md](./plugins.md) says: the first Device the Plugin is assigned to, else the first Device, else no Device.
-   - "Another Device Model" shows two more selects in the same line, "Device Model" and "Palette"; the second lists the Palettes of the chosen Device Model and starts at its first.
+   - "Another Device Model" shows two more selects in the same line, "Device Model" and "Palette"; the second lists the Palettes of the chosen Device Model and starts at its richest Palette, the one a new Device on it is given.
    - With no Devices there is no first select, only "Preview for" and the two selects, starting at TRMNL OG (2-bit) and 4 Grays.
    - The choice is the admin's for this visit. It is not saved and not part of the form.
 2. **The facts**, in mono `ink-soft`: "{Device Model} · {width} × {height} · {Palette}" for a Device; "{width} × {height}" for a chosen Device Model, whose name the selects already show.
@@ -176,8 +176,8 @@ The same component in three more modes. Only what differs is listed.
 **HTML** ([render][html-screen], [dark][html-dark], [phone][phone-html]) is the bench without Liquid, on Edit HTML and in Add Screen's HTML kind, as [devices.md](./devices.md) specs.
 
 - The strip's mode reads "HTML". Nothing is `wash`, since nothing is Liquid, and `{{ … }}` is shown as written.
-- The preview is always for the Screen's own Device, so there is no "Preview for": the facts line reads "Preview for {Device} · {Device Model} · {width} × {height} · {Palette}", then the honest line. There is no data, no "Data" section and nothing to fetch.
-- HTML is never invalid, so nothing is marked and nothing blocks "Save HTML". Ctrl/Cmd S is "Save HTML".
+- The preview is always for the Screen's own Device, so there is no "Preview for": "Preview", labelled "as {Device} renders it: {Device Model}, {Palette}", then the honest line. There is no data, no "Data" section and nothing to fetch.
+- HTML is never invalid except when empty: "Write the HTML this Screen is rendered from.", marked and blocking "Save HTML" on both Add Screen and Edit HTML, checked in the browser before sending. Ctrl/Cmd S is "Save HTML".
 - No full window.
 
 ## Phone

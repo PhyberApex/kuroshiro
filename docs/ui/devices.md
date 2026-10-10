@@ -265,7 +265,7 @@ The form ends with the primary button, "Cancel" (back to the Screens view) and t
 **For:** changing an HTML Screen's markup with the result in view. The page HTML Preview used to be.
 
 - Under the Screens tab: the back link "{Device}'s Screens", the heading "Edit {Screen}", then the code editor and the live preview side by side (stacked on phone, editor first).
-- A form: "Save HTML" (primary), "Cancel", and "{Device} shows the change when this Screen's turn next comes." Markup is not saved as it is typed, since half-written HTML would reach the Device.
+- A form: "Save HTML" (primary), "Cancel", and "{Device} shows the change when this Screen's turn next comes." Markup is not saved as it is typed, since half-written HTML would reach the Device. Empty HTML is invalid, as [template-editor.md](./template-editor.md) specs: "Write the HTML this Screen is rendered from.", marked and blocking "Save HTML".
 - Leaving with unsaved changes asks: "Leave without saving?" · Lost: "Your changes to {Screen}'s HTML." · "Leave" / "Keep editing".
 - The code editor is the one of [template-editor.md](./template-editor.md), in its HTML mode. The drawings here show a mono textarea.
 - The preview offers the device preview of [template-editor.md](./template-editor.md) the same way, for the Screen's Device (ADR-0040).
