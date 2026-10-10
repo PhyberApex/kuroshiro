@@ -137,7 +137,9 @@ describe('screen row', () => {
     await screen.getByRole('button', { name: 'Fetch Weather' }).click()
     await userEvent.keyboard('{Enter}')
 
-    expect(onFetch.mock.calls).toEqual([['Weather'], ['Weather']])
+    // Firefox's keyboard automation resolves before the native Enter-triggers-click default
+    // action lands, so the second call can arrive a tick after `userEvent.keyboard` returns.
+    await expect.poll(() => onFetch.mock.calls).toEqual([['Weather'], ['Weather']])
     await expect.element(triggerOf(screen, 'Weather')).toHaveAttribute('aria-expanded', 'false')
   })
 
@@ -269,7 +271,8 @@ describe('reordering screen rows', () => {
 
     await userEvent.keyboard(key)
 
-    expect(onReorder.mock.calls).toEqual([[['weather', 'weekend', 'calendar', 'trains']]])
+    // Same Firefox keyboard-automation lag as above: the drop's `reorder` can land a tick late.
+    await expect.poll(() => onReorder.mock.calls).toEqual([[['weather', 'weekend', 'calendar', 'trains']]])
     await expect.element(grip).toHaveAttribute('aria-pressed', 'false')
     await expect.element(grip).toHaveFocus()
     expect(namesOf(screen)).toEqual(['Weather', 'Weekend board', 'Calendar', 'Train departures'])
