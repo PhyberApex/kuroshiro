@@ -8,6 +8,9 @@ allowBuilds:
   puppeteer: true
   vue-demi: false
 
+overrides:
+  msw: 3.0.2
+
 catalog:
   '@antfu/eslint-config': 9.5.1
   '@atlaskit/pragmatic-drag-and-drop': 4.0.0
