@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.19.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.18.0...kuroshiro-v0.19.0) (2026-10-10)
+
+
+### Features
+
+* **api,ci:** make the Alert Sweep schedule configurable, speed up the real-API CI journey ([#1370](https://github.com/PhyberApex/kuroshiro/issues/1370)) ([62972fd](https://github.com/PhyberApex/kuroshiro/commit/62972fd511efc21887ab380915894ca6ac4866cf)), closes [#1270](https://github.com/PhyberApex/kuroshiro/issues/1270)
+* **ui:** clear a select or on/off Field Value back to its default ([#1385](https://github.com/PhyberApex/kuroshiro/issues/1385)) ([8084f71](https://github.com/PhyberApex/kuroshiro/commit/8084f719930d00162326c14d5b38a26c0fe6972a))
+* **ui:** tilt the Active Screen's seal 4 degrees askew on the Plate ([#1391](https://github.com/PhyberApex/kuroshiro/issues/1391)) ([2913081](https://github.com/PhyberApex/kuroshiro/commit/29130816277b7e51951635391582c0458ebf3e23))
+
+
+### Bug Fixes
+
+* **api,ui:** carry image-fetch-failed's reason in details, not a parsed message ([#1347](https://github.com/PhyberApex/kuroshiro/issues/1347)) ([fd2b55f](https://github.com/PhyberApex/kuroshiro/commit/fd2b55f883d478f76890065c5f89a49d3cd86adc))
+* **api,ui:** read a Device's deleted Active Screen as deletedScreen, not noScreens ([#1372](https://github.com/PhyberApex/kuroshiro/issues/1372)) ([a22dc29](https://github.com/PhyberApex/kuroshiro/commit/a22dc2964202277818d3ad791d634acd0b9281c0))
+* **api:** cap GitHub/Recipe import and External link image downloads ([#1369](https://github.com/PhyberApex/kuroshiro/issues/1369)) ([0d15aea](https://github.com/PhyberApex/kuroshiro/commit/0d15aeace3187a573a2ffb7d603e6fde6583f6df)), closes [#1269](https://github.com/PhyberApex/kuroshiro/issues/1269)
+* **configuration:** refuse an Instance Settings archive entry outside SETTING_BOUNDS ([#1348](https://github.com/PhyberApex/kuroshiro/issues/1348)) ([0e6785b](https://github.com/PhyberApex/kuroshiro/commit/0e6785b41a1fbda9ced193d4955bf26bf5911609))
+* **maintenance:** find and clean up stale Fallback Screen renders ([#1371](https://github.com/PhyberApex/kuroshiro/issues/1371)) ([183427d](https://github.com/PhyberApex/kuroshiro/commit/183427d37aee5006ffddc8cf30351060f9b20fd4))
+* **ui:** add a hook timeout to the browser project's coverage runs ([#1393](https://github.com/PhyberApex/kuroshiro/issues/1393)) ([a747957](https://github.com/PhyberApex/kuroshiro/commit/a747957e4c48dcf8e176361bd10920b3ac774425))
+* **ui:** ask before dropping an unsaved Palette or Add Screen form ([#1380](https://github.com/PhyberApex/kuroshiro/issues/1380)) ([7089775](https://github.com/PhyberApex/kuroshiro/commit/70897754365caac900dace7667be75c1f21b6620))
+* **ui:** drag a Screen or Plugin Field row by its grip in Firefox ([#1378](https://github.com/PhyberApex/kuroshiro/issues/1378)) ([4b93690](https://github.com/PhyberApex/kuroshiro/commit/4b93690db7e5b560c0eb2f8c375a9daa2874ac12))
+* **ui:** keep the Plugin page's Devices section from going bare while Devices load or fail ([#1389](https://github.com/PhyberApex/kuroshiro/issues/1389)) ([6e7b7ce](https://github.com/PhyberApex/kuroshiro/commit/6e7b7ce0103f27dd68309e91ce4a87e6ac558dcb))
+* **ui:** mark a custom Palette "· custom" in a Device Model's row ([#1386](https://github.com/PhyberApex/kuroshiro/issues/1386)) ([e6bee50](https://github.com/PhyberApex/kuroshiro/commit/e6bee50e0c857babe0ecae94cc08243d50243530))
+* **ui:** reach a relative time's exact time by keyboard and touch ([#1374](https://github.com/PhyberApex/kuroshiro/issues/1374)) ([2f727d4](https://github.com/PhyberApex/kuroshiro/commit/2f727d4cb12fe7ad18126e6d9df8963c2a4c50a9))
+* **ui:** report a Plugin or Configuration Archive export's failure ([#1381](https://github.com/PhyberApex/kuroshiro/issues/1381)) ([63ac075](https://github.com/PhyberApex/kuroshiro/commit/63ac075f0af3f3f0e79fc19b7ea00b516961e284)), closes [#1279](https://github.com/PhyberApex/kuroshiro/issues/1279)
+* **ui:** say a failed TRMNL sync check failed, not that it checked ([#1387](https://github.com/PhyberApex/kuroshiro/issues/1387)) ([c522b29](https://github.com/PhyberApex/kuroshiro/commit/c522b2962abc37822ef389593ffd3cf9d8feefc5)), closes [#1283](https://github.com/PhyberApex/kuroshiro/issues/1283)
+* **ui:** say an unassigned Webhook-kind Plugin keeps its Webhook URL ([#1382](https://github.com/PhyberApex/kuroshiro/issues/1382)) ([8532cd8](https://github.com/PhyberApex/kuroshiro/commit/8532cd8a1e1e94dac939cfa47eb1fe5714bbcadf)), closes [#1280](https://github.com/PhyberApex/kuroshiro/issues/1280)
+* **ui:** show a failed-load notice when the code editor's chunk cannot be fetched ([#1377](https://github.com/PhyberApex/kuroshiro/issues/1377)) ([7dc897d](https://github.com/PhyberApex/kuroshiro/commit/7dc897d2648a656a23ea929cc17c7f3f2aa1a245))
+* **ui:** widen the weekday toggle's touch target to 44 px square ([#1376](https://github.com/PhyberApex/kuroshiro/issues/1376)) ([7cd920f](https://github.com/PhyberApex/kuroshiro/commit/7cd920f53e7b524b48e30d092fe64fff0b204e07)), closes [#1275](https://github.com/PhyberApex/kuroshiro/issues/1275)
+
 ## [0.18.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.17.1...kuroshiro-v0.18.0) (2026-10-09)
 
 
