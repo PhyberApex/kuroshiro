@@ -6,8 +6,10 @@ import RadioRow from '@/components/RadioRow.vue'
 import BackLink from '@/patterns/BackLink.vue'
 import ChoiceBesideForm from '@/patterns/ChoiceBesideForm.vue'
 import LoadBody from '@/patterns/LoadBody.vue'
+import UnsavedChanges from '@/patterns/UnsavedChanges.vue'
 import { useInstanceFacts } from '@/reads/sharedReads'
 import { chosenKind, offeredKinds } from './addScreen'
+import { provideScreenFormsChanged } from './addScreenChanged'
 import { ADD_SCREEN_KINDS } from './addScreenKinds'
 import { useDeviceFrame } from './deviceFrame'
 import { possessive } from './screenNaming'
@@ -18,6 +20,10 @@ const facts = useInstanceFacts()
 const { device, name, path } = useDeviceFrame()
 
 const headingId = useId()
+
+/** Whether any kind's form, kept alive while another is in view, holds something that would be lost. */
+const changedForms = provideScreenFormsChanged()
+const changed = computed(() => changedForms.size > 0)
 
 const kinds = computed(() => offeredKinds(ADD_SCREEN_KINDS, facts.data?.demoMode ?? false))
 const chosen = computed(() => {
@@ -50,6 +56,11 @@ function choose(kind?: AddScreenKind) {
       </LoadBody>
     </ChoiceBesideForm>
   </section>
+  <UnsavedChanges :when="changed">
+    <template #lost>
+      What you entered for the new Screen.
+    </template>
+  </UnsavedChanges>
 </template>
 
 <style scoped>

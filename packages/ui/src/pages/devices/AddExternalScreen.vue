@@ -7,6 +7,7 @@ import { createScreen } from '@/api/screens'
 import Field from '@/components/Field.vue'
 import RadioRow from '@/components/RadioRow.vue'
 import TextInput from '@/components/TextInput.vue'
+import { useReportScreenFormChanged } from './addScreenChanged'
 import AddScreenFoot from './AddScreenFoot.vue'
 import { useAddScreen } from './addScreenForm'
 import { FETCH_CHOICES, NOT_A_WEB_ADDRESS } from './fetchChoices'
@@ -26,6 +27,7 @@ const addition = useAddScreen(['name', 'url'])
 const draft = reactive({ name: '', url: '', fetching: 'keep' as FetchChoice })
 
 const changed = computed(() => !addition.added && (draft.name.trim() !== '' || draft.url.trim() !== '' || draft.fetching !== 'keep'))
+useReportScreenFormChanged(changed)
 
 /** An address that gave no image is a problem of the address: the Screen is not added and the field says why. */
 function noImage(error: unknown) {
@@ -55,7 +57,7 @@ function add() {
       <TextInput v-model="draft.url" v-bind="control" type="url" inputmode="url" spellcheck="false" autocomplete="off" wide />
     </Field>
     <RadioRow v-model="draft.fetching" class="fetching" :choices="FETCH_CHOICES" aria-label="Fetching" />
-    <AddScreenFoot :running="addition.running" :changed="changed" :failure="addition.failure" />
+    <AddScreenFoot :running="addition.running" :changed="changed" :failure="addition.failure" :guarded="false" />
   </form>
 </template>
 

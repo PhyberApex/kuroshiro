@@ -111,6 +111,44 @@ describe('add Screen', () => {
       await screen.getByRole('link', { name: 'Cancel' }).click()
       await expect.poll(() => path(screen)).toBe('/devices/kitchen')
     })
+
+    it('asks before leaving while another kind\'s form, kept alive, holds something that would be lost', async () => {
+      fakeKitchen({ plugins: PLUGINS })
+      const screen = await mountAddScreen('link')
+
+      await nameField(screen).fill('Tide table')
+      await kindOf(screen, 'File').click()
+      await screen.getByRole('link', { name: 'Kitchen\'s Screens' }).click()
+
+      const question = screen.getByRole('alertdialog', { name: 'Leave without saving?' })
+      await expect.element(question).toBeVisible()
+      await expect.element(question.getByText('What you entered for the new Screen.')).toBeVisible()
+
+      await question.getByRole('button', { name: 'Keep editing' }).click()
+
+      await expect.element(question).not.toBeInTheDocument()
+      await expect.element(kindOf(screen, 'File')).toBeChecked()
+      await kindOf(screen, 'External link').click()
+      await expect.element(nameField(screen)).toHaveValue('Tide table')
+    })
+
+    it('never asks while only switching kinds, and navigates without asking once a Screen is added', async () => {
+      const faked = fakeKitchen({ plugins: PLUGINS })
+      const screen = await mountAddScreen('link')
+
+      await nameField(screen).fill('Tide table')
+      await kindOf(screen, 'File').click()
+      await kindOf(screen, 'External link').click()
+
+      expect(screen.getByRole('alertdialog').elements()).toEqual([])
+
+      await screen.getByRole('textbox', { name: 'Image URL' }).fill('https://tides.example/today.png')
+      await screen.getByRole('button', { name: 'Add Screen' }).click()
+
+      await expect.poll(() => path(screen)).toBe(OPENED_ON_THE_NEW_SCREEN)
+      expect(faked.writes).toEqual([{ method: 'POST', path: 'screens', body: { kind: 'external', deviceId: 'kitchen', name: 'Tide table', url: 'https://tides.example/today.png', fetchManual: true } }])
+      expect(screen.getByRole('alertdialog').elements()).toEqual([])
+    })
   })
 
   describe('a Plugin', () => {

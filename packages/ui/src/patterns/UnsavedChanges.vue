@@ -6,6 +6,8 @@ import Confirmation from '@/components/Confirmation.vue'
 const props = defineProps<{
   /** Whether the form holds changes that are not saved. */
   when: boolean
+  /** Query keys whose change counts as leaving even while the path stays the same: switching which custom Palette's form is open. */
+  leavesOnQuery?: string[]
 }>()
 
 defineSlots<{
@@ -36,8 +38,13 @@ let leaving = false
 const mayLeave = () => !props.when || leaving || ask()
 
 onBeforeRouteLeave(mayLeave)
-// Another record of the same route (another Plugin's page) is a way out too; a query or a fragment is the same page.
-onBeforeRouteUpdate((to, from) => to.path === from.path || mayLeave())
+// Another record of the same route (another Plugin's page) is a way out too; a query or a fragment is the same page,
+// unless it switches a query key named by `leavesOnQuery` to another value (which form of the same kind is open).
+// The key going away rather than switching (Cancel, a save) is not a switch, and does not ask.
+onBeforeRouteUpdate((to, from) => {
+  const leavesByQuery = (props.leavesOnQuery ?? []).some(key => to.query[key] != null && to.query[key] !== from.query[key])
+  return (to.path === from.path && !leavesByQuery) || mayLeave()
+})
 
 /**
  * For an action that counts as leaving without being a route change of its own (duplicating,

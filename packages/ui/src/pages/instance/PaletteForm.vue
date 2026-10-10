@@ -138,7 +138,7 @@ async function save() {
       </p>
       <FieldError :id="coloursErrorId" :message="problems.colours" />
     </div>
-    <AddFormFoot :button="palette ? 'Save Palette' : 'Add Palette'" :running="saving" :changed="changed" :failure="failure" :cancel-to="DEVICE_MODELS_PATH">
+    <AddFormFoot :button="palette ? 'Save Palette' : 'Add Palette'" :running="saving" :changed="changed" :failure="failure" :cancel-to="DEVICE_MODELS_PATH" :leaves-on-query="['palette']">
       <template v-if="converts" #default>
         {{ converts }}
       </template>

@@ -685,7 +685,15 @@ A view with a primary button and "Cancel" renders the guard once, anywhere in it
 
 While `when` is true, a route change opens "Leave without saving?" with "Keep editing" (focused) and "Leave", and the browser asks before the page is unloaded. After a save, let `when` turn false and `await nextTick()` before navigating away, so the guard has seen it.
 
-A change of the path within the same route (another Plugin's page) asks too; a change of the query or the fragment does not. For an action that counts as leaving without being a route change, take a template ref of the guard and call `leaveFor(action)`: it asks first, runs `action` unless the admin keeps editing, and does not ask again about a navigation `action` makes.
+A change of the path within the same route (another Plugin's page) asks too; a change of the query or the fragment does not. Where a query key picks which form is open (`?palette=`), name it in `leavesOnQuery` so that switching it to another value asks too, while the key going away (Cancel, a save) does not:
+
+```vue
+<UnsavedChanges :when="changed" :leaves-on-query="['palette']">
+```
+
+For an action that counts as leaving without being a route change, take a template ref of the guard and call `leaveFor(action)`: it asks first, runs `action` unless the admin keeps editing, and does not ask again about a navigation `action` makes.
+
+Where several forms can hold changes at once and only one is shown (Add Screen's kinds, kept alive while another is chosen), one guard at the page covers them all: each form reports its `changed` with `useReportScreenFormChanged` (`addScreenChanged.ts`) instead of rendering a guard of its own. `AddFormFoot`'s `guarded` prop, false there, turns its own `UnsavedChanges` off so it is not asked about twice.
 
 ## Tests of a page
 
