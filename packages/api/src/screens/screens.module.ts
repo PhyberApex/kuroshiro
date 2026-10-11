@@ -7,6 +7,8 @@ import { Device } from '../devices/devices.entity.js'
 import { DevicePlugin } from '../plugins/entities/device-plugin.entity.js'
 import { PluginsModule } from '../plugins/plugins.module.js'
 import { DeviceScreensController } from './device-screens.controller.js'
+import { PickedScreenController } from './picked-screen.controller.js'
+import { PickedScreenService } from './picked-screen.service.js'
 import { PluginAssignmentsController } from './plugin-assignments.controller.js'
 import { ScreenReadsService } from './screen-reads.service.js'
 import { ScreensController } from './screens.controller.js'
@@ -15,8 +17,8 @@ import { ScreensService } from './screens.service.js'
 
 @Module({
   imports: [TypeOrmModule.forFeature([Screen, Device, DevicePlugin, Alert]), ConfigModule, DeviceModelsModule, PluginsModule],
-  controllers: [ScreensController, DeviceScreensController, PluginAssignmentsController],
-  providers: [ScreensService, ScreenReadsService],
+  controllers: [ScreensController, DeviceScreensController, PluginAssignmentsController, PickedScreenController],
+  providers: [ScreensService, ScreenReadsService, PickedScreenService],
   exports: [ScreensService, ScreenReadsService],
 })
 export class ScreensModule {}

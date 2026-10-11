@@ -1235,6 +1235,135 @@ describe('deviceDisplayService', () => {
     })
   })
 
+  describe('picked screen rotation', () => {
+    const pickedScreenDevice = makeDevice({ ...baseDevice, apikey: 'token', id: '1', mirrorEnabled: false })
+
+    function fileScreen(overrides: Partial<Omit<Screen, 'schedule'>> & { schedule?: Partial<Schedule> | null } = {}): Screen {
+      const { schedule, ...rest } = overrides
+      return makeScreen({
+        device: pickedScreenDevice,
+        type: 'file',
+        isActive: false,
+        fetchManual: false,
+        externalLink: null,
+        filename: 'file.png',
+        generatedAt: new Date('2026-08-21T00:00:00'),
+        schedule: schedule == null ? null : makeSchedule(schedule),
+        ...rest,
+      })
+    }
+
+    /** An `html` Screen whose body embeds the marker `primePuppeteer` reads back as a fresh Render Signal. */
+    function htmlScreen(overrides: Partial<Screen> & { id: string, order: number }, signal: 'skip' | 'hold'): Screen {
+      const body = `<p>x</p><script>${signal === 'skip' ? SKIP_MARKER : HOLD_MARKER} = true</script>`
+      return makeScreen({ device: pickedScreenDevice, type: 'html', html: body, isActive: false, fetchManual: false, externalLink: null, generatedAt: new Date('2026-08-21T00:00:00'), ...overrides })
+    }
+
+    function primeRotation(screens: Screen[], pickedScreen: Screen | null) {
+      pickedScreenDevice.pickedScreen = pickedScreen
+      deviceRepo.findOneBy.mockResolvedValue(pickedScreenDevice)
+      screenRepo.find.mockResolvedValue(screens)
+      screenRepo.findOne.mockResolvedValue(null)
+      configService.get.mockReturnValue('http://api')
+      fileExists.mockResolvedValue(true)
+      fileModifiedAt.mockResolvedValue(new Date('2026-08-21T00:00:00'))
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-08-21T12:00:00'))
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('serves the Picked Screen instead of what Order would give, and clears the pick in the same poll', async () => {
+      const picked = fileScreen({ id: 'screen3', order: 3 })
+      primeRotation([
+        fileScreen({ id: 'screen1', order: 1, isActive: true }),
+        fileScreen({ id: 'screen2', order: 2 }),
+        picked,
+      ], picked)
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.image_url).toBe('http://api/screens/devices/1/screen3.png')
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1' }, { pickedScreen: null })
+    })
+
+    it('drops a pick whose Schedule now excludes it, running normal Rotation from the Active Screen instead', async () => {
+      const picked = fileScreen({ id: 'screen2', order: 2, schedule: { enabled: false } })
+      primeRotation([
+        fileScreen({ id: 'screen1', order: 1, isActive: true }),
+        picked,
+        fileScreen({ id: 'screen3', order: 3 }),
+      ], picked)
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.image_url).toBe('http://api/screens/devices/1/screen3.png')
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1' }, { pickedScreen: null })
+    })
+
+    it('drops a pick carrying a remembered skip, running normal Rotation instead', async () => {
+      const picked = fileScreen({ id: 'screen2', order: 2, renderSignal: 'skip' })
+      primeRotation([
+        fileScreen({ id: 'screen1', order: 1, isActive: true }),
+        picked,
+        fileScreen({ id: 'screen3', order: 3 }),
+      ], picked)
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.image_url).toBe('http://api/screens/devices/1/screen3.png')
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1' }, { pickedScreen: null })
+    })
+
+    it('drops a pick whose render raises a fresh skip, trying the next eligible Screen in Order instead', async () => {
+      const picked = htmlScreen({ id: 'screen2', order: 2 }, 'skip')
+      primeRotation([
+        fileScreen({ id: 'screen1', order: 1, isActive: true }),
+        picked,
+        fileScreen({ id: 'screen3', order: 3 }),
+      ], picked)
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.image_url).toBe('http://api/screens/devices/1/screen3.png')
+      expect(screenRepo.update).toHaveBeenCalledWith({ id: 'screen2' }, { renderSignal: 'skip' })
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1' }, { pickedScreen: null })
+    })
+
+    it('keeps the Picked Screen\'s turn on a hold, serving its stored image, and still clears the pick', async () => {
+      const picked = htmlScreen({ id: 'screen2', order: 2 }, 'hold')
+      primeRotation([
+        fileScreen({ id: 'screen1', order: 1, isActive: true }),
+        picked,
+      ], picked)
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.image_url).toBe('http://api/screens/devices/1/screen2.png')
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1' }, { pickedScreen: null })
+    })
+
+    it('is held, not cleared, while the Device sleeps', async () => {
+      const picked = fileScreen({ id: 'screen2', order: 2 })
+      const sleeper = makeDevice({ ...pickedScreenDevice, sleepModeEnabled: true, sleepStartTime: 22 * 3600, sleepEndTime: 6 * 3600, sleepScreenEnabled: false, pickedScreen: picked })
+      deviceRepo.findOneBy.mockResolvedValue(sleeper)
+      screenRepo.findOneBy.mockResolvedValue(null)
+      configService.get.mockReturnValue('http://api')
+      fileExists.mockResolvedValue(true)
+
+      vi.setSystemTime(new Date('2026-08-21T23:00:00'))
+      await service.getCurrentImage(headers)
+
+      expect(screenRepo.find).not.toHaveBeenCalled()
+      expect(deviceRepo.update).not.toHaveBeenCalledWith({ id: sleeper.id }, { pickedScreen: null })
+    })
+  })
+
   describe('render-signal-gated rotation', () => {
     const signalDevice = makeDevice({ ...baseDevice, apikey: 'token', id: '1', mirrorEnabled: false })
 

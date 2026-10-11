@@ -125,6 +125,8 @@ export interface ScreenRead {
   state: ScreenState | null
   /** Set only with the state `notToday`. */
   stateCause: ScreenStateCause | null
+  /** The Device's Picked Screen ("Show next"); set only with the state `upNext`. */
+  picked: boolean
   renderSignal: RenderSignal | null
   /** `null` until the Screen has been rendered. */
   imagePath: string | null
@@ -180,6 +182,11 @@ export interface AssignPluginInput {
 export interface ReorderScreensInput {
   /** Every Screen of the Device, once, in the new Order. */
   screenIds: string[]
+}
+
+/** Sets a Device's Picked Screen ("Show next"); to one of its own Screens. */
+export interface SetPickedScreenInput {
+  screenId: string
 }
 
 /** Each field belongs to some kinds only; a field the Screen's kind does not have answers 400 `screen-field-not-for-kind`. */

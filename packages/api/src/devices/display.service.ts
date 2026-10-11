@@ -194,6 +194,7 @@ export class DeviceDisplayService {
       await this.screenRepository.update({ device: { id: device.id } }, { isActive: false })
 
     const shown = await this.pickAndRenderScreen(screens, device, now)
+    await this.clearPickIfSet(device)
     if (!shown) {
       this.logger.log(`No eligible screen for device ${device.id} returning default no screen image`)
       return {
@@ -237,6 +238,18 @@ export class DeviceDisplayService {
   }
 
   /**
+   * A Picked Screen is tried at most once: whether this poll served it or it
+   * had lapsed, it is cleared either way, the same way a Special Function is
+   * cleared once it fires (ADR-0038).
+   */
+  private async clearPickIfSet(device: Device): Promise<void> {
+    if (!device.pickedScreen)
+      return
+    device.pickedScreen = null
+    await this.deviceRepository.update({ id: device.id }, { pickedScreen: null })
+  }
+
+  /**
    * A raw `html` Screen re-evaluates its Render Signal on every poll it comes
    * up in, so a stale stored `skip` or `hold` never excludes or short-circuits
    * it without rendering; a `plugin` or Mashup Screen's stored verdict is
@@ -255,6 +268,12 @@ export class DeviceDisplayService {
    * count (ADR-0031: no cap on Chrome launches within one poll). A `hold` —
    * remembered, or freshly observed this poll — keeps this Screen's turn
    * instead of retrying the next one, serving its stored image unchanged.
+   *
+   * The Device's own Picked Screen ("Show next") is tried first, ahead of
+   * Order, on every attempt: once a fresh `skip` marks it in `rotationScreens`
+   * the same pick id is passed over by `nextEligibleScreen` itself on the next
+   * attempt, so the retry falls through to normal Rotation without further
+   * special-casing here (ADR-0038).
    */
   private async pickAndRenderScreen(screens: Screen[], device: Device, now: Date): Promise<{ screen: Screen, imgUrl: string, served: Served, filename: string, renderSignal: RenderSignal | null } | null> {
     const byId = new Map(screens.map(screen => [screen.id, screen]))
@@ -264,9 +283,10 @@ export class DeviceDisplayService {
       schedule: screen.schedule,
       renderSignal: this.gatingRenderSignalOf(screen),
     }))
+    const pickedScreenId = device.pickedScreen?.id ?? null
 
     for (let attempt = 0; attempt < screens.length; attempt++) {
-      const candidate = nextEligibleScreen(rotationScreens, now)
+      const candidate = nextEligibleScreen(rotationScreens, now, pickedScreenId)
       if (!candidate)
         return null
       const screen = byId.get(candidate.id)!

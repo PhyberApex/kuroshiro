@@ -19,6 +19,7 @@ export const buildScreen = defineBuilder<ScreenRead>(() => ({
   order: 1,
   state: null,
   stateCause: null,
+  picked: false,
   renderSignal: null,
   imagePath: 'screens/devices/3f6c1c1e-9d0a-4f39-8a53-0c2f0a1d7b11/c2f1d0a4-5b6e-4c7d-8e9f-0a1b2c3d4e5f.png',
   renderedAt: '2026-10-03T07:31:00.000Z',

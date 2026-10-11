@@ -17,13 +17,13 @@ function scheduled(id: string, schedule: Partial<Schedule>, overrides: Partial<R
   return screen(id, { schedule: makeSchedule(schedule), ...overrides })
 }
 
-function statesOf(screens: RotationScreen[], moment: { now?: Date, nextPollAt?: Date, isMirrored?: boolean } = {}) {
+function statesOf(screens: RotationScreen[], moment: { now?: Date, nextPollAt?: Date, isMirrored?: boolean, pickedScreenId?: string | null } = {}) {
   const now = moment.now ?? FRIDAY_NOON
-  const states = screenStatesOf(screens, { now, nextRotationAt: moment.nextPollAt ?? NEXT_POLL, isMirrored: moment.isMirrored ?? false })
+  const states = screenStatesOf(screens, { now, nextRotationAt: moment.nextPollAt ?? NEXT_POLL, isMirrored: moment.isMirrored ?? false, pickedScreenId: moment.pickedScreenId ?? null })
   return Object.fromEntries(screens.map(({ id }) => [id, states.get(id)]))
 }
 
-const NO_STATE = { state: null, stateCause: null }
+const NO_STATE = { state: null, stateCause: null, picked: false }
 
 describe('nextEligibleScreen', () => {
   it('is the first eligible Screen after the Active Screen, wrapping past the end of the Order', () => {
@@ -49,14 +49,40 @@ describe('nextEligibleScreen', () => {
 
     expect(nextEligibleScreen(screens, FRIDAY_NOON)?.id).toBe('c')
   })
+
+  describe('a Picked Screen', () => {
+    it('overrides Order, regardless of its position relative to the Active Screen', () => {
+      const screens = [screen('a', { isActive: true }), screen('b'), screen('c')]
+
+      expect(nextEligibleScreen(screens, FRIDAY_NOON, 'c')?.id).toBe('c')
+    })
+
+    it('falls back to the normal scan when its Schedule excludes it at the given moment', () => {
+      const screens = [screen('a', { isActive: true }), scheduled('b', { enabled: false }), screen('c')]
+
+      expect(nextEligibleScreen(screens, FRIDAY_NOON, 'b')?.id).toBe('c')
+    })
+
+    it('falls back to the normal scan when it carries a remembered skip Render Signal', () => {
+      const screens = [screen('a', { isActive: true }), screen('b', { renderSignal: 'skip' }), screen('c')]
+
+      expect(nextEligibleScreen(screens, FRIDAY_NOON, 'b')?.id).toBe('c')
+    })
+
+    it('is ignored when it names no Screen of the Device', () => {
+      const screens = [screen('a', { isActive: true }), screen('b')]
+
+      expect(nextEligibleScreen(screens, FRIDAY_NOON, 'unknown')?.id).toBe('b')
+    })
+  })
 })
 
 describe('screenStatesOf', () => {
   describe('each Screen State', () => {
     it('reads the Active Screen as active, the Screen Rotation turns to next as upNext, and one waiting its turn as none', () => {
       expect(statesOf([screen('a', { isActive: true }), screen('b'), screen('c')])).toEqual({
-        a: { state: 'active', stateCause: null },
-        b: { state: 'upNext', stateCause: null },
+        a: { state: 'active', stateCause: null, picked: false },
+        b: { state: 'upNext', stateCause: null, picked: false },
         c: NO_STATE,
       })
     })
@@ -64,37 +90,37 @@ describe('screenStatesOf', () => {
     it('reads a Screen whose Schedule is switched off as scheduleOff, whatever its days and hours', () => {
       const off = scheduled('a', { enabled: false, weekdays: [6], startTime: '00:00:00', endTime: '01:00:00' })
 
-      expect(statesOf([off]).a).toEqual({ state: 'scheduleOff', stateCause: null })
+      expect(statesOf([off]).a).toEqual({ state: 'scheduleOff', stateCause: null, picked: false })
     })
 
     it('reads a Screen whose Schedule leaves out today\'s weekday as notToday by weekday', () => {
-      expect(statesOf([scheduled('a', { weekdays: [6, 0] })]).a).toEqual({ state: 'notToday', stateCause: 'weekday' })
+      expect(statesOf([scheduled('a', { weekdays: [6, 0] })]).a).toEqual({ state: 'notToday', stateCause: 'weekday', picked: false })
     })
 
     it('reads a Screen whose Schedule\'s dates leave out today as notToday by date range', () => {
       const summerOnly = scheduled('a', { startDate: '2026-06-01', endDate: '2026-08-20' })
 
-      expect(statesOf([summerOnly]).a).toEqual({ state: 'notToday', stateCause: 'dateRange' })
+      expect(statesOf([summerOnly]).a).toEqual({ state: 'notToday', stateCause: 'dateRange', picked: false })
     })
 
     it('names the weekday when both the weekday and the date range leave out today', () => {
       const both = scheduled('a', { weekdays: [6], startDate: '2026-06-01', endDate: '2026-08-20' })
 
-      expect(statesOf([both]).a).toEqual({ state: 'notToday', stateCause: 'weekday' })
+      expect(statesOf([both]).a).toEqual({ state: 'notToday', stateCause: 'weekday', picked: false })
     })
 
     it('reads a Screen outside its hours on a day that matches as notThisHour', () => {
       const mornings = scheduled('a', { weekdays: [5], startTime: '06:00:00', endTime: '09:00:00' })
 
-      expect(statesOf([mornings]).a).toEqual({ state: 'notThisHour', stateCause: null })
+      expect(statesOf([mornings]).a).toEqual({ state: 'notThisHour', stateCause: null, picked: false })
     })
 
     it('reads a Screen with a remembered skip Render Signal as skipping', () => {
-      expect(statesOf([screen('a', { renderSignal: 'skip' })]).a).toEqual({ state: 'skipping', stateCause: null })
+      expect(statesOf([screen('a', { renderSignal: 'skip' })]).a).toEqual({ state: 'skipping', stateCause: null, picked: false })
     })
 
     it('gives a Screen with a hold Render Signal the state it would have without it', () => {
-      expect(statesOf([screen('a', { isActive: true }), screen('b', { renderSignal: 'hold' })]).b).toEqual({ state: 'upNext', stateCause: null })
+      expect(statesOf([screen('a', { isActive: true }), screen('b', { renderSignal: 'hold' })]).b).toEqual({ state: 'upNext', stateCause: null, picked: false })
     })
   })
 
@@ -102,11 +128,11 @@ describe('screenStatesOf', () => {
     const overnight = scheduled('a', { startTime: '22:00:00', endTime: '02:00:00' })
 
     it.each(['2026-08-21T23:30:00', '2026-08-22T01:30:00'])('lets the Screen show at %s', (moment) => {
-      expect(statesOf([overnight], { now: new Date(moment), nextPollAt: new Date(moment) }).a).toEqual({ state: 'upNext', stateCause: null })
+      expect(statesOf([overnight], { now: new Date(moment), nextPollAt: new Date(moment) }).a).toEqual({ state: 'upNext', stateCause: null, picked: false })
     })
 
     it('reads notThisHour between its end and its start', () => {
-      expect(statesOf([overnight]).a).toEqual({ state: 'notThisHour', stateCause: null })
+      expect(statesOf([overnight]).a).toEqual({ state: 'notThisHour', stateCause: null, picked: false })
     })
   })
 
@@ -114,7 +140,7 @@ describe('screenStatesOf', () => {
     it('keeps the Active Screen active after its Schedule closed', () => {
       const closed = scheduled('a', { enabled: false }, { isActive: true })
 
-      expect(statesOf([closed]).a).toEqual({ state: 'active', stateCause: null })
+      expect(statesOf([closed]).a).toEqual({ state: 'active', stateCause: null, picked: false })
     })
 
     it.each<[string, Partial<Schedule>, string | null]>([
@@ -122,7 +148,7 @@ describe('screenStatesOf', () => {
       ['notToday', { weekdays: [6] }, 'weekday'],
       ['notThisHour', { startTime: '06:00:00', endTime: '09:00:00' }, null],
     ])('puts %s before skipping', (state, schedule, stateCause) => {
-      expect(statesOf([scheduled('a', schedule, { renderSignal: 'skip' })]).a).toEqual({ state, stateCause })
+      expect(statesOf([scheduled('a', schedule, { renderSignal: 'skip' })]).a).toEqual({ state, stateCause, picked: false })
     })
 
     it('puts scheduleOff before the days and hours, and the day before the hour', () => {
@@ -130,8 +156,8 @@ describe('screenStatesOf', () => {
       const wrongDayAndHour = scheduled('b', { weekdays: [6], startTime: '06:00:00', endTime: '09:00:00' })
 
       expect(statesOf([offAndWrongDay, wrongDayAndHour])).toEqual({
-        a: { state: 'scheduleOff', stateCause: null },
-        b: { state: 'notToday', stateCause: 'weekday' },
+        a: { state: 'scheduleOff', stateCause: null, picked: false },
+        b: { state: 'notToday', stateCause: 'weekday', picked: false },
       })
     })
   })
@@ -167,7 +193,7 @@ describe('screenStatesOf', () => {
       const untilNoon = scheduled('b', { startTime: '06:00:00', endTime: '12:02:00' })
       const screens = [screen('a', { isActive: true }), untilNoon, screen('c')]
 
-      expect(statesOf(screens)).toEqual({ a: { state: 'active', stateCause: null }, b: NO_STATE, c: { state: 'upNext', stateCause: null } })
+      expect(statesOf(screens)).toEqual({ a: { state: 'active', stateCause: null, picked: false }, b: NO_STATE, c: { state: 'upNext', stateCause: null, picked: false } })
     })
 
     it('is worked out at the end of Sleep Mode\'s window while the Device is asleep', () => {
@@ -177,6 +203,38 @@ describe('screenStatesOf', () => {
       const screens = [screen('a', { isActive: true }), fridayOnly, screen('c')]
 
       expect(statesOf(screens, { now: night, nextPollAt: wake })).toMatchObject({ b: NO_STATE, c: { state: 'upNext' } })
+    })
+  })
+
+  describe('a Picked Screen', () => {
+    it('is upNext and picked, overriding the Screen Rotation would otherwise turn to', () => {
+      const screens = [screen('a', { isActive: true }), screen('b'), screen('c')]
+
+      expect(statesOf(screens, { pickedScreenId: 'c' })).toEqual({
+        a: { state: 'active', stateCause: null, picked: false },
+        b: NO_STATE,
+        c: { state: 'upNext', stateCause: null, picked: true },
+      })
+    })
+
+    it('is dropped quietly when its Schedule excludes it by the next poll, so normal Rotation\'s own upNext carries no picked qualifier', () => {
+      const screens = [screen('a', { isActive: true }), scheduled('b', { enabled: false }), screen('c')]
+
+      expect(statesOf(screens, { pickedScreenId: 'b' })).toEqual({
+        a: { state: 'active', stateCause: null, picked: false },
+        b: { state: 'scheduleOff', stateCause: null, picked: false },
+        c: { state: 'upNext', stateCause: null, picked: false },
+      })
+    })
+
+    it('is dropped quietly when it carries a remembered skip Render Signal', () => {
+      const screens = [screen('a', { isActive: true }), screen('b', { renderSignal: 'skip' }), screen('c')]
+
+      expect(statesOf(screens, { pickedScreenId: 'b' })).toEqual({
+        a: { state: 'active', stateCause: null, picked: false },
+        b: { state: 'skipping', stateCause: null, picked: false },
+        c: { state: 'upNext', stateCause: null, picked: false },
+      })
     })
   })
 

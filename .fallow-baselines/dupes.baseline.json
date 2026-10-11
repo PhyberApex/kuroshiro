@@ -2,7 +2,7 @@
   "kind": "dupes",
   "clone_groups": [
     "packages/ui/src/components/SelectCombobox.vue:28-34|packages/ui/src/components/SelectListbox.vue:20-29",
-    "packages/api/src/devices/display.service.ts:707-712|packages/api/src/mashup/services/screen-render.service.ts:124-129",
+    "packages/api/src/devices/display.service.ts:745-750|packages/api/src/mashup/services/screen-render.service.ts:124-129",
     "packages/api/src/plugins/services/plugin-importer.service.ts:373-378|packages/api/src/plugins/services/plugin-importer.service.ts:401-406"
   ],
   "clone_fingerprints": [

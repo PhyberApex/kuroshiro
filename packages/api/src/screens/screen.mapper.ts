@@ -82,6 +82,7 @@ export function toScreenRead(screen: Screen, facts: ScreenFacts): ScreenRead {
     order: screen.order,
     state: facts.state.state,
     stateCause: facts.state.stateCause,
+    picked: facts.state.picked,
     renderSignal: facts.renderSignal,
     imagePath: facts.isRendered ? toImagePath(`/screens/devices/${facts.deviceId}/${screen.id}.png`, screen.generatedAt) : null,
     renderedAt: facts.isRendered ? toIsoString(screen.generatedAt) : null,

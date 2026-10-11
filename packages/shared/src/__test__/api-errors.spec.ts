@@ -69,6 +69,10 @@ const wording: Record<ApiErrorCode, string> = {
   'palette-name-taken': 'There is already a custom Palette with that name.',
   'palette-not-custom': 'Only a custom Palette can be changed.',
   'palette-in-use': 'A Device uses that Palette.',
+  'picked-screen-wrong-device': 'That Screen does not belong to this Device.',
+  'picked-screen-mirrored': 'A mirrored Device has no Rotation to pick in.',
+  'picked-screen-active': 'The Active Screen cannot be picked.',
+  'picked-screen-ineligible': 'Rotation could not show that Screen at the next poll.',
 }
 
 function wordingBySwitch(code: ApiErrorCode): string {
@@ -128,6 +132,10 @@ function wordingBySwitch(code: ApiErrorCode): string {
     case 'palette-name-taken':
     case 'palette-not-custom':
     case 'palette-in-use':
+    case 'picked-screen-wrong-device':
+    case 'picked-screen-mirrored':
+    case 'picked-screen-active':
+    case 'picked-screen-ineligible':
     case 'conflict':
     case 'payload-too-large':
     case 'unprocessable':
