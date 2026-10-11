@@ -209,7 +209,7 @@ The daily job that deletes resolved Alerts and Device Log entries older than the
 _Avoid_: Cleanup (reserved for the Housekeeping page's cleanup of stored files), purge, garbage collection
 
 **Notification**:
-The message pushed to an admin's channels when an Alert is opened or resolved, delivered via Apprise. Fire-and-forget: a Notification carries no state of its own beyond whether the Alert it belongs to has been announced.
+The message pushed to an admin's channels when an Alert Sweep has something to announce, delivered via Apprise. One Notification is a digest for the whole Sweep: every Alert that Sweep opened or resolved, plus any still unannounced from an earlier Sweep, rides in the same Notification, grouped by Alert Rule and then by subject. Fire-and-forget: a Notification carries no state of its own beyond whether each Alert it carries has been announced.
 _Avoid_: Alert (as a name for the message), push, message
 
 **Test Notification**:

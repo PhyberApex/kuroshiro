@@ -1,6 +1,7 @@
 import type { OnApplicationBootstrap } from '@nestjs/common'
 import type { AlertDetails } from 'kuroshiro-shared'
 import type { Repository } from 'typeorm'
+import type { DigestEntry } from './notification-digest.js'
 import type { AlertRule, AlertRuleContext, SweepSubjects } from './rules/alert-rule.js'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
@@ -11,6 +12,7 @@ import { Device } from '../devices/devices.entity.js'
 import { PluginDataSource } from '../plugins/entities/plugin-data-source.entity.js'
 import { InstanceSettingsService } from '../settings/instance-settings.service.js'
 import { Alert } from './entities/alert.entity.js'
+import { buildDigest } from './notification-digest.js'
 import { NotificationSenderService } from './notification-sender.service.js'
 import { ALERT_RULES } from './rules/index.js'
 
@@ -20,7 +22,10 @@ import { ALERT_RULES } from './rules/index.js'
  * when Apprise isn't configured; only delivery is skipped in that case.
  * Subject-agnostic (ADR-0025): every Rule declares which of `SweepSubjects`
  * it watches and how to read/write its own subject relation on `Alert` —
- * this service never touches `device`/`dataSource` directly.
+ * this service never touches `device`/`dataSource` directly. Delivery is
+ * batched into a single digest Notification per Sweep (ADR-0022 addendum):
+ * every open/resolve this Sweep decided, plus anything still unannounced
+ * from an earlier one, rides in one `NotificationSenderService.send()` call.
  */
 @Injectable()
 export class AlertSweepService implements OnApplicationBootstrap {
@@ -68,17 +73,26 @@ export class AlertSweepService implements OnApplicationBootstrap {
     ])
     const subjects: SweepSubjects = { devices, dataSources }
 
-    for (const rule of ALERT_RULES)
-      await this.sweepRule(rule, subjects, context)
+    // Snapshotted before this Sweep's own rule changes so a just-resolved Alert below isn't also picked up here as "pending".
+    const pending = await this.collectPendingResolutions()
 
-    await this.retryPendingResolutionNotifications()
+    const entries: DigestEntry[] = [...pending]
+    for (const rule of ALERT_RULES)
+      entries.push(...await this.sweepRule(rule, subjects, context))
+
+    await this.deliverDigest(entries)
   }
 
-  private async sweepRule(rule: AlertRule, subjects: SweepSubjects, context: AlertRuleContext): Promise<void> {
+  private async sweepRule(rule: AlertRule, subjects: SweepSubjects, context: AlertRuleContext): Promise<DigestEntry[]> {
     const activeBySubjectId = await this.loadActiveBySubjectId(rule)
 
-    for (const subject of rule.subjects(subjects))
-      await this.sweepSubject(rule, subject, context, activeBySubjectId.get(rule.subjectId(subject)))
+    const entries: DigestEntry[] = []
+    for (const subject of rule.subjects(subjects)) {
+      const entry = await this.sweepSubject(rule, subject, context, activeBySubjectId.get(rule.subjectId(subject)))
+      if (entry)
+        entries.push(entry)
+    }
+    return entries
   }
 
   /** Keys every active Alert for this Rule by its subject id, dropping any whose subject relation is missing (`subjectFromAlert` returned `undefined`). */
@@ -92,40 +106,35 @@ export class AlertSweepService implements OnApplicationBootstrap {
     )
   }
 
-  private async sweepSubject(rule: AlertRule, subject: unknown, context: AlertRuleContext, existing: Alert | undefined): Promise<void> {
+  private async sweepSubject(rule: AlertRule, subject: unknown, context: AlertRuleContext, existing: Alert | undefined): Promise<DigestEntry | undefined> {
     const evaluation = rule.evaluate(subject, context, !!existing)
     if (evaluation.skip)
-      return
+      return undefined
 
     if (evaluation.active) {
-      if (existing)
-        await this.retryOpenedNotification(rule, subject, existing, evaluation.details)
-      else
-        await this.openAlert(rule, subject, evaluation.details)
+      return existing
+        ? this.retryOpenedNotification(rule, subject, existing, evaluation.details)
+        : this.openAlert(rule, subject, evaluation.details)
     }
-    else if (existing) {
-      await this.resolveAlert(rule, subject, existing)
-    }
+    if (existing)
+      return this.resolveAlert(rule, subject, existing)
+    return undefined
   }
 
-  private async openAlert(rule: AlertRule, subject: unknown, details: AlertDetails | undefined): Promise<void> {
+  private async openAlert(rule: AlertRule, subject: unknown, details: AlertDetails | undefined): Promise<DigestEntry> {
     const now = new Date()
     const alert = await this.alertRepository.save(this.alertRepository.create({ kind: rule.kind, ...rule.toAlertSubject(subject), openedAt: now, details: details ?? null }))
-    const sent = await this.sender.send(rule.openedNotification(subject))
-    if (sent)
-      await this.alertRepository.update(alert.id, { notifiedAt: now })
+    return { alertId: alert.id, kind: rule.kind, phase: 'opened', notification: rule.openedNotification(subject) }
   }
 
-  private async retryOpenedNotification(rule: AlertRule, subject: unknown, alert: Alert, details?: AlertDetails): Promise<void> {
+  private async retryOpenedNotification(rule: AlertRule, subject: unknown, alert: Alert, details?: AlertDetails): Promise<DigestEntry | undefined> {
     if (details) {
       // TypeORM's QueryDeepPartialEntity can't distribute over a union-typed value — see webhook-ingest.service.ts.
       await this.alertRepository.update(alert.id, { details } as Parameters<typeof this.alertRepository.update>[1])
     }
     if (alert.notifiedAt)
-      return
-    const sent = await this.sender.send(rule.openedNotification(subject))
-    if (sent)
-      await this.alertRepository.update(alert.id, { notifiedAt: new Date() })
+      return undefined
+    return { alertId: alert.id, kind: rule.kind, phase: 'opened', notification: rule.openedNotification(subject) }
   }
 
   /**
@@ -135,24 +144,23 @@ export class AlertSweepService implements OnApplicationBootstrap {
    * ADR-0022's "enabling delivery later doesn't burst-notify" intent for
    * resolutions, not just active Alerts.
    */
-  private async resolveAlert(rule: AlertRule, subject: unknown, alert: Alert): Promise<void> {
+  private async resolveAlert(rule: AlertRule, subject: unknown, alert: Alert): Promise<DigestEntry | undefined> {
     const now = new Date()
     if (!this.sender.isConfigured()) {
       await this.alertRepository.update(alert.id, { resolvedAt: now, resolutionNotifiedAt: now })
-      return
+      return undefined
     }
     await this.alertRepository.update(alert.id, { resolvedAt: now })
-    const sent = await this.sender.send(rule.resolvedNotification(subject))
-    if (sent)
-      await this.alertRepository.update(alert.id, { resolutionNotifiedAt: now })
+    return { alertId: alert.id, kind: rule.kind, phase: 'resolved', notification: rule.resolvedNotification(subject) }
   }
 
-  /** A resolved Alert whose resolution Notification hasn't succeeded yet is retried independent of the per-Rule loop above, which only looks at active Alerts. */
-  private async retryPendingResolutionNotifications(): Promise<void> {
+  /** Alerts resolved on an earlier Sweep whose resolution Notification hasn't succeeded yet — carried into this Sweep's digest alongside its own changes, not sent separately. */
+  private async collectPendingResolutions(): Promise<DigestEntry[]> {
     const pending = await this.alertRepository.find({
       where: { resolvedAt: Not(IsNull()), resolutionNotifiedAt: IsNull() },
       relations: { device: true, dataSource: { plugin: true } },
     })
+    const entries: DigestEntry[] = []
     for (const alert of pending) {
       const rule = ALERT_RULES.find(candidate => candidate.kind === alert.kind)
       if (!rule)
@@ -160,9 +168,23 @@ export class AlertSweepService implements OnApplicationBootstrap {
       const subject = rule.subjectFromAlert(alert)
       if (subject === undefined)
         continue
-      const sent = await this.sender.send(rule.resolvedNotification(subject))
-      if (sent)
-        await this.alertRepository.update(alert.id, { resolutionNotifiedAt: new Date() })
+      entries.push({ alertId: alert.id, kind: alert.kind, phase: 'resolved', notification: rule.resolvedNotification(subject) })
     }
+    return entries
+  }
+
+  /** Delivery is all-or-nothing for the whole digest: every included entry is stamped together on success, or none on failure — each rides again in the next Sweep's digest. */
+  private async deliverDigest(entries: DigestEntry[]): Promise<void> {
+    const digest = buildDigest(entries)
+    if (!digest)
+      return
+
+    const sent = await this.sender.send(digest)
+    if (!sent)
+      return
+
+    const now = new Date()
+    for (const entry of entries)
+      await this.alertRepository.update(entry.alertId, entry.phase === 'opened' ? { notifiedAt: now } : { resolutionNotifiedAt: now })
   }
 }
