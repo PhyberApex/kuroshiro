@@ -20,6 +20,7 @@ export function buildArchive(options: {
   settings?: Record<string, unknown> | null
   pluginFolders?: Record<string, PluginFolder>
   screenImages?: Record<string, string>
+  deviceSleepImages?: Record<string, { original?: string, converted?: string }>
 } = {}): Buffer {
   const zip = new AdmZip()
 
@@ -55,6 +56,15 @@ export function buildArchive(options: {
 
   for (const [screenId, content] of Object.entries(options.screenImages ?? {})) {
     zip.addFile(`screens/${screenId}/${screenId}.png`, Buffer.from(content))
+  }
+
+  for (const [deviceId, images] of Object.entries(options.deviceSleepImages ?? {})) {
+    if (images.original !== undefined) {
+      zip.addFile(`devices/${deviceId}/sleep-image.original`, Buffer.from(images.original))
+    }
+    if (images.converted !== undefined) {
+      zip.addFile(`devices/${deviceId}/sleep-image.png`, Buffer.from(images.converted))
+    }
   }
 
   return zip.toBuffer()

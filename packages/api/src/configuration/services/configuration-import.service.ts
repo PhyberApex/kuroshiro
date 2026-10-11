@@ -1,5 +1,6 @@
 import type { ConfigurationImportSummary, ImportCheck, ImportCounts, ImportWarning, Ref } from 'kuroshiro-shared'
 import type { EntityManager, Repository } from 'typeorm'
+import type { DeviceRenderTarget } from '../../device-models/device-models.service.js'
 import type { ParsedDataSource, ParsedPlugin } from '../../plugins/services/plugin-importer.service.js'
 import type {
   AssignmentManifestEntry,
@@ -20,14 +21,16 @@ import { Buffer } from 'node:buffer'
 import { randomUUID } from 'node:crypto'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import { HttpStatus, Injectable } from '@nestjs/common'
+import { HttpStatus, Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
 import { BOOLEAN_SETTING_KEYS, CONFIGURATION_REDACTION_SENTINEL, SETTING_KEYS } from 'kuroshiro-shared'
 import { QueryFailedError } from 'typeorm'
+import { DeviceModelsService } from '../../device-models/device-models.service.js'
 import { DeviceModel } from '../../device-models/entities/device-model.entity.js'
 import { Palette } from '../../device-models/entities/palette.entity.js'
+import { sleepImageOriginalPath, sleepImagePath } from '../../devices/device-sleep-image.service.js'
 import { Device } from '../../devices/devices.entity.js'
 import { ApiException } from '../../errors/api.exception.js'
 import { Firmware } from '../../firmware/entities/firmware.entity.js'
@@ -49,6 +52,8 @@ import { INSTANCE_SETTINGS_ID, InstanceSettings } from '../../settings/entities/
 import { settingViolation } from '../../settings/setting-violation.js'
 import { fileExists } from '../../utils/fileExists.js'
 import generateApikey from '../../utils/generateApikey.js'
+import { getErrorMessage } from '../../utils/getErrorMessage.js'
+import { convertToPng } from '../../utils/imageUtils.js'
 import { resolveAppPath } from '../../utils/pathHelper.js'
 import { CONFIG_SCHEMA_VERSION, FIRST_CONFIG_SCHEMA_VERSION_WITH_SETTINGS, IMPORTABLE_CONFIG_SCHEMA_VERSIONS, LEGACY_CONFIG_SCHEMA_VERSIONS } from '../schema-version.js'
 import { CONFIG_ARCHIVE_FILES } from '../types.js'
@@ -58,6 +63,18 @@ import { toImportCheck } from './import-check.mapper.js'
 interface PendingImageWrite {
   destPath: string
   image: Buffer
+}
+
+/**
+ * A Device's own sleep image, held back the same way until the transaction commits.
+ * `null` for either file means it is deleted rather than written, so a Device whose
+ * archive entry carries no sleep image — or whose retained original failed to
+ * reconvert — ends up without one.
+ */
+interface PendingSleepImageWrite {
+  deviceId: string
+  original: Buffer | null
+  converted: Buffer | null
 }
 
 /** What one run over an archive has done so far. A check runs the same import and is rolled back at its end. */
@@ -72,6 +89,7 @@ interface ImportRun {
   /** The id of every Plugin this run created or updated, for scheduling once the transaction commits. */
   upsertedPluginIds: Set<string>
   pendingImageWrites: PendingImageWrite[]
+  pendingSleepImageWrites: PendingSleepImageWrite[]
 }
 
 interface ArchiveContents {
@@ -155,11 +173,14 @@ function listsDataSources(settingsYaml: string): boolean {
 
 @Injectable()
 export class ConfigurationImportService {
+  private readonly logger = new Logger(ConfigurationImportService.name)
+
   constructor(
     @InjectRepository(Plugin)
     private readonly pluginRepository: Repository<Plugin>,
     private readonly pluginImporter: PluginImporterService,
     private readonly pluginScheduler: PluginSchedulerService,
+    private readonly deviceModels: DeviceModelsService,
   ) {}
 
   async importFromZip(buffer: Buffer): Promise<ConfigurationImportSummary> {
@@ -205,6 +226,7 @@ export class ConfigurationImportService {
         : new Set(),
       upsertedPluginIds: new Set(),
       pendingImageWrites: [],
+      pendingSleepImageWrites: [],
     }
 
     try {
@@ -228,7 +250,7 @@ export class ConfigurationImportService {
 
         const deviceIdRemap = new Map<string, string>()
         for (const entry of archive.devices) {
-          const dbId = await this.withEntryContext('Device', entry.id, () => this.upsertDevice(repos, entry, run))
+          const dbId = await this.withEntryContext('Device', entry.id, () => this.upsertDevice(repos, zip, entry, run))
           if (dbId !== entry.id) {
             deviceIdRemap.set(entry.id, dbId)
           }
@@ -258,6 +280,7 @@ export class ConfigurationImportService {
     // A check's transaction is rolled back in full, so nothing it touched is real: neither the disk nor the scheduler must hear about it.
     if (!checkOnly) {
       await this.writePendingImages(run.pendingImageWrites)
+      await this.writePendingSleepImages(run.pendingSleepImageWrites)
       await this.scheduleUpsertedPlugins(run.upsertedPluginIds)
     }
 
@@ -270,6 +293,23 @@ export class ConfigurationImportService {
       await fs.promises.mkdir(path.dirname(destPath), { recursive: true })
       await fs.promises.writeFile(destPath, image)
     }
+  }
+
+  /** Writes or deletes each Device's own sleep image only once the transaction holding its row has committed, same as `writePendingImages`. */
+  private async writePendingSleepImages(writes: PendingSleepImageWrite[]): Promise<void> {
+    for (const { deviceId, original, converted } of writes) {
+      await this.writeOrDeleteSleepFile(sleepImageOriginalPath(deviceId), original)
+      await this.writeOrDeleteSleepFile(sleepImagePath(deviceId), converted)
+    }
+  }
+
+  private async writeOrDeleteSleepFile(destPath: string, content: Buffer | null): Promise<void> {
+    if (!content) {
+      await fs.promises.unlink(destPath).catch(() => {})
+      return
+    }
+    await fs.promises.mkdir(path.dirname(destPath), { recursive: true })
+    await fs.promises.writeFile(destPath, content)
   }
 
   /** Reloads each Plugin with the relations a scheduled tick reads before scheduling: `upsertPlugin`'s own entity never gets its Data Sources relation back from `save`, and the scheduler's timer closes over whatever Plugin object it is given. */
@@ -489,7 +529,7 @@ export class ConfigurationImportService {
     return firmware
   }
 
-  private async upsertDevice(repos: TransactionRepos, entry: DeviceManifestEntry, run: ImportRun): Promise<string> {
+  private async upsertDevice(repos: TransactionRepos, zip: AdmZip, entry: DeviceManifestEntry, run: ImportRun): Promise<string> {
     let device = await repos.device.findOneBy({ id: entry.id })
     let wasCreated = !device
     let reattachedByMac = false
@@ -531,10 +571,84 @@ export class ConfigurationImportService {
     device.sleepScreenEnabled = entry.sleepScreenEnabled
     device.targetFirmware = await this.resolveFirmware(repos.firmware, entry.targetFirmwareId, ref, run)
 
+    await this.applySleepImageToDevice(zip, entry.id, device, ref, run)
+
     const saved = await repos.device.save(device)
     this.bump(run, 'devices', wasCreated)
     ;(wasCreated ? run.devices.added : run.devices.overwritten).push(ref)
     return saved.id
+  }
+
+  /**
+   * Resolves this Device's sleep image out of the archive and applies the outcome: `device.sleepImageGeneratedAt`
+   * for the row `upsertDevice` is about to save, a warning on a failed reconversion, and (for a real
+   * import) the file write or delete queued for once the transaction commits. `device.id` is already
+   * final by this point — `upsertDevice` either created the row with the archive's id or matched an
+   * existing one — so the pending write can be keyed on it without waiting for `save`.
+   */
+  private async applySleepImageToDevice(zip: AdmZip, archivedDeviceId: string, device: Device, ref: Ref, run: ImportRun): Promise<void> {
+    const sleepImage = await this.resolveSleepImageForImport(zip, archivedDeviceId, device, ref)
+    device.sleepImageGeneratedAt = sleepImage.generatedAt
+    if (sleepImage.warning) {
+      run.warnings.push(sleepImage.warning)
+    }
+    if (!run.checkOnly) {
+      run.pendingSleepImageWrites.push({ deviceId: device.id, original: sleepImage.original, converted: sleepImage.converted })
+    }
+  }
+
+  /**
+   * Reads this Device's sleep image out of the archive, next to where it reads a File Screen's
+   * (ADR-0021): the retained original when there is one, reconverted for the target's render
+   * target the way slice A's upload does, else the once-converted PNG verbatim, same as a File
+   * Screen's. Neither entry present means the Device ends up without one. A reconversion that
+   * fails is a degraded restore, not a refusal (ADR-0028): the Device ends up without one and
+   * the caller warns about it, the rest of the import unaffected.
+   */
+  private async resolveSleepImageForImport(zip: AdmZip, archivedDeviceId: string, device: Device, ref: Ref): Promise<{ generatedAt: Date | null, original: Buffer | null, converted: Buffer | null, warning?: ImportWarning }> {
+    const originalEntry = zip.getEntry(`devices/${archivedDeviceId}/sleep-image.original`)
+    if (originalEntry) {
+      const original = this.readEntry(originalEntry)
+      try {
+        const target = await this.deviceModels.renderTargetFor(device)
+        const converted = await this.convertSleepImageForImport(device.id, original, target)
+        return { generatedAt: new Date(), original, converted }
+      }
+      catch (err) {
+        this.logger.error(`Failed to restore the sleep image of device ${device.id}: ${getErrorMessage(err)}`)
+        return { generatedAt: null, original: null, converted: null, warning: { kind: 'sleep-image-failed', device: ref } }
+      }
+    }
+
+    const convertedOnlyEntry = zip.getEntry(`devices/${archivedDeviceId}/sleep-image.png`)
+    if (convertedOnlyEntry) {
+      return { generatedAt: new Date(), original: null, converted: this.readEntry(convertedOnlyEntry) }
+    }
+
+    return { generatedAt: null, original: null, converted: null }
+  }
+
+  /**
+   * Converts `original` for `target` into the PNG Configuration Import will write, through a
+   * throwaway temp file next to the Device's own folder — the same `convertToPng` slice A's
+   * upload and reconvert use — without touching the Device's real files until the caller's
+   * transaction commits.
+   */
+  private async convertSleepImageForImport(deviceId: string, original: Buffer, target: DeviceRenderTarget): Promise<Buffer> {
+    const dir = path.dirname(sleepImagePath(deviceId))
+    await fs.promises.mkdir(dir, { recursive: true })
+    const token = randomUUID()
+    const tempOriginal = path.join(dir, `tmp-import-sleep-image-${token}.original`)
+    const tempConverted = path.join(dir, `tmp-import-sleep-image-${token}.png`)
+    try {
+      await fs.promises.writeFile(tempOriginal, original)
+      await convertToPng(tempOriginal, tempConverted, target, this.logger)
+      return await fs.promises.readFile(tempConverted)
+    }
+    finally {
+      await fs.promises.unlink(tempOriginal).catch(() => {})
+      await fs.promises.unlink(tempConverted).catch(() => {})
+    }
   }
 
   /** Shared recovery for a single redacted scalar field (ADR-0028): keeps `keptValue` when `keep` is true, otherwise warns and falls back. Not used for headers, which resolve per-key against a map rather than a single value. */

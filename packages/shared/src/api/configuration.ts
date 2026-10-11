@@ -20,6 +20,7 @@ export type ImportWarning
     | { kind: 'device-model-unknown', device: Ref, deviceModel: string }
     | { kind: 'palette-unknown', device: Ref, paletteId: string }
     | { kind: 'firmware-unknown', device: Ref, firmwareId: string }
+    | { kind: 'sleep-image-failed', device: Ref }
 
 /** How many records of each kind, by the importer's own keys: `devices`, `plugins`, `screens`, `schedules`, `mashupConfigurations`, `palettes`, `firmware` and the rows under a Plugin. */
 export type ImportCounts = Record<string, number>

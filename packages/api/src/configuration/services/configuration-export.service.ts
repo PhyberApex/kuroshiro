@@ -1,4 +1,4 @@
-import type { ScreenManifestEntry } from '../types.js'
+import type { DeviceManifestEntry, ScreenManifestEntry } from '../types.js'
 import { Buffer } from 'node:buffer'
 import { existsSync, readFileSync } from 'node:fs'
 import { Injectable } from '@nestjs/common'
@@ -6,6 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import AdmZip from 'adm-zip'
 import { Repository } from 'typeorm'
 import { Palette } from '../../device-models/entities/palette.entity.js'
+import { sleepImageOriginalPath, sleepImagePath } from '../../devices/device-sleep-image.service.js'
 import { Device } from '../../devices/devices.entity.js'
 import { Firmware } from '../../firmware/entities/firmware.entity.js'
 import { DevicePlugin } from '../../plugins/entities/device-plugin.entity.js'
@@ -74,7 +75,12 @@ export class ConfigurationExportService {
     const fieldValuesByPlugin = await this.fieldValues.storedByPlugin(plugins.map(plugin => plugin.id))
     this.addJson(zip, CONFIG_ARCHIVE_FILES.plugins, plugins.map(plugin => buildPluginEntry(plugin, fieldValuesByPlugin.get(plugin.id) ?? {}, redact)))
 
-    this.addJson(zip, CONFIG_ARCHIVE_FILES.devices, devices.map(device => buildDeviceEntry(device, redact)))
+    const deviceEntries: DeviceManifestEntry[] = []
+    for (const device of devices) {
+      deviceEntries.push(buildDeviceEntry(device, redact))
+      this.addSleepImage(zip, device)
+    }
+    this.addJson(zip, CONFIG_ARCHIVE_FILES.devices, deviceEntries)
 
     const screenEntries: ScreenManifestEntry[] = []
     for (const screen of screens) {
@@ -113,6 +119,24 @@ export class ConfigurationExportService {
       return
     }
     zip.addFile(`screens/${screen.id}/${screen.filename ?? `${screen.id}.png`}`, readFileSync(imagePath))
+  }
+
+  /**
+   * A Device's own sleep image, next to where a File Screen's lives (ADR-0021).
+   * The retained original is written when it is there, so Configuration Import can
+   * reconvert it for the target's Device Model and Palette the way slice A's upload does;
+   * when only the once-converted PNG survives, that travels instead, same as a File Screen's.
+   */
+  private addSleepImage(zip: AdmZip, device: Device): void {
+    const originalPath = sleepImageOriginalPath(device.id)
+    if (existsSync(originalPath)) {
+      zip.addFile(`devices/${device.id}/sleep-image.original`, readFileSync(originalPath))
+      return
+    }
+    const convertedPath = sleepImagePath(device.id)
+    if (existsSync(convertedPath)) {
+      zip.addFile(`devices/${device.id}/sleep-image.png`, readFileSync(convertedPath))
+    }
   }
 
   private addJson(zip: AdmZip, filename: string, value: unknown): void {

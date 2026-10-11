@@ -1,10 +1,13 @@
 import type { Repository } from 'typeorm'
+import type { DeviceModelsService } from '../../device-models/device-models.service.js'
 import type { Plugin } from '../../plugins/entities/plugin.entity.js'
 import type { PluginSchedulerService } from '../../plugins/services/plugin-scheduler.service.js'
 import { Buffer } from 'node:buffer'
 import { CONFIGURATION_REDACTION_SENTINEL } from 'kuroshiro-shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PluginImporterService } from '../../plugins/services/plugin-importer.service.js'
+import { createMockDeviceModelsService, primeMockDeviceModelsService } from '../../test/mockDeviceModelsService.js'
+import { asService } from '../../test/mockService.js'
 import { CONFIG_SCHEMA_VERSION } from '../schema-version.js'
 import { ConfigurationImportService } from '../services/configuration-import.service.js'
 import { buildArchive, makeDeviceEntry } from './archive.js'
@@ -13,11 +16,17 @@ const { fsMock } = vi.hoisted(() => ({
   fsMock: {
     mkdir: vi.fn().mockResolvedValue(undefined),
     writeFile: vi.fn().mockResolvedValue(undefined),
+    readFile: vi.fn().mockResolvedValue(undefined),
+    unlink: vi.fn().mockResolvedValue(undefined),
   },
 }))
 
 vi.mock('node:fs', () => ({
   promises: fsMock,
+}))
+
+vi.mock('../../utils/imageUtils.js', () => ({
+  convertToPng: vi.fn().mockResolvedValue(undefined),
 }))
 
 const ENTITY_NAMES = [
@@ -120,10 +129,17 @@ describe('configurationImportService', () => {
   let backing: ReturnType<typeof createFakeManager>['backing']
   let service: ConfigurationImportService
   let scheduler: { schedulePlugin: ReturnType<typeof vi.fn> }
+  let deviceModels: ReturnType<typeof createMockDeviceModelsService>
 
-  beforeEach(() => {
+  beforeEach(async () => {
     fsMock.mkdir.mockReset().mockResolvedValue(undefined)
     fsMock.writeFile.mockReset().mockResolvedValue(undefined)
+    fsMock.readFile.mockReset().mockResolvedValue(Buffer.from('converted-bytes'))
+    fsMock.unlink.mockReset().mockResolvedValue(undefined)
+    const { convertToPng } = await import('../../utils/imageUtils.js')
+    vi.mocked(convertToPng).mockReset().mockResolvedValue(undefined)
+    deviceModels = createMockDeviceModelsService()
+    primeMockDeviceModelsService(deviceModels)
 
     const fake = createFakeManager()
     manager = fake.manager
@@ -145,7 +161,7 @@ describe('configurationImportService', () => {
     })
     const pluginRepository = { manager, findOne } as unknown as Repository<Plugin>
     scheduler = { schedulePlugin: vi.fn() }
-    service = new ConfigurationImportService(pluginRepository, new PluginImporterService(), scheduler as unknown as PluginSchedulerService)
+    service = new ConfigurationImportService(pluginRepository, new PluginImporterService(), scheduler as unknown as PluginSchedulerService, asService<DeviceModelsService>(deviceModels))
   })
 
   it('rejects an archive with no manifest.json, without starting a transaction', async () => {
@@ -935,6 +951,89 @@ describe('configurationImportService', () => {
 
     expect(fsMock.mkdir).toHaveBeenCalledWith(expect.stringContaining('device-1'), { recursive: true })
     expect(fsMock.writeFile).toHaveBeenCalledWith(expect.stringContaining('screen-1.png'), Buffer.from('png-bytes'))
+  })
+
+  describe('a Device\'s own sleep image', () => {
+    it('restores it from the archive\'s retained original, reconverted for the target', async () => {
+      const buffer = buildArchive({
+        devices: [makeDeviceEntry()],
+        deviceSleepImages: { 'device-1': { original: 'original-bytes' } },
+      })
+      const { convertToPng } = await import('../../utils/imageUtils.js')
+
+      const summary = await service.importFromZip(buffer)
+
+      expect(vi.mocked(convertToPng)).toHaveBeenCalledWith(
+        expect.stringContaining('device-1'),
+        expect.stringContaining('device-1'),
+        { model: expect.anything(), palette: expect.anything() },
+        expect.anything(),
+      )
+      expect(fsMock.writeFile).toHaveBeenCalledWith(expect.stringContaining('sleep-image.original'), Buffer.from('original-bytes'))
+      expect(fsMock.writeFile).toHaveBeenCalledWith(expect.stringContaining('sleep-image.png'), Buffer.from('converted-bytes'))
+      const device = backing.get('Device')!.get('device-1')!
+      expect(device.sleepImageGeneratedAt).toBeInstanceOf(Date)
+      expect(summary.warnings).toEqual([])
+    })
+
+    it('restores just the once-converted PNG, like a File Screen\'s, when the archive holds no retained original', async () => {
+      const buffer = buildArchive({
+        devices: [makeDeviceEntry()],
+        deviceSleepImages: { 'device-1': { converted: 'converted-only-bytes' } },
+      })
+
+      await service.importFromZip(buffer)
+
+      expect(fsMock.writeFile).toHaveBeenCalledWith(expect.stringContaining('sleep-image.png'), Buffer.from('converted-only-bytes'))
+      expect(fsMock.unlink).toHaveBeenCalledWith(expect.stringContaining('sleep-image.original'))
+      const device = backing.get('Device')!.get('device-1')!
+      expect(device.sleepImageGeneratedAt).toBeInstanceOf(Date)
+    })
+
+    it('removes an existing sleep image when the archive holds none for that Device', async () => {
+      const buffer = buildArchive({ devices: [makeDeviceEntry()] })
+
+      await service.importFromZip(buffer)
+
+      expect(fsMock.unlink).toHaveBeenCalledWith(expect.stringContaining('sleep-image.original'))
+      expect(fsMock.unlink).toHaveBeenCalledWith(expect.stringContaining('sleep-image.png'))
+      const device = backing.get('Device')!.get('device-1')!
+      expect(device.sleepImageGeneratedAt).toBeNull()
+    })
+
+    it('warns and leaves the Device without one when the retained original fails to reconvert, without failing the import', async () => {
+      const buffer = buildArchive({
+        devices: [makeDeviceEntry()],
+        deviceSleepImages: { 'device-1': { original: 'corrupt-bytes' } },
+      })
+      const { convertToPng } = await import('../../utils/imageUtils.js')
+      vi.mocked(convertToPng).mockRejectedValueOnce(new Error('unreadable'))
+
+      const summary = await service.importFromZip(buffer)
+
+      expect(summary.warnings).toEqual([{ kind: 'sleep-image-failed', device: { id: 'device-1', name: 'Device 1' } }])
+      expect(fsMock.unlink).toHaveBeenCalledWith(expect.stringContaining('sleep-image.original'))
+      expect(fsMock.unlink).toHaveBeenCalledWith(expect.stringContaining('sleep-image.png'))
+      const device = backing.get('Device')!.get('device-1')!
+      expect(device.sleepImageGeneratedAt).toBeNull()
+    })
+
+    it('surfaces the same warning from a check, without touching the Device\'s real sleep image files', async () => {
+      const buffer = buildArchive({
+        devices: [makeDeviceEntry()],
+        deviceSleepImages: { 'device-1': { original: 'corrupt-bytes' } },
+      })
+      const { convertToPng } = await import('../../utils/imageUtils.js')
+      vi.mocked(convertToPng).mockRejectedValueOnce(new Error('unreadable'))
+
+      const check = await service.checkZip(buffer)
+
+      expect(check.warnings).toEqual([{ kind: 'sleep-image-failed', device: { id: 'device-1', name: 'Device 1' } }])
+      expect(fsMock.writeFile).not.toHaveBeenCalledWith(expect.stringContaining('sleep-image.original'), expect.anything())
+      expect(fsMock.writeFile).not.toHaveBeenCalledWith(expect.stringContaining('sleep-image.png'), expect.anything())
+      expect(fsMock.unlink).not.toHaveBeenCalledWith(expect.stringContaining('sleep-image.original'))
+      expect(fsMock.unlink).not.toHaveBeenCalledWith(expect.stringContaining('sleep-image.png'))
+    })
   })
 
   describe('scheduling a Plugin an import creates or updates', () => {

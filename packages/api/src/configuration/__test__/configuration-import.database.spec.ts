@@ -11,6 +11,8 @@ import { PluginDataSource } from '../../plugins/entities/plugin-data-source.enti
 import { Plugin } from '../../plugins/entities/plugin.entity.js'
 import { PluginImporterService } from '../../plugins/services/plugin-importer.service.js'
 import { createHttpTestApp } from '../../test/httpApp.js'
+import { createMockDeviceModelsService, primeMockDeviceModelsService } from '../../test/mockDeviceModelsService.js'
+import { asService } from '../../test/mockService.js'
 import { createTestDatabase } from '../../test/testDatabase.js'
 import { ConfigurationController } from '../configuration.controller.js'
 import { CONFIG_SCHEMA_VERSION, LEGACY_CONFIG_SCHEMA_VERSIONS } from '../schema-version.js'
@@ -160,11 +162,13 @@ describe('reading and importing a Configuration Archive, against a real database
 
   beforeAll(async () => {
     database = await createTestDatabase()
+    const deviceModels = createMockDeviceModelsService()
+    primeMockDeviceModelsService(deviceModels)
     http = await createHttpTestApp({
       controllers: [ConfigurationController],
       providers: [
         { provide: ConfigurationExportService, useValue: {} },
-        { provide: ConfigurationImportService, useValue: new ConfigurationImportService(database.getRepository(Plugin), new PluginImporterService(), scheduler as unknown as PluginSchedulerService) },
+        { provide: ConfigurationImportService, useValue: new ConfigurationImportService(database.getRepository(Plugin), new PluginImporterService(), scheduler as unknown as PluginSchedulerService, asService(deviceModels)) },
       ],
     })
   })

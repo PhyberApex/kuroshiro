@@ -110,6 +110,8 @@ export function wordWarning(warning: ImportWarning): string {
       return `${warning.device.name} names a Palette this Instance does not know and uses its Device Model's richest Palette.`
     case 'firmware-unknown':
       return `${warning.device.name} names a target Firmware this Instance does not know and has no target Firmware.`
+    case 'sleep-image-failed':
+      return `${possessive(warning.device.name)} sleep image could not be restored and is left out.`
   }
 }
 

@@ -106,6 +106,7 @@ describe('configuration archive wording', () => {
       { kind: 'device-model-unknown', device: HALLWAY, deviceModel: 'inky_impression_99' },
       { kind: 'palette-unknown', device: HALLWAY, paletteId: 'p' },
       { kind: 'firmware-unknown', device: HALLWAY, firmwareId: 'f' },
+      { kind: 'sleep-image-failed', device: HALLWAY },
     ]
 
     expect(warnings.map(wordWarning)).toEqual([
@@ -120,6 +121,7 @@ describe('configuration archive wording', () => {
       'Hallway names a Device Model this Instance does not know. It is resolved again at its next poll.',
       'Hallway names a Palette this Instance does not know and uses its Device Model\'s richest Palette.',
       'Hallway names a target Firmware this Instance does not know and has no target Firmware.',
+      'Hallway\'s sleep image could not be restored and is left out.',
     ])
   })
 
