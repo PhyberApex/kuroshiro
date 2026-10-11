@@ -20,7 +20,7 @@ import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { convertToPng, downloadImage, readImageSize } from '../utils/imageUtils.js'
 import { resolveAppPath } from '../utils/pathHelper.js'
 import { assertPublicUrl } from '../utils/ssrfGuard.js'
-import { deleteFileIfExists, stageUpload } from '../utils/stagedImageUpload.js'
+import { assertUploadAllowed, deleteFileIfExists, refusingUnreadableImage, stageUpload, writeUpload } from '../utils/stagedImageUpload.js'
 import { CreateScreenDto } from './dto/create-screen.dto.js'
 import { UpdateScreenDto } from './dto/update-screen.dto.js'
 import { closeGapInOrder, joinEndOfOrder, writeOrder } from './screen-order.js'
@@ -75,7 +75,7 @@ export class ScreensService {
         throw new ValidationException([{ path: 'file', message: 'Only a File Screen takes a file.' }])
       return
     }
-    this.assertUploadAllowed(file)
+    assertUploadAllowed(this.configService, file, 'A File Screen needs a file.')
   }
 
   /** The kind's own columns, with its image stored under the given Screen id when the kind keeps one. */
@@ -151,15 +151,8 @@ export class ScreensService {
     const screen = await this.findScreenWithDevice(id)
     if (screen.type !== 'file')
       throw new ApiException(HttpStatus.BAD_REQUEST, 'screen-field-not-for-kind', 'Only a File Screen has an image to replace.')
-    this.assertUploadAllowed(file)
+    assertUploadAllowed(this.configService, file, 'A File Screen needs a file.')
     return screen
-  }
-
-  private assertUploadAllowed(file?: Express.Multer.File): void {
-    if (this.configService.get<boolean>('demo_mode'))
-      throw new ApiException(HttpStatus.FORBIDDEN, 'demo-mode', 'A file cannot be uploaded in demo mode.')
-    if (!file)
-      throw new ValidationException([{ path: 'file', message: 'A File Screen needs a file.' }])
   }
 
   /** Where an image is written before it replaces the stored one, so a failed fetch or conversion leaves the stored one alone. */
@@ -189,16 +182,12 @@ export class ScreensService {
 
   private async convertUpload(device: Device, file: Express.Multer.File, staged: StagedImagePaths): Promise<FileFacts> {
     const target = await this.deviceModels.renderTargetFor(device)
-    await fs.promises.mkdir(path.dirname(staged.originalPath), { recursive: true })
-    await fs.promises.writeFile(staged.originalPath, file.buffer)
-    try {
+    await writeUpload(staged.originalPath, file)
+    return refusingUnreadableImage(this.logger, async () => {
       const { width, height } = await readImageSize(staged.originalPath, this.logger)
       await convertToPng(staged.originalPath, staged.imagePath, target, this.logger)
       return { fileOriginalName: file.originalname, fileWidth: width, fileHeight: height, fileBytes: file.size, fileUploadedAt: new Date() }
-    }
-    catch (err) {
-      throw this.refuseImage(err, HttpStatus.BAD_REQUEST, 'image-unreadable', 'The file is not an image Kuroshiro can read.')
-    }
+    })
   }
 
   /** Builds the refusal of an image; the cause goes to the log, not to the client. */

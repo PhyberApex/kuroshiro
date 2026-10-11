@@ -1,4 +1,3 @@
-import type { ApiErrorCode } from 'kuroshiro-shared'
 import type { StagedImagePaths } from '../utils/stagedImageUpload.js'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
@@ -8,12 +7,12 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { isUUID } from 'class-validator'
 import { Repository } from 'typeorm'
 import { DeviceModelsService } from '../device-models/device-models.service.js'
-import { ApiException, ValidationException } from '../errors/api.exception.js'
+import { ApiException } from '../errors/api.exception.js'
 import { fileExists } from '../utils/fileExists.js'
 import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { convertToPng } from '../utils/imageUtils.js'
 import { resolveAppPath } from '../utils/pathHelper.js'
-import { deleteFileIfExists, stageUpload } from '../utils/stagedImageUpload.js'
+import { assertUploadAllowed, deleteFileIfExists, refusingUnreadableImage, stageUpload, writeUpload } from '../utils/stagedImageUpload.js'
 import { Device } from './devices.entity.js'
 
 const SLEEP_IMAGE_FILENAME = 'sleep-image.png'
@@ -55,7 +54,7 @@ export class DeviceSleepImageService {
   /** Stores and converts `file` as the Device's sleep image; replacing an existing one is just another upload. */
   async upload(deviceId: string, file?: Express.Multer.File): Promise<void> {
     const device = await this.findDevice(deviceId)
-    this.assertUploadAllowed(file)
+    assertUploadAllowed(this.configService, file, 'A sleep image needs a file.')
     await stageUpload(sleepImageOriginalPath(device.id), sleepImagePath(device.id), this.logger)
       .store(staged => this.convertUpload(device, file!, staged))
     await this.deviceRepository.update({ id: device.id }, { sleepImageGeneratedAt: new Date() })
@@ -100,27 +99,8 @@ export class DeviceSleepImageService {
 
   private async convertUpload(device: Device, file: Express.Multer.File, staged: StagedImagePaths): Promise<void> {
     const target = await this.deviceModels.renderTargetFor(device)
-    await fs.promises.mkdir(path.dirname(staged.originalPath), { recursive: true })
-    await fs.promises.writeFile(staged.originalPath, file.buffer)
-    try {
-      await convertToPng(staged.originalPath, staged.imagePath, target, this.logger)
-    }
-    catch (err) {
-      throw this.refuseImage(err, HttpStatus.BAD_REQUEST, 'image-unreadable', 'The file is not an image Kuroshiro can read.')
-    }
-  }
-
-  private assertUploadAllowed(file?: Express.Multer.File): void {
-    if (this.configService.get<boolean>('demo_mode'))
-      throw new ApiException(HttpStatus.FORBIDDEN, 'demo-mode', 'A file cannot be uploaded in demo mode.')
-    if (!file)
-      throw new ValidationException([{ path: 'file', message: 'A sleep image needs a file.' }])
-  }
-
-  /** Builds the refusal of an image; the cause goes to the log, not to the client. */
-  private refuseImage(cause: unknown, status: HttpStatus, code: ApiErrorCode, message: string): ApiException {
-    this.logger.error(`Refusing a sleep image (${code}): ${getErrorMessage(cause)}`)
-    return new ApiException(status, code, message)
+    await writeUpload(staged.originalPath, file)
+    await refusingUnreadableImage(this.logger, () => convertToPng(staged.originalPath, staged.imagePath, target, this.logger))
   }
 
   private async findDevice(id: string): Promise<Device> {

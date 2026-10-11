@@ -1,7 +1,11 @@
 import type { Logger } from '@nestjs/common'
+import type { ConfigService } from '@nestjs/config'
 import { randomUUID } from 'node:crypto'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import { HttpStatus } from '@nestjs/common'
+import { ApiException, ValidationException } from '../errors/api.exception.js'
+import { getErrorMessage } from './getErrorMessage.js'
 
 export interface StagedImagePaths { originalPath: string, imagePath: string }
 
@@ -48,5 +52,30 @@ export function stageUpload(finalOriginalPath: string, finalImagePath: string, l
         throw err
       }
     },
+  }
+}
+
+/** The demo-mode and "needs a file" refusals shared by every image upload. */
+export function assertUploadAllowed(configService: ConfigService, file: Express.Multer.File | undefined, missingFileMessage: string): void {
+  if (configService.get<boolean>('demo_mode'))
+    throw new ApiException(HttpStatus.FORBIDDEN, 'demo-mode', 'A file cannot be uploaded in demo mode.')
+  if (!file)
+    throw new ValidationException([{ path: 'file', message: missingFileMessage }])
+}
+
+/** Writes `file`'s bytes to `path`, creating its folder first. */
+export async function writeUpload(path_: string, file: Express.Multer.File): Promise<void> {
+  await fs.promises.mkdir(path.dirname(path_), { recursive: true })
+  await fs.promises.writeFile(path_, file.buffer)
+}
+
+/** Runs `operation`, refusing any failure as the same 400 `image-unreadable` every image upload answers with. */
+export async function refusingUnreadableImage<T>(logger: Logger, operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation()
+  }
+  catch (err) {
+    logger.error(`Refusing an image (image-unreadable): ${getErrorMessage(err)}`)
+    throw new ApiException(HttpStatus.BAD_REQUEST, 'image-unreadable', 'The file is not an image Kuroshiro can read.')
   }
 }
