@@ -194,7 +194,7 @@ export class DeviceDisplayService {
       await this.screenRepository.update({ device: { id: device.id } }, { isActive: false })
 
     const shown = await this.pickAndRenderScreen(screens, device, now)
-    await this.clearPickIfSet(device)
+    await this.clearPick(device)
     if (!shown) {
       this.logger.log(`No eligible screen for device ${device.id} returning default no screen image`)
       return {
@@ -242,7 +242,7 @@ export class DeviceDisplayService {
    * had lapsed, it is cleared either way, the same way a Special Function is
    * cleared once it fires (ADR-0038).
    */
-  private async clearPickIfSet(device: Device): Promise<void> {
+  private async clearPick(device: Device): Promise<void> {
     if (!device.pickedScreen)
       return
     device.pickedScreen = null

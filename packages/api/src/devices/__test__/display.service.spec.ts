@@ -1292,6 +1292,27 @@ describe('deviceDisplayService', () => {
       expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1' }, { pickedScreen: null })
     })
 
+    it('continues Rotation in Order from the Picked Screen on the poll after it was served', async () => {
+      const picked = fileScreen({ id: 'screen3', order: 3 })
+      primeRotation([
+        fileScreen({ id: 'screen1', order: 1, isActive: true }),
+        fileScreen({ id: 'screen2', order: 2 }),
+        picked,
+      ], picked)
+      await service.getCurrentImage(headers)
+
+      // What the poll above persisted: screen3 is now Active, and the pick is cleared.
+      primeRotation([
+        fileScreen({ id: 'screen1', order: 1 }),
+        fileScreen({ id: 'screen2', order: 2 }),
+        fileScreen({ id: 'screen3', order: 3, isActive: true }),
+      ], null)
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.image_url).toBe('http://api/screens/devices/1/screen1.png')
+    })
+
     it('drops a pick whose Schedule now excludes it, running normal Rotation from the Active Screen instead', async () => {
       const picked = fileScreen({ id: 'screen2', order: 2, schedule: { enabled: false } })
       primeRotation([
@@ -1361,6 +1382,22 @@ describe('deviceDisplayService', () => {
 
       expect(screenRepo.find).not.toHaveBeenCalled()
       expect(deviceRepo.update).not.toHaveBeenCalledWith({ id: sleeper.id }, { pickedScreen: null })
+    })
+
+    it('is served at the first poll after wake', async () => {
+      const picked = fileScreen({ id: 'screen2', order: 2 })
+      const sleeper = makeDevice({ ...pickedScreenDevice, sleepModeEnabled: true, sleepStartTime: 22 * 3600, sleepEndTime: 6 * 3600, sleepScreenEnabled: false, pickedScreen: picked })
+      deviceRepo.findOneBy.mockResolvedValue(sleeper)
+      screenRepo.find.mockResolvedValue([fileScreen({ id: 'screen1', order: 1, isActive: true }), picked])
+      screenRepo.findOne.mockResolvedValue(null)
+      configService.get.mockReturnValue('http://api')
+      fileExists.mockResolvedValue(true)
+
+      vi.setSystemTime(new Date('2026-08-22T07:00:00'))
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.image_url).toBe('http://api/screens/devices/1/screen2.png')
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: sleeper.id }, { pickedScreen: null })
     })
   })
 
