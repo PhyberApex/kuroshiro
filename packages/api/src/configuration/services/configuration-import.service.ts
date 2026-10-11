@@ -77,6 +77,13 @@ interface PendingSleepImageWrite {
   converted: Buffer | null
 }
 
+/** What reading a Device's sleep image out of the archive produced, for `applySleepImageToDevice` to apply: the `sleepImageGeneratedAt` to save, the file write (or delete) to queue, and a warning when a reconversion failed. */
+interface SleepImageResolution {
+  generatedAt: Date | null
+  write: Omit<PendingSleepImageWrite, 'deviceId'>
+  warning?: ImportWarning
+}
+
 /** What one run over an archive has done so far. A check runs the same import and is rolled back at its end. */
 interface ImportRun {
   checkOnly: boolean
@@ -593,7 +600,7 @@ export class ConfigurationImportService {
       run.warnings.push(sleepImage.warning)
     }
     if (!run.checkOnly) {
-      run.pendingSleepImageWrites.push({ deviceId: device.id, original: sleepImage.original, converted: sleepImage.converted })
+      run.pendingSleepImageWrites.push({ deviceId: device.id, ...sleepImage.write })
     }
   }
 
@@ -605,34 +612,36 @@ export class ConfigurationImportService {
    * fails is a degraded restore, not a refusal (ADR-0028): the Device ends up without one and
    * the caller warns about it, the rest of the import unaffected.
    */
-  private async resolveSleepImageForImport(zip: AdmZip, archivedDeviceId: string, device: Device, ref: Ref): Promise<{ generatedAt: Date | null, original: Buffer | null, converted: Buffer | null, warning?: ImportWarning }> {
+  private async resolveSleepImageForImport(zip: AdmZip, archivedDeviceId: string, device: Device, ref: Ref): Promise<SleepImageResolution> {
     const originalEntry = zip.getEntry(`devices/${archivedDeviceId}/sleep-image.original`)
     if (originalEntry) {
       const original = this.readEntry(originalEntry)
       try {
         const target = await this.deviceModels.renderTargetFor(device)
         const converted = await this.convertSleepImageForImport(device.id, original, target)
-        return { generatedAt: new Date(), original, converted }
+        return { generatedAt: new Date(), write: { original, converted } }
       }
       catch (err) {
         this.logger.error(`Failed to restore the sleep image of device ${device.id}: ${getErrorMessage(err)}`)
-        return { generatedAt: null, original: null, converted: null, warning: { kind: 'sleep-image-failed', device: ref } }
+        return { generatedAt: null, write: { original: null, converted: null }, warning: { kind: 'sleep-image-failed', device: ref } }
       }
     }
 
     const convertedOnlyEntry = zip.getEntry(`devices/${archivedDeviceId}/sleep-image.png`)
     if (convertedOnlyEntry) {
-      return { generatedAt: new Date(), original: null, converted: this.readEntry(convertedOnlyEntry) }
+      return { generatedAt: new Date(), write: { original: null, converted: this.readEntry(convertedOnlyEntry) } }
     }
 
-    return { generatedAt: null, original: null, converted: null }
+    return { generatedAt: null, write: { original: null, converted: null } }
   }
 
   /**
    * Converts `original` for `target` into the PNG Configuration Import will write, through a
-   * throwaway temp file next to the Device's own folder — the same `convertToPng` slice A's
-   * upload and reconvert use — without touching the Device's real files until the caller's
-   * transaction commits.
+   * throwaway temp file next to the Device's own folder — the same `convertToPng`
+   * `DeviceSleepImageService.upload`/`reconvert` use. Not implemented by calling either of
+   * those: `original` is fresh bytes out of the archive, not yet the Device's own file, and
+   * the result here is read back into memory rather than renamed into place, since the real
+   * write is deferred until the caller's transaction commits.
    */
   private async convertSleepImageForImport(deviceId: string, original: Buffer, target: DeviceRenderTarget): Promise<Buffer> {
     const dir = path.dirname(sleepImagePath(deviceId))
