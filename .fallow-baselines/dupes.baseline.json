@@ -2,35 +2,17 @@
   "kind": "dupes",
   "clone_groups": [
     "packages/ui/src/components/SelectCombobox.vue:28-34|packages/ui/src/components/SelectListbox.vue:20-29",
-    "packages/ui/real-api/devicePlayer.ts:4-35|packages/ui/src/api/deviceCalls.ts:4-26",
     "packages/api/src/devices/display.service.ts:690-695|packages/api/src/mashup/services/screen-render.service.ts:124-129",
-    "packages/api/src/plugins/services/plugin-importer.service.ts:373-378|packages/api/src/plugins/services/plugin-importer.service.ts:401-406",
-    "packages/ui/src/components/WeekdayToggle.vue:15-23|packages/ui/src/pages/devices/scheduleSummary.ts:4-12",
-    "packages/api/src/configuration/services/configuration-export.service.ts:117-121|packages/api/src/configuration/services/configuration-export.service.ts:154-158",
-    "packages/api/src/device-models/device-models.controller.ts:29-36|packages/api/src/firmware/firmware.controller.ts:29-36",
-    "packages/api/src/device-models/device-model-sync.service.ts:81-85|packages/api/src/firmware/firmware-sync.service.ts:71-75",
-    "packages/api/src/test/fixtures.ts:90-109|packages/api/src/test/mockDeviceModelsService.ts:6-25"
+    "packages/api/src/plugins/services/plugin-importer.service.ts:373-378|packages/api/src/plugins/services/plugin-importer.service.ts:401-406"
   ],
   "clone_fingerprints": [
     "dup:1c24940b:2",
-    "dup:9740cde1:2",
     "dup:c9320de8:2",
-    "dup:47ff2f72:2",
-    "dup:06a793ac:2",
-    "dup:ff4d40c8:2",
-    "dup:e320c6d1:2",
-    "dup:6dbdb4b5:2",
-    "dup:5304ed0c:2"
+    "dup:47ff2f72:2"
   ],
   "normalized_clone_fingerprints": [
     "dup:c77b3abb6f87acd9-r2:2",
-    "dup:ee99c8cb:2",
     "dup:c77b3abb6f87acd9-r1:2",
-    "dup:c77b3abb6f87acd9-r6:2",
-    "dup:d02f2b1f:2",
-    "dup:c77b3abb6f87acd9-r4:2",
-    "dup:c76759f9:2",
-    "dup:c77b3abb6f87acd9-r5:2",
     "dup:c77b3abb6f87acd9-r3:2"
   ]
 }

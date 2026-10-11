@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ScheduleInput, ScheduleRead } from 'kuroshiro-shared'
-import type { Weekday } from '@/components/WeekdayToggle.vue'
+import type { Weekday } from '@/components/weekdays'
 import { computed, ref, watch } from 'vue'
 import { updateSchedule } from '@/api/screens'
 import SaveState from '@/components/SaveState.vue'

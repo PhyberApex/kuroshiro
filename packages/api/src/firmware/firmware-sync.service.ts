@@ -11,7 +11,6 @@ import { Repository } from 'typeorm'
 import { TRMNL_API_URL } from '../device-models/trmnl-payloads.js'
 import { isUniqueViolation } from '../errors/unique-violation.js'
 import { SyncRunService } from '../sync-runs/sync-run.service.js'
-import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { Firmware } from './entities/firmware.entity.js'
 import { FirmwareAutoUpdateService } from './firmware-auto-update.service.js'
 import { firmwareFilePath } from './firmware-paths.js'
@@ -68,8 +67,7 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
       result = await this.runSync(ranAt)
     }
     catch (error) {
-      await this.syncRuns.record('firmware', ranAt, { ok: false, error: getErrorMessage(error) })
-        .catch(recordError => this.logger.error(`Could not record the failed firmware sync: ${getErrorMessage(recordError)}`))
+      await this.syncRuns.recordFailure('firmware', ranAt, error)
       throw error
     }
     await this.syncRuns.record('firmware', ranAt, { ok: true })

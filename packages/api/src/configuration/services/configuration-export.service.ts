@@ -114,11 +114,16 @@ export class ConfigurationExportService {
   private withRedactedHeaders(plugin: Plugin): Plugin {
     return {
       ...plugin,
-      dataSources: (plugin.dataSources || []).map(ds => ({
-        ...ds,
-        headers: ds.headers && Object.fromEntries(Object.keys(ds.headers).map(key => [key, CONFIGURATION_REDACTION_SENTINEL])),
-      })),
+      dataSources: this.redactHeaders(plugin.dataSources),
     }
+  }
+
+  /** Replaces every Data Source header *value* with the Redaction Sentinel, keeping the rest of each Data Source as it was. */
+  private redactHeaders<T extends { headers?: Record<string, string> | null }>(dataSources: T[] | null | undefined): T[] {
+    return (dataSources || []).map(ds => ({
+      ...ds,
+      headers: ds.headers && Object.fromEntries(Object.keys(ds.headers).map(key => [key, CONFIGURATION_REDACTION_SENTINEL])),
+    }))
   }
 
   private buildPluginEntry(plugin: Plugin, fieldValues: StoredFieldValues, redact: boolean): PluginManifestEntry {
@@ -151,10 +156,7 @@ export class ConfigurationExportService {
     }
     return {
       ...snapshot,
-      dataSources: (snapshot.dataSources || []).map(ds => ({
-        ...ds,
-        headers: ds.headers && Object.fromEntries(Object.keys(ds.headers).map(key => [key, CONFIGURATION_REDACTION_SENTINEL])),
-      })),
+      dataSources: this.redactHeaders(snapshot.dataSources),
     }
   }
 

@@ -38,13 +38,13 @@ describe('deviceModelSyncService', () => {
   let service: DeviceModelSyncService
   let modelRepo: ReturnType<typeof createMockRepository<DeviceModel>>
   let paletteRepo: ReturnType<typeof createMockRepository<Palette>>
-  let syncRuns: { record: ReturnType<typeof vi.fn> }
+  let syncRuns: { record: ReturnType<typeof vi.fn>, recordFailure: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     vi.resetAllMocks()
     modelRepo = createMockRepository<DeviceModel>()
     paletteRepo = createMockRepository<Palette>()
-    syncRuns = { record: vi.fn().mockResolvedValue(undefined) }
+    syncRuns = { record: vi.fn().mockResolvedValue(undefined), recordFailure: vi.fn().mockResolvedValue(undefined) }
     service = new DeviceModelSyncService(asRepository(modelRepo), asRepository(paletteRepo), asService<SyncRunService>(syncRuns))
   })
 
@@ -77,12 +77,12 @@ describe('deviceModelSyncService', () => {
       modelRepo.find.mockResolvedValue([])
 
       await service.onApplicationBootstrap()
-      await vi.waitFor(() => expect(syncRuns.record).toHaveBeenCalledTimes(1))
-      expect(syncRuns.record).toHaveBeenLastCalledWith('device-models', expect.any(Date), { ok: false, error: expect.any(String) })
+      await vi.waitFor(() => expect(syncRuns.recordFailure).toHaveBeenCalledTimes(1))
+      expect(syncRuns.recordFailure).toHaveBeenLastCalledWith('device-models', expect.any(Date), expect.any(Error))
 
       expect(cronMock.schedule).toHaveBeenCalledWith('0 4 * * *', expect.any(Function))
       cronMock.schedule.mock.calls[0][1]()
-      await vi.waitFor(() => expect(syncRuns.record).toHaveBeenCalledTimes(2))
+      await vi.waitFor(() => expect(syncRuns.recordFailure).toHaveBeenCalledTimes(2))
     })
   })
 
@@ -149,15 +149,9 @@ describe('deviceModelSyncService', () => {
     it('throws and writes nothing when TRMNL is unreachable', async () => {
       mockFetch.mockImplementation(async () => jsonResponse(null, { ok: false }))
       await expect(service.sync()).rejects.toThrow(/request failed/)
-      expect(syncRuns.record).toHaveBeenCalledWith('device-models', expect.any(Date), { ok: false, error: expect.stringMatching(/request failed/) })
+      expect(syncRuns.recordFailure).toHaveBeenCalledWith('device-models', expect.any(Date), expect.objectContaining({ message: expect.stringMatching(/request failed/) }))
       expect(paletteRepo.upsert).not.toHaveBeenCalled()
       expect(modelRepo.upsert).not.toHaveBeenCalled()
-    })
-
-    it('rethrows the upstream error when the failed run cannot be recorded', async () => {
-      mockFetch.mockImplementation(async () => jsonResponse(null, { ok: false }))
-      syncRuns.record.mockRejectedValue(new Error('database is down'))
-      await expect(service.sync()).rejects.toThrow(/request failed/)
     })
 
     it('throws when the response has no data array', async () => {

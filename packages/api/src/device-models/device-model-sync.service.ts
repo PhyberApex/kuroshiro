@@ -5,7 +5,6 @@ import { InjectRepository } from '@nestjs/typeorm'
 import cron from 'node-cron'
 import { In, Repository } from 'typeorm'
 import { SyncRunService } from '../sync-runs/sync-run.service.js'
-import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { TRMNL_MODELS_SNAPSHOT, TRMNL_PALETTES_SNAPSHOT } from './data/trmnl-snapshot.js'
 import { DeviceModel } from './entities/device-model.entity.js'
 import { Palette } from './entities/palette.entity.js'
@@ -78,8 +77,7 @@ export class DeviceModelSyncService implements OnApplicationBootstrap {
       result = await this.runSync(ranAt)
     }
     catch (error) {
-      await this.syncRuns.record('device-models', ranAt, { ok: false, error: getErrorMessage(error) })
-        .catch(recordError => this.logger.error(`Could not record the failed device model sync: ${getErrorMessage(recordError)}`))
+      await this.syncRuns.recordFailure('device-models', ranAt, error)
       throw error
     }
     await this.syncRuns.record('device-models', ranAt, { ok: true })
