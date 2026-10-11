@@ -1,16 +1,24 @@
 import type { Repository } from 'typeorm'
 import type { UpdateDeviceDto } from './dto/update-device.dto.js'
-import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common'
+import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { isUUID } from 'class-validator'
 import { ILike } from 'typeorm'
 import { DeviceModelsService } from '../device-models/device-models.service.js'
+import { PaletteSelectionService } from '../device-models/palette-selection.service.js'
 import { ApiException } from '../errors/api.exception.js'
-import { isFirmwareCompatible } from '../firmware/firmware-compatibility.js'
 import { FirmwareService } from '../firmware/firmware.service.js'
 import { ScreensService } from '../screens/screens.service.js'
 import generateApikey from '../utils/generateApikey.js'
 import generateFriendlyName from '../utils/generateFriendlyName.js'
+import {
+  applyFirmwareChanges,
+  applyModelChange,
+  applyPaletteChange,
+  assertPushCanBeServed,
+  assertSleepWindowConfigured,
+  renderTargetChanged,
+} from './device-update-rules.js'
 import { Device } from './devices.entity.js'
 import { CreateDeviceDto } from './dto/create-device.dto.js'
 
@@ -20,6 +28,7 @@ export class DevicesService {
     @InjectRepository(Device)
     private deviceRepository: Repository<Device>,
     private deviceModels: DeviceModelsService,
+    private paletteSelection: PaletteSelectionService,
     private firmwareService: FirmwareService,
     private screensService: ScreensService,
   ) {}
@@ -44,14 +53,14 @@ export class DevicesService {
     const { deviceModelName, paletteId, targetFirmwareId, ...attributes } = changes
     const pushWasPending = dbDevice.updateFirmware
     Object.assign(dbDevice, attributes)
-    this.assertSleepWindowConfigured(dbDevice)
+    assertSleepWindowConfigured(dbDevice)
     const before = { model: dbDevice.deviceModel?.name, palette: dbDevice.palette?.id }
-    await this.applyModelChange(dbDevice, deviceModelName)
-    await this.applyPaletteChange(dbDevice, paletteId)
-    await this.applyFirmwareChanges(dbDevice, targetFirmwareId, pushWasPending)
-    this.assertPushCanBeServed(dbDevice, changes.updateFirmware)
+    await applyModelChange(dbDevice, deviceModelName, this.deviceModels)
+    await applyPaletteChange(dbDevice, paletteId, this.paletteSelection)
+    await applyFirmwareChanges(dbDevice, targetFirmwareId, pushWasPending, this.firmwareService)
+    assertPushCanBeServed(dbDevice, changes.updateFirmware)
     const saved = await this.deviceRepository.save(dbDevice)
-    if (this.renderTargetChanged(before, saved))
+    if (renderTargetChanged(before, saved))
       await this.screensService.reconvertImageScreens(saved)
     return saved
   }
@@ -71,69 +80,5 @@ export class DevicesService {
 
   private async findByIdOrNull(id: string): Promise<Device | null> {
     return isUUID(id) ? this.deviceRepository.findOneBy({ id }) : null
-  }
-
-  private renderTargetChanged(before: { model?: string, palette?: string }, device: Device): boolean {
-    return before.model !== device.deviceModel?.name || before.palette !== device.palette?.id
-  }
-
-  private async applyModelChange(device: Device, deviceModelName?: string): Promise<void> {
-    if (deviceModelName === undefined || deviceModelName === device.deviceModel?.name)
-      return
-    const model = await this.deviceModels.findByName(deviceModelName)
-    if (!model)
-      throw new BadRequestException(`Unknown device model: ${deviceModelName}`)
-    device.deviceModel = model
-    device.palette = null
-  }
-
-  private async applyPaletteChange(device: Device, paletteId?: string): Promise<void> {
-    if (paletteId !== undefined) {
-      if (!device.deviceModel)
-        throw new BadRequestException('Cannot set a palette on a device with no assigned device model')
-      const palette = await this.deviceModels.findPalette(paletteId)
-      if (!palette || !(await this.deviceModels.supportsPalette(device.deviceModel, palette)))
-        throw new BadRequestException(`Palette ${paletteId} is not supported by device model ${device.deviceModel.name}`)
-      device.palette = palette
-    }
-    if (device.deviceModel && !device.palette)
-      device.palette = await this.deviceModels.defaultPaletteFor(device.deviceModel)
-  }
-
-  private async applyFirmwareChanges(device: Device, targetFirmwareId: string | null | undefined, pushWasPending: boolean): Promise<void> {
-    if (targetFirmwareId === undefined)
-      return
-    if (targetFirmwareId === null) {
-      if (pushWasPending)
-        throw new ApiException(HttpStatus.CONFLICT, 'firmware-push-pending', 'The target Firmware cannot be cleared while a push is pending.', { id: device.id })
-      device.targetFirmware = null
-      return
-    }
-    const firmware = await this.firmwareService.findById(targetFirmwareId)
-    if (!firmware)
-      throw new BadRequestException(`Unknown firmware: ${targetFirmwareId}`)
-    if (!isFirmwareCompatible(firmware, device.deviceModel?.name))
-      throw new BadRequestException(`Firmware ${targetFirmwareId} is not compatible with device model ${device.deviceModel?.name ?? 'unknown'}`)
-    device.targetFirmware = firmware
-  }
-
-  private assertPushCanBeServed(device: Device, updateFirmware?: boolean): void {
-    if (updateFirmware !== true)
-      return
-    if (!device.targetFirmware)
-      throw new ApiException(HttpStatus.CONFLICT, 'firmware-push-without-target', 'A Firmware push needs a target Firmware.', { id: device.id })
-    if (device.mirrorEnabled)
-      throw new ApiException(HttpStatus.CONFLICT, 'firmware-push-mirrored', 'A mirrored Device is not given Firmware.', { id: device.id })
-  }
-
-  /**
-   * UpdateDeviceDto's own cross-field check only sees a single request's
-   * payload, so a PATCH that clears just `sleepStartTime`/`sleepEndTime`
-   * (with `sleepModeEnabled` already `true` from an earlier request) would
-   * slip past it. Re-checking the merged entity here catches that case too.
-   */
-  private assertSleepWindowConfigured(device: Device): void {
-    if (device.sleepModeEnabled && (device.sleepStartTime == null || device.sleepEndTime == null))
-      throw new BadRequestException('sleepModeEnabled requires both sleepStartTime and sleepEndTime to be set')
   }
 }

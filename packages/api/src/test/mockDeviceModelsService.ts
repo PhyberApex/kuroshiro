@@ -28,11 +28,6 @@ export const CUSTOM_RED_3BWR: Palette = { id: 'a1b2c3d4-e5f6-4789-a0b1-c2d3e4f5a
 export interface MockDeviceModelsService {
   findAll: Mock
   findByName: Mock
-  findAllPalettes: Mock
-  findPalette: Mock
-  allowedPalettesFor: Mock
-  defaultPaletteFor: Mock
-  supportsPalette: Mock
   resolve: Mock
   assignResolvedModel: Mock
   renderTargetFor: Mock
@@ -42,11 +37,6 @@ export function createMockDeviceModelsService(): MockDeviceModelsService {
   return {
     findAll: vi.fn(),
     findByName: vi.fn(),
-    findAllPalettes: vi.fn(),
-    findPalette: vi.fn(),
-    allowedPalettesFor: vi.fn(),
-    defaultPaletteFor: vi.fn(),
-    supportsPalette: vi.fn(),
     resolve: vi.fn(),
     assignResolvedModel: vi.fn(),
     renderTargetFor: vi.fn(),
@@ -56,9 +46,26 @@ export function createMockDeviceModelsService(): MockDeviceModelsService {
 /** Default behaviour after `vi.resetAllMocks()`: everything renders as an OG with 4 grays. */
 export function primeMockDeviceModelsService(mock: MockDeviceModelsService) {
   mock.renderTargetFor.mockResolvedValue({ model: OG_PLUS, palette: GRAY_4 })
-  mock.defaultPaletteFor.mockResolvedValue(GRAY_4)
   mock.resolve.mockResolvedValue(null)
   mock.assignResolvedModel.mockResolvedValue(null)
+}
+
+export interface MockPaletteSelectionService {
+  findAllPalettes: Mock
+  findPalette: Mock
+  allowedPalettesFor: Mock
+  defaultPaletteFor: Mock
+  supportsPalette: Mock
+}
+
+export function createMockPaletteSelectionService(): MockPaletteSelectionService {
+  return {
+    findAllPalettes: vi.fn(),
+    findPalette: vi.fn(),
+    allowedPalettesFor: vi.fn(),
+    defaultPaletteFor: vi.fn(),
+    supportsPalette: vi.fn(),
+  }
 }
 
 export interface MockFallbackScreensService {

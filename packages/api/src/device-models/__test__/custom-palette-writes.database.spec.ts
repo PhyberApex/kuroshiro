@@ -27,6 +27,7 @@ import { DeviceModelReadsService } from '../device-model-reads.service.js'
 import { DeviceModelsService } from '../device-models.service.js'
 import { DeviceModel } from '../entities/device-model.entity.js'
 import { Palette } from '../entities/palette.entity.js'
+import { PaletteSelectionService } from '../palette-selection.service.js'
 
 vi.mock('../../utils/imageUtils.js', () => ({
   downloadImage: vi.fn(),
@@ -54,10 +55,11 @@ describe('creating, changing and deleting a custom Palette, against a real datab
     database = await createTestDatabase()
     // `synchronize` cannot express a partial, case-insensitive index from a plain entity decorator; this mirrors what the migration adds in production.
     await database.query(`CREATE UNIQUE INDEX "UQ_palette_name_custom" ON "palette" (lower("name")) WHERE "kind" = 'custom'`)
-    const deviceModels = new DeviceModelsService(database.getRepository(DeviceModel), database.getRepository(Palette))
-    const reads = new DeviceModelReadsService(database.getRepository(Device), deviceModels, new SyncRunService(database.getRepository(SyncRun)))
+    const paletteSelection = new PaletteSelectionService(database.getRepository(Palette))
+    const deviceModels = new DeviceModelsService(database.getRepository(DeviceModel), paletteSelection)
+    const reads = new DeviceModelReadsService(database.getRepository(Device), deviceModels, paletteSelection, new SyncRunService(database.getRepository(SyncRun)))
     const screens = new ScreensService(database.getRepository(Screen), database.getRepository(Device), asService<ConfigService>({ get: () => false }), deviceModels)
-    customPalettes = new CustomPalettesService(database.getRepository(Palette), database.getRepository(Device), deviceModels, screens)
+    customPalettes = new CustomPalettesService(database.getRepository(Palette), database.getRepository(Device), paletteSelection, screens)
     const fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
     const screenReads = new ScreenReadsService(database.getRepository(Screen), database.getRepository(Device), database.getRepository(Alert), fieldValues)
 

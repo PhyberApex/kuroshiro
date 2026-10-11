@@ -3,6 +3,7 @@ import type { DeviceDetail, DeviceSummary } from 'kuroshiro-shared'
 import type { DataSource } from 'typeorm'
 import type { DeviceModelsService } from '../../device-models/device-models.service.js'
 import type { FallbackScreensService } from '../../device-models/fallback-screens.service.js'
+import type { PaletteSelectionService } from '../../device-models/palette-selection.service.js'
 import type { FirmwareService } from '../../firmware/firmware.service.js'
 import type { ScreenRenderService } from '../../mashup/services/screen-render.service.js'
 import type { PluginRendererService } from '../../plugins/services/plugin-renderer.service.js'
@@ -14,7 +15,7 @@ import { DeviceSensorsService } from '../../device-sensors/device-sensors.servic
 import { DeviceSensor } from '../../device-sensors/entities/device-sensor.entity.js'
 import { Screen } from '../../screens/screens.entity.js'
 import { createHttpTestApp } from '../../test/httpApp.js'
-import { createMockDeviceModelsService, createMockFallbackScreensService, primeMockDeviceModelsService, primeMockFallbackScreensService } from '../../test/mockDeviceModelsService.js'
+import { createMockDeviceModelsService, createMockFallbackScreensService, createMockPaletteSelectionService, primeMockDeviceModelsService, primeMockFallbackScreensService } from '../../test/mockDeviceModelsService.js'
 import { createPluginTemplateContextService } from '../../test/mockPluginCollaborators.js'
 import { asService } from '../../test/mockService.js'
 import { createTestDatabase } from '../../test/testDatabase.js'
@@ -40,6 +41,7 @@ describe('the Device reads against a real database', () => {
     const devices = database.getRepository(Device)
     const screens = database.getRepository(Screen)
     const deviceModels = createMockDeviceModelsService()
+    const paletteSelection = createMockPaletteSelectionService()
     const fallbackScreens = createMockFallbackScreensService()
     primeMockDeviceModelsService(deviceModels)
     primeMockFallbackScreensService(fallbackScreens)
@@ -50,7 +52,7 @@ describe('the Device reads against a real database', () => {
       controllers: [DevicesController, DisplayController, SetupController],
       providers: [
         { provide: DeviceReadsService, useValue: new DeviceReadsService(devices, screens, deviceSensors) },
-        { provide: DevicesService, useValue: new DevicesService(devices, asService<DeviceModelsService>(deviceModels), firmware, asService<ScreensService>({})) },
+        { provide: DevicesService, useValue: new DevicesService(devices, asService<DeviceModelsService>(deviceModels), asService<PaletteSelectionService>(paletteSelection), firmware, asService<ScreensService>({})) },
         { provide: DeviceSetupService, useValue: new DeviceSetupService(devices, asService<DeviceModelsService>(deviceModels), asService<FallbackScreensService>(fallbackScreens)) },
         {
           provide: DeviceDisplayService,

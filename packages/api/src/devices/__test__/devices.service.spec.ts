@@ -1,14 +1,15 @@
 import type { DeviceModelsService } from '../../device-models/device-models.service.js'
 import type { DeviceModel } from '../../device-models/entities/device-model.entity.js'
 import type { Palette } from '../../device-models/entities/palette.entity.js'
+import type { PaletteSelectionService } from '../../device-models/palette-selection.service.js'
 import type { FirmwareService } from '../../firmware/firmware.service.js'
 import type { ScreensService } from '../../screens/screens.service.js'
-import type { MockDeviceModelsService } from '../../test/mockDeviceModelsService.js'
+import type { MockDeviceModelsService, MockPaletteSelectionService } from '../../test/mockDeviceModelsService.js'
 import type { Device } from '../devices.entity.js'
 import { BadRequestException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeDevice, makeFirmware } from '../../test/fixtures.js'
-import { BW, createMockDeviceModelsService, CUSTOM_RED_3BWR, GRAY_4, GRAY_16, OG_PLUS, V2 } from '../../test/mockDeviceModelsService.js'
+import { BW, createMockDeviceModelsService, createMockPaletteSelectionService, CUSTOM_RED_3BWR, GRAY_4, GRAY_16, OG_PLUS, V2 } from '../../test/mockDeviceModelsService.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
 import { asService } from '../../test/mockService.js'
 import { DevicesService } from '../devices.service.js'
@@ -19,18 +20,21 @@ describe('devicesService', () => {
   let service: DevicesService
   let repo: ReturnType<typeof createMockRepository<Device>>
   let deviceModels: MockDeviceModelsService
+  let paletteSelection: MockPaletteSelectionService
   let firmwareService: { findById: ReturnType<typeof vi.fn> }
   let screensService: { reconvertImageScreens: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     repo = createMockRepository<Device>()
     deviceModels = createMockDeviceModelsService()
-    deviceModels.supportsPalette.mockImplementation(async (model: DeviceModel, palette: Palette) => model.paletteIds.includes(palette.id))
+    paletteSelection = createMockPaletteSelectionService()
+    paletteSelection.supportsPalette.mockImplementation(async (model: DeviceModel, palette: Palette) => model.paletteIds.includes(palette.id))
     firmwareService = { findById: vi.fn() }
     screensService = { reconvertImageScreens: vi.fn().mockResolvedValue(0) }
     service = new DevicesService(
       asRepository(repo),
       asService<DeviceModelsService>(deviceModels),
+      asService<PaletteSelectionService>(paletteSelection),
       asService<FirmwareService>(firmwareService),
       asService<ScreensService>(screensService),
     )
@@ -109,7 +113,7 @@ describe('devicesService', () => {
     it('assigns a new model with its default palette', async () => {
       repo.findOneBy.mockResolvedValue(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, palette: GRAY_4 }))
       deviceModels.findByName.mockResolvedValue(V2)
-      deviceModels.defaultPaletteFor.mockResolvedValue(GRAY_16)
+      paletteSelection.defaultPaletteFor.mockResolvedValue(GRAY_16)
       const result = (await service.update(DEVICE_ID, { deviceModelName: 'v2' }))!
       expect(deviceModels.findByName).toHaveBeenCalledWith('v2')
       expect(result.deviceModel).toBe(V2)
@@ -120,16 +124,16 @@ describe('devicesService', () => {
     it('assigns a new model together with an explicitly chosen palette', async () => {
       repo.findOneBy.mockResolvedValue(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, palette: GRAY_4 }))
       deviceModels.findByName.mockResolvedValue(V2)
-      deviceModels.findPalette.mockResolvedValue(BW)
+      paletteSelection.findPalette.mockResolvedValue(BW)
       const result = (await service.update(DEVICE_ID, { deviceModelName: 'v2', paletteId: 'bw' }))!
       expect(result.deviceModel).toBe(V2)
       expect(result.palette).toBe(BW)
-      expect(deviceModels.defaultPaletteFor).not.toHaveBeenCalled()
+      expect(paletteSelection.defaultPaletteFor).not.toHaveBeenCalled()
     })
 
     it('changes only the palette when the model stays the same', async () => {
       repo.findOneBy.mockResolvedValue(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, palette: GRAY_4 }))
-      deviceModels.findPalette.mockResolvedValue(BW)
+      paletteSelection.findPalette.mockResolvedValue(BW)
       const result = (await service.update(DEVICE_ID, { deviceModelName: 'og_plus', paletteId: 'bw' }))!
       expect(deviceModels.findByName).not.toHaveBeenCalled()
       expect(result.deviceModel).toBe(OG_PLUS)
@@ -139,7 +143,7 @@ describe('devicesService', () => {
 
     it('does not reconvert images when neither model nor palette changed', async () => {
       repo.findOneBy.mockResolvedValue(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, palette: GRAY_4 }))
-      deviceModels.findPalette.mockResolvedValue(GRAY_4)
+      paletteSelection.findPalette.mockResolvedValue(GRAY_4)
       await service.update(DEVICE_ID, { name: 'renamed', deviceModelName: 'og_plus', paletteId: 'gray-4' })
       expect(screensService.reconvertImageScreens).not.toHaveBeenCalled()
     })
@@ -153,7 +157,7 @@ describe('devicesService', () => {
 
     it('rejects a palette the model does not support', async () => {
       repo.findOneBy.mockResolvedValue(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, palette: GRAY_4 }))
-      deviceModels.findPalette.mockResolvedValue(GRAY_16)
+      paletteSelection.findPalette.mockResolvedValue(GRAY_16)
       await expect(service.update(DEVICE_ID, { paletteId: 'gray-16' })).rejects.toThrow(BadRequestException)
       expect(repo.save).not.toHaveBeenCalled()
     })
@@ -161,13 +165,13 @@ describe('devicesService', () => {
     it('rejects a palette sent for a device with no assigned device model', async () => {
       repo.findOneBy.mockResolvedValue(makeDevice({ ...baseDevice, deviceModel: null, palette: null }))
       await expect(service.update(DEVICE_ID, { paletteId: 'bw' })).rejects.toThrow(BadRequestException)
-      expect(deviceModels.findPalette).not.toHaveBeenCalled()
+      expect(paletteSelection.findPalette).not.toHaveBeenCalled()
       expect(repo.save).not.toHaveBeenCalled()
     })
 
     it('fills in the default palette for a device that has a model but no palette', async () => {
       repo.findOneBy.mockResolvedValue(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, palette: null }))
-      deviceModels.defaultPaletteFor.mockResolvedValue(GRAY_4)
+      paletteSelection.defaultPaletteFor.mockResolvedValue(GRAY_4)
       const result = (await service.update(DEVICE_ID, { name: 'renamed' }))!
       expect(result.name).toBe('renamed')
       expect(result.palette).toBe(GRAY_4)
@@ -175,17 +179,17 @@ describe('devicesService', () => {
 
     it('accepts a custom palette whose colour family is compatible with the device model', async () => {
       repo.findOneBy.mockResolvedValue(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, palette: GRAY_4 }))
-      deviceModels.findPalette.mockResolvedValue(CUSTOM_RED_3BWR)
-      deviceModels.supportsPalette.mockResolvedValue(true)
+      paletteSelection.findPalette.mockResolvedValue(CUSTOM_RED_3BWR)
+      paletteSelection.supportsPalette.mockResolvedValue(true)
       const result = (await service.update(DEVICE_ID, { paletteId: CUSTOM_RED_3BWR.id }))!
-      expect(deviceModels.supportsPalette).toHaveBeenCalledWith(OG_PLUS, CUSTOM_RED_3BWR)
+      expect(paletteSelection.supportsPalette).toHaveBeenCalledWith(OG_PLUS, CUSTOM_RED_3BWR)
       expect(result.palette).toBe(CUSTOM_RED_3BWR)
     })
 
     it('rejects a custom palette whose colour family is not compatible with the device model', async () => {
       repo.findOneBy.mockResolvedValue(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, palette: GRAY_4 }))
-      deviceModels.findPalette.mockResolvedValue(CUSTOM_RED_3BWR)
-      deviceModels.supportsPalette.mockResolvedValue(false)
+      paletteSelection.findPalette.mockResolvedValue(CUSTOM_RED_3BWR)
+      paletteSelection.supportsPalette.mockResolvedValue(false)
       await expect(service.update(DEVICE_ID, { paletteId: CUSTOM_RED_3BWR.id })).rejects.toThrow(BadRequestException)
       expect(repo.save).not.toHaveBeenCalled()
     })
