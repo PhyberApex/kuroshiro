@@ -162,7 +162,7 @@ export function fakePreviewData(data: PreviewData = buildPreviewData(), pluginId
 
 /** The Alert of a Data Source whose fetch is failing, as the `*.shots.ts` files that open the Plugin page with it firing share it. */
 export function dataSourceFetchFailingAlert(): AlertsList {
-  return buildAlertsList({ active: [buildAlert({ kind: 'data-source-fetch-failing', deviceId: undefined, deviceName: undefined, pluginId: 'weather', pluginName: 'Weather', dataSourceName: 'forecast', details: null })] })
+  return buildAlertsList({ active: [buildAlert({ kind: 'data-source-fetch-failing', device: null, plugin: { id: 'weather', name: 'Weather' }, dataSource: { id: 'source', name: 'forecast' }, details: null })] })
 }
 
 interface FakePluginForShotOptions {

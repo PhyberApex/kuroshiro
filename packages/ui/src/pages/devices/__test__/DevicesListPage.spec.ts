@@ -96,8 +96,8 @@ describe('the Devices list', () => {
   it('gives each Device its facts, a firing Alert first and alone in red', async () => {
     const screen = await mountList([KITCHEN, HALLWAY, ATTIC], buildAlertsList({
       active: [
-        buildAlert({ kind: 'device-low-battery', deviceId: 'kitchen' }),
-        buildAlert({ id: 'offline', kind: 'device-offline', deviceId: 'attic' }),
+        buildAlert({ kind: 'device-low-battery', device: { id: 'kitchen', name: 'Kitchen' } }),
+        buildAlert({ id: 'offline', kind: 'device-offline', device: { id: 'attic', name: 'Attic' } }),
       ],
     }))
 
@@ -169,7 +169,7 @@ describe('the Devices list', () => {
   })
 
   it('is accessible in both themes and does not overflow at phone, tablet or desktop width', async () => {
-    const screen = await mountList([KITCHEN, HALLWAY, STUDY, ATTIC, CELLAR], buildAlertsList({ active: [buildAlert({ kind: 'device-low-battery', deviceId: 'kitchen' })] }))
+    const screen = await mountList([KITCHEN, HALLWAY, STUDY, ATTIC, CELLAR], buildAlertsList({ active: [buildAlert({ kind: 'device-low-battery', device: { id: 'kitchen', name: 'Kitchen' } })] }))
     await expect.poll(() => rows(screen).length).toBe(5)
 
     await expectAccessible()

@@ -92,12 +92,10 @@ describe('the Alerts list filtered, against a real database', () => {
     const { active } = await readList()
 
     const fetchAlert = active.find(alert => alert.kind === 'data-source-fetch-failing')
-    expect(fetchAlert).toMatchObject({ pluginId: weather.id, pluginName: 'Weather', dataSourceName: 'Forecast API' })
-    expect(fetchAlert?.dataSourceId).toBeDefined()
+    expect(fetchAlert).toMatchObject({ plugin: { id: weather.id, name: 'Weather' }, dataSource: { name: 'Forecast API' }, device: null })
+    expect(fetchAlert?.dataSource?.id).toBeDefined()
     const deviceAlert = active.find(alert => alert.kind === 'device-low-battery')
-    expect(deviceAlert).toMatchObject({ deviceId: kitchen.id, deviceName: 'Kitchen' })
-    expect(deviceAlert).not.toHaveProperty('pluginId')
-    expect(deviceAlert).not.toHaveProperty('dataSourceId')
+    expect(deviceAlert).toMatchObject({ device: { id: kitchen.id, name: 'Kitchen' }, plugin: null, dataSource: null })
   })
 
   it('answers every Alert when no filter is given', async () => {
@@ -114,8 +112,8 @@ describe('the Alerts list filtered, against a real database', () => {
 
     const { active, resolved } = await readList(`?deviceId=${kitchen.id}`)
 
-    expect(active.map(alert => alert.deviceId)).toEqual([kitchen.id])
-    expect(resolved.map(alert => alert.deviceId)).toEqual([kitchen.id])
+    expect(active.map(alert => alert.device?.id)).toEqual([kitchen.id])
+    expect(resolved.map(alert => alert.device?.id)).toEqual([kitchen.id])
   })
 
   it('keeps only the fetch Alerts of the named Plugin, firing and resolved', async () => {
@@ -123,8 +121,8 @@ describe('the Alerts list filtered, against a real database', () => {
 
     const { active, resolved } = await readList(`?pluginId=${weather.id}`)
 
-    expect(active.map(alert => alert.pluginId)).toEqual([weather.id])
-    expect(resolved.map(alert => alert.pluginId)).toEqual([weather.id])
+    expect(active.map(alert => alert.plugin?.id)).toEqual([weather.id])
+    expect(resolved.map(alert => alert.plugin?.id)).toEqual([weather.id])
   })
 
   it('answers nothing when a Device and a Plugin are asked for together', async () => {
@@ -149,7 +147,7 @@ describe('the Alerts list filtered, against a real database', () => {
     const { resolved } = await readList(`?deviceId=${kitchen.id}`)
 
     expect(resolved).toHaveLength(50)
-    expect(resolved.every(alert => alert.deviceId === kitchen.id)).toBe(true)
+    expect(resolved.every(alert => alert.device?.id === kitchen.id)).toBe(true)
     const times = resolved.map(alert => Date.parse(alert.resolvedAt as string))
     expect(times).toEqual([...times].sort((a, b) => b - a))
   })
