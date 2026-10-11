@@ -27,7 +27,7 @@ describe('the Device Models and Palettes page', () => {
     const screen = await mountLoadedDeviceModels()
 
     await expect.element(screen.getByRole('navigation', { name: 'Instance' }).getByRole('link', { name: 'Device Models and Palettes' })).toHaveAttribute('aria-current', 'page')
-    await expect.element(screen.getByText('What Kuroshiro knows about panels. A Device Model sets an image\'s size, a Palette the greys or colours it is reduced to. Which ones a Device uses is chosen in that Device\'s Settings.')).toBeVisible()
+    await expect.element(screen.getByText('What Kuroshiro knows about Device Models and Palettes. A Device Model sets an image\'s size, a Palette the greys or colours it is reduced to. Which ones a Device uses is chosen in that Device\'s Settings.')).toBeVisible()
     await expect.element(screen.getByText('Kuroshiro syncs both from TRMNL when it starts and every day at 04:00, server time. Without a connection it uses the list it was shipped with.')).toBeVisible()
   })
 

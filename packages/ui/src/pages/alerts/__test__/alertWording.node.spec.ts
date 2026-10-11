@@ -20,6 +20,11 @@ describe('why an Alert fires', () => {
     expect(words(alertWhy(alert({}), TOLD))).toBe('Battery at 14 %, below 20 %')
   })
 
+  it('says it is not yet back at the resolve point once the battery is at or above the threshold', () => {
+    expect(words(alertWhy(alert({ details: { percent: 22 } }), TOLD))).toBe('Battery at 22 %, not yet back at 25 %')
+    expect(words(alertWhy(alert({ details: { percent: 20 } }), TOLD))).toBe('Battery at 20 %, not yet back at 25 %')
+  })
+
   it('says when an offline Device was last seen and how long ago that is', () => {
     const offline = alert({ kind: 'device-offline', details: { lastSeen: at(3, 6, 31) } })
 

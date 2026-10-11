@@ -2,6 +2,7 @@ import type { AlertDetails, AlertSummary } from 'kuroshiro-shared'
 import type { Sentence } from '@/pages/devices/sentence'
 import { devicePath } from '@/pages/devices/devicePaths'
 import { mono, sentence } from '@/pages/devices/sentence'
+import { resolvesAbove } from '@/pages/instance/instanceSettingWording'
 import { pluginPath } from '@/pages/plugins/pluginPaths'
 import { clockTime, exactTime } from '@/patterns/time'
 
@@ -100,7 +101,11 @@ const NOTHING: Sentence = []
 function batteryWhy(details: AlertDetails, firing: boolean, { lowBatteryPercent }: AlertTold) {
   if (!('percent' in details))
     return NOTHING
-  return sentence(firing ? `Battery at ${details.percent} %, below ${lowBatteryPercent} %` : `Battery at ${details.percent} %`)
+  if (!firing)
+    return sentence(`Battery at ${details.percent} %`)
+  return sentence(details.percent >= lowBatteryPercent
+    ? `Battery at ${details.percent} %, not yet back at ${resolvesAbove(lowBatteryPercent)} %`
+    : `Battery at ${details.percent} %, below ${lowBatteryPercent} %`)
 }
 
 function offlineWhy(details: AlertDetails, firing: boolean, { now }: AlertTold, openedAt: string) {

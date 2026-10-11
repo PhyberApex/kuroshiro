@@ -12,7 +12,7 @@ import { fakeHousekeeping, mountHousekeeping } from './housekeepingHarness'
 
 const NOW = '2026-10-03T07:35:00.000Z'
 
-const FILE_GROUPS = ['Images no Screen uses', 'Folders of deleted Devices', 'Temporary files older than a day', 'Uploads older than a day']
+const FILE_GROUPS = ['Images no Screen uses', 'Folders of deleted Devices', 'Temporary files older than a day', 'Old uploads']
 const SCREENS = 'Screens whose image is missing'
 
 const CHECK = buildStorageCheck()
@@ -76,7 +76,7 @@ describe('housekeeping', () => {
         'Images no Screen uses 2 files 252 KB',
         'Folders of deleted Devices 1 folder 1.3 MB',
         'Temporary files older than a day 1 file 40 KB',
-        'Uploads older than a day 2 files 2.2 MB',
+        'Old uploads 2 files 2.2 MB',
         'Screens whose image is missing 1 Screen',
       ])
     })
@@ -190,7 +190,7 @@ describe('housekeeping', () => {
 
       await expect.element(dialog(screen).getByRole('heading', { name: 'Clean up 4 groups?' })).toBeVisible()
       expect(outcomeOf(screen)).toEqual({
-        Lost: 'Images no Screen uses: 2 files, 252 KB. Folders of deleted Devices: 1 folder, 1.3 MB. Temporary files older than a day: 1 file, 40 KB. Uploads older than a day: 2 files, 2.2 MB.',
+        Lost: 'Images no Screen uses: 2 files, 252 KB. Folders of deleted Devices: 1 folder, 1.3 MB. Temporary files older than a day: 1 file, 40 KB. Old uploads: 2 files, 2.2 MB.',
         Stays: 'Every Screen that has its image, and every Device. The Screen “Holiday photo”, at whose turn Kitchen shows the error Fallback Screen.',
       })
       expect(words(dialog(screen).element())).not.toContain('skipping')

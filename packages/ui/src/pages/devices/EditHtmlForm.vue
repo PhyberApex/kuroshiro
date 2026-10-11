@@ -6,10 +6,11 @@ import { updateScreen } from '@/api/screens'
 import CodeEditor from '@/components/CodeEditor.vue'
 import EditorBench from '@/components/EditorBench.vue'
 import { failureReason, notSavedSentence } from '@/components/failureReason'
+import FieldError from '@/components/FieldError.vue'
 import AddFormFoot from '@/patterns/AddFormFoot.vue'
 import { useDeviceFrame } from './deviceFrame'
 import HtmlPreview from './HtmlPreview.vue'
-import { possessive, screenName } from './screenNaming'
+import { htmlProblem, possessive, screenName } from './screenNaming'
 
 const props = defineProps<{
   device: DeviceDetail
@@ -21,6 +22,7 @@ const router = useRouter()
 const { path } = useDeviceFrame()
 
 const headingId = useId()
+const errorId = useId()
 
 const named = computed(() => screenName(props.screen.name))
 const saved = ref(props.screen.html ?? '')
@@ -29,11 +31,15 @@ const changed = computed(() => html.value !== saved.value)
 
 const saving = ref(false)
 const failure = ref<string>()
+const emptyError = ref<string>()
 
 const openedRow = computed(() => `${path.value}?screen=${props.screen.id}`)
 
 async function save() {
   if (saving.value)
+    return
+  emptyError.value = htmlProblem(html.value)
+  if (emptyError.value)
     return
   failure.value = undefined
   saving.value = true
@@ -60,7 +66,15 @@ async function save() {
     </h2>
     <EditorBench class="html-bench">
       <template #editor>
-        <CodeEditor v-model="html" mode="html" :aria-label="`HTML of ${named}`" @save="save" />
+        <CodeEditor
+          v-model="html"
+          mode="html"
+          :aria-label="`HTML of ${named}`"
+          :aria-describedby="emptyError ? errorId : undefined"
+          :invalid="Boolean(emptyError)"
+          @save="save"
+        />
+        <FieldError :id="errorId" :message="emptyError" />
       </template>
       <template #plate>
         <HtmlPreview :device="device" :html="html" :name="`Preview of ${named}`" facts />

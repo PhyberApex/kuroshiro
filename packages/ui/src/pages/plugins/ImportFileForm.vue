@@ -50,7 +50,7 @@ function add() {
       <FieldError :id="problemId" :message="importing.trouble.entered" />
     </div>
     <AddPluginFoot button="Import Plugin" :running="importing.importing" :changed="!importing.imported && file !== null" :failure="importing.trouble.failure">
-      Imports as a Poll Plugin. Field Values are not part of a file, so you enter them afterwards.
+      Imports as the Plugin Kind the file names, a Poll Plugin if it names none. Field Values are not part of a file, so you enter them afterwards.
     </AddPluginFoot>
   </form>
 </template>

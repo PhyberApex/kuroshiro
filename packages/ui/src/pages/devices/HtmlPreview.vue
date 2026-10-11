@@ -6,7 +6,7 @@ import { listDeviceModels, listPalettes } from '@/api/device-models'
 import Notice from '@/components/Notice.vue'
 import PreviewPlate from '@/components/PreviewPlate.vue'
 import DevicePreviewLines from '@/pages/plugins/DevicePreviewLines.vue'
-import { devicePreviewDrawingLine, targetFacts } from '@/pages/plugins/pluginTemplateWording'
+import { devicePreviewDrawingLine } from '@/pages/plugins/pluginTemplateWording'
 import { devicePreviewSourceOf, useDevicePreview } from '@/pages/plugins/useDevicePreview'
 import { useLoad } from '@/patterns/useLoad'
 import { htmlScreenDocument, shellTargetOf } from './htmlPreview'
@@ -82,9 +82,9 @@ const drawingNote = computed(() => devicePreview.state.value.status === 'drawing
     />
     <template v-if="facts">
       <p :id="headingId" class="facts">
-        Preview for {{ device.name }}<template v-if="worded">
-          · <span class="mono">{{ targetFacts(worded) }}</span>
-        </template>
+        <span class="label">Preview</span>
+        {{ ' ' }}
+        <span v-if="madeFor" class="for">as {{ device.name }} renders it: {{ madeFor }}</span>
       </p>
       <DevicePreviewLines
         v-if="worded"
@@ -118,11 +118,6 @@ const drawingNote = computed(() => devicePreview.state.value.status === 'drawing
   .facts {
     margin-top: var(--space-2);
     text-wrap: pretty;
-  }
-
-  .mono {
-    font-family: var(--font-mono);
-    font-size: var(--text-xs);
   }
 }
 </style>

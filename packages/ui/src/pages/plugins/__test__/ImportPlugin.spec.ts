@@ -296,7 +296,7 @@ describe('add a Plugin by importing', () => {
       await expect.element(way(screen, 'File')).toHaveAccessibleDescription('A Plugin exported from Kuroshiro or TRMNL')
       await expect.element(screen.getByRole('group', { name: 'Plugin file' }).getByText('Drop a .zip here: a Plugin as Kuroshiro or TRMNL exports it. ZIP, up to 10 MB.')).toBeVisible()
       await expect.element(fileInput(screen)).toHaveAttribute('accept', '.zip')
-      await expect.element(screen.getByText('Imports as a Poll Plugin. Field Values are not part of a file, so you enter them afterwards.')).toBeVisible()
+      await expect.element(screen.getByText('Imports as the Plugin Kind the file names, a Poll Plugin if it names none. Field Values are not part of a file, so you enter them afterwards.')).toBeVisible()
       await expect.element(screen.getByRole('combobox')).not.toBeInTheDocument()
     })
 
@@ -404,7 +404,7 @@ describe('add a Plugin by importing', () => {
       await expect.element(way(screen, 'GitHub')).toHaveAccessibleDescription('A Plugin kept in a public repository')
       await expect.element(repositoryField(screen)).toHaveAttribute('placeholder', 'https://github.com/owner/repository')
       await expect.element(repositoryField(screen)).toHaveAccessibleDescription('A public repository with the Plugin at its root, on the branch main.')
-      await expect.element(screen.getByText('Imports as a Poll Plugin, copied once. Later changes in the repository do not reach it.')).toBeVisible()
+      await expect.element(screen.getByText('Imports as the Plugin Kind the repository names, a Poll Plugin if it names none. Copied once: later changes in the repository do not reach it.')).toBeVisible()
       await expect.element(screen.getByRole('combobox')).not.toBeInTheDocument()
     })
 

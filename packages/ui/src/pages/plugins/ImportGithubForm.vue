@@ -42,7 +42,7 @@ function add() {
     </Field>
     <Notice v-if="importing.trouble.unanswered" :title="importing.trouble.unanswered" reason="Nothing was imported." action="Try again" @act="add" />
     <AddPluginFoot button="Import Plugin" :running="importing.importing" :changed="!importing.imported && entered.trim() !== ''" :failure="importing.trouble.failure">
-      Imports as a Poll Plugin, copied once. Later changes in the repository do not reach it.
+      Imports as the Plugin Kind the repository names, a Poll Plugin if it names none. Copied once: later changes in the repository do not reach it.
     </AddPluginFoot>
   </form>
 </template>

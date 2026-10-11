@@ -9,7 +9,7 @@ import AddScreenFoot from './AddScreenFoot.vue'
 import { useAddScreen } from './addScreenForm'
 import HtmlPreview from './HtmlPreview.vue'
 import ScreenNameField from './ScreenNameField.vue'
-import { screenNameProblem } from './screenNaming'
+import { htmlProblem, screenNameProblem } from './screenNaming'
 
 const props = defineProps<{
   device: DeviceDetail
@@ -25,7 +25,7 @@ useReportScreenFormChanged(changed)
 function add() {
   void addition.create(() => createScreen({ kind: 'html', deviceId: props.device.id, name: draft.name.trim(), html: draft.html }), {
     name: screenNameProblem(draft.name),
-    html: draft.html.trim() ? undefined : 'Write the HTML this Screen is rendered from.',
+    html: htmlProblem(draft.html),
   })
 }
 </script>

@@ -7,7 +7,7 @@ import { mountApp } from '@/testing/app'
 import { arrived } from '@/testing/arrivals'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import { resetViewport, resizeTo } from '@/testing/viewport'
-import { codeIn, fakeHtmlPreviewLibrary, previewed, typeAtEnd } from './htmlScreenHarness'
+import { clearAndType, codeIn, fakeHtmlPreviewLibrary, previewed, typeAtEnd } from './htmlScreenHarness'
 import { fakeKitchen, kitchenScreen, openedRow, SCREENS_OF_EVERY_KIND } from './screensViewHarness'
 
 type Mounted = Awaited<ReturnType<typeof mountApp>>
@@ -54,9 +54,9 @@ describe('edit HTML', () => {
     fakeFridgeNote()
     const screen = await mountFridgeNote()
 
-    await expect.element(screen.getByText('Preview for Kitchen · TRMNL OG (2-bit) · 800 × 480 · Greyscale, 4 levels')).toBeVisible()
+    await expect.element(screen.getByText('as Kitchen renders it: TRMNL OG (2-bit), Greyscale, 4 levels')).toBeVisible()
     await expect.element(screen.getByText('Your browser draws this. Kitchen shows it in 4 grays.')).toBeVisible()
-    await expect.element(screen.getByRole('group', { name: 'Preview for Kitchen · TRMNL OG (2-bit) · 800 × 480 · Greyscale, 4 levels' })).toBeVisible()
+    await expect.element(screen.getByRole('group', { name: 'Preview as Kitchen renders it: TRMNL OG (2-bit), Greyscale, 4 levels' })).toBeVisible()
   })
 
   it('previews the markup as it is typed, in the screen shell, and sends nothing', async () => {
@@ -81,6 +81,24 @@ describe('edit HTML', () => {
     expect(faked.writes).toEqual([{ method: 'PATCH', path: 'screens/fridge', body: { html: '<p>Back at six.</p>\n<p>{{ soup }}</p> Soup' } }])
     await openedRow(screen, 'Fridge note')
     await expect.element(screen.getByRole('alertdialog')).not.toBeInTheDocument()
+  })
+
+  it('blocks "Save HTML" on empty markup, checked in the browser, and clears once markup is written again', async () => {
+    const faked = fakeFridgeNote()
+    const screen = await mountFridgeNote()
+
+    await clearAndType(editor(screen), '  ')
+    await saveHtml(screen).click()
+
+    await expect.element(editor(screen)).toHaveAccessibleDescription('Write the HTML this Screen is rendered from.')
+    expect(editor(screen).element().closest('.code-editor')).toHaveAttribute('data-invalid')
+    expect(faked.writes).toEqual([])
+
+    await clearAndType(editor(screen), 'Milk')
+    await saveHtml(screen).click()
+
+    await expect.poll(() => path(screen)).toBe('/devices/kitchen?screen=fridge')
+    expect(faked.writes).toEqual([{ method: 'PATCH', path: 'screens/fridge', body: { html: 'Milk' } }])
   })
 
   it('saves with Ctrl S in the editor', async () => {
@@ -239,8 +257,8 @@ describe('edit HTML', () => {
       release()
 
       // Turning the response into the data: URL shown in the preview is a real FileReader round trip; on a
-      // loaded CI runner under coverage, that has taken past the default 1 s poll.
-      await expect.poll(() => previewed(), { timeout: 5000 }).toContain('<img src="data:image/png')
+      // loaded CI runner under coverage, that has outrun even a 5 s poll before the read finishes.
+      await expect.poll(() => previewed(), { timeout: 15_000 }).toContain('<img src="data:image/png')
       await expect.poll(honest).toMatch(/^As Kitchen shows it, in 4 grays, drawn at \d{2}:\d{2}\.$/)
       expect(document.querySelector('.html-preview .honest + .honest')).toBeNull()
       await expect.element(screen.getByRole('button', { name: 'Back to the browser drawing' })).toBeVisible()

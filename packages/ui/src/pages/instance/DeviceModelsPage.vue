@@ -36,7 +36,7 @@ const now = useNow()
       </template>
       <template #default="{ data }">
         <p class="lede">
-          What Kuroshiro knows about panels. A Device Model sets an image's size, a Palette the greys or colours it is reduced to. Which ones a Device uses is chosen in that Device's Settings.
+          What Kuroshiro knows about Device Models and Palettes. A Device Model sets an image's size, a Palette the greys or colours it is reduced to. Which ones a Device uses is chosen in that Device's Settings.
         </p>
         <TrmnlSyncOutcome
           :running="sync.running"
