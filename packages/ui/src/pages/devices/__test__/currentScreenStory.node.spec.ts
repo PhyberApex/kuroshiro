@@ -65,6 +65,13 @@ describe('what the plate shows and the sentences beside it', () => {
     expect(story.sentences[1]).toContainEqual({ text: 'Harbour photo', strong: true })
   })
 
+  it('names the Picked Screen the same way, as it already carries the state "upNext"', () => {
+    const picked = SCREENS.map(screen => screen.id === 'photo' ? { ...screen, picked: true } : screen)
+    const story = currentScreenStory({ device: kitchen(), screens: picked, alerts: [], now: NOW })
+
+    expect(said(story.sentences)[1]).toBe('Up next: Harbour photo, at the poll around 07:46.')
+  })
+
   it('says "at its next poll" without a time once the moment of the next poll has passed', () => {
     const story = currentScreenStory({ device: kitchen({ nextPollAt: at(7, 34) }), screens: SCREENS, alerts: [], now: NOW })
 

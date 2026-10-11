@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { api, apiErrorResponse, apiUrl } from '@/testing/api/server'
 import { mountApp } from '@/testing/app'
+import { buildDeviceDetail } from '@/testing/fixtures/devices'
 import { buildScreen } from '@/testing/fixtures/screens'
 import { resetViewport } from '@/testing/viewport'
 import { fakeKitchen, openedRow, SCREENS_OF_EVERY_KIND, words } from './screensViewHarness'
@@ -10,6 +11,7 @@ import { fakeKitchen, openedRow, SCREENS_OF_EVERY_KIND, words } from './screensV
 const dialog = () => document.querySelector('[role="alertdialog"]')
 const outcome = () => [...dialog()!.querySelectorAll('.outcome > div')].map(part => `${words(part.querySelector('dt'))} ${words(part.querySelector('dd'))}`)
 const rowNames = () => [...document.querySelectorAll('.screen-row .trigger')].map(words)
+const rowOf = (name: string) => [...document.querySelectorAll('.screen-row')].find(row => words(row.querySelector('.trigger')) === name)!
 
 afterEach(() => resetViewport())
 
@@ -171,5 +173,89 @@ describe('deleting and unassigning', () => {
 
     await expect.element(screen.getByRole('heading', { name: 'Add Kitchen\'s first Screen' })).toBeVisible()
     expect(faked.writes).toEqual([{ method: 'DELETE', path: 'screens/notes' }])
+  })
+})
+
+describe('showing next and back to order', () => {
+  it('"Show next" is offered only on an opened row Rotation could show next, not the Active Screen or already Up next', async () => {
+    fakeKitchen({ screens: SCREENS_OF_EVERY_KIND.map(screen => screen.id === 'photo' ? { ...screen, state: 'upNext' as const } : screen) })
+    const screen = await mountApp({ at: '/devices/kitchen?screen=weather' })
+    const active = await openedRow(screen, 'Weather')
+
+    expect(active.getByRole('button', { name: 'Show next' }).query()).toBeNull()
+    expect(active.getByRole('button', { name: 'Back to Order' }).query()).toBeNull()
+
+    await screen.router.replace({ query: { screen: 'photo' } })
+    const upNext = await openedRow(screen, 'Harbour photo')
+    expect(upNext.getByRole('button', { name: 'Show next' }).query()).toBeNull()
+
+    await screen.router.replace({ query: { screen: 'webcam' } })
+    const eligible = await openedRow(screen, 'Harbour webcam')
+    await expect.element(eligible.getByRole('button', { name: 'Show next' })).toBeVisible()
+  })
+
+  it('picks the Screen without a confirmation: the row reads "Up next · picked by hand" and offers "Back to Order"', async () => {
+    const faked = fakeKitchen()
+    const screen = await mountApp({ at: '/devices/kitchen?screen=webcam' })
+    const row = await openedRow(screen, 'Harbour webcam')
+
+    await row.getByRole('button', { name: 'Show next' }).click()
+
+    await expect.element(row.getByRole('button', { name: 'Back to Order' })).toBeVisible()
+    expect(faked.writes).toEqual([{ method: 'PUT', path: 'devices/kitchen/picked-screen', body: { screenId: 'webcam' } }])
+    await expect.poll(() => words(rowOf('Harbour webcam').querySelector('.state'))).toBe('Up next · picked by hand')
+    expect(words(row.element())).toContain('Picked by hand: shows at the next poll, around')
+  })
+
+  it('picking another Screen replaces the pick', async () => {
+    const faked = fakeKitchen({ screens: SCREENS_OF_EVERY_KIND.map(screen => screen.id === 'webcam' ? { ...screen, state: 'upNext' as const, picked: true } : screen) })
+    const screen = await mountApp({ at: '/devices/kitchen?screen=photo' })
+    const row = await openedRow(screen, 'Harbour photo')
+
+    await row.getByRole('button', { name: 'Show next' }).click()
+
+    await expect.element(row.getByRole('button', { name: 'Back to Order' })).toBeVisible()
+    expect(faked.writes).toEqual([{ method: 'PUT', path: 'devices/kitchen/picked-screen', body: { screenId: 'photo' } }])
+    await expect.poll(() => words(rowOf('Harbour webcam').querySelector('.state'))).toBe('')
+  })
+
+  it('"Back to Order" clears the pick, and the row returns to waiting its turn', async () => {
+    const faked = fakeKitchen({ screens: SCREENS_OF_EVERY_KIND.map(screen => screen.id === 'webcam' ? { ...screen, state: 'upNext' as const, picked: true } : screen) })
+    const screen = await mountApp({ at: '/devices/kitchen?screen=webcam' })
+    const row = await openedRow(screen, 'Harbour webcam')
+
+    await row.getByRole('button', { name: 'Back to Order' }).click()
+
+    await expect.element(row.getByRole('button', { name: 'Show next' })).toBeVisible()
+    expect(faked.writes).toEqual([{ method: 'DELETE', path: 'devices/kitchen/picked-screen' }])
+    await expect.poll(() => words(rowOf('Harbour webcam').querySelector('.state'))).toBe('')
+  })
+
+  it('shows the API\'s refusal the way the page shows other failed actions, and picks on a second try', async () => {
+    const faked = fakeKitchen()
+    api.use(http.put(apiUrl('devices/kitchen/picked-screen'), () => apiErrorResponse({ statusCode: 409, code: 'picked-screen-ineligible' }), { once: true }))
+    const screen = await mountApp({ at: '/devices/kitchen?screen=webcam' })
+    const row = await openedRow(screen, 'Harbour webcam')
+
+    await row.getByRole('button', { name: 'Show next' }).click()
+    await expect.element(screen.getByText('Not saved. Rotation could not show that Screen at the next poll.')).toBeVisible()
+    expect(faked.writes).toEqual([])
+
+    await screen.getByRole('button', { name: 'Try again' }).click()
+
+    await expect.element(row.getByRole('button', { name: 'Back to Order' })).toBeVisible()
+    expect(faked.writes).toEqual([{ method: 'PUT', path: 'devices/kitchen/picked-screen', body: { screenId: 'webcam' } }])
+  })
+
+  it.each([
+    ['a mirrored Device', { isMirrored: true }],
+    ['a Proxied Device', { isMirrored: true, isProxied: true }],
+  ])('is offered on neither %s', async (_name, deviceOverrides) => {
+    fakeKitchen({ device: buildDeviceDetail({ id: 'kitchen', name: 'Kitchen', ...deviceOverrides }) })
+    const screen = await mountApp({ at: '/devices/kitchen?screen=webcam' })
+    const row = await openedRow(screen, 'Harbour webcam')
+
+    expect(row.getByRole('button', { name: 'Show next' }).query()).toBeNull()
+    expect(row.getByRole('button', { name: 'Back to Order' }).query()).toBeNull()
   })
 })

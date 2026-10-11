@@ -18,6 +18,7 @@ import OpenedScreen from './OpenedScreen.vue'
 import RowSchedule from './RowSchedule.vue'
 import ScheduleEditor from './ScheduleEditor.vue'
 import { possessive, screenName } from './screenNaming'
+import ScreenPick from './ScreenPick.vue'
 import ScreenRemoval from './ScreenRemoval.vue'
 import ScreenRename from './ScreenRename.vue'
 import ScreenSource from './ScreenSource.vue'
@@ -196,6 +197,7 @@ const pausedNote = computed(() => sentence(
               </Button>
             </template>
             <template #actionsAfter>
+              <ScreenPick :screen="item" :device="device" :reload="reload" />
               <ScreenRemoval :screen="item" :device="device" @removed="showWithoutRemoved" />
             </template>
           </OpenedScreen>

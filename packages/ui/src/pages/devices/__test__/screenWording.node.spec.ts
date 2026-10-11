@@ -45,6 +45,12 @@ describe('why a Screen is or is not showing', () => {
     expect(whyOf(SCREENS[2]!, kitchen({ nextPollAt: new Date(NOW.getTime() - 60_000).toISOString() }))).toEqual(['Shows at its next poll.'])
   })
 
+  it('up next, picked by hand: Rotation carries on in Order from it', () => {
+    const picked = { ...SCREENS[2]!, picked: true }
+    expect(whyOf(picked)).toEqual([`Picked by hand: shows at the next poll, around ${nextPoll}. Rotation then carries on in Order from it.`])
+    expect(whyOf(picked, kitchen({ nextPollAt: new Date(NOW.getTime() - 60_000).toISOString() }))).toEqual(['Picked by hand: shows at its next poll. Rotation then carries on in Order from it.'])
+  })
+
   it('with its Schedule off', () => {
     expect(whyOf(SCREENS[3]!)).toEqual(['Its Schedule is switched off, so Rotation passes over it. The days and hours are kept.'])
   })
@@ -117,6 +123,15 @@ describe('the words of a Screen State on its row', () => {
 
   it('are none on a mirrored Device', () => {
     expect(screenStateWords(buildScreen({ renderSignal: 'hold' }), kitchen({ isMirrored: true }))).toEqual({ words: '', qualifier: undefined })
+  })
+
+  it('the Picked Screen gains "picked by hand", and only while it is Up next', () => {
+    expect(screenStateWords(buildScreen({ state: 'upNext', picked: true }), kitchen())).toEqual({ words: 'Up next', qualifier: 'picked by hand' })
+    expect(screenStateWords(buildScreen({ state: 'active', picked: true }), kitchen())).toEqual({ words: 'Active Screen', qualifier: undefined })
+  })
+
+  it('combines "picked by hand" with "holding image"', () => {
+    expect(screenStateWords(buildScreen({ state: 'upNext', picked: true, renderSignal: 'hold' }), kitchen())).toEqual({ words: 'Up next', qualifier: 'picked by hand · holding image' })
   })
 })
 

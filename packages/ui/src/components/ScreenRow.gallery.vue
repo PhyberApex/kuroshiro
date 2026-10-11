@@ -31,6 +31,8 @@ const openHeld = ref('trains')
 
 const mirrored = looks.value.slice(0, 2).map(screen => ({ ...screen, state: null }))
 
+const picked = looks.value.slice(1, 2).map(screen => ({ ...screen, picked: true }))
+
 const dragged = looks.value.slice(0, 4).map(screen => ({ ...screen, state: null }))
 
 const renamed = looks.value.slice(4, 5)
@@ -95,6 +97,20 @@ const hours = (screen: ScreenRead) => screen.schedule?.startTime ? `${screen.sch
             </template>
             <template v-if="order === 1" #state>
               <span>Active Screen <span class="qualifier">· holding image</span></span>
+            </template>
+          </ScreenRow>
+        </template>
+      </ScreenRows>
+    </Specimen>
+    <Specimen caption="the Picked Screen: Up next · picked by hand" wide>
+      <ScreenRows class="stretch" :items="picked" sortable>
+        <template #default="{ item }">
+          <ScreenRow :value="item.id" :name="item.name" :kind="SCREEN_KIND_LABELS[item.kind]" state="upNext">
+            <template #thumbnail>
+              <Plate :name="item.name" :src="image" size="row" lazy />
+            </template>
+            <template #state>
+              <span>Up next <span class="qualifier">· picked by hand</span></span>
             </template>
           </ScreenRow>
         </template>

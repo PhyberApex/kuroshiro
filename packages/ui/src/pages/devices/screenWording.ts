@@ -18,13 +18,18 @@ function wordsOfTurn(state: 'active' | 'upNext', { sleep }: DeviceDetail) {
   return state === 'active' ? 'Active Screen, paused' : `Up next at ${sleep.end}`
 }
 
-/** A row's Screen State with its qualifiers: paused during Sleep Mode's window, and the `hold` Render Signal. */
-export function screenStateWords({ state, renderSignal }: Pick<ScreenRead, 'state' | 'renderSignal'>, device: DeviceDetail): ScreenStateWords {
+/** A row's Screen State with its qualifiers: paused during Sleep Mode's window, the Picked Screen, and the `hold` Render Signal. */
+export function screenStateWords({ state, renderSignal, picked }: Pick<ScreenRead, 'state' | 'renderSignal' | 'picked'>, device: DeviceDetail): ScreenStateWords {
   if (device.isMirrored)
     return { words: '', qualifier: undefined }
   const holding = renderSignal === 'hold'
-  if (state === 'active' || state === 'upNext')
-    return { words: wordsOfTurn(state, device), qualifier: holding ? 'holding image' : undefined }
+  if (state === 'active' || state === 'upNext') {
+    const qualifiers = [
+      state === 'upNext' && picked ? 'picked by hand' : undefined,
+      holding ? 'holding image' : undefined,
+    ].filter((qualifier): qualifier is string => qualifier !== undefined)
+    return { words: wordsOfTurn(state, device), qualifier: qualifiers.length > 0 ? qualifiers.join(' · ') : undefined }
+  }
   if (state === null)
     return { words: holding ? 'Holding image' : '', qualifier: undefined }
   return { words: SCREEN_STATE_LABELS[state], qualifier: undefined }
@@ -68,8 +73,13 @@ function active({ screen, device }: ScreenAsked) {
   return servedAt ? `On the Device since the ${clockTime(new Date(servedAt))} poll.` : 'On the Device.'
 }
 
-function upNext({ device, now }: ScreenAsked) {
+function upNext({ screen, device, now }: ScreenAsked) {
   const nextPoll = nextPollTime(device, now)
+  if (screen.picked) {
+    return nextPoll
+      ? `Picked by hand: shows at the next poll, around ${nextPoll}. Rotation then carries on in Order from it.`
+      : 'Picked by hand: shows at its next poll. Rotation then carries on in Order from it.'
+  }
   return nextPoll ? `Shows at the next poll, around ${nextPoll}.` : 'Shows at its next poll.'
 }
 
