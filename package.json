@@ -30,7 +30,7 @@
     "prepare": "husky && puppeteer browsers install"
   },
   "devDependencies": {
-    "concurrently": "10.0.5",
+    "concurrently": "10.0.6",
     "dotenv-cli": "^11.0.0",
     "fallow": "3.32.0",
     "husky": "9.1.7",
