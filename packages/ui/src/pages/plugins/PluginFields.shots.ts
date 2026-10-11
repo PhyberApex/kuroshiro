@@ -1,14 +1,7 @@
 import type { PluginFieldRead } from 'kuroshiro-shared'
-import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
-import { api, apiUrl } from '@/testing/api/server'
-import { fakeShellReads, mountApp } from '@/testing/app'
-import { arrived } from '@/testing/arrivals'
-import { buildInstanceSettings } from '@/testing/fixtures/instance'
 import { buildPluginDetail, buildPluginField } from '@/testing/fixtures/plugins'
-import { expectPageScreenshots } from '@/testing/screenshots'
-import { freezeTime } from '@/testing/time'
-import { fakePreviewData, holdPreviewLibrary } from './__test__/pluginPageHarness'
+import { shootPluginPage } from './__test__/pluginPageHarness'
 
 const field = (keyname: string, label: string, overrides: Partial<PluginFieldRead>) => buildPluginField({ id: keyname, keyname, label, ...overrides })
 
@@ -40,21 +33,14 @@ const weather = buildPluginDetail({
 
 describe('the Field Values and the Plugin Fields of a Plugin', () => {
   it('with required Plugin Fields empty and the tucked section opened by the address', async () => {
-    freezeTime('2026-10-03T07:35:00.000Z')
-    fakeShellReads()
-    api.use(
-      http.get(apiUrl('settings'), () => HttpResponse.json(buildInstanceSettings())),
-      http.get(apiUrl('plugins/weather'), () => HttpResponse.json(weather)),
-    )
-    holdPreviewLibrary()
-    fakePreviewData()
-    const screen = await mountApp({ at: '/plugins/weather#fields' })
-
-    await expect.element(screen.getByRole('link', { name: 'Kitchen', exact: true }).first()).toBeVisible()
-    await expect.element(screen.getByRole('button', { name: 'Add a Plugin Field' })).toBeVisible()
-    await expect.element(screen.getByRole('button', { name: 'Replace Station token' })).toBeVisible()
-    await arrived()
-    window.scrollTo(0, 0)
-    await expectPageScreenshots('plugin-fields')
+    await shootPluginPage('plugin-fields', {
+      at: '/plugins/weather#fields',
+      plugin: weather,
+      assert: async (screen) => {
+        await expect.element(screen.getByRole('link', { name: 'Kitchen', exact: true }).first()).toBeVisible()
+        await expect.element(screen.getByRole('button', { name: 'Add a Plugin Field' })).toBeVisible()
+        await expect.element(screen.getByRole('button', { name: 'Replace Station token' })).toBeVisible()
+      },
+    })
   })
 })

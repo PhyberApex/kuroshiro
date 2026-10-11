@@ -7,7 +7,7 @@ import { fakeShellReads, mountApp } from '@/testing/app'
 import { buildDeviceModel, buildDeviceModelList } from '@/testing/fixtures/device-models'
 import { buildDeviceSummary } from '@/testing/fixtures/devices'
 import { buildFirmware, buildFirmwareList } from '@/testing/fixtures/firmware'
-import { buildInstanceSettings } from '@/testing/fixtures/instance'
+import { buildInstanceFacts, buildInstanceSettings } from '@/testing/fixtures/instance'
 import { freezeTime } from '@/testing/time'
 
 export const NOW = '2026-10-03T07:35:00.000Z'
@@ -148,6 +148,15 @@ export function fakeFirmware({ firmware = LIBRARY, lastSync = { ranAt: '2026-10-
     }),
   )
   return faked
+}
+
+/** Mounts an Instance page at `at` for a shot, with the three Devices and the version every Instance shot shares faked. */
+export async function mountInstancePageForShot(at: string) {
+  fakeShellReads({
+    instance: buildInstanceFacts({ version: '0.18.0' }),
+    devices: Object.values(DEVICES).map(device => buildDeviceSummary(device)),
+  })
+  return mountApp({ at })
 }
 
 export async function mountFirmware() {
