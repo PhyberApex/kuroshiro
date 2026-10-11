@@ -29,6 +29,7 @@ import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { convertToPng, downloadImage } from '../utils/imageUtils.js'
 import { parseHeaderInt } from '../utils/parseHeaderInt.js'
 import { resolveAppPath } from '../utils/pathHelper.js'
+import { sleepImagePath, sleepImageUrl } from './device-sleep-image.service.js'
 import { Device } from './devices.entity.js'
 import { Display } from './display.js'
 import { DisplayScreen } from './displayScreen.js'
@@ -416,7 +417,7 @@ export class DeviceDisplayService {
   private async buildSleepResponse(device: Device, now: Date, report: HeaderReport): Promise<DisplayAnswer> {
     const refreshRate = secondsUntilSleepEnd(device.sleepEndTime!, now)
     const { filename, imgUrl, served } = device.sleepScreenEnabled
-      ? { filename: 'sleep.png', imgUrl: await this.fallbackImageUrl({ kind: 'sleep' }, device), served: servedFallback('sleep', 'asleep') }
+      ? { ...await this.resolveSleepScreenImage(device), served: servedFallback('sleep', 'asleep') }
       : await this.resolveFrozenImage(device)
     return {
       display: new Display({
@@ -432,6 +433,22 @@ export class DeviceDisplayService {
       }),
       served,
     }
+  }
+
+  /**
+   * The dedicated Sleep screen: the Device's own uploaded sleep image when it
+   * has one, else the shared `sleep` Fallback Screen (ADR-0013's follow-up).
+   * The filename changes only when the image does, so an unchanged image
+   * never sends the Device redrawing.
+   */
+  private async resolveSleepScreenImage(device: Device): Promise<{ filename: string, imgUrl: string }> {
+    if (device.sleepImageGeneratedAt && await fileExists(sleepImagePath(device.id))) {
+      return {
+        filename: `sleep-image_${device.sleepImageGeneratedAt.toISOString()}`,
+        imgUrl: sleepImageUrl(this.configService.get<string>('api_url')!, device.id),
+      }
+    }
+    return { filename: 'sleep.png', imgUrl: await this.fallbackImageUrl({ kind: 'sleep' }, device) }
   }
 
   /**
@@ -469,9 +486,10 @@ export class DeviceDisplayService {
 
     if (asleep && device.sleepScreenEnabled) {
       this.logger.log(`Device ${device.id} is asleep. Returning the dedicated sleep screen.`)
+      const { filename, imgUrl } = await this.resolveSleepScreenImage(device)
       return new DisplayScreen({
-        filename: 'sleep.png',
-        image_url: await this.fallbackImageUrl({ kind: 'sleep' }, device),
+        filename,
+        image_url: imgUrl,
         refresh_rate: refreshRate,
         rendered_at: now,
       })

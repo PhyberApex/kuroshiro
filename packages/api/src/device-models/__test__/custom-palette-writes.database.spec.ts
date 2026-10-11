@@ -1,6 +1,7 @@
 import type { ConfigService } from '@nestjs/config'
 import type { PaletteRead, ScreenRead } from 'kuroshiro-shared'
 import type { DataSource } from 'typeorm'
+import type { DeviceSleepImageService } from '../../devices/device-sleep-image.service.js'
 import type { HttpTestApp } from '../../test/httpApp.js'
 import * as fs from 'node:fs'
 import path from 'node:path'
@@ -59,7 +60,8 @@ describe('creating, changing and deleting a custom Palette, against a real datab
     const deviceModels = new DeviceModelsService(database.getRepository(DeviceModel), paletteSelection)
     const reads = new DeviceModelReadsService(database.getRepository(Device), deviceModels, paletteSelection, new SyncRunService(database.getRepository(SyncRun)))
     const screens = new ScreensService(database.getRepository(Screen), database.getRepository(Device), asService<ConfigService>({ get: () => false }), deviceModels)
-    customPalettes = new CustomPalettesService(database.getRepository(Palette), database.getRepository(Device), paletteSelection, screens)
+    const sleepImage = asService<DeviceSleepImageService>({ reconvert: vi.fn().mockResolvedValue(undefined) })
+    customPalettes = new CustomPalettesService(database.getRepository(Palette), database.getRepository(Device), paletteSelection, screens, sleepImage)
     const fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
     const screenReads = new ScreenReadsService(database.getRepository(Screen), database.getRepository(Device), database.getRepository(Alert), fieldValues)
 

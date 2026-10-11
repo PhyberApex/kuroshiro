@@ -2,6 +2,7 @@ import type { ApiErrorCode } from 'kuroshiro-shared'
 import type { Buffer } from 'node:buffer'
 import type { DeepPartial } from 'typeorm'
 import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity.js'
+import type { StagedImagePaths } from '../utils/stagedImageUpload.js'
 import { randomUUID } from 'node:crypto'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
@@ -19,12 +20,11 @@ import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { convertToPng, downloadImage, readImageSize } from '../utils/imageUtils.js'
 import { resolveAppPath } from '../utils/pathHelper.js'
 import { assertPublicUrl } from '../utils/ssrfGuard.js'
+import { assertUploadAllowed, deleteFileIfExists, refusingUnreadableImage, stageUpload, writeUpload } from '../utils/stagedImageUpload.js'
 import { CreateScreenDto } from './dto/create-screen.dto.js'
 import { UpdateScreenDto } from './dto/update-screen.dto.js'
 import { closeGapInOrder, joinEndOfOrder, writeOrder } from './screen-order.js'
 import { Screen } from './screens.entity.js'
-
-interface StagedPaths { originalPath: string, imagePath: string }
 
 type FileFacts = Pick<Screen, 'fileOriginalName' | 'fileWidth' | 'fileHeight' | 'fileBytes' | 'fileUploadedAt'>
 
@@ -75,7 +75,7 @@ export class ScreensService {
         throw new ValidationException([{ path: 'file', message: 'Only a File Screen takes a file.' }])
       return
     }
-    this.assertUploadAllowed(file)
+    assertUploadAllowed(this.configService, file, 'A File Screen needs a file.')
   }
 
   /** The kind's own columns, with its image stored under the given Screen id when the kind keeps one. */
@@ -151,47 +151,16 @@ export class ScreensService {
     const screen = await this.findScreenWithDevice(id)
     if (screen.type !== 'file')
       throw new ApiException(HttpStatus.BAD_REQUEST, 'screen-field-not-for-kind', 'Only a File Screen has an image to replace.')
-    this.assertUploadAllowed(file)
+    assertUploadAllowed(this.configService, file, 'A File Screen needs a file.')
     return screen
-  }
-
-  private assertUploadAllowed(file?: Express.Multer.File): void {
-    if (this.configService.get<boolean>('demo_mode'))
-      throw new ApiException(HttpStatus.FORBIDDEN, 'demo-mode', 'A file cannot be uploaded in demo mode.')
-    if (!file)
-      throw new ValidationException([{ path: 'file', message: 'A File Screen needs a file.' }])
   }
 
   /** Where an image is written before it replaces the stored one, so a failed fetch or conversion leaves the stored one alone. */
   private stageImage(device: Device, screenId: string) {
-    const token = randomUUID()
-    const originalPath = resolveAppPath('public', 'screens', 'devices', device.id, `${token}.staging.original`)
-    const imagePath = resolveAppPath('public', 'screens', 'devices', device.id, `${token}.staging.png`)
-    const discard = async (): Promise<void> => {
-      await this.deleteFileIfExists(originalPath)
-      await this.deleteFileIfExists(imagePath)
-    }
-    return {
-      originalPath,
-      imagePath,
-      discard,
-      /** Runs `produce` against the staged paths and moves both files over the Screen's own on success. */
-      store: async <T>(produce: (staged: StagedPaths) => Promise<T>): Promise<T> => {
-        try {
-          const result = await produce({ originalPath, imagePath })
-          await fs.promises.rename(originalPath, this.originalImagePath(device.id, screenId))
-          await fs.promises.rename(imagePath, this.screenImagePath(device.id, screenId))
-          return result
-        }
-        catch (err) {
-          await discard()
-          throw err
-        }
-      },
-    }
+    return stageUpload(this.originalImagePath(device.id, screenId), this.screenImagePath(device.id, screenId), this.logger)
   }
 
-  private async fetchKeptImage(device: Device, url: string, staged: StagedPaths): Promise<void> {
+  private async fetchKeptImage(device: Device, url: string, staged: StagedImagePaths): Promise<void> {
     if (this.configService.get<boolean>('demo_mode'))
       assertPublicUrl(url)
     const target = await this.deviceModels.renderTargetFor(device)
@@ -211,18 +180,14 @@ export class ScreensService {
     }
   }
 
-  private async convertUpload(device: Device, file: Express.Multer.File, staged: StagedPaths): Promise<FileFacts> {
+  private async convertUpload(device: Device, file: Express.Multer.File, staged: StagedImagePaths): Promise<FileFacts> {
     const target = await this.deviceModels.renderTargetFor(device)
-    await fs.promises.mkdir(path.dirname(staged.originalPath), { recursive: true })
-    await fs.promises.writeFile(staged.originalPath, file.buffer)
-    try {
+    await writeUpload(staged.originalPath, file)
+    return refusingUnreadableImage(this.logger, async () => {
       const { width, height } = await readImageSize(staged.originalPath, this.logger)
       await convertToPng(staged.originalPath, staged.imagePath, target, this.logger)
       return { fileOriginalName: file.originalname, fileWidth: width, fileHeight: height, fileBytes: file.size, fileUploadedAt: new Date() }
-    }
-    catch (err) {
-      throw this.refuseImage(err, HttpStatus.BAD_REQUEST, 'image-unreadable', 'The file is not an image Kuroshiro can read.')
-    }
+    })
   }
 
   /** Builds the refusal of an image; the cause goes to the log, not to the client. */
@@ -315,8 +280,8 @@ export class ScreensService {
   }
 
   private async deleteImages(deviceId: string, screenId: string): Promise<void> {
-    await this.deleteFileIfExists(this.screenImagePath(deviceId, screenId))
-    await this.deleteFileIfExists(this.originalImagePath(deviceId, screenId))
+    await deleteFileIfExists(this.screenImagePath(deviceId, screenId), this.logger)
+    await deleteFileIfExists(this.originalImagePath(deviceId, screenId), this.logger)
   }
 
   private screenImagePath(deviceId: string, screenId: string): string {
@@ -325,17 +290,5 @@ export class ScreensService {
 
   private originalImagePath(deviceId: string, screenId: string): string {
     return resolveAppPath('public', 'screens', 'devices', deviceId, `${screenId}.original`)
-  }
-
-  private async deleteFileIfExists(filePath: string): Promise<void> {
-    try {
-      await fs.promises.unlink(filePath)
-      this.logger.log(`Deleted file: ${filePath}`)
-    }
-    catch (err) {
-      const errno = err as NodeJS.ErrnoException
-      if (errno.code !== 'ENOENT')
-        this.logger.error(`Failed to delete file: ${filePath} - ${errno.message}`)
-    }
   }
 }

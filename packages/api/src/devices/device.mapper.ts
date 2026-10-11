@@ -5,6 +5,7 @@ import { batteryPercentFromVoltage, SPECIAL_FUNCTIONS } from 'kuroshiro-shared'
 import { FALLBACK_SCREEN_TEMPLATE_VERSION } from '../device-models/fallback-screen-templates.js'
 import { screenNameOf } from '../screens/screen-name.js'
 import { toImagePath, toIsoString, toIsoStringOrNull } from '../utils/readModel.js'
+import { sleepImageRootRelativePath } from './device-sleep-image.service.js'
 import { nextPollOf } from './next-poll.js'
 import { isDeviceAsleep, nextSleepEnd, toClockTime } from './sleep-mode.js'
 
@@ -167,7 +168,7 @@ export function toDeviceDetail(device: Device, facts: DeviceDetailFacts): Device
       deviceReset: device.resetDevice,
       firmwarePush: device.updateFirmware,
     },
-    sleepImagePath: null,
+    sleepImagePath: device.sleepImageGeneratedAt ? toImagePath(sleepImageRootRelativePath(device.id), device.sleepImageGeneratedAt) : null,
     sensors: facts.sensors.map(({ kind, value, unit }) => ({ kind, value, unit })),
     screenCount: facts.screenCount,
   }

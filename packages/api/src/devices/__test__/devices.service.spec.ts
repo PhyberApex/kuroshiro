@@ -5,6 +5,7 @@ import type { PaletteSelectionService } from '../../device-models/palette-select
 import type { FirmwareService } from '../../firmware/firmware.service.js'
 import type { ScreensService } from '../../screens/screens.service.js'
 import type { MockDeviceModelsService, MockPaletteSelectionService } from '../../test/mockDeviceModelsService.js'
+import type { DeviceSleepImageService } from '../device-sleep-image.service.js'
 import type { Device } from '../devices.entity.js'
 import { BadRequestException } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -23,6 +24,7 @@ describe('devicesService', () => {
   let paletteSelection: MockPaletteSelectionService
   let firmwareService: { findById: ReturnType<typeof vi.fn> }
   let screensService: { reconvertImageScreens: ReturnType<typeof vi.fn> }
+  let deviceSleepImage: { reconvert: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     repo = createMockRepository<Device>()
@@ -31,12 +33,14 @@ describe('devicesService', () => {
     paletteSelection.supportsPalette.mockImplementation(async (model: DeviceModel, palette: Palette) => model.paletteIds.includes(palette.id))
     firmwareService = { findById: vi.fn() }
     screensService = { reconvertImageScreens: vi.fn().mockResolvedValue(0) }
+    deviceSleepImage = { reconvert: vi.fn().mockResolvedValue(undefined) }
     service = new DevicesService(
       asRepository(repo),
       asService<DeviceModelsService>(deviceModels),
       asService<PaletteSelectionService>(paletteSelection),
       asService<FirmwareService>(firmwareService),
       asService<ScreensService>(screensService),
+      asService<DeviceSleepImageService>(deviceSleepImage),
     )
   })
 
@@ -119,6 +123,7 @@ describe('devicesService', () => {
       expect(result.deviceModel).toBe(V2)
       expect(result.palette).toBe(GRAY_16)
       expect(screensService.reconvertImageScreens).toHaveBeenCalledWith(result)
+      expect(deviceSleepImage.reconvert).toHaveBeenCalledWith(result)
     })
 
     it('assigns a new model together with an explicitly chosen palette', async () => {
@@ -146,6 +151,7 @@ describe('devicesService', () => {
       paletteSelection.findPalette.mockResolvedValue(GRAY_4)
       await service.update(DEVICE_ID, { name: 'renamed', deviceModelName: 'og_plus', paletteId: 'gray-4' })
       expect(screensService.reconvertImageScreens).not.toHaveBeenCalled()
+      expect(deviceSleepImage.reconvert).not.toHaveBeenCalled()
     })
 
     it('rejects an unknown model', async () => {
