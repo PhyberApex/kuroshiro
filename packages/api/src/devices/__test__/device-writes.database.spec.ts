@@ -194,7 +194,64 @@ describe('the Device write and delete against a real database', () => {
 
       const response = await patch(device.id, { specialFunction: 'rewind', resetDevice: true })
 
-      expect(((await response.json()) as DeviceDetail).pending).toEqual({ specialFunction: 'rewind', deviceReset: true, firmwarePush: false })
+      expect(((await response.json()) as DeviceDetail).pending).toEqual({ specialFunction: 'rewind', deviceReset: true, deviceResetNewApikey: false, firmwarePush: false })
+    })
+
+    describe('a Device Reset with a new API key', () => {
+      it('shows the rotation as pending alongside the Device Reset', async () => {
+        const device = await registerDevice()
+
+        const response = await patch(device.id, { resetDevice: true, resetDeviceNewApikey: true })
+
+        expect(((await response.json()) as DeviceDetail).pending).toEqual({ specialFunction: 'identify', deviceReset: true, deviceResetNewApikey: true, firmwarePush: false })
+      })
+
+      it('refuses it for a Proxied Device and stores nothing', async () => {
+        const device = await registerDevice({ mirrorEnabled: true, mirrorMac: 'AA:BB:CC:DD:EE:01', mirrorApikey: 'k' })
+
+        const response = await patch(device.id, { resetDevice: true, resetDeviceNewApikey: true })
+
+        expect(response.status).toBe(409)
+        expect(await response.json()).toMatchObject({ code: 'device-reset-apikey-proxied' })
+        expect((await stored(device.id)).resetDeviceNewApikey).toBe(false)
+      })
+
+      it('works on a mirrored (non-proxied) Device', async () => {
+        const device = await registerDevice({ mirrorEnabled: true, mirrorMac: 'AA:BB:CC:DD:EE:99', mirrorApikey: 'k' })
+
+        const response = await patch(device.id, { resetDevice: true, resetDeviceNewApikey: true })
+
+        expect(response.status).toBe(200)
+        expect(((await response.json()) as DeviceDetail).pending.deviceResetNewApikey).toBe(true)
+      })
+
+      it('clears a previously pending rotation when a later Device Reset explicitly leaves it unchecked', async () => {
+        const device = await registerDevice()
+        await patch(device.id, { resetDevice: true, resetDeviceNewApikey: true })
+
+        const response = await patch(device.id, { resetDevice: true, resetDeviceNewApikey: false })
+
+        expect(((await response.json()) as DeviceDetail).pending.deviceResetNewApikey).toBe(false)
+      })
+
+      it('clears the pending rotation together with cancelling the Device Reset it rode on', async () => {
+        const device = await registerDevice()
+        await patch(device.id, { resetDevice: true, resetDeviceNewApikey: true })
+
+        const response = await patch(device.id, { resetDevice: false, resetDeviceNewApikey: false })
+
+        expect(((await response.json()) as DeviceDetail).pending).toMatchObject({ deviceReset: false, deviceResetNewApikey: false })
+      })
+
+      it('refuses a later PATCH that turns the Device Proxied while a rotation is still pending from an earlier one', async () => {
+        const device = await registerDevice({ mirrorEnabled: true, mirrorMac: 'AA:BB:CC:DD:EE:99', mirrorApikey: 'k' })
+        await patch(device.id, { resetDevice: true, resetDeviceNewApikey: true })
+
+        const response = await patch(device.id, { mirrorMac: device.mac })
+
+        expect(response.status).toBe(409)
+        expect(await response.json()).toMatchObject({ code: 'device-reset-apikey-proxied' })
+      })
     })
 
     it('resets the Palette to the richest of a new Device Model and converts stored images again', async () => {

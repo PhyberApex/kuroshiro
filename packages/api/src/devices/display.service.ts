@@ -25,11 +25,13 @@ import { RENDER_FAILED, RENDER_HELD, RENDER_SKIPPED } from '../screens/render-ou
 import { Screen } from '../screens/screens.entity.js'
 import { fileExists } from '../utils/fileExists.js'
 import { fileModifiedAt } from '../utils/fileModifiedAt.js'
+import generateApikey from '../utils/generateApikey.js'
 import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { convertToPng, downloadImage } from '../utils/imageUtils.js'
 import { parseHeaderInt } from '../utils/parseHeaderInt.js'
 import { resolveAppPath } from '../utils/pathHelper.js'
 import { sleepImagePath, sleepImageUrl } from './device-sleep-image.service.js'
+import { isProxiedDevice } from './device-update-rules.js'
 import { Device } from './devices.entity.js'
 import { Display } from './display.js'
 import { DisplayScreen } from './displayScreen.js'
@@ -156,6 +158,11 @@ export class DeviceDisplayService {
     // Handling reset
     const resetDevice = device.resetDevice
     device.resetDevice = false
+    // "Also give {Device} a new API key" (ADR-0039): rotated in this same poll, authenticated with the old key,
+    // so a Device that wipes itself and runs setup before the response arrives still fetches the new one.
+    if (resetDevice && device.resetDeviceNewApikey)
+      device.apikey = generateApikey()
+    device.resetDeviceNewApikey = false
     // A Special Function fires once: this response acknowledges it, the next poll gets 'none'
     const specialFunction = device.specialFunction ?? 'none'
     device.specialFunction = 'none'
@@ -364,14 +371,11 @@ export class DeviceDisplayService {
     }
   }
 
-  /** A Device mirrors itself (proxy) when TRMNL knows it by its own MAC; a different mirror MAC is fetched through `current_screen` instead. */
+  /** Called only once `device.mirrorEnabled` is known true, so this is `isProxiedDevice`'s MAC check: a different mirror MAC is fetched through `current_screen` instead. */
   private isProxiedMirror(device: Device): boolean {
-    if (device.mac === device.mirrorMac) {
-      this.logger.log(`MACs are identical we should proxy the device.`)
-      return true
-    }
-    this.logger.log(`MACs are different we should mirror with current_screen endpoint.`)
-    return false
+    const proxy = isProxiedDevice(device)
+    this.logger.log(proxy ? `MACs are identical we should proxy the device.` : `MACs are different we should mirror with current_screen endpoint.`)
+    return proxy
   }
 
   /** The fields a proxied fetch's response overrides; a field TRMNL's response left out keeps what was served before. */

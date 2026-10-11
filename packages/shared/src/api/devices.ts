@@ -104,7 +104,7 @@ export interface DeviceDetail extends DeviceSummary {
   palette: { id: string, name: string, kind: 'official' | 'custom' } | null
   mirror: { enabled: boolean, mac: string | null, apikeySet: boolean }
   targetFirmware: { id: string, version: string, kind: 'official-synced' | 'custom', label: string | null, deprecated: boolean } | null
-  pending: { specialFunction: SpecialFunction | null, deviceReset: boolean, firmwarePush: boolean }
+  pending: { specialFunction: SpecialFunction | null, deviceReset: boolean, deviceResetNewApikey: boolean, firmwarePush: boolean }
   sleepImagePath: string | null
   sensors: SensorReading[]
   screenCount: number
@@ -138,6 +138,8 @@ export interface UpdateDeviceInput {
   mirrorApikey?: string
   specialFunction?: SpecialFunction | 'none'
   resetDevice?: boolean
+  /** Rides on `resetDevice: true` (ADR-0039): the key is rotated in the poll that delivers the Reset. Refused with 409 `device-reset-apikey-proxied` on a Proxied Device. */
+  resetDeviceNewApikey?: boolean
   /** `null` clears the target, refused with 409 `firmware-push-pending` while a push is pending. */
   targetFirmwareId?: string | null
   /** `true` is refused with 409 `firmware-push-without-target` or `firmware-push-mirrored`. */

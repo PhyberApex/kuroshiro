@@ -41,6 +41,8 @@ defineSlots<{
   lost?: () => unknown
   /** What stays. */
   stays?: () => unknown
+  /** Between "Stays" and the buttons: a control that changes what the confirmation does, e.g. a checkbox "Stays" words itself around. */
+  options?: () => unknown
   /** Beside the safe choice of a dialog with nothing to confirm: a link to where the obstacle is removed. */
   also?: () => unknown
 }>()
@@ -108,6 +110,7 @@ function close(event: Event) {
                   <dd><slot name="stays" /></dd>
                 </div>
               </dl>
+              <slot name="options" />
             </div>
           </AlertDialogDescription>
           <FieldError class="failure" :message="failure" />

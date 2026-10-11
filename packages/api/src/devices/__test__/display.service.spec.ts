@@ -698,6 +698,42 @@ describe('deviceDisplayService', () => {
 
       expect(result.reset_firmware).toBe(false)
     })
+
+    it('rotates the apikey and clears the rotation flag when a pending reset asks for a new key', async () => {
+      primeNoScreen(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, resetDevice: true, resetDeviceNewApikey: true }))
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.reset_firmware).toBe(true)
+      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ resetDeviceNewApikey: false }))
+      expect(deviceRepo.save.mock.calls[0][0].apikey).not.toBe('token')
+    })
+
+    it('leaves the apikey unchanged when a pending reset does not ask for a new key', async () => {
+      primeNoScreen(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, resetDevice: true, resetDeviceNewApikey: false }))
+
+      await service.getCurrentImage(headers)
+
+      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ apikey: 'token' }))
+    })
+
+    it('does not rotate the apikey from a stray rotation flag with no reset pending', async () => {
+      primeNoScreen(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, resetDevice: false, resetDeviceNewApikey: true }))
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.reset_firmware).toBe(false)
+      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ apikey: 'token', resetDeviceNewApikey: false }))
+    })
+
+    it('rotates the apikey on a non-proxy mirrored Device too', async () => {
+      primeMirror(makeDevice({ ...mirroredDevice('different-mac', true), resetDeviceNewApikey: true }), { filename: 'mirror.png', image_url: 'http://example.com/image.jpg' })
+
+      await service.getCurrentImage(headers)
+
+      expect(deviceRepo.save.mock.calls[0][0].apikey).not.toBe('token')
+      expect(deviceRepo.save.mock.calls[0][0].resetDeviceNewApikey).toBe(false)
+    })
   })
 
   describe('firmware push', () => {

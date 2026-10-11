@@ -96,6 +96,10 @@ export class UpdateDeviceDto implements UpdateDeviceInput {
 
   @ValidateIf(isSent)
   @IsBoolean()
+  resetDeviceNewApikey?: boolean
+
+  @ValidateIf(isSent)
+  @IsBoolean()
   updateFirmware?: boolean
 
   @IsOptional()

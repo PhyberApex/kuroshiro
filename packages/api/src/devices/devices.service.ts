@@ -16,6 +16,7 @@ import {
   applyFirmwareChanges,
   applyModelChange,
   applyPaletteChange,
+  assertApikeyRotationAllowed,
   assertPushCanBeServed,
   assertSleepWindowConfigured,
   renderTargetChanged,
@@ -61,6 +62,7 @@ export class DevicesService {
     await applyPaletteChange(dbDevice, paletteId, this.paletteSelection)
     await applyFirmwareChanges(dbDevice, targetFirmwareId, pushWasPending, this.firmwareService)
     assertPushCanBeServed(dbDevice, changes.updateFirmware)
+    assertApikeyRotationAllowed(dbDevice)
     const saved = await this.deviceRepository.save(dbDevice)
     if (renderTargetChanged(before, saved)) {
       await this.screensService.reconvertImageScreens(saved)

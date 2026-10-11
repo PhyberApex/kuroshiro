@@ -66,6 +66,22 @@ export function assertPushCanBeServed(device: Device, updateFirmware: boolean | 
     throw new ApiException(HttpStatus.CONFLICT, 'firmware-push-mirrored', 'A mirrored Device is not given Firmware.', { id: device.id })
 }
 
+/** A Device mirrors itself (proxy) when TRMNL knows it by its own MAC: TRMNL answers its polls, so nothing requested here reaches it. */
+export function isProxiedDevice(device: Device): boolean {
+  return !!device.mirrorEnabled && device.mirrorMac === device.mac
+}
+
+/**
+ * "Also give {Device} a new API key" (ADR-0039): refused on a Proxied Device, whose own key is not what
+ * authenticates its polls. Checked against the merged entity, not just this request's own fields — like
+ * `assertSleepWindowConfigured`, so a PATCH that turns a Device Proxied while a rotation is already pending
+ * from an earlier request is caught too.
+ */
+export function assertApikeyRotationAllowed(device: Device): void {
+  if (device.resetDeviceNewApikey && isProxiedDevice(device))
+    throw new ApiException(HttpStatus.CONFLICT, 'device-reset-apikey-proxied', 'A Proxied Device cannot be given a new API key.', { id: device.id })
+}
+
 export function renderTargetChanged(before: { model?: string, palette?: string }, device: Device): boolean {
   return before.model !== device.deviceModel?.name || before.palette !== device.palette?.id
 }

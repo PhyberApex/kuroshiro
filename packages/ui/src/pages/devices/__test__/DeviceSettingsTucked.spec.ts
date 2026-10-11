@@ -162,8 +162,40 @@ describe('reset or delete a Device', () => {
     await screen.getByRole('alertdialog').getByRole('button', { name: 'Device Reset' }).click()
 
     await expect.element(screen.getByText(`Device Reset pending, reaches Kitchen around ${NEXT_POLL}`)).toBeVisible()
-    expect(faked.writes).toEqual([{ resetDevice: true }])
+    expect(faked.writes).toEqual([{ resetDevice: true, resetDeviceNewApikey: false }])
     await expect.element(screen.getByRole('button', { name: 'Device Reset' })).toBeDisabled()
+  })
+
+  it('a Device Reset with "Also give Kitchen a new API key" checked sends the rotation and words the pending line and the Stays line for it', async () => {
+    const faked = fakeKitchenSettings()
+    const screen = await mountSettings('#reset')
+
+    await screen.getByRole('button', { name: 'Device Reset' }).click()
+    const dialog = screen.getByRole('alertdialog')
+    await dialog.getByRole('checkbox', { name: 'Also give Kitchen a new API key' }).click()
+
+    expect(dialogSays().outcome).toEqual([
+      'Lost On the Device: its Wi-Fi credentials, its API key and this server\'s URL.',
+      'Stays Everything here: Kitchen, its Screens, Schedules and Device Log. It gets a new API key when it is set up again.',
+    ])
+
+    await dialog.getByRole('button', { name: 'Device Reset' }).click()
+
+    await expect.element(screen.getByText(`Device Reset pending, with a new API key, reaches Kitchen around ${NEXT_POLL}`)).toBeVisible()
+    expect(faked.writes).toEqual([{ resetDevice: true, resetDeviceNewApikey: true }])
+  })
+
+  it('offers the checkbox unchecked again after Cancel and reopening', async () => {
+    fakeKitchenSettings()
+    const screen = await mountSettings('#reset')
+
+    await screen.getByRole('button', { name: 'Device Reset' }).click()
+    await screen.getByRole('alertdialog').getByRole('checkbox', { name: 'Also give Kitchen a new API key' }).click()
+    await screen.getByRole('button', { name: 'Cancel' }).click()
+
+    await screen.getByRole('button', { name: 'Device Reset' }).click()
+
+    await expect.element(screen.getByRole('alertdialog').getByRole('checkbox', { name: 'Also give Kitchen a new API key' })).not.toBeChecked()
   })
 
   it('has no "Cancel Device Reset" while there is no pending Device Reset', async () => {
@@ -182,9 +214,18 @@ describe('reset or delete a Device', () => {
     await cancel().click()
 
     await expect.poll(() => cancel().elements()).toEqual([])
-    expect(faked.writes).toEqual([{ resetDevice: false }])
+    expect(faked.writes).toEqual([{ resetDevice: false, resetDeviceNewApikey: false }])
     expect(screen.getByText(`Device Reset pending, reaches Kitchen around ${NEXT_POLL}`).elements()).toEqual([])
     await expect.element(screen.getByRole('button', { name: 'Device Reset' })).toBeEnabled()
+  })
+
+  it('clears a pending rotation too when cancelling a Device Reset that asked for a new API key', async () => {
+    const faked = fakeKitchenSettings({ device: { ...KITCHEN, pending: { ...KITCHEN.pending, deviceReset: true, deviceResetNewApikey: true } } })
+    const screen = await mountSettings('#reset')
+
+    await screen.getByRole('button', { name: 'Cancel Device Reset' }).click()
+
+    await expect.poll(() => faked.writes).toEqual([{ resetDevice: false, resetDeviceNewApikey: false }])
   })
 
   it('words a refused cancel and offers to try again, with the reset still pending', async () => {

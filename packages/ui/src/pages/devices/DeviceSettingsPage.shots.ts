@@ -9,7 +9,7 @@ describe('the Settings of a Device', () => {
         ...KITCHEN,
         sleep: { enabled: true, start: '23:00', end: '06:00', whileAsleep: 'fallback', inWindow: false, endsAt: null },
         targetFirmware: { id: 'fw-official', version: '1.7.9', kind: 'official-synced', label: null, deprecated: false },
-        pending: { specialFunction: 'identify', deviceReset: false, firmwarePush: false },
+        pending: { specialFunction: 'identify', deviceReset: false, deviceResetNewApikey: false, firmwarePush: false },
       },
     })
     const screen = await mountSettings('#identity')

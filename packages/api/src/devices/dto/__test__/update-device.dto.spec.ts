@@ -31,10 +31,12 @@ describe('update-device dto', () => {
     const dto = new UpdateDeviceDto()
     dto.specialFunction = 'identify'
     dto.resetDevice = true
+    dto.resetDeviceNewApikey = true
     dto.updateFirmware = false
 
     expect(dto.specialFunction).toBe('identify')
     expect(dto.resetDevice).toBe(true)
+    expect(dto.resetDeviceNewApikey).toBe(true)
     expect(dto.updateFirmware).toBe(false)
   })
 })
