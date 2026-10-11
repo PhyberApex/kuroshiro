@@ -40,7 +40,7 @@ describe('the Devices list', () => {
   it('with an Active Screen and the low-battery Alert firing, a Device asleep and one that never polled', async () => {
     freezeTime('2026-10-03T07:35:00.000Z')
     fakeScreenImages()
-    fakeShellReads({ devices, alerts: buildAlertsList({ active: [buildAlert({ kind: 'device-low-battery', deviceId: 'kitchen' })] }) })
+    fakeShellReads({ devices, alerts: buildAlertsList({ active: [buildAlert({ kind: 'device-low-battery', device: { id: 'kitchen', name: 'Kitchen' } })] }) })
     const screen = await mountApp({ at: '/devices' })
     await expect.element(screen.getByRole('link', { name: '1 Alert firing' })).toBeVisible()
     await expect.element(screen.getByRole('img', { name: 'On Kitchen: Calendar' })).toBeVisible()

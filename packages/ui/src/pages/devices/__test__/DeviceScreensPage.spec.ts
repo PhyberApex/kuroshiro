@@ -103,7 +103,7 @@ describe('the plate and its column', () => {
   })
 
   it('shows an offline Device\'s last image without the seal, and the Alert as the only red', async () => {
-    fakeKitchen({ device: kitchen({ lastSeenAt: '2026-10-03T04:10:00.000Z' }), alerts: [buildAlert({ kind: 'device-offline', deviceId: 'kitchen' })] })
+    fakeKitchen({ device: kitchen({ lastSeenAt: '2026-10-03T04:10:00.000Z' }), alerts: [buildAlert({ kind: 'device-offline', device: { id: 'kitchen', name: 'Kitchen' } })] })
     const screen = await mountApp({ at: '/devices/kitchen' })
 
     await expect.element(screen.getByText('It has not called in since.', { exact: false })).toBeVisible()
@@ -179,7 +179,7 @@ describe('the facts', () => {
   })
 
   it('turn the battery row into the Alert while the low-battery Alert fires', async () => {
-    fakeKitchen({ device: kitchen({ batteryPercent: 18 }), alerts: [buildAlert({ kind: 'device-low-battery', deviceId: 'kitchen' }), buildAlert({ id: 'other', kind: 'device-offline', deviceId: 'study' })] })
+    fakeKitchen({ device: kitchen({ batteryPercent: 18 }), alerts: [buildAlert({ kind: 'device-low-battery', device: { id: 'kitchen', name: 'Kitchen' } }), buildAlert({ id: 'other', kind: 'device-offline', device: { id: 'study', name: 'Study' } })] })
     const screen = await mountApp({ at: '/devices/kitchen' })
 
     await expect.element(screen.getByText('Alert: battery low')).toBeVisible()
@@ -564,7 +564,7 @@ describe('loading and fresh data', () => {
 
 describe('the Screens view as a whole', () => {
   it('is accessible in both themes with a row opened, and does not scroll sideways', async () => {
-    fakeKitchen({ alerts: [buildAlert({ kind: 'device-low-battery', deviceId: 'kitchen' })] })
+    fakeKitchen({ alerts: [buildAlert({ kind: 'device-low-battery', device: { id: 'kitchen', name: 'Kitchen' } })] })
     const screen = await mountApp({ at: '/devices/kitchen?screen=weekend' })
 
     await expect.element(screen.getByRole('region', { name: 'Weekend board', exact: true })).toBeVisible()

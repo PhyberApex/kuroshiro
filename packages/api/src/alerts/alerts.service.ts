@@ -1,42 +1,15 @@
-import type { AlertsList, AlertSummary, ListAlertsQuery } from 'kuroshiro-shared'
+import type { AlertsList, ListAlertsQuery } from 'kuroshiro-shared'
 import type { Repository } from 'typeorm'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { IsNull, MoreThan } from 'typeorm'
 import { ApiException } from '../errors/api.exception.js'
+import { toAlertSummaries } from './alert.mapper.js'
 import { Alert } from './entities/alert.entity.js'
 import { NotificationSenderService } from './notification-sender.service.js'
 
 const DEFAULT_RESOLVED_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
 const RESOLVED_ALERTS_LIMIT = 50
-
-/** `undefined` for an Alert whose subject relation (Device or Data Source) is missing — cascade-deleted, or deleted between the query and the join. */
-function toSummary(alert: Alert): AlertSummary | undefined {
-  const subject = alert.device
-    ? { deviceId: alert.device.id, deviceName: alert.device.name }
-    : alert.dataSource
-      ? {
-          pluginId: alert.dataSource.plugin.id,
-          pluginName: alert.dataSource.plugin.name,
-          dataSourceId: alert.dataSource.id,
-          dataSourceName: alert.dataSource.name,
-        }
-      : undefined
-  if (!subject)
-    return undefined
-  return {
-    id: alert.id,
-    kind: alert.kind,
-    ...subject,
-    openedAt: alert.openedAt.toISOString(),
-    resolvedAt: alert.resolvedAt ? alert.resolvedAt.toISOString() : null,
-    details: alert.details ?? null,
-  }
-}
-
-function toSummaries(alerts: Alert[]): AlertSummary[] {
-  return alerts.map(toSummary).filter((summary): summary is AlertSummary => summary !== undefined)
-}
 
 @Injectable()
 export class AlertsService {
@@ -74,8 +47,8 @@ export class AlertsService {
     ])
 
     return {
-      active: toSummaries(active),
-      resolved: toSummaries(resolved),
+      active: toAlertSummaries(active),
+      resolved: toAlertSummaries(resolved),
     }
   }
 

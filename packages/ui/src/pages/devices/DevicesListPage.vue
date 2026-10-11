@@ -15,7 +15,7 @@ const router = useRouter()
 const devices = useDevices()
 const alerts = useAlerts()
 
-const firingOn = (device: DeviceSummary) => alerts.data?.active.filter(alert => alert.deviceId === device.id) ?? []
+const firingOn = (device: DeviceSummary) => alerts.data?.active.filter(alert => alert.device?.id === device.id) ?? []
 
 /** The widths of the two bars of each loading row: where the name and what the Device shows will be. */
 const LOADING_ROWS = [

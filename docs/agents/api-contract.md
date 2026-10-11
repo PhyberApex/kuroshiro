@@ -8,7 +8,7 @@
 
 ## Shape rules for a read model
 
-These bind every type written from now on. The types that were shared before ADR-0033 (`AlertSummary`, `FirmwareSyncResult` and the others moved in as they were) keep their shape until the slice that owns their endpoint reshapes them.
+These bind every type written from now on. The types that were shared before ADR-0033 (`FirmwareSyncResult` and the others moved in as they were) keep their shape until the slice that owns their endpoint reshapes them.
 
 - **Every key is present; absent is `null`.** No optional keys, so a fixture builder has to decide every field.
 - **Names** are `camelCase` and use the vocabulary of `CONTEXT.md`, renaming a stored column on the read where the two differ. Booleans read as statements (`isMirrored`, `filePresent`). A derived field sits beside stored ones with no marker and no `_` prefix.

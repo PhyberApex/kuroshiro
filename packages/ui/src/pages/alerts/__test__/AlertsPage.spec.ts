@@ -21,15 +21,15 @@ const WEDNESDAY_NOON = '2026-09-30T12:00:00.000Z'
 
 const clock = (at: string) => clockTime(new Date(at))
 
-const FETCH_SUBJECT = { deviceId: undefined, deviceName: undefined, pluginId: 'trains', pluginName: 'Train departures', dataSourceId: 'departures-id', dataSourceName: 'departures' }
+const FETCH_SUBJECT = { device: null, plugin: { id: 'trains', name: 'Train departures' }, dataSource: { id: 'departures-id', name: 'departures' } }
 
 const FETCH_FIRING = buildAlert({ id: 'fetch', kind: 'data-source-fetch-failing', ...FETCH_SUBJECT, openedAt: TODAY_0610, details: { streak: 5, lastError: '503 Service Unavailable' } })
-const BATTERY_FIRING = buildAlert({ id: 'battery', kind: 'device-low-battery', deviceId: 'hallway', deviceName: 'Hallway', openedAt: YESTERDAY_1935, details: { percent: 14 } })
-const OFFLINE_FIRING = buildAlert({ id: 'offline', kind: 'device-offline', deviceId: 'study', deviceName: 'Study', openedAt: TODAY_0610, details: { lastSeen: TODAY_0431 } })
+const BATTERY_FIRING = buildAlert({ id: 'battery', kind: 'device-low-battery', device: { id: 'hallway', name: 'Hallway' }, openedAt: YESTERDAY_1935, details: { percent: 14 } })
+const OFFLINE_FIRING = buildAlert({ id: 'offline', kind: 'device-offline', device: { id: 'study', name: 'Study' }, openedAt: TODAY_0610, details: { lastSeen: TODAY_0431 } })
 
-const OFFLINE_RESOLVED = buildAlert({ id: 'was-offline', kind: 'device-offline', deviceId: 'kitchen', deviceName: 'Kitchen', openedAt: WEDNESDAY_NOON, resolvedAt: '2026-09-30T13:30:00.000Z', details: { lastSeen: '2026-09-30T10:55:00.000Z' } })
-const FETCH_RESOLVED = buildAlert({ id: 'was-failing', kind: 'data-source-fetch-failing', ...FETCH_SUBJECT, pluginId: 'weather', pluginName: 'Weather', dataSourceName: 'forecast', openedAt: YESTERDAY_1935, resolvedAt: '2026-10-02T20:20:00.000Z', details: { streak: 3, lastError: 'getaddrinfo ENOTFOUND api.open-meteo.com' } })
-const BATTERY_RESOLVED = buildAlert({ id: 'was-low', kind: 'device-low-battery', deviceId: 'study', deviceName: 'Study', openedAt: TODAY_0431, resolvedAt: TODAY_0610, details: { percent: 17 } })
+const OFFLINE_RESOLVED = buildAlert({ id: 'was-offline', kind: 'device-offline', device: { id: 'kitchen', name: 'Kitchen' }, openedAt: WEDNESDAY_NOON, resolvedAt: '2026-09-30T13:30:00.000Z', details: { lastSeen: '2026-09-30T10:55:00.000Z' } })
+const FETCH_RESOLVED = buildAlert({ id: 'was-failing', kind: 'data-source-fetch-failing', ...FETCH_SUBJECT, plugin: { id: 'weather', name: 'Weather' }, dataSource: { id: 'departures-id', name: 'forecast' }, openedAt: YESTERDAY_1935, resolvedAt: '2026-10-02T20:20:00.000Z', details: { streak: 3, lastError: 'getaddrinfo ENOTFOUND api.open-meteo.com' } })
+const BATTERY_RESOLVED = buildAlert({ id: 'was-low', kind: 'device-low-battery', device: { id: 'study', name: 'Study' }, openedAt: TODAY_0431, resolvedAt: TODAY_0610, details: { percent: 17 } })
 
 type Screen = Awaited<ReturnType<typeof mountApp>>
 
