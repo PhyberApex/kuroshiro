@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Weekday } from './WeekdayToggle.vue'
+import type { Weekday } from './weekdays'
 import { ref } from 'vue'
 import Specimen from '@/gallery/Specimen.vue'
 import SpecimenRow from '@/gallery/SpecimenRow.vue'

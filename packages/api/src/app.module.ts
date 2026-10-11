@@ -8,6 +8,7 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import { AlertsModule } from './alerts/alerts.module.js'
 import { Alert } from './alerts/entities/alert.entity.js'
 import config from './config/config.js'
+import { migrationLogger } from './config/migration-logger.js'
 import { ConfigurationModule } from './configuration/configuration.module.js'
 import { CustomPalettesModule } from './device-models/custom-palettes.module.js'
 import { DeviceModelsModule } from './device-models/device-models.module.js'
@@ -71,9 +72,11 @@ const conf = config()
           .map((f: string) => path.join(dir, f))
       })(),
       migrationsTableName: 'migrations',
-      migrationsRun: false,
+      migrationsRun: true,
       synchronize: false,
-      logging: process.env.NODE_ENV !== 'production',
+      // the `logging` option has no effect once `logger` is a pre-built instance (TypeORM's
+      // LoggerFactory returns it as-is) — migrationLogger is built with that option itself.
+      logger: migrationLogger,
     }),
     TypeOrmModule.forFeature([Device, Screen, LogEntry]),
     ScreensModule,

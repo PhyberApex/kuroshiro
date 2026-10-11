@@ -7,7 +7,7 @@ import Select from '@/components/Select.vue'
 import SettingRow from '@/components/SettingRow.vue'
 import { useNow } from '@/patterns/useNow'
 import { nextPollTime } from './currentScreenStory'
-import { firmwareOptions, NO_TARGET } from './deviceSettings'
+import { firmwareOptions, NO_TARGET } from './deviceCatalogOptions'
 import { useDeviceSetting, useDeviceWrite } from './useDeviceSetting'
 
 const props = defineProps<{

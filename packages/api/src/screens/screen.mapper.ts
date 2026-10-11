@@ -5,6 +5,7 @@ import type { Schedule } from '../schedule/schedule.entity.js'
 import type { Screen } from './screens.entity.js'
 import { MASHUP_LAYOUTS } from 'kuroshiro-shared'
 import { toImagePath, toIsoString, toIsoStringOrNull } from '../utils/readModel.js'
+import { screenNameOf } from './screen-name.js'
 
 export interface ScreenFacts {
   deviceId: string
@@ -77,7 +78,7 @@ export function toScreenRead(screen: Screen, facts: ScreenFacts): ScreenRead {
     id: screen.id,
     deviceId: facts.deviceId,
     kind,
-    name: (kind === 'plugin' ? screen.plugin?.name : screen.filename) ?? '',
+    name: screenNameOf(screen),
     order: screen.order,
     state: facts.state.state,
     stateCause: facts.state.stateCause,

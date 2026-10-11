@@ -80,13 +80,13 @@ export interface AlertSubject {
 }
 
 /** What an Alert is about and where that is looked at: the Device's Screens view, or the Plugin page at the Data Source. */
-export function alertSubject({ deviceId, deviceName, pluginId, pluginName, dataSourceName }: AlertSummary): AlertSubject {
-  if (deviceId !== undefined)
-    return { name: deviceName ?? '', dataSource: null, to: devicePath(deviceId) }
+export function alertSubject({ device, plugin, dataSource }: AlertSummary): AlertSubject {
+  if (device !== null)
+    return { name: device.name, dataSource: null, to: devicePath(device.id) }
   return {
-    name: pluginName ?? '',
-    dataSource: dataSourceName ?? null,
-    to: `${pluginPath(pluginId ?? '')}?source=${encodeURIComponent(dataSourceName ?? '')}`,
+    name: plugin?.name ?? '',
+    dataSource: dataSource?.name ?? null,
+    to: `${pluginPath(plugin?.id ?? '')}?source=${encodeURIComponent(dataSource?.name ?? '')}`,
   }
 }
 

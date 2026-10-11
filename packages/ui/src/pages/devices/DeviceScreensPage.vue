@@ -18,7 +18,7 @@ const alerts = useAlerts()
 const screens = useLoad(() => listScreens(String(route.params.deviceId)), { key: () => route.params.deviceId, fresh: true })
 
 const failure = computed(() => device.failure ?? screens.failure)
-const firingHere = computed(() => alerts.data?.active.filter(alert => alert.deviceId === route.params.deviceId) ?? [])
+const firingHere = computed(() => alerts.data?.active.filter(alert => alert.device?.id === route.params.deviceId) ?? [])
 
 function reload() {
   void device.reload()

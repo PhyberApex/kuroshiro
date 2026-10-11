@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { AccordionContent, AccordionHeader, AccordionItem, AccordionTrigger } from 'reka-ui'
+import { AccordionContent, AccordionItem } from 'reka-ui'
 import { useTemplateRef } from 'vue'
+import AccordionRowHeading from './AccordionRowHeading.vue'
 import Icon from './Icon.vue'
 
 withDefaults(defineProps<{
@@ -43,16 +44,12 @@ function openFromLine(event: MouseEvent) {
 <template>
   <AccordionItem as-child :value="value" :disabled="removed">
     <li class="data-source-row" :class="{ removed }">
-      <div class="line" :data-force="force" @click="openFromLine">
-        <AccordionHeader as-child>
-          <component :is="heading" class="heading">
-            <AccordionTrigger as-child>
-              <button ref="trigger" type="button" class="trigger">
-                {{ name }}
-              </button>
-            </AccordionTrigger>
-          </component>
-        </AccordionHeader>
+      <div class="line row-line" :data-force="force" @click="openFromLine">
+        <AccordionRowHeading :heading="heading">
+          <button ref="trigger" type="button" class="trigger row-trigger">
+            {{ name }}
+          </button>
+        </AccordionRowHeading>
         <span class="what">{{ what }}</span>
         <div class="health">
           <slot name="health" />
@@ -60,7 +57,7 @@ function openFromLine(event: MouseEvent) {
         <Icon v-if="!removed" name="chevron" class="chevron" />
       </div>
       <AccordionContent as-child>
-        <div class="body">
+        <div class="body row-body">
           <div class="inside">
             <slot />
           </div>
@@ -81,23 +78,10 @@ function openFromLine(event: MouseEvent) {
     grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) minmax(0, 15rem) var(--icon);
     align-items: center;
     gap: var(--space-1) var(--space-4);
-    min-height: var(--hit-target);
-    padding: var(--space-2) 0;
-    border-radius: var(--radius);
-    cursor: pointer;
   }
 
   .data-source-row.removed .line {
     cursor: default;
-  }
-
-  .line:has(.trigger:focus-visible) {
-    outline: var(--focus-ring);
-    outline-offset: var(--focus-offset);
-  }
-
-  .trigger:focus-visible {
-    outline: 0;
   }
 
   .heading {
@@ -157,32 +141,8 @@ function openFromLine(event: MouseEvent) {
     rotate: 180deg;
   }
 
-  .body {
-    overflow: hidden;
-  }
-
   .inside {
     padding: var(--space-2) 0 var(--space-8);
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    .body[data-state='open'] {
-      animation: unfold var(--duration-move) var(--ease-out);
-    }
-
-    .body[data-state='closed'] {
-      animation: fold var(--duration-move) var(--ease-out);
-    }
-  }
-
-  @keyframes unfold {
-    from { height: 0; }
-    to { height: var(--reka-accordion-content-height); }
-  }
-
-  @keyframes fold {
-    from { height: var(--reka-accordion-content-height); }
-    to { height: 0; }
   }
 
   /* On phone the row stacks to the name, the line and the health, with the chevron beside the name. */

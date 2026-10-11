@@ -36,7 +36,7 @@ describe('something is wrong', () => {
     await page.goto(new URL(`devices/${id}`, baseUrl).href)
     await page.getByRole('heading', { level: 1, name }).waitFor()
 
-    await expect.poll(async () => (await firingAlerts()).some(alert => alert.deviceId === id), { timeout: ALERT_POLL_TIMEOUT_MS, interval: 1_000 }).toBe(true)
+    await expect.poll(async () => (await firingAlerts()).some(alert => alert.device?.id === id), { timeout: ALERT_POLL_TIMEOUT_MS, interval: 1_000 }).toBe(true)
     // The shell asks again when the window regains the focus; the suite's own types have no DOM to say so in.
     await page.evaluate('window.dispatchEvent(new Event("focus"))')
 

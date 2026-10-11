@@ -1,7 +1,6 @@
 import type { DeviceModelList, DeviceModelSyncResult, PaletteRead } from 'kuroshiro-shared'
 import { Controller, Get, Logger, Post } from '@nestjs/common'
-import { ApiException } from '../errors/api.exception.js'
-import { getErrorMessage } from '../utils/getErrorMessage.js'
+import { syncOr502 } from '../errors/sync-or-502.js'
 import { DeviceModelReadsService } from './device-model-reads.service.js'
 import { DeviceModelSyncService } from './device-model-sync.service.js'
 
@@ -25,14 +24,7 @@ export class DeviceModelsController {
   }
 
   @Post('sync')
-  async sync(): Promise<DeviceModelSyncResult> {
-    try {
-      return await this.syncService.sync()
-    }
-    catch (err) {
-      const message = getErrorMessage(err)
-      this.logger.error(`Device model sync failed: ${message}`)
-      throw new ApiException(502, 'upstream-unreachable', `Could not sync device models from TRMNL: ${message}`, { reason: message })
-    }
+  sync(): Promise<DeviceModelSyncResult> {
+    return syncOr502(this.logger, 'device models', () => this.syncService.sync())
   }
 }

@@ -6,8 +6,9 @@ import { Repository } from 'typeorm'
 import { Device } from '../devices/devices.entity.js'
 import { SyncRunService } from '../sync-runs/sync-run.service.js'
 import { toDeviceModelList, toDeviceModelRead, toPaletteRead } from './device-models.mapper.js'
-import { defaultPaletteAmong, DeviceModelsService } from './device-models.service.js'
+import { DeviceModelsService } from './device-models.service.js'
 import { compatiblePaletteIds } from './palette-compatibility.js'
+import { defaultPaletteAmong, PaletteSelectionService } from './palette-selection.service.js'
 
 function devicesOn(palette: Palette, devices: Device[]): Device[] {
   return devices.filter(device => device.palette?.id === palette.id)
@@ -19,13 +20,14 @@ export class DeviceModelReadsService {
     @InjectRepository(Device)
     private readonly deviceRepository: Repository<Device>,
     private readonly deviceModels: DeviceModelsService,
+    private readonly paletteSelection: PaletteSelectionService,
     private readonly syncRuns: SyncRunService,
   ) {}
 
   async listModels(): Promise<DeviceModelList> {
     const [models, palettes, devices, lastSync] = await Promise.all([
       this.deviceModels.findAll(),
-      this.deviceModels.findAllPalettes(),
+      this.paletteSelection.findAllPalettes(),
       this.devicesWithAssignments(),
       this.syncRuns.last('device-models'),
     ])
@@ -37,13 +39,13 @@ export class DeviceModelReadsService {
   }
 
   async listPalettes(): Promise<PaletteRead[]> {
-    const [palettes, devices] = await Promise.all([this.deviceModels.findAllPalettes(), this.devicesWithAssignments()])
+    const [palettes, devices] = await Promise.all([this.paletteSelection.findAllPalettes(), this.devicesWithAssignments()])
     return palettes.map(palette => toPaletteRead(palette, devicesOn(palette, devices)))
   }
 
   /** One Palette with the Devices set to it, as it stands now. */
   async palette(id: string): Promise<PaletteRead> {
-    const palette = await this.deviceModels.findPalette(id)
+    const palette = await this.paletteSelection.findPalette(id)
     if (!palette)
       throw new NotFoundException(`Palette ${id} not found`)
     return toPaletteRead(palette, devicesOn(palette, await this.devicesWithAssignments()))

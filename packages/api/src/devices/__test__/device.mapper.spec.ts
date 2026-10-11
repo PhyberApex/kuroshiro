@@ -1,6 +1,6 @@
 import type { Device } from '../devices.entity.js'
 import { describe, expect, it } from 'vitest'
-import { makeDevice, makeDeviceModel, makeFirmware, makePalette, makeScreen } from '../../test/fixtures.js'
+import { makeDevice, makeDeviceModel, makeFirmware, makePalette, makePlugin, makeScreen } from '../../test/fixtures.js'
 import { toDeviceDetail, toDeviceSummary } from '../device.mapper.js'
 
 const POLLED_AT = new Date('2026-03-01T10:00:00.000Z')
@@ -8,6 +8,7 @@ const NOW = new Date('2026-03-01T10:01:00.000Z')
 const RENDERED_AT = new Date('2026-03-01T09:30:00.000Z')
 
 const weather = makeScreen({ id: 'screen-weather', filename: 'Weather', generatedAt: RENDERED_AT })
+const weatherPlugin = makeScreen({ id: 'screen-weather-plugin', type: 'plugin', filename: null, plugin: makePlugin({ name: 'Weather' }), generatedAt: RENDERED_AT })
 
 function polledDevice(overrides: Partial<Device> = {}): Device {
   return makeDevice({
@@ -68,6 +69,12 @@ describe('toDeviceSummary', () => {
         paused: false,
         holding: false,
       })
+    })
+
+    it('names a Plugin Screen after its Plugin, not its (absent) filename', () => {
+      const device = polledDevice({ lastServedScreenId: weatherPlugin.id, lastServedImagePath: '/screens/devices/device-1/screen-weather-plugin.png' })
+
+      expect(currentScreenOf(device, weatherPlugin)).toMatchObject({ kind: 'screen', screenId: 'screen-weather-plugin', name: 'Weather' })
     })
 
     it('is the no-screen Fallback Screen for a Device without Screens', () => {

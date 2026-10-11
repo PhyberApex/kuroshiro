@@ -8,8 +8,8 @@ import { ApiException } from '../errors/api.exception.js'
 import { isUniqueViolation } from '../errors/unique-violation.js'
 import { ScreensService } from '../screens/screens.service.js'
 import { getErrorMessage } from '../utils/getErrorMessage.js'
-import { DeviceModelsService } from './device-models.service.js'
 import { Palette } from './entities/palette.entity.js'
+import { PaletteSelectionService } from './palette-selection.service.js'
 
 /** `ILike` treats these as wildcards; a name is compared as it is. */
 function literally(name: string): string {
@@ -25,7 +25,7 @@ export class CustomPalettesService {
     private readonly paletteRepository: Repository<Palette>,
     @InjectRepository(Device)
     private readonly deviceRepository: Repository<Device>,
-    private readonly deviceModels: DeviceModelsService,
+    private readonly paletteSelection: PaletteSelectionService,
     private readonly screens: ScreensService,
   ) {}
 
@@ -81,7 +81,7 @@ export class CustomPalettesService {
     const users = await this.devicesUsing(id)
     await this.paletteRepository.manager.transaction(async (manager) => {
       for (const device of users) {
-        device.palette = device.deviceModel ? await this.deviceModels.defaultPaletteFor(device.deviceModel) : null
+        device.palette = device.deviceModel ? await this.paletteSelection.defaultPaletteFor(device.deviceModel) : null
         await manager.save(device)
       }
       await manager.remove(palette)

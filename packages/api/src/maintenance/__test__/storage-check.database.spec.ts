@@ -9,6 +9,7 @@ import { DeviceModelsService } from '../../device-models/device-models.service.j
 import { DeviceModel } from '../../device-models/entities/device-model.entity.js'
 import { Palette } from '../../device-models/entities/palette.entity.js'
 import { FALLBACK_SCREEN_TEMPLATE_VERSION } from '../../device-models/fallback-screen-templates.js'
+import { PaletteSelectionService } from '../../device-models/palette-selection.service.js'
 import { Device } from '../../devices/devices.entity.js'
 import { Screen } from '../../screens/screens.entity.js'
 import { ScreensService } from '../../screens/screens.service.js'
@@ -37,7 +38,7 @@ describe('the stored-files check and its cleanup, against a real database and re
 
   beforeAll(async () => {
     database = await createTestDatabase()
-    const deviceModels = new DeviceModelsService(database.getRepository(DeviceModel), database.getRepository(Palette))
+    const deviceModels = new DeviceModelsService(database.getRepository(DeviceModel), new PaletteSelectionService(database.getRepository(Palette)))
     const screens = new ScreensService(
       database.getRepository(Screen),
       database.getRepository(Device),

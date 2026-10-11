@@ -15,6 +15,7 @@ import { DeviceModelsController } from '../device-models.controller.js'
 import { DeviceModelsService } from '../device-models.service.js'
 import { DeviceModel } from '../entities/device-model.entity.js'
 import { Palette } from '../entities/palette.entity.js'
+import { PaletteSelectionService } from '../palette-selection.service.js'
 
 vi.mock('node-cron', () => ({ default: { schedule: vi.fn() } }))
 
@@ -37,9 +38,10 @@ describe('the Device Model and Palette reads, against a real database', () => {
 
   beforeAll(async () => {
     database = await createTestDatabase()
-    const deviceModels = new DeviceModelsService(database.getRepository(DeviceModel), database.getRepository(Palette))
+    const paletteSelection = new PaletteSelectionService(database.getRepository(Palette))
+    const deviceModels = new DeviceModelsService(database.getRepository(DeviceModel), paletteSelection)
     const syncRuns = new SyncRunService(database.getRepository(SyncRun))
-    const reads = new DeviceModelReadsService(database.getRepository(Device), deviceModels, syncRuns)
+    const reads = new DeviceModelReadsService(database.getRepository(Device), deviceModels, paletteSelection, syncRuns)
     const syncService = new DeviceModelSyncService(database.getRepository(DeviceModel), database.getRepository(Palette), syncRuns)
     syncService.onApplicationBootstrap = async () => {}
 
@@ -107,12 +109,13 @@ describe('the Device Model and Palette reads, against a real database', () => {
 
     it('accepts a Device save with every Palette it lists for the Device Model', async () => {
       const { models: list } = await models()
-      const deviceModels = new DeviceModelsService(database.getRepository(DeviceModel), database.getRepository(Palette))
+      const paletteSelection = new PaletteSelectionService(database.getRepository(Palette))
+      const deviceModels = new DeviceModelsService(database.getRepository(DeviceModel), paletteSelection)
       const model = (await deviceModels.findByName('og_bwr'))!
 
       for (const id of list.find(m => m.name === 'og_bwr')!.paletteIds)
-        await expect(deviceModels.supportsPalette(model, (await deviceModels.findPalette(id))!)).resolves.toBe(true)
-      await expect(deviceModels.supportsPalette(model, (await deviceModels.findPalette('custom-yellow'))!)).resolves.toBe(false)
+        await expect(paletteSelection.supportsPalette(model, (await paletteSelection.findPalette(id))!)).resolves.toBe(true)
+      await expect(paletteSelection.supportsPalette(model, (await paletteSelection.findPalette('custom-yellow'))!)).resolves.toBe(false)
     })
 
     it('names the Devices on each Device Model, ordered by name ignoring case', async () => {

@@ -3,6 +3,7 @@ import type { Screen } from '../screens/screens.entity.js'
 import type { Device } from './devices.entity.js'
 import { batteryPercentFromVoltage, SPECIAL_FUNCTIONS } from 'kuroshiro-shared'
 import { FALLBACK_SCREEN_TEMPLATE_VERSION } from '../device-models/fallback-screen-templates.js'
+import { screenNameOf } from '../screens/screen-name.js'
 import { toImagePath, toIsoString, toIsoStringOrNull } from '../utils/readModel.js'
 import { nextPollOf } from './next-poll.js'
 import { isDeviceAsleep, nextSleepEnd, toClockTime } from './sleep-mode.js'
@@ -16,7 +17,7 @@ const WELCOME_IMAGE_PATH = `/screens/welcome.png?v=${FALLBACK_SCREEN_TEMPLATE_VE
 export interface DeviceSummaryFacts {
   now: Date
   /** The Screen the last-served record names, when it still exists. */
-  servedScreen: Pick<Screen, 'id' | 'filename' | 'generatedAt'> | null
+  servedScreen: Pick<Screen, 'id' | 'type' | 'filename' | 'generatedAt' | 'plugin'> | null
 }
 
 export interface DeviceDetailFacts extends DeviceSummaryFacts {
@@ -62,7 +63,7 @@ function toScreenOfRotation(device: Device, image: ServedImage, screen: NonNulla
   return {
     kind: 'screen',
     screenId: screen.id,
-    name: screen.filename ?? '',
+    name: screenNameOf(screen),
     imagePath: toImagePath(image.path, screen.generatedAt),
     renderedAt: toIsoString(screen.generatedAt),
     servedAt: toIsoString(image.at),

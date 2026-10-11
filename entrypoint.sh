@@ -3,12 +3,5 @@ set -e
 
 echo "🎀 starting kuroshiro..."
 
-node /app/dist/check-env.js
-
-# run migrations
-echo "✨ running migrations..."
-npx typeorm migration:run -d /app/dist/src/config/typeorm.config.js
-
-echo "🌸 starting app..."
-# start the app
+# migrations run inside main.js, before any module touches the database (migrationsRun: true)
 exec node /app/dist/main.js

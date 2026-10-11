@@ -1,4 +1,4 @@
-import type { Weekday } from '../WeekdayToggle.vue'
+import type { Weekday } from '../weekdays'
 import { describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { expectAccessible } from '@/testing/a11y'

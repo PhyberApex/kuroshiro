@@ -93,11 +93,18 @@ describe('plate', () => {
     const sealed = await mount(Plate, { props: { name: NAME, src: imageOf(800, 480), size: 'current', sealed: true } })
     const seal = sealed.container.querySelector('svg')!
     expect(seal).toHaveAttribute('aria-hidden', 'true')
-    expect(seal.getBoundingClientRect().width).toBe(56)
+    // The computed width, not the bounding rect: the seal's tilt widens its rotated bounding box.
+    expect(getComputedStyle(seal).width).toBe('56px')
     expect(getComputedStyle(seal.querySelector('path')!).fill).toBe('rgb(255, 255, 255)')
     const red = elementsInSealColour(sealed.container)
     expect(red).toContain(seal)
     expect(red.every(element => seal.contains(element))).toBe(true)
+  })
+
+  it('tilts the seal 4 degrees askew, as a hand-pressed hanko would', async () => {
+    const screen = await mount(Plate, { props: { name: NAME, src: imageOf(800, 480), sealed: true } })
+
+    expect(getComputedStyle(screen.container.querySelector('.mark')!).rotate).toBe('-4deg')
   })
 
   it('wears the small seal, 白 alone, as a row thumbnail', async () => {

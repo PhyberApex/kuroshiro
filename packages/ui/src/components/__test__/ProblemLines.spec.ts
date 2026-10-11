@@ -67,10 +67,10 @@ describe('problem lines', () => {
     const screen = await mountLines()
     const items = screen.getByRole('listitem').elements()
 
-    expect(items[0].querySelector('.square')).toHaveAttribute('aria-hidden', 'true')
+    expect(items[0].querySelector('.seal-chip')).toHaveAttribute('aria-hidden', 'true')
     expect(items[0].querySelector('svg')).toBeNull()
     expect(items[1].querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
-    expect(items[1].querySelector('.square')).toBeNull()
+    expect(items[1].querySelector('.seal-chip')).toBeNull()
   })
 
   it('gives a link a 44 px target at a coarse pointer', async () => {

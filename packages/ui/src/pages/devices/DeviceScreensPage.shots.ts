@@ -46,7 +46,7 @@ async function mountWithOpened(screenId: string, name: string) {
   fakeScreenImages()
   fakeShellReads({
     devices: [buildDeviceSummary({ id: 'kitchen', name: 'Kitchen' })],
-    alerts: buildAlertsList({ active: [buildAlert({ kind: 'device-low-battery', deviceId: 'kitchen' })] }),
+    alerts: buildAlertsList({ active: [buildAlert({ kind: 'device-low-battery', device: { id: 'kitchen', name: 'Kitchen' } })] }),
   })
   api.use(
     http.get(apiUrl('devices/kitchen'), () => HttpResponse.json(device)),

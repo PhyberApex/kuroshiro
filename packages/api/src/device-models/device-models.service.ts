@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { TRMNL_MODELS_SNAPSHOT, TRMNL_PALETTES_SNAPSHOT } from './data/trmnl-snapshot.js'
+import { TRMNL_MODELS_SNAPSHOT } from './data/trmnl-snapshot.js'
 import { DeviceModel } from './entities/device-model.entity.js'
 import { Palette } from './entities/palette.entity.js'
 import { FALLBACK_MODEL_NAME, FIRMWARE_MODEL_NAMES } from './firmware-model-names.js'
-import { paletteFitsModel } from './palette-compatibility.js'
-import { toDeviceModelAttributes, toPaletteAttributes, TrmnlModelPayload } from './trmnl-payloads.js'
+import { PaletteSelectionService } from './palette-selection.service.js'
+import { toDeviceModelAttributes, TrmnlModelPayload } from './trmnl-payloads.js'
 
 export interface DeviceReport {
   reportedModel?: string | null
@@ -24,20 +24,6 @@ interface DeviceLike extends DeviceReport {
   palette?: Palette | null
 }
 
-function paletteRichness(palette: Palette): number {
-  return palette.colors?.length ? 1000 + palette.colors.length : palette.grays
-}
-
-function pickRichest(palettes: Palette[]): Palette | null {
-  return palettes.reduce<Palette | null>((richest, candidate) =>
-    !richest || paletteRichness(candidate) > paletteRichness(richest) ? candidate : richest, null)
-}
-
-/** The Palette a Device on `model` is given when it has none: the richest of TRMNL's curated ones, never a custom one. */
-export function defaultPaletteAmong(model: DeviceModel, palettes: Palette[]): Palette | null {
-  return pickRichest(model.paletteIds.flatMap(id => palettes.filter(palette => palette.id === id)))
-}
-
 function snapshotFallbackModel(): TrmnlModelPayload {
   const model = TRMNL_MODELS_SNAPSHOT.find(m => m.name === FALLBACK_MODEL_NAME)
   if (!model)
@@ -52,8 +38,7 @@ export class DeviceModelsService {
   constructor(
     @InjectRepository(DeviceModel)
     private readonly deviceModelRepository: Repository<DeviceModel>,
-    @InjectRepository(Palette)
-    private readonly paletteRepository: Repository<Palette>,
+    private readonly paletteSelection: PaletteSelectionService,
   ) {}
 
   findAll(): Promise<DeviceModel[]> {
@@ -62,31 +47,6 @@ export class DeviceModelsService {
 
   findByName(name: string): Promise<DeviceModel | null> {
     return this.deviceModelRepository.findOneBy({ name })
-  }
-
-  findAllPalettes(): Promise<Palette[]> {
-    return this.paletteRepository.find({ order: { grays: 'ASC' } })
-  }
-
-  findPalette(id: string): Promise<Palette | null> {
-    return this.paletteRepository.findOneBy({ id })
-  }
-
-  async allowedPalettesFor(model: DeviceModel): Promise<Palette[]> {
-    if (model.paletteIds.length === 0)
-      return []
-    const palettes = await this.paletteRepository.find()
-    return model.paletteIds
-      .map(id => palettes.find(p => p.id === id))
-      .filter((p): p is Palette => !!p)
-  }
-
-  async defaultPaletteFor(model: DeviceModel): Promise<Palette | null> {
-    return defaultPaletteAmong(model, await this.allowedPalettesFor(model))
-  }
-
-  async supportsPalette(model: DeviceModel, palette: Palette): Promise<boolean> {
-    return paletteFitsModel(palette, model, await this.paletteRepository.find())
   }
 
   /**
@@ -120,7 +80,7 @@ export class DeviceModelsService {
     if (!model)
       return null
     device.deviceModel = model
-    device.palette = await this.defaultPaletteFor(model)
+    device.palette = await this.paletteSelection.defaultPaletteFor(model)
     this.logger.log(`Resolved "${device.reportedModel}" at ${device.width}x${device.height} to device model ${model.name} (palette ${device.palette?.id})`)
     return model
   }
@@ -132,7 +92,7 @@ export class DeviceModelsService {
    */
   async renderTargetFor(device: DeviceLike): Promise<DeviceRenderTarget> {
     const model = device.deviceModel ?? await this.findByName(FALLBACK_MODEL_NAME) ?? this.fallbackModelFromSnapshot()
-    const palette = device.palette ?? await this.defaultPaletteFor(model) ?? this.fallbackPaletteFromSnapshot(model)
+    const palette = device.palette ?? await this.paletteSelection.defaultPaletteFor(model) ?? this.paletteSelection.fallbackPaletteFor(model)
     return { model, palette }
   }
 
@@ -150,15 +110,5 @@ export class DeviceModelsService {
 
   private fallbackModelFromSnapshot(): DeviceModel {
     return Object.assign(new DeviceModel(), toDeviceModelAttributes(snapshotFallbackModel()), { deprecated: false, syncedAt: null })
-  }
-
-  private fallbackPaletteFromSnapshot(model: DeviceModel): Palette {
-    const palettes = TRMNL_PALETTES_SNAPSHOT
-      .filter(p => model.paletteIds.includes(p.id))
-      .map(p => Object.assign(new Palette(), toPaletteAttributes(p), { deprecated: false, syncedAt: null }))
-    const palette = pickRichest(palettes)
-    if (!palette)
-      throw new Error(`Bundled palette snapshot has no palette for device model ${model.name}`)
-    return palette
   }
 }

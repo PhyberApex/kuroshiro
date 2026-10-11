@@ -4,7 +4,7 @@ import type { SettingsReference } from './deviceSettings'
 import { computed } from 'vue'
 import Select from '@/components/Select.vue'
 import SettingRow from '@/components/SettingRow.vue'
-import { paletteOptions } from './deviceSettings'
+import { paletteOptions } from './deviceCatalogOptions'
 import { useDeviceSetting } from './useDeviceSetting'
 
 const props = defineProps<{

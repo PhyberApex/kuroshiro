@@ -35,7 +35,8 @@ describe('the Recipe of a Plugin', () => {
     await expect.element(screen.getByRole('link', { name: 'Run a Recipe Update Check' })).toHaveAttribute('href', '/plugins/weather/update')
   })
 
-  it('dates the Recipe Snapshot once a check has been applied or skipped', async () => {
+  // Mounts the full Plugin page; under coverage in CI, alongside the other packages' own coverage runs, it has run past the browser project's 30s default.
+  it('dates the Recipe Snapshot once a check has been applied or skipped', { timeout: 60_000 }, async () => {
     fakePlugin(fromRecipe({ snapshotTakenAt: '2026-10-01T09:00:00.000Z' }))
     await mountPlugin()
 

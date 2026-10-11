@@ -7,10 +7,10 @@ const NOW = new Date(2026, 9, 3, 9, 35)
 const at = (day: number, hour: number, minute: number) => new Date(2026, 9, day, hour, minute).toISOString()
 
 function alert(overrides: Partial<AlertSummary>): AlertSummary {
-  return { id: 'alert', kind: 'device-low-battery', deviceId: 'hallway', deviceName: 'Hallway', openedAt: at(3, 8, 10), resolvedAt: null, details: { percent: 14 }, ...overrides }
+  return { id: 'alert', kind: 'device-low-battery', device: { id: 'hallway', name: 'Hallway' }, plugin: null, dataSource: null, openedAt: at(3, 8, 10), resolvedAt: null, details: { percent: 14 }, ...overrides }
 }
 
-const FETCH = { kind: 'data-source-fetch-failing', deviceId: undefined, deviceName: undefined, pluginId: 'trains', pluginName: 'Train departures', dataSourceId: 'source', dataSourceName: 'departures' } as const
+const FETCH = { kind: 'data-source-fetch-failing', device: null, plugin: { id: 'trains', name: 'Train departures' }, dataSource: { id: 'source', name: 'departures' } } as const
 const TOLD = { now: NOW, lowBatteryPercent: 20 }
 
 const words = (sentence: { text: string }[]) => sentence.map(part => part.text).join('')
@@ -76,7 +76,7 @@ describe('an Alert\'s subject', () => {
   })
 
   it('is its Plugin and Data Source, opening the Plugin page at that Data Source', () => {
-    expect(alertSubject(alert({ ...FETCH, dataSourceName: 'next departures' }))).toEqual({ name: 'Train departures', dataSource: 'next departures', to: '/plugins/trains?source=next%20departures' })
+    expect(alertSubject(alert({ ...FETCH, dataSource: { id: 'source', name: 'next departures' } }))).toEqual({ name: 'Train departures', dataSource: 'next departures', to: '/plugins/trains?source=next%20departures' })
   })
 })
 

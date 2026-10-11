@@ -29,7 +29,7 @@ describe('the Plugins list', () => {
   it('with ten Plugins on three Devices, every state of the state column and a fetch Alert firing', async () => {
     fakeShellReads({
       devices: [HALLWAY, KITCHEN, STUDY].map(({ id, name }) => buildDeviceSummary({ id, name })),
-      alerts: buildAlertsList({ active: [buildAlert({ kind: 'data-source-fetch-failing', deviceId: undefined, deviceName: undefined, pluginId: 'trains', pluginName: 'Train departures', dataSourceName: 'departures', details: null })] }),
+      alerts: buildAlertsList({ active: [buildAlert({ kind: 'data-source-fetch-failing', device: null, plugin: { id: 'trains', name: 'Train departures' }, dataSource: { id: 'source', name: 'departures' }, details: null })] }),
     })
     api.use(http.get(apiUrl('plugins'), () => HttpResponse.json(plugins)))
     const screen = await mountApp({ at: '/plugins' })

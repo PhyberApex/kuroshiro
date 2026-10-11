@@ -25,20 +25,15 @@ export interface FetchFailingDetails {
 /** The cause an Alert fired with, as of the last Alert Sweep while it fired. Which shape it is follows the Alert's kind. */
 export type AlertDetails = LowBatteryDetails | OfflineDetails | FetchFailingDetails
 
-// A Device-subject Alert carries deviceId/deviceName; a Data-Source-subject
-// Alert (data-source-fetch-failing) carries pluginId/pluginName/dataSourceId/
-// dataSourceName instead — never both (ADR-0025). The subject keys are
-// optional rather than null, an exception to the read-model shape rules of
-// docs/agents/api-contract.md.
+// A Device-subject Alert carries `device`; a Data-Source-subject Alert
+// (data-source-fetch-failing) carries `plugin` and `dataSource` instead —
+// never both (ADR-0025).
 export interface AlertSummary {
   id: string
   kind: AlertKind
-  deviceId?: string
-  deviceName?: string
-  dataSourceId?: string
-  dataSourceName?: string
-  pluginId?: string
-  pluginName?: string
+  device: { id: string, name: string } | null
+  plugin: { id: string, name: string } | null
+  dataSource: { id: string, name: string } | null
   openedAt: string
   resolvedAt: string | null
   details: AlertDetails | null

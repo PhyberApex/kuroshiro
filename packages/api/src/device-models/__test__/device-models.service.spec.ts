@@ -2,13 +2,12 @@ import type { DeviceReport } from '../device-models.service.js'
 import type { DeviceModel } from '../entities/device-model.entity.js'
 import type { Palette } from '../entities/palette.entity.js'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { BW, GRAY_4, GRAY_16, OG_PLUS, V2 } from '../../test/mockDeviceModelsService.js'
+import { BW, COLOR_6A, GRAY_4, GRAY_16, OG_PLUS, SEEED_E1002, V2 } from '../../test/mockDeviceModelsService.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
 import { DeviceModelsService } from '../device-models.service.js'
+import { PaletteSelectionService } from '../palette-selection.service.js'
 
 const SEEED_E1003 = { ...V2, name: 'seeed_e1003', label: 'reTerminal E1003', kind: 'byod' }
-const COLOR_6A = { ...BW, id: 'color-6a', name: 'Color (6 colors)', grays: 2, colors: ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#000000', '#FFFFFF'], frameworkClass: 'screen--color-6a', grayscaleBitDepth: 1 }
-const SEEED_E1002 = { ...OG_PLUS, name: 'seeed_e1002', label: 'reTerminal E1002', kind: 'byod', paletteIds: ['color-6a', 'bw'] }
 const OG_BWRY = { ...OG_PLUS, name: 'og_bwry', label: 'TRMNL OG (colour)', kind: 'trmnl' }
 const OG_PNG = { ...OG_PLUS, name: 'og_png', label: 'TRMNL OG (1-bit)', kind: 'trmnl' }
 const ONYX_BOOX_NOVA_AIR_C = { ...V2, name: 'onxy_boox_nova_air_c', label: 'Onyx Boox Nova Air C', kind: 'byod' }
@@ -41,7 +40,7 @@ describe('deviceModelsService', () => {
       const w = firstWhere(where)
       return palettes.find(p => p.id === w?.id) ?? null
     })
-    service = new DeviceModelsService(asRepository(modelRepo), asRepository(paletteRepo))
+    service = new DeviceModelsService(asRepository(modelRepo), new PaletteSelectionService(asRepository(paletteRepo)))
   })
 
   describe('resolve', () => {
@@ -80,28 +79,6 @@ describe('deviceModelsService', () => {
     it('deterministically prefers TRMNL hardware over BYOD at the same dimensions, regardless of DB order', async () => {
       modelRepo.find.mockResolvedValueOnce([ONYX_BOOX_NOVA_AIR_C, V2])
       await expect(service.resolve({ reportedModel: 'unknown_x_class', width: 1872, height: 1404 })).resolves.toBe(V2)
-    })
-  })
-
-  describe('defaultPaletteFor', () => {
-    it('picks the palette with the most grays', async () => {
-      await expect(service.defaultPaletteFor(V2)).resolves.toBe(GRAY_16)
-      await expect(service.defaultPaletteFor(OG_PLUS)).resolves.toBe(GRAY_4)
-    })
-
-    it('prefers a colour palette over grays', async () => {
-      await expect(service.defaultPaletteFor(SEEED_E1002)).resolves.toBe(COLOR_6A)
-    })
-
-    it('returns null when the model lists no known palettes', async () => {
-      await expect(service.defaultPaletteFor({ ...OG_PLUS, paletteIds: ['nope'] })).resolves.toBeNull()
-    })
-  })
-
-  describe('supportsPalette', () => {
-    it('accepts a curated official palette and refuses one the model does not list', async () => {
-      await expect(service.supportsPalette(OG_PLUS, GRAY_4)).resolves.toBe(true)
-      await expect(service.supportsPalette(OG_PLUS, GRAY_16)).resolves.toBe(false)
     })
   })
 

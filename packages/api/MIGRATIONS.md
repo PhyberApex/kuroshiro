@@ -8,7 +8,7 @@ The API uses TypeORM migrations to manage database schema changes. Migrations ru
 
 ## How It Works
 
-- **Automatic Migration**: When the API starts, `bootstrap()` in `src/main.ts` runs any pending migrations from `dist/src/migrations` before it listens. In dev, `nest start` compiles them there; the Docker image ships them there and its entrypoint also runs `typeorm migration:run` before starting the app
+- **Automatic Migration**: `app.module.ts` sets `migrationsRun: true`, so TypeORM runs any pending migrations from `dist/src/migrations` while its `DataSource` connects, inside `NestFactory.create()` — before any provider's `onModuleInit` runs, and before `bootstrap()` in `src/main.ts` lets the app listen. In dev, `nest start` compiles them there; the Docker image ships them there.
 - **Safe**: TypeORM tracks which migrations have run in the `migrations` table
 - **Idempotent**: Running the app multiple times won't re-run migrations
 - **Version Control**: All migrations are committed to git with the code

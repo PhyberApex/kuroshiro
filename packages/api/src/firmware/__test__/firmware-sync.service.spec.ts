@@ -41,7 +41,7 @@ describe('firmwareSyncService', () => {
   let service: FirmwareSyncService
   let firmwareRepo: ReturnType<typeof createMockTransactionalRepository<Firmware>> & { existsBy: ReturnType<typeof vi.fn> }
   let autoUpdateService: { applyPolicy: ReturnType<typeof vi.fn> }
-  let syncRuns: { record: ReturnType<typeof vi.fn> }
+  let syncRuns: { record: ReturnType<typeof vi.fn>, recordFailure: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     vi.resetAllMocks()
@@ -50,7 +50,7 @@ describe('firmwareSyncService', () => {
     fsMock.unlink.mockResolvedValue(undefined)
     firmwareRepo = Object.assign(createMockTransactionalRepository<Firmware>(), { existsBy: vi.fn().mockResolvedValue(false) })
     autoUpdateService = { applyPolicy: vi.fn().mockResolvedValue([]) }
-    syncRuns = { record: vi.fn().mockResolvedValue(undefined) }
+    syncRuns = { record: vi.fn().mockResolvedValue(undefined), recordFailure: vi.fn().mockResolvedValue(undefined) }
     service = new FirmwareSyncService(asRepository(firmwareRepo), asService<FirmwareAutoUpdateService>(autoUpdateService), asService<SyncRunService>(syncRuns))
   })
 
@@ -159,13 +159,7 @@ describe('firmwareSyncService', () => {
       mockFetch.mockResolvedValueOnce(jsonResponse(null, { ok: false }))
       await expect(service.sync()).rejects.toThrow(/request failed/)
       expect(firmwareRepo.insert).not.toHaveBeenCalled()
-      expect(syncRuns.record).toHaveBeenCalledWith('firmware', expect.any(Date), { ok: false, error: expect.stringContaining('request failed') })
-    })
-
-    it('still throws the upstream error when recording the failure fails', async () => {
-      mockFetch.mockResolvedValueOnce(jsonResponse(null, { ok: false }))
-      syncRuns.record.mockRejectedValue(new Error('database down'))
-      await expect(service.sync()).rejects.toThrow(/request failed/)
+      expect(syncRuns.recordFailure).toHaveBeenCalledWith('firmware', expect.any(Date), expect.objectContaining({ message: expect.stringContaining('request failed') }))
     })
 
     it('throws when the response is missing url/version', async () => {

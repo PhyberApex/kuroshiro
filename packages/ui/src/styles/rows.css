@@ -1,0 +1,143 @@
+/*
+What the UI's row components share: ScreenRow, FindingRow and DataSourceRow are one accordion row
+each, opened from anywhere on the line but a control of its own, with the focus ring on the line
+rather than the trigger inside it, and the same fold and unfold of what they open. ScreenRow and
+PluginFieldRow are both sortable rows, with the same grip, its 44 px hit area, and the same lifted
+and landing looks a drag leaves on the row. SettingRow, FieldValueRow and ReadRow lay their label,
+control and side out on the same grid, so a section that mixes them keeps its columns.
+*/
+@layer components {
+  .row-line {
+    min-height: var(--hit-target);
+    padding: var(--space-2) 0;
+    border-radius: var(--radius);
+    cursor: pointer;
+  }
+
+  .row-line:has(.row-trigger:focus-visible) {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-offset);
+  }
+
+  .row-trigger:focus-visible {
+    outline: 0;
+  }
+
+  .row-body {
+    overflow: hidden;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .row-body[data-state='open'] {
+      animation: row-unfold var(--duration-move) var(--ease-out);
+    }
+
+    .row-body[data-state='closed'] {
+      animation: row-fold var(--duration-move) var(--ease-out);
+    }
+  }
+
+  @keyframes row-unfold {
+    from { height: 0; }
+    to { height: var(--reka-accordion-content-height); }
+  }
+
+  @keyframes row-fold {
+    from { height: var(--reka-accordion-content-height); }
+    to { height: 0; }
+  }
+
+  .row-grip {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: var(--grip-width);
+    height: var(--control-height);
+    border-radius: var(--radius-inner);
+    color: var(--color-ink-soft);
+    cursor: grab;
+    transition: color var(--duration-quick) var(--ease-out);
+  }
+
+  /* The grip is 16 px wide; this is the 44 px a finger or a near miss lands on. */
+  .row-grip::before {
+    content: "";
+    position: absolute;
+    inset: 0 calc((var(--grip-width) - var(--hit-target)) / 2);
+  }
+
+  .row-grip:is(:hover, [aria-pressed='true']),
+  .row-lifted .row-grip {
+    color: var(--color-ink);
+  }
+
+  .row-lifted .row-grip {
+    cursor: grabbing;
+  }
+
+  /* The lifted row: on wash, in a 1 px ink outline. The 2 px ink line is where it will land. */
+  .row-lifted {
+    outline: 1px solid var(--color-ink);
+    outline-offset: -1px;
+    background: var(--color-wash);
+  }
+
+  .row-drop-before {
+    box-shadow: 0 -2px 0 var(--color-ink);
+  }
+
+  .row-drop-after {
+    box-shadow: 0 2px 0 var(--color-ink);
+  }
+
+  .fields-row {
+    display: grid;
+    grid-template-columns: var(--setting-label-width, 12.5rem) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-1) var(--space-4);
+    min-height: 3.25rem;
+    padding: var(--space-2) 0;
+  }
+
+  @media (max-width: 820px) {
+    .fields-row {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  /* A seal-coloured square, rationed to what reports a firing Alert: inline, beside a label's own text. */
+  .seal-dot {
+    display: inline-block;
+    width: var(--space-2);
+    height: var(--space-2);
+    margin-right: var(--space-2);
+    background: var(--color-seal);
+  }
+
+  /* The same square, as the first child of a flex line, baseline-aligned with the icon it stands beside. */
+  .seal-chip {
+    flex: none;
+    width: var(--space-2);
+    height: var(--space-2);
+    margin: calc((1lh - var(--space-2)) / 2) var(--space-1) 0;
+    background: var(--color-seal);
+  }
+
+  /* A link with a 44 px target at a coarse pointer, underlined off its descenders. */
+  .row-link {
+    text-underline-offset: 3px;
+    transition: color var(--duration-quick) var(--ease-out);
+  }
+
+  .row-link:hover {
+    color: var(--color-ink-hover);
+  }
+
+  @media (pointer: coarse) {
+    .row-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: var(--hit-target);
+    }
+  }
+}
