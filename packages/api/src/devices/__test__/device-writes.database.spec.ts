@@ -5,6 +5,7 @@ import type { PaletteSelectionService } from '../../device-models/palette-select
 import type { FirmwareService } from '../../firmware/firmware.service.js'
 import type { ScreensService } from '../../screens/screens.service.js'
 import type { HttpTestApp } from '../../test/httpApp.js'
+import type { DeviceSleepImageService } from '../device-sleep-image.service.js'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DeviceModel } from '../../device-models/entities/device-model.entity.js'
 import { Palette } from '../../device-models/entities/palette.entity.js'
@@ -30,6 +31,7 @@ describe('the Device write and delete against a real database', () => {
   let database: DataSource
   let http: HttpTestApp
   const reconvertImageScreens = vi.fn().mockResolvedValue(0)
+  const reconvertSleepImage = vi.fn().mockResolvedValue(undefined)
 
   beforeAll(async () => {
     database = await createTestDatabase()
@@ -53,13 +55,14 @@ describe('the Device write and delete against a real database', () => {
       controllers: [DevicesController],
       providers: [
         { provide: DeviceReadsService, useValue: new DeviceReadsService(devices, database.getRepository(Screen), deviceSensors) },
-        { provide: DevicesService, useValue: new DevicesService(devices, asService<DeviceModelsService>(deviceModels), asService<PaletteSelectionService>(paletteSelection), firmware, asService<ScreensService>({ reconvertImageScreens })) },
+        { provide: DevicesService, useValue: new DevicesService(devices, asService<DeviceModelsService>(deviceModels), asService<PaletteSelectionService>(paletteSelection), firmware, asService<ScreensService>({ reconvertImageScreens }), asService<DeviceSleepImageService>({ reconvert: reconvertSleepImage })) },
       ],
     })
   })
 
   beforeEach(async () => {
     reconvertImageScreens.mockClear()
+    reconvertSleepImage.mockClear()
     await database.getRepository(Device).createQueryBuilder().delete().execute()
   })
 
@@ -203,6 +206,7 @@ describe('the Device write and delete against a real database', () => {
       expect(body.deviceModel?.name).toBe('v2')
       expect(body.palette?.id).toBe('gray-16')
       expect(reconvertImageScreens).toHaveBeenCalledOnce()
+      expect(reconvertSleepImage).toHaveBeenCalledOnce()
     })
 
     it('refuses a Palette the Device Model does not support', async () => {

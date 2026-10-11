@@ -1510,6 +1510,31 @@ describe('deviceDisplayService', () => {
       expect(fallbackScreens.urlFor).toHaveBeenCalledWith({ kind: 'sleep' }, device, { model: OG_PLUS, palette: GRAY_4 })
     })
 
+    it('serves the Device\'s own sleep image instead of the shared Fallback Screen when it has one', async () => {
+      const sleepImageGeneratedAt = new Date('2026-08-20T00:00:00Z')
+      const device = makeDevice({ ...sleepingDevice, sleepScreenEnabled: true, sleepImageGeneratedAt })
+      deviceRepo.findOneBy.mockResolvedValue(device)
+
+      vi.setSystemTime(new Date('2026-08-22T23:00:00'))
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.filename).toBe(`sleep-image_${sleepImageGeneratedAt.toISOString()}`)
+      expect(result.image_url).toBe(`http://api/screens/devices/1/sleep-image.png`)
+      expect(fallbackScreens.urlFor).not.toHaveBeenCalled()
+    })
+
+    it('falls back to the shared Sleep Fallback Screen when the Device\'s own sleep image has gone missing from disk', async () => {
+      const device = makeDevice({ ...sleepingDevice, sleepScreenEnabled: true, sleepImageGeneratedAt: new Date('2026-08-20T00:00:00Z') })
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      fileExists.mockResolvedValue(false)
+
+      vi.setSystemTime(new Date('2026-08-22T23:00:00'))
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.filename).toBe('sleep.png')
+      expect(result.image_url).toBe('http://api/screens/sleep.png')
+    })
+
     it('keeps showing noScreen for a screenless device with the sleep screen disabled', async () => {
       deviceRepo.findOneBy.mockResolvedValue(sleepingDevice)
       screenRepo.findOneBy.mockResolvedValue(null)
@@ -1556,6 +1581,18 @@ describe('deviceDisplayService', () => {
         expect(result.filename).toBe('sleep.png')
         expect(result.image_url).toBe('http://api/screens/sleep.png')
         expect(result.refresh_rate).toBe(7 * 3600)
+      })
+
+      it('serves the Device\'s own sleep image instead of the shared Fallback Screen when it has one', async () => {
+        const sleepImageGeneratedAt = new Date('2026-08-20T00:00:00Z')
+        const device = makeDevice({ ...sleepingDevice, sleepScreenEnabled: true, sleepImageGeneratedAt })
+        deviceRepo.findOneBy.mockResolvedValue(device)
+
+        vi.setSystemTime(new Date('2026-08-22T23:00:00'))
+        const result = await service.getCurrentImageWithoutProgressing(headers)
+
+        expect(result.filename).toBe(`sleep-image_${sleepImageGeneratedAt.toISOString()}`)
+        expect(result.image_url).toBe(`http://api/screens/devices/1/sleep-image.png`)
       })
 
       it('keeps showing the active screen when the sleep screen is disabled', async () => {

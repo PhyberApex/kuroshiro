@@ -314,6 +314,15 @@ describe('toDeviceDetail', () => {
     expect(detail.reported).toEqual({ batteryVoltage: '3.99', rssi: '-62', firmwareVersion: '1.7.1', model: 'og', width: 800, height: 480 })
   })
 
+  it('reports the sleep image\'s URL with its generation time as a cache-busting version, null without one', () => {
+    const sleepImageGeneratedAt = new Date('2026-03-01T09:30:00.000Z')
+    const withImage = toDeviceDetail(makeDevice({ id: 'device-1', sleepImageGeneratedAt }), facts)
+    const withoutImage = toDeviceDetail(makeDevice({ id: 'device-1', sleepImageGeneratedAt: null }), facts)
+
+    expect(withImage.sleepImagePath).toBe(`/screens/devices/device-1/sleep-image.png?v=${sleepImageGeneratedAt.getTime()}`)
+    expect(withoutImage.sleepImagePath).toBeNull()
+  })
+
   it('has every key present, with null for what a bare Device does not have', () => {
     const detail = toDeviceDetail(makeDevice({ lastSeen: null }), facts)
 

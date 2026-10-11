@@ -11,6 +11,7 @@ import { FirmwareService } from '../firmware/firmware.service.js'
 import { ScreensService } from '../screens/screens.service.js'
 import generateApikey from '../utils/generateApikey.js'
 import generateFriendlyName from '../utils/generateFriendlyName.js'
+import { DeviceSleepImageService } from './device-sleep-image.service.js'
 import {
   applyFirmwareChanges,
   applyModelChange,
@@ -31,6 +32,7 @@ export class DevicesService {
     private paletteSelection: PaletteSelectionService,
     private firmwareService: FirmwareService,
     private screensService: ScreensService,
+    private deviceSleepImage: DeviceSleepImageService,
   ) {}
 
   async findById(id: string): Promise<Device | null> {
@@ -60,8 +62,10 @@ export class DevicesService {
     await applyFirmwareChanges(dbDevice, targetFirmwareId, pushWasPending, this.firmwareService)
     assertPushCanBeServed(dbDevice, changes.updateFirmware)
     const saved = await this.deviceRepository.save(dbDevice)
-    if (renderTargetChanged(before, saved))
+    if (renderTargetChanged(before, saved)) {
       await this.screensService.reconvertImageScreens(saved)
+      await this.deviceSleepImage.reconvert(saved)
+    }
     return saved
   }
 

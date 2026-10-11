@@ -80,6 +80,14 @@ export class Device {
   @Column('boolean', { default: false })
   sleepScreenEnabled: boolean
 
+  /**
+   * When the Device's own sleep image was last stored or reconverted; `null`
+   * while it has none. Bumped on both, so it also serves as the image's
+   * cache-busting version and the `filename` a poll is given.
+   */
+  @Column('timestamptz', { nullable: true })
+  sleepImageGeneratedAt?: Date | null
+
   @Column('boolean', { default: false })
   resetDevice: boolean
 

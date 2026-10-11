@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { ILike, Not, Repository } from 'typeorm'
+import { DeviceSleepImageService } from '../devices/device-sleep-image.service.js'
 import { Device } from '../devices/devices.entity.js'
 import { ApiException } from '../errors/api.exception.js'
 import { isUniqueViolation } from '../errors/unique-violation.js'
@@ -27,6 +28,7 @@ export class CustomPalettesService {
     private readonly deviceRepository: Repository<Device>,
     private readonly paletteSelection: PaletteSelectionService,
     private readonly screens: ScreensService,
+    private readonly deviceSleepImage: DeviceSleepImageService,
   ) {}
 
   /**
@@ -122,6 +124,7 @@ export class CustomPalettesService {
     for (const device of devices) {
       await this.screens.reconvertImageScreens(device).catch((error: unknown) =>
         this.logger.error(`Could not convert the images of Device ${device.id} again: ${getErrorMessage(error)}`))
+      await this.deviceSleepImage.reconvert(device)
     }
   }
 }

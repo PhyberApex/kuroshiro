@@ -41,6 +41,8 @@ const SYSTEM_FILES = new Set([
   'welcome.png',
   'sleep.png',
   'colormap-2bit.png',
+  'sleep-image.png',
+  'sleep-image.original',
 ])
 
 const TEMP_FILE_THRESHOLD_MS = 24 * 60 * 60 * 1000

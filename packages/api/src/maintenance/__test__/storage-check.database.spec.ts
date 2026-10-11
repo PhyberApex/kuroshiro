@@ -224,6 +224,16 @@ describe('the stored-files check and its cleanup, against a real database and re
       expect(answer.screenImages).toEqual({ files: 4, bytes: 40 })
     })
 
+    it('never lists a Device\'s own sleep image or its retained original as unused', async () => {
+      await store(inDeviceFolder(device.id, 'sleep-image.png'))
+      await store(inDeviceFolder(device.id, 'sleep-image.original'))
+
+      const answer = await check()
+
+      expect(answer.findings).toEqual([])
+      expect(answer.screenImages).toEqual({ files: 2, bytes: 20 })
+    })
+
     it('lists a File Screen whose image is gone with its name, kind, Device and Order', async () => {
       await seedScreenWithImage(1)
       const broken = await seedScreen(2, { filename: 'Holiday photo' })

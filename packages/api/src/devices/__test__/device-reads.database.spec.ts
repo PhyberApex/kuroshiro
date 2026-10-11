@@ -9,6 +9,7 @@ import type { ScreenRenderService } from '../../mashup/services/screen-render.se
 import type { PluginRendererService } from '../../plugins/services/plugin-renderer.service.js'
 import type { ScreensService } from '../../screens/screens.service.js'
 import type { HttpTestApp } from '../../test/httpApp.js'
+import type { DeviceSleepImageService } from '../device-sleep-image.service.js'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { offlineRule } from '../../alerts/rules/offline.rule.js'
 import { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
@@ -53,7 +54,7 @@ describe('the Device reads against a real database', () => {
       controllers: [DevicesController, DisplayController, SetupController],
       providers: [
         { provide: DeviceReadsService, useValue: new DeviceReadsService(devices, screens, deviceSensors) },
-        { provide: DevicesService, useValue: new DevicesService(devices, asService<DeviceModelsService>(deviceModels), asService<PaletteSelectionService>(paletteSelection), firmware, asService<ScreensService>({})) },
+        { provide: DevicesService, useValue: new DevicesService(devices, asService<DeviceModelsService>(deviceModels), asService<PaletteSelectionService>(paletteSelection), firmware, asService<ScreensService>({}), asService<DeviceSleepImageService>({ reconvert: vi.fn() })) },
         { provide: DeviceSetupService, useValue: new DeviceSetupService(devices, asService<DeviceModelsService>(deviceModels), asService<FallbackScreensService>(fallbackScreens)) },
         {
           provide: DeviceDisplayService,
