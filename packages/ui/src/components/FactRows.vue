@@ -20,11 +20,11 @@ const said = computed(() => props.facts.filter(fact => fact.value?.trim()))
   <dl v-if="said.length > 0" class="fact-rows">
     <div v-for="fact in said" :key="fact.label" class="fact" :class="{ alert: fact.alert }">
       <dt class="label">
-        <span v-if="fact.alert" class="square" aria-hidden="true" />{{ fact.alert ?? fact.label }}
+        <span v-if="fact.alert" class="seal-dot" aria-hidden="true" />{{ fact.alert ?? fact.label }}
       </dt>
       <dd class="value">
         <LoadingMark v-if="fact.pending" decorative />
-        <RouterLink v-if="fact.to" class="link" :to="fact.to">
+        <RouterLink v-if="fact.to" class="link row-link" :to="fact.to">
           <slot name="value" :fact="fact">
             {{ fact.value }}
           </slot>
@@ -72,31 +72,6 @@ const said = computed(() => props.facts.filter(fact => fact.value?.trim()))
   .fact.alert :is(.label, .value) {
     color: var(--color-seal);
     font-weight: var(--weight-medium);
-  }
-
-  .square {
-    display: inline-block;
-    width: var(--space-2);
-    height: var(--space-2);
-    margin-right: var(--space-2);
-    background: var(--color-seal);
-  }
-
-  .link {
-    text-underline-offset: 3px;
-    transition: color var(--duration-quick) var(--ease-out);
-  }
-
-  .link:hover {
-    color: var(--color-ink-hover);
-  }
-
-  @media (pointer: coarse) {
-    .link {
-      display: inline-flex;
-      align-items: center;
-      min-height: var(--hit-target);
-    }
   }
 }
 </style>

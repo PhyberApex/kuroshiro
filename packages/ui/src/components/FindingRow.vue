@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { AccordionContent, AccordionHeader, AccordionItem, AccordionTrigger } from 'reka-ui'
+import { AccordionContent, AccordionItem } from 'reka-ui'
 import { useTemplateRef } from 'vue'
+import AccordionRowHeading from './AccordionRowHeading.vue'
 import Checkbox from './Checkbox.vue'
 import Icon from './Icon.vue'
 
@@ -45,17 +46,13 @@ function openFromLine(event: MouseEvent) {
 <template>
   <AccordionItem as-child :value="value">
     <li class="finding-row">
-      <div class="line" :data-force="force" @click="openFromLine">
+      <div class="line row-line" :data-force="force" @click="openFromLine">
         <Checkbox v-model="ticked" :aria-label="name" />
-        <AccordionHeader as-child>
-          <component :is="heading" class="heading">
-            <AccordionTrigger as-child>
-              <button ref="trigger" type="button" class="trigger">
-                {{ name }}
-              </button>
-            </AccordionTrigger>
-          </component>
-        </AccordionHeader>
+        <AccordionRowHeading :heading="heading">
+          <button ref="trigger" type="button" class="trigger row-trigger">
+            {{ name }}
+          </button>
+        </AccordionRowHeading>
         <span class="facts">
           <span>{{ count }}</span>
           <span class="size">{{ size }}</span>
@@ -63,7 +60,7 @@ function openFromLine(event: MouseEvent) {
         <Icon name="chevron" class="chevron" />
       </div>
       <AccordionContent as-child>
-        <div class="body">
+        <div class="body row-body">
           <div class="inside">
             <slot />
           </div>
@@ -84,19 +81,6 @@ function openFromLine(event: MouseEvent) {
     grid-template-columns: var(--icon) minmax(0, 1fr) auto var(--icon);
     align-items: center;
     gap: var(--space-1) var(--space-3);
-    min-height: var(--hit-target);
-    padding: var(--space-2) 0;
-    border-radius: var(--radius);
-    cursor: pointer;
-  }
-
-  .line:has(.trigger:focus-visible) {
-    outline: var(--focus-ring);
-    outline-offset: var(--focus-offset);
-  }
-
-  .trigger:focus-visible {
-    outline: 0;
   }
 
   .heading {
@@ -143,33 +127,9 @@ function openFromLine(event: MouseEvent) {
     rotate: 180deg;
   }
 
-  .body {
-    overflow: hidden;
-  }
-
   /* What a group holds lines up with its name, past the checkbox. */
   .inside {
     padding: 0 0 var(--space-5) calc(var(--icon) + var(--space-3));
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    .body[data-state='open'] {
-      animation: unfold var(--duration-move) var(--ease-out);
-    }
-
-    .body[data-state='closed'] {
-      animation: fold var(--duration-move) var(--ease-out);
-    }
-  }
-
-  @keyframes unfold {
-    from { height: 0; }
-    to { height: var(--reka-accordion-content-height); }
-  }
-
-  @keyframes fold {
-    from { height: var(--reka-accordion-content-height); }
-    to { height: 0; }
   }
 
   /* On phone the count and the size go under the name. */

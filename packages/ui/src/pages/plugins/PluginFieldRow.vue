@@ -47,14 +47,14 @@ watchEffect((onCleanup) => {
     <li
       ref="row"
       class="plugin-field-row"
-      :class="{ 'removed': field.removed, 'lifted': liftedBy, 'drop-before': dropEdge === 'before', 'drop-after': dropEdge === 'after' }"
+      :class="{ 'removed': field.removed, 'row-lifted': liftedBy, 'row-drop-before': dropEdge === 'before', 'row-drop-after': dropEdge === 'after' }"
     >
       <div class="line">
         <template v-if="!field.removed">
           <Tooltip :text="`Move ${keyname}`">
             <button
               type="button"
-              class="grip"
+              class="grip row-grip"
               data-grip
               :aria-label="`Move ${keyname}`"
               :aria-describedby="rows.gripHelpId"
@@ -122,34 +122,6 @@ watchEffect((onCleanup) => {
     padding: var(--space-2) 0;
   }
 
-  .grip {
-    position: relative;
-    display: grid;
-    place-items: center;
-    width: var(--grip-width);
-    height: var(--control-height);
-    border-radius: var(--radius-inner);
-    color: var(--color-ink-soft);
-    cursor: grab;
-    transition: color var(--duration-quick) var(--ease-out);
-  }
-
-  /* The grip is 16 px wide; this is the 44 px a finger or a near miss lands on. */
-  .grip::before {
-    content: "";
-    position: absolute;
-    inset: 0 calc((var(--grip-width) - var(--hit-target)) / 2);
-  }
-
-  .grip:is(:hover, [aria-pressed='true']),
-  .plugin-field-row.lifted .grip {
-    color: var(--color-ink);
-  }
-
-  .plugin-field-row.lifted .grip {
-    cursor: grabbing;
-  }
-
   .nudge {
     display: none;
   }
@@ -188,21 +160,6 @@ watchEffect((onCleanup) => {
   /* In the row's line a button is as high as the line of text it stands in. */
   .put-back {
     min-height: 0;
-  }
-
-  /* The lifted row: on wash, in a 1 px ink outline. The 2 px ink line is where it will land. */
-  .lifted {
-    outline: 1px solid var(--color-ink);
-    outline-offset: -1px;
-    background: var(--color-wash);
-  }
-
-  .drop-before {
-    box-shadow: 0 -2px 0 var(--color-ink);
-  }
-
-  .drop-after {
-    box-shadow: 0 2px 0 var(--color-ink);
   }
 
   .body {
