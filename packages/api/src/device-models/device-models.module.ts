@@ -16,6 +16,6 @@ import { PaletteSelectionService } from './palette-selection.service.js'
   imports: [TypeOrmModule.forFeature([DeviceModel, Palette, Device]), ConfigModule, SyncRunsModule],
   controllers: [DeviceModelsController],
   providers: [DeviceModelsService, PaletteSelectionService, DeviceModelSyncService, DeviceModelReadsService, FallbackScreensService],
-  exports: [DeviceModelsService, PaletteSelectionService, DeviceModelReadsService, FallbackScreensService],
+  exports: [DeviceModelsService, PaletteSelectionService, DeviceModelReadsService, FallbackScreensService, DeviceModelSyncService],
 })
 export class DeviceModelsModule {}

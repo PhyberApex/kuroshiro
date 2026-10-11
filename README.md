@@ -274,6 +274,8 @@ Everything else under `/app/public` ships with the image or is a cache Kuroshiro
 
 `pnpm run dev` starts the API on `KUROSHIRO_PORT` (`3000` when unset) and, once that port answers, the admin UI's Vite dev server on [http://localhost:5173](http://localhost:5173), which proxies `/api` and `/screens` to the same port. The API runs pending migrations every time it starts, in dev as in the image.
 
+Set `KUROSHIRO_DEMO_MODE=true` in your `.env` to start with a furnished instance instead of an empty one — Kuroshiro seeds a showcase Device, Plugins and Screens the first time it boots against an empty database.
+
 To start postgres in docker you can run
 ```
 export $(cat .env | xargs) && \
