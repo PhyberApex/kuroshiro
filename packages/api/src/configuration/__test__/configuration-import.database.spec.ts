@@ -248,6 +248,7 @@ describe('reading and importing a Configuration Archive, against a real database
     expect((await imported.json() as ConfigurationImportSummary).warnings).toEqual([
       { kind: 'previous-version-values-dropped', plugin: weather },
       { kind: 'previous-version-values-dropped', plugin: { id: DOORBELL, name: 'Doorbell note' } },
+      { kind: 'device-apikeys-kept' },
     ])
   })
 

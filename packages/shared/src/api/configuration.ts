@@ -5,11 +5,14 @@ export interface Ref {
 }
 
 /**
- * What a Configuration Import did that the admin has to know about, by kind and with the
- * record it is about. The page words each one; the server never sends a sentence.
+ * What a Configuration Import did that the admin has to know about, by kind and, for every
+ * kind but `device-apikeys-kept`, with the record it is about: that one summarizes every
+ * Device the import left alone, so it names none of them. The page words each one; the
+ * server never sends a sentence.
  */
 export type ImportWarning
   = | { kind: 'device-apikey-redacted', device: Ref }
+    | { kind: 'device-apikeys-kept' }
     | { kind: 'mirror-apikey-redacted', device: Ref }
     | { kind: 'webhook-token-redacted', plugin: Ref }
     | { kind: 'header-redacted', plugin: Ref, dataSource: string, header: string }

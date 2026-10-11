@@ -835,7 +835,7 @@ describe('configurationImportService', () => {
 
     const device = [...backing.get('Device')!.values()][0]
     expect(device.mirrorApikey).toBe('real-mirror-key')
-    expect(summary.warnings).toEqual([])
+    expect(summary.warnings).toEqual([{ kind: 'device-apikeys-kept' }])
   })
 
   it('unsets a brand-new Device\'s mirrorApikey with a warning when the archive holds the sentinel', async () => {
@@ -866,6 +866,37 @@ describe('configurationImportService', () => {
 
     const device = [...backing.get('Device')!.values()][0]
     expect(device.apikey).toBe('existing-key')
+    expect(summary.warnings).toEqual([])
+  })
+
+  it('keeps an existing Device\'s apikey, with a warning said once, when the unredacted archive holds a different key for it', async () => {
+    backing.get('Device')!.set('device-1', {
+      id: 'device-1',
+      name: 'Old',
+      friendlyId: 'OLD1',
+      mac: 'AA:BB:CC:DD:EE:FF',
+      apikey: 'existing-key',
+      refreshRate: 300,
+      sleepModeEnabled: false,
+      sleepScreenEnabled: false,
+    })
+
+    const buffer = buildArchive({ devices: [makeDeviceEntry({ apikey: 'leaked-archived-key' })] })
+
+    const summary = await service.importFromZip(buffer)
+
+    const device = [...backing.get('Device')!.values()][0]
+    expect(device.apikey).toBe('existing-key')
+    expect(summary.warnings).toEqual([{ kind: 'device-apikeys-kept' }])
+  })
+
+  it('creates a brand-new Device with the unredacted archive\'s own apikey, as onto a fresh Instance', async () => {
+    const buffer = buildArchive({ devices: [makeDeviceEntry({ apikey: 'fresh-archived-key' })] })
+
+    const summary = await service.importFromZip(buffer)
+
+    const device = [...backing.get('Device')!.values()][0]
+    expect(device.apikey).toBe('fresh-archived-key')
     expect(summary.warnings).toEqual([])
   })
 

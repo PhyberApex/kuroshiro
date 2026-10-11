@@ -332,6 +332,50 @@ describe('the Device write and delete against a real database', () => {
     })
   })
 
+  describe('regenerate-apikey', () => {
+    function regenerate(id: string): Promise<Response> {
+      return http.request(`/api/devices/${id}/regenerate-apikey`, { method: 'POST' })
+    }
+
+    it('replaces the apikey at once, which the display auth check (an equality against whatever is stored) sees immediately', async () => {
+      const device = await registerDevice({ apikey: 'old-key' })
+
+      const response = await regenerate(device.id)
+
+      expect(response.status).toBe(200)
+      const body = await response.json() as DeviceDetail
+      expect(body.apikey).not.toBe('old-key')
+      expect((await stored(device.id)).apikey).toBe(body.apikey)
+    })
+
+    it('answers 404 device-not-found for an unknown or malformed id', async () => {
+      for (const id of [UNKNOWN_ID, 'nope']) {
+        const response = await regenerate(id)
+        expect(response.status).toBe(404)
+        expect(await response.json()).toMatchObject({ code: 'device-not-found' })
+      }
+    })
+
+    it('refuses a Proxied Device with 409 device-apikey-proxied and leaves its apikey untouched', async () => {
+      const device = await registerDevice({ apikey: 'old-key', mirrorEnabled: true, mirrorMac: 'AA:BB:CC:DD:EE:01', mirrorApikey: 'k' })
+
+      const response = await regenerate(device.id)
+
+      expect(response.status).toBe(409)
+      expect(await response.json()).toMatchObject({ code: 'device-apikey-proxied' })
+      expect((await stored(device.id)).apikey).toBe('old-key')
+    })
+
+    it('allows a mirrored Device that is not Proxied', async () => {
+      const device = await registerDevice({ apikey: 'old-key', mirrorEnabled: true, mirrorMac: 'AA:BB:CC:DD:EE:99', mirrorApikey: 'k' })
+
+      const response = await regenerate(device.id)
+
+      expect(response.status).toBe(200)
+      expect((await stored(device.id)).apikey).not.toBe('old-key')
+    })
+  })
+
   describe('delete', () => {
     it('answers 204 and removes the Device', async () => {
       const device = await registerDevice()

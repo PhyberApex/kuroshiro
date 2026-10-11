@@ -19,6 +19,7 @@ import {
   assertApikeyRotationAllowed,
   assertPushCanBeServed,
   assertSleepWindowConfigured,
+  isProxiedDevice,
   renderTargetChanged,
 } from './device-update-rules.js'
 import { Device } from './devices.entity.js'
@@ -69,6 +70,17 @@ export class DevicesService {
       await this.deviceSleepImage.reconvert(saved)
     }
     return saved
+  }
+
+  /** Replaces the Device's apikey at once, as `generateApikey` would at registration; refused on a Proxied Device, which TRMNL authenticates (ADR-0039). */
+  async regenerateApikey(id: string): Promise<Device | null> {
+    const device = await this.findByIdOrNull(id)
+    if (!device)
+      return null
+    if (isProxiedDevice(device))
+      throw new ApiException(HttpStatus.CONFLICT, 'device-apikey-proxied', 'A Proxied Device is not given a new API key here.', { id })
+    device.apikey = generateApikey()
+    return this.deviceRepository.save(device)
   }
 
   async remove(id: string): Promise<boolean> {

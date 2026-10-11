@@ -21,6 +21,11 @@ export function updateDevice(deviceId: string, input: UpdateDeviceInput) {
   return apiSend<DeviceDetail>('PATCH', `devices/${deviceId}`, input)
 }
 
+/** Replaces the Device's apikey at once: its old key's next poll gets 401. Refused with `device-apikey-proxied` on a Proxied Device. */
+export function regenerateApikey(deviceId: string) {
+  return apiSend<DeviceDetail>('POST', `devices/${deviceId}/regenerate-apikey`)
+}
+
 /** One page of a Device Log, newest first. `after` with `limit: 0` answers only the counts of what arrived since. */
 export function listDeviceLogs(deviceId: string, query: DeviceLogsQuery = {}) {
   return apiGet<DeviceLogPage>(`devices/${deviceId}/logs`, { ...query })
