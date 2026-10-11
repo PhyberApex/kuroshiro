@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsup'
 
 export default defineConfig({
-  entry: ['src/main.ts', 'src/check-env.ts'],
+  entry: ['src/main.ts'],
   format: ['esm'],
   dts: false,
   splitting: false,
