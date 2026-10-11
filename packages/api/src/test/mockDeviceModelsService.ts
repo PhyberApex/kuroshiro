@@ -23,7 +23,10 @@ export const V2: DeviceModel = {
 export const BW: Palette = { id: 'bw', name: 'Black & White (1-bit)', kind: 'official', grays: 2, colors: null, frameworkClass: 'screen--1bit', grayscaleBitDepth: null, deprecated: false, syncedAt: null }
 export const GRAY_4: Palette = { id: 'gray-4', name: '4 Grays (2-bit)', kind: 'official', grays: 4, colors: null, frameworkClass: 'screen--2bit', grayscaleBitDepth: null, deprecated: false, syncedAt: null }
 export const GRAY_16: Palette = { id: 'gray-16', name: '16 Grays (4-bit)', kind: 'official', grays: 16, colors: null, frameworkClass: 'screen--4bit', grayscaleBitDepth: null, deprecated: false, syncedAt: null }
+export const COLOR_6A: Palette = { id: 'color-6a', name: 'Color (6 colors)', kind: 'official', grays: 2, colors: ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#000000', '#FFFFFF'], frameworkClass: 'screen--color-6a', grayscaleBitDepth: 1, deprecated: false, syncedAt: null }
 export const CUSTOM_RED_3BWR: Palette = { id: 'a1b2c3d4-e5f6-4789-a0b1-c2d3e4f5a6b7', name: 'My Red', kind: 'custom', grays: 2, colors: ['#ff0000', '#ffffff', '#000000'], frameworkClass: 'screen--color-3bwr', grayscaleBitDepth: null, deprecated: false, syncedAt: null }
+
+export const SEEED_E1002: DeviceModel = { ...OG_PLUS, name: 'seeed_e1002', label: 'reTerminal E1002', kind: 'byod', paletteIds: ['color-6a', 'bw'] }
 
 export interface MockDeviceModelsService {
   findAll: Mock

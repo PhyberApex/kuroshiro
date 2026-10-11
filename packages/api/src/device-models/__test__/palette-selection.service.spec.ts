@@ -1,11 +1,8 @@
 import type { Palette } from '../entities/palette.entity.js'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { BW, GRAY_4, GRAY_16, OG_PLUS, V2 } from '../../test/mockDeviceModelsService.js'
+import { BW, COLOR_6A, GRAY_4, GRAY_16, OG_PLUS, SEEED_E1002, V2 } from '../../test/mockDeviceModelsService.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
 import { PaletteSelectionService } from '../palette-selection.service.js'
-
-const COLOR_6A = { ...BW, id: 'color-6a', name: 'Color (6 colors)', grays: 2, colors: ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#000000', '#FFFFFF'], frameworkClass: 'screen--color-6a', grayscaleBitDepth: 1 }
-const SEEED_E1002 = { ...OG_PLUS, name: 'seeed_e1002', label: 'reTerminal E1002', kind: 'byod', paletteIds: ['color-6a', 'bw'] }
 
 function firstWhere<T>(where: T | T[] | undefined): T | undefined {
   return Array.isArray(where) ? where[0] : where

@@ -1,3 +1,4 @@
+import type { ScreenManifestEntry } from '../types.js'
 import { Buffer } from 'node:buffer'
 import { existsSync, readFileSync } from 'node:fs'
 import { Injectable } from '@nestjs/common'
@@ -75,11 +76,11 @@ export class ConfigurationExportService {
 
     this.addJson(zip, CONFIG_ARCHIVE_FILES.devices, devices.map(device => buildDeviceEntry(device, redact)))
 
-    const screenEntries = screens.map((screen) => {
-      const entry = buildScreenEntry(screen)
+    const screenEntries: ScreenManifestEntry[] = []
+    for (const screen of screens) {
+      screenEntries.push(buildScreenEntry(screen))
       this.addScreenImage(zip, screen)
-      return entry
-    })
+    }
     this.addJson(zip, CONFIG_ARCHIVE_FILES.screens, screenEntries)
 
     this.addJson(zip, CONFIG_ARCHIVE_FILES.assignments, assignments.map(assignment => buildAssignmentEntry(assignment)))
