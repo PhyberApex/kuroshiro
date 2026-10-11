@@ -13,6 +13,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { offlineRule } from '../../alerts/rules/offline.rule.js'
 import { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
 import { DeviceSensor } from '../../device-sensors/entities/device-sensor.entity.js'
+import { Plugin } from '../../plugins/entities/plugin.entity.js'
 import { Screen } from '../../screens/screens.entity.js'
 import { createHttpTestApp } from '../../test/httpApp.js'
 import { createMockDeviceModelsService, createMockFallbackScreensService, createMockPaletteSelectionService, primeMockDeviceModelsService, primeMockFallbackScreensService } from '../../test/mockDeviceModelsService.js'
@@ -92,6 +93,17 @@ describe('the Device reads against a real database', () => {
     return database.getRepository(Screen).save({ type: 'file', filename: name, order: 0, isActive: false, fetchManual: false, generatedAt: new Date('2026-03-01T09:30:00.000Z'), device })
   }
 
+  async function addPluginScreen(device: Device, pluginName: string): Promise<Screen> {
+    const plugin = await database.getRepository(Plugin).save({ name: pluginName })
+    return database.getRepository(Screen).save({ type: 'plugin', filename: null, plugin, order: 0, isActive: false, fetchManual: false, generatedAt: new Date('2026-03-01T09:30:00.000Z'), device })
+  }
+
+  async function readList(): Promise<DeviceSummary[]> {
+    const response = await http.request('/api/devices')
+    expect(response.status).toBe(200)
+    return response.json()
+  }
+
   async function poll(device: Device, headers: Record<string, string> = {}): Promise<{ image_url: string, refresh_rate: number }> {
     const response = await http.request('/api/display', { headers: { 'id': device.mac, 'access-token': device.apikey, ...headers } })
     expect(response.status).toBe(200)
@@ -149,6 +161,18 @@ describe('the Device reads against a real database', () => {
       })
       expect(new Date(detail.nextPollAt!).getTime()).toBe(new Date(detail.lastSeenAt!).getTime() + answer.refresh_rate * 1000)
       expect(detail.screenCount).toBe(1)
+    })
+
+    it('names the Current Screen after its Plugin, in the list and in the detail, when the last served Screen is a Plugin Screen', async () => {
+      const device = await register('Kitchen')
+      const weatherPlugin = await addPluginScreen(device, 'Weather')
+
+      await poll(device)
+      const detail = await readDetail(device.id)
+      const list = await readList()
+
+      expect(detail.currentScreen).toMatchObject({ kind: 'screen', screenId: weatherPlugin.id, name: 'Weather' })
+      expect(list.find(summary => summary.id === device.id)?.currentScreen).toMatchObject({ kind: 'screen', screenId: weatherPlugin.id, name: 'Weather' })
     })
 
     it('reads the no-screen Fallback Screen for a Device without Screens', async () => {

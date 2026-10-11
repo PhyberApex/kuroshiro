@@ -48,7 +48,7 @@ export class DeviceReadsService {
     const ids = devices.flatMap(device => device.lastServedScreenId ? [device.lastServedScreenId] : [])
     if (ids.length === 0)
       return new Map()
-    const screens = await this.screenRepository.find({ where: { id: In(ids) } })
+    const screens = await this.screenRepository.find({ where: { id: In(ids) }, relations: { plugin: true } })
     return new Map(screens.map(screen => [screen.id, screen]))
   }
 
