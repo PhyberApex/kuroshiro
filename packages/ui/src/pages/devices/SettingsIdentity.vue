@@ -6,6 +6,7 @@ import CopyValue from '@/components/CopyValue.vue'
 import TuckedSection from '@/components/TuckedSection.vue'
 import ReadRow from '@/patterns/ReadRow.vue'
 import { maskedKey, SETTINGS_SECTIONS } from './deviceSettings'
+import RegenerateApikey from './RegenerateApikey.vue'
 
 defineProps<{
   device: DeviceDetail
@@ -29,6 +30,9 @@ const revealed = ref(false)
           {{ revealed ? 'Hide' : 'Reveal' }}
         </Button>
       </span>
+      <template v-if="!device.isProxied" #note>
+        <RegenerateApikey :device="device" @regenerated="revealed = true" />
+      </template>
     </ReadRow>
   </TuckedSection>
 </template>

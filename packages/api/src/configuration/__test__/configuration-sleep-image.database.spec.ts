@@ -156,7 +156,7 @@ describe('a Device\'s own sleep image, through Configuration Export and Import, 
 
     const summary = await importService.importFromZip(archive)
 
-    expect(summary.warnings).toEqual([{ kind: 'sleep-image-failed', device: { id: device.id, name: 'Kitchen' } }])
+    expect(summary.warnings).toEqual([{ kind: 'sleep-image-failed', device: { id: device.id, name: 'Kitchen' } }, { kind: 'device-apikeys-kept' }])
     const restored = await database.getRepository(Device).findOneByOrFail({ id: device.id })
     expect(restored.name).toBe('Kitchen')
     expect(restored.sleepImageGeneratedAt).toBeNull()

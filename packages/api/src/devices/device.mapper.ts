@@ -35,7 +35,7 @@ const WAITING_FOR_FIRST_POLL: CurrentScreen = {
   servedAt: null,
 }
 
-function isProxied(device: Device): boolean {
+export function isProxied(device: Device): boolean {
   return !!device.mirrorEnabled && device.mirrorMac === device.mac
 }
 

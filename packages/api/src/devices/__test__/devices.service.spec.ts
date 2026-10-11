@@ -245,6 +245,40 @@ describe('devicesService', () => {
     })
   })
 
+  describe('regenerateApikey', () => {
+    it('replaces the apikey with a freshly generated one', async () => {
+      const original = baseDevice.apikey
+      repo.findOneBy.mockResolvedValue(makeDevice({ ...baseDevice }))
+      repo.save.mockImplementation(async device => device as Device)
+      const result = await service.regenerateApikey(DEVICE_ID)
+      expect(repo.findOneBy).toHaveBeenCalledWith({ id: DEVICE_ID })
+      expect(result?.apikey).toBeTypeOf('string')
+      expect(result?.apikey).not.toBe(original)
+      expect(repo.save).toHaveBeenCalledWith(expect.objectContaining({ apikey: result?.apikey }))
+    })
+
+    it('returns null if device not found', async () => {
+      repo.findOneBy.mockResolvedValue(null)
+      const result = await service.regenerateApikey(DEVICE_ID)
+      expect(result).toBeNull()
+      expect(repo.save).not.toHaveBeenCalled()
+    })
+
+    it('refuses a Proxied Device', async () => {
+      const proxied = makeDevice({ ...baseDevice, mirrorEnabled: true, mirrorMac: baseDevice.mac })
+      repo.findOneBy.mockResolvedValue(proxied)
+      await expect(service.regenerateApikey(DEVICE_ID)).rejects.toMatchObject({ code: 'device-apikey-proxied' })
+      expect(repo.save).not.toHaveBeenCalled()
+    })
+
+    it('allows a mirrored Device that is not Proxied', async () => {
+      const mirrored = makeDevice({ ...baseDevice, mirrorEnabled: true, mirrorMac: '00:00:00:00:00:99' })
+      repo.findOneBy.mockResolvedValue(mirrored)
+      repo.save.mockImplementation(async device => device as Device)
+      await expect(service.regenerateApikey(DEVICE_ID)).resolves.toBeTruthy()
+    })
+  })
+
   it('remove deletes a device and returns true', async () => {
     repo.findOneBy.mockResolvedValue(baseDevice)
     repo.remove.mockResolvedValue(baseDevice)
