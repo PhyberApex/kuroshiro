@@ -1,5 +1,5 @@
 import type { ScheduleInput, ScheduleRead } from 'kuroshiro-shared'
-import type { Weekday } from '@/components/WeekdayToggle.vue'
+import type { Weekday } from '@/components/weekdays'
 
 const EVERY_WEEKDAY: Weekday[] = [0, 1, 2, 3, 4, 5, 6]
 

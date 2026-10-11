@@ -2,28 +2,9 @@ import type { Mock } from 'vitest'
 import type { DeviceModel } from '../device-models/entities/device-model.entity.js'
 import type { Palette } from '../device-models/entities/palette.entity.js'
 import { vi } from 'vitest'
+import { makeDeviceModel } from './fixtures.js'
 
-export const OG_PLUS: DeviceModel = {
-  name: 'og_plus',
-  label: 'TRMNL OG (2-bit)',
-  description: null,
-  width: 800,
-  height: 480,
-  colors: 4,
-  bitDepth: 2,
-  scaleFactor: 1,
-  rotation: 0,
-  offsetX: 0,
-  offsetY: 0,
-  mimeType: 'image/png',
-  kind: 'trmnl',
-  paletteIds: ['bw', 'gray-4'],
-  cssClasses: ['screen--og_plus', 'screen--md', 'screen--density-1x'],
-  cssVariables: { '--screen-w': '800px', '--screen-h': '480px' },
-  imageSizeLimit: 90000,
-  deprecated: false,
-  syncedAt: null,
-}
+export const OG_PLUS: DeviceModel = makeDeviceModel()
 
 export const V2: DeviceModel = {
   ...OG_PLUS,

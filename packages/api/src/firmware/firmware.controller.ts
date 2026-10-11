@@ -1,9 +1,8 @@
 import type { FirmwareList, FirmwareRead, FirmwareSyncResult } from 'kuroshiro-shared'
 import { BadRequestException, Body, Controller, Delete, Get, HttpCode, Logger, Param, Post, UploadedFile, UseInterceptors } from '@nestjs/common'
-import { ApiException } from '../errors/api.exception.js'
+import { syncOr502 } from '../errors/sync-or-502.js'
 import { LimitedFileInterceptor } from '../uploads/limited-file-interceptor.js'
 import { UPLOAD_LIMITS } from '../uploads/upload-limits.js'
-import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { UploadFirmwareDto } from './dto/upload-firmware.dto.js'
 import { FirmwareReadsService } from './firmware-reads.service.js'
 import { FirmwareSyncService } from './firmware-sync.service.js'
@@ -25,15 +24,8 @@ export class FirmwareController {
   }
 
   @Post('sync')
-  async sync(): Promise<FirmwareSyncResult> {
-    try {
-      return await this.syncService.sync()
-    }
-    catch (err) {
-      const message = getErrorMessage(err)
-      this.logger.error(`Firmware sync failed: ${message}`)
-      throw new ApiException(502, 'upstream-unreachable', `Could not sync firmware from TRMNL: ${message}`, { reason: message })
-    }
+  sync(): Promise<FirmwareSyncResult> {
+    return syncOr502(this.logger, 'firmware', () => this.syncService.sync())
   }
 
   @Post('upload')

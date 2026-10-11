@@ -1,5 +1,4 @@
-import type { DeviceDetail, DeviceSummary, ScreenRead } from 'kuroshiro-shared'
-import type { DisplayAnswer, SetupAnswer } from '@/api/deviceCalls'
+import type { DeviceDetail, DeviceSummary, DisplayAnswer, ScreenRead, SetupAnswer } from 'kuroshiro-shared'
 import { http, HttpResponse } from 'msw'
 import { expect } from 'vitest'
 import { api, apiUrl } from '@/testing/api/server'

@@ -1,5 +1,4 @@
-import type { CurrentScreen, DeviceDetail, FallbackKind, ScreenRead, SensorReading } from 'kuroshiro-shared'
-import type { DisplayAnswer } from '@/api/deviceCalls'
+import type { CurrentScreen, DeviceDetail, DisplayAnswer, FallbackKind, ScreenRead, SensorReading } from 'kuroshiro-shared'
 import type { Sentence, SentencePart } from '@/pages/devices/sentence'
 import { possessive, screenName } from '@/pages/devices/screenNaming'
 import { sentence, strong } from '@/pages/devices/sentence'
