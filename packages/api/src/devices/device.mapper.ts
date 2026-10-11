@@ -6,6 +6,7 @@ import { FALLBACK_SCREEN_TEMPLATE_VERSION } from '../device-models/fallback-scre
 import { screenNameOf } from '../screens/screen-name.js'
 import { toImagePath, toIsoString, toIsoStringOrNull } from '../utils/readModel.js'
 import { sleepImageRootRelativePath } from './device-sleep-image.service.js'
+import { isProxiedDevice } from './device-update-rules.js'
 import { nextPollOf } from './next-poll.js'
 import { isDeviceAsleep, nextSleepEnd, toClockTime } from './sleep-mode.js'
 
@@ -35,10 +36,6 @@ const WAITING_FOR_FIRST_POLL: CurrentScreen = {
   servedAt: null,
 }
 
-export function isProxied(device: Device): boolean {
-  return !!device.mirrorEnabled && device.mirrorMac === device.mac
-}
-
 interface ServedImage {
   at: Date
   path: string
@@ -53,7 +50,7 @@ function servedImageOf(device: Device): ServedImage | null {
 function toMirroredScreen(device: Device, image: ServedImage): CurrentScreen {
   return {
     kind: 'mirror',
-    proxied: isProxied(device),
+    proxied: isProxiedDevice(device),
     mirrorMac: device.mirrorMac ?? '',
     imagePath: toImagePath(image.path, image.at),
     fetchedAt: toIsoString(image.at),
@@ -137,7 +134,7 @@ export function toDeviceSummary(device: Device, facts: DeviceSummaryFacts): Devi
     batteryPercent: batteryPercentFromVoltage(device.batteryVoltage) ?? null,
     rssi: toFiniteNumberOrNull(device.rssi),
     isMirrored: !!device.mirrorEnabled,
-    isProxied: isProxied(device),
+    isProxied: isProxiedDevice(device),
     sleep: toSleepState(device, facts.now),
     currentScreen: toCurrentScreen(device, facts.servedScreen),
   }
@@ -166,6 +163,7 @@ export function toDeviceDetail(device: Device, facts: DeviceDetailFacts): Device
     pending: {
       specialFunction: toPendingSpecialFunction(device.specialFunction),
       deviceReset: device.resetDevice,
+      deviceResetNewApikey: device.resetDeviceNewApikey,
       firmwarePush: device.updateFirmware,
     },
     sleepImagePath: device.sleepImageGeneratedAt ? toImagePath(sleepImageRootRelativePath(device.id), device.sleepImageGeneratedAt) : null,

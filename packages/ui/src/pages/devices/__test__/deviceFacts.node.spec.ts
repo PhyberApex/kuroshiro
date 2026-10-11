@@ -72,7 +72,7 @@ describe('the facts of a Device', () => {
 
   it('say what waits for the next poll: a Special Function, a Device Reset and a Firmware push', () => {
     const device = kitchen({
-      pending: { specialFunction: 'identify', deviceReset: true, firmwarePush: true },
+      pending: { specialFunction: 'identify', deviceReset: true, deviceResetNewApikey: false, firmwarePush: true },
       targetFirmware: { id: 'fw', version: '1.7.9', kind: 'official-synced', label: null, deprecated: false },
     })
 
@@ -84,7 +84,7 @@ describe('the facts of a Device', () => {
   })
 
   it('keep the Firmware row of a pending push whose target is not known', () => {
-    const device = kitchen({ pending: { specialFunction: null, deviceReset: false, firmwarePush: true } })
+    const device = kitchen({ pending: { specialFunction: null, deviceReset: false, deviceResetNewApikey: false, firmwarePush: true } })
 
     expect(rows(device).at(-1)).toEqual(['Firmware', 'at the next poll'])
   })

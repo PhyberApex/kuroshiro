@@ -91,6 +91,10 @@ export class Device {
   @Column('boolean', { default: false })
   resetDevice: boolean
 
+  /** Rides on `resetDevice` (ADR-0039): rotates `apikey` in the same poll that delivers the Reset, then clears with it. */
+  @Column('boolean', { default: false })
+  resetDeviceNewApikey: boolean
+
   @Column('boolean', { default: false })
   updateFirmware: boolean
 

@@ -281,11 +281,11 @@ describe('toDeviceDetail', () => {
   })
 
   it('states what is pending from the stored Special Function, Device Reset and Firmware push', () => {
-    const waiting = toDeviceDetail(makeDevice({ specialFunction: 'rewind', resetDevice: true, updateFirmware: true }), facts)
+    const waiting = toDeviceDetail(makeDevice({ specialFunction: 'rewind', resetDevice: true, resetDeviceNewApikey: true, updateFirmware: true }), facts)
     const idle = toDeviceDetail(makeDevice({ specialFunction: 'none' }), facts)
 
-    expect(waiting.pending).toEqual({ specialFunction: 'rewind', deviceReset: true, firmwarePush: true })
-    expect(idle.pending).toEqual({ specialFunction: null, deviceReset: false, firmwarePush: false })
+    expect(waiting.pending).toEqual({ specialFunction: 'rewind', deviceReset: true, deviceResetNewApikey: true, firmwarePush: true })
+    expect(idle.pending).toEqual({ specialFunction: null, deviceReset: false, deviceResetNewApikey: false, firmwarePush: false })
   })
 
   it('folds in the Sensor readings and counts the Screens', () => {
@@ -347,7 +347,7 @@ describe('toDeviceDetail', () => {
       palette: null,
       mirror: { enabled: false, mac: null, apikeySet: false },
       targetFirmware: null,
-      pending: { specialFunction: 'identify', deviceReset: false, firmwarePush: false },
+      pending: { specialFunction: 'identify', deviceReset: false, deviceResetNewApikey: false, firmwarePush: false },
       sleepImagePath: null,
       sensors: [],
       screenCount: 0,

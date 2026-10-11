@@ -16,11 +16,12 @@ import {
   applyFirmwareChanges,
   applyModelChange,
   applyPaletteChange,
+  assertApikeyRotationAllowed,
   assertPushCanBeServed,
   assertSleepWindowConfigured,
+  isProxiedDevice,
   renderTargetChanged,
 } from './device-update-rules.js'
-import { isProxied } from './device.mapper.js'
 import { Device } from './devices.entity.js'
 import { CreateDeviceDto } from './dto/create-device.dto.js'
 
@@ -62,6 +63,7 @@ export class DevicesService {
     await applyPaletteChange(dbDevice, paletteId, this.paletteSelection)
     await applyFirmwareChanges(dbDevice, targetFirmwareId, pushWasPending, this.firmwareService)
     assertPushCanBeServed(dbDevice, changes.updateFirmware)
+    assertApikeyRotationAllowed(dbDevice)
     const saved = await this.deviceRepository.save(dbDevice)
     if (renderTargetChanged(before, saved)) {
       await this.screensService.reconvertImageScreens(saved)
@@ -75,7 +77,7 @@ export class DevicesService {
     const device = await this.findByIdOrNull(id)
     if (!device)
       return null
-    if (isProxied(device))
+    if (isProxiedDevice(device))
       throw new ApiException(HttpStatus.CONFLICT, 'device-apikey-proxied', 'A Proxied Device is not given a new API key here.', { id })
     device.apikey = generateApikey()
     return this.deviceRepository.save(device)

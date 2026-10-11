@@ -39,6 +39,7 @@ export const API_ERROR_CODES = [
   'firmware-push-without-target',
   'firmware-push-mirrored',
   'firmware-push-pending',
+  'device-reset-apikey-proxied',
   'upstream-unreachable',
   'template-full-missing',
   'template-invalid',
