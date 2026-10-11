@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common'
+import { ConfigModule } from '@nestjs/config'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { DeviceModelsModule } from '../device-models/device-models.module.js'
 import { DeviceModel } from '../device-models/entities/device-model.entity.js'
@@ -20,6 +21,7 @@ import { InstanceSettings } from '../settings/entities/instance-settings.entity.
 import { ConfigurationController } from './configuration.controller.js'
 import { ConfigurationExportService } from './services/configuration-export.service.js'
 import { ConfigurationImportService } from './services/configuration-import.service.js'
+import { ShowcaseSeedService } from './showcase/showcase-seed.service.js'
 
 @Module({
   imports: [
@@ -42,8 +44,9 @@ import { ConfigurationImportService } from './services/configuration-import.serv
     ]),
     PluginsModule,
     DeviceModelsModule,
+    ConfigModule,
   ],
   controllers: [ConfigurationController],
-  providers: [ConfigurationExportService, ConfigurationImportService],
+  providers: [ConfigurationExportService, ConfigurationImportService, ShowcaseSeedService],
 })
 export class ConfigurationModule {}
