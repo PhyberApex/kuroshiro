@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
+import { DeviceModelsModule } from '../device-models/device-models.module.js'
 import { DeviceModel } from '../device-models/entities/device-model.entity.js'
 import { Palette } from '../device-models/entities/palette.entity.js'
 import { Device } from '../devices/devices.entity.js'
@@ -40,6 +41,7 @@ import { ConfigurationImportService } from './services/configuration-import.serv
       InstanceSettings,
     ]),
     PluginsModule,
+    DeviceModelsModule,
   ],
   controllers: [ConfigurationController],
   providers: [ConfigurationExportService, ConfigurationImportService],

@@ -424,4 +424,54 @@ describe('configurationExportService', () => {
 
     expect(zip.getEntries().some(entry => entry.entryName.startsWith('screens/'))).toBe(false)
   })
+
+  describe('a Device\'s own sleep image', () => {
+    it('includes the retained original when it exists on disk', async () => {
+      existsSyncMock.mockReturnValueOnce(true)
+      readFileSyncMock.mockImplementationOnce((...args: Parameters<typeof realFs.readFileSync>) => realFs.readFileSync(...args))
+      readFileSyncMock.mockReturnValueOnce(Buffer.from('original-bytes'))
+      deviceRepo.find.mockResolvedValue([makeDevice({ id: 'device-1' })])
+
+      const buffer = await service.exportToZip()
+      const zip = new AdmZip(buffer)
+
+      expect(zip.getEntry('devices/device-1/sleep-image.original')?.getData().toString('utf8')).toBe('original-bytes')
+      expect(zip.getEntry('devices/device-1/sleep-image.png')).toBeNull()
+    })
+
+    it('falls back to the once-converted PNG, like a File Screen\'s, when there is no retained original', async () => {
+      existsSyncMock.mockReturnValueOnce(false)
+      existsSyncMock.mockReturnValueOnce(true)
+      readFileSyncMock.mockImplementationOnce((...args: Parameters<typeof realFs.readFileSync>) => realFs.readFileSync(...args))
+      readFileSyncMock.mockReturnValueOnce(Buffer.from('converted-bytes'))
+      deviceRepo.find.mockResolvedValue([makeDevice({ id: 'device-1' })])
+
+      const buffer = await service.exportToZip()
+      const zip = new AdmZip(buffer)
+
+      expect(zip.getEntry('devices/device-1/sleep-image.png')?.getData().toString('utf8')).toBe('converted-bytes')
+      expect(zip.getEntry('devices/device-1/sleep-image.original')).toBeNull()
+    })
+
+    it('omits it when neither file is on disk', async () => {
+      deviceRepo.find.mockResolvedValue([makeDevice({ id: 'device-1' })])
+
+      const buffer = await service.exportToZip()
+      const zip = new AdmZip(buffer)
+
+      expect(zip.getEntries().some(entry => entry.entryName.startsWith('devices/'))).toBe(false)
+    })
+
+    it('carries it unchanged on a Redacted Archive, since it is not a secret', async () => {
+      existsSyncMock.mockReturnValueOnce(true)
+      readFileSyncMock.mockImplementationOnce((...args: Parameters<typeof realFs.readFileSync>) => realFs.readFileSync(...args))
+      readFileSyncMock.mockReturnValueOnce(Buffer.from('original-bytes'))
+      deviceRepo.find.mockResolvedValue([makeDevice({ id: 'device-1' })])
+
+      const buffer = await service.exportToZip({ redact: true })
+      const zip = new AdmZip(buffer)
+
+      expect(zip.getEntry('devices/device-1/sleep-image.original')?.getData().toString('utf8')).toBe('original-bytes')
+    })
+  })
 })
