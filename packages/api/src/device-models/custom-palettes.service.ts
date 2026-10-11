@@ -124,7 +124,8 @@ export class CustomPalettesService {
     for (const device of devices) {
       await this.screens.reconvertImageScreens(device).catch((error: unknown) =>
         this.logger.error(`Could not convert the images of Device ${device.id} again: ${getErrorMessage(error)}`))
-      await this.deviceSleepImage.reconvert(device)
+      await this.deviceSleepImage.reconvert(device).catch((error: unknown) =>
+        this.logger.error(`Could not convert the sleep image of Device ${device.id} again: ${getErrorMessage(error)}`))
     }
   }
 }
