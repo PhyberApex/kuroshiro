@@ -243,6 +243,8 @@ Every spec file shares that one Instance. `firstRun.spec.ts` runs first, on the 
 
 The suite holds one test per primary journey of [Primary journeys and the story each screen tells](https://github.com/PhyberApex/kuroshiro/issues/1078), plus `smoke.spec.ts`. It is not the place for broad coverage; that is the page specs' job.
 
+`builtStyles.spec.ts` guards a different class of bug than a journey does: the built UI rendering differently from how the components define it, whatever the cause (a cascade layer out of order, a CSS chunk loaded in the wrong order between lazy routes, a plugin or minifier change, a dependency bump). Every other spec and every screenshot baseline mounts a component in development mode, where `styles/index.css` is loaded first, so none of them would show this; #1303 shipped past 56 green PRs before this class of bug was caught. The spec opens the built `/plugins/new` and `/instance/settings` pages, in light and in dark, and compares a handful of layer-sensitive elements' computed styles against the tokens, read fresh from each page with a probe element (`getComputedStyle` on a `span` wearing `var(--color-ink)`, so a token's own value settles through `light-dark()` as the page sees it, not as this spec assumes), and it reruns `cssLayers.ts`'s layer-order guard against the HTML the page actually served. To cover a new layer-sensitive pattern, add a `getByRole` lookup and a computed-style comparison beside the existing ones, inside the `describe.each(THEMES)` block so both colour schemes cover it.
+
 ## What every build issue ships with
 
 Decision 9 of the test strategy. A PR that builds one of these is not done without it.

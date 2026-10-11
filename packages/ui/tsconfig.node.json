@@ -13,7 +13,6 @@
     "vite.config.*",
     "vitest.*",
     "scripts/**/*",
-    "real-api/**/*",
     "showcase/**/*",
     "eslint.config.*"
   ]

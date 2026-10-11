@@ -4,6 +4,9 @@
       "path": "./tsconfig.node.json"
     },
     {
+      "path": "./tsconfig.real-api.json"
+    },
+    {
       "path": "./tsconfig.app.json"
     }
   ],
