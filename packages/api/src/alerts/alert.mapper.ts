@@ -1,6 +1,6 @@
 import type { AlertSummary } from 'kuroshiro-shared'
 import type { Alert } from './entities/alert.entity.js'
-import { toIsoStringOrNull } from '../utils/readModel.js'
+import { toIsoString, toIsoStringOrNull } from '../utils/readModel.js'
 
 /** `undefined` for an Alert whose subject relation (Device or Data Source) is missing — cascade-deleted, or deleted between the query and the join. */
 export function toAlertSummary(alert: Alert): AlertSummary | undefined {
@@ -15,7 +15,7 @@ export function toAlertSummary(alert: Alert): AlertSummary | undefined {
     device,
     plugin,
     dataSource,
-    openedAt: alert.openedAt.toISOString(),
+    openedAt: toIsoString(alert.openedAt),
     resolvedAt: toIsoStringOrNull(alert.resolvedAt),
     details: alert.details ?? null,
   }
