@@ -20,6 +20,7 @@ import type {
 import { Buffer } from 'node:buffer'
 import { randomUUID } from 'node:crypto'
 import * as fs from 'node:fs'
+import * as os from 'node:os'
 import * as path from 'node:path'
 import { HttpStatus, Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
@@ -637,26 +638,24 @@ export class ConfigurationImportService {
 
   /**
    * Converts `original` for `target` into the PNG Configuration Import will write, through a
-   * throwaway temp file next to the Device's own folder — the same `convertToPng`
-   * `DeviceSleepImageService.upload`/`reconvert` use. Not implemented by calling either of
-   * those: `original` is fresh bytes out of the archive, not yet the Device's own file, and
-   * the result here is read back into memory rather than renamed into place, since the real
-   * write is deferred until the caller's transaction commits.
+   * throwaway temp directory (same `convertToPng` `DeviceSleepImageService.upload`/`reconvert`
+   * use, same scratch-dir idiom `DevicePreviewService` uses) rather than the Device's own
+   * folder: this runs on a check too (ADR-0021/#1340 — a check validates a reconversion the same
+   * way an import does), so it must never create or touch anything under the Device's real
+   * `public/screens/devices/<id>/` tree. The result is read back into memory rather than renamed
+   * into place, since the real write is deferred until the caller's transaction commits.
    */
   private async convertSleepImageForImport(deviceId: string, original: Buffer, target: DeviceRenderTarget): Promise<Buffer> {
-    const dir = path.dirname(sleepImagePath(deviceId))
-    await fs.promises.mkdir(dir, { recursive: true })
-    const token = randomUUID()
-    const tempOriginal = path.join(dir, `tmp-import-sleep-image-${token}.original`)
-    const tempConverted = path.join(dir, `tmp-import-sleep-image-${token}.png`)
+    const tmpDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'kuroshiro-import-sleep-image-'))
+    const tempOriginal = path.join(tmpDir, `${deviceId}.original`)
+    const tempConverted = path.join(tmpDir, `${deviceId}.png`)
     try {
       await fs.promises.writeFile(tempOriginal, original)
       await convertToPng(tempOriginal, tempConverted, target, this.logger)
       return await fs.promises.readFile(tempConverted)
     }
     finally {
-      await fs.promises.unlink(tempOriginal).catch(() => {})
-      await fs.promises.unlink(tempConverted).catch(() => {})
+      await fs.promises.rm(tmpDir, { recursive: true, force: true })
     }
   }
 

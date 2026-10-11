@@ -15,9 +15,11 @@ import { buildArchive, makeDeviceEntry } from './archive.js'
 const { fsMock } = vi.hoisted(() => ({
   fsMock: {
     mkdir: vi.fn().mockResolvedValue(undefined),
+    mkdtemp: vi.fn().mockImplementation(async (prefix: string) => `${prefix}test`),
     writeFile: vi.fn().mockResolvedValue(undefined),
     readFile: vi.fn().mockResolvedValue(undefined),
     unlink: vi.fn().mockResolvedValue(undefined),
+    rm: vi.fn().mockResolvedValue(undefined),
   },
 }))
 
@@ -133,9 +135,11 @@ describe('configurationImportService', () => {
 
   beforeEach(async () => {
     fsMock.mkdir.mockReset().mockResolvedValue(undefined)
+    fsMock.mkdtemp.mockReset().mockImplementation(async (prefix: string) => `${prefix}test`)
     fsMock.writeFile.mockReset().mockResolvedValue(undefined)
     fsMock.readFile.mockReset().mockResolvedValue(Buffer.from('converted-bytes'))
     fsMock.unlink.mockReset().mockResolvedValue(undefined)
+    fsMock.rm.mockReset().mockResolvedValue(undefined)
     const { convertToPng } = await import('../../utils/imageUtils.js')
     vi.mocked(convertToPng).mockReset().mockResolvedValue(undefined)
     deviceModels = createMockDeviceModelsService()
