@@ -330,7 +330,7 @@ export class DeviceDisplayService {
       const { response, localImageUrl: localImage } = await this.fetchAndStoreMirrorImage(device, proxy ? headers : undefined)
 
       if (proxy) {
-        const proxied = this.proxiedMirrorFields(response, { refreshRate, firmwareUrl, resetFirmware })
+        const proxied = this.proxiedMirrorFields(response, { refreshRate, firmwareUrl, resetFirmware, updateFirmware })
         refreshRate = proxied.refreshRate
         firmwareUrl = proxied.firmwareUrl
         resetFirmware = proxied.resetFirmware
@@ -374,7 +374,7 @@ export class DeviceDisplayService {
   }
 
   /** The fields a proxied fetch's response overrides; a field TRMNL's response left out keeps what was served before. */
-  private proxiedMirrorFields(response: TrmnlScreenResponse, before: { refreshRate: number, firmwareUrl: string | null, resetFirmware: boolean }) {
+  private proxiedMirrorFields(response: TrmnlScreenResponse, before: { refreshRate: number, firmwareUrl: string | null, resetFirmware: boolean, updateFirmware: boolean }) {
     const mirrorSpecialFunction = response.special_function ?? 'none'
     return {
       refreshRate: response.refresh_rate ?? before.refreshRate,
@@ -382,7 +382,7 @@ export class DeviceDisplayService {
       resetFirmware: response.reset_firmware ?? before.resetFirmware,
       mirrorSpecialFunction,
       mirrorAction: response.action ?? mirrorSpecialFunction,
-      updateFirmware: response.update_firmware ?? false,
+      updateFirmware: response.update_firmware ?? before.updateFirmware,
     }
   }
 
