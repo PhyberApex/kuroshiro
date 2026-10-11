@@ -347,7 +347,11 @@ describe('the shell\'s reads', () => {
     holdTabVisible()
     fakeShellReads({ alerts: buildAlertsList({ active: [buildAlert()] }) })
     const screen = await mountApp({ at: '/plugins' })
+    // Both of the mount's own reads settle before the listener attaches, so what it records is only
+    // the focus's own refresh: holdTabVisible() cannot stop a real visibilitychange from another
+    // spec's tab in the same run (see docs/agents/ui-testing.md) from adding one of its own.
     await expect.element(screen.getByRole('link', { name: '1 Alert firing' })).toBeVisible()
+    await expect.element(bar(screen).getByRole('link', { name: 'Kitchen' })).toBeVisible()
     const asked: string[] = []
     api.events.on('response:mocked', ({ request }) => asked.push(new URL(request.url).pathname))
     const changes: MutationRecord[] = []
@@ -355,7 +359,7 @@ describe('the shell\'s reads', () => {
     observer.observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true })
 
     window.dispatchEvent(new Event('focus'))
-    await expect.poll(() => asked.filter(path => path.endsWith('/api/alerts') || path.endsWith('/api/devices'))).toHaveLength(2)
+    await expect.poll(() => asked.filter(path => path.endsWith('/api/alerts') || path.endsWith('/api/devices'))).toEqual(expect.arrayContaining(['/api/alerts', '/api/devices']))
     await new Promise(resolve => setTimeout(resolve, 50))
     observer.disconnect()
     api.events.removeAllListeners()

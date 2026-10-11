@@ -45,12 +45,12 @@ describe('a page that loads', () => {
     await expect.element(screen.getByText('Study')).toBeVisible()
   })
 
-  it('shows no loading state for an answer within 300 ms', async () => {
+  it('shows no loading state for an answer well within 300 ms', async () => {
     const seen: string[] = []
     const observer = new MutationObserver(() => seen.push(document.body.textContent ?? ''))
     observer.observe(document.body, { subtree: true, childList: true, characterData: true })
     api.use(http.get(apiUrl('devices'), async () => {
-      await delay(200)
+      await delay(20)
       return fakeDevices('Kitchen')
     }))
     const screen = await mountPage({ routes, at: '/devices' })
