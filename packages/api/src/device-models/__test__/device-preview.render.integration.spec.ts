@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { wrapInScreenShell } from 'kuroshiro-shared'
+import { TRMNL_FRAMEWORK_VERSION, wrapInScreenShell } from 'kuroshiro-shared'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { makeDeviceModel, makePalette } from '../../test/fixtures.js'
 import { asService } from '../../test/mockService.js'
@@ -72,7 +72,7 @@ describe.runIf(magickAvailable())('devicePreviewService (real Chrome and magick)
     const { buffer } = await buildService().render({ html: HTML, deviceModelName: OG.name, paletteId: BLACK_AND_WHITE.id })
 
     const referencePath = path.join(tmpDir, 'reference.png')
-    await renderHtmlToPng(wrapInScreenShell({ model: OG, palette: BLACK_AND_WHITE }, HTML), { model: OG, palette: BLACK_AND_WHITE }, referencePath, logger)
+    await renderHtmlToPng(wrapInScreenShell({ model: OG, palette: BLACK_AND_WHITE }, HTML, TRMNL_FRAMEWORK_VERSION), { model: OG, palette: BLACK_AND_WHITE }, referencePath, logger)
     const reference = await fs.promises.readFile(referencePath)
 
     expect(buffer.equals(reference)).toBe(true)

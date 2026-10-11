@@ -3,7 +3,7 @@ import type { RenderOutcome } from '../../screens/render-outcome.js'
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
-import { wrapInScreenShell } from 'kuroshiro-shared'
+import { TRMNL_FRAMEWORK_VERSION, wrapInScreenShell } from 'kuroshiro-shared'
 import { Repository } from 'typeorm'
 import { DeviceModelsService } from '../../device-models/device-models.service.js'
 import { renderHtmlToPng } from '../../device-models/render-html-to-png.js'
@@ -78,7 +78,7 @@ export class ScreenRenderService {
    */
   async renderBodyToScreenPng(bodyHtml: string, screen: Screen, device: Device, honorRenderSignal: boolean): Promise<string | typeof RENDER_SKIPPED | typeof RENDER_HELD> {
     const target = await this.deviceModels.renderTargetFor(device)
-    const renderSignal = await renderHtmlToPng(wrapInScreenShell(target, bodyHtml), target, this.screenImagePath(device, screen), this.logger, {}, { honorRenderSignal })
+    const renderSignal = await renderHtmlToPng(wrapInScreenShell(target, bodyHtml, TRMNL_FRAMEWORK_VERSION), target, this.screenImagePath(device, screen), this.logger, {}, { honorRenderSignal })
     if (honorRenderSignal && renderSignal === 'skip')
       return RENDER_SKIPPED
     if (honorRenderSignal && renderSignal === 'hold')

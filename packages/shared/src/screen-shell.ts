@@ -3,8 +3,11 @@ export interface ScreenShellTarget {
   palette: { frameworkClass: string }
 }
 
-export const TRMNL_FRAMEWORK_CSS = 'https://usetrmnl.com/css/latest/plugins.css'
-export const TRMNL_FRAMEWORK_JS = 'https://usetrmnl.com/js/latest/plugins.js'
+/**
+ * The exact TRMNL framework version this Instance pins (ADR-0041), bumped by
+ * Renovate's custom regex manager from `usetrmnl/trmnl-framework` releases.
+ */
+export const TRMNL_FRAMEWORK_VERSION = '3.4.0'
 
 /**
  * Class list for the `.screen` element the TRMNL framework sizes and scales:
@@ -34,14 +37,16 @@ export function viewFull(innerHtml: string): string {
 
 /**
  * Wraps screen body markup (a `.view` or `.mashup` element) in the full HTML
- * document a device's image is rendered from.
+ * document a device's image is rendered from. `frameworkVersion` is an input
+ * (ADR-0041) rather than a constant read here, so the API and the UI build
+ * the same `<head>` from whichever version the caller resolved.
  */
-export function wrapInScreenShell(target: ScreenShellTarget, bodyHtml: string): string {
+export function wrapInScreenShell(target: ScreenShellTarget, bodyHtml: string, frameworkVersion: string): string {
   const style = screenStyle(target)
   return `<html>
   <head>
-    <link rel="stylesheet" href="${TRMNL_FRAMEWORK_CSS}">
-    <script src="${TRMNL_FRAMEWORK_JS}"></script>
+    <link rel="stylesheet" href="https://trmnl.com/css/${frameworkVersion}/plugins.css">
+    <script src="https://trmnl.com/js/${frameworkVersion}/plugins.js"></script>
   </head>
   <body class="environment trmnl">
     <div class="${screenClasses(target).join(' ')}"${style ? ` style="${style}"` : ''}>${bodyHtml}</div>

@@ -1,5 +1,6 @@
 import type { DeviceSummary, PluginDetail, UpdatePluginInput } from 'kuroshiro-shared'
 import type { Mounted } from './pluginPageHarness'
+import { TRMNL_FRAMEWORK_VERSION } from 'kuroshiro-shared'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { userEvent } from 'vitest/browser'
@@ -299,7 +300,7 @@ describe('the Template section of the Plugin page', () => {
       const screen = await mountTemplate()
 
       await expect.element(previewFor(screen)).toHaveTextContent('Kitchen')
-      expect(under()).toEqual(['TRMNL OG (2-bit) · 800 × 480 · 4 Grays (2-bit)', 'Your browser draws this. Kitchen shows it in 4 grays.'])
+      expect(under()).toEqual([`TRMNL OG (2-bit) · 800 × 480 · 4 Grays (2-bit) · framework ${TRMNL_FRAMEWORK_VERSION}`, 'Your browser draws this. Kitchen shows it in 4 grays.'])
       await expect.poll(drawn).toContain('<div class="screen screen--og_plus screen--2bit"')
       await expect.element(screen.getByRole('group', { name: 'Preview of Weather' })).toBeVisible()
     })
@@ -309,7 +310,7 @@ describe('the Template section of the Plugin page', () => {
       const screen = await mountTemplate()
 
       await expect.element(previewFor(screen)).toHaveTextContent('Hallway')
-      expect(under()[0]).toBe('TRMNL X · 1872 × 1404 · 16 Grays (4-bit)')
+      expect(under()[0]).toBe(`TRMNL X · 1872 × 1404 · 16 Grays (4-bit) · framework ${TRMNL_FRAMEWORK_VERSION}`)
     })
 
     it('draws for another Device, then for another Device Model and one of its Palettes, at that size', async () => {
@@ -319,7 +320,7 @@ describe('the Template section of the Plugin page', () => {
 
       await choose(screen, 'Preview for', 'Hallway')
       await expect.poll(drawn).toContain('<div class="screen screen--v2 screen--4bit"')
-      await expect.poll(under).toEqual(['TRMNL X · 1872 × 1404 · 16 Grays (4-bit)', 'Your browser draws this. Hallway shows it in 16 grays.'])
+      await expect.poll(under).toEqual([`TRMNL X · 1872 × 1404 · 16 Grays (4-bit) · framework ${TRMNL_FRAMEWORK_VERSION}`, 'Your browser draws this. Hallway shows it in 16 grays.'])
 
       await choose(screen, 'Preview for', 'Another Device Model')
       await expect.element(screen.getByRole('combobox', { name: 'Device Model' })).toHaveTextContent('TRMNL X')
@@ -330,7 +331,7 @@ describe('the Template section of the Plugin page', () => {
       await choose(screen, 'Palette', 'Black & White (1-bit)')
 
       await expect.poll(drawn).toContain('<div class="screen screen--og_plus screen--1bit"')
-      await expect.poll(under).toEqual(['800 × 480', 'Your browser draws this. The Device shows it in black and white.'])
+      await expect.poll(under).toEqual([`800 × 480 · framework ${TRMNL_FRAMEWORK_VERSION}`, 'Your browser draws this. The Device shows it in black and white.'])
       const frame = document.querySelector<HTMLIFrameElement>('#template iframe')!
       expect([frame.style.width, frame.style.height]).toEqual(['800px', '480px'])
       expect(document.querySelector('[aria-label="Unsaved changes"]')).toBeNull()
@@ -344,7 +345,7 @@ describe('the Template section of the Plugin page', () => {
       await expect.element(screen.getByRole('combobox', { name: 'Palette' })).toHaveTextContent('4 Grays (2-bit)')
       expect(document.querySelector('#template .preview-for')?.querySelectorAll('[role="combobox"]')).toHaveLength(2)
       expect(read(document.querySelector('#template .preview-for .label'))).toBe('Preview for')
-      expect(under()).toEqual(['800 × 480', 'Your browser draws this. The Device shows it in 4 grays.'])
+      expect(under()).toEqual([`800 × 480 · framework ${TRMNL_FRAMEWORK_VERSION}`, 'Your browser draws this. The Device shows it in 4 grays.'])
     })
 
     it('draws a slot size in its slot of a Mashup, the other slots empty, and says so', async () => {

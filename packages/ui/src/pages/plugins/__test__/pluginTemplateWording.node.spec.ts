@@ -1,3 +1,4 @@
+import { TRMNL_FRAMEWORK_VERSION } from 'kuroshiro-shared'
 import { describe, expect, it } from 'vitest'
 import { buildDeviceModel, buildPalette } from '@/testing/fixtures/device-models'
 import { buildDeviceSummary } from '@/testing/fixtures/devices'
@@ -28,12 +29,12 @@ describe('the words of the Template section', () => {
   })
 
   describe('the facts under the plate', () => {
-    it('are the Device Model, the size and the Palette for a Device', () => {
-      expect(targetFacts({ device: kitchen, model, palette: gray4 })).toBe('TRMNL OG (2-bit) · 800 × 480 · 4 Grays (2-bit)')
+    it('are the Device Model, the size and the Palette for a Device, ending with the framework version', () => {
+      expect(targetFacts({ device: kitchen, model, palette: gray4 })).toBe(`TRMNL OG (2-bit) · 800 × 480 · 4 Grays (2-bit) · framework ${TRMNL_FRAMEWORK_VERSION}`)
     })
 
-    it('are the size alone for a chosen Device Model, whose name the selects show', () => {
-      expect(targetFacts({ device: null, model, palette: gray4 })).toBe('800 × 480')
+    it('are the size alone for a chosen Device Model, whose name the selects show, still ending with the framework version', () => {
+      expect(targetFacts({ device: null, model, palette: gray4 })).toBe(`800 × 480 · framework ${TRMNL_FRAMEWORK_VERSION}`)
     })
   })
 

@@ -1,6 +1,6 @@
 import type { ScreenShellTarget } from '../screen-shell.ts'
 import { describe, expect, it } from 'vitest'
-import { screenClasses, screenStyle, viewFull, wrapInScreenShell } from '../screen-shell.ts'
+import { screenClasses, screenStyle, TRMNL_FRAMEWORK_VERSION, viewFull, wrapInScreenShell } from '../screen-shell.ts'
 import { SCREEN_SHELL_FIXTURE_BODY, SCREEN_SHELL_FIXTURE_EXPECTED, SCREEN_SHELL_FIXTURE_MODEL, SCREEN_SHELL_FIXTURE_PALETTE } from './screen-shell.fixture.ts'
 
 const V2: ScreenShellTarget = {
@@ -46,22 +46,28 @@ describe('screen shell', () => {
     expect(viewFull('<p>x</p>')).toBe('<div class="view view--full"><p>x</p></div>')
   })
 
-  it('wraps body markup in a complete document loading the TRMNL framework', () => {
-    const html = wrapInScreenShell(V2, '<div class="view view--full">hi</div>')
-    expect(html).toContain('<link rel="stylesheet" href="https://usetrmnl.com/css/latest/plugins.css">')
-    expect(html).toContain('<script src="https://usetrmnl.com/js/latest/plugins.js"></script>')
+  it('wraps body markup in a complete document loading the TRMNL framework at the given version', () => {
+    const html = wrapInScreenShell(V2, '<div class="view view--full">hi</div>', TRMNL_FRAMEWORK_VERSION)
+    expect(html).toContain(`<link rel="stylesheet" href="https://trmnl.com/css/${TRMNL_FRAMEWORK_VERSION}/plugins.css">`)
+    expect(html).toContain(`<script src="https://trmnl.com/js/${TRMNL_FRAMEWORK_VERSION}/plugins.js"></script>`)
     expect(html).toContain('<body class="environment trmnl">')
     expect(html).toContain('<div class="screen screen--v2 screen--lg screen--density-2x screen--4bit" style="--screen-w: 1040px; --screen-h: 780px;"><div class="view view--full">hi</div></div>')
   })
 
+  it('honours whatever version it is given, not a fixed constant', () => {
+    const html = wrapInScreenShell(V2, 'x', '3.5.1')
+    expect(html).toContain('<link rel="stylesheet" href="https://trmnl.com/css/3.5.1/plugins.css">')
+    expect(html).toContain('<script src="https://trmnl.com/js/3.5.1/plugins.js"></script>')
+  })
+
   it('omits the style attribute when the model has no CSS variables', () => {
-    const html = wrapInScreenShell({ ...OG_PLUS, palette: GRAY_4 }, 'x')
+    const html = wrapInScreenShell({ ...OG_PLUS, palette: GRAY_4 }, 'x', TRMNL_FRAMEWORK_VERSION)
     expect(html).toContain('<div class="screen screen--og_plus screen--md screen--density-1x screen--2bit">x</div>')
   })
 
   it('matches the golden fixture consumed by both packages', () => {
     expect(screenClasses(fixtureTarget)).toEqual(SCREEN_SHELL_FIXTURE_EXPECTED.classes)
     expect(screenStyle(fixtureTarget)).toBe(SCREEN_SHELL_FIXTURE_EXPECTED.style)
-    expect(wrapInScreenShell(fixtureTarget, SCREEN_SHELL_FIXTURE_BODY)).toContain(SCREEN_SHELL_FIXTURE_EXPECTED.wrappedDiv)
+    expect(wrapInScreenShell(fixtureTarget, SCREEN_SHELL_FIXTURE_BODY, TRMNL_FRAMEWORK_VERSION)).toContain(SCREEN_SHELL_FIXTURE_EXPECTED.wrappedDiv)
   })
 })
