@@ -98,6 +98,8 @@ export interface FakedSettings {
   writes: UpdateDeviceInput[]
   /** How often the Device was deleted. */
   deleted: number
+  /** How often the Device's apikey was regenerated. */
+  apikeyRegenerated: number
   /** While set, every write is answered with it. */
   refusing?: Response
   /** While set, a write is not answered until it resolves. */
@@ -115,7 +117,7 @@ interface Faked {
 
 /** Fakes what Kitchen's Settings read and take, with a Device that changes as the server would change it. */
 export function fakeKitchenSettings({ device = KITCHEN, models = MODELS, palettes = PALETTES, firmware = FIRMWARE, settings = buildInstanceSettings(), instance }: Faked = {}): FakedSettings {
-  const faked: FakedSettings = { device, writes: [], deleted: 0 }
+  const faked: FakedSettings = { device, writes: [], deleted: 0, apikeyRegenerated: 0 }
   let devices = [device]
   freezeTime(NOW)
   holdTabVisible()
@@ -141,6 +143,13 @@ export function fakeKitchenSettings({ device = KITCHEN, models = MODELS, palette
       faked.deleted += 1
       devices = []
       return new HttpResponse(null, { status: 204 })
+    }),
+    http.post(apiUrl('devices/kitchen/regenerate-apikey'), () => {
+      if (faked.refusing)
+        return faked.refusing.clone()
+      faked.apikeyRegenerated += 1
+      faked.device = { ...faked.device, apikey: `regenerated-${faked.apikeyRegenerated}` }
+      return HttpResponse.json(faked.device)
     }),
   )
   return faked

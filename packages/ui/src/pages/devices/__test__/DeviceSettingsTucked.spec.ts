@@ -70,6 +70,41 @@ describe('identity and credentials', () => {
     await expectAccessible()
     await expectNoHorizontalOverflow()
   })
+
+  it('"Regenerate now" confirms with what is lost and what stays, then reveals and copies the new API key', async () => {
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue()
+    const faked = fakeKitchenSettings()
+    const screen = await mountSettings('#identity')
+    const shown = () => words(rowOf(screen, 'API key')?.querySelector('code'))
+
+    await screen.getByRole('button', { name: 'Regenerate now' }).click()
+
+    await expect.element(screen.getByRole('alertdialog', { name: 'Give Kitchen a new API key now?' })).toBeVisible()
+    expect(dialogSays()).toEqual({
+      title: 'Give Kitchen a new API key now?',
+      body: 'Kitchen stops working at once. Its polls are refused until someone holds its button for 15 seconds and sets it up again. To have it reset itself first, use Device Reset with a new API key instead.',
+      outcome: [
+        'Lost The current API key, everywhere it is used.',
+        'Stays Kitchen, its Screens, Schedules and Device Log.',
+      ],
+    })
+    expect(faked.apikeyRegenerated).toBe(0)
+    await expectAccessible()
+
+    await screen.getByRole('alertdialog').getByRole('button', { name: 'Regenerate now' }).click()
+
+    expect(faked.apikeyRegenerated).toBe(1)
+    await expect.poll(shown).toBe('regenerated-1')
+    await copyIn(screen, 'API key')
+    expect(writeText).toHaveBeenLastCalledWith('regenerated-1')
+  })
+
+  it('is not offered on a Proxied Device', async () => {
+    fakeKitchenSettings({ device: PROXIED })
+    const screen = await mountSettings('#identity')
+
+    expect(screen.getByRole('button', { name: 'Regenerate now' }).elements()).toEqual([])
+  })
 })
 
 describe('special Functions', () => {

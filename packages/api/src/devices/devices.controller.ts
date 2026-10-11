@@ -56,6 +56,14 @@ export class DevicesController {
     return this.deviceReads.detail(id)
   }
 
+  @Post(':id/regenerate-apikey')
+  @HttpCode(HttpStatus.OK)
+  async regenerateApikey(@Param('id') id: string): Promise<DeviceDetail> {
+    if (!(await this.devicesService.regenerateApikey(id)))
+      throw this.deviceNotFound(id)
+    return this.deviceReads.detail(id)
+  }
+
   private deviceNotFound(id: string): ApiException {
     this.logger.warn(`Device not found: ${id}`)
     return new ApiException(HttpStatus.NOT_FOUND, 'device-not-found', 'Device not found', { id })
