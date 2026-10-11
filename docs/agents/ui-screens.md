@@ -117,7 +117,7 @@ const { device, listed, name, path } = useDeviceFrame() // from '@/pages/devices
 - Which Plugins are already on the Device is read off `PluginSummary.devices`, so the page does not read the Screens.
 - The shortcut to a new Plugin is `addPluginPath(way, deviceId)`, which carries the Device to Add a Plugin.
 - The HTML kind's markup is a `CodeEditor` in HTML mode inside its `Field`, named "HTML" by `aria-label`.
-- The preview's frame loads TRMNL's framework from `usetrmnl.com`, so a spec asserts the frame's `srcdoc` and a shot of the HTML kind holds the plate in its rendering state (`holdPreviewLibrary()` of `pages/plugins/__test__/pluginPageHarness.ts`).
+- The preview's frame loads TRMNL's framework from `trmnl.com`, at the Instance's pinned version (ADR-0041), so a spec asserts the frame's `srcdoc` and a shot of the HTML kind holds the plate in its rendering state (`holdPreviewLibrary()` of `pages/plugins/__test__/pluginPageHarness.ts`).
 - The page's two columns are `ChoiceBesideForm` (`#choice` and the default slot) and a form's foot is `AddFormFoot`, both in `@/patterns/` and shared with Add a Plugin. `BackLink` is the link back of a `TitleLine`, for a page under a frame that has the title line.
 
 ### Edit HTML

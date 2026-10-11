@@ -42,8 +42,9 @@ export const removedSentence = (size: TemplateSize) => `Removed when you save. A
 
 /**
  * "TRMNL OG (2-bit) · 800 × 480 · 4 Grays (2-bit) · framework 3.4.0", or the size
- * alone under the selects that already name the rest. The framework version is
- * this Instance's pin (ADR-0041); a Plugin's own version is slice B.
+ * alone under the selects that already name the rest. This is always the
+ * Instance's Framework Version pin (ADR-0041); a Plugin's own pin overriding
+ * it is out of scope here.
  */
 export function targetFacts({ device, model, palette }: WordedTarget) {
   const size = `${model.width} × ${model.height}`

@@ -90,7 +90,7 @@ A Plugin has one to four Templates, one per size: `full`, `half_horizontal`, `ha
    - "Another Device Model" shows two more selects in the same line, "Device Model" and "Palette"; the second lists the Palettes of the chosen Device Model and starts at its richest Palette, the one a new Device on it is given.
    - With no Devices there is no first select, only "Preview for" and the two selects, starting at TRMNL OG (2-bit) and 4 Grays.
    - The choice is the admin's for this visit. It is not saved and not part of the form.
-2. **The facts**, in mono `ink-soft`: "{Device Model} · {width} × {height} · {Palette}" for a Device; "{width} × {height}" for a chosen Device Model, whose name the selects already show.
+2. **The facts**, in mono `ink-soft`: "{Device Model} · {width} × {height} · {Palette} · framework {3.4.0}" for a Device; "{width} × {height} · framework {3.4.0}" for a chosen Device Model, whose name the selects already show.
 3. **The honest line**, in `ink-soft`: "Your browser draws this. {Device} shows it in {4 grays}." ("The Device" when none is chosen.) For a slot size it goes on: ", in {a quarter of a Mashup}; the other slots are left empty here." It ends with a plain button, "See it as {Device} shows it" ("See it as the Device shows it" when none is chosen).
    - While drawing: the plate keeps the browser drawing, with the loading mark and "Drawing it as {Device} shows it"; the button is disabled.
    - Drawn: the plate shows the image, and the line reads "As {Device} shows it, in {4 grays}, drawn at {hh:mm}." with "Back to the browser drawing". When the content raised a Render Signal, a second line: "This content asks to be skipped." or "This content asks to keep its previous image."
