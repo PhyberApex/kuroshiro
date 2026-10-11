@@ -1,12 +1,15 @@
-import type { DeviceModelRead, PaletteRead, PluginDetail, PreviewData, PreviewDataInput, PreviewName, UpdatePluginInput } from 'kuroshiro-shared'
+import type { AlertsList, DeviceModelRead, PaletteRead, PluginDetail, PreviewData, PreviewDataInput, PreviewName, UpdatePluginInput } from 'kuroshiro-shared'
 import { delay, http, HttpResponse } from 'msw'
 import { expect, onTestFinished, vi } from 'vitest'
 import { api, apiUrl } from '@/testing/api/server'
 import { fakeShellReads, mountApp } from '@/testing/app'
+import { arrived } from '@/testing/arrivals'
+import { buildAlert, buildAlertsList } from '@/testing/fixtures/alerts'
 import { buildDeviceModel, buildDeviceModelList, buildPalette } from '@/testing/fixtures/device-models'
 import { buildDeviceSummary } from '@/testing/fixtures/devices'
 import { buildInstanceSettings } from '@/testing/fixtures/instance'
 import { buildPluginDetail, buildPreviewData } from '@/testing/fixtures/plugins'
+import { expectPageScreenshots } from '@/testing/screenshots'
 import { freezeTime } from '@/testing/time'
 import { holdTabVisible } from '@/testing/visibility'
 
@@ -157,6 +160,33 @@ export function fakePreviewData(data: PreviewData = buildPreviewData(), pluginId
   api.use(http.post(apiUrl(`plugins/${pluginId}/preview-data`), () => HttpResponse.json(data)))
 }
 
+/** The Alert of a Data Source whose fetch is failing, as the `*.shots.ts` files that open the Plugin page with it firing share it. */
+export function dataSourceFetchFailingAlert(): AlertsList {
+  return buildAlertsList({ active: [buildAlert({ kind: 'data-source-fetch-failing', deviceId: undefined, deviceName: undefined, pluginId: 'weather', pluginName: 'Weather', dataSourceName: 'forecast', details: null })] })
+}
+
+interface FakePluginForShotOptions {
+  plugin?: PluginDetail
+  shell?: Parameters<typeof fakeShellReads>[0]
+  data?: PreviewData
+}
+
+/**
+ * Fakes what a Plugin page's `*.shots.ts` file reads before mounting: freezes the clock, fakes the shell's reads and
+ * the Plugin's and the Settings' reads, and holds the Template section's preview library so its plate stays in its
+ * rendering state while the preview data is answered.
+ */
+export function fakePluginForShot({ plugin = WEATHER, shell, data }: FakePluginForShotOptions = {}) {
+  freezeTime(NOW)
+  fakeShellReads(shell)
+  api.use(
+    http.get(apiUrl('settings'), () => HttpResponse.json(buildInstanceSettings())),
+    http.get(apiUrl(`plugins/${plugin.id}`), () => HttpResponse.json(plugin)),
+  )
+  holdPreviewLibrary()
+  fakePreviewData(data, plugin.id)
+}
+
 export async function mountPlugin(name = 'Weather', at = '/plugins/weather') {
   freezeTime(NOW)
   holdTabVisible()
@@ -166,6 +196,32 @@ export async function mountPlugin(name = 'Weather', at = '/plugins/weather') {
 }
 
 export type Mounted = Awaited<ReturnType<typeof mountPlugin>>
+
+interface ShootPluginPageOptions extends FakePluginForShotOptions {
+  at: string
+  /** The test's own checks, run once the page is mounted and before its shots are taken. */
+  assert?: (screen: Mounted) => Promise<void>
+}
+
+/**
+ * Fakes the Plugin's read with `fakePluginForShot`, mounts its page at `at`, and takes its shots under `name` once
+ * `assert` resolves. A page's shot reaches its state without a click: by the address, `fill` and `blur()`.
+ */
+export async function shootPluginPage(name: string, { at, assert: assertVisible, ...options }: ShootPluginPageOptions) {
+  fakePluginForShot(options)
+  const screen = await mountApp({ at })
+  await assertVisible?.(screen)
+  await arrived()
+  window.scrollTo(0, 0)
+  await expectPageScreenshots(name)
+  return screen
+}
+
+/** The Alert link and the Kitchen nav link a shot with `dataSourceFetchFailingAlert()` faked checks are visible. */
+export async function expectDataSourceAlertVisible(screen: Mounted) {
+  await expect.element(screen.getByRole('link', { name: '1 Alert firing' })).toBeVisible()
+  await expect.element(screen.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Kitchen', exact: true })).toBeVisible()
+}
 
 /** Has the page read the Plugin again, as it does every 30 seconds. A re-read is held back while a typed-in control has the focus. */
 export const refresh = () => window.dispatchEvent(new Event('focus'))

@@ -1,14 +1,11 @@
-import { http, HttpResponse } from 'msw'
+import type { Mounted } from './__test__/pluginPageHarness'
 import { describe, expect, it } from 'vitest'
-import { api, apiUrl } from '@/testing/api/server'
-import { fakeShellReads, mountApp } from '@/testing/app'
+import { mountApp } from '@/testing/app'
 import { arrived } from '@/testing/arrivals'
-import { buildInstanceSettings } from '@/testing/fixtures/instance'
 import { buildPluginDetail, buildPluginField, buildPreviewData } from '@/testing/fixtures/plugins'
 import { expectPageScreenshots, expectWindowScreenshot } from '@/testing/screenshots'
 import { THEMES } from '@/testing/theme'
-import { freezeTime } from '@/testing/time'
-import { fakePreviewData, holdPreviewLibrary } from './__test__/pluginPageHarness'
+import { fakePluginForShot } from './__test__/pluginPageHarness'
 
 const full = `<div class="layout layout--col layout--center">
   <span class="value value--xxlarge">{{ forecast.current.temperature | round }}°</span>
@@ -67,29 +64,33 @@ const notFetched = buildPreviewData({
 })
 
 function fakeWeather(plugin = weather, data = fetched) {
-  freezeTime('2026-10-03T07:35:00.000Z')
-  fakeShellReads()
-  api.use(
-    http.get(apiUrl('settings'), () => HttpResponse.json(buildInstanceSettings())),
-    http.get(apiUrl('plugins/weather'), () => HttpResponse.json(plugin)),
-  )
-  holdPreviewLibrary()
-  fakePreviewData(data)
+  fakePluginForShot({ plugin, data })
+}
+
+/** Mounts the "Data" section, opened by the address, and waits for the editor and the preview's status line. */
+async function mountTemplateData() {
+  const screen = await mountApp({ at: '/plugins/weather#template-data' })
+  await expect.element(screen.getByRole('link', { name: 'Kitchen', exact: true }).first()).toBeVisible()
+  await expect.element(screen.getByRole('textbox', { name: 'Template of Weather, Full' })).toBeVisible()
+  return screen
+}
+
+/** The "Data" section's own shots share this tail: the plate is held in its rendering state, so "Fetch again" is there once it settles. */
+async function shootTemplateData(screen: Mounted, name: string) {
+  await expect.element(screen.getByRole('button', { name: 'Fetch again' })).toBeVisible()
+  await arrived()
+  window.scrollTo(0, 0)
+  await expectPageScreenshots(name)
 }
 
 // The plate is held in its rendering state: a drawn preview loads TRMNL's framework from the network.
 describe('the Template section of a Plugin', () => {
   it('with three Templates, the full one in the editor, and "Data" opened by the address', async () => {
     fakeWeather()
-    const screen = await mountApp({ at: '/plugins/weather#template-data' })
+    const screen = await mountTemplateData()
 
-    await expect.element(screen.getByRole('link', { name: 'Kitchen', exact: true }).first()).toBeVisible()
-    await expect.element(screen.getByRole('textbox', { name: 'Template of Weather, Full' })).toBeVisible()
     await expect.element(screen.getByText('Loading the preview')).toBeVisible()
-    await expect.element(screen.getByRole('button', { name: 'Fetch again' })).toBeVisible()
-    await arrived()
-    window.scrollTo(0, 0)
-    await expectPageScreenshots('plugin-template')
+    await shootTemplateData(screen, 'plugin-template')
   })
 
   it('with the last scheduled render failed and a Data Source the preview could not fetch', async () => {
@@ -97,15 +98,10 @@ describe('the Template section of a Plugin', () => {
       { ...weather, lastScheduledRender: { at: '2026-10-03T07:30:00.000Z', error: { message: 'undefined filter: rnd', line: 2, size: 'full' } } },
       notFetched,
     )
-    const screen = await mountApp({ at: '/plugins/weather#template-data' })
+    const screen = await mountTemplateData()
 
-    await expect.element(screen.getByRole('link', { name: 'Kitchen', exact: true }).first()).toBeVisible()
-    await expect.element(screen.getByRole('textbox', { name: 'Template of Weather, Full' })).toBeVisible()
     await expect.element(screen.getByRole('button', { name: 'Go to line 2' })).toBeVisible()
-    await expect.element(screen.getByRole('button', { name: 'Fetch again' })).toBeVisible()
-    await arrived()
-    window.scrollTo(0, 0)
-    await expectPageScreenshots('plugin-template-problems')
+    await shootTemplateData(screen, 'plugin-template-problems')
   })
 
   // A shot of the window, not of the page: the full window fills it and scrolls inside itself.
