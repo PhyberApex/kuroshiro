@@ -377,7 +377,8 @@ describe('the Template section of the Plugin page', () => {
 
         release()
 
-        await expect.poll(drawn).toContain('<img src="data:image/png')
+        // Reading the response into a data URL outran the 5s default on a loaded CI runner (#1403).
+        await expect.poll(drawn, { timeout: 10_000 }).toContain('<img src="data:image/png')
         await expect.poll(() => under().at(-1)).toMatch(/^As Kitchen shows it, in 4 grays, drawn at \d{2}:\d{2}\.$/)
         await expect.element(screen.getByRole('button', { name: 'Back to the browser drawing' })).toBeVisible()
       })
