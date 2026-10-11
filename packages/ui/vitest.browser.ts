@@ -61,12 +61,15 @@ export function browserProject(test: ProjectTestOptions & { name: string }, brow
       setupFiles: ['src/testing/setup.ts'],
       // v8 coverage instrumentation slows every page script down, so the default 15s budget
       // can run out mid-click on a loaded CI runner before the spec itself does anything slow.
-      testTimeout: 30_000,
+      // 30s (the first bump, #1313) still wasn't enough: the Coverage job has since timed out
+      // on a plain `fill()` in NumberInput.spec.ts (#1399) and, on main itself, on three more
+      // unrelated specs in the same run — the runner is busier than one bump accounted for.
+      testTimeout: 60_000,
       // Vitest's browser-mode hookTimeout already defaults to 30s (the 10s default packages/api
       // guards against in #1248/#1252 is node mode's); pinned here so `beforeAll`, which starts
       // the faked API behind the same coverage slowdown as every test, keeps that budget even if
-      // the default ever changes.
-      hookTimeout: 30_000,
+      // the default ever changes. Raised alongside testTimeout for the same loaded-runner reason.
+      hookTimeout: 60_000,
       // A click that saves and then navigates takes longer than Vitest's one second on a loaded CI runner.
       expect: { poll: { timeout: 5000 } },
       ...test,
