@@ -1,4 +1,4 @@
-import type { AssignPluginInput, CreateMashupInput, CreateScreenInput, ReorderScreensInput, ScheduleInput, ScreenRead, UpdateMashupInput, UpdateScreenInput } from 'kuroshiro-shared'
+import type { AssignPluginInput, CreateMashupInput, CreateScreenInput, ReorderScreensInput, ScheduleInput, ScreenRead, SetPickedScreenInput, UpdateMashupInput, UpdateScreenInput } from 'kuroshiro-shared'
 import { apiGet, apiSend, apiSendForImage } from './client'
 
 /** A Device's Screens in Order, each with its Screen State. */
@@ -8,6 +8,16 @@ export function listScreens(deviceId: string) {
 
 export function reorderScreens(deviceId: string, input: ReorderScreensInput) {
   return apiSend<ScreenRead[]>('PUT', `devices/${deviceId}/screens/order`, input)
+}
+
+/** "Show next": refused with `picked-screen-wrong-device`, `picked-screen-mirrored`, `picked-screen-active` or `picked-screen-ineligible`. Answers every Screen of the Device, whose Up next it has just moved. */
+export function setPickedScreen(deviceId: string, input: SetPickedScreenInput) {
+  return apiSend<ScreenRead[]>('PUT', `devices/${deviceId}/picked-screen`, input)
+}
+
+/** "Back to Order": idempotent, whether or not a pick was set. */
+export function clearPickedScreen(deviceId: string) {
+  return apiSend<ScreenRead[]>('DELETE', `devices/${deviceId}/picked-screen`)
 }
 
 /** Refused with `screen-field-not-for-kind` for a field the Screen's kind does not have, and with `image-fetch-failed` when a kept image's new address gives no image; the earlier image and address then stay. */

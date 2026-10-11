@@ -1,4 +1,4 @@
-import type { AssignPluginInput, CreateMashupInput, CreateScreenInput, DeviceDetail, InstanceFacts, PluginSummary, ScheduleInput, ScreenRead, UpdateMashupInput, UpdateScreenInput } from 'kuroshiro-shared'
+import type { AssignPluginInput, CreateMashupInput, CreateScreenInput, DeviceDetail, InstanceFacts, PluginSummary, ScheduleInput, ScreenRead, SetPickedScreenInput, UpdateMashupInput, UpdateScreenInput } from 'kuroshiro-shared'
 import type { mountApp } from '@/testing/app'
 import { MASHUP_LAYOUTS } from 'kuroshiro-shared'
 import { http, HttpResponse } from 'msw'
@@ -192,6 +192,21 @@ export function fakeKitchen({
     http.delete(apiUrl('plugins/:pluginId/assignments/kitchen'), ({ params }) => {
       faked.writes.push({ method: 'DELETE', path: `plugins/${params.pluginId}/assignments/kitchen` })
       return removed(screen => screen.plugin?.id !== params.pluginId)
+    }),
+    http.put(apiUrl('devices/kitchen/picked-screen'), async ({ request }) => {
+      const body = await request.json() as SetPickedScreenInput
+      faked.writes.push({ method: 'PUT', path: 'devices/kitchen/picked-screen', body })
+      faked.screens = faked.screens.map((screen) => {
+        if (screen.id === body.screenId)
+          return { ...screen, state: 'upNext', stateCause: null, picked: true }
+        return screen.state === 'upNext' ? { ...screen, state: null, stateCause: null, picked: false } : screen
+      })
+      return HttpResponse.json(faked.screens)
+    }),
+    http.delete(apiUrl('devices/kitchen/picked-screen'), () => {
+      faked.writes.push({ method: 'DELETE', path: 'devices/kitchen/picked-screen' })
+      faked.screens = faked.screens.map(screen => screen.picked ? { ...screen, state: null, stateCause: null, picked: false } : screen)
+      return HttpResponse.json(faked.screens)
     }),
   )
   return faked
