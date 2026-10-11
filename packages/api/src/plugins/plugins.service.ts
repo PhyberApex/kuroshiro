@@ -385,27 +385,38 @@ export class PluginsService implements OnModuleInit {
 
   private assertSavable(plugin: Plugin, { refreshInterval, dataSources, fields, templates }: UpdatePluginDto): void {
     if (templates) {
-      this.assertOneTemplatePerSize(templates.map(template => template.size), 'size')
-      if (!templates.some(template => template.size === 'full')) {
-        throw new ApiException(HttpStatus.BAD_REQUEST, 'template-full-missing', 'A Plugin needs a Template of size full')
-      }
-      this.assertTemplatesParse(templates)
+      this.assertTemplatesSavable(templates)
     }
-
-    if (plugin.kind === 'Webhook' && refreshInterval !== undefined) {
-      throw new ValidationException([{ path: 'refreshInterval', message: 'A Webhook-kind Plugin has no refresh interval' }])
-    }
-    if (plugin.kind === 'Webhook' && dataSources?.length) {
-      throw new ValidationException([{ path: 'dataSources', message: 'A Webhook-kind Plugin cannot have Data Sources' }])
-    }
-
+    this.assertWebhookHasNoFetchConfig(plugin, { refreshInterval, dataSources })
     if (dataSources) {
       this.validateDataSourceNames(dataSources, fields ?? plugin.fields)
     }
     else if (fields) {
       this.assertNoKeynameIsADataSourceName(fields, plugin.dataSources)
     }
+    this.assertDataSourceIdsSavable(plugin, dataSources)
+  }
 
+  private assertTemplatesSavable(templates: UpdateTemplateDto[]): void {
+    this.assertOneTemplatePerSize(templates.map(template => template.size), 'size')
+    if (!templates.some(template => template.size === 'full')) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, 'template-full-missing', 'A Plugin needs a Template of size full')
+    }
+    this.assertTemplatesParse(templates)
+  }
+
+  private assertWebhookHasNoFetchConfig(plugin: Plugin, { refreshInterval, dataSources }: Pick<UpdatePluginDto, 'refreshInterval' | 'dataSources'>): void {
+    if (plugin.kind !== 'Webhook')
+      return
+    if (refreshInterval !== undefined) {
+      throw new ValidationException([{ path: 'refreshInterval', message: 'A Webhook-kind Plugin has no refresh interval' }])
+    }
+    if (dataSources?.length) {
+      throw new ValidationException([{ path: 'dataSources', message: 'A Webhook-kind Plugin cannot have Data Sources' }])
+    }
+  }
+
+  private assertDataSourceIdsSavable(plugin: Plugin, dataSources: UpdateDataSourceDto[] | undefined): void {
     const ownIds = new Set(plugin.dataSources.map(source => source.id))
     const seenIds = new Set<string>()
     const violations = (dataSources ?? []).flatMap(({ id: sourceId }, index): ApiErrorField[] => {

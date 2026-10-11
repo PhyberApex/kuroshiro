@@ -316,14 +316,7 @@ export class DeviceDisplayService {
    */
   private async buildMirrorResponse(device: Device, headers: DisplayRequestHeadersDto, report: Pick<HeaderReport, 'resetDevice' | 'specialFunction'>): Promise<DisplayAnswer> {
     this.logger.log(`Device ${device.id} is mirrored. Fetching from TRMNL.`)
-    let proxy = false
-    if (device.mac === device.mirrorMac) {
-      this.logger.log(`MACs are identical we should proxy the device.`)
-      proxy = true
-    }
-    else {
-      this.logger.log(`MACs are different we should mirror with current_screen endpoint.`)
-    }
+    const proxy = this.isProxiedMirror(device)
     let refreshRate = device.refreshRate
     let filename = 'error.png'
     let localImageUrl = await this.fallbackImageUrl({ kind: 'error', cause: 'mirror' }, device)
@@ -337,12 +330,13 @@ export class DeviceDisplayService {
       const { response, localImageUrl: localImage } = await this.fetchAndStoreMirrorImage(device, proxy ? headers : undefined)
 
       if (proxy) {
-        refreshRate = response.refresh_rate ?? refreshRate
-        firmwareUrl = response.firmware_url ?? firmwareUrl
-        resetFirmware = response.reset_firmware ?? resetFirmware
-        mirrorSpecialFunction = response.special_function ?? 'none'
-        mirrorAction = response.action ?? mirrorSpecialFunction
-        updateFirmware = response.update_firmware ?? updateFirmware
+        const proxied = this.proxiedMirrorFields(response, { refreshRate, firmwareUrl, resetFirmware })
+        refreshRate = proxied.refreshRate
+        firmwareUrl = proxied.firmwareUrl
+        resetFirmware = proxied.resetFirmware
+        mirrorSpecialFunction = proxied.mirrorSpecialFunction
+        mirrorAction = proxied.mirrorAction
+        updateFirmware = proxied.updateFirmware
       }
       localImageUrl = localImage
       filename = response.filename
@@ -366,6 +360,29 @@ export class DeviceDisplayService {
         update_firmware: updateFirmware,
       }),
       served,
+    }
+  }
+
+  /** A Device mirrors itself (proxy) when TRMNL knows it by its own MAC; a different mirror MAC is fetched through `current_screen` instead. */
+  private isProxiedMirror(device: Device): boolean {
+    if (device.mac === device.mirrorMac) {
+      this.logger.log(`MACs are identical we should proxy the device.`)
+      return true
+    }
+    this.logger.log(`MACs are different we should mirror with current_screen endpoint.`)
+    return false
+  }
+
+  /** The fields a proxied fetch's response overrides; a field TRMNL's response left out keeps what was served before. */
+  private proxiedMirrorFields(response: TrmnlScreenResponse, before: { refreshRate: number, firmwareUrl: string | null, resetFirmware: boolean }) {
+    const mirrorSpecialFunction = response.special_function ?? 'none'
+    return {
+      refreshRate: response.refresh_rate ?? before.refreshRate,
+      firmwareUrl: response.firmware_url ?? before.firmwareUrl,
+      resetFirmware: response.reset_firmware ?? before.resetFirmware,
+      mirrorSpecialFunction,
+      mirrorAction: response.action ?? mirrorSpecialFunction,
+      updateFirmware: response.update_firmware ?? false,
     }
   }
 
