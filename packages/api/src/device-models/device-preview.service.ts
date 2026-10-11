@@ -5,7 +5,7 @@ import * as fs from 'node:fs'
 import * as os from 'node:os'
 import * as path from 'node:path'
 import { HttpStatus, Injectable, Logger } from '@nestjs/common'
-import { wrapInScreenShell } from 'kuroshiro-shared'
+import { TRMNL_FRAMEWORK_VERSION, wrapInScreenShell } from 'kuroshiro-shared'
 import { ApiException } from '../errors/api.exception.js'
 import { DeviceModelsService } from './device-models.service.js'
 import { PaletteSelectionService } from './palette-selection.service.js'
@@ -53,7 +53,7 @@ export class DevicePreviewService {
     const tmpDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'kuroshiro-device-preview-'))
     const outputPath = path.join(tmpDir, 'preview.png')
     try {
-      const renderSignal = await renderHtmlToPng(wrapInScreenShell(target, html), target, outputPath, this.logger)
+      const renderSignal = await renderHtmlToPng(wrapInScreenShell(target, html, TRMNL_FRAMEWORK_VERSION), target, outputPath, this.logger)
       const buffer = await fs.promises.readFile(outputPath)
       return { buffer, signal: renderSignal ?? 'none' }
     }

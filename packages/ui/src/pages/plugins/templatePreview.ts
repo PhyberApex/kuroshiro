@@ -1,5 +1,5 @@
 import type { PreviewData, ScreenShellTarget, TemplateProblem, TemplateSize } from 'kuroshiro-shared'
-import { checkTemplate, MASHUP_LAYOUTS, renderLiquid, templateProblemOf, viewFull, wrapInScreenShell } from 'kuroshiro-shared'
+import { checkTemplate, MASHUP_LAYOUTS, renderLiquid, templateProblemOf, TRMNL_FRAMEWORK_VERSION, viewFull, wrapInScreenShell } from 'kuroshiro-shared'
 
 /**
  * The browser's render of a Template, and the one module of the admin UI that holds the Liquid engine: the Template
@@ -42,7 +42,7 @@ export async function previewOf({ markup, size, context, target }: PreviewInput)
     return { problem: unparsed, stopsSave: true }
   try {
     const body = bodyOf(size, await renderLiquid(markup, context))
-    return { document: wrapInScreenShell(target, body), body }
+    return { document: wrapInScreenShell(target, body, TRMNL_FRAMEWORK_VERSION), body }
   }
   catch (error) {
     return { problem: templateProblemOf(error), stopsSave: false }

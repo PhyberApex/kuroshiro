@@ -1,4 +1,5 @@
 import type { ScreenShellTarget } from 'kuroshiro-shared'
+import { TRMNL_FRAMEWORK_VERSION } from 'kuroshiro-shared'
 import { describe, expect, it } from 'vitest'
 import { previewOf } from '../templatePreview'
 
@@ -25,8 +26,8 @@ describe('the preview of a Template', () => {
     expect(outcome).toEqual({
       document: `<html>
   <head>
-    <link rel="stylesheet" href="https://usetrmnl.com/css/latest/plugins.css">
-    <script src="https://usetrmnl.com/js/latest/plugins.js"></script>
+    <link rel="stylesheet" href="https://trmnl.com/css/${TRMNL_FRAMEWORK_VERSION}/plugins.css">
+    <script src="https://trmnl.com/js/${TRMNL_FRAMEWORK_VERSION}/plugins.js"></script>
   </head>
   <body class="environment trmnl">
     <div class="screen screen--og_plus screen--md screen--2bit" style="--screen-w: 800px;"><div class="view view--full"><span class="title">Weather in LINDENPLATZ</span></div></div>

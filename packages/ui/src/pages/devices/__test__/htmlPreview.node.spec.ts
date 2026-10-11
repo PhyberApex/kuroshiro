@@ -1,3 +1,4 @@
+import { TRMNL_FRAMEWORK_VERSION } from 'kuroshiro-shared'
 import { describe, expect, it } from 'vitest'
 import { buildDeviceModel, buildPalette } from '@/testing/fixtures/device-models'
 import { buildDeviceDetail } from '@/testing/fixtures/devices'
@@ -26,7 +27,7 @@ describe('the document an HTML Screen is previewed from', () => {
   it('holds the markup as a full view in the screen shell the server renders with', () => {
     const document = htmlScreenDocument({ model: OG, palette: GREYS }, '<h1>Milk</h1>')
 
-    expect(document).toContain('<link rel="stylesheet" href="https://usetrmnl.com/css/latest/plugins.css">')
+    expect(document).toContain(`<link rel="stylesheet" href="https://trmnl.com/css/${TRMNL_FRAMEWORK_VERSION}/plugins.css">`)
     expect(document).toContain('<body class="environment trmnl">')
     expect(document).toContain('<div class="screen screen--og_plus screen--2bit" style="--screen-w: 800px;"><div class="view view--full"><h1>Milk</h1></div></div>')
   })

@@ -1,5 +1,5 @@
 import type { DeviceDetail, DeviceModelRead, PaletteRead, ScreenShellTarget } from 'kuroshiro-shared'
-import { viewFull, wrapInScreenShell } from 'kuroshiro-shared'
+import { TRMNL_FRAMEWORK_VERSION, viewFull, wrapInScreenShell } from 'kuroshiro-shared'
 
 /** What the server sizes and classes a Device's Screens by, or nothing for a Device whose Device Model or Palette this Instance does not hold. */
 export function shellTargetOf(device: Pick<DeviceDetail, 'deviceModel' | 'palette'>, models: DeviceModelRead[], palettes: PaletteRead[]) {
@@ -10,5 +10,5 @@ export function shellTargetOf(device: Pick<DeviceDetail, 'deviceModel' | 'palett
 
 /** The document the server renders an HTML Screen's image from: its markup as a full view in the screen shell. */
 export function htmlScreenDocument(target: ScreenShellTarget, html: string) {
-  return wrapInScreenShell(target, viewFull(html))
+  return wrapInScreenShell(target, viewFull(html), TRMNL_FRAMEWORK_VERSION)
 }

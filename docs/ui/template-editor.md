@@ -77,6 +77,7 @@ A Plugin has one to four Templates, one per size: `full`, `half_horizontal`, `ha
 **The plate** is the hero plate (2 px ink outline, always paper white, in both themes) in the shape of the Device Model. Inside it the Template is drawn the way the server draws it: Liquid's output wrapped in the screen shell of `packages/shared`, in a sandboxed frame at the Device Model's own pixel size, scaled down to the plate.
 
 - **Where it is rendered.** In the browser. The Liquid engine and Kuroshiro's filters move to `packages/shared`, so the browser and the server run the same code against the same data. Nothing goes to the server while a Template is typed.
+- **TRMNL's framework is pinned per Instance** (ADR-0041), loaded from `trmnl.com` at the pinned version by the browser for the preview as by the server for the image. An Instance without the internet draws an unstyled preview.
 - **When.** 300 ms after the last keystroke, and at once when a Field Value, the Device or the Template changes. The new drawing replaces the old one when it is ready; the plate is never blank in between.
 - **What it is not.** The Device shows an image dithered to its Palette; the plate shows what a browser draws before that step. One line under the plate says so (below), and offers the device preview.
 - **The device preview** (ADR-0040). On request, the server draws the plate's own HTML as the Device would get it and the plate shows that image instead. Any change to what it was drawn from (the Template, a Field Value, the data, the Device, Device Model or Palette) puts the live browser drawing back.
@@ -259,7 +260,6 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 **Left undecided**
 
 - **A name the data does not have.** `{{ forcast.current }}` renders as nothing and is not marked. Marking unknown names needs to know every name a Template defines itself (`assign`, `for`, `capture`), and a Webhook Payload's keys change with every POST. Completion is the help that is offered.
-- **TRMNL's framework is loaded from usetrmnl.com, at "latest"**, by the browser for the preview as by the server for the image. An Instance without the internet draws an unstyled preview, and a new framework version can change every Screen. Hosting or pinning it is not decided here.
 - **`{% render %}` and shared markup.** The importer inlines `shared.liquid` only for `{% render "main" %}`; any other `{% render %}` stays in the Template and fails, since the engine has no partials. The editor shows such a Template with its problem. Whether a Plugin should carry shared markup of its own is not decided.
 - **The dark mode and padding switches** in `trmnl.plugin_settings` are always "no". Nothing in the UI sets them.
 - **Sensors in a scheduled render.** A scheduled render is made once for all Devices and has no Sensors, while the preview for a Device shows that Device's. A Template that reads `sensors` therefore looks better here than on the Device until the server renders per Device; the API ticket owns that.

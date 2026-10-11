@@ -1,5 +1,6 @@
 import type { DevicePreviewSignal, PaletteRead, TemplateSize } from 'kuroshiro-shared'
 import type { PreviewTarget } from './previewTarget'
+import { TRMNL_FRAMEWORK_VERSION } from 'kuroshiro-shared'
 import { clockTime } from '@/patterns/time'
 
 export const SIZE_NAMES: Record<TemplateSize, string> = {
@@ -39,10 +40,15 @@ export const editorName = (pluginName: string, size: TemplateSize) => `Template 
 
 export const removedSentence = (size: TemplateSize) => `Removed when you save. A ${SIZE_NAMES[size].toLowerCase()} slot then shows the full template.`
 
-/** "TRMNL OG (2-bit) · 800 × 480 · 4 Grays (2-bit)", or the size alone under the selects that already name the rest. */
+/**
+ * "TRMNL OG (2-bit) · 800 × 480 · 4 Grays (2-bit) · framework 3.4.0", or the size
+ * alone under the selects that already name the rest. The framework version is
+ * this Instance's pin (ADR-0041); a Plugin's own version is slice B.
+ */
 export function targetFacts({ device, model, palette }: WordedTarget) {
   const size = `${model.width} × ${model.height}`
-  return device ? `${model.label} · ${size} · ${palette.name}` : size
+  const facts = device ? `${model.label} · ${size} · ${palette.name}` : size
+  return `${facts} · framework ${TRMNL_FRAMEWORK_VERSION}`
 }
 
 function shadesOf({ colors, grays }: PaletteRead) {
