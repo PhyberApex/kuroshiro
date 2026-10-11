@@ -8,6 +8,7 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common'
 import { wrapInScreenShell } from 'kuroshiro-shared'
 import { ApiException } from '../errors/api.exception.js'
 import { DeviceModelsService } from './device-models.service.js'
+import { PaletteSelectionService } from './palette-selection.service.js'
 import { renderHtmlToPng } from './render-html-to-png.js'
 
 export interface DevicePreviewResult {
@@ -28,7 +29,10 @@ export class DevicePreviewService {
   /** At most one render runs per Instance; a request that arrives while this is set is refused. */
   private rendering = false
 
-  constructor(private readonly deviceModels: DeviceModelsService) {}
+  constructor(
+    private readonly deviceModels: DeviceModelsService,
+    private readonly paletteSelection: PaletteSelectionService,
+  ) {}
 
   async render(input: DevicePreviewInput): Promise<DevicePreviewResult> {
     if (this.rendering)
@@ -62,10 +66,10 @@ export class DevicePreviewService {
     const model = await this.deviceModels.findByName(input.deviceModelName)
     if (!model)
       throw new ApiException(HttpStatus.BAD_REQUEST, 'device-model-unknown', `This Instance does not know the Device Model ${input.deviceModelName}.`, { names: [input.deviceModelName] })
-    const palette = await this.deviceModels.findPalette(input.paletteId)
+    const palette = await this.paletteSelection.findPalette(input.paletteId)
     if (!palette)
       throw new ApiException(HttpStatus.BAD_REQUEST, 'palette-unknown', `This Instance does not know the Palette ${input.paletteId}.`, { id: input.paletteId })
-    if (!await this.deviceModels.supportsPalette(model, palette))
+    if (!await this.paletteSelection.supportsPalette(model, palette))
       throw new ApiException(HttpStatus.BAD_REQUEST, 'palette-not-for-model', `The Palette ${palette.name} does not belong to ${model.label}.`)
     return { model, palette }
   }

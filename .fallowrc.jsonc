@@ -25,7 +25,36 @@
     "ignore": ["packages/api/src/migrations/**", "packages/api/src/device-models/data/trmnl-snapshot.ts"]
   },
   "health": {
-    // packages/ui/real-api is test code throughout: the suite's specs and the environment its global setup starts
-    "ignore": ["**/__test__/**", "**/*.spec.ts", "packages/ui/real-api/**", "packages/api/src/migrations/**", "packages/api/src/device-models/data/trmnl-snapshot.ts"]
+    "ignore": [
+      // packages/ui/real-api is test code throughout: the suite's specs and the environment its global setup starts
+      "**/__test__/**",
+      "**/*.spec.ts",
+      "packages/ui/real-api/**",
+      "packages/api/src/migrations/**",
+      "packages/api/src/device-models/data/trmnl-snapshot.ts",
+      // Tiny, single-purpose UI helpers: many dependents is the point of a small shared helper, not a reason to split a 9-33 line module further (#1292)
+      "packages/ui/src/components/failureReason.ts",
+      "packages/ui/src/pages/devices/screenNaming.ts",
+      "packages/ui/src/pages/devices/devicePaths.ts",
+      "packages/ui/src/patterns/joinLoads.ts",
+      "packages/ui/src/components/navItem.ts",
+      "packages/ui/src/pages/devices/sentence.ts",
+      // Each is one cohesive wording/rule module for a single page or section; several components import different exports of the same concern, not several concerns in one file (#1292)
+      "packages/ui/src/pages/plugins/pluginPageWording.ts",
+      "packages/ui/src/pages/instance/deviceSimulator.ts",
+      "packages/ui/src/pages/plugins/recipeUpdate.ts",
+      "packages/ui/src/pages/plugins/pluginDataSources.ts",
+      "packages/ui/src/pages/plugins/templateData.ts",
+      "packages/ui/src/pages/instance/deviceModelsWording.ts",
+      "packages/ui/src/pages/devices/deviceLogWording.ts",
+      "packages/ui/src/pages/instance/simulatorWording.ts",
+      "packages/ui/src/pages/instance/firmwareWording.ts",
+      "packages/ui/src/pages/plugins/pluginRows.ts",
+      "packages/ui/src/pages/devices/scheduleEditing.ts",
+      // One cohesive rule module for a Plugin Field's Field Value (ADR-0032): resolving, hiding and reading secrets, reused by several services (#1292)
+      "packages/api/src/plugins/plugin-field-values.ts",
+      // Split out of device-models.service.ts to separate Palette choice from Device Model resolution (#1292); many dependents is the point of this shared service, not a reason to split it further
+      "packages/api/src/device-models/palette-selection.service.ts"
+    ]
   }
 }

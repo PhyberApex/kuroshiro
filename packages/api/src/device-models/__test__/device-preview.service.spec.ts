@@ -1,5 +1,6 @@
 import type { DevicePreviewInput } from 'kuroshiro-shared'
 import type { DeviceModelsService } from '../device-models.service.js'
+import type { PaletteSelectionService } from '../palette-selection.service.js'
 import { Buffer } from 'node:buffer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeDeviceModel, makePalette } from '../../test/fixtures.js'
@@ -27,11 +28,13 @@ const INPUT: DevicePreviewInput = { html: '<div>Hi</div>', deviceModelName: MODE
 function buildService() {
   const deviceModels = {
     findByName: vi.fn().mockResolvedValue(MODEL),
+  }
+  const paletteSelection = {
     findPalette: vi.fn().mockResolvedValue(PALETTE),
     supportsPalette: vi.fn().mockResolvedValue(true),
   }
-  const service = new DevicePreviewService(asService<DeviceModelsService>(deviceModels))
-  return { service, deviceModels }
+  const service = new DevicePreviewService(asService<DeviceModelsService>(deviceModels), asService<PaletteSelectionService>(paletteSelection))
+  return { service, deviceModels, paletteSelection }
 }
 
 describe('devicePreviewService', () => {
@@ -99,8 +102,8 @@ describe('devicePreviewService', () => {
   })
 
   it('refuses an unknown Palette with 400 palette-unknown', async () => {
-    const { service, deviceModels } = buildService()
-    deviceModels.findPalette.mockResolvedValue(null)
+    const { service, paletteSelection } = buildService()
+    paletteSelection.findPalette.mockResolvedValue(null)
 
     const refusal = await service.render(INPUT).catch((error: unknown) => error)
 
@@ -109,9 +112,9 @@ describe('devicePreviewService', () => {
   })
 
   it('refuses a Palette that does not belong to the Device Model with 400 palette-not-for-model', async () => {
-    const { service, deviceModels } = buildService()
-    deviceModels.findPalette.mockResolvedValue(OTHER_PALETTE)
-    deviceModels.supportsPalette.mockResolvedValue(false)
+    const { service, paletteSelection } = buildService()
+    paletteSelection.findPalette.mockResolvedValue(OTHER_PALETTE)
+    paletteSelection.supportsPalette.mockResolvedValue(false)
 
     const refusal = await service.render({ ...INPUT, paletteId: OTHER_PALETTE.id }).catch((error: unknown) => error)
 

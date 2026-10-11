@@ -1,6 +1,7 @@
 import type { DeviceDetail } from 'kuroshiro-shared'
 import type { DataSource } from 'typeorm'
 import type { DeviceModelsService } from '../../device-models/device-models.service.js'
+import type { PaletteSelectionService } from '../../device-models/palette-selection.service.js'
 import type { FirmwareService } from '../../firmware/firmware.service.js'
 import type { ScreensService } from '../../screens/screens.service.js'
 import type { HttpTestApp } from '../../test/httpApp.js'
@@ -12,7 +13,7 @@ import { DeviceSensor } from '../../device-sensors/entities/device-sensor.entity
 import { Firmware } from '../../firmware/entities/firmware.entity.js'
 import { Screen } from '../../screens/screens.entity.js'
 import { createHttpTestApp } from '../../test/httpApp.js'
-import { BW, createMockDeviceModelsService, GRAY_4, GRAY_16, OG_PLUS, V2 } from '../../test/mockDeviceModelsService.js'
+import { BW, createMockDeviceModelsService, createMockPaletteSelectionService, GRAY_4, GRAY_16, OG_PLUS, V2 } from '../../test/mockDeviceModelsService.js'
 import { asService } from '../../test/mockService.js'
 import { createTestDatabase } from '../../test/testDatabase.js'
 import { DeviceReadsService } from '../device-reads.service.js'
@@ -40,9 +41,10 @@ describe('the Device write and delete against a real database', () => {
 
     const deviceModels = createMockDeviceModelsService()
     deviceModels.findByName.mockImplementation((name: string) => models.findOneBy({ name }))
-    deviceModels.findPalette.mockImplementation((id: string) => palettes.findOneBy({ id }))
-    deviceModels.supportsPalette.mockImplementation(async (model: DeviceModel, palette: Palette) => model.paletteIds.includes(palette.id))
-    deviceModels.defaultPaletteFor.mockImplementation((model: DeviceModel) => palettes.findOneBy({ id: model.paletteIds[0] }))
+    const paletteSelection = createMockPaletteSelectionService()
+    paletteSelection.findPalette.mockImplementation((id: string) => palettes.findOneBy({ id }))
+    paletteSelection.supportsPalette.mockImplementation(async (model: DeviceModel, palette: Palette) => model.paletteIds.includes(palette.id))
+    paletteSelection.defaultPaletteFor.mockImplementation((model: DeviceModel) => palettes.findOneBy({ id: model.paletteIds[0] }))
     const firmware = asService<FirmwareService>({ findById: (id: string) => database.getRepository(Firmware).findOneBy({ id }) })
 
     const devices = database.getRepository(Device)
@@ -51,7 +53,7 @@ describe('the Device write and delete against a real database', () => {
       controllers: [DevicesController],
       providers: [
         { provide: DeviceReadsService, useValue: new DeviceReadsService(devices, database.getRepository(Screen), deviceSensors) },
-        { provide: DevicesService, useValue: new DevicesService(devices, asService<DeviceModelsService>(deviceModels), firmware, asService<ScreensService>({ reconvertImageScreens })) },
+        { provide: DevicesService, useValue: new DevicesService(devices, asService<DeviceModelsService>(deviceModels), asService<PaletteSelectionService>(paletteSelection), firmware, asService<ScreensService>({ reconvertImageScreens })) },
       ],
     })
   })

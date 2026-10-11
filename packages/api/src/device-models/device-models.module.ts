@@ -10,11 +10,12 @@ import { DeviceModelsService } from './device-models.service.js'
 import { DeviceModel } from './entities/device-model.entity.js'
 import { Palette } from './entities/palette.entity.js'
 import { FallbackScreensService } from './fallback-screens.service.js'
+import { PaletteSelectionService } from './palette-selection.service.js'
 
 @Module({
   imports: [TypeOrmModule.forFeature([DeviceModel, Palette, Device]), ConfigModule, SyncRunsModule],
   controllers: [DeviceModelsController],
-  providers: [DeviceModelsService, DeviceModelSyncService, DeviceModelReadsService, FallbackScreensService],
-  exports: [DeviceModelsService, DeviceModelReadsService, FallbackScreensService],
+  providers: [DeviceModelsService, PaletteSelectionService, DeviceModelSyncService, DeviceModelReadsService, FallbackScreensService],
+  exports: [DeviceModelsService, PaletteSelectionService, DeviceModelReadsService, FallbackScreensService],
 })
 export class DeviceModelsModule {}

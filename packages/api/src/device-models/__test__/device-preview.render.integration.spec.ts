@@ -1,5 +1,6 @@
 import type { Logger } from '@nestjs/common'
 import type { DeviceModelsService } from '../device-models.service.js'
+import type { PaletteSelectionService } from '../palette-selection.service.js'
 import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -33,10 +34,12 @@ describe.runIf(magickAvailable())('devicePreviewService (real Chrome and magick)
   function buildService() {
     const deviceModels = asService<DeviceModelsService>({
       findByName: async (name: string) => (name === OG.name ? OG : null),
+    })
+    const paletteSelection = asService<PaletteSelectionService>({
       findPalette: async (id: string) => [BLACK_AND_WHITE, SEVEN_COLOUR].find(p => p.id === id) ?? null,
       supportsPalette: async (model: unknown, palette: { id: string }) => (model === OG) && [BLACK_AND_WHITE.id, SEVEN_COLOUR.id].includes(palette.id),
     })
-    return new DevicePreviewService(deviceModels)
+    return new DevicePreviewService(deviceModels, paletteSelection)
   }
 
   beforeAll(async () => {
