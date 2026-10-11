@@ -62,7 +62,7 @@ describe('alertSweepService', () => {
   })
 
   describe('sweep', () => {
-    it('opens a new low-battery alert and attempts its notification', async () => {
+    it('opens a new low-battery alert and attempts its notification as part of the digest', async () => {
       const device = makeDevice({ id: 'device-1', batteryVoltage: '3.0', lastSeen: new Date() }) // 0%
       deviceRepo.find.mockResolvedValue([device])
       alertRepo.find.mockResolvedValue([])
@@ -76,7 +76,8 @@ describe('alertSweepService', () => {
         device,
         details: { percent: 0 },
       }))
-      expect(sender.send).toHaveBeenCalledWith(expect.objectContaining({ title: expect.stringContaining('battery low') }))
+      expect(sender.send).toHaveBeenCalledTimes(1)
+      expect(sender.send).toHaveBeenCalledWith(expect.objectContaining({ body: expect.stringContaining('Low battery') }))
       expect(alertRepo.update).toHaveBeenCalledWith('new-alert-id', expect.objectContaining({ notifiedAt: expect.any(Date) }))
     })
 
@@ -125,7 +126,7 @@ describe('alertSweepService', () => {
       await service.sweep()
 
       expect(alertRepo.update).toHaveBeenCalledWith('alert-1', expect.objectContaining({ resolvedAt: expect.any(Date) }))
-      expect(sender.send).toHaveBeenCalledWith(expect.objectContaining({ title: expect.stringContaining('recovered') }))
+      expect(sender.send).toHaveBeenCalledWith(expect.objectContaining({ body: expect.stringContaining('Resolved:') }))
       expect(alertRepo.update).toHaveBeenCalledWith('alert-1', expect.objectContaining({ resolutionNotifiedAt: expect.any(Date) }))
     })
 
@@ -152,7 +153,7 @@ describe('alertSweepService', () => {
 
       await service.sweep()
 
-      expect(sender.send).toHaveBeenCalledWith(expect.objectContaining({ title: expect.stringContaining('recovered') }))
+      expect(sender.send).toHaveBeenCalledWith(expect.objectContaining({ body: expect.stringContaining('Resolved:') }))
       expect(alertRepo.update).toHaveBeenCalledWith('alert-1', expect.objectContaining({ resolvedAt: expect.any(Date) }))
       expect(alertRepo.update).not.toHaveBeenCalledWith('alert-1', expect.objectContaining({ resolutionNotifiedAt: expect.anything() }))
     })
@@ -182,7 +183,7 @@ describe('alertSweepService', () => {
 
       await service.sweep()
 
-      expect(sender.send).toHaveBeenCalledWith(expect.objectContaining({ title: expect.stringContaining('recovered') }))
+      expect(sender.send).toHaveBeenCalledWith(expect.objectContaining({ body: expect.stringContaining('Resolved:') }))
       expect(alertRepo.update).toHaveBeenCalledWith('alert-1', expect.objectContaining({ resolutionNotifiedAt: expect.any(Date) }))
     })
 
@@ -217,7 +218,7 @@ describe('alertSweepService', () => {
         dataSource: source,
         details: { streak: 3, lastError: null },
       }))
-      expect(sender.send).toHaveBeenCalledWith(expect.objectContaining({ title: expect.stringContaining('fetch failing') }))
+      expect(sender.send).toHaveBeenCalledWith(expect.objectContaining({ body: expect.stringContaining('Fetch failing') }))
     })
 
     it('does not open a data-source-fetch-failing alert one short of the threshold', async () => {
@@ -241,7 +242,7 @@ describe('alertSweepService', () => {
       await service.sweep()
 
       expect(alertRepo.update).toHaveBeenCalledWith('alert-1', expect.objectContaining({ resolvedAt: expect.any(Date) }))
-      expect(sender.send).toHaveBeenCalledWith(expect.objectContaining({ title: expect.stringContaining('recovered') }))
+      expect(sender.send).toHaveBeenCalledWith(expect.objectContaining({ body: expect.stringContaining('Fetch failing') }))
     })
 
     it('never opens a data-source-fetch-failing alert for a literal-mode source', async () => {
@@ -252,6 +253,79 @@ describe('alertSweepService', () => {
       await service.sweep()
 
       expect(alertRepo.save).not.toHaveBeenCalled()
+    })
+
+    it('sends nothing when nothing opened, resolved, or was left unannounced', async () => {
+      deviceRepo.find.mockResolvedValue([])
+      dataSourceRepo.find.mockResolvedValue([])
+      alertRepo.find.mockResolvedValue([])
+
+      await service.sweep()
+
+      expect(sender.send).not.toHaveBeenCalled()
+    })
+
+    it('combines opens and resolves from two different Rules into a single digest send', async () => {
+      const device = makeDevice({ id: 'device-1', batteryVoltage: '3.0', lastSeen: new Date() }) // opens: 0%
+      const source = makePluginDataSource({ id: 'ds-1', name: 'weather', fetchFailureStreak: 0 }) // resolves
+      const existingFetchAlert = makeAlert({ id: 'alert-fetch-1', kind: 'data-source-fetch-failing', device: undefined, dataSource: source, notifiedAt: new Date() })
+      deviceRepo.find.mockResolvedValue([device])
+      dataSourceRepo.find.mockResolvedValue([source])
+      alertRepo.find.mockImplementation(async (options) => {
+        const kind = whereKind(options)
+        if (kind === 'device-low-battery')
+          return []
+        if (kind === 'data-source-fetch-failing')
+          return [existingFetchAlert]
+        return []
+      })
+      alertRepo.save.mockImplementation(async input => ({ ...input, id: 'new-alert-id' }))
+      sender.send.mockResolvedValue(true)
+
+      await service.sweep()
+
+      expect(sender.send).toHaveBeenCalledTimes(1)
+      const digest = sender.send.mock.calls[0][0]
+      expect(digest.title).toContain('1 opened')
+      expect(digest.title).toContain('1 resolved')
+      expect(digest.body.indexOf('Low battery')).toBeLessThan(digest.body.indexOf('Fetch failing'))
+      expect(alertRepo.update).toHaveBeenCalledWith('new-alert-id', expect.objectContaining({ notifiedAt: expect.any(Date) }))
+      expect(alertRepo.update).toHaveBeenCalledWith('alert-fetch-1', expect.objectContaining({ resolutionNotifiedAt: expect.any(Date) }))
+    })
+
+    it('carries an Alert left unannounced by a prior failed send into the next digest alongside new changes, in one send call', async () => {
+      const device1 = makeDevice({ id: 'device-1', batteryVoltage: '3.0', lastSeen: new Date() }) // still active, unannounced from before
+      const device2 = makeDevice({ id: 'device-2', batteryVoltage: '4.2', lastSeen: new Date() }) // resolves this sweep
+      const unannounced = makeAlert({ id: 'alert-1', kind: 'device-low-battery', device: device1, notifiedAt: null })
+      const resolving = makeAlert({ id: 'alert-2', kind: 'device-low-battery', device: device2, notifiedAt: new Date() })
+      deviceRepo.find.mockResolvedValue([device1, device2])
+      alertRepo.find.mockImplementation(async options => (whereKind(options) === 'device-low-battery' ? [unannounced, resolving] : []))
+      sender.send.mockResolvedValue(true)
+
+      await service.sweep()
+
+      expect(sender.send).toHaveBeenCalledTimes(1)
+      const digest = sender.send.mock.calls[0][0]
+      expect(digest.title).toContain('1 opened')
+      expect(digest.title).toContain('1 resolved')
+      expect(alertRepo.update).toHaveBeenCalledWith('alert-1', expect.objectContaining({ notifiedAt: expect.any(Date) }))
+      expect(alertRepo.update).toHaveBeenCalledWith('alert-2', expect.objectContaining({ resolutionNotifiedAt: expect.any(Date) }))
+    })
+
+    it('stamps nothing when the combined digest send fails, even with multiple entries pending', async () => {
+      const device1 = makeDevice({ id: 'device-1', batteryVoltage: '3.0', lastSeen: new Date() })
+      const device2 = makeDevice({ id: 'device-2', batteryVoltage: '4.2', lastSeen: new Date() })
+      const unannounced = makeAlert({ id: 'alert-1', kind: 'device-low-battery', device: device1, notifiedAt: null })
+      const resolving = makeAlert({ id: 'alert-2', kind: 'device-low-battery', device: device2, notifiedAt: new Date() })
+      deviceRepo.find.mockResolvedValue([device1, device2])
+      alertRepo.find.mockImplementation(async options => (whereKind(options) === 'device-low-battery' ? [unannounced, resolving] : []))
+      sender.send.mockResolvedValue(false)
+
+      await service.sweep()
+
+      expect(sender.send).toHaveBeenCalledTimes(1)
+      expect(alertRepo.update).not.toHaveBeenCalledWith('alert-1', expect.objectContaining({ notifiedAt: expect.anything() }))
+      expect(alertRepo.update).not.toHaveBeenCalledWith('alert-2', expect.objectContaining({ resolutionNotifiedAt: expect.anything() }))
     })
   })
 })

@@ -82,7 +82,10 @@ describe('what an Alert keeps of its cause, against a real database', () => {
     await database.getRepository(Device).update(device.id, { batteryVoltage: '4.2' })
     await sweep.sweep()
 
-    expect(send).toHaveBeenLastCalledWith(expect.objectContaining({ title: 'Kuroshiro: Kitchen battery recovered', body: 'Kitchen (AA:BB:CC:DD:EE:01) is at 100%.' }))
+    expect(send).toHaveBeenLastCalledWith(expect.objectContaining({
+      title: expect.stringContaining('1 resolved'),
+      body: expect.stringContaining('Kitchen (AA:BB:CC:DD:EE:01) is at 100%.'),
+    }))
   })
 
   it('does not retry a resolution notification once a sender is configured later, for an Alert that resolved with none configured', async () => {
