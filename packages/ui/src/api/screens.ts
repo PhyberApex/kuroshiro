@@ -1,4 +1,4 @@
-import type { AssignPluginInput, CreateMashupInput, CreateScreenInput, ReorderScreensInput, ScheduleInput, ScreenRead, SetPickedScreenInput, UpdateMashupInput, UpdateScreenInput } from 'kuroshiro-shared'
+import type { AssignPluginInput, CreateMashupInput, CreateScreenInput, ReorderScreensInput, ScheduleInput, ScreenRead, UpdateMashupInput, UpdateScreenInput } from 'kuroshiro-shared'
 import { apiGet, apiSend, apiSendForImage } from './client'
 
 /** A Device's Screens in Order, each with its Screen State. */
@@ -88,18 +88,4 @@ export function updateSchedule(screenId: string, input: ScheduleInput) {
 /** The Screen is always shown again. */
 export function removeSchedule(screenId: string) {
   return apiSend<ScreenRead>('DELETE', `screens/${screenId}/schedule`)
-}
-
-/**
- * Picks a Screen to show at the Device's next poll ("Show next"), overriding
- * Order once. Refused with `picked-screen-wrong-device`, `picked-screen-mirrored`,
- * `picked-screen-active` or `picked-screen-ineligible`.
- */
-export function setPickedScreen(deviceId: string, input: SetPickedScreenInput) {
-  return apiSend<ScreenRead[]>('PUT', `devices/${deviceId}/picked-screen`, input)
-}
-
-/** "Back to Order": clears the Device's Picked Screen, whether or not one was set. */
-export function clearPickedScreen(deviceId: string) {
-  return apiSend<ScreenRead[]>('DELETE', `devices/${deviceId}/picked-screen`)
 }

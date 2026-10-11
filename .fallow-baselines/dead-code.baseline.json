@@ -10,10 +10,7 @@
   },
   "identity": "dc1",
   "unused_files": [],
-  "unused_exports": [
-    "unused-export:packages/ui/src/api/screens.ts:clearPickedScreen",
-    "unused-export:packages/ui/src/api/screens.ts:setPickedScreen"
-  ],
+  "unused_exports": [],
   "unused_types": [],
   "private_type_leaks": [],
   "deprecated_exports_in_use": [],
