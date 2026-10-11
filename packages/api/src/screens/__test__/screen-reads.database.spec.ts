@@ -93,6 +93,7 @@ describe('a Device\'s Screens, GET /api/devices/:id/screens, against a real data
       order: 1,
       state: 'active',
       stateCause: null,
+      picked: false,
       renderSignal: null,
       imagePath: `/screens/devices/${device.id}/${first.id}.png?v=${CREATED_AT.getTime()}`,
       renderedAt: '2026-03-01T09:30:00.000Z',

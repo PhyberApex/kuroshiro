@@ -65,6 +65,10 @@ export const API_ERROR_CODES = [
   'palette-name-taken',
   'palette-not-custom',
   'palette-in-use',
+  'picked-screen-wrong-device',
+  'picked-screen-mirrored',
+  'picked-screen-active',
+  'picked-screen-ineligible',
 ] as const
 
 export type ApiErrorCode = typeof API_ERROR_CODES[number]

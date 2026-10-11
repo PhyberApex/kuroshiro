@@ -8,7 +8,7 @@ const UPLOADED_AT = new Date('2026-02-15T08:00:00.000Z')
 
 const WAITING_ITS_TURN: ScreenFacts = {
   deviceId: 'device-1',
-  state: { state: null, stateCause: null },
+  state: { state: null, stateCause: null, picked: false },
   renderSignal: null,
   isRendered: true,
   requiredFieldEmpty: false,
@@ -27,6 +27,7 @@ describe('toScreenRead', () => {
       order: 2,
       state: null,
       stateCause: null,
+      picked: false,
       renderSignal: null,
       imagePath: `/screens/devices/device-1/screen-photo.png?v=${RENDERED_AT.getTime()}`,
       renderedAt: '2026-03-01T09:30:00.000Z',
@@ -52,9 +53,15 @@ describe('toScreenRead', () => {
   })
 
   it('carries the Screen State, its cause and the Render Signal it is given', () => {
-    const read = toScreenRead(makeScreen(), { ...WAITING_ITS_TURN, state: { state: 'notToday', stateCause: 'dateRange' }, renderSignal: 'hold' })
+    const read = toScreenRead(makeScreen(), { ...WAITING_ITS_TURN, state: { state: 'notToday', stateCause: 'dateRange', picked: false }, renderSignal: 'hold' })
 
     expect(read).toMatchObject({ state: 'notToday', stateCause: 'dateRange', renderSignal: 'hold' })
+  })
+
+  it('carries the picked qualifier for the Screen that is upNext because it is the Device\'s Picked Screen', () => {
+    const read = toScreenRead(makeScreen(), { ...WAITING_ITS_TURN, state: { state: 'upNext', stateCause: null, picked: true } })
+
+    expect(read).toMatchObject({ state: 'upNext', picked: true })
   })
 
   it('reads a Screen never rendered without an image or a render time, although its creation time is stored', () => {

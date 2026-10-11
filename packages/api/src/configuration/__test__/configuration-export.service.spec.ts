@@ -308,6 +308,18 @@ describe('configurationExportService', () => {
     expect(devicesJson[0]).not.toHaveProperty('rssi')
   })
 
+  it('excludes the Picked Screen, runtime state like every other (ADR-0038)', async () => {
+    const device = makeDevice({ id: 'device-1', pickedScreen: makeScreen({ id: 'screen-1' }) })
+    deviceRepo.find.mockResolvedValue([device])
+
+    const buffer = await service.exportToZip()
+    const zip = new AdmZip(buffer)
+    const devicesJson = JSON.parse(zip.getEntry('devices.json')!.getData().toString('utf8'))
+
+    expect(devicesJson[0]).not.toHaveProperty('pickedScreenId')
+    expect(devicesJson[0]).not.toHaveProperty('pickedScreen')
+  })
+
   it('nests a Screen\'s Schedule and Mashup configuration inside screens.json', async () => {
     const device = makeDevice({ id: 'device-1' })
     const screen = makeScreen({

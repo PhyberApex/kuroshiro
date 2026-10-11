@@ -102,6 +102,11 @@ export class Device {
   @JoinColumn({ name: 'targetFirmwareId' })
   targetFirmware?: Firmware | null
 
+  /** The Screen an admin picked ("Show next"), served and cleared by the next non-sleeping `/display` poll (ADR-0038). */
+  @ManyToOne('Screen', { nullable: true, eager: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'pickedScreenId' })
+  pickedScreen?: Relation<Screen> | null
+
   /** `null` until the Device's first `/display` poll. */
   @Column('timestamptz', { nullable: true })
   lastSeen?: Date | null

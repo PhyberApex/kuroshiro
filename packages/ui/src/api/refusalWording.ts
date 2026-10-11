@@ -113,6 +113,10 @@ const REFUSAL_WORDING: Record<ApiErrorCode, Wording> = {
   'palette-name-taken': 'There is already a custom Palette with that name.',
   'palette-not-custom': 'Only a custom Palette can be changed or deleted.',
   'palette-in-use': 'The Palette Family cannot be changed while a Device uses the Palette.',
+  'picked-screen-wrong-device': 'That Screen does not belong to this Device.',
+  'picked-screen-mirrored': 'A mirrored Device has no Rotation to pick in.',
+  'picked-screen-active': 'The Active Screen cannot be picked.',
+  'picked-screen-ineligible': 'Rotation could not show that Screen at the next poll.',
 }
 
 /** A code this build does not know, from a newer server, falls back on the server's own sentence. */

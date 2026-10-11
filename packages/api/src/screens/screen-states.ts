@@ -17,5 +17,5 @@ export function renderSignalOf(screen: Screen): RenderSignal | null {
  */
 export function screenStatesOfDevice(device: Device, screensInOrder: Screen[], now: Date): Map<string, ScreenStateRead> {
   const rotationScreens = screensInOrder.map(screen => ({ id: screen.id, isActive: screen.isActive, schedule: screen.schedule, renderSignal: renderSignalOf(screen) }))
-  return screenStatesOf(rotationScreens, { now, nextRotationAt: nextRotationAt(device, now), isMirrored: !!device.mirrorEnabled })
+  return screenStatesOf(rotationScreens, { now, nextRotationAt: nextRotationAt(device, now), isMirrored: !!device.mirrorEnabled, pickedScreenId: device.pickedScreen?.id ?? null })
 }
