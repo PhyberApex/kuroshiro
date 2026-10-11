@@ -45,7 +45,7 @@ const facts = computed(() => rowFacts(props))
           <template v-if="index > 0">
             ·
           </template>
-          <span v-if="fact.kind === 'alert'" class="alert"><span class="square" aria-hidden="true" />{{ fact.text }}</span>
+          <span v-if="fact.kind === 'alert'" class="alert"><span class="seal-dot" aria-hidden="true" />{{ fact.text }}</span>
           <span v-else-if="fact.kind === 'lastSeen'" class="seen">Last seen <RelativeTime :at="fact.at" /></span>
           <span v-else>{{ fact.text }}</span>
         </template>
@@ -108,14 +108,6 @@ const facts = computed(() => rowFacts(props))
   .alert {
     color: var(--color-seal);
     font-weight: var(--weight-medium);
-  }
-
-  .square {
-    display: inline-block;
-    width: var(--space-2);
-    height: var(--space-2);
-    margin-right: var(--space-2);
-    background: var(--color-seal);
   }
 
   /* Above the row's link, so that the exact time shows on hover. */

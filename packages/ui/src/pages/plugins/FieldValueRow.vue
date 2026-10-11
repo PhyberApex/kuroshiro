@@ -37,7 +37,7 @@ async function clear() {
 </script>
 
 <template>
-  <div class="field-value-row">
+  <div class="field-value-row fields-row">
     <div class="naming">
       <label class="label" :for="id">{{ label }}</label>
       <span v-if="field.required" :id="`${id}-required`" class="required">required</span>
@@ -70,16 +70,6 @@ async function clear() {
 
 <style scoped>
 @layer components {
-  /* The grid of a Setting row, drawn here because that row's label has no place for "required" under it. */
-  .field-value-row {
-    display: grid;
-    grid-template-columns: var(--setting-label-width, 12.5rem) minmax(0, 1fr) auto;
-    align-items: center;
-    gap: var(--space-1) var(--space-4);
-    min-height: 3.25rem;
-    padding: var(--space-2) 0;
-  }
-
   .field-value-row + .field-value-row {
     border-top: var(--rule);
   }
@@ -139,10 +129,6 @@ async function clear() {
   }
 
   @media (max-width: 820px) {
-    .field-value-row {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
     .naming {
       grid-auto-flow: column;
       justify-content: start;

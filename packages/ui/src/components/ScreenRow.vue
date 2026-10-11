@@ -80,18 +80,18 @@ function openFromLine(event: MouseEvent) {
         {
           'sortable': rows.sortable.value,
           'passed-over': dimmed,
-          'lifted': liftedBy,
-          'drop-before': dropEdge === 'before',
-          'drop-after': dropEdge === 'after',
+          'row-lifted': liftedBy,
+          'row-drop-before': dropEdge === 'before',
+          'row-drop-after': dropEdge === 'after',
         },
       ]"
     >
-      <div class="line" :data-force="force" @click="openFromLine">
+      <div class="line row-line" :data-force="force" @click="openFromLine">
         <template v-if="rows.sortable.value">
           <Tooltip :text="`Move ${name} in the Order`">
             <button
               type="button"
-              class="grip"
+              class="grip row-grip"
               data-grip
               :aria-label="`Move ${name} in the Order`"
               :aria-describedby="rows.gripHelpId"
@@ -129,7 +129,7 @@ function openFromLine(event: MouseEvent) {
             <AccordionHeader as-child>
               <component :is="heading" v-show="!renaming" class="heading">
                 <AccordionTrigger as-child>
-                  <button type="button" class="trigger">
+                  <button type="button" class="trigger row-trigger">
                     {{ name }}
                   </button>
                 </AccordionTrigger>
@@ -153,7 +153,7 @@ function openFromLine(event: MouseEvent) {
         <Icon name="chevron" class="chevron" />
       </div>
       <AccordionContent as-child>
-        <div class="body">
+        <div class="body row-body">
           <div class="inside">
             <slot />
           </div>
@@ -176,48 +176,11 @@ function openFromLine(event: MouseEvent) {
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    min-height: var(--hit-target);
-    padding: var(--space-2) 0;
-    border-radius: var(--radius);
-    cursor: pointer;
   }
 
-  .line:has(.trigger:focus-visible) {
-    outline: var(--focus-ring);
-    outline-offset: var(--focus-offset);
-  }
-
-  .trigger:focus-visible {
-    outline: 0;
-  }
-
-  .grip {
-    position: relative;
-    display: grid;
+  /* The grip stands in a flex line; PluginFieldRow's own grid sizes it by its column instead. */
+  .row-grip {
     flex: none;
-    place-items: center;
-    width: var(--grip-width);
-    height: var(--control-height);
-    border-radius: var(--radius-inner);
-    color: var(--color-ink-soft);
-    cursor: grab;
-    transition: color var(--duration-quick) var(--ease-out);
-  }
-
-  /* The grip is 16 px wide; this is the 44 px a finger or a near miss lands on. */
-  .grip::before {
-    content: "";
-    position: absolute;
-    inset: 0 calc((var(--grip-width) - var(--hit-target)) / 2);
-  }
-
-  .grip:is(:hover, [aria-pressed='true']),
-  .screen-row.lifted .grip {
-    color: var(--color-ink);
-  }
-
-  .screen-row.lifted .grip {
-    cursor: grabbing;
   }
 
   .nudge {
@@ -313,51 +276,12 @@ function openFromLine(event: MouseEvent) {
     rotate: 180deg;
   }
 
-  /* The lifted row: on wash, in a 1 px ink outline. The 2 px ink line is where it will land. */
-  .lifted {
-    outline: 1px solid var(--color-ink);
-    outline-offset: -1px;
-    background: var(--color-wash);
-  }
-
-  .drop-before {
-    box-shadow: 0 -2px 0 var(--color-ink);
-  }
-
-  .drop-after {
-    box-shadow: 0 2px 0 var(--color-ink);
-  }
-
-  .body {
-    overflow: hidden;
-  }
-
   .inside {
     padding: var(--space-2) 0 var(--space-6);
   }
 
   .screen-row.sortable .inside {
     padding-left: calc(var(--grip-width) + var(--order-width) + 2 * var(--space-3));
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    .body[data-state='open'] {
-      animation: unfold var(--duration-move) var(--ease-out);
-    }
-
-    .body[data-state='closed'] {
-      animation: fold var(--duration-move) var(--ease-out);
-    }
-  }
-
-  @keyframes unfold {
-    from { height: 0; }
-    to { height: var(--reka-accordion-content-height); }
-  }
-
-  @keyframes fold {
-    from { height: var(--reka-accordion-content-height); }
-    to { height: 0; }
   }
 
   /* On phone the grip and the Order give way to two move buttons, and the cells stand under the name. */

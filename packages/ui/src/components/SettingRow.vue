@@ -54,7 +54,7 @@ const saveStateTakesTheSide = computed(() => props.status === 'saving' || props.
 </script>
 
 <template>
-  <div class="setting-row">
+  <div class="setting-row fields-row">
     <label :id="labelId" class="label" :for="controlId">{{ label }}</label>
     <div class="control-cell">
       <slot :control="control" :label-id="labelId" />
@@ -72,15 +72,6 @@ const saveStateTakesTheSide = computed(() => props.status === 'saving' || props.
 
 <style scoped>
 @layer components {
-  .setting-row {
-    display: grid;
-    grid-template-columns: var(--setting-label-width, 12.5rem) minmax(0, 1fr) auto;
-    align-items: center;
-    gap: var(--space-1) var(--space-4);
-    min-height: 3.25rem;
-    padding: var(--space-2) 0;
-  }
-
   .setting-row + .setting-row {
     border-top: var(--rule);
   }
@@ -126,10 +117,6 @@ const saveStateTakesTheSide = computed(() => props.status === 'saving' || props.
   }
 
   @media (max-width: 820px) {
-    .setting-row {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
     .state,
     .source,
     .note,

@@ -14,7 +14,7 @@ defineSlots<{
 </script>
 
 <template>
-  <div class="read-row">
+  <div class="read-row fields-row">
     <b class="label">{{ label }}</b>
     <div class="shown">
       <slot />
@@ -30,16 +30,6 @@ defineSlots<{
 
 <style scoped>
 @layer components {
-  /* The grid of a Setting row, so a section that mixes the two keeps its columns. */
-  .read-row {
-    display: grid;
-    grid-template-columns: var(--setting-label-width, 12.5rem) minmax(0, 1fr) auto;
-    align-items: center;
-    gap: var(--space-1) var(--space-4);
-    min-height: 3.25rem;
-    padding: var(--space-2) 0;
-  }
-
   .read-row + .read-row {
     border-top: var(--rule);
   }
@@ -69,10 +59,6 @@ defineSlots<{
   }
 
   @media (max-width: 820px) {
-    .read-row {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
     .note {
       grid-column: 1;
     }

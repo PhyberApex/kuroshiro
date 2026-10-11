@@ -11,7 +11,7 @@ defineProps<{
 <template>
   <span class="row-state" :class="state?.kind">
     <template v-if="state">
-      <span v-if="state.kind === 'alert'" class="square" aria-hidden="true" />
+      <span v-if="state.kind === 'alert'" class="seal-chip" aria-hidden="true" />
       <Icon v-else-if="state.kind === 'problem'" name="problem" class="mark" />
       <span>{{ state.text }}</span>
     </template>
@@ -40,14 +40,6 @@ defineProps<{
   /* The seal colour is rationed: of a row's states only a firing Alert wears it. */
   .row-state.alert {
     color: var(--color-seal);
-  }
-
-  .square {
-    flex: none;
-    width: var(--space-2);
-    height: var(--space-2);
-    margin: calc((1lh - var(--space-2)) / 2) var(--space-1) 0;
-    background: var(--color-seal);
   }
 
   .row-state .mark {
