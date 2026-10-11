@@ -4,6 +4,7 @@ import { NestFactory } from '@nestjs/core'
 import { DataSource } from 'typeorm'
 import { AppModule } from './app.module.js'
 import config, { logUnknownEnvVars } from './config/config.js'
+import { migrationLogger } from './config/migration-logger.js'
 import { registerErrorEnvelope } from './errors/register-error-envelope.js'
 import { LoggingInterceptor } from './interceptors/logging.interceptor.js'
 import { ingressBasePathMiddleware } from './middleware/ingress-base-path.middleware.js'
@@ -18,13 +19,11 @@ async function bootstrap() {
   registerBodyParsers(app)
   app.use(ingressBasePathMiddleware(resolveAppPath('public')))
   const dataSource = app.get(DataSource)
-  const pending = dataSource.migrations
-  if (pending.length === 0) {
+  if (dataSource.migrations.length === 0) {
     logger.error('[Migrations] No migration files found (check dist/src/migrations in image)')
   }
-  const run = await dataSource.runMigrations()
-  if (run.length > 0) {
-    logger.log(`[Migrations] Ran ${run.length} migration(s): ${run.map(m => m.name).join(', ')}`)
+  if (migrationLogger.ran.length > 0) {
+    logger.log(`[Migrations] Ran ${migrationLogger.ran.length} migration(s): ${migrationLogger.ran.join(', ')}`)
   }
   else {
     logger.log(`[Migrations] No migrations to be run`)
