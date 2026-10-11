@@ -1,5 +1,5 @@
 import type { DeviceModelRead, DeviceModelSyncResult, PaletteRead, SyncRun } from 'kuroshiro-shared'
-import { paletteLabel } from '@/pages/devices/deviceSettings'
+import { paletteLabel } from '@/pages/devices/deviceCatalogOptions'
 import { exactTime, relativeTime } from '@/patterns/time'
 
 const MOST_GREYS_SHOWN = 8
