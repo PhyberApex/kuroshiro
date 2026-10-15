@@ -26,7 +26,7 @@ export const WEATHER_DATA = {
   trmnl: { plugin_settings: { instance_name: 'Weather' } },
 }
 
-export const KUROSHIRO_FILTER_NAMES = ['date_short', 'date_long', 'time_short', 'number_with_delimiter', 'round', 'truncate_words', 'titleize', 'shuffle', 'sample', 'yesno', 'json', 'url_encode', 'url_decode']
+export const KUROSHIRO_FILTER_NAMES = ['date_short', 'date_long', 'time_short', 'number_with_delimiter', 'truncate_words', 'titleize', 'shuffle', 'sample', 'yesno', 'json']
 
 export const FRIDGE_NOTE_HTML = `<div class="layout layout--col layout--center">
   <span class="value value--xlarge">Bins go out tonight</span>

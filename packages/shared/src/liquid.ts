@@ -16,15 +16,61 @@ export interface TemplateProblem {
 const EMPTY_TEMPLATE_MESSAGE = 'A template cannot be empty.'
 const POSITION_SUFFIX = /, line:\d+, col:\d+$/
 
-const asDate = (value: unknown) => new Date(value as string | number | Date)
+const asText = (value: unknown) => (typeof value === 'string' ? value : null)
+
+function asDate(value: unknown) {
+  if (typeof value !== 'string' && !(value instanceof Date))
+    return null
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function formatDate(value: unknown, format: (date: Date) => string) {
+  const date = asDate(value)
+  return date ? format(date) : ''
+}
+
+function toNumber(value: unknown) {
+  const number = typeof value === 'number' ? value : Number.parseFloat(String(value))
+  return Number.isNaN(number) ? 0 : number
+}
+
+/** Ruby reads `3.0` and `'3.0'` as floats; JavaScript cannot tell `3.0` from `3`, so the divisor's source text is asked too. */
+function isFloat(value: unknown, literal: string | undefined) {
+  return !Number.isInteger(toNumber(value)) || (typeof value === 'string' ? /[.e]/i.test(value) : /^[-+]?\d*\./.test(literal ?? ''))
+}
+
+type FilterThis = ThisParameterType<Extract<FilterImplOptions, (...args: never[]) => unknown>>
+
+/**
+ * Standard filters whose liquidjs answer differs (or throws) from Ruby Liquid's (ADR-0043). They are registered like the rest but
+ * stay out of `KUROSHIRO_FILTERS`, which names only the filters Kuroshiro adds.
+ */
+const corrections: Record<string, FilterImplOptions> = {
+  divided_by(this: FilterThis, dividend: unknown, divisor: unknown) {
+    const quotient = toNumber(dividend) / toNumber(divisor)
+    const first = this.token.args[0]
+    const literal = Array.isArray(first) ? undefined : first?.getText()
+    return isFloat(dividend, undefined) || isFloat(divisor, literal) ? quotient : Math.floor(quotient)
+  },
+  url_decode: (value: unknown) => {
+    const text = String(value ?? '')
+    try {
+      return decodeURIComponent(text.replace(/\+/g, ' '))
+    }
+    catch {
+      return text
+    }
+  },
+}
 
 const filters: Record<string, FilterImplOptions> = {
   date_short: (date: unknown) =>
-    asDate(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    formatDate(date, d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
   date_long: (date: unknown) =>
-    asDate(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+    formatDate(date, d => d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })),
   time_short: (date: unknown) =>
-    asDate(date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+    formatDate(date, d => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })),
   number_with_delimiter: numberWithDelimiter,
   number_to_currency: numberToCurrency,
   pluralize,
@@ -47,15 +93,17 @@ const filters: Record<string, FilterImplOptions> = {
   append_random(this: { context: Context }, value: unknown) {
     return appendRandom(this.context, value)
   },
-  round: (num: unknown, precision = 0) => Number(num).toFixed(precision),
-  truncate_words: (text: string, count = 20) => {
+  truncate_words: (value: unknown, count = 20) => {
+    const text = asText(value)
+    if (text === null)
+      return ''
     const words = text.split(/\s+/)
     if (words.length <= count)
       return text
     return `${words.slice(0, count).join(' ')}...`
   },
-  titleize: (text: string) =>
-    text.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' '),
+  titleize: (value: unknown) =>
+    (asText(value) ?? '').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' '),
   shuffle: (arr: unknown[]) => {
     const shuffled = [...arr]
     for (let i = shuffled.length - 1; i > 0; i--) {
@@ -70,8 +118,6 @@ const filters: Record<string, FilterImplOptions> = {
   },
   yesno: (value: unknown, yes = 'Yes', no = 'No') => (value ? yes : no),
   json: (value: unknown) => JSON.stringify(value),
-  url_encode: (value: unknown) => encodeURIComponent(String(value)),
-  url_decode: (value: unknown) => decodeURIComponent(String(value)),
 }
 
 export const KUROSHIRO_FILTERS: readonly string[] = Object.keys(filters)
@@ -94,7 +140,7 @@ const noPartials: FS = {
 
 export function createLiquidEngine(): Liquid {
   const engine = new Liquid({ fs: noPartials, relativeReference: false })
-  Object.entries(filters).forEach(([name, filter]) => engine.registerFilter(name, filter))
+  Object.entries({ ...filters, ...corrections }).forEach(([name, filter]) => engine.registerFilter(name, filter))
   return engine
 }
 
