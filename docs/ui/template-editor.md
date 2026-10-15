@@ -77,6 +77,7 @@ A Plugin has one to four Templates, one per size: `full`, `half_horizontal`, `ha
 **The plate** is the hero plate (2 px ink outline, always paper white, in both themes) in the shape of the Device Model. Inside it the Template is drawn the way the server draws it: Liquid's output wrapped in the screen shell of `packages/shared`, in a sandboxed frame at the Device Model's own pixel size, scaled down to the plate.
 
 - **Where it is rendered.** In the browser. The Liquid engine and Kuroshiro's filters move to `packages/shared`, so the browser and the server run the same code against the same data. Nothing goes to the server while a Template is typed.
+- **Dates are in the Instance Time Zone.** `date` and Kuroshiro's date and time filters render in the zone the server runs in, read from the Instance facts, not in the browser's zone, so the preview shows the hour the Device will. The plate draws once the Instance facts have arrived.
 - **TRMNL's framework is pinned per Instance** (ADR-0041), loaded from `trmnl.com` at the pinned version by the browser for the preview as by the server for the image. An Instance without the internet draws an unstyled preview.
 - **When.** 300 ms after the last keystroke, and at once when a Field Value, the Device or the Template changes. The new drawing replaces the old one when it is ready; the plate is never blank in between.
 - **What it is not.** The Device shows an image dithered to its Palette; the plate shows what a browser draws before that step. One line under the plate says so (below), and offers the device preview.

@@ -193,3 +193,34 @@ describe('templateProblemOf', () => {
     expect(templateProblemOf(new Error('boom'))).toEqual({ message: 'boom', line: null })
   })
 })
+
+describe('rendering in a given time zone', () => {
+  const instant = { at: '2030-01-05T09:00:00Z' }
+
+  it('renders date in the zone it is given', async () => {
+    expect(await renderLiquid('{{ at | date: "%H:%M %z" }}', instant, { timeZone: 'Asia/Tokyo' })).toBe('18:00 +0900')
+  })
+
+  it('renders date_short, date_long and time_short in the zone it is given', async () => {
+    const late = { at: '2030-01-05T20:30:00Z' }
+    expect(await renderLiquid('{{ at | date_short }}', late, { timeZone: 'Asia/Tokyo' })).toBe('Jan 6')
+    expect(await renderLiquid('{{ at | date_long }}', late, { timeZone: 'Asia/Tokyo' })).toContain('Sunday, January 6')
+    expect(await renderLiquid('{{ at | time_short }}', late, { timeZone: 'Asia/Tokyo' })).toMatch(/^5:30\sAM$/)
+  })
+
+  it('renders a zone other than the one before it', async () => {
+    expect(await renderLiquid('{{ at | date: "%H:%M" }}', instant, { timeZone: 'America/New_York' })).toBe('04:00')
+    expect(await renderLiquid('{{ at | date: "%H:%M" }}', instant, { timeZone: 'Asia/Tokyo' })).toBe('18:00')
+  })
+
+  it('renders a Template with no date filter the same with and without a zone', async () => {
+    const markup = '<p>{{ n | plus: 1 }} {{ s | upcase }}</p>'
+    const data = { n: 1, s: 'x' }
+    expect(await renderLiquid(markup, data, { timeZone: 'Asia/Tokyo' })).toBe(await renderLiquid(markup, data))
+  })
+
+  it('keeps the process zone when none is given', async () => {
+    const zone = new Intl.DateTimeFormat().resolvedOptions().timeZone
+    expect(await renderLiquid('{{ at | date: "%H:%M" }}', instant)).toBe(await renderLiquid('{{ at | date: "%H:%M" }}', instant, { timeZone: zone }))
+  })
+})

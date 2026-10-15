@@ -11,13 +11,19 @@ const POSITION_SUFFIX = /, line:\d+, col:\d+$/
 
 const asDate = (value: unknown) => new Date(value as string | number | Date)
 
+/** The filters that print a date or time, in the engine's zone; `undefined` is the process's own. */
+function zonedFilters(timeZone: string | undefined): Record<string, FilterImplOptions> {
+  return {
+    date_short: (date: unknown) =>
+      asDate(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone }),
+    date_long: (date: unknown) =>
+      asDate(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone }),
+    time_short: (date: unknown) =>
+      asDate(date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone }),
+  }
+}
+
 const filters: Record<string, FilterImplOptions> = {
-  date_short: (date: unknown) =>
-    asDate(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-  date_long: (date: unknown) =>
-    asDate(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-  time_short: (date: unknown) =>
-    asDate(date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
   number_with_delimiter: (num: unknown) => Number(num).toLocaleString('en-US'),
   round: (num: unknown, precision = 0) => Number(num).toFixed(precision),
   truncate_words: (text: string, count = 20) => {
@@ -46,7 +52,7 @@ const filters: Record<string, FilterImplOptions> = {
   url_decode: (value: unknown) => decodeURIComponent(String(value)),
 }
 
-export const KUROSHIRO_FILTERS: readonly string[] = Object.keys(filters)
+export const KUROSHIRO_FILTERS: readonly string[] = [...Object.keys(zonedFilters(undefined)), ...Object.keys(filters)]
 
 function refusePartial(name: string): never {
   throw new Error(`A template cannot render "${name}": Kuroshiro has no partials.`)
@@ -64,16 +70,32 @@ const noPartials: FS = {
   resolve: (_directory, name) => name,
 }
 
-export function createLiquidEngine(): Liquid {
-  const engine = new Liquid({ fs: noPartials, relativeReference: false })
-  Object.entries(filters).forEach(([name, filter]) => engine.registerFilter(name, filter))
+/**
+ * `timeZone` is the IANA zone `date` and Kuroshiro's date and time filters render in (the Instance Time Zone); without
+ * one they render in the running process's zone. liquidjs takes the zone only here, not per render.
+ */
+export function createLiquidEngine(timeZone?: string): Liquid {
+  const engine = new Liquid({ fs: noPartials, relativeReference: false, ...(timeZone && { timezoneOffset: timeZone }) })
+  Object.entries({ ...zonedFilters(timeZone), ...filters }).forEach(([name, filter]) => engine.registerFilter(name, filter))
   return engine
 }
 
 const engine = createLiquidEngine()
+const enginesByZone = new Map<string, Liquid>()
 
-export function renderLiquid(markup: string, context: object): Promise<string> {
-  return engine.parseAndRender(markup, context)
+function engineFor(timeZone: string | undefined): Liquid {
+  if (!timeZone)
+    return engine
+  let zoned = enginesByZone.get(timeZone)
+  if (!zoned) {
+    zoned = createLiquidEngine(timeZone)
+    enginesByZone.set(timeZone, zoned)
+  }
+  return zoned
+}
+
+export function renderLiquid(markup: string, context: object, { timeZone }: { timeZone?: string } = {}): Promise<string> {
+  return engineFor(timeZone).parseAndRender(markup, context)
 }
 
 export function templateProblemOf(error: unknown): TemplateProblem {

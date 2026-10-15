@@ -7,6 +7,7 @@ import type { PreviewDataDto } from '../dto/preview-data.dto.js'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Alert } from '../../alerts/entities/alert.entity.js'
 import { Device } from '../../devices/devices.entity.js'
+import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { MashupRendererService } from '../../mashup/services/mashup-renderer.service.js'
 import { Screen } from '../../screens/screens.entity.js'
 import { stubFetch } from '../../test/fetch.js'
@@ -51,7 +52,7 @@ describe('field values against a real database', () => {
   let mashupRenderer: MashupRendererService
   let webhookIngest: WebhookIngestService
   let previewData: PluginPreviewDataService
-  const renderer = new PluginRendererService()
+  const renderer = new PluginRendererService(new InstanceTimeZone())
   let recipeUpdate: RecipeUpdateService
   let mockImporter: { importFromRecipe: ReturnType<typeof vi.fn> }
   let device: Device
@@ -63,7 +64,7 @@ describe('field values against a real database', () => {
     fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
     const config = asService<ConfigService>({ get: () => false })
     const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config), new PluginTransformService())
-    const templateContext = new PluginTemplateContextService(fieldValues, resolver)
+    const templateContext = new PluginTemplateContextService(fieldValues, resolver, new InstanceTimeZone())
     const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
     const refresh = new PluginRefreshService(renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
 

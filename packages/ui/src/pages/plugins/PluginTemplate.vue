@@ -10,7 +10,7 @@ import CodeEditor from '@/components/CodeEditor.vue'
 import EditorBench from '@/components/EditorBench.vue'
 import PageSection from '@/patterns/PageSection.vue'
 import { useLoad } from '@/patterns/useLoad'
-import { useDevices } from '@/reads/sharedReads'
+import { useDevices, useServerTimezone } from '@/reads/sharedReads'
 import { enteredFrameworkVersion } from './pluginNaming'
 import { fieldArrived, fieldId, usePluginFormPart, usePluginPage } from './pluginPage'
 import { templatePaths, templatesPart, withTemplateAdded } from './pluginTemplates'
@@ -30,6 +30,7 @@ import { useTemplatePreview } from './useTemplatePreview'
 
 const { plugin, form, save } = usePluginPage()
 const devices = useDevices()
+const timeZone = useServerTimezone()
 
 /** What the preview is drawn with and for, beside the form: the Liquid engine, fetched apart from the page, and the Device Models with their Palettes. */
 async function loadEngine() {
@@ -95,14 +96,17 @@ const data = computed(() => fetched.held.value && heldWithForm(fetched.held.valu
 /** The Plugin's own Framework Version as entered, once it is valid; the browser preview draws the full size with it. */
 const frameworkVersion = computed(() => enteredFrameworkVersion(form.unsaved.frameworkVersion ?? ''))
 
-const preview = useTemplatePreview((): PreviewSource | undefined => needs.data && target.value && data.value && {
-  markup: markup.value,
-  size: row.value.size,
-  context: data.value.context,
-  target: target.value,
-  frameworkVersion: frameworkVersion.value,
-  render: needs.data.previewOf,
-})
+const preview = useTemplatePreview((): PreviewSource | undefined => needs.data && target.value && data.value && timeZone.value
+  ? {
+      markup: markup.value,
+      size: row.value.size,
+      context: data.value.context,
+      target: target.value,
+      frameworkVersion: frameworkVersion.value,
+      timeZone: timeZone.value,
+      render: needs.data.previewOf,
+    }
+  : undefined)
 
 /** What a device preview request draws (ADR-0040): the last rendered body, for the chosen Device Model and Palette. Any change to it drops a device preview back to the live browser drawing. */
 const devicePreview = useDevicePreview(() => target.value && preview.body.value !== null
@@ -113,7 +117,7 @@ const completionData = computed(() => data.value && !Array.isArray(data.value.co
 
 /** Why the plate has no drawing yet: the Device Models or the first data are on their way. A fetch that failed says so under the plate. */
 const waitingFor = computed(() => {
-  if (!target.value)
+  if (!target.value || !timeZone.value)
     return 'Loading the preview'
   return fetched.fetching.value ? 'Fetching the data' : undefined
 })

@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { PluginRendererService } from '../services/plugin-renderer.service.js'
 
 describe('pluginRendererService', () => {
   let service: PluginRendererService
 
   beforeEach(() => {
-    service = new PluginRendererService()
+    service = new PluginRendererService(new InstanceTimeZone())
   })
 
   it('renders a simple liquid template with data', async () => {
@@ -109,6 +110,14 @@ describe('pluginRendererService', () => {
     const result = await service.render(template, {})
 
     expect(result).toBe('<div>Static content</div>')
+  })
+
+  it('renders dates in the Instance Time Zone, whatever zone the process runs in', async () => {
+    const tokyo = new PluginRendererService(Object.assign(new InstanceTimeZone(), { name: 'Asia/Tokyo' }))
+
+    const result = await tokyo.render('{{ at | date: "%H:%M %z" }}', { at: '2030-01-05T09:00:00Z' })
+
+    expect(result).toBe('18:00 +0900')
   })
 
   it('renders with the filters Kuroshiro adds', async () => {
