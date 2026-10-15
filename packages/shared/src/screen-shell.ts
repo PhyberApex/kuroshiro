@@ -7,7 +7,7 @@ export interface ScreenShellTarget {
  * The exact TRMNL framework version this Instance pins (ADR-0041), bumped by
  * Renovate's custom regex manager from `usetrmnl/trmnl-framework` releases.
  */
-export const TRMNL_FRAMEWORK_VERSION = '3.4.2'
+export const TRMNL_FRAMEWORK_VERSION = '3.4.3'
 
 /** An exact `X.Y.Z` release; never `latest`, a range or a `v` prefix (ADR-0041). */
 export const FRAMEWORK_VERSION_PATTERN = /^\d+\.\d+\.\d+$/
