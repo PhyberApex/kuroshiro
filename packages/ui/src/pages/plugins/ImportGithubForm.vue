@@ -9,6 +9,7 @@ import TextInput from '@/components/TextInput.vue'
 import AddPluginFoot from './AddPluginFoot.vue'
 import { useImportPlugin } from './importPlugin'
 
+const REPOSITORY_EXAMPLE = 'https://github.com/owner/repository'
 const entered = ref('')
 
 const importing = useImportPlugin({
@@ -38,7 +39,7 @@ function add() {
       hint="A public repository with the Plugin at its root, on the branch main."
       :error="importing.trouble.entered"
     >
-      <TextInput v-model="entered" v-bind="control" type="url" wide placeholder="https://github.com/owner/repository" autocomplete="off" spellcheck="false" />
+      <TextInput v-model="entered" v-bind="control" type="url" wide :placeholder="REPOSITORY_EXAMPLE" autocomplete="off" spellcheck="false" />
     </Field>
     <Notice v-if="importing.trouble.unanswered" :title="importing.trouble.unanswered" reason="Nothing was imported." action="Try again" @act="add" />
     <AddPluginFoot button="Import Plugin" :running="importing.importing" :changed="!importing.imported && entered.trim() !== ''" :failure="importing.trouble.failure">
