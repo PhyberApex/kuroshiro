@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { checkTemplate, createLiquidEngine, KUROSHIRO_FILTERS, renderLiquid, templateProblemOf } from '../liquid.ts'
 
 describe('kuroshiro liquid filters', () => {
@@ -114,33 +114,71 @@ describe('kuroshiro liquid filters', () => {
     expect(result).toBe('{"key":"value"}')
   })
 
-  it('url_encode encodes URLs', async () => {
-    const template = '{{ url | url_encode }}'
-    const data = { url: 'hello world' }
-
-    const result = await renderLiquid(template, data)
-
-    expect(result).toBe('hello%20world')
-  })
-
-  it('url_decode decodes URLs', async () => {
-    const template = '{{ url | url_decode }}'
-    const data = { url: 'hello%20world' }
-
-    const result = await renderLiquid(template, data)
-
-    expect(result).toBe('hello world')
-  })
-
   it('registers a fresh engine with the same filters', async () => {
     const result = await createLiquidEngine().parseAndRender('{{ n | round: 1 }}', { n: 2.25 })
 
     expect(result).toBe('2.3')
   })
 
-  it('names the thirteen filters', () => {
-    expect(KUROSHIRO_FILTERS).toHaveLength(13)
+  it('names the ten filters Kuroshiro adds, and none it merely corrects', () => {
+    expect(KUROSHIRO_FILTERS).toHaveLength(10)
     expect(KUROSHIRO_FILTERS).toContain('truncate_words')
+    for (const standard of ['divided_by', 'round', 'url_encode', 'url_decode'])
+      expect(KUROSHIRO_FILTERS).not.toContain(standard)
+  })
+})
+
+describe('standard filters follow Ruby Liquid (ADR-0043)', () => {
+  it.each([
+    ['{{ 10 | divided_by: 3 }}', '3'],
+    ['{{ 10 | divided_by: 3.0 }}', '3.3333333333333335'],
+    ['{{ 10.5 | divided_by: 3 }}', '3.5'],
+    ['{{ "10" | divided_by: 3 }}', '3'],
+    ['{{ "10" | divided_by: "3.0" }}', '3.3333333333333335'],
+    ['{{ -7 | divided_by: 2 }}', '-4'],
+    ['{{ 7 | divided_by: 2 | plus: 1 }}', '4'],
+    ['{{ 1893456000 | minus: 1792093470 | divided_by: 86400 }}', '1173'],
+    ['{{ 1 | divided_by: 0 }}', 'Infinity'],
+    ['{{ 3.14159 | round: 2 }}', '3.14'],
+    ['{{ 3.7 | round }}', '4'],
+    ['{{ "abc" | round }}', '0'],
+    ['{{ 3.7 | round | plus: 1 }}', '5'],
+    ['{{ "a b&c" | url_encode }}', 'a+b%26c'],
+    ['{{ "a+b%26c" | url_decode }}', 'a b&c'],
+    ['{{ "100%" | url_decode }}', '100%'],
+    ['{{ nil | truncate_words: 2 }}', ''],
+    ['{{ nil | titleize }}', ''],
+    ['{{ nil | date_short }}', ''],
+    ['{{ nil | date_long }}', ''],
+    ['{{ nil | time_short }}', ''],
+    ['{{ 5 | date_short }}', ''],
+    ['{{ "garbage" | date_short }}', ''],
+  ])('%s renders %j', async (markup, expected) => {
+    expect(await renderLiquid(markup, {})).toBe(expected)
+  })
+
+  it('renders the Countdown recipe\'s day count as whole days', async () => {
+    vi.useFakeTimers({ now: 1792093470 * 1000 })
+    try {
+      const markup = `{% assign target_seconds = countdown.targetDate | date: '%s' %}
+{% assign now_seconds = 'now' | date: '%s' %}
+{% assign days_left = target_seconds | minus: now_seconds | divided_by: 86400 %}{{ days_left }}`
+      const result = await renderLiquid(markup, { countdown: { targetDate: '2030-01-01T00:00:00Z' } })
+
+      expect(result.trim()).toBe('1173')
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it.each([
+    ['{{ 5 | plus: "3" }}', '8'],
+    ['{{ -7 | modulo: 3 }}', '2'],
+    ['{{ "abc" | capitalize }}', 'Abc'],
+    ['{{ 2 | times: "3" }}', '6'],
+  ])('%s still renders %j', async (markup, expected) => {
+    expect(await renderLiquid(markup, {})).toBe(expected)
   })
 })
 
