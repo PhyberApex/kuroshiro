@@ -2,8 +2,8 @@
   "kind": "dupes",
   "clone_groups": [
     "packages/ui/src/components/SelectCombobox.vue:28-34|packages/ui/src/components/SelectListbox.vue:20-29",
-    "packages/api/src/devices/display.service.ts:745-750|packages/api/src/mashup/services/screen-render.service.ts:124-129",
-    "packages/api/src/plugins/services/plugin-importer.service.ts:373-378|packages/api/src/plugins/services/plugin-importer.service.ts:401-406"
+    "packages/api/src/devices/display.service.ts:750-755|packages/api/src/mashup/services/screen-render.service.ts:125-130",
+    "packages/api/src/plugins/services/plugin-importer.service.ts:377-382|packages/api/src/plugins/services/plugin-importer.service.ts:405-410"
   ],
   "clone_fingerprints": [
     "dup:1c24940b:2",
@@ -11,8 +11,8 @@
     "dup:47ff2f72:2"
   ],
   "normalized_clone_fingerprints": [
-    "dup:c77b3abb6f87acd9-r2:2",
-    "dup:c77b3abb6f87acd9-r1:2",
-    "dup:c77b3abb6f87acd9-r3:2"
+    "dup:3d092601:2",
+    "dup:27d65862:2",
+    "dup:ba989a22:2"
   ]
 }
