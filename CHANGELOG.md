@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.20.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.19.0...kuroshiro-v0.20.0) (2026-10-15)
+
+
+### Features
+
+* **alerts:** batch Alert Sweep Notifications into one digest per Sweep ([#1415](https://github.com/PhyberApex/kuroshiro/issues/1415)) ([642d006](https://github.com/PhyberApex/kuroshiro/commit/642d006dd37b4e049ae37ea9e2373a85e9d9e4c4)), closes [#1383](https://github.com/PhyberApex/kuroshiro/issues/1383)
+* **api:** carry a Plugin's Framework Version through import, export and archive ([#1438](https://github.com/PhyberApex/kuroshiro/issues/1438)) ([fc69068](https://github.com/PhyberApex/kuroshiro/commit/fc690684a4c5db1e9d5dd74e8f654e50b5430486))
+* **configuration:** seed a showcase Configuration Archive on an empty demo-mode boot ([#1417](https://github.com/PhyberApex/kuroshiro/issues/1417)) ([cda54bb](https://github.com/PhyberApex/kuroshiro/commit/cda54bb8d2a0381f429ef14c7b9fd5565e90e81e)), closes [#1384](https://github.com/PhyberApex/kuroshiro/issues/1384)
+* **plugins:** give a Plugin its own Framework Version ([#1433](https://github.com/PhyberApex/kuroshiro/issues/1433)) ([509696b](https://github.com/PhyberApex/kuroshiro/commit/509696be2a2fae28f3c787ad621ad77e2c24e637))
+* **ui:** "Show next" and "Back to Order" on a Device's Screen rows ([#1414](https://github.com/PhyberApex/kuroshiro/issues/1414)) ([50aed7b](https://github.com/PhyberApex/kuroshiro/commit/50aed7bea9f41bbcd0e74cdcad5dad650e31e233))
+* **ui:** add a Plugin's own Framework Version field and draw the preview with it ([#1439](https://github.com/PhyberApex/kuroshiro/issues/1439)) ([ac6313f](https://github.com/PhyberApex/kuroshiro/commit/ac6313f7d658e87b48e2c1cea56a8afb3a75c24a))
+* **ui:** add the Sleep image row to Device Settings ([#1430](https://github.com/PhyberApex/kuroshiro/issues/1430)) ([8a88ad1](https://github.com/PhyberApex/kuroshiro/commit/8a88ad14c5e7298ca259dfba597da96306f209af))
+
 ## [0.19.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.18.0...kuroshiro-v0.19.0) (2026-10-11)
 
 
