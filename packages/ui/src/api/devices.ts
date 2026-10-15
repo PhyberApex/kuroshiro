@@ -1,5 +1,5 @@
 import type { CreateDeviceInput, DeviceDetail, DeviceLogPage, DeviceLogsQuery, DeviceSummary, UpdateDeviceInput } from 'kuroshiro-shared'
-import { apiGet, apiSend } from './client'
+import { apiGet, apiSend, asUpload } from './client'
 
 const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
 
@@ -37,12 +37,6 @@ export function clearDeviceLogs(deviceId: string) {
 
 export function deleteDevice(deviceId: string) {
   return apiSend('DELETE', `devices/${deviceId}`)
-}
-
-function asUpload(file: File) {
-  const upload = new FormData()
-  upload.append('file', file)
-  return upload
 }
 
 /** Uploads the Device's sleep image, replacing one already stored. Refused with `image-unreadable`, `upload-too-large` or `demo-mode`. */

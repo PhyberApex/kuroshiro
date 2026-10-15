@@ -28,6 +28,12 @@ watch(() => props.device.sleepImagePath, path => sleepImagePath.value = path)
 const inDemo = computed(() => instance.data?.demoMode ?? false)
 const maxBytes = computed(() => instance.data?.limits.imageUploadBytes)
 
+/** Shared by "Upload an image" and "Replace": both open the same file chooser and are disabled the same way in demo mode. */
+const openerProps = computed(() => ({
+  'disabled': inDemo.value || !instance.data,
+  'aria-describedby': inDemo.value ? demoNoteId : undefined,
+}))
+
 const choosing = ref(false)
 const file = ref<File | null>(null)
 const asking = ref(false)
@@ -84,7 +90,7 @@ async function remove() {
             :height="device.deviceModel?.height"
           />
         </div>
-        <Button ref="opener" :disabled="inDemo || !instance.data" :aria-describedby="inDemo ? demoNoteId : undefined" @click="choosing = true">
+        <Button ref="opener" v-bind="openerProps" @click="choosing = true">
           Replace
         </Button>
         <Button variant="quiet" @click="asking = true">
@@ -92,7 +98,7 @@ async function remove() {
         </Button>
       </template>
       <template v-else>
-        <Button ref="opener" :disabled="inDemo || !instance.data" :aria-describedby="inDemo ? demoNoteId : undefined" @click="choosing = true">
+        <Button ref="opener" v-bind="openerProps" @click="choosing = true">
           Upload an image
         </Button>
       </template>
