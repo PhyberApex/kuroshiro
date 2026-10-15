@@ -15,6 +15,7 @@ import { DeviceSensorsService } from '../../device-sensors/device-sensors.servic
 import { DeviceSensor } from '../../device-sensors/entities/device-sensor.entity.js'
 import { Device } from '../../devices/devices.entity.js'
 import { DeviceDisplayService } from '../../devices/display.service.js'
+import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { MashupConfiguration } from '../../mashup/entities/mashup-configuration.entity.js'
 import { MashupSlot } from '../../mashup/entities/mashup-slot.entity.js'
 import { MashupRendererService } from '../../mashup/services/mashup-renderer.service.js'
@@ -79,7 +80,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
   let mashupRenderer: MashupRendererService
   let deviceSensors: DeviceSensorsService
   let deviceCount = 0
-  const renderer = new PluginRendererService()
+  const renderer = new PluginRendererService(new InstanceTimeZone())
 
   beforeAll(async () => {
     database = await createTestDatabase()
@@ -87,7 +88,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
     const fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
     const config = asService<ConfigService>({ get: () => false, getOrThrow: () => 'https://kuroshiro.example' })
     const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config), new PluginTransformService())
-    const templateContext = new PluginTemplateContextService(fieldValues, resolver)
+    const templateContext = new PluginTemplateContextService(fieldValues, resolver, new InstanceTimeZone())
     const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
     const refresh = new PluginRefreshService(renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
     scheduler = new PluginSchedulerService(refresh)
@@ -255,7 +256,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
         trmnl: {
           system: { timestamp_utc: 1790848800 },
           plugin_settings: { instance_name: 'Weather', strategy: 'polling', dark_mode: 'no', no_screen_padding: 'no', custom_fields_values: { city: 'Berlin' } },
-          user: { id: 'kuroshiro-user', locale: 'en' },
+          user: { id: 'kuroshiro-user', locale: 'en', time_zone: expect.any(String), time_zone_iana: expect.any(String), utc_offset: expect.any(Number) },
         },
       }
       // A Mashup slot and the device-scoped preview are each rendered for one specific
@@ -640,7 +641,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
       const demoConfig = asService<ConfigService>({ get: (key: string) => key === 'demo_mode' })
       const demoResolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, demoConfig), new PluginTransformService())
       const demoFieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
-      const demoPreview = new PluginPreviewDataService(database.getRepository(Plugin), database.getRepository(Device), deviceSensors, new PluginTemplateContextService(demoFieldValues, demoResolver))
+      const demoPreview = new PluginPreviewDataService(database.getRepository(Plugin), database.getRepository(Device), deviceSensors, new PluginTemplateContextService(demoFieldValues, demoResolver, new InstanceTimeZone()))
       const plugin = await createPollPlugin()
 
       const preview = await demoPreview.previewData(plugin.id, { deviceId: null, dataSources: [{ name: 'internal', mode: 'fetch', url: 'http://127.0.0.1:9/secrets' }] })

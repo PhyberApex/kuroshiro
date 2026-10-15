@@ -2,6 +2,7 @@ import { Buffer } from 'node:buffer'
 import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
 import { describe, expect, it } from 'vitest'
+import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { makePlugin, makePluginDataSource, makePluginField, makePluginTemplate } from '../../test/fixtures.js'
 import { PluginExporterService } from '../services/plugin-exporter.service.js'
 import { PluginImporterService } from '../services/plugin-importer.service.js'
@@ -309,7 +310,7 @@ describe('pluginImporterService recipe import', () => {
       })
 
       const imported = await new PluginImporterService().importFromRecipeArchive(archive, '1')
-      const markup = await new PluginRendererService().render(imported.templates[0].liquidMarkup, {
+      const markup = await new PluginRendererService(new InstanceTimeZone()).render(imported.templates[0].liquidMarkup, {
         payload: JSON.stringify({ books: ['a', 'b'], updated: '2025-01-11' }),
       })
 

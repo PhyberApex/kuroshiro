@@ -6,6 +6,7 @@ import { UnprocessableEntityException } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { getRepositoryToken } from '@nestjs/typeorm'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { MashupSlot as MashupSlotEntity } from '../../mashup/entities/mashup-slot.entity.js'
 import { Screen as ScreenEntity } from '../../screens/screens.entity.js'
 import { makeMashupConfiguration, makeMashupSlot, makePlugin, makePluginTemplate, makeScreen } from '../../test/fixtures.js'
@@ -93,6 +94,7 @@ describe('webhook ingest integration', () => {
         WebhookIngestService,
         PluginRenderCacheService,
         PluginRendererService,
+        InstanceTimeZone,
         PluginsService,
         PluginRefreshService,
         PluginTemplateContextService,
