@@ -64,7 +64,7 @@ A Plugin has one to four Templates, one per size: `full`, `half_horizontal`, `ha
 - **Completion** ([render][template-complete]), drawn like a select's list with the chosen item solid ink:
   - after `{{` or inside a tag: every name of the preview's data, each with its kind ("object", "list of 8", "string");
   - after a dot: the keys under that path in the preview's data; for a list `first`, `last` and `size`;
-  - after `|`: Liquid's filters and Kuroshiro's own (`date_short`, `date_long`, `time_short`, `number_with_delimiter`, `round`, `truncate_words`, `titleize`, `shuffle`, `sample`, `yesno`, `json`, `url_encode`, `url_decode`), the latter marked "Kuroshiro";
+  - after `|`: Liquid's filters and Kuroshiro's own (`date_short`, `date_long`, `time_short`, `number_with_delimiter`, `truncate_words`, `titleize`, `shuffle`, `sample`, `yesno`, `json`), the latter marked "Kuroshiro";
   - after `{%`: Liquid's tags.
 - **The strip** under the code, on a 1 px rule, `text-xs` in `ink-soft`: at the left "`Tab` indents. `Esc` then `Tab` moves on."; at the right the mode ("Liquid and HTML", "HTML"). When there is a problem the strip holds it instead (see Problems).
 - The editor is named for a screen reader: "Template of {Plugin}, {size}".
