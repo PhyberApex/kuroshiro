@@ -1,7 +1,7 @@
 import type { DataSourceInput, DataSourceMethod, TemplateSize, UpdatePluginInput } from 'kuroshiro-shared'
 import { Transform, Type } from 'class-transformer'
-import { IsArray, IsIn, IsInt, IsNotEmpty, IsObject, IsOptional, IsString, IsUUID, Max, Min, ValidateIf, ValidateNested } from 'class-validator'
-import { REFRESH_INTERVAL_BOUNDS, TEMPLATE_SIZES } from 'kuroshiro-shared'
+import { IsArray, IsIn, IsInt, IsNotEmpty, IsObject, IsOptional, IsString, IsUUID, Matches, Max, Min, ValidateIf, ValidateNested } from 'class-validator'
+import { FRAMEWORK_VERSION_PATTERN, REFRESH_INTERVAL_BOUNDS, TEMPLATE_SIZES } from 'kuroshiro-shared'
 import { PluginDataSourceDto } from './plugin-data-source.dto.js'
 import { PluginFieldDto } from './plugin-field.dto.js'
 
@@ -46,6 +46,11 @@ export class UpdatePluginDto implements UpdatePluginInput {
   @Min(REFRESH_INTERVAL_BOUNDS.min)
   @Max(REFRESH_INTERVAL_BOUNDS.max)
   refreshInterval?: number
+
+  @IsOptional()
+  @Transform(({ value }) => value === '' ? null : value)
+  @Matches(FRAMEWORK_VERSION_PATTERN, { message: 'frameworkVersion must be an exact version like 3.4.0' })
+  frameworkVersion?: string | null
 
   @IsOptional()
   @IsArray()

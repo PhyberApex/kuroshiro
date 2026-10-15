@@ -9,6 +9,14 @@ export interface ScreenShellTarget {
  */
 export const TRMNL_FRAMEWORK_VERSION = '3.4.0'
 
+/** An exact `X.Y.Z` release; never `latest`, a range or a `v` prefix (ADR-0041). */
+export const FRAMEWORK_VERSION_PATTERN = /^\d+\.\d+\.\d+$/
+
+/** A Plugin's own Framework Version if it has one, else the Instance pin. */
+export function effectiveFrameworkVersion(pluginVersion: string | null | undefined): string {
+  return pluginVersion || TRMNL_FRAMEWORK_VERSION
+}
+
 /**
  * Class list for the `.screen` element the TRMNL framework sizes and scales:
  * the model's own classes (device, size tier, density) and the palette's
