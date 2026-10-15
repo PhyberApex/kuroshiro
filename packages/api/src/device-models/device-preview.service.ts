@@ -73,7 +73,7 @@ export class DevicePreviewService {
       return effectiveFrameworkVersion(null)
     const plugin = await this.pluginRepository.findOne({ where: { id: input.pluginId }, select: { id: true, frameworkVersion: true } })
     if (!plugin)
-      throw new ApiException(HttpStatus.BAD_REQUEST, 'plugin-not-found', `This Instance does not know the Plugin ${input.pluginId}.`, { id: input.pluginId })
+      throw new ApiException(HttpStatus.NOT_FOUND, 'plugin-not-found', 'Plugin not found', { id: input.pluginId })
     return effectiveFrameworkVersion(plugin.frameworkVersion)
   }
 
