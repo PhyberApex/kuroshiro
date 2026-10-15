@@ -8,3 +8,4 @@ This is a known, accepted limitation: a Device not co-located (in timezone terms
 
 - Self-hosted users with geographically distributed Devices need to account for the offset manually when authoring a Schedule (e.g. shift the window by the known difference).
 - Adding per-Device timezone later is additive — it doesn't change Schedule's shape from ADR-0007, only what timezone its window is evaluated against — but does require a migration and a UI field.
+- Addendum (#1445): Liquid's `date` and the date/time filters follow the same rule — every Template render, the admin's browser preview included, uses this one Instance Time Zone rather than whatever zone the rendering process or browser happens to have.
