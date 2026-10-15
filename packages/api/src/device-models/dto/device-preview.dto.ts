@@ -1,5 +1,5 @@
 import type { DevicePreviewInput } from 'kuroshiro-shared'
-import { IsNotEmpty, IsString } from 'class-validator'
+import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator'
 
 export class DevicePreviewDto implements DevicePreviewInput {
   @IsString()
@@ -13,4 +13,8 @@ export class DevicePreviewDto implements DevicePreviewInput {
   @IsString()
   @IsNotEmpty()
   paletteId: string
+
+  @IsOptional()
+  @IsUUID()
+  pluginId?: string
 }

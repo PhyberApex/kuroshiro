@@ -10,7 +10,7 @@ import * as path from 'node:path'
 import { Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
-import { viewFull } from 'kuroshiro-shared'
+import { effectiveFrameworkVersion, viewFull } from 'kuroshiro-shared'
 import { Repository } from 'typeorm'
 import { DeviceModelsService } from '../device-models/device-models.service.js'
 import { FallbackScreensService } from '../device-models/fallback-screens.service.js'
@@ -674,12 +674,13 @@ export class DeviceDisplayService {
 
   private async renderPluginScreen(screenWithPlugin: Screen, screen: Screen, device: Device, honorRenderSignal: boolean): Promise<RenderOutcome> {
     const plugin = screenWithPlugin.plugin!
+    const frameworkVersion = effectiveFrameworkVersion(plugin.frameworkVersion)
 
     // Use cached output if available
     if (screenWithPlugin.cachedPluginOutput) {
       try {
         this.logger.log(`Using cached plugin output for plugin ${plugin.id}, screen ${screen.id}`)
-        return await this.screenRender.renderBodyToScreenPng(viewFull(screenWithPlugin.cachedPluginOutput), screen, device, honorRenderSignal)
+        return await this.screenRender.renderBodyToScreenPng(viewFull(screenWithPlugin.cachedPluginOutput), screen, device, honorRenderSignal, frameworkVersion)
       }
       catch (err) {
         const message = getErrorMessage(err)
@@ -691,7 +692,7 @@ export class DeviceDisplayService {
     // No render is cached yet: a Poll-kind Plugin fetches now, a Webhook-kind one renders what it has received, or nothing.
     try {
       const renderedHtml = await this.renderPluginHtml(plugin, screen)
-      return renderedHtml ? await this.screenRender.renderBodyToScreenPng(viewFull(renderedHtml), screen, device, honorRenderSignal) : null
+      return renderedHtml ? await this.screenRender.renderBodyToScreenPng(viewFull(renderedHtml), screen, device, honorRenderSignal, frameworkVersion) : null
     }
     catch (err) {
       const message = getErrorMessage(err)

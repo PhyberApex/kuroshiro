@@ -67,6 +67,7 @@ interface Refusal {
 const KEY_NAMES: Record<PluginInputKey, string> = {
   templates: 'template',
   refreshInterval: 'refresh interval',
+  frameworkVersion: 'Framework Version',
   dataSources: 'Data Sources',
   fieldValues: 'Field Values',
   fields: 'Plugin Fields',
