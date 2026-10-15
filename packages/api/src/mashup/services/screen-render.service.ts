@@ -74,11 +74,12 @@ export class ScreenRenderService {
    * the device's PNG. `honorRenderSignal` leaves the stored image untouched
    * and answers `RENDER_SKIPPED`/`RENDER_HELD` on a live `skip`/`hold` Render
    * Signal (ADR-0031); otherwise the signal is observed but has no effect, as
-   * outside `/display`.
+   * outside `/display`. `frameworkVersion` is the Instance pin unless the caller draws
+   * a Plugin's own Screen; a Mashup always keeps the pin (ADR-0041).
    */
-  async renderBodyToScreenPng(bodyHtml: string, screen: Screen, device: Device, honorRenderSignal: boolean): Promise<string | typeof RENDER_SKIPPED | typeof RENDER_HELD> {
+  async renderBodyToScreenPng(bodyHtml: string, screen: Screen, device: Device, honorRenderSignal: boolean, frameworkVersion: string = TRMNL_FRAMEWORK_VERSION): Promise<string | typeof RENDER_SKIPPED | typeof RENDER_HELD> {
     const target = await this.deviceModels.renderTargetFor(device)
-    const renderSignal = await renderHtmlToPng(wrapInScreenShell(target, bodyHtml, TRMNL_FRAMEWORK_VERSION), target, this.screenImagePath(device, screen), this.logger, {}, { honorRenderSignal })
+    const renderSignal = await renderHtmlToPng(wrapInScreenShell(target, bodyHtml, frameworkVersion), target, this.screenImagePath(device, screen), this.logger, {}, { honorRenderSignal })
     if (honorRenderSignal && renderSignal === 'skip')
       return RENDER_SKIPPED
     if (honorRenderSignal && renderSignal === 'hold')

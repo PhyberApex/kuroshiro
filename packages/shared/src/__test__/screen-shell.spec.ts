@@ -1,6 +1,6 @@
 import type { ScreenShellTarget } from '../screen-shell.ts'
 import { describe, expect, it } from 'vitest'
-import { screenClasses, screenStyle, TRMNL_FRAMEWORK_VERSION, viewFull, wrapInScreenShell } from '../screen-shell.ts'
+import { effectiveFrameworkVersion, screenClasses, screenStyle, TRMNL_FRAMEWORK_VERSION, viewFull, wrapInScreenShell } from '../screen-shell.ts'
 import { SCREEN_SHELL_FIXTURE_BODY, SCREEN_SHELL_FIXTURE_EXPECTED, SCREEN_SHELL_FIXTURE_MODEL, SCREEN_SHELL_FIXTURE_PALETTE } from './screen-shell.fixture.ts'
 
 const V2: ScreenShellTarget = {
@@ -69,5 +69,16 @@ describe('screen shell', () => {
     expect(screenClasses(fixtureTarget)).toEqual(SCREEN_SHELL_FIXTURE_EXPECTED.classes)
     expect(screenStyle(fixtureTarget)).toBe(SCREEN_SHELL_FIXTURE_EXPECTED.style)
     expect(wrapInScreenShell(fixtureTarget, SCREEN_SHELL_FIXTURE_BODY, TRMNL_FRAMEWORK_VERSION)).toContain(SCREEN_SHELL_FIXTURE_EXPECTED.wrappedDiv)
+  })
+})
+
+describe('effectiveFrameworkVersion', () => {
+  it('is the Plugin\'s own version when it has one', () => {
+    expect(effectiveFrameworkVersion('3.3.1')).toBe('3.3.1')
+  })
+
+  it('is the Instance pin when the Plugin has none', () => {
+    expect(effectiveFrameworkVersion(null)).toBe(TRMNL_FRAMEWORK_VERSION)
+    expect(effectiveFrameworkVersion(undefined)).toBe(TRMNL_FRAMEWORK_VERSION)
   })
 })

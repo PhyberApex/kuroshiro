@@ -32,6 +32,10 @@ export class Plugin {
   @Column('int', { default: 15 })
   refreshInterval: number = 15
 
+  // The Plugin's own TRMNL framework release (`X.Y.Z`); null means the Instance pin (ADR-0041).
+  @Column('text', { nullable: true })
+  frameworkVersion?: string | null
+
   @Index({ unique: true })
   @Column('text', { nullable: true })
   webhookToken?: string | null
