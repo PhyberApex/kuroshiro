@@ -125,6 +125,17 @@ describe('the plate and its column', () => {
     expect(hero(screen).element().querySelector('img')).toBeNull()
   })
 
+  it('shows the Device\'s own sleep image on the plate while asleep, when it was served one', async () => {
+    fakeKitchen({ device: kitchen({
+      sleep: { enabled: true, start: '23:00', end: '06:00', whileAsleep: 'fallback', inWindow: true, endsAt: NEXT_POLL_AT },
+      currentScreen: { kind: 'fallback', fallback: 'sleep', reason: 'asleep', screenId: null, imagePath: '/screens/devices/kitchen/sleep-image.png?v=1', servedAt: SERVED_AT },
+    }) })
+    const screen = await mountApp({ at: '/devices/kitchen' })
+
+    await expect.element(screen.getByRole('heading', { level: 2, name: 'Asleep until 06:00' })).toBeVisible()
+    await expect.element(screen.getByRole('img', { name: 'On Kitchen: Asleep until 06:00' })).toHaveAttribute('src', expect.stringContaining('sleep-image.png'))
+  })
+
   it('says why a Device with failed Mirroring shows the error Fallback Screen, and links to Settings', async () => {
     fakeKitchen({ device: kitchen({
       isMirrored: true,

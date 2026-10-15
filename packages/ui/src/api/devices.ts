@@ -38,3 +38,19 @@ export function clearDeviceLogs(deviceId: string) {
 export function deleteDevice(deviceId: string) {
   return apiSend('DELETE', `devices/${deviceId}`)
 }
+
+function asUpload(file: File) {
+  const upload = new FormData()
+  upload.append('file', file)
+  return upload
+}
+
+/** Uploads the Device's sleep image, replacing one already stored. Refused with `image-unreadable`, `upload-too-large` or `demo-mode`. */
+export function uploadSleepImage(deviceId: string, file: File) {
+  return apiSend<DeviceDetail>('PUT', `devices/${deviceId}/sleep-image`, asUpload(file))
+}
+
+/** Removes the Device's sleep image; Sleep Mode then shows the sleep Fallback Screen again. */
+export function removeSleepImage(deviceId: string) {
+  return apiSend<DeviceDetail>('DELETE', `devices/${deviceId}/sleep-image`)
+}
