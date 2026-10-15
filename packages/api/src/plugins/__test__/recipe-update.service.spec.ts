@@ -204,6 +204,22 @@ describe('recipeUpdateService', () => {
       expect(mockPluginsService.refreshRendersAfterSave).toHaveBeenCalledWith(PLUGIN_ID)
     })
 
+    it.each([
+      ['sets', '3.3.1', '3.3.1'],
+      ['clears', undefined, null],
+    ])('%s the Framework Version when applying a changed frameworkVersion', async (_label, upstreamVersion, stored) => {
+      const snapshot = baseParsedPlugin({ frameworkVersion: upstreamVersion ? undefined : '3.2.0' })
+      const upstream = baseParsedPlugin({ frameworkVersion: upstreamVersion })
+      const plugin = makePlugin({ id: PLUGIN_ID, sourceRecipeId: '150460', sourceRecipeSnapshot: toSnapshot(snapshot), frameworkVersion: snapshot.frameworkVersion ?? null })
+      stubReload(plugin)
+      mockImporter.importFromRecipe.mockResolvedValue(upstream)
+      const contentHash = computeRecipeContentHash(upstream)
+
+      await service.applyUpdate(PLUGIN_ID, { contentHash, apply: [{ itemType: 'frameworkVersion', key: 'frameworkVersion' }] })
+
+      expect(pluginRepo.update).toHaveBeenCalledWith(PLUGIN_ID, { frameworkVersion: stored, sourceRecipeSnapshot: { ...upstream }, snapshotTakenAt: expect.any(Date) })
+    })
+
     it('keeps a local-only header and replaces an upstream-set one when applying a changed Data Source', async () => {
       const localDataSource = makePluginDataSource({
         id: 'ds-1',

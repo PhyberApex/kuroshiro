@@ -43,6 +43,7 @@ const SIDE_READS: Record<UpdateItemType, (value: unknown) => unknown> = {
   name: value => value,
   description: value => value,
   refreshInterval: value => value,
+  frameworkVersion: value => value,
   template: value => (value as NormalizedTemplate).liquidMarkup,
   dataSource: toDataSource,
   field: toField,

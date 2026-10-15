@@ -44,6 +44,8 @@ export interface PluginManifestEntry {
   kind: PluginKind
   mergeStrategy: MergeStrategy | null
   streamLimit: number | null
+  /** Absent from an archive older than schemaVersion 4, which reads as null. */
+  frameworkVersion?: string | null
   webhookToken: string | null
   sourceRecipeId: string | null
   sourceRecipeSnapshot: ParsedPlugin | null

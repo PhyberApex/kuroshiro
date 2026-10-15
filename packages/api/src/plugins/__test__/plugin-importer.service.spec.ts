@@ -203,6 +203,22 @@ describe('pluginImporterService', () => {
       fs.unlinkSync(tmpPath)
     })
 
+    it.each([
+      ['an exact version', 'framework_version: 3.3.1', '3.3.1'],
+      ['latest', 'framework_version: latest', undefined],
+      ['an inexact version', 'framework_version: 3.3', undefined],
+      ['a missing value', 'refresh_interval: 15', undefined],
+    ])('stores %s as the Framework Version', (_label, line, expected) => {
+      const zip = new AdmZip()
+      zip.addFile('.trmnlp.yml', Buffer.from(yaml.dump({ name: 'Pinned' }), 'utf8'))
+      zip.addFile('src/settings.yml', Buffer.from(`${line}\nstrategy: webhook\n`, 'utf8'))
+      zip.addFile('src/full.liquid', Buffer.from('<div></div>', 'utf8'))
+
+      const result = service.importFromUpload({ buffer: zip.toBuffer(), originalname: 'pinned.zip' }).plugin
+
+      expect(result.frameworkVersion).toBe(expected)
+    })
+
     it('throws error if manifest is missing', async () => {
       const zip = new AdmZip()
       zip.addFile('src/settings.yml', Buffer.from('refresh_interval: 30', 'utf8'))

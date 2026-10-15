@@ -720,6 +720,23 @@ describe('configurationImportService', () => {
     expect(storedFieldValues()).toEqual({ 'field-city': 'Berlin' })
   })
 
+  describe('the Plugin\'s Framework Version', () => {
+    it('imports the archive entry\'s frameworkVersion', async () => {
+      await service.importFromZip(buildArchive(fieldValuePlugin({}, { frameworkVersion: '3.3.1' })))
+
+      expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ frameworkVersion: '3.3.1' })
+    })
+
+    it('imports an archive from before schemaVersion 4 with null', async () => {
+      const { plugins, pluginFolders } = fieldValuePlugin({})
+      const buffer = buildArchive({ manifest: { kuroshiroVersion: '0.20.0', schemaVersion: 3, exportedAt: new Date().toISOString(), containsSecrets: true }, plugins, pluginFolders })
+
+      await service.importFromZip(buffer)
+
+      expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ frameworkVersion: null })
+    })
+  })
+
   describe('a previous-version (schemaVersion 2) archive', () => {
     const previousManifest = { kuroshiroVersion: '0.17.0', schemaVersion: 2, exportedAt: new Date().toISOString(), containsSecrets: true }
 

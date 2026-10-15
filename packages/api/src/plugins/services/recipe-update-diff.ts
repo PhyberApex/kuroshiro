@@ -40,6 +40,7 @@ export interface ComparablePlugin {
   name: string
   description?: string | null
   refreshInterval: number
+  frameworkVersion?: string | null
   dataSources: ComparableDataSource[]
   templates: ComparableTemplate[]
   fields: ComparableField[]
@@ -244,6 +245,7 @@ export function diffRecipeUpdate(snapshot: ComparablePlugin | null, local: Compa
     scalarEntry('name', snapshot?.name, local.name, upstream.name),
     scalarEntry('description', snapshot?.description, local.description, upstream.description),
     scalarEntry('refreshInterval', snapshot?.refreshInterval, local.refreshInterval, upstream.refreshInterval),
+    scalarEntry('frameworkVersion', snapshot?.frameworkVersion, local.frameworkVersion, upstream.frameworkVersion),
     ...keyedEntries('template', mode, snapshot?.templates, local.templates, upstream.templates, t => t.layout, normalizeTemplate),
     ...keyedEntries('dataSource', mode, snapshot?.dataSources, local.dataSources, upstream.dataSources, d => d.name, normalizeDataSource),
     ...keyedEntries('field', mode, snapshot?.fields, local.fields, upstream.fields, f => f.keyname, normalizeField),
