@@ -769,6 +769,7 @@ export class ConfigurationImportService {
     plugin.webhookToken = webhookToken
     plugin.mergeStrategy = entry.mergeStrategy
     plugin.streamLimit = entry.streamLimit
+    plugin.frameworkVersion = entry.frameworkVersion ?? null
     plugin.sourceRecipeId = entry.sourceRecipeId ?? parsed.sourceRecipeId ?? undefined
     plugin.sourceRecipeSnapshot = entry.sourceRecipeSnapshot ? { ...entry.sourceRecipeSnapshot } : null
 

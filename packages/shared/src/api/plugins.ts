@@ -281,7 +281,7 @@ export interface PreviewData {
   webhookPayloadReceivedAt: string | null
 }
 
-export const UPDATE_ITEM_TYPES = ['name', 'description', 'refreshInterval', 'template', 'dataSource', 'field'] as const
+export const UPDATE_ITEM_TYPES = ['name', 'description', 'refreshInterval', 'frameworkVersion', 'template', 'dataSource', 'field'] as const
 export type UpdateItemType = typeof UPDATE_ITEM_TYPES[number]
 
 export type UpdateItemKind = 'added' | 'changed' | 'removed'
@@ -322,6 +322,7 @@ export type UpdateItem
   = | UpdateItemOf<'name', string>
     | UpdateItemOf<'description', string>
     | UpdateItemOf<'refreshInterval', number>
+    | UpdateItemOf<'frameworkVersion', string>
     | UpdateItemOf<'template', string>
     | UpdateItemOf<'dataSource', RecipeDataSource>
     | UpdateItemOf<'field', RecipeField>

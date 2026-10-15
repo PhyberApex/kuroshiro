@@ -33,6 +33,15 @@ interface BasicFieldUpdates {
   name?: string
   description?: string | null
   refreshInterval?: number
+  frameworkVersion?: string | null
+}
+
+// What each scalar Update Item writes to the Plugin; the keyed ones (Data Source, template, field) are applied child by child.
+const SCALAR_UPDATES: Partial<Record<UpdateItem['itemType'], (upstream: unknown) => BasicFieldUpdates>> = {
+  name: upstream => ({ name: upstream as string }),
+  description: upstream => ({ description: (upstream as string | undefined) ?? null }),
+  refreshInterval: upstream => ({ refreshInterval: upstream as number }),
+  frameworkVersion: upstream => ({ frameworkVersion: (upstream as string | undefined) ?? null }),
 }
 
 function toComparablePlugin(plugin: Plugin): ComparablePlugin {
@@ -40,6 +49,7 @@ function toComparablePlugin(plugin: Plugin): ComparablePlugin {
     name: plugin.name,
     description: plugin.description,
     refreshInterval: plugin.refreshInterval,
+    frameworkVersion: plugin.frameworkVersion,
     dataSources: (plugin.dataSources ?? []).map((dataSource): ComparableDataSource => ({
       name: dataSource.name,
       mode: dataSource.mode,
@@ -75,6 +85,7 @@ function parsedToComparable(parsed: ParsedPlugin): ComparablePlugin {
     name: parsed.name,
     description: parsed.description,
     refreshInterval: parsed.refreshInterval,
+    frameworkVersion: parsed.frameworkVersion,
     dataSources: parsed.dataSources,
     templates: parsed.templates,
     fields: parsed.fields,
@@ -160,25 +171,18 @@ export class RecipeUpdateService {
     const basicFieldUpdates: BasicFieldUpdates = {}
 
     for (const item of selected) {
-      switch (item.itemType) {
-        case 'name':
-          basicFieldUpdates.name = item.upstream as string
-          break
-        case 'description':
-          basicFieldUpdates.description = (item.upstream as string | undefined) ?? null
-          break
-        case 'refreshInterval':
-          basicFieldUpdates.refreshInterval = item.upstream as number
-          break
-        case 'dataSource':
-          await this.applyDataSourceItem(plugin, item)
-          break
-        case 'template':
-          await this.applyTemplateItem(plugin, item)
-          break
-        case 'field':
-          await this.applyFieldItem(plugin, item)
-          break
+      const scalar = SCALAR_UPDATES[item.itemType]
+      if (scalar) {
+        Object.assign(basicFieldUpdates, scalar(item.upstream))
+      }
+      else if (item.itemType === 'dataSource') {
+        await this.applyDataSourceItem(plugin, item)
+      }
+      else if (item.itemType === 'template') {
+        await this.applyTemplateItem(plugin, item)
+      }
+      else if (item.itemType === 'field') {
+        await this.applyFieldItem(plugin, item)
       }
     }
 

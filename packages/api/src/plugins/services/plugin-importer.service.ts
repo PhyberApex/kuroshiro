@@ -5,7 +5,7 @@ import * as path from 'node:path'
 import { HttpStatus, Injectable, Logger } from '@nestjs/common'
 import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
-import { githubRepositoryOf, MERGE_STRATEGIES, recipeIdOf } from 'kuroshiro-shared'
+import { FRAMEWORK_VERSION_PATTERN, githubRepositoryOf, MERGE_STRATEGIES, recipeIdOf } from 'kuroshiro-shared'
 import { ApiException } from '../../errors/api.exception.js'
 import { uploadTooLarge } from '../../uploads/limited-file-interceptor.js'
 import { UPLOAD_LIMITS } from '../../uploads/upload-limits.js'
@@ -111,6 +111,8 @@ interface TerminusSettings {
   // Standard fields
   name?: string
   refresh_interval?: number
+  // An exact `X.Y.Z` is kept; `latest` or anything else is dropped (ADR-0041)
+  framework_version?: unknown
   custom_fields?: CustomField[] | JsonObject
 
   // The Plugin Kind as Kuroshiro's export and TRMNL's own archives name it, with what a Webhook-kind Plugin carries
@@ -165,6 +167,8 @@ export interface ParsedPlugin {
   description?: string
   kind: PluginKind
   refreshInterval: number
+  /** An exact `X.Y.Z` the Recipe pins, otherwise absent (ADR-0041).. */
+  frameworkVersion?: string
   /** Webhook only. */
   mergeStrategy?: MergeStrategy
   /** Webhook with `stream` only. */
@@ -467,6 +471,7 @@ export class PluginImporterService {
       name: pluginName,
       description: manifest.description?.trim(),
       refreshInterval: settings.refresh_interval || 15,
+      frameworkVersion: typeof settings.framework_version === 'string' && FRAMEWORK_VERSION_PATTERN.test(settings.framework_version) ? settings.framework_version : undefined,
       templates,
       fields: this.resolveFields(manifest, settings),
     }

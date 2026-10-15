@@ -146,6 +146,16 @@ describe('configurationExportService', () => {
     expect(pluginsJson.find((p: { id: string }) => p.id === 'plugin-2').sourceRecipeSnapshot).toBeNull()
   })
 
+  it('writes the Plugin\'s Framework Version into the Plugin manifest entry, and null when it has none', async () => {
+    pluginRepo.find.mockResolvedValue([makePlugin({ id: 'plugin-1', frameworkVersion: '3.3.1' }), makePlugin({ id: 'plugin-2' })])
+
+    const zip = new AdmZip(await service.exportToZip())
+    const pluginsJson = JSON.parse(zip.getEntry('plugins.json')!.getData().toString('utf8'))
+
+    expect(pluginsJson.find((p: { id: string }) => p.id === 'plugin-1').frameworkVersion).toBe('3.3.1')
+    expect(pluginsJson.find((p: { id: string }) => p.id === 'plugin-2').frameworkVersion).toBeNull()
+  })
+
   it('redacts Data Source header values in the Recipe Snapshot, but not keys or other fields, when redact is set', async () => {
     const snapshot = {
       name: 'Daily Weather',

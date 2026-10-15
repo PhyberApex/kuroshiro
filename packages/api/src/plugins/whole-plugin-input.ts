@@ -19,6 +19,7 @@ export interface WholePluginInput {
   description?: string
   kind?: PluginKind
   refreshInterval?: number
+  frameworkVersion?: string | null
   isActive?: boolean
   order?: number
   webhookToken?: string

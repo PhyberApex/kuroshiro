@@ -109,6 +109,23 @@ describe('diffRecipeUpdate', () => {
     })
   })
 
+  describe('framework version', () => {
+    it('offers a changed frameworkVersion like any other scalar', () => {
+      const snapshot = basePlugin({ frameworkVersion: '3.3.1' })
+      const { items } = diffRecipeUpdate(snapshot, basePlugin({ frameworkVersion: '3.3.1' }), basePlugin({ frameworkVersion: '3.4.0' }))
+
+      expect(items).toEqual([
+        { kind: 'changed', conflict: false, itemType: 'frameworkVersion', key: 'frameworkVersion', local: '3.3.1', upstream: '3.4.0', snapshot: '3.3.1' },
+      ])
+    })
+
+    it('treats an absent and a null frameworkVersion as the same', () => {
+      const { items } = diffRecipeUpdate(basePlugin(), basePlugin({ frameworkVersion: null }), basePlugin({ frameworkVersion: undefined }))
+
+      expect(items).toEqual([])
+    })
+  })
+
   describe('three-way data sources', () => {
     it('emits an added data source', () => {
       const snapshot = basePlugin({ dataSources: [] })

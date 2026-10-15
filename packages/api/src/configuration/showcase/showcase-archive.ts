@@ -60,6 +60,7 @@ function buildPluginEntry(plugin: ShowcasePlugin): PluginManifestEntry {
     kind: 'Poll',
     mergeStrategy: null,
     streamLimit: null,
+    frameworkVersion: null,
     webhookToken: null,
     sourceRecipeId: plugin.sourceRecipeId,
     sourceRecipeSnapshot: null,

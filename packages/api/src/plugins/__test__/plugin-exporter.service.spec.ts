@@ -263,4 +263,14 @@ describe('pluginExporterService', () => {
     expect(manifest.custom_fields[0].description).toBe('')
     expect(manifest.custom_fields[0].default_value).toBe('')
   })
+  it.each(['Poll', 'Webhook'] as const)('round-trips a %s Plugin\'s Framework Version and omits it when null', async (kind) => {
+    const settingsOf = async (frameworkVersion: string | null) => {
+      const plugin = makePlugin({ kind, frameworkVersion, templates: [makePluginTemplate({ layout: 'full', liquidMarkup: 'x' })] })
+      const zip = new AdmZip(await service.exportToZip(plugin))
+      return yaml.load(zip.readAsText('src/settings.yml')) as Record<string, unknown>
+    }
+
+    expect((await settingsOf('3.3.1')).framework_version).toBe('3.3.1')
+    expect(await settingsOf(null)).not.toHaveProperty('framework_version')
+  })
 })
