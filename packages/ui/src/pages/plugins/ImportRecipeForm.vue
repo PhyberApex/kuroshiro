@@ -9,6 +9,7 @@ import AddPluginFoot from './AddPluginFoot.vue'
 import ImportedBefore from './ImportedBefore.vue'
 import { enteredRecipe, useImportPlugin } from './importPlugin'
 
+const RECIPE_EXAMPLE = 'https://trmnl.com/recipes/41120'
 const entered = ref('')
 const recipe = computed(() => enteredRecipe(entered.value))
 
@@ -49,7 +50,7 @@ function add() {
       hint="The address of the Recipe's page on trmnl.com, or only its id."
       :error="importing.trouble.entered"
     >
-      <TextInput v-model="entered" v-bind="control" wide placeholder="https://trmnl.com/recipes/41120" autocomplete="off" spellcheck="false" />
+      <TextInput v-model="entered" v-bind="control" wide :placeholder="RECIPE_EXAMPLE" autocomplete="off" spellcheck="false" />
     </Field>
     <ImportedBefore :plugins="fromThisRecipe" />
     <p>
