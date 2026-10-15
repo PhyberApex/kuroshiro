@@ -1,7 +1,9 @@
 import type { SleepState } from 'kuroshiro-shared'
+import { http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { expectAccessible } from '@/testing/a11y'
+import { api, apiErrorResponse, apiUrl } from '@/testing/api/server'
 import { buildInstanceFacts } from '@/testing/fixtures/instance'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import { fakeKitchenSettings, KITCHEN, mountSettings, noteOf, rowOf, sideOf, stateOf, words } from './deviceSettingsHarness'
@@ -15,6 +17,9 @@ const sleepSwitch = (screen: Screen) => screen.getByRole('switch', { name: 'Slee
 const from = (screen: Screen) => screen.getByLabelText('Sleep Mode from')
 const to = (screen: Screen) => screen.getByLabelText('Sleep Mode to')
 const switchSays = (screen: Screen) => words(rowOf(screen, 'Sleep Mode')?.querySelector('.control-cell'))
+const dialog = () => document.querySelector('[role="alertdialog"]')
+const outcome = () => [...dialog()!.querySelectorAll('.outcome > div')].map(part => `${words(part.querySelector('dt'))} ${words(part.querySelector('dd'))}`)
+const alps = () => new File(['alps'], 'alps.jpg', { type: 'image/jpeg' })
 
 describe('sleep Mode', () => {
   it('is off without its window and "While asleep"', async () => {
@@ -84,7 +89,7 @@ describe('sleep Mode', () => {
     const choices = screen.getByRole('radiogroup', { name: 'While asleep' })
 
     await expect.element(choices.getByRole('radio', { name: 'Show the sleep Fallback Screen' })).toHaveAttribute('aria-checked', 'true')
-    await expect.element(choices.getByRole('radio', { name: 'Show the sleep Fallback Screen' })).toHaveAccessibleDescription('“Asleep until 06:00”.')
+    await expect.element(choices.getByRole('radio', { name: 'Show the sleep Fallback Screen' })).toHaveAccessibleDescription('“Asleep until 06:00”, or your own image.')
     await expect.element(choices.getByRole('radio', { name: 'Keep the Current Screen' })).toHaveAccessibleDescription('Whatever Kitchen showed last stays on.')
 
     await choices.getByRole('radio', { name: 'Keep the Current Screen' }).click()
@@ -113,5 +118,93 @@ describe('sleep Mode', () => {
     expect(rowOf(screen, 'Window')).toBeUndefined()
     await sleepSwitch(screen).click({ force: true })
     expect(faked.writes).toEqual([])
+  })
+})
+
+describe('sleep image', () => {
+  const sleepImageRow = (screen: Screen) => rowOf(screen, 'Sleep image')
+
+  it('is shown only with "Show the sleep Fallback Screen" chosen', async () => {
+    fakeKitchenSettings({ device: asleepAt({ whileAsleep: 'keep' }) })
+    const screen = await mountSettings()
+
+    expect(sleepImageRow(screen)).toBeUndefined()
+  })
+
+  it('is not shown with Sleep Mode off', async () => {
+    fakeKitchenSettings()
+    const screen = await mountSettings()
+
+    expect(sleepImageRow(screen)).toBeUndefined()
+  })
+
+  it('offers "Upload an image" without one, and uploads it without a reload', async () => {
+    const faked = fakeKitchenSettings({ device: asleepAt({}) })
+    const screen = await mountSettings()
+
+    expect(noteOf(screen, 'Sleep image')).toBe('Optional. Without one, Kitchen shows the sleep Fallback Screen.')
+    await screen.getByRole('button', { name: 'Upload an image' }).click()
+    const input = screen.getByLabelText('Choose file')
+
+    await userEvent.upload(input, alps())
+
+    await expect.poll(() => faked.sleepImageUploads).toEqual(['alps.jpg'])
+    await expect.element(screen.getByRole('img', { name: 'Kitchen\'s sleep image' })).toBeVisible()
+    await expect.element(screen.getByRole('button', { name: 'Replace' })).toBeVisible()
+    await expect.element(screen.getByRole('button', { name: 'Remove' })).toBeVisible()
+    expect(noteOf(screen, 'Sleep image')).toBe('Shown instead of the sleep Fallback Screen.')
+    await expectAccessible()
+    await expectNoHorizontalOverflow()
+  })
+
+  it('replaces the image that is there', async () => {
+    const faked = fakeKitchenSettings({ device: { ...asleepAt({}), sleepImagePath: '/screens/devices/kitchen/sleep-image.png?v=1' } })
+    const screen = await mountSettings()
+
+    await screen.getByRole('button', { name: 'Replace' }).click()
+    const input = screen.getByLabelText('Choose file')
+    await userEvent.upload(input, alps())
+
+    await expect.poll(() => faked.sleepImageUploads).toEqual(['alps.jpg'])
+    await expect.element(screen.getByRole('button', { name: 'Replace' })).toBeVisible()
+  })
+
+  it('removes the image, with its own confirmation', async () => {
+    const faked = fakeKitchenSettings({ device: { ...asleepAt({}), sleepImagePath: '/screens/devices/kitchen/sleep-image.png?v=1' } })
+    const screen = await mountSettings()
+
+    await screen.getByRole('button', { name: 'Remove' }).click()
+
+    await expect.element(screen.getByRole('alertdialog', { name: 'Remove Kitchen\'s sleep image?' })).toBeVisible()
+    expect(outcome()).toEqual(['Lost The uploaded sleep image.', 'Stays Sleep Mode, which shows the sleep Fallback Screen again.'])
+    expect(faked.sleepImageRemoved).toBe(0)
+
+    await screen.getByRole('alertdialog').getByRole('button', { name: 'Remove' }).click()
+
+    expect(faked.sleepImageRemoved).toBe(1)
+    await expect.element(screen.getByRole('button', { name: 'Upload an image' })).toBeVisible()
+    expect(noteOf(screen, 'Sleep image')).toBe('Optional. Without one, Kitchen shows the sleep Fallback Screen.')
+  })
+
+  it('is disabled in demo mode, with the same wording as File Screen uploads', async () => {
+    fakeKitchenSettings({ device: asleepAt({}), instance: buildInstanceFacts({ demoMode: true }) })
+    const screen = await mountSettings()
+
+    await expect.element(screen.getByRole('button', { name: 'Upload an image' })).toBeDisabled()
+    await expect.element(screen.getByRole('button', { name: 'Upload an image' })).toHaveAccessibleDescription('Not available in the demo.')
+    await expect.element(screen.getByText('Not available in the demo.')).toBeVisible()
+  })
+
+  it('shows the failure pattern and keeps the previous image when an upload is refused', async () => {
+    fakeKitchenSettings({ device: asleepAt({}) })
+    api.use(http.put(apiUrl('devices/kitchen/sleep-image'), () => apiErrorResponse({ statusCode: 400, code: 'image-unreadable' })))
+    const screen = await mountSettings()
+
+    await screen.getByRole('button', { name: 'Upload an image' }).click()
+    const input = screen.getByLabelText('Choose file')
+    await userEvent.upload(input, alps())
+
+    await expect.poll(() => stateOf(screen, 'Sleep image')).toBe('Not saved. This file is not an image Kuroshiro can read. Use PNG, JPEG, BMP, GIF, TIFF or WebP.')
+    expect(screen.getByRole('img', { name: 'Kitchen\'s sleep image' }).query()).toBeNull()
   })
 })

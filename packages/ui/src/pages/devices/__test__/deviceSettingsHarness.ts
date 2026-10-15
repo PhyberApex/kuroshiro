@@ -8,6 +8,7 @@ import { buildDeviceModel, buildDeviceModelList, buildPalette } from '@/testing/
 import { buildDeviceDetail } from '@/testing/fixtures/devices'
 import { buildFirmware, buildFirmwareList } from '@/testing/fixtures/firmware'
 import { buildInstanceSettings } from '@/testing/fixtures/instance'
+import { fakeScreenImages } from '@/testing/images'
 import { freezeTime } from '@/testing/time'
 import { holdTabVisible } from '@/testing/visibility'
 
@@ -101,6 +102,10 @@ export interface FakedSettings {
   deleted: number
   /** How often the Device's apikey was regenerated. */
   apikeyRegenerated: number
+  /** The original name of each file uploaded as the Device's sleep image, in order. */
+  sleepImageUploads: string[]
+  /** How often the sleep image was removed. */
+  sleepImageRemoved: number
   /** While set, every write is answered with it. */
   refusing?: Response
   /** While set, a write is not answered until it resolves. */
@@ -118,10 +123,11 @@ interface Faked {
 
 /** Fakes what Kitchen's Settings read and take, with a Device that changes as the server would change it. */
 export function fakeKitchenSettings({ device = KITCHEN, models = MODELS, palettes = PALETTES, firmware = FIRMWARE, settings = buildInstanceSettings(), instance }: Faked = {}): FakedSettings {
-  const faked: FakedSettings = { device, writes: [], deleted: 0, apikeyRegenerated: 0 }
+  const faked: FakedSettings = { device, writes: [], deleted: 0, apikeyRegenerated: 0, sleepImageUploads: [], sleepImageRemoved: 0 }
   let devices = [device]
   freezeTime(NOW)
   holdTabVisible()
+  fakeScreenImages()
   fakeShellReads({ instance })
   api.use(
     http.get(apiUrl('devices'), () => HttpResponse.json(devices.map(listed => listed.id === faked.device.id ? faked.device : listed))),
@@ -150,6 +156,21 @@ export function fakeKitchenSettings({ device = KITCHEN, models = MODELS, palette
         return faked.refusing.clone()
       faked.apikeyRegenerated += 1
       faked.device = { ...faked.device, apikey: `regenerated-${faked.apikeyRegenerated}` }
+      return HttpResponse.json(faked.device)
+    }),
+    http.put(apiUrl('devices/kitchen/sleep-image'), async ({ request }) => {
+      if (faked.refusing)
+        return faked.refusing.clone()
+      const file = (await request.formData()).get('file') as File
+      faked.sleepImageUploads.push(file.name)
+      faked.device = { ...faked.device, sleepImagePath: `/screens/devices/kitchen/sleep-image.png?v=${faked.sleepImageUploads.length}` }
+      return HttpResponse.json(faked.device)
+    }),
+    http.delete(apiUrl('devices/kitchen/sleep-image'), () => {
+      if (faked.refusing)
+        return faked.refusing.clone()
+      faked.sleepImageRemoved += 1
+      faked.device = { ...faked.device, sleepImagePath: null }
       return HttpResponse.json(faked.device)
     }),
   )

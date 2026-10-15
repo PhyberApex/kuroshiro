@@ -1,5 +1,5 @@
 import type { AssignPluginInput, CreateMashupInput, CreateScreenInput, ReorderScreensInput, ScheduleInput, ScreenRead, SetPickedScreenInput, UpdateMashupInput, UpdateScreenInput } from 'kuroshiro-shared'
-import { apiGet, apiSend, apiSendForImage } from './client'
+import { apiGet, apiSend, apiSendForImage, asUpload } from './client'
 
 /** A Device's Screens in Order, each with its Screen State. */
 export function listScreens(deviceId: string) {
@@ -23,13 +23,6 @@ export function clearPickedScreen(deviceId: string) {
 /** Refused with `screen-field-not-for-kind` for a field the Screen's kind does not have, and with `image-fetch-failed` when a kept image's new address gives no image; the earlier image and address then stay. */
 export function updateScreen(screenId: string, input: UpdateScreenInput) {
   return apiSend<ScreenRead>('PATCH', `screens/${screenId}`, input)
-}
-
-function asUpload(file: File, fields: Record<string, string> = {}) {
-  const upload = new FormData()
-  Object.entries(fields).forEach(([key, value]) => upload.append(key, value))
-  upload.append('file', file)
-  return upload
 }
 
 /**

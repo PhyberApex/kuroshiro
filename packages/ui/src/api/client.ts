@@ -94,6 +94,14 @@ export function apiGet<T>(path: string, query?: Query): Promise<T> {
   return request<T>(apiAddress(path, query), { headers: { Accept: 'application/json' } })
 }
 
+/** A file upload as a write's body, with any further fields alongside it. */
+export function asUpload(file: File, fields: Record<string, string> = {}) {
+  const upload = new FormData()
+  Object.entries(fields).forEach(([key, value]) => upload.append(key, value))
+  upload.append('file', file)
+  return upload
+}
+
 type WriteMethod = 'POST' | 'PATCH' | 'PUT' | 'DELETE'
 
 /**

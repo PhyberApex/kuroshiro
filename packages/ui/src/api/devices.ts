@@ -1,5 +1,5 @@
 import type { CreateDeviceInput, DeviceDetail, DeviceLogPage, DeviceLogsQuery, DeviceSummary, UpdateDeviceInput } from 'kuroshiro-shared'
-import { apiGet, apiSend } from './client'
+import { apiGet, apiSend, asUpload } from './client'
 
 const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
 
@@ -37,4 +37,14 @@ export function clearDeviceLogs(deviceId: string) {
 
 export function deleteDevice(deviceId: string) {
   return apiSend('DELETE', `devices/${deviceId}`)
+}
+
+/** Uploads the Device's sleep image, replacing one already stored. Refused with `image-unreadable`, `upload-too-large` or `demo-mode`. */
+export function uploadSleepImage(deviceId: string, file: File) {
+  return apiSend<DeviceDetail>('PUT', `devices/${deviceId}/sleep-image`, asUpload(file))
+}
+
+/** Removes the Device's sleep image; Sleep Mode then shows the sleep Fallback Screen again. */
+export function removeSleepImage(deviceId: string) {
+  return apiSend<DeviceDetail>('DELETE', `devices/${deviceId}/sleep-image`)
 }

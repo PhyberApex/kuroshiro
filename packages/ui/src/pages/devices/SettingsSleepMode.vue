@@ -7,6 +7,7 @@ import SettingRow from '@/components/SettingRow.vue'
 import Switch from '@/components/Switch.vue'
 import PageSection from '@/patterns/PageSection.vue'
 import { FIRST_SLEEP_WINDOW, SETTINGS_SECTIONS, sleepWindowInput } from './deviceSettings'
+import SleepImageRow from './SleepImageRow.vue'
 import SleepWindow from './SleepWindow.vue'
 import { useDeviceSetting } from './useDeviceSetting'
 
@@ -28,7 +29,7 @@ const whileAsleep = useDeviceSetting<WhileAsleep>(() => sleep.value.whileAsleep,
   chosen === sleep.value.whileAsleep ? undefined : { sleepScreenEnabled: chosen === 'fallback' })
 
 const choices = computed<RadioChoice<WhileAsleep>[]>(() => [
-  { value: 'fallback', label: 'Show the sleep Fallback Screen', hint: `“Asleep until ${sleep.value.end ?? FIRST_SLEEP_WINDOW.end}”.` },
+  { value: 'fallback', label: 'Show the sleep Fallback Screen', hint: `“Asleep until ${sleep.value.end ?? FIRST_SLEEP_WINDOW.end}”, or your own image.` },
   { value: 'keep', label: 'Keep the Current Screen', hint: `Whatever ${props.device.name} showed last stays on.` },
 ])
 
@@ -67,6 +68,7 @@ function switchSays() {
           <RadioRow class="choices" :model-value="whileAsleep.entered" :choices="choices" :aria-labelledby="labelId" @update:model-value="whileAsleep.choose($event ?? 'fallback')" />
         </template>
       </SettingRow>
+      <SleepImageRow v-if="whileAsleep.entered === 'fallback'" :device="device" />
     </template>
   </PageSection>
 </template>
