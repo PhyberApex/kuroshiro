@@ -1,9 +1,39 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { makeDeviceSensor, makePlugin, makePluginDataSource, makePluginField } from '../../test/fixtures.js'
 import { createPluginTemplateContextService } from '../../test/mockPluginCollaborators.js'
+import { PluginTemplateContextService } from '../services/plugin-template-context.service.js'
 
 describe('pluginTemplateContextService', () => {
   const plugin = makePlugin({ name: 'Weather' })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  describe('trmnl.user time zone', () => {
+    const userAt = async (zone: string, at: string) => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date(at))
+      const service = new PluginTemplateContextService(
+        { resolveFor: async () => ({}) } as never,
+        { resolveAll: async () => ({}) } as never,
+        Object.assign(new InstanceTimeZone(), { name: zone }),
+      )
+      const { context } = await service.contextFor(plugin, [])
+      return (context as { trmnl: { user: Record<string, unknown> } }).trmnl.user
+    }
+
+    it('carries the Instance Time Zone as time_zone_iana and time_zone', async () => {
+      expect(await userAt('Europe/Berlin', '2030-01-05T09:00:00Z')).toMatchObject({ time_zone_iana: 'Europe/Berlin', time_zone: 'Europe/Berlin' })
+    })
+
+    it('carries the offset in seconds either side of a DST change', async () => {
+      expect((await userAt('Europe/Berlin', '2030-01-05T09:00:00Z')).utc_offset).toBe(3600)
+      expect((await userAt('Europe/Berlin', '2030-07-05T09:00:00Z')).utc_offset).toBe(7200)
+      expect((await userAt('America/St_Johns', '2030-01-05T09:00:00Z')).utc_offset).toBe(-12600)
+    })
+  })
 
   it('includes the trmnl system object keyed by the plugin name', async () => {
     const { context } = await createPluginTemplateContextService().contextFor(plugin, [])
@@ -11,7 +41,7 @@ describe('pluginTemplateContextService', () => {
     expect(context).toMatchObject({
       trmnl: {
         plugin_settings: { instance_name: 'Weather' },
-        user: { id: 'kuroshiro-user', locale: 'en' },
+        user: { id: 'kuroshiro-user', locale: 'en', time_zone_iana: expect.any(String), utc_offset: expect.any(Number) },
         system: { timestamp_utc: expect.any(Number) },
       },
     })

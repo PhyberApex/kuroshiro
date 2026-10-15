@@ -1,5 +1,6 @@
 import type { ConfigService } from '@nestjs/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { jsonResponse, stubFetch } from '../../test/fetch.js'
 import { asService } from '../../test/mockService.js'
 import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
@@ -60,7 +61,7 @@ describe('pluginDataFetcherService', () => {
   })
 
   it('renders Liquid in the url, the header values and the body against the template context', async () => {
-    const liquid = new PluginRendererService()
+    const liquid = new PluginRendererService(new InstanceTimeZone())
     mockRenderer.render.mockImplementation((template: string, data: object) => liquid.render(template, data))
     mockFetch.mockResolvedValue(jsonResponse({}))
 

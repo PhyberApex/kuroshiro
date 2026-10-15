@@ -1,7 +1,7 @@
 import type { DeviceSummary, PluginDetail, UpdatePluginInput } from 'kuroshiro-shared'
 import type { Mounted } from './pluginPageHarness'
 import { TRMNL_FRAMEWORK_VERSION } from 'kuroshiro-shared'
-import { http, HttpResponse } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import { describe, expect, it, onTestFinished } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { expectAccessible } from '@/testing/a11y'
@@ -10,6 +10,7 @@ import { fakeShellReads } from '@/testing/app'
 import { arrived } from '@/testing/arrivals'
 import { buildDeviceModel, buildPalette } from '@/testing/fixtures/device-models'
 import { buildDeviceSummary } from '@/testing/fixtures/devices'
+import { buildInstanceFacts } from '@/testing/fixtures/instance'
 import { buildPluginDetail, buildPluginField } from '@/testing/fixtures/plugins'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import { elementsInSealColour } from '@/testing/sealColour'
@@ -113,6 +114,26 @@ describe('the Template section of the Plugin page', () => {
       await screen.getByRole('textbox', { name: 'Name' }).fill('Forecast')
 
       await expect.poll(drawn).toContain('<span class="title">Forecast</span>')
+    })
+
+    it('draws a date in the Instance Time Zone, whatever zone the browser is in', async () => {
+      fakeWeather({ templates: [{ size: 'full', liquidMarkup: '{{ \'now\' | date: \'%z\' }}' }] }, undefined)
+      fakeShellReads({ instance: buildInstanceFacts({ timezone: 'Asia/Tokyo' }) })
+      await mountTemplate()
+
+      await expect.poll(drawn).toContain('+0900')
+    })
+
+    it('draws nothing until the Instance facts have arrived', async () => {
+      fakeWeather({ templates: [{ size: 'full', liquidMarkup: '{{ \'now\' | date: \'%z\' }}' }] })
+      api.use(http.get(apiUrl('instance'), async () => {
+        await delay('infinite')
+        return HttpResponse.json(buildInstanceFacts())
+      }))
+      const screen = await mountTemplate()
+
+      await expect.element(screen.getByText('Loading the preview')).toBeVisible()
+      expect(document.querySelector('#template iframe')).toBeNull()
     })
 
     it('draws a Field Value at once as it is changed in the form, a default where there is none and a password as dots', async () => {

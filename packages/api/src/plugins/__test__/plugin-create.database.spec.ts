@@ -5,6 +5,7 @@ import type { HttpTestApp } from '../../test/httpApp.js'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { Alert } from '../../alerts/entities/alert.entity.js'
 import { Device } from '../../devices/devices.entity.js'
+import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { Screen } from '../../screens/screens.entity.js'
 import { createHttpTestApp } from '../../test/httpApp.js'
 import { asService } from '../../test/mockService.js'
@@ -53,12 +54,12 @@ describe('building a Plugin, POST /api/plugins, against a real database', () => 
   beforeAll(async () => {
     database = await createTestDatabase()
 
-    const renderer = new PluginRendererService()
+    const renderer = new PluginRendererService(new InstanceTimeZone())
     const fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
     const config = asService<ConfigService>({ get: () => false, getOrThrow: () => API_URL })
     const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config), new PluginTransformService())
     const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
-    const refresh = new PluginRefreshService(renderCache, new PluginTemplateContextService(fieldValues, resolver), new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
+    const refresh = new PluginRefreshService(renderCache, new PluginTemplateContextService(fieldValues, resolver, new InstanceTimeZone()), new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
     scheduler = new PluginSchedulerService(refresh)
     const assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
     const plugins = new PluginsService(

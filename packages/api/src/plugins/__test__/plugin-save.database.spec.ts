@@ -5,6 +5,7 @@ import type { HttpTestApp } from '../../test/httpApp.js'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Alert } from '../../alerts/entities/alert.entity.js'
 import { Device } from '../../devices/devices.entity.js'
+import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { MashupConfiguration } from '../../mashup/entities/mashup-configuration.entity.js'
 import { MashupSlot } from '../../mashup/entities/mashup-slot.entity.js'
 import { Screen } from '../../screens/screens.entity.js'
@@ -61,11 +62,11 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
   beforeAll(async () => {
     database = await createTestDatabase()
 
-    const renderer = new PluginRendererService()
+    const renderer = new PluginRendererService(new InstanceTimeZone())
     const fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
     const config = asService<ConfigService>({ get: () => false, getOrThrow: () => 'https://kuroshiro.example' })
     const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config), new PluginTransformService())
-    const templateContext = new PluginTemplateContextService(fieldValues, resolver)
+    const templateContext = new PluginTemplateContextService(fieldValues, resolver, new InstanceTimeZone())
     const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
     const refresh = new PluginRefreshService(renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
     scheduler = new PluginSchedulerService(refresh)

@@ -10,7 +10,7 @@ const target: ScreenShellTarget = {
 
 const context = { location: 'Lindenplatz', trmnl: { plugin_settings: { instance_name: 'Weather' } } }
 
-const preview = (markup: string, size: Parameters<typeof previewOf>[0]['size'] = 'full') => previewOf({ markup, size, context, target })
+const preview = (markup: string, size: Parameters<typeof previewOf>[0]['size'] = 'full') => previewOf({ markup, size, context, target, timeZone: 'Europe/Berlin' })
 
 async function bodyOf(markup: string, size: Parameters<typeof previewOf>[0]['size']) {
   const outcome = await preview(markup, size)
@@ -20,6 +20,12 @@ async function bodyOf(markup: string, size: Parameters<typeof previewOf>[0]['siz
 }
 
 describe('the preview of a Template', () => {
+  it('renders dates in the Instance Time Zone it is given, not the browser\'s', async () => {
+    const outcome = await previewOf({ markup: '{{ \'2030-01-05T09:00:00Z\' | date: \'%H:%M %z\' }}', size: 'full', context, target, timeZone: 'Asia/Tokyo' })
+
+    expect(outcome).toMatchObject({ body: '<div class="view view--full">18:00 +0900</div>' })
+  })
+
   it('renders Liquid against the context and wraps it in the screen shell, as the server does', async () => {
     const outcome = await preview('<span class="title">{{ trmnl.plugin_settings.instance_name }} in {{ location | upcase }}</span>')
 
@@ -38,8 +44,8 @@ describe('the preview of a Template', () => {
   })
 
   it('draws the full size with the Plugin\'s own Framework Version, and the Instance\'s pin without one', async () => {
-    const own = await previewOf({ markup: 'x', size: 'full', context, target, frameworkVersion: '3.3.1' })
-    const none = await previewOf({ markup: 'x', size: 'full', context, target, frameworkVersion: null })
+    const own = await previewOf({ markup: 'x', size: 'full', context, target, timeZone: 'Europe/Berlin', frameworkVersion: '3.3.1' })
+    const none = await previewOf({ markup: 'x', size: 'full', context, target, timeZone: 'Europe/Berlin', frameworkVersion: null })
 
     expect(own).toMatchObject({ document: expect.stringContaining('https://trmnl.com/css/3.3.1/plugins.css') })
     expect(own).toMatchObject({ document: expect.stringContaining('https://trmnl.com/js/3.3.1/plugins.js') })
@@ -47,7 +53,7 @@ describe('the preview of a Template', () => {
   })
 
   it('draws a slot size with the Instance\'s pin, as in a Mashup, whatever the Plugin names', async () => {
-    const outcome = await previewOf({ markup: 'x', size: 'quadrant', context, target, frameworkVersion: '3.3.1' })
+    const outcome = await previewOf({ markup: 'x', size: 'quadrant', context, target, timeZone: 'Europe/Berlin', frameworkVersion: '3.3.1' })
 
     expect(outcome).toMatchObject({ document: expect.stringContaining(`https://trmnl.com/css/${TRMNL_FRAMEWORK_VERSION}/plugins.css`) })
   })

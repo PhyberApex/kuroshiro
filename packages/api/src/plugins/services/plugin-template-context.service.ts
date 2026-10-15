@@ -4,6 +4,7 @@ import type { Plugin } from '../entities/plugin.entity.js'
 import type { ResolvableDataSource } from './plugin-data-resolver.service.js'
 import type { FieldValueWrites } from './plugin-field-values.service.js'
 import { Injectable } from '@nestjs/common'
+import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { hideSecretFieldValues, hideSecretsIn, secretValues } from '../plugin-field-values.js'
 import { PluginDataResolverService } from './plugin-data-resolver.service.js'
 import { PluginFieldValuesService } from './plugin-field-values.service.js'
@@ -19,7 +20,7 @@ export interface PluginTemplateContext {
       no_screen_padding: 'no' | 'yes'
       custom_fields_values: Record<string, string>
     }
-    user: { id: string, locale: string }
+    user: { id: string, locale: string, time_zone: string, time_zone_iana: string, utc_offset: number }
   }
   sensors: Record<string, { value: number, unit: string }>
 }
@@ -73,6 +74,7 @@ export class PluginTemplateContextService {
   constructor(
     private readonly fieldValues: PluginFieldValuesService,
     private readonly dataResolver: PluginDataResolverService,
+    private readonly instanceTimeZone: InstanceTimeZone,
   ) {}
 
   /** `sensors` are the rendering Device's, and empty where the render is for no single Device. */
@@ -115,6 +117,10 @@ export class PluginTemplateContextService {
         user: {
           id: 'kuroshiro-user',
           locale: 'en',
+          // TRMNL's `time_zone` is a Rails name; there is no IANA-to-Rails table, so it carries the IANA name too.
+          time_zone: this.instanceTimeZone.name,
+          time_zone_iana: this.instanceTimeZone.name,
+          utc_offset: this.instanceTimeZone.utcOffsetSeconds(),
         },
       },
       sensors: Object.fromEntries(sensors.map(sensor => [sensor.kind, { value: sensor.value, unit: sensor.unit }])),

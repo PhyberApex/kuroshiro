@@ -6,9 +6,10 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import config from '../config/config.js'
 import { createHttpTestApp } from '../test/httpApp.js'
 import { UPLOAD_LIMITS } from '../uploads/upload-limits.js'
+import { InstanceTimeZone } from './instance-time-zone.js'
 import { InstanceController } from './instance.controller.js'
 
-const ENV_KEYS = ['KUROSHIRO_API_URL', 'KUROSHIRO_DEMO_MODE', 'KUROSHIRO_APPRISE_URL', 'KUROSHIRO_APPRISE_KEY', 'TZ']
+const ENV_KEYS = ['KUROSHIRO_API_URL', 'KUROSHIRO_DEMO_MODE', 'KUROSHIRO_APPRISE_URL', 'KUROSHIRO_APPRISE_KEY']
 
 describe('gET /api/instance', () => {
   const originalEnv = Object.fromEntries(ENV_KEYS.map(key => [key, process.env[key]]))
@@ -25,7 +26,7 @@ describe('gET /api/instance', () => {
   beforeAll(async () => {
     http = await createHttpTestApp({
       controllers: [InstanceController],
-      providers: [{ provide: ConfigService, useValue: { get: (key: string) => config()[key as 'alerts'], getOrThrow: (key: string) => config()[key as 'alerts'] } }],
+      providers: [{ provide: InstanceTimeZone, useValue: Object.assign(new InstanceTimeZone(), { name: 'Asia/Tokyo' }) }, { provide: ConfigService, useValue: { get: (key: string) => config()[key as 'alerts'], getOrThrow: (key: string) => config()[key as 'alerts'] } }],
     })
   })
 
@@ -70,16 +71,8 @@ describe('gET /api/instance', () => {
     expect(raw).not.toMatch(/user|secret|topsecretkey/)
   })
 
-  it('names the zone the process runs in', async () => {
-    const { facts } = await readFacts({ TZ: 'Asia/Tokyo' })
-    expect(facts.timezone).toBe('Asia/Tokyo')
-    expect(facts.timezone).toBe(new Intl.DateTimeFormat().resolvedOptions().timeZone)
-  })
-
-  it('names the zone the process resolves when TZ is unset', async () => {
-    delete process.env.TZ
+  it('names the Instance Time Zone', async () => {
     const { facts } = await readFacts()
-    expect(facts.timezone).toBe(new Intl.DateTimeFormat().resolvedOptions().timeZone)
-    expect(facts.timezone).not.toBe('')
+    expect(facts.timezone).toBe('Asia/Tokyo')
   })
 })

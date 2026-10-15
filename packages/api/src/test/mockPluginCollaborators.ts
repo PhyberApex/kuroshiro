@@ -3,6 +3,7 @@ import type { FetchableDataSource } from '../plugins/services/plugin-data-fetche
 import type { PluginDataResolverService } from '../plugins/services/plugin-data-resolver.service.js'
 import type { PluginFieldValuesService } from '../plugins/services/plugin-field-values.service.js'
 import { vi } from 'vitest'
+import { InstanceTimeZone } from '../instance/instance-time-zone.js'
 import { PluginTemplateContextService } from '../plugins/services/plugin-template-context.service.js'
 
 export interface MockPluginDataFetcherService {
@@ -62,6 +63,7 @@ export function createPluginTemplateContextService(
   return new PluginTemplateContextService(
     { resolveFor: async () => resolvedFieldValues } as unknown as PluginFieldValuesService,
     dataResolver as PluginDataResolverService,
+    new InstanceTimeZone(),
   )
 }
 

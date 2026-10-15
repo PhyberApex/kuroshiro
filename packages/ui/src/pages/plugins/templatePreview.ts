@@ -14,6 +14,8 @@ export interface PreviewInput {
   /** What Liquid reads: the data the server would render with. */
   context: PreviewData['context']
   target: ScreenShellTarget
+  /** The Instance Time Zone (IANA), the zone the server renders dates in, so the preview shows the hour the Device will. */
+  timeZone: string
   /** The Plugin's own Framework Version, or null for the Instance's. Only the full size draws with it; a slot size is drawn as in a Mashup, with the Instance's (ADR-0041). */
   frameworkVersion?: string | null
 }
@@ -38,12 +40,12 @@ function bodyOf(size: TemplateSize, html: string) {
 }
 
 /** The document the plate draws for a Template, or why there is none. */
-export async function previewOf({ markup, size, context, target, frameworkVersion }: PreviewInput): Promise<PreviewOutcome> {
+export async function previewOf({ markup, size, context, target, frameworkVersion, timeZone }: PreviewInput): Promise<PreviewOutcome> {
   const unparsed = checkTemplate(markup)
   if (unparsed)
     return { problem: unparsed, stopsSave: true }
   try {
-    const body = bodyOf(size, await renderLiquid(markup, context))
+    const body = bodyOf(size, await renderLiquid(markup, context, { timeZone }))
     return { document: wrapInScreenShell(target, body, size === 'full' ? effectiveFrameworkVersion(frameworkVersion) : TRMNL_FRAMEWORK_VERSION), body }
   }
   catch (error) {
