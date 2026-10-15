@@ -485,6 +485,43 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
       expect((await read(plugin.id)).refreshInterval).toBe(15)
     })
 
+    it('serves a Plugin without a Framework Version as null', async () => {
+      const plugin = await createPollPlugin()
+
+      expect((await read(plugin.id)).frameworkVersion).toBeNull()
+    })
+
+    it('saves an exact Framework Version', async () => {
+      const plugin = await createPollPlugin()
+
+      expect((await saved(plugin.id, { frameworkVersion: '3.3.1' })).frameworkVersion).toBe('3.3.1')
+    })
+
+    it.each(['latest', '3.4', 'v3.4.0', '3.4.0 ', 3])('refuses the Framework Version %j', async (frameworkVersion) => {
+      const plugin = await createPollPlugin()
+      await saved(plugin.id, { frameworkVersion: '3.3.1' })
+
+      const envelope = await refused(plugin.id, { frameworkVersion })
+
+      expect(envelope.code).toBe('validation')
+      expect(envelope.fields?.map(field => field.path)).toEqual(['frameworkVersion'])
+      expect((await read(plugin.id)).frameworkVersion).toBe('3.3.1')
+    })
+
+    it.each(['', null])('stores %j as no Framework Version', async (frameworkVersion) => {
+      const plugin = await createPollPlugin()
+      await saved(plugin.id, { frameworkVersion: '3.3.1' })
+
+      expect((await saved(plugin.id, { frameworkVersion })).frameworkVersion).toBeNull()
+    })
+
+    it('keeps the Framework Version when the save leaves the key out', async () => {
+      const plugin = await createPollPlugin()
+      await saved(plugin.id, { frameworkVersion: '3.3.1' })
+
+      expect((await saved(plugin.id, { name: 'Renamed' })).frameworkVersion).toBe('3.3.1')
+    })
+
     it('refuses a refresh interval on a Webhook-kind Plugin, which has none', async () => {
       const plugin = await createWebhookPlugin()
 

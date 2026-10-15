@@ -110,6 +110,8 @@ export interface PluginDetail {
   updatedAt: string
   /** In minutes; `null` for a Webhook-kind Plugin. */
   refreshInterval: number | null
+  /** The Plugin's own Framework Version (`X.Y.Z`); `null` means the Instance pin. */
+  frameworkVersion: string | null
   /** Always holds one of size `full`. */
   templates: Array<{ size: TemplateSize, liquidMarkup: string }>
   /** Empty for a Webhook-kind Plugin. */
@@ -236,6 +238,8 @@ export interface UpdatePluginInput {
   description?: string | null
   /** Poll only. A whole number within `REFRESH_INTERVAL_BOUNDS`. */
   refreshInterval?: number
+  /** An exact `X.Y.Z`; `null` or an empty string clears it, which means the Instance pin. */
+  frameworkVersion?: string | null
   templates?: Array<{ size: TemplateSize, liquidMarkup: string }>
   /** Matched by `id`: one with an id is updated in place, one without is created, one left out is deleted. */
   dataSources?: Array<{ id?: string } & DataSourceInput>

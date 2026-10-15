@@ -14,6 +14,7 @@ import type { TrmnlScreenResponse } from '../display.service.js'
 import type { DisplayRequestHeadersDto } from '../dto/display-request-headers.dto.js'
 import { promises as fs } from 'node:fs'
 import { NotFoundException, UnauthorizedException } from '@nestjs/common'
+import { TRMNL_FRAMEWORK_VERSION } from 'kuroshiro-shared'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMockDeviceSensorsService, primeMockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService.js'
 import { ScreenRenderService } from '../../mashup/services/screen-render.service.js'
@@ -254,6 +255,39 @@ describe('deviceDisplayService', () => {
       expect(html).toContain('screen--og_plus')
       expect(html).toContain('screen--2bit')
       expect(html).toContain('<div class="view view--full"><span>cached</span></div>')
+    })
+
+    it('loads the Instance pin for a Plugin without a Framework Version', async () => {
+      const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS })
+      primeRotation({ id: 'screen2', type: 'plugin', order: 2, plugin: makePlugin({ id: 'p1' }), cachedPluginOutput: '<span>cached</span>', filename: 'x' }, device)
+
+      await service.getCurrentImage(headers)
+
+      const html: string = puppeteerPage.setContent.mock.calls[0][0]
+      expect(html).toContain(`https://trmnl.com/css/${TRMNL_FRAMEWORK_VERSION}/plugins.css`)
+    })
+
+    it('loads a Plugin\'s own Framework Version', async () => {
+      const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS })
+      primeRotation({ id: 'screen2', type: 'plugin', order: 2, plugin: makePlugin({ id: 'p1', frameworkVersion: '3.3.1' }), cachedPluginOutput: '<span>cached</span>', filename: 'x' }, device)
+
+      await service.getCurrentImage(headers)
+
+      const html: string = puppeteerPage.setContent.mock.calls[0][0]
+      expect(html).toContain('https://trmnl.com/css/3.3.1/plugins.css')
+      expect(html).toContain('https://trmnl.com/js/3.3.1/plugins.js')
+    })
+
+    it('loads the Instance pin for a Mashup whose slot Plugins name other versions', async () => {
+      const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS })
+      const config = makeMashupConfiguration({ id: 'c', slots: [{ id: 's', order: 0, plugin: makePlugin({ id: 'p1', frameworkVersion: '3.3.1' }) }] } as never)
+      primeRotation({ id: 'screen2', type: 'mashup', order: 2, cachedPluginOutput: '<div class="mashup mashup--1Lx1R">m</div>', mashupConfiguration: config, filename: 'x' }, device)
+
+      await service.getCurrentImage(headers)
+
+      const html: string = puppeteerPage.setContent.mock.calls[0][0]
+      expect(html).toContain(`https://trmnl.com/css/${TRMNL_FRAMEWORK_VERSION}/plugins.css`)
+      expect(html).not.toContain('3.3.1')
     })
 
     it('serves the error Fallback Screen naming the Screen when its render fails', async () => {
