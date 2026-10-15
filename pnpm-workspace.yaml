@@ -59,10 +59,12 @@ catalog:
   jiti: 2.7.0
   js-yaml: ^5.0.0
   liquidjs: ^10.25.5
+  marked: 18.1.1
   msw: 3.0.3
   multer: ^2.1.1
   node-cron: ^4.2.1
   pg: 8.23.1
+  qrcode-generator: 2.0.4
   playwright: 1.64.0
   puppeteer: 25.13.0
   reflect-metadata: 0.2.2

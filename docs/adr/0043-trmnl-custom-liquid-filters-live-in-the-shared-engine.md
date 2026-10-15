@@ -1,0 +1,11 @@
+# TRMNL's custom Liquid filters live in the shared engine
+
+A Recipe imported under ADR-0010 keeps the filters TRMNL's own Liquid adds to the standard ones, and liquidjs ignores a filter it does not know: the Recipe renders its input unchanged and without an error. The twelve missing ones (`parse_json`, `find_by`, `number_to_currency`, `pluralize`, `markdown_to_html`, `days_ago`, `ordinalize`, `append_random`, `random_number`, `l_date`, `l_word`, `qr_code`) and a `number_with_delimiter` that honours its arguments are added to `packages/shared/src/filters/`, one file per family, wired in `liquid.ts` and so listed in `KUROSHIRO_FILTERS`. TRMNL's help article on custom plugin filters is the spec; where it and the issue disagree, its examples win (`l_date`'s locale is the third argument; `number_to_currency: 'sv'` answers `1234.57 kr`, ungrouped, because that is what the article shows).
+
+**Dependencies.** Two are added to `packages/shared` and, as ADR-0033 did for `liquidjs`, to `packages/api`, both from the workspace catalog: `marked` for `markdown_to_html` and `qrcode-generator` for `qr_code`. Both are dependency-free and run in a browser. `marked` is smaller than `markdown-it` and needs no plugins for the subset a Plugin writes. `qrcode-generator` yields the module matrix, and Kuroshiro draws the one `<svg class="qr-code">` itself, so the markup is ours to keep stable. The API bundle leaves both external and `pnpm install --prod` finds them in the API's manifest.
+
+**Dates** call liquidjs's own `date` filter, so `days_ago`, `ordinalize` and `l_date` agree with it in whatever time zone it renders in (#1445). `l_date` takes only month and weekday names from `Intl`. **`append_random`** keeps its suffixes in a `WeakMap` keyed by the render's liquidjs `Context`, so a render shares them with itself and with no other.
+
+**`group_by` stays liquidjs's** (`[{name, items}]`). TRMNL's is a Ruby hash keyed by value. A search of public code (GitHub code search, the `usetrmnl` organisation's plugins and BYOS servers) found no Recipe that depends on the hash form, so the difference is documented in CONTEXT.md instead of overriding a filter other templates may use.
+
+**The editor** keeps marking these in completion as "Kuroshiro": it is the label for every filter the engine adds, TRMNL's or not.

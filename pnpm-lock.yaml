@@ -305,6 +305,9 @@ catalogs:
     liquidjs:
       specifier: ^10.25.5
       version: 10.30.0
+    marked:
+      specifier: 18.1.1
+      version: 18.1.1
     msw:
       specifier: 3.0.3
       version: 3.0.3
@@ -323,6 +326,9 @@ catalogs:
     puppeteer:
       specifier: 25.13.0
       version: 25.13.0
+    qrcode-generator:
+      specifier: 2.0.4
+      version: 2.0.4
     reflect-metadata:
       specifier: 0.2.2
       version: 0.2.2
@@ -448,6 +454,9 @@ importers:
       liquidjs:
         specifier: 'catalog:'
         version: 10.30.0
+      marked:
+        specifier: 'catalog:'
+        version: 18.1.1
       multer:
         specifier: 'catalog:'
         version: 2.4.0
@@ -460,6 +469,9 @@ importers:
       puppeteer:
         specifier: 'catalog:'
         version: 25.13.0
+      qrcode-generator:
+        specifier: 'catalog:'
+        version: 2.0.4
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
@@ -533,6 +545,12 @@ importers:
       liquidjs:
         specifier: 'catalog:'
         version: 10.30.0
+      marked:
+        specifier: 'catalog:'
+        version: 18.1.1
+      qrcode-generator:
+        specifier: 'catalog:'
+        version: 2.0.4
     devDependencies:
       '@antfu/eslint-config':
         specifier: 'catalog:'
@@ -4376,6 +4394,11 @@ packages:
   markdown-table@3.0.4:
     resolution: {integrity: sha512-wiYz4+JrLyb/DqW2hkFJxP7Vd7JuTDm77fvbM8VfEQdmSMqcImWeeRbHwZjBjIFki/VaMK2BhFi7oUUZeM5bqw==}
 
+  marked@18.1.1:
+    resolution: {integrity: sha512-zEGgrtUG8crk+TrMacJSVABU4DYDDkS8uqgU3ohrn/2fW9C2AEfUrO3m6IhpIpQpl7YcVpiXXC9cSMWDANT3dg==}
+    engines: {node: '>= 20'}
+    hasBin: true
+
   math-intrinsics@1.1.0:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
     engines: {node: '>= 0.4'}
@@ -4954,6 +4977,9 @@ packages:
   qified@0.10.1:
     resolution: {integrity: sha512-+Owyggi9IxT1ePKGafcI87ubSmxol6smwJ+RAHDQlx9+9cPwFWDiKFFCPuWhr9ignlGpZ9vDQLw67N4dcTVFEA==}
     engines: {node: '>=20'}
+
+  qrcode-generator@2.0.4:
+    resolution: {integrity: sha512-mZSiP6RnbHl4xL2Ap5HfkjLnmxfKcPWpWe/c+5XxCuetEenqmNFf1FH/ftXPCtFG5/TDobjsjz6sSNL0Sr8Z9g==}
 
   qs@6.15.3:
     resolution: {integrity: sha512-O9gl3zCl5h5blw1KGUzQKhA5oUXSl8rwUIM5o0S3nCXMliSvy5Dzx7/DJcI+SwgICv+IneSZwhBh1oSyEHA71A==}
@@ -9676,6 +9702,8 @@ snapshots:
 
   markdown-table@3.0.4: {}
 
+  marked@18.1.1: {}
+
   math-intrinsics@1.1.0: {}
 
   mdast-util-find-and-replace@3.0.2:
@@ -10423,6 +10451,8 @@ snapshots:
   qified@0.10.1:
     dependencies:
       hookified: 2.2.0
+
+  qrcode-generator@2.0.4: {}
 
   qs@6.15.3:
     dependencies:

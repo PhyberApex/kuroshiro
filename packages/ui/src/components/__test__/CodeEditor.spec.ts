@@ -58,7 +58,7 @@ function completionsOf(screen: Screen) {
  * may still be the one of an earlier keystroke. Callers poll the reader for what they expect.
  */
 async function completionsAfter(typed: string, props: Record<string, unknown> = {}) {
-  const { screen } = await mountFocused({ completionData: DATA, kuroshiroFilters: ['date_short', 'yesno'], ...props })
+  const { screen } = await mountFocused({ completionData: DATA, kuroshiroFilters: ['date_short', 'pluralize', 'yesno'], ...props })
   await pressed(typed)
   await pressed('{Control>} {/Control}')
   return () => completionsOf(screen)
@@ -234,8 +234,8 @@ describe('code editor: completion', () => {
   it('offers Liquid\'s filters after a pipe and marks the given ones "Kuroshiro"', async () => {
     const offered = await completionsAfter('{{{{ location | ')
 
-    await expect.poll(offered).toEqual(expect.arrayContaining(['date_short · Kuroshiro', 'yesno · Kuroshiro', 'upcase', 'default']))
-    expect(offered().filter(filter => filter.endsWith('Kuroshiro'))).toHaveLength(2)
+    await expect.poll(offered).toEqual(expect.arrayContaining(['date_short · Kuroshiro', 'pluralize · Kuroshiro', 'yesno · Kuroshiro', 'upcase', 'default']))
+    expect(offered().filter(filter => filter.endsWith('Kuroshiro'))).toHaveLength(3)
   })
 
   it('offers Liquid\'s tags after {%', async () => {

@@ -1,5 +1,12 @@
-import type { FilterImplOptions, FS } from 'liquidjs'
+import type { Context, FilterImplOptions, FS } from 'liquidjs'
 import { Liquid } from 'liquidjs'
+import { findBy } from './filters/collections.ts'
+import { daysAgo, localizeDate, ordinalize } from './filters/dates.ts'
+import { markdownToHtml, qrCode } from './filters/markup.ts'
+import { numberToCurrency, numberWithDelimiter } from './filters/numbers.ts'
+import { appendRandom, randomNumber } from './filters/random.ts'
+import { parseJson, pluralize } from './filters/strings.ts'
+import { localizeWord } from './filters/words.ts'
 
 export interface TemplateProblem {
   message: string
@@ -18,7 +25,28 @@ const filters: Record<string, FilterImplOptions> = {
     asDate(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
   time_short: (date: unknown) =>
     asDate(date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-  number_with_delimiter: (num: unknown) => Number(num).toLocaleString('en-US'),
+  number_with_delimiter: numberWithDelimiter,
+  number_to_currency: numberToCurrency,
+  pluralize,
+  parse_json: parseJson,
+  find_by: findBy,
+  markdown_to_html: markdownToHtml,
+  qr_code: qrCode,
+  random_number: randomNumber,
+  l_word: localizeWord,
+  // The filters below read the render's own context: its clock zone for dates, its identity for `append_random`.
+  days_ago(this: { context: Context }, days: unknown) {
+    return daysAgo(this.context, days)
+  },
+  ordinalize(this: { context: Context }, value: unknown, format?: string) {
+    return ordinalize(this.context, value, format)
+  },
+  l_date(this: { context: Context }, value: unknown, format?: string, locale?: unknown) {
+    return localizeDate(this.context, value, format, locale)
+  },
+  append_random(this: { context: Context }, value: unknown) {
+    return appendRandom(this.context, value)
+  },
   round: (num: unknown, precision = 0) => Number(num).toFixed(precision),
   truncate_words: (text: string, count = 20) => {
     const words = text.split(/\s+/)

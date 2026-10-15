@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { makePlugin, makePluginDataSource, makePluginField, makePluginTemplate } from '../../test/fixtures.js'
 import { PluginExporterService } from '../services/plugin-exporter.service.js'
 import { PluginImporterService } from '../services/plugin-importer.service.js'
+import { PluginRendererService } from '../services/plugin-renderer.service.js'
 
 function buildFlatRecipeArchive(settings: Record<string, unknown>, files: Record<string, string> = { 'full.liquid': '<div>{{ source.title }}</div>' }): Buffer {
   const zip = new AdmZip()
@@ -299,6 +300,20 @@ describe('pluginImporterService recipe import', () => {
       const result = await service.importFromRecipeArchive(archive, '1')
 
       expect(result.dataSources[0].body).toEqual({})
+    })
+
+    it('imports a Recipe that uses TRMNL custom filters and renders them as trmnl.com does', async () => {
+      const settings = { name: 'Reading List', strategy: 'polling', polling_url: 'https://api.example.com/books' }
+      const archive = buildFlatRecipeArchive(settings, {
+        'full.liquid': '{% assign shelf = payload | parse_json %}<p>{{ "book" | pluralize: shelf.books.size }}, {{ shelf.updated | l_date: "%y %b" }}</p>',
+      })
+
+      const imported = await new PluginImporterService().importFromRecipeArchive(archive, '1')
+      const markup = await new PluginRendererService().render(imported.templates[0].liquidMarkup, {
+        payload: JSON.stringify({ books: ['a', 'b'], updated: '2025-01-11' }),
+      })
+
+      expect(markup).toBe('<p>2 books, 25 Jan</p>')
     })
   })
 })
