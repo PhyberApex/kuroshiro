@@ -242,8 +242,9 @@ describe('edit HTML', () => {
     it('draws it, then shows the image with the Render Signal none raises no second line', async () => {
       fakeFridgeNote()
       let release = () => {}
+      const held = new Promise<void>(resolve => (release = resolve))
       api.use(http.post(apiUrl('device-preview'), async () => {
-        await new Promise<void>(resolve => (release = resolve))
+        await held
         return new HttpResponse('png-bytes', { headers: { 'Content-Type': 'image/png', 'X-Render-Signal': 'none' } })
       }))
       const screen = await mountFridgeNote()
@@ -258,7 +259,7 @@ describe('edit HTML', () => {
 
       // Turning the response into the data: URL shown in the preview is a real FileReader round trip; on a
       // loaded CI runner under coverage, that has outrun even a 5 s poll before the read finishes.
-      await expect.poll(() => previewed(), { timeout: 15_000 }).toContain('<img src="data:image/png')
+      await expect.poll(previewed, { timeout: 15_000 }).toContain('<img src="data:image/png')
       await expect.poll(honest).toMatch(/^As Kitchen shows it, in 4 grays, drawn at \d{2}:\d{2}\.$/)
       expect(document.querySelector('.html-preview .honest + .honest')).toBeNull()
       await expect.element(screen.getByRole('button', { name: 'Back to the browser drawing' })).toBeVisible()
