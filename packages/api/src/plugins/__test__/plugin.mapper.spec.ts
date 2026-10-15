@@ -112,6 +112,12 @@ describe('toPluginSummary', () => {
 })
 
 describe('toPluginDetail', () => {
+  it('reads the Plugin\'s own Framework Version', () => {
+    const plugin = makePlugin({ createdAt: CREATED_AT, updatedAt: UPDATED_AT, frameworkVersion: '3.3.1' })
+
+    expect(toPluginDetail(plugin, NOTHING_AROUND_IN_DETAIL).frameworkVersion).toBe('3.3.1')
+  })
+
   it('reads a bare Poll-kind Plugin with every key present and what does not apply as null', () => {
     const plugin = makePlugin({ id: 'plugin-bare', name: 'Bare', createdAt: CREATED_AT, updatedAt: UPDATED_AT, refreshInterval: 30 })
 
@@ -123,6 +129,7 @@ describe('toPluginDetail', () => {
       createdAt: '2026-02-01T08:00:00.000Z',
       updatedAt: '2026-02-02T08:00:00.000Z',
       refreshInterval: 30,
+      frameworkVersion: null,
       templates: [{ size: 'full', liquidMarkup: '' }],
       dataSources: [],
       fields: [],

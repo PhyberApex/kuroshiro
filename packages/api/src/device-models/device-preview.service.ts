@@ -5,8 +5,11 @@ import * as fs from 'node:fs'
 import * as os from 'node:os'
 import * as path from 'node:path'
 import { HttpStatus, Injectable, Logger } from '@nestjs/common'
-import { TRMNL_FRAMEWORK_VERSION, wrapInScreenShell } from 'kuroshiro-shared'
+import { InjectRepository } from '@nestjs/typeorm'
+import { effectiveFrameworkVersion, wrapInScreenShell } from 'kuroshiro-shared'
+import { Repository } from 'typeorm'
 import { ApiException } from '../errors/api.exception.js'
+import { Plugin } from '../plugins/entities/plugin.entity.js'
 import { DeviceModelsService } from './device-models.service.js'
 import { PaletteSelectionService } from './palette-selection.service.js'
 import { renderHtmlToPng } from './render-html-to-png.js'
@@ -32,6 +35,8 @@ export class DevicePreviewService {
   constructor(
     private readonly deviceModels: DeviceModelsService,
     private readonly paletteSelection: PaletteSelectionService,
+    @InjectRepository(Plugin)
+    private readonly pluginRepository: Repository<Plugin>,
   ) {}
 
   async render(input: DevicePreviewInput): Promise<DevicePreviewResult> {
@@ -42,24 +47,34 @@ export class DevicePreviewService {
     this.rendering = true
     try {
       const target = await this.targetOf(input)
-      return await this.renderTo(target, input.html)
+      const frameworkVersion = await this.frameworkVersionOf(input)
+      return await this.renderTo(target, input.html, frameworkVersion)
     }
     finally {
       this.rendering = false
     }
   }
 
-  private async renderTo(target: DeviceRenderTarget, html: string): Promise<DevicePreviewResult> {
+  private async renderTo(target: DeviceRenderTarget, html: string, frameworkVersion: string): Promise<DevicePreviewResult> {
     const tmpDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'kuroshiro-device-preview-'))
     const outputPath = path.join(tmpDir, 'preview.png')
     try {
-      const renderSignal = await renderHtmlToPng(wrapInScreenShell(target, html, TRMNL_FRAMEWORK_VERSION), target, outputPath, this.logger)
+      const renderSignal = await renderHtmlToPng(wrapInScreenShell(target, html, frameworkVersion), target, outputPath, this.logger)
       const buffer = await fs.promises.readFile(outputPath)
       return { buffer, signal: renderSignal ?? 'none' }
     }
     finally {
       await fs.promises.rm(tmpDir, { recursive: true, force: true })
     }
+  }
+
+  private async frameworkVersionOf(input: DevicePreviewInput): Promise<string> {
+    if (!input.pluginId)
+      return effectiveFrameworkVersion(null)
+    const plugin = await this.pluginRepository.findOne({ where: { id: input.pluginId }, select: { id: true, frameworkVersion: true } })
+    if (!plugin)
+      throw new ApiException(HttpStatus.NOT_FOUND, 'plugin-not-found', 'Plugin not found', { id: input.pluginId })
+    return effectiveFrameworkVersion(plugin.frameworkVersion)
   }
 
   private async targetOf(input: DevicePreviewInput): Promise<DeviceRenderTarget> {
