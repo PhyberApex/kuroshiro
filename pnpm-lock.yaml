@@ -249,8 +249,8 @@ catalogs:
       specifier: 24.0.5
       version: 24.0.5
     '@types/adm-zip':
-      specifier: ^0.5.8
-      version: 0.5.8
+      specifier: ^0.6.0
+      version: 0.6.0
     '@types/express':
       specifier: 5.0.6
       version: 5.0.6
@@ -493,7 +493,7 @@ importers:
         version: 1.16.18(@swc/helpers@0.5.23)
       '@types/adm-zip':
         specifier: 'catalog:'
-        version: 0.5.8
+        version: 0.6.0
       '@types/express':
         specifier: 'catalog:'
         version: 5.0.6
@@ -2282,8 +2282,9 @@ packages:
   '@tsconfig/node24@24.0.5':
     resolution: {integrity: sha512-DWC54fGPuhZgg3Ighg4Y/A/bA3ZdB5hnzAuv/MkQ/X85sVsBsMQxu8t7khutdYeiNksBbFdDyeqv1HSW2Zl8aA==}
 
-  '@types/adm-zip@0.5.8':
-    resolution: {integrity: sha512-RVVH7QvZYbN+ihqZ4kX/dMiowf6o+Jk1fNwiSdx0NahBJLU787zkULhGhJM8mf/obmLGmgdMM0bXsQTmyfbR7Q==}
+  '@types/adm-zip@0.6.0':
+    resolution: {integrity: sha512-4BJwT30zsKqyYk+PgJS+LQzVrLh0bHragg9etHGg679uuBbNDbSaLsJy+DaJQZM8AvESHB+t3ruVzbrn6BUsMQ==}
+    deprecated: This is a stub types definition. adm-zip provides its own type definitions, so you do not need this installed.
 
   '@types/body-parser@1.19.6':
     resolution: {integrity: sha512-HLFeCYgz89uk22N5Qg3dvGvsv46B8GLvKKo1zKG4NybA8U2DiEO3w9lqGg29t/tfLRJpJ6iQxnVw4OnB7MoM9g==}
@@ -7404,9 +7405,9 @@ snapshots:
 
   '@tsconfig/node24@24.0.5': {}
 
-  '@types/adm-zip@0.5.8':
+  '@types/adm-zip@0.6.0':
     dependencies:
-      '@types/node': 24.19.2
+      adm-zip: 0.6.1
 
   '@types/body-parser@1.19.6':
     dependencies:
