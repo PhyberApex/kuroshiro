@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { TRMNL_FRAMEWORK_VERSION } from 'kuroshiro-shared'
 import { ref } from 'vue'
 import Field from '@/components/Field.vue'
 import Textarea from '@/components/Textarea.vue'
@@ -26,6 +27,15 @@ const naming = usePluginFormPart(pluginNaming, () => (open.value = true))
           rows="2"
           placeholder="What this Plugin shows. Only you read it."
         />
+      </Field>
+      <Field :id="fieldId('frameworkVersion')" label="Framework version" optional :error="naming.errors.frameworkVersion">
+        <template #default="{ control }">
+          <TextInput v-model="naming.draft.frameworkVersion" v-bind="control" :placeholder="`${TRMNL_FRAMEWORK_VERSION}, this Instance's`" />
+        </template>
+        <template #hint>
+          Leave empty to follow this Instance's version. TRMNL lists its versions under
+          <a href="https://trmnl.com/framework/releases" target="_blank" rel="noopener noreferrer">releases</a>.
+        </template>
       </Field>
     </div>
   </TuckedSection>

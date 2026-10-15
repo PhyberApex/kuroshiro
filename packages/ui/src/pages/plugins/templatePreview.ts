@@ -1,5 +1,5 @@
 import type { PreviewData, ScreenShellTarget, TemplateProblem, TemplateSize } from 'kuroshiro-shared'
-import { checkTemplate, MASHUP_LAYOUTS, renderLiquid, templateProblemOf, TRMNL_FRAMEWORK_VERSION, viewFull, wrapInScreenShell } from 'kuroshiro-shared'
+import { checkTemplate, effectiveFrameworkVersion, MASHUP_LAYOUTS, renderLiquid, templateProblemOf, TRMNL_FRAMEWORK_VERSION, viewFull, wrapInScreenShell } from 'kuroshiro-shared'
 
 /**
  * The browser's render of a Template, and the one module of the admin UI that holds the Liquid engine: the Template
@@ -14,6 +14,8 @@ export interface PreviewInput {
   /** What Liquid reads: the data the server would render with. */
   context: PreviewData['context']
   target: ScreenShellTarget
+  /** The Plugin's own Framework Version, or null for the Instance's. Only the full size draws with it; a slot size is drawn as in a Mashup, with the Instance's (ADR-0041). */
+  frameworkVersion?: string | null
 }
 
 export type PreviewOutcome
@@ -36,13 +38,13 @@ function bodyOf(size: TemplateSize, html: string) {
 }
 
 /** The document the plate draws for a Template, or why there is none. */
-export async function previewOf({ markup, size, context, target }: PreviewInput): Promise<PreviewOutcome> {
+export async function previewOf({ markup, size, context, target, frameworkVersion }: PreviewInput): Promise<PreviewOutcome> {
   const unparsed = checkTemplate(markup)
   if (unparsed)
     return { problem: unparsed, stopsSave: true }
   try {
     const body = bodyOf(size, await renderLiquid(markup, context))
-    return { document: wrapInScreenShell(target, body, TRMNL_FRAMEWORK_VERSION), body }
+    return { document: wrapInScreenShell(target, body, size === 'full' ? effectiveFrameworkVersion(frameworkVersion) : TRMNL_FRAMEWORK_VERSION), body }
   }
   catch (error) {
     return { problem: templateProblemOf(error), stopsSave: false }

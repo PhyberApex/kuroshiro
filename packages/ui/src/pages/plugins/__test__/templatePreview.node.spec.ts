@@ -37,6 +37,21 @@ describe('the preview of a Template', () => {
     })
   })
 
+  it('draws the full size with the Plugin\'s own Framework Version, and the Instance\'s pin without one', async () => {
+    const own = await previewOf({ markup: 'x', size: 'full', context, target, frameworkVersion: '3.3.1' })
+    const none = await previewOf({ markup: 'x', size: 'full', context, target, frameworkVersion: null })
+
+    expect(own).toMatchObject({ document: expect.stringContaining('https://trmnl.com/css/3.3.1/plugins.css') })
+    expect(own).toMatchObject({ document: expect.stringContaining('https://trmnl.com/js/3.3.1/plugins.js') })
+    expect(none).toMatchObject({ document: expect.stringContaining(`https://trmnl.com/css/${TRMNL_FRAMEWORK_VERSION}/plugins.css`) })
+  })
+
+  it('draws a slot size with the Instance\'s pin, as in a Mashup, whatever the Plugin names', async () => {
+    const outcome = await previewOf({ markup: 'x', size: 'quadrant', context, target, frameworkVersion: '3.3.1' })
+
+    expect(outcome).toMatchObject({ document: expect.stringContaining(`https://trmnl.com/css/${TRMNL_FRAMEWORK_VERSION}/plugins.css`) })
+  })
+
   it('draws a Half horizontal Template at the top of two rows, the other slot empty', async () => {
     expect(await bodyOf('<p>{{ location }}</p>', 'half_horizontal'))
       .toBe('<div class="mashup mashup--1Tx1B"><div class="view view--half_horizontal"><p>Lindenplatz</p></div><div class="view view--half_horizontal"></div></div>')
