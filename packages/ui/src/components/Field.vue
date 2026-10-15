@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Label } from 'reka-ui'
-import { computed, useId } from 'vue'
+import { computed, useId, useSlots } from 'vue'
 import FieldError from './FieldError.vue'
 
 const props = defineProps<{
@@ -16,10 +16,13 @@ const props = defineProps<{
 }>()
 
 defineSlots<{
+  /** The explanation under the control, where it holds more than text (a link). It takes the place of `hint`. */
+  hint?: () => unknown
   /** Holds one control, which takes `v-bind="control"`: the id the label points at, the description and the invalid flag. */
   default: (props: { control: { 'id': string, 'aria-describedby': string | undefined, 'invalid': boolean } }) => unknown
 }>()
 
+const slots = useSlots()
 const generatedId = useId()
 const controlId = computed(() => props.id ?? generatedId)
 const hintId = computed(() => `${controlId.value}-hint`)
@@ -28,7 +31,7 @@ const errorId = computed(() => `${controlId.value}-error`)
 function describedBy() {
   if (props.error)
     return errorId.value
-  return props.hint ? hintId.value : undefined
+  return props.hint || slots.hint ? hintId.value : undefined
 }
 
 const control = computed(() => ({
@@ -45,8 +48,10 @@ const control = computed(() => ({
       <span v-if="optional" class="optional">optional</span>
     </Label>
     <slot :control="control" />
-    <p v-if="hint && !error" :id="hintId" class="hint">
-      {{ hint }}
+    <p v-if="(hint || $slots.hint) && !error" :id="hintId" class="hint">
+      <slot name="hint">
+        {{ hint }}
+      </slot>
     </p>
     <FieldError :id="errorId" :message="error" />
   </div>

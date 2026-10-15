@@ -11,6 +11,7 @@ import EditorBench from '@/components/EditorBench.vue'
 import PageSection from '@/patterns/PageSection.vue'
 import { useLoad } from '@/patterns/useLoad'
 import { useDevices } from '@/reads/sharedReads'
+import { enteredFrameworkVersion } from './pluginNaming'
 import { fieldArrived, fieldId, usePluginFormPart, usePluginPage } from './pluginPage'
 import { templatePaths, templatesPart, withTemplateAdded } from './pluginTemplates'
 import { editorName } from './pluginTemplateWording'
@@ -91,11 +92,15 @@ const fetched = usePreviewData(
 /** What the Template reads: the data the server fetched last, with the form's name and Field Values as they stand now. */
 const data = computed(() => fetched.held.value && heldWithForm(fetched.held.value, plugin.value, form.unsaved))
 
+/** The Plugin's own Framework Version as entered, once it is valid; the browser preview draws the full size with it. */
+const frameworkVersion = computed(() => enteredFrameworkVersion(form.unsaved.frameworkVersion ?? ''))
+
 const preview = useTemplatePreview((): PreviewSource | undefined => needs.data && target.value && data.value && {
   markup: markup.value,
   size: row.value.size,
   context: data.value.context,
   target: target.value,
+  frameworkVersion: frameworkVersion.value,
   render: needs.data.previewOf,
 })
 
@@ -255,6 +260,7 @@ async function reveal(problemPath: string) {
         :library="library"
         :target="target"
         :size="row.size"
+        :framework-version="frameworkVersion"
         :device-preview="devicePreview.state.value"
         @draw-device-preview="devicePreview.draw"
         @back-to-browser="devicePreview.backToBrowser"

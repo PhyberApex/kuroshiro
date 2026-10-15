@@ -14,6 +14,8 @@ const props = defineProps<{
   target: PreviewTarget
   /** The size of the Template that is drawn. */
   size: TemplateSize
+  /** The Plugin's own Framework Version once valid, or null for the Instance's. */
+  frameworkVersion: string | null
   devicePreview: DevicePreviewState
 }>()
 
@@ -68,7 +70,7 @@ const chosenPalette = computed({
       </template>
     </div>
     <p class="facts">
-      {{ targetFacts(target) }}
+      {{ targetFacts(target, { size, frameworkVersion }) }}
     </p>
     <DevicePreviewLines
       :target="target"

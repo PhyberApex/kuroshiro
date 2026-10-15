@@ -1,6 +1,6 @@
 import type { DevicePreviewSignal, PaletteRead, TemplateSize } from 'kuroshiro-shared'
 import type { PreviewTarget } from './previewTarget'
-import { TRMNL_FRAMEWORK_VERSION } from 'kuroshiro-shared'
+import { effectiveFrameworkVersion, TRMNL_FRAMEWORK_VERSION } from 'kuroshiro-shared'
 import { clockTime } from '@/patterns/time'
 
 export const SIZE_NAMES: Record<TemplateSize, string> = {
@@ -42,14 +42,16 @@ export const removedSentence = (size: TemplateSize) => `Removed when you save. A
 
 /**
  * "TRMNL OG (2-bit) · 800 × 480 · 4 Grays (2-bit) · framework 3.4.0", or the size
- * alone under the selects that already name the rest. This is always the
- * Instance's Framework Version pin (ADR-0041); a Plugin's own pin overriding
- * it is out of scope here.
+ * alone under the selects that already name the rest. The version is the Plugin's
+ * own for the full size and the Instance's for a slot size, which reads "· framework
+ * 3.4.0, this Instance's, as in a Mashup" when the Plugin names its own (ADR-0041).
  */
-export function targetFacts({ device, model, palette }: WordedTarget) {
-  const size = `${model.width} × ${model.height}`
-  const facts = device ? `${model.label} · ${size} · ${palette.name}` : size
-  return `${facts} · framework ${TRMNL_FRAMEWORK_VERSION}`
+export function targetFacts({ device, model, palette }: WordedTarget, { size = 'full', frameworkVersion = null }: { size?: TemplateSize, frameworkVersion?: string | null } = {}) {
+  const dimensions = `${model.width} × ${model.height}`
+  const facts = device ? `${model.label} · ${dimensions} · ${palette.name}` : dimensions
+  if (size !== 'full')
+    return `${facts} · framework ${TRMNL_FRAMEWORK_VERSION}${frameworkVersion ? ', this Instance\'s, as in a Mashup' : ''}`
+  return `${facts} · framework ${effectiveFrameworkVersion(frameworkVersion)}`
 }
 
 function shadesOf({ colors, grays }: PaletteRead) {

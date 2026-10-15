@@ -146,6 +146,37 @@ describe('the Plugin page', () => {
       await expect.element(screen.getByText(`Saved at ${clock(NOW)}.`, { exact: true })).not.toBeInTheDocument()
     })
 
+    describe('the Framework Version', () => {
+      const versionField = (screen: Mounted) => screen.getByRole('textbox', { name: /Framework version/ })
+
+      it('saves a valid version with the form, and empty as null', async () => {
+        const faked = fakePlugin(buildPluginDetail({ id: 'weather', frameworkVersion: '3.3.1' }))
+        const screen = await mountPlugin()
+
+        await openNaming(screen)
+        await expect.element(versionField(screen)).toHaveValue('3.3.1')
+        await versionField(screen).fill('3.2.0')
+        await saveBar(screen).getByRole('button', { name: 'Save Plugin' }).click()
+        await expect.poll(() => faked.saves).toEqual([{ frameworkVersion: '3.2.0' }])
+
+        await versionField(screen).fill('')
+        await saveBar(screen).getByRole('button', { name: 'Save Plugin' }).click()
+        await expect.poll(() => faked.saves.at(-1)).toEqual({ frameworkVersion: null })
+      })
+
+      it.each(['latest', '3.4', 'v3.4.0'])('refuses %s with the format and saves nothing', async (value) => {
+        const faked = fakePlugin()
+        const screen = await mountPlugin()
+
+        await openNaming(screen)
+        await versionField(screen).fill(value)
+        await saveBar(screen).getByRole('button', { name: 'Save Plugin' }).click()
+
+        await expect.element(screen.getByText('Use a version such as 3.3.1.')).toBeVisible()
+        expect(faked.saves).toEqual([])
+      })
+    })
+
     it('puts every field back on "Discard changes" and asks nothing', async () => {
       const faked = fakePlugin()
       const screen = await mountPlugin()

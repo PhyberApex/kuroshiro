@@ -38,6 +38,21 @@ describe('the words of the Template section', () => {
     })
   })
 
+  describe('the facts under the plate, with a Plugin\'s own Framework Version', () => {
+    it('end with the Plugin\'s version for the full size', () => {
+      expect(targetFacts({ device: null, model, palette: gray4 }, { size: 'full', frameworkVersion: '3.3.1' })).toBe('800 × 480 · framework 3.3.1')
+    })
+
+    it('end with the Instance\'s pin for a slot size, saying so', () => {
+      expect(targetFacts({ device: null, model, palette: gray4 }, { size: 'quadrant', frameworkVersion: '3.3.1' }))
+        .toBe(`800 × 480 · framework ${TRMNL_FRAMEWORK_VERSION}, this Instance's, as in a Mashup`)
+    })
+
+    it('end with the plain pin for a slot size of a Plugin with no version of its own', () => {
+      expect(targetFacts({ device: null, model, palette: gray4 }, { size: 'quadrant', frameworkVersion: null })).toBe(`800 × 480 · framework ${TRMNL_FRAMEWORK_VERSION}`)
+    })
+  })
+
   describe('the honest line', () => {
     it('says what the Device shows the drawing in', () => {
       expect(honestLine({ device: kitchen, model, palette: gray4 }, 'full')).toBe('Your browser draws this. Kitchen shows it in 4 grays.')
