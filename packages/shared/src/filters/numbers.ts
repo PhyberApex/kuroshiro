@@ -10,6 +10,10 @@ function group(digits: string, delimiter: string): string {
   return delimiter === '' ? digits : digits.replace(/\B(?=(\d{3})+$)/g, delimiter)
 }
 
+function joinDigits(whole: string, delimiter: unknown, separator: unknown, fraction: string | undefined): string {
+  return `${group(whole, String(delimiter))}${fraction === undefined ? '' : `${separator}${fraction}`}`
+}
+
 /** TRMNL's `number_with_delimiter`: the digits keep the fraction they came with; anything but a plain number is returned as it is. */
 export function numberWithDelimiter(value: unknown, delimiter: unknown = ',', separator: unknown = '.'): string {
   const text = String(value)
@@ -17,8 +21,7 @@ export function numberWithDelimiter(value: unknown, delimiter: unknown = ',', se
     return text
   const negative = text.startsWith('-')
   const [whole, fraction] = text.replace('-', '').split('.')
-  const grouped = group(whole, String(delimiter))
-  return `${negative ? '-' : ''}${grouped}${fraction === undefined ? '' : `${separator}${fraction}`}`
+  return `${negative ? '-' : ''}${joinDigits(whole, delimiter, separator, fraction)}`
 }
 
 /*
@@ -68,7 +71,7 @@ export function numberToCurrency(value: unknown, unitOrLocale: unknown = '$', de
     return String(value ?? '')
   const places = Math.max(0, toInteger(precision))
   const [whole, fraction] = Math.abs(amount).toFixed(places).split('.')
-  const digits = `${group(whole, String(delimiter))}${fraction === undefined ? '' : `${separator}${fraction}`}`
+  const digits = joinDigits(whole, delimiter, separator, fraction)
   const sign = amount < 0 ? '-' : ''
   const argument = String(unitOrLocale)
   const locale = CURRENCY_FORMATS[argument]

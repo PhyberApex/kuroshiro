@@ -316,6 +316,9 @@ describe('trmnl custom filters (ADR-0043, after the trmnl-liquid gem)', () => {
     expect(table).not.toContain('<table')
     expect(table).toContain('<p>')
     expect(await render('{{ "~~gone~~ https://x.test" | markdown_to_html }}')).toBe('<p>~~gone~~ https://x.test</p>')
+    const fenced = await render('{{ source | markdown_to_html }}', { source: '```\ncode\n```' })
+    expect(fenced).not.toContain('<pre')
+    expect(fenced).toContain('```')
   })
 
   it('days_ago is the calendar date that many days before today, in the zone date renders in', async () => {
@@ -337,6 +340,8 @@ describe('trmnl custom filters (ADR-0043, after the trmnl-liquid gem)', () => {
     expect(await render('{{ "2025-10-02" | ordinalize: "%A, %B <<ordinal_day>>, %Y" }}')).toBe('Thursday, October 2nd, 2025')
     expect(await render('{{ "2025-10-02" | ordinalize: "%b <<ordinal_day>>" }}')).toBe('Oct 2nd')
     expect(await render('{{ "2025-12-31 16:50:38 -0400" | ordinalize: "%A, %b <<ordinal_day>>" }}')).toBe('Wednesday, Dec 31st')
+    expect(await render('{{ "2025-12-31 23:50:38 -0400" | ordinalize: "%b <<ordinal_day>> %H:%M" }}')).toBe('Dec 31st 23:50')
+    expect(await renderLiquid('{{ "2025-12-31 23:50:38 -0400" | ordinalize: "%b <<ordinal_day>> %H:%M" }}', {}, { timeZone: 'Asia/Tokyo' })).toBe('Dec 31st 23:50')
     expect(await render('{{ "2025-10-11" | ordinalize: "<<ordinal_day>>" }}, {{ "2025-10-23" | ordinalize: "<<ordinal_day>>" }}')).toBe('11th, 23rd')
   })
 
@@ -372,6 +377,7 @@ describe('trmnl custom filters (ADR-0043, after the trmnl-liquid gem)', () => {
     expect(await render('{{ "2025-01-11" | l_date: "%y %b" }}')).toBe('25 Jan')
     expect(await render('{{ "2025-01-11" | l_date: "%y %b", "ko" }}')).toBe('25 1월')
     expect(await render('{{ "2025-01-11" | l_date: "%A", "de" }}')).toBe('Samstag')
+    expect(await renderLiquid('{{ "2025-01-11T23:30:00-05:00" | l_date: "%-d %B %H:%M", "fr" }}', {}, { timeZone: 'Asia/Tokyo' })).toBe('11 janvier 23:30')
   })
 
   it('l_word translates the six words trmnl-i18n ships and falls back to the input', async () => {

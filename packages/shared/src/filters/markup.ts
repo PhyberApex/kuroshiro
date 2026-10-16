@@ -1,8 +1,8 @@
 import { Marked } from 'marked'
 import { encode } from 'uqr'
 
-/** Redcarpet with no extensions, as the gem builds it: no tables, fenced code, autolinks or strikethrough. */
-const markdown = new Marked({ gfm: false, async: false })
+/** Redcarpet with no extensions, as the gem builds it: no tables, fenced code, autolinks or strikethrough. Fences sit outside marked's GFM switch, so they are turned off by hand. */
+const markdown = new Marked({ gfm: false, async: false }, { tokenizer: { fences: () => undefined } })
 
 export function markdownToHtml(value: unknown): string {
   return (markdown.parse(String(value ?? '')) as string).trim()

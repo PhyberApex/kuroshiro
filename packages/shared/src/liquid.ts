@@ -1,4 +1,4 @@
-import type { Context, FilterImplOptions, FS } from 'liquidjs'
+import type { FilterImplOptions, FS } from 'liquidjs'
 import { Liquid } from 'liquidjs'
 import { findBy, mapToI } from './filters/collections.ts'
 import { daysAgo, localizeDate, ordinalize } from './filters/dates.ts'
@@ -94,16 +94,9 @@ const trmnlFilters: Record<string, FilterImplOptions> = {
   random_number: randomNumber,
   markdown_to_html: markdownToHtml,
   qr_code: qrCode,
-  // The date filters read the render's own context for the zone `date` renders in.
-  days_ago(this: { context: Context }, days: unknown, timeZone?: unknown) {
-    return daysAgo(this.context, days, timeZone)
-  },
-  ordinalize(this: { context: Context }, value: unknown, format?: string) {
-    return ordinalize(this.context, value, format)
-  },
-  l_date(this: { context: Context }, value: unknown, format?: string, locale?: unknown) {
-    return localizeDate(this.context, value, format, locale)
-  },
+  days_ago: daysAgo,
+  ordinalize,
+  l_date: localizeDate,
 }
 
 /** TRMNL filters liquidjs already ships under the same name and shape, listed for completion and registered by nobody. */

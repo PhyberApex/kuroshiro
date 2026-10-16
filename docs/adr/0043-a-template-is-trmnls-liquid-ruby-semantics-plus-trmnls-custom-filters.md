@@ -26,7 +26,7 @@ Three places deliberately leave the gem:
 
 ## Two runtime dependencies
 
-`markdown_to_html` and `qr_code` cannot be hand-rolled sensibly, so `packages/shared` grows from one runtime dependency to three, under the rule ADR-0033 set for `liquidjs`: catalog-pinned, listed in both the shared and the API manifest, external to the API bundle, browser-safe with no Node built-ins. Markdown is `marked` with GFM switched off and no sanitiser, mirroring the gem's Redcarpet with zero extensions, so tables, fenced code and autolinks render as plain text here as they do on trmnl.com. The QR encoder is a dependency-free one (`uqr` was picked at grilling, to be confirmed against the gem's module-size and error-level arguments when implemented) drawing the gem's markup: one `<svg class="qr-code" shape-rendering="crispEdges">` with a `viewBox` when responsive and `width`/`height` when `"fixed"` is passed.
+`markdown_to_html` and `qr_code` cannot be hand-rolled sensibly, so `packages/shared` grows from one runtime dependency to three, under the rule ADR-0033 set for `liquidjs`: catalog-pinned, listed in both the shared and the API manifest, external to the API bundle, browser-safe with no Node built-ins. Markdown is `marked` with GFM switched off and no sanitiser, mirroring the gem's Redcarpet with zero extensions, so tables, fenced code and autolinks render as plain text here as they do on trmnl.com. The QR encoder is `uqr`, dependency-free and taking the gem's error-correction level, with Kuroshiro drawing the gem's markup itself from the module matrix so the module size and the absence of a quiet zone match too: one `<svg class="qr-code" shape-rendering="crispEdges">` with a `viewBox` when responsive and `width`/`height` when `"fixed"` is passed.
 
 ## Completion labels
 
@@ -37,7 +37,7 @@ The editor's completion keeps two lists: TRMNL's filters marked "TRMNL" and Kuro
 - **The help article as the specification.** Rejected once the gem was read: the article's examples are hand-written and two of them are wrong. Following them would make Kuroshiro diverge from trmnl.com in the name of matching it.
 - **Memoising `append_random` per render.** The original #1444 brief asked for it. Rejected because upstream does not, and memoising would make two calls on the same input collide where trmnl.com gives two suffixes.
 - **Renaming `group_by` to TRMNL's hash shape, after hunting the Recipe catalog for users of it.** Rejected without the hunt: even a positive finding could not be served, since the hash idiom cannot be expressed in liquidjs without breaking the list shape.
-- **`number_to_currency` recognising every rails-i18n locale.** Rejected for the 27 `trmnl-i18n` locales, which are the only values `trmnl.user.locale` can hold.
+- **`number_to_currency` recognising every rails-i18n locale.** Rejected for the 27 `trmnl-i18n` locales, which are the only values `trmnl.user.locale` can hold, plus `en-GB` as the one example above that lies outside them.
 - **One ADR per issue.** Rejected: the Ruby-semantics rule and the custom filters are one decision seen from two sides. #1443 and #1444 both record their work here.
 
 ## Consequences
