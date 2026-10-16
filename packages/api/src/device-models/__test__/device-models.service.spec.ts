@@ -9,6 +9,7 @@ import { PaletteSelectionService } from '../palette-selection.service.js'
 
 const SEEED_E1003 = { ...V2, name: 'seeed_e1003', label: 'reTerminal E1003', kind: 'byod' }
 const OG_BWRY = { ...OG_PLUS, name: 'og_bwry', label: 'TRMNL OG (colour)', kind: 'trmnl' }
+const M5_PAPER_S3 = { ...V2, name: 'm5_paper_s3', label: 'M5 PaperS3', kind: 'byod' }
 const OG_PNG = { ...OG_PLUS, name: 'og_png', label: 'TRMNL OG (1-bit)', kind: 'trmnl' }
 const ONYX_BOOX_NOVA_AIR_C = { ...V2, name: 'onxy_boox_nova_air_c', label: 'Onyx Boox Nova Air C', kind: 'byod' }
 
@@ -21,7 +22,7 @@ describe('deviceModelsService', () => {
   let modelRepo: ReturnType<typeof createMockRepository<DeviceModel>>
   let paletteRepo: ReturnType<typeof createMockRepository<Palette>>
 
-  const models = [OG_PLUS, V2, SEEED_E1003, SEEED_E1002, OG_BWRY, OG_PNG, ONYX_BOOX_NOVA_AIR_C]
+  const models = [OG_PLUS, V2, SEEED_E1003, SEEED_E1002, OG_BWRY, OG_PNG, M5_PAPER_S3, ONYX_BOOX_NOVA_AIR_C]
   const palettes = [BW, GRAY_4, GRAY_16, COLOR_6A]
 
   beforeEach(() => {
@@ -48,6 +49,8 @@ describe('deviceModelsService', () => {
       await expect(service.resolve({ reportedModel: 'x' })).resolves.toBe(V2)
       await expect(service.resolve({ reportedModel: 'og' })).resolves.toBe(OG_PLUS)
       await expect(service.resolve({ reportedModel: 'reterminal_e1003' })).resolves.toBe(SEEED_E1003)
+      await expect(service.resolve({ reportedModel: 'og_4clr' })).resolves.toBe(OG_BWRY)
+      await expect(service.resolve({ reportedModel: 'm5_papers3' })).resolves.toBe(M5_PAPER_S3)
     })
 
     it('accepts an upstream model name as-is', async () => {
