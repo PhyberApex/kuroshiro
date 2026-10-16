@@ -11,7 +11,7 @@ describe('sharedBrowserService', () => {
   beforeEach(() => vi.resetAllMocks())
 
   it('closes the shared browser on module destroy', async () => {
-    const browser = { connected: true, close: vi.fn(), newPage: vi.fn().mockResolvedValue({ close: vi.fn() }) }
+    const browser = { connected: true, close: vi.fn(), newPage: vi.fn().mockResolvedValue({ close: vi.fn().mockResolvedValue(undefined) }) }
     puppeteerLaunch.mockResolvedValue(browser)
     await withSharedPage(async () => {})
 
