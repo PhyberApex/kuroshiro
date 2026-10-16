@@ -1,4 +1,4 @@
-import type { DeviceModelRead, FirmwareList, FirmwareRead, FirmwareSyncResult, InstanceSettingsResponse, UpdateInstanceSettingsInput } from 'kuroshiro-shared'
+import type { DeviceModelRead, FirmwareCatchUp, FirmwareList, FirmwareRead, FirmwareSyncResult, InstanceSettingsResponse, UpdateInstanceSettingsInput } from 'kuroshiro-shared'
 import { http, HttpResponse } from 'msw'
 import { expect } from 'vitest'
 import { words } from '@/pages/devices/__test__/deviceSettingsHarness'
@@ -77,6 +77,10 @@ export interface FakedFirmware {
   syncs: number
   /** What the next sync answers: a result, or a refusal. */
   syncAnswer: FirmwareSyncResult | Response
+  /** The Devices behind the current official Firmware, which "Catch up now" names and then gives it to. */
+  behind: FirmwareCatchUp
+  /** How often a catch-up was asked for. */
+  catchUps: number
   /** While set, a sync is not answered until it resolves. */
   holding?: Promise<unknown>
   /** The ids of the Firmware that were deleted, in order. */
@@ -99,6 +103,8 @@ export function fakeFirmware({ firmware = LIBRARY, lastSync = { ranAt: '2026-10-
     settings,
     settingsWrites: [],
     syncs: 0,
+    behind: { version: '1.7.9', assigned: [KITCHEN, STUDY] },
+    catchUps: 0,
     syncAnswer: { ranAt: NOW, inserted: false, version: '1.7.9', assigned: [] },
     deleted: [],
     uploads: [],
@@ -123,6 +129,11 @@ export function fakeFirmware({ firmware = LIBRARY, lastSync = { ranAt: '2026-10-
         return faked.syncAnswer.clone()
       faked.library = { ...faked.library, lastSync: { ranAt: faked.syncAnswer.ranAt, ok: true, error: null } }
       return HttpResponse.json(faked.syncAnswer)
+    }),
+    http.get(apiUrl('firmware/catch-up'), () => HttpResponse.json(faked.behind)),
+    http.post(apiUrl('firmware/catch-up'), () => {
+      faked.catchUps += 1
+      return HttpResponse.json(faked.behind)
     }),
     http.post(apiUrl('firmware/upload'), async ({ request }) => {
       const form = await request.formData()

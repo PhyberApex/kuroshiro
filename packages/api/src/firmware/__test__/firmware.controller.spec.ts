@@ -1,3 +1,4 @@
+import type { FirmwareAutoUpdateService } from '../firmware-auto-update.service.js'
 import type { FirmwareReadsService } from '../firmware-reads.service.js'
 import type { FirmwareSyncService } from '../firmware-sync.service.js'
 import type { FirmwareService } from '../firmware.service.js'
@@ -13,12 +14,14 @@ describe('firmwareController', () => {
   let firmwareService: { upload: ReturnType<typeof vi.fn>, delete: ReturnType<typeof vi.fn> }
   let reads: { list: ReturnType<typeof vi.fn>, readById: ReturnType<typeof vi.fn> }
   let syncService: { sync: ReturnType<typeof vi.fn> }
+  let autoUpdateService: { previewCatchUp: ReturnType<typeof vi.fn>, catchUp: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
     firmwareService = { upload: vi.fn(), delete: vi.fn() }
     reads = { list: vi.fn(), readById: vi.fn() }
     syncService = { sync: vi.fn() }
-    controller = new FirmwareController(asService<FirmwareService>(firmwareService), asService<FirmwareReadsService>(reads), asService<FirmwareSyncService>(syncService))
+    autoUpdateService = { previewCatchUp: vi.fn(), catchUp: vi.fn() }
+    controller = new FirmwareController(asService<FirmwareService>(firmwareService), asService<FirmwareReadsService>(reads), asService<FirmwareSyncService>(syncService), asService<FirmwareAutoUpdateService>(autoUpdateService))
   })
 
   it('lists firmware', async () => {
@@ -36,6 +39,16 @@ describe('firmwareController', () => {
   it('maps a failed sync to 502 upstream-unreachable', async () => {
     syncService.sync.mockRejectedValue(new Error('TRMNL firmware/latest request failed: 502 Bad Gateway'))
     await expect(controller.sync()).rejects.toMatchObject({ code: 'upstream-unreachable', status: 502 })
+  })
+
+  it('answers a catch-up as the version and the Devices it targeted', async () => {
+    autoUpdateService.catchUp.mockResolvedValue({ firmware: { version: '1.6.0' }, assigned: [{ id: 'd1', name: 'Kitchen', apikey: 'secret' }] })
+    await expect(controller.catchUp()).resolves.toEqual({ version: '1.6.0', assigned: [{ id: 'd1', name: 'Kitchen' }] })
+  })
+
+  it('answers a catch-up with no current official Firmware as empty', async () => {
+    autoUpdateService.previewCatchUp.mockResolvedValue({ firmware: null, behind: [] })
+    await expect(controller.previewCatchUp()).resolves.toEqual({ version: null, assigned: [] })
   })
 
   describe('upload', () => {

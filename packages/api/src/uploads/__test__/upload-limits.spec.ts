@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { ConfigurationController } from '../../configuration/configuration.controller.js'
 import { ConfigurationExportService } from '../../configuration/services/configuration-export.service.js'
 import { ConfigurationImportService } from '../../configuration/services/configuration-import.service.js'
+import { FirmwareAutoUpdateService } from '../../firmware/firmware-auto-update.service.js'
 import { FirmwareReadsService } from '../../firmware/firmware-reads.service.js'
 import { FirmwareSyncService } from '../../firmware/firmware-sync.service.js'
 import { FirmwareController } from '../../firmware/firmware.controller.js'
@@ -54,6 +55,7 @@ describe('the upload limits', () => {
         { provide: FirmwareService, useValue: { upload: async () => ({ id: 'firmware-id' }) } },
         { provide: FirmwareReadsService, useValue: { readById: async () => answered } },
         { provide: FirmwareSyncService, useValue: {} },
+        { provide: FirmwareAutoUpdateService, useValue: {} },
         { provide: ConfigurationExportService, useValue: {} },
         { provide: ConfigurationImportService, useValue: { importFromZip: async () => answered, checkZip: async () => answered } },
         { provide: PluginsService, useValue: { createOnDevice: async () => 'plugin-id' } },

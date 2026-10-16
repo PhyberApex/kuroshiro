@@ -54,6 +54,14 @@ export interface FirmwareSyncResult {
   assigned: DeviceReference[]
 }
 
+/** What "Catch up now" gives, or would give, the current official Firmware to. */
+export interface FirmwareCatchUp {
+  /** The current official Firmware; `null` when Firmware Auto-Update is off or there is none. */
+  version: string | null
+  /** The eligible Devices that are behind; empty when `version` is `null`. */
+  assigned: DeviceReference[]
+}
+
 export interface UploadFirmwareInput {
   version: string
   label?: string

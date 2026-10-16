@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildDeviceModel } from '@/testing/fixtures/device-models'
 import { buildFirmware } from '@/testing/fixtures/firmware'
-import { autoUpdateNote, checkedNote, deletionWording, earlierNote, headedFor, newestOfficialVersion, syncOutcome, whatItIs } from '../firmwareWording'
+import { autoUpdateNote, catchUpOutcome, catchUpWording, checkedNote, deletionWording, earlierNote, headedFor, newestOfficialVersion, syncOutcome, whatItIs } from '../firmwareWording'
 
 const MODELS = [
   buildDeviceModel({ name: 'og_png', label: 'TRMNL OG (1-bit)' }),
@@ -57,11 +57,28 @@ describe('firmware wording', () => {
     })
 
     it('names the newest version no Device is caught up to while it is on', () => {
-      expect(autoUpdateNote(true, '1.7.9')).toBe('Each new official Firmware becomes the target of every Device it fits, except a mirrored Device and one with a push already pending. It starts with the next official Firmware; Devices are not caught up to 1.7.9 now.')
+      expect(autoUpdateNote(true, '1.7.9')).toBe('Each new official Firmware becomes the target of every Device it fits, except a mirrored Device and one with a push already pending. It starts with the next official Firmware. Devices already registered are caught up with “Catch up now”.')
     })
 
     it('leaves the catching up out where there is no official Firmware yet', () => {
       expect(autoUpdateNote(true, undefined)).toBe('Each new official Firmware becomes the target of every Device it fits, except a mirrored Device and one with a push already pending. It starts with the next official Firmware.')
+    })
+  })
+
+  describe('catch up now', () => {
+    it('names the Devices it would target', () => {
+      const wording = catchUpWording({ version: '1.7.9', assigned: [KITCHEN, HALLWAY] })
+      expect(wording.title).toBe('Catch up to 1.7.9?')
+      expect(wording.says).toContain('Kitchen and Hallway are behind 1.7.9.')
+    })
+
+    it('says no Device is behind', () => {
+      expect(catchUpWording({ version: '1.7.9', assigned: [] }).says).toContain('No Device is behind 1.7.9.')
+    })
+
+    it('says which Devices were given the Firmware', () => {
+      expect(catchUpOutcome({ version: '1.7.9', assigned: [KITCHEN, HALLWAY, STUDY] })).toBe('Kitchen, Hallway and Study are given 1.7.9 at their next poll.')
+      expect(catchUpOutcome({ version: '1.7.9', assigned: [KITCHEN] })).toBe('Kitchen is given 1.7.9 at its next poll.')
     })
   })
 

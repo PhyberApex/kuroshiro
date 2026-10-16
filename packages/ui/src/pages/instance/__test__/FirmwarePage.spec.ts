@@ -125,8 +125,74 @@ describe('the Firmware page', () => {
       await expect.poll(() => faked.settingsWrites).toEqual([{ firmwareAutoUpdate: true }])
       await expect.poll(() => stateOf(screen, 'Firmware Auto-Update')).toBe('Saved')
       await expect.element(autoUpdate(screen)).toBeChecked()
-      expect(shownOf(screen, 'Firmware Auto-Update')).toBe('On')
-      expect(noteOf(screen, 'Firmware Auto-Update')).toBe('Each new official Firmware becomes the target of every Device it fits, except a mirrored Device and one with a push already pending. It starts with the next official Firmware; Devices are not caught up to 1.7.9 now.')
+      expect(shownOf(screen, 'Firmware Auto-Update')).toBe('On Catch up now')
+      expect(noteOf(screen, 'Firmware Auto-Update')).toBe('Each new official Firmware becomes the target of every Device it fits, except a mirrored Device and one with a push already pending. It starts with the next official Firmware. Devices already registered are caught up with “Catch up now”.')
+    })
+
+    describe('catch up now', () => {
+      const catchUpButton = (screen: Screen) => screen.getByRole('button', { name: 'Catch up now' })
+
+      it('is offered only while the switch is on, and switching it on assigns nothing', async () => {
+        const faked = fakeFirmware()
+        const screen = await mountLoadedFirmware()
+        expect(screen.getByRole('button', { name: 'Catch up now' }).elements()).toEqual([])
+
+        await autoUpdate(screen).click()
+
+        await expect.element(catchUpButton(screen)).toBeVisible()
+        expect(faked.catchUps).toBe(0)
+      })
+
+      it('confirms first, naming the Devices it would target, and says who was given the Firmware', async () => {
+        const faked = fakeFirmware({ settings: AUTO_UPDATE_ON })
+        const screen = await mountLoadedFirmware()
+
+        await catchUpButton(screen).click()
+
+        const dialog = screen.getByRole('alertdialog', { name: 'Catch up to 1.7.9?' })
+        await expect.element(dialog).toBeVisible()
+        expect(words(dialog.element())).toContain('Kitchen and Study are behind 1.7.9.')
+        expect(faked.catchUps).toBe(0)
+        await expectAccessible()
+
+        await dialog.getByRole('button', { name: 'Catch up now' }).click()
+
+        await expect.poll(() => faked.catchUps).toBe(1)
+        await expect.element(screen.getByText('Kitchen and Study are given 1.7.9 at their next poll.')).toBeVisible()
+      })
+
+      it('assigns nothing when it is cancelled', async () => {
+        const faked = fakeFirmware({ settings: AUTO_UPDATE_ON })
+        const screen = await mountLoadedFirmware()
+        await catchUpButton(screen).click()
+
+        await screen.getByRole('button', { name: 'Cancel' }).click()
+
+        expect(faked.catchUps).toBe(0)
+      })
+
+      it('only says so when no Device is behind', async () => {
+        const faked = fakeFirmware({ settings: AUTO_UPDATE_ON })
+        faked.behind = { version: '1.7.9', assigned: [] }
+        const screen = await mountLoadedFirmware()
+
+        await catchUpButton(screen).click()
+
+        const dialog = screen.getByRole('alertdialog', { name: 'Catch up to 1.7.9?' })
+        await expect.element(dialog).toBeVisible()
+        expect(words(dialog.element())).toContain('No Device is behind 1.7.9.')
+        expect(dialog.getByRole('button', { name: 'Catch up now' }).elements()).toEqual([])
+      })
+
+      it('says why it could not check who is behind', async () => {
+        fakeFirmware({ settings: AUTO_UPDATE_ON })
+        const screen = await mountLoadedFirmware()
+        api.use(http.get(apiUrl('firmware/catch-up'), () => apiErrorResponse({ statusCode: 500, code: 'internal' }), { once: true }))
+
+        await catchUpButton(screen).click()
+
+        await expect.element(screen.getByRole('alert').getByText('Could not check which Devices are behind.')).toBeVisible()
+      })
     })
 
     it('saves as it is switched off again', async () => {

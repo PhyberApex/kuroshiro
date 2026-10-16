@@ -1,4 +1,4 @@
-import type { DeviceModelRead, DeviceReference, FirmwareRead, FirmwareSyncResult, SyncRun } from 'kuroshiro-shared'
+import type { DeviceModelRead, DeviceReference, FirmwareCatchUp, FirmwareRead, FirmwareSyncResult, SyncRun } from 'kuroshiro-shared'
 import { listed } from '@/patterns/listed'
 
 type ModelLabelled = Pick<DeviceModelRead, 'name' | 'label'>
@@ -32,7 +32,7 @@ export function autoUpdateNote(on: boolean, newestVersion: string | undefined) {
   if (!on)
     return 'A Device only updates when you press “Update now” in its Settings. While on, each new official Firmware is pushed to every Device it fits.'
   const startsWith = newestVersion
-    ? `It starts with the next official Firmware; Devices are not caught up to ${newestVersion} now.`
+    ? `It starts with the next official Firmware. Devices already registered are caught up with “Catch up now”.`
     : 'It starts with the next official Firmware.'
   return `Each new official Firmware becomes the target of every Device it fits, except a mirrored Device and one with a push already pending. ${startsWith}`
 }
@@ -53,6 +53,28 @@ export function syncOutcome({ inserted, version, assigned }: FirmwareSyncResult,
   return assigned.length === 0
     ? `Synced ${version}. No Device it fits is free to take it.`
     : `Synced ${version}. Firmware Auto-Update made it the target of ${listed(assigned.map(device => device.name))}; it goes out at ${assigned.length === 1 ? 'its' : 'their'} next poll.`
+}
+
+const areGiven = (devices: DeviceReference[]) => devices.length === 1 ? 'is' : 'are'
+
+/** What the confirmation says before "Catch up now" gives the current official Firmware out. */
+export function catchUpWording({ version, assigned }: FirmwareCatchUp) {
+  const names = listed(assigned.map(device => device.name))
+  return {
+    title: version ? `Catch up to ${version}?` : 'Catch up now?',
+    says: assigned.length > 0
+      ? `${names} ${areGiven(assigned)} behind ${version}. Each becomes ${assigned.length === 1 ? 'its' : 'their'} target, with a push pending, as if ${version} had just been synced. A mirrored Device and one with a push already pending are left as they are.`
+      : version
+        ? `No Device is behind ${version}. A Device that already reports it, is mirrored, has a push pending or is not a Model it fits is left as it is.`
+        : 'There is no official Firmware to catch up to yet.',
+  }
+}
+
+/** What a catch-up that ran came to. */
+export function catchUpOutcome({ version, assigned }: FirmwareCatchUp) {
+  return assigned.length === 0
+    ? `No Device was behind ${version ?? 'the official Firmware'}, so none was given it.`
+    : `${listed(assigned.map(device => device.name))} ${areGiven(assigned)} given ${version} at ${assigned.length === 1 ? 'its' : 'their'} next poll.`
 }
 
 export function earlierNote(newestVersion: string | undefined) {
