@@ -20,7 +20,7 @@
   "dependencies": {
     "liquidjs": "catalog:",
     "marked": "catalog:",
-    "qrcode-generator": "catalog:"
+    "uqr": "catalog:"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:",

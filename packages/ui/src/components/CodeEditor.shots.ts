@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { defineComponent, h } from 'vue'
-import { KUROSHIRO_FILTER_NAMES, WEATHER_DATA, WEATHER_TEMPLATE } from '@/gallery/editorSamples'
+import { DIALECT_FILTERS, WEATHER_DATA, WEATHER_TEMPLATE } from '@/gallery/editorSamples'
 import { mount } from '@/testing/mount'
 import { expectScreenshot } from '@/testing/screenshots'
 import { THEMES } from '@/testing/theme'
@@ -12,7 +12,7 @@ const NAME = 'Template of Weather, Full'
 const Stage = defineComponent(() => () => h(
   'div',
   { 'data-testid': 'stage', 'style': 'width: 40rem; padding: 1rem; background: var(--color-paper)' },
-  h(CodeEditor, { 'modelValue': WEATHER_TEMPLATE, 'mode': 'liquid', 'completionData': WEATHER_DATA, 'kuroshiroFilters': KUROSHIRO_FILTER_NAMES, 'aria-label': NAME }),
+  h(CodeEditor, { 'modelValue': WEATHER_TEMPLATE, 'mode': 'liquid', 'completionData': WEATHER_DATA, 'dialectFilters': DIALECT_FILTERS, 'aria-label': NAME }),
 ))
 
 async function mountFocused(theme: typeof THEMES[number]) {

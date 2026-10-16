@@ -6,6 +6,7 @@ import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { listDeviceModels, listPalettes } from '@/api/device-models'
 import { previewPluginData } from '@/api/plugins'
 import Button from '@/components/Button.vue'
+import { filtersOf } from '@/components/codeCompletion'
 import CodeEditor from '@/components/CodeEditor.vue'
 import EditorBench from '@/components/EditorBench.vue'
 import PageSection from '@/patterns/PageSection.vue'
@@ -34,8 +35,8 @@ const timeZone = useServerTimezone()
 
 /** What the preview is drawn with and for, beside the form: the Liquid engine, fetched apart from the page, and the Device Models with their Palettes. */
 async function loadEngine() {
-  const { checkTemplate, KUROSHIRO_FILTERS, previewOf } = await import('./templatePreview')
-  return { checkTemplate, filters: KUROSHIRO_FILTERS, previewOf }
+  const { checkTemplate, KUROSHIRO_FILTERS, TRMNL_FILTERS, previewOf } = await import('./templatePreview')
+  return { checkTemplate, filters: [...filtersOf('TRMNL', TRMNL_FILTERS), ...filtersOf('Kuroshiro', KUROSHIRO_FILTERS)], previewOf }
 }
 
 const needs = useLoad(async () => {
@@ -239,7 +240,7 @@ async function reveal(problemPath: string) {
           :invalid="invalid"
           :problem="problem"
           :completion-data="completionData"
-          :kuroshiro-filters="needs.data?.filters"
+          :dialect-filters="needs.data?.filters"
           @save="save"
         />
       </template>

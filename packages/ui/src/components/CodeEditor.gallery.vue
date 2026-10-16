@@ -2,9 +2,9 @@
 import { ref } from 'vue'
 import {
   BROKEN_HEADERS_JSON,
+  DIALECT_FILTERS,
   FRIDGE_NOTE_HTML,
   HEADERS_JSON,
-  KUROSHIRO_FILTER_NAMES,
   TRANSFORM_JAVASCRIPT,
   UNCLOSED_PROBLEM,
   UNCLOSED_TEMPLATE,
@@ -39,7 +39,7 @@ const CHUNK_FAILURE = new Error('offline')
         class="stretch"
         mode="liquid"
         :completion-data="WEATHER_DATA"
-        :kuroshiro-filters="KUROSHIRO_FILTER_NAMES"
+        :dialect-filters="DIALECT_FILTERS"
         aria-label="Template of Weather, Full"
       />
     </Specimen>

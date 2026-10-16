@@ -64,7 +64,7 @@ A Plugin has one to four Templates, one per size: `full`, `half_horizontal`, `ha
 - **Completion** ([render][template-complete]), drawn like a select's list with the chosen item solid ink:
   - after `{{` or inside a tag: every name of the preview's data, each with its kind ("object", "list of 8", "string");
   - after a dot: the keys under that path in the preview's data; for a list `first`, `last` and `size`;
-  - after `|`: Liquid's filters and Kuroshiro's own (`KUROSHIRO_FILTERS` of `kuroshiro-shared`: `date_short`, `date_long`, `time_short`, `truncate_words`, `titleize`, `shuffle`, `yesno` and TRMNL's custom ones such as `json`, `sample`, `number_with_delimiter`, `pluralize`, `l_date` and `qr_code`), all marked "Kuroshiro", TRMNL's too: the mark says the engine added it, not who first did (ADR-0044);
+  - after `|`: Liquid's filters, then the two lists `kuroshiro-shared` exports (ADR-0043): TRMNL's custom filters (`TRMNL_FILTERS`: `json`, `sample`, `where_exp`, `parse_json`, `find_by`, `map_to_i`, `number_with_delimiter`, `number_to_currency`, `pluralize`, `l_word`, `l_date`, `days_ago`, `ordinalize`, `append_random`, `random_number`, `markdown_to_html`, `qr_code`) marked "TRMNL", and Kuroshiro's own (`KUROSHIRO_FILTERS`: `date_short`, `date_long`, `time_short`, `truncate_words`, `titleize`, `shuffle`, `yesno`) marked "Kuroshiro";
   - after `{%`: Liquid's tags.
 - **The strip** under the code, on a 1 px rule, `text-xs` in `ink-soft`: at the left "`Tab` indents. `Esc` then `Tab` moves on."; at the right the mode ("Liquid and HTML", "HTML"). When there is a problem the strip holds it instead (see Problems).
 - The editor is named for a screen reader: "Template of {Plugin}, {size}".

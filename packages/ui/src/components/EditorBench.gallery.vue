@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { KUROSHIRO_FILTER_NAMES, screenDocument, WEATHER_DATA, WEATHER_TEMPLATE } from '@/gallery/editorSamples'
+import { DIALECT_FILTERS, screenDocument, WEATHER_DATA, WEATHER_TEMPLATE } from '@/gallery/editorSamples'
 import Specimen from '@/gallery/Specimen.vue'
 import SpecimenRow from '@/gallery/SpecimenRow.vue'
 import CodeEditor from './CodeEditor.vue'
@@ -27,7 +27,7 @@ const scrolling = { kind: 'honest', text: 'What stands under the plate scrolls w
             v-model="onThePage"
             mode="liquid"
             :completion-data="WEATHER_DATA"
-            :kuroshiro-filters="KUROSHIRO_FILTER_NAMES"
+            :dialect-filters="DIALECT_FILTERS"
             aria-label="Template of Weather on the bench"
           />
         </template>

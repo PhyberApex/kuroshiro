@@ -1,28 +1,26 @@
 import { Marked } from 'marked'
-import qrcode from 'qrcode-generator'
+import { encode } from 'uqr'
 
-const markdown = new Marked({ gfm: true, async: false })
+/** Redcarpet with no extensions, as the gem builds it: no tables, fenced code, autolinks or strikethrough. */
+const markdown = new Marked({ gfm: false, async: false })
 
 export function markdownToHtml(value: unknown): string {
-  return (markdown.parse(String(value)) as string).trim()
+  return (markdown.parse(String(value ?? '')) as string).trim()
 }
 
 const LEVELS: Record<string, 'L' | 'M' | 'Q' | 'H'> = { l: 'L', m: 'M', q: 'Q', h: 'H' }
 
-/** An inline `<svg class="qr-code">`; it scales to its container unless `"fixed"` pins it to `module_size` pixels a module. */
-export function qrCode(value: unknown, moduleSize: unknown = 11, errorCorrection: unknown = 'm', mode?: unknown): string {
-  const code = qrcode(0, LEVELS[String(errorCorrection).toLowerCase()] ?? 'M')
-  code.addData(String(value))
-  code.make()
-  const count = code.getModuleCount()
-  let path = ''
-  for (let row = 0; row < count; row++) {
-    for (let column = 0; column < count; column++) {
-      if (code.isDark(row, column))
-        path += `M${column} ${row}h1v1h-1z`
-    }
-  }
-  const size = Number(moduleSize) > 0 ? Number(moduleSize) : 11
-  const dimensions = mode === 'fixed' ? `width="${count * size}" height="${count * size}"` : 'width="100%" height="100%"'
-  return `<svg class="qr-code" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${count} ${count}" ${dimensions} shape-rendering="crispEdges"><path d="${path}" fill="currentColor"/></svg>`
+/**
+ * TRMNL's `qr_code(data, size = 11, level = '', view = 'responsive')`: the gem's markup, one `<svg class="qr-code">` of
+ * `size` pixels a module, black on a white rect, with a `viewBox` that scales to the container unless the view is anything but responsive.
+ */
+export function qrCode(value: unknown, moduleSize: unknown = 11, level: unknown = '', view: unknown = 'responsive'): string {
+  const ecc = LEVELS[String(level).toLowerCase()] ?? 'H'
+  const { data, size: modules } = encode(String(value ?? ''), { ecc, border: 0, boostEcc: false })
+  const pixels = Number(moduleSize) > 0 ? Number(moduleSize) : 11
+  const side = modules * pixels
+  const path = data.flatMap((row, y) => row.flatMap((dark, x) => (dark ? [`M${x * pixels} ${y * pixels}h${pixels}v${pixels}h-${pixels}z`] : []))).join('')
+  const extent = view === 'responsive' ? `viewBox="0 0 ${side} ${side}"` : `width="${side}" height="${side}"`
+  return `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:ev="http://www.w3.org/2001/xml-events" class="qr-code" shape-rendering="crispEdges" ${extent}>`
+    + `<rect width="${side}" height="${side}" x="0" y="0" fill="#fff"/><path d="${path}" fill="#000"/></svg>`
 }

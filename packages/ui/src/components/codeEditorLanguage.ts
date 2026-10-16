@@ -1,5 +1,6 @@
 import type { Extension } from '@codemirror/state'
 import type { DecorationSet, EditorView, ViewUpdate } from '@codemirror/view'
+import type { FilterCompletion } from './codeCompletion'
 import type { CodeEditorMode } from './codeEditor'
 import { autocompletion, completeFromList } from '@codemirror/autocomplete'
 import { html } from '@codemirror/lang-html'
@@ -11,10 +12,10 @@ import { RangeSetBuilder } from '@codemirror/state'
 import { Decoration, ViewPlugin } from '@codemirror/view'
 import { keysUnder, namesOf } from './codeCompletion'
 
-/** What Liquid completion reads: the preview's data and the names of Kuroshiro's own filters. */
+/** What Liquid completion reads: the preview's data and the filters the dialect adds, each with the dialect that did. */
 export interface LiquidCompletion {
   data: Record<string, unknown>
-  filters: readonly string[]
+  filters: readonly FilterCompletion[]
 }
 
 const LIQUID_NODES = ['Interpolation', 'Tag', 'EndTag', 'Comment']
@@ -66,7 +67,7 @@ export function languageOf(mode: CodeEditorMode, { data, filters }: LiquidComple
       liquid({
         base: html(),
         variables: namesOf(data).map(name => ({ ...name, type: 'variable' })),
-        filters: filters.map(label => ({ label, type: 'function', detail: 'Kuroshiro' })),
+        filters: filters.map(({ label, dialect }) => ({ label, type: 'function', detail: dialect })),
         properties: path => keysUnder(data, path).map(key => ({ ...key, type: 'property' })),
       }),
       liquidWash,

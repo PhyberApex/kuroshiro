@@ -40,19 +40,27 @@ function pluralOf(word: string): string {
   return `${word}s`
 }
 
-/** TRMNL's `pluralize`: the count, then the word inflected for it. */
-export function pluralize(word: unknown, count: unknown = 1): string {
-  const text = String(word)
-  return `${count} ${Number(count) === 1 ? text : pluralOf(text)}`
+/** A filter's keyword arguments, which liquidjs hands over as `[name, value]` pairs after the positional ones. */
+function keywordArguments(rest: unknown[]): Record<string, unknown> {
+  return Object.fromEntries(rest.filter((arg): arg is [string, unknown] => Array.isArray(arg) && arg.length === 2 && typeof arg[0] === 'string'))
 }
 
+/** TRMNL's `pluralize(singular, count, plural: …)`: the count, then the singular for one and the plural otherwise. */
+export function pluralize(word: unknown, count: unknown = 1, ...rest: unknown[]): string {
+  const singular = String(word)
+  const { plural } = keywordArguments(rest)
+  const inflected = plural === undefined ? pluralOf(singular) : String(plural)
+  return `${count} ${Number(count) === 1 ? singular : inflected}`
+}
+
+/** TRMNL's `parse_json`: anything but a JSON string is a render error, as it is upstream. */
 export function parseJson(value: unknown): unknown {
   if (typeof value !== 'string')
-    return value
+    throw new TypeError(`parse_json expects a JSON string, not ${value === null || value === undefined ? 'nothing' : typeof value}`)
   try {
     return JSON.parse(value)
   }
-  catch {
-    return value
+  catch (error) {
+    throw new SyntaxError(`parse_json could not read the JSON: ${(error as Error).message}`)
   }
 }

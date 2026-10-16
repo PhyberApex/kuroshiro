@@ -4,6 +4,16 @@ export interface NameCompletion {
   detail?: string
 }
 
+/** A filter a Liquid dialect adds, marked in completion with the dialect's name so the reader knows it is not plain Liquid. */
+export interface FilterCompletion {
+  label: string
+  dialect: 'TRMNL' | 'Kuroshiro'
+}
+
+export function filtersOf(dialect: FilterCompletion['dialect'], names: readonly string[]): FilterCompletion[] {
+  return names.map(label => ({ label, dialect }))
+}
+
 const LIST_KEYS = ['first', 'last', 'size'] as const
 
 /** The kind of a value as completion words it: "object", "list of 8", "string". */

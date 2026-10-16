@@ -1,3 +1,4 @@
+import { filtersOf } from '@/components/codeCompletion'
 import { screenArt } from './screenArt'
 
 /** What the code editor, the preview plate and the bench show in the gallery. */
@@ -26,7 +27,10 @@ export const WEATHER_DATA = {
   trmnl: { plugin_settings: { instance_name: 'Weather' } },
 }
 
-export const KUROSHIRO_FILTER_NAMES = ['date_short', 'date_long', 'time_short', 'number_with_delimiter', 'truncate_words', 'titleize', 'shuffle', 'sample', 'yesno', 'json']
+export const DIALECT_FILTERS = [
+  ...filtersOf('TRMNL', ['json', 'sample', 'number_with_delimiter', 'pluralize', 'l_date', 'qr_code']),
+  ...filtersOf('Kuroshiro', ['date_short', 'date_long', 'time_short', 'truncate_words', 'titleize', 'shuffle', 'yesno']),
+]
 
 export const FRIDGE_NOTE_HTML = `<div class="layout layout--col layout--center">
   <span class="value value--xlarge">Bins go out tonight</span>

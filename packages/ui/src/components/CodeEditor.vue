@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { FilterCompletion } from './codeCompletion'
 import type { CodeEditorMode, CodeEditorSize, CodeProblem, CodeValidity } from './codeEditor'
 import type { CodeEditor } from './codeEditorView'
 import { computed, onBeforeUnmount, onMounted, ref, useAttrs, useTemplateRef, watch } from 'vue'
@@ -22,8 +23,8 @@ const props = withDefaults(defineProps<{
   problem?: CodeProblem | null
   /** Liquid only: the data the preview renders with. Completion offers its names and the keys under them. */
   completionData?: Record<string, unknown>
-  /** Liquid only: the names of Kuroshiro's own filters, which completion marks "Kuroshiro". */
-  kuroshiroFilters?: readonly string[]
+  /** Liquid only: the filters the dialect adds to Liquid, which completion marks with the dialect's name ("TRMNL", "Kuroshiro"). */
+  dialectFilters?: readonly FilterCompletion[]
   /** Names the document the text belongs to. When it changes, the document that leaves keeps its undo history and cursor for its return. */
   document?: string
   /** Holds the block shown while the editor is fetched, for the gallery. */
@@ -34,7 +35,7 @@ const props = withDefaults(defineProps<{
   size: 'bench',
   problem: null,
   completionData: () => ({}),
-  kuroshiroFilters: () => [],
+  dialectFilters: () => [],
   document: '',
 })
 
@@ -74,7 +75,7 @@ let unmounted = false
 
 const hasStrip = computed(() => props.size !== 'code-input')
 
-const completion = computed(() => ({ data: props.completionData, filters: props.kuroshiroFilters }))
+const completion = computed(() => ({ data: props.completionData, filters: props.dialectFilters }))
 
 async function fetchEditor() {
   try {

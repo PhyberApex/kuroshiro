@@ -43,10 +43,10 @@
     "node-cron": "catalog:",
     "pg": "catalog:",
     "puppeteer": "catalog:",
-    "qrcode-generator": "catalog:",
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
     "typeorm": "catalog:",
+    "uqr": "catalog:",
     "vm2": "catalog:"
   },
   "devDependencies": {

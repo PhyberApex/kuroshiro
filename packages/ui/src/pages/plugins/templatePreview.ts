@@ -6,7 +6,7 @@ import { checkTemplate, effectiveFrameworkVersion, MASHUP_LAYOUTS, renderLiquid,
  * section fetches it with `import()`, so the engine is in no page's first load (`scripts/firstLoad.ts`).
  */
 
-export { checkTemplate, KUROSHIRO_FILTERS } from 'kuroshiro-shared'
+export { checkTemplate, KUROSHIRO_FILTERS, TRMNL_FILTERS } from 'kuroshiro-shared'
 
 export interface PreviewInput {
   markup: string

@@ -1,25 +1,24 @@
-import type { Context } from 'liquidjs'
+import { toInteger } from './numbers.ts'
 
-const ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
-const suffixes = new WeakMap<Context, Map<string, string>>()
+const randomBelow = (bound: number) => Math.floor(Math.random() * bound)
 
-/** `append_random`: one suffix per input per render, kept on the render's own context so parallel renders never share one. */
-export function appendRandom(context: Context, value: unknown): string {
-  const text = String(value)
-  const known = suffixes.get(context) ?? new Map<string, string>()
-  suffixes.set(context, known)
-  let suffix = known.get(text)
-  if (suffix === undefined) {
-    suffix = Array.from({ length: 4 }, () => ALPHABET[Math.floor(Math.random() * ALPHABET.length)]).join('')
-    known.set(text, suffix)
-  }
-  return `${text}${suffix}`
+/** TRMNL's `append_random`: the input and two random bytes as lowercase hex, fresh on every call. */
+export function appendRandom(value: unknown): string {
+  return `${value ?? ''}${randomBelow(0x10000).toString(16).padStart(4, '0')}`
 }
 
-/** `random_number`: an integer, both bounds included; one argument is the maximum, none is 0..100. */
-export function randomNumber(_value: unknown, first?: unknown, second?: unknown): number {
-  const [min, max] = second === undefined ? [0, first === undefined ? 100 : Number(first)] : [Number(first), Number(second)]
-  const low = Math.ceil(Math.min(min, max))
-  const high = Math.floor(Math.max(min, max))
-  return low + Math.floor(Math.random() * (high - low + 1))
+/** TRMNL's `random_number`: the input is ignored; no bound is 0..100, one is 0..n, two are sorted; all inclusive integers. */
+export function randomNumber(_value: unknown, min?: unknown, max?: unknown): number {
+  const [lower, upper] = randomBounds(min, max)
+  return lower + randomBelow(upper - lower + 1)
+}
+
+function randomBounds(min: unknown, max: unknown): [number, number] {
+  if (min === undefined || min === null || min === false)
+    return [0, 100]
+  const lower = toInteger(min)
+  if (max === undefined || max === null || max === false)
+    return [0, lower]
+  const upper = toInteger(max)
+  return lower <= upper ? [lower, upper] : [upper, lower]
 }

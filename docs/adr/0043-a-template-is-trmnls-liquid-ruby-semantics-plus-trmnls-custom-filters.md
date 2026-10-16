@@ -22,7 +22,7 @@ Three places deliberately leave the gem:
 - **`days_ago` with no zone argument renders in the Instance Time Zone**, the same zone `date` renders in, rather than the gem's UTC default, so the two never disagree by a day on one instance. An explicit IANA zone argument is honoured as upstream.
 - **`l_word` for an unknown word or locale returns the input unchanged**, where the gem renders a "Translation missing" string. The table ported is the six flat words (`today`, `tomorrow`, `updated`, `activity`, `done`, `due`) across the 27 locales `trmnl-i18n` ships; the gem's dotted per-plugin keys belong to TRMNL-hosted plugins that are not importable Recipes and are dropped.
 
-`number_to_currency` treats its first argument as a locale when it is one of those same 27 locales, taking symbol and position from rails-i18n's data, and as a unit prefix otherwise, exactly the gem's rule. `random_number` ignores its input, treats one argument as `0..n`, sorts two arguments, is inclusive, and returns an integer. `parse_json` on invalid input is a render error, as upstream. `sample` keeps Kuroshiro's optional count, a superset of the gem's.
+`number_to_currency` treats its first argument as a locale when it is one of those same 27 locales (plus `en-GB`, the example above), taking symbol and position from rails-i18n's data, and as a unit prefix otherwise, exactly the gem's rule. `random_number` ignores its input, treats one argument as `0..n`, sorts two arguments, is inclusive, and returns an integer. `parse_json` on invalid input is a render error, as upstream. `sample` keeps Kuroshiro's optional count, a superset of the gem's.
 
 ## Two runtime dependencies
 
