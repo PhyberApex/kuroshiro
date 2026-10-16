@@ -38,6 +38,7 @@
     "express": "catalog:",
     "js-yaml": "catalog:",
     "liquidjs": "catalog:",
+    "marked": "catalog:",
     "multer": "catalog:",
     "node-cron": "catalog:",
     "pg": "catalog:",
@@ -45,6 +46,7 @@
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
     "typeorm": "catalog:",
+    "uqr": "catalog:",
     "vm2": "catalog:"
   },
   "devDependencies": {

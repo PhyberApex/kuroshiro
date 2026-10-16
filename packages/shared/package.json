@@ -18,7 +18,9 @@
     "type-check": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "liquidjs": "catalog:"
+    "liquidjs": "catalog:",
+    "marked": "catalog:",
+    "uqr": "catalog:"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:",

@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
-import { checkTemplate, createLiquidEngine, KUROSHIRO_FILTERS, renderLiquid, templateProblemOf } from '../liquid.ts'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { checkTemplate, createLiquidEngine, KUROSHIRO_FILTERS, renderLiquid, templateProblemOf, TRMNL_FILTERS } from '../liquid.ts'
 
 describe('kuroshiro liquid filters', () => {
   it('date_short formats dates', async () => {
@@ -120,11 +120,13 @@ describe('kuroshiro liquid filters', () => {
     expect(result).toBe('2.3')
   })
 
-  it('names the ten filters Kuroshiro adds, and none it merely corrects', () => {
-    expect(KUROSHIRO_FILTERS).toHaveLength(10)
-    expect(KUROSHIRO_FILTERS).toContain('truncate_words')
-    for (const standard of ['divided_by', 'round', 'url_encode', 'url_decode'])
+  it('names the filters Kuroshiro alone adds, apart from TRMNL\'s and from the corrections', () => {
+    expect(KUROSHIRO_FILTERS).toEqual(['date_short', 'date_long', 'time_short', 'truncate_words', 'titleize', 'shuffle', 'yesno'])
+    expect(KUROSHIRO_FILTERS.filter(name => TRMNL_FILTERS.includes(name))).toEqual([])
+    for (const standard of ['divided_by', 'round', 'url_encode', 'url_decode']) {
       expect(KUROSHIRO_FILTERS).not.toContain(standard)
+      expect(TRMNL_FILTERS).not.toContain(standard)
+    }
   })
 })
 
@@ -229,6 +231,202 @@ describe('templateProblemOf', () => {
 
   it('answers no line for an error without a position', () => {
     expect(templateProblemOf(new Error('boom'))).toEqual({ message: 'boom', line: null })
+  })
+})
+
+describe('trmnl custom filters (ADR-0043, after the trmnl-liquid gem)', () => {
+  const render = (markup: string, context: object = {}) => renderLiquid(markup, context)
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  it('parse_json parses a JSON string', async () => {
+    expect(await render('{% assign parsed = data.stuff | parse_json %}{{ parsed.num }}', { data: { stuff: '{"num":5}' } })).toBe('5')
+  })
+
+  it('parse_json makes invalid JSON a render error the editor can word', async () => {
+    const problem = await render('{{ "{bad" | parse_json }}').then(() => null, templateProblemOf)
+
+    expect(problem?.message).toContain('parse_json could not read the JSON')
+    expect(problem?.line).toBe(1)
+    await expect(render('{{ nothing | parse_json }}')).rejects.toThrow('parse_json expects a JSON string')
+  })
+
+  it('find_by finds the first strict match and falls back when nothing matches', async () => {
+    const people = [{ name: 'Ryan', age: 35 }, { name: 'Sara', age: 29 }]
+    expect(await render('{{ people | find_by: "name", "Ryan" | json }}', { people })).toBe('{"name":"Ryan","age":35}')
+    expect(await render('{{ people | find_by: "name", "Toby", "Not Found" }}', { people })).toBe('Not Found')
+    expect(await render('{{ people | find_by: "name", "Toby" }}', { people })).toBe('')
+    expect(await render('{{ people | find_by: "age", "35" | json }}', { people })).toBe('')
+    expect(await render('{{ objs | find_by: "ok", true | json }}', { objs: [{ ok: false }, { ok: true }] })).toBe('{"ok":true}')
+  })
+
+  it('map_to_i reads every item as Ruby\'s to_i does', async () => {
+    expect(await render('{% assign nums = "5, 4, 3.7, 2abc, e" | split: ", " | map_to_i %}{{ nums | join: "," }}')).toBe('5,4,3,2,0')
+    expect(await render('{% assign nums = "1,2,3,4,5" | split: "," | map_to_i %}{{ nums | sum }}')).toBe('15')
+  })
+
+  it('number_with_delimiter honours its delimiter and separator and leaves text alone', async () => {
+    expect(await render('{{ 1234 | number_with_delimiter }}')).toBe('1,234')
+    expect(await render('{{ 1234 | number_with_delimiter: "." }}')).toBe('1.234')
+    expect(await render('{{ 1000000 | number_with_delimiter: " " }}')).toBe('1 000 000')
+    expect(await render('{{ 1234.57 | number_with_delimiter: " ", "," }}')).toBe('1 234,57')
+    expect(await render('{{ "n/a" | number_with_delimiter }}')).toBe('n/a')
+  })
+
+  it('number_to_currency takes a unit prefix with grouping on, and explicit delimiter and separator', async () => {
+    expect(await render('{{ 10420 | number_to_currency }}')).toBe('$10,420.00')
+    expect(await render('{{ 10 | number_to_currency }}')).toBe('$10.00')
+    expect(await render('{{ 152350.69 | number_to_currency: "£" }}')).toBe('£152,350.69')
+    expect(await render('{{ 1234.57 | number_to_currency: "£", ".", "," }}')).toBe('£1.234,57')
+    expect(await render('{{ 123 | number_to_currency: "tbd" }}')).toBe('tbd123.00')
+    expect(await render('{{ -5 | number_to_currency }}')).toBe('-$5.00')
+    expect(await render('{{ 1234.567 | number_to_currency: "$", ",", ".", 0 }}')).toBe('$1,235')
+  })
+
+  it('number_to_currency takes a trmnl-i18n locale, placing its unit as rails-i18n does, grouped', async () => {
+    expect(await render('{{ 1234.57 | number_to_currency: "sv" }}')).toBe('1,234.57 kr')
+    expect(await render('{{ 567 | number_to_currency: "sv" }}')).toBe('567.00 kr')
+    expect(await render('{{ 1234.57 | number_to_currency: "en-GB" }}')).toBe('£1,234.57')
+    expect(await render('{{ 1234.57 | number_to_currency: "de", ".", "," }}')).toBe('1.234,57 €')
+    expect(await render('{{ 1234.57 | number_to_currency: "ja" }}')).toBe('1,234.57円')
+    expect(await render('{{ 1234.57 | number_to_currency: "pt-BR" }}')).toBe('R$ 1,234.57')
+  })
+
+  it('pluralize puts the count in front, inflects the word and takes a plural keyword', async () => {
+    expect(await render('{{ "book" | pluralize: 0 }}')).toBe('0 books')
+    expect(await render('{{ "book" | pluralize: 1 }}')).toBe('1 book')
+    expect(await render('{{ "book" | pluralize: 2 }}')).toBe('2 books')
+    expect(await render('{{ "octopus" | pluralize: 3 }}')).toBe('3 octopi')
+    expect(await render('{{ "person" | pluralize: 4 }}')).toBe('4 people')
+    expect(await render('{{ "ox" | pluralize: 2, plural: "oxen" }}')).toBe('2 oxen')
+    expect(await render('{{ "person" | pluralize: 4, plural: "humans" }}')).toBe('4 humans')
+    expect(await render('{{ "city" | pluralize: 2 }}, {{ "box" | pluralize: 2 }}, {{ "church" | pluralize: 2 }}, {{ "wolf" | pluralize: 2 }}'))
+      .toBe('2 cities, 2 boxes, 2 churches, 2 wolves')
+  })
+
+  it('markdown_to_html renders Markdown as Redcarpet with no extensions does', async () => {
+    expect(await render('{{ "*x*" | markdown_to_html }}')).toBe('<p><em>x</em></p>')
+    expect(await render('{{ "This is *crazy* and [a link](https://somewhere.com)." | markdown_to_html | strip_html }}'))
+      .toBe('This is crazy and a link.')
+    expect(await render('{{ nothing | markdown_to_html }}')).toBe('')
+    const table = await render('{{ source | markdown_to_html }}', { source: '| a | b |\n|---|---|\n| 1 | 2 |' })
+    expect(table).not.toContain('<table')
+    expect(table).toContain('<p>')
+    expect(await render('{{ "~~gone~~ https://x.test" | markdown_to_html }}')).toBe('<p>~~gone~~ https://x.test</p>')
+    const fenced = await render('{{ source | markdown_to_html }}', { source: '```\ncode\n```' })
+    expect(fenced).not.toContain('<pre')
+    expect(fenced).toContain('```')
+  })
+
+  it('days_ago is the calendar date that many days before today, in the zone date renders in', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2025-10-10T12:00:00Z'))
+    expect(await render('{{ 7 | days_ago }}')).toBe('2025-10-03')
+    expect(await render('{{ "2" | days_ago }}')).toBe('2025-10-08')
+    expect(await render('{{ 7 | days_ago }}', {})).toBe(await renderLiquid('{{ "now" | date: "%Y-%m-%d" | date: "%s" | minus: 604800 | date: "%Y-%m-%d" }}', {}))
+  })
+
+  it('days_ago honours an IANA zone argument', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2025-10-10T05:00:00Z'))
+    expect(await render('{{ 1 | days_ago: "Pacific/Kiritimati" }}')).toBe('2025-10-09')
+    expect(await render('{{ 1 | days_ago: "Pacific/Pago_Pago" }}')).toBe('2025-10-08')
+  })
+
+  it('ordinalize substitutes the ordinal day into the strftime format', async () => {
+    expect(await render('{{ "2025-10-02" | ordinalize: "%A, %B <<ordinal_day>>, %Y" }}')).toBe('Thursday, October 2nd, 2025')
+    expect(await render('{{ "2025-10-02" | ordinalize: "%b <<ordinal_day>>" }}')).toBe('Oct 2nd')
+    expect(await render('{{ "2025-12-31 16:50:38 -0400" | ordinalize: "%A, %b <<ordinal_day>>" }}')).toBe('Wednesday, Dec 31st')
+    expect(await render('{{ "2025-12-31 23:50:38 -0400" | ordinalize: "%b <<ordinal_day>> %H:%M" }}')).toBe('Dec 31st 23:50')
+    expect(await renderLiquid('{{ "2025-12-31 23:50:38 -0400" | ordinalize: "%b <<ordinal_day>> %H:%M" }}', {}, { timeZone: 'Asia/Tokyo' })).toBe('Dec 31st 23:50')
+    expect(await render('{{ "2025-10-11" | ordinalize: "<<ordinal_day>>" }}, {{ "2025-10-23" | ordinalize: "<<ordinal_day>>" }}')).toBe('11th, 23rd')
+  })
+
+  it('append_random adds two random bytes as hex, fresh on every call', async () => {
+    const random = vi.spyOn(Math, 'random')
+    random.mockReturnValueOnce(0.5).mockReturnValueOnce(0.5).mockReturnValueOnce(0.25)
+    const [first, again, third] = (await render('{{ "chart-" | append_random }}|{{ "chart-" | append_random }}|{{ "x" | append_random }}')).split('|')
+
+    expect(first).toMatch(/^chart-[0-9a-f]{4}$/)
+    expect(again).toBe(first)
+    expect(third).toBe('x4000')
+    random.mockRestore()
+    const [a, b] = (await render('{{ "x" | append_random }}|{{ "x" | append_random }}')).split('|')
+    expect(a).not.toBe(b)
+  })
+
+  it('random_number is an inclusive integer in sorted bounds, ignoring its input', async () => {
+    const random = vi.spyOn(Math, 'random')
+    random.mockReturnValue(0.999999)
+    expect(await render('{{ 0 | random_number: 1, 10 }}')).toBe('10')
+    expect(await render('{{ 0 | random_number }}')).toBe('100')
+    expect(await render('{{ "" | random_number: 5 }}')).toBe('5')
+    expect(await render('{{ 99 | random_number: 6, 1 }}')).toBe('6')
+    random.mockReturnValue(0)
+    expect(await render('{{ 0 | random_number: 1, 10 }}')).toBe('1')
+    expect(await render('{{ "" | random_number: 5 }}')).toBe('0')
+    expect(await render('{{ "" | random_number: 6, 1 }}')).toBe('1')
+    expect(await render('{{ "" | random_number: min, max }}', { min: '3', max: '3' })).toBe('3')
+    expect(await render('{% assign n = nil | random_number: 5, 5 %}{{ n | plus: 1 }}')).toBe('6')
+  })
+
+  it('l_date localizes month and weekday names', async () => {
+    expect(await render('{{ "2025-01-11" | l_date: "%y %b" }}')).toBe('25 Jan')
+    expect(await render('{{ "2025-01-11" | l_date: "%y %b", "ko" }}')).toBe('25 1월')
+    expect(await render('{{ "2025-01-11" | l_date: "%A", "de" }}')).toBe('Samstag')
+    expect(await renderLiquid('{{ "2025-01-11T23:30:00-05:00" | l_date: "%-d %B %H:%M", "fr" }}', {}, { timeZone: 'Asia/Tokyo' })).toBe('11 janvier 23:30')
+  })
+
+  it('l_word translates the six words trmnl-i18n ships and falls back to the input', async () => {
+    expect(await render('{{ "today" | l_word: "es-ES" }}')).toBe('hoy')
+    expect(await render('{{ "tomorrow" | l_word: "ko" }}')).toBe('내일')
+    expect(await render('{{ "due" | l_word: "de-AT" }}')).toBe('Fällig')
+    expect(await render('{{ "updated" | l_word: "fr-CA" }}')).toBe('Mis à jour')
+    expect(await render('{{ "banana" | l_word: "de" }}')).toBe('banana')
+    expect(await render('{{ "today" | l_word: "xx" }}')).toBe('today')
+  })
+
+  it('qr_code is the gem\'s svg: a viewBox when responsive, pixel width and height when fixed', async () => {
+    const scaling = await render('{{ "Test" | qr_code }}')
+    expect(scaling).toContain('<svg version="1.1" xmlns="http://www.w3.org/2000/svg"')
+    expect(scaling).toContain('class="qr-code"')
+    expect(scaling).toContain('shape-rendering="crispEdges"')
+    expect(scaling).toContain('viewBox="0 0 231 231"')
+    expect(scaling.match(/<svg [^>]*>/)![0]).not.toContain('width=')
+    expect(scaling.match(/<rect /g)).toHaveLength(1)
+    expect(scaling.match(/<path /g)).toHaveLength(1)
+    const fixed = await render('{{ "Test" | qr_code: 18, "", "fixed" }}')
+    expect(fixed).toContain('width="378" height="378"')
+    expect(fixed).not.toContain('viewBox')
+    expect(fixed.match(/<svg/g)).toHaveLength(1)
+    expect(await render('{{ "Test" | qr_code: 11, "l" }}')).toContain('viewBox="0 0 231 231"')
+    expect(await render('{{ "Test" | qr_code: 11, "BOGUS" }}')).toBe(scaling)
+  })
+
+  it('lists every TRMNL filter for completion, apart from Kuroshiro\'s', () => {
+    expect([...TRMNL_FILTERS].sort()).toEqual([
+      'append_random',
+      'days_ago',
+      'find_by',
+      'json',
+      'l_date',
+      'l_word',
+      'map_to_i',
+      'markdown_to_html',
+      'number_to_currency',
+      'number_with_delimiter',
+      'ordinalize',
+      'parse_json',
+      'pluralize',
+      'qr_code',
+      'random_number',
+      'sample',
+      'where_exp',
+    ])
+    expect(TRMNL_FILTERS.filter(name => KUROSHIRO_FILTERS.includes(name))).toEqual([])
   })
 })
 

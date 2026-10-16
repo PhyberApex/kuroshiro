@@ -1,5 +1,12 @@
 import type { FilterImplOptions, FS } from 'liquidjs'
 import { Liquid } from 'liquidjs'
+import { findBy, mapToI } from './filters/collections.ts'
+import { daysAgo, localizeDate, ordinalize } from './filters/dates.ts'
+import { markdownToHtml, qrCode } from './filters/markup.ts'
+import { numberToCurrency, numberWithDelimiter } from './filters/numbers.ts'
+import { appendRandom, randomNumber } from './filters/random.ts'
+import { parseJson, pluralize } from './filters/strings.ts'
+import { localizeWord } from './filters/words.ts'
 
 export interface TemplateProblem {
   message: string
@@ -37,7 +44,7 @@ type FilterThis = ThisParameterType<Extract<FilterImplOptions, (...args: never[]
 
 /**
  * Standard filters whose liquidjs answer differs (or throws) from Ruby Liquid's (ADR-0043). They are registered like the rest but
- * stay out of `KUROSHIRO_FILTERS`, which names only the filters Kuroshiro adds.
+ * stay out of both filter lists, which name only what the dialect adds to Liquid.
  */
 const corrections: Record<string, FilterImplOptions> = {
   divided_by(this: FilterThis, dividend: unknown, divisor: unknown) {
@@ -69,8 +76,34 @@ function zonedFilters(timeZone: string | undefined): Record<string, FilterImplOp
   }
 }
 
-const filters: Record<string, FilterImplOptions> = {
-  number_with_delimiter: (num: unknown) => Number(num).toLocaleString('en-US'),
+/** The custom filters of TRMNL's `trmnl-liquid` gem, under its names and signatures (ADR-0043). */
+const trmnlFilters: Record<string, FilterImplOptions> = {
+  json: (value: unknown) => JSON.stringify(value),
+  sample: (arr: unknown[], count = 1) => {
+    const shuffled = [...arr].sort(() => Math.random() - 0.5)
+    return count === 1 ? shuffled[0] : shuffled.slice(0, count)
+  },
+  parse_json: parseJson,
+  find_by: findBy,
+  map_to_i: mapToI,
+  number_with_delimiter: numberWithDelimiter,
+  number_to_currency: numberToCurrency,
+  pluralize,
+  l_word: localizeWord,
+  append_random: appendRandom,
+  random_number: randomNumber,
+  markdown_to_html: markdownToHtml,
+  qr_code: qrCode,
+  days_ago: daysAgo,
+  ordinalize,
+  l_date: localizeDate,
+}
+
+/** TRMNL filters liquidjs already ships under the same name and shape, listed for completion and registered by nobody. */
+const TRMNL_BUILTINS = ['where_exp']
+
+/** Kuroshiro's own inventions, which no Liquid dialect has. */
+const kuroshiroFilters: Record<string, FilterImplOptions> = {
   truncate_words: (value: unknown, count = 20) => {
     const text = asText(value)
     if (text === null)
@@ -90,15 +123,14 @@ const filters: Record<string, FilterImplOptions> = {
     }
     return shuffled
   },
-  sample: (arr: unknown[], count = 1) => {
-    const shuffled = [...arr].sort(() => Math.random() - 0.5)
-    return count === 1 ? shuffled[0] : shuffled.slice(0, count)
-  },
   yesno: (value: unknown, yes = 'Yes', no = 'No') => (value ? yes : no),
-  json: (value: unknown) => JSON.stringify(value),
 }
 
-export const KUROSHIRO_FILTERS: readonly string[] = [...Object.keys(zonedFilters(undefined)), ...Object.keys(filters)]
+/** The filters TRMNL's Liquid adds to standard Liquid; the editor marks them "TRMNL". */
+export const TRMNL_FILTERS: readonly string[] = [...Object.keys(trmnlFilters), ...TRMNL_BUILTINS]
+
+/** The filters Kuroshiro alone adds; the editor marks them "Kuroshiro". */
+export const KUROSHIRO_FILTERS: readonly string[] = [...Object.keys(zonedFilters(undefined)), ...Object.keys(kuroshiroFilters)]
 
 function refusePartial(name: string): never {
   throw new Error(`A template cannot render "${name}": Kuroshiro has no partials.`)
@@ -122,7 +154,7 @@ const noPartials: FS = {
  */
 export function createLiquidEngine(timeZone?: string): Liquid {
   const engine = new Liquid({ fs: noPartials, relativeReference: false, ...(timeZone && { timezoneOffset: timeZone }) })
-  Object.entries({ ...zonedFilters(timeZone), ...filters, ...corrections }).forEach(([name, filter]) => engine.registerFilter(name, filter))
+  Object.entries({ ...zonedFilters(timeZone), ...trmnlFilters, ...kuroshiroFilters, ...corrections }).forEach(([name, filter]) => engine.registerFilter(name, filter))
   return engine
 }
 
