@@ -1,4 +1,4 @@
-import type { FirmwareList, FirmwareRead, FirmwareSyncResult, UploadFirmwareInput } from 'kuroshiro-shared'
+import type { FirmwareCatchUp, FirmwareList, FirmwareRead, FirmwareSyncResult, UploadFirmwareInput } from 'kuroshiro-shared'
 import { apiGet, apiSend } from './client'
 
 /** The Firmware library, newest first. */
@@ -9,6 +9,16 @@ export function listFirmware() {
 /** Asks TRMNL for its newest official Firmware now. Refused with `upstream-unreachable` when TRMNL gives no answer. */
 export function syncFirmware() {
   return apiSend<FirmwareSyncResult>('POST', 'firmware/sync')
+}
+
+/** The Devices "Catch up now" would give the current official Firmware to. Nothing is changed. */
+export function previewCatchUp() {
+  return apiGet<FirmwareCatchUp>('firmware/catch-up')
+}
+
+/** Gives the current official Firmware to every eligible Device that is behind, as a new sync would. Answers empty while Firmware Auto-Update is off. */
+export function catchUpFirmware() {
+  return apiSend<FirmwareCatchUp>('POST', 'firmware/catch-up')
 }
 
 /** Refused with `firmware-version-taken`, `device-model-unknown` or `upload-too-large`. */

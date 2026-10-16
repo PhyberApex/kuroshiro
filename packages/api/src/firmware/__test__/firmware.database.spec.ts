@@ -1,5 +1,5 @@
 import type { ConfigService } from '@nestjs/config'
-import type { ApiError, FirmwareList, FirmwareRead, FirmwareSyncResult } from 'kuroshiro-shared'
+import type { ApiError, FirmwareCatchUp, FirmwareList, FirmwareRead, FirmwareSyncResult } from 'kuroshiro-shared'
 import type { DataSource } from 'typeorm'
 import type { InstanceSettingsService } from '../../settings/instance-settings.service.js'
 import type { HttpTestApp } from '../../test/httpApp.js'
@@ -63,6 +63,7 @@ describe('the Firmware reads and writes, against a real database', () => {
     const reads = new FirmwareReadsService(database.getRepository(Device), firmwareService, syncRuns)
     const autoUpdateService = new FirmwareAutoUpdateService(
       database.getRepository(Device),
+      firmwareRepository,
       asService<InstanceSettingsService>({ resolveFirmwareAutoUpdate: async () => autoUpdate }),
     )
     const syncService = new FirmwareSyncService(firmwareRepository, autoUpdateService, syncRuns)
@@ -74,6 +75,7 @@ describe('the Firmware reads and writes, against a real database', () => {
         { provide: FirmwareService, useValue: firmwareService },
         { provide: FirmwareReadsService, useValue: reads },
         { provide: FirmwareSyncService, useValue: syncService },
+        { provide: FirmwareAutoUpdateService, useValue: autoUpdateService },
         { provide: getRepositoryToken(Firmware), useValue: firmwareRepository },
       ],
     })
@@ -395,6 +397,70 @@ describe('the Firmware reads and writes, against a real database', () => {
 
       expect(response.status).toBe(404)
       expect(await response.json()).toMatchObject({ code: 'not-found' })
+    })
+  })
+
+  describe('catch up', () => {
+    async function catchUp(): Promise<FirmwareCatchUp> {
+      return (await http.request('/api/firmware/catch-up', { method: 'POST' })).json()
+    }
+
+    async function targetOf(id: string) {
+      const { updateFirmware, targetFirmware } = await database.getRepository(Device).findOneOrFail({ where: { id }, relations: { targetFirmware: true } })
+      return { updateFirmware, target: targetFirmware?.version ?? null }
+    }
+
+    it('gives the current official Firmware to each eligible Device that is behind, and nothing else', async () => {
+      autoUpdate = true
+      await addFirmware({ version: '1.4.0', deprecated: true })
+      await addFirmware({ version: '1.6.0' })
+      const behind = await addDevice({ fwVersion: '1.5.0' })
+      const unknown = await addDevice()
+      const current = await addDevice({ fwVersion: '1.6.0' })
+      const mirrored = await addDevice({ fwVersion: '1.5.0', mirrorEnabled: true })
+      const pending = await addDevice({ fwVersion: '1.5.0', updateFirmware: true })
+
+      const preview: FirmwareCatchUp = await (await http.request('/api/firmware/catch-up')).json()
+      expect(preview.version).toBe('1.6.0')
+      expect(preview.assigned.map(device => device.id).sort()).toEqual([behind.id, unknown.id].sort())
+      expect(await targetOf(behind.id)).toEqual({ updateFirmware: false, target: null })
+
+      const result = await catchUp()
+
+      expect(result.version).toBe('1.6.0')
+      expect(result.assigned).toEqual(expect.arrayContaining([{ id: behind.id, name: behind.name }, { id: unknown.id, name: unknown.name }]))
+      expect(result.assigned).toHaveLength(2)
+      expect(await targetOf(behind.id)).toEqual({ updateFirmware: true, target: '1.6.0' })
+      expect(await targetOf(unknown.id)).toEqual({ updateFirmware: true, target: '1.6.0' })
+      expect(await targetOf(current.id)).toEqual({ updateFirmware: false, target: null })
+      expect(await targetOf(mirrored.id)).toEqual({ updateFirmware: false, target: null })
+      expect(await targetOf(pending.id)).toEqual({ updateFirmware: true, target: null })
+    })
+
+    it('leaves a Device whose Model is not compatible untouched', async () => {
+      autoUpdate = true
+      await database.getRepository(DeviceModel).save({ name: 'v2', label: 'TRMNL X', width: 1872, height: 1404, colors: 4, bitDepth: 2, scaleFactor: 1, kind: 'trmnl' })
+      await addFirmware({ version: '1.6.0' })
+      const other = await addDevice({ deviceModel: { name: 'v2' } as DeviceModel })
+
+      expect(await catchUp()).toEqual({ version: '1.6.0', assigned: [] })
+      expect(await targetOf(other.id)).toEqual({ updateFirmware: false, target: null })
+    })
+
+    it('assigns nothing while the Setting is off', async () => {
+      await addFirmware({ version: '1.6.0' })
+      const device = await addDevice({ fwVersion: '1.5.0' })
+
+      expect(await catchUp()).toEqual({ version: null, assigned: [] })
+      expect(await targetOf(device.id)).toEqual({ updateFirmware: false, target: null })
+    })
+
+    it('assigns nothing with no current official Firmware', async () => {
+      autoUpdate = true
+      await addFirmware({ version: '1.6.0', kind: 'custom' })
+      await addDevice({ fwVersion: '1.5.0' })
+
+      expect(await catchUp()).toEqual({ version: null, assigned: [] })
     })
   })
 })

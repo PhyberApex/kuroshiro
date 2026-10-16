@@ -64,7 +64,7 @@ const sync = useTrmnlSync(async () => {
           @retry="sync.sync"
         />
         <div class="auto-update">
-          <FirmwareAutoUpdateRow :on="autoUpdateOn" :newest-version="newestOfficialVersion(data.library.firmware)" @saved="switchedTo = $event" />
+          <FirmwareAutoUpdateRow :on="autoUpdateOn" :newest-version="newestOfficialVersion(data.library.firmware)" @saved="switchedTo = $event" @caught-up="page.reload" />
         </div>
         <FirmwareLibrary v-if="data.library.firmware.length > 0" :library="data.library" :models="data.models" @deleted="page.reload" />
         <NoFirmwareYet v-else :syncing="sync.running" @sync="sync.sync" />

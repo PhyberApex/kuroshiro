@@ -22,3 +22,9 @@ Triage of issue #1041 lifted the "no global auto-update toggle" cut from ADR-001
 - The Setting travels in the Configuration Archive like every other overridden Instance Setting (ADR-0027).
 - Turning the toggle off does not clear pushes it already queued; those are indistinguishable from admin assignments and are cleared by an admin the usual way.
 - A future catch-up-on-enable or custom-Firmware policy is additive on top of this.
+
+## Addendum: "Catch up now"
+
+The "catch-up on enable" option above was rejected because it needed a rule for which Devices are "behind", which seemed to be the version comparison ADR-0014 avoids. `Device.fwVersion` (the version a Device reports) makes "behind" a plain inequality instead: a Device is behind when its reported version differs from the current official Firmware's version, or is unknown. No ordering is involved, so a Device running something newer is also "behind", and nothing protects against downgrades.
+
+The Firmware page therefore has an explicit "Catch up now" button, shown while the Setting is on. It gives the current non-deprecated `official-synced` Firmware to every eligible Device (same guards as above) that is behind, exactly as a new sync would, and reports the Devices it targeted. Turning the toggle on still assigns nothing; only the button acts. With the Setting off, or with no current official row, it assigns nothing. `custom` and deprecated Firmware are never caught up to, and there is no per-Device catch-up.
