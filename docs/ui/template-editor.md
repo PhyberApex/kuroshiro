@@ -145,7 +145,7 @@ Nothing here is red. A problem is ink, with the problem icon.
 
 **The data could not be fetched at all** ([render][template-down]): a notice in the same place: "**The data could not be fetched.** Kuroshiro's server is not answering." and "Try again". With data from an earlier fetch the preview keeps drawing against it and the notice adds "The preview uses the data from {when}." With none, the plate is in its rendering state.
 
-**While the first data is on its way** ([render][template-fetching]): the plate in its rendering state with the note "Fetching the data" and the loading mark.
+**While the first data is on its way** ([render][template-fetching]): the plate in its rendering state with the note "Fetching the data" and the loading mark. While the Device Models or the Instance facts are still on their way, the same state reads "Loading the preview".
 
 **The last scheduled render failed** ([render][template-scheduled]). The Plugin page's problem line "The template could not be rendered at {hh:mm}: {message}" links here with "Open the template". In the section, between the heading and the Template line: the problem icon, "The scheduled render at {hh:mm} failed at line {n}: `{message}`." and in `ink-soft` "The preview draws with the data fetched now, so it may not fail the same way." At the right "Go to line {n}" (quiet), when the server's error names a line. The line stays until a scheduled render succeeds.
 

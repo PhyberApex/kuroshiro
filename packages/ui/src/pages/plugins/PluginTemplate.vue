@@ -116,7 +116,10 @@ const devicePreview = useDevicePreview(() => target.value && preview.body.value 
 
 const completionData = computed(() => data.value && !Array.isArray(data.value.context) ? data.value.context : {})
 
-/** Why the plate has no drawing yet: the Device Models or the first data are on their way. A fetch that failed says so under the plate. */
+/** The plate can draw once the first data and the Instance Time Zone are both in; until then it is in its rendering state. */
+const canDraw = computed(() => data.value !== undefined && timeZone.value !== undefined)
+
+/** Why the plate has no drawing yet: the Device Models, the Instance facts or the first data are on their way. A fetch that failed says so under the plate. */
 const waitingFor = computed(() => {
   if (!target.value || !timeZone.value)
     return 'Loading the preview'
@@ -253,7 +256,7 @@ async function reveal(problemPath: string) {
           :document="preview.document.value"
           :not-drawn="preview.problem.value !== null"
           :waiting-for="waitingFor"
-          :has-data="data !== undefined"
+          :can-draw="canDraw"
           :device-preview="devicePreview.state.value"
           :device-name="target?.device?.name ?? null"
           @retry="needs.reload"

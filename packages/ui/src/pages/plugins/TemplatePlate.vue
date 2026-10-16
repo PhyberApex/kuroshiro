@@ -17,9 +17,10 @@ const props = defineProps<{
   model: Pick<DeviceModelRead, 'width' | 'height'> | undefined
   document: string | null
   notDrawn: boolean
-  /** What the plate has no drawing for yet. It is in its rendering state while this or the Device Model is missing. */
+  /** What the plate has no drawing for yet: shown in its rendering state, which lasts until the Device Model and everything the drawing needs are there. */
   waitingFor: string | undefined
-  hasData: boolean
+  /** The first data and the Instance Time Zone have arrived, so a drawing can be made. */
+  canDraw: boolean
   /** The device preview's own drawing (ADR-0040), which replaces the live browser drawing once it lands. */
   devicePreview: DevicePreviewState
   /** The Device the device preview is for, by name only, for "Drawing it as {Device} shows it". */
@@ -47,7 +48,7 @@ const drawingNote = computed(() => props.devicePreview.status === 'drawing' ? de
     :width="model?.width ?? 800"
     :height="model?.height ?? 480"
     :not-drawn="devicePreview.status === 'drawn' ? false : notDrawn"
-    :rendering="!model || !hasData"
+    :rendering="!model || !canDraw"
     :rendering-note="waitingFor"
     :drawing-note="drawingNote"
   />
