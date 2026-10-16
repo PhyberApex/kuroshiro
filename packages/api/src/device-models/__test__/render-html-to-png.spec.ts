@@ -11,6 +11,7 @@ const { fsMock, puppeteerPage, puppeteerLaunch, convertToPng } = vi.hoisted(() =
     setContent: vi.fn(),
     screenshot: vi.fn(),
     evaluate: vi.fn(),
+    close: vi.fn(),
   },
   puppeteerLaunch: vi.fn(),
   convertToPng: vi.fn(),
@@ -21,18 +22,21 @@ vi.mock('puppeteer', () => ({ default: { launch: puppeteerLaunch } }))
 vi.mock('../../utils/imageUtils.js', () => ({ convertToPng }))
 
 const { renderHtmlToPng } = await import('../render-html-to-png.js')
+const { closeSharedBrowser } = await import('../shared-browser.js')
 
 const TARGET: DeviceRenderTarget = { model: makeDeviceModel({ width: 800, height: 480 }), palette: makePalette() }
 const logger = asService<Logger>({ log: () => {}, error: () => {} })
 
 describe('renderHtmlToPng', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await closeSharedBrowser()
     vi.resetAllMocks()
+    puppeteerPage.close.mockResolvedValue(undefined)
     puppeteerPage.setViewport.mockResolvedValue(undefined)
     puppeteerPage.setContent.mockResolvedValue(undefined)
     puppeteerPage.screenshot.mockResolvedValue(new Uint8Array())
     puppeteerPage.evaluate.mockResolvedValue({ skip: false, hold: false })
-    puppeteerLaunch.mockResolvedValue({ newPage: vi.fn().mockResolvedValue(puppeteerPage), close: vi.fn() })
+    puppeteerLaunch.mockResolvedValue({ newPage: vi.fn().mockResolvedValue(puppeteerPage), close: vi.fn(), connected: true })
   })
 
   it('screenshots and converts, reporting no signal, when the page sets nothing', async () => {
@@ -101,13 +105,26 @@ describe('renderHtmlToPng', () => {
     expect(convertToPng).toHaveBeenCalled()
   })
 
-  it('closes the browser whether or not the signal was honored', async () => {
-    const close = vi.fn()
-    puppeteerLaunch.mockResolvedValue({ newPage: vi.fn().mockResolvedValue(puppeteerPage), close })
+  it('closes the page, not the browser, whether or not the signal was honored', async () => {
     puppeteerPage.evaluate.mockResolvedValue({ skip: true, hold: false })
 
     await renderHtmlToPng('<html></html>', TARGET, '/out/screen.png', logger, {}, { honorRenderSignal: true })
 
-    expect(close).toHaveBeenCalledOnce()
+    expect(puppeteerPage.close).toHaveBeenCalledOnce()
+  })
+
+  it('closes the page when the render throws', async () => {
+    puppeteerPage.setContent.mockRejectedValue(new Error('Chrome crashed'))
+
+    await expect(renderHtmlToPng('<html></html>', TARGET, '/out/screen.png', logger)).rejects.toThrow('Chrome crashed')
+
+    expect(puppeteerPage.close).toHaveBeenCalledOnce()
+  })
+
+  it('launches Chromium once for two renders in a row', async () => {
+    await renderHtmlToPng('<html></html>', TARGET, '/out/a.png', logger)
+    await renderHtmlToPng('<html></html>', TARGET, '/out/b.png', logger)
+
+    expect(puppeteerLaunch).toHaveBeenCalledOnce()
   })
 })

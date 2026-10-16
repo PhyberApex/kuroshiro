@@ -181,7 +181,7 @@ describe('sleep image', () => {
 
     await screen.getByRole('alertdialog').getByRole('button', { name: 'Remove' }).click()
 
-    expect(faked.sleepImageRemoved).toBe(1)
+    await expect.poll(() => faked.sleepImageRemoved).toBe(1)
     await expect.element(screen.getByRole('button', { name: 'Upload an image' })).toBeVisible()
     expect(noteOf(screen, 'Sleep image')).toBe('Optional. Without one, Kitchen shows the sleep Fallback Screen.')
   })

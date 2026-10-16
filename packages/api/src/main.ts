@@ -31,6 +31,8 @@ async function bootstrap() {
   app.setGlobalPrefix('api', { exclude: ['metrics'] })
   registerErrorEnvelope(app)
   app.useGlobalInterceptors(new LoggingInterceptor())
+  // Lets SIGTERM run the modules' destroy hooks, which close the shared render browser rather than orphan it (ADR-0044).
+  app.enableShutdownHooks()
   await app.listen(config().port)
 }
 bootstrap()

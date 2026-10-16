@@ -16,6 +16,7 @@ import { promises as fs } from 'node:fs'
 import { NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { TRMNL_FRAMEWORK_VERSION } from 'kuroshiro-shared'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { closeSharedBrowser } from '../../device-models/shared-browser.js'
 import { createMockDeviceSensorsService, primeMockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService.js'
 import { ScreenRenderService } from '../../mashup/services/screen-render.service.js'
 import { jsonResponse, stubFetch } from '../../test/fetch.js'
@@ -37,6 +38,7 @@ const { fileExists, fileModifiedAt, puppeteerPage, puppeteerLaunch } = vi.hoiste
     setContent: vi.fn(),
     screenshot: vi.fn(),
     evaluate: vi.fn(),
+    close: vi.fn(),
   },
   puppeteerLaunch: vi.fn(),
 }))
@@ -72,6 +74,7 @@ const SKIP_MARKER = 'window.TRMNL_SKIP_DISPLAY'
 const HOLD_MARKER = 'window.TRMNL_SKIP_SCREEN_GENERATION'
 
 function primePuppeteer() {
+  puppeteerPage.close.mockResolvedValue(undefined)
   puppeteerPage.setViewport.mockResolvedValue(undefined)
   puppeteerPage.setContent.mockResolvedValue(undefined)
   puppeteerPage.screenshot.mockResolvedValue(new Uint8Array())
@@ -80,7 +83,7 @@ function primePuppeteer() {
     const html = String(puppeteerPage.setContent.mock.calls.at(-1)?.[0] ?? '')
     return Promise.resolve({ skip: html.includes(SKIP_MARKER), hold: html.includes(HOLD_MARKER) })
   })
-  puppeteerLaunch.mockResolvedValue({ newPage: vi.fn().mockResolvedValue(puppeteerPage), close: vi.fn() })
+  puppeteerLaunch.mockResolvedValue({ newPage: vi.fn().mockResolvedValue(puppeteerPage), close: vi.fn(), connected: true })
 }
 
 const mockFetch = stubFetch()
@@ -96,7 +99,8 @@ describe('deviceDisplayService', () => {
   let firmwareService: { verifyChecksum: ReturnType<typeof vi.fn>, fileUrl: ReturnType<typeof vi.fn> }
   let deviceSensors: MockDeviceSensorsService
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await closeSharedBrowser()
     deviceRepo = createMockRepository<Device>()
     screenRepo = createMockRepository<Screen>()
     configService = { get: vi.fn() }

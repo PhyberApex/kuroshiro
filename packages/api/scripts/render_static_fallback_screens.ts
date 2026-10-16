@@ -5,6 +5,7 @@ import process from 'node:process'
 import { Logger } from '@nestjs/common'
 import { fallbackScreenHtml } from '../src/device-models/fallback-screen-templates.js'
 import { renderHtmlToPng } from '../src/device-models/render-html-to-png.js'
+import { closeSharedBrowser } from '../src/device-models/shared-browser.js'
 
 /**
  * Redraws the static last-resort Fallback Screens in assets/screens: what a
@@ -31,3 +32,5 @@ for (const request of REQUESTS) {
   const html = fallbackScreenHtml(request, null, TRMNL_OG_BLACK_AND_WHITE.model)
   await renderHtmlToPng(html, TRMNL_OG_BLACK_AND_WHITE, path.join(outputDir, `${request.kind}.png`), logger, { dither: false })
 }
+
+await closeSharedBrowser()
