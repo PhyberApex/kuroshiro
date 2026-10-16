@@ -11,11 +11,12 @@ import { DeviceModel } from './entities/device-model.entity.js'
 import { Palette } from './entities/palette.entity.js'
 import { FallbackScreensService } from './fallback-screens.service.js'
 import { PaletteSelectionService } from './palette-selection.service.js'
+import { SharedBrowserService } from './shared-browser.service.js'
 
 @Module({
   imports: [TypeOrmModule.forFeature([DeviceModel, Palette, Device]), ConfigModule, SyncRunsModule],
   controllers: [DeviceModelsController],
-  providers: [DeviceModelsService, PaletteSelectionService, DeviceModelSyncService, DeviceModelReadsService, FallbackScreensService],
+  providers: [DeviceModelsService, PaletteSelectionService, DeviceModelSyncService, DeviceModelReadsService, FallbackScreensService, SharedBrowserService],
   exports: [DeviceModelsService, PaletteSelectionService, DeviceModelReadsService, FallbackScreensService, DeviceModelSyncService],
 })
 export class DeviceModelsModule {}

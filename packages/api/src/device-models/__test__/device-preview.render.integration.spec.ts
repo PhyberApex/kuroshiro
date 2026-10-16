@@ -13,6 +13,7 @@ import { makeDeviceModel, makePalette } from '../../test/fixtures.js'
 import { asService } from '../../test/mockService.js'
 import { DevicePreviewService } from '../device-preview.service.js'
 import { renderHtmlToPng } from '../render-html-to-png.js'
+import { closeSharedBrowser } from '../shared-browser.js'
 
 function magickAvailable(): boolean {
   try {
@@ -49,6 +50,7 @@ describe.runIf(magickAvailable())('devicePreviewService (real Chrome and magick)
   })
 
   afterAll(async () => {
+    await closeSharedBrowser()
     await fs.promises.rm(tmpDir, { recursive: true, force: true })
   })
 

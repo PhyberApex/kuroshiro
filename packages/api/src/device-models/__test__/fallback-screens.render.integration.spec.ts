@@ -9,6 +9,7 @@ import { makeDeviceModel, makePalette } from '../../test/fixtures.js'
 import { asService } from '../../test/mockService.js'
 import { fallbackScreenHtml } from '../fallback-screen-templates.js'
 import { renderHtmlToPng } from '../render-html-to-png.js'
+import { closeSharedBrowser } from '../shared-browser.js'
 
 const execFileAsync = promisify(execFile)
 
@@ -37,6 +38,7 @@ describe.runIf(magickAvailable())('the error Fallback Screen on a 1-bit Palette 
   })
 
   afterAll(async () => {
+    await closeSharedBrowser()
     await fs.promises.rm(tmpDir, { recursive: true, force: true })
   })
 

@@ -7,6 +7,7 @@ import buffer from 'node:buffer'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { convertToPng } from '../utils/imageUtils.js'
+import { withSharedPage } from './shared-browser.js'
 
 export interface RenderHtmlToPngOptions {
   /**
@@ -38,27 +39,25 @@ async function readRenderSignal(page: Page): Promise<RenderSignal | null> {
  * leaves `outputPath` as it was on a `skip` or `hold`, instead of overwriting it.
  */
 export async function renderHtmlToPng(html: string, target: DeviceRenderTarget, outputPath: string, logger: Logger, conversion: ConversionOptions = {}, options: RenderHtmlToPngOptions = {}): Promise<RenderSignal | null> {
-  const { default: puppeteer } = await import('puppeteer')
-  const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-web-security'] })
   const tmpPath = `${outputPath}.tmp-source`
   try {
-    const page = await browser.newPage()
-    await page.setViewport({ width: target.model.width, height: target.model.height })
-    await page.setContent(html, { waitUntil: 'load' })
-    await page.evaluate(() => document.fonts.ready)
-    const renderSignal = await readRenderSignal(page)
-    if (renderSignal && options.honorRenderSignal)
+    return await withSharedPage(async (page) => {
+      await page.setViewport({ width: target.model.width, height: target.model.height })
+      await page.setContent(html, { waitUntil: 'load' })
+      await page.evaluate(() => document.fonts.ready)
+      const renderSignal = await readRenderSignal(page)
+      if (renderSignal && options.honorRenderSignal)
+        return renderSignal
+
+      const image: Uint8Array = await page.screenshot()
+
+      await fs.promises.mkdir(path.dirname(outputPath), { recursive: true })
+      await fs.promises.writeFile(tmpPath, buffer.Buffer.from(image))
+      await convertToPng(tmpPath, outputPath, target, logger, conversion)
       return renderSignal
-
-    const image: Uint8Array = await page.screenshot()
-
-    await fs.promises.mkdir(path.dirname(outputPath), { recursive: true })
-    await fs.promises.writeFile(tmpPath, buffer.Buffer.from(image))
-    await convertToPng(tmpPath, outputPath, target, logger, conversion)
-    return renderSignal
+    })
   }
   finally {
-    await browser.close()
     try {
       await fs.promises.unlink(tmpPath)
     }
