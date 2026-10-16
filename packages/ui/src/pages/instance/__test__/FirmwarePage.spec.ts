@@ -125,7 +125,7 @@ describe('the Firmware page', () => {
       await expect.poll(() => faked.settingsWrites).toEqual([{ firmwareAutoUpdate: true }])
       await expect.poll(() => stateOf(screen, 'Firmware Auto-Update')).toBe('Saved')
       await expect.element(autoUpdate(screen)).toBeChecked()
-      expect(shownOf(screen, 'Firmware Auto-Update')).toBe('On')
+      expect(shownOf(screen, 'Firmware Auto-Update')).toBe('On Catch up now')
       expect(noteOf(screen, 'Firmware Auto-Update')).toBe('Each new official Firmware becomes the target of every Device it fits, except a mirrored Device and one with a push already pending. It starts with the next official Firmware. Devices already registered are caught up with “Catch up now”.')
     })
 
