@@ -117,7 +117,18 @@ describe('the Device Simulator', () => {
         'width': '800',
         'height': '480',
         'sensors': 'kind=temperature;value=21.5;unit=C',
+        'update-source': 'timer',
       }])
+    })
+
+    it('sends a button press as the wake source when "Woken by" says so', async () => {
+      const { fake, screen } = await openSimulator('/instance/simulator?device=kitchen')
+
+      await choose(screen, 'Woken by', 'A button press')
+      await screen.getByRole('button', { name: 'Poll as Kitchen' }).click()
+
+      await expect.poll(() => fake.polls.length).toBe(1)
+      expect(fake.polls[0]).toMatchObject({ 'update-source': 'button' })
     })
   })
 

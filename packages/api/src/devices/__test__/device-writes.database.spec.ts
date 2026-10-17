@@ -164,6 +164,24 @@ describe('the Device write and delete against a real database', () => {
       expect((await stored(device.id)).refreshRate).toBe(refreshRate)
     })
 
+    it.each(['automatic', 'manual'])('saves %s as the rotation mode', async (rotationMode) => {
+      const device = await registerDevice()
+
+      const response = await patch(device.id, { rotationMode })
+
+      expect(response.status).toBe(200)
+      expect((await stored(device.id)).rotationMode).toBe(rotationMode)
+    })
+
+    it('refuses an unknown rotation mode with the field named', async () => {
+      const device = await registerDevice()
+
+      const response = await patch(device.id, { rotationMode: 'paused' })
+
+      expect(response.status).toBe(400)
+      expect(await response.json()).toMatchObject({ code: 'validation', fields: [{ path: 'rotationMode' }] })
+    })
+
     it.each(['mac', 'friendlyId', 'fwVersion', 'rssi', 'batteryVoltage', 'userAgent', 'host'])('refuses %s', async (field) => {
       const device = await registerDevice()
 

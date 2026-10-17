@@ -24,6 +24,14 @@ export const REPORT_INPUTS: { key: keyof Report, label: string, header: string }
   { key: 'height', label: 'Height', header: 'Height' },
 ]
 
+/** What can wake the simulated Device for a poll, as the `Update-Source` header the firmware sends it. */
+export type WakeSource = 'timer' | 'button'
+
+export const WAKE_SOURCE_OPTIONS: { value: WakeSource, label: string }[] = [
+  { value: 'timer', label: 'Its timer' },
+  { value: 'button', label: 'A button press' },
+]
+
 /** What a simulated Device that is not registered reports: a TRMNL OG on a full battery. */
 export const NEW_DEVICE_REPORT: Report = {
   batteryVoltage: '4.10',

@@ -357,6 +357,7 @@ describe('toDeviceDetail', () => {
       mac: 'AA:BB:CC:DD:EE:FF',
       apikey: 'test-api-key',
       refreshRate: 300,
+      rotationMode: 'automatic',
       reported: { batteryVoltage: null, rssi: null, firmwareVersion: null, model: null, width: null, height: null },
       palette: null,
       mirror: { enabled: false, mac: null, apikeySet: false },

@@ -25,6 +25,7 @@ export function makeDevice(overrides: Partial<Device> = {}): Device {
     mac: 'AA:BB:CC:DD:EE:FF',
     apikey: 'test-api-key',
     refreshRate: 300,
+    rotationMode: 'automatic',
     specialFunction: 'identify',
     sleepModeEnabled: false,
     sleepScreenEnabled: false,

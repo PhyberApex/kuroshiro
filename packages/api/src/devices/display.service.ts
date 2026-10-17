@@ -10,7 +10,7 @@ import * as path from 'node:path'
 import { Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
-import { effectiveFrameworkVersion, viewFull } from 'kuroshiro-shared'
+import { effectiveFrameworkVersion, isButtonWake, viewFull } from 'kuroshiro-shared'
 import { Repository } from 'typeorm'
 import { DeviceModelsService } from '../device-models/device-models.service.js'
 import { FallbackScreensService } from '../device-models/fallback-screens.service.js'
@@ -319,6 +319,10 @@ export class DeviceDisplayService {
    * the same pick id is passed over by `nextEligibleScreen` itself on the next
    * attempt, so the retry falls through to normal Rotation without further
    * special-casing here (ADR-0038).
+   *
+   * Under Manual Rotation a timer poll starts from the Active Screen instead of
+   * the one after it; it falls to the next eligible Screen only when the
+   * Active Screen is passed over, now or after a fresh `skip` (ADR-0046).
    */
   private async pickAndRenderScreen(screens: Screen[], device: Device, now: Date): Promise<{ screen: Screen, imgUrl: string, served: Served, filename: string, renderSignal: RenderSignal | null } | null> {
     const byId = new Map(screens.map(screen => [screen.id, screen]))
@@ -329,9 +333,11 @@ export class DeviceDisplayService {
       renderSignal: this.gatingRenderSignalOf(screen),
     }))
     const pickedScreenId = device.pickedScreen?.id ?? null
+    // Manual Rotation: only a press (or a pick) moves the page on; a timer poll re-renders the Active Screen where it is.
+    const stayOnActive = device.rotationMode === 'manual' && !isButtonWake(device.lastWakeSource)
 
     for (let attempt = 0; attempt < screens.length; attempt++) {
-      const candidate = nextEligibleScreen(rotationScreens, now, pickedScreenId)
+      const candidate = nextEligibleScreen(rotationScreens, now, pickedScreenId, stayOnActive)
       if (!candidate)
         return null
       const screen = byId.get(candidate.id)!

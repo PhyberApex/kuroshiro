@@ -71,6 +71,7 @@ function written(device: DeviceDetail, input: UpdateDeviceInput, { models, palet
     ...device,
     name: input.name ?? device.name,
     refreshRate: input.refreshRate ?? device.refreshRate,
+    rotationMode: input.rotationMode ?? device.rotationMode,
     deviceModel: model ? { name: model.name, label: model.label, width: model.width, height: model.height, deprecated: model.deprecated } : device.deviceModel,
     palette: palette ? { id: palette.id, name: palette.name, kind: palette.kind } : device.palette,
     sleep: {

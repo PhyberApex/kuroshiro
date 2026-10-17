@@ -7,6 +7,7 @@ import SettingsDeviceModel from './SettingsDeviceModel.vue'
 import SettingsName from './SettingsName.vue'
 import SettingsPalette from './SettingsPalette.vue'
 import SettingsRefreshRate from './SettingsRefreshRate.vue'
+import SettingsRotationMode from './SettingsRotationMode.vue'
 
 defineProps<{
   device: DeviceDetail
@@ -20,5 +21,6 @@ defineProps<{
     <SettingsDeviceModel :device="device" :models="reference.models" />
     <SettingsPalette :device="device" :reference="reference" />
     <SettingsRefreshRate :device="device" />
+    <SettingsRotationMode :device="device" />
   </PageSection>
 </template>

@@ -1634,6 +1634,101 @@ describe('deviceDisplayService', () => {
       expect(result.image_url).toBe('http://api/screens/devices/1/screen2.png')
       expect(deviceRepo.update).toHaveBeenCalledWith({ id: sleeper.id }, { pickedScreen: null })
     })
+
+    describe('manual Rotation', () => {
+      const manual = (overrides: Partial<Device> = {}) => Object.assign(pickedScreenDevice, { rotationMode: 'manual', ...overrides })
+
+      afterEach(() => {
+        Object.assign(pickedScreenDevice, { rotationMode: 'automatic' })
+      })
+
+      const threeScreens = () => [
+        fileScreen({ id: 'screen1', order: 1 }),
+        fileScreen({ id: 'screen2', order: 2, isActive: true }),
+        fileScreen({ id: 'screen3', order: 3 }),
+      ]
+
+      it('re-serves the Active Screen on a timer poll', async () => {
+        manual()
+        primeRotation(threeScreens(), null)
+
+        const result = await service.getCurrentImage(headers)
+
+        expect(result.image_url).toBe('http://api/screens/devices/1/screen2.png')
+        expect(screenRepo.update).toHaveBeenCalledWith({ id: 'screen2' }, expect.objectContaining({ isActive: true }))
+      })
+
+      it('re-renders the Active Screen on a timer poll rather than holding it', async () => {
+        manual()
+        const active = makeScreen({ device: pickedScreenDevice, id: 'screen2', order: 2, type: 'html', html: '<p>live</p>', isActive: true, fetchManual: false, externalLink: null, generatedAt: new Date('2026-08-21T00:00:00') })
+        primeRotation([fileScreen({ id: 'screen1', order: 1 }), active], null)
+        const render = vi.spyOn(screenRender, 'renderBodyToScreenPng').mockResolvedValue('http://api/screens/devices/1/screen2.png')
+
+        await service.getCurrentImage(headers)
+
+        expect(render).toHaveBeenCalledTimes(1)
+      })
+
+      it('treats a poll without an Update-Source as a timer poll', async () => {
+        manual()
+        primeRotation(threeScreens(), null)
+
+        const result = await service.getCurrentImage(headers)
+
+        expect(result.image_url).toBe('http://api/screens/devices/1/screen2.png')
+      })
+
+      it.each(['button', 'EXT0', 'EXT1'])('advances one step on a %s press', async (source) => {
+        manual()
+        primeRotation(threeScreens(), null)
+
+        const result = await service.getCurrentImage({ ...headers, 'update-source': source })
+
+        expect(result.image_url).toBe('http://api/screens/devices/1/screen3.png')
+      })
+
+      it('serves the Picked Screen on a timer poll and clears the pick', async () => {
+        manual()
+        const picked = fileScreen({ id: 'screen3', order: 3 })
+        primeRotation([fileScreen({ id: 'screen1', order: 1 }), fileScreen({ id: 'screen2', order: 2, isActive: true }), picked], picked)
+
+        const result = await service.getCurrentImage(headers)
+
+        expect(result.image_url).toBe('http://api/screens/devices/1/screen3.png')
+        expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1' }, { pickedScreen: null })
+      })
+
+      it('advances to the next eligible Screen when the Active Screen has become ineligible', async () => {
+        manual()
+        primeRotation([
+          fileScreen({ id: 'screen1', order: 1 }),
+          fileScreen({ id: 'screen2', order: 2, isActive: true, schedule: { enabled: false } }),
+          fileScreen({ id: 'screen3', order: 3 }),
+        ], null)
+
+        const result = await service.getCurrentImage(headers)
+
+        expect(result.image_url).toBe('http://api/screens/devices/1/screen3.png')
+      })
+
+      it('starts Rotation on the first poll when no Screen is active', async () => {
+        manual()
+        primeRotation([fileScreen({ id: 'screen1', order: 1 }), fileScreen({ id: 'screen2', order: 2 })], null)
+
+        const result = await service.getCurrentImage(headers)
+
+        expect(result.image_url).toBe('http://api/screens/devices/1/screen1.png')
+      })
+
+      it('still advances on a timer poll in automatic', async () => {
+        manual({ rotationMode: 'automatic' })
+        primeRotation(threeScreens(), null)
+
+        const result = await service.getCurrentImage(headers)
+
+        expect(result.image_url).toBe('http://api/screens/devices/1/screen3.png')
+      })
+    })
   })
 
   describe('render-signal-gated rotation', () => {

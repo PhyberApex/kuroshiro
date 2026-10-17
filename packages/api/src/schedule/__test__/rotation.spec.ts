@@ -50,6 +50,28 @@ describe('nextEligibleScreen', () => {
     expect(nextEligibleScreen(screens, FRIDAY_NOON)?.id).toBe('c')
   })
 
+  describe('staying on the Active Screen (Manual Rotation, timer poll)', () => {
+    it('is the Active Screen while Rotation does not pass it over', () => {
+      const screens = [screen('a'), screen('b', { isActive: true }), screen('c')]
+      expect(nextEligibleScreen(screens, FRIDAY_NOON, null, true)?.id).toBe('b')
+    })
+
+    it('advances to the next eligible Screen once the Active Screen is passed over', () => {
+      const screens = [screen('a'), scheduled('b', { enabled: false }, { isActive: true }), screen('c')]
+      expect(nextEligibleScreen(screens, FRIDAY_NOON, null, true)?.id).toBe('c')
+      expect(nextEligibleScreen([screen('a'), screen('b', { isActive: true, renderSignal: 'skip' }), screen('c')], FRIDAY_NOON, null, true)?.id).toBe('c')
+    })
+
+    it('starts Rotation as usual when no Screen is active', () => {
+      expect(nextEligibleScreen([screen('a'), screen('b')], FRIDAY_NOON, null, true)?.id).toBe('a')
+    })
+
+    it('serves a Picked Screen ahead of the Active Screen', () => {
+      const screens = [screen('a'), screen('b', { isActive: true }), screen('c')]
+      expect(nextEligibleScreen(screens, FRIDAY_NOON, 'c', true)?.id).toBe('c')
+    })
+  })
+
   describe('a Picked Screen', () => {
     it('overrides Order, regardless of its position relative to the Active Screen', () => {
       const screens = [screen('a', { isActive: true }), screen('b'), screen('c')]

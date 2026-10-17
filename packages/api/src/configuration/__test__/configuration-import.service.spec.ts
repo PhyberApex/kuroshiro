@@ -781,6 +781,20 @@ describe('configurationImportService', () => {
     })
   })
 
+  describe('the rotation mode of a Device', () => {
+    it('imports the mode the manifest carries', async () => {
+      await service.importFromZip(buildArchive({ devices: [makeDeviceEntry({ rotationMode: 'manual' })] }))
+
+      expect(backing.get('Device')!.get('device-1')).toMatchObject({ rotationMode: 'manual' })
+    })
+
+    it('imports a manifest without one as automatic', async () => {
+      await service.importFromZip(buildArchive({ devices: [makeDeviceEntry()] }))
+
+      expect(backing.get('Device')!.get('device-1')).toMatchObject({ rotationMode: 'automatic' })
+    })
+  })
+
   describe('a previous-version (schemaVersion 2) archive', () => {
     const previousManifest = { kuroshiroVersion: '0.17.0', schemaVersion: 2, exportedAt: new Date().toISOString(), containsSecrets: true }
 

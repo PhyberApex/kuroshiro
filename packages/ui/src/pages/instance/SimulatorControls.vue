@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DeviceSummary } from 'kuroshiro-shared'
+import type { WakeSource } from './simulatorWording'
 import { computed } from 'vue'
 import Button from '@/components/Button.vue'
 import Field from '@/components/Field.vue'
@@ -11,7 +12,7 @@ import SentenceLine from '@/pages/devices/SentenceLine.vue'
 import { NOT_REGISTERED, useSimulator } from './deviceSimulator'
 import SimulatorCalls from './SimulatorCalls.vue'
 import SimulatorReports from './SimulatorReports.vue'
-import { callConsequence } from './simulatorWording'
+import { callConsequence, WAKE_SOURCE_OPTIONS } from './simulatorWording'
 
 const props = defineProps<{
   devices: DeviceSummary[]
@@ -26,6 +27,11 @@ const options = computed(() => [
 
 const consequence = computed(() => callConsequence(simulator.registeredId ? simulator.device : undefined))
 
+function wake(source: WakeSource | null) {
+  if (source)
+    simulator.wakeSource = source
+}
+
 function choose(choice: string | null) {
   if (choice)
     simulator.choice = choice
@@ -36,6 +42,9 @@ function choose(choice: string | null) {
   <div class="controls">
     <Field v-slot="{ control }" label="Poll as">
       <Select v-bind="control" :model-value="simulator.choice" :options="options" @update:model-value="choose" />
+    </Field>
+    <Field v-slot="{ control }" label="Woken by" hint="Sent as Update-Source. A button press advances a Device on Manual Rotation.">
+      <Select v-bind="control" :model-value="simulator.wakeSource" :options="WAKE_SOURCE_OPTIONS" @update:model-value="wake" />
     </Field>
     <Field
       v-if="!simulator.registeredId"

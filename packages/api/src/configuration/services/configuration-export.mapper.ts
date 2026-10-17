@@ -90,6 +90,7 @@ export function buildDeviceEntry(device: Device, redact: boolean): DeviceManifes
     mac: device.mac,
     apikey: redact ? CONFIGURATION_REDACTION_SENTINEL : device.apikey,
     refreshRate: device.refreshRate,
+    rotationMode: device.rotationMode,
     deviceModelName: device.deviceModel?.name ?? null,
     paletteId: device.palette?.id ?? null,
     ...buildDeviceMirrorFields(device, redact),

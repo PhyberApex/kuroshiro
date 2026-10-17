@@ -583,6 +583,7 @@ export class ConfigurationImportService {
       device.apikey = this.resolveDeviceApikey(entry, device, wasCreated, ref, run)
     }
     device.refreshRate = entry.refreshRate
+    device.rotationMode = entry.rotationMode ?? 'automatic'
     device.deviceModel = await this.resolveDeviceModel(repos.deviceModel, entry.deviceModelName, ref, run)
     device.palette = await this.resolvePalette(repos.palette, entry.paletteId, ref, run)
     device.mirrorEnabled = entry.mirrorEnabled ?? undefined

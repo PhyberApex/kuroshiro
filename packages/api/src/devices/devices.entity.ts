@@ -1,3 +1,4 @@
+import type { RotationMode } from 'kuroshiro-shared'
 import type { Relation } from 'typeorm'
 import type { LogEntry } from '../logs/logs.entity.js'
 import type { Screen } from '../screens/screens.entity.js'
@@ -32,6 +33,9 @@ export class Device {
 
   @Column('int', { default: 300 })
   refreshRate: number
+
+  @Column('text', { default: 'automatic' })
+  rotationMode: RotationMode
 
   @Column('text', { nullable: true })
   rssi?: string
