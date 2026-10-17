@@ -43,6 +43,10 @@ export class Screen {
   @Column({ type: 'timestamptz', nullable: true })
   fileUploadedAt?: Date | null
 
+  /** Whether a File, External link or HTML Screen's content is Floyd-Steinberg dithered; the other kinds follow their Plugins. */
+  @Column({ type: 'boolean', default: true })
+  dither: boolean
+
   @Column({ type: 'boolean', default: false })
   isActive: boolean
 

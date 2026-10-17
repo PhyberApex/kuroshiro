@@ -103,6 +103,7 @@ describe('a Device\'s Screens, GET /api/devices/:id/screens, against a real data
       external: null,
       file: null,
       html: '<p>Hi</p>',
+      dither: true,
     })
     expect(screens[1]).toMatchObject({ state: 'upNext', renderSignal: null })
   })

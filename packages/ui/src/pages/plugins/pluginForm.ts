@@ -68,6 +68,7 @@ const KEY_NAMES: Record<PluginInputKey, string> = {
   templates: 'template',
   refreshInterval: 'refresh interval',
   frameworkVersion: 'Framework Version',
+  dither: 'Dithering',
   dataSources: 'Data Sources',
   fieldValues: 'Field Values',
   fields: 'Plugin Fields',

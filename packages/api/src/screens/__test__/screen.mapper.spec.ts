@@ -37,6 +37,7 @@ describe('toScreenRead', () => {
       external: null,
       file: { originalName: null, width: null, height: null, bytes: null, uploadedAt: '2026-02-15T08:00:00.000Z' },
       html: null,
+      dither: true,
     })
   })
 

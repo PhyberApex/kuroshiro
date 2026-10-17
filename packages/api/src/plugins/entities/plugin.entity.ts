@@ -36,6 +36,10 @@ export class Plugin {
   @Column('text', { nullable: true })
   frameworkVersion?: string | null
 
+  // Whether the Plugin's renders are Floyd-Steinberg dithered, at every Template size.
+  @Column('boolean', { default: true })
+  dither: boolean
+
   @Index({ unique: true })
   @Column('text', { nullable: true })
   webhookToken?: string | null

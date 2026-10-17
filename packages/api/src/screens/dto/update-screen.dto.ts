@@ -1,6 +1,6 @@
 import type { UpdateScreenInput } from 'kuroshiro-shared'
 import { Transform } from 'class-transformer'
-import { IsBoolean, IsNotEmpty, IsOptional, IsString, IsUrl } from 'class-validator'
+import { IsBoolean, IsNotEmpty, IsOptional, IsString, IsUrl, ValidateIf } from 'class-validator'
 import { trimmed } from '../../utils/trimmed.js'
 
 export class UpdateScreenDto implements UpdateScreenInput {
@@ -22,4 +22,8 @@ export class UpdateScreenDto implements UpdateScreenInput {
   @IsString()
   @IsNotEmpty()
   html?: string
+
+  @ValidateIf(value => value.dither !== undefined)
+  @IsBoolean()
+  dither?: boolean
 }

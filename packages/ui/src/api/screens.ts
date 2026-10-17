@@ -35,7 +35,8 @@ export function createScreen(input: Exclude<CreateScreenInput, { kind: 'file' }>
 
 /** Adds a File Screen from an image. Refused with `image-unreadable`, `upload-too-large` or `demo-mode`. */
 export function createFileScreen(input: Omit<Extract<CreateScreenInput, { kind: 'file' }>, 'kind'>, file: File) {
-  return apiSend<ScreenRead>('POST', 'screens', asUpload(file, { kind: 'file', ...input }))
+  const { dither, ...text } = input
+  return apiSend<ScreenRead>('POST', 'screens', asUpload(file, { kind: 'file', ...text, ...(dither !== undefined && { dither: String(dither) }) }))
 }
 
 /** Adds a Mashup Screen with one Plugin per slot of the layout, in slot order. A Plugin fills one slot at most. */

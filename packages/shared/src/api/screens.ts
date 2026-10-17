@@ -137,6 +137,8 @@ export interface ScreenRead {
   external: { url: string, fetchManual: boolean } | null
   file: { originalName: string | null, width: number | null, height: number | null, bytes: number | null, uploadedAt: string | null } | null
   html: string | null
+  /** Whether the Screen's content is Floyd-Steinberg dithered. A Plugin Screen follows its Plugin; a Mashup is undithered only when every slot's Plugin is. */
+  dither: boolean
 }
 
 /** The kinds `POST /api/screens` creates; a Mashup and a Plugin Assignment have their own endpoints. */
@@ -145,6 +147,8 @@ export const CREATABLE_SCREEN_KINDS = ['external', 'file', 'html'] as const sati
 interface CreateScreenBase {
   deviceId: string
   name: string
+  /** Defaults to `true`. `false` converts the content with hard thresholds, for text and line art. */
+  dither?: boolean
 }
 
 export interface CreateExternalScreenInput extends CreateScreenBase {
@@ -199,6 +203,8 @@ export interface UpdateScreenInput {
   fetchManual?: boolean
   /** HTML Screen only. */
   html?: string
+  /** External link, File and HTML Screens. A File Screen's stored image, and a kept External link's, are converted again at once. */
+  dither?: boolean
 }
 
 export interface UpdateMashupInput {

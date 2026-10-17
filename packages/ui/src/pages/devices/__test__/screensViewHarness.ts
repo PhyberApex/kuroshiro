@@ -130,7 +130,7 @@ export function fakeKitchen({
     http.post(apiUrl('screens'), async ({ request }) => {
       const body = await createInputOf(request)
       faked.writes.push({ method: 'POST', path: 'screens', body })
-      return added({ name: body.name.trim(), kind: body.kind, ...sourceOf(body) })
+      return added({ name: body.name.trim(), kind: body.kind, dither: String(body.dither) !== 'false', ...sourceOf(body) })
     }),
     http.post(apiUrl('mashup'), async ({ request }) => {
       const body = await request.json() as CreateMashupInput
@@ -145,12 +145,13 @@ export function fakeKitchen({
     }),
     http.patch(apiUrl('screens/:id'), async ({ request, params }) => {
       const body = await request.json() as UpdateScreenInput
-      const { name, html, ...external } = body
+      const { name, html, dither, ...external } = body
       faked.writes.push({ method: 'PATCH', path: `screens/${params.id}`, body })
       return answerChanged(String(params.id), screen => ({
         ...screen,
         name: name ?? screen.name,
         html: html ?? screen.html,
+        dither: dither ?? screen.dither,
         external: screen.external && { ...screen.external, ...external },
       }))
     }),

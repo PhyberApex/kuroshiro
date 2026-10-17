@@ -5,6 +5,7 @@ import { NOT_IN_DEMO } from '@/api/refusalWording'
 import Button from '@/components/Button.vue'
 import { useInstanceFacts } from '@/reads/sharedReads'
 import ReplaceFile from './ReplaceFile.vue'
+import ScreenDitheringField from './ScreenDitheringField.vue'
 import { fileFacts } from './screenSourceWording'
 
 const props = defineProps<{
@@ -46,6 +47,7 @@ async function close() {
     <p v-if="facts" class="facts">
       {{ facts }}
     </p>
+    <ScreenDitheringField :screen="screen" :reload="reload" />
     <div class="replace">
       <Button ref="opener" :disabled="inDemo || !instance.data" :aria-describedby="inDemo ? demoNoteId : undefined" @click="replacing = true">
         Replace file

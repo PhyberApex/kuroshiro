@@ -7,6 +7,7 @@ import { createScreen } from '@/api/screens'
 import Field from '@/components/Field.vue'
 import RadioRow from '@/components/RadioRow.vue'
 import TextInput from '@/components/TextInput.vue'
+import DitheringField from '@/patterns/DitheringField.vue'
 import { useReportScreenFormChanged } from './addScreenChanged'
 import AddScreenFoot from './AddScreenFoot.vue'
 import { useAddScreen } from './addScreenForm'
@@ -24,9 +25,9 @@ const NOT_AN_IMAGE = 'This address does not answer with an image Kuroshiro can r
 
 const addition = useAddScreen(['name', 'url'])
 
-const draft = reactive({ name: '', url: '', fetching: 'keep' as FetchChoice })
+const draft = reactive({ name: '', url: '', fetching: 'keep' as FetchChoice, dither: true })
 
-const changed = computed(() => !addition.added && (draft.name.trim() !== '' || draft.url.trim() !== '' || draft.fetching !== 'keep'))
+const changed = computed(() => !addition.added && (draft.name.trim() !== '' || draft.url.trim() !== '' || draft.fetching !== 'keep' || !draft.dither))
 useReportScreenFormChanged(changed)
 
 /** An address that gave no image is a problem of the address: the Screen is not added and the field says why. */
@@ -43,6 +44,7 @@ function add() {
     name: draft.name.trim(),
     url: draft.url.trim(),
     fetchManual: draft.fetching === 'keep',
+    dither: draft.dither,
   }), {
     name: screenNameProblem(draft.name),
     url: isWebAddress(draft.url) ? undefined : NOT_A_WEB_ADDRESS,
@@ -57,6 +59,7 @@ function add() {
       <TextInput v-model="draft.url" v-bind="control" type="url" inputmode="url" spellcheck="false" autocomplete="off" wide />
     </Field>
     <RadioRow v-model="draft.fetching" class="fetching" :choices="FETCH_CHOICES" aria-label="Fetching" />
+    <DitheringField v-model="draft.dither" />
     <AddScreenFoot :running="addition.running" :changed="changed" :failure="addition.failure" :guarded="false" />
   </form>
 </template>

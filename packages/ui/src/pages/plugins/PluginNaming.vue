@@ -5,6 +5,7 @@ import Field from '@/components/Field.vue'
 import Textarea from '@/components/Textarea.vue'
 import TextInput from '@/components/TextInput.vue'
 import TuckedSection from '@/components/TuckedSection.vue'
+import DitheringField from '@/patterns/DitheringField.vue'
 import { pluginNaming } from './pluginNaming'
 import { fieldId, usePluginFormPart } from './pluginPage'
 
@@ -37,6 +38,7 @@ const naming = usePluginFormPart(pluginNaming, () => (open.value = true))
           <a href="https://trmnl.com/framework/releases" target="_blank" rel="noopener noreferrer">releases</a>.
         </template>
       </Field>
+      <DitheringField :id="fieldId('dither')" v-model="naming.draft.dither" />
     </div>
   </TuckedSection>
 </template>

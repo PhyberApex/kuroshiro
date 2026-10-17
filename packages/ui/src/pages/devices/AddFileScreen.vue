@@ -5,6 +5,7 @@ import { isRefusal } from '@/api/client'
 import { createFileScreen } from '@/api/screens'
 import FieldError from '@/components/FieldError.vue'
 import FileDrop from '@/components/FileDrop.vue'
+import DitheringField from '@/patterns/DitheringField.vue'
 import { useInstanceFacts } from '@/reads/sharedReads'
 import { nameFromFile } from './addScreen'
 import { useReportScreenFormChanged } from './addScreenChanged'
@@ -29,10 +30,11 @@ const name = ref('')
 /** The name the last chosen file gave the Screen. While the field still holds it, another file renames the Screen. */
 const nameOfFile = ref('')
 const file = ref<File | null>(null)
+const dither = ref(true)
 
 const maxBytes = computed(() => facts.data?.limits.imageUploadBytes)
 const convertedFor = computed(() => rendersFor(props.device))
-const changed = computed(() => !addition.added && (name.value.trim() !== '' || file.value !== null))
+const changed = computed(() => !addition.added && (name.value.trim() !== '' || file.value !== null || !dither.value))
 useReportScreenFormChanged(changed)
 
 watch(file, (chosen) => {
@@ -48,7 +50,7 @@ function notTaken(error: unknown) {
 
 function add() {
   const chosen = file.value
-  void addition.create(() => createFileScreen({ deviceId: props.device.id, name: name.value.trim() }, chosen!), {
+  void addition.create(() => createFileScreen({ deviceId: props.device.id, name: name.value.trim(), dither: dither.value }, chosen!), {
     name: screenNameProblem(name.value),
     file: chosen ? undefined : 'Choose an image to upload.',
   }, notTaken)
@@ -77,6 +79,7 @@ function add() {
         It is converted for {{ convertedFor }}.
       </p>
     </div>
+    <DitheringField v-model="dither" />
     <AddScreenFoot :running="addition.running" :changed="changed" :failure="addition.failure" :guarded="false" />
   </form>
 </template>

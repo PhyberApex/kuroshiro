@@ -177,6 +177,31 @@ describe('the Plugin page', () => {
       })
     })
 
+    describe('dithering', () => {
+      const dithering = (screen: Mounted) => screen.getByRole('switch', { name: 'Dithering' })
+
+      it('shows it on after Framework version, and saves it off on its own', async () => {
+        const faked = fakePlugin(buildPluginDetail({ id: 'weather', dither: true }))
+        const screen = await mountPlugin()
+
+        await openNaming(screen)
+        await expect.element(dithering(screen)).toBeChecked()
+        await dithering(screen).click()
+        await saveBar(screen).getByRole('button', { name: 'Save Plugin' }).click()
+
+        await expect.poll(() => faked.saves).toEqual([{ dither: false }])
+      })
+
+      it('shows a Plugin saved undithered as off', async () => {
+        fakePlugin(buildPluginDetail({ id: 'weather', dither: false }))
+        const screen = await mountPlugin()
+
+        await openNaming(screen)
+
+        await expect.element(dithering(screen)).not.toBeChecked()
+      })
+    })
+
     it('puts every field back on "Discard changes" and asks nothing', async () => {
       const faked = fakePlugin()
       const screen = await mountPlugin()

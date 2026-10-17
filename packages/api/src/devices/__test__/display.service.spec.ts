@@ -243,9 +243,70 @@ describe('deviceDisplayService', () => {
       expect(html).toContain('--screen-w: 1040px;')
       expect(html).toContain('<div class="view view--full"><p>hi</p></div>')
       const { convertToPng } = await import('../../utils/imageUtils.js')
-      expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('screen2.png'), { model: V2, palette: GRAY_16 }, expect.any(Object), {})
+      expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('screen2.png'), { model: V2, palette: GRAY_16 }, expect.any(Object), { dither: true })
       expect(result.image_url).toBe('http://api/screens/devices/1/screen2.png')
       expect(fs.unlink).toHaveBeenCalledWith(expect.stringContaining('tmp-source'))
+    })
+
+    describe('dithering', () => {
+      async function convertedWith(): Promise<unknown> {
+        const { convertToPng } = await import('../../utils/imageUtils.js')
+        return vi.mocked(convertToPng).mock.calls.at(-1)?.[4]
+      }
+
+      it('converts an HTML Screen with its own Dithering', async () => {
+        const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS })
+        primeRotation({ id: 'screen2', type: 'html', order: 2, html: '<p>hi</p>', filename: 'x', dither: false }, device)
+
+        await service.getCurrentImage(headers)
+
+        expect(await convertedWith()).toEqual({ dither: false })
+      })
+
+      it('converts a Plugin Screen with its Plugin\'s Dithering', async () => {
+        const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS })
+        primeRotation({ id: 'screen2', type: 'plugin', order: 2, plugin: makePlugin({ id: 'p1', dither: false }), cachedPluginOutput: '<span>cached</span>', filename: 'x' }, device)
+
+        await service.getCurrentImage(headers)
+
+        expect(await convertedWith()).toEqual({ dither: false })
+      })
+
+      it('converts a Mashup of undithered Plugins undithered', async () => {
+        const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS })
+        const config = makeMashupConfiguration({ id: 'c', slots: [{ id: 's', order: 0, plugin: makePlugin({ id: 'p1', dither: false }) }] } as never)
+        primeRotation({ id: 'screen2', type: 'mashup', order: 2, cachedPluginOutput: '<div class="mashup mashup--1Lx1R">m</div>', mashupConfiguration: config, filename: 'x' }, device)
+
+        await service.getCurrentImage(headers)
+
+        expect(await convertedWith()).toEqual({ dither: false })
+      })
+
+      it('keeps a Mashup with one dithered slot dithered', async () => {
+        const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS })
+        const config = makeMashupConfiguration({
+          id: 'c',
+          slots: [
+            { id: 's1', order: 0, plugin: makePlugin({ id: 'p1', dither: false }) },
+            { id: 's2', order: 1, plugin: makePlugin({ id: 'p2', dither: true }) },
+          ],
+        } as never)
+        primeRotation({ id: 'screen2', type: 'mashup', order: 2, cachedPluginOutput: '<div class="mashup mashup--1Lx1R">m</div>', mashupConfiguration: config, filename: 'x' }, device)
+
+        await service.getCurrentImage(headers)
+
+        expect(await convertedWith()).toEqual({ dither: true })
+      })
+
+      it('keeps an empty Mashup dithered', async () => {
+        const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS })
+        const config = makeMashupConfiguration({ id: 'c', slots: [] } as never)
+        primeRotation({ id: 'screen2', type: 'mashup', order: 2, cachedPluginOutput: '<div class="mashup mashup--1Lx1R">m</div>', mashupConfiguration: config, filename: 'x' }, device)
+
+        await service.getCurrentImage(headers)
+
+        expect(await convertedWith()).toEqual({ dither: true })
+      })
     })
 
     it('wraps cached plugin output in a full view and the shell', async () => {
@@ -965,7 +1026,7 @@ describe('deviceDisplayService', () => {
 
       const result = await service.getCurrentImageWithoutProgressing(headers)
       expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', expect.any(String), expect.any(Object))
-      expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('screen1.png'), { model: OG_PLUS, palette: GRAY_4 }, expect.any(Object))
+      expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('screen1.png'), { model: OG_PLUS, palette: GRAY_4 }, expect.any(Object), { dither: true })
       expect(result).toBeInstanceOf(DisplayScreen)
       expect(result.image_url).toBe('http://api/screens/devices/1/screen1.png')
     })

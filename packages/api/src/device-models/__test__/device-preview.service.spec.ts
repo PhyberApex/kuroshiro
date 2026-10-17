@@ -51,6 +51,16 @@ describe('devicePreviewService', () => {
     renderHtmlToPng.mockResolvedValue(null)
   })
 
+  it('converts with Dithering unless the request turns it off', async () => {
+    const { service } = buildService()
+
+    await service.render(INPUT)
+    await service.render({ ...INPUT, dither: false })
+
+    expect(renderHtmlToPng.mock.calls[0][4]).toEqual({ dither: true })
+    expect(renderHtmlToPng.mock.calls[1][4]).toEqual({ dither: false })
+  })
+
   it('wraps the body HTML in the screen shell and renders it for the target, reporting no signal', async () => {
     const { service } = buildService()
 

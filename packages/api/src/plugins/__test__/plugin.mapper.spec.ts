@@ -130,6 +130,7 @@ describe('toPluginDetail', () => {
       updatedAt: '2026-02-02T08:00:00.000Z',
       refreshInterval: 30,
       frameworkVersion: null,
+      dither: true,
       templates: [{ size: 'full', liquidMarkup: '' }],
       dataSources: [],
       fields: [],

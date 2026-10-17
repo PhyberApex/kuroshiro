@@ -4,6 +4,7 @@ import type { ScreenStateRead } from '../schedule/rotation.js'
 import type { Schedule } from '../schedule/schedule.entity.js'
 import type { Screen } from './screens.entity.js'
 import { MASHUP_LAYOUTS } from 'kuroshiro-shared'
+import { mashupDither } from '../mashup/mashup-dither.js'
 import { toImagePath, toIsoString, toIsoStringOrNull } from '../utils/readModel.js'
 import { screenNameOf } from './screen-name.js'
 
@@ -72,6 +73,17 @@ function toFileRead(screen: Screen): ScreenRead['file'] {
   }
 }
 
+function ditherOf(screen: Screen): boolean {
+  switch (screen.type) {
+    case 'plugin':
+      return screen.plugin?.dither ?? true
+    case 'mashup':
+      return mashupDither({ slots: screen.mashupConfiguration?.slots ?? [] })
+    default:
+      return screen.dither
+  }
+}
+
 export function toScreenRead(screen: Screen, facts: ScreenFacts): ScreenRead {
   const kind = screen.type
   return {
@@ -92,5 +104,6 @@ export function toScreenRead(screen: Screen, facts: ScreenFacts): ScreenRead {
     external: kind === 'external' ? { url: screen.externalLink ?? '', fetchManual: screen.fetchManual } : null,
     file: kind === 'file' ? toFileRead(screen) : null,
     html: kind === 'html' ? screen.html ?? '' : null,
+    dither: ditherOf(screen),
   }
 }

@@ -146,7 +146,7 @@ describe('add Screen', () => {
       await screen.getByRole('button', { name: 'Add Screen' }).click()
 
       await expect.poll(() => path(screen)).toBe(OPENED_ON_THE_NEW_SCREEN)
-      expect(faked.writes).toEqual([{ method: 'POST', path: 'screens', body: { kind: 'external', deviceId: 'kitchen', name: 'Tide table', url: 'https://tides.example/today.png', fetchManual: true } }])
+      expect(faked.writes).toEqual([{ method: 'POST', path: 'screens', body: { kind: 'external', deviceId: 'kitchen', name: 'Tide table', url: 'https://tides.example/today.png', fetchManual: true, dither: true } }])
       expect(screen.getByRole('alertdialog').elements()).toEqual([])
     })
   })

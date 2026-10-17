@@ -1,6 +1,6 @@
 import type { CreateScreenInput } from 'kuroshiro-shared'
 import { Transform } from 'class-transformer'
-import { IsBoolean, IsIn, IsNotEmpty, IsString, IsUrl, IsUUID, ValidateIf } from 'class-validator'
+import { IsBoolean, IsIn, IsNotEmpty, IsOptional, IsString, IsUrl, IsUUID, ValidateIf } from 'class-validator'
 import { CREATABLE_SCREEN_KINDS } from 'kuroshiro-shared'
 import { trimmed } from '../../utils/trimmed.js'
 
@@ -39,6 +39,11 @@ export class CreateScreenDto implements CreateScreenFields {
   @Transform(({ value }) => typeof value === 'string' ? BOOLEAN_BY_FORM_VALUE[value] ?? value : value)
   @IsBoolean()
   fetchManual?: boolean
+
+  @IsOptional()
+  @Transform(({ value }) => typeof value === 'string' ? BOOLEAN_BY_FORM_VALUE[value] ?? value : value)
+  @IsBoolean()
+  dither?: boolean
 
   @ValidateIf((input: CreateScreenDto) => input.kind === 'html')
   @IsString()

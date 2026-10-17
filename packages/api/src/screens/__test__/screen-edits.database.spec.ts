@@ -205,6 +205,44 @@ describe('editing a Screen, against a real database', () => {
       expect(await response.json()).toMatchObject({ name: 'New', renderedAt: CREATED_AT.toISOString(), file: { uploadedAt: uploadedAt.toISOString() } })
     })
 
+    it('turns Dithering off on an HTML Screen and back on', async () => {
+      const screen = await seedScreen(1)
+
+      const off = await patch(screen.id, { dither: false })
+      expect(await off.json()).toMatchObject({ dither: false })
+      const on = await patch(screen.id, { dither: true })
+      expect(await on.json()).toMatchObject({ dither: true })
+    })
+
+    it('converts a File Screen\'s retained original again at once when Dithering flips', async () => {
+      const screen = await seedScreen(1, { type: 'file', html: null })
+      await seedFiles(screen)
+
+      const response = await patch(screen.id, { dither: false })
+
+      expect(await response.json()).toMatchObject({ kind: 'file', dither: false })
+      expect(convertToPng).toHaveBeenCalledWith(expect.stringContaining(`${screen.id}.original`), expect.any(String), expect.anything(), expect.anything(), { dither: false })
+    })
+
+    it('converts a kept External link\'s retained image again when Dithering flips, without fetching', async () => {
+      const screen = await seedScreen(1, { type: 'external', html: null, externalLink: 'http://a.local/a.png', fetchManual: true })
+      await seedFiles(screen)
+
+      await patch(screen.id, { dither: false })
+
+      expect(downloadImage).not.toHaveBeenCalled()
+      expect(convertToPng).toHaveBeenCalledWith(expect.stringContaining(`${screen.id}.original`), expect.any(String), expect.anything(), expect.anything(), { dither: false })
+    })
+
+    it('answers 400 for a dither that is not a boolean, and 400 screen-field-not-for-kind on a Mashup', async () => {
+      const html = await seedScreen(1)
+      const mashupScreen = await seedScreen(2, { type: 'mashup', html: null })
+      await database.getRepository(MashupConfiguration).save({ layout: '1Lx1R', screen: mashupScreen })
+
+      expect((await patch(html.id, { dither: 'no' })).status).toBe(400)
+      expect(await (await patch(mashupScreen.id, { dither: false })).json()).toMatchObject({ code: 'screen-field-not-for-kind' })
+    })
+
     it('saves the markup of an HTML Screen', async () => {
       const screen = await seedScreen(1)
 

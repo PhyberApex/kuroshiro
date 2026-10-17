@@ -664,7 +664,7 @@ export class DeviceDisplayService {
 
   private async renderHtmlScreen(html: string, screen: Screen, device: Device, honorRenderSignal: boolean): Promise<RenderOutcome> {
     try {
-      return await this.screenRender.renderBodyToScreenPng(viewFull(html), screen, device, honorRenderSignal)
+      return await this.screenRender.renderBodyToScreenPng(viewFull(html), screen, device, honorRenderSignal, undefined, screen.dither)
     }
     catch (err) {
       this.logger.error(`Failed to render HTML screen: ${getErrorMessage(err)}`)
@@ -680,7 +680,7 @@ export class DeviceDisplayService {
     if (screenWithPlugin.cachedPluginOutput) {
       try {
         this.logger.log(`Using cached plugin output for plugin ${plugin.id}, screen ${screen.id}`)
-        return await this.screenRender.renderBodyToScreenPng(viewFull(screenWithPlugin.cachedPluginOutput), screen, device, honorRenderSignal, frameworkVersion)
+        return await this.screenRender.renderBodyToScreenPng(viewFull(screenWithPlugin.cachedPluginOutput), screen, device, honorRenderSignal, frameworkVersion, plugin.dither)
       }
       catch (err) {
         const message = getErrorMessage(err)
@@ -692,7 +692,7 @@ export class DeviceDisplayService {
     // No render is cached yet: a Poll-kind Plugin fetches now, a Webhook-kind one renders what it has received, or nothing.
     try {
       const renderedHtml = await this.renderPluginHtml(plugin, screen)
-      return renderedHtml ? await this.screenRender.renderBodyToScreenPng(viewFull(renderedHtml), screen, device, honorRenderSignal, frameworkVersion) : null
+      return renderedHtml ? await this.screenRender.renderBodyToScreenPng(viewFull(renderedHtml), screen, device, honorRenderSignal, frameworkVersion, plugin.dither) : null
     }
     catch (err) {
       const message = getErrorMessage(err)
@@ -705,7 +705,7 @@ export class DeviceDisplayService {
     const inputPath = path.join(resolveAppPath('public', 'screens', 'devices', device.id), 'tmp-source')
     try {
       await downloadImage(screen.externalLink!, inputPath, this.logger)
-      await convertToPng(inputPath, this.screenImagePath(device, screen), await this.deviceModels.renderTargetFor(device), this.logger)
+      await convertToPng(inputPath, this.screenImagePath(device, screen), await this.deviceModels.renderTargetFor(device), this.logger, { dither: screen.dither })
       this.logger.log('Updating generation date on screen')
       screen.generatedAt = new Date()
       await this.screenRepository.save(screen)

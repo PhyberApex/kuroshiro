@@ -2,6 +2,7 @@ import type { ApiErrorCode } from 'kuroshiro-shared'
 import type { Buffer } from 'node:buffer'
 import type { DeepPartial } from 'typeorm'
 import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity.js'
+import type { DeviceRenderTarget } from '../device-models/device-models.service.js'
 import type { StagedImagePaths } from '../utils/stagedImageUpload.js'
 import { randomUUID } from 'node:crypto'
 import * as fs from 'node:fs'
@@ -29,9 +30,9 @@ import { Screen } from './screens.entity.js'
 type FileFacts = Pick<Screen, 'fileOriginalName' | 'fileWidth' | 'fileHeight' | 'fileBytes' | 'fileUploadedAt'>
 
 const EDITABLE_FIELDS: Record<Screen['type'], ReadonlyArray<keyof UpdateScreenDto>> = {
-  external: ['name', 'url', 'fetchManual'],
-  file: ['name'],
-  html: ['name', 'html'],
+  external: ['name', 'url', 'fetchManual', 'dither'],
+  file: ['name', 'dither'],
+  html: ['name', 'html', 'dither'],
   mashup: ['name'],
   plugin: [],
 }
@@ -57,9 +58,10 @@ export class ScreensService {
       throw new ApiException(HttpStatus.NOT_FOUND, 'device-not-found', 'Device not found', { id: input.deviceId })
 
     const id = randomUUID()
-    const content = await this.prepareContent(input, device, id, file)
+    const dither = input.dither ?? true
+    const content = await this.prepareContent(input, device, id, dither, file)
     try {
-      await joinEndOfOrder(this.screensRepository.manager, device.id, { id, type: input.kind, filename: input.name, ...content })
+      await joinEndOfOrder(this.screensRepository.manager, device.id, { id, type: input.kind, filename: input.name, dither, ...content })
     }
     catch (err) {
       await this.deleteImages(device.id, id)
@@ -79,16 +81,16 @@ export class ScreensService {
   }
 
   /** The kind's own columns, with its image stored under the given Screen id when the kind keeps one. */
-  private async prepareContent(input: CreateScreenDto, device: Device, screenId: string, file?: Express.Multer.File): Promise<DeepPartial<Screen>> {
+  private async prepareContent(input: CreateScreenDto, device: Device, screenId: string, dither: boolean, file?: Express.Multer.File): Promise<DeepPartial<Screen>> {
     switch (input.kind) {
       case 'html':
         return { html: input.html }
       case 'external':
         if (input.fetchManual)
-          await this.stageImage(device, screenId).store(staged => this.fetchKeptImage(device, input.url!, staged))
+          await this.stageImage(device, screenId).store(staged => this.fetchKeptImage(device, input.url!, staged, dither))
         return { externalLink: input.url, fetchManual: input.fetchManual }
       case 'file':
-        return this.stageImage(device, screenId).store(staged => this.convertUpload(device, file!, staged))
+        return this.stageImage(device, screenId).store(staged => this.convertUpload(device, file!, staged, dither))
     }
   }
 
@@ -101,11 +103,21 @@ export class ScreensService {
     const changes: QueryDeepPartialEntity<Screen> = {
       ...(input.name !== undefined && { filename: input.name }),
       ...(input.html !== undefined && { html: input.html, renderSignal: null }),
+      ...(input.dither !== undefined && { dither: input.dither }),
       ...(screen.type === 'external' && await this.changeExternalLink(screen, input)),
     }
     if (Object.keys(changes).length > 0)
       await this.screensRepository.update({ id }, changes)
+    await this.reconvertForDither(screen, input, changes)
     return id
+  }
+
+  /** A flip of Dithering converts a File Screen's stored image, or an External link's kept one, again from its retained original, unless the change fetched a new one. */
+  private async reconvertForDither(screen: Screen, input: UpdateScreenDto, changes: QueryDeepPartialEntity<Screen>): Promise<void> {
+    const kept = screen.type === 'file' || (screen.type === 'external' && (changes.fetchManual ?? screen.fetchManual))
+    if (input.dither === undefined || input.dither === screen.dither || changes.generatedAt || !kept)
+      return
+    await this.reconvertScreen(screen.device, await this.deviceModels.renderTargetFor(screen.device), { ...screen, dither: input.dither })
   }
 
   /** The columns of an External link's own fields, its kept image fetched first when the URL or the choice to keep it changed. */
@@ -114,7 +126,7 @@ export class ScreensService {
     const fetchManual = input.fetchManual ?? screen.fetchManual
     const needsFetch = fetchManual && (url !== screen.externalLink || !screen.fetchManual)
     if (needsFetch)
-      await this.stageImage(screen.device, screen.id).store(staged => this.fetchKeptImage(screen.device, url, staged))
+      await this.stageImage(screen.device, screen.id).store(staged => this.fetchKeptImage(screen.device, url, staged, input.dither ?? screen.dither))
     return { externalLink: url, fetchManual, ...(needsFetch && { generatedAt: new Date() }) }
   }
 
@@ -130,7 +142,7 @@ export class ScreensService {
     const screen = await this.findFileScreen(id, file)
     const staged = this.stageImage(screen.device, randomUUID())
     try {
-      await this.convertUpload(screen.device, file!, staged)
+      await this.convertUpload(screen.device, file!, staged, screen.dither)
       return await fs.promises.readFile(staged.imagePath)
     }
     finally {
@@ -142,7 +154,7 @@ export class ScreensService {
   async replaceImage(id: string, file?: Express.Multer.File): Promise<string> {
     this.logger.log(`Replacing the image of screen ${id}`)
     const screen = await this.findFileScreen(id, file)
-    const facts = await this.stageImage(screen.device, id).store(staged => this.convertUpload(screen.device, file!, staged))
+    const facts = await this.stageImage(screen.device, id).store(staged => this.convertUpload(screen.device, file!, staged, screen.dither))
     await this.screensRepository.update({ id }, { ...facts, generatedAt: new Date() })
     return id
   }
@@ -160,7 +172,7 @@ export class ScreensService {
     return stageUpload(this.originalImagePath(device.id, screenId), this.screenImagePath(device.id, screenId), this.logger)
   }
 
-  private async fetchKeptImage(device: Device, url: string, staged: StagedImagePaths): Promise<void> {
+  private async fetchKeptImage(device: Device, url: string, staged: StagedImagePaths, dither: boolean): Promise<void> {
     if (this.configService.get<boolean>('demo_mode'))
       assertPublicUrl(url)
     const target = await this.deviceModels.renderTargetFor(device)
@@ -172,7 +184,7 @@ export class ScreensService {
       throw this.refuseImage(err, HttpStatus.UNPROCESSABLE_ENTITY, 'image-fetch-failed', `The image could not be fetched: ${reason}`, { reason })
     }
     try {
-      await convertToPng(staged.originalPath, staged.imagePath, target, this.logger)
+      await convertToPng(staged.originalPath, staged.imagePath, target, this.logger, { dither })
     }
     catch (err) {
       const reason = 'The address did not answer with an image Kuroshiro can read.'
@@ -180,12 +192,12 @@ export class ScreensService {
     }
   }
 
-  private async convertUpload(device: Device, file: Express.Multer.File, staged: StagedImagePaths): Promise<FileFacts> {
+  private async convertUpload(device: Device, file: Express.Multer.File, staged: StagedImagePaths, dither: boolean): Promise<FileFacts> {
     const target = await this.deviceModels.renderTargetFor(device)
     await writeUpload(staged.originalPath, file)
     return refusingUnreadableImage(this.logger, async () => {
       const { width, height } = await readImageSize(staged.originalPath, this.logger)
-      await convertToPng(staged.originalPath, staged.imagePath, target, this.logger)
+      await convertToPng(staged.originalPath, staged.imagePath, target, this.logger, { dither })
       return { fileOriginalName: file.originalname, fileWidth: width, fileHeight: height, fileBytes: file.size, fileUploadedAt: new Date() }
     })
   }
@@ -233,7 +245,7 @@ export class ScreensService {
     const screen = await this.findScreenWithDevice(id)
     if (screen.type !== 'external' || !screen.fetchManual)
       throw new BadRequestException('Only an External link that keeps its image can be refreshed.')
-    await this.stageImage(screen.device, id).store(staged => this.fetchKeptImage(screen.device, screen.externalLink!, staged))
+    await this.stageImage(screen.device, id).store(staged => this.fetchKeptImage(screen.device, screen.externalLink!, staged, screen.dither))
     await this.screensRepository.update({ id }, { generatedAt: new Date() })
     return id
   }
@@ -248,28 +260,34 @@ export class ScreensService {
     const target = await this.deviceModels.renderTargetFor(device)
     let converted = 0
     for (const screen of screens.filter(s => s.type === 'file' || (s.type === 'external' && s.fetchManual))) {
-      const outputPath = this.screenImagePath(device.id, screen.id)
-      const originalPath = this.originalImagePath(device.id, screen.id)
-      const sourcePath = await fileExists(originalPath) ? originalPath : outputPath
-      if (!await fileExists(sourcePath)) {
-        this.logger.warn(`No image to reconvert for screen ${screen.id}`)
-        continue
-      }
-      const tempPath = path.join(path.dirname(outputPath), `tmp-${screen.id}.png`)
-      try {
-        await convertToPng(sourcePath, tempPath, target, this.logger)
-        await fs.promises.rename(tempPath, outputPath)
-        await this.screensRepository.update({ id: screen.id }, { generatedAt: new Date() })
+      if (await this.reconvertScreen(device, target, screen))
         converted++
-      }
-      catch (err) {
-        const message = getErrorMessage(err)
-        this.logger.error(`Failed to reconvert screen ${screen.id}: ${message}`)
-        await fs.promises.unlink(tempPath).catch(() => {})
-      }
     }
     this.logger.log(`Reconverted ${converted} image screen(s) for device ${device.id} as ${target.model.name}/${target.palette.id}`)
     return converted
+  }
+
+  /** Converts one Screen's image again for the target, with the Screen's own Dithering; `false` when there was nothing to convert or it failed. */
+  private async reconvertScreen(device: Device, target: DeviceRenderTarget, screen: Screen): Promise<boolean> {
+    const outputPath = this.screenImagePath(device.id, screen.id)
+    const originalPath = this.originalImagePath(device.id, screen.id)
+    const sourcePath = await fileExists(originalPath) ? originalPath : outputPath
+    if (!await fileExists(sourcePath)) {
+      this.logger.warn(`No image to reconvert for screen ${screen.id}`)
+      return false
+    }
+    const tempPath = path.join(path.dirname(outputPath), `tmp-${screen.id}.png`)
+    try {
+      await convertToPng(sourcePath, tempPath, target, this.logger, { dither: screen.dither })
+      await fs.promises.rename(tempPath, outputPath)
+      await this.screensRepository.update({ id: screen.id }, { generatedAt: new Date() })
+      return true
+    }
+    catch (err) {
+      this.logger.error(`Failed to reconvert screen ${screen.id}: ${getErrorMessage(err)}`)
+      await fs.promises.unlink(tempPath).catch(() => {})
+      return false
+    }
   }
 
   private async findScreenWithDevice(id: string): Promise<Screen> {
