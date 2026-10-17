@@ -17,16 +17,18 @@ type MetricsSensor = Pick<DeviceSensor, 'kind' | 'value' | 'unit'> & { device: P
 type MetricsDataSource = Pick<PluginDataSource, 'name' | 'mode' | 'fetchFailureStreak'> & { plugin: Pick<PluginDataSource['plugin'], 'id' | 'name'> }
 
 /**
- * Firmware-reported unit per Sensor kind (ADR-0018: `unit` is device-reported,
+ * Accepted `unit` spellings per Sensor kind (ADR-0018: `unit` is device-reported,
  * not a Kuroshiro constant) — fixed here only to name each metric and to spot
  * a reading reported in some other unit, which is omitted rather than
- * converted.
+ * converted. The first spelling is the word official TRMNL firmware sends in
+ * its `SENSORS` header (`environment_sensor.cpp`); the short form after it is
+ * also accepted. Compared lower-cased and trimmed.
  */
-const EXPECTED_SENSOR_UNITS: Record<DeviceSensorKind, { label: string, unit: string, metricName: string }> = {
-  carbon_dioxide: { label: 'carbon dioxide', unit: 'ppm', metricName: 'kuroshiro_device_sensor_carbon_dioxide_ppm' },
-  humidity: { label: 'humidity', unit: '%', metricName: 'kuroshiro_device_sensor_humidity_percent' },
-  pressure: { label: 'pressure', unit: 'hPa', metricName: 'kuroshiro_device_sensor_pressure_hpa' },
-  temperature: { label: 'temperature', unit: 'C', metricName: 'kuroshiro_device_sensor_temperature_celsius' },
+const EXPECTED_SENSOR_UNITS: Record<DeviceSensorKind, { label: string, helpUnit: string, units: readonly string[], metricName: string }> = {
+  carbon_dioxide: { label: 'carbon dioxide', helpUnit: 'ppm', units: ['parts_per_million', 'ppm'], metricName: 'kuroshiro_device_sensor_carbon_dioxide_ppm' },
+  humidity: { label: 'humidity', helpUnit: '%', units: ['percent', '%'], metricName: 'kuroshiro_device_sensor_humidity_percent' },
+  pressure: { label: 'pressure', helpUnit: 'hPa', units: ['hectopascal', 'hpa'], metricName: 'kuroshiro_device_sensor_pressure_hpa' },
+  temperature: { label: 'temperature', helpUnit: 'C', units: ['celsius', 'c'], metricName: 'kuroshiro_device_sensor_temperature_celsius' },
 }
 
 /** `undefined` for an unset or non-numeric field — `batteryVoltage`/`rssi` are optional strings, and a Device with neither should emit no sample rather than 0 or NaN. */
@@ -137,12 +139,12 @@ export class MetricsService {
 
   /** One family per Sensor kind (ADR fixed unit table) — a reading reported in any other unit is omitted rather than converted. */
   private sensorFamilies(sensors: MetricsSensor[]): MetricFamily[] {
-    return Object.entries(EXPECTED_SENSOR_UNITS).map(([kind, { label, unit, metricName }]) => ({
+    return Object.entries(EXPECTED_SENSOR_UNITS).map(([kind, { label, helpUnit, units, metricName }]) => ({
       name: metricName,
-      help: `Device's last reported ${label} Sensor reading, in ${unit}. Omitted for a Device with no reading of this kind, or one reported in a different unit.`,
+      help: `Device's last reported ${label} Sensor reading, in ${helpUnit}. Omitted for a Device with no reading of this kind, or one reported in a different unit.`,
       type: 'gauge' as const,
       samples: sensors
-        .filter(sensor => sensor.kind === kind && sensor.unit === unit)
+        .filter(sensor => sensor.kind === kind && units.includes(sensor.unit.trim().toLowerCase()))
         .map(sensor => ({ labels: deviceLabels(sensor.device), value: sensor.value })),
     }))
   }
