@@ -354,10 +354,11 @@ Delivery goes through the [`apprise-api`](https://github.com/caronc/apprise-api)
 | `KUROSHIRO_ALERT_LOW_BATTERY_PERCENT` | `20` | Derived battery percentage below which a Device is considered low. |
 | `KUROSHIRO_ALERT_OFFLINE_MULTIPLIER` | `3` | A Device is offline once it hasn't polled for longer than its `refreshRate` times this multiplier. |
 | `KUROSHIRO_ALERT_FETCH_FAILURES` | `3` | Consecutive scheduled-render failures a `fetch`-mode Data Source needs before its Alert opens. |
+| `KUROSHIRO_ALERT_REMINDER_HOURS` | `0` | Hours an Alert can stay active after its last announcement before the next Sweep's digest reminds you of it again under *Still open*. `0` turns Reminders off. See [ADR-0048](docs/adr/0048-alerts-still-open-are-re-announced-on-a-reminder-interval.md). |
 | `KUROSHIRO_ALERT_RETENTION_DAYS` | `90` | Age (in days) after which a resolved Alert is pruned by the daily Retention job. `0` disables Alert pruning. |
 | `KUROSHIRO_DEVICE_LOG_RETENTION_DAYS` | `30` | Age (in days) after which a Device Log entry is pruned by the daily Retention job. `0` disables Device Log pruning. |
 
-The three threshold variables and the two Retention variables above are only fallbacks: each is an Instance Setting an admin can override (`PATCH /api/settings`, or the admin UI's Instance Settings page), and an override wins over the environment variable until it is cleared. A Retention age of `0` disables pruning for that age whether it comes from an override or from the environment. See [ADR-0027](docs/adr/0027-instance-settings-typed-single-row-persisted-over-env-in-the-archive.md).
+The three threshold variables, the Reminder variable and the two Retention variables above are only fallbacks: each is an Instance Setting an admin can override (`PATCH /api/settings`, or the admin UI's Instance Settings page), and an override wins over the environment variable until it is cleared. A Retention age of `0` disables pruning for that age, and a Reminder Interval of `0` disables Reminders, whether it comes from an override or from the environment. See [ADR-0027](docs/adr/0027-instance-settings-typed-single-row-persisted-over-env-in-the-archive.md).
 
 To run the sidecar alongside Kuroshiro, uncomment the `apprise-api` service in [`docker-compose.yml`](./docker-compose.yml) and point `KUROSHIRO_APPRISE_URL` at it (e.g. `http://apprise-api:8000`), then configure your notification channels in its own persisted config under the `kuroshiro` key (or whatever `KUROSHIRO_APPRISE_KEY` is set to).
 

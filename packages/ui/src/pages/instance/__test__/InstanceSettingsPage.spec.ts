@@ -92,6 +92,31 @@ describe('instance Settings', () => {
       await expect.element(screen.getByRole('main').getByRole('link', { name: 'Alerts', exact: true })).toHaveAttribute('href', '/alerts')
     })
 
+    it('shows the Reminder Interval beside the thresholds, off by default, and saves it with the copy for a number of hours', async () => {
+      const patches = fakeSettings()
+      const screen = await mountSettings()
+
+      await expect.element(field(screen, 'Reminder')).toHaveValue(0)
+      expect(words(rowOf(screen, 'Reminder')?.querySelector('.control-cell'))).toBe('every hours')
+      expect(sourceOf(screen, 'Reminder')).toBe('Built-in default')
+      expect(noteOf(screen, 'Reminder')).toBe('Off. A firing Alert is announced when it fires and when it resolves.')
+
+      await enter(screen, 'Reminder', '24')
+
+      await expect.poll(() => noteOf(screen, 'Reminder'), { timeout: 5000 }).toBe('A firing Alert is announced again under "Still open" once 24 hours have passed since it was last announced.')
+      expect(patches).toEqual([{ alertReminderHours: 24 }])
+    })
+
+    it('does not send a negative Reminder Interval and says what is allowed', async () => {
+      const patches = fakeSettings()
+      const screen = await mountSettings()
+
+      await enter(screen, 'Reminder', '-1')
+
+      await expect.element(field(screen, 'Reminder')).toHaveAccessibleDescription('Enter a whole number of hours, or 0 to turn Reminders off.')
+      expect(patches).toEqual([])
+    })
+
     it('caps the resolve point at 100 % for a threshold of 96 or more', async () => {
       fakeSettings()
       const screen = await mountSettings()

@@ -11,6 +11,8 @@ const DEFAULT_ALERTS = {
   offlineMultiplierSource: 'default' as const,
   fetchFailureThreshold: 3,
   fetchFailureThresholdSource: 'default' as const,
+  alertReminderHours: 0,
+  alertReminderHoursSource: 'default' as const,
 }
 
 const DEFAULT_RETENTION = {
@@ -57,6 +59,26 @@ describe('instanceSettingsService', () => {
         offlineMultiplier: 3,
         fetchFailureThreshold: 3,
       })
+    })
+  })
+
+  describe('resolveAlertReminderHours', () => {
+    it('is off by default when no row exists and no env var is set', async () => {
+      await expect(service.resolveAlertReminderHours()).resolves.toBe(0)
+    })
+
+    it('falls back to the env-derived value when nothing is overridden', async () => {
+      service = new InstanceSettingsService(asRepository(repo), makeConfigService({ alerts: { alertReminderHours: 24, alertReminderHoursSource: 'env' } }))
+      repo.findOneBy.mockResolvedValue({ id: 1, alertReminderHours: null })
+
+      await expect(service.resolveAlertReminderHours()).resolves.toBe(24)
+    })
+
+    it('prefers a saved override, including 0 to turn Reminders off over an env value', async () => {
+      service = new InstanceSettingsService(asRepository(repo), makeConfigService({ alerts: { alertReminderHours: 24, alertReminderHoursSource: 'env' } }))
+      repo.findOneBy.mockResolvedValue({ id: 1, alertReminderHours: 0 })
+
+      await expect(service.resolveAlertReminderHours()).resolves.toBe(0)
     })
   })
 
@@ -115,6 +137,7 @@ describe('instanceSettingsService', () => {
         lowBatteryPercent: { override: null, value: 20, fallbackSource: 'default', fallbackValue: 20 },
         offlineMultiplier: { override: null, value: 3, fallbackSource: 'default', fallbackValue: 3 },
         fetchFailureThreshold: { override: null, value: 3, fallbackSource: 'default', fallbackValue: 3 },
+        alertReminderHours: { override: null, value: 0, fallbackSource: 'default', fallbackValue: 0 },
         alertRetentionDays: { override: null, value: 90, fallbackSource: 'default', fallbackValue: 90 },
         deviceLogRetentionDays: { override: null, value: 30, fallbackSource: 'default', fallbackValue: 30 },
         firmwareAutoUpdate: { override: null, value: false, fallbackSource: 'default', fallbackValue: false },

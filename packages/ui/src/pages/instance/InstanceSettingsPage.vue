@@ -13,7 +13,7 @@ import InstancePageHeading from './InstancePageHeading.vue'
 import { FIRMWARE_PATH, HOUSEKEEPING_PATH } from './instancePaths'
 import InstanceSection from './InstanceSection.vue'
 import InstanceSettingRow from './InstanceSettingRow.vue'
-import { batteryLowNote, deviceLogEntriesNote, fetchFailureStreakNote, offlineNote, resolvedAlertsNote } from './instanceSettingWording'
+import { batteryLowNote, deviceLogEntriesNote, fetchFailureStreakNote, offlineNote, reminderNote, resolvedAlertsNote } from './instanceSettingWording'
 import { useOnlyDevice } from './onlyDevice'
 import TestNotificationRow from './TestNotificationRow.vue'
 
@@ -65,6 +65,11 @@ const SKELETON_ROW_WIDTHS = ['30%', '26%', '34%', '22%']
           <InstanceSettingRow setting-key="fetchFailureThreshold" :setting="data.settings.fetchFailureThreshold" label="Fetch Failure Streak" before="of" after="failed fetches">
             <template #note="{ value }">
               {{ fetchFailureStreakNote(value) }}
+            </template>
+          </InstanceSettingRow>
+          <InstanceSettingRow setting-key="alertReminderHours" :setting="data.settings.alertReminderHours" label="Reminder" before="every" after="hours">
+            <template #note="{ value }">
+              {{ reminderNote(value) }}
             </template>
           </InstanceSettingRow>
           <p class="under-section">

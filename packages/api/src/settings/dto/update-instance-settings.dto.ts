@@ -21,6 +21,11 @@ export class UpdateInstanceSettingsDto implements UpdateInstanceSettingsInput {
 
   @IsOptional()
   @IsInt()
+  @Min(SETTING_BOUNDS.alertReminderHours.min)
+  alertReminderHours?: number | null
+
+  @IsOptional()
+  @IsInt()
   @Min(SETTING_BOUNDS.alertRetentionDays.min)
   alertRetentionDays?: number | null
 

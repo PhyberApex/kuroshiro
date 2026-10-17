@@ -1,10 +1,10 @@
-import type { AlertThresholdKey, FallbackSource, InstanceSettingsResponse, RetentionAgeKey, RetentionAges, SettingKey, UpdateInstanceSettingsInput } from 'kuroshiro-shared'
+import type { AlertReminderKey, AlertThresholdKey, FallbackSource, InstanceSettingsResponse, RetentionAgeKey, RetentionAges, SettingKey, UpdateInstanceSettingsInput } from 'kuroshiro-shared'
 import type { Repository } from 'typeorm'
 import type { InstanceSettingsFallbacks } from './instance-settings.mapper.js'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
-import { ALERT_THRESHOLD_KEYS, BOOLEAN_SETTING_KEYS, RETENTION_AGE_KEYS, SETTING_KEYS } from 'kuroshiro-shared'
+import { ALERT_REMINDER_KEYS, ALERT_THRESHOLD_KEYS, BOOLEAN_SETTING_KEYS, RETENTION_AGE_KEYS, SETTING_KEYS } from 'kuroshiro-shared'
 import { INSTANCE_SETTINGS_ID, InstanceSettings } from './entities/instance-settings.entity.js'
 import { toInstanceSettingsResponse } from './instance-settings.mapper.js'
 
@@ -14,9 +14,10 @@ const FIRMWARE_AUTO_UPDATE_DEFAULT = false
 
 /**
  * The persisted home for admin-tunable, instance-wide values (ADR-0027) — the Alert Rule
- * thresholds, the Retention ages and Firmware Auto-Update. Each numeric Setting resolves as
- * override, else its environment variable, else the built-in default; the single row need
- * not exist until the first save, and an absent row behaves like every Setting being unset.
+ * thresholds, the Reminder Interval, the Retention ages and Firmware Auto-Update. Each
+ * numeric Setting resolves as override, else its environment variable, else the built-in
+ * default; the single row need not exist until the first save, and an absent row behaves
+ * like every Setting being unset.
  */
 @Injectable()
 export class InstanceSettingsService {
@@ -32,7 +33,7 @@ export class InstanceSettingsService {
 
   private fallbacks(): InstanceSettingsFallbacks {
     const config: EnvFallbacks<SettingKey> = {
-      ...this.configService.get<EnvFallbacks<AlertThresholdKey>>('alerts')!,
+      ...this.configService.get<EnvFallbacks<AlertThresholdKey | AlertReminderKey>>('alerts')!,
       ...this.configService.get<EnvFallbacks<RetentionAgeKey>>('retention')!,
     }
     const numeric = Object.fromEntries(
@@ -52,6 +53,12 @@ export class InstanceSettingsService {
   /** The resolved thresholds `AlertSweepService` builds its `AlertRuleContext` from every Sweep — never cached, so a saved override applies from the next Sweep. */
   resolveThresholds(): Promise<Record<AlertThresholdKey, number>> {
     return this.resolve(ALERT_THRESHOLD_KEYS)
+  }
+
+  /** The resolved Reminder Interval in hours (ADR-0048), read by `AlertSweepService` every Sweep like the thresholds; `0` means Reminders are off. */
+  async resolveAlertReminderHours(): Promise<number> {
+    const { alertReminderHours } = await this.resolve(ALERT_REMINDER_KEYS)
+    return alertReminderHours
   }
 
   /** The resolved ages `RetentionService` reads at the start of every Retention Run — never cached, so a saved override applies to the next run, dry or real. */

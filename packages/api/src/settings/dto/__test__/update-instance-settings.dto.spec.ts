@@ -14,12 +14,12 @@ describe('updateInstanceSettingsDto', () => {
   })
 
   it('accepts null for every Setting, clearing its override', async () => {
-    const dto = plainToInstance(UpdateInstanceSettingsDto, { lowBatteryPercent: null, offlineMultiplier: null, fetchFailureThreshold: null, alertRetentionDays: null, deviceLogRetentionDays: null, firmwareAutoUpdate: null })
+    const dto = plainToInstance(UpdateInstanceSettingsDto, { lowBatteryPercent: null, offlineMultiplier: null, fetchFailureThreshold: null, alertReminderHours: null, alertRetentionDays: null, deviceLogRetentionDays: null, firmwareAutoUpdate: null })
     await expect(rejectedFields(dto)).resolves.toEqual([])
   })
 
   it('accepts an in-range integer for every Setting', async () => {
-    const dto = plainToInstance(UpdateInstanceSettingsDto, { lowBatteryPercent: 50, offlineMultiplier: 4, fetchFailureThreshold: 5, alertRetentionDays: 120, deviceLogRetentionDays: 14 })
+    const dto = plainToInstance(UpdateInstanceSettingsDto, { lowBatteryPercent: 50, offlineMultiplier: 4, fetchFailureThreshold: 5, alertReminderHours: 24, alertRetentionDays: 120, deviceLogRetentionDays: 14 })
     await expect(rejectedFields(dto)).resolves.toEqual([])
   })
 
@@ -61,5 +61,14 @@ describe('updateInstanceSettingsDto', () => {
 
   it('rejects a non-integer Retention age', async () => {
     await expect(rejectedFields(plainToInstance(UpdateInstanceSettingsDto, { alertRetentionDays: 1.5, deviceLogRetentionDays: 'thirty' }))).resolves.toEqual(['alertRetentionDays', 'deviceLogRetentionDays'])
+  })
+
+  it('accepts a Reminder Interval of 0, which turns Reminders off', async () => {
+    await expect(rejectedFields(plainToInstance(UpdateInstanceSettingsDto, { alertReminderHours: 0 }))).resolves.toEqual([])
+  })
+
+  it('rejects a negative or non-integer Reminder Interval', async () => {
+    await expect(rejectedFields(plainToInstance(UpdateInstanceSettingsDto, { alertReminderHours: -1 }))).resolves.toEqual(['alertReminderHours'])
+    await expect(rejectedFields(plainToInstance(UpdateInstanceSettingsDto, { alertReminderHours: 1.5 }))).resolves.toEqual(['alertReminderHours'])
   })
 })

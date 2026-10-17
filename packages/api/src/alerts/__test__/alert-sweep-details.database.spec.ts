@@ -12,7 +12,11 @@ import { Alert } from '../entities/alert.entity.js'
 
 const send = vi.fn<NotificationSenderService['send']>(async () => true)
 const sender = { send, isConfigured: () => true } as unknown as NotificationSenderService
-const settings = { resolveThresholds: async () => ({ lowBatteryPercent: 20, offlineMultiplier: 3, fetchFailureThreshold: 3 }) } as unknown as InstanceSettingsService
+const reminderHours = { value: 0 }
+const settings = {
+  resolveThresholds: async () => ({ lowBatteryPercent: 20, offlineMultiplier: 3, fetchFailureThreshold: 3 }),
+  resolveAlertReminderHours: async () => reminderHours.value,
+} as unknown as InstanceSettingsService
 const config = { get: (key: string) => (key === 'alerts' ? { sweepCron: '*/5 * * * *' } : undefined) } as unknown as ConfigService
 
 describe('what an Alert keeps of its cause, against a real database', () => {
@@ -25,6 +29,7 @@ describe('what an Alert keeps of its cause, against a real database', () => {
   })
 
   beforeEach(async () => {
+    reminderHours.value = 0
     await database.getRepository(Alert).createQueryBuilder().delete().execute()
     await database.getRepository(Device).createQueryBuilder().delete().execute()
     await database.getRepository(Plugin).createQueryBuilder().delete().execute()
@@ -103,6 +108,27 @@ describe('what an Alert keeps of its cause, against a real database', () => {
 
     send.mockClear()
     await sweep.sweep() // a sender is now configured
+
+    expect(send).not.toHaveBeenCalled()
+  })
+
+  it('stamps a delivered Reminder on remindedAt and leaves notifiedAt as the opening Notification\'s', async () => {
+    await database.getRepository(Device).save({ name: 'Kitchen', mac: 'AA:BB:CC:DD:EE:01', apikey: 'key-1', friendlyId: 'K1', batteryVoltage: '3.0', lastSeen: new Date() } as Device)
+    await sweep.sweep()
+    const openedAnnouncedAt = new Date(Date.now() - 25 * 60 * 60 * 1000)
+    await database.getRepository(Alert).update((await onlyAlert()).id, { notifiedAt: openedAnnouncedAt })
+    reminderHours.value = 24
+    send.mockClear()
+
+    await sweep.sweep()
+
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({ title: 'Kuroshiro: 0 opened, 0 resolved, 1 still open' }))
+    const alert = await onlyAlert()
+    expect(alert.notifiedAt).toEqual(openedAnnouncedAt)
+    expect(alert.remindedAt).toBeInstanceOf(Date)
+
+    send.mockClear()
+    await sweep.sweep()
 
     expect(send).not.toHaveBeenCalled()
   })

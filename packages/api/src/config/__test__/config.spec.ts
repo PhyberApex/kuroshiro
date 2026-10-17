@@ -16,6 +16,7 @@ const ENV_KEYS = [
   'KUROSHIRO_ALERT_LOW_BATTERY_PERCENT',
   'KUROSHIRO_ALERT_OFFLINE_MULTIPLIER',
   'KUROSHIRO_ALERT_FETCH_FAILURES',
+  'KUROSHIRO_ALERT_REMINDER_HOURS',
   'KUROSHIRO_ALERT_RETENTION_DAYS',
   'KUROSHIRO_DEVICE_LOG_RETENTION_DAYS',
   'KUROSHIRO_ALERT_SWEEP_CRON',
@@ -59,6 +60,8 @@ describe('config', () => {
         offlineMultiplierSource: 'default',
         fetchFailureThreshold: 3,
         fetchFailureThresholdSource: 'default',
+        alertReminderHours: 0,
+        alertReminderHoursSource: 'default',
         sweepCron: '*/5 * * * *',
       },
       retention: {
@@ -84,6 +87,7 @@ describe('config', () => {
     process.env.KUROSHIRO_ALERT_LOW_BATTERY_PERCENT = '15'
     process.env.KUROSHIRO_ALERT_OFFLINE_MULTIPLIER = '5'
     process.env.KUROSHIRO_ALERT_FETCH_FAILURES = '4'
+    process.env.KUROSHIRO_ALERT_REMINDER_HOURS = '24'
     process.env.KUROSHIRO_ALERT_RETENTION_DAYS = '120'
     process.env.KUROSHIRO_DEVICE_LOG_RETENTION_DAYS = '14'
     process.env.KUROSHIRO_ALERT_SWEEP_CRON = '*/5 * * * * *'
@@ -108,6 +112,8 @@ describe('config', () => {
         offlineMultiplierSource: 'env',
         fetchFailureThreshold: 4,
         fetchFailureThresholdSource: 'env',
+        alertReminderHours: 24,
+        alertReminderHoursSource: 'env',
         sweepCron: '*/5 * * * * *',
       },
       retention: {
@@ -162,6 +168,8 @@ describe('config', () => {
       offlineMultiplierSource: 'default',
       fetchFailureThreshold: 3,
       fetchFailureThresholdSource: 'default',
+      alertReminderHours: 0,
+      alertReminderHoursSource: 'default',
       sweepCron: '*/5 * * * *',
     })
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('KUROSHIRO_ALERT_LOW_BATTERY_PERCENT'))

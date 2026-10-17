@@ -8,6 +8,7 @@ import { ENV_VARS, RENAMED_ENV_VARS } from './env-vars.js'
 const DEFAULT_LOW_BATTERY_PERCENT = 20
 const DEFAULT_OFFLINE_MULTIPLIER = 3
 const DEFAULT_FETCH_FAILURE_THRESHOLD = 3
+const DEFAULT_ALERT_REMINDER_HOURS = 0
 const DEFAULT_ALERT_RETENTION_DAYS = 90
 const DEFAULT_DEVICE_LOG_RETENTION_DAYS = 30
 const DEFAULT_ALERT_SWEEP_CRON = '*/5 * * * *'
@@ -66,6 +67,7 @@ export default () => {
   const lowBatteryPercent = parseIntEnv(SETTING_ENV_VARS.lowBatteryPercent, DEFAULT_LOW_BATTERY_PERCENT)
   const offlineMultiplier = parseIntEnv(SETTING_ENV_VARS.offlineMultiplier, DEFAULT_OFFLINE_MULTIPLIER)
   const fetchFailureThreshold = parseIntEnv(SETTING_ENV_VARS.fetchFailureThreshold, DEFAULT_FETCH_FAILURE_THRESHOLD)
+  const alertReminderHours = parseIntEnv(SETTING_ENV_VARS.alertReminderHours, DEFAULT_ALERT_REMINDER_HOURS)
   const alertRetentionDays = parseIntEnv(SETTING_ENV_VARS.alertRetentionDays, DEFAULT_ALERT_RETENTION_DAYS)
   const deviceLogRetentionDays = parseIntEnv(SETTING_ENV_VARS.deviceLogRetentionDays, DEFAULT_DEVICE_LOG_RETENTION_DAYS)
 
@@ -89,6 +91,8 @@ export default () => {
       offlineMultiplierSource: offlineMultiplier.source,
       fetchFailureThreshold: fetchFailureThreshold.value,
       fetchFailureThresholdSource: fetchFailureThreshold.source,
+      alertReminderHours: alertReminderHours.value,
+      alertReminderHoursSource: alertReminderHours.source,
       sweepCron: parseCronEnv(ENV_VARS.alertSweepCron, DEFAULT_ALERT_SWEEP_CRON),
     },
     retention: {

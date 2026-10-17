@@ -10,7 +10,8 @@ import { ALERT_KIND_LABELS } from 'kuroshiro-shared'
 export interface DigestEntry {
   alertId: string
   kind: AlertKind
-  phase: 'opened' | 'resolved'
+  /** `reminded` is a Reminder (ADR-0048): an Alert still active re-announced with its Rule's opened wording. */
+  phase: 'opened' | 'reminded' | 'resolved'
   notification: NotificationContent
 }
 
@@ -41,23 +42,27 @@ function groupedByKind(entries: DigestEntry[]): string {
 /**
  * Builds the Sweep's single digest Notification out of every Alert event
  * still needing an announcement — `undefined` when there is nothing to
- * announce, so the caller sends zero Notifications. Opens are listed before
- * resolves; within each half, entries group by Alert Rule then by subject.
+ * announce, so the caller sends zero Notifications. Opens are listed first,
+ * then Reminders under `Still open:`, then resolves; within each section,
+ * entries group by Alert Rule then by subject.
  */
 export function buildDigest(entries: DigestEntry[]): NotificationContent | undefined {
   if (entries.length === 0)
     return undefined
 
   const opened = entries.filter(entry => entry.phase === 'opened')
+  const reminded = entries.filter(entry => entry.phase === 'reminded')
   const resolved = entries.filter(entry => entry.phase === 'resolved')
 
   const sections = [
     opened.length > 0 ? `Opened:\n${groupedByKind(opened)}` : undefined,
+    reminded.length > 0 ? `Still open:\n${groupedByKind(reminded)}` : undefined,
     resolved.length > 0 ? `Resolved:\n${groupedByKind(resolved)}` : undefined,
   ].filter((section): section is string => section !== undefined)
 
   return {
-    title: `Kuroshiro: ${opened.length} opened, ${resolved.length} resolved`,
+    // The still-open count only appears when non-zero, so a digest without Reminders reads as it did before them.
+    title: `Kuroshiro: ${opened.length} opened, ${resolved.length} resolved${reminded.length > 0 ? `, ${reminded.length} still open` : ''}`,
     body: sections.join('\n\n'),
     type: mostSevere(entries),
   }

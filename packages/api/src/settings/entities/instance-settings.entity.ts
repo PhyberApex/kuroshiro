@@ -18,6 +18,9 @@ export class InstanceSettings {
   fetchFailureThreshold?: number | null
 
   @Column('int', { nullable: true })
+  alertReminderHours?: number | null
+
+  @Column('int', { nullable: true })
   alertRetentionDays?: number | null
 
   @Column('int', { nullable: true })
