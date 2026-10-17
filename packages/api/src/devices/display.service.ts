@@ -189,7 +189,7 @@ export class DeviceDisplayService {
     if (!report.wipe)
       return null
     try {
-      const imageUrl = await this.fallbackScreens.wipeUrlFor(await this.deviceModels.renderTargetFor(device))
+      const imageUrl = await this.wipeImageUrl(device)
       this.logger.log(`Returning a Wipe for device ${device.id}`)
       return {
         display: new Display({
@@ -547,7 +547,7 @@ export class DeviceDisplayService {
     if (device.lastServedKind === 'wipe') {
       return new DisplayScreen({
         filename: 'wipe.png',
-        image_url: await this.fallbackScreens.wipeUrlFor(await this.deviceModels.renderTargetFor(device)),
+        image_url: await this.wipeImageUrl(device),
         refresh_rate: device.refreshRate,
         rendered_at: now,
       })
@@ -800,6 +800,10 @@ export class DeviceDisplayService {
 
   private screenImageUrl(device: Device, screen: Screen): string {
     return `${this.configService.get<string>('api_url')}/screens/devices/${device.id}/${screen.id}.png`
+  }
+
+  private async wipeImageUrl(device: Device): Promise<string> {
+    return this.fallbackScreens.wipeUrlFor(await this.deviceModels.renderTargetFor(device))
   }
 
   private async fallbackImageUrl(request: FallbackScreenRequest, device: Device): Promise<string> {

@@ -57,11 +57,11 @@ export class FallbackScreensService {
 
   /**
    * The Wipe's blank image for a render target, drawn on first use and cached
-   * under `public/screens/wipe/<model>-<palette>/wipe.png`. Not a Fallback Screen:
+   * under `public/screens/wipe/<model>-<palette>-<width>x<height>/wipe.png`, so a custom Device Model resized under the same name gets a fresh one. Not a Fallback Screen:
    * it prints nothing, so no template or Device fact goes into it.
    */
   async wipeUrlFor(target: DeviceRenderTarget): Promise<string> {
-    const relativePath = ['screens', 'wipe', fallbackRenderPairFolder(target), 'wipe.png']
+    const relativePath = ['screens', 'wipe', `${fallbackRenderPairFolder(target)}-${target.model.width}x${target.model.height}`, 'wipe.png']
     const outputPath = resolveAppPath('public', ...relativePath)
     if (await this.isMissing(outputPath))
       await convertBlankToPng(outputPath, target, this.logger)
