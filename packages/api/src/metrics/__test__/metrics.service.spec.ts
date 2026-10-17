@@ -135,6 +135,33 @@ describe('metricsService', () => {
     expect(text).toContain('kuroshiro_device_sensor_carbon_dioxide_ppm{device="Living Room",friendly_id="ABC123"} 800\n')
   })
 
+  it.each([
+    ['temperature', 'celsius', 'kuroshiro_device_sensor_temperature_celsius', 21.2],
+    ['humidity', 'percent', 'kuroshiro_device_sensor_humidity_percent', 47],
+    ['pressure', 'hectopascal', 'kuroshiro_device_sensor_pressure_hpa', 1013.25],
+    ['carbon_dioxide', 'parts_per_million', 'kuroshiro_device_sensor_carbon_dioxide_ppm', 800],
+  ] as const)('emits a %s sample for the firmware spelling %s', async (kind, unit, metricName, value) => {
+    const device = makeDevice({ name: 'Living Room', friendlyId: 'ABC123' })
+    sensorRepo.find.mockResolvedValue([makeDeviceSensor({ kind, value, unit, device })])
+
+    const text = await service.render()
+
+    expect(text).toContain(`${metricName}{device="Living Room",friendly_id="ABC123"} ${value}\n`)
+  })
+
+  it('compares the reported unit case-insensitively and ignoring surrounding whitespace', async () => {
+    const device = makeDevice({ name: 'Living Room', friendlyId: 'ABC123' })
+    sensorRepo.find.mockResolvedValue([
+      makeDeviceSensor({ kind: 'temperature', value: 21.5, unit: 'Celsius', device }),
+      makeDeviceSensor({ kind: 'humidity', value: 45, unit: ' percent ', device }),
+    ])
+
+    const text = await service.render()
+
+    expect(text).toContain('kuroshiro_device_sensor_temperature_celsius{device="Living Room",friendly_id="ABC123"} 21.5\n')
+    expect(text).toContain('kuroshiro_device_sensor_humidity_percent{device="Living Room",friendly_id="ABC123"} 45\n')
+  })
+
   it('emits no sensor samples for a Device with no DeviceSensor rows', async () => {
     const text = await service.render()
 
@@ -148,6 +175,8 @@ describe('metricsService', () => {
     const text = await service.render()
 
     expect(text).not.toContain('kuroshiro_device_sensor_temperature_celsius{')
+    expect(text).toContain('# HELP kuroshiro_device_sensor_temperature_celsius ')
+    expect(text).toContain('# TYPE kuroshiro_device_sensor_temperature_celsius gauge')
   })
 
   it('emits a fetch_failure_streak sample for a fetch-mode Data Source, including a streak of 0', async () => {
