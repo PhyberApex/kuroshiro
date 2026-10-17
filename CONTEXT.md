@@ -20,6 +20,10 @@ _Avoid_: Colour mode, bit depth (as a name for the choice), dither mode
 Which of TRMNL's 9 fixed rendering modes a Palette belongs to — 3 grayscale (1/2/4-bit), 5 colour (`3bwr`/`3bwy`/`4bwry`/`6a`/`7a`, each a fixed set of physical ink colours), or full-color. Identified by `frameworkClass`, which also drives the on-device CSS class — not a freely inventable string. Custom Palettes may only be authored in a colour family; a "custom" grayscale or full-color Palette would be indistinguishable from the official one of that family, so isn't offered.
 _Avoid_: Framework class (bare, in prose — reserve for the field name), colour mode, render mode
 
+**Ink**:
+One of the fixed physical colours a colour panel can print — black, white and red on `3bwr`, those plus yellow on `4bwry`, six on `6a`. A Palette names the colours Kuroshiro writes into the image; an Ink is what the panel shows once its firmware has classified each of those colours by threshold, so a Palette colour that misses its threshold prints as a different Ink than intended, usually white or grey. Which Ink an image colour becomes is decided by firmware, never by Kuroshiro; for `4bwry` and `6a` that decision is open source and can be emulated (ADR-0047).
+_Avoid_: Panel colour, hardware colour, ink colour (as a name for a Palette colour)
+
 **Screen**:
 A single unit of content assigned to a Device's rotation — a static image, an externally-fetched image, raw HTML, a plugin's rendered output, or a mashup. Screens belong to exactly one Device.
 _Avoid_: Slide, page
