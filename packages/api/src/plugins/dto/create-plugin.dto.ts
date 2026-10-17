@@ -1,6 +1,6 @@
 import type { CreatePollPluginInput, CreateWebhookPluginInput, MergeStrategy, PluginKind } from 'kuroshiro-shared'
 import { Transform } from 'class-transformer'
-import { IsBoolean, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator'
+import { IsBoolean, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Min, ValidateIf } from 'class-validator'
 import { MERGE_STRATEGIES, PLUGIN_KINDS } from 'kuroshiro-shared'
 
 /**
@@ -25,7 +25,7 @@ export class CreatePluginDto implements Omit<CreatePollPluginInput, 'kind'>, Par
   @Min(1)
   streamLimit?: number
 
-  @IsOptional()
+  @ValidateIf((input: CreatePluginDto) => input.dither !== undefined)
   @IsBoolean()
   dither?: boolean
 
