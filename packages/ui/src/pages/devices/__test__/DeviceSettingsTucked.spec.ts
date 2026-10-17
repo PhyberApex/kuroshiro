@@ -159,9 +159,50 @@ describe('special Functions', () => {
     const faked = fakeKitchenSettings({ device: PROXIED })
     const screen = await mountSettings('#special-functions')
 
-    await expect.element(screen.getByText('Kitchen is a Proxied Device. TRMNL answers its polls, so a Special Function triggered here never reaches it.')).toBeVisible()
+    await expect.element(screen.getByText('Kitchen is a Proxied Device. TRMNL answers its polls, so a Special Function or a Wipe triggered here never reaches it.')).toBeVisible()
     expect(functionRows().map(row => row.disabled)).toEqual([true, true, true, true])
     await trigger(screen, 'identify').click({ force: true })
+    expect(faked.writes).toEqual([])
+  })
+})
+
+describe('wipe', () => {
+  const wipeRow = () => section('special-functions')!.querySelector('.wipe-row')!
+
+  it('"Wipe" sends it, then shows it pending with a way to cancel it', async () => {
+    const faked = fakeKitchenSettings()
+    const screen = await mountSettings('#special-functions')
+
+    await screen.getByRole('button', { name: 'Wipe' }).click()
+
+    await expect.poll(() => words(wipeRow())).toContain(`Wipe pending, reaches Kitchen around ${NEXT_POLL}`)
+    expect(faked.writes).toEqual([{ wipe: true }])
+    await expectAccessible()
+  })
+
+  it('"Cancel Wipe" takes a pending Wipe back before the Device polls', async () => {
+    const faked = fakeKitchenSettings({ device: { ...KITCHEN, pending: { ...KITCHEN.pending, wipe: true } } })
+    const screen = await mountSettings('#special-functions')
+
+    await screen.getByRole('button', { name: 'Cancel Wipe' }).click()
+
+    await expect.poll(() => faked.writes).toEqual([{ wipe: false }])
+    await expect.element(screen.getByRole('button', { name: 'Wipe', exact: true })).toBeVisible()
+  })
+
+  it('opens the section by itself while a Wipe is pending', async () => {
+    fakeKitchenSettings({ device: { ...KITCHEN, pending: { ...KITCHEN.pending, wipe: true } } })
+    const screen = await mountSettings()
+
+    await expect.element(tucked(screen, 'Special Functions')).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  it('is disabled on a Proxied Device, with the reason given', async () => {
+    const faked = fakeKitchenSettings({ device: PROXIED })
+    const screen = await mountSettings('#special-functions')
+
+    await expect.element(screen.getByRole('button', { name: 'Wipe', exact: true })).toBeDisabled()
+    await expect.element(screen.getByText('a Special Function or a Wipe triggered here never reaches it.', { exact: false })).toBeVisible()
     expect(faked.writes).toEqual([])
   })
 })
@@ -255,7 +296,7 @@ describe('reset or delete a Device', () => {
   })
 
   it('clears a pending rotation too when cancelling a Device Reset that asked for a new API key', async () => {
-    const faked = fakeKitchenSettings({ device: { ...KITCHEN, pending: { ...KITCHEN.pending, deviceReset: true, deviceResetNewApikey: true } } })
+    const faked = fakeKitchenSettings({ device: { ...KITCHEN, pending: { ...KITCHEN.pending, deviceReset: true, deviceResetNewApikey: true, wipe: false } } })
     const screen = await mountSettings('#reset')
 
     await screen.getByRole('button', { name: 'Cancel Device Reset' }).click()

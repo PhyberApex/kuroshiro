@@ -835,6 +835,128 @@ describe('deviceDisplayService', () => {
     })
   })
 
+  describe('wipe', () => {
+    const WIPE_URL = 'http://api/screens/wipe/wipe.png'
+
+    function primeCycling(device: Device) {
+      const screens = [
+        makeScreen({ id: 'screen1', order: 1, device, isActive: true, fetchManual: false, externalLink: null, filename: 'file.png' }),
+        makeScreen({ id: 'screen2', order: 2, device, isActive: false, fetchManual: false, externalLink: null, filename: 'file.png' }),
+      ]
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      screenRepo.find.mockResolvedValue(screens)
+      configService.get.mockReturnValue('http://api')
+      fileExists.mockResolvedValue(true)
+    }
+
+    it('answers the poll with the blank image at the normal refresh rate and clears the flag', async () => {
+      primeCycling(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, wipe: true, refreshRate: 900 }))
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.image_url).toBe(WIPE_URL)
+      expect(result.filename).toBe('wipe.png')
+      expect(result.refresh_rate).toBe(900)
+      expect(result.reset_firmware).toBe(false)
+      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ wipe: false }))
+    })
+
+    it('leaves the Rotation where it stood', async () => {
+      primeCycling(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, wipe: true }))
+
+      await service.getCurrentImage(headers)
+
+      expect(screenRepo.update).not.toHaveBeenCalled()
+    })
+
+    it('keeps a Picked Screen for the poll after the Wipe', async () => {
+      const picked = makeScreen({ id: 'screen2', order: 2, isActive: false, fetchManual: false, externalLink: null, filename: 'file.png' })
+      const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS, wipe: true, pickedScreen: picked })
+      primeCycling(device)
+
+      await service.getCurrentImage(headers)
+
+      expect(deviceRepo.update).not.toHaveBeenCalledWith({ id: '1' }, expect.objectContaining({ pickedScreen: null }))
+      expect(device.pickedScreen).toBe(picked)
+    })
+
+    it('serves the Rotation on the poll after the Wipe', async () => {
+      primeCycling(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, wipe: false }))
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.image_url).toBe('http://api/screens/devices/1/screen2.png')
+    })
+
+    it('carries a pending special function in the same answer', async () => {
+      primeCycling(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, wipe: true, specialFunction: 'identify' }))
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.image_url).toBe(WIPE_URL)
+      expect(result.special_function).toBe('identify')
+      expect(result.action).toBe('identify')
+    })
+
+    it('is dropped, not served, when a Reset is pending', async () => {
+      primeCycling(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, wipe: true, resetDevice: true }))
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.reset_firmware).toBe(true)
+      expect(result.image_url).toBe('http://api/screens/devices/1/screen2.png')
+      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ wipe: false }))
+    })
+
+    it('is served once inside a Sleep Mode window, at the normal refresh rate', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-08-22T23:00:00'))
+      try {
+        primeCycling(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, wipe: true, refreshRate: 900, sleepModeEnabled: true, sleepStartTime: 22 * 3600, sleepEndTime: 6 * 3600 }))
+
+        const result = await service.getCurrentImage(headers)
+
+        expect(result.image_url).toBe(WIPE_URL)
+        expect(result.refresh_rate).toBe(900)
+      }
+      finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('is served locally to a Device mirroring another through current_screen', async () => {
+      const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS, wipe: true, mirrorEnabled: true, mirrorMac: 'other-mac', mirrorApikey: 'mirror-token' })
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      configService.get.mockReturnValue('http://api')
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.image_url).toBe(WIPE_URL)
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    it('is given up for the usual answer when the blank image cannot be made', async () => {
+      primeCycling(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, wipe: true }))
+      fallbackScreens.wipeUrlFor.mockRejectedValue(new Error('magick missing'))
+
+      const result = await service.getCurrentImage(headers)
+
+      expect(result.image_url).toBe('http://api/screens/devices/1/screen2.png')
+    })
+
+    describe('getCurrentImageWithoutProgressing', () => {
+      it('serves the blank image while the last poll was answered with a Wipe', async () => {
+        deviceRepo.findOneBy.mockResolvedValue(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, lastServedKind: 'wipe' }))
+        configService.get.mockReturnValue('http://api')
+
+        const result = await service.getCurrentImageWithoutProgressing(headers)
+
+        expect(result.image_url).toBe(WIPE_URL)
+        expect(result.filename).toBe('wipe.png')
+      })
+    })
+  })
+
   describe('firmware push', () => {
     const targetFirmware = makeFirmware({ id: 'fw-1', version: '1.5.6', checksum: 'abc123' })
 

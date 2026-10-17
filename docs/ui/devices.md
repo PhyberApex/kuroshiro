@@ -93,6 +93,7 @@ A `dl` under the sentences. Rows, in this order; a row with nothing to say is le
 | Device Model | "reports another size", a link to Settings | Only when the Device reports a width and height that differ from its Device Model's. |
 | Special Function | "{name} at the next poll", with the loading mark | Only while one is pending. |
 | Device Reset | "at the next poll", with the loading mark | Only while one is pending. |
+| Wipe | "at the next poll", with the loading mark | Only while one is pending. |
 | Firmware | "{version} at the next poll", with the loading mark | Only while a push is pending. |
 
 Nothing but a firing Alert is red. An Alert is known from the Alert list filtered to this Device, so a fact can turn red up to one Alert Sweep (5 minutes) after the cause.
@@ -329,8 +330,9 @@ Three tucked sections, closed by default.
 | `rewind` | Shows the previous Screen again |
 
 - Triggering one replaces its description with "Pending, reaches {Device} around {hh:mm}" and the loading mark, disables every "Trigger" until the poll delivers it, and adds the fact on the Screens view. The section opens by itself while one is pending.
+- Below the list, a **Wipe** row (not a Special Function): `wipe`, "Shows a blank image once, then the Rotation carries on where it stood" and "Wipe". Pending, it reads "Wipe pending, reaches {Device} around {hh:mm}" with the loading mark and "Cancel Wipe" in place of the button. The section opens by itself while one is pending. The Current Screen view then shows the blank image under "Showing a Wipe".
 - `restart_playlist` and `send_to_me` are not offered: no Device Kuroshiro targets acts on them.
-- On a Proxied Device every "Trigger" is disabled, under: "{Device} is a Proxied Device. TRMNL answers its polls, so a Special Function triggered here never reaches it."
+- On a Proxied Device every "Trigger" is disabled, under: "{Device} is a Proxied Device. TRMNL answers its polls, so a Special Function or a Wipe triggered here never reaches it." The Wipe button is disabled too.
 
 **Reset or delete {Device}.** "A Device Reset makes {Device} erase its Wi-Fi credentials and this server's URL at its next poll, so someone has to set it up by hand again. Nothing here is lost. Deleting removes {Device}, its {n} Screens, their Schedules and its Device Log from this Instance." Then two plain buttons.
 

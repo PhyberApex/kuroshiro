@@ -44,6 +44,7 @@ const wording: Record<ApiErrorCode, string> = {
   'firmware-push-mirrored': 'A mirrored Device is not given Firmware.',
   'firmware-push-pending': 'A Firmware push is waiting for the Device.',
   'device-reset-apikey-proxied': 'A Proxied Device cannot be given a new API key.',
+  'wipe-proxied': 'A Proxied Device cannot be wiped.',
   'upstream-unreachable': 'TRMNL did not answer.',
   'template-full-missing': 'A Plugin needs its full Template.',
   'template-invalid': 'A Template cannot be parsed.',
@@ -109,6 +110,7 @@ function wordingBySwitch(code: ApiErrorCode): string {
     case 'firmware-push-mirrored':
     case 'firmware-push-pending':
     case 'device-reset-apikey-proxied':
+    case 'wipe-proxied':
     case 'template-full-missing':
     case 'template-invalid':
     case 'notifications-off':

@@ -100,6 +100,10 @@ export class UpdateDeviceDto implements UpdateDeviceInput {
 
   @ValidateIf(isSent)
   @IsBoolean()
+  wipe?: boolean
+
+  @ValidateIf(isSent)
+  @IsBoolean()
   updateFirmware?: boolean
 
   @IsOptional()

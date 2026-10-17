@@ -35,7 +35,7 @@ import { isProxiedDevice } from './device-update-rules.js'
 import { Device } from './devices.entity.js'
 import { Display } from './display.js'
 import { DisplayScreen } from './displayScreen.js'
-import { SERVED_MIRROR, servedFallback, servedNoScreen, servedScreen, toLastServedRecord } from './last-served.js'
+import { SERVED_MIRROR, SERVED_WIPE, servedFallback, servedNoScreen, servedScreen, toLastServedRecord } from './last-served.js'
 import { isDeviceAsleep, secondsUntilSleepEnd } from './sleep-mode.js'
 
 // The fields getCurrentImage's response builders need out of applyHeaderReport,
@@ -44,6 +44,7 @@ import { isDeviceAsleep, secondsUntilSleepEnd } from './sleep-mode.js'
 // cleanly while silently flipping real-device behavior.
 interface HeaderReport {
   resetDevice: boolean
+  wipe: boolean
   specialFunction: string
   firmwareUrl: string
   updateFirmware: boolean
@@ -95,9 +96,10 @@ export class DeviceDisplayService {
     const device = await this.authenticateDevice(headers)
     const report = await this.applyHeaderReport(device, headers)
 
-    const { display, served } = device.mirrorEnabled
-      ? await this.buildMirrorResponse(device, headers, report)
-      : await this.buildRotationResponse(device, report)
+    const { display, served } = await this.buildWipeResponse(device, report)
+      ?? (device.mirrorEnabled
+        ? await this.buildMirrorResponse(device, headers, report)
+        : await this.buildRotationResponse(device, report))
     await this.recordServed(device, display, served)
     return display
   }
@@ -158,6 +160,9 @@ export class DeviceDisplayService {
     // Handling reset
     const resetDevice = device.resetDevice
     device.resetDevice = false
+    // A Wipe fires once too, and gives way to a Reset in the same poll: a Device about to forget everything is not also asked to blank
+    const wipe = device.wipe && !resetDevice
+    device.wipe = false
     // "Also give {Device} a new API key" (ADR-0039): rotated in this same poll, authenticated with the old key,
     // so a Device that wipes itself and runs setup before the response arrives still fetches the new one.
     if (resetDevice && device.resetDeviceNewApikey)
@@ -170,7 +175,41 @@ export class DeviceDisplayService {
     device.lastSeen = new Date()
     await this.deviceRepository.save(device)
     this.logger.log(`Device info updated for MAC: ${headers.id}`)
-    return { resetDevice, specialFunction, firmwareUrl, updateFirmware }
+    return { resetDevice, wipe, specialFunction, firmwareUrl, updateFirmware }
+  }
+
+  /**
+   * A pending Wipe answers the poll with a blank image instead of the Rotation's
+   * (or Sleep Mode's) answer, leaving the Active Screen and a Picked Screen as
+   * they were, so the poll after it resumes where the Rotation stood. `null`
+   * when nothing is to be wiped, or the blank image could not be made — the
+   * Wipe is then given up and the poll answered as usual.
+   */
+  private async buildWipeResponse(device: Device, report: HeaderReport): Promise<DisplayAnswer | null> {
+    if (!report.wipe)
+      return null
+    try {
+      const imageUrl = await this.fallbackScreens.wipeUrlFor(await this.deviceModels.renderTargetFor(device))
+      this.logger.log(`Returning a Wipe for device ${device.id}`)
+      return {
+        display: new Display({
+          action: report.specialFunction,
+          filename: 'wipe.png',
+          firmware_url: report.firmwareUrl,
+          image_url: imageUrl,
+          refresh_rate: device.refreshRate,
+          reset_firmware: false,
+          special_function: report.specialFunction,
+          temperature_profile: 'default',
+          update_firmware: report.updateFirmware,
+        }),
+        served: SERVED_WIPE,
+      }
+    }
+    catch (err) {
+      this.logger.error(`Could not make the Wipe image for device ${device.id}: ${getErrorMessage(err)}`)
+      return null
+    }
   }
 
   /**
@@ -505,6 +544,14 @@ export class DeviceDisplayService {
     this.logger.debug(`Headers: ${JSON.stringify(headers)}`)
     const device = await this.authenticateDevice(headers)
     const now = new Date()
+    if (device.lastServedKind === 'wipe') {
+      return new DisplayScreen({
+        filename: 'wipe.png',
+        image_url: await this.fallbackScreens.wipeUrlFor(await this.deviceModels.renderTargetFor(device)),
+        refresh_rate: device.refreshRate,
+        rendered_at: now,
+      })
+    }
     const asleep = !device.mirrorEnabled && isDeviceAsleep(device, now)
     const refreshRate = asleep ? secondsUntilSleepEnd(device.sleepEndTime!, now) : device.refreshRate
 

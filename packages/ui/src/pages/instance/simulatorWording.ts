@@ -66,6 +66,7 @@ function pendingNames({ pending, targetFirmware }: DeviceDetail) {
   return [
     ...pending.firmwarePush ? [`Firmware push${targetFirmware ? ` of ${targetFirmware.version}` : ''}`] : [],
     ...pending.deviceReset ? ['Device Reset'] : [],
+    ...pending.wipe ? ['Wipe'] : [],
     ...pending.specialFunction ? [`Special Function ${pending.specialFunction}`] : [],
   ]
 }
@@ -124,6 +125,8 @@ export function showsOf({ currentScreen }: { currentScreen: CurrentScreen }, scr
     return `The ${FALLBACK_NAMES[currentScreen.fallback]} Fallback Screen`
   if (currentScreen.kind === 'mirror')
     return currentScreen.proxied ? 'This Device\'s own image on TRMNL' : `The image of the TRMNL Device ${currentScreen.mirrorMac}`
+  if (currentScreen.kind === 'wipe')
+    return 'A blank image, from a Wipe'
   if (currentScreen.kind === 'deletedScreen')
     return 'The Screen it showed, since deleted'
   const index = screens.findIndex(screen => screen.id === currentScreen.screenId)

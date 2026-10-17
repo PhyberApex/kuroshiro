@@ -151,6 +151,16 @@ describe('toDeviceSummary', () => {
       expect(currentScreenOf(device)).toMatchObject({ kind: 'mirror', proxied: true, mirrorMac: 'AA:BB:CC:DD:EE:FF' })
     })
 
+    it('is the blank image, with no Screen, when the last poll was answered with a Wipe', () => {
+      const device = polledDevice({ lastServedKind: 'wipe', lastServedScreenId: null, lastServedImagePath: '/screens/wipe/og-bw/wipe.png' })
+
+      expect(currentScreenOf(device)).toEqual({
+        kind: 'wipe',
+        imagePath: `/screens/wipe/og-bw/wipe.png?v=${POLLED_AT.getTime()}`,
+        servedAt: '2026-03-01T10:00:00.000Z',
+      })
+    })
+
     it('reads as the deleted-Screen kind, with no image path, when the served Screen was deleted since', () => {
       expect(currentScreenOf(polledDevice(), null)).toEqual({
         kind: 'deletedScreen',
@@ -281,11 +291,11 @@ describe('toDeviceDetail', () => {
   })
 
   it('states what is pending from the stored Special Function, Device Reset and Firmware push', () => {
-    const waiting = toDeviceDetail(makeDevice({ specialFunction: 'rewind', resetDevice: true, resetDeviceNewApikey: true, updateFirmware: true }), facts)
+    const waiting = toDeviceDetail(makeDevice({ specialFunction: 'rewind', resetDevice: true, resetDeviceNewApikey: true, wipe: true, updateFirmware: true }), facts)
     const idle = toDeviceDetail(makeDevice({ specialFunction: 'none' }), facts)
 
-    expect(waiting.pending).toEqual({ specialFunction: 'rewind', deviceReset: true, deviceResetNewApikey: true, firmwarePush: true })
-    expect(idle.pending).toEqual({ specialFunction: null, deviceReset: false, deviceResetNewApikey: false, firmwarePush: false })
+    expect(waiting.pending).toEqual({ specialFunction: 'rewind', deviceReset: true, deviceResetNewApikey: true, wipe: true, firmwarePush: true })
+    expect(idle.pending).toEqual({ specialFunction: null, deviceReset: false, deviceResetNewApikey: false, wipe: false, firmwarePush: false })
   })
 
   it('folds in the Sensor readings and counts the Screens', () => {
@@ -347,7 +357,7 @@ describe('toDeviceDetail', () => {
       palette: null,
       mirror: { enabled: false, mac: null, apikeySet: false },
       targetFirmware: null,
-      pending: { specialFunction: 'identify', deviceReset: false, deviceResetNewApikey: false, firmwarePush: false },
+      pending: { specialFunction: 'identify', deviceReset: false, deviceResetNewApikey: false, wipe: false, firmwarePush: false },
       sleepImagePath: null,
       sensors: [],
       screenCount: 0,
