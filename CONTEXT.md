@@ -72,6 +72,10 @@ _Avoid_: DevicePlugin (the entity name), install, uninstall, remove, detach
 One named input a Plugin declares for the admin to fill in — a key, a label, a type (single-line text, multi-line text, number, on/off, password, or a select with its options), an optional default and whether it is required. Part of the Plugin: it arrives with a Recipe or `.trmnlp` import, or the admin authors it on the Plugin. A type Kuroshiro has no control for is treated as single-line text; the `author_bio` type is a read-only credit, never an input.
 _Avoid_: Custom field, form field (TRMNL's terms), setting, Plugin Configuration, variable
 
+**Dithering**:
+Whether an image is Floyd-Steinberg dithered when it is reduced to a Device's Palette — on for photos, gradients and mixed content, off for pure text and line art, where hard thresholds keep glyph edges sharp. Chosen per `file`, `external` and `html` Screen and per Plugin, which every `plugin` Screen showing it follows; a Mashup has no setting of its own and is undithered only when every slot's Plugin is. Off changes nothing but the dither method: a colour Palette keeps its colours and a full-color Palette is never dithered anyway. On by default (ADR-0045). What TRMNL calls `text` and `art`.
+_Avoid_: Render mode, text mode, art mode, dither mode
+
 **Framework Version**:
 The exact release (`X.Y.Z`) of TRMNL's framework CSS and JS a render loads. The Instance pins one, moved forward by a reviewed PR when TRMNL releases; a Plugin may pin its own, which every drawing of it uses — except inside a Mashup, which loads the Instance's for all its slots. Never `latest` (ADR-0041).
 _Avoid_: Framework (bare, for the version), design system version, `latest`
