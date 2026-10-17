@@ -1,8 +1,8 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm'
 
 /** A Wipe is a one-shot flag armed by an admin: nothing is pending on any existing Device, so there is nothing to backfill. */
-export class AddDeviceWipe1787330000000 implements MigrationInterface {
-  name = 'AddDeviceWipe1787330000000'
+export class AddDeviceWipe1787340000000 implements MigrationInterface {
+  name = 'AddDeviceWipe1787340000000'
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`ALTER TABLE "device" ADD "wipe" boolean NOT NULL DEFAULT false`)

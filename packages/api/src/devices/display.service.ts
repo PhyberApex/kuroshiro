@@ -147,13 +147,7 @@ export class DeviceDisplayService {
    */
   private async applyHeaderReport(device: Device, headers: DisplayRequestHeadersDto): Promise<HeaderReport> {
     this.logger.log(`Updating device info for MAC: ${headers.id}`)
-    device.batteryVoltage = headers['battery-voltage']
-    device.fwVersion = headers['fw-version']
-    device.rssi = headers.rssi
-    device.userAgent = headers['user-agent']
-    device.width = parseHeaderInt(headers.width) ?? device.width
-    device.height = parseHeaderInt(headers.height) ?? device.height
-    device.reportedModel = headers.model ?? device.reportedModel
+    this.recordReportedFields(device, headers)
     if (!device.deviceModel)
       await this.deviceModels.assignResolvedModel(device)
     await this.deviceSensors.syncFromHeader(device, headers.sensors)
@@ -177,6 +171,17 @@ export class DeviceDisplayService {
     await this.deviceRepository.save(device)
     this.logger.log(`Device info updated for MAC: ${headers.id}`)
     return { resetDevice, wipe, specialFunction, firmwareUrl, updateFirmware }
+  }
+
+  /** Copies what the Device reports about itself; a missing dimension or model keeps what was stored. */
+  private recordReportedFields(device: Device, headers: DisplayRequestHeadersDto): void {
+    device.batteryVoltage = headers['battery-voltage']
+    device.fwVersion = headers['fw-version']
+    device.rssi = headers.rssi
+    device.userAgent = headers['user-agent']
+    device.width = parseHeaderInt(headers.width) ?? device.width
+    device.height = parseHeaderInt(headers.height) ?? device.height
+    device.reportedModel = headers.model ?? device.reportedModel
   }
 
   /**
