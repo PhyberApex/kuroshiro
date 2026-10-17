@@ -5,6 +5,7 @@ export const SETTING_RANGE_MESSAGES: Record<SettingKey, string> = {
   lowBatteryPercent: 'Enter a whole number from 1 to 100.',
   offlineMultiplier: 'Enter a whole number, 2 or more.',
   fetchFailureThreshold: 'Enter a whole number, 1 or more.',
+  alertReminderHours: 'Enter a whole number of hours, or 0 to turn Reminders off.',
   alertRetentionDays: 'Enter a whole number of days, or 0 to keep them for good.',
   deviceLogRetentionDays: 'Enter a whole number of days, or 0 to keep them for good.',
 }
@@ -41,6 +42,12 @@ export function offlineNote(missedPolls: number, onlyDevice?: OnlyDevice) {
 
 export function fetchFailureStreakNote(failedFetches: number) {
   return `An Alert fires when the streak reaches ${failedFetches}. A Plugin that fetches every ${minutes(EXAMPLE_INTERVAL_MINUTES)} gets there after ${minutes(failedFetches * EXAMPLE_INTERVAL_MINUTES)}.`
+}
+
+export function reminderNote(hours: number) {
+  return hours === 0
+    ? 'Off. A firing Alert is announced when it fires and when it resolves.'
+    : `A firing Alert is announced again under "Still open" once ${hours} ${hours === 1 ? 'hour has' : 'hours have'} passed since it was last announced.`
 }
 
 export function resolvedAlertsNote(days: number) {

@@ -222,6 +222,7 @@ export function makeAlert(overrides: Partial<Alert> = {}): Alert {
     openedAt: FIXED_DATE,
     resolvedAt: null,
     notifiedAt: null,
+    remindedAt: null,
     resolutionNotifiedAt: null,
     details: null,
     ...overrides,

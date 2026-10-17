@@ -19,10 +19,16 @@ function whereKind(options?: FindManyOptions<Alert>): string | undefined {
   return (options?.where as { kind?: string } | undefined)?.kind
 }
 
-function makeSettingsService(overrides: Partial<{ lowBatteryPercent: number, offlineMultiplier: number, fetchFailureThreshold: number }> = {}): InstanceSettingsService {
+function makeSettingsService(overrides: Partial<{ lowBatteryPercent: number, offlineMultiplier: number, fetchFailureThreshold: number }> = {}, alertReminderHours = 0): InstanceSettingsService {
   const thresholds = { lowBatteryPercent: 20, offlineMultiplier: 3, fetchFailureThreshold: 3, ...overrides }
-  return asService<InstanceSettingsService>({ resolveThresholds: vi.fn().mockResolvedValue(thresholds) })
+  return asService<InstanceSettingsService>({
+    resolveThresholds: vi.fn().mockResolvedValue(thresholds),
+    resolveAlertReminderHours: vi.fn().mockResolvedValue(alertReminderHours),
+  })
 }
+
+const HOUR_MS = 60 * 60 * 1000
+const hoursAgo = (hours: number) => new Date(Date.now() - hours * HOUR_MS)
 
 function makeConfigService(sweepCron = '*/5 * * * *'): ConfigService {
   return asService<ConfigService>({ get: (key: string) => (key === 'alerts' ? { sweepCron } : undefined) })
@@ -326,6 +332,103 @@ describe('alertSweepService', () => {
       expect(sender.send).toHaveBeenCalledTimes(1)
       expect(alertRepo.update).not.toHaveBeenCalledWith('alert-1', expect.objectContaining({ notifiedAt: expect.anything() }))
       expect(alertRepo.update).not.toHaveBeenCalledWith('alert-2', expect.objectContaining({ resolutionNotifiedAt: expect.anything() }))
+    })
+  })
+
+  describe('reminders', () => {
+    function withReminderHours(hours: number): void {
+      service = new AlertSweepService(asRepository(alertRepo), asRepository(deviceRepo), asRepository(dataSourceRepo), sender as unknown as NotificationSenderService, makeSettingsService({}, hours), makeConfigService())
+    }
+
+    function withActiveLowBatteryAlert(alert: Partial<Alert>): void {
+      const device = makeDevice({ id: 'device-1', name: 'Kitchen', batteryVoltage: '3.0', lastSeen: new Date() }) // 0%, still active
+      deviceRepo.find.mockResolvedValue([device])
+      const existing = makeAlert({ id: 'alert-1', kind: 'device-low-battery', device, ...alert })
+      alertRepo.find.mockImplementation(async options => (whereKind(options) === 'device-low-battery' ? [existing] : []))
+    }
+
+    it('reminds an Alert still active whose opening Notification is older than the Reminder Interval, and stamps remindedAt alone', async () => {
+      withReminderHours(24)
+      withActiveLowBatteryAlert({ notifiedAt: hoursAgo(25) })
+      sender.send.mockResolvedValue(true)
+
+      await service.sweep()
+
+      expect(sender.send).toHaveBeenCalledTimes(1)
+      const [digest] = sender.send.mock.calls[0]
+      expect(digest.title).toBe('Kuroshiro: 0 opened, 0 resolved, 1 still open')
+      expect(digest.body).toContain('Still open:\nLow battery:\n- Kitchen')
+      expect(alertRepo.update).toHaveBeenCalledWith('alert-1', { remindedAt: expect.any(Date) })
+      expect(alertRepo.update).not.toHaveBeenCalledWith('alert-1', expect.objectContaining({ notifiedAt: expect.anything() }))
+    })
+
+    it('does not remind an Alert announced more recently than the Reminder Interval', async () => {
+      withReminderHours(24)
+      withActiveLowBatteryAlert({ notifiedAt: hoursAgo(23) })
+
+      await service.sweep()
+
+      expect(sender.send).not.toHaveBeenCalled()
+    })
+
+    it('counts the interval from the previous Reminder when it is later than the opening Notification', async () => {
+      withReminderHours(24)
+      withActiveLowBatteryAlert({ notifiedAt: hoursAgo(30), remindedAt: hoursAgo(1) })
+
+      await service.sweep()
+
+      expect(sender.send).not.toHaveBeenCalled()
+    })
+
+    it('reminds again once the previous Reminder is itself older than the interval', async () => {
+      withReminderHours(24)
+      withActiveLowBatteryAlert({ notifiedAt: hoursAgo(50), remindedAt: hoursAgo(25) })
+
+      await service.sweep()
+
+      expect(sender.send).toHaveBeenCalledWith(expect.objectContaining({ body: expect.stringContaining('Still open:') }))
+    })
+
+    it('reminds nothing while the Reminder Interval is 0, however old the announcement', async () => {
+      withReminderHours(0)
+      withActiveLowBatteryAlert({ notifiedAt: hoursAgo(24 * 365) })
+
+      await service.sweep()
+
+      expect(sender.send).not.toHaveBeenCalled()
+    })
+
+    it('carries an Alert whose opening Notification never landed as an opened entry, not a Reminder', async () => {
+      withReminderHours(1)
+      withActiveLowBatteryAlert({ notifiedAt: null })
+
+      await service.sweep()
+
+      const [digest] = sender.send.mock.calls[0]
+      expect(digest.title).toBe('Kuroshiro: 1 opened, 0 resolved')
+    })
+
+    it('does not remind a subject its Rule skips this Sweep', async () => {
+      withReminderHours(1)
+      const device = makeDevice({ id: 'device-1', lastSeen: null, batteryVoltage: undefined })
+      deviceRepo.find.mockResolvedValue([device])
+      const existing = makeAlert({ id: 'alert-1', kind: 'device-offline', device, notifiedAt: hoursAgo(48) })
+      alertRepo.find.mockImplementation(async options => (whereKind(options) === 'device-offline' ? [existing] : []))
+
+      await service.sweep()
+
+      expect(sender.send).not.toHaveBeenCalled()
+    })
+
+    it('stamps no remindedAt when the digest send fails, so the Reminder rides again next Sweep', async () => {
+      withReminderHours(24)
+      withActiveLowBatteryAlert({ notifiedAt: hoursAgo(25) })
+      sender.send.mockResolvedValue(false)
+
+      await service.sweep()
+
+      expect(sender.send).toHaveBeenCalledTimes(1)
+      expect(alertRepo.update).not.toHaveBeenCalledWith('alert-1', expect.objectContaining({ remindedAt: expect.anything() }))
     })
   })
 })

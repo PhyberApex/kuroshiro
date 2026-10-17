@@ -29,6 +29,10 @@ export class Alert {
   @Column('timestamptz', { nullable: true })
   notifiedAt?: Date | null
 
+  // The last Reminder delivered (ADR-0048); `notifiedAt` stays "the opening Notification was delivered".
+  @Column('timestamptz', { nullable: true })
+  remindedAt?: Date | null
+
   @Column('timestamptz', { nullable: true })
   resolutionNotifiedAt?: Date | null
 

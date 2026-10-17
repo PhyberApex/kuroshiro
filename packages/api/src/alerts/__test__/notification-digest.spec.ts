@@ -54,6 +54,34 @@ describe('buildDigest', () => {
     expect(digest?.body).toContain('Device B is offline.')
   })
 
+  it('lists Reminders under their own Still open section, between the opened and the resolved sections', () => {
+    const digest = buildDigest([
+      makeEntry({ phase: 'resolved', notification: makeNotification({ body: 'device recovered' }) }),
+      makeEntry({ phase: 'reminded', kind: 'device-offline', notification: makeNotification({ body: 'Device B is offline.' }) }),
+      makeEntry({ phase: 'opened', notification: makeNotification({ body: 'device opened' }) }),
+    ])
+
+    const body = digest!.body
+    expect(body).toContain('Still open:\nOffline:\n- Device B is offline.')
+    expect(body.indexOf('Opened:')).toBeLessThan(body.indexOf('Still open:'))
+    expect(body.indexOf('Still open:')).toBeLessThan(body.indexOf('Resolved:'))
+  })
+
+  it('counts Reminders in the title only when there are some, so a digest without any reads as before', () => {
+    expect(buildDigest([makeEntry({ phase: 'opened' })])?.title).toBe('Kuroshiro: 1 opened, 0 resolved')
+    expect(buildDigest([
+      makeEntry({ phase: 'reminded' }),
+      makeEntry({ phase: 'reminded' }),
+    ])?.title).toBe('Kuroshiro: 0 opened, 0 resolved, 2 still open')
+  })
+
+  it('carries a Reminder\'s severity into the digest type like an opened entry\'s', () => {
+    expect(buildDigest([
+      makeEntry({ phase: 'resolved', notification: makeNotification({ type: 'success' }) }),
+      makeEntry({ phase: 'reminded', notification: makeNotification({ type: 'failure' }) }),
+    ])?.type).toBe('failure')
+  })
+
   it('takes the most severe type among all entries: failure over warning over success', () => {
     expect(buildDigest([makeEntry({ notification: makeNotification({ type: 'warning' }) })])?.type).toBe('warning')
     expect(buildDigest([

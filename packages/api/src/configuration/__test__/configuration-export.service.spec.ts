@@ -456,6 +456,16 @@ describe('configurationExportService', () => {
     expect(settingsJson).toEqual({ alertRetentionDays: 0 })
   })
 
+  it('writes an overridden Reminder Interval to settings.json', async () => {
+    instanceSettingsRepo.findOneBy.mockResolvedValue({ id: 1, alertReminderHours: 24 })
+
+    const buffer = await service.exportToZip()
+    const zip = new AdmZip(buffer)
+    const settingsJson = JSON.parse(zip.getEntry('settings.json')!.getData().toString('utf8'))
+
+    expect(settingsJson).toEqual({ alertReminderHours: 24 })
+  })
+
   it('omits the image for a file-type Screen when nothing is on disk, and for non-file Screen types', async () => {
     const device = makeDevice({ id: 'device-1' })
     const fileScreen = makeScreen({ id: 'screen-1', device, type: 'file' })
