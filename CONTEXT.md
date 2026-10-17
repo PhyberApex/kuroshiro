@@ -73,7 +73,7 @@ One named input a Plugin declares for the admin to fill in — a key, a label, a
 _Avoid_: Custom field, form field (TRMNL's terms), setting, Plugin Configuration, variable
 
 **Dithering**:
-Whether an image is Floyd-Steinberg dithered when it is reduced to a Device's Palette — on for photos, gradients and mixed content, off for pure text and line art, where hard thresholds keep glyph edges sharp. Chosen per `file`, `url` and `html` Screen and per Plugin, which every `plugin` Screen showing it follows; a Mashup has no setting of its own and is undithered only when every slot's Plugin is. Off changes nothing but the dither method: a colour Palette keeps its colours and a full-color Palette is never dithered anyway. On by default (ADR-0045). What TRMNL calls `text` and `art`.
+Whether an image is Floyd-Steinberg dithered when it is reduced to a Device's Palette — on for photos, gradients and mixed content, off for pure text and line art, where hard thresholds keep glyph edges sharp. Chosen per `file`, `external` and `html` Screen and per Plugin, which every `plugin` Screen showing it follows; a Mashup has no setting of its own and is undithered only when every slot's Plugin is. Off changes nothing but the dither method: a colour Palette keeps its colours and a full-color Palette is never dithered anyway. On by default (ADR-0045). What TRMNL calls `text` and `art`.
 _Avoid_: Render mode, text mode, art mode, dither mode
 
 **Framework Version**:
