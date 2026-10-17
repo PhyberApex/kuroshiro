@@ -113,6 +113,8 @@ export interface DeviceDetail extends DeviceSummary {
   targetFirmware: { id: string, version: string, kind: 'official-synced' | 'custom', label: string | null, deprecated: boolean } | null
   pending: { specialFunction: SpecialFunction | null, deviceReset: boolean, deviceResetNewApikey: boolean, wipe: boolean, firmwarePush: boolean }
   sleepImagePath: string | null
+  /** The raw `Update-Source` header of the last poll (`button`, `EXT0`, `timer`, `powercycle`, …); `null` before a poll that sent one. */
+  lastWakeSource: string | null
   sensors: SensorReading[]
   screenCount: number
 }

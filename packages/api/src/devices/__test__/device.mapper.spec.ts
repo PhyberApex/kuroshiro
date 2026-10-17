@@ -333,6 +333,10 @@ describe('toDeviceDetail', () => {
     expect(withoutImage.sleepImagePath).toBeNull()
   })
 
+  it('reports the raw wake source of the last poll', () => {
+    expect(toDeviceDetail(makeDevice({ lastWakeSource: 'EXT0' }), facts).lastWakeSource).toBe('EXT0')
+  })
+
   it('has every key present, with null for what a bare Device does not have', () => {
     const detail = toDeviceDetail(makeDevice({ lastSeen: null }), facts)
 
@@ -359,6 +363,7 @@ describe('toDeviceDetail', () => {
       targetFirmware: null,
       pending: { specialFunction: 'identify', deviceReset: false, deviceResetNewApikey: false, wipe: false, firmwarePush: false },
       sleepImagePath: null,
+      lastWakeSource: null,
       sensors: [],
       screenCount: 0,
     })

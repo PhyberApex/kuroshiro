@@ -176,6 +176,20 @@ describe('deviceDisplayService', () => {
       expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ width: 800, height: 480, reportedModel: 'og' }))
     })
 
+    it('stores the Update-Source header as sent', async () => {
+      const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS })
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      await service.getCurrentImage({ ...headers, 'update-source': 'EXT0' })
+      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ lastWakeSource: 'EXT0' }))
+    })
+
+    it('leaves the wake source null when the Device sends no Update-Source', async () => {
+      const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS })
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      await service.getCurrentImage(headers)
+      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ lastWakeSource: null }))
+    })
+
     it('resolves and assigns a device model when the device has none', async () => {
       const device = makeDevice({ ...baseDevice, deviceModel: null })
       deviceRepo.findOneBy.mockResolvedValue(device)
