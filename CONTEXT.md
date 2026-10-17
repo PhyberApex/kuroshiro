@@ -33,12 +33,16 @@ The one Screen per Device currently being shown (`isActive: true`). Not a fixed 
 _Avoid_: Selected screen
 
 **Current Screen**:
-What a Device is showing right now, as far as the server knows — the Active Screen's image, a Fallback Screen, on a mirrored Device the mirrored image, or, when the Screen last served has since been deleted, that fact with no image (the Device still shows the deleted Screen's last image, but the server can no longer name or serve it). A Device reads it through `/current_screen`, which never advances the Rotation, unlike the `/display` poll a Device itself makes. The admin API reads it from what the Device's last `/display` poll was answered with, which the server records on the Device (the kind, the Screen, the Fallback Screen and its reason, the refresh rate given); a Device that never polled shows the welcome Fallback Screen.
+What a Device is showing right now, as far as the server knows — the Active Screen's image, a Fallback Screen, a Wipe's blank image, on a mirrored Device the mirrored image, or, when the Screen last served has since been deleted, that fact with no image (the Device still shows the deleted Screen's last image, but the server can no longer name or serve it). A Device reads it through `/current_screen`, which never advances the Rotation, unlike the `/display` poll a Device itself makes. The admin API reads it from what the Device's last `/display` poll was answered with, which the server records on the Device (the kind, the Screen, the Fallback Screen and its reason, the refresh rate given); a Device that never polled shows the welcome Fallback Screen.
 _Avoid_: Active Screen (the Screen whose turn it is — the Current Screen is the image, and may not come from a Screen at all), on the panel (say "on the Device"), preview
 
 **Rotation**:
 The cycle through a Device's Screens in `order`, one step per `/display` poll — skipping any Screen currently ineligible per its Schedule, if it has one, and any Screen whose render raises a `skip` Render Signal. A Picked Screen replaces one step's Order.
 _Avoid_: Cycling, playlist (see Schedule below — the concept "playlist" usually points at is Schedule, not Rotation)
+
+**Wipe**:
+A one-shot command an admin triggers on a Device: its next `/display` poll is answered with a plain white image in the Device Model's size and Palette instead of its Rotation, and the poll after that resumes where the Rotation stood, since a Wipe never advances the Active Screen. Fires exactly once, like a Special Function, but it is not one — firmware is told nothing, it simply shows the image it was given. Nor is the white image a Fallback Screen: it carries no seal, name or notice, and the Device does have Screens to show. Serves to blank a panel on demand and to ease ghosting. Refused on a Proxied Device, whose image comes from TRMNL.
+_Avoid_: Screen wipe (no Screen is wiped), blank screen, clear screen, white screen, screen_wipe (Terminus's name)
 
 **Picked Screen**:
 The Screen an admin asked Rotation to turn to at the Device's next poll ("Show next"), one per Device. It overrides Order once and never a Schedule or a `skip` Render Signal; a pick its Schedule or Render Signal shuts out by poll time is dropped. The poll that serves it clears it, and Rotation continues in Order from it. Runtime state, not exported (ADR-0038).
