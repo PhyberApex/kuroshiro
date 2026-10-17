@@ -24,6 +24,12 @@ const STAMP_BY_PHASE: Record<DigestEntry['phase'], (now: Date) => Pick<Alert, 'n
   resolved: now => ({ resolutionNotifiedAt: now }),
 }
 
+/** Opened entries and Reminders carry the Rule's opened wording, resolved entries its resolved wording (ADR-0048). */
+function entryFor(rule: AlertRule, subject: unknown, alert: Alert, phase: DigestEntry['phase']): DigestEntry {
+  const notification = phase === 'resolved' ? rule.resolvedNotification(subject) : rule.openedNotification(subject)
+  return { alertId: alert.id, kind: rule.kind, phase, notification }
+}
+
 /**
  * Evaluates every Alert Rule against persisted state on a schedule — the
  * only place Alerts are decided (ADR-0022). Runs and persists Alerts even
@@ -139,7 +145,7 @@ export class AlertSweepService implements OnApplicationBootstrap {
   private async openAlert(rule: AlertRule, subject: unknown, details: AlertDetails | undefined): Promise<DigestEntry> {
     const now = new Date()
     const alert = await this.alertRepository.save(this.alertRepository.create({ kind: rule.kind, ...rule.toAlertSubject(subject), openedAt: now, details: details ?? null }))
-    return { alertId: alert.id, kind: rule.kind, phase: 'opened', notification: rule.openedNotification(subject) }
+    return entryFor(rule, subject, alert, 'opened')
   }
 
   /**
@@ -153,10 +159,10 @@ export class AlertSweepService implements OnApplicationBootstrap {
       await this.alertRepository.update(alert.id, { details } as Parameters<typeof this.alertRepository.update>[1])
     }
     if (!alert.notifiedAt)
-      return { alertId: alert.id, kind: rule.kind, phase: 'opened', notification: rule.openedNotification(subject) }
+      return entryFor(rule, subject, alert, 'opened')
     const lastAnnounced = alert.remindedAt && alert.remindedAt > alert.notifiedAt ? alert.remindedAt : alert.notifiedAt
     if (reminderCutoff && lastAnnounced < reminderCutoff)
-      return { alertId: alert.id, kind: rule.kind, phase: 'reminded', notification: rule.openedNotification(subject) }
+      return entryFor(rule, subject, alert, 'reminded')
     return undefined
   }
 
@@ -174,7 +180,7 @@ export class AlertSweepService implements OnApplicationBootstrap {
       return undefined
     }
     await this.alertRepository.update(alert.id, { resolvedAt: now })
-    return { alertId: alert.id, kind: rule.kind, phase: 'resolved', notification: rule.resolvedNotification(subject) }
+    return entryFor(rule, subject, alert, 'resolved')
   }
 
   /** Alerts resolved on an earlier Sweep whose resolution Notification hasn't succeeded yet — carried into this Sweep's digest alongside its own changes, not sent separately. */
@@ -191,7 +197,7 @@ export class AlertSweepService implements OnApplicationBootstrap {
       const subject = rule.subjectFromAlert(alert)
       if (subject === undefined)
         continue
-      entries.push({ alertId: alert.id, kind: alert.kind, phase: 'resolved', notification: rule.resolvedNotification(subject) })
+      entries.push(entryFor(rule, subject, alert, 'resolved'))
     }
     return entries
   }
