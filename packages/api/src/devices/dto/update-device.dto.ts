@@ -1,8 +1,8 @@
 import type { ValidationArguments, ValidationOptions } from 'class-validator'
-import type { UpdateDeviceInput } from 'kuroshiro-shared'
+import type { RotationMode, UpdateDeviceInput } from 'kuroshiro-shared'
 import { Transform } from 'class-transformer'
 import { IsBoolean, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Matches, Max, Min, registerDecorator, ValidateIf } from 'class-validator'
-import { MAC_ADDRESS_PATTERN, REFRESH_RATE_MAX, REFRESH_RATE_MIN, SPECIAL_FUNCTIONS } from 'kuroshiro-shared'
+import { MAC_ADDRESS_PATTERN, REFRESH_RATE_MAX, REFRESH_RATE_MIN, ROTATION_MODES, SPECIAL_FUNCTIONS } from 'kuroshiro-shared'
 import { trimmed } from '../../utils/trimmed.js'
 
 const SLEEP_TIME_MAX = 86399
@@ -43,6 +43,10 @@ export class UpdateDeviceDto implements UpdateDeviceInput {
   @Min(REFRESH_RATE_MIN)
   @Max(REFRESH_RATE_MAX)
   refreshRate?: number
+
+  @ValidateIf(isSent)
+  @IsIn(ROTATION_MODES)
+  rotationMode?: RotationMode
 
   @ValidateIf(isSent)
   @IsString()

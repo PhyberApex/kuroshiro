@@ -288,6 +288,15 @@ describe('configurationExportService', () => {
     expect(entryNoMirror.mirrorApikey).toBeNull()
   })
 
+  it('writes the rotation mode next to the refresh rate', async () => {
+    deviceRepo.find.mockResolvedValue([makeDevice({ id: 'device-1', rotationMode: 'manual' })])
+
+    const zip = new AdmZip(await service.exportToZip())
+    const devicesJson = JSON.parse(zip.getEntry('devices.json')!.getData().toString('utf8'))
+
+    expect(devicesJson[0]).toMatchObject({ refreshRate: 300, rotationMode: 'manual' })
+  })
+
   it('does not send secrets when redact is not set (default unredacted behavior)', async () => {
     const device = makeDevice({ id: 'device-1', apikey: 'real-apikey' })
     deviceRepo.find.mockResolvedValue([device])

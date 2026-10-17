@@ -147,6 +147,7 @@ export function toDeviceDetail(device: Device, facts: DeviceDetailFacts): Device
     mac: device.mac,
     apikey: device.apikey,
     refreshRate: device.refreshRate,
+    rotationMode: device.rotationMode,
     reported: {
       batteryVoltage: device.batteryVoltage ?? null,
       rssi: device.rssi ?? null,

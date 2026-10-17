@@ -1,6 +1,6 @@
 import type { DeviceDetail, DeviceSummary, DisplayAnswer } from 'kuroshiro-shared'
 import type { ComputedRef, InjectionKey } from 'vue'
-import type { Report } from './simulatorWording'
+import type { Report, WakeSource } from './simulatorWording'
 import type { DeviceCall } from '@/api/deviceCalls'
 import { computed, inject, provide, reactive, ref, watch } from 'vue'
 import { callSetup, pollDisplay } from '@/api/deviceCalls'
@@ -54,6 +54,7 @@ function useDeviceSimulator(initialChoice: string) {
   const mac = ref('')
   const setUp = ref<SetUpDevice>()
   const report = ref<Report>({ ...NEW_DEVICE_REPORT })
+  const wakeSource = ref<WakeSource>('timer')
   const outcome = ref<SimulatorOutcome>({ kind: 'none' })
   const calling = ref<Call>()
 
@@ -99,7 +100,7 @@ function useDeviceSimulator(initialChoice: string) {
   }
 
   async function poll() {
-    const headers = reportHeaders(report.value)
+    const headers = { ...reportHeaders(report.value), 'Update-Source': wakeSource.value }
     if (registeredId.value) {
       const deviceId = registeredId.value
       await settled('poll', async () => {
@@ -142,7 +143,7 @@ function useDeviceSimulator(initialChoice: string) {
     return registeredId.value ? setupAsDevice(registeredId.value) : setupNew()
   }
 
-  return reactive({ choice, registeredId, device, listed, deviceName, detail, mac, report, outcome, calling, canPoll, canSetup, poll, setup })
+  return reactive({ choice, registeredId, device, listed, deviceName, detail, mac, report, wakeSource, outcome, calling, canPoll, canSetup, poll, setup })
 }
 
 type DeviceSimulator = ReturnType<typeof useDeviceSimulator>

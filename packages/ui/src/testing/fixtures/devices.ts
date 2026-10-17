@@ -31,6 +31,7 @@ export const buildDeviceDetail = defineBuilder<DeviceDetail>(() => ({
   mac: 'A4:C1:38:5F:0B:9D',
   apikey: 'k7Qm2Zr9Xw4Tn8Vb',
   refreshRate: 900,
+  rotationMode: 'automatic',
   reported: { batteryVoltage: '4.05', rssi: '-61', firmwareVersion: '1.7.8', model: 'og_plus', width: 800, height: 480 },
   palette: { id: '5c9e2f7a-3b1d-4e8f-a6c4-0d2b7e9f1a3c', name: 'Greyscale, 4 levels', kind: 'official' },
   mirror: { enabled: false, mac: null, apikeySet: false },

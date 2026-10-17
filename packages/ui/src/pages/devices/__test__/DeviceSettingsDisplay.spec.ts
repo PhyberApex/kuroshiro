@@ -207,3 +207,27 @@ describe('the Display section', () => {
     await expectNoHorizontalOverflow()
   })
 })
+
+describe('how a Device advances', () => {
+  it('offers every poll and a button press, and sends the mode alone', async () => {
+    const faked = fakeKitchenSettings()
+    const screen = await mountSettings()
+
+    await expect.element(screen.getByRole('combobox', { name: 'Advance' })).toHaveTextContent('Every poll')
+    expect(await offeredBy(screen, 'Advance')).toEqual(['Every poll', 'On button press'])
+
+    await choose(screen, 'Advance', 'On button press')
+
+    await expect.poll(() => stateOf(screen, 'Advance')).toBe('Saved')
+    expect(faked.writes).toEqual([{ rotationMode: 'manual' }])
+    await expect.element(screen.getByRole('combobox', { name: 'Advance' })).toHaveTextContent('On button press')
+  })
+
+  it('is disabled for a mirrored Device, which says it is not applied', async () => {
+    fakeKitchenSettings({ device: { ...KITCHEN, isMirrored: true, mirror: { enabled: true, mac: 'A4:CF:12:9B:01:7E', apikeySet: true } } })
+    const screen = await mountSettings()
+
+    await expect.element(screen.getByRole('combobox', { name: 'Advance' })).toBeDisabled()
+    expect(noteOf(screen, 'Advance')).toBe('Not applied while Kitchen is Mirroring.')
+  })
+})

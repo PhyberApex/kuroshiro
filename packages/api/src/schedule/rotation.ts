@@ -39,17 +39,21 @@ export function isPassedOver(screen: RotationScreen, at: Date): boolean {
  * Active Screen is (ADR-0038) — else the first Screen in Order, starting
  * after the Active Screen and wrapping past the end, that Rotation does not
  * pass over. A lapsed pick is dropped quietly and falls through to that same
- * scan. Scanning from the start of the Order when no Screen is active is what
+ * scan. With `stayOnActive` (a timer poll under Manual Rotation) the Active
+ * Screen keeps the turn while Rotation does not pass it over; a pick still
+ * comes first. Scanning from the start of the Order when no Screen is active is what
  * lets a Device that had nothing eligible pick the Rotation back up on a
  * later poll.
  */
-export function nextEligibleScreen<T extends RotationScreen>(screensInOrder: T[], at: Date, pickedScreenId?: string | null): T | null {
+export function nextEligibleScreen<T extends RotationScreen>(screensInOrder: T[], at: Date, pickedScreenId?: string | null, stayOnActive = false): T | null {
   if (pickedScreenId) {
     const picked = screensInOrder.find(screen => screen.id === pickedScreenId)
     if (picked && !isPassedOver(picked, at))
       return picked
   }
   const activeIndex = screensInOrder.findIndex(screen => screen.isActive)
+  if (stayOnActive && activeIndex !== -1 && !isPassedOver(screensInOrder[activeIndex], at))
+    return screensInOrder[activeIndex]
   const startIndex = activeIndex === -1 ? 0 : activeIndex + 1
   for (let offset = 0; offset < screensInOrder.length; offset++) {
     const candidate = screensInOrder[(startIndex + offset) % screensInOrder.length]

@@ -89,10 +89,15 @@ export interface DeviceSummary {
   currentScreen: CurrentScreen
 }
 
+export const ROTATION_MODES = ['automatic', 'manual'] as const
+export type RotationMode = typeof ROTATION_MODES[number]
+
 export interface DeviceDetail extends DeviceSummary {
   mac: string
   apikey: string
   refreshRate: number
+  /** How Rotation advances: on every poll, or only on a button press or a Picked Screen (Manual Rotation). */
+  rotationMode: RotationMode
   reported: {
     batteryVoltage: string | null
     rssi: string | null
@@ -125,6 +130,7 @@ export interface UpdateDeviceInput {
   name?: string
   /** Integer seconds, `REFRESH_RATE_MIN` to `REFRESH_RATE_MAX`. */
   refreshRate?: number
+  rotationMode?: RotationMode
   /** Changing it resets the Palette to the Device Model's richest one unless `paletteId` is sent too. */
   deviceModelName?: string
   paletteId?: string

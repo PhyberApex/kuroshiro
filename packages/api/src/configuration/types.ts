@@ -1,4 +1,4 @@
-import type { BooleanSettingKey, MergeStrategy, PluginKind, SettingKey } from 'kuroshiro-shared'
+import type { BooleanSettingKey, MergeStrategy, PluginKind, RotationMode, SettingKey } from 'kuroshiro-shared'
 import type { ParsedPlugin } from '../plugins/services/plugin-importer.service.js'
 import type { Screen } from '../screens/screens.entity.js'
 
@@ -75,6 +75,8 @@ export interface DeviceManifestEntry {
   mac: string
   apikey: string
   refreshRate: number
+  /** Absent in a manifest written before Manual Rotation: imports as `automatic`. */
+  rotationMode?: RotationMode
   deviceModelName: string | null
   paletteId: string | null
   mirrorEnabled: boolean | null
