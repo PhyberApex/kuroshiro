@@ -111,6 +111,10 @@ export class Device {
   @Column('timestamptz', { nullable: true })
   lastSeen?: Date | null
 
+  /** The raw `Update-Source` header of the last poll that sent one; `null` when it sent none. */
+  @Column('text', { nullable: true })
+  lastWakeSource?: string | null
+
   @Column('timestamptz', { nullable: true })
   lastServedAt?: Date | null
 

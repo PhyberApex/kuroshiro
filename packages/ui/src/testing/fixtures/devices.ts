@@ -37,6 +37,7 @@ export const buildDeviceDetail = defineBuilder<DeviceDetail>(() => ({
   targetFirmware: null,
   pending: { specialFunction: null, deviceReset: false, deviceResetNewApikey: false, firmwarePush: false },
   sleepImagePath: null,
+  lastWakeSource: null,
   sensors: [],
   screenCount: 1,
 }))
