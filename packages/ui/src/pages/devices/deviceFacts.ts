@@ -1,6 +1,7 @@
 import type { AlertKind, DeviceDetail, DeviceSensorKind, SleepState } from 'kuroshiro-shared'
 import type { DeviceTold } from './currentScreenStory'
 import type { Fact } from '@/components/fact'
+import { isButtonWake } from 'kuroshiro-shared'
 import { FIRING_ALERT_LABELS } from '@/pages/alerts/alertLabels'
 import { exactTime, relativeTime } from '@/patterns/time'
 import { deviceSettingsPath } from './devicePaths'
@@ -42,6 +43,20 @@ function lastSeenOf({ lastSeenAt }: DeviceDetail, offline: boolean, now: Date): 
   }
 }
 
+const WAKE_SOURCE_LABELS: Record<string, string> = {
+  powercycle: 'power cycle',
+  timer: 'timer',
+}
+
+/** Worded for a human; a source the firmware sent that has no wording shows as it was sent. */
+function wakeSourceOf(source: string | null) {
+  if (source === null)
+    return null
+  if (isButtonWake(source))
+    return 'button press'
+  return WAKE_SOURCE_LABELS[source] ?? source
+}
+
 export function reportsAnotherSize({ reported, deviceModel }: DeviceDetail) {
   return reported.width !== null && reported.height !== null && deviceModel !== null
     && (reported.width !== deviceModel.width || reported.height !== deviceModel.height)
@@ -60,6 +75,7 @@ export function deviceFacts({ device, alerts, now }: DeviceTold): DeviceFact[] {
   const firing = (kind: AlertKind) => alerts.some(alert => alert.kind === kind)
   return [
     lastSeenOf(device, firing('device-offline'), now),
+    { label: 'Last woke by', value: wakeSourceOf(device.lastWakeSource) },
     {
       label: 'Battery',
       value: device.batteryPercent === null ? null : `${device.batteryPercent} %`,

@@ -24,6 +24,17 @@ describe('the facts of a Device', () => {
     expect(rows(kitchen({ lastSeenAt: null, batteryPercent: null, rssi: null }))).toEqual([['Sleep Mode', 'Off']])
   })
 
+  it.each([
+    ['button', 'button press'],
+    ['EXT0', 'button press'],
+    ['EXT1', 'button press'],
+    ['timer', 'timer'],
+    ['powercycle', 'power cycle'],
+    ['touchpad', 'touchpad'],
+  ])('word the wake source %s as "%s", after last seen', (lastWakeSource, wording) => {
+    expect(rows(kitchen({ lastWakeSource }))[1]).toEqual(['Last woke by', wording])
+  })
+
   it('carry the instant behind "Last seen", for its exact time', () => {
     expect(factsOf()[0]).toMatchObject({ at: at(7, 31), lead: '' })
   })

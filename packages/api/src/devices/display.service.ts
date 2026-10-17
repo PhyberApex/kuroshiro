@@ -167,6 +167,7 @@ export class DeviceDisplayService {
     const specialFunction = device.specialFunction ?? 'none'
     device.specialFunction = 'none'
     const { firmwareUrl, updateFirmware } = await this.resolveFirmwarePush(device)
+    device.lastWakeSource = headers['update-source'] ?? null
     device.lastSeen = new Date()
     await this.deviceRepository.save(device)
     this.logger.log(`Device info updated for MAC: ${headers.id}`)

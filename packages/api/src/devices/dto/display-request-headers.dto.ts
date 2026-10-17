@@ -41,5 +41,9 @@ export class DisplayRequestHeadersDto {
 
   @IsOptional()
   @IsString()
+  'update-source'?: string
+
+  @IsOptional()
+  @IsString()
   sensors?: string
 }

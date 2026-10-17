@@ -167,6 +167,7 @@ export function toDeviceDetail(device: Device, facts: DeviceDetailFacts): Device
       firmwarePush: device.updateFirmware,
     },
     sleepImagePath: device.sleepImageGeneratedAt ? toImagePath(sleepImageRootRelativePath(device.id), device.sleepImageGeneratedAt) : null,
+    lastWakeSource: device.lastWakeSource ?? null,
     sensors: facts.sensors.map(({ kind, value, unit }) => ({ kind, value, unit })),
     screenCount: facts.screenCount,
   }
