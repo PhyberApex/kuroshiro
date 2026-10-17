@@ -82,6 +82,12 @@ export function assertApikeyRotationAllowed(device: Device): void {
     throw new ApiException(HttpStatus.CONFLICT, 'device-reset-apikey-proxied', 'A Proxied Device cannot be given a new API key.', { id: device.id })
 }
 
+/** A Wipe is answered by this server, which a Proxied Device's polls never reach. Checked against the merged entity, like `assertApikeyRotationAllowed`. */
+export function assertWipeAllowed(device: Device): void {
+  if (device.wipe && isProxiedDevice(device))
+    throw new ApiException(HttpStatus.CONFLICT, 'wipe-proxied', 'A Proxied Device cannot be wiped.', { id: device.id })
+}
+
 export function renderTargetChanged(before: { model?: string, palette?: string }, device: Device): boolean {
   return before.model !== device.deviceModel?.name || before.palette !== device.palette?.id
 }

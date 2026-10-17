@@ -20,9 +20,11 @@ const write = useDeviceWrite()
 const pending = computed(() => props.device.pending.specialFunction)
 const cannotTrigger = computed(() => pending.value !== null || props.device.isProxied || write.status === 'saving')
 
-const open = ref(pending.value !== null)
-watch(pending, (waiting) => {
-  if (waiting)
+const wipePending = computed(() => props.device.pending.wipe)
+
+const open = ref(pending.value !== null || wipePending.value)
+watch([pending, wipePending], ([waiting, wiping]) => {
+  if (waiting || wiping)
     open.value = true
 })
 </script>
@@ -48,8 +50,25 @@ watch(pending, (waiting) => {
         </Button>
       </li>
     </ul>
+    <div class="wipe-row">
+      <code class="name mono">wipe</code>
+      <div class="does">
+        <ResultLine :running="wipePending">
+          <template v-if="wipePending" #default>
+            Wipe pending, {{ reachesDevice(device, now) }}
+          </template>
+        </ResultLine>
+        <span v-if="!wipePending">Shows a blank image once, then the Rotation carries on where it stood</span>
+      </div>
+      <Button v-if="wipePending" variant="quiet" :loading="write.status === 'saving'" @click="write.send({ wipe: false })">
+        Cancel Wipe
+      </Button>
+      <Button v-else :disabled="device.isProxied || write.status === 'saving'" @click="write.send({ wipe: true })">
+        Wipe
+      </Button>
+    </div>
     <SettingsProblem v-if="device.isProxied">
-      {{ device.name }} is a Proxied Device. TRMNL answers its polls, so a Special Function triggered here never reaches it.
+      {{ device.name }} is a Proxied Device. TRMNL answers its polls, so a Special Function or a Wipe triggered here never reaches it.
     </SettingsProblem>
     <SaveState class="state" :status="write.status" :reason="write.reason" @retry="write.retry" />
   </TuckedSection>
@@ -71,7 +90,8 @@ watch(pending, (waiting) => {
     margin-top: var(--space-3);
   }
 
-  .function {
+  .function,
+  .wipe-row {
     display: grid;
     grid-template-columns: 8.5rem minmax(0, 1fr) auto;
     align-items: center;
@@ -91,7 +111,8 @@ watch(pending, (waiting) => {
   }
 
   @media (max-width: 820px) {
-    .function {
+    .function,
+    .wipe-row {
       grid-template-columns: minmax(0, 1fr) auto;
     }
 

@@ -1,7 +1,7 @@
 import type { FallbackKind, FallbackReason } from 'kuroshiro-shared'
 import type { Device } from './devices.entity.js'
 
-export type LastServedKind = 'screen' | 'fallback' | 'mirror'
+export type LastServedKind = 'screen' | 'fallback' | 'mirror' | 'wipe'
 export type LastServedFallback = Exclude<FallbackKind, 'welcome'>
 export type LastServedReason = Exclude<FallbackReason, 'neverPolled'>
 
@@ -14,6 +14,8 @@ export interface Served {
 }
 
 export const SERVED_MIRROR: Served = { kind: 'mirror', screenId: null, fallback: null, reason: null }
+
+export const SERVED_WIPE: Served = { kind: 'wipe', screenId: null, fallback: null, reason: null }
 
 /** `asleep` marks a Screen that Sleep Mode keeps on the Device instead of one Rotation reached. */
 export function servedScreen(screenId: string, reason: 'asleep' | null = null): Served {

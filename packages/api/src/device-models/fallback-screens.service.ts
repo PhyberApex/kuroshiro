@@ -6,6 +6,7 @@ import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { toClockTime } from '../devices/sleep-mode.js'
 import { getErrorMessage } from '../utils/getErrorMessage.js'
+import { convertBlankToPng } from '../utils/imageUtils.js'
 import { resolveAppPath } from '../utils/pathHelper.js'
 import { FALLBACK_SCREEN_TEMPLATE_VERSION, fallbackScreenHtml } from './fallback-screen-templates.js'
 import { renderHtmlToPng } from './render-html-to-png.js'
@@ -52,6 +53,19 @@ export class FallbackScreensService {
       this.logger.error(`Could not generate ${request.kind} screen for ${target.model.name}/${target.palette.id}, serving the static image: ${message}`)
       return `${this.apiUrl()}/screens/${request.kind}.png`
     }
+  }
+
+  /**
+   * The Wipe's blank image for a render target, drawn on first use and cached
+   * under `public/screens/wipe/<model>-<palette>-<width>x<height>/wipe.png`, so a custom Device Model resized under the same name gets a fresh one. Not a Fallback Screen:
+   * it prints nothing, so no template or Device fact goes into it.
+   */
+  async wipeUrlFor(target: DeviceRenderTarget): Promise<string> {
+    const relativePath = ['screens', 'wipe', `${fallbackRenderPairFolder(target)}-${target.model.width}x${target.model.height}`, 'wipe.png']
+    const outputPath = resolveAppPath('public', ...relativePath)
+    if (await this.isMissing(outputPath))
+      await convertBlankToPng(outputPath, target, this.logger)
+    return `${this.apiUrl()}/${relativePath.join('/')}`
   }
 
   private factsFor(device: FallbackScreenDevice): FallbackScreenFacts {

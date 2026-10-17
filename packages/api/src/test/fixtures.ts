@@ -30,6 +30,7 @@ export function makeDevice(overrides: Partial<Device> = {}): Device {
     sleepScreenEnabled: false,
     resetDevice: false,
     resetDeviceNewApikey: false,
+    wipe: false,
     updateFirmware: false,
     lastSeen: FIXED_DATE,
     screens: [],

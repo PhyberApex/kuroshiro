@@ -171,6 +171,19 @@ export async function readImageSize(inputPath: string, logger: Logger): Promise<
   return { width, height }
 }
 
+/** A plain white image in the render target's size and Palette, for a Wipe. */
+export async function convertBlankToPng(outputPath: string, target: DeviceRenderTarget, logger: Logger) {
+  const sourcePath = `${outputPath}.tmp-source`
+  try {
+    await fs.promises.mkdir(path.dirname(outputPath), { recursive: true })
+    await runMagick(['-size', `${target.model.width}x${target.model.height}`, 'xc:white', `png:${sourcePath}`], logger)
+    await convertToPng(sourcePath, outputPath, target, logger, { dither: false })
+  }
+  finally {
+    await fs.promises.rm(sourcePath, { force: true })
+  }
+}
+
 /** Converts any supported raster image into the PNG a device with the given render target expects. */
 export async function convertToPng(inputPath: string, outputPath: string, target: DeviceRenderTarget, logger: Logger, options: ConversionOptions = {}) {
   const format = await detectFormatOfFile(inputPath)

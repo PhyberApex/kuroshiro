@@ -73,13 +73,15 @@ export function createMockPaletteSelectionService(): MockPaletteSelectionService
 
 export interface MockFallbackScreensService {
   urlFor: Mock
+  wipeUrlFor: Mock
 }
 
 export function createMockFallbackScreensService(): MockFallbackScreensService {
-  return { urlFor: vi.fn() }
+  return { urlFor: vi.fn(), wipeUrlFor: vi.fn() }
 }
 
 /** Default behaviour after `vi.resetAllMocks()`: static placeholder URLs under http://api. */
 export function primeMockFallbackScreensService(mock: MockFallbackScreensService) {
   mock.urlFor.mockImplementation(async ({ kind }: { kind: string }) => `http://api/screens/${kind}.png`)
+  mock.wipeUrlFor.mockResolvedValue('http://api/screens/wipe/wipe.png')
 }
