@@ -3,7 +3,7 @@ export const BUTTON_WAKE_SOURCES = ['button', 'EXT0', 'EXT1'] as const
 
 /** Whether a Device's `Update-Source` header says a button press woke it. Case-sensitive: the firmware sends `EXT0` as is. */
 export function isButtonWake(wakeSource: string | null | undefined): boolean {
-  return BUTTON_WAKE_SOURCES.includes(wakeSource)
+  return (BUTTON_WAKE_SOURCES as readonly (string | null | undefined)[]).includes(wakeSource)
 }
 
 /** What `/api/setup` answers a Device that announces itself. */
