@@ -212,7 +212,7 @@ describe('the Device write and delete against a real database', () => {
 
       const response = await patch(device.id, { specialFunction: 'rewind', resetDevice: true })
 
-      expect(((await response.json()) as DeviceDetail).pending).toEqual({ specialFunction: 'rewind', deviceReset: true, deviceResetNewApikey: false, firmwarePush: false })
+      expect(((await response.json()) as DeviceDetail).pending).toEqual({ specialFunction: 'rewind', deviceReset: true, deviceResetNewApikey: false, wipe: false, firmwarePush: false })
     })
 
     describe('a Device Reset with a new API key', () => {
@@ -221,7 +221,7 @@ describe('the Device write and delete against a real database', () => {
 
         const response = await patch(device.id, { resetDevice: true, resetDeviceNewApikey: true })
 
-        expect(((await response.json()) as DeviceDetail).pending).toEqual({ specialFunction: 'identify', deviceReset: true, deviceResetNewApikey: true, firmwarePush: false })
+        expect(((await response.json()) as DeviceDetail).pending).toEqual({ specialFunction: 'identify', deviceReset: true, deviceResetNewApikey: true, wipe: false, firmwarePush: false })
       })
 
       it('refuses it for a Proxied Device and stores nothing', async () => {
@@ -269,6 +269,44 @@ describe('the Device write and delete against a real database', () => {
 
         expect(response.status).toBe(409)
         expect(await response.json()).toMatchObject({ code: 'device-reset-apikey-proxied' })
+      })
+    })
+
+    describe('a Wipe', () => {
+      it('is armed by PATCH and shown as pending', async () => {
+        const device = await registerDevice()
+
+        const response = await patch(device.id, { wipe: true })
+
+        expect(((await response.json()) as DeviceDetail).pending.wipe).toBe(true)
+        expect((await stored(device.id)).wipe).toBe(true)
+      })
+
+      it('is cancelled by PATCH before the Device polls', async () => {
+        const device = await registerDevice()
+        await patch(device.id, { wipe: true })
+
+        const response = await patch(device.id, { wipe: false })
+
+        expect(((await response.json()) as DeviceDetail).pending.wipe).toBe(false)
+      })
+
+      it('is refused for a Proxied Device and stores nothing', async () => {
+        const device = await registerDevice({ mirrorEnabled: true, mirrorMac: 'AA:BB:CC:DD:EE:01', mirrorApikey: 'k' })
+
+        const response = await patch(device.id, { wipe: true })
+
+        expect(response.status).toBe(409)
+        expect(await response.json()).toMatchObject({ code: 'wipe-proxied', message: 'A Proxied Device cannot be wiped.' })
+        expect((await stored(device.id)).wipe).toBe(false)
+      })
+
+      it('works on a mirrored (non-proxied) Device', async () => {
+        const device = await registerDevice({ mirrorEnabled: true, mirrorMac: 'AA:BB:CC:DD:EE:99', mirrorApikey: 'k' })
+
+        const response = await patch(device.id, { wipe: true })
+
+        expect(response.status).toBe(200)
       })
     })
 

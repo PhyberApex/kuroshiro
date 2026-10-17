@@ -2,14 +2,14 @@ import type { DataSource, QueryRunner } from 'typeorm'
 import { DataSource as TypeOrmDataSource } from 'typeorm'
 import { PGliteDriver } from 'typeorm-pglite'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { AddDeviceRotationMode1787340000000 } from '../1787340000000-AddDeviceRotationMode.js'
+import { AddDeviceRotationMode1787350000000 } from '../1787350000000-AddDeviceRotationMode.js'
 
 const ID = '00000000-0000-4000-8000-000000000001'
 
 describe('the rotation mode migration', () => {
   let dataSource: DataSource
   let queryRunner: QueryRunner
-  const migration = new AddDeviceRotationMode1787340000000()
+  const migration = new AddDeviceRotationMode1787350000000()
 
   beforeEach(async () => {
     dataSource = await new TypeOrmDataSource({ type: 'postgres', driver: new PGliteDriver().driver }).initialize()

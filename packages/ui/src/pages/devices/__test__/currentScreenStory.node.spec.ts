@@ -200,6 +200,14 @@ describe('what the plate shows and the sentences beside it', () => {
     expect(said(story.sentences)).toEqual(['The Screen Kitchen shows was deleted. At its next poll, around 07:46, it moves on.'])
   })
 
+  it('a Wipe: the blank image is on the panel, not the Active Screen', () => {
+    const device = kitchen({ currentScreen: { kind: 'wipe', imagePath: '/screens/wipe/og-bw/wipe.png', servedAt: at(7, 31) } })
+    const story = currentScreenStory({ device, screens: SCREENS, alerts: [], now: NOW })
+
+    expect(story).toMatchObject({ state: 'wipe', heading: 'Showing a Wipe', sealed: false })
+    expect(said(story.sentences)).toEqual(['Kitchen shows the blank image of a Wipe, not its Active Screen. At its next poll, around 07:46, it returns to its Rotation.'])
+  })
+
   it('leaves the time out once the moment of the next poll has passed', () => {
     const device = kitchen({ nextPollAt: at(7, 34), currentScreen: { kind: 'deletedScreen', imagePath: null, servedAt: at(7, 31) } })
     const story = currentScreenStory({ device, screens: SCREENS, alerts: [], now: NOW })

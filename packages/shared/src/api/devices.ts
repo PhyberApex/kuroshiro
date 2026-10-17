@@ -50,8 +50,15 @@ export interface CurrentDeletedScreen {
   servedAt: string
 }
 
+/** The last poll was answered with a Wipe's blank image, so no Screen is on the panel. */
+export interface CurrentWipeScreen {
+  kind: 'wipe'
+  imagePath: string
+  servedAt: string
+}
+
 /** What the Device shows: what its last poll was answered with, or the welcome Fallback Screen before its first. */
-export type CurrentScreen = CurrentScreenOfRotation | CurrentFallbackScreen | CurrentMirroredScreen | CurrentDeletedScreen
+export type CurrentScreen = CurrentScreenOfRotation | CurrentFallbackScreen | CurrentMirroredScreen | CurrentWipeScreen | CurrentDeletedScreen
 
 export interface SleepState {
   enabled: boolean
@@ -109,7 +116,7 @@ export interface DeviceDetail extends DeviceSummary {
   palette: { id: string, name: string, kind: 'official' | 'custom' } | null
   mirror: { enabled: boolean, mac: string | null, apikeySet: boolean }
   targetFirmware: { id: string, version: string, kind: 'official-synced' | 'custom', label: string | null, deprecated: boolean } | null
-  pending: { specialFunction: SpecialFunction | null, deviceReset: boolean, deviceResetNewApikey: boolean, firmwarePush: boolean }
+  pending: { specialFunction: SpecialFunction | null, deviceReset: boolean, deviceResetNewApikey: boolean, wipe: boolean, firmwarePush: boolean }
   sleepImagePath: string | null
   /** The raw `Update-Source` header of the last poll (`button`, `EXT0`, `timer`, `powercycle`, …); `null` before a poll that sent one. */
   lastWakeSource: string | null
@@ -148,6 +155,8 @@ export interface UpdateDeviceInput {
   resetDevice?: boolean
   /** Rides on `resetDevice: true` (ADR-0039): the key is rotated in the poll that delivers the Reset. Refused with 409 `device-reset-apikey-proxied` on a Proxied Device. */
   resetDeviceNewApikey?: boolean
+  /** `true` arms a Wipe: the next poll is answered with a blank image, once; `false` cancels it. `true` is refused with 409 `wipe-proxied` on a Proxied Device. */
+  wipe?: boolean
   /** `null` clears the target, refused with 409 `firmware-push-pending` while a push is pending. */
   targetFirmwareId?: string | null
   /** `true` is refused with 409 `firmware-push-without-target` or `firmware-push-mirrored`. */

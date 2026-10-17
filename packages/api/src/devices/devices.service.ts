@@ -19,6 +19,7 @@ import {
   assertApikeyRotationAllowed,
   assertPushCanBeServed,
   assertSleepWindowConfigured,
+  assertWipeAllowed,
   isProxiedDevice,
   renderTargetChanged,
 } from './device-update-rules.js'
@@ -64,6 +65,7 @@ export class DevicesService {
     await applyFirmwareChanges(dbDevice, targetFirmwareId, pushWasPending, this.firmwareService)
     assertPushCanBeServed(dbDevice, changes.updateFirmware)
     assertApikeyRotationAllowed(dbDevice)
+    assertWipeAllowed(dbDevice)
     const saved = await this.deviceRepository.save(dbDevice)
     if (renderTargetChanged(before, saved)) {
       await this.screensService.reconvertImageScreens(saved)

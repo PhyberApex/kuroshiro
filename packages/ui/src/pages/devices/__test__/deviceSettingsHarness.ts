@@ -89,6 +89,7 @@ function written(device: DeviceDetail, input: UpdateDeviceInput, { models, palet
       specialFunction: input.specialFunction === undefined ? device.pending.specialFunction : input.specialFunction === 'none' ? null : input.specialFunction,
       deviceReset: input.resetDevice ?? device.pending.deviceReset,
       deviceResetNewApikey: input.resetDeviceNewApikey ?? device.pending.deviceResetNewApikey,
+      wipe: input.wipe ?? device.pending.wipe,
       firmwarePush: input.updateFirmware ?? device.pending.firmwarePush,
     },
   }

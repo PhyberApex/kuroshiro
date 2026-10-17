@@ -66,6 +66,7 @@ function pendingFacts({ pending, targetFirmware }: DeviceDetail): DeviceFact[] {
   return [
     { label: 'Special Function', value: pending.specialFunction && `${pending.specialFunction} at the next poll`, pending: true },
     { label: 'Device Reset', value: pending.deviceReset ? 'at the next poll' : null, pending: true },
+    { label: 'Wipe', value: pending.wipe ? 'at the next poll' : null, pending: true },
     { label: 'Firmware', value: pending.firmwarePush ? `${targetFirmware ? `${targetFirmware.version} ` : ''}at the next poll` : null, pending: true },
   ]
 }

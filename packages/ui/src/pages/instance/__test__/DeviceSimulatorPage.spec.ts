@@ -191,7 +191,7 @@ describe('the Device Simulator', () => {
   })
 
   describe('a poll that takes something pending', () => {
-    const PENDING_PUSH = { ...PLAYED_KITCHEN, targetFirmware: FIRMWARE_1_8_0, pending: { firmwarePush: true, deviceReset: false, deviceResetNewApikey: false, specialFunction: null } }
+    const PENDING_PUSH = { ...PLAYED_KITCHEN, targetFirmware: FIRMWARE_1_8_0, pending: { firmwarePush: true, deviceReset: false, deviceResetNewApikey: false, wipe: false, specialFunction: null } }
 
     it('names what it takes in ink', async () => {
       const { screen } = await openSimulator('/instance/simulator?device=kitchen', { devices: [PENDING_PUSH, PLAYED_HALLWAY] })
@@ -233,7 +233,7 @@ describe('the Device Simulator', () => {
     })
 
     it('shows a Device Reset only when the answer carries one', async () => {
-      const resetting = { ...PLAYED_KITCHEN, pending: { firmwarePush: false, deviceReset: true, deviceResetNewApikey: false, specialFunction: 'identify' as const } }
+      const resetting = { ...PLAYED_KITCHEN, pending: { firmwarePush: false, deviceReset: true, deviceResetNewApikey: false, wipe: false, specialFunction: 'identify' as const } }
       const { screen } = await openSimulator('/instance/simulator?device=kitchen', { devices: [resetting] })
       await expect.poll(() => consequence(screen)).toContain('the Device Reset and the Special Function identify')
 

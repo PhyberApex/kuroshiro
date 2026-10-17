@@ -99,6 +99,10 @@ export class Device {
   @Column('boolean', { default: false })
   resetDeviceNewApikey: boolean
 
+  /** A Wipe (CONTEXT.md): the next `/display` poll is answered with a blank image, once. */
+  @Column('boolean', { default: false })
+  wipe: boolean
+
   @Column('boolean', { default: false })
   updateFirmware: boolean
 
