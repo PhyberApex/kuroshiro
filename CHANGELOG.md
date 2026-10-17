@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.21.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.20.0...kuroshiro-v0.21.0) (2026-10-17)
+
+
+### Features
+
+* **alerts:** remind Alerts still open on a Reminder Interval ([#1490](https://github.com/PhyberApex/kuroshiro/issues/1490)) ([3663e01](https://github.com/PhyberApex/kuroshiro/commit/3663e01177b9611937890e39b42a932f5b58b573))
+* **devices:** Manual Rotation, a per-Device setting that advances only on a button press or a Picked Screen ([#1482](https://github.com/PhyberApex/kuroshiro/issues/1482)) ([11b1601](https://github.com/PhyberApex/kuroshiro/commit/11b1601a4b2f39597e961a6a8e5db4951fd9f6fc))
+* **devices:** record the Update-Source header as the Device's last wake source ([#1479](https://github.com/PhyberApex/kuroshiro/issues/1479)) ([0b55aa0](https://github.com/PhyberApex/kuroshiro/commit/0b55aa0f80c5ee14d0c5c463f0fa273c5d30d0f3))
+* Dithering switch on Screens and Plugins ([#1477](https://github.com/PhyberApex/kuroshiro/issues/1477)) ([ce139b3](https://github.com/PhyberApex/kuroshiro/commit/ce139b34e437ed7a9b877398240164e01b61172e))
+* **firmware:** "Catch up now" gives the current official Firmware to Devices that are behind ([#1475](https://github.com/PhyberApex/kuroshiro/issues/1475)) ([b07ac88](https://github.com/PhyberApex/kuroshiro/commit/b07ac88d45c67feb13c5920072adf43b6fdf29f3))
+* **shared:** TRMNL's custom Liquid filters, so an imported Recipe that uses one renders as on trmnl.com ([#1447](https://github.com/PhyberApex/kuroshiro/issues/1447)) ([ce5cce5](https://github.com/PhyberApex/kuroshiro/commit/ce5cce53494e59314207271b8631a6a34a57f9b6))
+* Wipe, a one-shot blank-image command on a Device ([#1481](https://github.com/PhyberApex/kuroshiro/issues/1481)) ([5c3634d](https://github.com/PhyberApex/kuroshiro/commit/5c3634d737818d2cd0a3e39aac2cf6da3cce2eae))
+
+
+### Bug Fixes
+
+* **api:** map current firmware board names to their upstream Device Models ([#1473](https://github.com/PhyberApex/kuroshiro/issues/1473)) ([25671cc](https://github.com/PhyberApex/kuroshiro/commit/25671cc7948d849c1264d86072296aa3e1f1d7e8))
+* **metrics:** accept the unit spellings official firmware sends for Sensors ([#1484](https://github.com/PhyberApex/kuroshiro/issues/1484)) ([f8dbc0a](https://github.com/PhyberApex/kuroshiro/commit/f8dbc0a194fa594d6f4ed0222ce0d904d871c5da))
+* **shared:** make the Liquid engine's standard filters follow Ruby Liquid ([#1446](https://github.com/PhyberApex/kuroshiro/issues/1446)) ([20df7b5](https://github.com/PhyberApex/kuroshiro/commit/20df7b516d559aad193bc943e1f2911259ef05e9))
+* **shared:** render Liquid dates in the Instance Time Zone and carry it on trmnl.user ([#1449](https://github.com/PhyberApex/kuroshiro/issues/1449)) ([8274c44](https://github.com/PhyberApex/kuroshiro/commit/8274c44fafe8b47b43bc07f4b1fe195722ec175b))
+* **ui:** keep the Template plate in its rendering state until the Instance Time Zone is in ([#1453](https://github.com/PhyberApex/kuroshiro/issues/1453)) ([a80b654](https://github.com/PhyberApex/kuroshiro/commit/a80b654196d4a8d2bb2e78b05b27db90e54ee5bd))
+
+
+### Performance Improvements
+
+* **api:** render in one shared, long-lived Chromium ([#1474](https://github.com/PhyberApex/kuroshiro/issues/1474)) ([df1f890](https://github.com/PhyberApex/kuroshiro/commit/df1f89081c8b4a3a9f2caa3359d91e75896e19b2))
+
 ## [0.20.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.19.0...kuroshiro-v0.20.0) (2026-10-15)
 
 
