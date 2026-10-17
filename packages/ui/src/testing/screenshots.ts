@@ -65,17 +65,14 @@ const VIEWPORT_NAMES = Object.keys(VIEWPORTS) as ViewportName[]
 
 /** Takes the four shots of the mounted page: phone and desktop width, each in light and dark. */
 export async function expectPageScreenshots(name: string) {
-  const TMPFAILS: unknown[] = []
   try {
     for (const viewport of VIEWPORT_NAMES) {
       await resizeTo(VIEWPORTS[viewport].width, VIEWPORTS[viewport].height)
       for (const theme of THEMES) {
         await forceTheme(theme)
-        try { await expectScreenshot(page.elementLocator(document.body), `${name}-${viewport}-${theme}`) }
-        catch (e) { TMPFAILS.push(e) }
+        await expectScreenshot(page.elementLocator(document.body), `${name}-${viewport}-${theme}`)
       }
     }
-    if (TMPFAILS.length) throw TMPFAILS[0]
   }
   finally {
     await forceTheme('light')
