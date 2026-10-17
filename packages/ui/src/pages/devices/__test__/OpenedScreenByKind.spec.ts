@@ -106,7 +106,21 @@ describe('a File Screen', () => {
     const source = (await openedRow(screen, 'Harbour photo')).getByRole('group', { name: 'File' })
 
     await expect.element(source.getByRole('button', { name: 'Replace file' })).toBeVisible()
-    expect(lines(source.element())).toEqual(['File', 'Uploaded 12 September 2026. Converted for TRMNL OG (2-bit), Greyscale, 4 levels.', 'Replace file'])
+    const shown = lines(source.element())
+    expect(shown.slice(0, 2)).toEqual(['File', 'Uploaded 12 September 2026. Converted for TRMNL OG (2-bit), Greyscale, 4 levels.'])
+    expect(shown.at(-1)).toBe('Replace file')
+  })
+
+  it('saves Dithering as changed, sending the switch alone', async () => {
+    const faked = fakeKitchen()
+    const screen = await mountApp({ at: '/devices/kitchen?screen=photo' })
+    const source = (await openedRow(screen, 'Harbour photo')).getByRole('group', { name: 'File' })
+
+    await expect.element(source.getByRole('switch', { name: 'Dithering' })).toBeChecked()
+    await source.getByRole('switch', { name: 'Dithering' }).click()
+
+    await expect.poll(() => faked.writes).toEqual([{ method: 'PATCH', path: 'screens/photo', body: { dither: false } }])
+    await expect.element(source.getByRole('switch', { name: 'Dithering' })).not.toBeChecked()
   })
 })
 
@@ -153,6 +167,17 @@ describe('an External link Screen', () => {
     await expect.poll(() => faked.writes).toEqual([{ method: 'PATCH', path: 'screens/webcam', body: { fetchManual: false } }])
     await expect.element(source.getByRole('radio', { name: 'Fetch on every poll' })).toBeChecked()
     await expect.poll(() => source.getByRole('button', { name: 'Refresh image' }).query()).toBeNull()
+  })
+
+  it('saves Dithering as changed, sending the switch alone', async () => {
+    const faked = fakeKitchen()
+    const { source } = await openedWebcam()
+
+    await expect.element(source.getByRole('switch', { name: 'Dithering' })).toBeChecked()
+    await source.getByRole('switch', { name: 'Dithering' }).click()
+
+    await expect.poll(() => faked.writes).toEqual([{ method: 'PATCH', path: 'screens/webcam', body: { dither: false } }])
+    await expect.element(source.getByRole('switch', { name: 'Dithering' })).not.toBeChecked()
   })
 
   it('"Refresh image" fetches the kept image again and says when it was fetched', async () => {

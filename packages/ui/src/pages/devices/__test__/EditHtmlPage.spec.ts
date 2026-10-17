@@ -78,7 +78,7 @@ describe('edit HTML', () => {
     await saveHtml(screen).click()
 
     await expect.poll(() => path(screen)).toBe('/devices/kitchen?screen=fridge')
-    expect(faked.writes).toEqual([{ method: 'PATCH', path: 'screens/fridge', body: { html: '<p>Back at six.</p>\n<p>{{ soup }}</p> Soup' } }])
+    expect(faked.writes).toEqual([{ method: 'PATCH', path: 'screens/fridge', body: { html: '<p>Back at six.</p>\n<p>{{ soup }}</p> Soup', dither: true } }])
     await openedRow(screen, 'Fridge note')
     await expect.element(screen.getByRole('alertdialog')).not.toBeInTheDocument()
   })
@@ -98,7 +98,7 @@ describe('edit HTML', () => {
     await saveHtml(screen).click()
 
     await expect.poll(() => path(screen)).toBe('/devices/kitchen?screen=fridge')
-    expect(faked.writes).toEqual([{ method: 'PATCH', path: 'screens/fridge', body: { html: 'Milk' } }])
+    expect(faked.writes).toEqual([{ method: 'PATCH', path: 'screens/fridge', body: { html: 'Milk', dither: true } }])
   })
 
   it('saves with Ctrl S in the editor', async () => {
@@ -109,7 +109,7 @@ describe('edit HTML', () => {
     await userEvent.keyboard('{Control>}s{/Control}')
 
     await expect.poll(() => path(screen)).toBe('/devices/kitchen?screen=fridge')
-    expect(faked.writes).toEqual([{ method: 'PATCH', path: 'screens/fridge', body: { html: '<p>Back at six.</p>\n<p>{{ soup }}</p> Soup' } }])
+    expect(faked.writes).toEqual([{ method: 'PATCH', path: 'screens/fridge', body: { html: '<p>Back at six.</p>\n<p>{{ soup }}</p> Soup', dither: true } }])
   })
 
   it('names its mode "HTML" in the strip and shows Liquid\'s braces as written, unmarked', async () => {
@@ -130,6 +130,55 @@ describe('edit HTML', () => {
 
     await expect.poll(() => path(screen)).toBe('/devices/kitchen?screen=fridge')
     expect(faked.writes).toEqual([])
+  })
+
+  describe('dithering', () => {
+    const dithering = (screen: Mounted) => screen.getByRole('switch', { name: 'Dithering' })
+
+    it('shows the switch on, with the hint naming TRMNL\'s Art', async () => {
+      fakeFridgeNote()
+      const screen = await mountFridgeNote()
+
+      await expect.element(dithering(screen)).toBeChecked()
+      await expect.element(dithering(screen)).toHaveAccessibleDescription('On for photos, gradients and mixed content, what TRMNL calls Art. Off for pure text and line art, for sharper edges.')
+    })
+
+    it('saves it off with the markup', async () => {
+      const faked = fakeFridgeNote()
+      const screen = await mountFridgeNote()
+
+      await dithering(screen).click()
+      await saveHtml(screen).click()
+
+      await expect.poll(() => path(screen)).toBe('/devices/kitchen?screen=fridge')
+      expect(faked.writes).toEqual([{ method: 'PATCH', path: 'screens/fridge', body: { html: '<p>Back at six.</p>\n<p>{{ soup }}</p>', dither: false } }])
+    })
+
+    it('draws the device preview with the switch as it stands, saved or not', async () => {
+      fakeFridgeNote()
+      const requests: unknown[] = []
+      api.use(http.post(apiUrl('device-preview'), async ({ request }) => {
+        requests.push(await request.json())
+        return new HttpResponse('png', { headers: { 'Content-Type': 'image/png' } })
+      }))
+      const screen = await mountFridgeNote()
+
+      await dithering(screen).click()
+      await screen.getByRole('button', { name: 'See it as Kitchen shows it' }).click()
+
+      await expect.poll(() => requests.length).toBe(1)
+      expect(requests[0]).toMatchObject({ dither: false })
+    })
+
+    it('asks before leaving with the switch flipped', async () => {
+      fakeFridgeNote()
+      const screen = await mountFridgeNote()
+
+      await dithering(screen).click()
+      await screen.getByRole('link', { name: 'Kitchen\'s Screens' }).click()
+
+      await expect.element(screen.getByRole('alertdialog', { name: 'Leave without saving?' })).toBeVisible()
+    })
   })
 
   describe('leaving with unsaved changes', () => {
@@ -180,7 +229,7 @@ describe('edit HTML', () => {
     await screen.getByRole('button', { name: 'Try again' }).click()
 
     await expect.poll(() => path(screen)).toBe('/devices/kitchen?screen=fridge')
-    expect(faked.writes).toEqual([{ method: 'PATCH', path: 'screens/fridge', body: { html: '<p>Back at six.</p>\n<p>{{ soup }}</p> Soup' } }])
+    expect(faked.writes).toEqual([{ method: 'PATCH', path: 'screens/fridge', body: { html: '<p>Back at six.</p>\n<p>{{ soup }}</p> Soup', dither: true } }])
   })
 
   it.each([['a File Screen', 'photo'], ['a Screen that does not exist', 'gone']])('shows the empty state and no editor for %s', async (_, screenId) => {

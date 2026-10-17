@@ -523,6 +523,45 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
       expect((await saved(plugin.id, { name: 'Renamed' })).frameworkVersion).toBe('3.3.1')
     })
 
+    it('serves a new Plugin as dithered', async () => {
+      const plugin = await createPollPlugin()
+
+      expect((await read(plugin.id)).dither).toBe(true)
+    })
+
+    it('saves Dithering off and on again', async () => {
+      const plugin = await createPollPlugin()
+
+      expect((await saved(plugin.id, { dither: false })).dither).toBe(false)
+      expect((await saved(plugin.id, { dither: true })).dither).toBe(true)
+    })
+
+    it.each(['false', 0, null])('refuses the Dithering %j', async (dither) => {
+      const plugin = await createPollPlugin()
+
+      const envelope = await refused(plugin.id, { dither })
+
+      expect(envelope.fields?.map(field => field.path)).toEqual(['dither'])
+      expect((await read(plugin.id)).dither).toBe(true)
+    })
+
+    it('keeps Dithering when the save leaves the key out', async () => {
+      const plugin = await createPollPlugin()
+      await saved(plugin.id, { dither: false })
+
+      expect((await saved(plugin.id, { name: 'Renamed' })).dither).toBe(false)
+    })
+
+    it('clears the cached output of its Screens when Dithering flips, so the next poll redraws', async () => {
+      const plugin = await createPollPlugin()
+      const screenId = await assignments.assign(plugin.id, (await addDevice('Kitchen')).id)
+      await database.getRepository(Screen).update(screenId, { cachedPluginOutput: '<p>stale</p>' })
+
+      await saved(plugin.id, { dither: false })
+
+      expect((await database.getRepository(Screen).findOneByOrFail({ id: screenId })).cachedPluginOutput).not.toBe('<p>stale</p>')
+    })
+
     it('refuses a refresh interval on a Webhook-kind Plugin, which has none', async () => {
       const plugin = await createWebhookPlugin()
 

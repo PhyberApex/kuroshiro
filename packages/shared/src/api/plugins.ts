@@ -112,6 +112,8 @@ export interface PluginDetail {
   refreshInterval: number | null
   /** The Plugin's own Framework Version (`X.Y.Z`); `null` means the Instance pin. */
   frameworkVersion: string | null
+  /** Whether the Plugin's renders are Floyd-Steinberg dithered, at every Template size. */
+  dither: boolean
   /** Always holds one of size `full`. */
   templates: Array<{ size: TemplateSize, liquidMarkup: string }>
   /** Empty for a Webhook-kind Plugin. */
@@ -170,6 +172,8 @@ export interface CreatePollPluginInput {
   kind: 'Poll'
   /** Not empty; stored trimmed. */
   name: string
+  /** Defaults to `true`. */
+  dither?: boolean
   /** The Device the new Plugin is assigned to at once, at the end of its Order. */
   deviceId?: string
 }
@@ -181,6 +185,8 @@ export interface CreateWebhookPluginInput {
   mergeStrategy: MergeStrategy
   /** A whole number of at least 1. Required with `stream`, refused with any other Merge Strategy. */
   streamLimit?: number
+  /** Defaults to `true`. */
+  dither?: boolean
   /** The Device the new Plugin is assigned to at once, at the end of its Order. */
   deviceId?: string
 }
@@ -240,6 +246,7 @@ export interface UpdatePluginInput {
   refreshInterval?: number
   /** An exact `X.Y.Z`; `null` or an empty string clears it, which means the Instance pin. */
   frameworkVersion?: string | null
+  dither?: boolean
   templates?: Array<{ size: TemplateSize, liquidMarkup: string }>
   /** Matched by `id`: one with an id is updated in place, one without is created, one left out is deleted. */
   dataSources?: Array<{ id?: string } & DataSourceInput>

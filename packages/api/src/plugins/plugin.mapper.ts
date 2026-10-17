@@ -191,6 +191,7 @@ export function toPluginDetail(plugin: Plugin, facts: PluginDetailFacts): Plugin
     updatedAt: toIsoString(plugin.updatedAt),
     refreshInterval: isPolled(plugin) ? plugin.refreshInterval : null,
     frameworkVersion: plugin.frameworkVersion ?? null,
+    dither: plugin.dither,
     templates: toTemplateReads(plugin),
     dataSources: polledDataSources(plugin).map(source => toDataSourceRead(source, facts)),
     fields: fields.map(toPluginFieldRead),

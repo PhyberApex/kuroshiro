@@ -146,6 +146,18 @@ describe('configurationExportService', () => {
     expect(pluginsJson.find((p: { id: string }) => p.id === 'plugin-2').sourceRecipeSnapshot).toBeNull()
   })
 
+  it('writes dither on every Plugin and Screen entry', async () => {
+    pluginRepo.find.mockResolvedValue([makePlugin({ id: 'plugin-1', dither: false }), makePlugin({ id: 'plugin-2' })])
+    screenRepo.find.mockResolvedValue([makeScreen({ id: 'screen-1', device: makeDevice({ id: 'device-1' }), dither: false })])
+
+    const zip = new AdmZip(await service.exportToZip())
+    const pluginsJson = JSON.parse(zip.getEntry('plugins.json')!.getData().toString('utf8'))
+    const screensJson = JSON.parse(zip.getEntry('screens.json')!.getData().toString('utf8'))
+
+    expect(pluginsJson.map((p: { dither: boolean }) => p.dither)).toEqual([false, true])
+    expect(screensJson[0].dither).toBe(false)
+  })
+
   it('writes the Plugin\'s Framework Version into the Plugin manifest entry, and null when it has none', async () => {
     pluginRepo.find.mockResolvedValue([makePlugin({ id: 'plugin-1', frameworkVersion: '3.3.1' }), makePlugin({ id: 'plugin-2' })])
 

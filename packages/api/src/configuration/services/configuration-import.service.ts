@@ -770,6 +770,7 @@ export class ConfigurationImportService {
     plugin.mergeStrategy = entry.mergeStrategy
     plugin.streamLimit = entry.streamLimit
     plugin.frameworkVersion = entry.frameworkVersion ?? null
+    plugin.dither = entry.dither ?? true
     plugin.sourceRecipeId = entry.sourceRecipeId ?? parsed.sourceRecipeId ?? undefined
     plugin.sourceRecipeSnapshot = entry.sourceRecipeSnapshot ? { ...entry.sourceRecipeSnapshot } : null
 
@@ -968,6 +969,7 @@ export class ConfigurationImportService {
     screen.externalLink = entry.externalLink
     screen.html = entry.html
     screen.fetchManual = entry.fetchManual
+    screen.dither = entry.dither ?? true
     screen.plugin = entry.pluginId ? ({ id: entry.pluginId } as Plugin) : null
     screen.devicePluginId = entry.devicePluginId
     // The restored Screen's render is stale until the next poll recomputes it (ADR-0021).

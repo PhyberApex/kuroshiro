@@ -737,6 +737,50 @@ describe('configurationImportService', () => {
     })
   })
 
+  describe('dithering', () => {
+    function htmlScreenEntry(extra: Record<string, unknown> = {}) {
+      return {
+        id: 'screen-1',
+        deviceId: 'device-1',
+        type: 'html' as const,
+        order: 1,
+        filename: 'Note',
+        externalLink: null,
+        html: '<p>hi</p>',
+        fetchManual: false,
+        pluginId: null,
+        devicePluginId: null,
+        schedule: null,
+        mashupConfiguration: null,
+        ...extra,
+      }
+    }
+
+    it('imports the dither of a Screen entry, and reads a missing one as dithered', async () => {
+      await service.importFromZip(buildArchive({ devices: [makeDeviceEntry()], screens: [htmlScreenEntry({ dither: false })] }))
+      expect(backing.get('Screen')!.get('screen-1')).toMatchObject({ dither: false })
+
+      backing.get('Screen')!.clear()
+      await service.importFromZip(buildArchive({ devices: [makeDeviceEntry()], screens: [htmlScreenEntry()] }))
+      expect(backing.get('Screen')!.get('screen-1')).toMatchObject({ dither: true })
+    })
+
+    it('imports the dither of a Plugin entry', async () => {
+      await service.importFromZip(buildArchive(fieldValuePlugin({}, { dither: false })))
+
+      expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ dither: false })
+    })
+
+    it('imports an archive from before schemaVersion 5 as dithered', async () => {
+      const { plugins, pluginFolders } = fieldValuePlugin({})
+      const buffer = buildArchive({ manifest: { kuroshiroVersion: '0.20.0', schemaVersion: 4, exportedAt: new Date().toISOString(), containsSecrets: true }, plugins, pluginFolders })
+
+      await service.importFromZip(buffer)
+
+      expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ dither: true })
+    })
+  })
+
   describe('a previous-version (schemaVersion 2) archive', () => {
     const previousManifest = { kuroshiroVersion: '0.17.0', schemaVersion: 2, exportedAt: new Date().toISOString(), containsSecrets: true }
 

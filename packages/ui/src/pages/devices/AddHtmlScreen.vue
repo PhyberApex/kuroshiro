@@ -4,6 +4,7 @@ import { computed, reactive } from 'vue'
 import { createScreen } from '@/api/screens'
 import CodeEditor from '@/components/CodeEditor.vue'
 import Field from '@/components/Field.vue'
+import DitheringField from '@/patterns/DitheringField.vue'
 import { useReportScreenFormChanged } from './addScreenChanged'
 import AddScreenFoot from './AddScreenFoot.vue'
 import { useAddScreen } from './addScreenForm'
@@ -17,13 +18,13 @@ const props = defineProps<{
 
 const addition = useAddScreen(['name', 'html'])
 
-const draft = reactive({ name: '', html: '' })
+const draft = reactive({ name: '', html: '', dither: true })
 
-const changed = computed(() => !addition.added && (draft.name.trim() !== '' || draft.html.trim() !== ''))
+const changed = computed(() => !addition.added && (draft.name.trim() !== '' || draft.html.trim() !== '' || !draft.dither))
 useReportScreenFormChanged(changed)
 
 function add() {
-  void addition.create(() => createScreen({ kind: 'html', deviceId: props.device.id, name: draft.name.trim(), html: draft.html }), {
+  void addition.create(() => createScreen({ kind: 'html', deviceId: props.device.id, name: draft.name.trim(), html: draft.html, dither: draft.dither }), {
     name: screenNameProblem(draft.name),
     html: htmlProblem(draft.html),
   })
@@ -36,6 +37,7 @@ function add() {
     <Field v-slot="{ control }" class="markup" label="HTML" :error="addition.problems.html">
       <CodeEditor v-model="draft.html" v-bind="control" aria-label="HTML" mode="html" @save="add" />
     </Field>
+    <DitheringField v-model="draft.dither" />
     <HtmlPreview :device="device" :html="draft.html" name="Preview of the new Screen" />
     <AddScreenFoot :running="addition.running" :changed="changed" :failure="addition.failure" :guarded="false" />
   </form>

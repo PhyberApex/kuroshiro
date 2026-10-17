@@ -13,6 +13,7 @@ import TextInput from '@/components/TextInput.vue'
 import { useSaveAsChanged } from '@/components/useSaveAsChanged'
 import RelativeTime from '@/patterns/RelativeTime.vue'
 import { FETCH_CHOICES, fetchChoiceOf, NOT_A_WEB_ADDRESS } from './fetchChoices'
+import ScreenDitheringField from './ScreenDitheringField.vue'
 import { isWebAddress } from './screenSourceWording'
 
 const props = defineProps<{
@@ -92,6 +93,7 @@ async function refresh() {
     <RadioRow :model-value="choice" :choices="FETCH_CHOICES" aria-label="Fetching" @update:model-value="choose" />
     <SaveState :status="choiceSave.status" :reason="choiceSave.reason" @retry="choiceSave.retry" />
   </div>
+  <ScreenDitheringField :screen="screen" :reload="reload" />
   <div v-if="external.fetchManual" class="refresh">
     <Button :loading="refreshing" @click="refresh">
       Refresh image

@@ -7,6 +7,8 @@ export interface DevicePreviewInput {
   paletteId: string
   /** The Plugin being drawn; its Framework Version is used. Left out, the Instance pin is. */
   pluginId?: string
+  /** Defaults to `true`. `false` converts with hard thresholds, as a Screen or Plugin with Dithering off does. */
+  dither?: boolean
 }
 
 /** The response header naming the Render Signal raised while the preview was drawn, or `none`. Nothing about it is stored (ADR-0040). */

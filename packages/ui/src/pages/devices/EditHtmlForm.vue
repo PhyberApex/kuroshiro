@@ -8,6 +8,7 @@ import EditorBench from '@/components/EditorBench.vue'
 import { failureReason, notSavedSentence } from '@/components/failureReason'
 import FieldError from '@/components/FieldError.vue'
 import AddFormFoot from '@/patterns/AddFormFoot.vue'
+import DitheringField from '@/patterns/DitheringField.vue'
 import { useDeviceFrame } from './deviceFrame'
 import HtmlPreview from './HtmlPreview.vue'
 import { htmlProblem, possessive, screenName } from './screenNaming'
@@ -27,7 +28,9 @@ const errorId = useId()
 const named = computed(() => screenName(props.screen.name))
 const saved = ref(props.screen.html ?? '')
 const html = ref(saved.value)
-const changed = computed(() => html.value !== saved.value)
+const savedDither = ref(props.screen.dither)
+const dither = ref(savedDither.value)
+const changed = computed(() => html.value !== saved.value || dither.value !== savedDither.value)
 
 const saving = ref(false)
 const failure = ref<string>()
@@ -44,9 +47,11 @@ async function save() {
   failure.value = undefined
   saving.value = true
   try {
-    const answered = await updateScreen(props.screen.id, { html: html.value })
+    const answered = await updateScreen(props.screen.id, { html: html.value, dither: dither.value })
     saved.value = answered.html ?? html.value
     html.value = saved.value
+    savedDither.value = answered.dither
+    dither.value = answered.dither
     await nextTick()
     await router.push(openedRow.value)
   }
@@ -75,9 +80,10 @@ async function save() {
           @save="save"
         />
         <FieldError :id="errorId" :message="emptyError" />
+        <DitheringField v-model="dither" />
       </template>
       <template #plate>
-        <HtmlPreview :device="device" :html="html" :name="`Preview of ${named}`" facts />
+        <HtmlPreview :device="device" :html="html" :name="`Preview of ${named}`" :dither="dither" facts />
       </template>
     </EditorBench>
     <AddFormFoot

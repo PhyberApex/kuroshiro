@@ -11,6 +11,7 @@ import { RENDER_FAILED, RENDER_HELD, RENDER_SKIPPED } from '../../screens/render
 import { Screen } from '../../screens/screens.entity.js'
 import { getErrorMessage } from '../../utils/getErrorMessage.js'
 import { resolveAppPath } from '../../utils/pathHelper.js'
+import { mashupDither } from '../mashup-dither.js'
 import { MashupRendererService } from './mashup-renderer.service.js'
 
 /**
@@ -59,7 +60,7 @@ export class ScreenRenderService {
         renderedHtml = await this.renderMashupOnDemand(screen, screenWithMashup.mashupConfiguration, device)
       }
 
-      return await this.renderBodyToScreenPng(renderedHtml, screen, device, honorRenderSignal)
+      return await this.renderBodyToScreenPng(renderedHtml, screen, device, honorRenderSignal, TRMNL_FRAMEWORK_VERSION, mashupDither(screenWithMashup.mashupConfiguration))
     }
     catch (err) {
       const message = getErrorMessage(err)
@@ -75,11 +76,12 @@ export class ScreenRenderService {
    * and answers `RENDER_SKIPPED`/`RENDER_HELD` on a live `skip`/`hold` Render
    * Signal (ADR-0031); otherwise the signal is observed but has no effect, as
    * outside `/display`. `frameworkVersion` is the Instance pin unless the caller draws
-   * a Plugin's own Screen; a Mashup always keeps the pin (ADR-0041).
+   * a Plugin's own Screen; a Mashup always keeps the pin (ADR-0041). `dither` is the Screen's or Plugin's Dithering,
+   * or for a Mashup the one derived from its slots.
    */
-  async renderBodyToScreenPng(bodyHtml: string, screen: Screen, device: Device, honorRenderSignal: boolean, frameworkVersion: string = TRMNL_FRAMEWORK_VERSION): Promise<string | typeof RENDER_SKIPPED | typeof RENDER_HELD> {
+  async renderBodyToScreenPng(bodyHtml: string, screen: Screen, device: Device, honorRenderSignal: boolean, frameworkVersion: string = TRMNL_FRAMEWORK_VERSION, dither = true): Promise<string | typeof RENDER_SKIPPED | typeof RENDER_HELD> {
     const target = await this.deviceModels.renderTargetFor(device)
-    const renderSignal = await renderHtmlToPng(wrapInScreenShell(target, bodyHtml, frameworkVersion), target, this.screenImagePath(device, screen), this.logger, {}, { honorRenderSignal })
+    const renderSignal = await renderHtmlToPng(wrapInScreenShell(target, bodyHtml, frameworkVersion), target, this.screenImagePath(device, screen), this.logger, { dither }, { honorRenderSignal })
     if (honorRenderSignal && renderSignal === 'skip')
       return RENDER_SKIPPED
     if (honorRenderSignal && renderSignal === 'hold')

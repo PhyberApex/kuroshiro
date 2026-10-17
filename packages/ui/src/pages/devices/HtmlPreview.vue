@@ -21,6 +21,8 @@ const props = defineProps<{
   name: string
   /** The bench's wording: the facts and what the plate is not, under it, in place of the label above it that Add Screen's form has. The device preview (ADR-0040) is offered only here. */
   facts?: boolean
+  /** The Screen's Dithering as the form holds it, which the device preview draws with. */
+  dither?: boolean
 }>()
 
 /** How long the typing has to pause before the markup is drawn again. */
@@ -52,7 +54,7 @@ onBeforeUnmount(() => clearTimeout(pause))
 
 /** Offered only with `facts`: Add Screen's HTML kind, which has no saved Screen yet, is out of scope for the device preview. */
 const devicePreview = useDevicePreview(() => props.facts && target.value
-  ? devicePreviewSourceOf(target.value, viewFull(drawn.value))
+  ? devicePreviewSourceOf(target.value, viewFull(drawn.value), props.dither)
   : undefined)
 
 const shownDocument = computed(() => devicePreview.state.value.status === 'drawn' ? devicePreview.state.value.document : (target.value ? htmlScreenDocument(target.value, drawn.value) : null))

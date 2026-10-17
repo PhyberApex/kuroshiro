@@ -232,6 +232,37 @@ describe('adding, deleting and reordering a Device\'s Screens, against a real da
       expect(await response.json()).toMatchObject({ kind: 'html', name: 'Note', html: '<p>New</p>', external: null, file: null, order: 1 })
     })
 
+    it('creates a dithered Screen when the request leaves dither out', async () => {
+      const response = await postHtmlScreen()
+
+      expect(await response.json()).toMatchObject({ kind: 'html', dither: true })
+    })
+
+    it('stores dither: false on an HTML Screen', async () => {
+      const response = await postHtmlScreen({ dither: false })
+
+      expect(await response.json()).toMatchObject({ kind: 'html', dither: false })
+    })
+
+    it('answers 400 for a dither that is not a boolean', async () => {
+      const response = await postHtmlScreen({ dither: 'yes' })
+
+      expect(response.status).toBe(400)
+    })
+
+    it('converts a File Screen\'s upload without dithering when the form says so', async () => {
+      const response = await postFileScreen({ deviceId: device.id, kind: 'file', name: 'Line art', dither: 'false' })
+
+      expect(await response.json()).toMatchObject({ kind: 'file', dither: false })
+      expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.any(String), expect.anything(), expect.anything(), { dither: false })
+    })
+
+    it('fetches a kept External link without dithering when asked to', async () => {
+      await http.postJson('/api/screens', { deviceId: device.id, kind: 'external', name: 'Poster', url: 'https://example.com/poster.png', fetchManual: true, dither: false })
+
+      expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.any(String), expect.anything(), expect.anything(), { dither: false })
+    })
+
     it('answers 409 instead of a duplicate Order when another add wins a race the row lock did not prevent', async () => {
       await seedScreen(1, { filename: 'First' })
       const maximum = vi.spyOn(Repository.prototype, 'maximum')

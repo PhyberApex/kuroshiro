@@ -29,4 +29,5 @@ export const buildScreen = defineBuilder<ScreenRead>(() => ({
   external: null,
   file: null,
   html: null,
+  dither: true,
 }))

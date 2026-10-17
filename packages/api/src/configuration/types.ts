@@ -46,6 +46,8 @@ export interface PluginManifestEntry {
   streamLimit: number | null
   /** Absent from an archive older than schemaVersion 4, which reads as null. */
   frameworkVersion?: string | null
+  /** Absent from an archive older than schemaVersion 5, which reads as true. */
+  dither?: boolean
   webhookToken: string | null
   sourceRecipeId: string | null
   sourceRecipeSnapshot: ParsedPlugin | null
@@ -118,6 +120,8 @@ export interface ScreenManifestEntry {
   externalLink: string | null
   html: string | null
   fetchManual: boolean
+  /** Absent from an archive older than schemaVersion 5, which reads as true. */
+  dither?: boolean
   pluginId: string | null
   devicePluginId: string | null
   schedule: ScheduleManifestEntry | null

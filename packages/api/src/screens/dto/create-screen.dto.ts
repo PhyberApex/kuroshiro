@@ -40,6 +40,11 @@ export class CreateScreenDto implements CreateScreenFields {
   @IsBoolean()
   fetchManual?: boolean
 
+  @ValidateIf((input: CreateScreenDto) => input.dither !== undefined)
+  @Transform(({ value }) => typeof value === 'string' ? BOOLEAN_BY_FORM_VALUE[value] ?? value : value)
+  @IsBoolean()
+  dither?: boolean
+
   @ValidateIf((input: CreateScreenDto) => input.kind === 'html')
   @IsString()
   @IsNotEmpty()

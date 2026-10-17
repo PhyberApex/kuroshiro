@@ -48,18 +48,18 @@ export class DevicePreviewService {
     try {
       const target = await this.targetOf(input)
       const frameworkVersion = await this.frameworkVersionOf(input)
-      return await this.renderTo(target, input.html, frameworkVersion)
+      return await this.renderTo(target, input.html, frameworkVersion, input.dither ?? true)
     }
     finally {
       this.rendering = false
     }
   }
 
-  private async renderTo(target: DeviceRenderTarget, html: string, frameworkVersion: string): Promise<DevicePreviewResult> {
+  private async renderTo(target: DeviceRenderTarget, html: string, frameworkVersion: string, dither: boolean): Promise<DevicePreviewResult> {
     const tmpDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'kuroshiro-device-preview-'))
     const outputPath = path.join(tmpDir, 'preview.png')
     try {
-      const renderSignal = await renderHtmlToPng(wrapInScreenShell(target, html, frameworkVersion), target, outputPath, this.logger)
+      const renderSignal = await renderHtmlToPng(wrapInScreenShell(target, html, frameworkVersion), target, outputPath, this.logger, { dither })
       const buffer = await fs.promises.readFile(outputPath)
       return { buffer, signal: renderSignal ?? 'none' }
     }
