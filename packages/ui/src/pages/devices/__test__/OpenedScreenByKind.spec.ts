@@ -1,4 +1,4 @@
-import type { ScreenPluginReference } from 'kuroshiro-shared'
+import type { ScreenPluginReference, ScreenRead } from 'kuroshiro-shared'
 import type { MountedApp } from './screensViewHarness'
 import { http } from 'msw'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -131,6 +131,9 @@ describe('an External link Screen', () => {
     return { screen, source, url: source.getByRole('textbox', { name: 'Image URL' }) }
   }
 
+  /** Kitchen's Screens as the server has them once "Harbour webcam" was changed elsewhere. */
+  const webcamWith = (change: Partial<ScreenRead>) => SCREENS_OF_EVERY_KIND.map(screen => screen.id === 'webcam' ? { ...screen, ...change } : screen)
+
   it('saves a new address as changed, sending the address alone', async () => {
     const faked = fakeKitchen()
     const { source, url } = await openedWebcam()
@@ -167,6 +170,72 @@ describe('an External link Screen', () => {
     await expect.poll(() => faked.writes).toEqual([{ method: 'PATCH', path: 'screens/webcam', body: { fetchManual: false } }])
     await expect.element(source.getByRole('radio', { name: 'Fetch on every poll' })).toBeChecked()
     await expect.poll(() => source.getByRole('button', { name: 'Refresh image' }).query()).toBeNull()
+  })
+
+  it('keeps the fetch choice being saved when refreshes bring it back and forth before the save answers', async () => {
+    const faked = fakeKitchen()
+    let answer!: () => void
+    const answered = new Promise<void>(resolve => (answer = resolve))
+    // Holds the save, then lets the faked Device answer it.
+    api.use(http.patch(apiUrl('screens/webcam'), async () => {
+      await answered
+    }, { once: true }))
+    const { source } = await openedWebcam()
+    const everyPoll = source.getByRole('radio', { name: 'Fetch on every poll' })
+
+    await everyPoll.click()
+    // Dithering, switched elsewhere, says when each refresh has landed.
+    const dithering = source.getByRole('switch', { name: 'Dithering' })
+    faked.screens = webcamWith({ dither: false, external: { url: 'https://harbour.example/cam.jpg', fetchManual: false } })
+    window.dispatchEvent(new Event('focus'))
+    await expect.element(dithering).not.toBeChecked()
+    faked.screens = webcamWith({ dither: true, external: { url: 'https://harbour.example/cam.jpg', fetchManual: true } })
+    window.dispatchEvent(new Event('focus'))
+    await expect.element(dithering).toBeChecked()
+
+    await expect.element(everyPoll).toBeChecked()
+    answer()
+
+    await expect.poll(() => faked.writes).toEqual([{ method: 'PATCH', path: 'screens/webcam', body: { fetchManual: false } }])
+    await expect.element(everyPoll).toBeChecked()
+  })
+
+  it('follows an address and a fetch choice the server changed, at the next refresh', async () => {
+    const faked = fakeKitchen()
+    const { source, url } = await openedWebcam()
+
+    faked.screens = webcamWith({ external: { url: 'https://harbour.example/quay.jpg', fetchManual: false } })
+    window.dispatchEvent(new Event('focus'))
+
+    await expect.element(url).toHaveValue('https://harbour.example/quay.jpg')
+    await expect.element(source.getByRole('radio', { name: 'Fetch on every poll' })).toBeChecked()
+    expect(faked.writes).toEqual([])
+  })
+
+  it('keeps the address being saved when a refresh brings another one before the save answers', async () => {
+    const faked = fakeKitchen()
+    let answer!: () => void
+    const answered = new Promise<void>(resolve => (answer = resolve))
+    // Holds the save, then lets the faked Device answer it.
+    api.use(http.patch(apiUrl('screens/webcam'), async () => {
+      await answered
+    }, { once: true }))
+    const { source, url } = await openedWebcam()
+
+    await url.fill('https://harbour.example/quay.jpg')
+    await userEvent.keyboard('{Enter}')
+    ;(url.element() as HTMLElement).blur()
+    await expect.poll(() => faked.writes).toEqual([])
+    faked.screens = webcamWith({ renderedAt: '2026-10-03T07:33:00.000Z', external: { url: 'https://harbour.example/pier.jpg', fetchManual: true } })
+    window.dispatchEvent(new Event('focus'))
+
+    await expect.element(source.getByText('Fetched 2 min ago')).toBeVisible()
+    expect(url.element()).toHaveValue('https://harbour.example/quay.jpg')
+    answer()
+
+    await expect.element(source.getByText('Saved')).toBeVisible()
+    await expect.element(url).toHaveValue('https://harbour.example/quay.jpg')
+    expect(faked.writes).toEqual([{ method: 'PATCH', path: 'screens/webcam', body: { url: 'https://harbour.example/quay.jpg' } }])
   })
 
   it('saves Dithering as changed, sending the switch alone', async () => {

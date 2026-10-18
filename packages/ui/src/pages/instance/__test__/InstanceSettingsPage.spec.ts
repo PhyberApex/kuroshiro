@@ -233,6 +233,32 @@ describe('instance Settings', () => {
       await expect.poll(() => sourceOf(screen, 'Battery low'), { timeout: 5000 }).toBe('Set here · Reset to 20')
       expect(patches).toEqual([{ lowBatteryPercent: 15 }])
     })
+
+    it('sends nothing when the number entered is the one already in force', async () => {
+      const patches = fakeSettings()
+      const screen = await mountSettings()
+      await enter(screen, 'Battery low', '101')
+      await expect.element(field(screen, 'Battery low')).toHaveAttribute('aria-invalid', 'true')
+
+      await enter(screen, 'Battery low', '20')
+
+      await expect.element(field(screen, 'Battery low')).not.toHaveAttribute('aria-invalid')
+      expect(sourceOf(screen, 'Battery low')).toBe('Built-in default')
+      expect(patches).toEqual([])
+    })
+
+    it('sends the number already in force as an override when the last save failed', async () => {
+      const patches = fakeSettings()
+      const screen = await mountSettings()
+      api.use(http.patch(apiUrl('settings'), () => apiErrorResponse({ statusCode: 500, code: 'internal' }), { once: true }))
+      await enter(screen, 'Battery low', '15')
+      await expect.poll(() => words(rowOf(screen, 'Battery low')?.querySelector('[role="status"]'))).toBe('Not saved. Something went wrong on the server.')
+
+      await enter(screen, 'Battery low', '20')
+
+      await expect.poll(() => sourceOf(screen, 'Battery low'), { timeout: 5000 }).toBe('Set here · Reset to 20')
+      expect(patches).toEqual([{ lowBatteryPercent: 20 }])
+    })
   })
 
   describe('notifications', () => {

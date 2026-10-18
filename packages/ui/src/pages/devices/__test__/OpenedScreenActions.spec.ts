@@ -78,6 +78,51 @@ describe('rename', () => {
     expect(faked.writes).toEqual([{ method: 'PATCH', path: 'screens/webcam', body: { name: 'Quay webcam' } }])
   })
 
+  it('closes without a call when the name entered is the one the Screen already has', async () => {
+    const faked = fakeKitchen()
+    const screen = await mountApp({ at: '/devices/kitchen?screen=photo' })
+    const row = await openedRow(screen, 'Harbour photo')
+
+    await row.getByRole('button', { name: 'Rename' }).click()
+    await screen.getByRole('textbox', { name: 'Name of Harbour photo' }).fill('  Harbour photo  ')
+    await userEvent.keyboard('{Enter}')
+
+    await expect.element(screen.getByRole('button', { name: 'Rename' })).toHaveFocus()
+    expect(screen.getByRole('textbox', { name: 'Name of Harbour photo' }).query()).toBeNull()
+    expect(faked.writes).toEqual([])
+  })
+
+  it('shows the server\'s reason for a refused name under the field, and clears it once the name is typed again', async () => {
+    fakeKitchen()
+    api.use(http.patch(apiUrl('screens/webcam'), () => apiErrorResponse({ statusCode: 404, code: 'screen-not-found' })))
+    const screen = await mountApp({ at: '/devices/kitchen?screen=webcam' })
+    const row = await openedRow(screen, 'Harbour webcam')
+
+    await row.getByRole('button', { name: 'Rename' }).click()
+    const input = screen.getByRole('textbox', { name: 'Name of Harbour webcam' })
+    await input.fill('Quay webcam')
+    await userEvent.keyboard('{Enter}')
+
+    await expect.element(input).toHaveAccessibleDescription('That Screen does not exist.')
+    await userEvent.keyboard('!')
+    await expect.element(input).not.toHaveAccessibleDescription('That Screen does not exist.')
+    expect(screen.getByText('That Screen does not exist.').query()).toBeNull()
+  })
+
+  it('says "The name could not be saved." for a refusal that gives no reason', async () => {
+    fakeKitchen()
+    // A code worded by the server's own message, sent without one.
+    api.use(http.patch(apiUrl('screens/webcam'), () => apiErrorResponse({ statusCode: 503, code: 'device-preview-busy', message: '' })))
+    const screen = await mountApp({ at: '/devices/kitchen?screen=webcam' })
+    const row = await openedRow(screen, 'Harbour webcam')
+
+    await row.getByRole('button', { name: 'Rename' }).click()
+    await screen.getByRole('textbox', { name: 'Name of Harbour webcam' }).fill('Quay webcam')
+    await userEvent.keyboard('{Enter}')
+
+    await expect.element(screen.getByRole('textbox', { name: 'Name of Harbour webcam' })).toHaveAccessibleDescription('The name could not be saved.')
+  })
+
   it('starts from an empty input for a Screen that was saved without a name', async () => {
     fakeKitchen({ screens: [buildScreen({ id: 'nameless', name: '', kind: 'html', plugin: null, html: '<p></p>' })] })
     const screen = await mountApp({ at: '/devices/kitchen?screen=nameless' })
