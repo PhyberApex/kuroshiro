@@ -24,7 +24,7 @@ export default mergeConfig(viteConfig, defineConfig({
       provider: 'v8',
       reporter: ['text-summary', 'lcov'],
       include: ['src/**/*.{ts,vue}'],
-      // the gallery and src/testing/ are test fixtures that never reach the production bundle
+      // the gallery and src/testing/ are dev-only sources that never reach the production bundle (see vite.config.ts)
       exclude: ['src/main.ts', 'src/testing/**', 'src/gallery/**', 'src/**/*.gallery.vue', 'src/**/__test__/**', 'src/**/*.spec.ts', 'src/**/*.shots.ts'],
     },
     projects: [
