@@ -15,6 +15,9 @@ flag_management:
     - name: api
       paths:
         - packages/api/
+    - name: shared
+      paths:
+        - packages/shared/
     - name: ui
       paths:
         - packages/ui/

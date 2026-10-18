@@ -8,7 +8,7 @@ All commands run from `packages/ui` (or with `pnpm --filter kuroshiro-ui <script
 | --- | --- | --- |
 | `pnpm test` | Node specs and browser-mode specs | Chromium: `pnpm exec playwright install --only-shell chromium`, once. Firefox, for the drag specs: `pnpm exec playwright install firefox`, once |
 | `pnpm test:watch` | The same, watching | |
-| `pnpm test:coverage` | The same, with the lcov report Codecov's `ui` flag reads | |
+| `pnpm test:coverage` | The same, with the lcov report Codecov's `ui` flag reads; the gallery (`src/gallery/`, `*.gallery.vue`) and the testing helpers (`src/testing/`) are not counted | |
 | `pnpm test:screenshots` | Compares every shot with its committed baseline | Docker |
 | `pnpm test:screenshots:update` | Rewrites the baselines | Docker |
 | `pnpm test:real-api` | Builds the API and the UI and drives them against Postgres | Docker (or a Postgres named by `KUROSHIRO_DB_*`), Chromium, and ImageMagick 7 (`magick`) for a journey that adds a Screen |
