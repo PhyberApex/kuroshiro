@@ -24,8 +24,8 @@ export default mergeConfig(viteConfig, defineConfig({
       provider: 'v8',
       reporter: ['text-summary', 'lcov'],
       include: ['src/**/*.{ts,vue}'],
-      // screenshots.ts only runs in the pinned-image run, which reports no coverage
-      exclude: ['src/main.ts', 'src/testing/screenshots.ts', 'src/**/__test__/**', 'src/**/*.spec.ts', 'src/**/*.shots.ts'],
+      // the gallery and src/testing/ are dev-only sources that never reach the production bundle (see vite.config.ts)
+      exclude: ['src/main.ts', 'src/testing/**', 'src/gallery/**', 'src/**/*.gallery.vue', 'src/**/__test__/**', 'src/**/*.spec.ts', 'src/**/*.shots.ts'],
     },
     projects: [
       {
