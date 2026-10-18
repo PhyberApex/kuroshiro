@@ -1,0 +1,86 @@
+<!doctype html><meta charset=utf-8><title>#1458 emulated Ink sheet</title><style>body{font-family:sans-serif;background:#222;color:#eee;margin:16px}table{border-collapse:collapse;margin-bottom:32px}th,td{padding:4px 8px;vertical-align:top;text-align:left}img{width:400px;display:block;border:1px solid #555}h2{margin-top:32px}.src img{width:400px}small{color:#aaa}</style>
+<h1>#1458 — emulated Ink per candidate</h1><p>Firmware classification ported from usetrmnl/firmware <code>00799eeaaa865c6e48b63b5ff3817cf9143884ec</code> (GetBWYRPixel, GetSpectraPixel). No physical panel. Columns: <b>ours</b> (current operators), <b>terminus</b> (verbatim, remap in HSV), <b>combined</b> (Terminus curve in front of ours).</p>
+<h2>photo</h2><p class=src>source:<br><img src="in/photo.png"></p>
+<h3>4bwry · dither on</h3><table><tr><th>ours</th><th>terminus</th><th>combined</th></tr><tr>
+<td><img src="ink/photo_4bwry_on_ours.png"><small>black 28.4%, red 28.0%, white 23.0%, yellow 20.7%</small></td>
+<td><img src="ink/photo_4bwry_on_terminus.png"><small>black 39.1%, white 25.9%, red 18.0%, yellow 17.0%</small></td>
+<td><img src="ink/photo_4bwry_on_combined.png"><small>black 29.2%, red 25.4%, white 23.8%, yellow 21.6%</small></td>
+</tr></table>
+<h3>4bwry · dither off</h3><table><tr><th>ours</th><th>terminus</th><th>combined</th></tr><tr>
+<td><img src="ink/photo_4bwry_off_ours.png"><small>red 32.5%, black 24.4%, yellow 22.5%, white 20.6%</small></td>
+<td><img src="ink/photo_4bwry_off_terminus.png"><small>black 37.7%, red 21.9%, white 20.6%, yellow 19.7%</small></td>
+<td><img src="ink/photo_4bwry_off_combined.png"><small>black 31.2%, yellow 25.3%, red 22.7%, white 20.8%</small></td>
+</tr></table>
+<h3>6a · dither on</h3><table><tr><th>ours</th><th>terminus</th><th>combined</th></tr><tr>
+<td><img src="ink/photo_6a_on_ours.png"><small>red 30.0%, black 26.3%, white 22.9%, yellow 18.8%, green 2.0%, blue 0.1%</small></td>
+<td><img src="ink/photo_6a_on_terminus.png"><small>black 33.7%, white 24.9%, red 22.5%, yellow 13.5%, green 4.4%, blue 1.0%</small></td>
+<td><img src="ink/photo_6a_on_combined.png"><small>black 27.8%, red 26.8%, white 23.7%, yellow 20.3%, green 1.3%, blue 0.1%</small></td>
+</tr></table>
+<h3>6a · dither off</h3><table><tr><th>ours</th><th>terminus</th><th>combined</th></tr><tr>
+<td><img src="ink/photo_6a_off_ours.png"><small>red 32.5%, black 24.4%, yellow 22.5%, white 20.6%, green 0.0%</small></td>
+<td><img src="ink/photo_6a_off_terminus.png"><small>black 37.7%, red 21.9%, white 20.6%, yellow 19.7%, green 0.0%</small></td>
+<td><img src="ink/photo_6a_off_combined.png"><small>black 31.2%, yellow 25.3%, red 22.7%, white 20.8%, green 0.0%</small></td>
+</tr></table>
+<h2>berries</h2><p class=src>source:<br><img src="in/berries.png"></p>
+<h3>4bwry · dither on</h3><table><tr><th>ours</th><th>terminus</th><th>combined</th></tr><tr>
+<td><img src="ink/berries_4bwry_on_ours.png"><small>white 74.7%, black 17.2%, red 7.0%, yellow 1.1%</small></td>
+<td><img src="ink/berries_4bwry_on_terminus.png"><small>white 74.9%, black 20.2%, red 4.3%, yellow 0.7%</small></td>
+<td><img src="ink/berries_4bwry_on_combined.png"><small>white 79.5%, black 12.7%, red 6.7%, yellow 1.1%</small></td>
+</tr></table>
+<h3>4bwry · dither off</h3><table><tr><th>ours</th><th>terminus</th><th>combined</th></tr><tr>
+<td><img src="ink/berries_4bwry_off_ours.png"><small>white 80.4%, black 9.7%, red 8.1%, yellow 1.7%</small></td>
+<td><img src="ink/berries_4bwry_off_terminus.png"><small>white 81.3%, black 10.6%, red 6.5%, yellow 1.6%</small></td>
+<td><img src="ink/berries_4bwry_off_combined.png"><small>white 81.4%, black 9.4%, red 7.5%, yellow 1.7%</small></td>
+</tr></table>
+<h3>6a · dither on</h3><table><tr><th>ours</th><th>terminus</th><th>combined</th></tr><tr>
+<td><img src="ink/berries_6a_on_ours.png"><small>white 68.7%, blue 9.4%, red 8.1%, black 7.7%, green 3.2%, yellow 2.9%</small></td>
+<td><img src="ink/berries_6a_on_terminus.png"><small>white 67.4%, blue 11.9%, black 7.4%, red 6.0%, green 4.0%, yellow 3.3%</small></td>
+<td><img src="ink/berries_6a_on_combined.png"><small>white 75.5%, black 7.5%, red 7.5%, blue 5.8%, green 2.1%, yellow 1.7%</small></td>
+</tr></table>
+<h3>6a · dither off</h3><table><tr><th>ours</th><th>terminus</th><th>combined</th></tr><tr>
+<td><img src="ink/berries_6a_off_ours.png"><small>white 78.7%, black 8.6%, red 8.1%, blue 2.8%, yellow 1.6%, green 0.2%</small></td>
+<td><img src="ink/berries_6a_off_terminus.png"><small>white 80.6%, black 10.0%, red 6.5%, yellow 1.5%, blue 1.3%, green 0.1%</small></td>
+<td><img src="ink/berries_6a_off_combined.png"><small>white 80.5%, black 8.7%, red 7.5%, yellow 1.6%, blue 1.5%, green 0.1%</small></td>
+</tr></table>
+<h2>flat</h2><p class=src>source:<br><img src="in/flat.png"></p>
+<h3>4bwry · dither on</h3><table><tr><th>ours</th><th>terminus</th><th>combined</th></tr><tr>
+<td><img src="ink/flat_4bwry_on_ours.png"><small>white 56.8%, red 21.6%, yellow 13.2%, black 8.4%</small><br><small>gate: PASS · headline bar (red): 95% red, footer RED tile: 98% red, footer YELLOW tile: 93% yellow, yellow card fill: 82% yellow</small></td>
+<td><img src="ink/flat_4bwry_on_terminus.png"><small>white 57.4%, red 21.7%, yellow 11.0%, black 9.9%</small><br><small>gate: PASS · headline bar (red): 86% red, footer RED tile: 89% red, footer YELLOW tile: 77% yellow, yellow card fill: 68% yellow</small></td>
+<td><img src="ink/flat_4bwry_on_combined.png"><small>white 57.1%, red 21.6%, yellow 13.2%, black 8.2%</small><br><small>gate: PASS · headline bar (red): 95% red, footer RED tile: 98% red, footer YELLOW tile: 93% yellow, yellow card fill: 82% yellow</small></td>
+</tr></table>
+<h3>4bwry · dither off</h3><table><tr><th>ours</th><th>terminus</th><th>combined</th></tr><tr>
+<td><img src="ink/flat_4bwry_off_ours.png"><small>white 56.9%, red 21.0%, yellow 13.8%, black 8.3%</small><br><small>gate: PASS · headline bar (red): 95% red, footer RED tile: 98% red, footer YELLOW tile: 97% yellow, yellow card fill: 85% yellow</small></td>
+<td><img src="ink/flat_4bwry_off_terminus.png"><small>white 56.8%, red 21.0%, yellow 13.7%, black 8.5%</small><br><small>gate: PASS · headline bar (red): 95% red, footer RED tile: 98% red, footer YELLOW tile: 96% yellow, yellow card fill: 85% yellow</small></td>
+<td><img src="ink/flat_4bwry_off_combined.png"><small>white 56.9%, red 21.0%, yellow 13.8%, black 8.4%</small><br><small>gate: PASS · headline bar (red): 95% red, footer RED tile: 98% red, footer YELLOW tile: 97% yellow, yellow card fill: 85% yellow</small></td>
+</tr></table>
+<h3>6a · dither on</h3><table><tr><th>ours</th><th>terminus</th><th>combined</th></tr><tr>
+<td><img src="ink/flat_6a_on_ours.png"><small>white 54.7%, red 21.8%, yellow 15.0%, black 6.0%, blue 2.1%, green 0.3%</small><br><small>gate: PASS · headline bar (red): 95% red, footer RED tile: 98% red, footer YELLOW tile: 93% yellow, yellow card fill: 82% yellow</small></td>
+<td><img src="ink/flat_6a_on_terminus.png"><small>white 54.9%, red 22.4%, yellow 12.7%, black 6.7%, blue 2.5%, green 0.7%</small><br><small>gate: PASS · headline bar (red): 86% red, footer RED tile: 89% red, footer YELLOW tile: 77% yellow, yellow card fill: 68% yellow</small></td>
+<td><img src="ink/flat_6a_on_combined.png"><small>white 55.3%, red 21.9%, yellow 14.7%, black 6.0%, blue 1.8%, green 0.3%</small><br><small>gate: PASS · headline bar (red): 95% red, footer RED tile: 98% red, footer YELLOW tile: 93% yellow, yellow card fill: 82% yellow</small></td>
+</tr></table>
+<h3>6a · dither off</h3><table><tr><th>ours</th><th>terminus</th><th>combined</th></tr><tr>
+<td><img src="ink/flat_6a_off_ours.png"><small>white 56.9%, red 21.0%, yellow 13.8%, black 8.3%</small><br><small>gate: PASS · headline bar (red): 95% red, footer RED tile: 98% red, footer YELLOW tile: 97% yellow, yellow card fill: 85% yellow</small></td>
+<td><img src="ink/flat_6a_off_terminus.png"><small>white 56.8%, red 21.0%, yellow 13.7%, black 8.5%</small><br><small>gate: PASS · headline bar (red): 95% red, footer RED tile: 98% red, footer YELLOW tile: 96% yellow, yellow card fill: 85% yellow</small></td>
+<td><img src="ink/flat_6a_off_combined.png"><small>white 56.9%, red 21.0%, yellow 13.8%, black 8.4%</small><br><small>gate: PASS · headline bar (red): 95% red, footer RED tile: 98% red, footer YELLOW tile: 97% yellow, yellow card fill: 85% yellow</small></td>
+</tr></table>
+<h2>text</h2><p class=src>source:<br><img src="in/text.png"></p>
+<h3>4bwry · dither on</h3><table><tr><th>ours</th><th>terminus</th><th>combined</th></tr><tr>
+<td><img src="ink/text_4bwry_on_ours.png"><small>white 91.9%, black 8.1%</small><br><small>gate: PASS · 0 coloured px</small></td>
+<td><img src="ink/text_4bwry_on_terminus.png"><small>white 91.7%, black 8.3%</small><br><small>gate: PASS · 0 coloured px</small></td>
+<td><img src="ink/text_4bwry_on_combined.png"><small>white 91.8%, black 8.2%</small><br><small>gate: PASS · 0 coloured px</small></td>
+</tr></table>
+<h3>4bwry · dither off</h3><table><tr><th>ours</th><th>terminus</th><th>combined</th></tr><tr>
+<td><img src="ink/text_4bwry_off_ours.png"><small>white 91.9%, black 8.1%</small><br><small>gate: PASS · 0 coloured px</small></td>
+<td><img src="ink/text_4bwry_off_terminus.png"><small>white 91.7%, black 8.3%</small><br><small>gate: PASS · 0 coloured px</small></td>
+<td><img src="ink/text_4bwry_off_combined.png"><small>white 91.8%, black 8.2%</small><br><small>gate: PASS · 0 coloured px</small></td>
+</tr></table>
+<h3>6a · dither on</h3><table><tr><th>ours</th><th>terminus</th><th>combined</th></tr><tr>
+<td><img src="ink/text_6a_on_ours.png"><small>white 91.9%, black 8.1%</small><br><small>gate: PASS · 0 coloured px</small></td>
+<td><img src="ink/text_6a_on_terminus.png"><small>white 91.7%, black 8.3%</small><br><small>gate: PASS · 0 coloured px</small></td>
+<td><img src="ink/text_6a_on_combined.png"><small>white 91.8%, black 8.2%</small><br><small>gate: PASS · 0 coloured px</small></td>
+</tr></table>
+<h3>6a · dither off</h3><table><tr><th>ours</th><th>terminus</th><th>combined</th></tr><tr>
+<td><img src="ink/text_6a_off_ours.png"><small>white 91.9%, black 8.1%</small><br><small>gate: PASS · 0 coloured px</small></td>
+<td><img src="ink/text_6a_off_terminus.png"><small>white 91.7%, black 8.3%</small><br><small>gate: PASS · 0 coloured px</small></td>
+<td><img src="ink/text_6a_off_combined.png"><small>white 91.8%, black 8.2%</small><br><small>gate: PASS · 0 coloured px</small></td>
+</tr></table>

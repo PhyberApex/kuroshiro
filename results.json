@@ -1,0 +1,932 @@
+{
+ "firmware_commit": "00799eeaaa865c6e48b63b5ff3817cf9143884ec",
+ "results": [
+  {
+   "input": "berries",
+   "family": "4bwry",
+   "dither": "off",
+   "candidate": "combined",
+   "ink": {
+    "black": 0.09396875,
+    "white": 0.8138020833333334,
+    "yellow": 0.0173359375,
+    "red": 0.07489322916666667
+   }
+  },
+  {
+   "input": "berries",
+   "family": "4bwry",
+   "dither": "off",
+   "candidate": "ours",
+   "ink": {
+    "black": 0.09737239583333333,
+    "white": 0.8041119791666667,
+    "yellow": 0.017125,
+    "red": 0.081390625
+   }
+  },
+  {
+   "input": "berries",
+   "family": "4bwry",
+   "dither": "off",
+   "candidate": "terminus",
+   "ink": {
+    "black": 0.10649739583333333,
+    "white": 0.8127161458333333,
+    "yellow": 0.015614583333333333,
+    "red": 0.065171875
+   }
+  },
+  {
+   "input": "berries",
+   "family": "4bwry",
+   "dither": "on",
+   "candidate": "combined",
+   "ink": {
+    "black": 0.12724739583333333,
+    "white": 0.7953671875,
+    "yellow": 0.010752604166666667,
+    "red": 0.0666328125
+   }
+  },
+  {
+   "input": "berries",
+   "family": "4bwry",
+   "dither": "on",
+   "candidate": "ours",
+   "ink": {
+    "black": 0.17184635416666666,
+    "white": 0.7471067708333333,
+    "yellow": 0.0110703125,
+    "red": 0.0699765625
+   }
+  },
+  {
+   "input": "berries",
+   "family": "4bwry",
+   "dither": "on",
+   "candidate": "terminus",
+   "ink": {
+    "black": 0.20169270833333333,
+    "white": 0.7486197916666667,
+    "yellow": 0.007088541666666667,
+    "red": 0.04259895833333333
+   }
+  },
+  {
+   "input": "berries",
+   "family": "6a",
+   "dither": "off",
+   "candidate": "combined",
+   "ink": {
+    "black": 0.0869453125,
+    "white": 0.8054947916666667,
+    "yellow": 0.01646875,
+    "red": 0.0747890625,
+    "blue": 0.0149375,
+    "green": 0.0013645833333333333
+   }
+  },
+  {
+   "input": "berries",
+   "family": "6a",
+   "dither": "off",
+   "candidate": "ours",
+   "ink": {
+    "black": 0.0860390625,
+    "white": 0.7869609375,
+    "yellow": 0.0158671875,
+    "red": 0.08129166666666666,
+    "blue": 0.027705729166666665,
+    "green": 0.0021354166666666665
+   }
+  },
+  {
+   "input": "berries",
+   "family": "6a",
+   "dither": "off",
+   "candidate": "terminus",
+   "ink": {
+    "black": 0.10003385416666667,
+    "white": 0.805671875,
+    "yellow": 0.014927083333333334,
+    "red": 0.065125,
+    "blue": 0.012921875,
+    "green": 0.0013203125
+   }
+  },
+  {
+   "input": "berries",
+   "family": "6a",
+   "dither": "on",
+   "candidate": "combined",
+   "ink": {
+    "black": 0.074875,
+    "white": 0.755,
+    "yellow": 0.017203125,
+    "red": 0.07471875,
+    "blue": 0.057567708333333335,
+    "green": 0.020635416666666666
+   }
+  },
+  {
+   "input": "berries",
+   "family": "6a",
+   "dither": "on",
+   "candidate": "ours",
+   "ink": {
+    "black": 0.07713541666666666,
+    "white": 0.6869296875,
+    "yellow": 0.029026041666666665,
+    "red": 0.0811484375,
+    "blue": 0.09398958333333333,
+    "green": 0.03177083333333333
+   }
+  },
+  {
+   "input": "berries",
+   "family": "6a",
+   "dither": "on",
+   "candidate": "terminus",
+   "ink": {
+    "black": 0.07374479166666667,
+    "white": 0.6743828125,
+    "yellow": 0.03338541666666667,
+    "red": 0.0596640625,
+    "blue": 0.11908072916666666,
+    "green": 0.0397421875
+   }
+  },
+  {
+   "input": "flat",
+   "family": "4bwry",
+   "dither": "off",
+   "candidate": "combined",
+   "ink": {
+    "black": 0.08387760416666666,
+    "white": 0.5688828125,
+    "yellow": 0.13754166666666667,
+    "red": 0.20969791666666668
+   },
+   "gate": {
+    "regions": {
+     "headline bar (red)": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.9516
+     },
+     "footer RED tile": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.9781
+     },
+     "footer YELLOW tile": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.9662
+     },
+     "yellow card fill": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.853
+     }
+    },
+    "pass": true
+   }
+  },
+  {
+   "input": "flat",
+   "family": "4bwry",
+   "dither": "off",
+   "candidate": "ours",
+   "ink": {
+    "black": 0.0832421875,
+    "white": 0.5692421875,
+    "yellow": 0.13757291666666666,
+    "red": 0.20994270833333334
+   },
+   "gate": {
+    "regions": {
+     "headline bar (red)": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.9518
+     },
+     "footer RED tile": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.9782
+     },
+     "footer YELLOW tile": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.9663
+     },
+     "yellow card fill": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.8531
+     }
+    },
+    "pass": true
+   }
+  },
+  {
+   "input": "flat",
+   "family": "4bwry",
+   "dither": "off",
+   "candidate": "terminus",
+   "ink": {
+    "black": 0.08478125,
+    "white": 0.56815625,
+    "yellow": 0.13715104166666667,
+    "red": 0.20991145833333333
+   },
+   "gate": {
+    "regions": {
+     "headline bar (red)": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.9523
+     },
+     "footer RED tile": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.9782
+     },
+     "footer YELLOW tile": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.965
+     },
+     "yellow card fill": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.8505
+     }
+    },
+    "pass": true
+   }
+  },
+  {
+   "input": "flat",
+   "family": "4bwry",
+   "dither": "on",
+   "candidate": "combined",
+   "ink": {
+    "black": 0.08153385416666667,
+    "white": 0.5710859375,
+    "yellow": 0.1318203125,
+    "red": 0.21555989583333332
+   },
+   "gate": {
+    "regions": {
+     "headline bar (red)": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.9518
+     },
+     "footer RED tile": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.9788
+     },
+     "footer YELLOW tile": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.9268
+     },
+     "yellow card fill": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.8166
+     }
+    },
+    "pass": true
+   }
+  },
+  {
+   "input": "flat",
+   "family": "4bwry",
+   "dither": "on",
+   "candidate": "ours",
+   "ink": {
+    "black": 0.0843671875,
+    "white": 0.5679427083333334,
+    "yellow": 0.13178125,
+    "red": 0.21590885416666666
+   },
+   "gate": {
+    "regions": {
+     "headline bar (red)": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.9519
+     },
+     "footer RED tile": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.979
+     },
+     "footer YELLOW tile": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.9268
+     },
+     "yellow card fill": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.8163
+     }
+    },
+    "pass": true
+   }
+  },
+  {
+   "input": "flat",
+   "family": "4bwry",
+   "dither": "on",
+   "candidate": "terminus",
+   "ink": {
+    "black": 0.09908333333333333,
+    "white": 0.5736927083333333,
+    "yellow": 0.1099453125,
+    "red": 0.21727864583333334
+   },
+   "gate": {
+    "regions": {
+     "headline bar (red)": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.8634
+     },
+     "footer RED tile": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.8858
+     },
+     "footer YELLOW tile": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.7742
+     },
+     "yellow card fill": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.6807
+     }
+    },
+    "pass": true
+   }
+  },
+  {
+   "input": "flat",
+   "family": "6a",
+   "dither": "off",
+   "candidate": "combined",
+   "ink": {
+    "black": 0.08387760416666666,
+    "white": 0.5688828125,
+    "yellow": 0.13754166666666667,
+    "red": 0.20969791666666668
+   },
+   "gate": {
+    "regions": {
+     "headline bar (red)": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.9516
+     },
+     "footer RED tile": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.9781
+     },
+     "footer YELLOW tile": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.9662
+     },
+     "yellow card fill": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.853
+     }
+    },
+    "pass": true
+   }
+  },
+  {
+   "input": "flat",
+   "family": "6a",
+   "dither": "off",
+   "candidate": "ours",
+   "ink": {
+    "black": 0.0832421875,
+    "white": 0.5692421875,
+    "yellow": 0.13757291666666666,
+    "red": 0.20994270833333334
+   },
+   "gate": {
+    "regions": {
+     "headline bar (red)": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.9518
+     },
+     "footer RED tile": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.9782
+     },
+     "footer YELLOW tile": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.9663
+     },
+     "yellow card fill": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.8531
+     }
+    },
+    "pass": true
+   }
+  },
+  {
+   "input": "flat",
+   "family": "6a",
+   "dither": "off",
+   "candidate": "terminus",
+   "ink": {
+    "black": 0.08478125,
+    "white": 0.56815625,
+    "yellow": 0.13715104166666667,
+    "red": 0.20991145833333333
+   },
+   "gate": {
+    "regions": {
+     "headline bar (red)": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.9523
+     },
+     "footer RED tile": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.9782
+     },
+     "footer YELLOW tile": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.965
+     },
+     "yellow card fill": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.8505
+     }
+    },
+    "pass": true
+   }
+  },
+  {
+   "input": "flat",
+   "family": "6a",
+   "dither": "on",
+   "candidate": "combined",
+   "ink": {
+    "black": 0.06000260416666667,
+    "white": 0.5528697916666667,
+    "yellow": 0.14676041666666667,
+    "red": 0.21879166666666666,
+    "blue": 0.0183046875,
+    "green": 0.0032708333333333335
+   },
+   "gate": {
+    "regions": {
+     "headline bar (red)": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.9518
+     },
+     "footer RED tile": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.9788
+     },
+     "footer YELLOW tile": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.9267
+     },
+     "yellow card fill": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.8176
+     }
+    },
+    "pass": true
+   }
+  },
+  {
+   "input": "flat",
+   "family": "6a",
+   "dither": "on",
+   "candidate": "ours",
+   "ink": {
+    "black": 0.06031770833333333,
+    "white": 0.54659375,
+    "yellow": 0.15042708333333332,
+    "red": 0.2184921875,
+    "blue": 0.021463541666666665,
+    "green": 0.0027057291666666666
+   },
+   "gate": {
+    "regions": {
+     "headline bar (red)": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.9519
+     },
+     "footer RED tile": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.979
+     },
+     "footer YELLOW tile": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.9266
+     },
+     "yellow card fill": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.8169
+     }
+    },
+    "pass": true
+   }
+  },
+  {
+   "input": "flat",
+   "family": "6a",
+   "dither": "on",
+   "candidate": "terminus",
+   "ink": {
+    "black": 0.06729947916666666,
+    "white": 0.5491197916666667,
+    "yellow": 0.12721354166666668,
+    "red": 0.22448958333333333,
+    "blue": 0.024557291666666668,
+    "green": 0.0073203125
+   },
+   "gate": {
+    "regions": {
+     "headline bar (red)": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.8631
+     },
+     "footer RED tile": {
+      "want": "red",
+      "top": "red",
+      "share_of_wanted": 0.8855
+     },
+     "footer YELLOW tile": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.7746
+     },
+     "yellow card fill": {
+      "want": "yellow",
+      "top": "yellow",
+      "share_of_wanted": 0.683
+     }
+    },
+    "pass": true
+   }
+  },
+  {
+   "input": "photo",
+   "family": "4bwry",
+   "dither": "off",
+   "candidate": "combined",
+   "ink": {
+    "black": 0.3116770833333333,
+    "white": 0.20813802083333333,
+    "yellow": 0.2533723958333333,
+    "red": 0.2268125
+   }
+  },
+  {
+   "input": "photo",
+   "family": "4bwry",
+   "dither": "off",
+   "candidate": "ours",
+   "ink": {
+    "black": 0.24375,
+    "white": 0.20561458333333332,
+    "yellow": 0.22527604166666668,
+    "red": 0.325359375
+   }
+  },
+  {
+   "input": "photo",
+   "family": "4bwry",
+   "dither": "off",
+   "candidate": "terminus",
+   "ink": {
+    "black": 0.3774635416666667,
+    "white": 0.2059453125,
+    "yellow": 0.19710416666666666,
+    "red": 0.21948697916666668
+   }
+  },
+  {
+   "input": "photo",
+   "family": "4bwry",
+   "dither": "on",
+   "candidate": "combined",
+   "ink": {
+    "black": 0.291734375,
+    "white": 0.2376640625,
+    "yellow": 0.2162421875,
+    "red": 0.254359375
+   }
+  },
+  {
+   "input": "photo",
+   "family": "4bwry",
+   "dither": "on",
+   "candidate": "ours",
+   "ink": {
+    "black": 0.28363020833333336,
+    "white": 0.22981770833333334,
+    "yellow": 0.20682291666666666,
+    "red": 0.27972916666666664
+   }
+  },
+  {
+   "input": "photo",
+   "family": "4bwry",
+   "dither": "on",
+   "candidate": "terminus",
+   "ink": {
+    "black": 0.39084114583333335,
+    "white": 0.2591015625,
+    "yellow": 0.16994270833333333,
+    "red": 0.18011458333333333
+   }
+  },
+  {
+   "input": "photo",
+   "family": "6a",
+   "dither": "off",
+   "candidate": "combined",
+   "ink": {
+    "black": 0.3116744791666667,
+    "white": 0.20813802083333333,
+    "yellow": 0.2533671875,
+    "red": 0.2268125,
+    "green": 7.8125e-06
+   }
+  },
+  {
+   "input": "photo",
+   "family": "6a",
+   "dither": "off",
+   "candidate": "ours",
+   "ink": {
+    "black": 0.24373958333333334,
+    "white": 0.20561458333333332,
+    "yellow": 0.22526822916666667,
+    "red": 0.325359375,
+    "green": 1.8229166666666668e-05
+   }
+  },
+  {
+   "input": "photo",
+   "family": "6a",
+   "dither": "off",
+   "candidate": "terminus",
+   "ink": {
+    "black": 0.377453125,
+    "white": 0.2059453125,
+    "yellow": 0.1971015625,
+    "red": 0.21948697916666668,
+    "green": 1.3020833333333334e-05
+   }
+  },
+  {
+   "input": "photo",
+   "family": "6a",
+   "dither": "on",
+   "candidate": "combined",
+   "ink": {
+    "black": 0.27788802083333336,
+    "white": 0.23713020833333334,
+    "yellow": 0.20343489583333332,
+    "red": 0.26760677083333334,
+    "blue": 0.0005442708333333333,
+    "green": 0.013395833333333333
+   }
+  },
+  {
+   "input": "photo",
+   "family": "6a",
+   "dither": "on",
+   "candidate": "ours",
+   "ink": {
+    "black": 0.2625625,
+    "white": 0.2287578125,
+    "yellow": 0.187859375,
+    "red": 0.29971875,
+    "blue": 0.0010729166666666667,
+    "green": 0.020028645833333334
+   }
+  },
+  {
+   "input": "photo",
+   "family": "6a",
+   "dither": "on",
+   "candidate": "terminus",
+   "ink": {
+    "black": 0.33715104166666665,
+    "white": 0.24915885416666667,
+    "yellow": 0.135234375,
+    "red": 0.22468229166666667,
+    "blue": 0.010127604166666667,
+    "green": 0.043645833333333335
+   }
+  },
+  {
+   "input": "text",
+   "family": "4bwry",
+   "dither": "off",
+   "candidate": "combined",
+   "ink": {
+    "black": 0.08188541666666667,
+    "white": 0.9181145833333333
+   },
+   "gate": {
+    "coloured_pixels": 0,
+    "pass": true
+   }
+  },
+  {
+   "input": "text",
+   "family": "4bwry",
+   "dither": "off",
+   "candidate": "ours",
+   "ink": {
+    "black": 0.08147395833333333,
+    "white": 0.9185260416666666
+   },
+   "gate": {
+    "coloured_pixels": 0,
+    "pass": true
+   }
+  },
+  {
+   "input": "text",
+   "family": "4bwry",
+   "dither": "off",
+   "candidate": "terminus",
+   "ink": {
+    "black": 0.08267708333333333,
+    "white": 0.9173229166666667
+   },
+   "gate": {
+    "coloured_pixels": 0,
+    "pass": true
+   }
+  },
+  {
+   "input": "text",
+   "family": "4bwry",
+   "dither": "on",
+   "candidate": "combined",
+   "ink": {
+    "black": 0.08152083333333333,
+    "white": 0.9184791666666666
+   },
+   "gate": {
+    "coloured_pixels": 0,
+    "pass": true
+   }
+  },
+  {
+   "input": "text",
+   "family": "4bwry",
+   "dither": "on",
+   "candidate": "ours",
+   "ink": {
+    "black": 0.08106770833333334,
+    "white": 0.9189322916666667
+   },
+   "gate": {
+    "coloured_pixels": 0,
+    "pass": true
+   }
+  },
+  {
+   "input": "text",
+   "family": "4bwry",
+   "dither": "on",
+   "candidate": "terminus",
+   "ink": {
+    "black": 0.08291666666666667,
+    "white": 0.9170833333333334
+   },
+   "gate": {
+    "coloured_pixels": 0,
+    "pass": true
+   }
+  },
+  {
+   "input": "text",
+   "family": "6a",
+   "dither": "off",
+   "candidate": "combined",
+   "ink": {
+    "black": 0.08188541666666667,
+    "white": 0.9181145833333333
+   },
+   "gate": {
+    "coloured_pixels": 0,
+    "pass": true
+   }
+  },
+  {
+   "input": "text",
+   "family": "6a",
+   "dither": "off",
+   "candidate": "ours",
+   "ink": {
+    "black": 0.08147395833333333,
+    "white": 0.9185260416666666
+   },
+   "gate": {
+    "coloured_pixels": 0,
+    "pass": true
+   }
+  },
+  {
+   "input": "text",
+   "family": "6a",
+   "dither": "off",
+   "candidate": "terminus",
+   "ink": {
+    "black": 0.08267708333333333,
+    "white": 0.9173229166666667
+   },
+   "gate": {
+    "coloured_pixels": 0,
+    "pass": true
+   }
+  },
+  {
+   "input": "text",
+   "family": "6a",
+   "dither": "on",
+   "candidate": "combined",
+   "ink": {
+    "black": 0.08152083333333333,
+    "white": 0.9184791666666666
+   },
+   "gate": {
+    "coloured_pixels": 0,
+    "pass": true
+   }
+  },
+  {
+   "input": "text",
+   "family": "6a",
+   "dither": "on",
+   "candidate": "ours",
+   "ink": {
+    "black": 0.08106770833333334,
+    "white": 0.9189322916666667
+   },
+   "gate": {
+    "coloured_pixels": 0,
+    "pass": true
+   }
+  },
+  {
+   "input": "text",
+   "family": "6a",
+   "dither": "on",
+   "candidate": "terminus",
+   "ink": {
+    "black": 0.08291666666666667,
+    "white": 0.9170833333333334
+   },
+   "gate": {
+    "coloured_pixels": 0,
+    "pass": true
+   }
+  }
+ ]
+}
