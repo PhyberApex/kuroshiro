@@ -220,6 +220,18 @@ describe('recipeUpdateService', () => {
       expect(pluginRepo.update).toHaveBeenCalledWith(PLUGIN_ID, { frameworkVersion: stored, sourceRecipeSnapshot: { ...upstream }, snapshotTakenAt: expect.any(Date) })
     })
 
+    it('clears the description when applying a description the Recipe dropped', async () => {
+      const upstream = baseParsedPlugin({ description: undefined })
+      const plugin = makePlugin({ id: PLUGIN_ID, sourceRecipeId: '150460', sourceRecipeSnapshot: toSnapshot(baseParsedPlugin()) })
+      stubReload(plugin)
+      mockImporter.importFromRecipe.mockResolvedValue(upstream)
+      const contentHash = computeRecipeContentHash(upstream)
+
+      await service.applyUpdate(PLUGIN_ID, { contentHash, apply: [{ itemType: 'description', key: 'description' }] })
+
+      expect(pluginRepo.update).toHaveBeenCalledWith(PLUGIN_ID, { description: null, sourceRecipeSnapshot: { ...upstream }, snapshotTakenAt: expect.any(Date) })
+    })
+
     it('keeps a local-only header and replaces an upstream-set one when applying a changed Data Source', async () => {
       const localDataSource = makePluginDataSource({
         id: 'ds-1',
@@ -279,6 +291,40 @@ describe('recipeUpdateService', () => {
       expect(dataSourceRepo.remove).toHaveBeenCalledWith(localDataSource)
     })
 
+    it('saves and removes nothing when applying a removed Data Source the Plugin no longer has', async () => {
+      const snapshot = baseParsedPlugin({ dataSources: [{ name: 'weather', mode: 'fetch', method: 'GET', url: 'https://api.example.com' }] })
+      const upstream = baseParsedPlugin({ dataSources: [] })
+      const plugin = makePlugin({ id: PLUGIN_ID, sourceRecipeId: '150460', sourceRecipeSnapshot: toSnapshot(snapshot), dataSources: [] })
+      stubReload(plugin)
+      mockImporter.importFromRecipe.mockResolvedValue(upstream)
+      const contentHash = computeRecipeContentHash(upstream)
+
+      await service.applyUpdate(PLUGIN_ID, { contentHash, apply: [{ itemType: 'dataSource', key: 'weather' }] })
+
+      expect(dataSourceRepo.remove).not.toHaveBeenCalled()
+      expect(dataSourceRepo.save).not.toHaveBeenCalled()
+      expect(plugin.dataSources).toEqual([])
+    })
+
+    it('writes only the mode and the literal value when applying an added literal Data Source', async () => {
+      const snapshot = baseParsedPlugin({ dataSources: [] })
+      const upstream = baseParsedPlugin({ dataSources: [{ name: 'static', mode: 'literal', literalValue: { phase: 'full' } }] })
+      const plugin = makePlugin({ id: PLUGIN_ID, sourceRecipeId: '150460', sourceRecipeSnapshot: toSnapshot(snapshot), dataSources: [] })
+      stubReload(plugin)
+      mockImporter.importFromRecipe.mockResolvedValue(upstream)
+      const contentHash = computeRecipeContentHash(upstream)
+
+      await service.applyUpdate(PLUGIN_ID, { contentHash, apply: [{ itemType: 'dataSource', key: 'static' }] })
+
+      expect(dataSourceRepo.create).toHaveBeenCalledWith({ mode: 'literal', literalValue: { phase: 'full' }, name: 'static', order: 0, plugin })
+      const saved = dataSourceRepo.save.mock.calls[0][0]
+      expect(saved).not.toHaveProperty('url')
+      expect(saved).not.toHaveProperty('method')
+      expect(saved).not.toHaveProperty('headers')
+      expect(saved).not.toHaveProperty('body')
+      expect(plugin.dataSources).toEqual([saved])
+    })
+
     it('updates a template in place when applying a changed template', async () => {
       const localTemplate = makePluginTemplate({ id: 'tpl-1', layout: 'full', liquidMarkup: 'old' })
       const snapshot = baseParsedPlugin({ templates: [{ layout: 'full', liquidMarkup: 'old' }] })
@@ -291,6 +337,56 @@ describe('recipeUpdateService', () => {
       await service.applyUpdate(PLUGIN_ID, { contentHash, apply: [{ itemType: 'template', key: 'full' }] })
 
       expect(templateRepo.save).toHaveBeenCalledWith(expect.objectContaining({ id: 'tpl-1', liquidMarkup: 'new' }))
+      expect(mockPluginsService.refreshRendersAfterSave).toHaveBeenCalledWith(PLUGIN_ID)
+    })
+
+    it('removes the Plugin\'s template for the layout when applying a removed template', async () => {
+      const fullTemplate = makePluginTemplate({ id: 'tpl-1', layout: 'full', liquidMarkup: 'full' })
+      const quadrantTemplate = makePluginTemplate({ id: 'tpl-2', layout: 'quadrant', liquidMarkup: 'quadrant' })
+      const snapshot = baseParsedPlugin({ templates: [{ layout: 'full', liquidMarkup: 'full' }, { layout: 'quadrant', liquidMarkup: 'quadrant' }] })
+      const upstream = baseParsedPlugin({ templates: [{ layout: 'full', liquidMarkup: 'full' }] })
+      const plugin = makePlugin({ id: PLUGIN_ID, sourceRecipeId: '150460', sourceRecipeSnapshot: toSnapshot(snapshot), templates: [fullTemplate, quadrantTemplate] })
+      stubReload(plugin)
+      mockImporter.importFromRecipe.mockResolvedValue(upstream)
+      const contentHash = computeRecipeContentHash(upstream)
+
+      await service.applyUpdate(PLUGIN_ID, { contentHash, apply: [{ itemType: 'template', key: 'quadrant' }] })
+
+      expect(templateRepo.remove).toHaveBeenCalledWith(quadrantTemplate)
+      expect(plugin.templates).toEqual([fullTemplate])
+      expect(mockPluginsService.refreshRendersAfterSave).toHaveBeenCalledWith(PLUGIN_ID)
+    })
+
+    it('removes nothing when applying a removed template whose layout the Plugin no longer has', async () => {
+      const fullTemplate = makePluginTemplate({ id: 'tpl-1', layout: 'full', liquidMarkup: 'full' })
+      const snapshot = baseParsedPlugin({ templates: [{ layout: 'full', liquidMarkup: 'full' }, { layout: 'quadrant', liquidMarkup: 'quadrant' }] })
+      const upstream = baseParsedPlugin({ templates: [{ layout: 'full', liquidMarkup: 'full' }] })
+      const plugin = makePlugin({ id: PLUGIN_ID, sourceRecipeId: '150460', sourceRecipeSnapshot: toSnapshot(snapshot), templates: [fullTemplate] })
+      stubReload(plugin)
+      mockImporter.importFromRecipe.mockResolvedValue(upstream)
+      const contentHash = computeRecipeContentHash(upstream)
+
+      await service.applyUpdate(PLUGIN_ID, { contentHash, apply: [{ itemType: 'template', key: 'quadrant' }] })
+
+      expect(templateRepo.remove).not.toHaveBeenCalled()
+      expect(plugin.templates).toEqual([fullTemplate])
+    })
+
+    it('creates the template when applying an added template for a layout the Plugin does not have', async () => {
+      const fullTemplate = makePluginTemplate({ id: 'tpl-1', layout: 'full', liquidMarkup: 'full' })
+      const snapshot = baseParsedPlugin({ templates: [{ layout: 'full', liquidMarkup: 'full' }] })
+      const upstream = baseParsedPlugin({ templates: [{ layout: 'full', liquidMarkup: 'full' }, { layout: 'quadrant', liquidMarkup: 'quadrant' }] })
+      const plugin = makePlugin({ id: PLUGIN_ID, sourceRecipeId: '150460', sourceRecipeSnapshot: toSnapshot(snapshot), templates: [fullTemplate] })
+      stubReload(plugin)
+      mockImporter.importFromRecipe.mockResolvedValue(upstream)
+      const contentHash = computeRecipeContentHash(upstream)
+      const saved = makePluginTemplate({ id: 'tpl-2', layout: 'quadrant', liquidMarkup: 'quadrant' })
+      templateRepo.save.mockResolvedValue(saved)
+
+      await service.applyUpdate(PLUGIN_ID, { contentHash, apply: [{ itemType: 'template', key: 'quadrant' }] })
+
+      expect(templateRepo.create).toHaveBeenCalledWith({ layout: 'quadrant', liquidMarkup: 'quadrant', plugin })
+      expect(plugin.templates).toEqual([fullTemplate, saved])
       expect(mockPluginsService.refreshRendersAfterSave).toHaveBeenCalledWith(PLUGIN_ID)
     })
 

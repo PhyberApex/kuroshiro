@@ -57,6 +57,11 @@ function upstreamAnswers(answer: (url: string) => Response | Promise<Response>):
 }
 
 function recipeZip(settings: Record<string, unknown>, markup = '<p>{{ phase }}</p>'): Response {
+  return recipeArchive(settings, { 'full.liquid': markup })
+}
+
+/** A Recipe archive with one `.liquid` file per entry of `templates`, keyed by filename. */
+function recipeArchive(settings: Record<string, unknown>, templates: Record<string, string>): Response {
   const zip = new AdmZip()
   zip.addFile('settings.yml', Buffer.from(yaml.dump({
     name: 'Moon Phase',
@@ -67,7 +72,8 @@ function recipeZip(settings: Record<string, unknown>, markup = '<p>{{ phase }}</
     polling_verb: 'get',
     ...settings,
   }), 'utf8'))
-  zip.addFile('full.liquid', Buffer.from(markup, 'utf8'))
+  for (const [filename, markup] of Object.entries(templates))
+    zip.addFile(filename, Buffer.from(markup, 'utf8'))
   return new Response(new Uint8Array(zip.toBuffer()), { status: 200 })
 }
 
@@ -340,6 +346,26 @@ describe('the Recipe Update Check, against a real database', () => {
       expect(answered.refreshInterval).toBe(60)
       expect(answered.recipe!.snapshotTakenAt).not.toBe(before)
       expect(scheduler.runTick).toHaveBeenCalledTimes(1)
+    })
+
+    it('removes a template and adds another in a single apply', async () => {
+      upstreamAnswers(() => recipeArchive({}, { 'full.liquid': '<p>{{ phase }}</p>', 'quadrant.liquid': '<p>{{ phase }} small</p>' }))
+      const plugin = await importMoonPhase()
+      upstreamAnswers(() => recipeArchive({}, { 'full.liquid': '<p>{{ phase }}</p>', 'half_vertical.liquid': '<p>{{ phase }} tall</p>' }))
+      const { contentHash, items } = await check(plugin.id)
+      expect(items).toEqual([
+        { itemType: 'template', key: 'quadrant', kind: 'removed', conflict: false, snapshot: '<p>{{ phase }} small</p>', local: '<p>{{ phase }} small</p>', upstream: null },
+        { itemType: 'template', key: 'half_vertical', kind: 'added', conflict: false, snapshot: null, local: null, upstream: '<p>{{ phase }} tall</p>' },
+      ])
+
+      const response = await apply(plugin.id, { contentHash, apply: [{ itemType: 'template', key: 'quadrant' }, { itemType: 'template', key: 'half_vertical' }] })
+
+      expect(response.status).toBe(201)
+      const stored = await database.getRepository(Plugin).findOneOrFail({ where: { id: plugin.id }, relations: { templates: true } })
+      expect(stored.templates.map(({ layout, liquidMarkup }) => ({ layout, liquidMarkup })).sort((a, b) => a.layout.localeCompare(b.layout))).toEqual([
+        { layout: 'full', liquidMarkup: '<p>{{ phase }}</p>' },
+        { layout: 'half_vertical', liquidMarkup: '<p>{{ phase }} tall</p>' },
+      ])
     })
 
     it('moves only the Recipe Snapshot when nothing is applied', async () => {
