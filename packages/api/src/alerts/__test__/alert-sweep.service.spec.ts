@@ -5,7 +5,8 @@ import type { PluginDataSource } from '../../plugins/entities/plugin-data-source
 import type { InstanceSettingsService } from '../../settings/instance-settings.service.js'
 import type { Alert } from '../entities/alert.entity.js'
 import type { NotificationSenderService } from '../notification-sender.service.js'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { Logger } from '@nestjs/common'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeAlert, makeDevice, makePluginDataSource } from '../../test/fixtures.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
 import { asService } from '../../test/mockService.js'
@@ -53,9 +54,15 @@ describe('alertSweepService', () => {
   })
 
   describe('onApplicationBootstrap', () => {
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
     it('runs a sweep immediately and schedules one on the configured schedule', async () => {
       deviceRepo.find.mockResolvedValue([])
       await service.onApplicationBootstrap()
+      await vi.waitFor(() => expect(deviceRepo.find).toHaveBeenCalledTimes(1))
+      expect(cronMock.schedule).toHaveBeenCalledTimes(1)
       expect(cronMock.schedule).toHaveBeenCalledWith('*/5 * * * *', expect.any(Function))
     })
 
@@ -64,6 +71,27 @@ describe('alertSweepService', () => {
       service = new AlertSweepService(asRepository(alertRepo), asRepository(deviceRepo), asRepository(dataSourceRepo), sender as unknown as NotificationSenderService, makeSettingsService(), makeConfigService('*/5 * * * * *'))
       await service.onApplicationBootstrap()
       expect(cronMock.schedule).toHaveBeenCalledWith('*/5 * * * * *', expect.any(Function))
+    })
+
+    it('logs a boot-time sweep failure as a warning instead of rejecting', async () => {
+      const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+      deviceRepo.find.mockRejectedValue(new Error('db down'))
+
+      await expect(service.onApplicationBootstrap()).resolves.toBeUndefined()
+
+      await vi.waitFor(() => expect(warnSpy).toHaveBeenCalledWith('Initial alert sweep skipped: db down'))
+    })
+
+    it('logs a failure of the scheduled sweep as a warning instead of throwing', async () => {
+      const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+      deviceRepo.find.mockRejectedValue(new Error('db down'))
+      await service.onApplicationBootstrap()
+      await vi.waitFor(() => expect(warnSpy).toHaveBeenCalledTimes(1))
+      const scheduled: () => void = cronMock.schedule.mock.calls[0][1]
+
+      expect(() => scheduled()).not.toThrow()
+
+      await vi.waitFor(() => expect(warnSpy).toHaveBeenCalledWith('Scheduled alert sweep failed: db down'))
     })
   })
 
@@ -191,6 +219,19 @@ describe('alertSweepService', () => {
 
       expect(sender.send).toHaveBeenCalledWith(expect.objectContaining({ body: expect.stringContaining('Resolved:') }))
       expect(alertRepo.update).toHaveBeenCalledWith('alert-1', expect.objectContaining({ resolutionNotifiedAt: expect.any(Date) }))
+    })
+
+    it('drops a pending resolution whose Rule is unknown or whose subject is gone', async () => {
+      const unknownKind = makeAlert({ id: 'alert-unknown', kind: 'retired-rule' as Alert['kind'], resolvedAt: new Date() })
+      const orphaned = makeAlert({ id: 'alert-orphan', kind: 'device-low-battery', device: null, resolvedAt: new Date() })
+      deviceRepo.find.mockResolvedValue([])
+      alertRepo.find.mockImplementation(async options => (whereKind(options) === undefined ? [unknownKind, orphaned] : []))
+
+      await service.sweep()
+
+      expect(alertRepo.find).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ resolvedAt: expect.anything() }) }))
+      expect(sender.send).not.toHaveBeenCalled()
+      expect(alertRepo.update).not.toHaveBeenCalled()
     })
 
     it('does not duplicate an overlapping sweep', async () => {

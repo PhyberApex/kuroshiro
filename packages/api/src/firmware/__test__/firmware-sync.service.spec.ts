@@ -1,8 +1,9 @@
 import type { SyncRunService } from '../../sync-runs/sync-run.service.js'
 import type { Firmware } from '../entities/firmware.entity.js'
 import type { FirmwareAutoUpdateService } from '../firmware-auto-update.service.js'
+import { Logger } from '@nestjs/common'
 import { QueryFailedError } from 'typeorm'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { jsonResponse, stubFetch } from '../../test/fetch.js'
 import { asRepository, createMockTransactionalRepository } from '../../test/mockRepository.js'
 import { asService } from '../../test/mockService.js'
@@ -55,10 +56,41 @@ describe('firmwareSyncService', () => {
   })
 
   describe('onApplicationBootstrap', () => {
-    it('schedules the daily sync and swallows a boot-time sync failure instead of throwing', async () => {
-      mockFetch.mockImplementation(async () => jsonResponse(null, { ok: false }))
-      await expect(service.onApplicationBootstrap()).resolves.toBeUndefined()
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it('runs a sync immediately and schedules the daily sync at 4am', async () => {
+      mockFetch.mockResolvedValue(jsonResponse(latestPayload))
+      firmwareRepo.existsBy.mockResolvedValue(true)
+
+      await service.onApplicationBootstrap()
+
+      await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1))
+      expect(mockFetch).toHaveBeenCalledWith('https://usetrmnl.com/api/firmware/latest', { signal: expect.any(AbortSignal) })
+      expect(cronMock.schedule).toHaveBeenCalledTimes(1)
       expect(cronMock.schedule).toHaveBeenCalledWith('0 4 * * *', expect.any(Function))
+    })
+
+    it('logs a boot-time sync failure as a warning instead of rejecting', async () => {
+      const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+      mockFetch.mockImplementation(async () => jsonResponse(null, { ok: false }))
+
+      await expect(service.onApplicationBootstrap()).resolves.toBeUndefined()
+
+      await vi.waitFor(() => expect(warnSpy).toHaveBeenCalledWith(expect.stringMatching(/^Initial firmware sync skipped: .*request failed/)))
+    })
+
+    it('logs a failure of the scheduled sync as a warning instead of throwing', async () => {
+      const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+      mockFetch.mockImplementation(async () => jsonResponse(null, { ok: false }))
+      await service.onApplicationBootstrap()
+      await vi.waitFor(() => expect(warnSpy).toHaveBeenCalledTimes(1))
+      const scheduled: () => void = cronMock.schedule.mock.calls[0][1]
+
+      expect(() => scheduled()).not.toThrow()
+
+      await vi.waitFor(() => expect(warnSpy).toHaveBeenCalledWith(expect.stringMatching(/^Scheduled firmware sync failed: .*request failed/)))
     })
   })
 
@@ -129,17 +161,38 @@ describe('firmwareSyncService', () => {
       expect(firmwareRepo.insert).toHaveBeenCalled()
     })
 
-    it('answers inserted: false, without throwing, when another sync or upload takes the version first', async () => {
+    /** The download succeeds and the insert then fails on `constraint`, as when another sync or upload commits the version first. */
+    function loseInsertOn(constraint: string): QueryFailedError {
       mockFetch
         .mockResolvedValueOnce(jsonResponse(latestPayload))
         .mockResolvedValueOnce(binaryResponse())
-      firmwareRepo.insert.mockRejectedValue(uniqueViolation('UQ_firmware_version'))
+      const violation = uniqueViolation(constraint)
+      firmwareRepo.insert.mockRejectedValue(violation)
+      return violation
+    }
+
+    it('answers inserted: false, without throwing, and unlinks the very file it wrote when another sync or upload takes the version first', async () => {
+      loseInsertOn('UQ_firmware_version')
 
       const result = await service.sync()
 
       expect(result).toEqual({ ranAt: expect.any(String), inserted: false, version: '1.5.6', assigned: [] })
       expect(autoUpdateService.applyPolicy).not.toHaveBeenCalled()
-      expect(fsMock.unlink).toHaveBeenCalledWith(expect.stringContaining('.bin'))
+      expect(fsMock.unlink).toHaveBeenCalledWith(fsMock.writeFile.mock.calls[0][0])
+    })
+
+    it('still answers inserted: false when unlinking the losing file fails', async () => {
+      loseInsertOn('UQ_firmware_version')
+      fsMock.unlink.mockRejectedValue(new Error('ENOENT'))
+
+      await expect(service.sync()).resolves.toEqual({ ranAt: expect.any(String), inserted: false, version: '1.5.6', assigned: [] })
+    })
+
+    it('rethrows a unique violation on any other constraint and keeps the file', async () => {
+      const otherViolation = loseInsertOn('UQ_something_else')
+
+      await expect(service.sync()).rejects.toBe(otherViolation)
+      expect(fsMock.unlink).not.toHaveBeenCalled()
     })
 
     it('coalesces concurrent sync() calls into a single run', async () => {
@@ -172,6 +225,17 @@ describe('firmwareSyncService', () => {
         throw new DOMException('The operation was aborted due to timeout', 'TimeoutError')
       })
       await expect(service.sync()).rejects.toThrow(/request timed out/)
+    })
+
+    it('recognises a timeout by the error name alone', async () => {
+      mockFetch.mockRejectedValue(Object.assign(new Error('x'), { name: 'TimeoutError' }))
+      await expect(service.sync()).rejects.toThrow('TRMNL firmware/latest request timed out')
+    })
+
+    it('rethrows any other fetch error unchanged', async () => {
+      const networkError = new TypeError('fetch failed')
+      mockFetch.mockRejectedValue(networkError)
+      await expect(service.sync()).rejects.toBe(networkError)
     })
 
     it('throws when downloading the binary fails', async () => {
