@@ -50,6 +50,8 @@ describe('creating, changing and deleting a custom Palette, against a real datab
   let database: DataSource
   let http: HttpTestApp
   let customPalettes: CustomPalettesService
+  let screens: ScreensService
+  const sleepImage = { reconvert: vi.fn() }
   const devicesWithImages: string[] = []
 
   beforeAll(async () => {
@@ -59,9 +61,8 @@ describe('creating, changing and deleting a custom Palette, against a real datab
     const paletteSelection = new PaletteSelectionService(database.getRepository(Palette))
     const deviceModels = new DeviceModelsService(database.getRepository(DeviceModel), paletteSelection)
     const reads = new DeviceModelReadsService(database.getRepository(Device), deviceModels, paletteSelection, new SyncRunService(database.getRepository(SyncRun)))
-    const screens = new ScreensService(database.getRepository(Screen), database.getRepository(Device), asService<ConfigService>({ get: () => false }), deviceModels)
-    const sleepImage = asService<DeviceSleepImageService>({ reconvert: vi.fn().mockResolvedValue(undefined) })
-    customPalettes = new CustomPalettesService(database.getRepository(Palette), database.getRepository(Device), paletteSelection, screens, sleepImage)
+    screens = new ScreensService(database.getRepository(Screen), database.getRepository(Device), asService<ConfigService>({ get: () => false }), deviceModels)
+    customPalettes = new CustomPalettesService(database.getRepository(Palette), database.getRepository(Device), paletteSelection, screens, asService<DeviceSleepImageService>(sleepImage))
     const fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
     const screenReads = new ScreenReadsService(database.getRepository(Screen), database.getRepository(Device), database.getRepository(Alert), fieldValues)
 
@@ -78,6 +79,7 @@ describe('creating, changing and deleting a custom Palette, against a real datab
 
   beforeEach(async () => {
     vi.mocked(convertToPng).mockReset().mockImplementation(async (_input, output) => writeStandInFile(output))
+    sleepImage.reconvert.mockReset().mockResolvedValue(undefined)
     await database.query(`TRUNCATE "device", "device_model", "palette" CASCADE`)
     await database.getRepository(Palette).save([
       { id: 'bw', name: 'Black & White', kind: 'official', grays: 2, frameworkClass: 'screen--1bit' },
@@ -92,6 +94,7 @@ describe('creating, changing and deleting a custom Palette, against a real datab
   })
 
   afterEach(async () => {
+    vi.restoreAllMocks()
     await Promise.all(devicesWithImages.splice(0).map(id => fs.promises.rm(resolveAppPath('public', 'screens', 'devices', id), { recursive: true, force: true })))
   })
 
@@ -235,6 +238,34 @@ describe('creating, changing and deleting a custom Palette, against a real datab
 
       expect(response.status).toBe(409)
       expect(await response.json()).toMatchObject({ code: 'palette-name-taken' })
+    })
+
+    it('rethrows a rename to a name another Palette has as the name taken refusal when it loses a race the up-front check missed', async () => {
+      const assertNameFree = vi.spyOn(customPalettes as unknown as { assertNameFree: (name: string, ownId?: string) => Promise<void> }, 'assertNameFree')
+      assertNameFree.mockImplementationOnce(async () => {
+        // The other request's write, landing between this one's check and its own write.
+        await database.getRepository(Palette).save({ id: 'other-soft-red', name: 'soft RED', kind: 'custom', grays: 2, colors: SOFT_RED.colors, frameworkClass: RED_FAMILY })
+      })
+
+      const response = await send('PATCH', '/api/device-models/palettes/study-panel', { name: 'Soft red' })
+
+      expect(response.status).toBe(409)
+      expect(await response.json()).toMatchObject({ code: 'palette-name-taken', details: { name: 'Soft red' } })
+      expect((await database.getRepository(Palette).findOneByOrFail({ id: 'study-panel' })).name).toBe('Study panel')
+    })
+
+    it('logs a failing image or sleep-image reconversion of one Device and goes on to the next, and the Palette change stands', async () => {
+      const { device: study } = await studyOnTheCustomPalette()
+      const hall = await database.getRepository(Device).save({ name: 'Hall', friendlyId: 'HALL01', mac: 'AA:BB:CC:DD:EE:02', apikey: 'key2', deviceModel: { name: 'og_bwr' }, palette: { id: 'study-panel' } })
+      const reconvertImages = vi.spyOn(screens, 'reconvertImageScreens').mockRejectedValueOnce(new Error('disk full'))
+      sleepImage.reconvert.mockRejectedValueOnce(new Error('sleep image unreadable'))
+
+      const response = await send('PATCH', '/api/device-models/palettes/study-panel', { colors: ['#000000', '#FFFFFF'] })
+
+      expect(response.status).toBe(200)
+      expect(reconvertImages.mock.calls.map(([device]) => device.id)).toEqual([hall.id, study.id])
+      expect(sleepImage.reconvert.mock.calls.map(([device]) => device.id)).toEqual([hall.id, study.id])
+      expect((await database.getRepository(Palette).findOneByOrFail({ id: 'study-panel' })).colors).toEqual(['#000000', '#FFFFFF'])
     })
 
     it('changes the Palette Family of a Palette no Device uses', async () => {
