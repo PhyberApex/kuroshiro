@@ -172,6 +172,34 @@ describe('an External link Screen', () => {
     await expect.poll(() => source.getByRole('button', { name: 'Refresh image' }).query()).toBeNull()
   })
 
+  it('keeps the fetch choice being saved when refreshes bring it back and forth before the save answers', async () => {
+    const faked = fakeKitchen()
+    let answer!: () => void
+    const answered = new Promise<void>(resolve => (answer = resolve))
+    // Holds the save, then lets the faked Device answer it.
+    api.use(http.patch(apiUrl('screens/webcam'), async () => {
+      await answered
+    }, { once: true }))
+    const { source } = await openedWebcam()
+    const everyPoll = source.getByRole('radio', { name: 'Fetch on every poll' })
+
+    await everyPoll.click()
+    // Dithering, switched elsewhere, says when each refresh has landed.
+    const dithering = source.getByRole('switch', { name: 'Dithering' })
+    faked.screens = webcamWith({ dither: false, external: { url: 'https://harbour.example/cam.jpg', fetchManual: false } })
+    window.dispatchEvent(new Event('focus'))
+    await expect.element(dithering).not.toBeChecked()
+    faked.screens = webcamWith({ dither: true, external: { url: 'https://harbour.example/cam.jpg', fetchManual: true } })
+    window.dispatchEvent(new Event('focus'))
+    await expect.element(dithering).toBeChecked()
+
+    await expect.element(everyPoll).toBeChecked()
+    answer()
+
+    await expect.poll(() => faked.writes).toEqual([{ method: 'PATCH', path: 'screens/webcam', body: { fetchManual: false } }])
+    await expect.element(everyPoll).toBeChecked()
+  })
+
   it('follows an address and a fetch choice the server changed, at the next refresh', async () => {
     const faked = fakeKitchen()
     const { source, url } = await openedWebcam()
