@@ -349,6 +349,7 @@ describe('the Recipe Update Check, against a real database', () => {
     })
 
     it('removes a template and adds another in a single apply', async () => {
+      // `full.liquid` stays unchanged on both sides: a Recipe needs at least one template.
       upstreamAnswers(() => recipeArchive({}, { 'full.liquid': '<p>{{ phase }}</p>', 'quadrant.liquid': '<p>{{ phase }} small</p>' }))
       const plugin = await importMoonPhase()
       upstreamAnswers(() => recipeArchive({}, { 'full.liquid': '<p>{{ phase }}</p>', 'half_vertical.liquid': '<p>{{ phase }} tall</p>' }))
@@ -362,10 +363,12 @@ describe('the Recipe Update Check, against a real database', () => {
 
       expect(response.status).toBe(201)
       const stored = await database.getRepository(Plugin).findOneOrFail({ where: { id: plugin.id }, relations: { templates: true } })
-      expect(stored.templates.map(({ layout, liquidMarkup }) => ({ layout, liquidMarkup })).sort((a, b) => a.layout.localeCompare(b.layout))).toEqual([
+      const templates = stored.templates.map(({ layout, liquidMarkup }) => ({ layout, liquidMarkup }))
+      expect(templates).toHaveLength(2)
+      expect(templates).toEqual(expect.arrayContaining([
         { layout: 'full', liquidMarkup: '<p>{{ phase }}</p>' },
         { layout: 'half_vertical', liquidMarkup: '<p>{{ phase }} tall</p>' },
-      ])
+      ]))
     })
 
     it('moves only the Recipe Snapshot when nothing is applied', async () => {
