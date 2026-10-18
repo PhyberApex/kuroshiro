@@ -1,4 +1,4 @@
-import { http } from 'msw'
+import { delay, http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { expectAccessible } from '@/testing/a11y'
 import { api, apiErrorResponse, apiUrl } from '@/testing/api/server'
@@ -277,6 +277,77 @@ describe('entries that arrive while the page is open', () => {
 
     await expect.element(screen.getByText('Showing 50 of 207, newest first')).toBeVisible()
     expect(messages(screen)[0]).toBe('display poll burst 1')
+  })
+
+  it('keeps the list and says why when the new entries cannot be loaded', async () => {
+    const faked = fakeKitchenLog()
+    const screen = await mountLogs()
+    await expect.element(log(screen)).toBeVisible()
+
+    faked.entries = [...arrivals, ...ENTRIES]
+    comeBackToTheTab()
+    const newEntries = screen.getByRole('button', { name: '2 new entries' })
+    await expect.element(newEntries).toBeVisible()
+    faked.failing = apiErrorResponse({ statusCode: 500, code: 'internal', message: 'Internal server error' })
+    await newEntries.click()
+
+    await expect.element(screen.getByText('Could not load the new entries.')).toBeVisible()
+    expect(messages(screen)).toHaveLength(6)
+    await expect.element(newEntries).toBeVisible()
+  })
+
+  /**
+   * Holds the first count of new entries until `answer()`, then lets the faked Device Log answer it; any later count
+   * never answers. `counts` is every count asked for, as it is asked.
+   */
+  function holdCounts() {
+    const counts: string[] = []
+    let answer!: () => void
+    const answered = new Promise<void>(resolve => (answer = resolve))
+    api.use(http.get(apiUrl('devices/kitchen/logs'), async ({ request }) => {
+      if (new URL(request.url).searchParams.get('limit') !== '0')
+        return
+      counts.push(request.url)
+      await (counts.length === 1 ? answered : delay('infinite'))
+    }))
+    return { counts, answer }
+  }
+
+  it('asks for the count once while an earlier count is still on its way', async () => {
+    const faked = fakeKitchenLog()
+    const { counts, answer } = holdCounts()
+    const screen = await mountLogs()
+    await expect.element(log(screen)).toBeVisible()
+
+    faked.entries = [...arrivals, ...ENTRIES]
+    comeBackToTheTab()
+    await expect.poll(() => counts).toHaveLength(1)
+    comeBackToTheTab()
+    answer()
+
+    await expect.element(screen.getByRole('button', { name: '2 new entries' })).toBeVisible()
+    expect(counts).toHaveLength(1)
+  })
+
+  it('drops a count that answers after another first page took the list\'s place', async () => {
+    const faked = fakeKitchenLog()
+    const { counts, answer } = holdCounts()
+    const screen = await mountLogs()
+    await expect.element(log(screen)).toBeVisible()
+
+    comeBackToTheTab()
+    await expect.poll(() => counts).toHaveLength(1)
+    await screen.getByRole('radio', { name: 'Warnings and errors' }).click()
+    await expect.element(screen.getByText('Showing 3 of 3 that match, newest first')).toBeVisible()
+    faked.entries = [...arrivals, ...ENTRIES]
+    answer()
+
+    // A count is asked for again only once the one held has landed.
+    await expect.poll(() => {
+      comeBackToTheTab()
+      return counts.length
+    }).toBe(2)
+    expect(screen.getByRole('button', { name: /new entr/ }).query()).toBeNull()
   })
 })
 

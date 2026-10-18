@@ -1,7 +1,7 @@
 import type { DeviceSummary, PluginDetail, PreviewDataInput, UpdatePluginInput } from 'kuroshiro-shared'
 import type { Mounted } from './pluginPageHarness'
 import { delay, http, HttpResponse } from 'msw'
-import { describe, expect, it, onTestFinished } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
 import { expectAccessible } from '@/testing/a11y'
 import { api, apiUrl } from '@/testing/api/server'
@@ -551,6 +551,26 @@ describe('the fetched data of the Template section', () => {
       await expect.element(screen.getByRole('textbox', { name: 'Name' })).toHaveFocus()
       expect(view(screen)).toBeUndefined()
       expect(faked.saves).toEqual([])
+    })
+
+    it('goes back one step in the history when the page is the entry before it, and shows the first thing to fix once there', async () => {
+      const faked = fakeWeather()
+      const screen = await mountTemplate('/plugins/weather#name')
+      await screen.getByRole('textbox', { name: 'Name' }).fill('')
+      await screen.getByRole('button', { name: 'Full window' }).click()
+      await expect.element(screen.getByRole('button', { name: 'Back to the page' })).toBeVisible()
+      // The test router's memory history leaves the browser's own entry alone; the app's web history names the entry before it there.
+      const state = vi.spyOn(History.prototype, 'state', 'get').mockReturnValue({ back: '/plugins/weather' })
+      onTestFinished(() => state.mockRestore())
+
+      await saveBar(screen).getByRole('button', { name: 'Save Plugin' }).click()
+      await saveBar(screen).getByRole('button', { name: 'Show the first' }).click()
+
+      await expect.element(screen.getByRole('textbox', { name: 'Name' })).toHaveFocus()
+      expect(view(screen)).toBeUndefined()
+      expect(faked.saves).toEqual([])
+      screen.router.forward()
+      await expect.poll(() => view(screen)).toBe('template')
     })
 
     it('goes back to the page with the browser\'s Back', async () => {

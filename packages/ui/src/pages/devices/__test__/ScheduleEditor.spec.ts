@@ -340,6 +340,20 @@ describe('the date range', () => {
     await expect.element(editor.getByText('Both days count.')).toBeVisible()
     expect(editor.getByText('The last day has passed, so this Screen no longer shows.').elements()).toEqual([])
   })
+
+  it('re-fills the first day, the last day and the ranged choice from dates the server changed, at the next refresh', async () => {
+    const { faked, editor } = await openedPhoto(WEEKDAY_MORNINGS)
+    const ranged = editor.getByRole('checkbox', { name: 'Only between two dates' })
+    await expect.element(ranged).not.toBeChecked()
+
+    faked.screens = photoWith({ ...WEEKDAY_MORNINGS, startDate: '2026-11-01', endDate: '2026-11-30' })
+    window.dispatchEvent(new Event('focus'))
+
+    await expect.element(ranged).toBeChecked()
+    await expect.element(end(dates(editor), 'From')).toHaveValue('2026-11-01')
+    await expect.element(end(dates(editor), 'to')).toHaveValue('2026-11-30')
+    expect(faked.writes).toEqual([])
+  })
 })
 
 describe('the timezone line', () => {

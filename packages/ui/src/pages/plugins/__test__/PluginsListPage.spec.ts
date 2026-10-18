@@ -283,6 +283,42 @@ describe('the Plugins list', () => {
 
       await expect.element(screen.getByRole('heading', { name: 'Weather (copy)', level: 1 })).toBeVisible()
     })
+
+    it('says "That did not work." when the copy is refused without a reason', async () => {
+      fakePlugins()
+      // A code worded by the server's own message, sent without one.
+      api.use(http.post(apiUrl('plugins/weather/duplicate'), () => apiErrorResponse({ statusCode: 503, code: 'device-preview-busy', message: '' })))
+      const screen = await mountList()
+
+      await choose(screen, 'Weather', 'Duplicate')
+
+      await expect.element(screen.getByRole('alert')).toHaveTextContent('Could not duplicate Weather. That did not work.')
+    })
+
+    it('ignores a second Duplicate while the first is still making its copy', async () => {
+      fakePlugins()
+      const copy = buildPluginDetail({ id: 'weather-copy', name: 'Weather (copy)', assignments: [] })
+      const asked: string[] = []
+      let answer!: () => void
+      const answered = new Promise<void>(resolve => (answer = resolve))
+      api.use(
+        http.post(apiUrl('plugins/:id/duplicate'), async ({ params }) => {
+          asked.push(String(params.id))
+          await answered
+          return HttpResponse.json(copy, { status: 201 })
+        }),
+        http.get(apiUrl('plugins/weather-copy'), () => HttpResponse.json(copy)),
+      )
+      const screen = await mountList()
+
+      await choose(screen, 'Weather', 'Duplicate')
+      await expect.poll(() => rowText('Weather')[2]).toBe('Duplicating')
+      await choose(screen, 'Bin day', 'Duplicate')
+      answer()
+
+      await expect.element(screen.getByRole('heading', { name: 'Weather (copy)', level: 1 })).toBeVisible()
+      expect(asked).toEqual(['weather'])
+    })
   })
 
   describe('exporting a Plugin', () => {
@@ -338,6 +374,40 @@ describe('the Plugins list', () => {
 
       await expect.poll(() => rowText('Bin day')[2]).toBe('Exported')
       await expect.element(screen.getByRole('alert')).not.toBeInTheDocument()
+    })
+
+    it('says "That did not work." when the export is refused without a reason', async () => {
+      fakePlugins()
+      catchDownloads()
+      // A code worded by the server's own message, sent without one.
+      api.use(http.get(apiUrl('plugins/bins/export'), () => apiErrorResponse({ statusCode: 503, code: 'device-preview-busy', message: '' })))
+      const screen = await mountList()
+
+      await choose(screen, 'Bin day', 'Export')
+
+      await expect.element(screen.getByRole('alert')).toHaveTextContent('Not exported. That did not work.')
+    })
+
+    it('ignores a second Export while the first download is still running', async () => {
+      const faked = fakePlugins()
+      const downloads = catchDownloads()
+      let answer!: () => void
+      const answered = new Promise<void>(resolve => (answer = resolve))
+      api.use(http.get(apiUrl('plugins/bins/export'), async ({ request }) => {
+        faked.exports.push(request.url)
+        await answered
+        return exportZipResponse('Bin day.trmnlp.zip')
+      }, { once: true }))
+      const screen = await mountList()
+
+      await choose(screen, 'Bin day', 'Export')
+      await expect.poll(() => rowText('Bin day')[2]).toBe('Exporting')
+      await choose(screen, 'Weather', 'Export')
+      answer()
+
+      await expect.poll(() => rowText('Bin day')[2]).toBe('Exported')
+      expect(faked.exports).toEqual([apiUrl('plugins/bins/export')])
+      expect(downloads).toEqual([{ filename: 'Bin day.trmnlp.zip', blob: expect.any(Blob) }])
     })
   })
 

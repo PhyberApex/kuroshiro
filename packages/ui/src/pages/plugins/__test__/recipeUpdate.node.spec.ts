@@ -96,6 +96,29 @@ describe('the Recipe Update Check', () => {
     ])
   })
 
+  it('reads a name, a description and a Framework Version as the one line each is', () => {
+    expect(linesOf(buildUpdateItem({ itemType: 'name', upstream: 'Moon phase' }), 'upstream')).toEqual(['Moon phase'])
+    expect(linesOf(buildUpdateItem({ itemType: 'description', upstream: 'Tonight\'s moon' }), 'upstream')).toEqual(['Tonight\'s moon'])
+    expect(linesOf(buildUpdateItem({ itemType: 'frameworkVersion', upstream: '1.2.0' }), 'upstream')).toEqual(['1.2.0'])
+  })
+
+  it('leaves out of the lines what a Data Source or a Plugin Field does not have', () => {
+    expect(linesOf(buildUpdateItem({
+      itemType: 'dataSource',
+      upstream: { mode: 'fetch', method: 'POST', url: null, headers: {}, body: { city: 'Berlin' }, transformJs: null },
+    }), 'upstream')).toEqual([
+      'method: POST',
+      'url: ',
+      'body: {"city":"Berlin"}',
+    ])
+    expect(linesOf(field({ upstream: { keyname: 'city', label: 'City', type: 'string', helpText: null, default: null, required: false, order: 2, options: null } }), 'upstream')).toEqual([
+      'label: City',
+      'type: string',
+      'required: no',
+      'place: 2',
+    ])
+  })
+
   it('tells the Recipe\'s change from the Recipe Snapshot, or from the Plugin without one', () => {
     const item = buildUpdateItem({ itemType: 'refreshInterval', snapshot: 15, local: 20, upstream: 30 })
 
