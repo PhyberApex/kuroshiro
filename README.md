@@ -239,6 +239,16 @@ We build these tags automatically:
 
 For local hacking or deployment inspiration, check out [`docker-compose.yml`](./docker-compose.yml). It spins up everything you need—API, UI, and Postgres—so you can get started in seconds.
 
+### Home Assistant add-on
+
+Running Home Assistant OS? Kuroshiro is packaged as an add-on in [PhyberApex/home-assistant-add-on-repo](https://github.com/PhyberApex/home-assistant-add-on-repo/tree/main/kuroshiro). It bundles its own Postgres, keeps everything under the add-on's `/data` so Home Assistant backups cover it, and opens the admin UI from the sidebar through ingress.
+
+1. Add `https://github.com/PhyberApex/home-assistant-add-on-repo` under **Settings → Add-ons → Add-on Store → ⋮ → Repositories**.
+2. Install **Kuroshiro** and start it.
+3. Point your devices at `http://<HA-IP>:3000`. Devices cannot use ingress, so the published port has to stay reachable on your network; the `api_url` option overrides the auto-detected address.
+
+The add-on's [DOCS.md](https://github.com/PhyberApex/home-assistant-add-on-repo/blob/main/kuroshiro/DOCS.md) covers the options and what to check when a device cannot reach the server.
+
 The container listens on `KUROSHIRO_PORT` (`3000` when unset). [`.env.example`](./.env.example) lists every `KUROSHIRO_*` variable Kuroshiro reads; at startup it logs a warning for any other `KUROSHIRO_*` variable it finds, naming the replacement of an outdated one (such as `KUROSHIRO_DB_USER` for `KUROSHIRO_POSTGRES_USER`), since an ignored variable otherwise falls back to its default without a word. `bootstrap()` logs it before connecting to the database at all, so it shows even when the database settings are the ones that are wrong.
 
 ### Persisting data
