@@ -48,6 +48,34 @@ describe('pluginTransformService', () => {
       await expect(service.transform(transformJs, input)).rejects.toThrow('fetch is not defined')
     })
 
+    it('has the web globals Node has, so a transform bounds its fetch with a timer and an AbortController', async () => {
+      const fetch = vi.fn().mockImplementation((_url: string, init?: RequestInit) => new Promise<Response>((resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(new Error('aborted')))
+      }))
+      const transformJs = `
+        async function run(input) {
+          const controller = new AbortController()
+          const timer = setTimeout(() => controller.abort(), 5)
+          try {
+            await fetch(new URL('/quotes', 'https://dummyjson.com').href, { signal: controller.signal })
+            return { aborted: false }
+          }
+          catch {
+            return { aborted: true, query: new URLSearchParams({ q: input.items.length }).toString(), bytes: new TextEncoder().encode('ab').length, b64: btoa('ab'), copy: structuredClone(input.items) }
+          }
+          finally {
+            clearTimeout(timer)
+          }
+        }
+      `
+
+      expect(await service.transform(transformJs, input, { fetch })).toEqual({ aborted: true, query: 'q=2', bytes: 2, b64: 'YWI=', copy: [1, 2] })
+    })
+
+    it('keeps require, process and the file system out of reach', async () => {
+      expect(await service.transform('function run() { return [typeof require, typeof process] }', input)).toEqual(['undefined', 'undefined'])
+    })
+
     it('propagates the rejection of an async run function', async () => {
       await expect(service.transform('async function run() { throw new Error("no quotes today") }', input)).rejects.toThrow('no quotes today')
     })
