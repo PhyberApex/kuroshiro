@@ -1,5 +1,5 @@
-import type { FilterImplOptions, FS } from 'liquidjs'
-import { Liquid } from 'liquidjs'
+import type { Context, Emitter, FilterImplOptions, FS, Hash, Parser, TagToken, Template, TopLevelToken } from 'liquidjs'
+import { Liquid, Tag } from 'liquidjs'
 import { findBy, mapToI } from './filters/collections.ts'
 import { daysAgo, localizeDate, ordinalize } from './filters/dates.ts'
 import { markdownToHtml, qrCode } from './filters/markup.ts'
@@ -148,6 +148,62 @@ const noPartials: FS = {
   resolve: (_directory, name) => name,
 }
 
+const TEMPLATE_NAME = /^[\w/]+$/
+const DEFINED_TEMPLATES_REGISTER = 'definedTemplates'
+
+type DefinedTemplates = Record<string, Template[]>
+type TagClass = Liquid['tags'][string]
+
+/** The templates `{% template %}` has defined so far in this render, which `{% render %}` reads by name (ADR-0050). */
+const definedTemplatesOf = (ctx: Context): DefinedTemplates => ctx.getRegister<DefinedTemplates>(DEFINED_TEMPLATES_REGISTER, {})
+
+/** `{% template name %}…{% endtemplate %}` as TRMNL's Liquid has it: defines `name` for the `{% render %}` tags after it and draws nothing. */
+class TemplateTag extends Tag {
+  private readonly templateName: string
+  private readonly templates: Template[] = []
+
+  constructor(token: TagToken, remainTokens: TopLevelToken[], liquid: Liquid, parser: Parser) {
+    super(token, remainTokens, liquid)
+    this.templateName = token.args.trim()
+    const stream = parser.parseStream(remainTokens)
+      .on('tag:endtemplate', () => stream.stop())
+      .on('template', (template: Template) => this.templates.push(template))
+      .on('end', () => {
+        throw new Error(`tag ${token.getText()} not closed`)
+      })
+    stream.start()
+  }
+
+  * render(ctx: Context): Generator<unknown, void, unknown> {
+    if (!TEMPLATE_NAME.test(this.templateName))
+      throw new Error(`A template's name may hold only letters, numbers, underscores and slashes: "${this.templateName}".`)
+    definedTemplatesOf(ctx)[this.templateName] = this.templates
+  }
+}
+
+/**
+ * `{% render "name", key: value %}` drawing a template the Template defined, with only the arguments it is given, as
+ * TRMNL does; any other name goes to the engine's own tag, which looks it up nowhere.
+ */
+function renderDefinedTemplateTag(engine: Liquid): TagClass {
+  const BuiltIn = engine.tags.render
+  const renderPartial = BuiltIn.prototype.render as (this: Tag, ctx: Context, emitter: Emitter) => Generator<unknown, void, unknown>
+
+  return class extends BuiltIn {
+    * render(ctx: Context, emitter: Emitter): Generator<unknown, void, unknown> {
+      const { file, hash } = this as unknown as { file: unknown, hash: Hash }
+      const defined = typeof file === 'string' ? definedTemplatesOf(ctx)[file] : undefined
+      if (!defined)
+        return yield* renderPartial.call(this, ctx, emitter)
+
+      const childCtx = ctx.spawn()
+      childCtx.setRegister(DEFINED_TEMPLATES_REGISTER, definedTemplatesOf(ctx))
+      Object.assign(childCtx.bottom(), yield hash.render(ctx))
+      yield this.liquid.renderer.renderTemplates(defined, childCtx, emitter)
+    }
+  }
+}
+
 /**
  * `timeZone` is the IANA zone `date` and Kuroshiro's date and time filters render in (the Instance Time Zone); without
  * one they render in the running process's zone. liquidjs takes the zone only here, not per render.
@@ -155,6 +211,8 @@ const noPartials: FS = {
 export function createLiquidEngine(timeZone?: string): Liquid {
   const engine = new Liquid({ fs: noPartials, relativeReference: false, ...(timeZone && { timezoneOffset: timeZone }) })
   Object.entries({ ...zonedFilters(timeZone), ...trmnlFilters, ...kuroshiroFilters, ...corrections }).forEach(([name, filter]) => engine.registerFilter(name, filter))
+  engine.registerTag('template', TemplateTag)
+  engine.registerTag('render', renderDefinedTemplateTag(engine))
   return engine
 }
 

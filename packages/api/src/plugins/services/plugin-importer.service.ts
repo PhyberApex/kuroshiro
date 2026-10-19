@@ -299,9 +299,9 @@ export class PluginImporterService {
       this.logger.debug('Found transform.js, will include in plugin')
     }
 
-    // Extract shared.liquid if it exists (used for {% render "main" %} partials)
+    // TRMNL puts shared.liquid, with its {% template %} definitions and styles, at the top of every layout (ADR-0050)
     const sharedEntry = templateEntries.find(entry => entry.entryName.endsWith('shared.liquid'))
-    const sharedContent = sharedEntry ? sharedEntry.getData().toString('utf8') : null
+    const sharedContent = sharedEntry?.getData().toString('utf8').trimEnd() || null
 
     // Process layout templates (skip shared.liquid, transform.js, etc.)
     const layoutEntries = templateEntries.filter((entry) => {
@@ -314,23 +314,9 @@ export class PluginImporterService {
       const content = entry.getData().toString('utf8')
       const layout = layoutFromTemplateFilename(filename)
 
-      // If template uses {% render "main" %} and we have shared.liquid, inline it
-      let liquidMarkup = content
-      if (sharedContent && (content.includes('{% render "main"') || content.includes('{%render "main"'))) {
-        // Extract content from {% template main %}...{% endtemplate %} wrapper
-        let sharedContentToInline = sharedContent
-        const templateMatch = sharedContent.match(/\{%\s*template\s+main\s*%\}([\s\S]*?)\{%\s*endtemplate\s*%\}/i)
-        if (templateMatch) {
-          sharedContentToInline = templateMatch[1].trim()
-        }
-
-        // Replace the render tag with the extracted shared content
-        liquidMarkup = content.replace(/\{%\s*render\s+"main"[^%]*%\}/g, sharedContentToInline)
-      }
-
       return {
         layout,
-        liquidMarkup,
+        liquidMarkup: sharedContent ? `${sharedContent}\n${content}` : content,
       }
     })
 

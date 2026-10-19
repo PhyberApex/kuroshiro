@@ -208,6 +208,49 @@ describe('checkTemplate', () => {
   })
 })
 
+describe('templates a Template defines itself', () => {
+  const render = (markup: string, context: object = {}) => renderLiquid(markup, context)
+  const problemOf = (markup: string, context: object = {}) => render(markup, context).then(() => null, templateProblemOf)
+
+  it('renders a template it defined, with the arguments it is given, and draws nothing where it is defined', async () => {
+    const markup = 'a{% template greeting %}Hello, {{ name }}{% endtemplate %}b{% render "greeting", name: "world" %}'
+
+    expect(await render(markup, {})).toBe('abHello, world')
+  })
+
+  it('gives a template only its arguments, not what the Template around it reads', async () => {
+    const markup = '{% template t %}[{{ name }}|{{ given }}]{% endtemplate %}{% render "t", given: name %}'
+
+    expect(await render(markup, { name: 'Seneca' })).toBe('[|Seneca]')
+  })
+
+  it('lets a template render another, and the same one again', async () => {
+    const markup = [
+      '{% template item %}<li>{{ label }}</li>{% endtemplate %}',
+      '{% template list %}<ul>{% for label in labels %}{% render "item", label: label %}{% endfor %}</ul>{% endtemplate %}',
+      '{%- render "list", labels: labels -%}',
+    ].join('\n')
+
+    expect(await render(markup, { labels: ['x', 'y'] })).toBe('\n<ul><li>x</li><li>y</li></ul>')
+  })
+
+  it('reads the single-quoted name and the whitespace-trimming form', async () => {
+    expect(await render('{%- template t -%}T{%- endtemplate -%}{%- render \'t\' -%}', {})).toBe('T')
+  })
+
+  it('refuses a template name holding anything but letters, numbers, underscores and slashes', async () => {
+    expect(await problemOf('{% template Danger! %}x{% endtemplate %}')).toEqual({ message: 'A template\'s name may hold only letters, numbers, underscores and slashes: "Danger!".', line: 1 })
+  })
+
+  it('still renders no partial it did not define, so nothing is read from disk or the network', async () => {
+    expect(await problemOf('{% template t %}x{% endtemplate %}\n{% render "package.json" %}')).toEqual({ message: 'A template cannot render "package.json": Kuroshiro has no partials.', line: 2 })
+  })
+
+  it('names the template left open', () => {
+    expect(checkTemplate('{% template t %}x')).toEqual({ message: 'tag {% template t %} not closed', line: 1 })
+  })
+})
+
 describe('templateProblemOf', () => {
   it('reads message and line from a render-time error', async () => {
     const strict = createLiquidEngine()
