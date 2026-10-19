@@ -4,6 +4,12 @@
     "config:recommended",
     "security:minimumReleaseAgeNpm"
   ],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["patch"],
+      "automerge": true
+    }
+  ],
   "customManagers": [
     {
       "customType": "regex",
