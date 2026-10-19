@@ -59,6 +59,7 @@ const wording: Record<ApiErrorCode, string> = {
   'recipe-not-found': 'TRMNL has no such Recipe.',
   'recipe-oauth': 'That Recipe signs in with OAuth.',
   'recipe-strategy-unsupported': 'That Recipe does not poll, hold fixed data, or have no data source.',
+  'recipe-webhook-transform': 'This Recipe runs a transform on each payload it is sent, which a Webhook Plugin does not do.',
   'recipe-serverless-language': 'That Recipe\'s serverless code is in a language Kuroshiro cannot run.',
   'plugin-not-from-recipe': 'That Plugin was not imported from a Recipe.',
   'recipe-changed': 'The Recipe changed since it was compared.',
@@ -122,6 +123,7 @@ function wordingBySwitch(code: ApiErrorCode): string {
     case 'recipe-not-found':
     case 'recipe-oauth':
     case 'recipe-strategy-unsupported':
+    case 'recipe-webhook-transform':
     case 'recipe-serverless-language':
     case 'plugin-not-from-recipe':
     case 'recipe-changed':

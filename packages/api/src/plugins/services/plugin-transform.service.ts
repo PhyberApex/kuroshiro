@@ -12,6 +12,32 @@ export interface TransformOptions {
 }
 
 /**
+ * The web-standard globals Node 20 has, which TRMNL's serverless runtime leaves in reach (ADR-0055). Node's own
+ * `require`, `process` and file system stay out.
+ */
+const WEB_GLOBALS = {
+  AbortController,
+  AbortSignal,
+  setTimeout,
+  clearTimeout,
+  setInterval,
+  clearInterval,
+  queueMicrotask,
+  URL,
+  URLSearchParams,
+  TextEncoder,
+  TextDecoder,
+  atob,
+  btoa,
+  structuredClone,
+  performance,
+  crypto,
+  Headers,
+  Request,
+  Response,
+}
+
+/**
  * The function a transform exports, found as TRMNL's serverless runtime finds it (ADR-0051): `run`, declared or
  * exported as `module.exports = { run }` / `exports.run`, then `module.exports` itself, then a declared `transform`.
  * Without one the input passes through unchanged.
@@ -36,8 +62,8 @@ export class PluginTransformService {
 
   /**
    * Runs a transform in a sandbox on its input, the fetched data laid over the template context, and answers what the
-   * transform returns, awaited when it is a promise. The sandbox has no `require` and no file system, and only the
-   * `fetch` it is handed (ADR-0052).
+   * transform returns, awaited when it is a promise. The sandbox has Node's web globals (ADR-0055) but no `require`
+   * and no file system, and only the `fetch` it is handed (ADR-0052).
    */
   async transform(transformJs: string, input: unknown, { timeoutMs = DEFAULT_TIMEOUT_MS, fetch }: TransformOptions = {}): Promise<unknown> {
     try {
@@ -45,6 +71,7 @@ export class PluginTransformService {
       const vm = new VM({
         timeout: timeoutMs,
         sandbox: {
+          ...WEB_GLOBALS,
           input,
           data: input,
           module: moduleObj,

@@ -201,6 +201,33 @@ function foreignServerlessOf(entries: AdmZip.IZipEntry[]): { language: string } 
   return language ? { language } : null
 }
 
+const IMPORTABLE_STRATEGIES = ['polling', 'webhook', 'static', 'none']
+
+/** The reasons a Recipe cannot become a Plugin here, each named by its own refusal (ADR-0011, ADR-0051, ADR-0056). */
+function assertRecipeImportable(recipeSettings: RecipeSettings, entries: AdmZip.IZipEntry[]): void {
+  const foreignServerless = foreignServerlessOf(entries)
+  if (foreignServerless) {
+    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'recipe-serverless-language', `The Recipe's serverless code is ${foreignServerless.language}, which Kuroshiro cannot run; only JavaScript transforms run here.`, { language: foreignServerless.language })
+  }
+
+  if (recipeFlag(recipeSettings.oauth_enabled)) {
+    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'recipe-oauth', 'The Recipe signs in to another service with OAuth, which is not supported.')
+  }
+
+  const strategy = recipeSettings.strategy ?? 'unknown'
+  if (strategy === 'webhook' && recipeTransformJsOf(entries)) {
+    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'recipe-webhook-transform', 'The Recipe runs a transform on each payload it is sent, which a Webhook Plugin does not do.')
+  }
+
+  if (strategy === 'plugin_merge') {
+    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'recipe-strategy-unsupported', 'The Recipe reads other TRMNL plugins\' data, which only trmnl.com holds.', { strategy })
+  }
+
+  if (!IMPORTABLE_STRATEGIES.includes(strategy)) {
+    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'recipe-strategy-unsupported', `The Recipe's strategy "${strategy}" is not supported; only ${IMPORTABLE_STRATEGIES.map(name => `"${name}"`).join(', ')} Recipes can be imported.`, { strategy })
+  }
+}
+
 function recipeTransformJsOf(entries: AdmZip.IZipEntry[]): string | null {
   const entry = entries.find(candidate => path.basename(candidate.entryName) === 'transform.js')
   return entry?.getData().toString('utf8') || null
@@ -393,14 +420,7 @@ export class PluginImporterService {
     const settingsContent = settingsEntry.getData().toString('utf8')
     const recipeSettings = parseYamlObject<RecipeSettings>(settingsContent, 'Invalid settings.yml')
 
-    const foreignServerless = foreignServerlessOf(entries)
-    if (foreignServerless) {
-      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'recipe-serverless-language', `The Recipe's serverless code is ${foreignServerless.language}, which Kuroshiro cannot run; only JavaScript transforms run here.`, { language: foreignServerless.language })
-    }
-
-    if (recipeFlag(recipeSettings.oauth_enabled)) {
-      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'recipe-oauth', 'The Recipe signs in to another service with OAuth, which is not supported.')
-    }
+    assertRecipeImportable(recipeSettings, entries)
 
     if (recipeSettings.strategy === 'static') {
       return this.importStaticRecipe(entries, settingsContent, recipeSettings, recipeId)
@@ -408,11 +428,6 @@ export class PluginImporterService {
 
     if (recipeSettings.strategy === 'none') {
       return this.importNoneRecipe(entries, settingsContent, recipeSettings, recipeId)
-    }
-
-    if (recipeSettings.strategy !== 'polling') {
-      const strategy = recipeSettings.strategy ?? 'unknown'
-      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'recipe-strategy-unsupported', `The Recipe's strategy "${strategy}" is not supported; only "polling", "static" and "none" Recipes can be imported.`, { strategy })
     }
 
     const reshapedZip = this.reshapeRecipeArchive(entries, settingsContent, recipeSettings)
