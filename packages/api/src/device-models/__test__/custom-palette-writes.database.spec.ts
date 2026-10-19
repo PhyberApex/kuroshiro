@@ -5,6 +5,7 @@ import type { DeviceSleepImageService } from '../../devices/device-sleep-image.s
 import type { HttpTestApp } from '../../test/httpApp.js'
 import * as fs from 'node:fs'
 import path from 'node:path'
+import { Logger } from '@nestjs/common'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Alert } from '../../alerts/entities/alert.entity.js'
 import { Device } from '../../devices/devices.entity.js'
@@ -241,10 +242,11 @@ describe('creating, changing and deleting a custom Palette, against a real datab
     })
 
     it('rethrows a rename to a name another Palette has as the name taken refusal when it loses a race the up-front check missed', async () => {
-      const assertNameFree = vi.spyOn(customPalettes as unknown as { assertNameFree: (name: string, ownId?: string) => Promise<void> }, 'assertNameFree')
-      assertNameFree.mockImplementationOnce(async () => {
+      const palettes = database.getRepository(Palette)
+      vi.spyOn(palettes, 'existsBy').mockImplementationOnce(async () => {
         // The other request's write, landing between this one's check and its own write.
-        await database.getRepository(Palette).save({ id: 'other-soft-red', name: 'soft RED', kind: 'custom', grays: 2, colors: SOFT_RED.colors, frameworkClass: RED_FAMILY })
+        await palettes.save({ id: 'other-soft-red', name: 'soft RED', kind: 'custom', grays: 2, colors: SOFT_RED.colors, frameworkClass: RED_FAMILY })
+        return false
       })
 
       const response = await send('PATCH', '/api/device-models/palettes/study-panel', { name: 'Soft red' })
@@ -259,12 +261,15 @@ describe('creating, changing and deleting a custom Palette, against a real datab
       const hall = await database.getRepository(Device).save({ name: 'Hall', friendlyId: 'HALL01', mac: 'AA:BB:CC:DD:EE:02', apikey: 'key2', deviceModel: { name: 'og_bwr' }, palette: { id: 'study-panel' } })
       const reconvertImages = vi.spyOn(screens, 'reconvertImageScreens').mockRejectedValueOnce(new Error('disk full'))
       sleepImage.reconvert.mockRejectedValueOnce(new Error('sleep image unreadable'))
+      const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {})
 
       const response = await send('PATCH', '/api/device-models/palettes/study-panel', { colors: ['#000000', '#FFFFFF'] })
 
       expect(response.status).toBe(200)
       expect(reconvertImages.mock.calls.map(([device]) => device.id)).toEqual([hall.id, study.id])
       expect(sleepImage.reconvert.mock.calls.map(([device]) => device.id)).toEqual([hall.id, study.id])
+      expect(logged).toHaveBeenCalledWith(`Could not convert the images of Device ${hall.id} again: disk full`)
+      expect(logged).toHaveBeenCalledWith(`Could not convert the sleep image of Device ${hall.id} again: sleep image unreadable`)
       expect((await database.getRepository(Palette).findOneByOrFail({ id: 'study-panel' })).colors).toEqual(['#000000', '#FFFFFF'])
     })
 

@@ -5,6 +5,7 @@ import type { Device } from '../../devices/devices.entity.js'
 import type { MockDeviceModelsService } from '../../test/mockDeviceModelsService.js'
 import type { Screen } from '../screens.entity.js'
 import * as fs from 'node:fs'
+import { Logger } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ValidationException } from '../../errors/api.exception.js'
 import { makeDevice, makeScreen } from '../../test/fixtures.js'
@@ -89,11 +90,14 @@ describe('screensService', () => {
     it('answers false instead of throwing when an image Screen\'s file is gone from disk', async () => {
       screensRepo.find.mockResolvedValue([makeScreen({ id: 'gone', type: 'file', device })])
       fileExistsMock.mockResolvedValue(false)
+      const warned = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
       const { convertToPng } = await import('../../utils/imageUtils.js')
 
       await expect(service.reconvertImageScreens(device)).resolves.toBe(0)
+      expect(warned).toHaveBeenCalledWith('No image to reconvert for screen gone')
       expect(convertToPng).not.toHaveBeenCalled()
       expect(screensRepo.update).not.toHaveBeenCalled()
+      warned.mockRestore()
     })
   })
 
