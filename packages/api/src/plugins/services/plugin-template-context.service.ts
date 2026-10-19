@@ -6,7 +6,7 @@ import type { FieldValueWrites } from './plugin-field-values.service.js'
 import { Injectable } from '@nestjs/common'
 import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { hideSecretFieldValues, hideSecretsIn, secretValues } from '../plugin-field-values.js'
-import { PluginDataResolverService } from './plugin-data-resolver.service.js'
+import { loneSourceRootKeys, PluginDataResolverService } from './plugin-data-resolver.service.js'
 import { PluginFieldValuesService } from './plugin-field-values.service.js'
 
 export interface PluginTemplateContext {
@@ -66,8 +66,9 @@ export interface PluginRenderContext {
  * `sensors` object keyed by kind (ADR-0018) for whichever kinds the rendering
  * Device currently has a reading for, and on top the data: a Poll-kind
  * Plugin's Data Source results or error markers by name, a Webhook-kind
- * Plugin's Webhook Payload keys. The data wins over a bare Field Value key of
- * the same name.
+ * Plugin's Webhook Payload keys. A lone Data Source's keys are laid at the
+ * root too (ADR-0049). The data wins over a bare Field Value key of the same
+ * name; nothing replaces `trmnl` or `sensors`.
  */
 @Injectable()
 export class PluginTemplateContextService {
@@ -97,7 +98,8 @@ export class PluginTemplateContextService {
 
     const fetched = await this.dataResolver.resolveAll(unsaved.dataSources ?? plugin.dataSources ?? [], fetchContext)
     const sourceData = hideSecretsIn(fetched, secretValues(hideSecretsOf, resolved))
-    return { context: { ...withoutData, ...sourceData }, fieldValues, resolvedFieldValues: resolved, sourceData }
+    const context = { ...withoutData, ...loneSourceRootKeys(sourceData), trmnl: withoutData.trmnl, sensors: withoutData.sensors, ...sourceData }
+    return { context, fieldValues, resolvedFieldValues: resolved, sourceData }
   }
 
   private withoutData(instanceName: string, fieldValues: Record<string, string>, sensors: DeviceSensor[]): PluginTemplateContext {

@@ -393,6 +393,16 @@ describe('toPreviewData', () => {
     })
   })
 
+  it('names a lone Data Source\'s root keys as Data Source names too, after the Data Source itself', () => {
+    const plugin = makePlugin({ dataSources: [makePluginDataSource({ name: 'source' })], fields: [makePluginField({ keyname: 'author' })] })
+    const sourceData = { source: { author: 'Seneca', title: 'On life' } }
+    const context = { author: 'Seneca', title: 'On life', ...sourceData, trmnl: {}, sensors: {} }
+
+    const names = toPreviewData(plugin, { context, fieldValues: { author: 'me' }, resolvedFieldValues: { author: 'me' }, sourceData }, NOW).names
+
+    expect(names.map(row => `${row.origin}:${row.name}`)).toEqual(['dataSource:source', 'dataSource:author', 'dataSource:title', 'sensors:sensors', 'trmnl:trmnl'])
+  })
+
   it('names a name the data replaces once, as the data', () => {
     const plugin = makePlugin({
       kind: 'Webhook',
