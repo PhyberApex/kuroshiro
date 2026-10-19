@@ -9,7 +9,7 @@ import { TEMPLATE_SIZES } from 'kuroshiro-shared'
 import { screenStatesOfDevice } from '../screens/screen-states.js'
 import { toIsoString, toIsoStringOrNull } from '../utils/readModel.js'
 import { needsValues, toFieldValueReads } from './plugin-field-values.js'
-import { isFetchErrorMarker } from './services/plugin-data-resolver.service.js'
+import { isFetchErrorMarker, loneSourceRootKeys } from './services/plugin-data-resolver.service.js'
 
 export interface PluginFacts {
   /** Secrets included; the mappers never pass one on. */
@@ -213,10 +213,11 @@ function toPreviewNames(plugin: Plugin, { context, fieldValues, sourceData }: Pl
   if (Array.isArray(context))
     return []
 
-  const data = isPolled(plugin) ? sourceData : plugin.webhookPayload ?? {}
-  const origin = isPolled(plugin) ? 'dataSource' : 'webhookPayload'
-  const isReplaced = (name: string) => name in data
   const isBuiltIn = (name: string) => name === 'sensors' || name === 'trmnl'
+  const data = isPolled(plugin) ? sourceData : plugin.webhookPayload ?? {}
+  const atRoot = isPolled(plugin) ? Object.keys(loneSourceRootKeys(sourceData)).filter(name => !(name in data) && !isBuiltIn(name)) : []
+  const origin = isPolled(plugin) ? 'dataSource' : 'webhookPayload'
+  const isReplaced = (name: string) => name in data || atRoot.includes(name)
   const fieldValueNames = inOrder(plugin.fields)
     .map(field => field.keyname)
     .filter(keyname => keyname in fieldValues && !isReplaced(keyname) && !isBuiltIn(keyname))
@@ -224,6 +225,7 @@ function toPreviewNames(plugin: Plugin, { context, fieldValues, sourceData }: Pl
   return [
     ...fieldValueNames.map((name): PreviewName => ({ name, origin: 'fieldValue', error: null })),
     ...Object.entries(data).map(([name, value]): PreviewName => ({ name, origin, error: isFetchErrorMarker(value) ? value.message : null })),
+    ...atRoot.map((name): PreviewName => ({ name, origin, error: null })),
     ...BUILT_IN_NAMES.filter(name => !isReplaced(name)).map((name): PreviewName => ({ name, origin: name, error: null })),
   ]
 }

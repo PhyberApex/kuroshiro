@@ -251,6 +251,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
 
       const sharedRenderExpected = {
         city: 'Berlin',
+        temperature: 21,
         weather: { temperature: 21 },
         sensors: {},
         trmnl: {
@@ -488,6 +489,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
 
       expect(preview.context).toEqual({
         city: 'Paris',
+        via: 'https://api.example.com/air/Paris',
         air: { via: 'https://api.example.com/air/Paris' },
         sensors: {},
         trmnl: expect.objectContaining({ plugin_settings: expect.objectContaining({ instance_name: 'Forecast', custom_fields_values: { city: 'Paris' } }) }),
@@ -495,6 +497,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
       expect(preview.names).toEqual([
         { name: 'city', origin: 'fieldValue', error: null },
         { name: 'air', origin: 'dataSource', error: null },
+        { name: 'via', origin: 'dataSource', error: null },
         { name: 'sensors', origin: 'sensors', error: null },
         { name: 'trmnl', origin: 'trmnl', error: null },
       ])
@@ -508,8 +511,8 @@ describe('what a Plugin renders from, and with which Template, against a real da
 
       const preview = await previewData(plugin.id)
 
-      expect(preview.context).toMatchObject({ city: 'Berlin', weather: { temperature: 21 }, trmnl: { plugin_settings: { instance_name: 'Weather' } } })
-      expect(preview.names.map(row => row.name)).toEqual(['city', 'weather', 'sensors', 'trmnl'])
+      expect(preview.context).toMatchObject({ city: 'Berlin', temperature: 21, weather: { temperature: 21 }, trmnl: { plugin_settings: { instance_name: 'Weather' } } })
+      expect(preview.names.map(row => row.name)).toEqual(['city', 'weather', 'temperature', 'sensors', 'trmnl'])
     })
 
     it('lists the names in the order Field Values, Data Sources, sensors, trmnl, each set in its own order', async () => {

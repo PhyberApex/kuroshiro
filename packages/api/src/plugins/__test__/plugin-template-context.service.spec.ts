@@ -90,6 +90,48 @@ describe('pluginTemplateContextService', () => {
     expect(resolveAll).toHaveBeenCalledWith(withSource.dataSources, expect.objectContaining({ city: 'Berlin' }))
   })
 
+  describe('a lone Data Source', () => {
+    const lone = makePlugin({ name: 'Letters', dataSources: [makePluginDataSource({ name: 'source' })] })
+
+    it('lays its keys at the root as well as under its name, as TRMNL does with one polling URL', async () => {
+      const resolveAll = vi.fn().mockResolvedValue({ source: { author: 'Seneca', title: 'On the shortness of life' } })
+
+      const { context, sourceData } = await createPluginTemplateContextService({ author: 'from the Field Value' }, { resolveAll }).contextFor(lone, [])
+
+      expect(context).toMatchObject({ author: 'Seneca', title: 'On the shortness of life', source: { author: 'Seneca' } })
+      expect(sourceData).toEqual({ source: { author: 'Seneca', title: 'On the shortness of life' } })
+    })
+
+    it('never lets its keys replace trmnl, sensors or the Data Source\'s own name', async () => {
+      const resolveAll = vi.fn().mockResolvedValue({ source: { trmnl: 'x', sensors: 'y', source: 'z' } })
+
+      const { context } = await createPluginTemplateContextService({}, { resolveAll }).contextFor(lone, [makeDeviceSensor({ kind: 'temperature', value: 21, unit: 'C' })])
+
+      expect(context).toMatchObject({ trmnl: { plugin_settings: { instance_name: 'Letters' } }, sensors: { temperature: { value: 21, unit: 'C' } }, source: { source: 'z' } })
+    })
+
+    it.each([
+      ['a list', [1, 2]],
+      ['a scalar', 'text'],
+      ['an error marker', { error: true, message: 'HTTP 500' }],
+    ])('lays nothing at the root when its result is %s', async (_, result) => {
+      const resolveAll = vi.fn().mockResolvedValue({ source: result })
+
+      const { context } = await createPluginTemplateContextService({}, { resolveAll }).contextFor(lone, [])
+
+      expect(Object.keys(context)).toEqual(['trmnl', 'sensors', 'source'])
+    })
+
+    it('lays nothing at the root when the Plugin has two Data Sources', async () => {
+      const two = makePlugin({ name: 'Weather', dataSources: [makePluginDataSource({ name: 'now' }), makePluginDataSource({ name: 'forecast' })] })
+      const resolveAll = vi.fn().mockResolvedValue({ now: { temp: 21 }, forecast: { temp: 19 } })
+
+      const { context } = await createPluginTemplateContextService({}, { resolveAll }).contextFor(two, [])
+
+      expect(context).not.toHaveProperty('temp')
+    })
+  })
+
   it('exposes the resolved Field Values unhidden, so a caller that must hide a secret elsewhere does not resolve them twice', async () => {
     const fields = [makePluginField({ keyname: 'api_key', fieldType: 'password' })]
 
