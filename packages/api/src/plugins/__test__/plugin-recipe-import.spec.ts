@@ -75,17 +75,30 @@ describe('pluginImporterService recipe import', () => {
       expect(result.templates.map(t => t.layout).sort()).toEqual(['full', 'half_horizontal', 'half_vertical', 'quadrant'])
     })
 
-    it('inlines shared.liquid into a layout that renders "main"', async () => {
+    it('puts shared.liquid at the top of every layout, so its templates and styles reach each of them as on TRMNL', async () => {
       const settings = { name: 'Shared Partial', strategy: 'polling', polling_url: 'https://api.example.com' }
+      const shared = '<style>.x{}</style>{% template main %}<div>{{ title }}</div>{% endtemplate %}'
       const archive = buildFlatRecipeArchive(settings, {
-        'full.liquid': '{% render "main" %}',
-        'shared.liquid': '{% template main %}<div>Shared content</div>{% endtemplate %}',
+        'full.liquid': '{% render "main", title: "Full" %}',
+        'quadrant.liquid': '<p>Quadrant</p>',
+        'shared.liquid': shared,
       })
 
       const service = new PluginImporterService()
       const result = await service.importFromRecipeArchive(archive, '1')
 
-      expect(result.templates[0].liquidMarkup).toBe('<div>Shared content</div>')
+      expect(result.templates.find(t => t.layout === 'full')?.liquidMarkup).toBe(`${shared}\n{% render "main", title: "Full" %}`)
+      expect(result.templates.find(t => t.layout === 'quadrant')?.liquidMarkup).toBe(`${shared}\n<p>Quadrant</p>`)
+    })
+
+    it('leaves a layout alone when shared.liquid is blank', async () => {
+      const settings = { name: 'Blank Shared', strategy: 'polling', polling_url: 'https://api.example.com' }
+      const archive = buildFlatRecipeArchive(settings, { 'full.liquid': '<p>Full</p>', 'shared.liquid': '  \n' })
+
+      const service = new PluginImporterService()
+      const result = await service.importFromRecipeArchive(archive, '1')
+
+      expect(result.templates[0].liquidMarkup).toBe('<p>Full</p>')
     })
 
     it('imports a transform.js into the Data Source', async () => {
