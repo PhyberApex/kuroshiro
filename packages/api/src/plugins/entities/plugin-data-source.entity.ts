@@ -32,6 +32,10 @@ export class PluginDataSource {
   @Column('jsonb', { nullable: true })
   literalValue?: DataSourceLiteralValue
 
+  /** What its transform returned as `trmnl_state` on the last scheduled run (ADR-0052). */
+  @Column('jsonb', { nullable: true })
+  savedState?: JsonObject | null
+
   @Column('int', { default: 0 })
   order: number = 0
 

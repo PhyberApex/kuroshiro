@@ -22,6 +22,7 @@ import { DataSourceFetchOutcomeService } from '../services/data-source-fetch-out
 import { PluginAssignmentsService } from '../services/plugin-assignments.service.js'
 import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
 import { PluginDataResolverService } from '../services/plugin-data-resolver.service.js'
+import { PluginDataSourceStateService } from '../services/plugin-data-source-state.service.js'
 import { PluginExporterService } from '../services/plugin-exporter.service.js'
 import { PluginFieldValuesService } from '../services/plugin-field-values.service.js'
 import { PluginImporterService } from '../services/plugin-importer.service.js'
@@ -59,7 +60,7 @@ describe('building a Plugin, POST /api/plugins, against a real database', () => 
     const config = asService<ConfigService>({ get: () => false, getOrThrow: () => API_URL })
     const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config), new PluginTransformService())
     const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
-    const refresh = new PluginRefreshService(renderCache, new PluginTemplateContextService(fieldValues, resolver, new InstanceTimeZone()), new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
+    const refresh = new PluginRefreshService(renderCache, new PluginTemplateContextService(fieldValues, resolver, new InstanceTimeZone(), new PluginDataSourceStateService(database.getRepository(PluginDataSource))), new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), new PluginDataSourceStateService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
     scheduler = new PluginSchedulerService(refresh)
     const assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
     const plugins = new PluginsService(

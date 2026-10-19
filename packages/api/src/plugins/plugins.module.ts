@@ -19,6 +19,7 @@ import { DataSourceFetchOutcomeService } from './services/data-source-fetch-outc
 import { PluginAssignmentsService } from './services/plugin-assignments.service.js'
 import { PluginDataFetcherService } from './services/plugin-data-fetcher.service.js'
 import { PluginDataResolverService } from './services/plugin-data-resolver.service.js'
+import { PluginDataSourceStateService } from './services/plugin-data-source-state.service.js'
 import { PluginExporterService } from './services/plugin-exporter.service.js'
 import { PluginFieldValuesService } from './services/plugin-field-values.service.js'
 import { PluginImporterService } from './services/plugin-importer.service.js'
@@ -58,6 +59,7 @@ import { WebhookIngestController } from './webhook-ingest.controller.js'
     PluginPreviewDataService,
     PluginAssignmentsService,
     DataSourceFetchOutcomeService,
+    PluginDataSourceStateService,
     PluginDataFetcherService,
     PluginDataResolverService,
     PluginRendererService,

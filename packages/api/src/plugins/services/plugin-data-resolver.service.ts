@@ -1,3 +1,4 @@
+import type { JsonObject } from '../../utils/json.js'
 import type { FetchableDataSource } from './plugin-data-fetcher.service.js'
 import { Injectable, Logger } from '@nestjs/common'
 import { PluginDataFetcherService } from './plugin-data-fetcher.service.js'
@@ -7,8 +8,21 @@ import { PluginTransformService } from './plugin-transform.service.js'
 // PluginDataSource entity and PreviewDataSourceDto, which carry the same fields
 // under slightly different types.
 export interface ResolvableDataSource extends FetchableDataSource {
+  /** Absent for a Data Source the preview holds unsaved; its saved state is then empty. */
+  id?: string
   name: string
   transformJs?: string | null
+}
+
+export interface ResolveOptions {
+  /** Each stored Data Source's saved state by id (ADR-0052). */
+  savedStates?: Record<string, JsonObject>
+}
+
+/** The context with the Data Source's saved state at `trmnl.state`, for its request and its transform alike. */
+function withState(templateContext: object, state: JsonObject): Record<string, unknown> {
+  const trmnl = (templateContext as { trmnl?: object }).trmnl ?? {}
+  return { ...templateContext, trmnl: { ...trmnl, state } }
 }
 
 export interface FetchErrorMarker {
@@ -60,14 +74,16 @@ export class PluginDataResolverService {
    * through this rather than re-deriving the fetch/transform/error-marker
    * logic itself.
    */
-  async resolveAll(dataSources: ResolvableDataSource[], templateContext?: object): Promise<Record<string, unknown>> {
+  async resolveAll(dataSources: ResolvableDataSource[], templateContext: object = {}, { savedStates = {} }: ResolveOptions = {}): Promise<Record<string, unknown>> {
+    const fetchForTransform = (url: string, init?: RequestInit) => this.dataFetcher.fetchForTransform(url, init)
     const results = await Promise.allSettled(
       dataSources.map(async (source) => {
-        const rawData = await this.dataFetcher.fetchOrLiteral(source, templateContext)
+        const context = withState(templateContext, (source.id && savedStates[source.id]) || {})
+        const rawData = await this.dataFetcher.fetchOrLiteral(source, context)
         if (!source.transformJs)
           return rawData
         this.logger.debug(`Applying transform.js to data source: ${source.name}`)
-        return this.transformer.transform(source.transformJs, transformInputOf(rawData, templateContext))
+        return this.transformer.transform(source.transformJs, transformInputOf(rawData, context), { fetch: fetchForTransform })
       }),
     )
 

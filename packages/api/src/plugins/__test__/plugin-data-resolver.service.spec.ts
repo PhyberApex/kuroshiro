@@ -40,7 +40,7 @@ describe('pluginDataResolverService', () => {
       makePluginDataSource({ name: 'source', transformJs: 'module.exports = data => data' }),
     ], { city: 'Berlin', trmnl: { user: { locale: 'de' } } })
 
-    expect(transformer.transform).toHaveBeenCalledWith('module.exports = data => data', { city: 'from the response', trmnl: { user: { locale: 'de' } }, raw: true })
+    expect(transformer.transform).toHaveBeenCalledWith('module.exports = data => data', { city: 'from the response', trmnl: { user: { locale: 'de' }, state: {} }, raw: true }, expect.anything())
     expect(data).toEqual({ source: { transformed: true } })
   })
 
@@ -54,7 +54,41 @@ describe('pluginDataResolverService', () => {
 
     await service.resolveAll([makePluginDataSource({ name: 'source', transformJs: 'x' })], { trmnl: {} })
 
-    expect(transformer.transform).toHaveBeenCalledWith('x', { trmnl: {}, data: fetched })
+    expect(transformer.transform).toHaveBeenCalledWith('x', { trmnl: { state: {} }, data: fetched }, expect.anything())
+  })
+
+  describe('saved state', () => {
+    it('gives the transform its Data Source\'s saved state at input.trmnl.state, and an empty object before any was saved', async () => {
+      vi.spyOn(dataFetcher, 'fetchOrLiteral').mockResolvedValue({ n: 1 })
+      vi.spyOn(transformer, 'transform').mockResolvedValue({})
+      const sources = [makePluginDataSource({ id: 'ds-1', name: 'a', transformJs: 'x' }), makePluginDataSource({ id: 'ds-2', name: 'b', transformJs: 'x' })]
+
+      await service.resolveAll(sources, { trmnl: { user: { locale: 'en' } } }, { savedStates: { 'ds-1': { cursor: 'abc' } } })
+
+      expect(transformer.transform).toHaveBeenCalledWith('x', expect.objectContaining({ trmnl: { user: { locale: 'en' }, state: { cursor: 'abc' } } }), expect.anything())
+      expect(transformer.transform).toHaveBeenCalledWith('x', expect.objectContaining({ trmnl: { user: { locale: 'en' }, state: {} } }), expect.anything())
+    })
+
+    it('renders the request with the saved state too, so a cursor can go into the URL', async () => {
+      const fetchOrLiteral = vi.spyOn(dataFetcher, 'fetchOrLiteral').mockResolvedValue({})
+      const source = makePluginDataSource({ id: 'ds-1', name: 'a' })
+
+      await service.resolveAll([source], { trmnl: {} }, { savedStates: { 'ds-1': { cursor: 'abc' } } })
+
+      expect(fetchOrLiteral).toHaveBeenCalledWith(source, { trmnl: { state: { cursor: 'abc' } } })
+    })
+
+    it('hands the transform the guarded fetch', async () => {
+      vi.spyOn(dataFetcher, 'fetchOrLiteral').mockResolvedValue({})
+      const transform = vi.spyOn(transformer, 'transform').mockResolvedValue({})
+
+      await service.resolveAll([makePluginDataSource({ name: 'a', transformJs: 'x' })], {})
+
+      const options = transform.mock.calls[0]![2] as { fetch: (url: string) => unknown }
+      const fetchForTransform = vi.spyOn(dataFetcher, 'fetchForTransform').mockResolvedValue(new Response('{}'))
+      await options.fetch('https://example.com')
+      expect(fetchForTransform).toHaveBeenCalledWith('https://example.com', undefined)
+    })
   })
 
   it('applies a transform to a literal Data Source too', async () => {
@@ -62,7 +96,7 @@ describe('pluginDataResolverService', () => {
 
     const data = await service.resolveAll([makePluginDataSource({ name: 'source', mode: 'literal', literalValue: { base: 2 }, transformJs: 'x' })], { trmnl: {} })
 
-    expect(transformer.transform).toHaveBeenCalledWith('x', { trmnl: {}, base: 2 })
+    expect(transformer.transform).toHaveBeenCalledWith('x', { trmnl: { state: {} }, base: 2 }, expect.anything())
     expect(data).toEqual({ source: { computed: 1 } })
   })
 

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PluginTransformService } from '../services/plugin-transform.service.js'
 
 describe('pluginTransformService', () => {
@@ -37,6 +37,15 @@ describe('pluginTransformService', () => {
 
     it('fails a run function that resolves too late', async () => {
       await expect(service.transform('async function run() { await new Promise(() => {}) }', input, { timeoutMs: 20 })).rejects.toThrow('The transform did not finish within 20 ms.')
+    })
+
+    it('gives the code the fetch it is handed, and no other way to the network', async () => {
+      const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ quotes: [{ quote: 'Festina lente' }] })))
+      const transformJs = 'async function run() { const res = await fetch("https://dummyjson.com/quotes?limit=1", { headers: { Accept: "application/json" } }); const data = await res.json(); return { quote: data.quotes[0].quote } }'
+
+      expect(await service.transform(transformJs, input, { fetch })).toEqual({ quote: 'Festina lente' })
+      expect(fetch).toHaveBeenCalledWith('https://dummyjson.com/quotes?limit=1', { headers: { Accept: 'application/json' } })
+      await expect(service.transform(transformJs, input)).rejects.toThrow('fetch is not defined')
     })
 
     it('propagates the rejection of an async run function', async () => {

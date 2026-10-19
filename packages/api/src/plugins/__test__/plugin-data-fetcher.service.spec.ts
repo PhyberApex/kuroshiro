@@ -92,6 +92,23 @@ describe('pluginDataFetcherService', () => {
     expect(await service.fetchData('GET', 'https://example.com/empty')).toBeNull()
   })
 
+  describe('fetchForTransform', () => {
+    it('passes the request through to fetch and answers the Response as is', async () => {
+      const response = new Response('{"ok":true}', { status: 200 })
+      mockFetch.mockResolvedValue(response)
+
+      expect(await service.fetchForTransform('https://api.example.com/items', { method: 'POST', body: '{}' })).toBe(response)
+      expect(mockFetch).toHaveBeenCalledWith('https://api.example.com/items', { method: 'POST', body: '{}' })
+    })
+
+    it('refuses an internal host in demo mode, as a Data Source URL is refused', async () => {
+      mockConfigService.get.mockReturnValue(true)
+
+      await expect(service.fetchForTransform('http://127.0.0.1:9/secrets')).rejects.toThrow('not allowed in demo mode')
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+  })
+
   it('throws error when fetch fails', async () => {
     mockFetch.mockResolvedValue(jsonResponse(null, { ok: false, status: 404 }))
 

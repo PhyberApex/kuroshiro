@@ -1,5 +1,6 @@
 import type { Plugin } from '../entities/plugin.entity.js'
 import type { DataSourceFetchOutcomeService } from '../services/data-source-fetch-outcome.service.js'
+import type { PluginDataSourceStateService } from '../services/plugin-data-source-state.service.js'
 import type { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
 import type { PluginTemplateContextService } from '../services/plugin-template-context.service.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -13,6 +14,7 @@ describe('pluginRefreshService', () => {
   let renderCache: { renderAndCache: ReturnType<typeof vi.fn> }
   let templateContext: { contextFor: ReturnType<typeof vi.fn> }
   let fetchOutcome: { recordOutcomes: ReturnType<typeof vi.fn> }
+  let sourceStates: { save: ReturnType<typeof vi.fn> }
   let pluginRepo: ReturnType<typeof createMockRepository<Plugin>>
   let service: PluginRefreshService
 
@@ -20,11 +22,13 @@ describe('pluginRefreshService', () => {
     renderCache = { renderAndCache: vi.fn() }
     templateContext = { contextFor: vi.fn() }
     fetchOutcome = { recordOutcomes: vi.fn() }
+    sourceStates = { save: vi.fn() }
     pluginRepo = createMockRepository<Plugin>()
     service = new PluginRefreshService(
       asService<PluginRenderCacheService>(renderCache),
       asService<PluginTemplateContextService>(templateContext),
       asService<DataSourceFetchOutcomeService>(fetchOutcome),
+      asService<PluginDataSourceStateService>(sourceStates),
       asRepository(pluginRepo),
     )
   })
@@ -46,6 +50,17 @@ describe('pluginRefreshService', () => {
       weather: { error: true, message: 'Failed to parse URL from not a url/••••••••' },
     })
     expect(renderCache.renderAndCache).toHaveBeenCalledWith(plugin, { weather: sourceData.weather })
+  })
+
+  it('saves the state each transform wrote on a scheduled tick, and never from any other render', async () => {
+    const plugin = makePlugin({ dataSources: [makePluginDataSource({ id: 'ds-1', name: 'weather' })] })
+    templateContext.contextFor.mockResolvedValue({ context: {}, fieldValues: {}, resolvedFieldValues: {}, sourceData: { weather: {} }, sourceStates: { weather: { cursor: 'abc' } } })
+
+    await service.refresh(plugin, { scheduled: false })
+    expect(sourceStates.save).not.toHaveBeenCalled()
+
+    await service.refresh(plugin, { scheduled: true })
+    expect(sourceStates.save).toHaveBeenCalledWith(plugin.dataSources, { weather: { cursor: 'abc' } })
   })
 
   it('leaves a Field Value that is not password-type alone', async () => {

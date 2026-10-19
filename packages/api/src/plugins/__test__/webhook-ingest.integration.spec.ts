@@ -22,6 +22,7 @@ import { PluginsService } from '../plugins.service.js'
 import { DataSourceFetchOutcomeService } from '../services/data-source-fetch-outcome.service.js'
 import { PluginAssignmentsService } from '../services/plugin-assignments.service.js'
 import { PluginDataResolverService } from '../services/plugin-data-resolver.service.js'
+import { PluginDataSourceStateService } from '../services/plugin-data-source-state.service.js'
 import { PluginFieldValuesService } from '../services/plugin-field-values.service.js'
 import { PluginRefreshService } from '../services/plugin-refresh.service.js'
 import { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
@@ -103,6 +104,7 @@ describe('webhook ingest integration', () => {
         PluginRefreshService,
         PluginTemplateContextService,
         { provide: DataSourceFetchOutcomeService, useValue: {} },
+        { provide: PluginDataSourceStateService, useValue: {} },
         { provide: getRepositoryToken(PluginEntity), useValue: pluginRepo },
         { provide: getRepositoryToken(DevicePlugin), useValue: {} },
         { provide: getRepositoryToken(ScreenEntity), useValue: screenRepo },
