@@ -1,10 +1,10 @@
-import type { DeviceSummary, ScreenRead } from 'kuroshiro-shared'
+import type { DeviceSummary } from 'kuroshiro-shared'
 import type { Browser, Page } from 'playwright'
 import { readFile } from 'node:fs/promises'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest'
 import { connectDevice } from './devicePlayer.ts'
-import { screenStates } from './screensOfDevice.ts'
+import { addExternalScreen, screenStates } from './screensOfDevice.ts'
 
 const baseUrl = inject('baseUrl')
 
@@ -18,18 +18,6 @@ async function devicesOfInstance() {
 /** The Devices other journeys made, by id and name. */
 async function otherDevices(id: string) {
   return (await devicesOfInstance()).filter(summary => summary.id !== id).map(summary => ({ id: summary.id, name: summary.name }))
-}
-
-/** An External link that is fetched at every turn, so adding it fetches and converts nothing. */
-async function addExternalScreen(deviceId: string, name: string) {
-  const response = await fetch(new URL('api/screens', baseUrl), {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ kind: 'external', deviceId, name, url: new URL('screens/welcome.png', baseUrl).href, fetchManual: false }),
-  })
-  if (!response.ok)
-    throw new Error(`Adding the Screen ${name} answered ${response.status}: ${await response.text()}`)
-  return await response.json() as ScreenRead
 }
 
 /** What each row of the summary says, by its label. */
@@ -53,17 +41,17 @@ describe('keeping a Configuration Archive', () => {
   it('undoes a Screen\'s rename by a Configuration Import of the Configuration Archive exported before it, and imports the same archive again to the same end', async () => {
     const device = await connectDevice(baseUrl, { mac: 'A4:C1:38:5F:0D:03' })
     const { id, name } = (await devicesOfInstance()).find(summary => summary.friendlyId === device.setup.friendly_id)!
-    const screen = await addExternalScreen(id, 'Before')
+    const screen = await addExternalScreen(baseUrl, id, 'Before')
     const othersBefore = await otherDevices(id)
 
     const page = await browser.newPage()
     const failures: string[] = []
     page.on('pageerror', error => failures.push(error.message))
     page.on('requestfailed', request => failures.push(`${request.method()} ${request.url()}`))
+    const exporting = page.getByRole('region', { name: 'Configuration Export' })
     const importing = page.getByRole('region', { name: 'Configuration Import' })
 
     await page.goto(new URL('instance/archive', baseUrl).href)
-    const exporting = page.getByRole('region', { name: 'Configuration Export' })
     const downloading = page.waitForEvent('download')
     await exporting.getByRole('group', { name: 'With its secrets' }).getByRole('button', { name: 'Export', exact: true }).click()
     const download = await downloading
