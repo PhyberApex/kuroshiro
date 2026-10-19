@@ -202,6 +202,16 @@ describe('the Data Sources part of the Plugin\'s form', () => {
       expect(fetchProblems({ url: 'ftp://api.test' })).toEqual([{ path: 'dataSources.0.url', message }])
     })
 
+    it('takes several addresses, one per line, and one that starts with Liquid, as TRMNL reads a Polling URL', () => {
+      const message = 'Enter an address that starts with http:// or https://.'
+
+      expect(fetchProblems({ url: 'https://a.test/one\n\n  https://b.test/two\r\n' })).toEqual([])
+      expect(fetchProblems({ url: '{% for feed in feeds %}{{ feed }}\n{% endfor %}' })).toEqual([])
+      expect(fetchProblems({ url: '{{ base }}/api/today' })).toEqual([])
+      expect(fetchProblems({ url: 'https://a.test/one\nftp://b.test' })).toEqual([{ path: 'dataSources.0.url', message }])
+      expect(fetchProblems({ url: 'https://a.test/one\nhttp://192.168.1.20/status' }, demoPart)).toEqual([{ path: 'dataSources.0.url', message: 'In the demo a Data Source can only fetch a public address.' }])
+    })
+
     it('refuses an address that is not public in demo mode only', () => {
       const message = 'In the demo a Data Source can only fetch a public address.'
 

@@ -201,7 +201,17 @@ describe('pluginTemplateContextService', () => {
 
     it.each([
       ['a list', [1, 2]],
-      ['a scalar', 'text'],
+      ['text', '<rss/>'],
+    ])('lays %s at the root as data, as TRMNL wraps one polling URL\'s response that is not an object (ADR-0058)', async (_, result) => {
+      const resolveAll = vi.fn().mockResolvedValue({ source: result })
+
+      const { context } = await createPluginTemplateContextService({ data: 'from the Field Value' }, { resolveAll }).contextFor(lone, [])
+
+      expect(context).toMatchObject({ data: result, source: result })
+    })
+
+    it.each([
+      ['nothing', null],
       ['an error marker', { error: true, message: 'HTTP 500' }],
     ])('lays nothing at the root when its result is %s', async (_, result) => {
       const resolveAll = vi.fn().mockResolvedValue({ source: result })

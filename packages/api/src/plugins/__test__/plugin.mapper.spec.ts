@@ -409,6 +409,16 @@ describe('toPreviewData', () => {
     expect(names.map(row => `${row.origin}:${row.name}`)).toEqual(['dataSource:source', 'dataSource:author', 'dataSource:title', 'sensors:sensors', 'trmnl:trmnl'])
   })
 
+  it('names data for a lone Data Source that resolved to a list, as the template reads it at the root (ADR-0058)', () => {
+    const plugin = makePlugin({ dataSources: [makePluginDataSource({ name: 'source' })] })
+    const sourceData = { source: [{ title: 'A' }] }
+    const context = { data: sourceData.source, ...sourceData, trmnl: {}, sensors: {} }
+
+    const names = toPreviewData(plugin, { context, fieldValues: {}, resolvedFieldValues: {}, sourceData, sourceStates: {} }, NOW).names
+
+    expect(names.map(row => `${row.origin}:${row.name}`)).toEqual(['dataSource:source', 'dataSource:data', 'sensors:sensors', 'trmnl:trmnl'])
+  })
+
   it('names a name the data replaces once, as the data', () => {
     const plugin = makePlugin({
       kind: 'Webhook',

@@ -54,7 +54,7 @@ export class PluginDataSourceDto {
 
   @IsOptional()
   @IsString()
-  @Matches(/^https?:\/\//i, { message: 'url must start with http:// or https://' })
+  @Matches(/^\s*(?:https?:\/\/|\{\{|\{%)/i, { message: 'url must start with http:// or https://' })
   url?: string
 
   @IsOptional()

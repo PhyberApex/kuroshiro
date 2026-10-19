@@ -6,7 +6,7 @@ import { DATA_SOURCE_METHODS } from 'kuroshiro-shared'
 import { computed } from 'vue'
 import Field from '@/components/Field.vue'
 import Select from '@/components/Select.vue'
-import TextInput from '@/components/TextInput.vue'
+import Textarea from '@/components/Textarea.vue'
 import DataSourceCode from './DataSourceCode.vue'
 import { codeProblems } from './pluginDataSources'
 import { fieldId } from './pluginPage'
@@ -34,7 +34,7 @@ const at = (field: string) => `${props.path}.${field}`
     v-slot="{ control }"
     class="request"
     label="Request"
-    hint="The response must be JSON. A Field Value can be used as {{ keyname }} here, in the headers and in the body."
+    hint="The response must be JSON. A Field Value can be used as {{ keyname }} here, in the headers and in the body. Several addresses, one per line, read as IDX_0, IDX_1 and so on."
     :error="errors[at('url')]"
   >
     <span class="request-line">
@@ -45,7 +45,7 @@ const at = (field: string) => `${props.path}.${field}`
         :options="METHOD_OPTIONS"
         @update:model-value="method => source.method = method ?? 'GET'"
       />
-      <TextInput v-model="source.url" v-bind="control" wide spellcheck="false" />
+      <Textarea v-model="source.url" v-bind="control" class="addresses" rows="1" spellcheck="false" />
     </span>
   </Field>
   <DataSourceCode
@@ -79,7 +79,13 @@ const at = (field: string) => `${props.path}.${field}`
   .request-line {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
     gap: var(--space-2);
+  }
+
+  :deep(.addresses) {
+    width: 100%;
+    resize: vertical;
   }
 
   :deep(.method) {

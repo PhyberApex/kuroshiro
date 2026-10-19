@@ -154,11 +154,18 @@ export function isPublicAddress(address: string) {
   return !isLocalHost(new URL(address).hostname.toLowerCase().replace(/^\[|\]$/g, ''))
 }
 
+/** Each address the request names, one per line as TRMNL reads a Polling URL; a line that starts with Liquid is rendered first. */
+function addressesOf(url: string) {
+  return url.split(/\r\n|\r|\n/).map(line => line.trim()).filter(line => line !== '')
+}
+
+const startsAsAddress = (line: string) => /^(?:https?:\/\/|\{\{|\{%)/i.test(line)
+
 function addressProblem(url: string, demoMode: boolean) {
-  const address = url.trim()
-  if (!/^https?:\/\//i.test(address))
+  const addresses = addressesOf(url)
+  if (addresses.length === 0 || !addresses.every(startsAsAddress))
     return 'Enter an address that starts with http:// or https://.'
-  return demoMode && !isPublicAddress(address) ? 'In the demo a Data Source can only fetch a public address.' : undefined
+  return demoMode && !addresses.every(isPublicAddress) ? 'In the demo a Data Source can only fetch a public address.' : undefined
 }
 
 const objectProblem = (text: string, message: string) => enteredObject(text) === undefined ? message : undefined
