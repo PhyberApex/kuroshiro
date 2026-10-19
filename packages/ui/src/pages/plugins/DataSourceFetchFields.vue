@@ -3,18 +3,15 @@ import type { DataSourceMethod } from 'kuroshiro-shared'
 import type { DataSourceDraft } from './pluginDataSources'
 import type { SelectOption } from '@/components/selectOption'
 import { DATA_SOURCE_METHODS } from 'kuroshiro-shared'
-import { computed, ref } from 'vue'
-import CodeEditor from '@/components/CodeEditor.vue'
+import { computed } from 'vue'
 import Field from '@/components/Field.vue'
 import Select from '@/components/Select.vue'
 import TextInput from '@/components/TextInput.vue'
-import TuckedSection from '@/components/TuckedSection.vue'
 import DataSourceCode from './DataSourceCode.vue'
 import { codeProblems } from './pluginDataSources'
-import { transformTitle } from './pluginDataSourceWording'
 import { fieldId } from './pluginPage'
 
-/** What a Data Source in Fetch mode is made of: the request, its headers, its body and its transform. */
+/** What a Data Source in Fetch mode is made of: the request, its headers and its body. */
 const props = defineProps<{
   /** The path a save sends the Data Source at: `dataSources.2`. */
   path: string
@@ -27,7 +24,6 @@ const source = defineModel<DataSourceDraft>('source', { required: true })
 const METHOD_OPTIONS: SelectOption<DataSourceMethod>[] = DATA_SOURCE_METHODS.map(method => ({ value: method, label: method }))
 
 const problems = computed(() => codeProblems(source.value))
-const transformOpen = ref(false)
 
 const at = (field: string) => `${props.path}.${field}`
 </script>
@@ -71,12 +67,6 @@ const at = (field: string) => `${props.path}.${field}`
     :error="errors[at('body')]"
     :problem="problems.body"
   />
-  <TuckedSection v-model:open="transformOpen" class="transform" :title="transformTitle(source.transformJs)" heading="h4">
-    <p class="about">
-      JavaScript that reshapes the response before the template sees it. It runs on this server at every fetch.
-    </p>
-    <CodeEditor v-model="source.transformJs" aria-label="Transform" mode="javascript" size="code-input" />
-  </TuckedSection>
 </template>
 
 <style scoped>
@@ -97,9 +87,6 @@ const at = (field: string) => `${props.path}.${field}`
   }
 
   /* An `h4` is the one heading the reset leaves its margins. */
-  .transform :deep(h4) {
-    margin: 0;
-  }
 
   .about {
     margin-bottom: var(--space-3);

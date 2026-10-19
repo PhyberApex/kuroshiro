@@ -245,7 +245,7 @@ export class RecipeUpdateService {
   // put credentials (ADR-0030).
   private buildDataSourceFields(upstream: NormalizedDataSource, existingHeaders: Record<string, string> | undefined) {
     if (upstream.mode === 'literal') {
-      return { mode: upstream.mode, literalValue: upstream.literalValue ?? null }
+      return { mode: upstream.mode, literalValue: upstream.literalValue ?? null, transformJs: upstream.transformJs ?? null }
     }
     return {
       mode: upstream.mode,

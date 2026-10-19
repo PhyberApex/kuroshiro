@@ -267,15 +267,17 @@ describe('pluginImporterService recipe import', () => {
       expect(result.dataSources[0].literalValue).toEqual({})
     })
 
-    it('rejects a "static" strategy recipe that also carries a transform.js', async () => {
+    it('keeps a "static" strategy recipe\'s transform.js on its literal Data Source, since TRMNL runs it on the Field Values', async () => {
       const settings = { name: 'Static Recipe', strategy: 'static', static_data: { title: 'Hello' } }
       const archive = buildFlatRecipeArchive(settings, {
-        'full.liquid': '<div>{{ source.title }}</div>',
-        'transform.js': 'module.exports = (data) => data',
+        'full.liquid': '<div>{{ title }}</div>',
+        'transform.js': 'async function run(input) { return input }\nmodule.exports = { run }',
       })
 
       const service = new PluginImporterService()
-      await expect(service.importFromRecipeArchive(archive, '1')).rejects.toThrow(/transform\.js/i)
+      const result = await service.importFromRecipeArchive(archive, '1')
+
+      expect(result.dataSources[0]).toMatchObject({ name: 'source', mode: 'literal', literalValue: { title: 'Hello' }, transformJs: 'async function run(input) { return input }\nmodule.exports = { run }' })
     })
 
     it('rejects a recipe with a missing/unrecognized strategy, naming the value', async () => {
@@ -324,15 +326,46 @@ describe('pluginImporterService recipe import', () => {
       expect(result.sourceRecipeId).toBe('490885')
     })
 
-    it('rejects a "none" strategy recipe that also carries a transform.js', async () => {
-      const settings = { name: 'None Recipe', strategy: 'none' }
+    it('gives a "none" strategy recipe with a transform.js an empty literal Data Source named "source" to run it on', async () => {
+      const settings = { name: 'None Recipe', strategy: 'none', static_data: '' }
       const archive = buildFlatRecipeArchive(settings, {
-        'full.liquid': '<div>No data</div>',
-        'transform.js': 'module.exports = (data) => data',
+        'full.liquid': '<div>{{ computed }}</div>',
+        'transform.js': 'function run(input) { return { computed: 1 } }',
       })
 
       const service = new PluginImporterService()
-      await expect(service.importFromRecipeArchive(archive, '1')).rejects.toThrow(/transform\.js/i)
+      const result = await service.importFromRecipeArchive(archive, '1')
+
+      expect(result.dataSources).toEqual([expect.objectContaining({ name: 'source', mode: 'literal', literalValue: {}, transformJs: 'function run(input) { return { computed: 1 } }' })])
+    })
+
+    it('gives a polling recipe with no polling_url and a transform.js an empty literal Data Source named "source", as the transform fetches itself', async () => {
+      const settings = { name: 'Self-fetching Recipe', strategy: 'polling', polling_url: '' }
+      const archive = buildFlatRecipeArchive(settings, {
+        'full.liquid': '<div>{{ computed }}</div>',
+        'transform.js': 'async function run(input) { return { computed: 1 } }',
+      })
+
+      const service = new PluginImporterService()
+      const result = await service.importFromRecipeArchive(archive, '1')
+
+      expect(result.dataSources).toEqual([expect.objectContaining({ name: 'source', mode: 'literal', literalValue: {}, transformJs: 'async function run(input) { return { computed: 1 } }' })])
+    })
+
+    it.each(['python', 'ruby', 'php'])('refuses a recipe whose serverless code is %s, which Kuroshiro cannot run', async (language) => {
+      const settings = { name: 'Other Language', strategy: 'polling', polling_url: 'https://api.example.com', serverless_language: language }
+      const archive = buildFlatRecipeArchive(settings, { 'full.liquid': 'x', [`transform.${language === 'python' ? 'py' : language === 'ruby' ? 'rb' : 'php'}`]: 'def run(input): return input' })
+
+      const service = new PluginImporterService()
+      await expect(service.importFromRecipeArchive(archive, '1')).rejects.toMatchObject({ code: 'recipe-serverless-language', details: { language } })
+    })
+
+    it('imports a recipe that names a serverless language but ships no serverless code', async () => {
+      const settings = { name: 'Node by default', strategy: 'polling', polling_url: 'https://api.example.com', serverless_language: 'python' }
+      const archive = buildFlatRecipeArchive(settings, { 'full.liquid': 'x' })
+
+      const service = new PluginImporterService()
+      expect((await service.importFromRecipeArchive(archive, '1')).name).toBe('Node by default')
     })
 
     it('falls back to an empty object when polling_headers is malformed JSON', async () => {

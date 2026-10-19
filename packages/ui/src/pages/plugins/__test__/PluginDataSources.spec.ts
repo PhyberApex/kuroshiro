@@ -331,7 +331,7 @@ describe('the Data Sources of a Plugin', () => {
       await expect.poll(() => faked.saves).toEqual([{
         dataSources: [
           { id: FORECAST.id, name: 'forecast', mode: 'fetch', method: 'GET', url: 'https://api.open-meteo.com/v2/forecast', headers: {}, transformJs: null },
-          { id: 'holidays', name: 'holidays', mode: 'literal', literalValue: { next: 'Reformation Day' } },
+          { id: 'holidays', name: 'holidays', mode: 'literal', literalValue: { next: 'Reformation Day' }, transformJs: null },
           { name: 'tides', mode: 'fetch', method: 'GET', url: 'https://tides.test/v2/station/4411', headers: {}, transformJs: null },
         ],
       }])
@@ -450,7 +450,7 @@ describe('the Data Sources of a Plugin', () => {
       await typeCode(screen, 'forecast', 'Body', '{{"region": "north"')
 
       await row.getByRole('button', { name: 'Transform · JavaScript, 2 lines' }).click()
-      await expect.element(row.getByText('JavaScript that reshapes the response before the template sees it. It runs on this server at every fetch.')).toBeVisible()
+      await expect.element(row.getByText('JavaScript that reshapes the data before the template sees it. It runs on this server at every scheduled render, with the fetched data or the Value laid over the template context as its input.')).toBeVisible()
       await typeCode(screen, 'forecast', 'Transform', '')
       await expect.element(row.getByRole('button', { name: 'Transform · none' })).toBeVisible()
 

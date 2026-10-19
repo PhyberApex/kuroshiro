@@ -167,6 +167,22 @@ function tryParseJson(text: string): unknown {
   }
 }
 
+const FOREIGN_SERVERLESS_FILES: Record<string, string> = { 'transform.py': 'python', 'transform.rb': 'ruby', 'transform.php': 'php' }
+
+/** The serverless code of a Recipe written in a language Kuroshiro has no runtime for (ADR-0051). */
+function foreignServerlessOf(entries: AdmZip.IZipEntry[]): { language: string } | null {
+  const language = entries.map(entry => FOREIGN_SERVERLESS_FILES[path.basename(entry.entryName)]).find(found => found !== undefined)
+  return language ? { language } : null
+}
+
+function recipeTransformJsOf(entries: AdmZip.IZipEntry[]): string | null {
+  const entry = entries.find(candidate => path.basename(candidate.entryName) === 'transform.js')
+  return entry?.getData().toString('utf8') || null
+}
+
+/** A transform with no URL to fetch for it: it computes from the Field Values, or fetches on its own, over an empty value (ADR-0051). */
+const selfFetchingDataSource = (transformJs: string): ParsedDataSource => ({ name: 'source', mode: 'literal', literalValue: {}, transformJs })
+
 /** A Plugin read from a Recipe, tied to it by the Recipe's id. */
 export type RecipePlugin = ParsedPlugin & { sourceRecipeId: string }
 
@@ -347,6 +363,11 @@ export class PluginImporterService {
     const settingsContent = settingsEntry.getData().toString('utf8')
     const recipeSettings = parseYamlObject<RecipeSettings>(settingsContent, 'Invalid settings.yml')
 
+    const foreignServerless = foreignServerlessOf(entries)
+    if (foreignServerless) {
+      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'recipe-serverless-language', `The Recipe's serverless code is ${foreignServerless.language}, which Kuroshiro cannot run; only JavaScript transforms run here.`, { language: foreignServerless.language })
+    }
+
     if (recipeFlag(recipeSettings.oauth_enabled)) {
       throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'recipe-oauth', 'The Recipe signs in to another service with OAuth, which is not supported.')
     }
@@ -377,20 +398,14 @@ export class PluginImporterService {
   // A `strategy: static` Recipe carries its fixed payload as `static_data`
   // instead of a `polling_*` endpoint — it imports as a single `literal`-mode
   // Data Source named 'source', matching the existing single-implicit-source
-  // naming convention (issue #794 / ADR-0037). Nothing fetches for a literal
-  // source, so a `transform.js` alongside it has nothing to transform.
+  // naming convention (issue #794 / ADR-0037). Its transform.js runs on that
+  // value and the Field Values, as on TRMNL (ADR-0051).
   private importStaticRecipe(entries: AdmZip.IZipEntry[], settingsContent: string, recipeSettings: RecipeSettings, recipeId: string): RecipePlugin {
-    const hasTransform = entries.some(entry =>
-      entry.entryName === 'transform.js' || entry.entryName.endsWith('/transform.js'),
-    )
-    if (hasTransform) {
-      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'recipe-static-transform', 'The Recipe holds fixed data and a transform.js, which has nothing to transform.')
-    }
-
     const staticDataSource: ParsedDataSource = {
       name: 'source',
       mode: 'literal',
       literalValue: recipeStaticData(recipeSettings.static_data),
+      transformJs: recipeTransformJsOf(entries),
     }
 
     const reshapedZip = this.reshapeRecipeArchive(entries, settingsContent, recipeSettings)
@@ -406,17 +421,11 @@ export class PluginImporterService {
   // A `strategy: none` Recipe has no data source at all: it renders only
   // from its Template, Plugin Fields and the `trmnl` object, the same shape
   // a Poll-kind Plugin without Data Sources already renders (issue #1207 /
-  // #1261). A transform.js alongside it has nothing to transform.
+  // #1261). A transform.js alongside it runs over an empty value (ADR-0051).
   private importNoneRecipe(entries: AdmZip.IZipEntry[], settingsContent: string, recipeSettings: RecipeSettings, recipeId: string): RecipePlugin {
-    const hasTransform = entries.some(entry =>
-      entry.entryName === 'transform.js' || entry.entryName.endsWith('/transform.js'),
-    )
-    if (hasTransform) {
-      throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'recipe-none-transform', 'The Recipe has no data source and a transform.js, which has nothing to transform.')
-    }
-
+    const transformJs = recipeTransformJsOf(entries)
     const reshapedZip = this.reshapeRecipeArchive(entries, settingsContent, recipeSettings)
-    const parsed = withFullTemplate(this.parseZip(reshapedZip, `recipe-${recipeId}`, []))
+    const parsed = withFullTemplate(this.parseZip(reshapedZip, `recipe-${recipeId}`, transformJs ? [selfFetchingDataSource(transformJs)] : []))
 
     return {
       ...parsed,
@@ -565,6 +574,7 @@ export class PluginImporterService {
       name,
       mode: 'literal',
       literalValue: entry.literal_value ?? {},
+      transformJs: entry.transform_js || null,
     }
   }
 
@@ -590,7 +600,7 @@ export class PluginImporterService {
     const endpoint = settings.endpoint || settings.polling_url
 
     if (!endpoint || endpoint.trim() === '') {
-      return null
+      return transformJs ? selfFetchingDataSource(transformJs) : null
     }
 
     return {

@@ -79,7 +79,7 @@ describe('the Recipe Update Check', () => {
       '  return data',
       '    .phase',
     ])
-    expect(linesOf(buildUpdateItem({ itemType: 'dataSource', upstream: { mode: 'literal', literalValue: { phase: 'full' } } }), 'upstream')).toEqual([
+    expect(linesOf(buildUpdateItem({ itemType: 'dataSource', upstream: { mode: 'literal', literalValue: { phase: 'full' }, transformJs: null } }), 'upstream')).toEqual([
       'fixed data:',
       '  {',
       '    "phase": "full"',

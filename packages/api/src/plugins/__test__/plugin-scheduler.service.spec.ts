@@ -513,7 +513,7 @@ describe('pluginSchedulerService', () => {
       service.schedulePlugin(plugin)
       await service.runTick(plugin)
 
-      expect(mockTransformer.transform).toHaveBeenCalledWith('return { totalShort: "3.5k" }', { raw: 'graphql body' })
+      expect(mockTransformer.transform).toHaveBeenCalledWith('return { totalShort: "3.5k" }', expect.objectContaining({ raw: 'graphql body', trmnl: expect.anything() }))
       expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(
         plugin,
         expect.objectContaining({ gh: { totalShort: '3.5k' } }),

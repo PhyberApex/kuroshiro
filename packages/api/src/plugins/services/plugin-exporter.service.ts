@@ -64,6 +64,7 @@ export class PluginExporterService {
               name: source.name,
               mode: 'literal',
               literal_value: source.literalValue ?? null,
+              ...(source.transformJs ? { transform_js: source.transformJs } : {}),
             }
           : {
               name: source.name,

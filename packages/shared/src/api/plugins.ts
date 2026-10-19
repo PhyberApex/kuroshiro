@@ -48,7 +48,7 @@ export interface DataSourceRead {
   id: string
   name: string
   mode: DataSourceMode
-  /** `null`, like `url`, `headers`, `body` and `transformJs`, for a `literal` Data Source. */
+  /** `null`, like `url`, `headers` and `body`, for a `literal` Data Source; a `transformJs` belongs to either mode. */
   method: DataSourceMethod | null
   url: string | null
   headers: Record<string, string> | null
@@ -306,7 +306,7 @@ export type RecipeDataSource
     body: Record<string, unknown>
     transformJs: string | null
   }
-  | { mode: 'literal', literalValue: DataSourceLiteralValue }
+  | { mode: 'literal', literalValue: DataSourceLiteralValue, transformJs: string | null }
 
 /** A Plugin Field as a Recipe Update Check compares it, in the words of `PluginFieldRead`. */
 export type RecipeField = Omit<PluginFieldRead, 'id'>

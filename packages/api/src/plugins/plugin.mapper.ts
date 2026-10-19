@@ -76,7 +76,7 @@ type FetchSettings = Pick<DataSourceRead, 'method' | 'url' | 'headers' | 'body' 
 
 function toFetchSettings(source: PluginDataSource): FetchSettings {
   if (source.mode !== 'fetch')
-    return { method: null, url: null, headers: null, body: null, transformJs: null, literalValue: source.literalValue ?? null }
+    return { method: null, url: null, headers: null, body: null, transformJs: source.transformJs ?? null, literalValue: source.literalValue ?? null }
   return {
     method: source.method === 'POST' ? 'POST' : 'GET',
     url: source.url ?? null,

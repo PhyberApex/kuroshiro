@@ -31,6 +31,11 @@ import { STARTER_TEMPLATE } from './starter-template.js'
 
 // A `literal` Data Source is never fetched, so one switched to it starts over (ADR-0025).
 const NO_FETCH_OUTCOME = { fetchFailureStreak: 0, lastFetchAttemptAt: null, lastFetchSucceededAt: null, lastFetchError: null }
+const NO_REQUEST_COLUMNS = { method: 'GET', url: null, headers: null, body: null }
+
+function requestColumnsOf(sourceData: PluginDataSourceDto) {
+  return { method: sourceData.method || 'GET', url: sourceData.url, headers: sourceData.headers || {}, body: sourceData.body || {} }
+}
 
 export function pluginNotFound(id: string): ApiException {
   return new ApiException(HttpStatus.NOT_FOUND, 'plugin-not-found', 'Plugin not found', { id })
@@ -537,24 +542,14 @@ export class PluginsService implements OnModuleInit {
     }
   }
 
-  /** A column the mode does not use is `null` (`method`, which cannot be, its default), so a Data Source saved under the other mode drops what it held. */
+  /** A column the mode does not use is `null` (`method`, which cannot be, its default), so a Data Source saved under the other mode drops what it held; a transform belongs to both modes. */
   private buildDataSourceFields(sourceData: PluginDataSourceDto, index: number) {
     const mode = sourceData.mode || 'fetch'
-    const common = { name: sourceData.name, mode, order: sourceData.order ?? index }
+    const common = { name: sourceData.name, mode, order: sourceData.order ?? index, transformJs: sourceData.transformJs || null }
 
-    if (mode === 'literal') {
-      return { ...common, method: 'GET', url: null, headers: null, body: null, transformJs: null, literalValue: sourceData.literalValue ?? null }
-    }
-
-    return {
-      ...common,
-      method: sourceData.method || 'GET',
-      url: sourceData.url,
-      headers: sourceData.headers || {},
-      body: sourceData.body || {},
-      transformJs: sourceData.transformJs || null,
-      literalValue: null,
-    }
+    return mode === 'literal'
+      ? { ...common, ...NO_REQUEST_COLUMNS, literalValue: sourceData.literalValue ?? null }
+      : { ...common, ...requestColumnsOf(sourceData), literalValue: null }
   }
 
   private validateDataSourceNames(dataSources: Array<{ name?: string }>, fields: Array<{ keyname?: string }>): void {
