@@ -31,6 +31,7 @@ export const buildPluginField = defineBuilder<PluginFieldRead>(() => ({
   required: false,
   order: 0,
   options: null,
+  attributes: {},
 }))
 
 export const buildPluginDetail = defineBuilder<PluginDetail>(() => ({

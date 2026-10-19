@@ -1,4 +1,4 @@
-import type { PluginFieldOption } from 'kuroshiro-shared'
+import type { PluginFieldAttributes, PluginFieldOption } from 'kuroshiro-shared'
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { Plugin } from './plugin.entity.js'
 
@@ -27,6 +27,10 @@ export class PluginField {
 
   @Column('boolean', { default: false })
   required: boolean = false
+
+  /** What the Plugin Field carries beyond its type: placeholder, hint, group, bounds (ADR-0053). */
+  @Column('jsonb', { default: {} })
+  attributes: PluginFieldAttributes = {}
 
   @Column('int', { default: 0 })
   order: number = 0

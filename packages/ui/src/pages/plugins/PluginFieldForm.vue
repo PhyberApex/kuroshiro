@@ -53,7 +53,7 @@ const at = (name: string) => `${props.path}.${name}`
       <TextInput v-model="field.label" v-bind="control" prose wide />
     </Field>
     <Field v-slot="{ control }" label="Type">
-      <Select v-model="type" v-bind="control" class="type" :options="isCredit ? CREDIT : OFFERED" :disabled="isCredit" />
+      <Select v-model="type" v-bind="control" class="type" :options="isCredit ? CREDIT : OFFERED" :disabled="isCredit" :filter="false" />
     </Field>
     <Field v-if="field.type !== 'password'" v-slot="{ control }" label="Default">
       <TextInput v-model="field.default" v-bind="control" prose wide placeholder="None" />

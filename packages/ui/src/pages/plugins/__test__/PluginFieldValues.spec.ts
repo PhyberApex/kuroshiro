@@ -71,6 +71,41 @@ describe('the Field Values of a Plugin', () => {
       await expect.element(screen.getByRole('textbox', { name: 'zone' })).toHaveValue('')
     })
 
+    it('is a date, time or web address input, with the Plugin Field\'s placeholder, bounds, length and rows, and its hint under the help text', async () => {
+      fakeWeather([
+        field('start', { type: 'date' }),
+        field('at', { type: 'time' }),
+        field('feed', { type: 'url', attributes: { placeholder: 'https://www.site.com/rss', hint: 'Please include http:// or https://' }, helpText: 'URL of the feed.' }),
+        field('posts', { type: 'number', attributes: { min: 1, max: 5, step: 0.5, placeholder: '3' } }),
+        field('prompt', { type: 'text', attributes: { rows: 8, maxlength: 200 } }),
+      ], { start: '2026-07-04', at: '09:30' })
+      const screen = await mountPlugin()
+
+      expect((rowOf(screen, 'start').querySelector('input') as HTMLInputElement).type).toBe('date')
+      expect((rowOf(screen, 'start').querySelector('input') as HTMLInputElement).value).toBe('2026-07-04')
+      expect((rowOf(screen, 'at').querySelector('input') as HTMLInputElement).type).toBe('time')
+      expect((rowOf(screen, 'at').querySelector('input') as HTMLInputElement).value).toBe('09:30')
+      const feed = rowOf(screen, 'feed').querySelector('input') as HTMLInputElement
+      expect([feed.type, feed.placeholder]).toEqual(['url', 'https://www.site.com/rss'])
+      expect([...rowOf(screen, 'feed').querySelectorAll('.help, .hint')].map(read)).toEqual(['URL of the feed.', 'Please include http:// or https://'])
+      const posts = rowOf(screen, 'posts').querySelector('input') as HTMLInputElement
+      expect([posts.min, posts.max, posts.step, posts.placeholder]).toEqual(['1', '5', '0.5', '3'])
+      const prompt = rowOf(screen, 'prompt').querySelector('textarea') as HTMLTextAreaElement
+      expect([prompt.rows, prompt.maxLength]).toEqual([8, 200])
+      await expectAccessible()
+    })
+
+    it('shows the rows of a group under its name, after the rows that belong to none', async () => {
+      fakeWeather([
+        field('person_1_name', { label: 'Name', attributes: { group: 'Person 1' } }),
+        field('people', { label: 'Birthdays to display' }),
+        field('person_1_birthdate', { label: 'Birthdate', type: 'date', attributes: { group: 'Person 1' } }),
+      ])
+      await mountPlugin()
+
+      expect([...document.querySelectorAll('#values .group-name, #values label.label')].map(read)).toEqual(['Birthdays to display', 'Person 1', 'Name', 'Birthdate'])
+    })
+
     it('is a textarea for multi-line text and a number input for a number', async () => {
       fakeWeather([field('greeting', { type: 'text' }), field('days', { type: 'number' })], { greeting: 'Moin\nmoin', days: '3' })
       const screen = await mountPlugin()

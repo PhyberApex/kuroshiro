@@ -111,7 +111,7 @@ describe('the Recipe Update Check', () => {
       'url: ',
       'body: {"city":"Berlin"}',
     ])
-    expect(linesOf(field({ upstream: { keyname: 'city', label: 'City', type: 'string', helpText: null, default: null, required: false, order: 2, options: null } }), 'upstream')).toEqual([
+    expect(linesOf(field({ upstream: { keyname: 'city', label: 'City', type: 'string', helpText: null, default: null, required: false, order: 2, options: null, attributes: {} } }), 'upstream')).toEqual([
       'label: City',
       'type: string',
       'required: no',

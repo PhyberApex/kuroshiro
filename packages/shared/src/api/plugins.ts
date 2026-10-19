@@ -68,6 +68,21 @@ export interface PluginFieldOption {
   value: string
 }
 
+/** What a Plugin Field carries beyond its type, named as TRMNL's form builder names it (ADR-0053). */
+export interface PluginFieldAttributes {
+  /** An example value shown while the control is empty: url, string, text, number and code. */
+  placeholder?: string
+  /** TRMNL's `help_text`: a third line under the help text. */
+  hint?: string
+  /** TRMNL's `group`: the Plugin Fields of one group are shown together under its name. */
+  group?: string
+  min?: number
+  max?: number
+  step?: number
+  maxlength?: number
+  rows?: number
+}
+
 export interface PluginFieldRead {
   id: string
   keyname: string
@@ -80,6 +95,7 @@ export interface PluginFieldRead {
   order: number
   /** `null` unless the Plugin Field offers a choice. */
   options: PluginFieldOption[] | null
+  attributes: PluginFieldAttributes
 }
 
 /** A password Field Value is never read back; it reports only whether one is stored. */
@@ -166,6 +182,8 @@ export interface PluginFieldInput {
   options?: PluginFieldOption[] | null
   required?: boolean
   order?: number
+  /** Left out, a Plugin Field has none. */
+  attributes?: PluginFieldAttributes
 }
 
 export interface CreatePollPluginInput {

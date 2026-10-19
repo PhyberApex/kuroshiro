@@ -49,10 +49,14 @@ export function valuesAmong(keynames: string[], entered: Record<string, string>,
   }))
 }
 
-export type FieldControl = 'text' | 'textarea' | 'number' | 'switch' | 'select' | 'secret'
+export type FieldControl = 'text' | 'url' | 'date' | 'time' | 'textarea' | 'number' | 'switch' | 'select' | 'secret'
 
 const CONTROLS: Record<string, FieldControl> = {
+  url: 'url',
+  date: 'date',
+  time: 'time',
   text: 'textarea',
+  code: 'textarea',
   number: 'number',
   boolean: 'switch',
   select: 'select',
@@ -96,6 +100,22 @@ export function creditOf(fields: PluginFieldInput[]) {
 }
 
 /** The Plugin Fields that get a row: every one that is an input, once per keyname, in their order. */
+/** A group of rows under its name, or under none for the Plugin Fields of no group. */
+export interface FieldGroup<T> {
+  name: string | null
+  fields: T[]
+}
+
+/** The rows in their groups: those of no group first, then each group in the order it first appears, each keeping the rows' order. */
+export function groupsOf<T extends Pick<PluginFieldInput, 'attributes'>>(fields: T[]): FieldGroup<T>[] {
+  const groups = new Map<string | null, T[]>([[null, []]])
+  fields.forEach((field) => {
+    const name = field.attributes?.group?.trim() || null
+    groups.set(name, [...groups.get(name) ?? [], field])
+  })
+  return [...groups].filter(([name, grouped]) => name === null ? true : grouped.length > 0).map(([name, grouped]) => ({ name, fields: grouped }))
+}
+
 export function fieldsWithRow(fields: PluginFieldInput[]) {
   return fields.filter((field, index) => field.fieldType !== CREDIT_TYPE
     && field.keyname !== ''

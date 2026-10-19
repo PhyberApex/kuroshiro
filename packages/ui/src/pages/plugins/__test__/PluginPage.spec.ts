@@ -580,9 +580,9 @@ describe('the Plugin page', () => {
           { ...SOURCE, id: 'c', name: 'tides' },
         ],
         fields: [
-          { id: 'f1', keyname: 'latitude', label: 'Latitude', type: 'string', helpText: null, default: null, required: true, order: 0, options: null },
-          { id: 'f2', keyname: 'api_key', label: 'API key', type: 'password', helpText: null, default: null, required: true, order: 1, options: null },
-          { id: 'f3', keyname: 'units', label: 'Units', type: 'string', helpText: null, default: 'metric', required: true, order: 2, options: null },
+          { id: 'f1', keyname: 'latitude', label: 'Latitude', type: 'string', helpText: null, default: null, required: true, order: 0, options: null, attributes: {} },
+          { id: 'f2', keyname: 'api_key', label: 'API key', type: 'password', helpText: null, default: null, required: true, order: 1, options: null, attributes: {} },
+          { id: 'f3', keyname: 'units', label: 'Units', type: 'string', helpText: null, default: 'metric', required: true, order: 2, options: null, attributes: {} },
         ],
         fieldValues: { latitude: { secret: false, value: null }, api_key: { secret: true, set: false }, units: { secret: false, value: null } },
         needsValues: true,
@@ -614,7 +614,7 @@ describe('the Plugin page', () => {
     it('names the one required Plugin Field that is empty', async () => {
       fakePlugin(buildPluginDetail({
         id: 'weather',
-        fields: [{ id: 'f1', keyname: 'latitude', label: 'Latitude', type: 'string', helpText: null, default: null, required: true, order: 0, options: null }],
+        fields: [{ id: 'f1', keyname: 'latitude', label: 'Latitude', type: 'string', helpText: null, default: null, required: true, order: 0, options: null, attributes: {} }],
         fieldValues: { latitude: { secret: false, value: null } },
         needsValues: true,
       }))

@@ -465,7 +465,7 @@ describe('the Data Sources of a Plugin', () => {
   describe('the rules', () => {
     it('stop the save, each with its message, and "Show the first" opens the row and focuses the field', async () => {
       const faked = fakeWeather([FORECAST, POLLEN, HOLIDAYS], {
-        fields: [{ id: 'latitude', keyname: 'latitude', label: 'Latitude', type: 'string', helpText: null, default: null, required: false, order: 0, options: null }],
+        fields: [{ id: 'latitude', keyname: 'latitude', label: 'Latitude', type: 'string', helpText: null, default: null, required: false, order: 0, options: null, attributes: {} }],
         fieldValues: { latitude: { secret: false, value: '52.5' } },
       })
       const screen = await mountPlugin()

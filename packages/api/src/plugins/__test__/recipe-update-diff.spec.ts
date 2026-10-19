@@ -239,6 +239,16 @@ describe('diffRecipeUpdate', () => {
       ])
     })
 
+    it('offers a field whose attributes changed upstream, and nothing for the same attributes', () => {
+      const posts = { keyname: 'posts', fieldType: 'number', name: 'Posts', required: false, order: 1, attributes: { min: 1 } }
+      const snapshot = basePlugin({ fields: [posts] })
+
+      expect(diffRecipeUpdate(snapshot, basePlugin({ fields: [posts] }), basePlugin({ fields: [{ ...posts, attributes: { min: 1, max: 5 } }] })).items).toEqual([
+        expect.objectContaining({ kind: 'changed', conflict: false, itemType: 'field', key: 'posts' }),
+      ])
+      expect(diffRecipeUpdate(snapshot, basePlugin({ fields: [posts] }), basePlugin({ fields: [{ ...posts, attributes: { min: 1 } }] })).items).toEqual([])
+    })
+
     it('never emits an item for a Data Source/template/field that only exists locally', () => {
       const local = basePlugin({ dataSources: [{ name: 'admin-added', mode: 'literal', literalValue: 'x' }] })
       const upstream = basePlugin({ dataSources: [] })

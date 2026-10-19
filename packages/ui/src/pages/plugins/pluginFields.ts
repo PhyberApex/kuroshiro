@@ -1,4 +1,4 @@
-import type { PluginFieldInput, PluginFieldOption, PluginFieldRead } from 'kuroshiro-shared'
+import type { PluginFieldAttributes, PluginFieldInput, PluginFieldOption, PluginFieldRead } from 'kuroshiro-shared'
 import type { FormRow } from './formRows'
 import type { FieldProblem, PluginFormPart } from './pluginForm'
 import { freeName, keptRows, nextAddedKey, sentPathsOf } from './formRows'
@@ -18,6 +18,8 @@ export interface PluginFieldDraft extends FormRow {
   storedOptions: PluginFieldOption[] | null
   helpText: string
   required: boolean
+  /** As read; the form does not edit them yet. */
+  attributes: PluginFieldAttributes
 }
 
 export interface PluginFieldsDraft {
@@ -34,6 +36,9 @@ export const FIELD_TYPE_NAMES = {
   boolean: 'On or off',
   password: 'Password',
   select: 'Select',
+  url: 'Web address',
+  date: 'Date',
+  time: 'Time',
 } as const
 
 export type OfferedFieldType = keyof typeof FIELD_TYPE_NAMES
@@ -55,6 +60,7 @@ function draftOf(field: PluginFieldRead): PluginFieldDraft {
     storedOptions: field.options,
     helpText: field.helpText ?? '',
     required: field.required,
+    attributes: field.attributes,
     removed: false,
   }
 }
@@ -86,6 +92,7 @@ function inputOf(row: PluginFieldDraft, order: number): PluginFieldInput {
     options: row.type === 'select' ? enteredOptions(row) : row.storedOptions,
     required: row.required,
     order,
+    attributes: row.attributes,
   }
 }
 
@@ -142,6 +149,7 @@ export function addedPluginField(rows: PluginFieldDraft[]): PluginFieldDraft {
     storedOptions: null,
     helpText: '',
     required: false,
+    attributes: {},
     removed: false,
   }
 }

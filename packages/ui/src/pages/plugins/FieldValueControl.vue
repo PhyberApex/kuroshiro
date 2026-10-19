@@ -41,6 +41,10 @@ const number = computed({
 
 const options = computed(() => (props.field.options ?? []).filter(option => option.value !== ''))
 
+const attributes = computed(() => props.field.attributes ?? {})
+const placeholder = computed(() => attributes.value.placeholder ?? props.field.defaultValue)
+const inputType = computed(() => kind.value === 'url' || kind.value === 'date' || kind.value === 'time' ? kind.value : 'text')
+
 const chosen = computed({
   get: () => entered.value || props.field.defaultValue || null,
   set: (value) => {
@@ -50,8 +54,8 @@ const chosen = computed({
 </script>
 
 <template>
-  <Textarea v-if="kind === 'textarea'" v-bind="$attrs" v-model="entered" class="prose" rows="3" :invalid="invalid" :placeholder="field.defaultValue" />
-  <NumberInput v-else-if="kind === 'number'" v-bind="$attrs" v-model="number" wide :invalid="invalid" :placeholder="field.defaultValue" />
+  <Textarea v-if="kind === 'textarea'" v-bind="$attrs" v-model="entered" class="prose" :rows="attributes.rows ?? 3" :maxlength="attributes.maxlength" :invalid="invalid" :placeholder="placeholder" />
+  <NumberInput v-else-if="kind === 'number'" v-bind="$attrs" v-model="number" wide :invalid="invalid" :placeholder="placeholder" :min="attributes.min" :max="attributes.max" :step="attributes.step" />
   <template v-else-if="kind === 'switch'">
     <Switch v-bind="$attrs" v-model="on" :error="invalid" />
     <span>{{ on ? 'On' : 'Off' }}</span>
@@ -66,5 +70,5 @@ const chosen = computed({
     :replace-label="`Replace ${label}`"
     placeholder="Not set"
   />
-  <TextInput v-else v-bind="$attrs" v-model="entered" prose wide :invalid="invalid" :placeholder="field.defaultValue" />
+  <TextInput v-else v-bind="$attrs" v-model="entered" :type="inputType" :prose="inputType === 'text'" wide :invalid="invalid" :placeholder="placeholder" :maxlength="attributes.maxlength" />
 </template>

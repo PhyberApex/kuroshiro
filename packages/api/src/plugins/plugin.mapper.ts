@@ -112,6 +112,7 @@ function toPluginFieldRead(field: PluginField): PluginFieldRead {
     required: field.required,
     order: field.order,
     options: field.options ?? null,
+    attributes: field.attributes ?? {},
   }
 }
 

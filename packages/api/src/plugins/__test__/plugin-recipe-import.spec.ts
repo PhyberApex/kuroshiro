@@ -101,6 +101,29 @@ describe('pluginImporterService recipe import', () => {
       expect(result.templates[0].liquidMarkup).toBe('<p>Full</p>')
     })
 
+    it('reads a field\'s placeholder, help_text, group, min, max, step, maxlength and rows into its attributes, numbers as numbers', async () => {
+      const settings = {
+        name: 'Fields Recipe',
+        strategy: 'polling',
+        polling_url: 'https://api.example.com',
+        custom_fields: [
+          { keyname: 'posts', field_type: 'number', name: 'Posts', placeholder: '3', min: '1', max: 5, step: 0.5, help_text: 'Maximum 5.', group: 'Display' },
+          { keyname: 'prompt', field_type: 'text', name: 'Prompt', rows: 8, maxlength: '200' },
+          { keyname: 'city', field_type: 'string', name: 'City' },
+        ],
+      }
+      const archive = buildFlatRecipeArchive(settings)
+
+      const service = new PluginImporterService()
+      const result = await service.importFromRecipeArchive(archive, '1')
+
+      expect(result.fields.map(field => field.attributes)).toEqual([
+        { placeholder: '3', min: 1, max: 5, step: 0.5, hint: 'Maximum 5.', group: 'Display' },
+        { rows: 8, maxlength: 200 },
+        {},
+      ])
+    })
+
     it('imports a transform.js into the Data Source', async () => {
       const settings = { name: 'Transform Recipe', strategy: 'polling', polling_url: 'https://api.example.com' }
       const archive = buildFlatRecipeArchive(settings, {

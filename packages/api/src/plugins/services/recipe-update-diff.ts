@@ -1,4 +1,4 @@
-import type { PluginFieldOption, RecipeUpdateMode, UpdateItemKind, UpdateItemType } from 'kuroshiro-shared'
+import type { PluginFieldAttributes, PluginFieldOption, RecipeUpdateMode, UpdateItemKind, UpdateItemType } from 'kuroshiro-shared'
 import type { JsonObject } from '../../utils/json.js'
 import * as crypto from 'node:crypto'
 
@@ -34,6 +34,8 @@ export interface ComparableField {
   options?: PluginFieldOption[] | null
   required: boolean
   order: number
+  /** Absent in a Recipe Snapshot taken before attributes were kept. */
+  attributes?: PluginFieldAttributes
 }
 
 export interface ComparablePlugin {
@@ -70,6 +72,7 @@ export interface NormalizedField {
   options: PluginFieldOption[] | null
   required: boolean
   order: number
+  attributes: PluginFieldAttributes
 }
 
 export interface UpdateItem {
@@ -125,6 +128,7 @@ function normalizeField(field: ComparableField): NormalizedField {
     options: field.options ?? null,
     required: !!field.required,
     order: field.order ?? 0,
+    attributes: field.attributes ?? {},
   }
 }
 

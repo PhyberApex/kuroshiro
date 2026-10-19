@@ -174,6 +174,7 @@ export function makePluginField(overrides: Partial<PluginField> = {}): PluginFie
     name: 'Test Field',
     required: false,
     order: 0,
+    attributes: {},
     plugin: makePlugin(),
     ...overrides,
   }
