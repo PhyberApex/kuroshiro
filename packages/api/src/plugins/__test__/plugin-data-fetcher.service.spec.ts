@@ -80,10 +80,50 @@ describe('pluginDataFetcherService', () => {
     })
   })
 
-  it('answers the text of a response that is not JSON, as an Atom feed or HTML page', async () => {
-    mockFetch.mockResolvedValue(new Response('<feed><entry/></feed>', { status: 200, headers: { 'content-type': 'application/atom+xml' } }))
+  describe('a response that is not JSON (ADR-0059)', () => {
+    const xml = (body: string, type = 'application/xml') => new Response(body, { status: 200, headers: { 'content-type': type } })
 
-    expect(await service.fetchData('GET', 'https://example.com/feed')).toBe('<feed><entry/></feed>')
+    it('reads an XML feed as TRMNL does: the root element as the top key, a repeated child as a list, a single one as an object, text as a string', async () => {
+      mockFetch.mockResolvedValue(xml('<?xml version="1.0"?><rss version="2.0"><channel><title>Peanuts</title><item><title>Monday</title><link>https://a/1</link></item><item><title>Tuesday</title></item></channel></rss>', 'application/rss+xml'))
+
+      expect(await service.fetchData('GET', 'https://example.com/feed')).toEqual({
+        rss: { version: '2.0', channel: { title: 'Peanuts', item: [{ title: 'Monday', link: 'https://a/1' }, { title: 'Tuesday' }] } },
+      })
+    })
+
+    it('lays an element\'s attributes beside its children, keeps text over attributes, and reads an empty element as nothing', async () => {
+      mockFetch.mockResolvedValue(xml('<feed xmlns="http://www.w3.org/2005/Atom"><entry><link href="https://a/1" rel="alternate"/><title type="html">Hello</title><summary/><media:content url="https://a/1.png"/></entry></feed>', 'application/atom+xml'))
+
+      expect(await service.fetchData('GET', 'https://example.com/feed')).toEqual({
+        feed: { xmlns: 'http://www.w3.org/2005/Atom', entry: { 'link': { href: 'https://a/1', rel: 'alternate' }, 'title': 'Hello', 'summary': null, 'media:content': { url: 'https://a/1.png' } } },
+      })
+    })
+
+    it('reads CDATA and a byte order mark through, and text/xml as XML too', async () => {
+      mockFetch.mockResolvedValue(xml('﻿<item><description><![CDATA[<img src="x">]]></description></item>', 'text/xml; charset=utf-8'))
+
+      expect(await service.fetchData('GET', 'https://example.com/feed')).toEqual({ item: { description: '<img src="x">' } })
+    })
+
+    it('reads CSV as rows of cells under data, quotes honoured', async () => {
+      mockFetch.mockResolvedValue(new Response('name,note\nA,"x, y"\nB,"say ""hi"""\n', { status: 200, headers: { 'content-type': 'text/csv' } }))
+
+      expect(await service.fetchData('GET', 'https://example.com/table')).toEqual({ data: [['name', 'note'], ['A', 'x, y'], ['B', 'say "hi"']] })
+    })
+
+    it('answers the text of anything else that is not JSON, as an HTML page', async () => {
+      mockFetch.mockResolvedValue(new Response('<html><body>hi</body></html>', { status: 200, headers: { 'content-type': 'text/html' } }))
+
+      expect(await service.fetchData('GET', 'https://example.com/page')).toBe('<html><body>hi</body></html>')
+    })
+
+    it('answers JSON served under a textual content type as JSON, and XML that does not parse as its text', async () => {
+      mockFetch.mockResolvedValueOnce(new Response('{"ok":true}', { status: 200, headers: { 'content-type': 'text/plain' } }))
+      expect(await service.fetchData('GET', 'https://example.com/a')).toEqual({ ok: true })
+
+      mockFetch.mockResolvedValueOnce(xml('<broken'))
+      expect(await service.fetchData('GET', 'https://example.com/b')).toBe('<broken')
+    })
   })
 
   describe('several polling URLs (ADR-0058)', () => {

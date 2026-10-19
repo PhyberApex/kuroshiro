@@ -34,7 +34,7 @@ const at = (field: string) => `${props.path}.${field}`
     v-slot="{ control }"
     class="request"
     label="Request"
-    hint="The response must be JSON. A Field Value can be used as {{ keyname }} here, in the headers and in the body. Several addresses, one per line, read as IDX_0, IDX_1 and so on."
+    hint="The response is read as JSON, XML or CSV. A Field Value can be used as {{ keyname }} here, in the headers and in the body. Several addresses, one per line, read as IDX_0, IDX_1 and so on."
     :error="errors[at('url')]"
   >
     <span class="request-line">

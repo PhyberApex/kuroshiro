@@ -36,6 +36,7 @@
     "class-validator": "catalog:",
     "dotenv": "catalog:",
     "express": "catalog:",
+    "fast-xml-parser": "catalog:",
     "js-yaml": "catalog:",
     "liquidjs": "catalog:",
     "marked": "catalog:",
