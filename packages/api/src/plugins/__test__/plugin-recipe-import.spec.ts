@@ -323,12 +323,39 @@ describe('pluginImporterService recipe import', () => {
       await expect(service.importFromRecipeArchive(archive, '1')).rejects.toThrow(/strategy/i)
     })
 
-    it('rejects a "plugin_merge" strategy recipe, naming the value', async () => {
+    it('refuses a "plugin_merge" strategy recipe, which reads other TRMNL plugin instances, naming the value', async () => {
       const settings = { name: 'Merge Recipe', strategy: 'plugin_merge' }
       const archive = buildFlatRecipeArchive(settings)
 
       const service = new PluginImporterService()
-      await expect(service.importFromRecipeArchive(archive, '1')).rejects.toThrow(/plugin_merge/)
+      await expect(service.importFromRecipeArchive(archive, '1')).rejects.toMatchObject({ code: 'recipe-strategy-unsupported', details: { strategy: 'plugin_merge' }, message: expect.stringMatching(/other TRMNL plugins/) })
+    })
+
+    it('imports a "webhook" strategy recipe, shaped like Payment QR Code (#1520), as a Webhook plugin with the standard Merge Strategy', async () => {
+      const settings = {
+        name: 'Payment QR Code',
+        strategy: 'webhook',
+        polling_url: '',
+        no_screen_padding: 'yes',
+        custom_fields: [{ keyname: 'label', field_type: 'string', name: 'Label' }],
+      }
+      const archive = buildFlatRecipeArchive(settings, { 'shared.liquid': '{% template qr %}<img src="{{ url }}">{% endtemplate %}', 'full.liquid': '{% render "qr", url: payment_url %}', 'quadrant.liquid': '<span>{{ label }}</span>' })
+
+      const service = new PluginImporterService()
+      const result = await service.importFromRecipeArchive(archive, '494226')
+
+      expect(result).toMatchObject({ kind: 'Webhook', dataSources: [], mergeStrategy: 'standard', noScreenPadding: true, sourceRecipeId: '494226' })
+      expect(result.fields.map(field => field.keyname)).toEqual(['label'])
+      expect(result.templates.map(template => template.layout).sort()).toEqual(['full', 'quadrant'])
+      expect(result.templates.find(template => template.layout === 'full')?.liquidMarkup).toBe('{% template qr %}<img src="{{ url }}">{% endtemplate %}\n{% render "qr", url: payment_url %}')
+    })
+
+    it('refuses a "webhook" strategy recipe that ships a transform, since a Webhook Plugin runs none on its payload', async () => {
+      const settings = { name: 'Webhook Transform', strategy: 'webhook' }
+      const archive = buildFlatRecipeArchive(settings, { 'full.liquid': 'x', 'transform.js': 'function run(input) { return input }' })
+
+      const service = new PluginImporterService()
+      await expect(service.importFromRecipeArchive(archive, '1')).rejects.toMatchObject({ code: 'recipe-webhook-transform' })
     })
 
     it('imports a "none" strategy recipe, shaped like DWD Rainradar (#1261), as a Poll plugin with zero Data Sources', async () => {

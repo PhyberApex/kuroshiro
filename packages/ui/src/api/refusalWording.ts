@@ -34,8 +34,6 @@ const NOT_A_CONFIGURATION_ARCHIVE = 'This is not a Configuration Archive. It has
 // for `plugin_merge` and for a strategy this build does not know either.
 function recipeStrategyUnsupported({ details }: ApiError): string {
   const strategy = details?.strategy
-  if (strategy === 'webhook')
-    return 'This Recipe gets its data pushed by TRMNL. Kuroshiro can only import Recipes that poll or hold fixed data. Build a Webhook Plugin instead.'
   if (strategy === 'plugin_merge')
     return 'This Recipe combines other TRMNL plugins, which Kuroshiro cannot import.'
   return 'This Recipe\'s strategy is not one Kuroshiro can import.'
@@ -102,6 +100,7 @@ const REFUSAL_WORDING: Record<ApiErrorCode, Wording> = {
   'recipe-not-found': recipeNotFound,
   'recipe-oauth': 'This Recipe signs in to another service with OAuth, which Kuroshiro cannot do.',
   'recipe-strategy-unsupported': recipeStrategyUnsupported,
+  'recipe-webhook-transform': 'This Recipe runs a transform on each payload it is sent, which a Webhook Plugin does not do.',
   'recipe-serverless-language': ({ details }) => `This Recipe's serverless code is ${details?.language ?? 'not JavaScript'}; Kuroshiro runs only JavaScript transforms.`,
   'plugin-not-from-recipe': 'This Plugin was not imported from a Recipe, so there is nothing to check.',
   'recipe-changed': 'The Recipe changed again since it was compared. Run the check again.',

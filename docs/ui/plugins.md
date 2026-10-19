@@ -70,7 +70,7 @@ The back link reads "All Plugins". Heading: "Add a Plugin".
 
 Each form ends with its primary button, "Cancel" (back to where the admin came from) and one line in `ink-soft`. The primary button shows the loading mark while it runs. On success the new Plugin's page opens.
 
-- **Recipe.** One field, "Recipe", placeholder "https://trmnl.com/recipes/41120", hint "The address of the Recipe's page on trmnl.com, or only its id." Under it the link "Browse Recipes on trmnl.com". Button "Import Recipe". Line: "Imports as a Poll Plugin you can edit. Nothing updates by itself afterwards."
+- **Recipe.** One field, "Recipe", placeholder "https://trmnl.com/recipes/41120", hint "The address of the Recipe's page on trmnl.com, or only its id." Under it the link "Browse Recipes on trmnl.com". Button "Import Recipe". Line: "Imports as a Poll or Webhook Plugin you can edit. Nothing updates by itself afterwards."
   - When a Plugin from the same Recipe exists, as soon as the id can be read from the field: "You already have {Plugin} from this Recipe. Importing makes a second Plugin." The import is still allowed.
   - Refusals, shown under the field with the problem icon:
 
@@ -80,7 +80,7 @@ Each form ends with its primary button, "Cancel" (back to where the admin came f
     | Neither digits nor an address holding `recipes/{digits}` | "This is not a Recipe address or id. It looks like https://trmnl.com/recipes/41120, or 41120." |
     | TRMNL has no such Recipe | "TRMNL has no Recipe {id}." |
     | The Recipe signs in to another service | "This Recipe signs in to another service with OAuth, which Kuroshiro cannot do." |
-    | The Recipe is fed by a webhook | "This Recipe gets its data pushed by TRMNL. Kuroshiro can only import Recipes that poll or hold fixed data. Build a Webhook Plugin instead." |
+    | The Recipe transforms each payload it is sent | "This Recipe runs a transform on each payload it is sent, which a Webhook Plugin does not do." |
     | The Recipe combines other TRMNL plugins | "This Recipe combines other TRMNL plugins, which Kuroshiro cannot import." |
     | Anything else Kuroshiro does not recognize as a strategy it can import | "This Recipe's strategy is not one Kuroshiro can import." |
     | TRMNL does not answer | "trmnl.com did not answer. Nothing was imported." with "Try again" |

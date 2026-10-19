@@ -78,7 +78,7 @@ describe('add a Plugin by importing', () => {
       await expect.element(recipeField(screen)).toHaveAttribute('placeholder', 'https://trmnl.com/recipes/41120')
       await expect.element(recipeField(screen)).toHaveAccessibleDescription('The address of the Recipe\'s page on trmnl.com, or only its id.')
       await expect.element(screen.getByRole('link', { name: 'Browse Recipes on trmnl.com' })).toHaveAttribute('href', 'https://trmnl.com/recipes')
-      await expect.element(screen.getByText('Imports as a Poll Plugin you can edit. Nothing updates by itself afterwards.')).toBeVisible()
+      await expect.element(screen.getByText('Imports as a Poll or Webhook Plugin you can edit. Nothing updates by itself afterwards.')).toBeVisible()
       await expect.element(screen.getByRole('combobox')).not.toBeInTheDocument()
     })
 
@@ -140,7 +140,7 @@ describe('add a Plugin by importing', () => {
     it.each<[string, Partial<ApiError>, string]>([
       ['TRMNL has no such Recipe', { statusCode: 422, code: 'recipe-not-found', details: { id: '41120' } }, 'TRMNL has no Recipe 41120.'],
       ['the Recipe signs in to another service', { statusCode: 422, code: 'recipe-oauth' }, 'This Recipe signs in to another service with OAuth, which Kuroshiro cannot do.'],
-      ['the Recipe is fed by a webhook', { statusCode: 422, code: 'recipe-strategy-unsupported', details: { strategy: 'webhook' } }, 'This Recipe gets its data pushed by TRMNL. Kuroshiro can only import Recipes that poll or hold fixed data. Build a Webhook Plugin instead.'],
+      ['the Recipe transforms each payload it is sent', { statusCode: 422, code: 'recipe-webhook-transform' }, 'This Recipe runs a transform on each payload it is sent, which a Webhook Plugin does not do.'],
       ['the Recipe combines other TRMNL plugins', { statusCode: 422, code: 'recipe-strategy-unsupported', details: { strategy: 'plugin_merge' } }, 'This Recipe combines other TRMNL plugins, which Kuroshiro cannot import.'],
       ['the Recipe\'s strategy is one this build does not know', { statusCode: 422, code: 'recipe-strategy-unsupported', details: { strategy: 'unknown' } }, 'This Recipe\'s strategy is not one Kuroshiro can import.'],
       ['the server reads no id either', { statusCode: 400, code: 'recipe-id-invalid' }, 'This is not a Recipe address or id. It looks like https://trmnl.com/recipes/41120, or 41120.'],
