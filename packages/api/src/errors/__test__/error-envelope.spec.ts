@@ -171,13 +171,14 @@ describe('the admin API error envelope', () => {
     logged.mockRestore()
   })
 
-  it('ends the response and writes no body when an exception comes after the headers were sent', async () => {
+  it('ends the response and writes no error body when an exception comes after the headers were sent', async () => {
     const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {})
 
     const response = await http.request('/api/things/half-sent')
 
     expect(response.status).toBe(200)
     expect(await response.text()).toBe('partial')
+    expect(logged).toHaveBeenCalledWith('failed after the headers went out', expect.any(String))
     logged.mockRestore()
   })
 

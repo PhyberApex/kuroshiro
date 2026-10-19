@@ -87,7 +87,7 @@ describe('screensService', () => {
       expect(unlinkMock).toHaveBeenCalledWith(expect.stringContaining('tmp-a.png'))
     })
 
-    it('answers false instead of throwing when an image Screen\'s file is gone from disk', async () => {
+    it('logs a warning and counts it as not reconverted, instead of throwing, when an image Screen\'s file is gone from disk', async () => {
       screensRepo.find.mockResolvedValue([makeScreen({ id: 'gone', type: 'file', device })])
       fileExistsMock.mockResolvedValue(false)
       const warned = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})

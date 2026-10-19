@@ -120,6 +120,15 @@ describe('creating, changing and deleting a custom Palette, against a real datab
     return { device, screen }
   }
 
+  /** The up-front name check passes, and another request's write of the same name lands before this one's own write. */
+  function loseTheNameCheckToAnotherWrite(): void {
+    const palettes = database.getRepository(Palette)
+    vi.spyOn(palettes, 'existsBy').mockImplementationOnce(async () => {
+      await palettes.save({ id: 'other-soft-red', name: 'soft RED', kind: 'custom', grays: 2, colors: SOFT_RED.colors, frameworkClass: RED_FAMILY })
+      return false
+    })
+  }
+
   function send(method: string, route: string, body?: unknown): Promise<Response> {
     return http.request(route, { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })
   }
@@ -164,18 +173,13 @@ describe('creating, changing and deleting a custom Palette, against a real datab
     })
 
     it('refuses with palette-name-taken when another create wins a race the up-front check missed', async () => {
-      const assertNameFree = vi.spyOn(customPalettes as unknown as { assertNameFree: (name: string) => Promise<void> }, 'assertNameFree')
-      assertNameFree.mockImplementationOnce(async () => {
-        // The other request's write, landing between this one's check and its own write.
-        await database.getRepository(Palette).save({ id: 'other-soft-red', name: 'soft RED', kind: 'custom', grays: 2, colors: SOFT_RED.colors, frameworkClass: RED_FAMILY })
-      })
+      loseTheNameCheckToAnotherWrite()
 
       const response = await send('POST', '/api/device-models/palettes', SOFT_RED)
 
       expect(response.status).toBe(409)
       expect(await response.json()).toMatchObject({ code: 'palette-name-taken' })
       expect(await database.getRepository(Palette).countBy({ kind: 'custom' })).toBe(2)
-      assertNameFree.mockRestore()
     })
 
     it('takes the name of one of TRMNL\'s Palettes, which is not a custom one', async () => {
@@ -242,12 +246,7 @@ describe('creating, changing and deleting a custom Palette, against a real datab
     })
 
     it('rethrows a rename to a name another Palette has as the name taken refusal when it loses a race the up-front check missed', async () => {
-      const palettes = database.getRepository(Palette)
-      vi.spyOn(palettes, 'existsBy').mockImplementationOnce(async () => {
-        // The other request's write, landing between this one's check and its own write.
-        await palettes.save({ id: 'other-soft-red', name: 'soft RED', kind: 'custom', grays: 2, colors: SOFT_RED.colors, frameworkClass: RED_FAMILY })
-        return false
-      })
+      loseTheNameCheckToAnotherWrite()
 
       const response = await send('PATCH', '/api/device-models/palettes/study-panel', { name: 'Soft red' })
 
