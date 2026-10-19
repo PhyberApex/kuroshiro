@@ -90,9 +90,18 @@ export class PluginDataFetcherService {
     return options
   }
 
+  /** JSON when the body is JSON; otherwise the body's text, as TRMNL hands an XML feed or an HTML page to a transform; nothing for an empty body. */
   private async parseResponse(response: Response): Promise<unknown> {
     if (!response.ok)
       throw new Error(`HTTP error! status: ${response.status}`)
-    return response.json()
+    const text = await response.text()
+    if (text.trim() === '')
+      return null
+    try {
+      return JSON.parse(text)
+    }
+    catch {
+      return text
+    }
   }
 }

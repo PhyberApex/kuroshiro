@@ -2,13 +2,16 @@
 import type { DataSourceMode } from 'kuroshiro-shared'
 import type { DataSourceDraft } from './pluginDataSources'
 import type { Segment } from '@/components/SegmentedFilter.vue'
-import { computed, useId } from 'vue'
+import { computed, ref, useId } from 'vue'
+import CodeEditor from '@/components/CodeEditor.vue'
 import Field from '@/components/Field.vue'
 import SegmentedFilter from '@/components/SegmentedFilter.vue'
 import TextInput from '@/components/TextInput.vue'
+import TuckedSection from '@/components/TuckedSection.vue'
 import DataSourceCode from './DataSourceCode.vue'
 import DataSourceFetchFields from './DataSourceFetchFields.vue'
 import { codeProblems } from './pluginDataSources'
+import { transformTitle } from './pluginDataSourceWording'
 import { fieldId } from './pluginPage'
 
 /** The form of an opened Data Source. Both modes' entries stay in the draft, so switching the mode and back loses nothing. */
@@ -32,6 +35,7 @@ const ABOUT_MODE: Record<DataSourceMode, string> = {
 }
 
 const modeLabelId = useId()
+const transformOpen = ref(false)
 const literalProblem = computed(() => codeProblems(source.value).literalValue)
 const readAs = computed(() => source.value.name.trim() ? `The template reads it as {{ ${source.value.name.trim()} }}.` : undefined)
 
@@ -69,11 +73,20 @@ const at = (field: string) => `${props.path}.${field}`
       :error="errors[at('literalValue')]"
       :problem="literalProblem"
     />
+    <TuckedSection v-model:open="transformOpen" class="transform" :title="transformTitle(source.transformJs)" heading="h4">
+      <p class="about">
+        JavaScript that reshapes the data before the template sees it. It runs on this server at every scheduled render, with the fetched data or the Value laid over the template context as its input.
+      </p>
+      <CodeEditor v-model="source.transformJs" aria-label="Transform" mode="javascript" size="code-input" />
+    </TuckedSection>
   </div>
 </template>
 
 <style scoped>
 @layer components {
+  .transform :deep(h4) {
+    margin: 0;
+  }
   .form {
     display: grid;
     align-content: start;

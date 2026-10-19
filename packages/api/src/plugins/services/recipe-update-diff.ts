@@ -129,12 +129,12 @@ function normalizeField(field: ComparableField): NormalizedField {
 }
 
 // Only the properties relevant to a Data Source's own mode are compared —
-// a `literal` source carries none of the fetch fields (CONTEXT.md "Data
-// Source Mode"), so leftover fetch-shaped column defaults on a row that was
-// never a fetch source must not register as a difference.
+// a `literal` source carries a transform but none of the request fields
+// (CONTEXT.md "Data Source Mode"), so leftover fetch-shaped column defaults
+// on a row that was never a fetch source must not register as a difference.
 function normalizeDataSource(dataSource: ComparableDataSource): NormalizedDataSource {
   if (dataSource.mode === 'literal') {
-    return { mode: 'literal', literalValue: dataSource.literalValue ?? null }
+    return { mode: 'literal', literalValue: dataSource.literalValue ?? null, transformJs: dataSource.transformJs ?? null }
   }
   return {
     mode: 'fetch',

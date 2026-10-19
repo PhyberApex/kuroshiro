@@ -583,22 +583,28 @@ describe('importing a Plugin, against a real database', () => {
       expect(scheduler.hasScheduledJob(result.plugin.id)).toBe(true)
     })
 
-    it('answers 422 recipe-static-transform for fixed data with a transform', async () => {
-      upstreamAnswers(() => zipResponse({ ...recipeSettings({ strategy: 'static', static_data: {} }), 'transform.js': 'function transform(input) { return input }' }))
+    it('keeps a "static" Recipe\'s transform on its literal Data Source', async () => {
+      upstreamAnswers(() => zipResponse({ ...recipeSettings({ strategy: 'static', static_data: { n: 1 } }), 'transform.js': 'function run(input) { return input }' }))
 
-      const refusal = await refused(await http.postJson('/api/plugins/import-recipe', { recipe: '41120' }), 422)
+      const result = await imported(await http.postJson('/api/plugins/import-recipe', { recipe: '41120' }))
 
-      expect(refusal.code).toBe('recipe-static-transform')
-      expect(refusal.message).toEqual(expect.stringContaining('transform'))
+      expect(result.plugin.dataSources).toEqual([expect.objectContaining({ name: 'source', mode: 'literal', literalValue: { n: 1 }, transformJs: 'function run(input) { return input }' })])
     })
 
-    it('answers 422 recipe-none-transform for no data source with a transform', async () => {
-      upstreamAnswers(() => zipResponse({ ...recipeSettings({ strategy: 'none' }), 'transform.js': 'function transform(input) { return input }' }))
+    it('gives a "none" Recipe with a transform an empty literal Data Source to run it on', async () => {
+      upstreamAnswers(() => zipResponse({ ...recipeSettings({ strategy: 'none' }), 'transform.js': 'function run(input) { return input }' }))
+
+      const result = await imported(await http.postJson('/api/plugins/import-recipe', { recipe: '41120' }))
+
+      expect(result.plugin.dataSources).toEqual([expect.objectContaining({ name: 'source', mode: 'literal', literalValue: {}, transformJs: 'function run(input) { return input }' })])
+    })
+
+    it('answers 422 recipe-serverless-language for a Recipe whose serverless code is Python', async () => {
+      upstreamAnswers(() => zipResponse({ ...recipeSettings({ strategy: 'polling' }), 'transform.py': 'def run(input):\n    return input' }))
 
       const refusal = await refused(await http.postJson('/api/plugins/import-recipe', { recipe: '41120' }), 422)
 
-      expect(refusal.code).toBe('recipe-none-transform')
-      expect(refusal.message).toEqual(expect.stringContaining('transform'))
+      expect(refusal).toMatchObject({ code: 'recipe-serverless-language', details: { language: 'python' } })
     })
 
     it.each([

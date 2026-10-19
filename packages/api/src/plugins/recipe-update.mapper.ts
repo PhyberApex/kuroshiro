@@ -14,7 +14,7 @@ export interface RecipeUpdateFacts {
 function toDataSource(value: unknown): RecipeDataSource {
   const source = value as NormalizedDataSource
   if (source.mode === 'literal')
-    return { mode: 'literal', literalValue: source.literalValue ?? null }
+    return { mode: 'literal', literalValue: source.literalValue ?? null, transformJs: source.transformJs ?? null }
   return {
     mode: 'fetch',
     method: source.method ?? 'GET',

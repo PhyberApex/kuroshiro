@@ -80,6 +80,18 @@ describe('pluginDataFetcherService', () => {
     })
   })
 
+  it('answers the text of a response that is not JSON, as an Atom feed or HTML page', async () => {
+    mockFetch.mockResolvedValue(new Response('<feed><entry/></feed>', { status: 200, headers: { 'content-type': 'application/atom+xml' } }))
+
+    expect(await service.fetchData('GET', 'https://example.com/feed')).toBe('<feed><entry/></feed>')
+  })
+
+  it('answers an empty body as null', async () => {
+    mockFetch.mockResolvedValue(new Response('', { status: 200 }))
+
+    expect(await service.fetchData('GET', 'https://example.com/empty')).toBeNull()
+  })
+
   it('throws error when fetch fails', async () => {
     mockFetch.mockResolvedValue(jsonResponse(null, { ok: false, status: 404 }))
 

@@ -96,7 +96,12 @@ function fetchInput(row: DataSourceDraft): Partial<DataSourceInput> {
   }
 }
 
-const literalInput = (row: DataSourceDraft): Partial<DataSourceInput> => ({ literalValue: parsed(row.literalValue).value as DataSourceInput['literalValue'] })
+function literalInput(row: DataSourceDraft): Partial<DataSourceInput> {
+  return {
+    literalValue: parsed(row.literalValue).value as DataSourceInput['literalValue'],
+    transformJs: isEntered(row.transformJs) ? row.transformJs : null,
+  }
+}
 
 function inputOf(row: DataSourceDraft): SavedDataSource {
   return {

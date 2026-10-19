@@ -59,8 +59,8 @@ describe('why nothing was imported', () => {
     expect(importTrouble(undefined, wording)).toEqual({ failure: 'Not imported. Something went wrong.' })
   })
 
-  it('shows the server\'s sentence for a refusal without wording', () => {
-    expect(importTrouble(refusal('recipe-static-transform'), { aboutEntry: { 'recipe-static-transform': true } })).toEqual({ entered: 'The server\'s own sentence.' })
+  it('shows the refusal\'s own sentence for a code the form marks true', () => {
+    expect(importTrouble(refusal('recipe-serverless-language'), { aboutEntry: { 'recipe-serverless-language': true } })).toEqual({ entered: 'This Recipe\'s serverless code is not JavaScript; Kuroshiro runs only JavaScript transforms.' })
   })
 })
 

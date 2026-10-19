@@ -80,7 +80,7 @@ describe('the Data Sources part of the Plugin\'s form', () => {
         refreshInterval: 2880,
         dataSources: [
           { id: FORECAST.id, name: 'forecast', mode: 'fetch', method: 'GET', url: FORECAST.url, headers: {}, transformJs: null },
-          { id: 'holidays', name: 'holidays', mode: 'literal', literalValue: { next: 'Reformation Day' } },
+          { id: 'holidays', name: 'holidays', mode: 'literal', literalValue: { next: 'Reformation Day' }, transformJs: null },
         ],
       })
     })
@@ -110,7 +110,7 @@ describe('the Data Sources part of the Plugin\'s form', () => {
       Object.assign(draft.sources[0]!, { mode: 'literal', literalValue: '[1, 2]' })
 
       expect(draft.sources[0]!.url).toBe(FORECAST.url)
-      expect(part.toInput(draft).dataSources).toEqual([{ id: FORECAST.id, name: 'forecast', mode: 'literal', literalValue: [1, 2] }])
+      expect(part.toInput(draft).dataSources).toEqual([{ id: FORECAST.id, name: 'forecast', mode: 'literal', literalValue: [1, 2], transformJs: null }])
     })
 
     it('leaves out code that does not parse, so that it differs from anything saved', () => {

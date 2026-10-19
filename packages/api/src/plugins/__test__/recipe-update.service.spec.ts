@@ -316,7 +316,7 @@ describe('recipeUpdateService', () => {
 
       await service.applyUpdate(PLUGIN_ID, { contentHash, apply: [{ itemType: 'dataSource', key: 'static' }] })
 
-      expect(dataSourceRepo.create).toHaveBeenCalledWith({ mode: 'literal', literalValue: { phase: 'full' }, name: 'static', order: 0, plugin })
+      expect(dataSourceRepo.create).toHaveBeenCalledWith({ mode: 'literal', literalValue: { phase: 'full' }, transformJs: null, name: 'static', order: 0, plugin })
       const saved = dataSourceRepo.save.mock.calls[0][0]
       expect(saved).not.toHaveProperty('url')
       expect(saved).not.toHaveProperty('method')

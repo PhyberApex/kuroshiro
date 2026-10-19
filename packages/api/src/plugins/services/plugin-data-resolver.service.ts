@@ -35,6 +35,14 @@ export function loneSourceRootKeys(sourceData: Record<string, unknown>): Record<
   return results.length === 1 && isPlainRecord(only) && !isFetchErrorMarker(only) ? only : {}
 }
 
+/**
+ * What a transform receives, as TRMNL's serverless `run(input)` does: the template context (`trmnl`, the Field Values,
+ * `sensors`) with the fetched object laid over it, or anything else fetched (a list, text, nothing) under `data`.
+ */
+export function transformInputOf(fetched: unknown, templateContext: object = {}): Record<string, unknown> {
+  return isPlainRecord(fetched) ? { ...templateContext, ...fetched } : { ...templateContext, data: fetched }
+}
+
 @Injectable()
 export class PluginDataResolverService {
   private readonly logger = new Logger(PluginDataResolverService.name)
@@ -55,12 +63,11 @@ export class PluginDataResolverService {
   async resolveAll(dataSources: ResolvableDataSource[], templateContext?: object): Promise<Record<string, unknown>> {
     const results = await Promise.allSettled(
       dataSources.map(async (source) => {
-        let rawData = await this.dataFetcher.fetchOrLiteral(source, templateContext)
-        if (source.transformJs) {
-          this.logger.debug(`Applying transform.js to data source: ${source.name}`)
-          rawData = this.transformer.transform(source.transformJs, rawData)
-        }
-        return rawData
+        const rawData = await this.dataFetcher.fetchOrLiteral(source, templateContext)
+        if (!source.transformJs)
+          return rawData
+        this.logger.debug(`Applying transform.js to data source: ${source.name}`)
+        return this.transformer.transform(source.transformJs, transformInputOf(rawData, templateContext))
       }),
     )
 

@@ -32,16 +32,38 @@ describe('pluginDataResolverService', () => {
     expect(data).toEqual({ weather: { temp: '72F' }, calendar: { count: 5 } })
   })
 
-  it('applies transform.js to a source that has one', async () => {
-    vi.spyOn(dataFetcher, 'fetchOrLiteral').mockResolvedValue({ raw: true })
-    vi.spyOn(transformer, 'transform').mockReturnValue({ transformed: true })
+  it('applies transform.js to a source that has one, with the fetched object laid over the template context as its input', async () => {
+    vi.spyOn(dataFetcher, 'fetchOrLiteral').mockResolvedValue({ raw: true, city: 'from the response' })
+    vi.spyOn(transformer, 'transform').mockResolvedValue({ transformed: true })
 
     const data = await service.resolveAll([
       makePluginDataSource({ name: 'source', transformJs: 'module.exports = data => data' }),
-    ])
+    ], { city: 'Berlin', trmnl: { user: { locale: 'de' } } })
 
-    expect(transformer.transform).toHaveBeenCalledWith('module.exports = data => data', { raw: true })
+    expect(transformer.transform).toHaveBeenCalledWith('module.exports = data => data', { city: 'from the response', trmnl: { user: { locale: 'de' } }, raw: true })
     expect(data).toEqual({ source: { transformed: true } })
+  })
+
+  it.each([
+    ['a list', [1, 2]],
+    ['text', '<feed/>'],
+    ['null', null],
+  ])('gives the transform %s it fetched under data, beside the template context', async (_, fetched) => {
+    vi.spyOn(dataFetcher, 'fetchOrLiteral').mockResolvedValue(fetched)
+    vi.spyOn(transformer, 'transform').mockResolvedValue({})
+
+    await service.resolveAll([makePluginDataSource({ name: 'source', transformJs: 'x' })], { trmnl: {} })
+
+    expect(transformer.transform).toHaveBeenCalledWith('x', { trmnl: {}, data: fetched })
+  })
+
+  it('applies a transform to a literal Data Source too', async () => {
+    vi.spyOn(transformer, 'transform').mockResolvedValue({ computed: 1 })
+
+    const data = await service.resolveAll([makePluginDataSource({ name: 'source', mode: 'literal', literalValue: { base: 2 }, transformJs: 'x' })], { trmnl: {} })
+
+    expect(transformer.transform).toHaveBeenCalledWith('x', { trmnl: {}, base: 2 })
+    expect(data).toEqual({ source: { computed: 1 } })
   })
 
   it('gives a failing source an error marker instead of rejecting the whole call (ADR-0005)', async () => {

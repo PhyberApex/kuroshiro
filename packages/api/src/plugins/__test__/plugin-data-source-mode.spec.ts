@@ -41,10 +41,8 @@ describe('dataSourceModeViolation', () => {
       )
     })
 
-    it('rejects a Transform', () => {
-      expect(dataSourceModeViolation({ mode: 'literal', literalValue: {}, transformJs: 'module.exports = d => d' })).toBe(
-        'A literal-mode Data Source cannot have a Transform',
-      )
+    it('accepts a Transform, which runs on the Value', () => {
+      expect(dataSourceModeViolation({ mode: 'literal', literalValue: {}, transformJs: 'module.exports = d => d' })).toBeNull()
     })
 
     it('requires a literalValue', () => {

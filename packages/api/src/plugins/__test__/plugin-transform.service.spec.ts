@@ -8,42 +8,78 @@ describe('pluginTransformService', () => {
     service = new PluginTransformService()
   })
 
-  it('transforms data using module.exports function', () => {
+  describe('the serverless contract of TRMNL', () => {
+    const input = { items: [1, 2], trmnl: { user: { locale: 'de' } } }
+
+    it('awaits an async run function exported as module.exports = { run }', async () => {
+      const transformJs = `
+        async function run(input) {
+          await Promise.resolve()
+          return { first: input.items[0], locale: input.trmnl.user.locale }
+        }
+        module.exports = { run }
+      `
+
+      expect(await service.transform(transformJs, input)).toEqual({ first: 1, locale: 'de' })
+    })
+
+    it('calls a run function that is only declared, as TRMNL\'s editor has it', async () => {
+      expect(await service.transform('function run(input) { return { n: input.items.length } }', input)).toEqual({ n: 2 })
+    })
+
+    it('calls exports.run', async () => {
+      expect(await service.transform('exports.run = input => ({ n: input.items.length })', input)).toEqual({ n: 2 })
+    })
+
+    it('prefers run over a transform function beside it', async () => {
+      expect(await service.transform('function transform() { return "old" }\nfunction run() { return "new" }', input)).toBe('new')
+    })
+
+    it('fails a run function that resolves too late', async () => {
+      await expect(service.transform('async function run() { await new Promise(() => {}) }', input, { timeoutMs: 20 })).rejects.toThrow('The transform did not finish within 20 ms.')
+    })
+
+    it('propagates the rejection of an async run function', async () => {
+      await expect(service.transform('async function run() { throw new Error("no quotes today") }', input)).rejects.toThrow('no quotes today')
+    })
+  })
+
+  it('transforms data using module.exports function', async () => {
     const transformJs = `
       module.exports = function(data) {
         return { transformed: true, original: data };
       };
     `
     const rawData = { value: 42 }
-    const result = service.transform(transformJs, rawData) as Record<string, unknown>
+    const result = await service.transform(transformJs, rawData) as Record<string, unknown>
 
     expect(result.transformed).toBe(true)
     expect(result.original).toEqual({ value: 42 })
   })
 
-  it('transforms data using transform function', () => {
+  it('transforms data using transform function', async () => {
     const transformJs = `
       function transform(data) {
         return { doubled: data.value * 2 };
       }
     `
     const rawData = { value: 10 }
-    const result = service.transform(transformJs, rawData) as Record<string, unknown>
+    const result = await service.transform(transformJs, rawData) as Record<string, unknown>
 
     expect(result.doubled).toBe(20)
   })
 
-  it('returns data unchanged if no transform function found', () => {
+  it('returns data unchanged if no transform function found', async () => {
     const transformJs = `
       const x = 5;
     `
     const rawData = { value: 42 }
-    const result = service.transform(transformJs, rawData)
+    const result = await service.transform(transformJs, rawData)
 
     expect(result).toEqual({ value: 42 })
   })
 
-  it('handles complex transformations', () => {
+  it('handles complex transformations', async () => {
     const transformJs = `
       module.exports = function(data) {
         return {
@@ -55,14 +91,14 @@ describe('pluginTransformService', () => {
       };
     `
     const rawData = { items: [{ id: 1 }, { id: 2 }] }
-    const result = service.transform(transformJs, rawData) as { items: { processed: boolean }[] }
+    const result = await service.transform(transformJs, rawData) as { items: { processed: boolean }[] }
 
     expect(result.items).toHaveLength(2)
     expect(result.items[0].processed).toBe(true)
     expect(result.items[1].processed).toBe(true)
   })
 
-  it('propagates the error on transformation failure', () => {
+  it('propagates the error on transformation failure', async () => {
     const transformJs = `
       module.exports = function(data) {
         throw new Error('Transform failed');
@@ -70,10 +106,10 @@ describe('pluginTransformService', () => {
     `
     const rawData = { value: 42 }
 
-    expect(() => service.transform(transformJs, rawData)).toThrow('Transform failed')
+    await expect(service.transform(transformJs, rawData)).rejects.toThrow('Transform failed')
   })
 
-  it('propagates the error on timeout for long-running transforms', () => {
+  it('propagates the error on timeout for long-running transforms', async () => {
     const transformJs = `
       module.exports = function(data) {
         while(true) {} // Infinite loop
@@ -82,10 +118,10 @@ describe('pluginTransformService', () => {
     `
     const rawData = { value: 42 }
 
-    expect(() => service.transform(transformJs, rawData)).toThrow()
+    await expect(service.transform(transformJs, rawData)).rejects.toThrow()
   }, 10000)
 
-  it('provides console.log in sandbox', () => {
+  it('provides console.log in sandbox', async () => {
     const transformJs = `
       module.exports = function(data) {
         console.log('Processing data', data.value);
@@ -93,12 +129,12 @@ describe('pluginTransformService', () => {
       };
     `
     const rawData = { value: 42 }
-    const result = service.transform(transformJs, rawData) as Record<string, unknown>
+    const result = await service.transform(transformJs, rawData) as Record<string, unknown>
 
     expect(result.logged).toBe(true)
   })
 
-  it('propagates the error when an unsafe API is blocked', () => {
+  it('propagates the error when an unsafe API is blocked', async () => {
     const transformJs = `
       module.exports = function(data) {
         const fs = require('fs'); // Should fail
@@ -107,6 +143,6 @@ describe('pluginTransformService', () => {
     `
     const rawData = { value: 42 }
 
-    expect(() => service.transform(transformJs, rawData)).toThrow()
+    await expect(service.transform(transformJs, rawData)).rejects.toThrow()
   })
 })

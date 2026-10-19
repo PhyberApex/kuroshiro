@@ -22,7 +22,7 @@ type ModeViolationCheck = [fieldName: string, isViolation: boolean, message: str
  * silently ignored — structurally parallel to pluginKindFieldViolation.
  */
 export function dataSourceModeViolation(fields: DataSourceModeFields): string | null {
-  const { mode = 'fetch', method, url, headers, body, transformJs, literalValue } = fields
+  const { mode = 'fetch', method, url, headers, body, literalValue } = fields
 
   const checks: ModeViolationCheck[] = mode === 'literal'
     ? [
@@ -36,7 +36,6 @@ export function dataSourceModeViolation(fields: DataSourceModeFields): string | 
         ['url', isPresent(url), 'A literal-mode Data Source cannot have a URL'],
         ['headers', isPresent(headers), 'A literal-mode Data Source cannot have Headers'],
         ['body', isPresent(body), 'A literal-mode Data Source cannot have a Body'],
-        ['transformJs', isPresent(transformJs), 'A literal-mode Data Source cannot have a Transform'],
         ['literalValue', !isPresent(literalValue), 'A literal-mode Data Source requires a Value'],
       ]
     : [
