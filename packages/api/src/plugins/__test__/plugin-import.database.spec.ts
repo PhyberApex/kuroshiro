@@ -566,7 +566,25 @@ describe('importing a Plugin, against a real database', () => {
       expect(refusal.code).toBe('recipe-oauth')
     })
 
-    it.each(['webhook', 'plugin_merge', undefined])('answers 422 recipe-strategy-unsupported for a Recipe of strategy "%s"', async (strategy) => {
+    it('imports a "webhook" strategy Recipe as a Webhook-kind Plugin that replaces its payload, tied to the Recipe (ADR-0056)', async () => {
+      upstreamAnswers(() => zipResponse(recipeSettings({ strategy: 'webhook', polling_url: '' })))
+
+      const result = await imported(await http.postJson('/api/plugins/import-recipe', { recipe: '41120' }))
+
+      expect(result.plugin).toMatchObject({ kind: 'Webhook', dataSources: [], webhook: { mergeStrategy: 'standard', streamLimit: null, payload: null }, recipe: { id: '41120', name: 'Moon Phase' } })
+      expect(result.plugin.webhook!.token).toEqual(expect.stringMatching(/\S{16,}/))
+    })
+
+    it('answers 422 recipe-webhook-transform for a "webhook" strategy Recipe that ships a transform', async () => {
+      upstreamAnswers(() => zipResponse({ ...recipeSettings({ strategy: 'webhook' }), 'transform.js': 'function run(input) { return input }' }))
+
+      const refusal = await refused(await http.postJson('/api/plugins/import-recipe', { recipe: '41120' }), 422)
+
+      expect(refusal).toMatchObject({ code: 'recipe-webhook-transform' })
+      expect(await listed()).toEqual([])
+    })
+
+    it.each(['plugin_merge', undefined])('answers 422 recipe-strategy-unsupported for a Recipe of strategy "%s"', async (strategy) => {
       upstreamAnswers(() => zipResponse(recipeSettings({ strategy })))
 
       const refusal = await refused(await http.postJson('/api/plugins/import-recipe', { recipe: '41120' }), 422)
