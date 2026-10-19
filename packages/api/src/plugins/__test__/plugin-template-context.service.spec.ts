@@ -48,6 +48,38 @@ describe('pluginTemplateContextService', () => {
     })
   })
 
+  describe('trmnl.plugin_settings.data_fetched_utc (ADR-0057)', () => {
+    it('is the second the Data Sources were resolved at, for a Plugin that has any', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2030-01-05T09:00:00Z'))
+      const polled = makePlugin({ name: 'Weather', dataSources: [makePluginDataSource({ name: 'source' })] })
+
+      const { context } = await createPluginTemplateContextService({}, { resolveAll: async () => ({ source: { temp: 3 } }) }).contextFor(polled, [])
+
+      expect(context).toMatchObject({ trmnl: { plugin_settings: { strategy: 'polling', data_fetched_utc: 1893834000 } } })
+    })
+
+    it('is absent for a Plugin with no Data Sources, which fetched nothing', async () => {
+      const { context } = await createPluginTemplateContextService().contextFor(makePlugin({ name: 'Clock', dataSources: [] }), [])
+
+      expect((context as { trmnl: { plugin_settings: Record<string, unknown> } }).trmnl.plugin_settings).not.toHaveProperty('data_fetched_utc')
+    })
+
+    it('is the second a Webhook-kind Plugin\'s payload arrived at, with the strategy TRMNL names', async () => {
+      const webhook = makePlugin({ name: 'Feed', kind: 'Webhook', webhookPayload: { reading: 4 }, payloadReceivedAt: new Date('2030-01-05T09:00:00.700Z') })
+
+      const { context } = await createPluginTemplateContextService().contextFor(webhook, [])
+
+      expect(context).toMatchObject({ trmnl: { plugin_settings: { strategy: 'webhook', data_fetched_utc: 1893834000 } } })
+    })
+
+    it('is absent for a Webhook-kind Plugin that has not been sent a payload yet', async () => {
+      const { context } = await createPluginTemplateContextService().contextFor(makePlugin({ name: 'Feed', kind: 'Webhook' }), [])
+
+      expect((context as { trmnl: { plugin_settings: Record<string, unknown> } }).trmnl.plugin_settings).not.toHaveProperty('data_fetched_utc')
+    })
+  })
+
   it('tells the template the Plugin\'s screen modifiers as TRMNL spells them', async () => {
     const { context } = await createPluginTemplateContextService().contextFor(makePlugin({ name: 'Weather', noScreenPadding: true, darkMode: false }), [])
 
