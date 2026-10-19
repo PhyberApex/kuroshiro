@@ -258,7 +258,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
         trmnl: {
           system: { timestamp_utc: 1790848800 },
           state: {},
-          plugin_settings: { instance_name: 'Weather', strategy: 'polling', dark_mode: 'no', no_screen_padding: 'no', custom_fields_values: { city: 'Berlin' } },
+          plugin_settings: { instance_name: 'Weather', strategy: 'polling', dark_mode: 'no', no_screen_padding: 'no', custom_fields_values: { city: 'Berlin' }, data_fetched_utc: 1790848800 },
           user: { id: 'kuroshiro-user', locale: 'en', time_zone: expect.any(String), time_zone_iana: expect.any(String), utc_offset: expect.any(Number) },
         },
       }

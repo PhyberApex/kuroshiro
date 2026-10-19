@@ -19,10 +19,12 @@ export interface PluginTemplateContext {
     system: { timestamp_utc: number }
     plugin_settings: {
       instance_name: string
-      strategy: 'polling'
+      strategy: 'polling' | 'webhook'
       dark_mode: 'no' | 'yes'
       no_screen_padding: 'no' | 'yes'
       custom_fields_values: Record<string, string>
+      /** The second the data was fetched at, absent until a fetch happened (ADR-0057). */
+      data_fetched_utc?: number
     }
     user: { id: string, locale: string, time_zone: string, time_zone_iana: string, utc_offset: number }
     /** A lone Data Source's saved state, as its transform last wrote it (ADR-0052); empty otherwise. */
@@ -108,6 +110,12 @@ function takeWrittenStates(fetched: Record<string, unknown>): { data: Record<str
   return { data, states }
 }
 
+/** The `trmnl` object with its `plugin_settings` told when the data was fetched, or left as they are when nothing was. */
+function fetchedAt(trmnl: PluginTemplateContext['trmnl'], at: Date | null | undefined, strategy: 'polling' | 'webhook'): PluginTemplateContext['trmnl'] {
+  const plugin_settings = { ...trmnl.plugin_settings, strategy, ...(at && { data_fetched_utc: Math.floor(at.getTime() / 1000) }) }
+  return { ...trmnl, plugin_settings }
+}
+
 /**
  * The Liquid context of every render of a Plugin, and of the preview's data:
  * its resolved Field Values, both under `trmnl.plugin_settings.custom_fields_values`
@@ -142,7 +150,8 @@ export class PluginTemplateContextService {
   private webhookContext(plugin: Plugin, { instanceName, modifiers, sensors, resolved, fieldValues }: RenderInput): PluginRenderContext {
     const withoutData = this.hidingSecrets(this.withoutData(instanceName, modifiers, resolved, sensors, {}), fieldValues)
     const payload = plugin.webhookPayload
-    return { context: Array.isArray(payload) ? payload : { ...withoutData, ...payload }, fieldValues, resolvedFieldValues: resolved, sourceData: {}, sourceStates: {} }
+    const trmnl = fetchedAt(withoutData.trmnl, plugin.payloadReceivedAt, 'webhook')
+    return { context: Array.isArray(payload) ? payload : { ...withoutData, trmnl, ...payload }, fieldValues, resolvedFieldValues: resolved, sourceData: {}, sourceStates: {} }
   }
 
   private async pollContext(dataSources: ResolvableDataSource[], { instanceName, modifiers, sensors, resolved, fieldValues, hideSecretsOf }: RenderInput): Promise<PluginRenderContext> {
@@ -154,7 +163,7 @@ export class PluginTemplateContextService {
 
     const { data, states } = takeWrittenStates(await this.dataResolver.resolveAll(dataSources, fetchContext, { savedStates }))
     const sourceData = hideSecretsIn(data, secretValues(hideSecretsOf, resolved))
-    const trmnl = { ...withoutData.trmnl, state: lone ? states[lone.name] ?? loneSavedState : {} }
+    const trmnl = { ...fetchedAt(withoutData.trmnl, dataSources.length ? new Date() : null, 'polling'), state: lone ? states[lone.name] ?? loneSavedState : {} }
     const context = { ...withoutData, ...loneSourceRootKeys(sourceData), trmnl, sensors: withoutData.sensors, ...sourceData }
     return { context, fieldValues, resolvedFieldValues: resolved, sourceData, sourceStates: states }
   }
