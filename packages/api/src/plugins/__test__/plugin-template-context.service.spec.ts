@@ -19,6 +19,7 @@ describe('pluginTemplateContextService', () => {
         { resolveFor: async () => ({}) } as never,
         { resolveAll: async () => ({}) } as never,
         Object.assign(new InstanceTimeZone(), { name: zone }),
+        { load: async () => ({}) } as never,
       )
       const { context } = await service.contextFor(plugin, [])
       return (context as { trmnl: { user: Record<string, unknown> } }).trmnl.user
@@ -87,7 +88,57 @@ describe('pluginTemplateContextService', () => {
 
     expect(context).toMatchObject({ city: { name: 'from the Data Source' }, trmnl: { plugin_settings: { custom_fields_values: { city: 'Berlin' } } } })
     expect(sourceData).toEqual({ city: { name: 'from the Data Source' } })
-    expect(resolveAll).toHaveBeenCalledWith(withSource.dataSources, expect.objectContaining({ city: 'Berlin' }))
+    expect(resolveAll).toHaveBeenCalledWith(withSource.dataSources, expect.objectContaining({ city: 'Berlin' }), { savedStates: {} })
+  })
+
+  describe('saved state (ADR-0052)', () => {
+    const lone = makePlugin({ name: 'Trend', dataSources: [makePluginDataSource({ id: 'ds-1', name: 'source', transformJs: 'x' })] })
+
+    it('takes trmnl_state out of a Data Source\'s result, lists it as the state the run wrote, and lets a lone Data Source\'s template read it as trmnl.state', async () => {
+      const resolveAll = vi.fn().mockResolvedValue({ source: { price: 3, trmnl_state: { history: [1, 3] } } })
+
+      const { context, sourceData, sourceStates } = await createPluginTemplateContextService({}, { resolveAll }).contextFor(lone, [])
+
+      expect(context).toMatchObject({ price: 3, source: { price: 3 }, trmnl: { state: { history: [1, 3] } } })
+      expect(context).not.toHaveProperty('trmnl_state')
+      expect((context as { source: object }).source).not.toHaveProperty('trmnl_state')
+      expect(sourceData).toEqual({ source: { price: 3 } })
+      expect(sourceStates).toEqual({ source: { history: [1, 3] } })
+    })
+
+    it('reads the saved state for the request and the template when the run writes none', async () => {
+      const resolveAll = vi.fn().mockResolvedValue({ source: { price: 3 } })
+      const savedStates = { 'ds-1': { history: [1] } }
+
+      const { context, sourceStates } = await createPluginTemplateContextService({}, { resolveAll }, { load: async () => savedStates }).contextFor(lone, [])
+
+      expect(context).toMatchObject({ trmnl: { state: { history: [1] } } })
+      expect(sourceStates).toEqual({})
+      expect(resolveAll).toHaveBeenCalledWith(lone.dataSources, expect.objectContaining({ trmnl: expect.objectContaining({ state: { history: [1] } }) }), { savedStates })
+    })
+
+    it.each([
+      ['a list', [1, 2]],
+      ['text', 'abc'],
+      ['more than 8192 bytes', { big: 'x'.repeat(8192) }],
+    ])('drops a trmnl_state that is %s, keeping the saved state, and still takes it out of the data', async (_, written) => {
+      const resolveAll = vi.fn().mockResolvedValue({ source: { price: 3, trmnl_state: written } })
+
+      const { context, sourceStates } = await createPluginTemplateContextService({}, { resolveAll }, { load: async () => ({ 'ds-1': { kept: true } }) }).contextFor(lone, [])
+
+      expect(context).toMatchObject({ trmnl: { state: { kept: true } }, source: { price: 3 } })
+      expect(sourceStates).toEqual({})
+    })
+
+    it('gives a template no trmnl.state when the Plugin has two Data Sources, though each transform wrote its own', async () => {
+      const two = makePlugin({ name: 'Two', dataSources: [makePluginDataSource({ id: 'ds-1', name: 'a' }), makePluginDataSource({ id: 'ds-2', name: 'b' })] })
+      const resolveAll = vi.fn().mockResolvedValue({ a: { trmnl_state: { n: 1 } }, b: { trmnl_state: { n: 2 } } })
+
+      const { context, sourceStates } = await createPluginTemplateContextService({}, { resolveAll }).contextFor(two, [])
+
+      expect(context).toMatchObject({ trmnl: { state: {} }, a: {}, b: {} })
+      expect(sourceStates).toEqual({ a: { n: 1 }, b: { n: 2 } })
+    })
   })
 
   describe('a lone Data Source', () => {
@@ -168,7 +219,7 @@ describe('pluginTemplateContextService', () => {
       const { context } = await createPluginTemplateContextService({}, { resolveAll }).contextFor(stored, [], { name: 'Forecast', dataSources: unsavedSources })
 
       expect(context).toMatchObject({ unsaved: { n: 1 }, trmnl: { plugin_settings: { instance_name: 'Forecast' } } })
-      expect(resolveAll).toHaveBeenCalledWith(unsavedSources, expect.anything())
+      expect(resolveAll).toHaveBeenCalledWith(unsavedSources, expect.anything(), { savedStates: {} })
     })
 
     it('hides a password Field Value in both address forms, and still fetches with the real one', async () => {
@@ -182,7 +233,7 @@ describe('pluginTemplateContextService', () => {
       expect(context).toMatchObject({ ...shown, trmnl: { plugin_settings: { custom_fields_values: shown } } })
       expect(fieldValues).toEqual(shown)
       expect(JSON.stringify(context)).not.toContain('hunter2')
-      expect(resolveAll).toHaveBeenCalledWith([], expect.objectContaining({ api_key: 'hunter2', trmnl: expect.objectContaining({ plugin_settings: expect.objectContaining({ custom_fields_values: expect.objectContaining({ api_key: 'hunter2' }) }) }) }))
+      expect(resolveAll).toHaveBeenCalledWith([], expect.objectContaining({ api_key: 'hunter2', trmnl: expect.objectContaining({ plugin_settings: expect.objectContaining({ custom_fields_values: expect.objectContaining({ api_key: 'hunter2' }) }) }) }), { savedStates: {} })
     })
   })
 })

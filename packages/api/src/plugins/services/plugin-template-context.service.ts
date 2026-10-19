@@ -1,12 +1,15 @@
 import type { DeviceSensor } from '../../device-sensors/entities/device-sensor.entity.js'
+import type { JsonObject } from '../../utils/json.js'
 import type { PluginField } from '../entities/plugin-field.entity.js'
 import type { Plugin } from '../entities/plugin.entity.js'
 import type { ResolvableDataSource } from './plugin-data-resolver.service.js'
 import type { FieldValueWrites } from './plugin-field-values.service.js'
+import { Buffer } from 'node:buffer'
 import { Injectable } from '@nestjs/common'
 import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { hideSecretFieldValues, hideSecretsIn, secretValues } from '../plugin-field-values.js'
 import { loneSourceRootKeys, PluginDataResolverService } from './plugin-data-resolver.service.js'
+import { PluginDataSourceStateService } from './plugin-data-source-state.service.js'
 import { PluginFieldValuesService } from './plugin-field-values.service.js'
 
 export interface PluginTemplateContext {
@@ -21,6 +24,8 @@ export interface PluginTemplateContext {
       custom_fields_values: Record<string, string>
     }
     user: { id: string, locale: string, time_zone: string, time_zone_iana: string, utc_offset: number }
+    /** A lone Data Source's saved state, as its transform last wrote it (ADR-0052); empty otherwise. */
+    state: JsonObject
   }
   sensors: Record<string, { value: number, unit: string }>
 }
@@ -57,6 +62,47 @@ export interface PluginRenderContext {
   resolvedFieldValues: Record<string, string>
   /** Each Data Source's result or error marker by name; empty for a Webhook-kind Plugin. */
   sourceData: Record<string, unknown>
+  /** The state each Data Source's transform wrote this run as `trmnl_state`, by name, taken out of `sourceData` (ADR-0052). */
+  sourceStates: Record<string, JsonObject>
+}
+
+const STATE_KEY = 'trmnl_state'
+const STATE_LIMIT_BYTES = 8192
+
+const isPlainRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
+
+/** The written state when it is an object within TRMNL's limit; anything else is dropped and the saved state stays. */
+function writableState(value: unknown): JsonObject | null {
+  return isPlainRecord(value) && Buffer.byteLength(JSON.stringify(value)) <= STATE_LIMIT_BYTES ? value as JsonObject : null
+}
+
+const loneOf = <T>(dataSources: T[]): T | undefined => dataSources.length === 1 ? dataSources[0] : undefined
+
+/** What one render resolves before its data: the Field Values as fetched with and as shown. */
+interface RenderInput {
+  instanceName: string
+  sensors: DeviceSensor[]
+  resolved: Record<string, string>
+  fieldValues: Record<string, string>
+  hideSecretsOf: ContextOptions['hideSecretsOf'] & object
+}
+
+/** Each result without its `trmnl_state`, and the states the run wrote. */
+function takeWrittenStates(fetched: Record<string, unknown>): { data: Record<string, unknown>, states: Record<string, JsonObject> } {
+  const data: Record<string, unknown> = {}
+  const states: Record<string, JsonObject> = {}
+  for (const [name, result] of Object.entries(fetched)) {
+    if (!isPlainRecord(result) || !(STATE_KEY in result)) {
+      data[name] = result
+      continue
+    }
+    const { [STATE_KEY]: written, ...rest } = result
+    data[name] = rest
+    const state = writableState(written)
+    if (state)
+      states[name] = state
+  }
+  return { data, states }
 }
 
 /**
@@ -76,33 +122,50 @@ export class PluginTemplateContextService {
     private readonly fieldValues: PluginFieldValuesService,
     private readonly dataResolver: PluginDataResolverService,
     private readonly instanceTimeZone: InstanceTimeZone,
+    private readonly sourceStates: PluginDataSourceStateService,
   ) {}
 
   /** `sensors` are the rendering Device's, and empty where the render is for no single Device. */
   async contextFor(plugin: Plugin, sensors: DeviceSensor[], unsaved: UnsavedPluginInput = {}, { hideSecretsOf = [] }: ContextOptions = {}): Promise<PluginRenderContext> {
     const resolved = await this.fieldValues.resolveFor(plugin.id, unsaved.fieldValues)
-    const fetchContext = this.withoutData(unsaved.name ?? plugin.name, resolved, sensors)
+    const render: RenderInput = { instanceName: unsaved.name ?? plugin.name, sensors, resolved, fieldValues: hideSecretFieldValues(hideSecretsOf, resolved), hideSecretsOf }
 
-    const fieldValues = hideSecretFieldValues(hideSecretsOf, resolved)
-    const withoutData = {
+    return plugin.kind === 'Webhook'
+      ? this.webhookContext(plugin, render)
+      : this.pollContext(unsaved.dataSources ?? plugin.dataSources ?? [], render)
+  }
+
+  private webhookContext(plugin: Plugin, { instanceName, sensors, resolved, fieldValues }: RenderInput): PluginRenderContext {
+    const withoutData = this.hidingSecrets(this.withoutData(instanceName, resolved, sensors, {}), fieldValues)
+    const payload = plugin.webhookPayload
+    return { context: Array.isArray(payload) ? payload : { ...withoutData, ...payload }, fieldValues, resolvedFieldValues: resolved, sourceData: {}, sourceStates: {} }
+  }
+
+  private async pollContext(dataSources: ResolvableDataSource[], { instanceName, sensors, resolved, fieldValues, hideSecretsOf }: RenderInput): Promise<PluginRenderContext> {
+    const savedStates = await this.sourceStates.load(dataSources)
+    const lone = loneOf(dataSources)
+    const loneSavedState = (lone?.id && savedStates[lone.id]) || {}
+    const fetchContext = this.withoutData(instanceName, resolved, sensors, loneSavedState)
+    const withoutData = this.hidingSecrets(fetchContext, fieldValues)
+
+    const { data, states } = takeWrittenStates(await this.dataResolver.resolveAll(dataSources, fetchContext, { savedStates }))
+    const sourceData = hideSecretsIn(data, secretValues(hideSecretsOf, resolved))
+    const trmnl = { ...withoutData.trmnl, state: lone ? states[lone.name] ?? loneSavedState : {} }
+    const context = { ...withoutData, ...loneSourceRootKeys(sourceData), trmnl, sensors: withoutData.sensors, ...sourceData }
+    return { context, fieldValues, resolvedFieldValues: resolved, sourceData, sourceStates: states }
+  }
+
+  /** The fetch context with each password Field Value as dots, in both address forms. */
+  private hidingSecrets(fetchContext: PluginTemplateContext, fieldValues: Record<string, string>): PluginTemplateContext {
+    return {
       ...fetchContext,
       ...fieldValues,
       trmnl: { ...fetchContext.trmnl, plugin_settings: { ...fetchContext.trmnl.plugin_settings, custom_fields_values: fieldValues } },
       sensors: fetchContext.sensors,
     }
-
-    if (plugin.kind === 'Webhook') {
-      const payload = plugin.webhookPayload
-      return { context: Array.isArray(payload) ? payload : { ...withoutData, ...payload }, fieldValues, resolvedFieldValues: resolved, sourceData: {} }
-    }
-
-    const fetched = await this.dataResolver.resolveAll(unsaved.dataSources ?? plugin.dataSources ?? [], fetchContext)
-    const sourceData = hideSecretsIn(fetched, secretValues(hideSecretsOf, resolved))
-    const context = { ...withoutData, ...loneSourceRootKeys(sourceData), trmnl: withoutData.trmnl, sensors: withoutData.sensors, ...sourceData }
-    return { context, fieldValues, resolvedFieldValues: resolved, sourceData }
   }
 
-  private withoutData(instanceName: string, fieldValues: Record<string, string>, sensors: DeviceSensor[]): PluginTemplateContext {
+  private withoutData(instanceName: string, fieldValues: Record<string, string>, sensors: DeviceSensor[], state: JsonObject): PluginTemplateContext {
     return {
       ...fieldValues,
       trmnl: {
@@ -124,6 +187,7 @@ export class PluginTemplateContextService {
           time_zone_iana: this.instanceTimeZone.name,
           utc_offset: this.instanceTimeZone.utcOffsetSeconds(),
         },
+        state,
       },
       sensors: Object.fromEntries(sensors.map(sensor => [sensor.kind, { value: sensor.value, unit: sensor.unit }])),
     }

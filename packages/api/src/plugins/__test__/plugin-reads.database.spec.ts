@@ -28,6 +28,7 @@ import { DataSourceFetchOutcomeService } from '../services/data-source-fetch-out
 import { PluginAssignmentsService } from '../services/plugin-assignments.service.js'
 import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
 import { PluginDataResolverService } from '../services/plugin-data-resolver.service.js'
+import { PluginDataSourceStateService } from '../services/plugin-data-source-state.service.js'
 import { PluginExporterService } from '../services/plugin-exporter.service.js'
 import { PluginFieldValuesService } from '../services/plugin-field-values.service.js'
 import { PluginImporterService } from '../services/plugin-importer.service.js'
@@ -73,9 +74,9 @@ describe('the Plugin reads, GET /api/plugins and GET /api/plugins/:id, against a
     const fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
     const config = asService<ConfigService>({ get: () => false, getOrThrow: () => API_URL })
     const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config), new PluginTransformService())
-    const templateContext = new PluginTemplateContextService(fieldValues, resolver, new InstanceTimeZone())
+    const templateContext = new PluginTemplateContextService(fieldValues, resolver, new InstanceTimeZone(), new PluginDataSourceStateService(database.getRepository(PluginDataSource)))
     const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
-    refresh = new PluginRefreshService(renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
+    refresh = new PluginRefreshService(renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), new PluginDataSourceStateService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
     scheduler = new PluginSchedulerService(refresh)
     assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
     plugins = new PluginsService(

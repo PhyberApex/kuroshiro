@@ -5,6 +5,7 @@ import { Repository } from 'typeorm'
 import { Plugin } from '../entities/plugin.entity.js'
 import { hideSecretsIn, secretValues } from '../plugin-field-values.js'
 import { DataSourceFetchOutcomeService } from './data-source-fetch-outcome.service.js'
+import { PluginDataSourceStateService } from './plugin-data-source-state.service.js'
 import { PluginRenderCacheService, TemplateRenderError } from './plugin-render-cache.service.js'
 import { PluginTemplateContextService } from './plugin-template-context.service.js'
 
@@ -32,6 +33,7 @@ export class PluginRefreshService {
     private readonly renderCache: PluginRenderCacheService,
     private readonly pluginTemplateContext: PluginTemplateContextService,
     private readonly fetchOutcome: DataSourceFetchOutcomeService,
+    private readonly sourceStates: PluginDataSourceStateService,
     @InjectRepository(Plugin)
     private readonly pluginRepository: Repository<Plugin>,
   ) {}
@@ -39,7 +41,7 @@ export class PluginRefreshService {
   async refresh(plugin: Plugin, { scheduled, isSuperseded }: RefreshOptions = { scheduled: false }): Promise<void> {
     // The cache entry is shared across Devices, so there is no single Device
     // to scope sensors to here.
-    const { context, sourceData, resolvedFieldValues } = await this.pluginTemplateContext.contextFor(plugin, [])
+    const { context, sourceData, resolvedFieldValues, sourceStates } = await this.pluginTemplateContext.contextFor(plugin, [])
 
     if (plugin.kind === 'Webhook') {
       await this.renderCache.renderAndCache(plugin, context)
@@ -52,8 +54,10 @@ export class PluginRefreshService {
     // used the real one); hidden here, so the one writer of lastFetchError never
     // stores it (unlike `context`, which keeps the real value for the render).
     // Every scheduled tick records its own fetch attempt, superseded or not: each was a real fetch.
-    if (scheduled)
+    if (scheduled) {
       await this.recordFetchOutcome(plugin, sourceData, resolvedFieldValues)
+      await this.sourceStates.save(plugin.dataSources ?? [], sourceStates)
+    }
 
     await this.renderPoll(plugin, context, { scheduled, isSuperseded })
   }

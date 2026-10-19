@@ -1,6 +1,7 @@
 import type { Mock } from 'vitest'
 import type { FetchableDataSource } from '../plugins/services/plugin-data-fetcher.service.js'
 import type { PluginDataResolverService } from '../plugins/services/plugin-data-resolver.service.js'
+import type { PluginDataSourceStateService } from '../plugins/services/plugin-data-source-state.service.js'
 import type { PluginFieldValuesService } from '../plugins/services/plugin-field-values.service.js'
 import { vi } from 'vitest'
 import { InstanceTimeZone } from '../instance/instance-time-zone.js'
@@ -59,11 +60,13 @@ export function createMockPluginRenderCacheService(): MockPluginRenderCacheServi
 export function createPluginTemplateContextService(
   resolvedFieldValues: Record<string, string> = {},
   dataResolver: Pick<PluginDataResolverService, 'resolveAll'> = { resolveAll: async () => ({}) },
+  sourceStates: Pick<PluginDataSourceStateService, 'load'> = { load: async () => ({}) },
 ): PluginTemplateContextService {
   return new PluginTemplateContextService(
     { resolveFor: async () => resolvedFieldValues } as unknown as PluginFieldValuesService,
     dataResolver as PluginDataResolverService,
     new InstanceTimeZone(),
+    sourceStates as PluginDataSourceStateService,
   )
 }
 

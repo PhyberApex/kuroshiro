@@ -39,6 +39,7 @@ import { DataSourceFetchOutcomeService } from '../services/data-source-fetch-out
 import { PluginAssignmentsService } from '../services/plugin-assignments.service.js'
 import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
 import { PluginDataResolverService } from '../services/plugin-data-resolver.service.js'
+import { PluginDataSourceStateService } from '../services/plugin-data-source-state.service.js'
 import { PluginExporterService } from '../services/plugin-exporter.service.js'
 import { PluginFieldValuesService } from '../services/plugin-field-values.service.js'
 import { PluginImporterService } from '../services/plugin-importer.service.js'
@@ -88,9 +89,9 @@ describe('what a Plugin renders from, and with which Template, against a real da
     const fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
     const config = asService<ConfigService>({ get: () => false, getOrThrow: () => 'https://kuroshiro.example' })
     const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config), new PluginTransformService())
-    const templateContext = new PluginTemplateContextService(fieldValues, resolver, new InstanceTimeZone())
+    const templateContext = new PluginTemplateContextService(fieldValues, resolver, new InstanceTimeZone(), new PluginDataSourceStateService(database.getRepository(PluginDataSource)))
     const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
-    const refresh = new PluginRefreshService(renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
+    const refresh = new PluginRefreshService(renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), new PluginDataSourceStateService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
     scheduler = new PluginSchedulerService(refresh)
     assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
     plugins = new PluginsService(
@@ -256,6 +257,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
         sensors: {},
         trmnl: {
           system: { timestamp_utc: 1790848800 },
+          state: {},
           plugin_settings: { instance_name: 'Weather', strategy: 'polling', dark_mode: 'no', no_screen_padding: 'no', custom_fields_values: { city: 'Berlin' } },
           user: { id: 'kuroshiro-user', locale: 'en', time_zone: expect.any(String), time_zone_iana: expect.any(String), utc_offset: expect.any(Number) },
         },
@@ -342,6 +344,30 @@ describe('what a Plugin renders from, and with which Template, against a real da
 
       expect(answer.image_url).not.toMatch(/^http:\/\/api\/screens\//)
       expect(dataSourceFetches()).toEqual([])
+    })
+  })
+
+  describe('a transform\'s Saved State (ADR-0052)', () => {
+    it('keeps the state a transform writes as trmnl_state between scheduled ticks, reads it back fresh at input.trmnl.state and in the template, and never writes it from a preview (ADR-0052)', async () => {
+      const plugin = await createPollPlugin({
+        dataSources: [{ name: 'counter', mode: 'literal', literalValue: {}, transformJs: 'function run(input) { const n = (input.trmnl.state.n || 0) + 1; return { n, trmnl_state: { n } } }' }],
+        templates: [{ layout: 'full', liquidMarkup: '<p>{{ trmnl.state.n }}/{{ counter.n }}</p>' }],
+      })
+      await assignments.assign(plugin.id, (await addDevice('Kitchen')).id)
+      const savedState = async () => (await database.getRepository(PluginDataSource).findOneByOrFail({ plugin: { id: plugin.id } })).savedState
+
+      await schedulerTick(plugin.id)
+      expect(await cachedOutput(plugin.id)).toContain('<p>1/1</p>')
+      expect(await savedState()).toEqual({ n: 1 })
+
+      await schedulerTick(plugin.id)
+      expect(await cachedOutput(plugin.id)).toContain('<p>2/2</p>')
+      expect(await savedState()).toEqual({ n: 2 })
+
+      const preview = await previewData(plugin.id)
+      expect(preview.context).toMatchObject({ counter: { n: 3 }, trmnl: { state: { n: 3 } } })
+      expect(preview.context).not.toHaveProperty('trmnl_state')
+      expect(await savedState()).toEqual({ n: 2 })
     })
   })
 
@@ -644,7 +670,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
       const demoConfig = asService<ConfigService>({ get: (key: string) => key === 'demo_mode' })
       const demoResolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, demoConfig), new PluginTransformService())
       const demoFieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
-      const demoPreview = new PluginPreviewDataService(database.getRepository(Plugin), database.getRepository(Device), deviceSensors, new PluginTemplateContextService(demoFieldValues, demoResolver, new InstanceTimeZone()))
+      const demoPreview = new PluginPreviewDataService(database.getRepository(Plugin), database.getRepository(Device), deviceSensors, new PluginTemplateContextService(demoFieldValues, demoResolver, new InstanceTimeZone(), new PluginDataSourceStateService(database.getRepository(PluginDataSource))))
       const plugin = await createPollPlugin()
 
       const preview = await demoPreview.previewData(plugin.id, { deviceId: null, dataSources: [{ name: 'internal', mode: 'fetch', url: 'http://127.0.0.1:9/secrets' }] })

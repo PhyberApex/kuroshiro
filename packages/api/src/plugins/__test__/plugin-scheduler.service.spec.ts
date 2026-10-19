@@ -2,6 +2,7 @@ import type { MockPluginDataFetcherService, MockPluginTransformService } from '.
 import type { Plugin } from '../entities/plugin.entity.js'
 import type { DataSourceFetchOutcomeService } from '../services/data-source-fetch-outcome.service.js'
 import type { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
+import type { PluginDataSourceStateService } from '../services/plugin-data-source-state.service.js'
 import type { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
 import type { PluginTransformService } from '../services/plugin-transform.service.js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -43,6 +44,7 @@ describe('pluginSchedulerService', () => {
       asService<PluginRenderCacheService>(mockRenderCache),
       createPluginTemplateContextService({}, pluginDataResolver),
       asService<DataSourceFetchOutcomeService>(mockFetchOutcome),
+      asService<PluginDataSourceStateService>({ save: vi.fn() }),
       asRepository(mockPluginRepo),
     ))
   })
@@ -513,7 +515,7 @@ describe('pluginSchedulerService', () => {
       service.schedulePlugin(plugin)
       await service.runTick(plugin)
 
-      expect(mockTransformer.transform).toHaveBeenCalledWith('return { totalShort: "3.5k" }', expect.objectContaining({ raw: 'graphql body', trmnl: expect.anything() }))
+      expect(mockTransformer.transform).toHaveBeenCalledWith('return { totalShort: "3.5k" }', expect.objectContaining({ raw: 'graphql body', trmnl: expect.anything() }), expect.anything())
       expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(
         plugin,
         expect.objectContaining({ gh: { totalShort: '3.5k' } }),

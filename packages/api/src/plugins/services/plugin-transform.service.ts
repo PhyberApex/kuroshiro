@@ -7,6 +7,8 @@ const DEFAULT_TIMEOUT_MS = 5000
 export interface TransformOptions {
   /** How long the code may take, synchronously and awaiting, before the transform fails. */
   timeoutMs?: number
+  /** The `fetch` the code may call, guarded by the caller; without one the code has no way to the network. */
+  fetch?: (url: string, init?: RequestInit) => Promise<Response>
 }
 
 /**
@@ -34,9 +36,10 @@ export class PluginTransformService {
 
   /**
    * Runs a transform in a sandbox on its input, the fetched data laid over the template context, and answers what the
-   * transform returns, awaited when it is a promise. The sandbox has no `require`, no network and no file system.
+   * transform returns, awaited when it is a promise. The sandbox has no `require` and no file system, and only the
+   * `fetch` it is handed (ADR-0052).
    */
-  async transform(transformJs: string, input: unknown, { timeoutMs = DEFAULT_TIMEOUT_MS }: TransformOptions = {}): Promise<unknown> {
+  async transform(transformJs: string, input: unknown, { timeoutMs = DEFAULT_TIMEOUT_MS, fetch }: TransformOptions = {}): Promise<unknown> {
     try {
       const moduleObj = { exports: {} }
       const vm = new VM({
@@ -49,6 +52,7 @@ export class PluginTransformService {
           console: {
             log: (...args: unknown[]) => this.logger.debug(`[Transform] ${args.join(' ')}`),
           },
+          ...(fetch && { fetch }),
         },
       })
 

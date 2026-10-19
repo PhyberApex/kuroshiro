@@ -59,6 +59,13 @@ export class PluginDataFetcherService {
     return this.parseResponse(response)
   }
 
+  /** The `fetch` a transform calls (ADR-0052): the request as given, refused for an internal host in demo mode like a Data Source URL. */
+  async fetchForTransform(url: string, init?: RequestInit): Promise<Response> {
+    if (this.configService.get<boolean>('demo_mode'))
+      assertPublicUrl(url)
+    return fetch(url, init)
+  }
+
   // The rendered result is never logged: a Field Value placed in a url or a header can be a secret.
   private async renderLiquid(text: string, context: object): Promise<string> {
     if (!text.includes('{{') && !text.includes('{%'))
