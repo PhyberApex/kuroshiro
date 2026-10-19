@@ -14,7 +14,7 @@ const weather = buildPluginDetail({
 })
 
 const forecast = (url: string) => ({ mode: 'fetch' as const, method: 'GET', url, headers: {}, body: {}, transformJs: null })
-const units = (options: string[]) => ({ keyname: 'units', label: 'Units', type: 'select', helpText: null, default: 'metric', required: false, order: 1, options: options.map(value => ({ label: value, value })) })
+const units = (options: string[]) => ({ keyname: 'units', label: 'Units', type: 'select', helpText: null, default: 'metric', required: false, order: 1, options: options.map(value => ({ label: value, value })), attributes: {} })
 
 const items = [
   buildUpdateItem({ itemType: 'refreshInterval', key: 'refreshInterval', snapshot: 15, local: 15, upstream: 30 }),

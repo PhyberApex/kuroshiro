@@ -68,6 +68,7 @@ function fieldLines(field: RecipeField): string[] {
     ...(field.default ? [`default: ${field.default}`] : []),
     `required: ${field.required ? 'yes' : 'no'}`,
     ...(field.helpText ? [`help text: ${field.helpText}`] : []),
+    ...Object.entries(field.attributes ?? {}).map(([name, value]) => `${name}: ${value}`),
     `place: ${field.order}`,
   ]
 }

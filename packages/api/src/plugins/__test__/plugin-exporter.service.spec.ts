@@ -82,6 +82,20 @@ describe('pluginExporterService', () => {
     expect(manifest.custom_fields[0].optional).toBe(false)
   })
 
+  it('writes a field\'s attributes as TRMNL\'s form builder names them, and none for a field without', async () => {
+    const plugin = makePlugin({
+      fields: [
+        makePluginField({ keyname: 'posts', fieldType: 'number', name: 'Posts', attributes: { placeholder: '3', min: 1, max: 5, step: 0.5, hint: 'Maximum 5.', group: 'Display', maxlength: 2, rows: 1 } }),
+        makePluginField({ keyname: 'city', fieldType: 'string', name: 'City', attributes: {} }),
+      ],
+    })
+
+    const manifest = yaml.load(new AdmZip(await service.exportToZip(plugin)).getEntry('.trmnlp.yml')!.getData().toString('utf8')) as { custom_fields: Record<string, unknown>[] }
+
+    expect(manifest.custom_fields[0]).toMatchObject({ keyname: 'posts', placeholder: '3', min: 1, max: 5, step: 0.5, help_text: 'Maximum 5.', group: 'Display', maxlength: 2, rows: 1 })
+    expect(Object.keys(manifest.custom_fields[1])).toEqual(['keyname', 'field_type', 'name', 'description', 'default_value', 'optional'])
+  })
+
   it('includes settings with a data_sources array', async () => {
     const plugin = makePlugin({
       name: 'Test',

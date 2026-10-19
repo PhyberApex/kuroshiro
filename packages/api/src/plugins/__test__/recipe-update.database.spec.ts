@@ -244,7 +244,7 @@ describe('the Recipe Update Check, against a real database', () => {
         conflict: false,
         snapshot: null,
         local: null,
-        upstream: { keyname: 'city', label: 'City', type: 'string', helpText: null, default: null, required: true, order: 1, options: null },
+        upstream: { keyname: 'city', label: 'City', type: 'string', helpText: null, default: null, required: true, order: 1, options: null, attributes: {} },
       })
     })
 

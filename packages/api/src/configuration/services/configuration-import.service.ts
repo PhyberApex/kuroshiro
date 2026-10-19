@@ -894,6 +894,7 @@ export class ConfigurationImportService {
     field.options = parsedField.options ?? null
     field.required = parsedField.required
     field.order = parsedField.order
+    field.attributes = parsedField.attributes ?? {}
     field.plugin = plugin
     const saved = await repo.save(field)
     const retypedFromPassword = previousFieldType !== undefined && isSecretField({ fieldType: previousFieldType }) && !isSecretField(saved)

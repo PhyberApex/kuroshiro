@@ -217,6 +217,7 @@ export class PluginsService implements OnModuleInit {
         options: f.options,
         required: f.required,
         order: f.order,
+        attributes: f.attributes,
       })),
     }
   }
@@ -291,6 +292,7 @@ export class PluginsService implements OnModuleInit {
       options: fieldData.options ?? null,
       required: fieldData.required || false,
       order: fieldData.order || 0,
+      attributes: fieldData.attributes ?? {},
     }
   }
 

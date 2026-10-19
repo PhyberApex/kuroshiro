@@ -3,7 +3,7 @@ import { Buffer } from 'node:buffer'
 import { Injectable, Logger } from '@nestjs/common'
 import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
-import { formatFieldOptions } from '../plugin-field-options.js'
+import { formatFieldAttributes, formatFieldOptions } from '../plugin-field-options.js'
 
 export interface PluginExportEntry {
   path: string
@@ -29,6 +29,7 @@ export class PluginExporterService {
         default_value: field.defaultValue || '',
         ...(field.options ? { options: formatFieldOptions(field.options) } : {}),
         optional: !field.required,
+        ...formatFieldAttributes(field.attributes),
       })),
     }
 

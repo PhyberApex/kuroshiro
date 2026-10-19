@@ -1,4 +1,4 @@
-import type { MergeStrategy, PluginFieldOption, PluginKind } from 'kuroshiro-shared'
+import type { MergeStrategy, PluginFieldAttributes, PluginFieldOption, PluginKind } from 'kuroshiro-shared'
 import type { JsonObject } from '../../utils/json.js'
 import { Buffer } from 'node:buffer'
 import * as path from 'node:path'
@@ -94,6 +94,28 @@ interface CustomField {
   default?: string | number | boolean | null
   optional?: boolean
   options?: unknown
+  placeholder?: unknown
+  help_text?: unknown
+  group?: unknown
+  min?: unknown
+  max?: unknown
+  step?: unknown
+  maxlength?: unknown
+  rows?: unknown
+}
+
+const FIELD_TEXT_ATTRIBUTES: Array<[archive: 'placeholder' | 'help_text' | 'group', attribute: 'placeholder' | 'hint' | 'group']> = [['placeholder', 'placeholder'], ['help_text', 'hint'], ['group', 'group']]
+const FIELD_NUMBER_ATTRIBUTES = ['min', 'max', 'step', 'maxlength', 'rows'] as const
+
+/** The Plugin Field attributes TRMNL's form builder names, text kept when present and numbers when they are numbers, written as such or quoted (ADR-0053). */
+function attributesOf(field: CustomField): PluginFieldAttributes {
+  const texts = FIELD_TEXT_ATTRIBUTES.flatMap(([archive, attribute]) => typeof field[archive] === 'string' && field[archive].trim() !== '' ? [[attribute, field[archive]]] : [])
+  const numbers = FIELD_NUMBER_ATTRIBUTES.flatMap((attribute) => {
+    const value = field[attribute]
+    const number = typeof value === 'number' ? value : typeof value === 'string' && value.trim() !== '' ? Number(value) : Number.NaN
+    return Number.isFinite(number) ? [[attribute, number]] : []
+  })
+  return Object.fromEntries([...texts, ...numbers])
 }
 
 interface DataSourceEntry {
@@ -222,6 +244,8 @@ export interface ParsedPlugin {
     options?: PluginFieldOption[]
     required: boolean
     order: number
+    /** Absent in a Recipe Snapshot taken before attributes were kept (ADR-0053). */
+    attributes?: PluginFieldAttributes
   }>
   sourceRecipeId?: string
 }
@@ -555,6 +579,7 @@ export class PluginImporterService {
         ...(options ? { options } : {}),
         required: !field.optional,
         order: index + 1,
+        attributes: attributesOf(field),
       }
     })
   }

@@ -28,6 +28,7 @@ function toDataSource(value: unknown): RecipeDataSource {
 function toField(value: unknown): RecipeField {
   const field = value as NormalizedField
   return {
+    attributes: field.attributes ?? {},
     keyname: field.keyname,
     label: field.name,
     type: field.fieldType,

@@ -81,7 +81,7 @@ A Plugin attached to one Device's Rotation, always paired 1:1 with a plugin-type
 _Avoid_: DevicePlugin (the entity name), install, uninstall, remove, detach
 
 **Plugin Field**:
-One named input a Plugin declares for the admin to fill in — a key, a label, a type (single-line text, multi-line text, number, on/off, password, or a select with its options), an optional default and whether it is required. Part of the Plugin: it arrives with a Recipe or `.trmnlp` import, or the admin authors it on the Plugin. A type Kuroshiro has no control for is treated as single-line text; the `author_bio` type is a read-only credit, never an input.
+One named input a Plugin declares for the admin to fill in — a key, a label, a type (single-line text, web address, date, time, multi-line text, number, on/off, password, or a select with its options), an optional default, whether it is required, and its attributes as TRMNL's form builder names them: placeholder, hint, group and the bounds of a number or a text (ADR-0053). Part of the Plugin: it arrives with a Recipe or `.trmnlp` import, or the admin authors it on the Plugin. A type Kuroshiro has no control for is treated as single-line text; the `author_bio` type is a read-only credit, never an input.
 _Avoid_: Custom field, form field (TRMNL's terms), setting, Plugin Configuration, variable
 
 **Dithering**:

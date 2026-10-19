@@ -15,7 +15,7 @@ const weather = buildPluginDetail({
   id: 'weather',
   recipe: { id: '41120', name: 'Weather report', importedAt: '2026-09-12T09:20:00.000Z', snapshotTakenAt: null },
   dataSources: [{ ...source, fetchFailureStreak: 6, alertFiring: true }, { ...source, id: 'pollen', name: 'pollen', fetchFailureStreak: 1 }],
-  fields: [{ id: 'latitude', keyname: 'latitude', label: 'Latitude', type: 'string', helpText: null, default: null, required: true, order: 0, options: null }],
+  fields: [{ id: 'latitude', keyname: 'latitude', label: 'Latitude', type: 'string', helpText: null, default: null, required: true, order: 0, options: null, attributes: {} }],
   fieldValues: { latitude: { secret: false, value: null } },
   needsValues: true,
 })

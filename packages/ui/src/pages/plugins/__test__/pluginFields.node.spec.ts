@@ -44,6 +44,7 @@ describe('the Plugin Fields of the Plugin\'s form', () => {
         storedOptions: [{ label: 'Metric', value: 'metric' }, { label: 'Imperial', value: 'imperial' }],
         helpText: '',
         required: false,
+        attributes: {},
         removed: false,
       }])
     })
@@ -57,11 +58,18 @@ describe('the Plugin Fields of the Plugin\'s form', () => {
     it('is every Plugin Field in its order, as the server takes it', () => {
       expect(pluginFields.toInput({ rows: drafted() })).toEqual({
         fields: [
-          { keyname: 'location', name: 'Location', fieldType: 'string', description: 'A place name or a postcode.', options: null, required: true, order: 0 },
-          { keyname: 'units', name: 'Units', fieldType: 'select', defaultValue: 'metric', options: [{ label: 'Metric', value: 'metric' }, { label: 'Imperial', value: 'imperial' }], required: false, order: 1 },
-          { keyname: 'api_key', name: 'API key', fieldType: 'password', options: null, required: false, order: 2 },
+          { keyname: 'location', name: 'Location', fieldType: 'string', description: 'A place name or a postcode.', options: null, required: true, order: 0, attributes: {} },
+          { keyname: 'units', name: 'Units', fieldType: 'select', defaultValue: 'metric', options: [{ label: 'Metric', value: 'metric' }, { label: 'Imperial', value: 'imperial' }], required: false, order: 1, attributes: {} },
+          { keyname: 'api_key', name: 'API key', fieldType: 'password', options: null, required: false, order: 2, attributes: {} },
         ],
       })
+    })
+
+    it('keeps a Plugin Field\'s attributes as read, since the form does not edit them yet', () => {
+      const posts = buildPluginField({ id: 'posts-id', keyname: 'posts', label: 'Posts', type: 'number', attributes: { min: 1, group: 'Display' } })
+      const { rows } = pluginFields.read(buildPluginDetail({ fields: [posts] }))
+
+      expect(pluginFields.toInput({ rows }).fields).toEqual([expect.objectContaining({ keyname: 'posts', attributes: { min: 1, group: 'Display' } })])
     })
 
     it('leaves a removed Plugin Field out and counts the order without it', () => {
@@ -179,6 +187,7 @@ describe('the Plugin Fields of the Plugin\'s form', () => {
         storedOptions: null,
         helpText: '',
         required: false,
+        attributes: {},
         removed: false,
       })
     })
@@ -199,7 +208,9 @@ describe('the Plugin Fields of the Plugin\'s form', () => {
 
   it.each([
     ['string', 'Single-line text'],
-    ['url', 'Single-line text'],
+    ['url', 'Web address'],
+    ['date', 'Date'],
+    ['time', 'Time'],
     ['text', 'Multi-line text'],
     ['number', 'Number'],
     ['boolean', 'On or off'],

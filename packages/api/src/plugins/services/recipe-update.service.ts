@@ -73,6 +73,7 @@ function toComparablePlugin(plugin: Plugin): ComparablePlugin {
       options: field.options,
       required: field.required,
       order: field.order,
+      attributes: field.attributes,
     })),
   }
 }
@@ -309,6 +310,7 @@ export class RecipeUpdateService {
       options: upstream.options,
       required: upstream.required,
       order: upstream.order,
+      attributes: upstream.attributes ?? {},
     }
 
     if (existing) {

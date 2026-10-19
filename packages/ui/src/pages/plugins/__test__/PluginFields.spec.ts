@@ -73,7 +73,7 @@ describe('the Plugin Fields of a Plugin', () => {
 
       expect(lineOf('location')).toEqual(['location', 'Location · required', 'Single-line text'])
       expect(lineOf('units')).toEqual(['units', 'Units', 'Select'])
-      expect(lineOf('feed')).toEqual(['feed', 'no label', 'Single-line text'])
+      expect(lineOf('feed')).toEqual(['feed', 'no label', 'Web address'])
       expect(lineOf('author_bio')).toEqual(['author_bio', 'About', 'Credit, read-only'])
       await expect.element(edit(screen, 'location')).toBeVisible()
     })
@@ -100,14 +100,14 @@ describe('the Plugin Fields of a Plugin', () => {
       await expect.element(edit(screen, 'units')).toHaveTextContent('Edit')
     })
 
-    it('offers the six types, a Default only where there is one to give and Options only for a Select', async () => {
+    it('offers the nine types, a Default only where there is one to give and Options only for a Select', async () => {
       fakeWeather([LOCATION])
       const screen = await mountOpened(1)
       const opened = await open(screen, 'location')
 
       expect(opened.getByRole('textbox', { name: 'Options' }).elements()).toEqual([])
       await opened.getByRole('combobox', { name: 'Type' }).click()
-      await expect.poll(() => screen.getByRole('option').elements().map(read)).toEqual(['Single-line text', 'Multi-line text', 'Number', 'On or off', 'Password', 'Select'])
+      await expect.poll(() => screen.getByRole('option').elements().map(read)).toEqual(['Single-line text', 'Multi-line text', 'Number', 'On or off', 'Password', 'Select', 'Web address', 'Date', 'Time'])
 
       await screen.getByRole('option', { name: 'Password' }).click()
       await expect.poll(() => opened.getByRole('textbox', { name: 'Default' }).elements()).toEqual([])
@@ -143,8 +143,8 @@ describe('the Plugin Fields of a Plugin', () => {
 
       await expect.poll(() => faked.saves).toEqual([{
         fields: [
-          { keyname: 'location', name: 'Place', fieldType: 'text', description: 'Where you are.', options: null, required: true, order: 0 },
-          { keyname: 'units', name: 'Units', fieldType: 'select', defaultValue: 'metric', options: [{ label: 'Metric', value: 'metric' }, { label: 'Imperial', value: 'imperial' }], required: false, order: 1 },
+          { keyname: 'location', name: 'Place', fieldType: 'text', description: 'Where you are.', options: null, required: true, order: 0, attributes: {} },
+          { keyname: 'units', name: 'Units', fieldType: 'select', defaultValue: 'metric', options: [{ label: 'Metric', value: 'metric' }, { label: 'Imperial', value: 'imperial' }], required: false, order: 1, attributes: {} },
         ],
       }])
       await expect.element(screen.getByRole('textbox', { name: 'Place' })).toHaveValue('Lindenplatz')
@@ -235,7 +235,7 @@ describe('the Plugin Fields of a Plugin', () => {
       await save(screen)
 
       await expect.poll(() => sentFields(faked.saves)).toEqual([['location', 'station']])
-      expect(faked.saves[0]!.fields![1]).toEqual({ keyname: 'station', name: '', fieldType: 'string', options: null, required: false, order: 1 })
+      expect(faked.saves[0]!.fields![1]).toEqual({ keyname: 'station', name: '', fieldType: 'string', options: null, required: false, order: 1, attributes: {} })
       expect(faked.saves[0]!.fieldValues).toEqual({ location: 'Lindenplatz', station: 'Hbf' })
       await expect.element(form(screen, 'station')).toBeVisible()
       await expect.element(screen.getByRole('textbox', { name: 'station', exact: true })).toHaveValue('Hbf')

@@ -38,6 +38,7 @@ function savedField(plugin: PluginDetail, sent: Sent, order: number): PluginFiel
     keyname: sent.keyname,
     label: sent.name,
     type: sent.fieldType ?? 'string',
+    attributes: sent.attributes ?? {},
     helpText: sent.description ?? null,
     default: sent.defaultValue ?? null,
     required: sent.required ?? false,

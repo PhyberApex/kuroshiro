@@ -182,7 +182,7 @@ describe('the Data Sources part of the Plugin\'s form', () => {
     })
 
     it('is checked against the keynames of the Plugin Fields as they stand in the form, saved or not', () => {
-      const field = { id: 'f1', keyname: 'forecast', label: 'Forecast', type: 'string', helpText: null, default: null, required: false, order: 0, options: null }
+      const field = { id: 'f1', keyname: 'forecast', label: 'Forecast', type: 'string', helpText: null, default: null, required: false, order: 0, options: null, attributes: {} }
       const message = 'forecast is already the keyname of a Plugin Field.'
 
       expect(problemsOf(pluginWith({ fields: [field] }), () => {})).toEqual([{ path: 'dataSources.0.name', message }])

@@ -26,6 +26,7 @@ const describedBy = computed(() => [
   props.field.required && `${id.value}-required`,
   note.value && !clearable.value && `${id.value}-note`,
   props.field.description && `${id.value}-help`,
+  props.field.attributes?.hint && `${id.value}-hint`,
 ].filter(Boolean).join(' ') || undefined)
 
 async function clear() {
@@ -64,6 +65,9 @@ async function clear() {
     </p>
     <p v-if="field.description" :id="`${id}-help`" class="help">
       {{ field.description }}
+    </p>
+    <p v-if="field.attributes?.hint" :id="`${id}-hint`" class="help hint">
+      {{ field.attributes.hint }}
     </p>
   </div>
 </template>

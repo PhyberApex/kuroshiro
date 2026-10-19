@@ -1,7 +1,7 @@
 import type { PluginFieldRead } from 'kuroshiro-shared'
 import { describe, expect, it } from 'vitest'
 import { buildPluginDetail, buildPluginField } from '@/testing/fixtures/plugins'
-import { creditOf, fieldControl, fieldsWithRow, fieldValueNote, isClearable, isOn, pluginFieldValues, valuesAmong } from '../pluginFieldValues'
+import { creditOf, fieldControl, fieldsWithRow, fieldValueNote, groupsOf, isClearable, isOn, pluginFieldValues, valuesAmong } from '../pluginFieldValues'
 
 const field = (keyname: string, overrides: Partial<PluginFieldRead> = {}) => buildPluginField({ id: `${keyname}-id`, keyname, label: keyname, ...overrides })
 
@@ -69,7 +69,10 @@ describe('the Field Values of the Plugin\'s form', () => {
 
   it.each([
     ['string', 'text'],
-    ['url', 'text'],
+    ['url', 'url'],
+    ['date', 'date'],
+    ['time', 'time'],
+    ['code', 'textarea'],
     ['text', 'textarea'],
     ['number', 'number'],
     ['boolean', 'switch'],
@@ -128,6 +131,17 @@ describe('the Field Values of the Plugin\'s form', () => {
   it('reads the credit from the author_bio Plugin Field', () => {
     expect(creditOf([{ keyname: 'location', name: 'Location' }, { keyname: 'author_bio', name: 'About', fieldType: 'author_bio', description: 'Made by Mika.' }])).toBe('Made by Mika.')
     expect(creditOf([{ keyname: 'location', name: 'Location' }])).toBeUndefined()
+  })
+
+  it('groups the rows under their group\'s name in the order the groups first appear, the ungrouped ones first', () => {
+    const rows = [
+      { keyname: 'a', name: 'A', attributes: { group: 'One' } },
+      { keyname: 'b', name: 'B' },
+      { keyname: 'c', name: 'C', attributes: { group: 'Two' } },
+      { keyname: 'd', name: 'D', attributes: { group: 'One' } },
+    ]
+
+    expect(groupsOf(rows).map(group => [group.name, group.fields.map(field => field.keyname)])).toEqual([[null, ['b']], ['One', ['a', 'd']], ['Two', ['c']]])
   })
 
   it('gives a row to every Plugin Field that is an input, once per keyname', () => {

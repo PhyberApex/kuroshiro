@@ -228,13 +228,13 @@ describe('toPluginDetail', () => {
     const plugin = makePlugin({
       fields: [
         makePluginField({ id: 'field-2', keyname: 'units', order: 2, fieldType: 'select', name: 'Units', options: [{ label: 'Metric', value: 'metric' }] }),
-        makePluginField({ id: 'field-1', keyname: 'city', order: 1, fieldType: 'string', name: 'City', description: 'Where you live', defaultValue: 'Berlin', required: true }),
+        makePluginField({ id: 'field-1', keyname: 'city', order: 1, fieldType: 'string', name: 'City', description: 'Where you live', defaultValue: 'Berlin', required: true, attributes: { placeholder: 'Hamburg', group: 'Where' } }),
       ],
     })
 
     expect(toPluginDetail(plugin, NOTHING_AROUND_IN_DETAIL).fields).toEqual([
-      { id: 'field-1', keyname: 'city', label: 'City', type: 'string', helpText: 'Where you live', default: 'Berlin', required: true, order: 1, options: null },
-      { id: 'field-2', keyname: 'units', label: 'Units', type: 'select', helpText: null, default: null, required: false, order: 2, options: [{ label: 'Metric', value: 'metric' }] },
+      { id: 'field-1', keyname: 'city', label: 'City', type: 'string', helpText: 'Where you live', default: 'Berlin', required: true, order: 1, options: null, attributes: { placeholder: 'Hamburg', group: 'Where' } },
+      { id: 'field-2', keyname: 'units', label: 'Units', type: 'select', helpText: null, default: null, required: false, order: 2, options: [{ label: 'Metric', value: 'metric' }], attributes: {} },
     ])
   })
 
