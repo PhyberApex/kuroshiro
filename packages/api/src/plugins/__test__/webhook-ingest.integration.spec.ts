@@ -1,15 +1,17 @@
 import type { TestingModule } from '@nestjs/testing'
 import type { MashupSlot } from '../../mashup/entities/mashup-slot.entity.js'
 import type { Screen } from '../../screens/screens.entity.js'
+import type { HttpTestApp } from '../../test/httpApp.js'
 import type { Plugin } from '../entities/plugin.entity.js'
 import { UnprocessableEntityException } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { getRepositoryToken } from '@nestjs/typeorm'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { MashupSlot as MashupSlotEntity } from '../../mashup/entities/mashup-slot.entity.js'
 import { Screen as ScreenEntity } from '../../screens/screens.entity.js'
 import { makeMashupConfiguration, makeMashupSlot, makePlugin, makePluginTemplate, makeScreen } from '../../test/fixtures.js'
+import { createHttpTestApp } from '../../test/httpApp.js'
 import { createMockPluginFieldValuesService } from '../../test/mockPluginCollaborators.js'
 import { DevicePlugin } from '../entities/device-plugin.entity.js'
 import { PluginDataSource } from '../entities/plugin-data-source.entity.js'
@@ -27,6 +29,7 @@ import { PluginRendererService } from '../services/plugin-renderer.service.js'
 import { PluginSchedulerService } from '../services/plugin-scheduler.service.js'
 import { PluginTemplateContextService } from '../services/plugin-template-context.service.js'
 import { WebhookIngestService } from '../services/webhook-ingest.service.js'
+import { WebhookIngestController } from '../webhook-ingest.controller.js'
 
 function matches(entity: unknown, where: Record<string, unknown>): boolean {
   const record = entity as Record<string, unknown>
@@ -39,6 +42,7 @@ function matches(entity: unknown, where: Record<string, unknown>): boolean {
 
 describe('webhook ingest integration', () => {
   let ingest: WebhookIngestService
+  let module: TestingModule
   let plugin: Plugin
   let screens: Screen[]
   let mashupSlots: MashupSlot[]
@@ -89,7 +93,7 @@ describe('webhook ingest integration', () => {
       manager: { getRepository: (name: string) => (name === 'MashupSlot' ? mashupSlotRepo : null) },
     }
 
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         WebhookIngestService,
         PluginRenderCacheService,
@@ -217,6 +221,42 @@ describe('webhook ingest integration', () => {
 
     it('returns null before the first POST', () => {
       expect(ingest.readPayload(plugin)).toBeNull()
+    })
+  })
+
+  describe('gET /api/webhook/:token', () => {
+    let http: HttpTestApp
+
+    beforeEach(async () => {
+      http = await createHttpTestApp({
+        controllers: [WebhookIngestController],
+        providers: [
+          { provide: WebhookIngestService, useValue: ingest },
+          { provide: getRepositoryToken(PluginEntity), useValue: module.get(getRepositoryToken(PluginEntity)) },
+        ],
+      })
+    })
+
+    afterEach(async () => {
+      await http.app.close()
+    })
+
+    it('answers the stored payload as JSON with Content-Type: application/json', async () => {
+      await ingest.ingest(plugin, { status: 'ok', readings: [1, 2] })
+
+      const response = await http.request('/api/webhook/token-abc')
+
+      expect(response.status).toBe(200)
+      expect(response.headers.get('content-type')).toMatch(/^application\/json/)
+      expect(await response.json()).toEqual({ status: 'ok', readings: [1, 2] })
+    })
+
+    it('answers null as the literal null body when nothing was stored', async () => {
+      const response = await http.request('/api/webhook/token-abc')
+
+      expect(response.status).toBe(200)
+      expect(response.headers.get('content-type')).toMatch(/^application\/json/)
+      expect(await response.text()).toBe('null')
     })
   })
 })

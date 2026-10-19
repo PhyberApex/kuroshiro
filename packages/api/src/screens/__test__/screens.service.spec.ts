@@ -5,8 +5,11 @@ import type { Device } from '../../devices/devices.entity.js'
 import type { MockDeviceModelsService } from '../../test/mockDeviceModelsService.js'
 import type { Screen } from '../screens.entity.js'
 import * as fs from 'node:fs'
+import { Logger } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ValidationException } from '../../errors/api.exception.js'
 import { makeDevice, makeScreen } from '../../test/fixtures.js'
+import { makeMulterFile } from '../../test/fs.js'
 import { createMockDeviceModelsService, primeMockDeviceModelsService } from '../../test/mockDeviceModelsService.js'
 import { asRepository, createMockRepository, createMockTransactionalRepository } from '../../test/mockRepository.js'
 import { asService } from '../../test/mockService.js'
@@ -83,6 +86,38 @@ describe('screensService', () => {
       await expect(service.reconvertImageScreens(device)).resolves.toBe(1)
       expect(unlinkMock).toHaveBeenCalledWith(expect.stringContaining('tmp-a.png'))
     })
+
+    it('logs a warning and counts it as not reconverted, instead of throwing, when an image Screen\'s file is gone from disk', async () => {
+      screensRepo.find.mockResolvedValue([makeScreen({ id: 'gone', type: 'file', device })])
+      fileExistsMock.mockResolvedValue(false)
+      const warned = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+      const { convertToPng } = await import('../../utils/imageUtils.js')
+
+      await expect(service.reconvertImageScreens(device)).resolves.toBe(0)
+      expect(warned).toHaveBeenCalledWith('No image to reconvert for screen gone')
+      expect(convertToPng).not.toHaveBeenCalled()
+      expect(screensRepo.update).not.toHaveBeenCalled()
+      warned.mockRestore()
+    })
+  })
+
+  it('refuses a kind other than file sent with a file, at path file', async () => {
+    const refusal = await service.add({ deviceId: 'dev', kind: 'html', name: 'Markup', html: '<p></p>' }, makeMulterFile()).catch((err: unknown) => err)
+
+    expect(refusal).toBeInstanceOf(ValidationException)
+    expect((refusal as ValidationException).fields).toEqual([{ path: 'file', message: 'Only a File Screen takes a file.' }])
+    expect(devicesRepo.findOneBy).not.toHaveBeenCalled()
+  })
+
+  it('refuses a private or loopback URL under demo_mode before anything is fetched', async () => {
+    mockConfigService.get.mockImplementation((key: string) => key === 'demo_mode')
+    const device = makeDevice({ id: 'dev' })
+    screensRepo.findOne.mockResolvedValue(makeScreen({ id: SCREEN_ID, type: 'external', device, fetchManual: true, externalLink: 'http://127.0.0.1/image.png' }))
+    const { downloadImage } = await import('../../utils/imageUtils.js')
+
+    await expect(service.refresh(SCREEN_ID)).rejects.toThrow('Requests to private IP ranges are not allowed in demo mode')
+    expect(downloadImage).not.toHaveBeenCalled()
+    expect(screensRepo.update).not.toHaveBeenCalled()
   })
 
   it('refresh throws if not found', async () => {

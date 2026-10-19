@@ -158,6 +158,25 @@ describe('ingressBasePathMiddleware', () => {
     expect(res.send).toHaveBeenCalledWith(expect.stringContaining('<base href="/">'))
   })
 
+  it('drops the cached copy and passes the error to next when index.html cannot be read', async () => {
+    fs.rmSync(path.join(publicDir, 'index.html'))
+    const middleware = ingressBasePathMiddleware(publicDir)
+    const res = makeResponse()
+    const next = vi.fn()
+
+    middleware(makeRequest({ path: '/' }), res, next)
+    await vi.waitFor(() => expect(next).toHaveBeenCalled())
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ code: 'ENOENT' }))
+    expect(res.send).not.toHaveBeenCalled()
+
+    fs.writeFileSync(path.join(publicDir, 'index.html'), '<html><head></head></html>')
+    middleware(makeRequest({ path: '/' }), res, next)
+    await vi.waitFor(() => expect(res.send).toHaveBeenCalled())
+
+    expect(res.send).toHaveBeenCalledWith(expect.stringContaining('<base href="/">'))
+  })
+
   it('passes non-GET requests through untouched', () => {
     const middleware = ingressBasePathMiddleware(publicDir)
     const req = makeRequest({ method: 'POST', path: '/' })
