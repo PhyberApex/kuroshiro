@@ -1,5 +1,6 @@
+import type { Response } from 'express'
 import type { HttpTestApp } from '../../test/httpApp.js'
-import { Body, ConflictException, Controller, Get, HttpStatus, Logger, NotFoundException, Patch, Post } from '@nestjs/common'
+import { Body, ConflictException, Controller, Get, HttpStatus, Logger, NotFoundException, Patch, Post, Res } from '@nestjs/common'
 import { Type } from 'class-transformer'
 import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator'
 import { QueryFailedError } from 'typeorm'
@@ -59,6 +60,12 @@ class ThingsController {
   @Get('bug')
   bug() {
     throw new Error('secret detail')
+  }
+
+  @Get('half-sent')
+  halfSent(@Res() response: Response) {
+    response.status(200).write('partial')
+    throw new Error('failed after the headers went out')
   }
 
   @Get('unique')
@@ -161,6 +168,17 @@ describe('the admin API error envelope', () => {
     expect(response.status).toBe(500)
     expect(await response.json()).toEqual({ statusCode: 500, code: 'internal', message: 'Internal server error' })
     expect(logged).toHaveBeenCalledWith('secret detail', expect.stringContaining('ThingsController.bug'))
+    logged.mockRestore()
+  })
+
+  it('ends the response and writes no error body when an exception comes after the headers were sent', async () => {
+    const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {})
+
+    const response = await http.request('/api/things/half-sent')
+
+    expect(response.status).toBe(200)
+    expect(await response.text()).toBe('partial')
+    expect(logged).toHaveBeenCalledWith('failed after the headers went out', expect.any(String))
     logged.mockRestore()
   })
 

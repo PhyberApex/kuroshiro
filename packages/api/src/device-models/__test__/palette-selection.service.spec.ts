@@ -39,6 +39,20 @@ describe('paletteSelectionService', () => {
     })
   })
 
+  describe('allowedPalettesFor', () => {
+    it('answers [] for a Device Model with no paletteIds without touching the repository', async () => {
+      await expect(service.allowedPalettesFor({ ...OG_PLUS, paletteIds: [] })).resolves.toEqual([])
+      expect(paletteRepo.find).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('fallbackPaletteFor', () => {
+    it('throws naming the model when the bundled snapshot holds no Palette for it', () => {
+      expect(() => service.fallbackPaletteFor({ ...OG_PLUS, name: 'homemade_panel', paletteIds: ['nope'] }))
+        .toThrow('Bundled palette snapshot has no palette for device model homemade_panel')
+    })
+  })
+
   describe('supportsPalette', () => {
     it('accepts a curated official palette and refuses one the model does not list', async () => {
       await expect(service.supportsPalette(OG_PLUS, GRAY_4)).resolves.toBe(true)
