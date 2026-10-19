@@ -86,6 +86,49 @@ describe('pluginDataFetcherService', () => {
     expect(await service.fetchData('GET', 'https://example.com/feed')).toBe('<feed><entry/></feed>')
   })
 
+  describe('several polling URLs (ADR-0058)', () => {
+    it('requests each non-blank line the URL renders to and answers them as IDX_0, IDX_1, … in line order', async () => {
+      mockRenderer.render.mockResolvedValue('https://a.example/one\n\n   https://b.example/two  \r\nhttps://c.example/three\n')
+      mockFetch.mockImplementation(async (url: string | URL | Request) => jsonResponse({ from: String(url) }))
+
+      const result = await service.fetchData('GET', '{% for feed in feeds %}{{ feed }}\n{% endfor %}', { Accept: 'application/json' }, undefined, { feeds: [] })
+
+      expect(result).toEqual({ IDX_0: { from: 'https://a.example/one' }, IDX_1: { from: 'https://b.example/two' }, IDX_2: { from: 'https://c.example/three' } })
+      expect(mockFetch.mock.calls.map(([url, init]) => [url, init?.headers])).toEqual([
+        ['https://a.example/one', { Accept: 'application/json' }],
+        ['https://b.example/two', { Accept: 'application/json' }],
+        ['https://c.example/three', { Accept: 'application/json' }],
+      ])
+    })
+
+    it('gives a line that fails its own error marker, so the other lines still read', async () => {
+      mockRenderer.render.mockResolvedValue('https://a.example/one\nhttps://b.example/two')
+      mockFetch.mockResolvedValueOnce(new Response('x', { status: 404 })).mockResolvedValueOnce(jsonResponse({ ok: true }))
+
+      expect(await service.fetchData('GET', '{{ urls }}', {}, undefined, {})).toEqual({ IDX_0: { error: true, message: 'HTTP error! status: 404' }, IDX_1: { ok: true } })
+    })
+
+    it('refuses an internal host on any line in demo mode, with the marker on that line', async () => {
+      mockConfigService.get.mockReturnValue(true)
+      mockRenderer.render.mockResolvedValue('https://a.example/one\nhttp://localhost:3000/private')
+      mockFetch.mockResolvedValue(jsonResponse({ ok: true }))
+
+      const result = await service.fetchData('GET', '{{ urls }}', {}, undefined, {}) as Record<string, unknown>
+
+      expect(result.IDX_0).toEqual({ ok: true })
+      expect(result.IDX_1).toMatchObject({ error: true })
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('reads a single line, spaces around it dropped, as the one request it always was', async () => {
+      mockRenderer.render.mockResolvedValue('  https://a.example/one \n')
+      mockFetch.mockResolvedValue(jsonResponse({ ok: true }))
+
+      expect(await service.fetchData('GET', '{{ url }}', {}, undefined, {})).toEqual({ ok: true })
+      expect(mockFetch).toHaveBeenCalledWith('https://a.example/one', expect.anything())
+    })
+  })
+
   it('answers an empty body as null', async () => {
     mockFetch.mockResolvedValue(new Response('', { status: 200 }))
 

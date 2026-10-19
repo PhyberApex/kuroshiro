@@ -401,6 +401,15 @@ describe('pluginImporterService recipe import', () => {
       expect(result.dataSources).toEqual([expect.objectContaining({ name: 'source', mode: 'literal', literalValue: {}, transformJs: 'function run(input) { return { computed: 1 } }' })])
     })
 
+    it('keeps a polling_url of several lines, one address per line, as the one Data Source\'s URL (ADR-0058)', async () => {
+      const settings = { name: 'Have Haze Not', strategy: 'polling', polling_url: 'https://a.example/psi\nhttps://b.example/pm25\nhttps://c.example/aqi?token={{ aqicn_token }}' }
+      const archive = buildFlatRecipeArchive(settings, { 'full.liquid': '{{ IDX_0.reading }} {{ IDX_1.reading }}' })
+
+      const result = await new PluginImporterService().importFromRecipeArchive(archive, '482229')
+
+      expect(result.dataSources).toEqual([expect.objectContaining({ name: 'source', mode: 'fetch', url: 'https://a.example/psi\nhttps://b.example/pm25\nhttps://c.example/aqi?token={{ aqicn_token }}' })])
+    })
+
     it('gives a polling recipe with no polling_url and a transform.js an empty literal Data Source named "source", as the transform fetches itself', async () => {
       const settings = { name: 'Self-fetching Recipe', strategy: 'polling', polling_url: '' }
       const archive = buildFlatRecipeArchive(settings, {

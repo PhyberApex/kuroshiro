@@ -1,5 +1,5 @@
 import type { JsonObject } from '../../utils/json.js'
-import type { FetchableDataSource } from './plugin-data-fetcher.service.js'
+import type { FetchableDataSource, FetchErrorMarker } from './plugin-data-fetcher.service.js'
 import { Injectable, Logger } from '@nestjs/common'
 import { PluginDataFetcherService } from './plugin-data-fetcher.service.js'
 import { PluginTransformService } from './plugin-transform.service.js'
@@ -25,10 +25,7 @@ function withState(templateContext: object, state: JsonObject): Record<string, u
   return { ...templateContext, trmnl: { ...trmnl, state } }
 }
 
-export interface FetchErrorMarker {
-  error: true
-  message: string
-}
+export type { FetchErrorMarker } from './plugin-data-fetcher.service.js'
 
 /** What a Template reads in place of the data of a Data Source that failed (ADR-0005). */
 export function isFetchErrorMarker(value: unknown): value is FetchErrorMarker {
@@ -40,13 +37,16 @@ const isPlainRecord = (value: unknown): value is Record<string, unknown> => type
 /**
  * What a lone Data Source lays at the root of the context besides its own
  * name, as TRMNL lays one polling URL's response (ADR-0049): its keys when it
- * resolved to an object, and nothing for a list, a scalar, an error marker or
- * a Plugin with two or more Data Sources.
+ * resolved to an object, the value as `data` when it resolved to a list or
+ * text (ADR-0058), and nothing for an empty body, an error marker or a Plugin
+ * with two or more Data Sources.
  */
 export function loneSourceRootKeys(sourceData: Record<string, unknown>): Record<string, unknown> {
   const results = Object.values(sourceData)
   const [only] = results
-  return results.length === 1 && isPlainRecord(only) && !isFetchErrorMarker(only) ? only : {}
+  if (results.length !== 1 || only === null || only === undefined || isFetchErrorMarker(only))
+    return {}
+  return isPlainRecord(only) ? only : { data: only }
 }
 
 /**

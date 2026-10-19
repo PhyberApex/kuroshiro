@@ -9,6 +9,12 @@ import { PluginRendererService } from './plugin-renderer.service.js'
 // The subset of a Data Source's fields fetchOrLiteral needs — shared by the
 // PluginDataSource entity and PreviewDataSourceDto, which carry the same fields
 // under slightly different types.
+/** What a Template reads in place of the data of a request that failed (ADR-0005). */
+export interface FetchErrorMarker {
+  error: true
+  message: string
+}
+
 export interface FetchableDataSource {
   mode?: DataSourceMode
   method?: string
@@ -16,6 +22,19 @@ export interface FetchableDataSource {
   headers?: Record<string, string> | null
   body?: JsonObject | null
   literalValue?: DataSourceLiteralValue
+}
+
+/**
+ * The addresses a Data Source's rendered URL names, one per line as TRMNL reads a Polling URL (ADR-0058): line breaks of
+ * either kind split it, each line's inner whitespace collapses, blank lines are dropped.
+ */
+export function pollingUrlsOf(rendered: string): string[] {
+  return rendered.split(/\r\n|\r|\n/).map(line => line.replace(/\s+/g, ' ').trim()).filter(line => line !== '')
+}
+
+/** What a line that failed reads as, next to the lines that did not (ADR-0005). */
+function errorMarkerOf(reason: unknown): FetchErrorMarker {
+  return { error: true, message: reason instanceof Error ? reason.message : String(reason) }
 }
 
 @Injectable()
@@ -47,16 +66,22 @@ export class PluginDataFetcherService {
     templateContext?: object,
   ): Promise<unknown> {
     const context = templateContext ?? {}
-    const resolvedUrl = await this.renderLiquid(url, context)
-
-    if (this.configService.get<boolean>('demo_mode'))
-      assertPublicUrl(resolvedUrl)
-
+    const urls = pollingUrlsOf(await this.renderLiquid(url, context))
     const resolvedHeaders = await this.renderLiquidDeep(headers, context) as Record<string, string>
     const resolvedBody = body && await this.renderLiquidDeep(body, context) as JsonObject
+    const init = this.buildRequestInit(method, resolvedHeaders, resolvedBody)
 
-    const response = await fetch(resolvedUrl, this.buildRequestInit(method, resolvedHeaders, resolvedBody))
-    return this.parseResponse(response)
+    if (urls.length <= 1)
+      return this.fetchOne(urls[0] ?? '', init)
+
+    const responses = await Promise.allSettled(urls.map(line => this.fetchOne(line, init)))
+    return Object.fromEntries(responses.map((response, index) => [`IDX_${index}`, response.status === 'fulfilled' ? response.value : errorMarkerOf(response.reason)]))
+  }
+
+  private async fetchOne(url: string, init: RequestInit): Promise<unknown> {
+    if (this.configService.get<boolean>('demo_mode'))
+      assertPublicUrl(url)
+    return this.parseResponse(await fetch(url, init))
   }
 
   /** The `fetch` a transform calls (ADR-0052): the request as given, refused for an internal host in demo mode like a Data Source URL. */
