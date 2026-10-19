@@ -122,6 +122,8 @@ export function makePlugin(overrides: Partial<Plugin> = {}): Plugin {
     kind: 'Poll',
     refreshInterval: 15,
     dither: true,
+    noScreenPadding: false,
+    darkMode: false,
     createdAt: FIXED_DATE,
     updatedAt: FIXED_DATE,
     dataSources: [],

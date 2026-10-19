@@ -21,4 +21,12 @@ export class DevicePreviewDto implements DevicePreviewInput {
   @ValidateIf((input: DevicePreviewDto) => input.dither !== undefined)
   @IsBoolean()
   dither?: boolean
+
+  @ValidateIf((input: DevicePreviewDto) => input.noScreenPadding !== undefined)
+  @IsBoolean()
+  noScreenPadding?: boolean
+
+  @ValidateIf((input: DevicePreviewDto) => input.darkMode !== undefined)
+  @IsBoolean()
+  darkMode?: boolean
 }

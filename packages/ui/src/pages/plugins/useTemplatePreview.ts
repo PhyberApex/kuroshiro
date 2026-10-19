@@ -79,7 +79,7 @@ export function useTemplatePreview(source: () => PreviewSource | undefined) {
     void draw()
   }
 
-  const drawnWith = (now: PreviewSource | undefined) => now && JSON.stringify([now.size, now.context, now.target, now.frameworkVersion, now.timeZone])
+  const drawnWith = (now: PreviewSource | undefined) => now && JSON.stringify([now.size, now.context, now.target, now.frameworkVersion, now.timeZone, now.screenModifiers])
 
   watch(source, (now, before) => {
     if (!now)

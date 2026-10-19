@@ -1,4 +1,4 @@
-import type { DevicePreviewInput, DevicePreviewSignal } from 'kuroshiro-shared'
+import type { DevicePreviewInput, DevicePreviewSignal, ScreenModifiers } from 'kuroshiro-shared'
 import type { Buffer } from 'node:buffer'
 import type { DeviceRenderTarget } from './device-models.service.js'
 import * as fs from 'node:fs'
@@ -48,18 +48,18 @@ export class DevicePreviewService {
     try {
       const target = await this.targetOf(input)
       const frameworkVersion = await this.frameworkVersionOf(input)
-      return await this.renderTo(target, input.html, frameworkVersion, input.dither ?? true)
+      return await this.renderTo(target, input.html, frameworkVersion, input.dither ?? true, { noScreenPadding: input.noScreenPadding, darkMode: input.darkMode })
     }
     finally {
       this.rendering = false
     }
   }
 
-  private async renderTo(target: DeviceRenderTarget, html: string, frameworkVersion: string, dither: boolean): Promise<DevicePreviewResult> {
+  private async renderTo(target: DeviceRenderTarget, html: string, frameworkVersion: string, dither: boolean, modifiers: ScreenModifiers): Promise<DevicePreviewResult> {
     const tmpDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'kuroshiro-device-preview-'))
     const outputPath = path.join(tmpDir, 'preview.png')
     try {
-      const renderSignal = await renderHtmlToPng(wrapInScreenShell(target, html, frameworkVersion), target, outputPath, this.logger, { dither })
+      const renderSignal = await renderHtmlToPng(wrapInScreenShell(target, html, frameworkVersion, modifiers), target, outputPath, this.logger, { dither })
       const buffer = await fs.promises.readFile(outputPath)
       return { buffer, signal: renderSignal ?? 'none' }
     }

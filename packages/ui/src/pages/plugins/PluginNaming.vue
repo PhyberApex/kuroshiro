@@ -2,6 +2,7 @@
 import { TRMNL_FRAMEWORK_VERSION } from 'kuroshiro-shared'
 import { ref } from 'vue'
 import Field from '@/components/Field.vue'
+import Switch from '@/components/Switch.vue'
 import Textarea from '@/components/Textarea.vue'
 import TextInput from '@/components/TextInput.vue'
 import TuckedSection from '@/components/TuckedSection.vue'
@@ -39,6 +40,16 @@ const naming = usePluginFormPart(pluginNaming, () => (open.value = true))
         </template>
       </Field>
       <DitheringField :id="fieldId('dither')" v-model="naming.draft.dither" />
+      <Field :id="fieldId('noScreenPadding')" v-slot="{ control }" label="No screen padding" hint="The Plugin's own Screen draws to the panel's edge, what TRMNL calls no bleed. A Mashup slot keeps its padding.">
+        <Switch :id="control.id" v-model="naming.draft.noScreenPadding" :aria-describedby="control['aria-describedby']">
+          {{ naming.draft.noScreenPadding ? 'On' : 'Off' }}
+        </Switch>
+      </Field>
+      <Field :id="fieldId('darkMode')" v-slot="{ control }" label="Dark mode" hint="The Plugin's own Screen draws with ink and paper swapped.">
+        <Switch :id="control.id" v-model="naming.draft.darkMode" :aria-describedby="control['aria-describedby']">
+          {{ naming.draft.darkMode ? 'On' : 'Off' }}
+        </Switch>
+      </Field>
     </div>
   </TuckedSection>
 </template>

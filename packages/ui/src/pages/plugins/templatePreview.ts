@@ -1,4 +1,4 @@
-import type { PreviewData, ScreenShellTarget, TemplateProblem, TemplateSize } from 'kuroshiro-shared'
+import type { PreviewData, ScreenModifiers, ScreenShellTarget, TemplateProblem, TemplateSize } from 'kuroshiro-shared'
 import { checkTemplate, effectiveFrameworkVersion, MASHUP_LAYOUTS, renderLiquid, templateProblemOf, TRMNL_FRAMEWORK_VERSION, viewFull, wrapInScreenShell } from 'kuroshiro-shared'
 
 /**
@@ -18,6 +18,8 @@ export interface PreviewInput {
   timeZone: string
   /** The Plugin's own Framework Version, or null for the Instance's. Only the full size draws with it; a slot size is drawn as in a Mashup, with the Instance's (ADR-0041). */
   frameworkVersion?: string | null
+  /** The Plugin's screen modifiers (ADR-0054), drawn on the full size as on its own Screen; a slot size is drawn as in a Mashup, with none. */
+  screenModifiers?: ScreenModifiers
 }
 
 export type PreviewOutcome
@@ -40,13 +42,13 @@ function bodyOf(size: TemplateSize, html: string) {
 }
 
 /** The document the plate draws for a Template, or why there is none. */
-export async function previewOf({ markup, size, context, target, frameworkVersion, timeZone }: PreviewInput): Promise<PreviewOutcome> {
+export async function previewOf({ markup, size, context, target, frameworkVersion, timeZone, screenModifiers }: PreviewInput): Promise<PreviewOutcome> {
   const unparsed = checkTemplate(markup)
   if (unparsed)
     return { problem: unparsed, stopsSave: true }
   try {
     const body = bodyOf(size, await renderLiquid(markup, context, { timeZone }))
-    return { document: wrapInScreenShell(target, body, size === 'full' ? effectiveFrameworkVersion(frameworkVersion) : TRMNL_FRAMEWORK_VERSION), body }
+    return { document: wrapInScreenShell(target, body, size === 'full' ? effectiveFrameworkVersion(frameworkVersion) : TRMNL_FRAMEWORK_VERSION, size === 'full' ? screenModifiers : undefined), body }
   }
   catch (error) {
     return { problem: templateProblemOf(error), stopsSave: false }

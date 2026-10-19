@@ -75,6 +75,14 @@ describe('devicePreviewService', () => {
     expect(outputPath).toContain('kuroshiro-device-preview-xyz')
   })
 
+  it('puts the screen modifiers the request names on the shell', async () => {
+    const { service } = buildService()
+
+    await service.render({ ...INPUT, noScreenPadding: true, darkMode: true })
+
+    expect(renderHtmlToPng.mock.calls[0][0]).toContain('screen--no-bleed screen--dark-mode')
+  })
+
   it('draws with the Instance pin when no Plugin is named', async () => {
     const { service } = buildService()
 

@@ -177,6 +177,33 @@ describe('the Plugin page', () => {
       })
     })
 
+    describe('screen modifiers', () => {
+      it('shows "No screen padding" and "Dark mode" after Dithering, off by default, and saves each on its own', async () => {
+        const faked = fakePlugin(buildPluginDetail({ id: 'weather', noScreenPadding: false, darkMode: false }))
+        const screen = await mountPlugin()
+
+        await openNaming(screen)
+        await expect.element(screen.getByRole('switch', { name: 'No screen padding' })).not.toBeChecked()
+        await expect.element(screen.getByRole('switch', { name: 'Dark mode' })).not.toBeChecked()
+        expect([...document.querySelectorAll('[role=switch]')].map(element => element.getAttribute('aria-label') ?? element.closest('.field')?.querySelector('label')?.textContent?.trim())).toEqual(['Dithering', 'No screen padding', 'Dark mode'])
+
+        await screen.getByRole('switch', { name: 'No screen padding' }).click()
+        await saveBar(screen).getByRole('button', { name: 'Save Plugin' }).click()
+
+        await expect.poll(() => faked.saves).toEqual([{ noScreenPadding: true }])
+      })
+
+      it('shows a Plugin saved with both on as on', async () => {
+        fakePlugin(buildPluginDetail({ id: 'weather', noScreenPadding: true, darkMode: true }))
+        const screen = await mountPlugin()
+
+        await openNaming(screen)
+
+        await expect.element(screen.getByRole('switch', { name: 'No screen padding' })).toBeChecked()
+        await expect.element(screen.getByRole('switch', { name: 'Dark mode' })).toBeChecked()
+      })
+    })
+
     describe('dithering', () => {
       const dithering = (screen: Mounted) => screen.getByRole('switch', { name: 'Dithering' })
 

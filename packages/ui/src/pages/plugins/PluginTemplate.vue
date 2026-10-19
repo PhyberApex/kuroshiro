@@ -96,6 +96,7 @@ const data = computed(() => fetched.held.value && heldWithForm(fetched.held.valu
 
 /** The Plugin's own Framework Version as entered, once it is valid; the browser preview draws the full size with it. */
 const frameworkVersion = computed(() => enteredFrameworkVersion(form.unsaved.frameworkVersion ?? ''))
+const screenModifiers = computed(() => ({ noScreenPadding: form.unsaved.noScreenPadding ?? plugin.value.noScreenPadding, darkMode: form.unsaved.darkMode ?? plugin.value.darkMode }))
 
 const preview = useTemplatePreview((): PreviewSource | undefined => needs.data && target.value && data.value && timeZone.value
   ? {
@@ -105,13 +106,14 @@ const preview = useTemplatePreview((): PreviewSource | undefined => needs.data &
       target: target.value,
       frameworkVersion: frameworkVersion.value,
       timeZone: timeZone.value,
+      screenModifiers: screenModifiers.value,
       render: needs.data.previewOf,
     }
   : undefined)
 
 /** What a device preview request draws (ADR-0040): the last rendered body, for the chosen Device Model and Palette. Any change to it drops a device preview back to the live browser drawing. */
 const devicePreview = useDevicePreview(() => target.value && preview.body.value !== null
-  ? devicePreviewSourceOf(target.value, preview.body.value, form.unsaved.dither ?? plugin.value.dither)
+  ? devicePreviewSourceOf(target.value, preview.body.value, form.unsaved.dither ?? plugin.value.dither, screenModifiers.value)
   : undefined)
 
 const completionData = computed(() => data.value && !Array.isArray(data.value.context) ? data.value.context : {})

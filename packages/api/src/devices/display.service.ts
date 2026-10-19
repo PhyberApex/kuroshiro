@@ -739,7 +739,7 @@ export class DeviceDisplayService {
     if (screenWithPlugin.cachedPluginOutput) {
       try {
         this.logger.log(`Using cached plugin output for plugin ${plugin.id}, screen ${screen.id}`)
-        return await this.screenRender.renderBodyToScreenPng(viewFull(screenWithPlugin.cachedPluginOutput), screen, device, honorRenderSignal, frameworkVersion, plugin.dither)
+        return await this.screenRender.renderBodyToScreenPng(viewFull(screenWithPlugin.cachedPluginOutput), screen, device, honorRenderSignal, frameworkVersion, plugin.dither, { noScreenPadding: plugin.noScreenPadding, darkMode: plugin.darkMode })
       }
       catch (err) {
         const message = getErrorMessage(err)
@@ -751,7 +751,7 @@ export class DeviceDisplayService {
     // No render is cached yet: a Poll-kind Plugin fetches now, a Webhook-kind one renders what it has received, or nothing.
     try {
       const renderedHtml = await this.renderPluginHtml(plugin, screen)
-      return renderedHtml ? await this.screenRender.renderBodyToScreenPng(viewFull(renderedHtml), screen, device, honorRenderSignal, frameworkVersion, plugin.dither) : null
+      return renderedHtml ? await this.screenRender.renderBodyToScreenPng(viewFull(renderedHtml), screen, device, honorRenderSignal, frameworkVersion, plugin.dither, { noScreenPadding: plugin.noScreenPadding, darkMode: plugin.darkMode }) : null
     }
     catch (err) {
       const message = getErrorMessage(err)

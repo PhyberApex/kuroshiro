@@ -49,14 +49,16 @@ export class PluginExporterService {
   /** `strategy` is the key a TRMNL Recipe names its kind with, so an export says which Plugin Kind it holds. */
   private buildSettings(plugin: Plugin) {
     const frameworkVersion = plugin.frameworkVersion ? { framework_version: plugin.frameworkVersion } : {}
+    const modifiers = { no_screen_padding: plugin.noScreenPadding ? 'yes' : 'no', dark_mode: plugin.darkMode ? 'yes' : 'no' }
 
     if (plugin.kind === 'Webhook') {
-      return { strategy: 'webhook', merge_strategy: plugin.mergeStrategy, stream_limit: plugin.streamLimit ?? null, ...frameworkVersion }
+      return { strategy: 'webhook', merge_strategy: plugin.mergeStrategy, stream_limit: plugin.streamLimit ?? null, ...frameworkVersion, ...modifiers }
     }
 
     return {
       strategy: 'polling',
       ...frameworkVersion,
+      ...modifiers,
       refresh_interval: plugin.refreshInterval,
       data_sources: [...plugin.dataSources ?? []]
         .sort((a, b) => a.order - b.order)

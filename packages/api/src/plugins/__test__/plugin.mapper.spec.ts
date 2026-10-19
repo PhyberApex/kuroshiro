@@ -57,6 +57,10 @@ describe('toPluginSummary', () => {
     })
   })
 
+  it('reads the Plugin\'s screen modifiers', () => {
+    expect(toPluginDetail(makePlugin({ noScreenPadding: true, darkMode: true }), NOTHING_AROUND_IN_DETAIL)).toMatchObject({ noScreenPadding: true, darkMode: true })
+  })
+
   it('reads a Webhook-kind Plugin without a streak and says whether a Webhook Payload is stored', () => {
     const waiting = makePlugin({ kind: 'Webhook', webhookPayload: null, dataSources: [makePluginDataSource({ fetchFailureStreak: 4 })] })
     const fed = makePlugin({ kind: 'Webhook', webhookPayload: { temperature: 21 } })
@@ -131,6 +135,8 @@ describe('toPluginDetail', () => {
       refreshInterval: 30,
       frameworkVersion: null,
       dither: true,
+      noScreenPadding: false,
+      darkMode: false,
       templates: [{ size: 'full', liquidMarkup: '' }],
       dataSources: [],
       fields: [],

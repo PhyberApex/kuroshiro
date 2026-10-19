@@ -130,6 +130,10 @@ export interface PluginDetail {
   frameworkVersion: string | null
   /** Whether the Plugin's renders are Floyd-Steinberg dithered, at every Template size. */
   dither: boolean
+  /** TRMNL's `no_screen_padding`: the Plugin's own Screen draws to the panel's edge (ADR-0054). */
+  noScreenPadding: boolean
+  /** TRMNL's `dark_mode`: the Plugin's own Screen draws with ink and paper swapped (ADR-0054). */
+  darkMode: boolean
   /** Always holds one of size `full`. */
   templates: Array<{ size: TemplateSize, liquidMarkup: string }>
   /** Empty for a Webhook-kind Plugin. */
@@ -192,6 +196,8 @@ export interface CreatePollPluginInput {
   name: string
   /** Defaults to `true`. */
   dither?: boolean
+  noScreenPadding?: boolean
+  darkMode?: boolean
   /** The Device the new Plugin is assigned to at once, at the end of its Order. */
   deviceId?: string
 }
@@ -205,6 +211,8 @@ export interface CreateWebhookPluginInput {
   streamLimit?: number
   /** Defaults to `true`. */
   dither?: boolean
+  noScreenPadding?: boolean
+  darkMode?: boolean
   /** The Device the new Plugin is assigned to at once, at the end of its Order. */
   deviceId?: string
 }
@@ -265,6 +273,8 @@ export interface UpdatePluginInput {
   /** An exact `X.Y.Z`; `null` or an empty string clears it, which means the Instance pin. */
   frameworkVersion?: string | null
   dither?: boolean
+  noScreenPadding?: boolean
+  darkMode?: boolean
   templates?: Array<{ size: TemplateSize, liquidMarkup: string }>
   /** Matched by `id`: one with an id is updated in place, one without is created, one left out is deleted. */
   dataSources?: Array<{ id?: string } & DataSourceInput>
