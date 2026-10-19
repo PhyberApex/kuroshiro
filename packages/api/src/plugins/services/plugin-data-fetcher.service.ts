@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config'
 import { isPlainObject } from '../../utils/json.js'
 import { assertPublicUrl } from '../../utils/ssrfGuard.js'
 import { PluginRendererService } from './plugin-renderer.service.js'
+import { parseResponseBody } from './response-body.js'
 
 // The subset of a Data Source's fields fetchOrLiteral needs — shared by the
 // PluginDataSource entity and PreviewDataSourceDto, which carry the same fields
@@ -122,18 +123,10 @@ export class PluginDataFetcherService {
     return options
   }
 
-  /** JSON when the body is JSON; otherwise the body's text, as TRMNL hands an XML feed or an HTML page to a transform; nothing for an empty body. */
+  /** The body read as TRMNL reads it (ADR-0059): JSON, an XML feed as an object, CSV rows, or the text. */
   private async parseResponse(response: Response): Promise<unknown> {
     if (!response.ok)
       throw new Error(`HTTP error! status: ${response.status}`)
-    const text = await response.text()
-    if (text.trim() === '')
-      return null
-    try {
-      return JSON.parse(text)
-    }
-    catch {
-      return text
-    }
+    return parseResponseBody(await response.text(), response.headers.get('content-type'))
   }
 }
