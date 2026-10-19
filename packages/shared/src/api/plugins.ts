@@ -220,7 +220,7 @@ export function githubRepositoryOf(entered: string): string | null {
 /** The Recipe id in what was entered: the digits alone, or an address holding `recipes/{digits}`. Zeros in front are not part of an id. */
 export function recipeIdOf(entered: string): string | null {
   const text = entered.trim()
-  const digits = /^\d+$/.test(text) ? text : /recipes\/(\d+)/.exec(text)?.[1]
+  const digits = /^\d+$/.test(text) ? text : /recipes\/(?:[\w-]*-)?(\d+)(?=[/?#]|$)/.exec(text)?.[1]
   return digits?.replace(/^0+(?=\d)/, '') ?? null
 }
 

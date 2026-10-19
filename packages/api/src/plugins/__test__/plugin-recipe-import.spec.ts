@@ -177,6 +177,45 @@ describe('pluginImporterService recipe import', () => {
       await expect(service.importFromRecipeArchive(archive, '1')).rejects.toThrow('OAuth')
     })
 
+    it('refuses an OAuth-enabled recipe whose archive spells the flag as the string "true"', async () => {
+      const settings = { name: 'OAuth Recipe', strategy: 'polling', oauth_enabled: 'true', polling_url: 'https://api.example.com' }
+      const archive = buildFlatRecipeArchive(settings)
+
+      const service = new PluginImporterService()
+      await expect(service.importFromRecipeArchive(archive, '1')).rejects.toThrow('OAuth')
+    })
+
+    it('imports a recipe whose archive spells oauth_enabled as the string "false"', async () => {
+      const settings = { name: 'Plain Recipe', strategy: 'polling', oauth_enabled: 'false', oauth_pkce_enabled: 'no', polling_url: 'https://api.example.com' }
+      const archive = buildFlatRecipeArchive(settings)
+
+      const service = new PluginImporterService()
+      const result = await service.importFromRecipeArchive(archive, '1')
+
+      expect(result.name).toBe('Plain Recipe')
+      expect(result.dataSources[0].url).toBe('https://api.example.com')
+    })
+
+    it('imports a "static" strategy recipe whose static_data is a JSON string, as TRMNL archives ship it', async () => {
+      const settings = { name: 'Static Recipe', strategy: 'static', oauth_enabled: 'false', static_data: '{"title":"Hello","count":3}' }
+      const archive = buildFlatRecipeArchive(settings)
+
+      const service = new PluginImporterService()
+      const result = await service.importFromRecipeArchive(archive, '1')
+
+      expect(result.dataSources[0]).toMatchObject({ name: 'source', mode: 'literal', literalValue: { title: 'Hello', count: 3 } })
+    })
+
+    it('imports a "static" strategy recipe whose static_data is the string "{}" as an empty literal value', async () => {
+      const settings = { name: 'Static Recipe', strategy: 'static', static_data: '{}' }
+      const archive = buildFlatRecipeArchive(settings)
+
+      const service = new PluginImporterService()
+      const result = await service.importFromRecipeArchive(archive, '1')
+
+      expect(result.dataSources[0].literalValue).toEqual({})
+    })
+
     it('imports a "static" strategy recipe as a Poll plugin with one literal-mode Data Source named "source"', async () => {
       const settings = { name: 'Static Recipe', strategy: 'static', static_data: { title: 'Hello', count: 3 } }
       const archive = buildFlatRecipeArchive(settings)

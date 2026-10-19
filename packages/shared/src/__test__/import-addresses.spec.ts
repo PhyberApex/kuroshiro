@@ -11,11 +11,15 @@ describe('reading a Recipe id', () => {
     ['041120', '41120'],
     ['https://trmnl.com/recipes/007', '7'],
     ['0', '0'],
+    ['https://trmnl.com/recipes/how-old-356235', '356235'],
+    ['https://trmnl.com/recipes/weather-curve-500572/', '500572'],
+    ['https://trmnl.com/recipes/f1-2026-schedule-62668?ref=x', '62668'],
+    ['trmnl.com/recipes/how-old-356235#reviews', '356235'],
   ])('reads “%s” as %s', (entered, id) => {
     expect(recipeIdOf(entered)).toBe(id)
   })
 
-  it.each(['', '   ', 'weather', '41120a', 'https://trmnl.com/recipes/', 'https://trmnl.com/plugins/41120', '-5', '4 1'])('reads no id from “%s”', (entered) => {
+  it.each(['', '   ', 'weather', '41120a', 'https://trmnl.com/recipes/', 'https://trmnl.com/plugins/41120', 'https://trmnl.com/recipes/how-old-356235a', 'https://trmnl.com/recipes/how-old', '-5', '4 1'])('reads no id from “%s”', (entered) => {
     expect(recipeIdOf(entered)).toBeNull()
   })
 })

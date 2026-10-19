@@ -142,10 +142,29 @@ interface TerminusSettings {
 // the TerminusSettings fields above (issue #796 / ADR-0010)
 interface RecipeSettings extends TerminusSettings {
   description?: string
-  oauth_enabled?: boolean
+  // TRMNL's archives quote the flag as 'true' / 'false'
+  oauth_enabled?: boolean | string
   // Terminus schema: `maybe :hash` — a `strategy: static` recipe's fixed
-  // payload (issue #794 / ADR-0037)
-  static_data?: JsonObject | null
+  // payload (issue #794 / ADR-0037); TRMNL's archives ship it JSON-encoded
+  static_data?: JsonObject | string | null
+}
+
+function recipeFlag(value: boolean | string | undefined): boolean {
+  return typeof value === 'string' ? ['true', 'yes'].includes(value.trim().toLowerCase()) : value === true
+}
+
+function recipeStaticData(value: RecipeSettings['static_data']): JsonObject {
+  const parsed = typeof value === 'string' ? tryParseJson(value) : value
+  return isPlainObject(parsed) ? parsed as JsonObject : {}
+}
+
+function tryParseJson(text: string): unknown {
+  try {
+    return JSON.parse(text)
+  }
+  catch {
+    return null
+  }
 }
 
 /** A Plugin read from a Recipe, tied to it by the Recipe's id. */
@@ -342,7 +361,7 @@ export class PluginImporterService {
     const settingsContent = settingsEntry.getData().toString('utf8')
     const recipeSettings = parseYamlObject<RecipeSettings>(settingsContent, 'Invalid settings.yml')
 
-    if (recipeSettings.oauth_enabled) {
+    if (recipeFlag(recipeSettings.oauth_enabled)) {
       throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'recipe-oauth', 'The Recipe signs in to another service with OAuth, which is not supported.')
     }
 
@@ -385,7 +404,7 @@ export class PluginImporterService {
     const staticDataSource: ParsedDataSource = {
       name: 'source',
       mode: 'literal',
-      literalValue: isPlainObject(recipeSettings.static_data) ? recipeSettings.static_data as JsonObject : {},
+      literalValue: recipeStaticData(recipeSettings.static_data),
     }
 
     const reshapedZip = this.reshapeRecipeArchive(entries, settingsContent, recipeSettings)
