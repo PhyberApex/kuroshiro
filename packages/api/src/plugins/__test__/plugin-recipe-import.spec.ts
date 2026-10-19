@@ -124,6 +124,18 @@ describe('pluginImporterService recipe import', () => {
       ])
     })
 
+    it.each([
+      ['yes', true],
+      ['no', false],
+      [undefined, false],
+    ])('reads no_screen_padding and dark_mode spelled %s as %s', async (spelled, flag) => {
+      const settings = { name: 'Flags', strategy: 'polling', polling_url: 'https://api.example.com', ...(spelled === undefined ? {} : { no_screen_padding: spelled, dark_mode: spelled }) }
+
+      const result = await new PluginImporterService().importFromRecipeArchive(buildFlatRecipeArchive(settings), '1')
+
+      expect(result).toMatchObject({ noScreenPadding: flag, darkMode: flag })
+    })
+
     it('imports a transform.js into the Data Source', async () => {
       const settings = { name: 'Transform Recipe', strategy: 'polling', polling_url: 'https://api.example.com' }
       const archive = buildFlatRecipeArchive(settings, {

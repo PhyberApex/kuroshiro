@@ -69,6 +69,8 @@ const KEY_NAMES: Record<PluginInputKey, string> = {
   refreshInterval: 'refresh interval',
   frameworkVersion: 'Framework Version',
   dither: 'Dithering',
+  noScreenPadding: 'No screen padding',
+  darkMode: 'Dark mode',
   dataSources: 'Data Sources',
   fieldValues: 'Field Values',
   fields: 'Plugin Fields',

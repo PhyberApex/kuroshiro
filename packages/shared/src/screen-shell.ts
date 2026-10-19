@@ -3,6 +3,16 @@ export interface ScreenShellTarget {
   palette: { frameworkClass: string }
 }
 
+/** The modifiers TRMNL applies to the `.screen` element from a Plugin's settings (ADR-0054). */
+export interface ScreenModifiers {
+  /** `screen--no-bleed`: the views reach the panel's edge. */
+  noScreenPadding?: boolean
+  /** `screen--dark-mode`: ink and paper swapped. */
+  darkMode?: boolean
+}
+
+const NO_MODIFIERS: ScreenModifiers = {}
+
 /**
  * The exact TRMNL framework version this Instance pins (ADR-0041), bumped by
  * Renovate's custom regex manager from `usetrmnl/trmnl-framework` releases.
@@ -25,8 +35,8 @@ export function effectiveFrameworkVersion(pluginVersion: string | null | undefin
  * `model.rotation`, which is the post-render image rotation for panels whose
  * framebuffer is portrait (landscape-classed models can have `rotation: 90`).
  */
-export function screenClasses({ model, palette }: ScreenShellTarget): string[] {
-  return ['screen', ...model.cssClasses, palette.frameworkClass]
+export function screenClasses({ model, palette }: ScreenShellTarget, { noScreenPadding, darkMode }: ScreenModifiers = NO_MODIFIERS): string[] {
+  return ['screen', ...model.cssClasses, palette.frameworkClass, ...(noScreenPadding ? ['screen--no-bleed'] : []), ...(darkMode ? ['screen--dark-mode'] : [])]
 }
 
 /**
@@ -49,7 +59,7 @@ export function viewFull(innerHtml: string): string {
  * (ADR-0041) rather than a constant read here, so the API and the UI build
  * the same `<head>` from whichever version the caller resolved.
  */
-export function wrapInScreenShell(target: ScreenShellTarget, bodyHtml: string, frameworkVersion: string): string {
+export function wrapInScreenShell(target: ScreenShellTarget, bodyHtml: string, frameworkVersion: string, modifiers: ScreenModifiers = NO_MODIFIERS): string {
   const style = screenStyle(target)
   return `<html>
   <head>
@@ -57,7 +67,7 @@ export function wrapInScreenShell(target: ScreenShellTarget, bodyHtml: string, f
     <script src="https://trmnl.com/js/${frameworkVersion}/plugins.js"></script>
   </head>
   <body class="environment trmnl">
-    <div class="${screenClasses(target).join(' ')}"${style ? ` style="${style}"` : ''}>${bodyHtml}</div>
+    <div class="${screenClasses(target, modifiers).join(' ')}"${style ? ` style="${style}"` : ''}>${bodyHtml}</div>
   </body>
 </html>`
 }

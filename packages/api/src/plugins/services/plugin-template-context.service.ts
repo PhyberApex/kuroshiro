@@ -1,3 +1,4 @@
+import type { ScreenModifiers } from 'kuroshiro-shared'
 import type { DeviceSensor } from '../../device-sensors/entities/device-sensor.entity.js'
 import type { JsonObject } from '../../utils/json.js'
 import type { PluginField } from '../entities/plugin-field.entity.js'
@@ -81,6 +82,8 @@ const loneOf = <T>(dataSources: T[]): T | undefined => dataSources.length === 1 
 /** What one render resolves before its data: the Field Values as fetched with and as shown. */
 interface RenderInput {
   instanceName: string
+  /** The Plugin's screen modifiers, told to the template as TRMNL spells them (ADR-0054). */
+  modifiers: ScreenModifiers
   sensors: DeviceSensor[]
   resolved: Record<string, string>
   fieldValues: Record<string, string>
@@ -128,24 +131,25 @@ export class PluginTemplateContextService {
   /** `sensors` are the rendering Device's, and empty where the render is for no single Device. */
   async contextFor(plugin: Plugin, sensors: DeviceSensor[], unsaved: UnsavedPluginInput = {}, { hideSecretsOf = [] }: ContextOptions = {}): Promise<PluginRenderContext> {
     const resolved = await this.fieldValues.resolveFor(plugin.id, unsaved.fieldValues)
-    const render: RenderInput = { instanceName: unsaved.name ?? plugin.name, sensors, resolved, fieldValues: hideSecretFieldValues(hideSecretsOf, resolved), hideSecretsOf }
+    const modifiers = { noScreenPadding: plugin.noScreenPadding, darkMode: plugin.darkMode }
+    const render: RenderInput = { instanceName: unsaved.name ?? plugin.name, modifiers, sensors, resolved, fieldValues: hideSecretFieldValues(hideSecretsOf, resolved), hideSecretsOf }
 
     return plugin.kind === 'Webhook'
       ? this.webhookContext(plugin, render)
       : this.pollContext(unsaved.dataSources ?? plugin.dataSources ?? [], render)
   }
 
-  private webhookContext(plugin: Plugin, { instanceName, sensors, resolved, fieldValues }: RenderInput): PluginRenderContext {
-    const withoutData = this.hidingSecrets(this.withoutData(instanceName, resolved, sensors, {}), fieldValues)
+  private webhookContext(plugin: Plugin, { instanceName, modifiers, sensors, resolved, fieldValues }: RenderInput): PluginRenderContext {
+    const withoutData = this.hidingSecrets(this.withoutData(instanceName, modifiers, resolved, sensors, {}), fieldValues)
     const payload = plugin.webhookPayload
     return { context: Array.isArray(payload) ? payload : { ...withoutData, ...payload }, fieldValues, resolvedFieldValues: resolved, sourceData: {}, sourceStates: {} }
   }
 
-  private async pollContext(dataSources: ResolvableDataSource[], { instanceName, sensors, resolved, fieldValues, hideSecretsOf }: RenderInput): Promise<PluginRenderContext> {
+  private async pollContext(dataSources: ResolvableDataSource[], { instanceName, modifiers, sensors, resolved, fieldValues, hideSecretsOf }: RenderInput): Promise<PluginRenderContext> {
     const savedStates = await this.sourceStates.load(dataSources)
     const lone = loneOf(dataSources)
     const loneSavedState = (lone?.id && savedStates[lone.id]) || {}
-    const fetchContext = this.withoutData(instanceName, resolved, sensors, loneSavedState)
+    const fetchContext = this.withoutData(instanceName, modifiers, resolved, sensors, loneSavedState)
     const withoutData = this.hidingSecrets(fetchContext, fieldValues)
 
     const { data, states } = takeWrittenStates(await this.dataResolver.resolveAll(dataSources, fetchContext, { savedStates }))
@@ -165,7 +169,7 @@ export class PluginTemplateContextService {
     }
   }
 
-  private withoutData(instanceName: string, fieldValues: Record<string, string>, sensors: DeviceSensor[], state: JsonObject): PluginTemplateContext {
+  private withoutData(instanceName: string, modifiers: ScreenModifiers, fieldValues: Record<string, string>, sensors: DeviceSensor[], state: JsonObject): PluginTemplateContext {
     return {
       ...fieldValues,
       trmnl: {
@@ -175,8 +179,8 @@ export class PluginTemplateContextService {
         plugin_settings: {
           instance_name: instanceName,
           strategy: 'polling',
-          dark_mode: 'no',
-          no_screen_padding: 'no',
+          dark_mode: modifiers.darkMode ? 'yes' : 'no',
+          no_screen_padding: modifiers.noScreenPadding ? 'yes' : 'no',
           custom_fields_values: fieldValues,
         },
         user: {

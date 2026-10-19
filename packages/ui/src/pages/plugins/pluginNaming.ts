@@ -13,11 +13,11 @@ function frameworkVersionProblem(version: string) {
 /** The version the browser preview draws the Plugin's own Screens with: the entered one once it is valid, else none (the Instance's). */
 export const enteredFrameworkVersion = (version: string) => frameworkVersionProblem(version) ? null : version.trim() || null
 
-/** The part of the Plugin's form that "Name and description" edits, with the Framework Version under the description and Dithering after it. */
-export const pluginNaming: PluginFormPart<{ name: string, description: string, frameworkVersion: string, dither: boolean }> = {
-  keys: ['name', 'description', 'frameworkVersion', 'dither'],
-  read: plugin => ({ name: plugin.name, description: plugin.description ?? '', frameworkVersion: plugin.frameworkVersion ?? '', dither: plugin.dither }),
-  toInput: draft => ({ name: draft.name.trim(), description: draft.description.trim() || null, frameworkVersion: draft.frameworkVersion.trim() || null, dither: draft.dither }),
+/** The part of the Plugin's form that "Name and description" edits, with the Framework Version under the description, Dithering and the screen modifiers after it. */
+export const pluginNaming: PluginFormPart<{ name: string, description: string, frameworkVersion: string, dither: boolean, noScreenPadding: boolean, darkMode: boolean }> = {
+  keys: ['name', 'description', 'frameworkVersion', 'dither', 'noScreenPadding', 'darkMode'],
+  read: plugin => ({ name: plugin.name, description: plugin.description ?? '', frameworkVersion: plugin.frameworkVersion ?? '', dither: plugin.dither, noScreenPadding: plugin.noScreenPadding, darkMode: plugin.darkMode }),
+  toInput: draft => ({ name: draft.name.trim(), description: draft.description.trim() || null, frameworkVersion: draft.frameworkVersion.trim() || null, dither: draft.dither, noScreenPadding: draft.noScreenPadding, darkMode: draft.darkMode }),
   validate: (draft) => {
     const name = pluginNameProblem(draft.name)
     const version = frameworkVersionProblem(draft.frameworkVersion)

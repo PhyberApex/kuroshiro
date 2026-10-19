@@ -1,4 +1,4 @@
-import type { DevicePreviewSignal } from 'kuroshiro-shared'
+import type { DevicePreviewSignal, ScreenModifiers } from 'kuroshiro-shared'
 import { shallowRef, watch } from 'vue'
 import { isRefusal } from '@/api/client'
 import { devicePreview } from '@/api/devicePreview'
@@ -11,6 +11,8 @@ export interface DevicePreviewSource {
   width: number
   height: number
   dither: boolean
+  noScreenPadding?: boolean
+  darkMode?: boolean
 }
 
 /** The Device Model and Palette a device preview is drawn for, as both callers (the Template editor and Edit HTML) already hold it. */
@@ -20,8 +22,8 @@ export interface DevicePreviewTarget {
 }
 
 /** Builds the source from a target and the body HTML already drawn for it, so both callers assemble it the same way. */
-export function devicePreviewSourceOf(target: DevicePreviewTarget, html: string, dither = true): DevicePreviewSource {
-  return { html, deviceModelName: target.model.name, paletteId: target.palette.id, width: target.model.width, height: target.model.height, dither }
+export function devicePreviewSourceOf(target: DevicePreviewTarget, html: string, dither = true, modifiers: ScreenModifiers = {}): DevicePreviewSource {
+  return { html, deviceModelName: target.model.name, paletteId: target.palette.id, width: target.model.width, height: target.model.height, dither, ...modifiers }
 }
 
 export type DevicePreviewState

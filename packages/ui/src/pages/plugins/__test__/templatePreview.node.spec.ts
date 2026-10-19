@@ -20,6 +20,12 @@ async function bodyOf(markup: string, size: Parameters<typeof previewOf>[0]['siz
 }
 
 describe('the preview of a Template', () => {
+  it('puts the Plugin\'s screen modifiers on the shell, as the Device\'s render has them', async () => {
+    const outcome = await previewOf({ markup: 'x', size: 'full', context, target, timeZone: 'Europe/Berlin', screenModifiers: { noScreenPadding: true, darkMode: true } })
+
+    expect(outcome).toMatchObject({ document: expect.stringContaining('<div class="screen screen--og_plus screen--md screen--2bit screen--no-bleed screen--dark-mode"') })
+  })
+
   it('renders dates in the Instance Time Zone it is given, not the browser\'s', async () => {
     const outcome = await previewOf({ markup: '{{ \'2030-01-05T09:00:00Z\' | date: \'%H:%M %z\' }}', size: 'full', context, target, timeZone: 'Asia/Tokyo' })
 

@@ -96,6 +96,13 @@ describe('pluginExporterService', () => {
     expect(Object.keys(manifest.custom_fields[1])).toEqual(['keyname', 'field_type', 'name', 'description', 'default_value', 'optional'])
   })
 
+  it('writes no_screen_padding and dark_mode as yes or no, as TRMNL\'s settings have them', async () => {
+    const settingsOf = async (plugin: ReturnType<typeof makePlugin>) => yaml.load(new AdmZip(await service.exportToZip(plugin)).getEntry('src/settings.yml')!.getData().toString('utf8')) as Record<string, unknown>
+
+    expect(await settingsOf(makePlugin({ noScreenPadding: true, darkMode: false }))).toMatchObject({ no_screen_padding: 'yes', dark_mode: 'no' })
+    expect(await settingsOf(makePlugin({ kind: 'Webhook', noScreenPadding: false, darkMode: true }))).toMatchObject({ no_screen_padding: 'no', dark_mode: 'yes' })
+  })
+
   it('includes settings with a data_sources array', async () => {
     const plugin = makePlugin({
       name: 'Test',
@@ -213,7 +220,7 @@ describe('pluginExporterService', () => {
     const entries = zip.getEntries()
 
     expect(entries.some(e => e.entryName === '.trmnlp.yml')).toBe(true)
-    expect(yaml.load(zip.readAsText('src/settings.yml'))).toEqual({ strategy: 'polling', refresh_interval: 15, data_sources: [] })
+    expect(yaml.load(zip.readAsText('src/settings.yml'))).toEqual({ strategy: 'polling', no_screen_padding: 'no', dark_mode: 'no', refresh_interval: 15, data_sources: [] })
     expect(entries.some(e => e.entryName === 'src/full.liquid')).toBe(true)
   })
 
@@ -222,7 +229,7 @@ describe('pluginExporterService', () => {
 
     const zip = new AdmZip(await service.exportToZip(plugin))
 
-    expect(yaml.load(zip.readAsText('src/settings.yml'))).toEqual({ strategy: 'webhook', merge_strategy: 'deep_merge', stream_limit: null })
+    expect(yaml.load(zip.readAsText('src/settings.yml'))).toEqual({ strategy: 'webhook', merge_strategy: 'deep_merge', stream_limit: null, no_screen_padding: 'no', dark_mode: 'no' })
   })
 
   it('handles plugin without templates', async () => {

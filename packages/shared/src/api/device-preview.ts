@@ -9,6 +9,9 @@ export interface DevicePreviewInput {
   pluginId?: string
   /** Defaults to `true`. `false` converts with hard thresholds, as a Screen or Plugin with Dithering off does. */
   dither?: boolean
+  /** The Plugin's screen modifiers (ADR-0054); left out, none. */
+  noScreenPadding?: boolean
+  darkMode?: boolean
 }
 
 /** The response header naming the Render Signal raised while the preview was drawn, or `none`. Nothing about it is stored (ADR-0040). */

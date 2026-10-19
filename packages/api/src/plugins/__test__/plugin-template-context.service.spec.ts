@@ -48,6 +48,12 @@ describe('pluginTemplateContextService', () => {
     })
   })
 
+  it('tells the template the Plugin\'s screen modifiers as TRMNL spells them', async () => {
+    const { context } = await createPluginTemplateContextService().contextFor(makePlugin({ name: 'Weather', noScreenPadding: true, darkMode: false }), [])
+
+    expect(context).toMatchObject({ trmnl: { plugin_settings: { no_screen_padding: 'yes', dark_mode: 'no' } } })
+  })
+
   it('shapes a sensors object keyed by kind for a device with readings across multiple kinds', async () => {
     const sensors = [
       makeDeviceSensor({ kind: 'temperature', value: 21.5, unit: 'C' }),

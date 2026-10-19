@@ -40,6 +40,13 @@ export class Plugin {
   @Column('boolean', { default: true })
   dither: boolean
 
+  // TRMNL's no_screen_padding and dark_mode: the modifiers the Plugin's own Screen is drawn with (ADR-0054).
+  @Column('boolean', { default: false })
+  noScreenPadding: boolean = false
+
+  @Column('boolean', { default: false })
+  darkMode: boolean = false
+
   @Index({ unique: true })
   @Column('text', { nullable: true })
   webhookToken?: string | null

@@ -56,6 +56,14 @@ export class UpdatePluginDto implements UpdatePluginInput {
   @IsBoolean()
   dither?: boolean
 
+  @ValidateIf(isSent)
+  @IsBoolean()
+  noScreenPadding?: boolean
+
+  @ValidateIf(isSent)
+  @IsBoolean()
+  darkMode?: boolean
+
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })

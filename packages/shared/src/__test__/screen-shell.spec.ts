@@ -19,6 +19,14 @@ const BW: ScreenShellTarget['palette'] = { frameworkClass: 'screen--1bit' }
 const fixtureTarget: ScreenShellTarget = { model: SCREEN_SHELL_FIXTURE_MODEL, palette: SCREEN_SHELL_FIXTURE_PALETTE }
 
 describe('screen shell', () => {
+  it('adds the no-bleed and dark-mode modifiers TRMNL applies from a Plugin\'s settings, and neither by default', () => {
+    expect(screenClasses(V2, { noScreenPadding: true, darkMode: true })).toEqual(['screen', 'screen--v2', 'screen--lg', 'screen--density-2x', 'screen--4bit', 'screen--no-bleed', 'screen--dark-mode'])
+    expect(screenClasses(V2, { noScreenPadding: true })).toContain('screen--no-bleed')
+    expect(screenClasses(V2, { noScreenPadding: true })).not.toContain('screen--dark-mode')
+    expect(screenClasses(V2, {})).toEqual(screenClasses(V2))
+    expect(wrapInScreenShell(OG_PLUS, '<p>x</p>', '3.4.3', { darkMode: true })).toContain('<div class="screen screen--og_plus screen--md screen--density-1x screen--2bit screen--dark-mode">')
+  })
+
   it('builds the screen class list from model and palette', () => {
     expect(screenClasses(V2)).toEqual([
       'screen',

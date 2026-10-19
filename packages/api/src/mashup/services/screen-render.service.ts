@@ -1,3 +1,4 @@
+import type { ScreenModifiers } from 'kuroshiro-shared'
 import type { Device } from '../../devices/devices.entity.js'
 import type { RenderOutcome } from '../../screens/render-outcome.js'
 import { Injectable, Logger } from '@nestjs/common'
@@ -77,11 +78,11 @@ export class ScreenRenderService {
    * Signal (ADR-0031); otherwise the signal is observed but has no effect, as
    * outside `/display`. `frameworkVersion` is the Instance pin unless the caller draws
    * a Plugin's own Screen; a Mashup always keeps the pin (ADR-0041). `dither` is the Screen's or Plugin's Dithering,
-   * or for a Mashup the one derived from its slots.
+   * or for a Mashup the one derived from its slots. `modifiers` are a Plugin's own Screen's (ADR-0054); a Mashup has none.
    */
-  async renderBodyToScreenPng(bodyHtml: string, screen: Screen, device: Device, honorRenderSignal: boolean, frameworkVersion: string = TRMNL_FRAMEWORK_VERSION, dither = true): Promise<string | typeof RENDER_SKIPPED | typeof RENDER_HELD> {
+  async renderBodyToScreenPng(bodyHtml: string, screen: Screen, device: Device, honorRenderSignal: boolean, frameworkVersion: string = TRMNL_FRAMEWORK_VERSION, dither = true, modifiers: ScreenModifiers = {}): Promise<string | typeof RENDER_SKIPPED | typeof RENDER_HELD> {
     const target = await this.deviceModels.renderTargetFor(device)
-    const renderSignal = await renderHtmlToPng(wrapInScreenShell(target, bodyHtml, frameworkVersion), target, this.screenImagePath(device, screen), this.logger, { dither }, { honorRenderSignal })
+    const renderSignal = await renderHtmlToPng(wrapInScreenShell(target, bodyHtml, frameworkVersion, modifiers), target, this.screenImagePath(device, screen), this.logger, { dither }, { honorRenderSignal })
     if (honorRenderSignal && renderSignal === 'skip')
       return RENDER_SKIPPED
     if (honorRenderSignal && renderSignal === 'hold')

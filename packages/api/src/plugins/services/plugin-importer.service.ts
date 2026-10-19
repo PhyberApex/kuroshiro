@@ -153,6 +153,10 @@ interface TerminusSettings {
   headers?: Record<string, string>
   body?: JsonObject
 
+  // TRMNL's screen modifiers, 'yes' / 'no' in its archives and booleans in ours (ADR-0054)
+  no_screen_padding?: boolean | string
+  dark_mode?: boolean | string
+
   // Actual Terminus format
   polling_url?: string
   polling_verb?: string
@@ -226,6 +230,8 @@ export interface ParsedPlugin {
   refreshInterval: number
   /** An exact `X.Y.Z` the Recipe pins, otherwise absent (ADR-0041).. */
   frameworkVersion?: string
+  noScreenPadding?: boolean
+  darkMode?: boolean
   /** Webhook only. */
   mergeStrategy?: MergeStrategy
   /** Webhook with `stream` only. */
@@ -510,6 +516,8 @@ export class PluginImporterService {
       description: manifest.description?.trim(),
       refreshInterval: settings.refresh_interval || 15,
       frameworkVersion: typeof settings.framework_version === 'string' && FRAMEWORK_VERSION_PATTERN.test(settings.framework_version) ? settings.framework_version : undefined,
+      noScreenPadding: recipeFlag(settings.no_screen_padding),
+      darkMode: recipeFlag(settings.dark_mode),
       templates,
       fields: this.resolveFields(manifest, settings),
     }

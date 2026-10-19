@@ -292,7 +292,7 @@ describe('deleting, duplicating and exporting a Plugin, against a real database'
     it('writes the Plugin Kind, the Merge Strategy and the Stream Limit of a Webhook-kind Plugin into src/settings.yml', async () => {
       const plugin = await createWebhookPlugin()
 
-      expect(await exportedSettings(plugin.id)).toEqual({ strategy: 'webhook', merge_strategy: 'stream', stream_limit: 12 })
+      expect(await exportedSettings(plugin.id)).toEqual({ strategy: 'webhook', merge_strategy: 'stream', stream_limit: 12, no_screen_padding: 'no', dark_mode: 'no' })
     })
 
     it('writes src/settings.yml for a Poll-kind Plugin as polling, also when it has no Data Source', async () => {
@@ -300,7 +300,7 @@ describe('deleting, duplicating and exporting a Plugin, against a real database'
       const without = await createPollPlugin({ name: 'Clock', dataSources: [] })
 
       expect(await exportedSettings(withSource.id)).toMatchObject({ strategy: 'polling', refresh_interval: 30, data_sources: [{ name: 'weather' }] })
-      expect(await exportedSettings(without.id)).toEqual({ strategy: 'polling', refresh_interval: 30, data_sources: [] })
+      expect(await exportedSettings(without.id)).toEqual({ strategy: 'polling', no_screen_padding: 'no', dark_mode: 'no', refresh_interval: 30, data_sources: [] })
     })
 
     it('names the file after the Plugin in a header that a quote or a letter outside ASCII in the name cannot break', async () => {

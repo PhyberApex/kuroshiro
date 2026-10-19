@@ -193,6 +193,8 @@ export function toPluginDetail(plugin: Plugin, facts: PluginDetailFacts): Plugin
     refreshInterval: isPolled(plugin) ? plugin.refreshInterval : null,
     frameworkVersion: plugin.frameworkVersion ?? null,
     dither: plugin.dither,
+    noScreenPadding: plugin.noScreenPadding,
+    darkMode: plugin.darkMode,
     templates: toTemplateReads(plugin),
     dataSources: polledDataSources(plugin).map(source => toDataSourceRead(source, facts)),
     fields: fields.map(toPluginFieldRead),

@@ -21,6 +21,8 @@ export interface WholePluginInput {
   refreshInterval?: number
   frameworkVersion?: string | null
   dither?: boolean
+  noScreenPadding?: boolean
+  darkMode?: boolean
   isActive?: boolean
   order?: number
   webhookToken?: string

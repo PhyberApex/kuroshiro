@@ -29,6 +29,14 @@ export class CreatePluginDto implements Omit<CreatePollPluginInput, 'kind'>, Par
   @IsBoolean()
   dither?: boolean
 
+  @ValidateIf((input: CreatePluginDto) => input.noScreenPadding !== undefined)
+  @IsBoolean()
+  noScreenPadding?: boolean
+
+  @ValidateIf((input: CreatePluginDto) => input.darkMode !== undefined)
+  @IsBoolean()
+  darkMode?: boolean
+
   @IsOptional()
   @IsString()
   deviceId?: string

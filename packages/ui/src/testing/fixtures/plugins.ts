@@ -44,6 +44,8 @@ export const buildPluginDetail = defineBuilder<PluginDetail>(() => ({
   refreshInterval: 30,
   frameworkVersion: null,
   dither: true,
+  noScreenPadding: false,
+  darkMode: false,
   templates: [{ size: 'full', liquidMarkup: '<div class="title">{{ forecast.today.summary }}</div>' }],
   dataSources: [{
     id: '6b7c8d9e-0f1a-4b2c-8d3e-4f5a6b7c8d9e',
