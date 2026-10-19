@@ -20,6 +20,7 @@ const importing = useImportPlugin({
     'recipe-not-found': true,
     'recipe-oauth': true,
     'recipe-strategy-unsupported': true,
+    'recipe-webhook-transform': true,
     'recipe-serverless-language': true,
     'import-no-plugin': 'This Recipe holds no template, so there is nothing to import.',
   },
@@ -57,7 +58,7 @@ function add() {
     </p>
     <Notice v-if="importing.trouble.unanswered" :title="importing.trouble.unanswered" reason="Nothing was imported." action="Try again" @act="add" />
     <AddPluginFoot button="Import Recipe" :running="importing.importing" :changed="!importing.imported && entered.trim() !== ''" :failure="importing.trouble.failure">
-      Imports as a Poll Plugin you can edit. Nothing updates by itself afterwards.
+      Imports as a Poll or Webhook Plugin you can edit. Nothing updates by itself afterwards.
     </AddPluginFoot>
   </form>
 </template>

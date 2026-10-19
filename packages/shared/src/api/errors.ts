@@ -55,6 +55,7 @@ export const API_ERROR_CODES = [
   'recipe-not-found',
   'recipe-oauth',
   'recipe-strategy-unsupported',
+  'recipe-webhook-transform',
   'recipe-serverless-language',
   'plugin-not-from-recipe',
   'recipe-changed',

@@ -523,7 +523,7 @@ A way's form is a `form` whose submit adds the Plugin, with an `AddPluginFoot` a
 <form novalidate @submit.prevent="add">
   …the way's fields…
   <AddPluginFoot button="Import Recipe" :running="importing" :changed="changed" :failure="failure">
-    Imports as a Poll Plugin you can edit. Nothing updates by itself afterwards.
+    Imports as a Poll or Webhook Plugin you can edit. Nothing updates by itself afterwards.
   </AddPluginFoot>
 </form>
 ```
