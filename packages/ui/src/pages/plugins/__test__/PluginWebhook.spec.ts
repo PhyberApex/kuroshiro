@@ -91,7 +91,7 @@ describe('the Webhook section of the Plugin page', () => {
     const urlRow = () => rowOf('Webhook URL')
 
     expect(spokenOf(urlRow()?.querySelector('code'))).toBe(MASKED_URL)
-    expect(partsOf('Webhook URL')[2]).toBe('POST a JSON object or array here. It becomes the Webhook Payload and Doorbell note is rendered again at once. The Webhook Token at its end is the only key, so treat the address as a secret.')
+    expect(partsOf('Webhook URL')[2]).toBe('POST a JSON object or array here, on its own or inside TRMNL\'s merge_variables. It becomes the Webhook Payload and Doorbell note is rendered again at once. The Webhook Token at its end is the only key, so treat the address as a secret.')
     await copyIn('Webhook URL').click()
     expect(copies).toHaveBeenLastCalledWith(urlOf(TOKEN))
 

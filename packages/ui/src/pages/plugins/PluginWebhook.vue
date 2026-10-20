@@ -28,7 +28,7 @@ const example = computed(() => exampleCall(webhook.value, revealed.value))
         </Button>
       </span>
       <template #note>
-        POST a JSON object or array here. It becomes the Webhook Payload and {{ plugin.name }} is rendered again at once. The Webhook Token at its end is the only key, so treat the address as a secret.
+        POST a JSON object or array here, on its own or inside TRMNL's merge_variables. It becomes the Webhook Payload and {{ plugin.name }} is rendered again at once. The Webhook Token at its end is the only key, so treat the address as a secret.
       </template>
     </ReadRow>
     <ReadRow label="Merge Strategy">

@@ -11,6 +11,29 @@ function isWebhookPayload(value: unknown): value is WebhookPayload {
   return value === null || Array.isArray(value) || isPlainObject(value)
 }
 
+/** The keys TRMNL's webhook API takes beside `merge_variables`; the Merge Strategy stays the Plugin's (ADR-0004). */
+const ENVELOPE_KEYS = ['merge_variables', 'merge_strategy', 'deep_merge', 'stream_limit']
+
+function parsedObject(text: string): unknown {
+  try {
+    return JSON.parse(text)
+  }
+  catch {
+    return text
+  }
+}
+
+/**
+ * The payload a POST carries: the body itself, or its `merge_variables` when the body is TRMNL's envelope, which
+ * every script written for TRMNL sends (ADR-0063). TRMNL also takes `merge_variables` as JSON text.
+ */
+function payloadOf(body: unknown): unknown {
+  if (!isPlainObject(body) || !('merge_variables' in body) || !Object.keys(body).every(key => ENVELOPE_KEYS.includes(key)))
+    return body
+  const variables = body.merge_variables
+  return typeof variables === 'string' ? parsedObject(variables) : variables
+}
+
 // `incoming`/`value` are only ever reached here once `isWebhookPayload` has
 // confirmed the root body is JSON-object/array/null shaped, so recursing
 // through it with `unknown` and handing leaf values back as-is is safe.
@@ -62,11 +85,12 @@ export class WebhookIngestService {
       throw new UnprocessableEntityException(`Plugin "${plugin.name}" has no template configured`)
     }
 
-    if (!isWebhookPayload(body)) {
+    const payload = payloadOf(body)
+    if (!isWebhookPayload(payload)) {
       throw new UnprocessableEntityException('Webhook body must be a JSON object or array')
     }
 
-    const merged = this.merge(plugin, body)
+    const merged = this.merge(plugin, payload)
 
     // TypeORM's QueryDeepPartialEntity can't distribute over the WebhookPayload
     // union against a union-typed value, even though `merged`'s type already
