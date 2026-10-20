@@ -1,9 +1,10 @@
-import { Column, Entity, PrimaryGeneratedColumn, Unique } from 'typeorm'
+import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm'
 
 export type FirmwareKind = 'official-synced' | 'custom'
 
 @Entity()
-@Unique('UQ_firmware_version', ['version'])
+@Index('UQ_firmware_custom_version', ['version'], { unique: true, where: `"kind" = 'custom'` })
+@Index('UQ_firmware_folder_version', ['folder', 'version'], { unique: true, where: `"kind" = 'official-synced'` })
 export class Firmware {
   @PrimaryGeneratedColumn('uuid')
   id: string
@@ -13,6 +14,10 @@ export class Firmware {
 
   @Column('text')
   kind: FirmwareKind
+
+  /** The folder of TRMNL's firmware bucket an `official-synced` row came from (ADR-0065); `null` for `custom`. */
+  @Column('text', { nullable: true })
+  folder?: string | null
 
   @Column('text')
   checksum: string

@@ -16,16 +16,22 @@ import { FirmwareAutoUpdateService } from './firmware-auto-update.service.js'
 import { firmwareFilePath } from './firmware-paths.js'
 import { toDeviceReference } from './firmware.mapper.js'
 
-interface TrmnlFirmwarePayload {
-  url: string
-  version: string
+/**
+ * TRMNL's `/api/firmware/latest` names only the version; each hardware family's binary of it
+ * sits in its own folder of TRMNL's firmware bucket, the way TRMNL's own `trmnl-api` gem and
+ * Terminus fetch it (ADR-0065, superseding the OG-only sync of ADR-0015). Each folder gets
+ * its own `official-synced` row, compatible with the Device Models listed here. `trmnl_bwry`
+ * is left out because OTA on OG B/W/R/Y Devices fails or loops (usetrmnl/trmnl-firmware#538,
+ * tracked in #1328).
+ */
+const OFFICIAL_FOLDERS: Record<string, string[]> = {
+  trmnl_og: ['og_png', 'og_plus'],
+  trmnl_x: ['v2'],
 }
 
-// TRMNL's public firmware endpoint only ever returns the OG binary (see
-// docs/adr/0015-firmware-compatibility-enforced-og-only-sync.md). `og_bwry` is left out
-// because OTA with that binary fails or loops on OG B/W/R/Y Devices
-// (usetrmnl/trmnl-firmware#538).
-const OFFICIAL_SYNC_COMPATIBLE_MODELS = ['og_png', 'og_plus']
+function officialBinaryUrl(folder: string, version: string): string {
+  return `https://trmnl-fw.s3.us-east-2.amazonaws.com/${folder}/FW${encodeURIComponent(version)}.bin`
+}
 
 const DAILY_AT_4AM = '0 4 * * *'
 const TRMNL_FETCH_TIMEOUT_MS = 15_000
@@ -77,65 +83,81 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
   private async runSync(ranAt: Date): Promise<FirmwareSyncResult> {
     this.logger.log('Syncing firmware from TRMNL')
     await this.realignOfficialCompatibility()
-    const payload = await this.fetchLatest()
-    const noop = { ranAt: ranAt.toISOString(), inserted: false, version: payload.version, assigned: [] }
-    if (await this.firmwareRepository.existsBy({ version: payload.version })) {
-      this.logger.log(`Firmware ${payload.version} already exists, nothing to sync`)
-      return noop
+    const version = await this.fetchLatestVersion()
+    const result: FirmwareSyncResult = { ranAt: ranAt.toISOString(), inserted: false, version, assigned: [] }
+    if (await this.firmwareRepository.existsBy({ kind: 'custom', version })) {
+      this.logger.log(`A custom Firmware already holds ${version}, nothing to sync`)
+      return result
     }
 
-    const binary = await this.downloadBinary(payload.url)
+    for (const [folder, compatibleModels] of Object.entries(OFFICIAL_FOLDERS)) {
+      const inserted = await this.syncFolder(folder, compatibleModels, version)
+      if (!inserted)
+        continue
+      result.inserted = true
+      result.assigned.push(...(await this.autoUpdateService.applyPolicy(inserted)).map(toDeviceReference))
+    }
+    return result
+  }
+
+  /** The new row of `version` from `folder`, or `null` when there is none to add. */
+  private async syncFolder(folder: string, compatibleModels: string[], version: string): Promise<Firmware | null> {
+    if (await this.firmwareRepository.existsBy({ kind: 'official-synced', folder, version })) {
+      this.logger.log(`Firmware ${version} from ${folder} already exists, nothing to sync`)
+      return null
+    }
+
+    const binary = await this.downloadBinary(officialBinaryUrl(folder, version))
+    if (!binary) {
+      this.logger.warn(`TRMNL has no ${folder} binary of firmware ${version}, skipped`)
+      return null
+    }
     const checksum = crypto.createHash('sha256').update(binary).digest('hex')
     const id = crypto.randomUUID()
-    const syncedAt = new Date()
     const filePath = firmwareFilePath(id)
     await fs.promises.mkdir(path.dirname(filePath), { recursive: true })
     await fs.promises.writeFile(filePath, binary)
 
     const newFirmware = this.firmwareRepository.create({
       id,
-      version: payload.version,
+      version,
       kind: 'official-synced',
+      folder,
       checksum,
-      compatibleModels: OFFICIAL_SYNC_COMPATIBLE_MODELS,
+      compatibleModels,
       deprecated: false,
-      syncedAt,
+      syncedAt: new Date(),
     })
 
     try {
       await this.firmwareRepository.manager.transaction(async (manager) => {
-        await manager.getRepository(Firmware).update({ kind: 'official-synced', deprecated: false }, { deprecated: true })
+        await manager.getRepository(Firmware).update({ kind: 'official-synced', folder, deprecated: false }, { deprecated: true })
         await manager.getRepository(Firmware).insert(newFirmware)
       })
     }
     catch (err) {
-      if (!isUniqueViolation(err, 'UQ_firmware_version'))
+      if (!isUniqueViolation(err, 'UQ_firmware_folder_version'))
         throw err
       await fs.promises.unlink(filePath).catch(() => {})
-      this.logger.log(`Firmware ${payload.version} was inserted elsewhere first, nothing to do`)
-      return noop
+      this.logger.log(`Firmware ${version} from ${folder} was inserted elsewhere first, nothing to do`)
+      return null
     }
 
-    const assigned = await this.autoUpdateService.applyPolicy(newFirmware)
-
-    this.logger.log(`Synced firmware ${payload.version} (${id})`)
-    return {
-      ranAt: ranAt.toISOString(),
-      inserted: true,
-      version: payload.version,
-      assigned: assigned.map(toDeviceReference),
-    }
+    this.logger.log(`Synced firmware ${version} from ${folder} (${id})`)
+    return newFirmware
   }
 
   /**
    * Official-synced rows aren't admin-editable, so their compatibility is whatever this
-   * service currently declares; rows synced under an older declaration catch up here.
+   * service currently declares for their folder; rows synced under an older declaration
+   * catch up here.
    */
   private async realignOfficialCompatibility(): Promise<void> {
-    await this.firmwareRepository.update({ kind: 'official-synced' }, { compatibleModels: OFFICIAL_SYNC_COMPATIBLE_MODELS })
+    for (const [folder, compatibleModels] of Object.entries(OFFICIAL_FOLDERS))
+      await this.firmwareRepository.update({ kind: 'official-synced', folder }, { compatibleModels })
   }
 
-  private async fetchLatest(): Promise<TrmnlFirmwarePayload> {
+  private async fetchLatestVersion(): Promise<string> {
     let res: Response
     try {
       res = await fetch(`${TRMNL_API_URL}/firmware/latest`, { signal: AbortSignal.timeout(TRMNL_FETCH_TIMEOUT_MS) })
@@ -148,13 +170,16 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
     if (!res.ok)
       throw new Error(`TRMNL firmware/latest request failed: ${res.status} ${res.statusText}`)
     const body = await res.json()
-    if (typeof body?.url !== 'string' || typeof body?.version !== 'string')
-      throw new Error('TRMNL firmware/latest response is missing url/version')
-    return { url: body.url, version: body.version }
+    if (typeof body?.version !== 'string')
+      throw new Error('TRMNL firmware/latest response is missing version')
+    return body.version
   }
 
-  private async downloadBinary(url: string): Promise<buffer.Buffer> {
+  /** `null` when the folder has no binary of that version. */
+  private async downloadBinary(url: string): Promise<buffer.Buffer | null> {
     const res = await fetch(url)
+    if (res.status === 404)
+      return null
     if (!res.ok)
       throw new Error(`Failed to download firmware binary: ${res.status} ${res.statusText}`)
     return buffer.Buffer.from(await res.arrayBuffer())
