@@ -10,9 +10,10 @@ import { isFirmwareCompatible } from './firmware-compatibility.js'
  * Applies the Firmware Auto-Update policy (ADR-0029): when the Setting is on and a new
  * official Firmware row lands, assigns it to every eligible Device exactly as an admin
  * would. Each folder TRMNL publishes official Firmware in has its own rows (ADR-0065), so
- * "the current official Firmware" is per Device Model. Never touches a Device with a push already pending, and never runs for `custom`
- * Firmware — `FirmwareSyncService` calls `applyPolicy` right after a successful insert, and
- * the admin's "Catch up now" calls `catchUp` (ADR-0029 addendum).
+ * "the current official Firmware" is per Device Model. Never touches a Device with a push
+ * already pending, and never runs for `custom` Firmware — `FirmwareSyncService` calls
+ * `applyPolicy` right after a successful insert, and the admin's "Catch up now" calls
+ * `catchUp` (ADR-0029 addendum).
  */
 @Injectable()
 export class FirmwareAutoUpdateService {
@@ -44,7 +45,7 @@ export class FirmwareAutoUpdateService {
     const current = await this.findCurrentOfficial()
     if (current.length === 0)
       return { newest: null, behind: [] }
-    const behind = (await this.findFree()).flatMap((device) => {
+    const behind = (await this.findCandidates()).flatMap((device) => {
       const firmware = current.find(candidate => isFirmwareCompatible(candidate, device.deviceModel?.name))
       return firmware && device.fwVersion !== firmware.version ? [{ device, firmware }] : []
     })
@@ -67,11 +68,11 @@ export class FirmwareAutoUpdateService {
   }
 
   private async findEligible(firmware: Firmware): Promise<Device[]> {
-    return (await this.findFree()).filter(device => isFirmwareCompatible(firmware, device.deviceModel?.name))
+    return (await this.findCandidates()).filter(device => isFirmwareCompatible(firmware, device.deviceModel?.name))
   }
 
   /** The Devices the policy may give a Firmware to: not mirrored, with a Device Model and no push pending. */
-  private async findFree(): Promise<Device[]> {
+  private async findCandidates(): Promise<Device[]> {
     const candidates = await this.deviceRepository.find({ where: { updateFirmware: false } })
     return candidates.filter(device => !device.mirrorEnabled && device.deviceModel != null)
   }

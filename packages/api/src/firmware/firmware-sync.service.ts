@@ -90,8 +90,17 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
       return result
     }
 
-    for (const [folder, compatibleModels] of Object.entries(OFFICIAL_FOLDERS)) {
-      const inserted = await this.syncFolder(folder, compatibleModels, version)
+    // Every download comes before the first insert, so a folder failing other than with a
+    // 404 fails the sync before any row is stored or any Device is assigned one.
+    const downloads: Array<{ folder: string, binary: buffer.Buffer }> = []
+    for (const folder of Object.keys(OFFICIAL_FOLDERS)) {
+      const binary = await this.downloadNew(folder, version)
+      if (binary)
+        downloads.push({ folder, binary })
+    }
+
+    for (const { folder, binary } of downloads) {
+      const inserted = await this.store(folder, version, binary)
       if (!inserted)
         continue
       result.inserted = true
@@ -100,18 +109,20 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
     return result
   }
 
-  /** The new row of `version` from `folder`, or `null` when there is none to add. */
-  private async syncFolder(folder: string, compatibleModels: string[], version: string): Promise<Firmware | null> {
+  /** The binary of `version` from `folder`, or `null` when the folder already holds it or TRMNL has none. */
+  private async downloadNew(folder: string, version: string): Promise<buffer.Buffer | null> {
     if (await this.firmwareRepository.existsBy({ kind: 'official-synced', folder, version })) {
       this.logger.log(`Firmware ${version} from ${folder} already exists, nothing to sync`)
       return null
     }
-
     const binary = await this.downloadBinary(officialBinaryUrl(folder, version))
-    if (!binary) {
+    if (!binary)
       this.logger.warn(`TRMNL has no ${folder} binary of firmware ${version}, skipped`)
-      return null
-    }
+    return binary
+  }
+
+  /** The new row of `version` from `folder`, or `null` when another sync stored it first. */
+  private async store(folder: string, version: string, binary: buffer.Buffer): Promise<Firmware | null> {
     const checksum = crypto.createHash('sha256').update(binary).digest('hex')
     const id = crypto.randomUUID()
     const filePath = firmwareFilePath(id)
@@ -124,7 +135,7 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
       kind: 'official-synced',
       folder,
       checksum,
-      compatibleModels,
+      compatibleModels: OFFICIAL_FOLDERS[folder],
       deprecated: false,
       syncedAt: new Date(),
     })

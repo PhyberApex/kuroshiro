@@ -292,11 +292,13 @@ describe('firmwareSyncService', () => {
       await expect(service.sync()).rejects.toBe(networkError)
     })
 
-    it('throws when downloading a binary fails other than with a 404', async () => {
-      trmnlAnswers({ [OG_URL]: 502 })
+    it('throws, and stores and assigns nothing, when downloading any folder\'s binary fails other than with a 404', async () => {
+      trmnlAnswers({ [X_URL]: 502 })
 
       await expect(service.sync()).rejects.toThrow(/Failed to download firmware binary/)
+      expect(fsMock.writeFile).not.toHaveBeenCalled()
       expect(firmwareRepo.insert).not.toHaveBeenCalled()
+      expect(autoUpdateService.applyPolicy).not.toHaveBeenCalled()
     })
   })
 })
