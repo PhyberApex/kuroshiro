@@ -141,6 +141,16 @@ describe('pluginDataFetcherService', () => {
       ])
     })
 
+    it('reads a line that answers a list or text under data, as TRMNL wraps each response before it is IDX_n (ADR-0061)', async () => {
+      mockRenderer.render.mockResolvedValue('https://a.example/list\nhttps://b.example/text\nhttps://c.example/object')
+      mockFetch
+        .mockResolvedValueOnce(jsonResponse([1, 2]))
+        .mockResolvedValueOnce(new Response('plain words', { status: 200, headers: { 'content-type': 'text/plain' } }))
+        .mockResolvedValueOnce(jsonResponse({ ok: true }))
+
+      expect(await service.fetchData('GET', '{{ urls }}', {}, undefined, {})).toEqual({ IDX_0: { data: [1, 2] }, IDX_1: { data: 'plain words' }, IDX_2: { ok: true } })
+    })
+
     it('gives a line that fails its own error marker, so the other lines still read', async () => {
       mockRenderer.render.mockResolvedValue('https://a.example/one\nhttps://b.example/two')
       mockFetch.mockResolvedValueOnce(new Response('x', { status: 404 })).mockResolvedValueOnce(jsonResponse({ ok: true }))
