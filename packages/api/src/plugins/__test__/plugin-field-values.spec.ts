@@ -25,8 +25,9 @@ describe('plugin field values', () => {
       expect(needsValues([{ ...required, defaultValue: 'abc' }], {})).toBe(false)
     })
 
-    it('ignores optional Plugin Fields and the author_bio credit', () => {
+    it('ignores optional Plugin Fields, the author_bio credit and a copyable_webhook_url', () => {
       expect(needsValues([units, makePluginField({ keyname: 'author_bio', fieldType: 'author_bio', required: true })], {})).toBe(false)
+      expect(needsValues([makePluginField({ keyname: 'webhook_url', fieldType: 'copyable_webhook_url', required: true })], {})).toBe(false)
     })
   })
 

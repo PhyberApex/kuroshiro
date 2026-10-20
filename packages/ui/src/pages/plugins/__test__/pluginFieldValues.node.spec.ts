@@ -149,6 +149,7 @@ describe('the Field Values of the Plugin\'s form', () => {
       { keyname: 'location', name: 'Location' },
       { keyname: '', name: 'Not named yet' },
       { keyname: 'author_bio', name: 'About', fieldType: 'author_bio' },
+      { keyname: 'webhook_url', name: 'Webhook URL', fieldType: 'copyable_webhook_url' },
       { keyname: 'location', name: 'A second location' },
       { keyname: 'units', name: 'Units' },
     ]

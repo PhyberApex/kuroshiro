@@ -63,6 +63,14 @@ export interface DataSourceRead {
   alertFiring: boolean
 }
 
+/**
+ * The Plugin Field types that are never an input: `author_bio` is a read-only credit, `copyable_webhook_url` is TRMNL's
+ * row that shows the plugin's own webhook address, which Kuroshiro shows as the Webhook URL (ADR-0010).
+ */
+export const READ_ONLY_FIELD_TYPES = ['author_bio', 'copyable_webhook_url'] as const
+
+export const isReadOnlyFieldType = (fieldType: string | undefined) => (READ_ONLY_FIELD_TYPES as readonly string[]).includes(fieldType ?? '')
+
 export interface PluginFieldOption {
   label: string
   value: string
