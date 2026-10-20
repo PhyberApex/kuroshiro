@@ -346,7 +346,8 @@ describe('pluginImporterService recipe import', () => {
         const imported = await new PluginImporterService().importFromRecipeArchive(buildFlatRecipeArchive(ADMOB), '499993')
         const plugin = makePlugin({
           oauthSettings: imported.oauthSettings,
-          dataSources: [makePluginDataSource({ name: 'source', url: imported.dataSources[0].url, oauthAccessToken: 'runtime-token' })],
+          oauthAccessToken: 'runtime-token',
+          dataSources: [makePluginDataSource({ name: 'source', url: imported.dataSources[0].url })],
           fields: imported.fields.map(field => makePluginField(field)),
           templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '<div></div>' })],
         })

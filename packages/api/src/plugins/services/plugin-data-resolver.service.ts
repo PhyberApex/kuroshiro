@@ -1,5 +1,5 @@
 import type { JsonObject } from '../../utils/json.js'
-import type { FetchableDataSource, FetchErrorMarker } from './plugin-data-fetcher.service.js'
+import type { FetchableDataSource, FetchErrorMarker, FetchOptions } from './plugin-data-fetcher.service.js'
 import type { OAuthPoll } from './plugin-oauth.service.js'
 import { Injectable, Logger, Optional } from '@nestjs/common'
 import { withAccessToken } from '../plugin-oauth.js'
@@ -20,7 +20,7 @@ export interface ResolvableDataSource extends FetchableDataSource {
 export interface ResolveOptions {
   /** Each stored Data Source's saved state by id (ADR-0052). */
   savedStates?: Record<string, JsonObject>
-  /** Set for a Plugin imported from an OAuth Recipe: each fetch-mode Data Source polls with its access token (ADR-0067). */
+  /** Set for a Plugin imported from an OAuth Recipe: each fetch-mode Data Source polls with the Plugin's access token (ADR-0067). */
   oauth?: OAuthPoll
 }
 
@@ -86,7 +86,7 @@ export class PluginDataResolverService {
         const context = withState(templateContext, (source.id && savedStates[source.id]) || {})
         if (!oauth || !this.oauthTokens || source.mode === 'literal')
           return this.resolveOne(source, context)
-        return this.oauthTokens.withAccessToken(source, oauth, accessToken => this.resolveOne(source, withAccessToken(context, accessToken)))
+        return this.oauthTokens.withAccessToken(oauth, (accessToken, lastTry) => this.resolveOne(source, withAccessToken(context, accessToken), { unauthorizedThrows: !lastTry }))
       }),
     )
 
@@ -108,8 +108,8 @@ export class PluginDataResolverService {
     return data
   }
 
-  private async resolveOne(source: ResolvableDataSource, context: object): Promise<unknown> {
-    const rawData = await this.dataFetcher.fetchOrLiteral(source, context)
+  private async resolveOne(source: ResolvableDataSource, context: object, fetchOptions?: FetchOptions): Promise<unknown> {
+    const rawData = await this.dataFetcher.fetchOrLiteral(source, context, fetchOptions)
     if (!source.transformJs)
       return rawData
     this.logger.debug(`Applying transform.js to data source: ${source.name}`)

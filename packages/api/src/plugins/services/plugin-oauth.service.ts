@@ -2,12 +2,14 @@ import type { OAuthSettings, StoredAccessToken } from '../plugin-oauth.js'
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { PluginDataSource } from '../entities/plugin-data-source.entity.js'
+import { Plugin } from '../entities/plugin.entity.js'
 import { isDueForRefresh, refreshCredentialsOf, refreshedTokenOf, refreshRequestOf } from '../plugin-oauth.js'
 import { HttpStatusError, PluginDataFetcherService } from './plugin-data-fetcher.service.js'
 
-/** What a poll of an OAuth Plugin's Data Source is signed with: the Recipe's settings and the Plugin's Field Values, secrets included. */
+/** What a poll of an OAuth Plugin's Data Source is signed with: the Plugin, the Recipe's settings and its Field Values, secrets included. */
 export interface OAuthPoll {
+  /** Unset for a preview of a Plugin not saved yet, whose refreshed token is kept nowhere. */
+  pluginId?: string
   settings: OAuthSettings
   fieldValues: Record<string, string>
 }
@@ -20,44 +22,73 @@ const NO_TOKEN: StoredAccessToken = { accessToken: null, refreshToken: null, exp
 const isUnauthorized = (error: unknown): boolean => error instanceof HttpStatusError && error.status === 401
 
 /**
- * The access token an OAuth Recipe's Data Source polls with (ADR-0067): the one its last refresh answered, or the
- * pasted one until a refresh happens. It is refreshed before a poll when it is due, and once more when the poll
- * answers 401. What a refresh answers is runtime state on the Data Source, never written into a Field Value.
+ * The access token an OAuth Recipe's Data Sources poll with (ADR-0067): the one the Plugin's last refresh answered, or
+ * the pasted one until a refresh happens. It is refreshed before a poll when it is due, and once more when the poll
+ * answers 401. What a refresh answers is runtime state on the Plugin, read by every one of its Data Sources and never
+ * written into a Field Value. Reading and refreshing it is one Plugin at a time, so two Data Sources polling together
+ * refresh once and never send a refresh token a rotating provider has already spent.
  */
 @Injectable()
 export class PluginOAuthService {
+  private readonly locks = new Map<string, Promise<unknown>>()
+
   constructor(
-    @InjectRepository(PluginDataSource)
-    private readonly dataSourceRepository: Repository<PluginDataSource>,
+    @InjectRepository(Plugin)
+    private readonly pluginRepository: Repository<Plugin>,
     private readonly dataFetcher: PluginDataFetcherService,
   ) {}
 
-  /** `poll` run with the access token, and run once more with a refreshed one if it is refused with a 401. A refresh that fails throws. */
-  async withAccessToken<T>(source: { id?: string }, oauth: OAuthPoll, poll: (accessToken: string) => Promise<T>): Promise<T> {
-    const stored = await this.load(source.id)
-    const canRefresh = refreshCredentialsOf(oauth.fieldValues, stored) !== null
-    const token = canRefresh && isDueForRefresh(stored, new Date())
-      ? await this.refresh(source.id, oauth, stored)
-      : stored
+  /**
+   * `poll` run with the access token, and run once more with a refreshed one if it is refused with a 401. `lastTry`
+   * tells the retry from the first poll. A refresh that fails throws.
+   */
+  async withAccessToken<T>(oauth: OAuthPoll, poll: (accessToken: string, lastTry: boolean) => Promise<T>): Promise<T> {
+    const token = await this.oneAtATime(oauth.pluginId, async () => {
+      const stored = await this.load(oauth.pluginId)
+      const canRefresh = refreshCredentialsOf(oauth.fieldValues, stored) !== null
+      return canRefresh && isDueForRefresh(stored, new Date()) ? this.refresh(oauth, stored) : stored
+    })
     try {
-      return await poll(token.accessToken ?? oauth.fieldValues.oauth_access_token ?? '')
+      return await poll(token.accessToken ?? oauth.fieldValues.oauth_access_token ?? '', false)
     }
     catch (error) {
       if (!isUnauthorized(error))
         throw error
-      const refreshed = await this.refresh(source.id, oauth, token)
-      return poll(refreshed.accessToken ?? '')
+      const refreshed = await this.oneAtATime(oauth.pluginId, async () => {
+        const stored = await this.load(oauth.pluginId)
+        // Another Data Source refreshed it since this poll took its token.
+        if (stored.accessToken && stored.accessToken !== token.accessToken)
+          return stored
+        return this.refresh(oauth, stored)
+      })
+      return poll(refreshed.accessToken ?? '', true)
     }
   }
 
-  private async load(id: string | undefined): Promise<StoredAccessToken> {
-    const row = id ? await this.dataSourceRepository.findOne({ where: { id }, select: { id: true, oauthAccessToken: true, oauthRefreshToken: true, oauthAccessTokenExpiresAt: true, oauthRefreshedAt: true } }) : null
+  /** `work` run once the Plugin's earlier work has settled. */
+  private async oneAtATime<T>(pluginId: string | undefined, work: () => Promise<T>): Promise<T> {
+    if (!pluginId)
+      return work()
+    const current = (this.locks.get(pluginId) ?? Promise.resolve()).then(work)
+    const settled = current.catch(() => {})
+    this.locks.set(pluginId, settled)
+    try {
+      return await current
+    }
+    finally {
+      if (this.locks.get(pluginId) === settled)
+        this.locks.delete(pluginId)
+    }
+  }
+
+  private async load(pluginId: string | undefined): Promise<StoredAccessToken> {
+    const row = pluginId ? await this.pluginRepository.findOne({ where: { id: pluginId }, select: { id: true, oauthAccessToken: true, oauthRefreshToken: true, oauthAccessTokenExpiresAt: true, oauthRefreshedAt: true } }) : null
     if (!row)
       return NO_TOKEN
     return { accessToken: row.oauthAccessToken ?? null, refreshToken: row.oauthRefreshToken ?? null, expiresAt: row.oauthAccessTokenExpiresAt ?? null, refreshedAt: row.oauthRefreshedAt ?? null }
   }
 
-  private async refresh(id: string | undefined, { settings, fieldValues }: OAuthPoll, stored: StoredAccessToken): Promise<StoredAccessToken> {
+  private async refresh({ pluginId, settings, fieldValues }: OAuthPoll, stored: StoredAccessToken): Promise<StoredAccessToken> {
     const credentials = refreshCredentialsOf(fieldValues, stored)
     if (!credentials)
       throw new Error('The access token was refused, and there is no refresh token, client id and client secret to refresh it with.')
@@ -74,8 +105,8 @@ export class PluginOAuthService {
     if (!refreshed)
       throw new Error(`The token endpoint answered no access token: ${reply.slice(0, REPLY_LIMIT)}`)
     const token = { ...refreshed, refreshToken: refreshed.refreshToken ?? stored.refreshToken }
-    if (id)
-      await this.dataSourceRepository.update(id, { oauthAccessToken: token.accessToken, oauthRefreshToken: token.refreshToken, oauthAccessTokenExpiresAt: token.expiresAt, oauthRefreshedAt: token.refreshedAt })
+    if (pluginId)
+      await this.pluginRepository.update(pluginId, { oauthAccessToken: token.accessToken, oauthRefreshToken: token.refreshToken, oauthAccessTokenExpiresAt: token.expiresAt, oauthRefreshedAt: token.refreshedAt })
     return token
   }
 }

@@ -39,21 +39,6 @@ export class PluginDataSource {
   @Column('int', { default: 0 })
   order: number = 0
 
-  // The access token its last OAuth refresh answered, with the refresh token answered in place of the pasted one
-  // and the expiry (ADR-0066). Runtime state, like savedState: never written into a Field Value, left out of
-  // `.trmnlp` export and the Configuration Archive.
-  @Column('text', { nullable: true })
-  oauthAccessToken?: string | null
-
-  @Column('text', { nullable: true })
-  oauthRefreshToken?: string | null
-
-  @Column('timestamptz', { nullable: true })
-  oauthAccessTokenExpiresAt?: Date | null
-
-  @Column('timestamptz', { nullable: true })
-  oauthRefreshedAt?: Date | null
-
   // Fetch Failure Streak (ADR-0025): written only by the scheduler tick, for
   // `fetch`-mode sources only. Runtime state — excluded from `.trmnlp`
   // export and the Configuration Archive, like every other runtime value.

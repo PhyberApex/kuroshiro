@@ -362,7 +362,7 @@ export class PluginsService implements OnModuleInit {
       await manager.update(Plugin, id, basicFields)
       await this.fieldValues.within(manager).write({ id, fields: savedFields }, fieldValues)
       if (Object.keys(fieldValues ?? {}).some(isOAuthKeyname))
-        await manager.update(PluginDataSource, { plugin: { id } }, NO_REFRESHED_TOKEN)
+        await manager.update(Plugin, id, NO_REFRESHED_TOKEN)
     })
 
     await this.refreshRendersAfterSave(id)

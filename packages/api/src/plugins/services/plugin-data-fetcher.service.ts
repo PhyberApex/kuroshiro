@@ -41,6 +41,13 @@ export class HttpStatusError extends Error {
   }
 }
 
+export interface FetchOptions {
+  /** A line of a multi-line Polling URL answered 401 fails the whole fetch rather than reading as that line's error marker, so an OAuth poll can refresh its token and retry (ADR-0067). */
+  unauthorizedThrows?: boolean
+}
+
+const isUnauthorized = (reason: unknown): boolean => reason instanceof HttpStatusError && reason.status === 401
+
 /** How long TRMNL gives a polled host to answer (ADR-0062). */
 const REQUEST_TIMEOUT_MS = 10_000
 
@@ -81,11 +88,11 @@ export class PluginDataFetcherService {
    * preview path that iterates a Plugin's Data Sources should go through
    * this rather than re-deriving the mode branch itself.
    */
-  async fetchOrLiteral(source: FetchableDataSource, templateContext?: object): Promise<unknown> {
+  async fetchOrLiteral(source: FetchableDataSource, templateContext?: object, options?: FetchOptions): Promise<unknown> {
     if (source.mode === 'literal') {
       return source.literalValue ?? null
     }
-    return this.fetchData(source.method || 'GET', source.url || '', source.headers ?? undefined, source.body ?? undefined, templateContext)
+    return this.fetchData(source.method || 'GET', source.url || '', source.headers ?? undefined, source.body ?? undefined, templateContext, options)
   }
 
   async fetchData(
@@ -94,6 +101,7 @@ export class PluginDataFetcherService {
     headers: Record<string, string> = {},
     body?: JsonObject,
     templateContext?: object,
+    { unauthorizedThrows = false }: FetchOptions = {},
   ): Promise<unknown> {
     const context = templateContext ?? {}
     const urls = pollingUrlsOf(await this.renderLiquid(url, context))
@@ -105,6 +113,9 @@ export class PluginDataFetcherService {
       return this.fetchOne(urls[0] ?? '', init)
 
     const responses = await Promise.allSettled(urls.map(line => this.fetchOne(line, init)))
+    const refused = unauthorizedThrows && responses.find(response => response.status === 'rejected' && isUnauthorized(response.reason))
+    if (refused)
+      throw (refused as PromiseRejectedResult).reason
     return Object.fromEntries(responses.map((response, index) => [`IDX_${index}`, response.status === 'fulfilled' ? lineDataOf(response.value) : errorMarkerOf(response.reason)]))
   }
 

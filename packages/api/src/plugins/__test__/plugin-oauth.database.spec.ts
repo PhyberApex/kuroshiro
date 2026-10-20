@@ -46,9 +46,9 @@ describe('an OAuth Plugin\'s access token, refreshed before a poll and on a 401 
   beforeAll(async () => {
     database = await createTestDatabase()
     const renderer = new PluginRendererService(new InstanceTimeZone())
-    const fetcher = new PluginDataFetcherService(renderer, asService<ConfigService>({ get: () => false }))
+    const fetcher = new PluginDataFetcherService(renderer, asService<ConfigService>({ get: () => false }), new InstanceTimeZone())
     const dataSources = database.getRepository(PluginDataSource)
-    const resolver = new PluginDataResolverService(fetcher, new PluginTransformService(), new PluginOAuthService(dataSources, fetcher))
+    const resolver = new PluginDataResolverService(fetcher, new PluginTransformService(), new PluginOAuthService(database.getRepository(Plugin), fetcher))
     const fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
     templateContext = new PluginTemplateContextService(fieldValues, resolver, new InstanceTimeZone(), new PluginDataSourceStateService(dataSources))
     const renderCache = asService<PluginRenderCacheService>({ renderAndCache: async () => {} })
@@ -81,10 +81,11 @@ describe('an OAuth Plugin\'s access token, refreshed before a poll and on a 401 
     await database.destroy()
   })
 
-  async function oauthPlugin({ settings = ADMOB_SETTINGS, values = PASTED, token = {} }: { settings?: OAuthSettings, values?: Partial<typeof PASTED>, token?: Partial<PluginDataSource> } = {}): Promise<Plugin> {
+  async function oauthPlugin({ settings = ADMOB_SETTINGS, values = PASTED, token = {}, sources = [{ name: 'source', url: POLL_URL }] }: { settings?: OAuthSettings, values?: Partial<typeof PASTED>, token?: Partial<Plugin>, sources?: { name: string, url: string }[] } = {}): Promise<Plugin> {
     const plugins = database.getRepository(Plugin)
-    const saved = await plugins.save(plugins.create({ name: 'AdMob', oauthSettings: settings }))
-    await database.getRepository(PluginDataSource).save({ name: 'source', mode: 'fetch', method: 'GET', url: POLL_URL, headers: { Authorization: 'Bearer {{ oauth_access_token }}' }, plugin: saved, ...token })
+    const saved = await plugins.save(plugins.create({ name: 'AdMob', oauthSettings: settings, ...token }))
+    for (const [order, source] of sources.entries())
+      await database.getRepository(PluginDataSource).save({ ...source, order, mode: 'fetch', method: 'GET', headers: { Authorization: 'Bearer {{ oauth_access_token }}' }, plugin: saved })
     for (const [order, field] of OAUTH_FIELDS.entries()) {
       const stored = await database.getRepository(PluginField).save({ keyname: field.keyname, name: field.name, fieldType: 'password', order, plugin: saved })
       const value = values[field.keyname]
@@ -94,17 +95,18 @@ describe('an OAuth Plugin\'s access token, refreshed before a poll and on a 401 
     return plugins.findOneOrFail({ where: { id: saved.id }, relations: { dataSources: true, fields: true, templates: true } })
   }
 
+  const storedToken = async (plugin: Plugin) => database.getRepository(Plugin).findOneOrFail({ where: { id: plugin.id }, select: { id: true, oauthAccessToken: true, oauthRefreshToken: true, oauthAccessTokenExpiresAt: true, oauthRefreshedAt: true } })
   const storedSource = async (plugin: Plugin) => database.getRepository(PluginDataSource).findOneByOrFail({ id: plugin.dataSources[0].id })
   const sourceDataOf = async (plugin: Plugin) => (await templateContext.contextFor(plugin, [])).sourceData
 
-  it('refreshes before the first poll, polls with the refreshed token and keeps it and its expiry on the Data Source, not in the Field Value', async () => {
+  it('refreshes before the first poll, polls with the refreshed token and keeps it and its expiry on the Plugin, not in the Field Value', async () => {
     const plugin = await oauthPlugin()
 
     expect(await sourceDataOf(plugin)).toEqual({ source: { rows: 3 } })
 
     expect(new URLSearchParams(tokenRequests[0])).toEqual(new URLSearchParams({ grant_type: 'refresh_token', refresh_token: 'pasted-refresh', client_id: 'client', client_secret: 'secret' }))
     expect(pollAuthorizations).toEqual(['Bearer refreshed-access'])
-    expect(await storedSource(plugin)).toMatchObject({ oauthAccessToken: 'refreshed-access', oauthAccessTokenExpiresAt: new Date(NOW.getTime() + 3599_000), oauthRefreshedAt: NOW })
+    expect(await storedToken(plugin)).toMatchObject({ oauthAccessToken: 'refreshed-access', oauthAccessTokenExpiresAt: new Date(NOW.getTime() + 3599_000), oauthRefreshedAt: NOW })
     expect((await database.getRepository(PluginFieldValue).find({ relations: { field: true } })).find(row => row.field.keyname === 'oauth_access_token')?.value).toBe('pasted-access')
   })
 
@@ -171,7 +173,7 @@ describe('an OAuth Plugin\'s access token, refreshed before a poll and on a 401 
     await sourceDataOf(plugin)
 
     expect(new URLSearchParams(tokenRequests[0]).get('audience')).toBe('reports')
-    expect((await storedSource(plugin)).oauthAccessTokenExpiresAt).toEqual(new Date(NOW.getTime() + 600_000))
+    expect((await storedToken(plugin)).oauthAccessTokenExpiresAt).toEqual(new Date(NOW.getTime() + 600_000))
   })
 
   it('keeps the refresh token the token endpoint answers in place of the pasted one, and refreshes with it next', async () => {
@@ -194,7 +196,71 @@ describe('an OAuth Plugin\'s access token, refreshed before a poll and on a 401 
     expect(await storedSource(plugin)).toMatchObject({
       fetchFailureStreak: 1,
       lastFetchError: 'The token endpoint answered 400: {"error":"invalid_grant","error_description":"Token has been expired or revoked."}',
-      oauthAccessToken: null,
     })
+    expect((await storedToken(plugin)).oauthAccessToken).toBeNull()
+  })
+  it('refreshes once and polls once more when one line of a multi-line Polling URL answers 401', async () => {
+    const plugin = await oauthPlugin({ token: { oauthAccessToken: 'revoked-access', oauthAccessTokenExpiresAt: new Date(NOW.getTime() + 30 * MINUTE) }, sources: [{ name: 'source', url: `${POLL_URL}\nhttps://api.example.com/other` }] })
+    pollEndpoint = init => new Headers(init.headers).get('Authorization') === 'Bearer revoked-access' ? new Response('', { status: 401 }) : jsonResponse({ rows: 3 })
+
+    expect(await sourceDataOf(plugin)).toEqual({ source: { IDX_0: { rows: 3 }, IDX_1: { rows: 3 } } })
+    expect(tokenRequests).toHaveLength(1)
+    expect(pollAuthorizations).toEqual(['Bearer revoked-access', 'Bearer revoked-access', 'Bearer refreshed-access', 'Bearer refreshed-access'])
+  })
+
+  it('leaves a line refused again after the retry as that line\'s error marker', async () => {
+    const plugin = await oauthPlugin({ token: { oauthAccessToken: 'stored-access', oauthAccessTokenExpiresAt: new Date(NOW.getTime() + 30 * MINUTE) }, sources: [{ name: 'source', url: `${POLL_URL}\nhttps://api.example.com/other` }] })
+    fetchMock.mockImplementation(async (input, init = {}) => {
+      if (String(input) === TOKEN_URL) {
+        tokenRequests.push(String(init.body))
+        return tokenEndpoint(init)
+      }
+      return String(input) === POLL_URL ? new Response('', { status: 401 }) : jsonResponse({ rows: 3 })
+    })
+
+    expect(await sourceDataOf(plugin)).toEqual({ source: { IDX_0: { error: true, message: 'HTTP error! status: 401' }, IDX_1: { rows: 3 } } })
+    expect(tokenRequests).toHaveLength(1)
+  })
+
+  it('refreshes once for two Data Sources polling together, and both poll with the refreshed token', async () => {
+    const plugin = await oauthPlugin({ sources: [{ name: 'first', url: POLL_URL }, { name: 'second', url: POLL_URL }] })
+    tokenEndpoint = () => jsonResponse({ access_token: 'refreshed-access', refresh_token: 'rotated-refresh', expires_in: 3599 })
+
+    expect(await sourceDataOf(plugin)).toEqual({ first: { rows: 3 }, second: { rows: 3 } })
+    expect(tokenRequests).toHaveLength(1)
+    expect(pollAuthorizations).toEqual(['Bearer refreshed-access', 'Bearer refreshed-access'])
+    expect((await storedToken(plugin)).oauthRefreshToken).toBe('rotated-refresh')
+  })
+
+  it('refreshes once when two Data Sources are both refused with a 401, the second retrying with the first one\'s refresh', async () => {
+    const plugin = await oauthPlugin({ token: { oauthAccessToken: 'revoked-access', oauthAccessTokenExpiresAt: new Date(NOW.getTime() + 30 * MINUTE) }, sources: [{ name: 'first', url: POLL_URL }, { name: 'second', url: POLL_URL }] })
+    pollEndpoint = init => new Headers(init.headers).get('Authorization') === 'Bearer revoked-access' ? new Response('', { status: 401 }) : jsonResponse({ rows: 3 })
+
+    expect(await sourceDataOf(plugin)).toEqual({ first: { rows: 3 }, second: { rows: 3 } })
+    expect(tokenRequests).toHaveLength(1)
+  })
+
+  it('never refreshes with an access token pasted alone, a 401 failing the fetch', async () => {
+    const plugin = await oauthPlugin({ values: { oauth_access_token: 'pasted-access' } })
+    pollEndpoint = () => new Response('', { status: 401 })
+
+    expect(await sourceDataOf(plugin)).toEqual({ source: { error: true, message: 'The access token was refused, and there is no refresh token, client id and client secret to refresh it with.' } })
+    expect(tokenRequests).toEqual([])
+  })
+
+  it('counts the expiry unknown for an expiry strategy it does not know, even with expires_in in the answer', async () => {
+    const plugin = await oauthPlugin({ settings: { ...ADMOB_SETTINGS, oauth_expiry_strategy: 'something_else' } })
+
+    await sourceDataOf(plugin)
+
+    expect(await storedToken(plugin)).toMatchObject({ oauthAccessTokenExpiresAt: null, oauthRefreshedAt: NOW })
+  })
+
+  it('reads oauth_fixed_expiry_ms as the token\'s lifetime from the refresh', async () => {
+    const plugin = await oauthPlugin({ settings: { ...ADMOB_SETTINGS, oauth_fixed_expiry_ms: '1800000' } })
+
+    await sourceDataOf(plugin)
+
+    expect((await storedToken(plugin)).oauthAccessTokenExpiresAt).toEqual(new Date(NOW.getTime() + 30 * MINUTE))
   })
 })

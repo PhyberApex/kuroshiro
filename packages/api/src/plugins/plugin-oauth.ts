@@ -28,7 +28,7 @@ export function oauthSettingsOf(settings: object): OAuthSettings | undefined {
   return Object.fromEntries(entries.map(([key, value]) => [key, value === null || value === undefined ? '' : String(value)]))
 }
 
-/** The access token a Data Source last refreshed, and when; all `null` until it refreshes one. */
+/** The access token a Plugin last refreshed, and when; all `null` until it refreshes one. */
 export interface StoredAccessToken {
   accessToken: string | null
   refreshToken: string | null
@@ -36,7 +36,7 @@ export interface StoredAccessToken {
   refreshedAt: Date | null
 }
 
-/** A Data Source's refreshed token forgotten, as a save that pastes a token again leaves it, so the next poll starts from what was pasted. */
+/** A Plugin's refreshed token forgotten, as a save that pastes a token again leaves it, so the next poll starts from what was pasted. */
 export const NO_REFRESHED_TOKEN = { oauthAccessToken: null, oauthRefreshToken: null, oauthAccessTokenExpiresAt: null, oauthRefreshedAt: null }
 
 const EXPIRY_MARGIN_MS = 60_000
@@ -98,30 +98,24 @@ export function refreshRequestOf(settings: OAuthSettings, credentials: RefreshCr
   }
 }
 
-const validDate = (at: Date): Date | null => Number.isNaN(at.getTime()) ? null : at
-
-/** A moment as epoch seconds, epoch milliseconds or ISO text. */
-function momentOf(value: unknown): Date | null {
-  if (typeof value === 'number')
-    return validDate(new Date(value < 1e12 ? value * 1000 : value))
-  return typeof value === 'string' ? validDate(new Date(value)) : null
-}
-
 /** A number of seconds from `now`, written as a number or as text. */
 function secondsFrom(now: Date, value: unknown): Date | null {
   const seconds = typeof value === 'number' || (typeof value === 'string' && value.trim() !== '') ? Number(value) : Number.NaN
   return Number.isFinite(seconds) ? new Date(now.getTime() + seconds * 1000) : null
 }
 
-const ABSOLUTE_EXPIRY = ['expires_at', 'absolute']
-
-/** The expiry by the Recipe's strategy: its fixed lifetime, a moment the answer names, or by default seconds from now. */
+/**
+ * The expiry of a refreshed token: `oauth_fixed_expiry_ms` after the refresh when the Recipe sets it, else the answer's
+ * `expires_in` (or the field `oauth_expiry_field_name` names) as seconds from now. TRMNL's docs name no value of
+ * `oauth_expiry_strategy`, so any it sets leaves the expiry unknown.
+ */
 function expiresAtOf(settings: OAuthSettings, response: Record<string, unknown>, now: Date): Date | null {
-  const strategy = settings.oauth_expiry_strategy?.trim().toLowerCase() ?? ''
-  if (strategy === 'fixed')
-    return secondsFrom(now, Number(settings.oauth_fixed_expiry_ms) / 1000)
-  const value = response[settings.oauth_expiry_field_name?.trim() || 'expires_in']
-  return ABSOLUTE_EXPIRY.includes(strategy) ? momentOf(value) : secondsFrom(now, value)
+  const fixedMs = settings.oauth_fixed_expiry_ms?.trim()
+  if (fixedMs)
+    return secondsFrom(now, Number(fixedMs) / 1000)
+  if (settings.oauth_expiry_strategy?.trim())
+    return null
+  return secondsFrom(now, response[settings.oauth_expiry_field_name?.trim() || 'expires_in'])
 }
 
 /** The token endpoint's answer read as a stored token, or `null` when it names no access token. */
