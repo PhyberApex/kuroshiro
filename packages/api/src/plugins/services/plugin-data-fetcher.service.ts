@@ -38,6 +38,11 @@ function errorMarkerOf(reason: unknown): FetchErrorMarker {
   return { error: true, message: reason instanceof Error ? reason.message : String(reason) }
 }
 
+/** One line's response as TRMNL lays it at `IDX_n`: a list or text under `data`, an object as it is (ADR-0061). */
+function lineDataOf(value: unknown): unknown {
+  return Array.isArray(value) || typeof value === 'string' ? { data: value } : value
+}
+
 @Injectable()
 export class PluginDataFetcherService {
   constructor(
@@ -76,7 +81,7 @@ export class PluginDataFetcherService {
       return this.fetchOne(urls[0] ?? '', init)
 
     const responses = await Promise.allSettled(urls.map(line => this.fetchOne(line, init)))
-    return Object.fromEntries(responses.map((response, index) => [`IDX_${index}`, response.status === 'fulfilled' ? response.value : errorMarkerOf(response.reason)]))
+    return Object.fromEntries(responses.map((response, index) => [`IDX_${index}`, response.status === 'fulfilled' ? lineDataOf(response.value) : errorMarkerOf(response.reason)]))
   }
 
   private async fetchOne(url: string, init: RequestInit): Promise<unknown> {
