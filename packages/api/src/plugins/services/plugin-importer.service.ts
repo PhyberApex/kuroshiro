@@ -102,6 +102,7 @@ interface CustomField {
   step?: unknown
   maxlength?: unknown
   rows?: unknown
+  multiple?: unknown
 }
 
 const FIELD_TEXT_ATTRIBUTES: Array<[archive: 'placeholder' | 'help_text' | 'group', attribute: 'placeholder' | 'hint' | 'group']> = [['placeholder', 'placeholder'], ['help_text', 'hint'], ['group', 'group']]
@@ -115,7 +116,8 @@ function attributesOf(field: CustomField): PluginFieldAttributes {
     const number = typeof value === 'number' ? value : typeof value === 'string' && value.trim() !== '' ? Number(value) : Number.NaN
     return Number.isFinite(number) ? [[attribute, number]] : []
   })
-  return Object.fromEntries([...texts, ...numbers])
+  const multiple = recipeFlag(field.multiple as boolean | string | undefined) ? [['multiple', true]] : []
+  return Object.fromEntries([...texts, ...numbers, ...multiple])
 }
 
 interface DataSourceEntry {

@@ -112,6 +112,14 @@ describe('pluginTemplateContextService', () => {
     expect(context).toMatchObject({ city: 'Berlin', trmnl: { plugin_settings: { custom_fields_values: { city: 'Berlin' } } } })
   })
 
+  it('reads a list Plugin Field\'s Field Value as a list, as a bare key and under custom_fields_values (ADR-0064)', async () => {
+    const withLists = makePlugin({ name: 'Weather', fields: [makePluginField({ keyname: 'labels', fieldType: 'multi_string' }), makePluginField({ keyname: 'days', fieldType: 'select', attributes: { multiple: true } })] })
+
+    const { context } = await createPluginTemplateContextService({ labels: 'Work\nHome', days: '' }).contextFor(withLists, [])
+
+    expect(context).toMatchObject({ labels: ['Work', 'Home'], days: [], trmnl: { plugin_settings: { custom_fields_values: { labels: ['Work', 'Home'], days: [] } } } })
+  })
+
   it('never lets a Field Value keyname replace trmnl or sensors', async () => {
     const { context } = await createPluginTemplateContextService({ trmnl: 'x', sensors: 'y' }).contextFor(plugin, [])
 

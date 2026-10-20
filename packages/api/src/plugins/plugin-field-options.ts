@@ -21,7 +21,7 @@ export function parseFieldOptions(options: unknown): PluginFieldOption[] | undef
 }
 
 /** A Plugin Field's attributes as TRMNL's form builder names them, `hint` as `help_text`; none for an empty set (ADR-0053). */
-export function formatFieldAttributes({ hint, ...rest }: PluginFieldAttributes = {}): Record<string, string | number> {
+export function formatFieldAttributes({ hint, ...rest }: PluginFieldAttributes = {}): Record<string, string | number | boolean> {
   return { ...rest, ...(hint !== undefined ? { help_text: hint } : {}) }
 }
 

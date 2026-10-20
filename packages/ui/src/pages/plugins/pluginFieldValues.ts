@@ -1,6 +1,6 @@
-import type { PluginDetail, PluginFieldInput } from 'kuroshiro-shared'
+import type { PluginDetail, PluginFieldAttributes, PluginFieldInput } from 'kuroshiro-shared'
 import type { PluginFormPart } from './pluginForm'
-import { isReadOnlyFieldType } from 'kuroshiro-shared'
+import { isListField, isReadOnlyFieldType } from 'kuroshiro-shared'
 import { CREDIT_TYPE } from './pluginFields'
 
 /**
@@ -50,7 +50,7 @@ export function valuesAmong(keynames: string[], entered: Record<string, string>,
   }))
 }
 
-export type FieldControl = 'text' | 'url' | 'date' | 'time' | 'textarea' | 'number' | 'switch' | 'select' | 'secret'
+export type FieldControl = 'text' | 'url' | 'date' | 'time' | 'textarea' | 'number' | 'switch' | 'select' | 'secret' | 'lines' | 'checklist'
 
 const CONTROLS: Record<string, FieldControl> = {
   url: 'url',
@@ -64,17 +64,24 @@ const CONTROLS: Record<string, FieldControl> = {
   password: 'secret',
 }
 
-/** The control a Plugin Field's value is entered with. A type Kuroshiro has no control for is single-line text. */
-export const fieldControl = (type: string | undefined): FieldControl => CONTROLS[type ?? ''] ?? 'text'
+/**
+ * The control a Plugin Field's value is entered with: a list Plugin Field's as one value per line, or as a checklist of
+ * its options (ADR-0064). A type Kuroshiro has no control for is single-line text.
+ */
+export function fieldControl(type: string | undefined, attributes?: PluginFieldAttributes | null): FieldControl {
+  if (isListField(type, attributes))
+    return type === 'select' ? 'checklist' : 'lines'
+  return CONTROLS[type ?? ''] ?? 'text'
+}
 
 /**
- * Whether a Field Value holds an explicit value its control can empty with "Clear": a select or On or off one, never
- * text, number or password. True even where the value chosen is the Plugin Field's default, since it is still an
- * explicit choice and not "no value".
+ * Whether a Field Value holds an explicit value its control can empty with "Clear": a select, a checklist or On or off
+ * one, never text, number or password. True even where the value chosen is the Plugin Field's default, since it is
+ * still an explicit choice and not "no value".
  */
-export function isClearable(type: string | undefined, entered: string) {
-  const control = fieldControl(type)
-  return (control === 'select' || control === 'switch') && entered !== ''
+export function isClearable(type: string | undefined, entered: string, attributes?: PluginFieldAttributes | null) {
+  const control = fieldControl(type, attributes)
+  return (control === 'select' || control === 'checklist' || control === 'switch') && entered !== ''
 }
 
 type NotedField = Pick<PluginFieldInput, 'fieldType' | 'defaultValue' | 'required'>

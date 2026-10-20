@@ -44,6 +44,10 @@ class PluginFieldAttributesDto implements PluginFieldAttributes {
   @IsOptional()
   @IsInt()
   rows?: number
+
+  @IsOptional()
+  @IsBoolean()
+  multiple?: boolean
 }
 
 export class PluginFieldDto implements PluginFieldInput {

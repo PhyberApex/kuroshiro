@@ -7,6 +7,7 @@ import Select from '@/components/Select.vue'
 import Switch from '@/components/Switch.vue'
 import Textarea from '@/components/Textarea.vue'
 import TextInput from '@/components/TextInput.vue'
+import FieldValueChecklist from './FieldValueChecklist.vue'
 import { fieldControl, isOn, OFF, ON } from './pluginFieldValues'
 
 defineOptions({ inheritAttrs: false })
@@ -23,7 +24,7 @@ const props = defineProps<{
 
 const entered = defineModel<string>({ required: true })
 
-const kind = computed(() => fieldControl(props.field.fieldType))
+const kind = computed(() => fieldControl(props.field.fieldType, props.field.attributes))
 
 const on = computed({
   get: () => isOn(entered.value, props.field.defaultValue),
@@ -61,6 +62,8 @@ const chosen = computed({
     <span>{{ on ? 'On' : 'Off' }}</span>
   </template>
   <Select v-else-if="kind === 'select'" v-bind="$attrs" v-model="chosen" :options="options" :invalid="invalid" placeholder="Not set" />
+  <Textarea v-else-if="kind === 'lines'" v-bind="$attrs" v-model="entered" class="prose" :rows="attributes.rows ?? 3" :invalid="invalid" :placeholder="placeholder ?? 'One per line'" />
+  <FieldValueChecklist v-else-if="kind === 'checklist'" v-bind="$attrs" v-model="entered" :options="options" :default-value="field.defaultValue" :label="label" :invalid="invalid" />
   <SecretField
     v-else-if="kind === 'secret'"
     v-bind="$attrs"

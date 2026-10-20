@@ -230,6 +230,34 @@ describe('pluginImporterService recipe import', () => {
       expect(service.parseZip(new AdmZip(exported), 'weather').fields[0].options).toEqual(expectedOptions)
     })
 
+    it('keeps a select\'s multiple flag as an attribute, which the export writes back', async () => {
+      const settings = {
+        name: 'Days',
+        strategy: 'polling',
+        polling_url: 'https://api.example.com',
+        custom_fields: [
+          { keyname: 'days', field_type: 'select', name: 'Days', multiple: true, options: ['mon', 'tue'] },
+          { keyname: 'theme', field_type: 'select', name: 'Theme', multiple: 'false', options: ['light'] },
+        ],
+      }
+
+      const service = new PluginImporterService()
+      const imported = await service.importFromRecipeArchive(buildFlatRecipeArchive(settings), '1')
+
+      expect(imported.fields.map(field => field.attributes)).toEqual([{ multiple: true }, {}])
+
+      const exported = await new PluginExporterService().exportToZip(makePlugin({
+        name: imported.name,
+        dataSources: imported.dataSources.map(source => makePluginDataSource(source)),
+        templates: imported.templates.map(template => makePluginTemplate(template)),
+        fields: imported.fields.map(field => makePluginField(field)),
+      }))
+      const manifest = yaml.load(new AdmZip(exported).readAsText('.trmnlp.yml')) as { custom_fields: Array<{ multiple?: boolean }> }
+
+      expect(manifest.custom_fields.map(field => field.multiple)).toEqual([true, undefined])
+      expect(service.parseZip(new AdmZip(exported), 'days').fields.map(field => field.attributes)).toEqual([{ multiple: true }, {}])
+    })
+
     it('imports a field of a type Kuroshiro has no control for, and one with no type at all', async () => {
       const settings = {
         name: 'Odd Fields',

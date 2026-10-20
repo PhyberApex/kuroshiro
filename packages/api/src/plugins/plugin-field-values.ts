@@ -1,6 +1,6 @@
 import type { FieldValueRead } from 'kuroshiro-shared'
 import type { PluginField } from './entities/plugin-field.entity.js'
-import { isReadOnlyFieldType } from 'kuroshiro-shared'
+import { isListField, isReadOnlyFieldType, listValuesOf } from 'kuroshiro-shared'
 
 type FieldDefinition = Pick<PluginField, 'keyname' | 'fieldType' | 'defaultValue' | 'required'>
 
@@ -18,6 +18,12 @@ export function isSecretField(field: Pick<PluginField, 'fieldType'>): boolean {
 /** What a render sees for each Plugin Field: the Field Value, else the Plugin Field's default, else empty (ADR-0032). */
 export function resolveFieldValues(fields: FieldDefinition[], stored: StoredFieldValues): Record<string, string> {
   return Object.fromEntries(fields.map(field => [field.keyname, stored[field.keyname] ?? field.defaultValue ?? '']))
+}
+
+/** The resolved Field Values as a template reads them: a list Plugin Field's as a list of its lines (ADR-0064). */
+export function templateFieldValues(fields: Array<Pick<PluginField, 'keyname' | 'fieldType' | 'attributes'>>, resolved: Record<string, string>): Record<string, string | string[]> {
+  const lists = new Set(fields.filter(field => isListField(field.fieldType, field.attributes)).map(field => field.keyname))
+  return Object.fromEntries(Object.entries(resolved).map(([keyname, value]) => [keyname, lists.has(keyname) ? listValuesOf(value) : value]))
 }
 
 /** What stands in for a password Field Value wherever the admin's browser reads a render's context. */

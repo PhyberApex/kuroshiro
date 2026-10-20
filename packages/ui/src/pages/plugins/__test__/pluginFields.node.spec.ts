@@ -218,7 +218,13 @@ describe('the Plugin Fields of the Plugin\'s form', () => {
     ['select', 'Select'],
     ['author_bio', 'Credit, read-only'],
     ['time_zone', 'Single-line text'],
+    ['multi_string', 'Lines of text'],
   ])('calls the type %s "%s"', (type, name) => {
     expect(typeName(type)).toBe(name)
+  })
+
+  it('calls a select that allows several "Select, several" (ADR-0064)', () => {
+    expect(typeName('select', { multiple: true })).toBe('Select, several')
+    expect(typeName('select', {})).toBe('Select')
   })
 })

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { makePluginField } from '../../test/fixtures.js'
-import { fieldValueViews, needsValues, resolveFieldValues } from '../plugin-field-values.js'
+import { fieldValueViews, needsValues, resolveFieldValues, templateFieldValues } from '../plugin-field-values.js'
 
 describe('plugin field values', () => {
   const city = makePluginField({ keyname: 'city', defaultValue: 'Tokyo' })
@@ -44,6 +44,21 @@ describe('plugin field values', () => {
 
       expect(fieldValueViews([password], { api_key: 's3cret' })).toEqual({ api_key: { value: null, isSet: true } })
       expect(fieldValueViews([password], {})).toEqual({ api_key: { value: null, isSet: false } })
+    })
+  })
+
+  describe('templateFieldValues (ADR-0064)', () => {
+    it('reads a multi_string and a select that allows several as the lines of the value, and leaves the rest as text', () => {
+      const fields = [
+        makePluginField({ keyname: 'labels', fieldType: 'multi_string' }),
+        makePluginField({ keyname: 'days', fieldType: 'select', attributes: { multiple: true } }),
+        makePluginField({ keyname: 'theme', fieldType: 'select' }),
+        makePluginField({ keyname: 'note', fieldType: 'text' }),
+      ]
+      const resolved = { labels: 'Work\n\n Home \n', days: 'mon', theme: 'dark', note: 'a\nb' }
+
+      expect(templateFieldValues(fields, resolved)).toEqual({ labels: ['Work', 'Home'], days: ['mon'], theme: 'dark', note: 'a\nb' })
+      expect(templateFieldValues(fields, { labels: '' })).toEqual({ labels: [] })
     })
   })
 })
