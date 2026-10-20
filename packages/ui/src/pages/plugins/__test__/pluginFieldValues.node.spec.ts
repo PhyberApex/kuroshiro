@@ -79,9 +79,17 @@ describe('the Field Values of the Plugin\'s form', () => {
     ['select', 'select'],
     ['password', 'secret'],
     ['time_zone', 'text'],
+    ['multi_string', 'lines'],
     [undefined, 'text'],
   ])('enters a Plugin Field of type %s with the control "%s"', (type, control) => {
     expect(fieldControl(type)).toBe(control)
+  })
+
+  it('enters a select that allows several with a checklist, and clears it like a select (ADR-0064)', () => {
+    expect(fieldControl('select', { multiple: true })).toBe('checklist')
+    expect(fieldControl('select', { multiple: false })).toBe('select')
+    expect(isClearable('select', 'mon\ntue', { multiple: true })).toBe(true)
+    expect(isClearable('multi_string', 'a')).toBe(false)
   })
 
   describe('the note at the right of a row', () => {

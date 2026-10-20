@@ -252,6 +252,8 @@ Shown only when the Plugin has Plugin Fields ([render][plugin-needs]). A heading
 | Number | number input |
 | On or off | switch, with "On" or "Off" |
 | Select | select of its options |
+| Select with TRMNL's `multiple` | a checklist of its options; the value holds the ticked ones, one per line |
+| `multi_string` | textarea, one value per line |
 | Password | when a value is stored: twelve dots and "Replace", which swaps in an empty password input. Otherwise a password input with the placeholder "Not set". The stored secret is never sent to the browser. |
 | `author_bio` | no row. Its text is a line in `ink-soft` under the section. |
 | `copyable_webhook_url` | no row: TRMNL's own row for the plugin's webhook address, which the Webhook URL row of this page shows. Never counts as a required Plugin Field left empty. |
@@ -297,7 +299,7 @@ Three tucked sections, closed by default ([render][plugin-fields]).
 |---|---|---|
 | Keyname | text input, mono | Hint: "Templates and Data Sources read `{{ {keyname} }}`. Changing it starts the Field Value over." Required; letters, digits and underscores, not starting with a digit: "Use letters, digits and underscores, starting with a letter." Unique: "Another Plugin Field is called {keyname}." Not a Data Source's name and not `trmnl`, worded as for a Data Source. |
 | Label | text input | What the Field Values row is called. Empty falls back to the keyname. |
-| Type | select: Single-line text, Multi-line text, Number, On or off, Password, Select | An `author_bio` Plugin Field shows "Credit, read-only" and cannot be changed to or from. |
+| Type | select: Single-line text, Multi-line text, Number, On or off, Password, Select, Web address, Date, Time, Lines of text | An `author_bio` Plugin Field shows "Credit, read-only" and cannot be changed to or from. |
 | Default | text input, placeholder "None" | Not offered for Password. |
 | Options (Select only) | textarea | Hint: "One per line." At least one: "A Select needs at least one option." |
 | Help text | text input | Shown under the Field Values row. |

@@ -86,7 +86,7 @@ watchEffect((onCleanup) => {
           </Button>
         </span>
         <template v-else>
-          <span class="type">{{ typeName(field.type) }}</span>
+          <span class="type">{{ typeName(field.type, field.attributes) }}</span>
           <AccordionTrigger as-child>
             <Button variant="quiet" class="edit" :aria-label="open ? `Done editing ${keyname}` : `Edit ${keyname}`">
               {{ open ? 'Done' : 'Edit' }}

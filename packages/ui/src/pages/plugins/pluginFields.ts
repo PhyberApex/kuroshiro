@@ -39,6 +39,7 @@ export const FIELD_TYPE_NAMES = {
   url: 'Web address',
   date: 'Date',
   time: 'Time',
+  multi_string: 'Lines of text',
 } as const
 
 export type OfferedFieldType = keyof typeof FIELD_TYPE_NAMES
@@ -46,7 +47,12 @@ export type OfferedFieldType = keyof typeof FIELD_TYPE_NAMES
 /** The type a Plugin Field is entered as: one Kuroshiro has no control for is single-line text. */
 export const offeredType = (type: string): OfferedFieldType => type in FIELD_TYPE_NAMES ? type as OfferedFieldType : 'string'
 
-export const typeName = (type: string) => type === CREDIT_TYPE ? 'Credit, read-only' : FIELD_TYPE_NAMES[offeredType(type)]
+/** What a Plugin Field's type is called; a select that allows several says so (ADR-0064). */
+export function typeName(type: string, attributes?: PluginFieldAttributes | null) {
+  if (type === CREDIT_TYPE)
+    return 'Credit, read-only'
+  return type === 'select' && attributes?.multiple ? 'Select, several' : FIELD_TYPE_NAMES[offeredType(type)]
+}
 
 function draftOf(field: PluginFieldRead): PluginFieldDraft {
   return {

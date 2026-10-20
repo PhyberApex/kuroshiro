@@ -89,7 +89,17 @@ export interface PluginFieldAttributes {
   step?: number
   maxlength?: number
   rows?: number
+  /** TRMNL's `multiple` on a select: several options may be chosen, and the Field Value is a list (ADR-0064). */
+  multiple?: boolean
 }
+
+/** Whether a Plugin Field's Field Value is a list: `multi_string`, or a select that allows several (ADR-0064). */
+export function isListField(fieldType: string | undefined, attributes: PluginFieldAttributes | null | undefined) {
+  return fieldType === 'multi_string' || (fieldType === 'select' && attributes?.multiple === true)
+}
+
+/** The values a list Field Value holds: one per line, blank lines being no value (ADR-0064). */
+export const listValuesOf = (text: string) => text.split(/\r?\n/).map(line => line.trim()).filter(line => line !== '')
 
 export interface PluginFieldRead {
   id: string

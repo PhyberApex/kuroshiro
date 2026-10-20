@@ -20,7 +20,7 @@ const id = computed(() => fieldId(`fieldValues.${props.field.keyname}`))
 const label = computed(() => props.field.name || props.field.keyname)
 const note = computed(() => fieldValueNote(props.field, { entered: entered.value, secretStored: props.secretStored }))
 const empty = computed(() => note.value === 'Empty')
-const clearable = computed(() => isClearable(props.field.fieldType, entered.value))
+const clearable = computed(() => isClearable(props.field.fieldType, entered.value, props.field.attributes))
 
 const describedBy = computed(() => [
   props.field.required && `${id.value}-required`,
@@ -43,7 +43,7 @@ async function clear() {
       <label class="label" :for="id">{{ label }}</label>
       <span v-if="field.required" :id="`${id}-required`" class="required">required</span>
     </div>
-    <div class="control-cell" :class="fieldControl(field.fieldType)">
+    <div class="control-cell" :class="fieldControl(field.fieldType, field.attributes)">
       <FieldValueControl
         :id="id"
         v-model="entered"
@@ -102,7 +102,7 @@ async function clear() {
   }
 
   /* A value is entered in a control of the width its type calls for, not of the row's. */
-  .control-cell:is(.text, .textarea, .secret) {
+  .control-cell:is(.text, .textarea, .lines, .secret) {
     max-width: 22rem;
   }
 

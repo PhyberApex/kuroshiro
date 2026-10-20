@@ -142,6 +142,23 @@ describe('the Field Values of a Plugin', () => {
 
       await expect.poll(() => faked.saves).toEqual([{ fieldValues: { units: 'imperial' } }])
     })
+
+    it('is a textarea of one value per line for multi_string, and a checklist of the options for a select that allows several (ADR-0064)', async () => {
+      const faked = fakeWeather([
+        field('labels', { type: 'multi_string' }),
+        field('days', { type: 'select', label: 'Days', default: 'mon', attributes: { multiple: true }, options: [{ label: 'Monday', value: 'mon' }, { label: 'Tuesday', value: 'tue' }] }),
+      ], { labels: 'Work\nHome' })
+      const screen = await mountPlugin()
+
+      await expect.element(screen.getByRole('textbox', { name: 'labels' })).toHaveValue('Work\nHome')
+      await expect.element(screen.getByRole('checkbox', { name: 'Monday' })).toBeChecked()
+      await expect.element(screen.getByRole('checkbox', { name: 'Tuesday' })).not.toBeChecked()
+
+      await screen.getByRole('checkbox', { name: 'Tuesday' }).click()
+      await save(screen)
+
+      await expect.poll(() => faked.saves).toEqual([{ fieldValues: { days: 'mon\ntue', labels: 'Work\nHome' } }])
+    })
   })
 
   describe('a value', () => {

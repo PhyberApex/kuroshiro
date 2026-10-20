@@ -100,14 +100,14 @@ describe('the Plugin Fields of a Plugin', () => {
       await expect.element(edit(screen, 'units')).toHaveTextContent('Edit')
     })
 
-    it('offers the nine types, a Default only where there is one to give and Options only for a Select', async () => {
+    it('offers the ten types, a Default only where there is one to give and Options only for a Select', async () => {
       fakeWeather([LOCATION])
       const screen = await mountOpened(1)
       const opened = await open(screen, 'location')
 
       expect(opened.getByRole('textbox', { name: 'Options' }).elements()).toEqual([])
       await opened.getByRole('combobox', { name: 'Type' }).click()
-      await expect.poll(() => screen.getByRole('option').elements().map(read)).toEqual(['Single-line text', 'Multi-line text', 'Number', 'On or off', 'Password', 'Select', 'Web address', 'Date', 'Time'])
+      await expect.poll(() => screen.getByRole('option').elements().map(read)).toEqual(['Single-line text', 'Multi-line text', 'Number', 'On or off', 'Password', 'Select', 'Web address', 'Date', 'Time', 'Lines of text'])
 
       await screen.getByRole('option', { name: 'Password' }).click()
       await expect.poll(() => opened.getByRole('textbox', { name: 'Default' }).elements()).toEqual([])

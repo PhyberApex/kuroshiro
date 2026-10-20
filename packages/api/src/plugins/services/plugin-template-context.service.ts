@@ -8,7 +8,7 @@ import type { FieldValueWrites } from './plugin-field-values.service.js'
 import { Buffer } from 'node:buffer'
 import { Injectable } from '@nestjs/common'
 import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
-import { hideSecretFieldValues, hideSecretsIn, secretValues } from '../plugin-field-values.js'
+import { hideSecretFieldValues, hideSecretsIn, secretValues, templateFieldValues } from '../plugin-field-values.js'
 import { loneSourceRootKeys, PluginDataResolverService } from './plugin-data-resolver.service.js'
 import { PluginDataSourceStateService } from './plugin-data-source-state.service.js'
 import { PluginFieldValuesService } from './plugin-field-values.service.js'
@@ -22,7 +22,7 @@ export interface PluginTemplateContext {
       strategy: 'polling' | 'webhook'
       dark_mode: 'no' | 'yes'
       no_screen_padding: 'no' | 'yes'
-      custom_fields_values: Record<string, string>
+      custom_fields_values: Record<string, string | string[]>
       /** The second the data was fetched at, absent until a fetch happened (ADR-0057). */
       data_fetched_utc?: number
     }
@@ -84,6 +84,8 @@ const loneOf = <T>(dataSources: T[]): T | undefined => dataSources.length === 1 
 /** What one render resolves before its data: the Field Values as fetched with and as shown. */
 interface RenderInput {
   instanceName: string
+  /** The Plugin Fields, for which Field Values read as lists (ADR-0064). */
+  fields: PluginField[]
   /** The Plugin's screen modifiers, told to the template as TRMNL spells them (ADR-0054). */
   modifiers: ScreenModifiers
   sensors: DeviceSensor[]
@@ -140,26 +142,26 @@ export class PluginTemplateContextService {
   async contextFor(plugin: Plugin, sensors: DeviceSensor[], unsaved: UnsavedPluginInput = {}, { hideSecretsOf = [] }: ContextOptions = {}): Promise<PluginRenderContext> {
     const resolved = await this.fieldValues.resolveFor(plugin.id, unsaved.fieldValues)
     const modifiers = { noScreenPadding: plugin.noScreenPadding, darkMode: plugin.darkMode }
-    const render: RenderInput = { instanceName: unsaved.name ?? plugin.name, modifiers, sensors, resolved, fieldValues: hideSecretFieldValues(hideSecretsOf, resolved), hideSecretsOf }
+    const render: RenderInput = { instanceName: unsaved.name ?? plugin.name, fields: plugin.fields ?? [], modifiers, sensors, resolved, fieldValues: hideSecretFieldValues(hideSecretsOf, resolved), hideSecretsOf }
 
     return plugin.kind === 'Webhook'
       ? this.webhookContext(plugin, render)
       : this.pollContext(unsaved.dataSources ?? plugin.dataSources ?? [], render)
   }
 
-  private webhookContext(plugin: Plugin, { instanceName, modifiers, sensors, resolved, fieldValues }: RenderInput): PluginRenderContext {
-    const withoutData = this.hidingSecrets(this.withoutData(instanceName, modifiers, resolved, sensors, {}), fieldValues)
+  private webhookContext(plugin: Plugin, { instanceName, fields, modifiers, sensors, resolved, fieldValues }: RenderInput): PluginRenderContext {
+    const withoutData = this.hidingSecrets(this.withoutData(instanceName, modifiers, templateFieldValues(fields, resolved), sensors, {}), templateFieldValues(fields, fieldValues))
     const payload = plugin.webhookPayload
     const trmnl = fetchedAt(withoutData.trmnl, plugin.payloadReceivedAt, 'webhook')
     return { context: Array.isArray(payload) ? payload : { ...withoutData, trmnl, ...payload }, fieldValues, resolvedFieldValues: resolved, sourceData: {}, sourceStates: {} }
   }
 
-  private async pollContext(dataSources: ResolvableDataSource[], { instanceName, modifiers, sensors, resolved, fieldValues, hideSecretsOf }: RenderInput): Promise<PluginRenderContext> {
+  private async pollContext(dataSources: ResolvableDataSource[], { instanceName, fields, modifiers, sensors, resolved, fieldValues, hideSecretsOf }: RenderInput): Promise<PluginRenderContext> {
     const savedStates = await this.sourceStates.load(dataSources)
     const lone = loneOf(dataSources)
     const loneSavedState = (lone?.id && savedStates[lone.id]) || {}
-    const fetchContext = this.withoutData(instanceName, modifiers, resolved, sensors, loneSavedState)
-    const withoutData = this.hidingSecrets(fetchContext, fieldValues)
+    const fetchContext = this.withoutData(instanceName, modifiers, templateFieldValues(fields, resolved), sensors, loneSavedState)
+    const withoutData = this.hidingSecrets(fetchContext, templateFieldValues(fields, fieldValues))
 
     const { data, states } = takeWrittenStates(await this.dataResolver.resolveAll(dataSources, fetchContext, { savedStates }))
     const sourceData = hideSecretsIn(data, secretValues(hideSecretsOf, resolved))
@@ -169,7 +171,7 @@ export class PluginTemplateContextService {
   }
 
   /** The fetch context with each password Field Value as dots, in both address forms. */
-  private hidingSecrets(fetchContext: PluginTemplateContext, fieldValues: Record<string, string>): PluginTemplateContext {
+  private hidingSecrets(fetchContext: PluginTemplateContext, fieldValues: Record<string, string | string[]>): PluginTemplateContext {
     return {
       ...fetchContext,
       ...fieldValues,
@@ -178,7 +180,7 @@ export class PluginTemplateContextService {
     }
   }
 
-  private withoutData(instanceName: string, modifiers: ScreenModifiers, fieldValues: Record<string, string>, sensors: DeviceSensor[], state: JsonObject): PluginTemplateContext {
+  private withoutData(instanceName: string, modifiers: ScreenModifiers, fieldValues: Record<string, string | string[]>, sensors: DeviceSensor[], state: JsonObject): PluginTemplateContext {
     return {
       ...fieldValues,
       trmnl: {
