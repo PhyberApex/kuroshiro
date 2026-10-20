@@ -11,6 +11,20 @@ function isWebhookPayload(value: unknown): value is WebhookPayload {
   return value === null || Array.isArray(value) || isPlainObject(value)
 }
 
+// TRMNL posts `{"merge_variables": ...}`; what is inside is the payload. The
+// envelope's `merge_strategy`/`stream_limit`/`deep_merge` are ignored — the
+// Merge Strategy is the Plugin's (ADR-0004). Only an object or array inside
+// counts, so any other `merge_variables` leaves the body whole.
+function unwrapEnvelope(body: WebhookPayload): WebhookPayload {
+  if (!isPlainObject(body)) {
+    return body
+  }
+
+  const inner = body.merge_variables
+
+  return Array.isArray(inner) || isPlainObject(inner) ? inner : body
+}
+
 // `incoming`/`value` are only ever reached here once `isWebhookPayload` has
 // confirmed the root body is JSON-object/array/null shaped, so recursing
 // through it with `unknown` and handing leaf values back as-is is safe.
@@ -66,7 +80,7 @@ export class WebhookIngestService {
       throw new UnprocessableEntityException('Webhook body must be a JSON object or array')
     }
 
-    const merged = this.merge(plugin, body)
+    const merged = this.merge(plugin, unwrapEnvelope(body))
 
     // TypeORM's QueryDeepPartialEntity can't distribute over the WebhookPayload
     // union against a union-typed value, even though `merged`'s type already

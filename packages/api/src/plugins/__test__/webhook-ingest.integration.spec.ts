@@ -181,6 +181,74 @@ describe('webhook ingest integration', () => {
     })
   })
 
+  describe('tRMNL merge_variables envelope', () => {
+    it('stores what is inside the envelope and renders against it', async () => {
+      plugin.templates = [makePluginTemplate({ layout: 'full', liquidMarkup: 'amount: {{ payment.amount }}' })]
+
+      await ingest.ingest(plugin, { merge_variables: { payment: { amount: 5 } } })
+
+      expect(plugin.webhookPayload).toEqual({ payment: { amount: 5 } })
+      expect(ingest.readPayload(plugin)).toEqual({ payment: { amount: 5 } })
+      expect(screens[0].cachedPluginOutput).toBe('amount: 5')
+    })
+
+    it('unwraps an array inside the envelope', async () => {
+      await ingest.ingest(plugin, { merge_variables: [1, 2] })
+
+      expect(plugin.webhookPayload).toEqual([1, 2])
+    })
+
+    it.each([['text'], [null], [7], [true]])('stores an envelope whose merge_variables is %j whole', async (value) => {
+      await ingest.ingest(plugin, { merge_variables: value })
+
+      expect(plugin.webhookPayload).toEqual({ merge_variables: value })
+    })
+
+    it('keeps the stream Merge Strategy and Stream Limit whatever the envelope says', async () => {
+      plugin.mergeStrategy = 'stream'
+      plugin.streamLimit = 3
+
+      await ingest.ingest(plugin, { merge_variables: { readings: [1, 2] }, merge_strategy: 'standard', stream_limit: 10 })
+      await ingest.ingest(plugin, { merge_variables: { readings: [1, 2] }, merge_strategy: 'standard', stream_limit: 10 })
+
+      expect(plugin.webhookPayload).toEqual({ readings: [2, 1, 2] })
+      expect(plugin.mergeStrategy).toBe('stream')
+      expect(plugin.streamLimit).toBe(3)
+    })
+
+    it('does not deep-merge a standard Plugin when the envelope asks to', async () => {
+      await ingest.ingest(plugin, { merge_variables: { sensor: { name: 'attic' } } })
+      await ingest.ingest(plugin, { merge_variables: { sensor: { temp: 23 } }, deep_merge: true })
+
+      expect(plugin.webhookPayload).toEqual({ sensor: { temp: 23 } })
+    })
+
+    it('deep-merges two enveloped POSTs on a deep_merge Plugin as two bare POSTs would', async () => {
+      plugin.mergeStrategy = 'deep_merge'
+
+      await ingest.ingest(plugin, { merge_variables: { sensor: { name: 'attic', temp: 21 }, status: 'ok' } })
+      await ingest.ingest(plugin, { merge_variables: { sensor: { temp: 23 } } })
+
+      expect(plugin.webhookPayload).toEqual({ sensor: { name: 'attic', temp: 23 }, status: 'ok' })
+    })
+
+    it('answers GET on the Webhook URL with the unwrapped value', async () => {
+      const http = await createHttpTestApp({
+        controllers: [WebhookIngestController],
+        providers: [
+          { provide: WebhookIngestService, useValue: ingest },
+          { provide: getRepositoryToken(PluginEntity), useValue: module.get(getRepositoryToken(PluginEntity)) },
+        ],
+      })
+
+      await ingest.ingest(plugin, { merge_variables: { payment: { amount: 5 } } })
+      const response = await http.request('/api/webhook/token-abc')
+      await http.app.close()
+
+      expect(await response.json()).toEqual({ payment: { amount: 5 } })
+    })
+  })
+
   describe('rendering', () => {
     it('renders the template against the full merged payload and caches it to every Screen', async () => {
       plugin.mergeStrategy = 'stream'
