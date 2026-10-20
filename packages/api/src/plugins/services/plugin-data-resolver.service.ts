@@ -1,7 +1,10 @@
 import type { JsonObject } from '../../utils/json.js'
 import type { FetchableDataSource, FetchErrorMarker } from './plugin-data-fetcher.service.js'
-import { Injectable, Logger } from '@nestjs/common'
+import type { OAuthPoll } from './plugin-oauth.service.js'
+import { Injectable, Logger, Optional } from '@nestjs/common'
+import { withAccessToken } from '../plugin-oauth.js'
 import { PluginDataFetcherService } from './plugin-data-fetcher.service.js'
+import { PluginOAuthService } from './plugin-oauth.service.js'
 import { PluginTransformService } from './plugin-transform.service.js'
 
 // The subset of a Data Source's fields resolveAll needs — shared by the
@@ -17,6 +20,8 @@ export interface ResolvableDataSource extends FetchableDataSource {
 export interface ResolveOptions {
   /** Each stored Data Source's saved state by id (ADR-0052). */
   savedStates?: Record<string, JsonObject>
+  /** Set for a Plugin imported from an OAuth Recipe: each fetch-mode Data Source polls with its access token (ADR-0067). */
+  oauth?: OAuthPoll
 }
 
 /** The context with the Data Source's saved state at `trmnl.state`, for its request and its transform alike. */
@@ -64,6 +69,7 @@ export class PluginDataResolverService {
   constructor(
     private readonly dataFetcher: PluginDataFetcherService,
     private readonly transformer: PluginTransformService,
+    @Optional() private readonly oauthTokens?: PluginOAuthService,
   ) {}
 
   /**
@@ -74,16 +80,13 @@ export class PluginDataResolverService {
    * through this rather than re-deriving the fetch/transform/error-marker
    * logic itself.
    */
-  async resolveAll(dataSources: ResolvableDataSource[], templateContext: object = {}, { savedStates = {} }: ResolveOptions = {}): Promise<Record<string, unknown>> {
-    const fetchForTransform = (url: string, init?: RequestInit) => this.dataFetcher.fetchForTransform(url, init)
+  async resolveAll(dataSources: ResolvableDataSource[], templateContext: object = {}, { savedStates = {}, oauth }: ResolveOptions = {}): Promise<Record<string, unknown>> {
     const results = await Promise.allSettled(
       dataSources.map(async (source) => {
         const context = withState(templateContext, (source.id && savedStates[source.id]) || {})
-        const rawData = await this.dataFetcher.fetchOrLiteral(source, context)
-        if (!source.transformJs)
-          return rawData
-        this.logger.debug(`Applying transform.js to data source: ${source.name}`)
-        return this.transformer.transform(source.transformJs, transformInputOf(rawData, context), { fetch: fetchForTransform })
+        if (!oauth || !this.oauthTokens || source.mode === 'literal')
+          return this.resolveOne(source, context)
+        return this.oauthTokens.withAccessToken(source, oauth, accessToken => this.resolveOne(source, withAccessToken(context, accessToken)))
       }),
     )
 
@@ -103,5 +106,14 @@ export class PluginDataResolverService {
     })
 
     return data
+  }
+
+  private async resolveOne(source: ResolvableDataSource, context: object): Promise<unknown> {
+    const rawData = await this.dataFetcher.fetchOrLiteral(source, context)
+    if (!source.transformJs)
+      return rawData
+    this.logger.debug(`Applying transform.js to data source: ${source.name}`)
+    const fetchForTransform = (url: string, init?: RequestInit) => this.dataFetcher.fetchForTransform(url, init)
+    return this.transformer.transform(source.transformJs, transformInputOf(rawData, context), { fetch: fetchForTransform })
   }
 }

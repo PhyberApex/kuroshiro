@@ -1,0 +1,28 @@
+# An OAuth Recipe imports with a token the admin brings, and Kuroshiro refreshes it before a poll
+
+ADR-0011 refused every Recipe whose settings.yml has `oauth_enabled: true`, because nothing in Kuroshiro could sign in to another service and the imported Data Source could never authenticate. Of the 25 featured Recipes one was refused for it (499993 AdMob Overview), and Strava and Google Calendar style Recipes outside the featured set sign in the same way. The full OAuth stack TRMNL runs (an authorize redirect, a public callback route, a client registered per install, a Connection shared by several Plugins) is a large surface for a self-hosted admin app. Most of what a Recipe needs at poll time is an access token and a way to renew it. (Issue #1518.)
+
+**An OAuth Recipe imports, and the admin brings the tokens.** The importer keeps the Recipe's `oauth_*` settings on the Plugin as written, and adds four `password` Plugin Fields after the Recipe's own: `oauth_access_token`, `oauth_refresh_token`, `oauth_client_id`, `oauth_client_secret`. The admin fills them from an OAuth dance done elsewhere (Google's OAuth Playground, a provider's console). `{{ oauth_access_token }}` then resolves in the polling URL, headers and body like any Field Value, so the Recipe's own template needs no mapping. The import's answer says the Plugin needs a token before it can poll. This supersedes ADR-0011's OAuth line.
+
+**`xhrSelect` reads as text typed by hand.** TRMNL fills it from a list it fetches with the token (`remote.url`, `response_path`, `label_field`, `value_field`). Here it is a `string` Plugin Field with the same keyname, name and description, and the import's answer names it as typed by hand.
+
+**The token is refreshed before a poll, and once on a 401.** Before each poll of a fetch-mode Data Source, Kuroshiro refreshes when the stored expiry is within sixty seconds, or when the expiry is unknown and the last refresh is older than fifty minutes or never happened. A refresh needs the refresh token, client id and client secret; without them the poll goes with the pasted access token. A `401` on the poll causes one refresh and one retry, never more. The refresh grant is a POST to `oauth_refresh_url`, or `oauth_token_url` when that is empty, with `grant_type=refresh_token`, the refresh token, client id, client secret and `oauth_refresh_params` (a JSON object or `key=value` pairs), form-encoded unless `oauth_body_format` is `json`. The access token is read from `oauth_token_field_name`, default `access_token`. The expiry is read from `oauth_expiry_field_name`, default `expires_in`, as seconds from now. `oauth_expiry_strategy` `fixed` takes `oauth_fixed_expiry_ms` instead, and `expires_at` / `absolute` read the field as a moment. Any other strategy, AdMob's empty one included, reads it as seconds from now.
+
+**What a refresh answers is runtime state on the Data Source,** like Saved State (ADR-0052): the access token, a refresh token the endpoint answers in place of the pasted one (Strava rotates them), the expiry and when it was refreshed. None of it is written into the pasted Field Value, and none of it is in a `.trmnlp` export, the Configuration Archive or a Recipe Update Check diff. The pasted values are password Field Values and travel like every other. A save that writes any of the four OAuth Field Values forgets the refreshed token, so a newly pasted token is the one the next poll starts from.
+
+**A failed refresh is a failed fetch.** It is the Data Source's error marker (ADR-0005), moves the Fetch Failure Streak and raises the fetch-failure alert (ADR-0025), and `lastFetchError` names the token endpoint's reply: "The token endpoint answered 400: {…}". There is no separate disconnected state or badge.
+
+**The `oauth_*` settings travel as the rest of a Plugin does.** The `.trmnlp` export writes them into settings.yml, so the Configuration Archive carries them too. They are part of the Recipe Snapshot, and the Recipe Update Check offers a change to them as one `oauthSettings` Update Item.
+
+Considered and rejected:
+
+- **The full authorize dance now.** A callback route needs a public URL and a client registered by each self-hoster for their own Kuroshiro, and a demo instance has neither. Bringing a token unblocks the Recipes that exist, and the dance can fill the same four Plugin Fields later.
+- **A Connection entity shared by Plugins.** Two Recipes against one account mean pasting twice. A shared Connection can be added later without reshaping this.
+- **Writing the refreshed token back into the Field Value.** That would turn a value the admin pasted into one the server rewrites, change a password Field Value behind the admin's back, and put a short-lived token into every Configuration Archive.
+- **A `secret` Plugin Field type.** `password` already hides a value on every read and redacts it from a Redacted Archive.
+
+## Consequences
+
+- The `recipe-oauth` refusal code is gone. A Recipe Update Check no longer fails on an OAuth Recipe (ADR-0030).
+- One refresh per Data Source: a Plugin with two Data Sources against the same account refreshes for each.
+- A Recipe that reads the token only inside an `xhrSelect` choice list, never in a request, imports but has the admin type the value TRMNL would have listed.

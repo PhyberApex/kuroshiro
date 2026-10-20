@@ -762,19 +762,7 @@ export class ConfigurationImportService {
     const webhookToken = this.resolveWebhookToken(entry, existing, ref, run)
     await this.assertWebhookTokenFree(repos.plugin, entry.id, webhookToken)
 
-    const plugin = existing ?? repos.plugin.create({ id: entry.id })
-    plugin.name = parsed.name
-    plugin.description = parsed.description
-    plugin.kind = entry.kind
-    plugin.refreshInterval = parsed.refreshInterval
-    plugin.webhookToken = webhookToken
-    plugin.mergeStrategy = entry.mergeStrategy
-    plugin.streamLimit = entry.streamLimit
-    plugin.frameworkVersion = entry.frameworkVersion ?? null
-    plugin.dither = entry.dither ?? true
-    plugin.sourceRecipeId = entry.sourceRecipeId ?? parsed.sourceRecipeId ?? undefined
-    plugin.sourceRecipeSnapshot = entry.sourceRecipeSnapshot ? { ...entry.sourceRecipeSnapshot } : null
-
+    const plugin = this.withEntry(existing ?? repos.plugin.create({ id: entry.id }), entry, parsed, webhookToken)
     const saved = await repos.plugin.save(plugin)
     this.bump(run, 'plugins', !existing)
 
@@ -783,6 +771,23 @@ export class ConfigurationImportService {
     const fields = await this.upsertPluginFields(repos.field, repos.fieldValue, saved, parsed.fields, entry.fields, run)
     await this.upsertFieldValues(repos.fieldValue, saved, fields, entry.fieldValues, ref, run)
     run.upsertedPluginIds.add(saved.id)
+  }
+
+  /** The Plugin with what the archive entry and its `.trmnlp` folder say of it, Data Sources, templates and Plugin Fields aside. */
+  private withEntry(plugin: Plugin, entry: PluginManifestEntry, parsed: ParsedPlugin, webhookToken: string | null): Plugin {
+    plugin.name = parsed.name
+    plugin.description = parsed.description
+    plugin.kind = entry.kind
+    plugin.refreshInterval = parsed.refreshInterval
+    plugin.webhookToken = webhookToken
+    plugin.mergeStrategy = entry.mergeStrategy
+    plugin.streamLimit = entry.streamLimit
+    plugin.frameworkVersion = entry.frameworkVersion ?? null
+    plugin.oauthSettings = parsed.oauthSettings ?? null
+    plugin.dither = entry.dither ?? true
+    plugin.sourceRecipeId = entry.sourceRecipeId ?? parsed.sourceRecipeId ?? undefined
+    plugin.sourceRecipeSnapshot = entry.sourceRecipeSnapshot ? { ...entry.sourceRecipeSnapshot } : null
+    return plugin
   }
 
   private async assertWebhookTokenFree(repo: Repository<Plugin>, pluginId: string, webhookToken: string | null): Promise<void> {

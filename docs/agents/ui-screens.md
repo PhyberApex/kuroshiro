@@ -532,12 +532,12 @@ A way's form is a `form` whose submit adds the Plugin, with an `AddPluginFoot` a
 - A refusal of one field goes under that field (`fieldErrorsOf`); any other becomes `failure`. What was entered stays.
 - `createPlugin(input)` (`src/api/plugins.ts`) is `POST /api/plugins`: a name and a Plugin Kind in, the `PluginDetail` out.
 
-**A way that imports** answers `PluginImportResult` (`plugin`, `origin`, `hasTransform`) from `importRecipe(input)`, `importPluginFile(file, deviceId?)` or `importGithubPlugin(input)`, and stands on `useImportPlugin(wording)`:
+**A way that imports** answers `PluginImportResult` (`plugin`, `origin`, `hasTransform`, `needsToken`, `typedByHand`) from `importRecipe(input)`, `importPluginFile(file, deviceId?)` or `importGithubPlugin(input)`, and stands on `useImportPlugin(wording)`:
 
 ```ts
 const importing = useImportPlugin({
   upstream: 'trmnl.com',                                    // named in the notice when it does not answer; a file import has none
-  aboutEntry: { 'recipe-oauth': true, 'import-no-plugin': 'This Recipe holds no template, so there is nothing to import.' },
+  aboutEntry: { 'recipe-not-found': true, 'import-no-plugin': 'This Recipe holds no template, so there is nothing to import.' },
 })
 watch(entered, importing.clear)
 

@@ -139,7 +139,6 @@ describe('add a Plugin by importing', () => {
 
     it.each<[string, Partial<ApiError>, string]>([
       ['TRMNL has no such Recipe', { statusCode: 422, code: 'recipe-not-found', details: { id: '41120' } }, 'TRMNL has no Recipe 41120.'],
-      ['the Recipe signs in to another service', { statusCode: 422, code: 'recipe-oauth' }, 'This Recipe signs in to another service with OAuth, which Kuroshiro cannot do.'],
       ['the Recipe transforms each payload it is sent', { statusCode: 422, code: 'recipe-webhook-transform' }, 'This Recipe runs a transform on each payload it is sent, which a Webhook Plugin does not do.'],
       ['the Recipe combines other TRMNL plugins', { statusCode: 422, code: 'recipe-strategy-unsupported', details: { strategy: 'plugin_merge' } }, 'This Recipe combines other TRMNL plugins, which Kuroshiro cannot import.'],
       ['the Recipe\'s strategy is one this build does not know', { statusCode: 422, code: 'recipe-strategy-unsupported', details: { strategy: 'unknown' } }, 'This Recipe\'s strategy is not one Kuroshiro can import.'],
@@ -233,13 +232,13 @@ describe('add a Plugin by importing', () => {
       })
 
       it('gives way to a refusal', async () => {
-        fakeImporting({ plugins: [WEATHER], answer: refuseWith({ statusCode: 422, code: 'recipe-oauth' }) })
+        fakeImporting({ plugins: [WEATHER], answer: refuseWith({ statusCode: 422, code: 'recipe-webhook-transform' }) })
         const screen = await mountAddPlugin()
 
         await recipeField(screen).fill('41120')
         await importRecipe(screen).click()
 
-        await expect.element(recipeField(screen)).toHaveAccessibleDescription('This Recipe signs in to another service with OAuth, which Kuroshiro cannot do.')
+        await expect.element(recipeField(screen)).toHaveAccessibleDescription('This Recipe runs a transform on each payload it is sent, which a Webhook Plugin does not do.')
         await expect.element(already(screen)).not.toBeInTheDocument()
       })
 

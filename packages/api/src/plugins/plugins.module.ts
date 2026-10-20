@@ -23,6 +23,7 @@ import { PluginDataSourceStateService } from './services/plugin-data-source-stat
 import { PluginExporterService } from './services/plugin-exporter.service.js'
 import { PluginFieldValuesService } from './services/plugin-field-values.service.js'
 import { PluginImporterService } from './services/plugin-importer.service.js'
+import { PluginOAuthService } from './services/plugin-oauth.service.js'
 import { PluginPreviewDataService } from './services/plugin-preview-data.service.js'
 import { PluginReadsService } from './services/plugin-reads.service.js'
 import { PluginRefreshService } from './services/plugin-refresh.service.js'
@@ -62,6 +63,7 @@ import { WebhookIngestController } from './webhook-ingest.controller.js'
     PluginDataSourceStateService,
     PluginDataFetcherService,
     PluginDataResolverService,
+    PluginOAuthService,
     PluginRendererService,
     PluginSchedulerService,
     PluginImporterService,

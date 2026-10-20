@@ -34,6 +34,13 @@ export function pollingUrlsOf(rendered: string): string[] {
   return rendered.split(/\r\n|\r|\n/).map(line => line.replace(/\s+/g, ' ').trim()).filter(line => line !== '')
 }
 
+/** A response that was not a success, with its status, so a caller can tell a refused token (401) from the rest. */
+export class HttpStatusError extends Error {
+  constructor(readonly status: number) {
+    super(`HTTP error! status: ${status}`)
+  }
+}
+
 /** How long TRMNL gives a polled host to answer (ADR-0062). */
 const REQUEST_TIMEOUT_MS = 10_000
 
@@ -148,7 +155,7 @@ export class PluginDataFetcherService {
   /** The body read as TRMNL reads it (ADR-0059): JSON, an XML feed as an object, CSV rows, an iCalendar feed's events (ADR-0066), or the text. */
   private async parseResponse(response: Response): Promise<unknown> {
     if (!response.ok)
-      throw new Error(`HTTP error! status: ${response.status}`)
+      throw new HttpStatusError(response.status)
     return parseResponseBody(await response.text(), response.headers.get('content-type'), { timeZone: this.instanceTimeZone.name, now: new Date() })
   }
 }

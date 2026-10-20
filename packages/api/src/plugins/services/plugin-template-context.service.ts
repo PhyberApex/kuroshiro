@@ -3,6 +3,7 @@ import type { DeviceSensor } from '../../device-sensors/entities/device-sensor.e
 import type { JsonObject } from '../../utils/json.js'
 import type { PluginField } from '../entities/plugin-field.entity.js'
 import type { Plugin } from '../entities/plugin.entity.js'
+import type { OAuthSettings } from '../plugin-oauth.js'
 import type { ResolvableDataSource } from './plugin-data-resolver.service.js'
 import type { FieldValueWrites } from './plugin-field-values.service.js'
 import { Buffer } from 'node:buffer'
@@ -146,7 +147,7 @@ export class PluginTemplateContextService {
 
     return plugin.kind === 'Webhook'
       ? this.webhookContext(plugin, render)
-      : this.pollContext(unsaved.dataSources ?? plugin.dataSources ?? [], render)
+      : this.pollContext(unsaved.dataSources ?? plugin.dataSources ?? [], render, plugin.oauthSettings ?? null)
   }
 
   private webhookContext(plugin: Plugin, { instanceName, fields, modifiers, sensors, resolved, fieldValues }: RenderInput): PluginRenderContext {
@@ -156,14 +157,14 @@ export class PluginTemplateContextService {
     return { context: Array.isArray(payload) ? payload : { ...withoutData, trmnl, ...payload }, fieldValues, resolvedFieldValues: resolved, sourceData: {}, sourceStates: {} }
   }
 
-  private async pollContext(dataSources: ResolvableDataSource[], { instanceName, fields, modifiers, sensors, resolved, fieldValues, hideSecretsOf }: RenderInput): Promise<PluginRenderContext> {
+  private async pollContext(dataSources: ResolvableDataSource[], { instanceName, fields, modifiers, sensors, resolved, fieldValues, hideSecretsOf }: RenderInput, oauthSettings: OAuthSettings | null): Promise<PluginRenderContext> {
     const savedStates = await this.sourceStates.load(dataSources)
     const lone = loneOf(dataSources)
     const loneSavedState = (lone?.id && savedStates[lone.id]) || {}
     const fetchContext = this.withoutData(instanceName, modifiers, templateFieldValues(fields, resolved), sensors, loneSavedState)
     const withoutData = this.hidingSecrets(fetchContext, templateFieldValues(fields, fieldValues))
 
-    const { data, states } = takeWrittenStates(await this.dataResolver.resolveAll(dataSources, fetchContext, { savedStates }))
+    const { data, states } = takeWrittenStates(await this.dataResolver.resolveAll(dataSources, fetchContext, { savedStates, ...(oauthSettings && { oauth: { settings: oauthSettings, fieldValues: resolved } }) }))
     const sourceData = hideSecretsIn(data, secretValues(hideSecretsOf, resolved))
     const trmnl = { ...fetchedAt(withoutData.trmnl, dataSources.length ? new Date() : null, 'polling'), state: lone ? states[lone.name] ?? loneSavedState : {} }
     const context = { ...withoutData, ...loneSourceRootKeys(sourceData), trmnl, sensors: withoutData.sensors, ...sourceData }

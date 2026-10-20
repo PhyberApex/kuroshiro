@@ -51,6 +51,26 @@ describe('the Recipe Update Check', () => {
     ])
   })
 
+  it('reads the Recipe\'s OAuth settings as one Update Item of the Data Sources, a line per setting (ADR-0067)', () => {
+    const oauth = buildUpdateItem({
+      itemType: 'oauthSettings',
+      key: 'oauthSettings',
+      kind: 'changed',
+      conflict: false,
+      snapshot: { oauth_enabled: 'true', oauth_token_url: 'https://oauth2.example.com/token' },
+      local: null,
+      upstream: { oauth_enabled: 'true', oauth_token_url: 'https://oauth2.example.com/v2/token' },
+    } as UpdateItem)
+
+    expect(updateItemName(oauth)).toEqual({ what: 'OAuth settings', code: null })
+    expect(updateGroups([oauth])).toEqual([{ title: 'Data Sources', items: [oauth] }])
+    expect(recipeChange(oauth, 'three-way')).toEqual({
+      before: ['oauth_enabled: true', 'oauth_token_url: https://oauth2.example.com/token'],
+      after: ['oauth_enabled: true', 'oauth_token_url: https://oauth2.example.com/v2/token'],
+    })
+    expect(conflictSentence('oauthSettings')).toBe('The Recipe and you both changed these OAuth settings since the Recipe Snapshot. Applying replaces your version with the Recipe\'s.')
+  })
+
   it('checks every Update Item but a conflict', () => {
     const conflict = buildUpdateItem({ itemType: 'dataSource', key: 'forecast', conflict: true })
     const template = buildUpdateItem({ itemType: 'template', key: 'full' })
@@ -134,7 +154,7 @@ describe('the Recipe Update Check', () => {
   it('words a check that failed by why', () => {
     expect(checkFailure(refusal({ statusCode: 502, code: 'upstream-unreachable', details: { reason: 'fetch failed' } }), 'Weather')).toBe('trmnl.com did not answer. Nothing was changed.')
     expect(checkFailure(refusal({ statusCode: 422, code: 'recipe-not-found', details: { id: '41120' } }), 'Weather')).toBe('TRMNL no longer has the Recipe 41120. Weather keeps working as it is.')
-    expect(checkFailure(refusal({ statusCode: 422, code: 'recipe-oauth' }), 'Weather')).toBe('This Recipe signs in to another service with OAuth, which Kuroshiro cannot do.')
+    expect(checkFailure(refusal({ statusCode: 422, code: 'recipe-webhook-transform' }), 'Weather')).toBe('This Recipe runs a transform on each payload it is sent, which a Webhook Plugin does not do.')
   })
 
   it('dates the Recipe by its day, and tells a Recipe Snapshot taken over from one taken at the import', () => {

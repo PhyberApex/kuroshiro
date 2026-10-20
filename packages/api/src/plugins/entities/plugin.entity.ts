@@ -1,4 +1,5 @@
 import type { MergeStrategy, PluginKind, TemplateSize } from 'kuroshiro-shared'
+import type { OAuthSettings } from '../plugin-oauth.js'
 import type { DevicePlugin } from './device-plugin.entity.js'
 import type { PluginDataSource } from './plugin-data-source.entity.js'
 import type { PluginField } from './plugin-field.entity.js'
@@ -59,6 +60,10 @@ export class Plugin {
 
   @Column('jsonb', { nullable: true })
   webhookPayload?: WebhookPayload
+
+  // The `oauth_*` settings of the OAuth Recipe it was imported from; null for a Plugin that does not sign in (ADR-0067).
+  @Column('jsonb', { nullable: true })
+  oauthSettings?: OAuthSettings | null
 
   @Column('timestamptz', { nullable: true })
   payloadReceivedAt?: Date | null

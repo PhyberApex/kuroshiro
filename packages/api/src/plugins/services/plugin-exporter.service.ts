@@ -59,6 +59,7 @@ export class PluginExporterService {
       strategy: 'polling',
       ...frameworkVersion,
       ...modifiers,
+      ...plugin.oauthSettings,
       refresh_interval: plugin.refreshInterval,
       data_sources: [...plugin.dataSources ?? []]
         .sort((a, b) => a.order - b.order)

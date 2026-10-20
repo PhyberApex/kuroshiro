@@ -31,7 +31,7 @@ describe('the Plugin page', () => {
     holdPreviewLibrary()
     fakePreviewData()
     const screen = await mountApp({ at: '/plugins' })
-    await openPluginPage(screen.router, 'weather', { how: 'imported', origin: 'recipe', name: 'Weather report', hasTransform: true, device: { id: '3f6c1c1e-9d0a-4f39-8a53-0c2f0a1d7b11', name: 'Kitchen' } })
+    await openPluginPage(screen.router, 'weather', { how: 'imported', origin: 'recipe', name: 'Weather report', hasTransform: true, needsToken: false, typedByHand: [], device: { id: '3f6c1c1e-9d0a-4f39-8a53-0c2f0a1d7b11', name: 'Kitchen' } })
 
     await expectDataSourceAlertVisible(screen)
     // Opened by its fragment and left by `blur()`: the shot files share one pointer, and a click here would leave it hovering in another file's shot.

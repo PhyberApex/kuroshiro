@@ -757,4 +757,31 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
       expect(scheduler.hasScheduledJob(plugin.id)).toBe(false)
     })
   })
+
+  describe('an OAuth Plugin\'s refreshed token (ADR-0067)', () => {
+    async function withRefreshedToken() {
+      const plugin = await createPollPlugin({ fields: [{ keyname: 'city', name: 'City' }, { keyname: 'oauth_refresh_token', name: 'OAuth refresh token', fieldType: 'password' }] })
+      await database.getRepository(PluginDataSource).update({ plugin: { id: plugin.id } }, { oauthAccessToken: 'refreshed-access', oauthRefreshToken: 'rotated-refresh', oauthAccessTokenExpiresAt: new Date(), oauthRefreshedAt: new Date() })
+      return plugin
+    }
+    const tokenOf = async (pluginId: string) => (await database.getRepository(PluginDataSource).findOneByOrFail({ plugin: { id: pluginId } })).oauthAccessToken
+
+    it('is forgotten when a token is pasted again, so the next poll starts from what was pasted', async () => {
+      const plugin = await withRefreshedToken()
+
+      await saved(plugin.id, { fieldValues: { oauth_refresh_token: 'pasted-again' } })
+      await backgroundTicksDone()
+
+      expect(await database.getRepository(PluginDataSource).findOneByOrFail({ plugin: { id: plugin.id } })).toMatchObject({ oauthAccessToken: null, oauthRefreshToken: null, oauthAccessTokenExpiresAt: null, oauthRefreshedAt: null })
+    })
+
+    it('is kept by a save that leaves the tokens as they are', async () => {
+      const plugin = await withRefreshedToken()
+
+      await saved(plugin.id, { fieldValues: { city: 'Berlin' } })
+      await backgroundTicksDone()
+
+      expect(await tokenOf(plugin.id)).toBe('refreshed-access')
+    })
+  })
 })

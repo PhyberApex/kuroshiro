@@ -293,6 +293,36 @@ describe('the Recipe Update Check, against a real database', () => {
       expect(preview.items).toEqual([])
     })
 
+    describe('an OAuth Recipe (ADR-0067)', () => {
+      const OAUTH = { oauth_enabled: 'true', oauth_token_url: 'https://oauth2.example.com/token' }
+
+      async function importOAuthRecipe(): Promise<PluginDetail> {
+        upstreamAnswers(() => recipeZip(OAUTH))
+        const response = await http.postJson('/api/plugins/import-recipe', { recipe: '41120' })
+        expect(response.status).toBe(201)
+        return ((await response.json()) as PluginImportResult).plugin
+      }
+
+      it('shows no Update Items right after import, its token Plugin Fields included', async () => {
+        const plugin = await importOAuthRecipe()
+
+        expect((await check(plugin.id)).items).toEqual([])
+      })
+
+      it('offers the Recipe\'s changed OAuth settings as one Update Item, and applying it keeps them on the Plugin', async () => {
+        const plugin = await importOAuthRecipe()
+        const moved = { ...OAUTH, oauth_token_url: 'https://oauth2.example.com/v2/token' }
+        upstreamAnswers(() => recipeZip(moved))
+
+        const { items, contentHash } = await check(plugin.id)
+        expect(items).toEqual([{ itemType: 'oauthSettings', key: 'oauthSettings', kind: 'changed', conflict: false, snapshot: OAUTH, local: OAUTH, upstream: moved }])
+
+        const response = await http.postJson(`/api/plugins/${plugin.id}/recipe-update/apply`, { contentHash, apply: [{ itemType: 'oauthSettings', key: 'oauthSettings' }] })
+        expect(response.status).toBe(201)
+        expect((await database.getRepository(Plugin).findOneByOrFail({ id: plugin.id })).oauthSettings).toEqual(moved)
+      })
+    })
+
     it('answers 422 recipe-not-found, naming the id, when TRMNL no longer has the Recipe', async () => {
       const plugin = await importMoonPhase()
       upstreamAnswers(() => new Response(null, { status: 404 }))
