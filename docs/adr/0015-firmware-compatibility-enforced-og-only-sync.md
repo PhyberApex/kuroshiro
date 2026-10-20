@@ -5,7 +5,7 @@ While grilling issue #781, we probed `usetrmnl.com/api/firmware/latest` directly
 ## Considered options
 
 - **Match Terminus: no compatibility link.** Rejected: Kuroshiro already has the Device Model concept Terminus's schema lacks; not using it here to prevent an obviously-wrong flash would be leaving a real guardrail on the table.
-- **Try to reverse-engineer per-model official binaries** (e.g. guessing S3 paths for other variants). Rejected: no public, documented way to do this; the differentiation logic clearly lives in TRMNL's closed-source Core, reached only through the authenticated, per-account `/api/display` flow.
+- **Try to reverse-engineer per-model official binaries** (e.g. guessing S3 paths for other variants). _(Superseded by ADR-0065: TRMNL's own `trmnl-api` gem now encodes the per-folder S3 path, and official Firmware is synced once per folder.)_ Rejected: no public, documented way to do this; the differentiation logic clearly lives in TRMNL's closed-source Core, reached only through the authenticated, per-account `/api/display` flow.
 
 ## Consequences
 
