@@ -219,6 +219,37 @@ describe('pluginDataFetcherService', () => {
       ])
     })
 
+    it('matches an exclusion, an override and an end of the rule given in another zone than the event, as the instants they name', async () => {
+      mockFetch.mockResolvedValue(calendar([
+        vevent('UID:sync', 'DTSTART;TZID=Europe/Berlin:20261020T233000', 'DTEND;TZID=Europe/Berlin:20261021T000000', 'RRULE:FREQ=DAILY;UNTIL=20261023T213000Z', 'EXDATE:20261020T213000Z', 'SUMMARY:Sync'),
+        vevent('UID:sync', 'RECURRENCE-ID:20261021T213000Z', 'DTSTART:20261021T190000Z', 'DTEND:20261021T193000Z', 'SUMMARY:Sync (early)'),
+      ].join('\r\n')))
+
+      expect(shown(await calendarService.fetchData('GET', 'https://example.com/basic.ics'))).toEqual([
+        'Sync (early) 2026-10-21T21:00:00+02:00 2026-10-21T21:30:00+02:00',
+        'Sync 2026-10-22T23:30:00+02:00 2026-10-23T00:00:00+02:00',
+        'Sync 2026-10-23T23:30:00+02:00 2026-10-24T00:00:00+02:00',
+      ])
+    })
+
+    it('takes an override that moves the last occurrence of a rule into the window, and the events of every calendar in the feed', async () => {
+      mockFetch.mockResolvedValue(new Response([
+        'BEGIN:VCALENDAR',
+        vevent('UID:offsite', 'DTSTART:20261201T090000Z', 'RRULE:FREQ=WEEKLY;COUNT=1', 'SUMMARY:Offsite'),
+        vevent('UID:offsite', 'RECURRENCE-ID:20261201T090000Z', 'DTSTART:20261028T090000Z', 'DTEND:20261028T100000Z', 'SUMMARY:Offsite (brought forward)'),
+        'END:VCALENDAR',
+        'BEGIN:VCALENDAR',
+        vevent('UID:dentist', 'DTSTART:20261027T080000Z', 'DTEND:20261027T090000Z', 'SUMMARY:Dentist'),
+        'END:VCALENDAR',
+        '',
+      ].join('\r\n'), { status: 200, headers: { 'content-type': 'text/calendar' } }))
+
+      expect(shown(await calendarService.fetchData('GET', 'https://example.com/basic.ics'))).toEqual([
+        'Dentist 2026-10-27T09:00:00+01:00 2026-10-27T10:00:00+01:00',
+        'Offsite (brought forward) 2026-10-28T10:00:00+01:00 2026-10-28T11:00:00+01:00',
+      ])
+    })
+
     it('keeps what overlaps the thirty days from the start of today, sorted by start, an all-day event as its dates', async () => {
       mockFetch.mockResolvedValue(calendar([
         vevent('UID:late', 'DTSTART:20261118T230000Z', 'DTEND:20261119T000000Z', 'SUMMARY:Past the window'),
@@ -261,6 +292,14 @@ describe('pluginDataFetcherService', () => {
       expect(shown(await calendarService.fetchData('GET', 'https://example.com/basic.ics'))).toEqual([
         'Call 2026-10-21T15:00:00+02:00 2026-10-21T16:00:00+02:00',
         'Lunch 2026-10-22T12:00:00+02:00 2026-10-22T13:00:00+02:00',
+      ])
+    })
+
+    it('reads a time in the hour the clocks go back twice as the first of the two', async () => {
+      mockFetch.mockResolvedValue(calendar(vevent('UID:night', 'DTSTART;TZID=Europe/Berlin:20261025T023000', 'DTEND;TZID=Europe/Berlin:20261025T040000', 'SUMMARY:Night shift')))
+
+      expect(shown(await calendarService.fetchData('GET', 'https://example.com/basic.ics'))).toEqual([
+        'Night shift 2026-10-25T02:30:00+02:00 2026-10-25T04:00:00+01:00',
       ])
     })
 
