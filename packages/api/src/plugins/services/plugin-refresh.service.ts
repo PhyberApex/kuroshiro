@@ -41,7 +41,7 @@ export class PluginRefreshService {
   async refresh(plugin: Plugin, { scheduled, isSuperseded }: RefreshOptions = { scheduled: false }): Promise<void> {
     // The cache entry is shared across Devices, so there is no single Device
     // to scope sensors to here.
-    const { context, sourceData, resolvedFieldValues, sourceStates } = await this.pluginTemplateContext.contextFor(plugin, [])
+    const { context, sourceData, resolvedFieldValues, sourceStates, sourceMergeVariables } = await this.pluginTemplateContext.contextFor(plugin, [])
 
     if (plugin.kind === 'Webhook') {
       await this.renderCache.renderAndCache(plugin, context)
@@ -56,7 +56,7 @@ export class PluginRefreshService {
     // Every scheduled tick records its own fetch attempt, superseded or not: each was a real fetch.
     if (scheduled) {
       await this.recordFetchOutcome(plugin, sourceData, resolvedFieldValues)
-      await this.sourceStates.save(plugin.dataSources ?? [], sourceStates)
+      await this.sourceStates.save(plugin.dataSources ?? [], { states: sourceStates, mergeVariables: sourceMergeVariables })
     }
 
     await this.renderPoll(plugin, context, { scheduled, isSuperseded })

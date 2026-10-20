@@ -17,12 +17,19 @@ export interface ResolvableDataSource extends FetchableDataSource {
 export interface ResolveOptions {
   /** Each stored Data Source's saved state by id (ADR-0052). */
   savedStates?: Record<string, JsonObject>
+  /** What each stored Data Source's transform returned on the last scheduled run, by id. */
+  previousMergeVariables?: Record<string, JsonObject>
 }
 
 /** The context with the Data Source's saved state at `trmnl.state`, for its request and its transform alike. */
 function withState(templateContext: object, state: JsonObject): Record<string, unknown> {
   const trmnl = (templateContext as { trmnl?: object }).trmnl ?? {}
   return { ...templateContext, trmnl: { ...trmnl, state } }
+}
+
+/** The transform's context, which alone reads the last scheduled run's output at `trmnl.previous_merge_variables`, as trmnlp hands it. */
+function withPreviousMergeVariables(context: Record<string, unknown>, previous: JsonObject): Record<string, unknown> {
+  return { ...context, trmnl: { ...context.trmnl as object, previous_merge_variables: previous } }
 }
 
 export type { FetchErrorMarker } from './plugin-data-fetcher.service.js'
@@ -74,7 +81,7 @@ export class PluginDataResolverService {
    * through this rather than re-deriving the fetch/transform/error-marker
    * logic itself.
    */
-  async resolveAll(dataSources: ResolvableDataSource[], templateContext: object = {}, { savedStates = {} }: ResolveOptions = {}): Promise<Record<string, unknown>> {
+  async resolveAll(dataSources: ResolvableDataSource[], templateContext: object = {}, { savedStates = {}, previousMergeVariables = {} }: ResolveOptions = {}): Promise<Record<string, unknown>> {
     const fetchForTransform = (url: string, init?: RequestInit) => this.dataFetcher.fetchForTransform(url, init)
     const results = await Promise.allSettled(
       dataSources.map(async (source) => {
@@ -83,7 +90,8 @@ export class PluginDataResolverService {
         if (!source.transformJs)
           return rawData
         this.logger.debug(`Applying transform.js to data source: ${source.name}`)
-        return this.transformer.transform(source.transformJs, transformInputOf(rawData, context), { fetch: fetchForTransform })
+        const transformContext = withPreviousMergeVariables(context, (source.id && previousMergeVariables[source.id]) || {})
+        return this.transformer.transform(source.transformJs, transformInputOf(rawData, transformContext), { fetch: fetchForTransform })
       }),
     )
 

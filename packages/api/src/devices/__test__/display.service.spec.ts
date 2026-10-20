@@ -458,7 +458,7 @@ describe('deviceDisplayService', () => {
         city: 'Berlin',
         trmnl: expect.objectContaining({ plugin_settings: expect.objectContaining({ custom_fields_values: { city: 'Berlin' } }) }),
       })
-      expect(resolveAll).toHaveBeenCalledWith(plugin.dataSources, fieldValuesInContext, { savedStates: {} })
+      expect(resolveAll).toHaveBeenCalledWith(plugin.dataSources, fieldValuesInContext, { savedStates: {}, previousMergeVariables: {} })
       expect(render).toHaveBeenCalledWith('{{ city }}', expect.objectContaining({ source: 1 }))
       expect(render).toHaveBeenCalledWith('{{ city }}', fieldValuesInContext)
     })

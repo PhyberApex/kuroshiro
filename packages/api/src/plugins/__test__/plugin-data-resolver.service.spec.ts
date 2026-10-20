@@ -41,7 +41,7 @@ describe('pluginDataResolverService', () => {
       makePluginDataSource({ name: 'source', transformJs: 'module.exports = data => data' }),
     ], { city: 'Berlin', trmnl: { user: { locale: 'de' } } })
 
-    expect(transformer.transform).toHaveBeenCalledWith('module.exports = data => data', { city: 'from the response', trmnl: { user: { locale: 'de' }, state: {} }, raw: true }, expect.anything())
+    expect(transformer.transform).toHaveBeenCalledWith('module.exports = data => data', { city: 'from the response', trmnl: { user: { locale: 'de' }, state: {}, previous_merge_variables: {} }, raw: true }, expect.anything())
     expect(data).toEqual({ source: { transformed: true } })
   })
 
@@ -55,7 +55,7 @@ describe('pluginDataResolverService', () => {
 
     await service.resolveAll([makePluginDataSource({ name: 'source', transformJs: 'x' })], { trmnl: {} })
 
-    expect(transformer.transform).toHaveBeenCalledWith('x', { trmnl: { state: {} }, data: fetched }, expect.anything())
+    expect(transformer.transform).toHaveBeenCalledWith('x', { trmnl: { state: {}, previous_merge_variables: {} }, data: fetched }, expect.anything())
   })
 
   describe('saved state', () => {
@@ -66,8 +66,8 @@ describe('pluginDataResolverService', () => {
 
       await service.resolveAll(sources, { trmnl: { user: { locale: 'en' } } }, { savedStates: { 'ds-1': { cursor: 'abc' } } })
 
-      expect(transformer.transform).toHaveBeenCalledWith('x', expect.objectContaining({ trmnl: { user: { locale: 'en' }, state: { cursor: 'abc' } } }), expect.anything())
-      expect(transformer.transform).toHaveBeenCalledWith('x', expect.objectContaining({ trmnl: { user: { locale: 'en' }, state: {} } }), expect.anything())
+      expect(transformer.transform).toHaveBeenCalledWith('x', expect.objectContaining({ trmnl: { user: { locale: 'en' }, state: { cursor: 'abc' }, previous_merge_variables: {} } }), expect.anything())
+      expect(transformer.transform).toHaveBeenCalledWith('x', expect.objectContaining({ trmnl: { user: { locale: 'en' }, state: {}, previous_merge_variables: {} } }), expect.anything())
     })
 
     it('renders the request with the saved state too, so a cursor can go into the URL', async () => {
@@ -77,6 +77,18 @@ describe('pluginDataResolverService', () => {
       await service.resolveAll([source], { trmnl: {} }, { savedStates: { 'ds-1': { cursor: 'abc' } } })
 
       expect(fetchOrLiteral).toHaveBeenCalledWith(source, { trmnl: { state: { cursor: 'abc' } } })
+    })
+
+    it('gives the transform its Data Source\'s previous merge variables at input.trmnl.previous_merge_variables, an empty object before any, and leaves them out of the request', async () => {
+      const fetchOrLiteral = vi.spyOn(dataFetcher, 'fetchOrLiteral').mockResolvedValue({})
+      vi.spyOn(transformer, 'transform').mockResolvedValue({})
+      const sources = [makePluginDataSource({ id: 'ds-1', name: 'a', transformJs: 'x' }), makePluginDataSource({ id: 'ds-2', name: 'b', transformJs: 'y' })]
+
+      await service.resolveAll(sources, { trmnl: {} }, { previousMergeVariables: { 'ds-1': { plan: 'pro' } } })
+
+      expect(transformer.transform).toHaveBeenCalledWith('x', { trmnl: { state: {}, previous_merge_variables: { plan: 'pro' } } }, expect.anything())
+      expect(transformer.transform).toHaveBeenCalledWith('y', { trmnl: { state: {}, previous_merge_variables: {} } }, expect.anything())
+      expect(fetchOrLiteral).toHaveBeenCalledWith(sources[0], { trmnl: { state: {} } })
     })
 
     it('hands the transform the guarded fetch', async () => {
@@ -97,7 +109,7 @@ describe('pluginDataResolverService', () => {
 
     const data = await service.resolveAll([makePluginDataSource({ name: 'source', mode: 'literal', literalValue: { base: 2 }, transformJs: 'x' })], { trmnl: {} })
 
-    expect(transformer.transform).toHaveBeenCalledWith('x', { trmnl: { state: {} }, base: 2 }, expect.anything())
+    expect(transformer.transform).toHaveBeenCalledWith('x', { trmnl: { state: {}, previous_merge_variables: {} }, base: 2 }, expect.anything())
     expect(data).toEqual({ source: { computed: 1 } })
   })
 

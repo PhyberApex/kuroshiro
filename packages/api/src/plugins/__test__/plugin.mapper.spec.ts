@@ -384,7 +384,7 @@ describe('toPreviewData', () => {
     const sourceData = { weather: { temperature: 21 }, air: { error: true, message: 'HTTP error! status: 503' } }
     const context = { ...fieldValues, trmnl, sensors: {}, ...sourceData }
 
-    expect(serialized(toPreviewData(plugin, { context, fieldValues, resolvedFieldValues: fieldValues, sourceData, sourceStates: {} }, NOW))).toEqual({
+    expect(serialized(toPreviewData(plugin, { context, fieldValues, resolvedFieldValues: fieldValues, sourceData, sourceStates: {}, sourceMergeVariables: {} }, NOW))).toEqual({
       context,
       names: [
         { name: 'city', origin: 'fieldValue', error: null },
@@ -404,7 +404,7 @@ describe('toPreviewData', () => {
     const sourceData = { source: { author: 'Seneca', title: 'On life' } }
     const context = { author: 'Seneca', title: 'On life', ...sourceData, trmnl: {}, sensors: {} }
 
-    const names = toPreviewData(plugin, { context, fieldValues: { author: 'me' }, resolvedFieldValues: { author: 'me' }, sourceData, sourceStates: {} }, NOW).names
+    const names = toPreviewData(plugin, { context, fieldValues: { author: 'me' }, resolvedFieldValues: { author: 'me' }, sourceData, sourceStates: {}, sourceMergeVariables: {} }, NOW).names
 
     expect(names.map(row => `${row.origin}:${row.name}`)).toEqual(['dataSource:source', 'dataSource:author', 'dataSource:title', 'sensors:sensors', 'trmnl:trmnl'])
   })
@@ -414,7 +414,7 @@ describe('toPreviewData', () => {
     const sourceData = { source: [{ title: 'A' }] }
     const context = { data: sourceData.source, ...sourceData, trmnl: {}, sensors: {} }
 
-    const names = toPreviewData(plugin, { context, fieldValues: {}, resolvedFieldValues: {}, sourceData, sourceStates: {} }, NOW).names
+    const names = toPreviewData(plugin, { context, fieldValues: {}, resolvedFieldValues: {}, sourceData, sourceStates: {}, sourceMergeVariables: {} }, NOW).names
 
     expect(names.map(row => `${row.origin}:${row.name}`)).toEqual(['dataSource:source', 'dataSource:data', 'sensors:sensors', 'trmnl:trmnl'])
   })
@@ -428,7 +428,7 @@ describe('toPreviewData', () => {
     })
     const context = { trmnl, city: 'from the payload', sensors: 'mine' }
 
-    const preview = toPreviewData(plugin, { context, fieldValues: { city: 'Berlin' }, resolvedFieldValues: { city: 'Berlin' }, sourceData: {}, sourceStates: {} }, NOW)
+    const preview = toPreviewData(plugin, { context, fieldValues: { city: 'Berlin' }, resolvedFieldValues: { city: 'Berlin' }, sourceData: {}, sourceStates: {}, sourceMergeVariables: {} }, NOW)
 
     expect(preview.names).toEqual([
       { name: 'city', origin: 'webhookPayload', error: null },
@@ -442,12 +442,12 @@ describe('toPreviewData', () => {
     const plugin = makePlugin({ fields: [makePluginField({ keyname: 'trmnl' }), makePluginField({ keyname: 'sensors' })] })
     const context = { trmnl, sensors: {} }
 
-    expect(toPreviewData(plugin, { context, fieldValues: { trmnl: 'x', sensors: 'y' }, resolvedFieldValues: { trmnl: 'x', sensors: 'y' }, sourceData: {}, sourceStates: {} }, NOW).names.map(row => row.name)).toEqual(['sensors', 'trmnl'])
+    expect(toPreviewData(plugin, { context, fieldValues: { trmnl: 'x', sensors: 'y' }, resolvedFieldValues: { trmnl: 'x', sensors: 'y' }, sourceData: {}, sourceStates: {}, sourceMergeVariables: {} }, NOW).names.map(row => row.name)).toEqual(['sensors', 'trmnl'])
   })
 
   it('names nothing for a Webhook Payload that is a list, which is the whole context', () => {
     const plugin = makePlugin({ kind: 'Webhook', webhookPayload: [1, 2] })
 
-    expect(toPreviewData(plugin, { context: [1, 2], fieldValues: {}, resolvedFieldValues: {}, sourceData: {}, sourceStates: {} }, NOW)).toMatchObject({ context: [1, 2], names: [] })
+    expect(toPreviewData(plugin, { context: [1, 2], fieldValues: {}, resolvedFieldValues: {}, sourceData: {}, sourceStates: {}, sourceMergeVariables: {} }, NOW)).toMatchObject({ context: [1, 2], names: [] })
   })
 })

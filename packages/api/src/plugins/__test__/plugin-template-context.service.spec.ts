@@ -134,7 +134,7 @@ describe('pluginTemplateContextService', () => {
 
     expect(context).toMatchObject({ city: { name: 'from the Data Source' }, trmnl: { plugin_settings: { custom_fields_values: { city: 'Berlin' } } } })
     expect(sourceData).toEqual({ city: { name: 'from the Data Source' } })
-    expect(resolveAll).toHaveBeenCalledWith(withSource.dataSources, expect.objectContaining({ city: 'Berlin' }), { savedStates: {} })
+    expect(resolveAll).toHaveBeenCalledWith(withSource.dataSources, expect.objectContaining({ city: 'Berlin' }), { savedStates: {}, previousMergeVariables: {} })
   })
 
   describe('saved state (ADR-0052)', () => {
@@ -154,13 +154,13 @@ describe('pluginTemplateContextService', () => {
 
     it('reads the saved state for the request and the template when the run writes none', async () => {
       const resolveAll = vi.fn().mockResolvedValue({ source: { price: 3 } })
-      const savedStates = { 'ds-1': { history: [1] } }
+      const loaded = { savedStates: { 'ds-1': { history: [1] } }, previousMergeVariables: { 'ds-1': { price: 2 } } }
 
-      const { context, sourceStates } = await createPluginTemplateContextService({}, { resolveAll }, { load: async () => savedStates }).contextFor(lone, [])
+      const { context, sourceStates } = await createPluginTemplateContextService({}, { resolveAll }, { load: async () => loaded }).contextFor(lone, [])
 
       expect(context).toMatchObject({ trmnl: { state: { history: [1] } } })
       expect(sourceStates).toEqual({})
-      expect(resolveAll).toHaveBeenCalledWith(lone.dataSources, expect.objectContaining({ trmnl: expect.objectContaining({ state: { history: [1] } }) }), { savedStates })
+      expect(resolveAll).toHaveBeenCalledWith(lone.dataSources, expect.objectContaining({ trmnl: expect.objectContaining({ state: { history: [1] } }) }), loaded)
     })
 
     it.each([
@@ -170,7 +170,7 @@ describe('pluginTemplateContextService', () => {
     ])('drops a trmnl_state that is %s, keeping the saved state, and still takes it out of the data', async (_, written) => {
       const resolveAll = vi.fn().mockResolvedValue({ source: { price: 3, trmnl_state: written } })
 
-      const { context, sourceStates } = await createPluginTemplateContextService({}, { resolveAll }, { load: async () => ({ 'ds-1': { kept: true } }) }).contextFor(lone, [])
+      const { context, sourceStates } = await createPluginTemplateContextService({}, { resolveAll }, { load: async () => ({ savedStates: { 'ds-1': { kept: true } }, previousMergeVariables: {} }) }).contextFor(lone, [])
 
       expect(context).toMatchObject({ trmnl: { state: { kept: true } }, source: { price: 3 } })
       expect(sourceStates).toEqual({})
@@ -184,6 +184,31 @@ describe('pluginTemplateContextService', () => {
 
       expect(context).toMatchObject({ trmnl: { state: {} }, a: {}, b: {} })
       expect(sourceStates).toEqual({ a: { n: 1 }, b: { n: 2 } })
+    })
+  })
+
+  describe('previous merge variables (ADR-0067)', () => {
+    it('lists what each transform returned, without its trmnl_state and any previous_merge_variables it echoed at any depth, for the next run', async () => {
+      const plugin = makePlugin({ name: 'Plan', dataSources: [makePluginDataSource({ id: 'ds-1', name: 'source', transformJs: 'x' })] })
+      const echoed = { plan: 'pro', trmnl_state: { n: 1 }, previous_merge_variables: { plan: 'free' }, input: { trmnl: { previous_merge_variables: { plan: 'free' } } }, rows: [{ previous_merge_variables: {}, n: 1 }] }
+      const resolveAll = vi.fn().mockResolvedValue({ source: echoed })
+
+      const { sourceMergeVariables } = await createPluginTemplateContextService({}, { resolveAll }).contextFor(plugin, [])
+
+      expect(sourceMergeVariables).toEqual({ source: { plan: 'pro', input: { trmnl: {} }, rows: [{ n: 1 }] } })
+    })
+
+    it.each([
+      ['has no transform', makePluginDataSource({ id: 'ds-1', name: 'source' }), { plan: 'pro' }],
+      ['failed', makePluginDataSource({ id: 'ds-1', name: 'source', transformJs: 'x' }), { error: true, message: 'timed out' }],
+      ['returned a list', makePluginDataSource({ id: 'ds-1', name: 'source', transformJs: 'x' }), [1, 2]],
+      ['returned more than 100 kB', makePluginDataSource({ id: 'ds-1', name: 'source', transformJs: 'x' }), { big: 'x'.repeat(100 * 1024) }],
+    ])('lists nothing for a Data Source that %s, so the last output stays', async (_, source, result) => {
+      const resolveAll = vi.fn().mockResolvedValue({ source: result })
+
+      const { sourceMergeVariables } = await createPluginTemplateContextService({}, { resolveAll }).contextFor(makePlugin({ name: 'Plan', dataSources: [source] }), [])
+
+      expect(sourceMergeVariables).toEqual({})
     })
   })
 
@@ -275,7 +300,7 @@ describe('pluginTemplateContextService', () => {
       const { context } = await createPluginTemplateContextService({}, { resolveAll }).contextFor(stored, [], { name: 'Forecast', dataSources: unsavedSources })
 
       expect(context).toMatchObject({ unsaved: { n: 1 }, trmnl: { plugin_settings: { instance_name: 'Forecast' } } })
-      expect(resolveAll).toHaveBeenCalledWith(unsavedSources, expect.anything(), { savedStates: {} })
+      expect(resolveAll).toHaveBeenCalledWith(unsavedSources, expect.anything(), { savedStates: {}, previousMergeVariables: {} })
     })
 
     it('hides a password Field Value in both address forms, and still fetches with the real one', async () => {
@@ -289,7 +314,7 @@ describe('pluginTemplateContextService', () => {
       expect(context).toMatchObject({ ...shown, trmnl: { plugin_settings: { custom_fields_values: shown } } })
       expect(fieldValues).toEqual(shown)
       expect(JSON.stringify(context)).not.toContain('hunter2')
-      expect(resolveAll).toHaveBeenCalledWith([], expect.objectContaining({ api_key: 'hunter2', trmnl: expect.objectContaining({ plugin_settings: expect.objectContaining({ custom_fields_values: expect.objectContaining({ api_key: 'hunter2' }) }) }) }), { savedStates: {} })
+      expect(resolveAll).toHaveBeenCalledWith([], expect.objectContaining({ api_key: 'hunter2', trmnl: expect.objectContaining({ plugin_settings: expect.objectContaining({ custom_fields_values: expect.objectContaining({ api_key: 'hunter2' }) }) }) }), { savedStates: {}, previousMergeVariables: {} })
     })
   })
 })

@@ -36,6 +36,10 @@ export class PluginDataSource {
   @Column('jsonb', { nullable: true })
   savedState?: JsonObject | null
 
+  /** What its transform returned on the last scheduled run, read back as `trmnl.previous_merge_variables` (ADR-0067). */
+  @Column('jsonb', { nullable: true })
+  previousMergeVariables?: JsonObject | null
+
   @Column('int', { default: 0 })
   order: number = 0
 
