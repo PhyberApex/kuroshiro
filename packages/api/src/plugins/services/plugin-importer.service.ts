@@ -233,6 +233,52 @@ function recipeTransformJsOf(entries: AdmZip.IZipEntry[]): string | null {
   return entry?.getData().toString('utf8') || null
 }
 
+/** The delimiter of one `polling_headers` pair: `=` or `: `, whichever comes first, so a URL value's `:` is not one. */
+function headerPairDelimiter(pair: string): '=' | ': ' | null {
+  const equals = pair.indexOf('=')
+  const colon = pair.indexOf(': ')
+  if (equals < 0 && colon < 0)
+    return null
+  if (colon < 0)
+    return '='
+  if (equals < 0)
+    return ': '
+  return colon < equals ? ': ' : '='
+}
+
+function decodedHeaderValue(value: string): string {
+  try {
+    return decodeURIComponent(value)
+  }
+  catch {
+    return value
+  }
+}
+
+/**
+ * TRMNL's `polling_headers` string as its own form reads it: a JSON object, or `key=value` pairs joined by `&` or line
+ * breaks, each pair also allowed as `Key: Value`, with the value percent-decoded. A pair with no delimiter is skipped.
+ */
+function pollingHeadersOf(raw: string): Record<string, string> {
+  if (raw.trim().startsWith('{')) {
+    const parsed = tryParseJson(raw)
+    return isPlainObject(parsed) ? Object.fromEntries(Object.entries(parsed).map(([key, value]) => [key, String(value)])) : {}
+  }
+  return Object.fromEntries(raw.split(/[\n&]/).flatMap((line) => {
+    const pair = line.trim()
+    const delimiter = headerPairDelimiter(pair)
+    if (!delimiter)
+      return []
+    const at = pair.indexOf(delimiter)
+    return [[pair.slice(0, at).trim(), decodedHeaderValue(pair.slice(at + delimiter.length).trim())]]
+  }))
+}
+
+/** The headers of settings in TRMNL's form (`polling_headers`) or Kuroshiro's own (`headers`), else none. */
+function headersOf(settings: TerminusSettings): Record<string, string> {
+  return settings.polling_headers?.trim() ? pollingHeadersOf(settings.polling_headers) : settings.headers ?? {}
+}
+
 /** A transform with no URL to fetch for it: it computes from the Field Values, or fetches on its own, over an empty value (ADR-0051). */
 const selfFetchingDataSource = (transformJs: string): ParsedDataSource => ({ name: 'source', mode: 'literal', literalValue: {}, transformJs })
 
@@ -656,7 +702,7 @@ export class PluginImporterService {
       mode: 'fetch',
       method: (settings.method || settings.polling_verb)?.toUpperCase() || 'GET',
       url: endpoint.trim(),
-      headers: this.parseLegacyJsonField(settings.headers, settings.polling_headers, 'polling_headers'),
+      headers: headersOf(settings),
       body: this.parseLegacyJsonField(settings.body, settings.polling_body, 'polling_body'),
       transformJs: transformJs || null,
     }
