@@ -28,6 +28,7 @@ describe('pluginDataFetcherService', () => {
     expect(mockFetch).toHaveBeenCalledWith('https://api.weather.com/data', {
       method: 'GET',
       headers: {},
+      signal: expect.any(AbortSignal),
     })
     expect(result).toEqual(mockData)
   })
@@ -43,6 +44,7 @@ describe('pluginDataFetcherService', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal: expect.any(AbortSignal),
     })
     expect(result).toEqual(mockData)
   })
@@ -57,6 +59,7 @@ describe('pluginDataFetcherService', () => {
     expect(mockFetch).toHaveBeenCalledWith('https://api.example.com', {
       method: 'GET',
       headers,
+      signal: expect.any(AbortSignal),
     })
   })
 
@@ -77,7 +80,17 @@ describe('pluginDataFetcherService', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer s3cret', 'X-Plain': 'as-is' },
       body: JSON.stringify({ query: { place: 'Berlin', limit: 3 }, tags: ['Berlin', 'fixed'] }),
+      signal: expect.any(AbortSignal),
     })
+  })
+
+  it('gives up on a host that has not answered within 10 seconds, as TRMNL does (ADR-0062)', async () => {
+    mockFetch.mockImplementation(async (_url, init) => {
+      expect(init?.signal).toBeInstanceOf(AbortSignal)
+      throw new DOMException('The operation was aborted due to timeout', 'TimeoutError')
+    })
+
+    await expect(service.fetchData('GET', 'https://slow.example/')).rejects.toThrow('The host did not answer within 10 seconds.')
   })
 
   describe('a response that is not JSON (ADR-0059)', () => {
