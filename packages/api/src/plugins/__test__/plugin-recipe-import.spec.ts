@@ -198,6 +198,38 @@ describe('pluginImporterService recipe import', () => {
       expect(reimported.fields[0].options).toEqual(expectedOptions)
     })
 
+    it('stores a bare select option under the value TRMNL derives for it, and keeps a labelled option\'s value', async () => {
+      const settings = {
+        name: 'Weather',
+        strategy: 'polling',
+        polling_url: 'https://api.example.com',
+        custom_fields: [
+          { keyname: 'theme', field_type: 'select', name: 'Theme', options: ['Light', 'Dark Mode', { 'US AQI': 'US AQI' }], default: 'dark_mode' },
+        ],
+      }
+      const expectedOptions = [
+        { label: 'Light', value: 'light' },
+        { label: 'Dark Mode', value: 'dark_mode' },
+        { label: 'US AQI', value: 'US AQI' },
+      ]
+
+      const service = new PluginImporterService()
+      const imported = await service.importFromRecipeArchive(buildFlatRecipeArchive(settings), '1')
+
+      expect(imported.fields[0].options).toEqual(expectedOptions)
+
+      const exported = await new PluginExporterService().exportToZip(makePlugin({
+        name: imported.name,
+        dataSources: imported.dataSources.map(source => makePluginDataSource(source)),
+        templates: imported.templates.map(template => makePluginTemplate(template)),
+        fields: imported.fields.map(field => makePluginField(field)),
+      }))
+      const exportedSettings = yaml.load(new AdmZip(exported).readAsText('.trmnlp.yml')) as { custom_fields: Array<{ options: unknown }> }
+
+      expect(exportedSettings.custom_fields[0].options).toEqual(['Light', 'Dark Mode', { 'US AQI': 'US AQI' }])
+      expect(service.parseZip(new AdmZip(exported), 'weather').fields[0].options).toEqual(expectedOptions)
+    })
+
     it('imports a field of a type Kuroshiro has no control for, and one with no type at all', async () => {
       const settings = {
         name: 'Odd Fields',
