@@ -1,5 +1,5 @@
 import type { ConfigService } from '@nestjs/config'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { jsonResponse, stubFetch } from '../../test/fetch.js'
 import { asService } from '../../test/mockService.js'
@@ -14,7 +14,7 @@ describe('pluginDataFetcherService', () => {
   const mockConfigService = { get: vi.fn().mockReturnValue(false) }
 
   beforeEach(() => {
-    service = new PluginDataFetcherService(asService<PluginRendererService>(mockRenderer), asService<ConfigService>(mockConfigService))
+    service = new PluginDataFetcherService(asService<PluginRendererService>(mockRenderer), asService<ConfigService>(mockConfigService), new InstanceTimeZone())
     vi.clearAllMocks()
     mockConfigService.get.mockReturnValue(false)
   })
@@ -136,6 +136,194 @@ describe('pluginDataFetcherService', () => {
 
       mockFetch.mockResolvedValueOnce(xml('<broken'))
       expect(await service.fetchData('GET', 'https://example.com/b')).toBe('<broken')
+    })
+  })
+
+  describe('an iCalendar feed (ADR-0066)', () => {
+    const berlin = Object.assign(new InstanceTimeZone(), { name: 'Europe/Berlin' })
+    const calendar = (events: string, type = 'text/calendar; charset=utf-8') => new Response(
+      ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Test//EN', events, 'END:VCALENDAR', ''].join('\r\n'),
+      { status: 200, headers: { 'content-type': type } },
+    )
+    let calendarService: PluginDataFetcherService
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-10-20T15:00:00Z'))
+      calendarService = new PluginDataFetcherService(asService<PluginRendererService>(mockRenderer), asService<ConfigService>(mockConfigService), berlin)
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('reads each event as uid, summary, description, location, start, end, all_day and status, times in the Instance Time Zone', async () => {
+      mockFetch.mockResolvedValue(calendar([
+        'BEGIN:VEVENT',
+        'UID:standup@example.com',
+        'DTSTART:20261021T070000Z',
+        'DTEND:20261021T073000Z',
+        'SUMMARY:Standup',
+        'DESCRIPTION:Daily sync',
+        'LOCATION:Room 1',
+        'STATUS:CONFIRMED',
+        'BEGIN:VALARM',
+        'TRIGGER:-PT10M',
+        'ACTION:DISPLAY',
+        'END:VALARM',
+        'END:VEVENT',
+      ].join('\r\n')))
+
+      expect(await calendarService.fetchData('GET', 'https://example.com/basic.ics')).toEqual({
+        events: [{
+          uid: 'standup@example.com',
+          summary: 'Standup',
+          description: 'Daily sync',
+          location: 'Room 1',
+          start: '2026-10-21T09:00:00+02:00',
+          end: '2026-10-21T09:30:00+02:00',
+          all_day: false,
+          status: 'CONFIRMED',
+        }],
+      })
+    })
+
+    const vevent = (...lines: string[]) => ['BEGIN:VEVENT', ...lines, 'END:VEVENT'].join('\r\n')
+    const shown = (body: unknown) => (body as { events: { summary: string | null, start: string, end: string, all_day: boolean }[] }).events.map(({ summary, start, end, all_day }) => `${summary} ${start} ${end}${all_day ? ' all day' : ''}`)
+
+    it('expands a recurring event over the window, skipping an excluded date and taking an override\'s time and summary, across a change of offset', async () => {
+      mockFetch.mockResolvedValue(calendar([
+        'BEGIN:VTIMEZONE',
+        'TZID:Europe/Berlin',
+        'BEGIN:DAYLIGHT',
+        'TZOFFSETFROM:+0100',
+        'TZOFFSETTO:+0200',
+        'DTSTART:19700329T020000',
+        'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU',
+        'END:DAYLIGHT',
+        'BEGIN:STANDARD',
+        'TZOFFSETFROM:+0200',
+        'TZOFFSETTO:+0100',
+        'DTSTART:19701025T030000',
+        'RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU',
+        'END:STANDARD',
+        'END:VTIMEZONE',
+        vevent('UID:review', 'DTSTART;TZID=Europe/Berlin:20260101T090000', 'DTEND;TZID=Europe/Berlin:20260101T100000', 'RRULE:FREQ=WEEKLY;BYDAY=TH', 'EXDATE;TZID=Europe/Berlin:20261105T090000', 'SUMMARY:Review'),
+        vevent('UID:review', 'RECURRENCE-ID;TZID=Europe/Berlin:20261112T090000', 'DTSTART;TZID=Europe/Berlin:20261112T140000', 'DTEND;TZID=Europe/Berlin:20261112T150000', 'SUMMARY:Review (moved)'),
+      ].join('\r\n')))
+
+      expect(shown(await calendarService.fetchData('GET', 'https://example.com/basic.ics'))).toEqual([
+        'Review 2026-10-22T09:00:00+02:00 2026-10-22T10:00:00+02:00',
+        'Review 2026-10-29T09:00:00+01:00 2026-10-29T10:00:00+01:00',
+        'Review (moved) 2026-11-12T14:00:00+01:00 2026-11-12T15:00:00+01:00',
+      ])
+    })
+
+    it('matches an exclusion, an override and an end of the rule given in another zone than the event, as the instants they name', async () => {
+      mockFetch.mockResolvedValue(calendar([
+        vevent('UID:sync', 'DTSTART;TZID=Europe/Berlin:20261020T233000', 'DTEND;TZID=Europe/Berlin:20261021T000000', 'RRULE:FREQ=DAILY;UNTIL=20261023T213000Z', 'EXDATE:20261020T213000Z', 'SUMMARY:Sync'),
+        vevent('UID:sync', 'RECURRENCE-ID:20261021T213000Z', 'DTSTART:20261021T190000Z', 'DTEND:20261021T193000Z', 'SUMMARY:Sync (early)'),
+      ].join('\r\n')))
+
+      expect(shown(await calendarService.fetchData('GET', 'https://example.com/basic.ics'))).toEqual([
+        'Sync (early) 2026-10-21T21:00:00+02:00 2026-10-21T21:30:00+02:00',
+        'Sync 2026-10-22T23:30:00+02:00 2026-10-23T00:00:00+02:00',
+        'Sync 2026-10-23T23:30:00+02:00 2026-10-24T00:00:00+02:00',
+      ])
+    })
+
+    it('takes an override that moves the last occurrence of a rule into the window, and the events of every calendar in the feed', async () => {
+      mockFetch.mockResolvedValue(new Response([
+        'BEGIN:VCALENDAR',
+        vevent('UID:offsite', 'DTSTART:20261201T090000Z', 'RRULE:FREQ=WEEKLY;COUNT=1', 'SUMMARY:Offsite'),
+        vevent('UID:offsite', 'RECURRENCE-ID:20261201T090000Z', 'DTSTART:20261028T090000Z', 'DTEND:20261028T100000Z', 'SUMMARY:Offsite (brought forward)'),
+        'END:VCALENDAR',
+        'BEGIN:VCALENDAR',
+        vevent('UID:dentist', 'DTSTART:20261027T080000Z', 'DTEND:20261027T090000Z', 'SUMMARY:Dentist'),
+        'END:VCALENDAR',
+        '',
+      ].join('\r\n'), { status: 200, headers: { 'content-type': 'text/calendar' } }))
+
+      expect(shown(await calendarService.fetchData('GET', 'https://example.com/basic.ics'))).toEqual([
+        'Dentist 2026-10-27T09:00:00+01:00 2026-10-27T10:00:00+01:00',
+        'Offsite (brought forward) 2026-10-28T10:00:00+01:00 2026-10-28T11:00:00+01:00',
+      ])
+    })
+
+    it('keeps what overlaps the thirty days from the start of today, sorted by start, an all-day event as its dates', async () => {
+      mockFetch.mockResolvedValue(calendar([
+        vevent('UID:late', 'DTSTART:20261118T230000Z', 'DTEND:20261119T000000Z', 'SUMMARY:Past the window'),
+        vevent('UID:holiday', 'DTSTART;VALUE=DATE:20261026', 'DTEND;VALUE=DATE:20261027', 'SUMMARY:Holiday'),
+        vevent('UID:yesterday', 'DTSTART:20261019T080000Z', 'DTEND:20261019T090000Z', 'SUMMARY:Yesterday'),
+        vevent('UID:overnight', 'DTSTART:20261019T200000Z', 'DTEND:20261020T060000Z', 'SUMMARY:Overnight'),
+        vevent('UID:last', 'DTSTART:20261118T200000Z', 'DTEND:20261118T210000Z', 'SUMMARY:Last day'),
+        vevent('UID:trip', 'DTSTART;VALUE=DATE:20261018', 'DTEND;VALUE=DATE:20261021', 'SUMMARY:Trip'),
+      ].join('\r\n')))
+
+      expect(shown(await calendarService.fetchData('GET', 'https://example.com/basic.ics'))).toEqual([
+        'Trip 2026-10-18 2026-10-21 all day',
+        'Overnight 2026-10-19T22:00:00+02:00 2026-10-20T08:00:00+02:00',
+        'Holiday 2026-10-26 2026-10-27 all day',
+        'Last day 2026-11-18T21:00:00+01:00 2026-11-18T22:00:00+01:00',
+      ])
+    })
+
+    it('reads a time in a zone the feed defines under a name of its own, and a floating time in the Instance Time Zone', async () => {
+      mockFetch.mockResolvedValue(calendar([
+        'BEGIN:VTIMEZONE',
+        'TZID:Eastern Standard Time',
+        'BEGIN:STANDARD',
+        'TZOFFSETFROM:-0400',
+        'TZOFFSETTO:-0500',
+        'DTSTART:16011104T020000',
+        'RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU',
+        'END:STANDARD',
+        'BEGIN:DAYLIGHT',
+        'TZOFFSETFROM:-0500',
+        'TZOFFSETTO:-0400',
+        'DTSTART:16010311T020000',
+        'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU',
+        'END:DAYLIGHT',
+        'END:VTIMEZONE',
+        vevent('UID:call', 'DTSTART;TZID=Eastern Standard Time:20261021T090000', 'DTEND;TZID=Eastern Standard Time:20261021T100000', 'SUMMARY:Call'),
+        vevent('UID:lunch', 'DTSTART:20261022T120000', 'DTEND:20261022T130000', 'SUMMARY:Lunch'),
+      ].join('\r\n')))
+
+      expect(shown(await calendarService.fetchData('GET', 'https://example.com/basic.ics'))).toEqual([
+        'Call 2026-10-21T15:00:00+02:00 2026-10-21T16:00:00+02:00',
+        'Lunch 2026-10-22T12:00:00+02:00 2026-10-22T13:00:00+02:00',
+      ])
+    })
+
+    it('reads a time in the hour the clocks go back twice as the first of the two', async () => {
+      mockFetch.mockResolvedValue(calendar(vevent('UID:night', 'DTSTART;TZID=Europe/Berlin:20261025T023000', 'DTEND;TZID=Europe/Berlin:20261025T040000', 'SUMMARY:Night shift')))
+
+      expect(shown(await calendarService.fetchData('GET', 'https://example.com/basic.ics'))).toEqual([
+        'Night shift 2026-10-25T02:30:00+02:00 2026-10-25T04:00:00+01:00',
+      ])
+    })
+
+    it('leaves out an event without a start and keeps the others', async () => {
+      mockFetch.mockResolvedValue(calendar([
+        vevent('UID:draft', 'SUMMARY:No time yet'),
+        vevent('UID:dentist', 'DTSTART:20261027T080000Z', 'DTEND:20261027T090000Z', 'SUMMARY:Dentist'),
+      ].join('\r\n')))
+
+      expect(shown(await calendarService.fetchData('GET', 'https://example.com/basic.ics'))).toEqual([
+        'Dentist 2026-10-27T09:00:00+01:00 2026-10-27T10:00:00+01:00',
+      ])
+    })
+
+    it('reads a calendar served as text/plain or a download, and keeps a text/calendar body that does not parse as its text', async () => {
+      const lone = vevent('UID:one', 'DTSTART;VALUE=DATE:20261020', 'SUMMARY:Today')
+      mockFetch.mockResolvedValueOnce(calendar(lone, 'text/plain'))
+      expect(shown(await calendarService.fetchData('GET', 'https://example.com/a.ics'))).toEqual(['Today 2026-10-20 2026-10-21 all day'])
+
+      mockFetch.mockResolvedValueOnce(calendar(lone, 'application/octet-stream'))
+      expect(shown(await calendarService.fetchData('GET', 'https://example.com/b.ics'))).toEqual(['Today 2026-10-20 2026-10-21 all day'])
+
+      mockFetch.mockResolvedValueOnce(new Response('not a calendar', { status: 200, headers: { 'content-type': 'text/calendar' } }))
+      expect(await calendarService.fetchData('GET', 'https://example.com/c.ics')).toBe('not a calendar')
     })
   })
 

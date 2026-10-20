@@ -299,6 +299,9 @@ catalogs:
     fast-xml-parser:
       specifier: 5.11.2
       version: 5.11.2
+    ical.js:
+      specifier: 2.2.1
+      version: 2.2.1
     jiti:
       specifier: 2.7.0
       version: 2.7.0
@@ -454,6 +457,9 @@ importers:
       fast-xml-parser:
         specifier: 'catalog:'
         version: 5.11.2
+      ical.js:
+        specifier: 'catalog:'
+        version: 2.2.1
       js-yaml:
         specifier: 'catalog:'
         version: 5.5.0
@@ -4242,6 +4248,9 @@ packages:
     resolution: {integrity: sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA==}
     engines: {node: '>=18'}
     hasBin: true
+
+  ical.js@2.2.1:
+    resolution: {integrity: sha512-yK/UlPbEs316igb/tjRgbFA8ZV75rCsBJp/hWOatpyaPNlgw0dGDmU+FoicOcwX4xXkeXOkYiOmCqNPFpNPkQg==}
 
   iconv-lite@0.7.3:
     resolution: {integrity: sha512-IKXpvIzjnC9XTAUbVBcMfGS0EPaIXtW6v+zr+RRp+hqULEpo0owZax6wyRwPOJbWbzjYspQwusTsfVr0ifh4uQ==}
@@ -9756,6 +9765,8 @@ snapshots:
       - supports-color
 
   husky@9.1.7: {}
+
+  ical.js@2.2.1: {}
 
   iconv-lite@0.7.3:
     dependencies:

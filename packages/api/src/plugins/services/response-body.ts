@@ -1,4 +1,6 @@
+import type { CalendarClock } from './ics-calendar.js'
 import { XMLParser } from 'fast-xml-parser'
+import { parseIcs } from './ics-calendar.js'
 
 const XML_TYPES = /^(?:text\/xml|application\/xml|application\/[\w.+-]+\+xml)$/i
 const BYTE_ORDER_MARK = '﻿'
@@ -79,14 +81,17 @@ function parseJson(text: string): unknown {
   }
 }
 
+const CALENDAR_START = /^\s*BEGIN:VCALENDAR/i
+
 const mediaTypeOf = (contentType: string | null) => (contentType ?? '').split(';')[0]?.trim() ?? ''
 
 /**
  * What a fetched body is to a Template and a transform, read as TRMNL reads it (ADR-0059): JSON as JSON whatever the
- * content type says, an XML type as an object in `Hash.from_xml`'s shape, `text/csv` as rows under `data`, an empty body
- * as nothing, and anything else as its text.
+ * content type says, an XML type as an object in `Hash.from_xml`'s shape, `text/csv` as rows under `data`, `text/calendar` or
+ * a body that starts as a calendar as its events under `events` (ADR-0066), an empty body as nothing, and anything else as
+ * its text.
  */
-export function parseResponseBody(body: string, contentType: string | null): unknown {
+export function parseResponseBody(body: string, contentType: string | null, clock: CalendarClock): unknown {
   const text = body.startsWith(BYTE_ORDER_MARK) ? body.slice(1) : body
   if (text.trim() === '')
     return null
@@ -96,6 +101,8 @@ export function parseResponseBody(body: string, contentType: string | null): unk
   const mediaType = mediaTypeOf(contentType)
   if (XML_TYPES.test(mediaType))
     return parseXml(text) ?? text
+  if (mediaType === 'text/calendar' || CALENDAR_START.test(text))
+    return parseIcs(text, clock) ?? text
   if (mediaType === 'text/csv')
     return { data: parseCsv(text) }
   return text

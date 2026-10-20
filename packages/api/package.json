@@ -37,6 +37,7 @@
     "dotenv": "catalog:",
     "express": "catalog:",
     "fast-xml-parser": "catalog:",
+    "ical.js": "catalog:",
     "js-yaml": "catalog:",
     "liquidjs": "catalog:",
     "marked": "catalog:",
