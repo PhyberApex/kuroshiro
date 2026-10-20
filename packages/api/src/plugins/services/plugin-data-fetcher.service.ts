@@ -33,6 +33,21 @@ export function pollingUrlsOf(rendered: string): string[] {
   return rendered.split(/\r\n|\r|\n/).map(line => line.replace(/\s+/g, ' ').trim()).filter(line => line !== '')
 }
 
+/** How long TRMNL gives a polled host to answer (ADR-0062). */
+const REQUEST_TIMEOUT_MS = 10_000
+
+/** The request as given, given up when the host has not answered within TRMNL's time. */
+async function fetchWithinTimeout(url: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) })
+  }
+  catch (error) {
+    if (error instanceof DOMException && error.name === 'TimeoutError')
+      throw new Error(`The host did not answer within ${REQUEST_TIMEOUT_MS / 1000} seconds.`)
+    throw error
+  }
+}
+
 /** What a line that failed reads as, next to the lines that did not (ADR-0005). */
 function errorMarkerOf(reason: unknown): FetchErrorMarker {
   return { error: true, message: reason instanceof Error ? reason.message : String(reason) }
@@ -87,7 +102,7 @@ export class PluginDataFetcherService {
   private async fetchOne(url: string, init: RequestInit): Promise<unknown> {
     if (this.configService.get<boolean>('demo_mode'))
       assertPublicUrl(url)
-    return this.parseResponse(await fetch(url, init))
+    return this.parseResponse(await fetchWithinTimeout(url, init))
   }
 
   /** The `fetch` a transform calls (ADR-0052): the request as given, refused for an internal host in demo mode like a Data Source URL. */
