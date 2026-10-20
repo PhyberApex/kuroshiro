@@ -3,6 +3,7 @@ import type { DeviceSensor } from '../../device-sensors/entities/device-sensor.e
 import type { JsonObject } from '../../utils/json.js'
 import type { PluginField } from '../entities/plugin-field.entity.js'
 import type { Plugin } from '../entities/plugin.entity.js'
+import type { TrmnlDevice } from '../trmnl-device.js'
 import type { ResolvableDataSource } from './plugin-data-resolver.service.js'
 import type { FieldValueWrites } from './plugin-field-values.service.js'
 import { Buffer } from 'node:buffer'
@@ -29,6 +30,8 @@ export interface PluginTemplateContext {
     user: { id: string, locale: string, time_zone: string, time_zone_iana: string, utc_offset: number }
     /** A lone Data Source's saved state, as its transform last wrote it (ADR-0052); empty otherwise. */
     state: JsonObject
+    /** The Device the render is for, laid in after the fetch by `withTrmnlDevice` (ADR-0066); absent for no single Device. */
+    device?: TrmnlDevice
   }
   sensors: Record<string, { value: number, unit: string }>
 }

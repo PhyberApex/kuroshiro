@@ -1,12 +1,15 @@
+import type { DeviceModel } from '../../device-models/entities/device-model.entity.js'
 import type { DeviceSensor } from '../../device-sensors/entities/device-sensor.entity.js'
 import type { Device } from '../../devices/devices.entity.js'
 import type { MashupConfiguration } from '../entities/mashup-configuration.entity.js'
 import type { MashupSlot } from '../entities/mashup-slot.entity.js'
 import { Injectable, Logger } from '@nestjs/common'
+import { DeviceModelsService } from '../../device-models/device-models.service.js'
 import { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
 import { templateOfSize, templateSizeOfSlot } from '../../plugins/plugin-templates.js'
 import { PluginRendererService } from '../../plugins/services/plugin-renderer.service.js'
 import { PluginTemplateContextService } from '../../plugins/services/plugin-template-context.service.js'
+import { withTrmnlDevice } from '../../plugins/trmnl-device.js'
 import { getErrorMessage } from '../../utils/getErrorMessage.js'
 import { MASHUP_SLOT_ERROR_STYLE, mashupSlotErrorHtml } from '../mashup-slot-error-template.js'
 
@@ -18,6 +21,7 @@ export class MashupRendererService {
     private readonly pluginRenderer: PluginRendererService,
     private readonly deviceSensors: DeviceSensorsService,
     private readonly pluginTemplateContext: PluginTemplateContextService,
+    private readonly deviceModels: DeviceModelsService,
   ) {}
 
   async renderMashup(mashupConfig: MashupConfiguration, device: Device): Promise<string> {
@@ -25,12 +29,13 @@ export class MashupRendererService {
 
     const slotHtmls: Array<{ slot: MashupSlot, html: string }> = []
     const sensors = await this.deviceSensors.findForDevice(device.id)
+    const { model } = await this.deviceModels.renderTargetFor(device)
     let anySlotFailed = false
 
     // Render each slot (with error handling for partial renders)
     for (const slot of mashupConfig.slots) {
       try {
-        const html = await this.renderSlot(slot, sensors)
+        const html = await this.renderSlot(slot, device, model, sensors)
         slotHtmls.push({ slot, html })
       }
       catch (err) {
@@ -47,7 +52,7 @@ export class MashupRendererService {
     return this.buildMashupHtml(mashupConfig.layout, slotHtmls, anySlotFailed)
   }
 
-  private async renderSlot(slot: MashupSlot, sensors: DeviceSensor[]): Promise<string> {
+  private async renderSlot(slot: MashupSlot, device: Device, model: DeviceModel, sensors: DeviceSensor[]): Promise<string> {
     const plugin = slot.plugin
 
     const template = templateOfSize(plugin.templates, templateSizeOfSlot(slot.size))
@@ -58,7 +63,7 @@ export class MashupRendererService {
     const { context } = await this.pluginTemplateContext.contextFor(plugin, sensors)
 
     // Render unwrapped plugin content
-    return await this.pluginRenderer.render(template.liquidMarkup, context)
+    return await this.pluginRenderer.render(template.liquidMarkup, withTrmnlDevice(context, device, model))
   }
 
   private buildMashupHtml(layout: string, slotHtmls: Array<{ slot: MashupSlot, html: string }>, anySlotFailed: boolean): string {

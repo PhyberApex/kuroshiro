@@ -7,11 +7,13 @@ import { UnprocessableEntityException } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { getRepositoryToken } from '@nestjs/typeorm'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { DeviceModelsService } from '../../device-models/device-models.service.js'
 import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { MashupSlot as MashupSlotEntity } from '../../mashup/entities/mashup-slot.entity.js'
 import { Screen as ScreenEntity } from '../../screens/screens.entity.js'
 import { makeMashupConfiguration, makeMashupSlot, makePlugin, makePluginTemplate, makeScreen } from '../../test/fixtures.js'
 import { createHttpTestApp } from '../../test/httpApp.js'
+import { createMockDeviceModelsService, primeMockDeviceModelsServiceWithAssignedModels } from '../../test/mockDeviceModelsService.js'
 import { createMockPluginFieldValuesService } from '../../test/mockPluginCollaborators.js'
 import { DevicePlugin } from '../entities/device-plugin.entity.js'
 import { PluginDataSource } from '../entities/plugin-data-source.entity.js'
@@ -77,8 +79,9 @@ describe('webhook ingest integration', () => {
     }
 
     const screenRepo = {
-      update: vi.fn(async (where: Record<string, unknown>, partial: Partial<Screen>) => {
-        screens.filter(screen => matches(screen, where)).forEach(screen => Object.assign(screen, partial))
+      find: vi.fn(async ({ where }: { where: Record<string, unknown> }) => screens.filter(screen => matches(screen, where))),
+      update: vi.fn(async (where: string | Record<string, unknown>, partial: Partial<Screen>) => {
+        screens.filter(screen => matches(screen, typeof where === 'string' ? { id: where } : where)).forEach(screen => Object.assign(screen, partial))
       }),
       manager: { getRepository: (name: string) => (name === 'MashupSlot' ? mashupSlotRepo : null) },
     }
@@ -113,6 +116,7 @@ describe('webhook ingest integration', () => {
         { provide: getRepositoryToken(PluginField), useValue: {} },
         { provide: PluginFieldValuesService, useValue: createMockPluginFieldValuesService() },
         { provide: PluginAssignmentsService, useValue: {} },
+        { provide: DeviceModelsService, useValue: primeMockDeviceModelsServiceWithAssignedModels(createMockDeviceModelsService()) },
         { provide: getRepositoryToken(MashupSlotEntity), useValue: mashupSlotRepo },
         { provide: PluginDataResolverService, useValue: {} },
         { provide: PluginSchedulerService, useValue: { schedulePlugin: vi.fn(), removeScheduledJob: vi.fn() } },

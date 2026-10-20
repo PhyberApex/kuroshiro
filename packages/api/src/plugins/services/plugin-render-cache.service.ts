@@ -1,13 +1,16 @@
 import type { TemplateProblem, TemplateSize } from 'kuroshiro-shared'
 import type { MashupSlot } from '../../mashup/entities/mashup-slot.entity.js'
 import type { Plugin } from '../entities/plugin.entity.js'
+import type { PluginRenderContext } from './plugin-template-context.service.js'
 import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { templateProblemOf } from 'kuroshiro-shared'
 import { Repository } from 'typeorm'
+import { DeviceModelsService } from '../../device-models/device-models.service.js'
 import { Screen } from '../../screens/screens.entity.js'
 import { getErrorMessage } from '../../utils/getErrorMessage.js'
 import { templateOfSize } from '../plugin-templates.js'
+import { withTrmnlDevice } from '../trmnl-device.js'
 import { PluginRendererService } from './plugin-renderer.service.js'
 
 /** A Template that Liquid could not render, as against a render that failed to be stored. */
@@ -30,6 +33,7 @@ export class PluginRenderCacheService {
     private readonly renderer: PluginRendererService,
     @InjectRepository(Screen)
     private readonly screenRepository: Repository<Screen>,
+    private readonly deviceModels: DeviceModelsService,
   ) {
     // Lazy injection to avoid circular dependency
     setTimeout(() => {
@@ -42,25 +46,38 @@ export class PluginRenderCacheService {
     }, 0)
   }
 
-  /** Renders the `full` Template, the one a Screen on its own shows, into the cache of every Screen of the Plugin. */
-  async renderAndCache(plugin: Plugin, data: object | null): Promise<void> {
+  /**
+   * Renders the `full` Template, the one a Screen on its own shows, once per
+   * Screen of the Plugin from the same data, each told its own Device as
+   * `trmnl.device` (ADR-0066), and caches each output to its Screen. Every
+   * Screen is rendered before the first is written, so a Template that fails
+   * for one caches nothing. A Plugin on no Screen is still rendered once,
+   * without a Device, so a broken Template is told on a scheduled render.
+   */
+  async renderAndCache(plugin: Plugin, context: PluginRenderContext['context']): Promise<void> {
     const template = templateOfSize(plugin.templates, 'full')
     if (!template) {
       return
     }
 
-    const rendered = await this.renderer.render(template.liquidMarkup, data ?? {}).catch((error) => {
+    const render = (deviceContext: PluginRenderContext['context']) => this.renderer.render(template.liquidMarkup, deviceContext).catch((error) => {
       throw new TemplateRenderError('full', error)
     })
+    const screens = await this.screenRepository.find({ where: { plugin: { id: plugin.id } }, relations: { device: true } })
+    if (screens.length === 0) {
+      await render(context)
+      return
+    }
 
-    await this.screenRepository.update(
-      { plugin: { id: plugin.id } },
-      {
-        cachedPluginOutput: rendered,
-        renderSignal: null,
-        generatedAt: new Date(),
-      },
-    )
+    const rendered: Array<{ screen: Screen, html: string }> = []
+    for (const screen of screens) {
+      const { model } = await this.deviceModels.renderTargetFor(screen.device)
+      rendered.push({ screen, html: await render(withTrmnlDevice(context, screen.device, model)) })
+    }
+
+    const generatedAt = new Date()
+    for (const { screen, html } of rendered)
+      await this.screenRepository.update(screen.id, { cachedPluginOutput: html, renderSignal: null, generatedAt })
 
     await this.invalidateMashupCaches(plugin.id)
   }

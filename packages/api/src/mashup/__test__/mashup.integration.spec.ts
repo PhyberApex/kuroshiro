@@ -1,9 +1,11 @@
+import type { DeviceModelsService } from '../../device-models/device-models.service.js'
 import type { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
 import type { PluginRendererService } from '../../plugins/services/plugin-renderer.service.js'
 import type { MockPluginRendererService } from '../../test/mockPluginCollaborators.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMockDeviceSensorsService, primeMockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService.js'
 import { makeDevice, makeMashupConfiguration, makeMashupSlot, makePlugin, makePluginTemplate } from '../../test/fixtures.js'
+import { createMockDeviceModelsService, primeMockDeviceModelsServiceWithAssignedModels } from '../../test/mockDeviceModelsService.js'
 import { createMockPluginRendererService, createPluginTemplateContextService } from '../../test/mockPluginCollaborators.js'
 import { asService } from '../../test/mockService.js'
 import { MashupRendererService } from '../services/mashup-renderer.service.js'
@@ -16,6 +18,7 @@ function makeRenderer(pluginRenderer: MockPluginRendererService): MashupRenderer
     asService<PluginRendererService>(pluginRenderer),
     asService<DeviceSensorsService>(deviceSensors),
     createPluginTemplateContextService(),
+    asService<DeviceModelsService>(primeMockDeviceModelsServiceWithAssignedModels(createMockDeviceModelsService())),
   )
 }
 
