@@ -113,7 +113,7 @@ The maximum length a `stream` Merge Strategy retains for its arrays — enforced
 _Avoid_: stream_limit (bare, in prose — reserve backticks for the field name)
 
 **Webhook Payload**:
-The single JSON blob a Webhook-kind Plugin persists across POSTs, mutated according to its Merge Strategy and rendered against on every arrival. Readable as-is via `GET` on the Plugin's Webhook URL.
+The single JSON blob a Webhook-kind Plugin persists across POSTs, mutated according to its Merge Strategy and rendered against on every arrival. A POST is the payload itself, or TRMNL's envelope `{"merge_variables": …}` whose `merge_variables` is read as the payload and whose other keys are ignored (ADR-0063). Readable as-is via `GET` on the Plugin's Webhook URL.
 _Avoid_: merge_variables (TRMNL's term), webhook data, raw payload
 
 **Data Source**:

@@ -134,6 +134,25 @@ describe('webhook ingest integration', () => {
     })
   })
 
+  describe('the merge_variables envelope TRMNL\'s webhook API takes (ADR-0063)', () => {
+    it('reads the envelope\'s merge_variables as the payload and leaves the Merge Strategy the Plugin\'s', async () => {
+      await ingest.ingest(plugin, { merge_variables: { payment: { amount: 5 } }, merge_strategy: 'deep_merge' })
+      await ingest.ingest(plugin, { merge_variables: { payment: { note: 'coffee' } }, deep_merge: 'true' })
+
+      expect(plugin.webhookPayload).toEqual({ payment: { note: 'coffee' } })
+    })
+
+    it('reads merge_variables sent as JSON text, and keeps a body that only looks like one', async () => {
+      await ingest.ingest(plugin, { merge_variables: '{"payment": {"amount": 5}}' })
+      expect(plugin.webhookPayload).toEqual({ payment: { amount: 5 } })
+
+      await ingest.ingest(plugin, { merge_variables: { a: 1 }, other: true })
+      expect(plugin.webhookPayload).toEqual({ merge_variables: { a: 1 }, other: true })
+
+      await expect(ingest.ingest(plugin, { merge_variables: 'not an object' })).rejects.toThrow('Webhook body must be a JSON object or array')
+    })
+  })
+
   describe('deep_merge merge strategy', () => {
     beforeEach(() => {
       plugin.mergeStrategy = 'deep_merge'
