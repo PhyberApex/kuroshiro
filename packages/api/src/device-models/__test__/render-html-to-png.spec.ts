@@ -21,7 +21,7 @@ vi.mock('node:fs', () => ({ promises: fsMock }))
 vi.mock('puppeteer', () => ({ default: { launch: puppeteerLaunch } }))
 vi.mock('../../utils/imageUtils.js', () => ({ convertToPng }))
 
-const { renderHtmlToPng } = await import('../render-html-to-png.js')
+const { readHtmlRenderSignal, renderHtmlToPng } = await import('../render-html-to-png.js')
 const { closeSharedBrowser } = await import('../shared-browser.js')
 
 const TARGET: DeviceRenderTarget = { model: makeDeviceModel({ width: 800, height: 480 }), palette: makePalette() }
@@ -126,5 +126,30 @@ describe('renderHtmlToPng', () => {
     await renderHtmlToPng('<html></html>', TARGET, '/out/b.png', logger)
 
     expect(puppeteerLaunch).toHaveBeenCalledOnce()
+  })
+})
+
+describe('readHtmlRenderSignal', () => {
+  beforeEach(async () => {
+    await closeSharedBrowser()
+    vi.resetAllMocks()
+    puppeteerPage.close.mockResolvedValue(undefined)
+    puppeteerPage.setViewport.mockResolvedValue(undefined)
+    puppeteerPage.setContent.mockResolvedValue(undefined)
+    puppeteerLaunch.mockResolvedValue({ newPage: vi.fn().mockResolvedValue(puppeteerPage), close: vi.fn(), connected: true })
+  })
+
+  it.each([
+    [{ skip: false, hold: false }, null],
+    [{ skip: false, hold: true }, 'hold'],
+    [{ skip: true, hold: true }, 'skip'],
+  ])('reports the signal the page raises (%o) without taking a screenshot', async (flags, signal) => {
+    puppeteerPage.evaluate.mockResolvedValue(flags)
+
+    expect(await readHtmlRenderSignal('<html></html>', TARGET)).toBe(signal)
+
+    expect(puppeteerPage.screenshot).not.toHaveBeenCalled()
+    expect(convertToPng).not.toHaveBeenCalled()
+    expect(puppeteerPage.close).toHaveBeenCalledOnce()
   })
 })

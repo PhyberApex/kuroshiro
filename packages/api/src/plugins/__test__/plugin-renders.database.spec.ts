@@ -118,6 +118,8 @@ describe('what a Plugin renders from, and with which Template, against a real da
       config,
       asService<DeviceModelsService>(deviceModels),
       mashupRenderer,
+      database.getRepository(MashupSlot),
+      database.getRepository(MashupConfiguration),
     )
     display = new DeviceDisplayService(
       database.getRepository(Device),
@@ -287,7 +289,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
 
     async function slotOutputs(pluginId: string, slotSizes: string[]): Promise<string[]> {
       const device = await addDevice('Hallway')
-      const html = await mashupRenderer.renderMashup(await addMashup(device, pluginId, slotSizes), device)
+      const { html } = await mashupRenderer.renderMashup(await addMashup(device, pluginId, slotSizes), device)
       return [...html.matchAll(/<div class="view [^"]+">([^<]*)<\/div>/g)].map(match => match[1])
     }
 
