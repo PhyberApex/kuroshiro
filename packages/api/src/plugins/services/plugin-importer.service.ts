@@ -5,7 +5,7 @@ import * as path from 'node:path'
 import { HttpStatus, Injectable, Logger } from '@nestjs/common'
 import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
-import { FRAMEWORK_VERSION_PATTERN, githubRepositoryOf, MERGE_STRATEGIES, recipeIdOf } from 'kuroshiro-shared'
+import { FRAMEWORK_VERSION_PATTERN, githubRepositoryOf, isReadOnlyFieldType, MERGE_STRATEGIES, recipeIdOf } from 'kuroshiro-shared'
 import { ApiException } from '../../errors/api.exception.js'
 import { uploadTooLarge } from '../../uploads/limited-file-interceptor.js'
 import { UPLOAD_LIMITS } from '../../uploads/upload-limits.js'
@@ -279,6 +279,9 @@ function headersOf(settings: TerminusSettings): Record<string, string> {
   return settings.polling_headers?.trim() ? pollingHeadersOf(settings.polling_headers) : settings.headers ?? {}
 }
 
+/** A Recipe's read-only field is never an input, whether or not the Recipe marks it optional. */
+const neverRequiredWhenReadOnly = <T extends { fieldType: string, required: boolean }>(field: T): T => isReadOnlyFieldType(field.fieldType) ? { ...field, required: false } : field
+
 /** A transform with no URL to fetch for it: it computes from the Field Values, or fetches on its own, over an empty value (ADR-0051). */
 const selfFetchingDataSource = (transformJs: string): ParsedDataSource => ({ name: 'source', mode: 'literal', literalValue: {}, transformJs })
 
@@ -481,7 +484,7 @@ export class PluginImporterService {
 
     return {
       ...parsed,
-      fields: parsed.fields.map(field => field.fieldType === 'author_bio' ? { ...field, required: false } : field),
+      fields: parsed.fields.map(neverRequiredWhenReadOnly),
       sourceRecipeId: recipeId,
     }
   }
@@ -504,7 +507,7 @@ export class PluginImporterService {
 
     return {
       ...parsed,
-      fields: parsed.fields.map(field => field.fieldType === 'author_bio' ? { ...field, required: false } : field),
+      fields: parsed.fields.map(neverRequiredWhenReadOnly),
       sourceRecipeId: recipeId,
     }
   }
@@ -520,7 +523,7 @@ export class PluginImporterService {
 
     return {
       ...parsed,
-      fields: parsed.fields.map(field => field.fieldType === 'author_bio' ? { ...field, required: false } : field),
+      fields: parsed.fields.map(neverRequiredWhenReadOnly),
       sourceRecipeId: recipeId,
     }
   }

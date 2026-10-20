@@ -1,5 +1,6 @@
 import type { FieldValueRead } from 'kuroshiro-shared'
 import type { PluginField } from './entities/plugin-field.entity.js'
+import { isReadOnlyFieldType } from 'kuroshiro-shared'
 
 type FieldDefinition = Pick<PluginField, 'keyname' | 'fieldType' | 'defaultValue' | 'required'>
 
@@ -51,11 +52,11 @@ export function hideSecretsIn<T>(value: T, secrets: string[]): T {
   return hide(value) as T
 }
 
-/** `author_bio` is a read-only credit, never an input, so it can't be what a Plugin is waiting on. */
+/** A read-only Plugin Field is never an input, so it can't be what a Plugin is waiting on. */
 export function needsValues(fields: FieldDefinition[], stored: StoredFieldValues): boolean {
   return fields.some(field =>
     field.required
-    && field.fieldType !== 'author_bio'
+    && !isReadOnlyFieldType(field.fieldType)
     && stored[field.keyname] === undefined
     && !field.defaultValue,
   )

@@ -1,5 +1,6 @@
 import type { PluginDetail, PluginFieldInput } from 'kuroshiro-shared'
 import type { PluginFormPart } from './pluginForm'
+import { isReadOnlyFieldType } from 'kuroshiro-shared'
 import { CREDIT_TYPE } from './pluginFields'
 
 /**
@@ -117,7 +118,7 @@ export function groupsOf<T extends Pick<PluginFieldInput, 'attributes'>>(fields:
 }
 
 export function fieldsWithRow(fields: PluginFieldInput[]) {
-  return fields.filter((field, index) => field.fieldType !== CREDIT_TYPE
+  return fields.filter((field, index) => !isReadOnlyFieldType(field.fieldType)
     && field.keyname !== ''
     && fields.findIndex(other => other.keyname === field.keyname) === index)
 }

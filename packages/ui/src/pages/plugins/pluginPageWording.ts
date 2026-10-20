@@ -2,6 +2,7 @@ import type { PluginDetail, PluginFieldRead } from 'kuroshiro-shared'
 import type { PluginArrival } from './pluginArrival'
 import type { NavItem } from '@/components/navItem'
 import type { ProblemLine } from '@/components/problemLine'
+import { isReadOnlyFieldType } from 'kuroshiro-shared'
 import { devicePath } from '@/pages/devices/devicePaths'
 import { possessive } from '@/pages/devices/screenNaming'
 import { listed } from '@/patterns/listed'
@@ -57,11 +58,11 @@ function dataSourceProblems(plugin: PluginDetail): ProblemLine[] {
     })
 }
 
-/** As the server decides `needsValues`: required, not a credit, without a Field Value and without a default. */
+/** As the server decides `needsValues`: required, not read-only, without a Field Value and without a default. */
 function isWaitingForValue(field: PluginFieldRead, { fieldValues }: PluginDetail) {
   const value = fieldValues[field.keyname]
   const stored = value !== undefined && (value.secret ? value.set : value.value !== null)
-  return field.required && field.type !== 'author_bio' && !stored && !field.default
+  return field.required && !isReadOnlyFieldType(field.type) && !stored && !field.default
 }
 
 function emptyFieldsSentence(plugin: PluginDetail) {

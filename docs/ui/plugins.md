@@ -254,6 +254,7 @@ Shown only when the Plugin has Plugin Fields ([render][plugin-needs]). A heading
 | Select | select of its options |
 | Password | when a value is stored: twelve dots and "Replace", which swaps in an empty password input. Otherwise a password input with the placeholder "Not set". The stored secret is never sent to the browser. |
 | `author_bio` | no row. Its text is a line in `ink-soft` under the section. |
+| `copyable_webhook_url` | no row: TRMNL's own row for the plugin's webhook address, which the Webhook URL row of this page shows. Never counts as a required Plugin Field left empty. |
 | Anything else | text input |
 
 An On or off Field Value reaches a template as the text `"true"` or `"false"`, not a real boolean. A template compares it as text, `{% if show_wind == "true" %}`, since `{% if show_wind %}` is true even when it is off.

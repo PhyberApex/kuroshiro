@@ -149,13 +149,14 @@ describe('pluginImporterService recipe import', () => {
       expect(result.dataSources[0].transformJs).toBe('module.exports = (data) => data')
     })
 
-    it('forces an author_bio field to required: false even without an "optional" flag', async () => {
+    it('forces an author_bio and a copyable_webhook_url field to required: false even without an "optional" flag', async () => {
       const settings = {
         name: 'Attribution Recipe',
-        strategy: 'polling',
-        polling_url: 'https://api.example.com',
+        strategy: 'webhook',
         custom_fields: [
           { keyname: 'author_bio', field_type: 'author_bio', name: 'Author', description: 'About the author' },
+          { keyname: 'webhook_url', field_type: 'copyable_webhook_url', name: 'Webhook URL' },
+          { keyname: 'city', field_type: 'string', name: 'City' },
         ],
       }
       const archive = buildFlatRecipeArchive(settings)
@@ -163,8 +164,7 @@ describe('pluginImporterService recipe import', () => {
       const service = new PluginImporterService()
       const result = await service.importFromRecipeArchive(archive, '1')
 
-      expect(result.fields[0].fieldType).toBe('author_bio')
-      expect(result.fields[0].required).toBe(false)
+      expect(result.fields.map(field => [field.fieldType, field.required])).toEqual([['author_bio', false], ['copyable_webhook_url', false], ['string', true]])
     })
 
     it('keeps a select field\'s options, and they survive a .trmnlp export and re-import', async () => {
