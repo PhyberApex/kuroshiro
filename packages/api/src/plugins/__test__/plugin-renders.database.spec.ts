@@ -88,7 +88,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
 
     const fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
     const config = asService<ConfigService>({ get: () => false, getOrThrow: () => 'https://kuroshiro.example' })
-    const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config), new PluginTransformService())
+    const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config, new InstanceTimeZone()), new PluginTransformService())
     const templateContext = new PluginTemplateContextService(fieldValues, resolver, new InstanceTimeZone(), new PluginDataSourceStateService(database.getRepository(PluginDataSource)))
     const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
     const refresh = new PluginRefreshService(renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), new PluginDataSourceStateService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
@@ -668,7 +668,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
 
     it('keeps the public-address rule for a Data Source in demo mode', async () => {
       const demoConfig = asService<ConfigService>({ get: (key: string) => key === 'demo_mode' })
-      const demoResolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, demoConfig), new PluginTransformService())
+      const demoResolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, demoConfig, new InstanceTimeZone()), new PluginTransformService())
       const demoFieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
       const demoPreview = new PluginPreviewDataService(database.getRepository(Plugin), database.getRepository(Device), deviceSensors, new PluginTemplateContextService(demoFieldValues, demoResolver, new InstanceTimeZone(), new PluginDataSourceStateService(database.getRepository(PluginDataSource))))
       const plugin = await createPollPlugin()

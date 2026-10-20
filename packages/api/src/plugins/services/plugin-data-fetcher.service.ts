@@ -2,6 +2,7 @@ import type { DataSourceLiteralValue, DataSourceMode } from 'kuroshiro-shared'
 import type { JsonObject, JsonValue } from '../../utils/json.js'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { isPlainObject } from '../../utils/json.js'
 import { assertPublicUrl } from '../../utils/ssrfGuard.js'
 import { PluginRendererService } from './plugin-renderer.service.js'
@@ -63,6 +64,7 @@ export class PluginDataFetcherService {
   constructor(
     private readonly renderer: PluginRendererService,
     private readonly configService: ConfigService,
+    private readonly instanceTimeZone: InstanceTimeZone,
   ) {}
 
   /**
@@ -143,10 +145,10 @@ export class PluginDataFetcherService {
     return options
   }
 
-  /** The body read as TRMNL reads it (ADR-0059): JSON, an XML feed as an object, CSV rows, or the text. */
+  /** The body read as TRMNL reads it (ADR-0059): JSON, an XML feed as an object, CSV rows, an iCalendar feed's events (ADR-0066), or the text. */
   private async parseResponse(response: Response): Promise<unknown> {
     if (!response.ok)
       throw new Error(`HTTP error! status: ${response.status}`)
-    return parseResponseBody(await response.text(), response.headers.get('content-type'))
+    return parseResponseBody(await response.text(), response.headers.get('content-type'), { timeZone: this.instanceTimeZone.name, now: new Date() })
   }
 }

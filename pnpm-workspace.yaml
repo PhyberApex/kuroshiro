@@ -57,6 +57,7 @@ catalog:
   eslint: 10.13.0
   express: 5.3.0
   fast-xml-parser: 5.11.2
+  ical.js: 2.2.1
   jiti: 2.7.0
   js-yaml: ^5.0.0
   liquidjs: ^10.25.5
