@@ -303,6 +303,17 @@ describe('pluginDataFetcherService', () => {
       ])
     })
 
+    it('leaves out an event without a start and keeps the others', async () => {
+      mockFetch.mockResolvedValue(calendar([
+        vevent('UID:draft', 'SUMMARY:No time yet'),
+        vevent('UID:dentist', 'DTSTART:20261027T080000Z', 'DTEND:20261027T090000Z', 'SUMMARY:Dentist'),
+      ].join('\r\n')))
+
+      expect(shown(await calendarService.fetchData('GET', 'https://example.com/basic.ics'))).toEqual([
+        'Dentist 2026-10-27T09:00:00+01:00 2026-10-27T10:00:00+01:00',
+      ])
+    })
+
     it('reads a calendar served as text/plain or a download, and keeps a text/calendar body that does not parse as its text', async () => {
       const lone = vevent('UID:one', 'DTSTART;VALUE=DATE:20261020', 'SUMMARY:Today')
       mockFetch.mockResolvedValueOnce(calendar(lone, 'text/plain'))

@@ -152,9 +152,14 @@ function occurrencesOf(event: Event, overrides: Event[], clock: FeedClock, until
   return occurrences
 }
 
-/** The calendar's VEVENTs, each override of a recurring event related to it by UID; an override without its event stands alone. */
+/**
+ * The calendar's VEVENTs, each override of a recurring event related to it by UID; an override without its event stands
+ * alone, and one without a `DTSTART` names no time and is left out.
+ */
 function eventsOf(calendar: Component): { event: Event, overrides: Event[] }[] {
-  const events = calendar.getAllSubcomponents('vevent').map(vevent => new ICAL.Event(vevent))
+  const events = calendar.getAllSubcomponents('vevent')
+    .filter(vevent => vevent.hasProperty('dtstart'))
+    .map(vevent => new ICAL.Event(vevent))
   const recurring = new Map<string, { event: Event, overrides: Event[] }>()
   const standalone: { event: Event, overrides: Event[] }[] = []
   for (const event of events.filter(candidate => !candidate.isRecurrenceException())) {
