@@ -94,8 +94,9 @@ export interface PluginFieldAttributes {
 }
 
 /** Whether a Plugin Field's Field Value is a list: `multi_string`, or a select that allows several (ADR-0064). */
-export const isListField = (fieldType: string | undefined, attributes: PluginFieldAttributes | null | undefined) =>
-  fieldType === 'multi_string' || (fieldType === 'select' && attributes?.multiple === true)
+export function isListField(fieldType: string | undefined, attributes: PluginFieldAttributes | null | undefined) {
+  return fieldType === 'multi_string' || (fieldType === 'select' && attributes?.multiple === true)
+}
 
 /** The values a list Field Value holds: one per line, blank lines being no value (ADR-0064). */
 export const listValuesOf = (text: string) => text.split(/\r?\n/).map(line => line.trim()).filter(line => line !== '')
