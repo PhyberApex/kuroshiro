@@ -1,6 +1,9 @@
 import type { PluginFieldAttributes, PluginFieldOption } from 'kuroshiro-shared'
 import { isPlainObject } from '../utils/json.js'
 
+/** The value TRMNL stores a bare select option under, as a Recipe's template and default name it (ADR-0060). */
+const storedOptionValue = (label: string) => label.toLowerCase().replaceAll(' ', '_')
+
 // A `.trmnlp` manifest writes a select's options either as bare strings or as
 // single-entry `{ Label: value }` maps; anything else in the list is skipped.
 export function parseFieldOptions(options: unknown): PluginFieldOption[] | undefined {
@@ -12,7 +15,8 @@ export function parseFieldOptions(options: unknown): PluginFieldOption[] | undef
       return Object.entries(option).map(([label, value]) => ({ label, value: String(value) }))
     if (option === null || option === undefined)
       return []
-    return [{ label: String(option), value: String(option) }]
+    const label = String(option)
+    return [{ label, value: storedOptionValue(label) }]
   })
 }
 
@@ -21,6 +25,7 @@ export function formatFieldAttributes({ hint, ...rest }: PluginFieldAttributes =
   return { ...rest, ...(hint !== undefined ? { help_text: hint } : {}) }
 }
 
+/** An option as a manifest writes it: bare where an import would derive the same value again, else `{ Label: value }`. */
 export function formatFieldOptions(options: PluginFieldOption[]): Array<string | Record<string, string>> {
-  return options.map(option => option.label === option.value ? option.value : { [option.label]: option.value })
+  return options.map(option => storedOptionValue(option.label) === option.value ? option.label : { [option.label]: option.value })
 }
