@@ -471,6 +471,16 @@ describe('pluginImporterService recipe import', () => {
       expect((await service.importFromRecipeArchive(archive, '1')).name).toBe('Node by default')
     })
 
+    it('reads polling_headers in each form TRMNL writes: key=value pairs joined by &, one Key: Value per line, or JSON', async () => {
+      const service = new PluginImporterService()
+      const headersOf = async (polling_headers: string) => (await service.importFromRecipeArchive(buildFlatRecipeArchive({ name: 'H', strategy: 'polling', polling_url: 'https://api.example.com', polling_headers }), '1')).dataSources[0].headers
+
+      expect(await headersOf('authorization=Bearer {{ api_key }}&x-plain=as%20is')).toEqual({ 'authorization': 'Bearer {{ api_key }}', 'x-plain': 'as is' })
+      expect(await headersOf('Accept: application/json\nX-Key: {{ key }}\nbroken line')).toEqual({ 'Accept': 'application/json', 'X-Key': '{{ key }}' })
+      expect(await headersOf('Referer: https://example.com/?a=1')).toEqual({ Referer: 'https://example.com/?a=1' })
+      expect(await headersOf('{"X-Limit": 5, "X-Flag": true}')).toEqual({ 'X-Limit': '5', 'X-Flag': 'true' })
+    })
+
     it('falls back to an empty object when polling_headers is malformed JSON', async () => {
       const settings = { name: 'Bad Headers', strategy: 'polling', polling_url: 'https://api.example.com', polling_headers: 'not json{{{' }
       const archive = buildFlatRecipeArchive(settings)
