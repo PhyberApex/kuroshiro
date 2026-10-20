@@ -181,7 +181,7 @@ describe('webhook ingest integration', () => {
     })
   })
 
-  describe('tRMNL merge_variables envelope', () => {
+  describe('the TRMNL merge_variables envelope', () => {
     it('stores what is inside the envelope and renders against it', async () => {
       plugin.templates = [makePluginTemplate({ layout: 'full', liquidMarkup: 'amount: {{ payment.amount }}' })]
 
