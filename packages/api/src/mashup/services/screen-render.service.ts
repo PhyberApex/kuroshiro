@@ -16,7 +16,7 @@ import { MashupConfiguration } from '../entities/mashup-configuration.entity.js'
 import { MashupSlot } from '../entities/mashup-slot.entity.js'
 import { mashupDither } from '../mashup-dither.js'
 import { mashupPageHtml } from '../mashup-page.js'
-import { mashupRenderSignal, slotDrawing } from '../mashup-slot-signals.js'
+import { mashupRenderSignal, renderedSlotDrawing, slotDrawing } from '../mashup-slot-signals.js'
 import { MashupRendererService } from './mashup-renderer.service.js'
 
 /**
@@ -92,7 +92,8 @@ export class ScreenRenderService {
 
     if (!mashup.slotSignalsRead) {
       const outcome = await draw(renderedHtml, true)
-      if (typeof outcome === 'string') {
+      const drewLive = outcome !== RENDER_SKIPPED && outcome !== RENDER_HELD
+      if (drewLive) {
         await this.recordLiveMarkup(slots)
         return outcome
       }
@@ -103,9 +104,9 @@ export class ScreenRenderService {
     if (signal && honorRenderSignal)
       return signal === 'skip' ? RENDER_SKIPPED : RENDER_HELD
 
-    // Not honoured (a render after save, or a stored image gone missing): drawn slot by slot all the same.
+    // A signal not honoured (a render after save, or a stored image gone missing) is drawn slot by slot all
+    // the same; whatever this page raises was already read slot by slot, so it is drawn regardless.
     await this.recordLiveMarkup(slots)
-    // Whatever this page raises was already read slot by slot, so it is drawn regardless.
     return await draw(mashupPageHtml(mashup.layout, slots.map(slotDrawing)), false)
   }
 
@@ -113,9 +114,8 @@ export class ScreenRenderService {
   private async readSlotSignals(mashup: MashupConfiguration, slots: MashupSlot[], device: Device): Promise<void> {
     const target = await this.deviceModels.renderTargetFor(device)
     for (const slot of slots) {
-      slot.renderSignal = slot.renderedMarkup == null
-        ? null
-        : await readHtmlRenderSignal(wrapInScreenShell(target, mashupPageHtml(mashup.layout, [{ size: slot.size, kind: 'markup', markup: slot.renderedMarkup }]), TRMNL_FRAMEWORK_VERSION), target)
+      const slotAlone = slot.renderedMarkup == null ? null : mashupPageHtml(mashup.layout, [renderedSlotDrawing(slot, slot.renderedMarkup)])
+      slot.renderSignal = slotAlone === null ? null : await readHtmlRenderSignal(wrapInScreenShell(target, slotAlone, TRMNL_FRAMEWORK_VERSION), target)
       await this.slotRepository.update({ id: slot.id }, { renderSignal: slot.renderSignal })
     }
     mashup.slotSignalsRead = true

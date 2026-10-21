@@ -229,6 +229,16 @@ describe('screenRenderService', () => {
       expect(lastDrawnHtml()).toContain('Plugin b')
     })
 
+    it('renders a failed slot\'s Plugin name even when every other slot holds', async () => {
+      const screen = mashupScreen([slot('a', 0, 'hold', { liveMarkup: '<p>a yesterday</p>' }), slot('b', 1, null, { renderedMarkup: null })])
+      primeSignals('hold')
+
+      expect(await service.renderMashupScreen(screen, device, true)).toBe(IMAGE)
+
+      expect(lastDrawnHtml()).toContain('Plugin b')
+      expect(lastDrawnHtml()).toContain('<p>a yesterday</p>')
+    })
+
     it('skips as a whole when every slot skips', async () => {
       const screen = mashupScreen([slot('a', 0, 'skip'), slot('b', 1, 'skip')])
       primeSignals('skip')

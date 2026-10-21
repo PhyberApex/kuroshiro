@@ -2,7 +2,6 @@ import type { DeviceSensor } from '../../device-sensors/entities/device-sensor.e
 import type { Device } from '../../devices/devices.entity.js'
 import type { MashupConfiguration } from '../entities/mashup-configuration.entity.js'
 import type { MashupSlot } from '../entities/mashup-slot.entity.js'
-import type { SlotDrawing } from '../mashup-page.js'
 import { Injectable, Logger } from '@nestjs/common'
 import { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
 import { templateOfSize, templateSizeOfSlot } from '../../plugins/plugin-templates.js'
@@ -10,6 +9,7 @@ import { PluginRendererService } from '../../plugins/services/plugin-renderer.se
 import { PluginTemplateContextService } from '../../plugins/services/plugin-template-context.service.js'
 import { getErrorMessage } from '../../utils/getErrorMessage.js'
 import { mashupPageHtml } from '../mashup-page.js'
+import { renderedSlotDrawing } from '../mashup-slot-signals.js'
 
 /** One slot's rendered markup, `null` when its Plugin could not be rendered. */
 export interface RenderedSlot {
@@ -51,10 +51,7 @@ export class MashupRendererService {
       }
     }
 
-    const drawings = slots.map(({ slot, markup }): SlotDrawing => markup === null
-      ? { size: slot.size, kind: 'failed', pluginName: slot.plugin.name }
-      : { size: slot.size, kind: 'markup', markup })
-    return { html: mashupPageHtml(mashupConfig.layout, drawings), slots }
+    return { html: mashupPageHtml(mashupConfig.layout, slots.map(({ slot, markup }) => renderedSlotDrawing(slot, markup))), slots }
   }
 
   private async renderSlot(slot: MashupSlot, sensors: DeviceSensor[]): Promise<string> {

@@ -22,11 +22,18 @@ export function mashupRenderSignal(slots: SignalledSlot[]): RenderSignal | null 
  * drawing when its Plugin could not be rendered.
  */
 export function slotDrawing(slot: Pick<MashupSlot, 'size' | 'renderedMarkup' | 'liveMarkup' | 'renderSignal' | 'plugin'>): SlotDrawing {
-  if (slot.renderedMarkup == null)
-    return { size: slot.size, kind: 'failed', pluginName: slot.plugin.name }
+  if (slot.renderedMarkup == null || !slot.renderSignal)
+    return renderedSlotDrawing(slot, slot.renderedMarkup ?? null)
   if (slot.renderSignal === 'skip')
     return { size: slot.size, kind: 'empty' }
   if (slot.renderSignal === 'hold')
     return slot.liveMarkup == null ? { size: slot.size, kind: 'empty' } : { size: slot.size, kind: 'markup', markup: slot.liveMarkup }
-  return { size: slot.size, kind: 'markup', markup: slot.renderedMarkup }
+  return renderedSlotDrawing(slot, slot.renderedMarkup)
+}
+
+/** What a slot draws from the markup its Plugin rendered, regardless of any signal: that markup, or the failed-render drawing when it is `null`. */
+export function renderedSlotDrawing(slot: Pick<MashupSlot, 'size' | 'plugin'>, markup: string | null): SlotDrawing {
+  return markup === null
+    ? { size: slot.size, kind: 'failed', pluginName: slot.plugin.name }
+    : { size: slot.size, kind: 'markup', markup }
 }
