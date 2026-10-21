@@ -193,9 +193,9 @@ describe('pluginTemplateContextService', () => {
       const echoed = { plan: 'pro', trmnl_state: { n: 1 }, previous_merge_variables: { plan: 'free' }, input: { trmnl: { previous_merge_variables: { plan: 'free' } } }, rows: [{ previous_merge_variables: {}, n: 1 }] }
       const resolveAll = vi.fn().mockResolvedValue({ source: echoed })
 
-      const { sourceOutputs } = await createPluginTemplateContextService({}, { resolveAll }).contextFor(plugin, [])
+      const { sourcePreviousOutputs } = await createPluginTemplateContextService({}, { resolveAll }).contextFor(plugin, [])
 
-      expect(sourceOutputs).toEqual({ source: { plan: 'pro', input: { trmnl: {} }, rows: [{ n: 1 }] } })
+      expect(sourcePreviousOutputs).toEqual({ source: { plan: 'pro', input: { trmnl: {} }, rows: [{ n: 1 }] } })
     })
 
     it.each([
@@ -206,9 +206,9 @@ describe('pluginTemplateContextService', () => {
     ])('lists nothing for a Data Source that %s, so the last output stays', async (_, source, result) => {
       const resolveAll = vi.fn().mockResolvedValue({ source: result })
 
-      const { sourceOutputs } = await createPluginTemplateContextService({}, { resolveAll }).contextFor(makePlugin({ name: 'Plan', dataSources: [source] }), [])
+      const { sourcePreviousOutputs } = await createPluginTemplateContextService({}, { resolveAll }).contextFor(makePlugin({ name: 'Plan', dataSources: [source] }), [])
 
-      expect(sourceOutputs).toEqual({})
+      expect(sourcePreviousOutputs).toEqual({})
     })
   })
 

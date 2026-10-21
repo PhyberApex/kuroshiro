@@ -1,4 +1,5 @@
 import type { ConfigService } from '@nestjs/config'
+import type { OAuthPoll, PluginOAuthService } from '../services/plugin-oauth.service.js'
 import type { PluginRendererService } from '../services/plugin-renderer.service.js'
 import { Logger } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -89,6 +90,17 @@ describe('pluginDataResolverService', () => {
       expect(transformer.transform).toHaveBeenCalledWith('x', { trmnl: { state: {}, previous_merge_variables: { plan: 'pro' } } }, expect.anything())
       expect(transformer.transform).toHaveBeenCalledWith('y', { trmnl: { state: {}, previous_merge_variables: {} } }, expect.anything())
       expect(fetchOrLiteral).toHaveBeenCalledWith(sources[0], { trmnl: { state: {} } }, undefined)
+    })
+
+    it('gives the transform its Previous Output on a Plugin polled with an OAuth access token too', async () => {
+      vi.spyOn(dataFetcher, 'fetchOrLiteral').mockResolvedValue({})
+      vi.spyOn(transformer, 'transform').mockResolvedValue({})
+      const oauthTokens = asService<PluginOAuthService>({ withAccessToken: async (_oauth: OAuthPoll, poll: (accessToken: string, lastTry: boolean) => Promise<unknown>) => poll('access', true) })
+      const oauth = { pluginId: 'p-1', settings: {}, fieldValues: {} } as unknown as OAuthPoll
+
+      await new PluginDataResolverService(dataFetcher, transformer, oauthTokens).resolveAll([makePluginDataSource({ id: 'ds-1', name: 'a', transformJs: 'x' })], { trmnl: {} }, { previousOutputs: { 'ds-1': { plan: 'pro' } }, oauth })
+
+      expect(transformer.transform).toHaveBeenCalledWith('x', expect.objectContaining({ trmnl: expect.objectContaining({ previous_merge_variables: { plan: 'pro' } }) }), expect.anything())
     })
 
     it('hands the transform the guarded fetch', async () => {

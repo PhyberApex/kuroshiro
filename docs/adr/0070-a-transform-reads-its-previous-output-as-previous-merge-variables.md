@@ -1,4 +1,4 @@
-# A transform reads its Previous Output as previous merge variables
+# A transform reads its Previous Output as `trmnl.previous_merge_variables`
 
 TRMNL hands a transform `trmnl.previous_merge_variables` beside `trmnl.state`: what the transform returned last time, so it can compare today's data with yesterday's or carry a value across a failed fetch. ADR-0052 set it aside as a separate decision. Four Recipes among the 75 featured (500871, 500937, 500939, 500950) read it, guarded, so without it they render but lose the comparison.
 

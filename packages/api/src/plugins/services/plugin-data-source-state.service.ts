@@ -14,7 +14,7 @@ export interface StoredBetweenRuns {
 /** What one run wrote, by Data Source name: each transform's `trmnl_state` and its output. */
 export interface WrittenByRun {
   states: Record<string, JsonObject>
-  outputs: Record<string, JsonObject>
+  previousOutputs: Record<string, JsonObject>
 }
 
 /**
@@ -43,10 +43,10 @@ export class PluginDataSourceStateService {
   }
 
   /** As the run wrote them; a Data Source the run wrote nothing for keeps what it had. */
-  async save(dataSources: PluginDataSource[], { states, outputs }: WrittenByRun): Promise<void> {
+  async save(dataSources: PluginDataSource[], { states, previousOutputs }: WrittenByRun): Promise<void> {
     for (const source of dataSources) {
       const state = states[source.name]
-      const output = outputs[source.name]
+      const output = previousOutputs[source.name]
       if (state || output)
         await this.dataSourceRepository.update(source.id, { ...(state && { savedState: state as never }), ...(output && { previousOutput: output as never }) })
     }

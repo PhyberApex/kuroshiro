@@ -74,14 +74,14 @@ export interface PluginRenderContext {
   /** The state each Data Source's transform wrote this run as `trmnl_state`, by name, taken out of `sourceData` (ADR-0052). */
   sourceStates: Record<string, JsonObject>
   /** What each transform returned this run, by name: the Previous Output the next scheduled run reads at `trmnl.previous_merge_variables` (ADR-0070). */
-  sourceOutputs: Record<string, JsonObject>
+  sourcePreviousOutputs: Record<string, JsonObject>
 }
 
 const STATE_KEY = 'trmnl_state'
 const STATE_LIMIT_BYTES = 8192
 const PREVIOUS_MERGE_VARIABLES_KEY = 'previous_merge_variables'
 // TRMNL refuses merge variables over 100 kB, and so a Previous Output over it.
-const OUTPUT_LIMIT_BYTES = 100 * 1024
+const PREVIOUS_OUTPUT_LIMIT_BYTES = 100 * 1024
 
 const isPlainRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 
@@ -101,14 +101,14 @@ function withoutEchoedPreviousOutput(value: unknown): unknown {
 }
 
 /** Each transform's object result as the next run reads it, within TRMNL's limit; a failure, a list or text is not stored and the Previous Output stays. */
-function writtenOutputs(dataSources: ResolvableDataSource[], data: Record<string, unknown>): Record<string, JsonObject> {
+function writtenPreviousOutputs(dataSources: ResolvableDataSource[], data: Record<string, unknown>): Record<string, JsonObject> {
   const written: Record<string, JsonObject> = {}
   for (const source of dataSources) {
     const result = data[source.name]
     if (!source.transformJs || !isPlainRecord(result) || isFetchErrorMarker(result))
       continue
     const output = withoutEchoedPreviousOutput(result) as JsonObject
-    if (Buffer.byteLength(JSON.stringify(output)) <= OUTPUT_LIMIT_BYTES)
+    if (Buffer.byteLength(JSON.stringify(output)) <= PREVIOUS_OUTPUT_LIMIT_BYTES)
       written[source.name] = output
   }
   return written
@@ -194,7 +194,7 @@ export class PluginTemplateContextService {
     const withoutData = this.hidingSecrets(this.withoutData(instanceName, modifiers, templateFieldValues(fields, resolved), sensors, {}), templateFieldValues(fields, fieldValues))
     const payload = plugin.webhookPayload
     const trmnl = fetchedAt(withoutData.trmnl, plugin.payloadReceivedAt, 'webhook')
-    return { context: Array.isArray(payload) ? payload : { ...withoutData, trmnl, ...payload }, fieldValues, resolvedFieldValues: resolved, sourceData: {}, sourceStates: {}, sourceOutputs: {} }
+    return { context: Array.isArray(payload) ? payload : { ...withoutData, trmnl, ...payload }, fieldValues, resolvedFieldValues: resolved, sourceData: {}, sourceStates: {}, sourcePreviousOutputs: {} }
   }
 
   private async pollContext(dataSources: ResolvableDataSource[], { instanceName, fields, modifiers, sensors, resolved, fieldValues, hideSecretsOf }: RenderInput, oauth: Omit<OAuthPoll, 'fieldValues'> | null): Promise<PluginRenderContext> {
@@ -208,7 +208,7 @@ export class PluginTemplateContextService {
     const sourceData = hideSecretsIn(data, secretValues(hideSecretsOf, resolved))
     const trmnl = { ...fetchedAt(withoutData.trmnl, dataSources.length ? new Date() : null, 'polling'), state: lone ? states[lone.name] ?? loneSavedState : {} }
     const context = { ...withoutData, ...loneSourceRootKeys(sourceData), trmnl, sensors: withoutData.sensors, ...sourceData }
-    return { context, fieldValues, resolvedFieldValues: resolved, sourceData, sourceStates: states, sourceOutputs: writtenOutputs(dataSources, data) }
+    return { context, fieldValues, resolvedFieldValues: resolved, sourceData, sourceStates: states, sourcePreviousOutputs: writtenPreviousOutputs(dataSources, data) }
   }
 
   /** The fetch context with each password Field Value as dots, in both address forms. */

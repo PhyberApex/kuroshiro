@@ -33,7 +33,7 @@ describe('pluginDataSourceStateService', () => {
   it('saves the state and the output a run wrote on the Data Source of that name, and leaves the others alone', async () => {
     const sources = [makePluginDataSource({ id: 'ds-1', name: 'a' }), makePluginDataSource({ id: 'ds-2', name: 'b' }), makePluginDataSource({ id: 'ds-3', name: 'c' })]
 
-    await service.save(sources, { states: { a: { cursor: 'abc' } }, outputs: { a: { price: 3 }, b: { price: 4 } } })
+    await service.save(sources, { states: { a: { cursor: 'abc' } }, previousOutputs: { a: { price: 3 }, b: { price: 4 } } })
 
     expect(dataSourceRepo.update).toHaveBeenCalledTimes(2)
     expect(dataSourceRepo.update).toHaveBeenCalledWith('ds-1', { savedState: { cursor: 'abc' }, previousOutput: { price: 3 } })

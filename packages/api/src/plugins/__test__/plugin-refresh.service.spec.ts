@@ -54,13 +54,13 @@ describe('pluginRefreshService', () => {
 
   it('saves the state and the output each transform wrote on a scheduled tick, and never from any other render', async () => {
     const plugin = makePlugin({ dataSources: [makePluginDataSource({ id: 'ds-1', name: 'weather' })] })
-    templateContext.contextFor.mockResolvedValue({ context: {}, fieldValues: {}, resolvedFieldValues: {}, sourceData: { weather: {} }, sourceStates: { weather: { cursor: 'abc' } }, sourceOutputs: { weather: { temp: 3 } } })
+    templateContext.contextFor.mockResolvedValue({ context: {}, fieldValues: {}, resolvedFieldValues: {}, sourceData: { weather: {} }, sourceStates: { weather: { cursor: 'abc' } }, sourcePreviousOutputs: { weather: { temp: 3 } } })
 
     await service.refresh(plugin, { scheduled: false })
     expect(sourceStates.save).not.toHaveBeenCalled()
 
     await service.refresh(plugin, { scheduled: true })
-    expect(sourceStates.save).toHaveBeenCalledWith(plugin.dataSources, { states: { weather: { cursor: 'abc' } }, outputs: { weather: { temp: 3 } } })
+    expect(sourceStates.save).toHaveBeenCalledWith(plugin.dataSources, { states: { weather: { cursor: 'abc' } }, previousOutputs: { weather: { temp: 3 } } })
   })
 
   it('leaves a Field Value that is not password-type alone', async () => {
