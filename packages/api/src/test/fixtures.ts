@@ -188,6 +188,7 @@ export function makeMashupConfiguration(overrides: Partial<MashupConfiguration> 
     layout: '2x1',
     screen: makeScreen(),
     slots: [],
+    slotSignalsRead: false,
     createdAt: FIXED_DATE,
     updatedAt: FIXED_DATE,
     ...overrides,

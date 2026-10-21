@@ -2,7 +2,7 @@ import type { ScreenRead } from 'kuroshiro-shared'
 import type { DataSource } from 'typeorm'
 import type { DeviceModelsService } from '../../device-models/device-models.service.js'
 import type { HttpTestApp } from '../../test/httpApp.js'
-import type { MashupRendererService } from '../services/mashup-renderer.service.js'
+import type { MashupRendererService, RenderedMashup } from '../services/mashup-renderer.service.js'
 import { ConfigService } from '@nestjs/config'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Alert } from '../../alerts/entities/alert.entity.js'
@@ -47,6 +47,8 @@ describe('a Mashup\'s image renders right after its save, against a real databas
       config,
       asService<DeviceModelsService>(deviceModels),
       asService<MashupRendererService>(mashupRenderer),
+      database.getRepository(MashupSlot),
+      database.getRepository(MashupConfiguration),
     )
     const mashupService = new MashupService(
       database.getRepository(Screen),
@@ -71,7 +73,7 @@ describe('a Mashup\'s image renders right after its save, against a real databas
   })
 
   beforeEach(async () => {
-    mashupRenderer.renderMashup.mockReset().mockResolvedValue('<div class="mashup">rendered</div>')
+    mashupRenderer.renderMashup.mockReset().mockResolvedValue({ html: '<div class="mashup">rendered</div>', slots: [] })
     await database.getRepository(Plugin).createQueryBuilder().delete().execute()
     await database.getRepository(Device).createQueryBuilder().delete().execute()
     device = await database.getRepository(Device).save({ name: 'Kitchen', friendlyId: 'ABC123', mac: 'AA:BB:CC:DD:EE:01', apikey: 'device-secret', refreshRate: 300 })
@@ -111,8 +113,8 @@ describe('a Mashup\'s image renders right after its save, against a real databas
     const before = await createSettledMashup()
 
     let resolveRender!: (html: string) => void
-    mashupRenderer.renderMashup.mockImplementation(() => new Promise<string>((resolve) => {
-      resolveRender = resolve
+    mashupRenderer.renderMashup.mockImplementation(() => new Promise<RenderedMashup>((resolve) => {
+      resolveRender = html => resolve({ html, slots: [] })
     }))
 
     const patchResponse = await patchMashup(before.id, [pluginB.id, pluginA.id])

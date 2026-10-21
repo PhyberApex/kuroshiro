@@ -184,7 +184,7 @@ describe('field values against a real database', () => {
       const slot = { id: 'slot-1', position: 'top', size: 'half_horizontal', order: 0, plugin: await loadForRender(plugin.id) } as MashupSlot
       const mashup = { id: 'mashup-1', layout: '1Tx1B', slots: [slot] } as MashupConfiguration
 
-      const html = await mashupRenderer.renderMashup(mashup, device)
+      const { html } = await mashupRenderer.renderMashup(mashup, device)
 
       expect(html).toContain(BERLIN)
     })
