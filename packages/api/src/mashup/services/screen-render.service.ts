@@ -102,9 +102,8 @@ export class ScreenRenderService {
     const signal = mashupRenderSignal(slots)
     if (signal && honorRenderSignal)
       return signal === 'skip' ? RENDER_SKIPPED : RENDER_HELD
-    if (signal)
-      return await draw(renderedHtml, false)
 
+    // Not honoured (a render after save, or a stored image gone missing): drawn slot by slot all the same.
     await this.recordLiveMarkup(slots)
     // Whatever this page raises was already read slot by slot, so it is drawn regardless.
     return await draw(mashupPageHtml(mashup.layout, slots.map(slotDrawing)), false)

@@ -248,6 +248,21 @@ describe('screenRenderService', () => {
       expect(renderHtmlToPng).toHaveBeenCalledTimes(1)
     })
 
+    it.each([
+      ['every slot skips', ['skip', 'skip']],
+      ['every slot holds', ['hold', 'hold']],
+    ] as const)('draws slot by slot, not the whole page, when %s but the signal is not honoured', async (_name, raised) => {
+      const screen = mashupScreen([slot('a', 0, raised[0], { liveMarkup: '<p>a yesterday</p>' }), slot('b', 1, raised[1])])
+      primeSignals(raised[0])
+
+      expect(await service.renderMashupScreen(screen, device, false)).toBe(IMAGE)
+
+      const drawn = lastDrawnHtml()
+      expect(drawn).not.toContain('whole page')
+      expect(drawn).not.toContain(`raises ${raised[0]}`)
+      expect(drawn).toContain(raised[0] === 'hold' ? '<p>a yesterday</p>' : '<div class="view view--quadrant"></div>')
+    })
+
     it('reads each slot once per cached output when the whole page signals but no slot does alone', async () => {
       const screen = mashupScreen([slot('a', 0, null), slot('b', 1, null)])
       primeSignals('skip')
