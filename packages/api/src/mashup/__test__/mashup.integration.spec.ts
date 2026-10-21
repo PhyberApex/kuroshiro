@@ -67,7 +67,7 @@ describe('mashup Integration Tests', () => {
 
     const mockDevice = makeDevice({ id: 'device-1', name: 'Test Device', width: 800, height: 480 })
 
-    const html = await renderer.renderMashup(mockMashupConfig, mockDevice)
+    const { html } = await renderer.renderMashup(mockMashupConfig, mockDevice)
 
     expect(html).toContain('class="mashup mashup--1Lx1R"')
     expect(html).toContain('class="plugin-weather"')
@@ -103,7 +103,7 @@ describe('mashup Integration Tests', () => {
 
     const mockDevice = makeDevice({ id: 'device-1', width: 800, height: 480 })
 
-    const html = await renderer.renderMashup(mockMashupConfig, mockDevice)
+    const { html } = await renderer.renderMashup(mockMashupConfig, mockDevice)
 
     expect(html).not.toContain('error.png')
     expect(html).toContain('Weather Plugin')
@@ -127,7 +127,7 @@ describe('mashup Integration Tests', () => {
 
     const mockDevice = makeDevice({ id: 'device-1', width: 800, height: 480 })
 
-    const html = await renderer.renderMashup(mockMashupConfig, mockDevice)
+    const { html } = await renderer.renderMashup(mockMashupConfig, mockDevice)
 
     expect(html).toContain('class="mashup mashup--1Lx1R"')
     expect(html).not.toContain('error.png')

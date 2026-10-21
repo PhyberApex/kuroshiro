@@ -2,6 +2,7 @@ import type { ConfigService } from '@nestjs/config'
 import type { PluginRendererService } from '../services/plugin-renderer.service.js'
 import { Logger } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { makePluginDataSource } from '../../test/fixtures.js'
 import { asService } from '../../test/mockService.js'
 import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
@@ -14,7 +15,7 @@ describe('pluginDataResolverService', () => {
   let transformer: PluginTransformService
 
   beforeEach(() => {
-    dataFetcher = new PluginDataFetcherService(asService<PluginRendererService>({}), asService<ConfigService>({ get: vi.fn() }))
+    dataFetcher = new PluginDataFetcherService(asService<PluginRendererService>({}), asService<ConfigService>({ get: vi.fn() }), new InstanceTimeZone())
     transformer = new PluginTransformService()
     service = new PluginDataResolverService(dataFetcher, transformer)
   })

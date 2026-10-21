@@ -66,7 +66,7 @@ describe('field values against a real database', () => {
 
     fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
     const config = asService<ConfigService>({ get: () => false })
-    const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config), new PluginTransformService())
+    const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config, new InstanceTimeZone()), new PluginTransformService())
     const templateContext = new PluginTemplateContextService(fieldValues, resolver, new InstanceTimeZone(), new PluginDataSourceStateService(database.getRepository(PluginDataSource)))
     const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen), asService<DeviceModelsService>(primeMockDeviceModelsServiceWithAssignedModels(createMockDeviceModelsService())))
     const refresh = new PluginRefreshService(renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), new PluginDataSourceStateService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
@@ -186,7 +186,7 @@ describe('field values against a real database', () => {
       const slot = { id: 'slot-1', position: 'top', size: 'half_horizontal', order: 0, plugin: await loadForRender(plugin.id) } as MashupSlot
       const mashup = { id: 'mashup-1', layout: '1Tx1B', slots: [slot] } as MashupConfiguration
 
-      const html = await mashupRenderer.renderMashup(mashup, device)
+      const { html } = await mashupRenderer.renderMashup(mashup, device)
 
       expect(html).toContain(BERLIN)
     })

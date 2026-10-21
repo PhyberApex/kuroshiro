@@ -49,7 +49,7 @@ export class PluginRenderCacheService {
   /**
    * Renders the `full` Template, the one a Screen on its own shows, once per
    * Screen of the Plugin from the same data, each told its own Device as
-   * `trmnl.device` (ADR-0066), and caches each output to its Screen. Every
+   * `trmnl.device` (ADR-0068), and caches each output to its Screen. Every
    * Screen is rendered before the first is written, so a Template that fails
    * for one caches nothing, and `isSuperseded` is asked once more before the
    * first write, so a render a newer one has overtaken writes nothing. A

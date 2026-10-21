@@ -21,7 +21,7 @@ export interface RefreshOptions {
 
 /**
  * Re-renders a Plugin into the cache of every Screen it is assigned to, each
- * told its own Device (ADR-0066): a Poll-kind Plugin from Data Sources fetched
+ * told its own Device (ADR-0068): a Poll-kind Plugin from Data Sources fetched
  * once for all of them, a Webhook-kind Plugin from its stored Webhook Payload.
  * The scheduler tick, the tick a save starts and a Webhook ingest all go
  * through here.
@@ -41,7 +41,7 @@ export class PluginRefreshService {
 
   async refresh(plugin: Plugin, { scheduled, isSuperseded }: RefreshOptions = { scheduled: false }): Promise<void> {
     // Fetched once for every Screen, so the context is built for no single
-    // Device; the cache tells each Screen's render its Device (ADR-0066) and
+    // Device; the cache tells each Screen's render its Device (ADR-0068) and
     // leaves sensors empty.
     const { context, sourceData, resolvedFieldValues, sourceStates } = await this.pluginTemplateContext.contextFor(plugin, [])
 

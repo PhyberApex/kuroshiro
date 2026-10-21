@@ -30,7 +30,7 @@ export interface PluginTemplateContext {
     user: { id: string, locale: string, time_zone: string, time_zone_iana: string, utc_offset: number }
     /** A lone Data Source's saved state, as its transform last wrote it (ADR-0052); empty otherwise. */
     state: JsonObject
-    /** The Device the render is for, laid in after the fetch by `withTrmnlDevice` (ADR-0066); absent for no single Device. */
+    /** The Device the render is for, laid in after the fetch by `withTrmnlDevice` (ADR-0068); absent for no single Device. */
     device?: TrmnlDevice
   }
   sensors: Record<string, { value: number, unit: string }>

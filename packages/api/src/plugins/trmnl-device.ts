@@ -6,7 +6,7 @@ import { batteryPercentFromVoltage } from 'kuroshiro-shared'
 
 /**
  * `trmnl.device` as trmnlp's `device_namespace` spells it, for the Device a
- * render is for (ADR-0066). The size is the Device Model's, which is the page
+ * render is for (ADR-0068). The size is the Device Model's, which is the page
  * the template is laid out on. A key the Device has not reported or set is
  * left out, as is `wifi_strength`: Kuroshiro keeps the raw RSSI and has no
  * TRMNL-equal way to read it as a percentage.

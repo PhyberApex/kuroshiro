@@ -90,7 +90,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
 
     const fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
     const config = asService<ConfigService>({ get: () => false, getOrThrow: () => 'https://kuroshiro.example' })
-    const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config), new PluginTransformService())
+    const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config, new InstanceTimeZone()), new PluginTransformService())
     const templateContext = new PluginTemplateContextService(fieldValues, resolver, new InstanceTimeZone(), new PluginDataSourceStateService(database.getRepository(PluginDataSource)))
     await database.getRepository(DeviceModel).save([OG_PLUS, V2, PORTRAIT])
     const deviceModels = createMockDeviceModelsService()
@@ -121,6 +121,8 @@ describe('what a Plugin renders from, and with which Template, against a real da
       config,
       asService<DeviceModelsService>(deviceModels),
       mashupRenderer,
+      database.getRepository(MashupSlot),
+      database.getRepository(MashupConfiguration),
     )
     display = new DeviceDisplayService(
       database.getRepository(Device),
@@ -281,7 +283,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
       expect(tick).toEqual(sharedRenderExpected)
     })
 
-    it('renders a scheduler tick once per Screen, each told its own Device and Device Model as trmnl.device (ADR-0066)', async () => {
+    it('renders a scheduler tick once per Screen, each told its own Device and Device Model as trmnl.device (ADR-0068)', async () => {
       const plugin = await createPollPlugin({ templates: [{ layout: 'full', liquidMarkup: '{{ trmnl.device.friendly_id }} {{ trmnl.device.model }} {{ trmnl.device.width }}x{{ trmnl.device.height }} {{ trmnl.device.orientation }} {{ weather.temperature }}' }] })
       const og = await addDevice('Kitchen')
       const x = await addDevice('Hallway', V2)
@@ -324,7 +326,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
 
     async function slotOutputs(pluginId: string, slotSizes: string[]): Promise<string[]> {
       const device = await addDevice('Hallway')
-      const html = await mashupRenderer.renderMashup(await addMashup(device, pluginId, slotSizes), device)
+      const { html } = await mashupRenderer.renderMashup(await addMashup(device, pluginId, slotSizes), device)
       return [...html.matchAll(/<div class="view [^"]+">([^<]*)<\/div>/g)].map(match => match[1])
     }
 
@@ -705,7 +707,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
 
     it('keeps the public-address rule for a Data Source in demo mode', async () => {
       const demoConfig = asService<ConfigService>({ get: (key: string) => key === 'demo_mode' })
-      const demoResolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, demoConfig), new PluginTransformService())
+      const demoResolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, demoConfig, new InstanceTimeZone()), new PluginTransformService())
       const demoFieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
       const demoPreview = new PluginPreviewDataService(database.getRepository(Plugin), database.getRepository(Device), deviceSensors, new PluginTemplateContextService(demoFieldValues, demoResolver, new InstanceTimeZone(), new PluginDataSourceStateService(database.getRepository(PluginDataSource))), asService<DeviceModelsService>(createMockDeviceModelsService()))
       const plugin = await createPollPlugin()

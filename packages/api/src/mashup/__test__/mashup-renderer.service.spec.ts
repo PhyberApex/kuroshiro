@@ -90,7 +90,7 @@ describe('mashupRendererService', () => {
       .mockResolvedValueOnce('<div>Weather: 72F</div>')
       .mockResolvedValueOnce('<div>Events: 5</div>')
 
-    const result = await service.renderMashup(config, device)
+    const { html: result } = await service.renderMashup(config, device)
 
     expect(result).toContain('class="mashup mashup--1Lx1R"')
     expect(result).toContain('class="view view--quadrant"')
@@ -142,7 +142,7 @@ describe('mashupRendererService', () => {
       .mockResolvedValueOnce('<div>Success</div>')
       .mockResolvedValueOnce('<div>true</div>')
 
-    const result = await service.renderMashup(config, device)
+    const { html: result } = await service.renderMashup(config, device)
 
     expect(result).toContain('Success')
     expect(result).not.toContain('error.png')
@@ -165,7 +165,7 @@ describe('mashupRendererService', () => {
     const plugin = makePlugin({ id: 'plugin-1', name: 'Clock', dataSources: [], templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '<div>Clock</div>' })] })
     pluginRenderer.render.mockResolvedValue('<div>Clock</div>')
 
-    const result = await service.renderMashup(draftSlotConfiguration(plugin), device)
+    const { html: result } = await service.renderMashup(draftSlotConfiguration(plugin), device)
 
     expect(result).toContain('<div>Clock</div>')
     expect(result).not.toContain('error.png')
@@ -176,7 +176,7 @@ describe('mashupRendererService', () => {
     const device = makeDevice({ id: 'device-1', width: 800, height: 480 })
     const plugin = makePlugin({ id: 'plugin-1', name: 'Draft Plugin', dataSources: [makePluginDataSource({ name: 'source' })], templates: [] })
 
-    const result = await service.renderMashup(draftSlotConfiguration(plugin), device)
+    const { html: result } = await service.renderMashup(draftSlotConfiguration(plugin), device)
 
     expect(result).not.toContain('error.png')
     expect(result).toContain('Draft Plugin')
@@ -196,7 +196,7 @@ describe('mashupRendererService', () => {
     })
     pluginRenderer.render.mockResolvedValue('<div>42</div>')
 
-    const result = await service.renderMashup(draftSlotConfiguration(plugin), device)
+    const { html: result } = await service.renderMashup(draftSlotConfiguration(plugin), device)
 
     expect(result).toContain('<div>42</div>')
     expect(result).not.toContain('error.png')
@@ -221,7 +221,7 @@ describe('mashupRendererService', () => {
     })
     pluginRenderer.render.mockResolvedValue('<div>Feed</div>')
 
-    const result = await service.renderMashup(draftSlotConfiguration(plugin), device)
+    const { html: result } = await service.renderMashup(draftSlotConfiguration(plugin), device)
 
     expect(result).toContain('<div>Feed</div>')
     expect(result).not.toContain('error.png')
@@ -232,7 +232,7 @@ describe('mashupRendererService', () => {
     const device = makeDevice({ id: 'device-1', width: 800, height: 480 })
     const plugin = makePlugin({ id: 'plugin-1', name: 'Feed', kind: 'Webhook', webhookPayload: { reading: 42 }, templates: [] })
 
-    const result = await service.renderMashup(draftSlotConfiguration(plugin), device)
+    const { html: result } = await service.renderMashup(draftSlotConfiguration(plugin), device)
 
     expect(result).not.toContain('error.png')
     expect(result).toContain('Feed')
@@ -265,7 +265,7 @@ describe('mashupRendererService', () => {
     pluginDataFetcher.fetchData = vi.fn().mockResolvedValue({})
     pluginRenderer.render = vi.fn().mockResolvedValue('<div>Test</div>')
 
-    const result = await service.renderMashup(config, device)
+    const { html: result } = await service.renderMashup(config, device)
 
     expect(result).toContain('class="mashup mashup--2x2"')
     expect(result.trim().startsWith('<div class="mashup')).toBe(true)
@@ -294,7 +294,7 @@ describe('mashupRendererService', () => {
     pluginDataFetcher.fetchData = vi.fn().mockResolvedValue({})
     pluginRenderer.render = vi.fn().mockResolvedValue('<div>Test</div>')
 
-    const result = await service.renderMashup(config, device)
+    const { html: result } = await service.renderMashup(config, device)
 
     expect(result).toContain('class="mashup mashup--1Tx1B"')
     expect(result).not.toContain('<html>')

@@ -788,7 +788,7 @@ export class DeviceDisplayService {
   }
 
   /**
-   * Rendered as a scheduler tick renders each Screen (ADR-0066): told the
+   * Rendered as a scheduler tick renders each Screen (ADR-0068): told the
    * Device as `trmnl.device`, with `sensors` left `[]` like the tick, the
    * save-triggered refresh and a Webhook ingest, so the output cached here
    * reads no differently from the one the next tick writes.
