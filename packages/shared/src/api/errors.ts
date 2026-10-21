@@ -53,7 +53,6 @@ export const API_ERROR_CODES = [
   'github-repo-not-found',
   'recipe-id-invalid',
   'recipe-not-found',
-  'recipe-oauth',
   'recipe-strategy-unsupported',
   'recipe-webhook-transform',
   'recipe-serverless-language',

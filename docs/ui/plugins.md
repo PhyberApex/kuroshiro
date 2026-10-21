@@ -79,7 +79,6 @@ Each form ends with its primary button, "Cancel" (back to where the admin came f
     | Empty | "Enter a Recipe's address or its id." |
     | Neither digits nor an address holding `recipes/{digits}` | "This is not a Recipe address or id. It looks like https://trmnl.com/recipes/41120, or 41120." |
     | TRMNL has no such Recipe | "TRMNL has no Recipe {id}." |
-    | The Recipe signs in to another service | "This Recipe signs in to another service with OAuth, which Kuroshiro cannot do." |
     | The Recipe transforms each payload it is sent | "This Recipe runs a transform on each payload it is sent, which a Webhook Plugin does not do." |
     | The Recipe combines other TRMNL plugins | "This Recipe combines other TRMNL plugins, which Kuroshiro cannot import." |
     | Anything else Kuroshiro does not recognize as a strategy it can import | "This Recipe's strategy is not one Kuroshiro can import." |
@@ -153,6 +152,8 @@ The page is one form. A Plugin's template is not valid halfway through, and its 
 |---|---|
 | A Recipe, file or GitHub import | "Imported from the Recipe {name}." or "Imported from {file name}." or "Imported from {owner/repository}." Then "It is not on a Device yet." or "Assigned to {Device}." |
 | An import that brought a transform | The line above, then: "It brings a transform: JavaScript that runs on this server at every fetch. Read it under Data Sources." |
+| An import of a Recipe that signs in with OAuth (ADR-0067) | The line above, then: "It signs in with OAuth and needs a token before it can poll: paste the tokens and the client under Plugin Fields." |
+| An import with Plugin Fields TRMNL fills from a list | The line above, then: "Type {names} by hand; on TRMNL {it is / they are} picked from a list." |
 | Building | "Created. It shows its name until you write its template." |
 | Duplicating | "A copy of {Plugin}. It is not on a Device yet." |
 | Saving, or applying a Recipe Update Check | "Saved at {hh:mm}. Fetching and rendering again for {Devices}." or "Applied {n} Update Items from the Recipe {name}." |

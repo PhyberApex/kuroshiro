@@ -1,7 +1,11 @@
 import type { JsonObject } from '../../utils/json.js'
-import type { FetchableDataSource, FetchErrorMarker } from './plugin-data-fetcher.service.js'
-import { Injectable, Logger } from '@nestjs/common'
-import { PluginDataFetcherService } from './plugin-data-fetcher.service.js'
+import type { FetchableDataSource, FetchErrorMarker, FetchOptions } from './plugin-data-fetcher.service.js'
+import type { OAuthPoll } from './plugin-oauth.service.js'
+import { Injectable, Logger, Optional } from '@nestjs/common'
+import { hideSecretsIn } from '../plugin-field-values.js'
+import { contextWithAccessToken } from '../plugin-oauth.js'
+import { isUnauthorized, PluginDataFetcherService } from './plugin-data-fetcher.service.js'
+import { PluginOAuthService } from './plugin-oauth.service.js'
 import { PluginTransformService } from './plugin-transform.service.js'
 
 // The subset of a Data Source's fields resolveAll needs — shared by the
@@ -17,6 +21,8 @@ export interface ResolvableDataSource extends FetchableDataSource {
 export interface ResolveOptions {
   /** Each stored Data Source's saved state by id (ADR-0052). */
   savedStates?: Record<string, JsonObject>
+  /** Set for a Plugin imported from an OAuth Recipe: each fetch-mode Data Source polls with the Plugin's access token (ADR-0067). */
+  oauth?: OAuthPoll
 }
 
 /** The context with the Data Source's saved state at `trmnl.state`, for its request and its transform alike. */
@@ -57,6 +63,23 @@ export function transformInputOf(fetched: unknown, templateContext: object = {})
   return isPlainRecord(fetched) ? { ...templateContext, ...fetched } : { ...templateContext, data: fetched }
 }
 
+/**
+ * What a Data Source polled with an OAuth access token answers, or the error it fails with, with that token hidden: a
+ * refreshed token is no Field Value, so the password hiding downstream never knows it. A 401 passes through untouched,
+ * so it can still be told apart and retried.
+ */
+async function hidingAccessToken(accessToken: string, resolving: Promise<unknown>): Promise<unknown> {
+  const secrets = [accessToken].filter(Boolean)
+  try {
+    return hideSecretsIn(await resolving, secrets)
+  }
+  catch (error) {
+    if (isUnauthorized(error))
+      throw error
+    throw new Error(hideSecretsIn(error instanceof Error ? error.message : String(error), secrets))
+  }
+}
+
 @Injectable()
 export class PluginDataResolverService {
   private readonly logger = new Logger(PluginDataResolverService.name)
@@ -64,6 +87,7 @@ export class PluginDataResolverService {
   constructor(
     private readonly dataFetcher: PluginDataFetcherService,
     private readonly transformer: PluginTransformService,
+    @Optional() private readonly oauthTokens?: PluginOAuthService,
   ) {}
 
   /**
@@ -74,16 +98,13 @@ export class PluginDataResolverService {
    * through this rather than re-deriving the fetch/transform/error-marker
    * logic itself.
    */
-  async resolveAll(dataSources: ResolvableDataSource[], templateContext: object = {}, { savedStates = {} }: ResolveOptions = {}): Promise<Record<string, unknown>> {
-    const fetchForTransform = (url: string, init?: RequestInit) => this.dataFetcher.fetchForTransform(url, init)
+  async resolveAll(dataSources: ResolvableDataSource[], templateContext: object = {}, { savedStates = {}, oauth }: ResolveOptions = {}): Promise<Record<string, unknown>> {
     const results = await Promise.allSettled(
       dataSources.map(async (source) => {
         const context = withState(templateContext, (source.id && savedStates[source.id]) || {})
-        const rawData = await this.dataFetcher.fetchOrLiteral(source, context)
-        if (!source.transformJs)
-          return rawData
-        this.logger.debug(`Applying transform.js to data source: ${source.name}`)
-        return this.transformer.transform(source.transformJs, transformInputOf(rawData, context), { fetch: fetchForTransform })
+        if (!oauth || !this.oauthTokens || source.mode === 'literal')
+          return this.resolveOne(source, context)
+        return this.oauthTokens.withAccessToken(oauth, (accessToken, lastTry) => hidingAccessToken(accessToken, this.resolveOne(source, contextWithAccessToken(context, accessToken), { unauthorizedThrows: !lastTry })))
       }),
     )
 
@@ -103,5 +124,14 @@ export class PluginDataResolverService {
     })
 
     return data
+  }
+
+  private async resolveOne(source: ResolvableDataSource, context: object, fetchOptions?: FetchOptions): Promise<unknown> {
+    const rawData = await this.dataFetcher.fetchOrLiteral(source, context, fetchOptions)
+    if (!source.transformJs)
+      return rawData
+    this.logger.debug(`Applying transform.js to data source: ${source.name}`)
+    const fetchForTransform = (url: string, init?: RequestInit) => this.dataFetcher.fetchForTransform(url, init)
+    return this.transformer.transform(source.transformJs, transformInputOf(rawData, context), { fetch: fetchForTransform })
   }
 }

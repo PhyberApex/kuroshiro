@@ -34,6 +34,21 @@ export function pollingUrlsOf(rendered: string): string[] {
   return rendered.split(/\r\n|\r|\n/).map(line => line.replace(/\s+/g, ' ').trim()).filter(line => line !== '')
 }
 
+/** A response that was not a success, with its status, so a caller can tell a refused token (401) from the rest. */
+export class HttpStatusError extends Error {
+  constructor(readonly status: number) {
+    super(`HTTP error! status: ${status}`)
+  }
+}
+
+export interface FetchOptions {
+  /** A line of a multi-line Polling URL answered 401 fails the whole fetch rather than reading as that line's error marker, so an OAuth poll can refresh its token and retry (ADR-0067). */
+  unauthorizedThrows?: boolean
+}
+
+/** A response refused with a 401, as a revoked or expired OAuth access token is. */
+export const isUnauthorized = (reason: unknown): boolean => reason instanceof HttpStatusError && reason.status === 401
+
 /** How long TRMNL gives a polled host to answer (ADR-0062). */
 const REQUEST_TIMEOUT_MS = 10_000
 
@@ -74,11 +89,11 @@ export class PluginDataFetcherService {
    * preview path that iterates a Plugin's Data Sources should go through
    * this rather than re-deriving the mode branch itself.
    */
-  async fetchOrLiteral(source: FetchableDataSource, templateContext?: object): Promise<unknown> {
+  async fetchOrLiteral(source: FetchableDataSource, templateContext?: object, options?: FetchOptions): Promise<unknown> {
     if (source.mode === 'literal') {
       return source.literalValue ?? null
     }
-    return this.fetchData(source.method || 'GET', source.url || '', source.headers ?? undefined, source.body ?? undefined, templateContext)
+    return this.fetchData(source.method || 'GET', source.url || '', source.headers ?? undefined, source.body ?? undefined, templateContext, options)
   }
 
   async fetchData(
@@ -87,6 +102,7 @@ export class PluginDataFetcherService {
     headers: Record<string, string> = {},
     body?: JsonObject,
     templateContext?: object,
+    { unauthorizedThrows = false }: FetchOptions = {},
   ): Promise<unknown> {
     const context = templateContext ?? {}
     const urls = pollingUrlsOf(await this.renderLiquid(url, context))
@@ -98,6 +114,9 @@ export class PluginDataFetcherService {
       return this.fetchOne(urls[0] ?? '', init)
 
     const responses = await Promise.allSettled(urls.map(line => this.fetchOne(line, init)))
+    const refused = unauthorizedThrows && responses.find(response => response.status === 'rejected' && isUnauthorized(response.reason))
+    if (refused)
+      throw (refused as PromiseRejectedResult).reason
     return Object.fromEntries(responses.map((response, index) => [`IDX_${index}`, response.status === 'fulfilled' ? lineDataOf(response.value) : errorMarkerOf(response.reason)]))
   }
 
@@ -148,7 +167,7 @@ export class PluginDataFetcherService {
   /** The body read as TRMNL reads it (ADR-0059): JSON, an XML feed as an object, CSV rows, an iCalendar feed's events (ADR-0066), or the text. */
   private async parseResponse(response: Response): Promise<unknown> {
     if (!response.ok)
-      throw new Error(`HTTP error! status: ${response.status}`)
+      throw new HttpStatusError(response.status)
     return parseResponseBody(await response.text(), response.headers.get('content-type'), { timeZone: this.instanceTimeZone.name, now: new Date() })
   }
 }

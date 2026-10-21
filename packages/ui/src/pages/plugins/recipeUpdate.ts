@@ -10,6 +10,7 @@ const NAMES: Record<UpdateItemType, string> = {
   description: 'Description',
   refreshInterval: 'Refresh interval',
   frameworkVersion: 'Framework Version',
+  oauthSettings: 'OAuth settings',
   template: 'Template',
   dataSource: 'Data Source',
   field: 'Plugin Field',
@@ -25,7 +26,7 @@ export function updateItemName(item: UpdateItem): { what: string, code: string |
 const GROUPS: Array<{ title: string, types: UpdateItemType[] }> = [
   { title: 'Plugin details', types: ['name', 'description', 'refreshInterval'] },
   { title: 'Templates', types: ['template'] },
-  { title: 'Data Sources', types: ['dataSource'] },
+  { title: 'Data Sources', types: ['oauthSettings', 'dataSource'] },
   { title: 'Plugin Fields', types: ['field'] },
 ]
 
@@ -82,6 +83,7 @@ const LINES: { [T in UpdateItemType]: (value: ValueOf<T>) => string[] } = {
   description: value => [value],
   refreshInterval: value => [fetchInterval(value)],
   frameworkVersion: value => [value],
+  oauthSettings: value => Object.entries(value).map(([key, setting]) => `${key}: ${setting}`),
   template: value => value.split('\n'),
   dataSource: dataSourceLines,
   field: fieldLines,
@@ -103,6 +105,7 @@ const CONFLICT_SUBJECT: Record<UpdateItemType, string> = {
   description: 'description',
   refreshInterval: 'refresh interval',
   frameworkVersion: 'Framework Version',
+  oauthSettings: 'OAuth settings',
   template: 'Template',
   dataSource: 'Data Source',
   field: 'Plugin Field',
@@ -110,7 +113,8 @@ const CONFLICT_SUBJECT: Record<UpdateItemType, string> = {
 
 export function conflictSentence(itemType: UpdateItemType) {
   const kept = itemType === 'dataSource' ? '; headers you added yourself are kept.' : '.'
-  return `The Recipe and you both changed this ${CONFLICT_SUBJECT[itemType]} since the Recipe Snapshot. Applying replaces your version with the Recipe's${kept}`
+  const these = itemType === 'oauthSettings' ? 'these' : 'this'
+  return `The Recipe and you both changed ${these} ${CONFLICT_SUBJECT[itemType]} since the Recipe Snapshot. Applying replaces your version with the Recipe's${kept}`
 }
 
 /** Why the check could not download the Recipe, after "Could not download the Recipe." */

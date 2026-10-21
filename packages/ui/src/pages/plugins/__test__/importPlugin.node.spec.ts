@@ -41,10 +41,10 @@ describe('the Plugins that came from a Recipe before', () => {
 })
 
 describe('why nothing was imported', () => {
-  const wording = { upstream: 'trmnl.com', aboutEntry: { 'recipe-oauth': true, 'import-no-plugin': 'This Recipe holds no template.' } } as const
+  const wording = { upstream: 'trmnl.com', aboutEntry: { 'recipe-webhook-transform': true, 'import-no-plugin': 'This Recipe holds no template.' } } as const
 
   it('goes under the field for a refusal about what was entered, in the refusal\'s words or the way\'s own', () => {
-    expect(importTrouble(refusal('recipe-oauth'), wording)).toEqual({ entered: 'This Recipe signs in to another service with OAuth, which Kuroshiro cannot do.' })
+    expect(importTrouble(refusal('recipe-webhook-transform'), wording)).toEqual({ entered: 'This Recipe runs a transform on each payload it is sent, which a Webhook Plugin does not do.' })
     expect(importTrouble(refusal('import-no-plugin'), wording)).toEqual({ entered: 'This Recipe holds no template.' })
   })
 
@@ -72,6 +72,6 @@ describe('what the Plugin\'s page is told about an import', () => {
     [{ type: 'file', fileName: 'moon.trmnlp.zip' } as const, 'file', 'moon.trmnlp.zip'],
     [{ type: 'github', repository: 'usetrmnl/moon-phase' } as const, 'github', 'usetrmnl/moon-phase'],
   ])('names where it came from: %o', (origin, type, name) => {
-    expect(importArrival({ plugin, origin, hasTransform: true }, { id: 'kitchen', name: 'Kitchen' })).toEqual({ how: 'imported', origin: type, name, hasTransform: true, device: { id: 'kitchen', name: 'Kitchen' } })
+    expect(importArrival({ plugin, origin, hasTransform: true, needsToken: true, typedByHand: ['Account'] }, { id: 'kitchen', name: 'Kitchen' })).toEqual({ how: 'imported', origin: type, name, hasTransform: true, needsToken: true, typedByHand: ['Account'], device: { id: 'kitchen', name: 'Kitchen' } })
   })
 })

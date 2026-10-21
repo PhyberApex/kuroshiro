@@ -180,6 +180,7 @@ describe('importing a Plugin, against a real database', () => {
 
       expect(result.origin).toEqual({ type: 'file', fileName: 'weather.trmnlp.zip' })
       expect(result.hasTransform).toBe(false)
+      expect(result).toMatchObject({ needsToken: false, typedByHand: [] })
       expect(result.plugin).toMatchObject({
         name: 'Weather',
         description: 'The forecast',
@@ -482,6 +483,7 @@ describe('importing a Plugin, against a real database', () => {
       expect(asked).toEqual(['https://trmnl.com/api/plugin_settings/41120/archive'])
       expect(result.origin).toEqual({ type: 'recipe', id: '41120', name: 'Moon Phase' })
       expect(result.hasTransform).toBe(false)
+      expect(result).toMatchObject({ needsToken: false, typedByHand: [] })
       expect(result.plugin).toMatchObject({
         name: 'Moon Phase',
         description: 'Tonight\'s moon',
@@ -560,12 +562,29 @@ describe('importing a Plugin, against a real database', () => {
       expect(refusal).toMatchObject({ code: 'recipe-not-found', details: { id: '999' } })
     })
 
-    it('answers 422 recipe-oauth for a Recipe that signs in to another service', async () => {
-      upstreamAnswers(() => zipResponse(recipeSettings({ strategy: 'polling', polling_url: 'https://api.example.com/moon', oauth_enabled: true })))
+    it('imports a Recipe that signs in with OAuth, saying it needs a token before it can poll and which Plugin Field is typed by hand (ADR-0067)', async () => {
+      upstreamAnswers(() => zipResponse(recipeSettings({
+        strategy: 'polling',
+        polling_url: 'https://api.example.com/moon/{{ account }}',
+        oauth_enabled: 'true',
+        oauth_token_url: 'https://oauth2.example.com/token',
+        custom_fields: [{ keyname: 'account', field_type: 'xhrSelect', name: 'Account', remote: { url: 'https://api.example.com/accounts' } }],
+      })))
 
-      const refusal = await refused(await http.postJson('/api/plugins/import-recipe', { recipe: '41120' }), 422)
+      const result = await imported(await http.postJson('/api/plugins/import-recipe', { recipe: '41120' }))
 
-      expect(refusal.code).toBe('recipe-oauth')
+      expect(result).toMatchObject({ needsToken: true, typedByHand: ['Account'] })
+      expect(result.plugin.fields.map(field => [field.keyname, field.type])).toEqual([
+        ['account', 'string'],
+        ['oauth_access_token', 'password'],
+        ['oauth_refresh_token', 'password'],
+        ['oauth_client_id', 'password'],
+        ['oauth_client_secret', 'password'],
+      ])
+      const stored = await database.getRepository(Plugin).findOneByOrFail({ id: result.plugin.id })
+      expect(stored.oauthSettings).toEqual({ oauth_enabled: 'true', oauth_token_url: 'https://oauth2.example.com/token' })
+      expect(stored.sourceRecipeSnapshot).toMatchObject({ oauthSettings: { oauth_token_url: 'https://oauth2.example.com/token' } })
+      expect(stored.sourceRecipeSnapshot).not.toHaveProperty('typedByHand')
     })
 
     it('imports a "webhook" strategy Recipe as a Webhook-kind Plugin that replaces its payload, tied to the Recipe (ADR-0056)', async () => {

@@ -1,4 +1,5 @@
 import type { MergeStrategy, PluginKind, TemplateSize } from 'kuroshiro-shared'
+import type { OAuthSettings } from '../plugin-oauth.js'
 import type { DevicePlugin } from './device-plugin.entity.js'
 import type { PluginDataSource } from './plugin-data-source.entity.js'
 import type { PluginField } from './plugin-field.entity.js'
@@ -59,6 +60,25 @@ export class Plugin {
 
   @Column('jsonb', { nullable: true })
   webhookPayload?: WebhookPayload
+
+  // The `oauth_*` settings of the OAuth Recipe it was imported from; null for a Plugin that does not sign in (ADR-0067).
+  @Column('jsonb', { nullable: true })
+  oauthSettings?: OAuthSettings | null
+
+  // The access token its last OAuth refresh answered, with the refresh token answered in place of the pasted one and
+  // the expiry, read by every Data Source of the Plugin (ADR-0067). Runtime state, like savedState: never written into
+  // a Field Value, left out of `.trmnlp` export and the Configuration Archive, and loaded only when asked for.
+  @Column('text', { nullable: true, select: false })
+  oauthAccessToken?: string | null
+
+  @Column('text', { nullable: true, select: false })
+  oauthRefreshToken?: string | null
+
+  @Column('timestamptz', { nullable: true, select: false })
+  oauthAccessTokenExpiresAt?: Date | null
+
+  @Column('timestamptz', { nullable: true, select: false })
+  oauthRefreshedAt?: Date | null
 
   @Column('timestamptz', { nullable: true })
   payloadReceivedAt?: Date | null

@@ -280,6 +280,10 @@ export interface PluginImportResult {
   origin: PluginImportOrigin
   /** Whether a Data Source came with a transform: JavaScript that runs on the server at every fetch. */
   hasTransform: boolean
+  /** Whether the Plugin signs in with OAuth, so it polls only once a token is pasted into its OAuth Plugin Fields. */
+  needsToken: boolean
+  /** The names of the Plugin Fields TRMNL fills from a list it fetches, which are typed by hand here. */
+  typedByHand: string[]
 }
 
 /** A key left out keeps what is stored. Each collection is the whole set. */
@@ -334,7 +338,7 @@ export interface PreviewData {
   webhookPayloadReceivedAt: string | null
 }
 
-export const UPDATE_ITEM_TYPES = ['name', 'description', 'refreshInterval', 'frameworkVersion', 'template', 'dataSource', 'field'] as const
+export const UPDATE_ITEM_TYPES = ['name', 'description', 'refreshInterval', 'frameworkVersion', 'oauthSettings', 'template', 'dataSource', 'field'] as const
 export type UpdateItemType = typeof UPDATE_ITEM_TYPES[number]
 
 export type UpdateItemKind = 'added' | 'changed' | 'removed'
@@ -359,7 +363,7 @@ export type RecipeField = Omit<PluginFieldRead, 'id'>
 
 interface UpdateItemOf<T extends UpdateItemType, V> {
   itemType: T
-  /** The item's own name for a name, description and refresh interval; the size, the Data Source's name or the keyname otherwise. */
+  /** The item's own name for a name, description, refresh interval and OAuth settings; the size, the Data Source's name or the keyname otherwise. */
   key: string
   kind: UpdateItemKind
   /** The Recipe and the Plugin both changed it since the Recipe Snapshot. Never set without one. */
@@ -376,6 +380,8 @@ export type UpdateItem
     | UpdateItemOf<'description', string>
     | UpdateItemOf<'refreshInterval', number>
     | UpdateItemOf<'frameworkVersion', string>
+    /** An OAuth Recipe's `oauth_*` settings, by key, as its settings.yml writes them. */
+    | UpdateItemOf<'oauthSettings', Record<string, string>>
     | UpdateItemOf<'template', string>
     | UpdateItemOf<'dataSource', RecipeDataSource>
     | UpdateItemOf<'field', RecipeField>

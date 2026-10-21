@@ -141,7 +141,7 @@ The on-demand action on an imported Plugin that re-downloads its source Recipe, 
 _Avoid_: Sync, upgrade, pull, auto-update, refresh (collides with the render/refresh cycle)
 
 **Update Item**:
-One unit a Recipe Update Check can show and apply on its own: the Plugin's name, description or refresh interval, one template (by layout), one Data Source (by name, transform included) or one Plugin Field (by keyname). Each is `added`, `changed` or `removed` relative to the Recipe Snapshot, and a `conflict` when both the Recipe and the local Plugin changed it. Anything that exists only locally is not an Update Item.
+One unit a Recipe Update Check can show and apply on its own: the Plugin's name, description, refresh interval or OAuth settings, one template (by layout), one Data Source (by name, transform included) or one Plugin Field (by keyname). Each is `added`, `changed` or `removed` relative to the Recipe Snapshot, and a `conflict` when both the Recipe and the local Plugin changed it. Anything that exists only locally is not an Update Item.
 _Avoid_: Diff entry, change, hunk (that is a line-level thing inside a template's diff)
 
 **Configuration Archive**:

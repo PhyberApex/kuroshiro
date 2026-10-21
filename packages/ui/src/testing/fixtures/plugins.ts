@@ -91,6 +91,8 @@ export const buildPluginImportResult = defineBuilder<PluginImportResult>(() => (
   }),
   origin: { type: 'recipe', id: '41120', name: 'Moon Phase' },
   hasTransform: false,
+  needsToken: false,
+  typedByHand: [],
 }))
 
 export const buildPreviewData = defineBuilder<PreviewData>(() => ({

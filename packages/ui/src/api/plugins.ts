@@ -20,7 +20,7 @@ export function createPlugin(input: CreatePluginInput) {
 
 /**
  * Imports a Recipe from TRMNL as a Poll-kind Plugin tied to it, a Webhook-kind one when TRMNL pushes its data. Refused with
- * `recipe-id-invalid`, `recipe-not-found`, `recipe-oauth`, `recipe-strategy-unsupported`, `recipe-webhook-transform` or
+ * `recipe-id-invalid`, `recipe-not-found`, `recipe-strategy-unsupported`, `recipe-webhook-transform` or
  * `recipe-serverless-language`, and with `upstream-unreachable` when TRMNL does not answer.
  */
 export function importRecipe(input: ImportRecipeInput) {

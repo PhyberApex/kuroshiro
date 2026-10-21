@@ -98,7 +98,6 @@ const REFUSAL_WORDING: Record<ApiErrorCode, Wording> = {
   'github-repo-not-found': 'GitHub has no public repository at this address.',
   'recipe-id-invalid': NOT_A_RECIPE,
   'recipe-not-found': recipeNotFound,
-  'recipe-oauth': 'This Recipe signs in to another service with OAuth, which Kuroshiro cannot do.',
   'recipe-strategy-unsupported': recipeStrategyUnsupported,
   'recipe-webhook-transform': 'This Recipe runs a transform on each payload it is sent, which a Webhook Plugin does not do.',
   'recipe-serverless-language': ({ details }) => `This Recipe's serverless code is ${details?.language ?? 'not JavaScript'}; Kuroshiro runs only JavaScript transforms.`,
