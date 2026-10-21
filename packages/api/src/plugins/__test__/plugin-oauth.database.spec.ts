@@ -286,6 +286,24 @@ describe('an OAuth Plugin\'s access token, refreshed before a poll and on a 401 
     expect(lastFetchError).toBe('The token endpoint answered no "token" field.')
   })
 
+  it('hides the refreshed access token in what a poll answers, as a password Field Value is hidden', async () => {
+    const plugin = await oauthPlugin()
+    pollEndpoint = init => jsonResponse({ echoed: new Headers(init.headers).get('Authorization') })
+
+    expect(await sourceDataOf(plugin)).toEqual({ source: { echoed: 'Bearer ••••••••' } })
+  })
+
+  it('hides the refreshed access token in the fetch error a failed Data Source records', async () => {
+    const plugin = await oauthPlugin()
+    await database.getRepository(PluginDataSource).update(plugin.dataSources[0].id, { transformJs: 'module.exports = input => { throw new Error("refused " + input.oauth_access_token) }' })
+
+    await refresh.refresh(await database.getRepository(Plugin).findOneOrFail({ where: { id: plugin.id }, relations: { dataSources: true, fields: true, templates: true } }), { scheduled: true })
+
+    const { lastFetchError } = await storedSource(plugin)
+    expect(lastFetchError).toContain('refused ••••••••')
+    expect(lastFetchError).not.toContain('refreshed-access')
+  })
+
   it('keeps a preview\'s refresh with tokens not saved yet off the saved Plugin', async () => {
     const plugin = await oauthPlugin({ token: { oauthAccessToken: 'stored-access', oauthRefreshToken: 'stored-refresh', oauthAccessTokenExpiresAt: new Date(NOW.getTime() + 30 * MINUTE) } })
 

@@ -2,8 +2,9 @@ import type { JsonObject } from '../../utils/json.js'
 import type { FetchableDataSource, FetchErrorMarker, FetchOptions } from './plugin-data-fetcher.service.js'
 import type { OAuthPoll } from './plugin-oauth.service.js'
 import { Injectable, Logger, Optional } from '@nestjs/common'
+import { hideSecretsIn } from '../plugin-field-values.js'
 import { contextWithAccessToken } from '../plugin-oauth.js'
-import { PluginDataFetcherService } from './plugin-data-fetcher.service.js'
+import { isUnauthorized, PluginDataFetcherService } from './plugin-data-fetcher.service.js'
 import { PluginOAuthService } from './plugin-oauth.service.js'
 import { PluginTransformService } from './plugin-transform.service.js'
 
@@ -62,6 +63,23 @@ export function transformInputOf(fetched: unknown, templateContext: object = {})
   return isPlainRecord(fetched) ? { ...templateContext, ...fetched } : { ...templateContext, data: fetched }
 }
 
+/**
+ * What a Data Source polled with an OAuth access token answers, or the error it fails with, with that token hidden: a
+ * refreshed token is no Field Value, so the password hiding downstream never knows it. A 401 passes through untouched,
+ * so it can still be told apart and retried.
+ */
+async function hidingAccessToken(accessToken: string, resolving: Promise<unknown>): Promise<unknown> {
+  const secrets = [accessToken].filter(Boolean)
+  try {
+    return hideSecretsIn(await resolving, secrets)
+  }
+  catch (error) {
+    if (isUnauthorized(error))
+      throw error
+    throw new Error(hideSecretsIn(error instanceof Error ? error.message : String(error), secrets))
+  }
+}
+
 @Injectable()
 export class PluginDataResolverService {
   private readonly logger = new Logger(PluginDataResolverService.name)
@@ -86,7 +104,7 @@ export class PluginDataResolverService {
         const context = withState(templateContext, (source.id && savedStates[source.id]) || {})
         if (!oauth || !this.oauthTokens || source.mode === 'literal')
           return this.resolveOne(source, context)
-        return this.oauthTokens.withAccessToken(oauth, (accessToken, lastTry) => this.resolveOne(source, contextWithAccessToken(context, accessToken), { unauthorizedThrows: !lastTry }))
+        return this.oauthTokens.withAccessToken(oauth, (accessToken, lastTry) => hidingAccessToken(accessToken, this.resolveOne(source, contextWithAccessToken(context, accessToken), { unauthorizedThrows: !lastTry })))
       }),
     )
 
