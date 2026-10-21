@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { TypeOrmModule } from '@nestjs/typeorm'
 import { Alert } from '../alerts/entities/alert.entity.js'
+import { DeviceModelsModule } from '../device-models/device-models.module.js'
 import { DeviceSensorsModule } from '../device-sensors/device-sensors.module.js'
 import { Device } from '../devices/devices.entity.js'
 import { InstanceModule } from '../instance/instance.module.js'
@@ -39,6 +40,7 @@ import { WebhookIngestController } from './webhook-ingest.controller.js'
 @Module({
   imports: [
     ConfigModule,
+    DeviceModelsModule,
     DeviceSensorsModule,
     InstanceModule,
     TypeOrmModule.forFeature([

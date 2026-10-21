@@ -42,7 +42,7 @@ export class HttpStatusError extends Error {
 }
 
 export interface FetchOptions {
-  /** A line of a multi-line Polling URL answered 401 fails the whole fetch rather than reading as that line's error marker, so an OAuth poll can refresh its token and retry (ADR-0067). */
+  /** A line of a multi-line Polling URL answered 401 fails the whole fetch rather than reading as that line's error marker, so an OAuth poll can refresh its token and retry (ADR-0068). */
   unauthorizedThrows?: boolean
 }
 

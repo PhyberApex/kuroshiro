@@ -51,7 +51,7 @@ describe('the Recipe Update Check', () => {
     ])
   })
 
-  it('reads the Recipe\'s OAuth settings as one Update Item of the Data Sources, a line per setting (ADR-0067)', () => {
+  it('reads the Recipe\'s OAuth settings as one Update Item of the Data Sources, a line per setting (ADR-0068)', () => {
     const oauth = buildUpdateItem({
       itemType: 'oauthSettings',
       key: 'oauthSettings',

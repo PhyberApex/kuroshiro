@@ -1,7 +1,7 @@
 import type { Plugin } from './entities/plugin.entity.js'
 import { isPlainObject } from '../utils/json.js'
 
-/** A Recipe's `oauth_*` settings as its settings.yml wrote them, `oauth_enabled` included (ADR-0067). */
+/** A Recipe's `oauth_*` settings as its settings.yml wrote them, `oauth_enabled` included (ADR-0068). */
 export type OAuthSettings = Record<string, string>
 
 /** The Plugin Fields an OAuth Recipe is given on import, which hold what the admin pastes from an OAuth dance done elsewhere. */

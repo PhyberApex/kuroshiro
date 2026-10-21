@@ -3,10 +3,12 @@ import type { Device } from '../../devices/devices.entity.js'
 import type { MashupConfiguration } from '../entities/mashup-configuration.entity.js'
 import type { MashupSlot } from '../entities/mashup-slot.entity.js'
 import { Injectable, Logger } from '@nestjs/common'
+import { DeviceModelsService } from '../../device-models/device-models.service.js'
 import { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
 import { templateOfSize, templateSizeOfSlot } from '../../plugins/plugin-templates.js'
 import { PluginRendererService } from '../../plugins/services/plugin-renderer.service.js'
 import { PluginTemplateContextService } from '../../plugins/services/plugin-template-context.service.js'
+import { withTrmnlDevice } from '../../plugins/trmnl-device.js'
 import { getErrorMessage } from '../../utils/getErrorMessage.js'
 import { mashupPageHtml } from '../mashup-page.js'
 import { renderedSlotDrawing } from '../mashup-slot-signals.js'
@@ -30,6 +32,7 @@ export class MashupRendererService {
     private readonly pluginRenderer: PluginRendererService,
     private readonly deviceSensors: DeviceSensorsService,
     private readonly pluginTemplateContext: PluginTemplateContextService,
+    private readonly deviceModels: DeviceModelsService,
   ) {}
 
   /**
@@ -43,7 +46,7 @@ export class MashupRendererService {
     const slots: RenderedSlot[] = []
     for (const slot of [...mashupConfig.slots].sort((a, b) => a.order - b.order)) {
       try {
-        slots.push({ slot, markup: await this.renderSlot(slot, sensors) })
+        slots.push({ slot, markup: await this.renderSlot(slot, device, sensors) })
       }
       catch (err) {
         this.logger.error(`Failed to render plugin ${slot.plugin.id} in slot ${slot.id}: ${getErrorMessage(err)}`)
@@ -54,7 +57,7 @@ export class MashupRendererService {
     return { html: mashupPageHtml(mashupConfig.layout, slots.map(({ slot, markup }) => renderedSlotDrawing(slot, markup))), slots }
   }
 
-  private async renderSlot(slot: MashupSlot, sensors: DeviceSensor[]): Promise<string> {
+  private async renderSlot(slot: MashupSlot, device: Device, sensors: DeviceSensor[]): Promise<string> {
     const plugin = slot.plugin
 
     const template = templateOfSize(plugin.templates, templateSizeOfSlot(slot.size))
@@ -65,6 +68,6 @@ export class MashupRendererService {
     const { context } = await this.pluginTemplateContext.contextFor(plugin, sensors)
 
     // Render unwrapped plugin content
-    return await this.pluginRenderer.render(template.liquidMarkup, context)
+    return await this.pluginRenderer.render(template.liquidMarkup, await withTrmnlDevice(context, device, this.deviceModels))
   }
 }

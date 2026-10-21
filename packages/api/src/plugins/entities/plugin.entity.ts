@@ -61,12 +61,12 @@ export class Plugin {
   @Column('jsonb', { nullable: true })
   webhookPayload?: WebhookPayload
 
-  // The `oauth_*` settings of the OAuth Recipe it was imported from; null for a Plugin that does not sign in (ADR-0067).
+  // The `oauth_*` settings of the OAuth Recipe it was imported from; null for a Plugin that does not sign in (ADR-0068).
   @Column('jsonb', { nullable: true })
   oauthSettings?: OAuthSettings | null
 
   // The access token its last OAuth refresh answered, with the refresh token answered in place of the pasted one and
-  // the expiry, read by every Data Source of the Plugin (ADR-0067). Runtime state, like savedState: never written into
+  // the expiry, read by every Data Source of the Plugin (ADR-0068). Runtime state, like savedState: never written into
   // a Field Value, left out of `.trmnlp` export and the Configuration Archive, and loaded only when asked for.
   @Column('text', { nullable: true, select: false })
   oauthAccessToken?: string | null

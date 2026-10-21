@@ -1,6 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm'
 
-/** OAuth Recipes (ADR-0067): the Recipe's `oauth_*` settings on the Plugin, and its refreshed access token as runtime state. */
+/** OAuth Recipes (ADR-0068): the Recipe's `oauth_*` settings on the Plugin, and its refreshed access token as runtime state. */
 export class AddPluginOAuth1787410000000 implements MigrationInterface {
   name = 'AddPluginOAuth1787410000000'
 

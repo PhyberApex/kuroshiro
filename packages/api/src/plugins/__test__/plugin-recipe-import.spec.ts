@@ -277,7 +277,7 @@ describe('pluginImporterService recipe import', () => {
       ])
     })
 
-    describe('an OAuth Recipe (ADR-0067)', () => {
+    describe('an OAuth Recipe (ADR-0068)', () => {
       const ADMOB = {
         name: 'AdMob Overview',
         strategy: 'polling',

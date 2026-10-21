@@ -152,7 +152,7 @@ The page is one form. A Plugin's template is not valid halfway through, and its 
 |---|---|
 | A Recipe, file or GitHub import | "Imported from the Recipe {name}." or "Imported from {file name}." or "Imported from {owner/repository}." Then "It is not on a Device yet." or "Assigned to {Device}." |
 | An import that brought a transform | The line above, then: "It brings a transform: JavaScript that runs on this server at every fetch. Read it under Data Sources." |
-| An import of a Recipe that signs in with OAuth (ADR-0067) | The line above, then: "It signs in with OAuth and needs a token before it can poll: paste the tokens and the client under Plugin Fields." |
+| An import of a Recipe that signs in with OAuth (ADR-0068) | The line above, then: "It signs in with OAuth and needs a token before it can poll: paste the tokens and the client under Plugin Fields." |
 | An import with Plugin Fields TRMNL fills from a list | The line above, then: "Type {names} by hand; on TRMNL {it is / they are} picked from a list." |
 | Building | "Created. It shows its name until you write its template." |
 | Duplicating | "A copy of {Plugin}. It is not on a Device yet." |

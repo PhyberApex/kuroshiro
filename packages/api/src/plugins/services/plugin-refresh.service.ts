@@ -20,10 +20,11 @@ export interface RefreshOptions {
 }
 
 /**
- * Re-renders a Plugin into the cache shared by every Screen it is assigned
- * to: a Poll-kind Plugin from freshly fetched Data Sources, a Webhook-kind
- * Plugin from its stored Webhook Payload. The scheduler tick, the tick a
- * save starts and a Webhook ingest all go through here.
+ * Re-renders a Plugin into the cache of every Screen it is assigned to, each
+ * told its own Device (ADR-0069): a Poll-kind Plugin from Data Sources fetched
+ * once for all of them, a Webhook-kind Plugin from its stored Webhook Payload.
+ * The scheduler tick, the tick a save starts and a Webhook ingest all go
+ * through here.
  */
 @Injectable()
 export class PluginRefreshService {
@@ -39,8 +40,9 @@ export class PluginRefreshService {
   ) {}
 
   async refresh(plugin: Plugin, { scheduled, isSuperseded }: RefreshOptions = { scheduled: false }): Promise<void> {
-    // The cache entry is shared across Devices, so there is no single Device
-    // to scope sensors to here.
+    // Fetched once for every Screen, so the context is built for no single
+    // Device; the cache tells each Screen's render its Device (ADR-0069) and
+    // leaves sensors empty.
     const { context, sourceData, resolvedFieldValues, sourceStates } = await this.pluginTemplateContext.contextFor(plugin, [])
 
     if (plugin.kind === 'Webhook') {
@@ -72,7 +74,7 @@ export class PluginRefreshService {
       return
 
     try {
-      await this.renderCache.renderAndCache(plugin, context)
+      await this.renderCache.renderAndCache(plugin, context, () => this.dropAsSuperseded(plugin.id, isSuperseded, 'cache write'))
     }
     catch (error) {
       if (scheduled && error instanceof TemplateRenderError && !this.dropAsSuperseded(plugin.id, isSuperseded, 'failed-render record'))

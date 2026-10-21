@@ -49,7 +49,7 @@ describe('pluginRefreshService', () => {
     expect(fetchOutcome.recordOutcomes).toHaveBeenCalledWith(plugin.dataSources, {
       weather: { error: true, message: 'Failed to parse URL from not a url/••••••••' },
     })
-    expect(renderCache.renderAndCache).toHaveBeenCalledWith(plugin, { weather: sourceData.weather })
+    expect(renderCache.renderAndCache).toHaveBeenCalledWith(plugin, { weather: sourceData.weather }, expect.any(Function))
   })
 
   it('saves the state each transform wrote on a scheduled tick, and never from any other render', async () => {
@@ -160,6 +160,21 @@ describe('pluginRefreshService', () => {
 
       expect(renderCache.renderAndCache).toHaveBeenCalledTimes(1)
       expect(pluginRepo.update).not.toHaveBeenCalled()
+    })
+
+    it('lets the render cache ask again whether it is superseded just before it writes', async () => {
+      const plugin = makePlugin({ dataSources: [makePluginDataSource({ name: 'weather' })] })
+      stubContext()
+      let superseded = false
+      renderCache.renderAndCache.mockImplementation(async (_plugin, _context, isSupersededBeforeWrite: () => boolean) => {
+        expect(isSupersededBeforeWrite()).toBe(false)
+        superseded = true
+        expect(isSupersededBeforeWrite()).toBe(true)
+      })
+
+      await service.refresh(plugin, { scheduled: true, isSuperseded: () => superseded })
+
+      expect(renderCache.renderAndCache).toHaveBeenCalledTimes(1)
     })
 
     it('renders and records as usual when never superseded', async () => {
