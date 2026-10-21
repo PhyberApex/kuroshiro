@@ -321,6 +321,17 @@ describe('the Recipe Update Check, against a real database', () => {
         expect(response.status).toBe(201)
         expect((await database.getRepository(Plugin).findOneByOrFail({ id: plugin.id })).oauthSettings).toEqual(moved)
       })
+
+      it('forgets the refreshed token when the OAuth settings change, so the next poll starts from what was pasted', async () => {
+        const plugin = await importOAuthRecipe()
+        await database.getRepository(Plugin).update(plugin.id, { oauthAccessToken: 'refreshed-access', oauthRefreshToken: 'rotated-refresh', oauthRefreshedAt: new Date() })
+        upstreamAnswers(() => recipeZip({ ...OAUTH, oauth_token_url: 'https://oauth2.example.com/v2/token' }))
+
+        const { contentHash } = await check(plugin.id)
+        await http.postJson(`/api/plugins/${plugin.id}/recipe-update/apply`, { contentHash, apply: [{ itemType: 'oauthSettings', key: 'oauthSettings' }] })
+
+        expect(await database.getRepository(Plugin).findOneOrFail({ where: { id: plugin.id }, select: { id: true, oauthAccessToken: true, oauthRefreshToken: true, oauthRefreshedAt: true } })).toMatchObject({ oauthAccessToken: null, oauthRefreshToken: null, oauthRefreshedAt: null })
+      })
     })
 
     it('answers 422 recipe-not-found, naming the id, when TRMNL no longer has the Recipe', async () => {

@@ -86,12 +86,12 @@ export class PluginFieldValuesService {
    * Writes the given Field Values and leaves every keyname not mentioned as it
    * is, which is what keeps a write-only secret when an update omits it. `null`
    * or an empty string clears a value, so the Plugin Field's default applies again.
-   * Returns whether anything stored changed.
+   * Returns the keynames whose stored value changed.
    */
-  async write(plugin: Pick<Plugin, 'id' | 'fields'>, writes: FieldValueWrites | undefined): Promise<boolean> {
+  async write(plugin: Pick<Plugin, 'id' | 'fields'>, writes: FieldValueWrites | undefined): Promise<string[]> {
     const entries = Object.entries(writes ?? {})
     if (entries.length === 0)
-      return false
+      return []
 
     const stored = await this.storedFor(plugin.id)
     const changes = entries
@@ -102,7 +102,7 @@ export class PluginFieldValuesService {
       await this.store(plugin, field, value)
     }
 
-    return changes.length > 0
+    return changes.map(({ field }) => field.keyname)
   }
 
   /**

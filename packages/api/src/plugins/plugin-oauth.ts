@@ -105,17 +105,16 @@ function secondsFrom(now: Date, value: unknown): Date | null {
 }
 
 /**
- * The expiry of a refreshed token: `oauth_fixed_expiry_ms` after the refresh when the Recipe sets it, else the answer's
- * `expires_in` (or the field `oauth_expiry_field_name` names) as seconds from now. TRMNL's docs name no value of
- * `oauth_expiry_strategy`, so any it sets leaves the expiry unknown.
+ * The expiry of a refreshed token: the answer's `expires_in` (or the field `oauth_expiry_field_name` names) as seconds
+ * from now whenever the answer has it, else `oauth_fixed_expiry_ms` after the refresh when the Recipe sets it, else
+ * unknown. TRMNL's docs name no value of `oauth_expiry_strategy`, so it is not read.
  */
 function expiresAtOf(settings: OAuthSettings, response: Record<string, unknown>, now: Date): Date | null {
+  const answered = secondsFrom(now, response[settings.oauth_expiry_field_name?.trim() || 'expires_in'])
+  if (answered)
+    return answered
   const fixedMs = settings.oauth_fixed_expiry_ms?.trim()
-  if (fixedMs)
-    return secondsFrom(now, Number(fixedMs) / 1000)
-  if (settings.oauth_expiry_strategy?.trim())
-    return null
-  return secondsFrom(now, response[settings.oauth_expiry_field_name?.trim() || 'expires_in'])
+  return fixedMs ? secondsFrom(now, Number(fixedMs) / 1000) : null
 }
 
 /** The token endpoint's answer read as a stored token, or `null` when it names no access token. */

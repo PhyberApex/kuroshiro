@@ -360,8 +360,8 @@ export class PluginsService implements OnModuleInit {
       }
       const savedFields = fields ? await this.saveFields(manager, plugin, fields) : plugin.fields
       await manager.update(Plugin, id, basicFields)
-      await this.fieldValues.within(manager).write({ id, fields: savedFields }, fieldValues)
-      if (Object.keys(fieldValues ?? {}).some(isOAuthKeyname))
+      const changed = await this.fieldValues.within(manager).write({ id, fields: savedFields }, fieldValues)
+      if (changed.some(isOAuthKeyname))
         await manager.update(Plugin, id, NO_REFRESHED_TOKEN)
     })
 

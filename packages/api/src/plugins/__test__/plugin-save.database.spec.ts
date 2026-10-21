@@ -775,6 +775,17 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
       expect(await storedToken(plugin.id)).toMatchObject({ oauthAccessToken: null, oauthRefreshToken: null, oauthAccessTokenExpiresAt: null, oauthRefreshedAt: null })
     })
 
+    it('is kept by a save that writes the same token as is stored', async () => {
+      const plugin = await withRefreshedToken()
+      await saved(plugin.id, { fieldValues: { oauth_refresh_token: 'pasted' } })
+      await database.getRepository(Plugin).update(plugin.id, { oauthAccessToken: 'refreshed-access' })
+
+      await saved(plugin.id, { fieldValues: { oauth_refresh_token: 'pasted' } })
+      await backgroundTicksDone()
+
+      expect((await storedToken(plugin.id)).oauthAccessToken).toBe('refreshed-access')
+    })
+
     it('is kept by a save that leaves the tokens as they are', async () => {
       const plugin = await withRefreshedToken()
 

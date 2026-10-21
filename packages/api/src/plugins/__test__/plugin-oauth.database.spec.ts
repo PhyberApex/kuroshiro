@@ -199,6 +199,7 @@ describe('an OAuth Plugin\'s access token, refreshed before a poll and on a 401 
     })
     expect((await storedToken(plugin)).oauthAccessToken).toBeNull()
   })
+
   it('refreshes once and polls once more when one line of a multi-line Polling URL answers 401', async () => {
     const plugin = await oauthPlugin({ token: { oauthAccessToken: 'revoked-access', oauthAccessTokenExpiresAt: new Date(NOW.getTime() + 30 * MINUTE) }, sources: [{ name: 'source', url: `${POLL_URL}\nhttps://api.example.com/other` }] })
     pollEndpoint = init => new Headers(init.headers).get('Authorization') === 'Bearer revoked-access' ? new Response('', { status: 401 }) : jsonResponse({ rows: 3 })
@@ -248,19 +249,29 @@ describe('an OAuth Plugin\'s access token, refreshed before a poll and on a 401 
     expect(tokenRequests).toEqual([])
   })
 
-  it('counts the expiry unknown for an expiry strategy it does not know, even with expires_in in the answer', async () => {
-    const plugin = await oauthPlugin({ settings: { ...ADMOB_SETTINGS, oauth_expiry_strategy: 'something_else' } })
+  it('reads expires_in as the expiry whatever the expiry strategy and fixed expiry say', async () => {
+    const plugin = await oauthPlugin({ settings: { ...ADMOB_SETTINGS, oauth_expiry_strategy: 'something_else', oauth_fixed_expiry_ms: '1800000' } })
 
     await sourceDataOf(plugin)
 
-    expect(await storedToken(plugin)).toMatchObject({ oauthAccessTokenExpiresAt: null, oauthRefreshedAt: NOW })
+    expect((await storedToken(plugin)).oauthAccessTokenExpiresAt).toEqual(new Date(NOW.getTime() + 3599_000))
   })
 
-  it('reads oauth_fixed_expiry_ms as the token\'s lifetime from the refresh', async () => {
+  it('reads oauth_fixed_expiry_ms as the token\'s lifetime from the refresh when the answer has no expires_in', async () => {
     const plugin = await oauthPlugin({ settings: { ...ADMOB_SETTINGS, oauth_fixed_expiry_ms: '1800000' } })
+    tokenEndpoint = () => jsonResponse({ access_token: 'refreshed-access' })
 
     await sourceDataOf(plugin)
 
     expect((await storedToken(plugin)).oauthAccessTokenExpiresAt).toEqual(new Date(NOW.getTime() + 30 * MINUTE))
+  })
+
+  it('counts the expiry unknown when the answer has no expires_in and the Recipe sets no fixed expiry', async () => {
+    const plugin = await oauthPlugin({ settings: { ...ADMOB_SETTINGS, oauth_expiry_strategy: 'something_else' } })
+    tokenEndpoint = () => jsonResponse({ access_token: 'refreshed-access' })
+
+    await sourceDataOf(plugin)
+
+    expect(await storedToken(plugin)).toMatchObject({ oauthAccessTokenExpiresAt: null, oauthRefreshedAt: NOW })
   })
 })

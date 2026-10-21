@@ -22,6 +22,7 @@ import { PluginDataSource } from '../entities/plugin-data-source.entity.js'
 import { PluginField } from '../entities/plugin-field.entity.js'
 import { PluginTemplate } from '../entities/plugin-template.entity.js'
 import { Plugin as PluginEntity } from '../entities/plugin.entity.js'
+import { NO_REFRESHED_TOKEN } from '../plugin-oauth.js'
 import { pluginNotFound, PluginsService } from '../plugins.service.js'
 import { toRecipeUpdatePreview } from '../recipe-update.mapper.js'
 import { PluginFieldValuesService } from './plugin-field-values.service.js'
@@ -30,7 +31,7 @@ import { computeRecipeContentHash, diffRecipeUpdate } from './recipe-update-diff
 
 const PLUGIN_UPDATE_RELATIONS = { dataSources: true, templates: true, fields: true } as const
 
-interface BasicFieldUpdates {
+interface BasicFieldUpdates extends Partial<typeof NO_REFRESHED_TOKEN> {
   name?: string
   description?: string | null
   refreshInterval?: number
@@ -44,7 +45,8 @@ const SCALAR_UPDATES: Partial<Record<UpdateItem['itemType'], (upstream: unknown)
   description: upstream => ({ description: (upstream as string | undefined) ?? null }),
   refreshInterval: upstream => ({ refreshInterval: upstream as number }),
   frameworkVersion: upstream => ({ frameworkVersion: (upstream as string | undefined) ?? null }),
-  oauthSettings: upstream => ({ oauthSettings: (upstream as OAuthSettings | undefined) ?? null }),
+  // A refreshed token belongs to the endpoint and client that issued it, so new settings start again from the pasted one.
+  oauthSettings: upstream => ({ oauthSettings: (upstream as OAuthSettings | undefined) ?? null, ...NO_REFRESHED_TOKEN }),
 }
 
 function toComparablePlugin(plugin: Plugin): ComparablePlugin {
