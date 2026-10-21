@@ -22,6 +22,7 @@ import { randomUUID } from 'node:crypto'
 import * as fs from 'node:fs'
 import * as os from 'node:os'
 import * as path from 'node:path'
+import { isDeepStrictEqual } from 'node:util'
 import { HttpStatus, Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import AdmZip from 'adm-zip'
@@ -45,6 +46,7 @@ import { PluginField } from '../../plugins/entities/plugin-field.entity.js'
 import { PluginTemplate } from '../../plugins/entities/plugin-template.entity.js'
 import { Plugin } from '../../plugins/entities/plugin.entity.js'
 import { isSecretField } from '../../plugins/plugin-field-values.js'
+import { isOAuthKeyname, NO_REFRESHED_TOKEN } from '../../plugins/plugin-oauth.js'
 import { PluginImporterService } from '../../plugins/services/plugin-importer.service.js'
 import { PluginSchedulerService } from '../../plugins/services/plugin-scheduler.service.js'
 import { Schedule } from '../../schedule/schedule.entity.js'
@@ -762,7 +764,23 @@ export class ConfigurationImportService {
     const webhookToken = this.resolveWebhookToken(entry, existing, ref, run)
     await this.assertWebhookTokenFree(repos.plugin, entry.id, webhookToken)
 
-    const plugin = existing ?? repos.plugin.create({ id: entry.id })
+    const oauthSettingsChanged = !!existing && !isDeepStrictEqual(existing.oauthSettings ?? null, parsed.oauthSettings ?? null)
+    const plugin = this.withEntry(existing ?? repos.plugin.create({ id: entry.id }), entry, parsed, webhookToken)
+    const saved = await repos.plugin.save(plugin)
+    this.bump(run, 'plugins', !existing)
+
+    await this.upsertPluginDataSources(repos.dataSource, saved, parsed.dataSources, entry.dataSources, ref, run)
+    await this.upsertPluginTemplates(repos.template, saved, parsed.templates, entry.templates, run)
+    const fields = await this.upsertPluginFields(repos.field, repos.fieldValue, saved, parsed.fields, entry.fields, run)
+    const changedValues = await this.upsertFieldValues(repos.fieldValue, saved, fields, entry.fieldValues, ref, run)
+    // A refreshed token belongs to the endpoint and client that issued it, so new settings or tokens start again from the pasted ones (ADR-0068).
+    if (oauthSettingsChanged || changedValues.some(isOAuthKeyname))
+      await repos.plugin.save({ ...saved, ...NO_REFRESHED_TOKEN })
+    run.upsertedPluginIds.add(saved.id)
+  }
+
+  /** The Plugin with what the archive entry and its `.trmnlp` folder say of it, Data Sources, templates and Plugin Fields aside. */
+  private withEntry(plugin: Plugin, entry: PluginManifestEntry, parsed: ParsedPlugin, webhookToken: string | null): Plugin {
     plugin.name = parsed.name
     plugin.description = parsed.description
     plugin.kind = entry.kind
@@ -771,18 +789,11 @@ export class ConfigurationImportService {
     plugin.mergeStrategy = entry.mergeStrategy
     plugin.streamLimit = entry.streamLimit
     plugin.frameworkVersion = entry.frameworkVersion ?? null
+    plugin.oauthSettings = parsed.oauthSettings ?? null
     plugin.dither = entry.dither ?? true
     plugin.sourceRecipeId = entry.sourceRecipeId ?? parsed.sourceRecipeId ?? undefined
     plugin.sourceRecipeSnapshot = entry.sourceRecipeSnapshot ? { ...entry.sourceRecipeSnapshot } : null
-
-    const saved = await repos.plugin.save(plugin)
-    this.bump(run, 'plugins', !existing)
-
-    await this.upsertPluginDataSources(repos.dataSource, saved, parsed.dataSources, entry.dataSources, ref, run)
-    await this.upsertPluginTemplates(repos.template, saved, parsed.templates, entry.templates, run)
-    const fields = await this.upsertPluginFields(repos.field, repos.fieldValue, saved, parsed.fields, entry.fields, run)
-    await this.upsertFieldValues(repos.fieldValue, saved, fields, entry.fieldValues, ref, run)
-    run.upsertedPluginIds.add(saved.id)
+    return plugin
   }
 
   private async assertWebhookTokenFree(repo: Repository<Plugin>, pluginId: string, webhookToken: string | null): Promise<void> {
@@ -901,8 +912,12 @@ export class ConfigurationImportService {
     return { field: saved, isNew: !existing, retypedFromPassword }
   }
 
-  /** A redacted (password-type) Field Value keeps the target Plugin Field's value when one is stored, otherwise the Plugin Field is left without a value (ADR-0028, ADR-0032). */
-  private async upsertFieldValues(repo: Repository<PluginFieldValue>, plugin: Plugin, fields: PluginField[], fieldValues: Record<string, string> | undefined, ref: Ref, run: ImportRun): Promise<void> {
+  /**
+   * A redacted (password-type) Field Value keeps the target Plugin Field's value when one is stored, otherwise the
+   * Plugin Field is left without a value (ADR-0028, ADR-0032). Returns the keynames whose stored value changed.
+   */
+  private async upsertFieldValues(repo: Repository<PluginFieldValue>, plugin: Plugin, fields: PluginField[], fieldValues: Record<string, string> | undefined, ref: Ref, run: ImportRun): Promise<string[]> {
+    const changed: string[] = []
     for (const [keyname, value] of Object.entries(fieldValues ?? {})) {
       const field = fields.find(candidate => candidate.keyname === keyname)
       if (!field) {
@@ -911,23 +926,28 @@ export class ConfigurationImportService {
       }
 
       // An empty value is no value: the Plugin Field's default applies, as on a save.
-      if (!value) {
-        continue
-      }
-
-      const existing = await repo.findOne({ where: { field: { id: field.id } } })
-      if (value === CONFIGURATION_REDACTION_SENTINEL) {
-        if (!existing) {
-          run.warnings.push({ kind: 'field-value-redacted', plugin: ref, keyname, label: field.name })
-        }
-        continue
-      }
-
-      const fieldValue = existing ?? repo.create({ plugin, field })
-      fieldValue.value = value
-      await repo.save(fieldValue)
-      this.bump(run, 'fieldValues', !existing)
+      if (value && await this.upsertFieldValue(repo, plugin, field, value, ref, run))
+        changed.push(keyname)
     }
+    return changed
+  }
+
+  /** Whether the Field Value stored for the Plugin Field changed. */
+  private async upsertFieldValue(repo: Repository<PluginFieldValue>, plugin: Plugin, field: PluginField, value: string, ref: Ref, run: ImportRun): Promise<boolean> {
+    const existing = await repo.findOne({ where: { field: { id: field.id } } })
+    if (value === CONFIGURATION_REDACTION_SENTINEL) {
+      if (!existing) {
+        run.warnings.push({ kind: 'field-value-redacted', plugin: ref, keyname: field.keyname, label: field.name })
+      }
+      return false
+    }
+
+    const fieldValue = existing ?? repo.create({ plugin, field })
+    const changed = fieldValue.value !== value
+    fieldValue.value = value
+    await repo.save(fieldValue)
+    this.bump(run, 'fieldValues', !existing)
+    return changed
   }
 
   private async upsertAssignment(repos: TransactionRepos, entry: AssignmentManifestEntry, deviceIdRemap: Map<string, string>, run: ImportRun): Promise<void> {

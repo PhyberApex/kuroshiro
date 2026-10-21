@@ -22,6 +22,7 @@ import { PluginTemplate } from './entities/plugin-template.entity.js'
 import { Plugin } from './entities/plugin.entity.js'
 import { dataSourceModeViolation } from './plugin-data-source-mode.js'
 import { pluginKindFieldViolation } from './plugin-kind-fields.js'
+import { isOAuthKeyname, NO_REFRESHED_TOKEN } from './plugin-oauth.js'
 import { toPluginPlaces } from './plugin.mapper.js'
 import { PluginAssignmentsService } from './services/plugin-assignments.service.js'
 import { PluginFieldValuesService } from './services/plugin-field-values.service.js'
@@ -191,6 +192,7 @@ export class PluginsService implements OnModuleInit {
       dither: source.dither,
       noScreenPadding: source.noScreenPadding,
       darkMode: source.darkMode,
+      oauthSettings: source.oauthSettings,
       mergeStrategy: source.mergeStrategy ?? undefined,
       streamLimit: source.streamLimit ?? undefined,
       sourceRecipeId: source.sourceRecipeId,
@@ -241,6 +243,7 @@ export class PluginsService implements OnModuleInit {
       dither: basicFields.dither ?? true,
       noScreenPadding: basicFields.noScreenPadding ?? false,
       darkMode: basicFields.darkMode ?? false,
+      oauthSettings: basicFields.oauthSettings,
       sourceRecipeId: basicFields.sourceRecipeId,
       sourceRecipeSnapshot: basicFields.sourceRecipeSnapshot,
       snapshotTakenAt: basicFields.sourceRecipeSnapshot ? snapshotTakenAt : null,
@@ -357,7 +360,9 @@ export class PluginsService implements OnModuleInit {
       }
       const savedFields = fields ? await this.saveFields(manager, plugin, fields) : plugin.fields
       await manager.update(Plugin, id, basicFields)
-      await this.fieldValues.within(manager).write({ id, fields: savedFields }, fieldValues)
+      const changed = await this.fieldValues.within(manager).write({ id, fields: savedFields }, fieldValues)
+      if (changed.some(isOAuthKeyname))
+        await manager.update(Plugin, id, NO_REFRESHED_TOKEN)
     })
 
     await this.refreshRendersAfterSave(id)

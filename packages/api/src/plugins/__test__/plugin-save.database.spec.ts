@@ -1,6 +1,7 @@
 import type { ConfigService } from '@nestjs/config'
 import type { ApiError, PluginDetail, UpdatePluginInput } from 'kuroshiro-shared'
 import type { DataSource } from 'typeorm'
+import type { DeviceModelsService } from '../../device-models/device-models.service.js'
 import type { HttpTestApp } from '../../test/httpApp.js'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Alert } from '../../alerts/entities/alert.entity.js'
@@ -11,6 +12,7 @@ import { MashupSlot } from '../../mashup/entities/mashup-slot.entity.js'
 import { Screen } from '../../screens/screens.entity.js'
 import { stubFetch } from '../../test/fetch.js'
 import { createHttpTestApp } from '../../test/httpApp.js'
+import { createMockDeviceModelsService, primeMockDeviceModelsServiceWithAssignedModels } from '../../test/mockDeviceModelsService.js'
 import { asService } from '../../test/mockService.js'
 import { createTestDatabase } from '../../test/testDatabase.js'
 import { DevicePlugin } from '../entities/device-plugin.entity.js'
@@ -19,6 +21,7 @@ import { PluginFieldValue } from '../entities/plugin-field-value.entity.js'
 import { PluginField } from '../entities/plugin-field.entity.js'
 import { PluginTemplate } from '../entities/plugin-template.entity.js'
 import { Plugin } from '../entities/plugin.entity.js'
+import { STORED_TOKEN_SELECT } from '../plugin-oauth.js'
 import { PluginsController } from '../plugins.controller.js'
 import { PluginsService } from '../plugins.service.js'
 import { DataSourceFetchOutcomeService } from '../services/data-source-fetch-outcome.service.js'
@@ -68,7 +71,7 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
     const config = asService<ConfigService>({ get: () => false, getOrThrow: () => 'https://kuroshiro.example' })
     const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config, new InstanceTimeZone()), new PluginTransformService())
     const templateContext = new PluginTemplateContextService(fieldValues, resolver, new InstanceTimeZone(), new PluginDataSourceStateService(database.getRepository(PluginDataSource)))
-    const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
+    const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen), asService<DeviceModelsService>(primeMockDeviceModelsServiceWithAssignedModels(createMockDeviceModelsService())))
     const refresh = new PluginRefreshService(renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), new PluginDataSourceStateService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
     scheduler = new PluginSchedulerService(refresh)
     assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
@@ -755,6 +758,44 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
 
       expect(await cachedOutput(plugin.id)).toBe('<p>Feed</p>')
       expect(scheduler.hasScheduledJob(plugin.id)).toBe(false)
+    })
+  })
+
+  describe('an OAuth Plugin\'s refreshed token (ADR-0068)', () => {
+    async function withRefreshedToken() {
+      const plugin = await createPollPlugin({ fields: [{ keyname: 'city', name: 'City' }, { keyname: 'oauth_refresh_token', name: 'OAuth refresh token', fieldType: 'password' }] })
+      await database.getRepository(Plugin).update(plugin.id, { oauthAccessToken: 'refreshed-access', oauthRefreshToken: 'rotated-refresh', oauthAccessTokenExpiresAt: new Date(), oauthRefreshedAt: new Date() })
+      return plugin
+    }
+    const storedToken = async (pluginId: string) => database.getRepository(Plugin).findOneOrFail({ where: { id: pluginId }, select: STORED_TOKEN_SELECT })
+
+    it('is forgotten when a token is pasted again, so the next poll starts from what was pasted', async () => {
+      const plugin = await withRefreshedToken()
+
+      await saved(plugin.id, { fieldValues: { oauth_refresh_token: 'pasted-again' } })
+      await backgroundTicksDone()
+
+      expect(await storedToken(plugin.id)).toMatchObject({ oauthAccessToken: null, oauthRefreshToken: null, oauthAccessTokenExpiresAt: null, oauthRefreshedAt: null })
+    })
+
+    it('is kept by a save that writes the same token as is stored', async () => {
+      const plugin = await withRefreshedToken()
+      await saved(plugin.id, { fieldValues: { oauth_refresh_token: 'pasted' } })
+      await database.getRepository(Plugin).update(plugin.id, { oauthAccessToken: 'refreshed-access' })
+
+      await saved(plugin.id, { fieldValues: { oauth_refresh_token: 'pasted' } })
+      await backgroundTicksDone()
+
+      expect((await storedToken(plugin.id)).oauthAccessToken).toBe('refreshed-access')
+    })
+
+    it('is kept by a save that leaves the tokens as they are', async () => {
+      const plugin = await withRefreshedToken()
+
+      await saved(plugin.id, { fieldValues: { city: 'Berlin' } })
+      await backgroundTicksDone()
+
+      expect((await storedToken(plugin.id)).oauthAccessToken).toBe('refreshed-access')
     })
   })
 })

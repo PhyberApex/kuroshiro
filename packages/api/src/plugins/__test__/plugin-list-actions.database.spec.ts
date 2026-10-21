@@ -1,6 +1,7 @@
 import type { ConfigService } from '@nestjs/config'
 import type { ApiError, PluginDetail } from 'kuroshiro-shared'
 import type { DataSource, DeepPartial } from 'typeorm'
+import type { DeviceModelsService } from '../../device-models/device-models.service.js'
 import type { HttpTestApp } from '../../test/httpApp.js'
 import { Buffer } from 'node:buffer'
 import AdmZip from 'adm-zip'
@@ -13,6 +14,7 @@ import { MashupConfiguration } from '../../mashup/entities/mashup-configuration.
 import { MashupSlot } from '../../mashup/entities/mashup-slot.entity.js'
 import { Screen } from '../../screens/screens.entity.js'
 import { createHttpTestApp } from '../../test/httpApp.js'
+import { createMockDeviceModelsService, primeMockDeviceModelsServiceWithAssignedModels } from '../../test/mockDeviceModelsService.js'
 import { asService } from '../../test/mockService.js'
 import { createTestDatabase } from '../../test/testDatabase.js'
 import { DevicePlugin } from '../entities/device-plugin.entity.js'
@@ -59,7 +61,7 @@ describe('deleting, duplicating and exporting a Plugin, against a real database'
     const fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
     const config = asService<ConfigService>({ get: () => false, getOrThrow: () => API_URL })
     const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config, new InstanceTimeZone()), new PluginTransformService())
-    const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
+    const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen), asService<DeviceModelsService>(primeMockDeviceModelsServiceWithAssignedModels(createMockDeviceModelsService())))
     const refresh = new PluginRefreshService(renderCache, new PluginTemplateContextService(fieldValues, resolver, new InstanceTimeZone(), new PluginDataSourceStateService(database.getRepository(PluginDataSource))), new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), new PluginDataSourceStateService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
     scheduler = new PluginSchedulerService(refresh)
     assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))

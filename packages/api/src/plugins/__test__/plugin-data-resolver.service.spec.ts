@@ -76,19 +76,19 @@ describe('pluginDataResolverService', () => {
 
       await service.resolveAll([source], { trmnl: {} }, { savedStates: { 'ds-1': { cursor: 'abc' } } })
 
-      expect(fetchOrLiteral).toHaveBeenCalledWith(source, { trmnl: { state: { cursor: 'abc' } } })
+      expect(fetchOrLiteral).toHaveBeenCalledWith(source, { trmnl: { state: { cursor: 'abc' } } }, undefined)
     })
 
-    it('gives the transform its Data Source\'s previous merge variables at input.trmnl.previous_merge_variables, an empty object before any, and leaves them out of the request', async () => {
+    it('gives the transform its Data Source\'s Previous Output at input.trmnl.previous_merge_variables, an empty object before any, and leaves them out of the request', async () => {
       const fetchOrLiteral = vi.spyOn(dataFetcher, 'fetchOrLiteral').mockResolvedValue({})
       vi.spyOn(transformer, 'transform').mockResolvedValue({})
       const sources = [makePluginDataSource({ id: 'ds-1', name: 'a', transformJs: 'x' }), makePluginDataSource({ id: 'ds-2', name: 'b', transformJs: 'y' })]
 
-      await service.resolveAll(sources, { trmnl: {} }, { previousMergeVariables: { 'ds-1': { plan: 'pro' } } })
+      await service.resolveAll(sources, { trmnl: {} }, { previousOutputs: { 'ds-1': { plan: 'pro' } } })
 
       expect(transformer.transform).toHaveBeenCalledWith('x', { trmnl: { state: {}, previous_merge_variables: { plan: 'pro' } } }, expect.anything())
       expect(transformer.transform).toHaveBeenCalledWith('y', { trmnl: { state: {}, previous_merge_variables: {} } }, expect.anything())
-      expect(fetchOrLiteral).toHaveBeenCalledWith(sources[0], { trmnl: { state: {} } })
+      expect(fetchOrLiteral).toHaveBeenCalledWith(sources[0], { trmnl: { state: {} } }, undefined)
     })
 
     it('hands the transform the guarded fetch', async () => {

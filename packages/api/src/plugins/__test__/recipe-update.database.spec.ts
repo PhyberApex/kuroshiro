@@ -1,6 +1,7 @@
 import type { ConfigService } from '@nestjs/config'
 import type { ApiError, PluginDetail, PluginImportResult, RecipeUpdatePreview } from 'kuroshiro-shared'
 import type { DataSource } from 'typeorm'
+import type { DeviceModelsService } from '../../device-models/device-models.service.js'
 import type { HttpTestApp } from '../../test/httpApp.js'
 import { Buffer } from 'node:buffer'
 import AdmZip from 'adm-zip'
@@ -12,6 +13,7 @@ import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { Screen } from '../../screens/screens.entity.js'
 import { stubFetch } from '../../test/fetch.js'
 import { createHttpTestApp } from '../../test/httpApp.js'
+import { createMockDeviceModelsService, primeMockDeviceModelsServiceWithAssignedModels } from '../../test/mockDeviceModelsService.js'
 import { asService } from '../../test/mockService.js'
 import { createTestDatabase } from '../../test/testDatabase.js'
 import { DevicePlugin } from '../entities/device-plugin.entity.js'
@@ -95,7 +97,7 @@ describe('the Recipe Update Check, against a real database', () => {
     const fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
     const config = asService<ConfigService>({ get: () => false, getOrThrow: () => API_URL })
     const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config, new InstanceTimeZone()), new PluginTransformService())
-    const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
+    const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen), asService<DeviceModelsService>(primeMockDeviceModelsServiceWithAssignedModels(createMockDeviceModelsService())))
     const refresh = new PluginRefreshService(renderCache, new PluginTemplateContextService(fieldValues, resolver, new InstanceTimeZone(), new PluginDataSourceStateService(database.getRepository(PluginDataSource))), new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), new PluginDataSourceStateService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
     scheduler = new PluginSchedulerService(refresh)
     assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
@@ -291,6 +293,47 @@ describe('the Recipe Update Check, against a real database', () => {
       const preview = await check(plugin.id)
 
       expect(preview.items).toEqual([])
+    })
+
+    describe('an OAuth Recipe (ADR-0068)', () => {
+      const OAUTH = { oauth_enabled: 'true', oauth_token_url: 'https://oauth2.example.com/token' }
+
+      async function importOAuthRecipe(): Promise<PluginDetail> {
+        upstreamAnswers(() => recipeZip(OAUTH))
+        const response = await http.postJson('/api/plugins/import-recipe', { recipe: '41120' })
+        expect(response.status).toBe(201)
+        return ((await response.json()) as PluginImportResult).plugin
+      }
+
+      it('shows no Update Items right after import, its token Plugin Fields included', async () => {
+        const plugin = await importOAuthRecipe()
+
+        expect((await check(plugin.id)).items).toEqual([])
+      })
+
+      it('offers the Recipe\'s changed OAuth settings as one Update Item, and applying it keeps them on the Plugin', async () => {
+        const plugin = await importOAuthRecipe()
+        const moved = { ...OAUTH, oauth_token_url: 'https://oauth2.example.com/v2/token' }
+        upstreamAnswers(() => recipeZip(moved))
+
+        const { items, contentHash } = await check(plugin.id)
+        expect(items).toEqual([{ itemType: 'oauthSettings', key: 'oauthSettings', kind: 'changed', conflict: false, snapshot: OAUTH, local: OAUTH, upstream: moved }])
+
+        const response = await http.postJson(`/api/plugins/${plugin.id}/recipe-update/apply`, { contentHash, apply: [{ itemType: 'oauthSettings', key: 'oauthSettings' }] })
+        expect(response.status).toBe(201)
+        expect((await database.getRepository(Plugin).findOneByOrFail({ id: plugin.id })).oauthSettings).toEqual(moved)
+      })
+
+      it('forgets the refreshed token when the OAuth settings change, so the next poll starts from what was pasted', async () => {
+        const plugin = await importOAuthRecipe()
+        await database.getRepository(Plugin).update(plugin.id, { oauthAccessToken: 'refreshed-access', oauthRefreshToken: 'rotated-refresh', oauthRefreshedAt: new Date() })
+        upstreamAnswers(() => recipeZip({ ...OAUTH, oauth_token_url: 'https://oauth2.example.com/v2/token' }))
+
+        const { contentHash } = await check(plugin.id)
+        await http.postJson(`/api/plugins/${plugin.id}/recipe-update/apply`, { contentHash, apply: [{ itemType: 'oauthSettings', key: 'oauthSettings' }] })
+
+        expect(await database.getRepository(Plugin).findOneOrFail({ where: { id: plugin.id }, select: { id: true, oauthAccessToken: true, oauthRefreshToken: true, oauthRefreshedAt: true } })).toMatchObject({ oauthAccessToken: null, oauthRefreshToken: null, oauthRefreshedAt: null })
+      })
     })
 
     it('answers 422 recipe-not-found, naming the id, when TRMNL no longer has the Recipe', async () => {

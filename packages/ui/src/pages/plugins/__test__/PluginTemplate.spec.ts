@@ -385,8 +385,10 @@ describe('the Template section of the Plugin page', () => {
       it('draws it, then shows the image with the drawn-at line', async () => {
         fakeHome([kitchen], { assignments: assignedTo('kitchen') })
         let release = () => {}
+        // Held from the start, not from when the request arrives: a release before then would be lost.
+        const held = new Promise<void>(resolve => (release = resolve))
         api.use(http.post(apiUrl('device-preview'), async () => {
-          await new Promise<void>(resolve => (release = resolve))
+          await held
           return new HttpResponse('png-bytes', { headers: { 'Content-Type': 'image/png', 'X-Render-Signal': 'none' } })
         }))
         const screen = await mountTemplate()

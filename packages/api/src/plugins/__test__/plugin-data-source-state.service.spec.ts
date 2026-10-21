@@ -13,30 +13,30 @@ describe('pluginDataSourceStateService', () => {
     service = new PluginDataSourceStateService(asRepository(dataSourceRepo))
   })
 
-  it('loads the saved state and the previous merge variables of each stored Data Source by id, fresh from the database, and nothing for one that is not stored', async () => {
+  it('loads the saved state and the Previous Output of each stored Data Source by id, fresh from the database, and nothing for one that is not stored', async () => {
     dataSourceRepo.find.mockResolvedValue([
-      makePluginDataSource({ id: 'ds-1', savedState: { cursor: 'abc' }, previousMergeVariables: null }),
-      makePluginDataSource({ id: 'ds-2', savedState: null, previousMergeVariables: { plan: 'pro' } }),
+      makePluginDataSource({ id: 'ds-1', savedState: { cursor: 'abc' }, previousOutput: null }),
+      makePluginDataSource({ id: 'ds-2', savedState: null, previousOutput: { plan: 'pro' } }),
     ])
 
     const loaded = await service.load([makePluginDataSource({ id: 'ds-1' }), makePluginDataSource({ id: 'ds-2' }), { name: 'unsaved' }])
 
-    expect(dataSourceRepo.find).toHaveBeenCalledWith({ where: { id: expect.anything() }, select: { id: true, savedState: true, previousMergeVariables: true } })
-    expect(loaded).toEqual({ savedStates: { 'ds-1': { cursor: 'abc' } }, previousMergeVariables: { 'ds-2': { plan: 'pro' } } })
+    expect(dataSourceRepo.find).toHaveBeenCalledWith({ where: { id: expect.anything() }, select: { id: true, savedState: true, previousOutput: true } })
+    expect(loaded).toEqual({ savedStates: { 'ds-1': { cursor: 'abc' } }, previousOutputs: { 'ds-2': { plan: 'pro' } } })
   })
 
   it('loads nothing without a stored Data Source, and asks the database nothing', async () => {
-    expect(await service.load([{ name: 'unsaved' }])).toEqual({ savedStates: {}, previousMergeVariables: {} })
+    expect(await service.load([{ name: 'unsaved' }])).toEqual({ savedStates: {}, previousOutputs: {} })
     expect(dataSourceRepo.find).not.toHaveBeenCalled()
   })
 
-  it('saves the state and the merge variables a run wrote on the Data Source of that name, and leaves the others alone', async () => {
+  it('saves the state and the output a run wrote on the Data Source of that name, and leaves the others alone', async () => {
     const sources = [makePluginDataSource({ id: 'ds-1', name: 'a' }), makePluginDataSource({ id: 'ds-2', name: 'b' }), makePluginDataSource({ id: 'ds-3', name: 'c' })]
 
-    await service.save(sources, { states: { a: { cursor: 'abc' } }, mergeVariables: { a: { price: 3 }, b: { price: 4 } } })
+    await service.save(sources, { states: { a: { cursor: 'abc' } }, outputs: { a: { price: 3 }, b: { price: 4 } } })
 
     expect(dataSourceRepo.update).toHaveBeenCalledTimes(2)
-    expect(dataSourceRepo.update).toHaveBeenCalledWith('ds-1', { savedState: { cursor: 'abc' }, previousMergeVariables: { price: 3 } })
-    expect(dataSourceRepo.update).toHaveBeenCalledWith('ds-2', { previousMergeVariables: { price: 4 } })
+    expect(dataSourceRepo.update).toHaveBeenCalledWith('ds-1', { savedState: { cursor: 'abc' }, previousOutput: { price: 3 } })
+    expect(dataSourceRepo.update).toHaveBeenCalledWith('ds-2', { previousOutput: { price: 4 } })
   })
 })

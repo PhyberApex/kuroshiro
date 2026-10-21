@@ -18,6 +18,14 @@ export class MashupConfiguration {
   @OneToMany('MashupSlot', (slot: MashupSlot) => slot.mashupConfiguration)
   slots: Relation<MashupSlot[]>
 
+  /**
+   * Whether each slot's own Render Signal has been read for the Mashup's current cached
+   * output. Set once its whole page raised a signal, cleared whenever the cached output is
+   * written, so a page that keeps raising one has its slots read once per cache (ADR-0067).
+   */
+  @Column({ type: 'boolean', default: false })
+  slotSignalsRead: boolean
+
   @CreateDateColumn()
   createdAt: Date
 

@@ -1,6 +1,7 @@
 import type { Mock } from 'vitest'
 import type { DeviceModel } from '../device-models/entities/device-model.entity.js'
 import type { Palette } from '../device-models/entities/palette.entity.js'
+import type { Device } from '../devices/devices.entity.js'
 import { vi } from 'vitest'
 import { makeDeviceModel } from './fixtures.js'
 
@@ -51,6 +52,13 @@ export function primeMockDeviceModelsService(mock: MockDeviceModelsService) {
   mock.renderTargetFor.mockResolvedValue({ model: OG_PLUS, palette: GRAY_4 })
   mock.resolve.mockResolvedValue(null)
   mock.assignResolvedModel.mockResolvedValue(null)
+}
+
+/** Renders every Device at the Device Model assigned to it, and one with none as an OG with 4 grays, as `renderTargetFor` does. */
+export function primeMockDeviceModelsServiceWithAssignedModels(mock: MockDeviceModelsService): MockDeviceModelsService {
+  primeMockDeviceModelsService(mock)
+  mock.renderTargetFor.mockImplementation(async (device: Pick<Device, 'deviceModel'>) => ({ model: device.deviceModel ?? OG_PLUS, palette: GRAY_4 }))
+  return mock
 }
 
 export interface MockPaletteSelectionService {

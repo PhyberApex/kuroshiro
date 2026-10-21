@@ -49,18 +49,18 @@ describe('pluginRefreshService', () => {
     expect(fetchOutcome.recordOutcomes).toHaveBeenCalledWith(plugin.dataSources, {
       weather: { error: true, message: 'Failed to parse URL from not a url/••••••••' },
     })
-    expect(renderCache.renderAndCache).toHaveBeenCalledWith(plugin, { weather: sourceData.weather })
+    expect(renderCache.renderAndCache).toHaveBeenCalledWith(plugin, { weather: sourceData.weather }, expect.any(Function))
   })
 
-  it('saves the state and the merge variables each transform wrote on a scheduled tick, and never from any other render', async () => {
+  it('saves the state and the output each transform wrote on a scheduled tick, and never from any other render', async () => {
     const plugin = makePlugin({ dataSources: [makePluginDataSource({ id: 'ds-1', name: 'weather' })] })
-    templateContext.contextFor.mockResolvedValue({ context: {}, fieldValues: {}, resolvedFieldValues: {}, sourceData: { weather: {} }, sourceStates: { weather: { cursor: 'abc' } }, sourceMergeVariables: { weather: { temp: 3 } } })
+    templateContext.contextFor.mockResolvedValue({ context: {}, fieldValues: {}, resolvedFieldValues: {}, sourceData: { weather: {} }, sourceStates: { weather: { cursor: 'abc' } }, sourceOutputs: { weather: { temp: 3 } } })
 
     await service.refresh(plugin, { scheduled: false })
     expect(sourceStates.save).not.toHaveBeenCalled()
 
     await service.refresh(plugin, { scheduled: true })
-    expect(sourceStates.save).toHaveBeenCalledWith(plugin.dataSources, { states: { weather: { cursor: 'abc' } }, mergeVariables: { weather: { temp: 3 } } })
+    expect(sourceStates.save).toHaveBeenCalledWith(plugin.dataSources, { states: { weather: { cursor: 'abc' } }, outputs: { weather: { temp: 3 } } })
   })
 
   it('leaves a Field Value that is not password-type alone', async () => {
@@ -160,6 +160,21 @@ describe('pluginRefreshService', () => {
 
       expect(renderCache.renderAndCache).toHaveBeenCalledTimes(1)
       expect(pluginRepo.update).not.toHaveBeenCalled()
+    })
+
+    it('lets the render cache ask again whether it is superseded just before it writes', async () => {
+      const plugin = makePlugin({ dataSources: [makePluginDataSource({ name: 'weather' })] })
+      stubContext()
+      let superseded = false
+      renderCache.renderAndCache.mockImplementation(async (_plugin, _context, isSupersededBeforeWrite: () => boolean) => {
+        expect(isSupersededBeforeWrite()).toBe(false)
+        superseded = true
+        expect(isSupersededBeforeWrite()).toBe(true)
+      })
+
+      await service.refresh(plugin, { scheduled: true, isSuperseded: () => superseded })
+
+      expect(renderCache.renderAndCache).toHaveBeenCalledTimes(1)
     })
 
     it('renders and records as usual when never superseded', async () => {

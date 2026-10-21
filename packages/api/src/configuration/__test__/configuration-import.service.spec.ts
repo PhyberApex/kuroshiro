@@ -726,6 +726,59 @@ describe('configurationImportService', () => {
     expect(storedFieldValues()).toEqual({ 'field-city': 'Berlin' })
   })
 
+  it('imports an OAuth Plugin\'s oauth_* settings from its settings.yml, and none for a Plugin that does not sign in (ADR-0068)', async () => {
+    const { plugins, pluginFolders } = fieldValuePlugin({})
+    const folder = { ...pluginFolders['plugin-1'], settings: { strategy: 'polling', oauth_enabled: 'true', oauth_token_url: 'https://oauth2.example.com/token' } }
+
+    await service.importFromZip(buildArchive({ plugins, pluginFolders: { 'plugin-1': folder } }))
+    expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ oauthSettings: { oauth_enabled: 'true', oauth_token_url: 'https://oauth2.example.com/token' } })
+
+    await service.importFromZip(buildArchive(fieldValuePlugin({})))
+    expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ oauthSettings: null })
+  })
+
+  describe('an OAuth Plugin\'s refreshed token (ADR-0068)', () => {
+    const OAUTH = { strategy: 'polling', oauth_enabled: 'true', oauth_token_url: 'https://oauth2.example.com/token' }
+    const REFRESHED = { oauthAccessToken: 'refreshed-access', oauthRefreshToken: 'rotated-refresh', oauthRefreshedAt: new Date() }
+
+    function oauthArchive(settings: Record<string, string>, fieldValues: Record<string, string> = {}) {
+      const { plugins, pluginFolders } = fieldValuePlugin(fieldValues)
+      plugins[0].fields = [...plugins[0].fields, { id: 'field-refresh', keyname: 'oauth_refresh_token' }]
+      const folder = pluginFolders['plugin-1']
+      const manifest = { ...folder.manifest, custom_fields: [...folder.manifest.custom_fields, { keyname: 'oauth_refresh_token', field_type: 'password', name: 'OAuth refresh token' }] }
+      return buildArchive({ plugins, pluginFolders: { 'plugin-1': { ...folder, manifest, settings } } })
+    }
+
+    async function importedWithRefreshedToken() {
+      await service.importFromZip(oauthArchive(OAUTH, { oauth_refresh_token: 'pasted' }))
+      Object.assign(backing.get('Plugin')!.get('plugin-1')!, REFRESHED)
+    }
+
+    it('is kept by an import that changes neither the OAuth settings nor the pasted tokens', async () => {
+      await importedWithRefreshedToken()
+
+      await service.importFromZip(oauthArchive(OAUTH, { oauth_refresh_token: 'pasted' }))
+
+      expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ oauthAccessToken: 'refreshed-access' })
+    })
+
+    it('is forgotten by an import that changes the OAuth settings', async () => {
+      await importedWithRefreshedToken()
+
+      await service.importFromZip(oauthArchive({ ...OAUTH, oauth_token_url: 'https://oauth2.example.com/v2/token' }))
+
+      expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ oauthAccessToken: null, oauthRefreshToken: null, oauthRefreshedAt: null })
+    })
+
+    it('is forgotten by an import that changes a pasted token', async () => {
+      await importedWithRefreshedToken()
+
+      await service.importFromZip(oauthArchive(OAUTH, { oauth_refresh_token: 'pasted-again' }))
+
+      expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ oauthAccessToken: null, oauthRefreshToken: null, oauthRefreshedAt: null })
+    })
+  })
+
   describe('the Plugin\'s Framework Version', () => {
     it('imports the archive entry\'s frameworkVersion', async () => {
       await service.importFromZip(buildArchive(fieldValuePlugin({}, { frameworkVersion: '3.3.1' })))

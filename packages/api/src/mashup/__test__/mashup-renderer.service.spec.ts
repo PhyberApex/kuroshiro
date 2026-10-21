@@ -1,15 +1,18 @@
+import type { DeviceModelsService } from '../../device-models/device-models.service.js'
 import type { MockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService.js'
 import type { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
 import type { Plugin } from '../../plugins/entities/plugin.entity.js'
 import type { PluginDataFetcherService } from '../../plugins/services/plugin-data-fetcher.service.js'
 import type { PluginRendererService } from '../../plugins/services/plugin-renderer.service.js'
 import type { PluginTransformService } from '../../plugins/services/plugin-transform.service.js'
+import type { MockDeviceModelsService } from '../../test/mockDeviceModelsService.js'
 import type { MockPluginDataFetcherService, MockPluginRendererService, MockPluginTransformService } from '../../test/mockPluginCollaborators.js'
 import type { MashupConfiguration } from '../entities/mashup-configuration.entity.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMockDeviceSensorsService, primeMockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService.js'
 import { PluginDataResolverService } from '../../plugins/services/plugin-data-resolver.service.js'
 import { makeDevice, makeMashupConfiguration, makeMashupSlot, makePlugin, makePluginDataSource, makePluginTemplate } from '../../test/fixtures.js'
+import { createMockDeviceModelsService, primeMockDeviceModelsServiceWithAssignedModels } from '../../test/mockDeviceModelsService.js'
 import { createMockPluginDataFetcherService, createMockPluginRendererService, createMockPluginTransformService, createPluginTemplateContextService } from '../../test/mockPluginCollaborators.js'
 import { asService } from '../../test/mockService.js'
 import { MashupRendererService } from '../services/mashup-renderer.service.js'
@@ -20,6 +23,7 @@ describe('mashupRendererService', () => {
   let pluginRenderer: MockPluginRendererService
   let pluginTransformer: MockPluginTransformService
   let deviceSensors: MockDeviceSensorsService
+  let deviceModels: MockDeviceModelsService
 
   beforeEach(() => {
     pluginDataFetcher = createMockPluginDataFetcherService()
@@ -28,6 +32,7 @@ describe('mashupRendererService', () => {
 
     deviceSensors = createMockDeviceSensorsService()
     primeMockDeviceSensorsService(deviceSensors)
+    deviceModels = createMockDeviceModelsService()
 
     const pluginDataResolver = new PluginDataResolverService(
       asService<PluginDataFetcherService>(pluginDataFetcher),
@@ -38,10 +43,12 @@ describe('mashupRendererService', () => {
       asService<PluginRendererService>(pluginRenderer),
       asService<DeviceSensorsService>(deviceSensors),
       createPluginTemplateContextService({}, pluginDataResolver),
+      asService<DeviceModelsService>(deviceModels),
     )
 
     vi.resetAllMocks()
     primeMockDeviceSensorsService(deviceSensors)
+    primeMockDeviceModelsServiceWithAssignedModels(deviceModels)
   })
 
   it('should render mashup with all plugins successful', async () => {
@@ -83,7 +90,7 @@ describe('mashupRendererService', () => {
       .mockResolvedValueOnce('<div>Weather: 72F</div>')
       .mockResolvedValueOnce('<div>Events: 5</div>')
 
-    const result = await service.renderMashup(config, device)
+    const { html: result } = await service.renderMashup(config, device)
 
     expect(result).toContain('class="mashup mashup--1Lx1R"')
     expect(result).toContain('class="view view--quadrant"')
@@ -135,7 +142,7 @@ describe('mashupRendererService', () => {
       .mockResolvedValueOnce('<div>Success</div>')
       .mockResolvedValueOnce('<div>true</div>')
 
-    const result = await service.renderMashup(config, device)
+    const { html: result } = await service.renderMashup(config, device)
 
     expect(result).toContain('Success')
     expect(result).not.toContain('error.png')
@@ -158,7 +165,7 @@ describe('mashupRendererService', () => {
     const plugin = makePlugin({ id: 'plugin-1', name: 'Clock', dataSources: [], templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '<div>Clock</div>' })] })
     pluginRenderer.render.mockResolvedValue('<div>Clock</div>')
 
-    const result = await service.renderMashup(draftSlotConfiguration(plugin), device)
+    const { html: result } = await service.renderMashup(draftSlotConfiguration(plugin), device)
 
     expect(result).toContain('<div>Clock</div>')
     expect(result).not.toContain('error.png')
@@ -169,7 +176,7 @@ describe('mashupRendererService', () => {
     const device = makeDevice({ id: 'device-1', width: 800, height: 480 })
     const plugin = makePlugin({ id: 'plugin-1', name: 'Draft Plugin', dataSources: [makePluginDataSource({ name: 'source' })], templates: [] })
 
-    const result = await service.renderMashup(draftSlotConfiguration(plugin), device)
+    const { html: result } = await service.renderMashup(draftSlotConfiguration(plugin), device)
 
     expect(result).not.toContain('error.png')
     expect(result).toContain('Draft Plugin')
@@ -189,7 +196,7 @@ describe('mashupRendererService', () => {
     })
     pluginRenderer.render.mockResolvedValue('<div>42</div>')
 
-    const result = await service.renderMashup(draftSlotConfiguration(plugin), device)
+    const { html: result } = await service.renderMashup(draftSlotConfiguration(plugin), device)
 
     expect(result).toContain('<div>42</div>')
     expect(result).not.toContain('error.png')
@@ -214,7 +221,7 @@ describe('mashupRendererService', () => {
     })
     pluginRenderer.render.mockResolvedValue('<div>Feed</div>')
 
-    const result = await service.renderMashup(draftSlotConfiguration(plugin), device)
+    const { html: result } = await service.renderMashup(draftSlotConfiguration(plugin), device)
 
     expect(result).toContain('<div>Feed</div>')
     expect(result).not.toContain('error.png')
@@ -225,7 +232,7 @@ describe('mashupRendererService', () => {
     const device = makeDevice({ id: 'device-1', width: 800, height: 480 })
     const plugin = makePlugin({ id: 'plugin-1', name: 'Feed', kind: 'Webhook', webhookPayload: { reading: 42 }, templates: [] })
 
-    const result = await service.renderMashup(draftSlotConfiguration(plugin), device)
+    const { html: result } = await service.renderMashup(draftSlotConfiguration(plugin), device)
 
     expect(result).not.toContain('error.png')
     expect(result).toContain('Feed')
@@ -258,7 +265,7 @@ describe('mashupRendererService', () => {
     pluginDataFetcher.fetchData = vi.fn().mockResolvedValue({})
     pluginRenderer.render = vi.fn().mockResolvedValue('<div>Test</div>')
 
-    const result = await service.renderMashup(config, device)
+    const { html: result } = await service.renderMashup(config, device)
 
     expect(result).toContain('class="mashup mashup--2x2"')
     expect(result.trim().startsWith('<div class="mashup')).toBe(true)
@@ -287,7 +294,7 @@ describe('mashupRendererService', () => {
     pluginDataFetcher.fetchData = vi.fn().mockResolvedValue({})
     pluginRenderer.render = vi.fn().mockResolvedValue('<div>Test</div>')
 
-    const result = await service.renderMashup(config, device)
+    const { html: result } = await service.renderMashup(config, device)
 
     expect(result).toContain('class="mashup mashup--1Tx1B"')
     expect(result).not.toContain('<html>')

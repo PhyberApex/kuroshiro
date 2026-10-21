@@ -4,6 +4,8 @@ import type { FallbackScreensService } from '../../device-models/fallback-screen
 import type { MockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService.js'
 import type { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
 import type { FirmwareService } from '../../firmware/firmware.service.js'
+import type { MashupConfiguration } from '../../mashup/entities/mashup-configuration.entity.js'
+import type { MashupSlot } from '../../mashup/entities/mashup-slot.entity.js'
 import type { MashupRendererService } from '../../mashup/services/mashup-renderer.service.js'
 import type { PluginRendererService } from '../../plugins/services/plugin-renderer.service.js'
 import type { Schedule } from '../../schedule/schedule.entity.js'
@@ -113,6 +115,8 @@ describe('deviceDisplayService', () => {
       asService<ConfigService>(configService),
       asService<DeviceModelsService>(deviceModels),
       asService<MashupRendererService>({}),
+      asRepository(createMockRepository<MashupSlot>()),
+      asRepository(createMockRepository<MashupConfiguration>()),
     )
     service = new DeviceDisplayService(
       asRepository(deviceRepo),
@@ -458,7 +462,7 @@ describe('deviceDisplayService', () => {
         city: 'Berlin',
         trmnl: expect.objectContaining({ plugin_settings: expect.objectContaining({ custom_fields_values: { city: 'Berlin' } }) }),
       })
-      expect(resolveAll).toHaveBeenCalledWith(plugin.dataSources, fieldValuesInContext, { savedStates: {}, previousMergeVariables: {} })
+      expect(resolveAll).toHaveBeenCalledWith(plugin.dataSources, fieldValuesInContext, { savedStates: {}, previousOutputs: {} })
       expect(render).toHaveBeenCalledWith('{{ city }}', expect.objectContaining({ source: 1 }))
       expect(render).toHaveBeenCalledWith('{{ city }}', fieldValuesInContext)
     })
@@ -1256,7 +1260,7 @@ describe('deviceDisplayService', () => {
       configService.get.mockReturnValue('http://api')
 
       const mockMashupRenderer = {
-        renderMashup: vi.fn().mockResolvedValue('<html>Mashup HTML</html>'),
+        renderMashup: vi.fn().mockResolvedValue({ html: '<html>Mashup HTML</html>', slots: [] }),
       }
       injectPrivate(screenRender, 'mashupRenderer', mockMashupRenderer)
 
@@ -1744,7 +1748,7 @@ describe('deviceDisplayService', () => {
       const base = overrides.type === 'plugin'
         ? { plugin: makePlugin({ id: `${overrides.id}-plugin` }), cachedPluginOutput: body, html: null }
         : overrides.type === 'mashup'
-          ? { mashupConfiguration: makeMashupConfiguration({ id: `${overrides.id}-mashup` }), cachedPluginOutput: body, html: null }
+          ? { mashupConfiguration: makeMashupConfiguration({ id: `${overrides.id}-mashup`, slots: [makeMashupSlot({ id: `${overrides.id}-slot`, renderedMarkup: body })] }), cachedPluginOutput: body, html: null }
           : { type: 'html' as const, html: body }
       return makeScreen({ device: signalDevice, isActive: false, fetchManual: false, externalLink: null, filename: 'x', generatedAt: new Date('2026-08-21T00:00:00'), ...base, ...overrides })
     }

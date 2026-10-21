@@ -1,5 +1,6 @@
 import type { ConfigService } from '@nestjs/config'
 import type { DataSource } from 'typeorm'
+import type { DeviceModelsService } from '../../device-models/device-models.service.js'
 import type { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
 import type { MashupConfiguration } from '../../mashup/entities/mashup-configuration.entity.js'
 import type { MashupSlot } from '../../mashup/entities/mashup-slot.entity.js'
@@ -11,6 +12,7 @@ import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { MashupRendererService } from '../../mashup/services/mashup-renderer.service.js'
 import { Screen } from '../../screens/screens.entity.js'
 import { stubFetch } from '../../test/fetch.js'
+import { createMockDeviceModelsService, primeMockDeviceModelsServiceWithAssignedModels } from '../../test/mockDeviceModelsService.js'
 import { asService } from '../../test/mockService.js'
 import { createTestDatabase } from '../../test/testDatabase.js'
 import { DevicePlugin } from '../entities/device-plugin.entity.js'
@@ -66,7 +68,7 @@ describe('field values against a real database', () => {
     const config = asService<ConfigService>({ get: () => false })
     const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config, new InstanceTimeZone()), new PluginTransformService())
     const templateContext = new PluginTemplateContextService(fieldValues, resolver, new InstanceTimeZone(), new PluginDataSourceStateService(database.getRepository(PluginDataSource)))
-    const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
+    const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen), asService<DeviceModelsService>(primeMockDeviceModelsServiceWithAssignedModels(createMockDeviceModelsService())))
     const refresh = new PluginRefreshService(renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), new PluginDataSourceStateService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
 
     scheduler = new PluginSchedulerService(refresh)
@@ -84,8 +86,8 @@ describe('field values against a real database', () => {
     )
     pluginReads = new PluginReadsService(database.getRepository(Plugin), database.getRepository(Screen), database.getRepository(Alert), fieldValues, asService<ConfigService>({ getOrThrow: () => 'https://kuroshiro.example' }))
     const deviceSensors = asService<DeviceSensorsService>({ findForDevice: async () => [] })
-    mashupRenderer = new MashupRendererService(renderer, deviceSensors, templateContext)
-    previewData = new PluginPreviewDataService(database.getRepository(Plugin), database.getRepository(Device), deviceSensors, templateContext)
+    mashupRenderer = new MashupRendererService(renderer, deviceSensors, templateContext, asService<DeviceModelsService>(primeMockDeviceModelsServiceWithAssignedModels(createMockDeviceModelsService())))
+    previewData = new PluginPreviewDataService(database.getRepository(Plugin), database.getRepository(Device), deviceSensors, templateContext, asService<DeviceModelsService>(primeMockDeviceModelsServiceWithAssignedModels(createMockDeviceModelsService())))
     webhookIngest = new WebhookIngestService(database.getRepository(Plugin), refresh)
     mockImporter = { importFromRecipe: vi.fn() }
     recipeUpdate = new RecipeUpdateService(
@@ -184,7 +186,7 @@ describe('field values against a real database', () => {
       const slot = { id: 'slot-1', position: 'top', size: 'half_horizontal', order: 0, plugin: await loadForRender(plugin.id) } as MashupSlot
       const mashup = { id: 'mashup-1', layout: '1Tx1B', slots: [slot] } as MashupConfiguration
 
-      const html = await mashupRenderer.renderMashup(mashup, device)
+      const { html } = await mashupRenderer.renderMashup(mashup, device)
 
       expect(html).toContain(BERLIN)
     })
