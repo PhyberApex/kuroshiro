@@ -1,6 +1,7 @@
 import type { RecipeUpdateMode, RecipeUpdatePreview } from 'kuroshiro-shared'
 import type { ApplyRecipeUpdateDto } from '../dto/apply-recipe-update.dto.js'
 import type { Plugin } from '../entities/plugin.entity.js'
+import type { OAuthSettings } from '../plugin-oauth.js'
 import type { ParsedPlugin } from './plugin-importer.service.js'
 import type {
   ComparableDataSource,
@@ -21,19 +22,21 @@ import { PluginDataSource } from '../entities/plugin-data-source.entity.js'
 import { PluginField } from '../entities/plugin-field.entity.js'
 import { PluginTemplate } from '../entities/plugin-template.entity.js'
 import { Plugin as PluginEntity } from '../entities/plugin.entity.js'
+import { NO_REFRESHED_TOKEN } from '../plugin-oauth.js'
 import { pluginNotFound, PluginsService } from '../plugins.service.js'
 import { toRecipeUpdatePreview } from '../recipe-update.mapper.js'
 import { PluginFieldValuesService } from './plugin-field-values.service.js'
-import { PluginImporterService } from './plugin-importer.service.js'
+import { PluginImporterService, recipeSnapshotOf } from './plugin-importer.service.js'
 import { computeRecipeContentHash, diffRecipeUpdate } from './recipe-update-diff.js'
 
 const PLUGIN_UPDATE_RELATIONS = { dataSources: true, templates: true, fields: true } as const
 
-interface BasicFieldUpdates {
+interface BasicFieldUpdates extends Partial<typeof NO_REFRESHED_TOKEN> {
   name?: string
   description?: string | null
   refreshInterval?: number
   frameworkVersion?: string | null
+  oauthSettings?: OAuthSettings | null
 }
 
 // What each scalar Update Item writes to the Plugin; the keyed ones (Data Source, template, field) are applied child by child.
@@ -42,6 +45,8 @@ const SCALAR_UPDATES: Partial<Record<UpdateItem['itemType'], (upstream: unknown)
   description: upstream => ({ description: (upstream as string | undefined) ?? null }),
   refreshInterval: upstream => ({ refreshInterval: upstream as number }),
   frameworkVersion: upstream => ({ frameworkVersion: (upstream as string | undefined) ?? null }),
+  // A refreshed token belongs to the endpoint and client that issued it, so new settings start again from the pasted one.
+  oauthSettings: upstream => ({ oauthSettings: (upstream as OAuthSettings | undefined) ?? null, ...NO_REFRESHED_TOKEN }),
 }
 
 function toComparablePlugin(plugin: Plugin): ComparablePlugin {
@@ -50,6 +55,7 @@ function toComparablePlugin(plugin: Plugin): ComparablePlugin {
     description: plugin.description,
     refreshInterval: plugin.refreshInterval,
     frameworkVersion: plugin.frameworkVersion,
+    oauthSettings: plugin.oauthSettings,
     dataSources: (plugin.dataSources ?? []).map((dataSource): ComparableDataSource => ({
       name: dataSource.name,
       mode: dataSource.mode,
@@ -87,6 +93,7 @@ function parsedToComparable(parsed: ParsedPlugin): ComparablePlugin {
     description: parsed.description,
     refreshInterval: parsed.refreshInterval,
     frameworkVersion: parsed.frameworkVersion,
+    oauthSettings: parsed.oauthSettings,
     dataSources: parsed.dataSources,
     templates: parsed.templates,
     fields: parsed.fields,
@@ -146,7 +153,7 @@ export class RecipeUpdateService {
 
   private async prepareDiff(pluginId: string): Promise<{ plugin: Plugin, upstream: ParsedPlugin, contentHash: string, mode: RecipeUpdateMode, items: UpdateItem[] }> {
     const plugin = await this.loadPluginWithSourceRecipe(pluginId)
-    const upstream = await this.importerService.importFromRecipe(plugin.sourceRecipeId!)
+    const upstream = recipeSnapshotOf(await this.importerService.importFromRecipe(plugin.sourceRecipeId!))
     const contentHash = computeRecipeContentHash(upstream)
     const { mode, items } = diffRecipeUpdate(this.snapshotOf(plugin), toComparablePlugin(plugin), parsedToComparable(upstream))
     return { plugin, upstream, contentHash, mode, items }

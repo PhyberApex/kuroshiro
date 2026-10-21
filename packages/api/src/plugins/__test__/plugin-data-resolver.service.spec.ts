@@ -76,7 +76,7 @@ describe('pluginDataResolverService', () => {
 
       await service.resolveAll([source], { trmnl: {} }, { savedStates: { 'ds-1': { cursor: 'abc' } } })
 
-      expect(fetchOrLiteral).toHaveBeenCalledWith(source, { trmnl: { state: { cursor: 'abc' } } })
+      expect(fetchOrLiteral).toHaveBeenCalledWith(source, { trmnl: { state: { cursor: 'abc' } } }, undefined)
     })
 
     it('hands the transform the guarded fetch', async () => {

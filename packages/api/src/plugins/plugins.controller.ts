@@ -12,7 +12,7 @@ import { UpdatePluginDto } from './dto/update-plugin.dto.js'
 import { PluginsService } from './plugins.service.js'
 import { PluginAssignmentsService } from './services/plugin-assignments.service.js'
 import { PluginExporterService } from './services/plugin-exporter.service.js'
-import { ParsedPlugin, PluginImporterService } from './services/plugin-importer.service.js'
+import { ParsedPlugin, PluginImporterService, recipeSnapshotOf } from './services/plugin-importer.service.js'
 import { PluginPreviewDataService } from './services/plugin-preview-data.service.js'
 import { PluginReadsService } from './services/plugin-reads.service.js'
 import { RecipeUpdateService } from './services/recipe-update.service.js'
@@ -107,11 +107,11 @@ export class PluginsController {
 
   @Post('import-recipe')
   async importFromRecipe(@Body() { recipe, deviceId }: ImportRecipeDto): Promise<PluginImportResult> {
-    const parsed = await this.importerService.importFromRecipe(recipe)
-    return this.answerImport(parsed, { type: 'recipe', id: parsed.sourceRecipeId, name: parsed.name }, deviceId)
+    const imported = await this.importerService.importFromRecipe(recipe)
+    return this.answerImport(recipeSnapshotOf(imported), { type: 'recipe', id: imported.sourceRecipeId, name: imported.name }, deviceId, imported.typedByHand)
   }
 
-  private async answerImport(parsed: ParsedPlugin, origin: PluginImportOrigin, deviceId?: string): Promise<PluginImportResult> {
+  private async answerImport(parsed: ParsedPlugin, origin: PluginImportOrigin, deviceId?: string, typedByHand: string[] = []): Promise<PluginImportResult> {
     // Only a Recipe import keeps what it read as the Recipe Snapshot.
     const sourceRecipeSnapshot = parsed.sourceRecipeId ? { ...parsed } : undefined
     const id = await this.pluginsService.createOnDevice({ ...parsed, sourceRecipeSnapshot }, deviceId || undefined)
@@ -119,6 +119,8 @@ export class PluginsController {
       plugin: await this.pluginReads.detail(id),
       origin,
       hasTransform: parsed.dataSources.some(source => Boolean(source.transformJs)),
+      needsToken: Boolean(parsed.oauthSettings),
+      typedByHand,
     }
   }
 

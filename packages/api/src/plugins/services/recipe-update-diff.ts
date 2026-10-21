@@ -1,5 +1,6 @@
 import type { PluginFieldAttributes, PluginFieldOption, RecipeUpdateMode, UpdateItemKind, UpdateItemType } from 'kuroshiro-shared'
 import type { JsonObject } from '../../utils/json.js'
+import type { OAuthSettings } from '../plugin-oauth.js'
 import * as crypto from 'node:crypto'
 
 // A plain, framework-free shape every side of the diff (the stored Recipe
@@ -43,6 +44,7 @@ export interface ComparablePlugin {
   description?: string | null
   refreshInterval: number
   frameworkVersion?: string | null
+  oauthSettings?: OAuthSettings | null
   dataSources: ComparableDataSource[]
   templates: ComparableTemplate[]
   fields: ComparableField[]
@@ -250,6 +252,7 @@ export function diffRecipeUpdate(snapshot: ComparablePlugin | null, local: Compa
     scalarEntry('description', snapshot?.description, local.description, upstream.description),
     scalarEntry('refreshInterval', snapshot?.refreshInterval, local.refreshInterval, upstream.refreshInterval),
     scalarEntry('frameworkVersion', snapshot?.frameworkVersion, local.frameworkVersion, upstream.frameworkVersion),
+    scalarEntry('oauthSettings', snapshot?.oauthSettings, local.oauthSettings, upstream.oauthSettings),
     ...keyedEntries('template', mode, snapshot?.templates, local.templates, upstream.templates, t => t.layout, normalizeTemplate),
     ...keyedEntries('dataSource', mode, snapshot?.dataSources, local.dataSources, upstream.dataSources, d => d.name, normalizeDataSource),
     ...keyedEntries('field', mode, snapshot?.fields, local.fields, upstream.fields, f => f.keyname, normalizeField),

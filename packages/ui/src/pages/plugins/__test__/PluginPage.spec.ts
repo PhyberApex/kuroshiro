@@ -560,9 +560,10 @@ describe('the Plugin page', () => {
     it.each<[PluginArrival, string]>([
       [{ how: 'created' }, 'Created. It shows its name until you write its template. It is not on a Device yet.'],
       [{ how: 'duplicated', source: 'Forecast' }, 'A copy of Forecast. It is not on a Device yet.'],
-      [{ how: 'imported', origin: 'recipe', name: 'Weather report', hasTransform: false }, 'Imported from the Recipe Weather report. It is not on a Device yet.'],
-      [{ how: 'imported', origin: 'file', name: 'weather.trmnlp.zip', hasTransform: true }, 'Imported from weather.trmnlp.zip. It is not on a Device yet. It brings a transform: JavaScript that runs on this server at every fetch. Read it under Data Sources.'],
-      [{ how: 'imported', origin: 'github', name: 'usetrmnl/weather', hasTransform: false }, 'Imported from usetrmnl/weather. It is not on a Device yet.'],
+      [{ how: 'imported', origin: 'recipe', name: 'Weather report', hasTransform: false, needsToken: false, typedByHand: [] }, 'Imported from the Recipe Weather report. It is not on a Device yet.'],
+      [{ how: 'imported', origin: 'file', name: 'weather.trmnlp.zip', hasTransform: true, needsToken: false, typedByHand: [] }, 'Imported from weather.trmnlp.zip. It is not on a Device yet. It brings a transform: JavaScript that runs on this server at every fetch. Read it under Data Sources.'],
+      [{ how: 'imported', origin: 'github', name: 'usetrmnl/weather', hasTransform: false, needsToken: false, typedByHand: [] }, 'Imported from usetrmnl/weather. It is not on a Device yet.'],
+      [{ how: 'imported', origin: 'recipe', name: 'AdMob Overview', hasTransform: false, needsToken: true, typedByHand: ['AdMob account'] }, 'Imported from the Recipe AdMob Overview. It is not on a Device yet. It signs in with OAuth and needs a token before it can poll: paste the tokens and the client under Plugin Fields. Type AdMob account by hand; on TRMNL it is picked from a list.'],
       [{ how: 'applied', updateItems: 3, recipe: 'Weather report' }, 'Applied 3 Update Items from the Recipe Weather report.'],
       [{ how: 'skipped', updateItems: 2, recipe: 'Weather report' }, 'Skipped 2 Update Items from the Recipe Weather report.'],
     ])('says what just happened for %j', async (arrival, line) => {

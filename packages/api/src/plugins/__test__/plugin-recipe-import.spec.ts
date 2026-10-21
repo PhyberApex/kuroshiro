@@ -277,20 +277,88 @@ describe('pluginImporterService recipe import', () => {
       ])
     })
 
-    it('rejects an OAuth-enabled recipe with a clear error', async () => {
-      const settings = { name: 'OAuth Recipe', strategy: 'polling', oauth_enabled: true, polling_url: 'https://api.example.com' }
-      const archive = buildFlatRecipeArchive(settings)
+    describe('an OAuth Recipe (ADR-0067)', () => {
+      const ADMOB = {
+        name: 'AdMob Overview',
+        strategy: 'polling',
+        polling_url: 'https://admob.googleapis.com/v1/accounts/{{ publisher_id }}/networkReport:generate',
+        polling_verb: 'post',
+        polling_headers: 'Authorization=Bearer {{ oauth_access_token }}',
+        oauth_enabled: 'true',
+        oauth_token_url: 'https://oauth2.googleapis.com/token',
+        oauth_scopes: 'https://www.googleapis.com/auth/admob.report',
+        oauth_refresh_params: '',
+        custom_fields: [{
+          keyname: 'publisher_id',
+          field_type: 'xhrSelect',
+          name: 'AdMob account',
+          description: 'Connect Google above, then choose the account to show.',
+          remote: { url: 'https://admob.googleapis.com/v1/accounts', response_path: 'account', value_field: 'publisherId' },
+        }],
+      }
 
-      const service = new PluginImporterService()
-      await expect(service.importFromRecipeArchive(archive, '1')).rejects.toThrow('OAuth')
-    })
+      it('imports with its oauth_* settings kept as the Recipe wrote them', async () => {
+        const result = await new PluginImporterService().importFromRecipeArchive(buildFlatRecipeArchive(ADMOB), '499993')
 
-    it('refuses an OAuth-enabled recipe whose archive spells the flag as the string "true"', async () => {
-      const settings = { name: 'OAuth Recipe', strategy: 'polling', oauth_enabled: 'true', polling_url: 'https://api.example.com' }
-      const archive = buildFlatRecipeArchive(settings)
+        expect(result.oauthSettings).toEqual({
+          oauth_enabled: 'true',
+          oauth_token_url: 'https://oauth2.googleapis.com/token',
+          oauth_scopes: 'https://www.googleapis.com/auth/admob.report',
+          oauth_refresh_params: '',
+        })
+        expect(result.dataSources[0].headers).toEqual({ Authorization: 'Bearer {{ oauth_access_token }}' })
+      })
 
-      const service = new PluginImporterService()
-      await expect(service.importFromRecipeArchive(archive, '1')).rejects.toThrow('OAuth')
+      it('adds a password Plugin Field for each token and the client, after the Recipe\'s own', async () => {
+        const result = await new PluginImporterService().importFromRecipeArchive(buildFlatRecipeArchive(ADMOB), '499993')
+
+        expect(result.fields.map(field => [field.keyname, field.fieldType, field.required, field.order])).toEqual([
+          ['publisher_id', 'string', true, 1],
+          ['oauth_access_token', 'password', false, 2],
+          ['oauth_refresh_token', 'password', false, 3],
+          ['oauth_client_id', 'password', false, 4],
+          ['oauth_client_secret', 'password', false, 5],
+        ])
+      })
+
+      it('reads an xhrSelect Plugin Field as text typed by hand, keeping its keyname, name and description', async () => {
+        const result = await new PluginImporterService().importFromRecipeArchive(buildFlatRecipeArchive(ADMOB), '499993')
+
+        expect(result.fields[0]).toMatchObject({ keyname: 'publisher_id', fieldType: 'string', name: 'AdMob account', description: 'Connect Google above, then choose the account to show.' })
+        expect(result.typedByHand).toEqual(['AdMob account'])
+      })
+
+      it('reads the flag written as a boolean too', async () => {
+        const result = await new PluginImporterService().importFromRecipeArchive(buildFlatRecipeArchive({ ...ADMOB, oauth_enabled: true }), '1')
+
+        expect(result.oauthSettings?.oauth_token_url).toBe('https://oauth2.googleapis.com/token')
+      })
+
+      it('keeps no OAuth settings and adds no token fields for a Recipe that does not sign in', async () => {
+        const result = await new PluginImporterService().importFromRecipeArchive(buildFlatRecipeArchive({ ...ADMOB, oauth_enabled: 'false', custom_fields: [] }), '1')
+
+        expect(result.oauthSettings).toBeUndefined()
+        expect(result.fields).toEqual([])
+        expect(result.typedByHand).toEqual([])
+      })
+
+      it('travels a .trmnlp export and back, its token fields not doubled', async () => {
+        const imported = await new PluginImporterService().importFromRecipeArchive(buildFlatRecipeArchive(ADMOB), '499993')
+        const plugin = makePlugin({
+          oauthSettings: imported.oauthSettings,
+          oauthAccessToken: 'runtime-token',
+          dataSources: [makePluginDataSource({ name: 'source', url: imported.dataSources[0].url })],
+          fields: imported.fields.map(field => makePluginField(field)),
+          templates: [makePluginTemplate({ layout: 'full', liquidMarkup: '<div></div>' })],
+        })
+
+        const zip = new AdmZip(await new PluginExporterService().exportToZip(plugin))
+        const reread = new PluginImporterService().parseZip(zip, 'admob')
+
+        expect(reread.oauthSettings).toEqual(imported.oauthSettings)
+        expect(reread.fields.map(field => field.keyname)).toEqual(['publisher_id', 'oauth_access_token', 'oauth_refresh_token', 'oauth_client_id', 'oauth_client_secret'])
+        expect(zip.getEntries().map(entry => entry.getData().toString('utf8')).join('\n')).not.toContain('runtime-token')
+      })
     })
 
     it('imports a recipe whose archive spells oauth_enabled as the string "false"', async () => {
