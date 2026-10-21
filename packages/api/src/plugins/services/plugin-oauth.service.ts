@@ -1,14 +1,16 @@
 import type { OAuthSettings, StoredAccessToken } from '../plugin-oauth.js'
+import { isDeepStrictEqual } from 'node:util'
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Plugin } from '../entities/plugin.entity.js'
-import { isDueForRefresh, refreshCredentialsOf, refreshedTokenOf, refreshRequestOf } from '../plugin-oauth.js'
-import { HttpStatusError, PluginDataFetcherService } from './plugin-data-fetcher.service.js'
+import { accessTokenFieldOf, columnsOf, isDueForRefresh, NO_STORED_TOKEN, pastedTokensOf, refreshCredentialsOf, refreshedTokenOf, refreshRequestOf, STORED_TOKEN_SELECT, storedAccessTokenOf } from '../plugin-oauth.js'
+import { isUnauthorized, PluginDataFetcherService } from './plugin-data-fetcher.service.js'
+import { PluginFieldValuesService } from './plugin-field-values.service.js'
 
 /** What a poll of an OAuth Plugin's Data Source is signed with: the Plugin, the Recipe's settings and its Field Values, secrets included. */
 export interface OAuthPoll {
-  /** Unset for a preview of a Plugin not saved yet, whose refreshed token is kept nowhere. */
+  /** Unset for a preview of a Plugin not saved yet, or of tokens not saved yet, whose refreshed token is kept nowhere. */
   pluginId?: string
   settings: OAuthSettings
   fieldValues: Record<string, string>
@@ -16,10 +18,6 @@ export interface OAuthPoll {
 
 const TOKEN_REQUEST_TIMEOUT_MS = 10_000
 const REPLY_LIMIT = 500
-
-const NO_TOKEN: StoredAccessToken = { accessToken: null, refreshToken: null, expiresAt: null, refreshedAt: null }
-
-const isUnauthorized = (error: unknown): boolean => error instanceof HttpStatusError && error.status === 401
 
 /**
  * The access token an OAuth Recipe's Data Sources poll with (ADR-0067): the one the Plugin's last refresh answered, or
@@ -36,6 +34,7 @@ export class PluginOAuthService {
     @InjectRepository(Plugin)
     private readonly pluginRepository: Repository<Plugin>,
     private readonly dataFetcher: PluginDataFetcherService,
+    private readonly fieldValues: PluginFieldValuesService,
   ) {}
 
   /**
@@ -82,10 +81,21 @@ export class PluginOAuthService {
   }
 
   private async load(pluginId: string | undefined): Promise<StoredAccessToken> {
-    const row = pluginId ? await this.pluginRepository.findOne({ where: { id: pluginId }, select: { id: true, oauthAccessToken: true, oauthRefreshToken: true, oauthAccessTokenExpiresAt: true, oauthRefreshedAt: true } }) : null
-    if (!row)
-      return NO_TOKEN
-    return { accessToken: row.oauthAccessToken ?? null, refreshToken: row.oauthRefreshToken ?? null, expiresAt: row.oauthAccessTokenExpiresAt ?? null, refreshedAt: row.oauthRefreshedAt ?? null }
+    const row = pluginId ? await this.pluginRepository.findOne({ where: { id: pluginId }, select: STORED_TOKEN_SELECT }) : null
+    return row ? storedAccessTokenOf(row) : NO_STORED_TOKEN
+  }
+
+  /**
+   * Whether the Plugin still has the settings and pasted tokens a refresh was sent with. A save that changes them while
+   * the refresh runs forgets the refreshed token, and what the refresh answers must not bring back one issued for the
+   * old ones.
+   */
+  private async stillPasted(pluginId: string, { settings, fieldValues }: OAuthPoll): Promise<boolean> {
+    const [plugin, stored] = await Promise.all([
+      this.pluginRepository.findOne({ where: { id: pluginId }, select: { id: true, oauthSettings: true } }),
+      this.fieldValues.storedFor(pluginId),
+    ])
+    return !!plugin && isDeepStrictEqual(plugin.oauthSettings, settings) && isDeepStrictEqual(pastedTokensOf(stored), pastedTokensOf(fieldValues))
   }
 
   private async refresh({ pluginId, settings, fieldValues }: OAuthPoll, stored: StoredAccessToken): Promise<StoredAccessToken> {
@@ -102,11 +112,12 @@ export class PluginOAuthService {
       throw new Error(`The token endpoint answered ${response.status}: ${reply.slice(0, REPLY_LIMIT)}`)
 
     const refreshed = refreshedTokenOf(settings, tryParseJson(reply), new Date())
+    // A successful answer is not quoted: it holds the tokens.
     if (!refreshed)
-      throw new Error(`The token endpoint answered no access token: ${reply.slice(0, REPLY_LIMIT)}`)
+      throw new Error(`The token endpoint answered no "${accessTokenFieldOf(settings)}" field.`)
     const token = { ...refreshed, refreshToken: refreshed.refreshToken ?? stored.refreshToken }
-    if (pluginId)
-      await this.pluginRepository.update(pluginId, { oauthAccessToken: token.accessToken, oauthRefreshToken: token.refreshToken, oauthAccessTokenExpiresAt: token.expiresAt, oauthRefreshedAt: token.refreshedAt })
+    if (pluginId && await this.stillPasted(pluginId, { pluginId, settings, fieldValues }))
+      await this.pluginRepository.update(pluginId, columnsOf(token))
     return token
   }
 }

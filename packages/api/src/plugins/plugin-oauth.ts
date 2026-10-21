@@ -1,3 +1,4 @@
+import type { Plugin } from './entities/plugin.entity.js'
 import { isPlainObject } from '../utils/json.js'
 
 /** A Recipe's `oauth_*` settings as its settings.yml wrote them, `oauth_enabled` included (ADR-0067). */
@@ -13,17 +14,20 @@ export const OAUTH_FIELDS = [
 
 const ACCESS_TOKEN = 'oauth_access_token'
 
+/** The four pasted values, read from Field Values that may lack any of them. */
+export const pastedTokensOf = (fieldValues: Record<string, string | undefined>): Record<string, string> => Object.fromEntries(OAUTH_FIELDS.map(({ keyname }) => [keyname, fieldValues[keyname] || '']))
+
 export const isOAuthKeyname = (keyname: string): boolean => OAUTH_FIELDS.some(field => field.keyname === keyname)
 
 /** A flag of a Recipe's settings, which TRMNL's archives quote as 'true' / 'false' or 'yes' / 'no'. */
-export function settingFlag(value: unknown): boolean {
+export function recipeFlag(value: unknown): boolean {
   return typeof value === 'string' ? ['true', 'yes'].includes(value.trim().toLowerCase()) : value === true
 }
 
 /** The `oauth_*` keys of settings that sign in with OAuth, each as text; none for settings that do not. */
 export function oauthSettingsOf(settings: object): OAuthSettings | undefined {
   const entries = Object.entries(settings).filter(([key]) => key.startsWith('oauth_'))
-  if (!settingFlag((settings as { oauth_enabled?: unknown }).oauth_enabled))
+  if (!recipeFlag((settings as { oauth_enabled?: unknown }).oauth_enabled))
     return undefined
   return Object.fromEntries(entries.map(([key, value]) => [key, value === null || value === undefined ? '' : String(value)]))
 }
@@ -36,8 +40,20 @@ export interface StoredAccessToken {
   refreshedAt: Date | null
 }
 
-/** A Plugin's refreshed token forgotten, as a save that pastes a token again leaves it, so the next poll starts from what was pasted. */
-export const NO_REFRESHED_TOKEN = { oauthAccessToken: null, oauthRefreshToken: null, oauthAccessTokenExpiresAt: null, oauthRefreshedAt: null }
+/** The Plugin's runtime columns that hold its refreshed token. */
+type StoredAccessTokenColumns = Pick<Plugin, 'oauthAccessToken' | 'oauthRefreshToken' | 'oauthAccessTokenExpiresAt' | 'oauthRefreshedAt'>
+
+export const NO_STORED_TOKEN: StoredAccessToken = { accessToken: null, refreshToken: null, expiresAt: null, refreshedAt: null }
+
+export const storedAccessTokenOf = (row: StoredAccessTokenColumns): StoredAccessToken => ({ accessToken: row.oauthAccessToken ?? null, refreshToken: row.oauthRefreshToken ?? null, expiresAt: row.oauthAccessTokenExpiresAt ?? null, refreshedAt: row.oauthRefreshedAt ?? null })
+
+export const columnsOf = (token: StoredAccessToken): Required<StoredAccessTokenColumns> => ({ oauthAccessToken: token.accessToken, oauthRefreshToken: token.refreshToken, oauthAccessTokenExpiresAt: token.expiresAt, oauthRefreshedAt: token.refreshedAt })
+
+/** The columns to select to read a Plugin's refreshed token, which a plain load leaves out. */
+export const STORED_TOKEN_SELECT = { id: true, oauthAccessToken: true, oauthRefreshToken: true, oauthAccessTokenExpiresAt: true, oauthRefreshedAt: true } as const
+
+/** A Plugin's refreshed token forgotten, as a change to its OAuth settings or pasted tokens leaves it, so the next poll starts from what was pasted. */
+export const NO_REFRESHED_TOKEN = columnsOf(NO_STORED_TOKEN)
 
 const EXPIRY_MARGIN_MS = 60_000
 const UNKNOWN_EXPIRY_AGE_MS = 50 * 60_000
@@ -105,23 +121,27 @@ function secondsFrom(now: Date, value: unknown): Date | null {
 }
 
 /**
- * The expiry of a refreshed token: the answer's `expires_in` (or the field `oauth_expiry_field_name` names) as seconds
- * from now whenever the answer has it, else `oauth_fixed_expiry_ms` after the refresh when the Recipe sets it, else
- * unknown. TRMNL's docs name no value of `oauth_expiry_strategy`, so it is not read.
+ * The expiry of a refreshed token: the answer's `expires_in` as seconds from now whenever the answer has it, else the
+ * field `oauth_expiry_field_name` names read the same way, else `oauth_fixed_expiry_ms` after the refresh when the
+ * Recipe sets it, else unknown. TRMNL's docs name no value of `oauth_expiry_strategy`, so it is not read.
  */
 function expiresAtOf(settings: OAuthSettings, response: Record<string, unknown>, now: Date): Date | null {
-  const answered = secondsFrom(now, response[settings.oauth_expiry_field_name?.trim() || 'expires_in'])
+  const fieldName = settings.oauth_expiry_field_name?.trim()
+  const answered = secondsFrom(now, response.expires_in) ?? (fieldName ? secondsFrom(now, response[fieldName]) : null)
   if (answered)
     return answered
   const fixedMs = settings.oauth_fixed_expiry_ms?.trim()
   return fixedMs ? secondsFrom(now, Number(fixedMs) / 1000) : null
 }
 
+/** The field of the token endpoint's answer the access token is read from. */
+export const accessTokenFieldOf = (settings: OAuthSettings): string => settings.oauth_token_field_name?.trim() || 'access_token'
+
 /** The token endpoint's answer read as a stored token, or `null` when it names no access token. */
 export function refreshedTokenOf(settings: OAuthSettings, response: unknown, now: Date): StoredAccessToken | null {
   if (!isPlainObject(response))
     return null
-  const accessToken = response[settings.oauth_token_field_name?.trim() || 'access_token']
+  const accessToken = response[accessTokenFieldOf(settings)]
   if (typeof accessToken !== 'string' || accessToken === '')
     return null
   const refreshToken = typeof response.refresh_token === 'string' && response.refresh_token !== '' ? response.refresh_token : null
@@ -129,7 +149,7 @@ export function refreshedTokenOf(settings: OAuthSettings, response: unknown, now
 }
 
 /** The context with the access token in place of the pasted one, in both places a Field Value is read. */
-export function withAccessToken(context: object, accessToken: string): Record<string, unknown> {
+export function contextWithAccessToken(context: object, accessToken: string): Record<string, unknown> {
   const trmnl = (context as { trmnl?: { plugin_settings?: { custom_fields_values?: object } } }).trmnl
   const pluginSettings = trmnl?.plugin_settings
   return {

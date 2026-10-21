@@ -3,6 +3,7 @@ import type { DeviceSensor } from '../../device-sensors/entities/device-sensor.e
 import type { JsonObject } from '../../utils/json.js'
 import type { PluginField } from '../entities/plugin-field.entity.js'
 import type { Plugin } from '../entities/plugin.entity.js'
+import type { OAuthSettings } from '../plugin-oauth.js'
 import type { ResolvableDataSource } from './plugin-data-resolver.service.js'
 import type { FieldValueWrites } from './plugin-field-values.service.js'
 import type { OAuthPoll } from './plugin-oauth.service.js'
@@ -10,6 +11,7 @@ import { Buffer } from 'node:buffer'
 import { Injectable } from '@nestjs/common'
 import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { hideSecretFieldValues, hideSecretsIn, secretValues, templateFieldValues } from '../plugin-field-values.js'
+import { isOAuthKeyname } from '../plugin-oauth.js'
 import { loneSourceRootKeys, PluginDataResolverService } from './plugin-data-resolver.service.js'
 import { PluginDataSourceStateService } from './plugin-data-source-state.service.js'
 import { PluginFieldValuesService } from './plugin-field-values.service.js'
@@ -119,6 +121,12 @@ function fetchedAt(trmnl: PluginTemplateContext['trmnl'], at: Date | null | unde
   return { ...trmnl, plugin_settings }
 }
 
+/** A preview of tokens not saved yet refreshes apart from the saved Plugin, so it neither keeps nor spends the saved one's token. */
+function oauthPollOf(plugin: Plugin, settings: OAuthSettings, unsaved: UnsavedPluginInput): Omit<OAuthPoll, 'fieldValues'> {
+  const tokensUnsaved = Object.keys(unsaved.fieldValues ?? {}).some(isOAuthKeyname)
+  return { pluginId: tokensUnsaved ? undefined : plugin.id, settings }
+}
+
 /**
  * The Liquid context of every render of a Plugin, and of the preview's data:
  * its resolved Field Values, both under `trmnl.plugin_settings.custom_fields_values`
@@ -147,7 +155,7 @@ export class PluginTemplateContextService {
 
     return plugin.kind === 'Webhook'
       ? this.webhookContext(plugin, render)
-      : this.pollContext(unsaved.dataSources ?? plugin.dataSources ?? [], render, plugin.oauthSettings ? { pluginId: plugin.id, settings: plugin.oauthSettings } : null)
+      : this.pollContext(unsaved.dataSources ?? plugin.dataSources ?? [], render, plugin.oauthSettings ? oauthPollOf(plugin, plugin.oauthSettings, unsaved) : null)
   }
 
   private webhookContext(plugin: Plugin, { instanceName, fields, modifiers, sensors, resolved, fieldValues }: RenderInput): PluginRenderContext {

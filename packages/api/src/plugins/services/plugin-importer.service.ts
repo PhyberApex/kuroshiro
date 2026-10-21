@@ -13,7 +13,7 @@ import { UPLOAD_LIMITS } from '../../uploads/upload-limits.js'
 import { downloadLimited, DownloadTooLargeError } from '../../utils/downloadLimited.js'
 import { isPlainObject } from '../../utils/json.js'
 import { parseFieldOptions } from '../plugin-field-options.js'
-import { OAUTH_FIELDS, oauthSettingsOf, settingFlag as recipeFlag } from '../plugin-oauth.js'
+import { OAUTH_FIELDS, oauthSettingsOf, recipeFlag } from '../plugin-oauth.js'
 
 const DOWNLOAD_TIMEOUT_MS = 30_000
 

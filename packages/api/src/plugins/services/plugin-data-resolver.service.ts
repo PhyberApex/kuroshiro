@@ -2,7 +2,7 @@ import type { JsonObject } from '../../utils/json.js'
 import type { FetchableDataSource, FetchErrorMarker, FetchOptions } from './plugin-data-fetcher.service.js'
 import type { OAuthPoll } from './plugin-oauth.service.js'
 import { Injectable, Logger, Optional } from '@nestjs/common'
-import { withAccessToken } from '../plugin-oauth.js'
+import { contextWithAccessToken } from '../plugin-oauth.js'
 import { PluginDataFetcherService } from './plugin-data-fetcher.service.js'
 import { PluginOAuthService } from './plugin-oauth.service.js'
 import { PluginTransformService } from './plugin-transform.service.js'
@@ -86,7 +86,7 @@ export class PluginDataResolverService {
         const context = withState(templateContext, (source.id && savedStates[source.id]) || {})
         if (!oauth || !this.oauthTokens || source.mode === 'literal')
           return this.resolveOne(source, context)
-        return this.oauthTokens.withAccessToken(oauth, (accessToken, lastTry) => this.resolveOne(source, withAccessToken(context, accessToken), { unauthorizedThrows: !lastTry }))
+        return this.oauthTokens.withAccessToken(oauth, (accessToken, lastTry) => this.resolveOne(source, contextWithAccessToken(context, accessToken), { unauthorizedThrows: !lastTry }))
       }),
     )
 

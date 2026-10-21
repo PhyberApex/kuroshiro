@@ -11,7 +11,7 @@ import { PluginDataSource } from '../entities/plugin-data-source.entity.js'
 import { PluginFieldValue } from '../entities/plugin-field-value.entity.js'
 import { PluginField } from '../entities/plugin-field.entity.js'
 import { Plugin } from '../entities/plugin.entity.js'
-import { OAUTH_FIELDS } from '../plugin-oauth.js'
+import { OAUTH_FIELDS, STORED_TOKEN_SELECT } from '../plugin-oauth.js'
 import { DataSourceFetchOutcomeService } from '../services/data-source-fetch-outcome.service.js'
 import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
 import { PluginDataResolverService } from '../services/plugin-data-resolver.service.js'
@@ -48,8 +48,8 @@ describe('an OAuth Plugin\'s access token, refreshed before a poll and on a 401 
     const renderer = new PluginRendererService(new InstanceTimeZone())
     const fetcher = new PluginDataFetcherService(renderer, asService<ConfigService>({ get: () => false }), new InstanceTimeZone())
     const dataSources = database.getRepository(PluginDataSource)
-    const resolver = new PluginDataResolverService(fetcher, new PluginTransformService(), new PluginOAuthService(database.getRepository(Plugin), fetcher))
     const fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
+    const resolver = new PluginDataResolverService(fetcher, new PluginTransformService(), new PluginOAuthService(database.getRepository(Plugin), fetcher, fieldValues))
     templateContext = new PluginTemplateContextService(fieldValues, resolver, new InstanceTimeZone(), new PluginDataSourceStateService(dataSources))
     const renderCache = asService<PluginRenderCacheService>({ renderAndCache: async () => {} })
     refresh = new PluginRefreshService(renderCache, templateContext, new DataSourceFetchOutcomeService(dataSources), new PluginDataSourceStateService(dataSources), database.getRepository(Plugin))
@@ -95,7 +95,7 @@ describe('an OAuth Plugin\'s access token, refreshed before a poll and on a 401 
     return plugins.findOneOrFail({ where: { id: saved.id }, relations: { dataSources: true, fields: true, templates: true } })
   }
 
-  const storedToken = async (plugin: Plugin) => database.getRepository(Plugin).findOneOrFail({ where: { id: plugin.id }, select: { id: true, oauthAccessToken: true, oauthRefreshToken: true, oauthAccessTokenExpiresAt: true, oauthRefreshedAt: true } })
+  const storedToken = async (plugin: Plugin) => database.getRepository(Plugin).findOneOrFail({ where: { id: plugin.id }, select: STORED_TOKEN_SELECT })
   const storedSource = async (plugin: Plugin) => database.getRepository(PluginDataSource).findOneByOrFail({ id: plugin.dataSources[0].id })
   const sourceDataOf = async (plugin: Plugin) => (await templateContext.contextFor(plugin, [])).sourceData
 
@@ -166,7 +166,7 @@ describe('an OAuth Plugin\'s access token, refreshed before a poll and on a 401 
     expect(pollAuthorizations).toEqual(['Bearer pasted-access'])
   })
 
-  it('sends the Recipe\'s refresh params, and reads the expiry from the field the Recipe names', async () => {
+  it('sends the Recipe\'s refresh params, and reads the expiry from the field the Recipe names when the answer has no expires_in', async () => {
     const plugin = await oauthPlugin({ settings: { ...ADMOB_SETTINGS, oauth_refresh_params: '{"audience":"reports"}', oauth_expiry_field_name: 'lifetime' } })
     tokenEndpoint = () => jsonResponse({ access_token: 'refreshed-access', lifetime: 600 })
 
@@ -249,8 +249,9 @@ describe('an OAuth Plugin\'s access token, refreshed before a poll and on a 401 
     expect(tokenRequests).toEqual([])
   })
 
-  it('reads expires_in as the expiry whatever the expiry strategy and fixed expiry say', async () => {
-    const plugin = await oauthPlugin({ settings: { ...ADMOB_SETTINGS, oauth_expiry_strategy: 'something_else', oauth_fixed_expiry_ms: '1800000' } })
+  it('reads expires_in as the expiry whatever the expiry strategy, expiry field and fixed expiry say', async () => {
+    const plugin = await oauthPlugin({ settings: { ...ADMOB_SETTINGS, oauth_expiry_strategy: 'something_else', oauth_expiry_field_name: 'lifetime', oauth_fixed_expiry_ms: '1800000' } })
+    tokenEndpoint = () => jsonResponse({ access_token: 'refreshed-access', expires_in: 3599, lifetime: 600 })
 
     await sourceDataOf(plugin)
 
@@ -273,5 +274,38 @@ describe('an OAuth Plugin\'s access token, refreshed before a poll and on a 401 
     await sourceDataOf(plugin)
 
     expect(await storedToken(plugin)).toMatchObject({ oauthAccessTokenExpiresAt: null, oauthRefreshedAt: NOW })
+  })
+
+  it('names no token of a successful answer that lacks the access token field in the fetch error', async () => {
+    const plugin = await oauthPlugin({ settings: { ...ADMOB_SETTINGS, oauth_token_field_name: 'token' } })
+    tokenEndpoint = () => jsonResponse({ access_token: 'refreshed-access', refresh_token: 'rotated-refresh' })
+
+    await refresh.refresh(plugin, { scheduled: true })
+
+    const { lastFetchError } = await storedSource(plugin)
+    expect(lastFetchError).toBe('The token endpoint answered no "token" field.')
+  })
+
+  it('keeps a preview\'s refresh with tokens not saved yet off the saved Plugin', async () => {
+    const plugin = await oauthPlugin({ token: { oauthAccessToken: 'stored-access', oauthRefreshToken: 'stored-refresh', oauthAccessTokenExpiresAt: new Date(NOW.getTime() + 30 * MINUTE) } })
+
+    await templateContext.contextFor(plugin, [], { fieldValues: { oauth_refresh_token: 'typed-refresh' } })
+
+    expect(new URLSearchParams(tokenRequests[0]).get('refresh_token')).toBe('typed-refresh')
+    expect(pollAuthorizations).toEqual(['Bearer refreshed-access'])
+    expect(await storedToken(plugin)).toMatchObject({ oauthAccessToken: 'stored-access', oauthRefreshToken: 'stored-refresh' })
+  })
+
+  it('keeps nothing a refresh answers when the tokens were saved anew while it ran', async () => {
+    const plugin = await oauthPlugin()
+    tokenEndpoint = async () => {
+      const field = await database.getRepository(PluginField).findOneByOrFail({ keyname: 'oauth_refresh_token' })
+      await database.getRepository(PluginFieldValue).update({ field: { id: field.id } }, { value: 'pasted-again' })
+      return jsonResponse({ access_token: 'refreshed-access', expires_in: 3599 })
+    }
+
+    await sourceDataOf(plugin)
+
+    expect((await storedToken(plugin)).oauthAccessToken).toBeNull()
   })
 })

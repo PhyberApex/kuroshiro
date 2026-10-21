@@ -19,6 +19,7 @@ import { PluginFieldValue } from '../entities/plugin-field-value.entity.js'
 import { PluginField } from '../entities/plugin-field.entity.js'
 import { PluginTemplate } from '../entities/plugin-template.entity.js'
 import { Plugin } from '../entities/plugin.entity.js'
+import { STORED_TOKEN_SELECT } from '../plugin-oauth.js'
 import { PluginsController } from '../plugins.controller.js'
 import { PluginsService } from '../plugins.service.js'
 import { DataSourceFetchOutcomeService } from '../services/data-source-fetch-outcome.service.js'
@@ -764,7 +765,7 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
       await database.getRepository(Plugin).update(plugin.id, { oauthAccessToken: 'refreshed-access', oauthRefreshToken: 'rotated-refresh', oauthAccessTokenExpiresAt: new Date(), oauthRefreshedAt: new Date() })
       return plugin
     }
-    const storedToken = async (pluginId: string) => database.getRepository(Plugin).findOneOrFail({ where: { id: pluginId }, select: { id: true, oauthAccessToken: true, oauthRefreshToken: true, oauthAccessTokenExpiresAt: true, oauthRefreshedAt: true } })
+    const storedToken = async (pluginId: string) => database.getRepository(Plugin).findOneOrFail({ where: { id: pluginId }, select: STORED_TOKEN_SELECT })
 
     it('is forgotten when a token is pasted again, so the next poll starts from what was pasted', async () => {
       const plugin = await withRefreshedToken()

@@ -46,7 +46,8 @@ export interface FetchOptions {
   unauthorizedThrows?: boolean
 }
 
-const isUnauthorized = (reason: unknown): boolean => reason instanceof HttpStatusError && reason.status === 401
+/** A response refused with a 401, as a revoked or expired OAuth access token is. */
+export const isUnauthorized = (reason: unknown): boolean => reason instanceof HttpStatusError && reason.status === 401
 
 /** How long TRMNL gives a polled host to answer (ADR-0062). */
 const REQUEST_TIMEOUT_MS = 10_000
