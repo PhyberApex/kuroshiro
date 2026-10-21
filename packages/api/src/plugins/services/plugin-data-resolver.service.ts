@@ -21,6 +21,8 @@ export interface ResolvableDataSource extends FetchableDataSource {
 export interface ResolveOptions {
   /** Each stored Data Source's saved state by id (ADR-0052). */
   savedStates?: Record<string, JsonObject>
+  /** Each stored Data Source's Previous Output by id (ADR-0070). */
+  previousOutputs?: Record<string, JsonObject>
   /** Set for a Plugin imported from an OAuth Recipe: each fetch-mode Data Source polls with the Plugin's access token (ADR-0068). */
   oauth?: OAuthPoll
 }
@@ -29,6 +31,12 @@ export interface ResolveOptions {
 function withState(templateContext: object, state: JsonObject): Record<string, unknown> {
   const trmnl = (templateContext as { trmnl?: object }).trmnl ?? {}
   return { ...templateContext, trmnl: { ...trmnl, state } }
+}
+
+/** The transform's context, which alone reads the Previous Output at `trmnl.previous_merge_variables`, as trmnlp hands it (ADR-0070). */
+function withPreviousOutput(context: object, previousOutput: JsonObject): Record<string, unknown> {
+  const trmnl = (context as { trmnl?: object }).trmnl ?? {}
+  return { ...context, trmnl: { ...trmnl, previous_merge_variables: previousOutput } }
 }
 
 export type { FetchErrorMarker } from './plugin-data-fetcher.service.js'
@@ -98,13 +106,14 @@ export class PluginDataResolverService {
    * through this rather than re-deriving the fetch/transform/error-marker
    * logic itself.
    */
-  async resolveAll(dataSources: ResolvableDataSource[], templateContext: object = {}, { savedStates = {}, oauth }: ResolveOptions = {}): Promise<Record<string, unknown>> {
+  async resolveAll(dataSources: ResolvableDataSource[], templateContext: object = {}, { savedStates = {}, previousOutputs = {}, oauth }: ResolveOptions = {}): Promise<Record<string, unknown>> {
     const results = await Promise.allSettled(
       dataSources.map(async (source) => {
         const context = withState(templateContext, (source.id && savedStates[source.id]) || {})
+        const previousOutput = (source.id && previousOutputs[source.id]) || {}
         if (!oauth || !this.oauthTokens || source.mode === 'literal')
-          return this.resolveOne(source, context)
-        return this.oauthTokens.withAccessToken(oauth, (accessToken, lastTry) => hidingAccessToken(accessToken, this.resolveOne(source, contextWithAccessToken(context, accessToken), { unauthorizedThrows: !lastTry })))
+          return this.resolveOne(source, context, previousOutput)
+        return this.oauthTokens.withAccessToken(oauth, (accessToken, lastTry) => hidingAccessToken(accessToken, this.resolveOne(source, contextWithAccessToken(context, accessToken), previousOutput, { unauthorizedThrows: !lastTry })))
       }),
     )
 
@@ -126,12 +135,12 @@ export class PluginDataResolverService {
     return data
   }
 
-  private async resolveOne(source: ResolvableDataSource, context: object, fetchOptions?: FetchOptions): Promise<unknown> {
+  private async resolveOne(source: ResolvableDataSource, context: object, previousOutput: JsonObject, fetchOptions?: FetchOptions): Promise<unknown> {
     const rawData = await this.dataFetcher.fetchOrLiteral(source, context, fetchOptions)
     if (!source.transformJs)
       return rawData
     this.logger.debug(`Applying transform.js to data source: ${source.name}`)
     const fetchForTransform = (url: string, init?: RequestInit) => this.dataFetcher.fetchForTransform(url, init)
-    return this.transformer.transform(source.transformJs, transformInputOf(rawData, context), { fetch: fetchForTransform })
+    return this.transformer.transform(source.transformJs, transformInputOf(rawData, withPreviousOutput(context, previousOutput)), { fetch: fetchForTransform })
   }
 }

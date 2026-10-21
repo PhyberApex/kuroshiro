@@ -43,7 +43,7 @@ export class PluginRefreshService {
     // Fetched once for every Screen, so the context is built for no single
     // Device; the cache tells each Screen's render its Device (ADR-0069) and
     // leaves sensors empty.
-    const { context, sourceData, resolvedFieldValues, sourceStates } = await this.pluginTemplateContext.contextFor(plugin, [])
+    const { context, sourceData, resolvedFieldValues, sourceStates, sourcePreviousOutputs } = await this.pluginTemplateContext.contextFor(plugin, [])
 
     if (plugin.kind === 'Webhook') {
       await this.renderCache.renderAndCache(plugin, context)
@@ -58,7 +58,7 @@ export class PluginRefreshService {
     // Every scheduled tick records its own fetch attempt, superseded or not: each was a real fetch.
     if (scheduled) {
       await this.recordFetchOutcome(plugin, sourceData, resolvedFieldValues)
-      await this.sourceStates.save(plugin.dataSources ?? [], sourceStates)
+      await this.sourceStates.save(plugin.dataSources ?? [], { states: sourceStates, previousOutputs: sourcePreviousOutputs })
     }
 
     await this.renderPoll(plugin, context, { scheduled, isSuperseded })

@@ -60,7 +60,7 @@ export function createMockPluginRenderCacheService(): MockPluginRenderCacheServi
 export function createPluginTemplateContextService(
   resolvedFieldValues: Record<string, string> = {},
   dataResolver: Pick<PluginDataResolverService, 'resolveAll'> = { resolveAll: async () => ({}) },
-  sourceStates: Pick<PluginDataSourceStateService, 'load'> = { load: async () => ({}) },
+  sourceStates: Pick<PluginDataSourceStateService, 'load'> = { load: async () => ({ savedStates: {}, previousOutputs: {} }) },
 ): PluginTemplateContextService {
   return new PluginTemplateContextService(
     { resolveFor: async () => resolvedFieldValues } as unknown as PluginFieldValuesService,

@@ -410,6 +410,46 @@ describe('what a Plugin renders from, and with which Template, against a real da
     })
   })
 
+  describe('a transform\'s Previous Output (ADR-0070)', () => {
+    it('hands a transform what it returned on the last scheduled tick at input.trmnl.previous_merge_variables, and never stores what a preview returned', async () => {
+      const plugin = await createPollPlugin({
+        dataSources: [{ name: 'plan', mode: 'literal', literalValue: {}, transformJs: 'function run(input) { const before = input.trmnl.previous_merge_variables.n || 0; return { before, n: before + 1 } }' }],
+        templates: [{ layout: 'full', liquidMarkup: '<p>{{ before }}/{{ n }}</p>' }],
+      })
+      await assignments.assign(plugin.id, (await addDevice('Kitchen')).id)
+      const stored = async () => (await database.getRepository(PluginDataSource).findOneByOrFail({ plugin: { id: plugin.id } })).previousOutput
+
+      await schedulerTick(plugin.id)
+      expect(await cachedOutput(plugin.id)).toContain('<p>0/1</p>')
+      expect(await stored()).toEqual({ before: 0, n: 1 })
+
+      await schedulerTick(plugin.id)
+      expect(await cachedOutput(plugin.id)).toContain('<p>1/2</p>')
+
+      expect((await previewData(plugin.id)).context).toMatchObject({ plan: { before: 2, n: 3 } })
+      expect(await stored()).toEqual({ before: 1, n: 2 })
+    })
+
+    it('keeps the Previous Output through a tick whose transform fails, and hands it to the next one', async () => {
+      const plugin = await createPollPlugin({
+        dataSources: [{ name: 'plan', mode: 'literal', literalValue: {}, transformJs: 'function run(input) { if (input.down) throw new Error(\'down\'); const before = input.trmnl.previous_merge_variables.n || 0; return { before, n: before + 1 } }' }],
+        templates: [{ layout: 'full', liquidMarkup: '<p>{{ before }}/{{ n }}</p>' }],
+      })
+      await assignments.assign(plugin.id, (await addDevice('Kitchen')).id)
+      const dataSources = database.getRepository(PluginDataSource)
+      const source = await dataSources.findOneByOrFail({ plugin: { id: plugin.id } })
+
+      await schedulerTick(plugin.id)
+      await dataSources.update(source.id, { literalValue: { down: true } })
+      await schedulerTick(plugin.id)
+      expect((await dataSources.findOneByOrFail({ id: source.id })).previousOutput).toEqual({ before: 0, n: 1 })
+
+      await dataSources.update(source.id, { literalValue: {} })
+      await schedulerTick(plugin.id)
+      expect(await cachedOutput(plugin.id)).toContain('<p>1/2</p>')
+    })
+  })
+
   describe('a scheduled render that fails', () => {
     // Liquid parses a `render` of a partial no Plugin has, and fails on it only when rendering.
     const FAILS_ON_LINE_2 = '<p>Weather</p>\n{% render "header" %}'
