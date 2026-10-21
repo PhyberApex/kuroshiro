@@ -20,7 +20,7 @@ const TOKEN_REQUEST_TIMEOUT_MS = 10_000
 const REPLY_LIMIT = 500
 
 /**
- * The access token an OAuth Recipe's Data Sources poll with (ADR-0067): the one the Plugin's last refresh answered, or
+ * The access token an OAuth Recipe's Data Sources poll with (ADR-0068): the one the Plugin's last refresh answered, or
  * the pasted one until a refresh happens. It is refreshed before a poll when it is due, and once more when the poll
  * answers 401. What a refresh answers is runtime state on the Plugin, read by every one of its Data Sources and never
  * written into a Field Value. Reading and refreshing it is one Plugin at a time, so two Data Sources polling together

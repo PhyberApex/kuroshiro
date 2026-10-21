@@ -726,7 +726,7 @@ describe('configurationImportService', () => {
     expect(storedFieldValues()).toEqual({ 'field-city': 'Berlin' })
   })
 
-  it('imports an OAuth Plugin\'s oauth_* settings from its settings.yml, and none for a Plugin that does not sign in (ADR-0067)', async () => {
+  it('imports an OAuth Plugin\'s oauth_* settings from its settings.yml, and none for a Plugin that does not sign in (ADR-0068)', async () => {
     const { plugins, pluginFolders } = fieldValuePlugin({})
     const folder = { ...pluginFolders['plugin-1'], settings: { strategy: 'polling', oauth_enabled: 'true', oauth_token_url: 'https://oauth2.example.com/token' } }
 
@@ -737,7 +737,7 @@ describe('configurationImportService', () => {
     expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ oauthSettings: null })
   })
 
-  describe('an OAuth Plugin\'s refreshed token (ADR-0067)', () => {
+  describe('an OAuth Plugin\'s refreshed token (ADR-0068)', () => {
     const OAUTH = { strategy: 'polling', oauth_enabled: 'true', oauth_token_url: 'https://oauth2.example.com/token' }
     const REFRESHED = { oauthAccessToken: 'refreshed-access', oauthRefreshToken: 'rotated-refresh', oauthRefreshedAt: new Date() }
 

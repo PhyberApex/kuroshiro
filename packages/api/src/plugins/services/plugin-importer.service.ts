@@ -141,7 +141,7 @@ interface TerminusSettings {
   framework_version?: unknown
   custom_fields?: CustomField[] | JsonObject
 
-  // TRMNL's OAuth settings, `oauth_enabled` among them (ADR-0067)
+  // TRMNL's OAuth settings, `oauth_enabled` among them (ADR-0068)
   [oauthKey: `oauth_${string}`]: unknown
 
   // The Plugin Kind as Kuroshiro's export and TRMNL's own archives name it, with what a Webhook-kind Plugin carries
@@ -279,7 +279,7 @@ function headersOf(settings: TerminusSettings): Record<string, string> {
 /** A Recipe's read-only field is never an input, whether or not the Recipe marks it optional. */
 const neverRequiredWhenReadOnly = <T extends { fieldType: string, required: boolean }>(field: T): T => isReadOnlyFieldType(field.fieldType) ? { ...field, required: false } : field
 
-/** TRMNL's select whose choices it asks of another service with the OAuth token; read here as text typed by hand (ADR-0067). */
+/** TRMNL's select whose choices it asks of another service with the OAuth token; read here as text typed by hand (ADR-0068). */
 const REMOTE_SELECT = 'xhrSelect'
 
 /** The password Plugin Fields an OAuth Recipe's tokens are pasted into, after its own and under keynames it does not already use. */
@@ -326,7 +326,7 @@ export interface ParsedPlugin {
   frameworkVersion?: string
   noScreenPadding?: boolean
   darkMode?: boolean
-  /** Poll only, and only for settings that sign in with OAuth (ADR-0067). */
+  /** Poll only, and only for settings that sign in with OAuth (ADR-0068). */
   oauthSettings?: OAuthSettings
   /** Webhook only. */
   mergeStrategy?: MergeStrategy

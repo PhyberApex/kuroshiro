@@ -24,7 +24,7 @@ export interface WholePluginInput {
   dither?: boolean
   noScreenPadding?: boolean
   darkMode?: boolean
-  /** An OAuth Recipe's `oauth_*` settings (ADR-0067). */
+  /** An OAuth Recipe's `oauth_*` settings (ADR-0068). */
   oauthSettings?: OAuthSettings | null
   isActive?: boolean
   order?: number

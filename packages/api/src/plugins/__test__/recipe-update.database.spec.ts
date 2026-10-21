@@ -295,7 +295,7 @@ describe('the Recipe Update Check, against a real database', () => {
       expect(preview.items).toEqual([])
     })
 
-    describe('an OAuth Recipe (ADR-0067)', () => {
+    describe('an OAuth Recipe (ADR-0068)', () => {
       const OAUTH = { oauth_enabled: 'true', oauth_token_url: 'https://oauth2.example.com/token' }
 
       async function importOAuthRecipe(): Promise<PluginDetail> {

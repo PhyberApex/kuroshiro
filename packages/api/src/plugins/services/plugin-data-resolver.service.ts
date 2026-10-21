@@ -21,7 +21,7 @@ export interface ResolvableDataSource extends FetchableDataSource {
 export interface ResolveOptions {
   /** Each stored Data Source's saved state by id (ADR-0052). */
   savedStates?: Record<string, JsonObject>
-  /** Set for a Plugin imported from an OAuth Recipe: each fetch-mode Data Source polls with the Plugin's access token (ADR-0067). */
+  /** Set for a Plugin imported from an OAuth Recipe: each fetch-mode Data Source polls with the Plugin's access token (ADR-0068). */
   oauth?: OAuthPoll
 }
 

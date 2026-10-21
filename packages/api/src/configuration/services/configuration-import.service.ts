@@ -773,7 +773,7 @@ export class ConfigurationImportService {
     await this.upsertPluginTemplates(repos.template, saved, parsed.templates, entry.templates, run)
     const fields = await this.upsertPluginFields(repos.field, repos.fieldValue, saved, parsed.fields, entry.fields, run)
     const changedValues = await this.upsertFieldValues(repos.fieldValue, saved, fields, entry.fieldValues, ref, run)
-    // A refreshed token belongs to the endpoint and client that issued it, so new settings or tokens start again from the pasted ones (ADR-0067).
+    // A refreshed token belongs to the endpoint and client that issued it, so new settings or tokens start again from the pasted ones (ADR-0068).
     if (oauthSettingsChanged || changedValues.some(isOAuthKeyname))
       await repos.plugin.save({ ...saved, ...NO_REFRESHED_TOKEN })
     run.upsertedPluginIds.add(saved.id)

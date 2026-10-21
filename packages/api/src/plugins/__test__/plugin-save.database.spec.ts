@@ -761,7 +761,7 @@ describe('saving a Plugin, PATCH /api/plugins/:id, against a real database', () 
     })
   })
 
-  describe('an OAuth Plugin\'s refreshed token (ADR-0067)', () => {
+  describe('an OAuth Plugin\'s refreshed token (ADR-0068)', () => {
     async function withRefreshedToken() {
       const plugin = await createPollPlugin({ fields: [{ keyname: 'city', name: 'City' }, { keyname: 'oauth_refresh_token', name: 'OAuth refresh token', fieldType: 'password' }] })
       await database.getRepository(Plugin).update(plugin.id, { oauthAccessToken: 'refreshed-access', oauthRefreshToken: 'rotated-refresh', oauthAccessTokenExpiresAt: new Date(), oauthRefreshedAt: new Date() })

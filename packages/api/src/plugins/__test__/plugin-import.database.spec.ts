@@ -562,7 +562,7 @@ describe('importing a Plugin, against a real database', () => {
       expect(refusal).toMatchObject({ code: 'recipe-not-found', details: { id: '999' } })
     })
 
-    it('imports a Recipe that signs in with OAuth, saying it needs a token before it can poll and which Plugin Field is typed by hand (ADR-0067)', async () => {
+    it('imports a Recipe that signs in with OAuth, saying it needs a token before it can poll and which Plugin Field is typed by hand (ADR-0068)', async () => {
       upstreamAnswers(() => zipResponse(recipeSettings({
         strategy: 'polling',
         polling_url: 'https://api.example.com/moon/{{ account }}',

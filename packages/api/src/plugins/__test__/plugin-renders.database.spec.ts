@@ -283,7 +283,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
       expect(tick).toEqual(sharedRenderExpected)
     })
 
-    it('renders a scheduler tick once per Screen, each told its own Device and Device Model as trmnl.device (ADR-0068)', async () => {
+    it('renders a scheduler tick once per Screen, each told its own Device and Device Model as trmnl.device (ADR-0069)', async () => {
       const plugin = await createPollPlugin({ templates: [{ layout: 'full', liquidMarkup: '{{ trmnl.device.friendly_id }} {{ trmnl.device.model }} {{ trmnl.device.width }}x{{ trmnl.device.height }} {{ trmnl.device.orientation }} {{ weather.temperature }}' }] })
       const og = await addDevice('Kitchen')
       const x = await addDevice('Hallway', V2)

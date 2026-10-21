@@ -33,7 +33,7 @@ const PASTED = { oauth_access_token: 'pasted-access', oauth_refresh_token: 'past
 
 type Answer = (init: RequestInit) => Response | Promise<Response>
 
-describe('an OAuth Plugin\'s access token, refreshed before a poll and on a 401 (ADR-0067)', () => {
+describe('an OAuth Plugin\'s access token, refreshed before a poll and on a 401 (ADR-0068)', () => {
   let database: DataSource
   let refresh: PluginRefreshService
   let templateContext: PluginTemplateContextService
