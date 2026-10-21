@@ -1,3 +1,4 @@
+import type { DeviceModelsService } from '../device-models/device-models.service.js'
 import type { DeviceModel } from '../device-models/entities/device-model.entity.js'
 import type { Device } from '../devices/devices.entity.js'
 import type { PluginRenderContext } from './services/plugin-template-context.service.js'
@@ -48,13 +49,14 @@ export function trmnlDeviceOf(device: Device, model: DeviceModel): TrmnlDevice {
 
 /**
  * A render's context with `trmnl.device` told for the Device it is rendered
- * for. The data was fetched without it, so a Data Source never reads it. A
- * Webhook Payload that is an array is the whole context and has no `trmnl` to
- * hold it.
+ * for, at the Device Model it is rendered at. The data was fetched without it,
+ * so a Data Source never reads it. A Webhook Payload that is an array is the
+ * whole context and has no `trmnl` to hold it.
  */
-export function withTrmnlDevice(context: PluginRenderContext['context'], device: Device, model: DeviceModel): PluginRenderContext['context'] {
+export async function withTrmnlDevice(context: PluginRenderContext['context'], device: Device, deviceModels: Pick<DeviceModelsService, 'renderTargetFor'>): Promise<PluginRenderContext['context']> {
   if (Array.isArray(context))
     return context
+  const { model } = await deviceModels.renderTargetFor(device)
   const trmnl = typeof context.trmnl === 'object' && context.trmnl !== null ? context.trmnl : {}
   return { ...context, trmnl: { ...trmnl, device: trmnlDeviceOf(device, model) } }
 }

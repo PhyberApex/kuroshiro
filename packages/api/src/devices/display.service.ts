@@ -801,9 +801,8 @@ export class DeviceDisplayService {
       return null
 
     const { context } = await this.pluginTemplateContext.contextFor(plugin, [])
-    const { model } = await this.deviceModels.renderTargetFor(device)
 
-    const renderedHtml = await this.pluginRenderer.render(fullTemplate.liquidMarkup, withTrmnlDevice(context, device, model))
+    const renderedHtml = await this.pluginRenderer.render(fullTemplate.liquidMarkup, await withTrmnlDevice(context, device, this.deviceModels))
     await this.screenRender.cachePluginOutput(screen, renderedHtml)
     return renderedHtml
   }

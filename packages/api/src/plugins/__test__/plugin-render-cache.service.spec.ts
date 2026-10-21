@@ -65,6 +65,31 @@ describe('pluginRenderCacheService', () => {
     expect(mockScreenRepo.update).not.toHaveBeenCalled()
   })
 
+  it('still invalidates the Mashups that show a Plugin on no Screen of its own', async () => {
+    mockScreenRepo.find.mockResolvedValue([])
+    mockMashupSlotRepo.find.mockResolvedValue([makeMashupSlot({ mashupConfiguration: makeMashupConfiguration({ screen: makeScreen({ id: 'screen-mashup' }) }) })])
+    injectPrivate(service, 'mashupSlotRepository', asRepository(mockMashupSlotRepo))
+
+    await service.renderAndCache(plugin, { data: 'hello' })
+
+    expect(mockScreenRepo.update).toHaveBeenCalledExactlyOnceWith({ id: 'screen-mashup' }, { cachedPluginOutput: null, renderSignal: null })
+  })
+
+  it('writes nothing when a newer render of the Plugin has started by the time every Screen is rendered', async () => {
+    let superseded = false
+    mockRenderer.render.mockImplementation(async () => {
+      superseded = true
+      return '<div>stale</div>'
+    })
+    mockMashupSlotRepo.find.mockResolvedValue([makeMashupSlot({ mashupConfiguration: makeMashupConfiguration({ screen: makeScreen({ id: 'screen-mashup' }) }) })])
+    injectPrivate(service, 'mashupSlotRepository', asRepository(mockMashupSlotRepo))
+
+    await service.renderAndCache(plugin, { data: 'hello' }, () => superseded)
+
+    expect(mockRenderer.render).toHaveBeenCalledTimes(2)
+    expect(mockScreenRepo.update).not.toHaveBeenCalled()
+  })
+
   it('leaves a Webhook Payload that is an array as the whole context, with no trmnl to tell the Device in', async () => {
     await service.renderAndCache(plugin, [1, 2])
 

@@ -51,10 +51,12 @@ export class PluginRenderCacheService {
    * Screen of the Plugin from the same data, each told its own Device as
    * `trmnl.device` (ADR-0066), and caches each output to its Screen. Every
    * Screen is rendered before the first is written, so a Template that fails
-   * for one caches nothing. A Plugin on no Screen is still rendered once,
-   * without a Device, so a broken Template is told on a scheduled render.
+   * for one caches nothing, and `isSuperseded` is asked once more before the
+   * first write, so a render a newer one has overtaken writes nothing. A
+   * Plugin on no Screen is still rendered once, without a Device, so a broken
+   * Template is told on a scheduled render.
    */
-  async renderAndCache(plugin: Plugin, context: PluginRenderContext['context']): Promise<void> {
+  async renderAndCache(plugin: Plugin, context: PluginRenderContext['context'], isSuperseded?: () => boolean): Promise<void> {
     const template = templateOfSize(plugin.templates, 'full')
     if (!template) {
       return
@@ -64,16 +66,15 @@ export class PluginRenderCacheService {
       throw new TemplateRenderError('full', error)
     })
     const screens = await this.screenRepository.find({ where: { plugin: { id: plugin.id } }, relations: { device: true } })
-    if (screens.length === 0) {
+    if (screens.length === 0)
       await render(context)
-      return
-    }
 
     const rendered: Array<{ screen: Screen, html: string }> = []
-    for (const screen of screens) {
-      const { model } = await this.deviceModels.renderTargetFor(screen.device)
-      rendered.push({ screen, html: await render(withTrmnlDevice(context, screen.device, model)) })
-    }
+    for (const screen of screens)
+      rendered.push({ screen, html: await render(await withTrmnlDevice(context, screen.device, this.deviceModels)) })
+
+    if (isSuperseded?.())
+      return
 
     const generatedAt = new Date()
     for (const { screen, html } of rendered)

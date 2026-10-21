@@ -6,7 +6,7 @@ TRMNL gives a template `trmnl.device` (trmnlp's `UserDataAssembler#device_namesp
 
 The maintainer settled it, against the two cheaper options in the issue, because N Liquid renders per tick are cheap at the size Kuroshiro's fleets are: a self-hosted instance runs a handful of Devices, a Plugin sits on few of them, and a Liquid render is milliseconds against a fetch that is often a second. The fetch, which is the costly and rate-limited part, still happens once.
 
-- Every Screen is rendered before the first is written, so a Template that fails for one Device caches nothing, as before.
+- Every Screen is rendered before the first is written, so a Template that fails for one Device caches nothing, as before. A scheduled render asks again whether a newer tick has started just before that first write, since N renders widen the window, and writes nothing if one has.
 - A Plugin on no Screen is still rendered once, without a Device, so a scheduled render still reports a broken Template.
 - `trmnl.device` is laid on after the fetch, so a Data Source's URL, headers and body never read it: one fetch serves every Screen. A polling URL that names `{{ trmnl.device.friendly_id }}` renders it empty.
 - `wifi_strength` is left out: Kuroshiro stores the raw RSSI and has no TRMNL-equal way to read it as a percentage. A key the Device has not reported or set is left out too, so the template's `default` applies.

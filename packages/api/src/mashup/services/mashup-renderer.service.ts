@@ -1,4 +1,3 @@
-import type { DeviceModel } from '../../device-models/entities/device-model.entity.js'
 import type { DeviceSensor } from '../../device-sensors/entities/device-sensor.entity.js'
 import type { Device } from '../../devices/devices.entity.js'
 import type { MashupConfiguration } from '../entities/mashup-configuration.entity.js'
@@ -29,13 +28,12 @@ export class MashupRendererService {
 
     const slotHtmls: Array<{ slot: MashupSlot, html: string }> = []
     const sensors = await this.deviceSensors.findForDevice(device.id)
-    const { model } = await this.deviceModels.renderTargetFor(device)
     let anySlotFailed = false
 
     // Render each slot (with error handling for partial renders)
     for (const slot of mashupConfig.slots) {
       try {
-        const html = await this.renderSlot(slot, device, model, sensors)
+        const html = await this.renderSlot(slot, device, sensors)
         slotHtmls.push({ slot, html })
       }
       catch (err) {
@@ -52,7 +50,7 @@ export class MashupRendererService {
     return this.buildMashupHtml(mashupConfig.layout, slotHtmls, anySlotFailed)
   }
 
-  private async renderSlot(slot: MashupSlot, device: Device, model: DeviceModel, sensors: DeviceSensor[]): Promise<string> {
+  private async renderSlot(slot: MashupSlot, device: Device, sensors: DeviceSensor[]): Promise<string> {
     const plugin = slot.plugin
 
     const template = templateOfSize(plugin.templates, templateSizeOfSlot(slot.size))
@@ -63,7 +61,7 @@ export class MashupRendererService {
     const { context } = await this.pluginTemplateContext.contextFor(plugin, sensors)
 
     // Render unwrapped plugin content
-    return await this.pluginRenderer.render(template.liquidMarkup, withTrmnlDevice(context, device, model))
+    return await this.pluginRenderer.render(template.liquidMarkup, await withTrmnlDevice(context, device, this.deviceModels))
   }
 
   private buildMashupHtml(layout: string, slotHtmls: Array<{ slot: MashupSlot, html: string }>, anySlotFailed: boolean): string {

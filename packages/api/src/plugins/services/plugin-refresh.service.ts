@@ -74,7 +74,7 @@ export class PluginRefreshService {
       return
 
     try {
-      await this.renderCache.renderAndCache(plugin, context)
+      await this.renderCache.renderAndCache(plugin, context, () => this.dropAsSuperseded(plugin.id, isSuperseded, 'cache write'))
     }
     catch (error) {
       if (scheduled && error instanceof TemplateRenderError && !this.dropAsSuperseded(plugin.id, isSuperseded, 'failed-render record'))
