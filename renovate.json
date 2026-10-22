@@ -6,8 +6,7 @@
   ],
   "packageRules": [
     {
-      "description": "Minor and patch npm updates merge themselves once the required checks pass",
-      "matchDatasources": ["npm"],
+      "description": "Minor and patch updates merge themselves once the required checks pass",
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true
     }
