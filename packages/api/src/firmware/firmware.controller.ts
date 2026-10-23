@@ -33,14 +33,14 @@ export class FirmwareController {
 
   @Get('catch-up')
   async previewCatchUp(): Promise<FirmwareCatchUp> {
-    const { firmware, behind } = await this.autoUpdateService.previewCatchUp()
-    return { version: firmware?.version ?? null, assigned: behind.map(toDeviceReference) }
+    const { newest, behind } = await this.autoUpdateService.previewCatchUp()
+    return { version: newest?.version ?? null, assigned: behind.map(({ device }) => toDeviceReference(device)) }
   }
 
   @Post('catch-up')
   async catchUp(): Promise<FirmwareCatchUp> {
-    const { firmware, assigned } = await this.autoUpdateService.catchUp()
-    return { version: firmware?.version ?? null, assigned: assigned.map(toDeviceReference) }
+    const { newest, assigned } = await this.autoUpdateService.catchUp()
+    return { version: newest?.version ?? null, assigned: assigned.map(toDeviceReference) }
   }
 
   @Post('upload')

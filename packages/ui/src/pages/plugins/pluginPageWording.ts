@@ -97,6 +97,19 @@ export interface OnceLine {
 }
 
 const BRINGS_TRANSFORM = 'It brings a transform: JavaScript that runs on this server at every fetch. Read it under Data Sources.'
+const NEEDS_TOKEN = 'It signs in with OAuth and needs a token before it can poll: paste the tokens and the client under Plugin Fields.'
+
+/** What an import brought that needs the admin: a transform to read, a token to paste, Plugin Fields to type by hand. */
+function importNotes(arrival: PluginArrival): string[] {
+  if (arrival.how !== 'imported')
+    return []
+  const { hasTransform, needsToken, typedByHand } = arrival
+  return [
+    ...(hasTransform ? [BRINGS_TRANSFORM] : []),
+    ...(needsToken ? [NEEDS_TOKEN] : []),
+    ...(typedByHand.length > 0 ? [`Type ${listed(typedByHand)} by hand; on TRMNL ${typedByHand.length === 1 ? 'it is' : 'they are'} picked from a list.`] : []),
+  ]
+}
 
 const updateItems = (count: number) => counted(count, '1 Update Item', 'Update Items')
 
@@ -123,9 +136,8 @@ function whereItIs(arrival: PluginArrival) {
 }
 
 export function arrivalLine(arrival: PluginArrival): OnceLine {
-  const transform = arrival.how === 'imported' && arrival.hasTransform ? [BRINGS_TRANSFORM] : []
   return {
-    text: [whatHappened(arrival), ...whereItIs(arrival), ...transform].join(' '),
+    text: [whatHappened(arrival), ...whereItIs(arrival), ...importNotes(arrival)].join(' '),
     back: arrival.device && { label: `Back to ${possessive(arrival.device.name)} Screens`, to: devicePath(arrival.device.id) },
   }
 }

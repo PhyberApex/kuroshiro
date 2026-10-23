@@ -57,7 +57,6 @@ const wording: Record<ApiErrorCode, string> = {
   'github-repo-not-found': 'GitHub has no public repository at that address.',
   'recipe-id-invalid': 'That is not a Recipe address or id.',
   'recipe-not-found': 'TRMNL has no such Recipe.',
-  'recipe-oauth': 'That Recipe signs in with OAuth.',
   'recipe-strategy-unsupported': 'That Recipe does not poll, hold fixed data, or have no data source.',
   'recipe-webhook-transform': 'This Recipe runs a transform on each payload it is sent, which a Webhook Plugin does not do.',
   'recipe-serverless-language': 'That Recipe\'s serverless code is in a language Kuroshiro cannot run.',
@@ -121,7 +120,6 @@ function wordingBySwitch(code: ApiErrorCode): string {
     case 'github-repo-not-found':
     case 'recipe-id-invalid':
     case 'recipe-not-found':
-    case 'recipe-oauth':
     case 'recipe-strategy-unsupported':
     case 'recipe-webhook-transform':
     case 'recipe-serverless-language':

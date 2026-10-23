@@ -7,12 +7,16 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { TRMNL_FRAMEWORK_VERSION, wrapInScreenShell } from 'kuroshiro-shared'
 import { Repository } from 'typeorm'
 import { DeviceModelsService } from '../../device-models/device-models.service.js'
-import { renderHtmlToPng } from '../../device-models/render-html-to-png.js'
+import { readHtmlRenderSignal, renderHtmlToPng } from '../../device-models/render-html-to-png.js'
 import { RENDER_FAILED, RENDER_HELD, RENDER_SKIPPED } from '../../screens/render-outcome.js'
 import { Screen } from '../../screens/screens.entity.js'
 import { getErrorMessage } from '../../utils/getErrorMessage.js'
 import { resolveAppPath } from '../../utils/pathHelper.js'
+import { MashupConfiguration } from '../entities/mashup-configuration.entity.js'
+import { MashupSlot } from '../entities/mashup-slot.entity.js'
 import { mashupDither } from '../mashup-dither.js'
+import { mashupPageHtml } from '../mashup-page.js'
+import { mashupRenderSignal, renderedSlotDrawing, slotDrawing } from '../mashup-slot-signals.js'
 import { MashupRendererService } from './mashup-renderer.service.js'
 
 /**
@@ -31,8 +35,19 @@ export class ScreenRenderService {
     private readonly configService: ConfigService,
     private readonly deviceModels: DeviceModelsService,
     private readonly mashupRenderer: MashupRendererService,
+    @InjectRepository(MashupSlot)
+    private readonly slotRepository: Repository<MashupSlot>,
+    @InjectRepository(MashupConfiguration)
+    private readonly mashupRepository: Repository<MashupConfiguration>,
   ) {}
 
+  /**
+   * Draws a Mashup from its cached output, rendering and caching that first when needed.
+   * Its whole page is drawn first; only when that raises a Render Signal is each slot's own
+   * read, once per cached output, since the slots share one `window` (ADR-0067). Then a
+   * slot that skips draws empty and one that holds draws the markup it last drew live,
+   * and the Mashup itself skips or holds only when no slot draws live.
+   */
   async renderMashupScreen(screen: Screen, device: Device, honorRenderSignal: boolean): Promise<RenderOutcome> {
     try {
       const screenWithMashup = await this.screenRepository.findOne({
@@ -49,7 +64,8 @@ export class ScreenRenderService {
         },
       })
 
-      if (!screenWithMashup?.mashupConfiguration)
+      const mashup = screenWithMashup?.mashupConfiguration
+      if (!mashup)
         return null
 
       let renderedHtml: string
@@ -58,15 +74,61 @@ export class ScreenRenderService {
         renderedHtml = screenWithMashup.cachedPluginOutput
       }
       else {
-        renderedHtml = await this.renderMashupOnDemand(screen, screenWithMashup.mashupConfiguration, device)
+        renderedHtml = await this.renderMashupOnDemand(screen, mashup, device)
       }
 
-      return await this.renderBodyToScreenPng(renderedHtml, screen, device, honorRenderSignal, TRMNL_FRAMEWORK_VERSION, mashupDither(screenWithMashup.mashupConfiguration))
+      return await this.drawMashup(renderedHtml, mashup, screen, device, honorRenderSignal)
     }
     catch (err) {
       const message = getErrorMessage(err)
       this.logger.error(`Failed to render mashup: ${message}`)
       return RENDER_FAILED
+    }
+  }
+
+  private async drawMashup(renderedHtml: string, mashup: MashupConfiguration, screen: Screen, device: Device, honorRenderSignal: boolean): Promise<RenderOutcome> {
+    const slots = [...mashup.slots].sort((a, b) => a.order - b.order)
+    const draw = (bodyHtml: string, honor: boolean) => this.renderBodyToScreenPng(bodyHtml, screen, device, honor, TRMNL_FRAMEWORK_VERSION, mashupDither(mashup))
+
+    if (!mashup.slotSignalsRead) {
+      const outcome = await draw(renderedHtml, true)
+      const drewLive = outcome !== RENDER_SKIPPED && outcome !== RENDER_HELD
+      if (drewLive) {
+        await this.recordLiveMarkup(slots)
+        return outcome
+      }
+      await this.readSlotSignals(mashup, slots, device)
+    }
+
+    const signal = mashupRenderSignal(slots)
+    if (signal && honorRenderSignal)
+      return signal === 'skip' ? RENDER_SKIPPED : RENDER_HELD
+
+    // A signal not honoured (a render after save, or a stored image gone missing) is drawn slot by slot all
+    // the same; whatever this page raises was already read slot by slot, so it is drawn regardless.
+    await this.recordLiveMarkup(slots)
+    return await draw(mashupPageHtml(mashup.layout, slots.map(slotDrawing)), false)
+  }
+
+  /** Each slot's own Render Signal, read on a page holding that slot alone, kept until the Mashup's cached output is written again. */
+  private async readSlotSignals(mashup: MashupConfiguration, slots: MashupSlot[], device: Device): Promise<void> {
+    const target = await this.deviceModels.renderTargetFor(device)
+    for (const slot of slots) {
+      const slotAlone = slot.renderedMarkup == null ? null : mashupPageHtml(mashup.layout, [renderedSlotDrawing(slot, slot.renderedMarkup)])
+      slot.renderSignal = slotAlone === null ? null : await readHtmlRenderSignal(wrapInScreenShell(target, slotAlone, TRMNL_FRAMEWORK_VERSION), target)
+      await this.slotRepository.update({ id: slot.id }, { renderSignal: slot.renderSignal })
+    }
+    mashup.slotSignalsRead = true
+    await this.mashupRepository.update({ id: mashup.id }, { slotSignalsRead: true })
+  }
+
+  /** Every slot drawn live in this render keeps its markup, for a later `hold` on it to draw again. */
+  private async recordLiveMarkup(slots: MashupSlot[]): Promise<void> {
+    for (const slot of slots) {
+      if (slot.renderSignal || slot.renderedMarkup == null || slot.liveMarkup === slot.renderedMarkup)
+        continue
+      slot.liveMarkup = slot.renderedMarkup
+      await this.slotRepository.update({ id: slot.id }, { liveMarkup: slot.liveMarkup })
     }
   }
 
@@ -110,11 +172,18 @@ export class ScreenRenderService {
     }
   }
 
-  private async renderMashupOnDemand(screen: Screen, mashupConfiguration: NonNullable<Screen['mashupConfiguration']>, device: Device): Promise<string> {
-    this.logger.log(`Rendering mashup ${mashupConfiguration.id} for screen ${screen.id}`)
-    const renderedHtml = await this.mashupRenderer.renderMashup(mashupConfiguration, device)
-    await this.cachePluginOutput(screen, renderedHtml)
-    return renderedHtml
+  private async renderMashupOnDemand(screen: Screen, mashup: MashupConfiguration, device: Device): Promise<string> {
+    this.logger.log(`Rendering mashup ${mashup.id} for screen ${screen.id}`)
+    const { html, slots } = await this.mashupRenderer.renderMashup(mashup, device)
+    for (const { slot, markup } of slots) {
+      slot.renderedMarkup = markup
+      slot.renderSignal = null
+      await this.slotRepository.update({ id: slot.id }, { renderedMarkup: markup, renderSignal: null })
+    }
+    mashup.slotSignalsRead = false
+    await this.mashupRepository.update({ id: mashup.id }, { slotSignalsRead: false })
+    await this.cachePluginOutput(screen, html)
+    return html
   }
 
   /** Shared with `DeviceDisplayService`'s Plugin/HTML branches: the same cache-then-render-body shape, just reached from a different outcome. */

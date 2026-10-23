@@ -18,7 +18,6 @@ const importing = useImportPlugin({
   aboutEntry: {
     'recipe-id-invalid': true,
     'recipe-not-found': true,
-    'recipe-oauth': true,
     'recipe-strategy-unsupported': true,
     'recipe-webhook-transform': true,
     'recipe-serverless-language': true,

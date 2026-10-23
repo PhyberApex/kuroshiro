@@ -66,3 +66,17 @@ export async function renderHtmlToPng(html: string, target: DeviceRenderTarget, 
     }
   }
 }
+
+/**
+ * The Render Signal an already-shelled HTML document raises on a page of its
+ * own, read at its `load` event as `renderHtmlToPng` reads it, without taking
+ * a screenshot: how a Mashup slot's own signal is told apart from the rest of
+ * its Mashup's page, which shares one `window` (ADR-0067).
+ */
+export async function readHtmlRenderSignal(html: string, target: DeviceRenderTarget): Promise<RenderSignal | null> {
+  return await withSharedPage(async (page) => {
+    await page.setViewport({ width: target.model.width, height: target.model.height })
+    await page.setContent(html, { waitUntil: 'load' })
+    return await readRenderSignal(page)
+  })
+}

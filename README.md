@@ -258,7 +258,7 @@ Besides the Postgres database, Kuroshiro keeps files the database points at on t
 | Path in the container | What lives there |
 |---|---|
 | `/app/public/screens/devices` | Every Device's Screen images: uploaded and fetched images, their originals, rendered Plugin and Mashup Screens, the mirrored image of a mirrored Device |
-| `/app/public/firmware` | Firmware binaries, both uploaded custom builds and the synced official one. The daily sync does not download a version it has already recorded again, so a lost binary stays lost until the next official release |
+| `/app/public/firmware` | Firmware binaries, both uploaded custom builds and the synced official ones. The daily sync does not download a version it has already recorded again, so a lost binary stays lost until the next official release |
 
 Everything else under `/app/public` ships with the image or is a cache Kuroshiro redraws on demand (Fallback Screens, palette colour maps). Uploads are held in memory, so nothing needs mounting for them; an `/app/uploads` folder only exists on instances that ran an older version, and Housekeeping offers to clear it.
 
@@ -347,7 +347,7 @@ Don't want to build a Plugin from scratch? Paste a Recipe's id or [trmnl.com/rec
 
 ## 🔧 Firmware & Device Models
 
-Kuroshiro tracks the official TRMNL model list and the latest official firmware automatically (synced daily, with a bundled snapshot as offline fallback), or you can upload a custom `.bin` build of your own. Every Firmware carries a SHA-256 checksum and an optional set of compatible Device Models, so assigning one to a Device is blocked outright if it doesn't match that Device's hardware—no accidental bricking. Pushes are always explicit: pick a Firmware in the Device's Settings, and it's served on that Device's next poll. Custom colour Palettes (admin-created, within one of TRMNL's fixed colour families) sit alongside the official ones synced from TRMNL, so you're not limited to whatever's officially curated for a given Device Model. To refresh the bundled fallback snapshot from the live TRMNL API, run `pnpm --filter kuroshiro-api snapshot:device-models`.
+Kuroshiro tracks the official TRMNL model list (synced daily, with a bundled snapshot as offline fallback) and the latest official firmware (synced daily, online only), or you can upload a custom `.bin` build of your own. The official firmware is stored once per hardware family, the way TRMNL's own API client and Terminus fetch it: the TRMNL OG build fits `og_png` and `og_plus`, the TRMNL X build fits `v2`. OG B/W/R/Y Devices get no official build until OTA on them works upstream (usetrmnl/trmnl-firmware#538). Every Firmware carries a SHA-256 checksum and an optional set of compatible Device Models, so assigning one to a Device is blocked outright if it doesn't match that Device's hardware—no accidental bricking. Pushes are always explicit: pick a Firmware in the Device's Settings, and it's served on that Device's next poll. Custom colour Palettes (admin-created, within one of TRMNL's fixed colour families) sit alongside the official ones synced from TRMNL, so you're not limited to whatever's officially curated for a given Device Model. To refresh the bundled fallback snapshot from the live TRMNL API, run `pnpm --filter kuroshiro-api snapshot:device-models`.
 
 ---
 

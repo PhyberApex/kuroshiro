@@ -1,5 +1,6 @@
 import type { MergeStrategy, PluginFieldAttributes, PluginFieldOption, PluginKind } from 'kuroshiro-shared'
 import type { JsonObject } from '../../utils/json.js'
+import type { OAuthSettings } from '../plugin-oauth.js'
 import { Buffer } from 'node:buffer'
 import * as path from 'node:path'
 import { HttpStatus, Injectable, Logger } from '@nestjs/common'
@@ -12,6 +13,7 @@ import { UPLOAD_LIMITS } from '../../uploads/upload-limits.js'
 import { downloadLimited, DownloadTooLargeError } from '../../utils/downloadLimited.js'
 import { isPlainObject } from '../../utils/json.js'
 import { parseFieldOptions } from '../plugin-field-options.js'
+import { OAUTH_FIELDS, oauthSettingsOf, recipeFlag } from '../plugin-oauth.js'
 
 const DOWNLOAD_TIMEOUT_MS = 30_000
 
@@ -139,6 +141,9 @@ interface TerminusSettings {
   framework_version?: unknown
   custom_fields?: CustomField[] | JsonObject
 
+  // TRMNL's OAuth settings, `oauth_enabled` among them (ADR-0068)
+  [oauthKey: `oauth_${string}`]: unknown
+
   // The Plugin Kind as Kuroshiro's export and TRMNL's own archives name it, with what a Webhook-kind Plugin carries
   strategy?: string
   merge_strategy?: string
@@ -170,15 +175,9 @@ interface TerminusSettings {
 // the TerminusSettings fields above (issue #796 / ADR-0010)
 interface RecipeSettings extends TerminusSettings {
   description?: string
-  // TRMNL's archives quote the flag as 'true' / 'false'
-  oauth_enabled?: boolean | string
   // Terminus schema: `maybe :hash` — a `strategy: static` recipe's fixed
   // payload (issue #794 / ADR-0037); TRMNL's archives ship it JSON-encoded
   static_data?: JsonObject | string | null
-}
-
-function recipeFlag(value: boolean | string | undefined): boolean {
-  return typeof value === 'string' ? ['true', 'yes'].includes(value.trim().toLowerCase()) : value === true
 }
 
 function recipeStaticData(value: RecipeSettings['static_data']): JsonObject {
@@ -210,10 +209,6 @@ function assertRecipeImportable(recipeSettings: RecipeSettings, entries: AdmZip.
   const foreignServerless = foreignServerlessOf(entries)
   if (foreignServerless) {
     throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'recipe-serverless-language', `The Recipe's serverless code is ${foreignServerless.language}, which Kuroshiro cannot run; only JavaScript transforms run here.`, { language: foreignServerless.language })
-  }
-
-  if (recipeFlag(recipeSettings.oauth_enabled)) {
-    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, 'recipe-oauth', 'The Recipe signs in to another service with OAuth, which is not supported.')
   }
 
   const strategy = recipeSettings.strategy ?? 'unknown'
@@ -284,11 +279,32 @@ function headersOf(settings: TerminusSettings): Record<string, string> {
 /** A Recipe's read-only field is never an input, whether or not the Recipe marks it optional. */
 const neverRequiredWhenReadOnly = <T extends { fieldType: string, required: boolean }>(field: T): T => isReadOnlyFieldType(field.fieldType) ? { ...field, required: false } : field
 
+/** TRMNL's select whose choices it asks of another service with the OAuth token; read here as text typed by hand (ADR-0068). */
+const REMOTE_SELECT = 'xhrSelect'
+
+/** The password Plugin Fields an OAuth Recipe's tokens are pasted into, after its own and under keynames it does not already use. */
+function withOAuthFields(fields: ParsedPlugin['fields']): ParsedPlugin['fields'] {
+  const missing = OAUTH_FIELDS.filter(field => !fields.some(existing => existing.keyname === field.keyname))
+  const last = fields.reduce((max, field) => Math.max(max, field.order), 0)
+  return [...fields, ...missing.map((field, index) => ({ ...field, fieldType: 'password', required: false, order: last + index + 1, attributes: {} }))]
+}
+
+/** The names of a Recipe's Plugin Fields that TRMNL fills from a list it fetches, and that are typed by hand here. */
+function typedByHandOf(recipeSettings: RecipeSettings): string[] {
+  const fields = Array.isArray(recipeSettings.custom_fields) ? recipeSettings.custom_fields : []
+  return fields.filter(field => field.field_type === REMOTE_SELECT).map(field => field.name ?? field.keyname)
+}
+
 /** A transform with no URL to fetch for it: it computes from the Field Values, or fetches on its own, over an empty value (ADR-0051). */
 const selfFetchingDataSource = (transformJs: string): ParsedDataSource => ({ name: 'source', mode: 'literal', literalValue: {}, transformJs })
 
-/** A Plugin read from a Recipe, tied to it by the Recipe's id. */
-export type RecipePlugin = ParsedPlugin & { sourceRecipeId: string }
+/** A Plugin read from a Recipe, tied to it by the Recipe's id, with the names of its Plugin Fields typed by hand where TRMNL lists choices. */
+export type RecipePlugin = ParsedPlugin & { sourceRecipeId: string, typedByHand: string[] }
+
+/** What a Recipe import keeps as the Recipe Snapshot: the Plugin as read, without what only the import's answer reports. */
+export function recipeSnapshotOf({ typedByHand: _typedByHand, ...parsed }: RecipePlugin): ParsedPlugin {
+  return parsed
+}
 
 export interface ParsedDataSource {
   name: string
@@ -310,6 +326,8 @@ export interface ParsedPlugin {
   frameworkVersion?: string
   noScreenPadding?: boolean
   darkMode?: boolean
+  /** Poll only, and only for settings that sign in with OAuth (ADR-0068). */
+  oauthSettings?: OAuthSettings
   /** Webhook only. */
   mergeStrategy?: MergeStrategy
   /** Webhook with `stream` only. */
@@ -482,12 +500,16 @@ export class PluginImporterService {
     }
 
     const reshapedZip = this.reshapeRecipeArchive(entries, settingsContent, recipeSettings)
-    const parsed = withFullTemplate(this.parseZip(reshapedZip, `recipe-${recipeId}`))
+    return this.recipePluginOf(this.parseZip(reshapedZip, `recipe-${recipeId}`), recipeSettings, recipeId)
+  }
 
+  private recipePluginOf(parsed: ParsedPlugin, recipeSettings: RecipeSettings, recipeId: string): RecipePlugin {
+    const fields = parsed.fields.map(neverRequiredWhenReadOnly)
     return {
-      ...parsed,
-      fields: parsed.fields.map(neverRequiredWhenReadOnly),
+      ...withFullTemplate(parsed),
+      fields: parsed.oauthSettings ? withOAuthFields(fields) : fields,
       sourceRecipeId: recipeId,
+      typedByHand: typedByHandOf(recipeSettings),
     }
   }
 
@@ -505,13 +527,7 @@ export class PluginImporterService {
     }
 
     const reshapedZip = this.reshapeRecipeArchive(entries, settingsContent, recipeSettings)
-    const parsed = withFullTemplate(this.parseZip(reshapedZip, `recipe-${recipeId}`, [staticDataSource]))
-
-    return {
-      ...parsed,
-      fields: parsed.fields.map(neverRequiredWhenReadOnly),
-      sourceRecipeId: recipeId,
-    }
+    return this.recipePluginOf(this.parseZip(reshapedZip, `recipe-${recipeId}`, [staticDataSource]), recipeSettings, recipeId)
   }
 
   // A `strategy: none` Recipe has no data source at all: it renders only
@@ -521,13 +537,7 @@ export class PluginImporterService {
   private importNoneRecipe(entries: AdmZip.IZipEntry[], settingsContent: string, recipeSettings: RecipeSettings, recipeId: string): RecipePlugin {
     const transformJs = recipeTransformJsOf(entries)
     const reshapedZip = this.reshapeRecipeArchive(entries, settingsContent, recipeSettings)
-    const parsed = withFullTemplate(this.parseZip(reshapedZip, `recipe-${recipeId}`, transformJs ? [selfFetchingDataSource(transformJs)] : []))
-
-    return {
-      ...parsed,
-      fields: parsed.fields.map(neverRequiredWhenReadOnly),
-      sourceRecipeId: recipeId,
-    }
+    return this.recipePluginOf(this.parseZip(reshapedZip, `recipe-${recipeId}`, transformJs ? [selfFetchingDataSource(transformJs)] : []), recipeSettings, recipeId)
   }
 
   // A real Recipe archive is flat: settings.yml + *.liquid at the zip root,
@@ -590,7 +600,7 @@ export class PluginImporterService {
 
     return settings.strategy === 'webhook'
       ? { ...common, kind: 'Webhook', dataSources: [], ...this.resolveMerge(settings) }
-      : { ...common, kind: 'Poll', dataSources: forcedDataSources ?? this.resolveDataSources(settings, transformJs) }
+      : { ...common, kind: 'Poll', dataSources: forcedDataSources ?? this.resolveDataSources(settings, transformJs), ...this.resolveOAuth(settings) }
   }
 
   // An archive of TRMNL's own names the strategy alone, which is a Webhook Payload replaced at every POST.
@@ -603,6 +613,11 @@ export class PluginImporterService {
       throw importRefused('unprocessable', 'The Merge Strategy "stream" needs a "stream_limit" that is a whole number of 1 or more.')
     }
     return { mergeStrategy, streamLimit }
+  }
+
+  private resolveOAuth(settings: TerminusSettings): Pick<ParsedPlugin, 'oauthSettings'> {
+    const oauthSettings = oauthSettingsOf(settings)
+    return oauthSettings ? { oauthSettings } : {}
   }
 
   // Name can be in manifest, settings, or use filename fallback
@@ -646,7 +661,7 @@ export class PluginImporterService {
       const options = parseFieldOptions(field.options)
       return {
         keyname: field.keyname,
-        fieldType: field.field_type ?? 'string',
+        fieldType: field.field_type === REMOTE_SELECT ? 'string' : field.field_type ?? 'string',
         name: field.name ?? field.keyname,
         description: field.description,
         defaultValue: defaultOf(field),

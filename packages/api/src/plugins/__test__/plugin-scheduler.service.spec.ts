@@ -314,7 +314,7 @@ describe('pluginSchedulerService', () => {
     service.schedulePlugin(plugin)
     await service.runTick(plugin)
 
-    expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(plugin, expect.objectContaining({ trmnl: expect.anything() }))
+    expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(plugin, expect.objectContaining({ trmnl: expect.anything() }), expect.any(Function))
   })
 
   it('does not schedule if templates are missing', () => {
@@ -381,6 +381,7 @@ describe('pluginSchedulerService', () => {
       expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(
         plugin,
         expect.objectContaining({ weather: { temp: 25 }, air_quality: { aqi: 42 } }),
+        expect.any(Function),
       )
     })
 
@@ -406,6 +407,7 @@ describe('pluginSchedulerService', () => {
       expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(
         plugin,
         expect.objectContaining({ source: { title: 'Hello' } }),
+        expect.any(Function),
       )
     })
 
@@ -431,6 +433,7 @@ describe('pluginSchedulerService', () => {
       expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(
         plugin,
         expect.objectContaining({ weather: { temp: 25 }, title: 'Static Title' }),
+        expect.any(Function),
       )
     })
 
@@ -458,6 +461,7 @@ describe('pluginSchedulerService', () => {
           weather: { error: true, message: 'API timeout' },
           title: 'Static Title',
         }),
+        expect.any(Function),
       )
     })
 
@@ -488,6 +492,7 @@ describe('pluginSchedulerService', () => {
           weather: { temp: 25 },
           air_quality: { error: true, message: 'API timeout' },
         }),
+        expect.any(Function),
       )
     })
 
@@ -519,6 +524,7 @@ describe('pluginSchedulerService', () => {
       expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(
         plugin,
         expect.objectContaining({ gh: { totalShort: '3.5k' } }),
+        expect.any(Function),
       )
     })
 
@@ -555,6 +561,7 @@ describe('pluginSchedulerService', () => {
           gh: { error: true, message: 'bad transform' },
           title: 'Static Title',
         }),
+        expect.any(Function),
       )
     })
 
@@ -635,7 +642,7 @@ describe('pluginSchedulerService', () => {
       await Promise.all([earlierTick, laterTick])
 
       expect(mockRenderCache.renderAndCache).toHaveBeenCalledTimes(1)
-      expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(plugin, expect.objectContaining({ weather: { temp: 20 } }))
+      expect(mockRenderCache.renderAndCache).toHaveBeenCalledWith(plugin, expect.objectContaining({ weather: { temp: 20 } }), expect.any(Function))
       expect(mockPluginRepo.update).toHaveBeenCalledTimes(1)
     })
 

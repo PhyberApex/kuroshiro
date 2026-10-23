@@ -2,6 +2,7 @@ import type { MergeStrategy, PluginKind } from 'kuroshiro-shared'
 import type { PluginDataSourceDto } from './dto/plugin-data-source.dto.js'
 import type { PluginFieldDto } from './dto/plugin-field.dto.js'
 import type { RecipeSnapshot } from './entities/plugin.entity.js'
+import type { OAuthSettings } from './plugin-oauth.js'
 
 export interface PluginTemplateInput {
   layout?: string
@@ -23,6 +24,8 @@ export interface WholePluginInput {
   dither?: boolean
   noScreenPadding?: boolean
   darkMode?: boolean
+  /** An OAuth Recipe's `oauth_*` settings (ADR-0068). */
+  oauthSettings?: OAuthSettings | null
   isActive?: boolean
   order?: number
   webhookToken?: string

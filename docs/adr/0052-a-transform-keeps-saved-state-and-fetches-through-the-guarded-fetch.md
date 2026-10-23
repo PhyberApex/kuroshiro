@@ -13,7 +13,7 @@ Considered and rejected:
 - **One state per Plugin, as TRMNL has it.** TRMNL has one transform per plugin; Kuroshiro has one per Data Source, and two transforms writing one record would race on every parallel fetch (ADR-0005).
 - **`trmnl.state` keyed by Data Source name for several Data Sources.** A lone Data Source's template would then differ from TRMNL's, which every imported Recipe is written for.
 - **Writing state from the preview.** The editor would advance a cursor on every keystroke, and TRMNL's editor leaves it alone.
-- **`trmnl.previous_merge_variables`.** Kuroshiro caches the rendered Screen, not the data; keeping the last data per Data Source is a separate decision.
+- **`trmnl.previous_merge_variables`.** Kuroshiro caches the rendered Screen, not the data; keeping the last data per Data Source is a separate decision. _(Decided by ADR-0070: a transform reads its Previous Output there.)_
 
 ## Consequences
 

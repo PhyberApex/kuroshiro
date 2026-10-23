@@ -72,8 +72,8 @@ function originName(origin: PluginImportOrigin) {
   }
 }
 
-export function importArrival({ origin, hasTransform }: PluginImportResult, device?: CarriedDevice): PluginArrival {
-  return { how: 'imported', origin: origin.type, name: originName(origin), hasTransform, device }
+export function importArrival({ origin, hasTransform, needsToken, typedByHand }: PluginImportResult, device?: CarriedDevice): PluginArrival {
+  return { how: 'imported', origin: origin.type, name: originName(origin), hasTransform, needsToken, typedByHand, device }
 }
 
 /** What the forms of the three ways of importing share: the import under way, its trouble, and the Plugin's page once it worked. */

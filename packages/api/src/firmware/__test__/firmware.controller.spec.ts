@@ -42,13 +42,18 @@ describe('firmwareController', () => {
   })
 
   it('answers a catch-up as the version and the Devices it targeted', async () => {
-    autoUpdateService.catchUp.mockResolvedValue({ firmware: { version: '1.6.0' }, assigned: [{ id: 'd1', name: 'Kitchen', apikey: 'secret' }] })
+    autoUpdateService.catchUp.mockResolvedValue({ newest: { version: '1.6.0' }, assigned: [{ id: 'd1', name: 'Kitchen', apikey: 'secret' }] })
     await expect(controller.catchUp()).resolves.toEqual({ version: '1.6.0', assigned: [{ id: 'd1', name: 'Kitchen' }] })
   })
 
   it('answers a catch-up with no current official Firmware as empty', async () => {
-    autoUpdateService.previewCatchUp.mockResolvedValue({ firmware: null, behind: [] })
+    autoUpdateService.previewCatchUp.mockResolvedValue({ newest: null, behind: [] })
     await expect(controller.previewCatchUp()).resolves.toEqual({ version: null, assigned: [] })
+  })
+
+  it('previews a catch-up as the newest version and the Devices that are behind', async () => {
+    autoUpdateService.previewCatchUp.mockResolvedValue({ newest: { version: '1.6.0' }, behind: [{ device: { id: 'd1', name: 'Kitchen', apikey: 'secret' }, firmware: { version: '1.6.0' } }] })
+    await expect(controller.previewCatchUp()).resolves.toEqual({ version: '1.6.0', assigned: [{ id: 'd1', name: 'Kitchen' }] })
   })
 
   describe('upload', () => {

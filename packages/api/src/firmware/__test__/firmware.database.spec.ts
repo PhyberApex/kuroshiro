@@ -33,7 +33,7 @@ vi.mock('node-cron', () => ({ default: { schedule: vi.fn() } }))
 
 const UNKNOWN_ID = '00000000-0000-4000-8000-000000000000'
 const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
-const LATEST = { url: 'https://trmnl-fw.example.com/FW1.6.0.bin', version: '1.6.0' }
+const LATEST = { url: 'https://trmnl-fw.s3.us-east-2.amazonaws.com/trmnl_og/FW1.6.0.bin', version: '1.6.0' }
 
 const realFetch = globalThis.fetch
 const mockFetch = stubFetch()
@@ -86,16 +86,10 @@ describe('the Firmware reads and writes, against a real database', () => {
     await database.query(`TRUNCATE "device", "firmware", "device_model", "sync_run" CASCADE`)
     fs.rmSync(firmwareDirectory, { recursive: true, force: true })
     fs.mkdirSync(firmwareDirectory, { recursive: true })
-    await database.getRepository(DeviceModel).save({
-      name: 'og_plus',
-      label: 'TRMNL OG',
-      width: 800,
-      height: 480,
-      colors: 4,
-      bitDepth: 2,
-      scaleFactor: 1,
-      kind: 'trmnl',
-    })
+    await database.getRepository(DeviceModel).save([
+      { name: 'og_plus', label: 'TRMNL OG', width: 800, height: 480, colors: 4, bitDepth: 2, scaleFactor: 1, kind: 'trmnl' },
+      { name: 'v2', label: 'TRMNL X', width: 1872, height: 1404, colors: 4, bitDepth: 2, scaleFactor: 1, kind: 'trmnl' },
+    ])
     trmnlAnswers(newestAnswer())
   })
 
@@ -125,6 +119,7 @@ describe('the Firmware reads and writes, against a real database', () => {
       compatibleModels: ['og_plus'],
       deprecated: false,
       syncedAt: new Date('2026-09-01T00:00:00.000Z'),
+      folder: overrides.kind === 'custom' ? null : 'trmnl_og',
       ...overrides,
     })
     fs.writeFileSync(`${firmwareDirectory}/${firmware.id}.bin`, 'binary')
@@ -210,6 +205,39 @@ describe('the Firmware reads and writes, against a real database', () => {
       const result: FirmwareSyncResult = await (await sync()).json()
 
       expect(result.assigned).toEqual([{ id: device.id, name: 'Hallway' }])
+    })
+
+    it('stores one official Firmware per folder, and gives each Device the one of its Device Model', async () => {
+      autoUpdate = true
+      await addFirmware({ version: '1.5.0' })
+      const og = await addDevice({ name: 'Hallway' })
+      const x = await addDevice({ name: 'Desk', deviceModel: { name: 'v2' } as DeviceModel })
+
+      const result: FirmwareSyncResult = await (await sync()).json()
+
+      expect(result.assigned).toEqual(expect.arrayContaining([{ id: og.id, name: 'Hallway' }, { id: x.id, name: 'Desk' }]))
+      const rows = await database.getRepository(Firmware).find({ order: { folder: 'ASC', version: 'ASC' } })
+      expect(rows.map(({ version, folder, compatibleModels, deprecated }) => ({ version, folder, compatibleModels, deprecated }))).toEqual([
+        { version: '1.5.0', folder: 'trmnl_og', compatibleModels: ['og_png', 'og_plus'], deprecated: true },
+        { version: '1.6.0', folder: 'trmnl_og', compatibleModels: ['og_png', 'og_plus'], deprecated: false },
+        { version: '1.6.0', folder: 'trmnl_x', compatibleModels: ['v2'], deprecated: false },
+      ])
+      const targets = await database.getRepository(Device).find({ relations: { targetFirmware: true } })
+      expect(targets.find(device => device.id === og.id)?.targetFirmware?.folder).toBe('trmnl_og')
+      expect(targets.find(device => device.id === x.id)?.targetFirmware?.folder).toBe('trmnl_x')
+    })
+
+    it('syncs a folder that missed a version on the next run, and leaves the others as they are', async () => {
+      trmnlAnswers(url => url.endsWith('/firmware/latest') ? jsonResponse(LATEST) : new Response(null, { status: url.includes('/trmnl_x/') ? 404 : 200 }))
+      expect(await (await sync()).json()).toMatchObject({ inserted: true })
+      expect(await firmwareRows()).toBe(1)
+
+      trmnlAnswers(newestAnswer())
+      expect(await (await sync()).json()).toMatchObject({ inserted: true })
+      expect(await firmwareRows()).toBe(2)
+
+      expect(await (await sync()).json()).toMatchObject({ inserted: false })
+      expect(await firmwareRows()).toBe(2)
     })
 
     it('inserts nothing when a custom Firmware already holds the version, not just the newest official one', async () => {
@@ -302,7 +330,7 @@ describe('the Firmware reads and writes, against a real database', () => {
       const assertVersionFree = vi.spyOn(firmwareService as unknown as { assertVersionFree: (version: string) => Promise<void> }, 'assertVersionFree')
       assertVersionFree.mockImplementationOnce(async () => {
         // The other request's write, landing between this one's check and its own write.
-        await addFirmware({ version: '1.5.0' })
+        await addFirmware({ kind: 'custom', version: '1.5.0', uploadedAt: new Date(), syncedAt: null })
       })
 
       const response = await upload(uploadForm({ version: '1.5.0' }))
@@ -437,9 +465,23 @@ describe('the Firmware reads and writes, against a real database', () => {
       expect(await targetOf(pending.id)).toEqual({ updateFirmware: true, target: null })
     })
 
+    it('gives each Device the current official Firmware of its own Device Model', async () => {
+      autoUpdate = true
+      const og = await addFirmware({ version: '1.6.0' })
+      const x = await addFirmware({ version: '1.6.0', folder: 'trmnl_x', compatibleModels: ['v2'] })
+      const hallway = await addDevice({ fwVersion: '1.5.0' })
+      const desk = await addDevice({ fwVersion: '1.5.0', deviceModel: { name: 'v2' } as DeviceModel })
+
+      const result = await catchUp()
+
+      expect(result.assigned).toHaveLength(2)
+      const targets = await database.getRepository(Device).find({ relations: { targetFirmware: true } })
+      expect(targets.find(device => device.id === hallway.id)?.targetFirmware?.id).toBe(og.id)
+      expect(targets.find(device => device.id === desk.id)?.targetFirmware?.id).toBe(x.id)
+    })
+
     it('leaves a Device whose Model is not compatible untouched', async () => {
       autoUpdate = true
-      await database.getRepository(DeviceModel).save({ name: 'v2', label: 'TRMNL X', width: 1872, height: 1404, colors: 4, bitDepth: 2, scaleFactor: 1, kind: 'trmnl' })
       await addFirmware({ version: '1.6.0' })
       const other = await addDevice({ deviceModel: { name: 'v2' } as DeviceModel })
 

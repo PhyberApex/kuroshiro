@@ -76,7 +76,7 @@ export class FirmwareService {
     }
     catch (err) {
       await fs.promises.unlink(this.filePath(id)).catch(() => {})
-      if (!isUniqueViolation(err, 'UQ_firmware_version'))
+      if (!isUniqueViolation(err, 'UQ_firmware_custom_version'))
         throw err
       throw new ApiException(409, 'firmware-version-taken', `There is already a Firmware ${input.version}.`, { version: input.version })
     }

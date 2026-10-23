@@ -11,6 +11,7 @@ import { getRepositoryToken } from '@nestjs/typeorm'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AlertSweepService } from '../../alerts/alert-sweep.service.js'
 import { Alert } from '../../alerts/entities/alert.entity.js'
+import { DeviceModel } from '../../device-models/entities/device-model.entity.js'
 import { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
 import { DeviceSensor } from '../../device-sensors/entities/device-sensor.entity.js'
 import { Device } from '../../devices/devices.entity.js'
@@ -23,7 +24,7 @@ import { ScreenRenderService } from '../../mashup/services/screen-render.service
 import { Screen } from '../../screens/screens.entity.js'
 import { stubFetch } from '../../test/fetch.js'
 import { createHttpTestApp } from '../../test/httpApp.js'
-import { createMockDeviceModelsService, createMockFallbackScreensService, primeMockDeviceModelsService, primeMockFallbackScreensService } from '../../test/mockDeviceModelsService.js'
+import { createMockDeviceModelsService, createMockFallbackScreensService, OG_PLUS, primeMockDeviceModelsServiceWithAssignedModels, primeMockFallbackScreensService, V2 } from '../../test/mockDeviceModelsService.js'
 import { asService } from '../../test/mockService.js'
 import { createTestDatabase } from '../../test/testDatabase.js'
 import { DevicePlugin } from '../entities/device-plugin.entity.js'
@@ -58,6 +59,7 @@ import { WebhookIngestController } from '../webhook-ingest.controller.js'
 vi.mock('../../device-models/render-html-to-png.js', () => ({ renderHtmlToPng: vi.fn().mockResolvedValue(undefined) }))
 
 const UNKNOWN_ID = '00000000-0000-4000-8000-000000000000'
+const PORTRAIT: DeviceModel = { ...OG_PLUS, name: 'og_portrait', label: 'TRMNL OG, portrait', width: 480, height: 800 }
 const TEMPERATURE_READING = 'make=Sensirion;model=SHT4x;kind=temperature;value=21.5;unit=C;created_at=1'
 
 // The spec's own requests go to the test server through the real fetch; only
@@ -88,9 +90,14 @@ describe('what a Plugin renders from, and with which Template, against a real da
 
     const fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
     const config = asService<ConfigService>({ get: () => false, getOrThrow: () => 'https://kuroshiro.example' })
-    const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config), new PluginTransformService())
+    const resolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, config, new InstanceTimeZone()), new PluginTransformService())
     const templateContext = new PluginTemplateContextService(fieldValues, resolver, new InstanceTimeZone(), new PluginDataSourceStateService(database.getRepository(PluginDataSource)))
-    const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen))
+    await database.getRepository(DeviceModel).save([OG_PLUS, V2, PORTRAIT])
+    const deviceModels = createMockDeviceModelsService()
+    const fallbackScreens = createMockFallbackScreensService()
+    primeMockDeviceModelsServiceWithAssignedModels(deviceModels)
+    primeMockFallbackScreensService(fallbackScreens)
+    const renderCache = new PluginRenderCacheService(renderer, database.getRepository(Screen), asService<DeviceModelsService>(deviceModels))
     const refresh = new PluginRefreshService(renderCache, templateContext, new DataSourceFetchOutcomeService(database.getRepository(PluginDataSource)), new PluginDataSourceStateService(database.getRepository(PluginDataSource)), database.getRepository(Plugin))
     scheduler = new PluginSchedulerService(refresh)
     assignments = new PluginAssignmentsService(database.getRepository(Plugin), database.getRepository(Device), database.getRepository(DevicePlugin))
@@ -108,16 +115,14 @@ describe('what a Plugin renders from, and with which Template, against a real da
     webhookIngest = new WebhookIngestService(database.getRepository(Plugin), refresh)
 
     deviceSensors = new DeviceSensorsService(database.getRepository(DeviceSensor))
-    const deviceModels = createMockDeviceModelsService()
-    const fallbackScreens = createMockFallbackScreensService()
-    primeMockDeviceModelsService(deviceModels)
-    primeMockFallbackScreensService(fallbackScreens)
-    mashupRenderer = new MashupRendererService(renderer, deviceSensors, templateContext)
+    mashupRenderer = new MashupRendererService(renderer, deviceSensors, templateContext, asService<DeviceModelsService>(deviceModels))
     const screenRender = new ScreenRenderService(
       database.getRepository(Screen),
       config,
       asService<DeviceModelsService>(deviceModels),
       mashupRenderer,
+      database.getRepository(MashupSlot),
+      database.getRepository(MashupConfiguration),
     )
     display = new DeviceDisplayService(
       database.getRepository(Device),
@@ -140,7 +145,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
         WebhookPluginGuard,
         { provide: PluginsService, useValue: plugins },
         { provide: PluginReadsService, useValue: new PluginReadsService(database.getRepository(Plugin), database.getRepository(Screen), database.getRepository(Alert), fieldValues, config) },
-        { provide: PluginPreviewDataService, useValue: new PluginPreviewDataService(database.getRepository(Plugin), database.getRepository(Device), deviceSensors, templateContext) },
+        { provide: PluginPreviewDataService, useValue: new PluginPreviewDataService(database.getRepository(Plugin), database.getRepository(Device), deviceSensors, templateContext, asService<DeviceModelsService>(deviceModels)) },
         { provide: PluginAssignmentsService, useValue: assignments },
         { provide: PluginImporterService, useValue: asService<PluginImporterService>({}) },
         { provide: PluginExporterService, useValue: asService<PluginExporterService>({}) },
@@ -168,9 +173,9 @@ describe('what a Plugin renders from, and with which Template, against a real da
     await database.destroy()
   })
 
-  async function addDevice(name: string): Promise<Device> {
+  async function addDevice(name: string, deviceModel: DeviceModel | null = null): Promise<Device> {
     deviceCount += 1
-    return database.getRepository(Device).save({ name, friendlyId: `DEV${deviceCount}`, mac: `AA:BB:CC:DD:EE:${String(deviceCount).padStart(2, '0')}`, apikey: `device-secret-${deviceCount}`, refreshRate: 300 })
+    return database.getRepository(Device).save({ name, friendlyId: `DEV${deviceCount}`, mac: `AA:BB:CC:DD:EE:${String(deviceCount).padStart(2, '0')}`, apikey: `device-secret-${deviceCount}`, refreshRate: 300, deviceModel })
   }
 
   async function addMashup(device: Device, pluginId: string, slotSizes: string[]): Promise<MashupConfiguration> {
@@ -211,6 +216,11 @@ describe('what a Plugin renders from, and with which Template, against a real da
     return screen.cachedPluginOutput
   }
 
+  async function cachedOutputsByDevice(pluginId: string): Promise<Record<string, string | null | undefined>> {
+    const screens = await database.getRepository(Screen).find({ where: { plugin: { id: pluginId } }, relations: { device: true } })
+    return Object.fromEntries(screens.map(screen => [screen.device.id, screen.cachedPluginOutput]))
+  }
+
   async function read(pluginId: string): Promise<PluginDetail> {
     const response = await http.request(`/api/plugins/${pluginId}`)
     expect(response.status).toBe(200)
@@ -232,7 +242,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
   }
 
   describe('one context for every render', () => {
-    it('gives the scheduler tick and the on-demand render the same Sensor-less context a Mashup slot and the preview keep the polling Device\'s own Sensors for', async () => {
+    it('gives the scheduler tick and the on-demand render the same Sensor-less context, told the Device, a Mashup slot and the preview keep the polling Device\'s own Sensors for', async () => {
       vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-10-01T10:00:00.000Z') })
       const plugin = await createPollPlugin({ fields: [{ keyname: 'city', name: 'City' }], fieldValues: { city: 'Berlin' } })
       const device = await addDevice('Kitchen')
@@ -260,16 +270,45 @@ describe('what a Plugin renders from, and with which Template, against a real da
           state: {},
           plugin_settings: { instance_name: 'Weather', strategy: 'polling', dark_mode: 'no', no_screen_padding: 'no', custom_fields_values: { city: 'Berlin' }, data_fetched_utc: 1790848800 },
           user: { id: 'kuroshiro-user', locale: 'en', time_zone: expect.any(String), time_zone_iana: expect.any(String), utc_offset: expect.any(Number) },
+          device: { friendly_id: device.friendlyId, width: 800, height: 480, model: 'og_plus', bit_depth: 2, orientation: 'landscape', refresh_interval_seconds: 300, sleep_mode_enabled: false },
         },
       }
       // A Mashup slot and the device-scoped preview are each rendered for one specific
       // Device and stored (or returned) only for that Device, so they keep its Sensors
-      // — unlike the shared Plugin Screen cache this issue (#1121) is scoped to.
+      // — unlike the Plugin's own Screen, whose cache is written by a tick that fetched for every Screen at once (#1121).
       const deviceScopedExpected = { ...sharedRenderExpected, sensors: { temperature: { value: 21.5, unit: 'C' } } }
       expect(onDemand).toEqual(sharedRenderExpected)
       expect(mashupSlot).toEqual(deviceScopedExpected)
       expect(preview.context).toEqual(deviceScopedExpected)
       expect(tick).toEqual(sharedRenderExpected)
+    })
+
+    it('renders a scheduler tick once per Screen, each told its own Device and Device Model as trmnl.device (ADR-0069)', async () => {
+      const plugin = await createPollPlugin({ templates: [{ layout: 'full', liquidMarkup: '{{ trmnl.device.friendly_id }} {{ trmnl.device.model }} {{ trmnl.device.width }}x{{ trmnl.device.height }} {{ trmnl.device.orientation }} {{ weather.temperature }}' }] })
+      const og = await addDevice('Kitchen')
+      const x = await addDevice('Hallway', V2)
+      const portrait = await addDevice('Door', PORTRAIT)
+      for (const device of [og, x, portrait])
+        await assignments.assign(plugin.id, device.id)
+
+      await schedulerTick(plugin.id)
+
+      expect(await cachedOutputsByDevice(plugin.id)).toEqual({
+        [og.id]: `${og.friendlyId} og_plus 800x480 landscape 21`,
+        [x.id]: `${x.friendlyId} v2 1872x1404 landscape 21`,
+        [portrait.id]: `${portrait.friendlyId} og_portrait 480x800 portrait 21`,
+      })
+      expect(dataSourceFetches()).toHaveLength(1)
+    })
+
+    it('tells a Webhook-kind Plugin\'s render its Device beside its Webhook Payload', async () => {
+      const plugin = await createWebhookPlugin({ templates: [{ layout: 'full', liquidMarkup: '{{ trmnl.device.model }}: {{ reading }}' }] })
+      const x = await addDevice('Hallway', V2)
+      await assignments.assign(plugin.id, x.id)
+
+      await webhookIngest.ingest(await loadForRender(plugin.id), { reading: 4 })
+
+      expect(await cachedOutput(plugin.id)).toBe('v2: 4')
     })
 
     it('lets a Webhook-kind Plugin\'s render read trmnl beside its Webhook Payload', async () => {
@@ -287,7 +326,7 @@ describe('what a Plugin renders from, and with which Template, against a real da
 
     async function slotOutputs(pluginId: string, slotSizes: string[]): Promise<string[]> {
       const device = await addDevice('Hallway')
-      const html = await mashupRenderer.renderMashup(await addMashup(device, pluginId, slotSizes), device)
+      const { html } = await mashupRenderer.renderMashup(await addMashup(device, pluginId, slotSizes), device)
       return [...html.matchAll(/<div class="view [^"]+">([^<]*)<\/div>/g)].map(match => match[1])
     }
 
@@ -368,6 +407,46 @@ describe('what a Plugin renders from, and with which Template, against a real da
       expect(preview.context).toMatchObject({ counter: { n: 3 }, trmnl: { state: { n: 3 } } })
       expect(preview.context).not.toHaveProperty('trmnl_state')
       expect(await savedState()).toEqual({ n: 2 })
+    })
+  })
+
+  describe('a transform\'s Previous Output (ADR-0070)', () => {
+    it('hands a transform what it returned on the last scheduled tick at input.trmnl.previous_merge_variables, and never stores what a preview returned', async () => {
+      const plugin = await createPollPlugin({
+        dataSources: [{ name: 'plan', mode: 'literal', literalValue: {}, transformJs: 'function run(input) { const before = input.trmnl.previous_merge_variables.n || 0; return { before, n: before + 1 } }' }],
+        templates: [{ layout: 'full', liquidMarkup: '<p>{{ before }}/{{ n }}</p>' }],
+      })
+      await assignments.assign(plugin.id, (await addDevice('Kitchen')).id)
+      const stored = async () => (await database.getRepository(PluginDataSource).findOneByOrFail({ plugin: { id: plugin.id } })).previousOutput
+
+      await schedulerTick(plugin.id)
+      expect(await cachedOutput(plugin.id)).toContain('<p>0/1</p>')
+      expect(await stored()).toEqual({ before: 0, n: 1 })
+
+      await schedulerTick(plugin.id)
+      expect(await cachedOutput(plugin.id)).toContain('<p>1/2</p>')
+
+      expect((await previewData(plugin.id)).context).toMatchObject({ plan: { before: 2, n: 3 } })
+      expect(await stored()).toEqual({ before: 1, n: 2 })
+    })
+
+    it('keeps the Previous Output through a tick whose transform fails, and hands it to the next one', async () => {
+      const plugin = await createPollPlugin({
+        dataSources: [{ name: 'plan', mode: 'literal', literalValue: {}, transformJs: 'function run(input) { if (input.down) throw new Error(\'down\'); const before = input.trmnl.previous_merge_variables.n || 0; return { before, n: before + 1 } }' }],
+        templates: [{ layout: 'full', liquidMarkup: '<p>{{ before }}/{{ n }}</p>' }],
+      })
+      await assignments.assign(plugin.id, (await addDevice('Kitchen')).id)
+      const dataSources = database.getRepository(PluginDataSource)
+      const source = await dataSources.findOneByOrFail({ plugin: { id: plugin.id } })
+
+      await schedulerTick(plugin.id)
+      await dataSources.update(source.id, { literalValue: { down: true } })
+      await schedulerTick(plugin.id)
+      expect((await dataSources.findOneByOrFail({ id: source.id })).previousOutput).toEqual({ before: 0, n: 1 })
+
+      await dataSources.update(source.id, { literalValue: {} })
+      await schedulerTick(plugin.id)
+      expect(await cachedOutput(plugin.id)).toContain('<p>1/2</p>')
     })
   })
 
@@ -668,9 +747,9 @@ describe('what a Plugin renders from, and with which Template, against a real da
 
     it('keeps the public-address rule for a Data Source in demo mode', async () => {
       const demoConfig = asService<ConfigService>({ get: (key: string) => key === 'demo_mode' })
-      const demoResolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, demoConfig), new PluginTransformService())
+      const demoResolver = new PluginDataResolverService(new PluginDataFetcherService(renderer, demoConfig, new InstanceTimeZone()), new PluginTransformService())
       const demoFieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
-      const demoPreview = new PluginPreviewDataService(database.getRepository(Plugin), database.getRepository(Device), deviceSensors, new PluginTemplateContextService(demoFieldValues, demoResolver, new InstanceTimeZone(), new PluginDataSourceStateService(database.getRepository(PluginDataSource))))
+      const demoPreview = new PluginPreviewDataService(database.getRepository(Plugin), database.getRepository(Device), deviceSensors, new PluginTemplateContextService(demoFieldValues, demoResolver, new InstanceTimeZone(), new PluginDataSourceStateService(database.getRepository(PluginDataSource))), asService<DeviceModelsService>(createMockDeviceModelsService()))
       const plugin = await createPollPlugin()
 
       const preview = await demoPreview.previewData(plugin.id, { deviceId: null, dataSources: [{ name: 'internal', mode: 'fetch', url: 'http://127.0.0.1:9/secrets' }] })

@@ -20,6 +20,7 @@ import { ScreenRenderService } from '../mashup/services/screen-render.service.js
 import { templateOfSize } from '../plugins/plugin-templates.js'
 import { PluginRendererService } from '../plugins/services/plugin-renderer.service.js'
 import { PluginTemplateContextService } from '../plugins/services/plugin-template-context.service.js'
+import { withTrmnlDevice } from '../plugins/trmnl-device.js'
 import { nextEligibleScreen } from '../schedule/rotation.js'
 import { RENDER_FAILED, RENDER_HELD, RENDER_SKIPPED } from '../screens/render-outcome.js'
 import { Screen } from '../screens/screens.entity.js'
@@ -750,7 +751,7 @@ export class DeviceDisplayService {
 
     // No render is cached yet: a Poll-kind Plugin fetches now, a Webhook-kind one renders what it has received, or nothing.
     try {
-      const renderedHtml = await this.renderPluginHtml(plugin, screen)
+      const renderedHtml = await this.renderPluginHtml(plugin, screen, device)
       return renderedHtml ? await this.screenRender.renderBodyToScreenPng(viewFull(renderedHtml), screen, device, honorRenderSignal, frameworkVersion, plugin.dither, { noScreenPadding: plugin.noScreenPadding, darkMode: plugin.darkMode }) : null
     }
     catch (err) {
@@ -787,12 +788,12 @@ export class DeviceDisplayService {
   }
 
   /**
-   * `sensors` is always `[]` here, matching the scheduler tick, save-triggered
-   * refresh and Webhook ingest: this render's output is cached and then shared
-   * by every Device the Plugin is assigned to, so the polling Device's own
-   * Sensor readings must not leak into it.
+   * Rendered as a scheduler tick renders each Screen (ADR-0069): told the
+   * Device as `trmnl.device`, with `sensors` left `[]` like the tick, the
+   * save-triggered refresh and a Webhook ingest, so the output cached here
+   * reads no differently from the one the next tick writes.
    */
-  private async renderPluginHtml(plugin: Plugin, screen: Screen): Promise<string | null> {
+  private async renderPluginHtml(plugin: Plugin, screen: Screen, device: Device): Promise<string | null> {
     this.logger.log(`No cache, rendering plugin ${plugin.id} on-demand for screen ${screen.id}`)
 
     const fullTemplate = templateOfSize(plugin.templates, 'full')
@@ -801,7 +802,7 @@ export class DeviceDisplayService {
 
     const { context } = await this.pluginTemplateContext.contextFor(plugin, [])
 
-    const renderedHtml = await this.pluginRenderer.render(fullTemplate.liquidMarkup, context)
+    const renderedHtml = await this.pluginRenderer.render(fullTemplate.liquidMarkup, await withTrmnlDevice(context, device, this.deviceModels))
     await this.screenRender.cachePluginOutput(screen, renderedHtml)
     return renderedHtml
   }
