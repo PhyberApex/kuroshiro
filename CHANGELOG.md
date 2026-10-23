@@ -1,5 +1,57 @@
 # Changelog
 
+## [0.21.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.20.0...kuroshiro-v0.21.0) (2026-10-22)
+
+
+### Features
+
+* **alerts:** remind Alerts still open on a Reminder Interval ([#1490](https://github.com/PhyberApex/kuroshiro/issues/1490)) ([3663e01](https://github.com/PhyberApex/kuroshiro/commit/3663e01177b9611937890e39b42a932f5b58b573))
+* **devices:** Manual Rotation, a per-Device setting that advances only on a button press or a Picked Screen ([#1482](https://github.com/PhyberApex/kuroshiro/issues/1482)) ([11b1601](https://github.com/PhyberApex/kuroshiro/commit/11b1601a4b2f39597e961a6a8e5db4951fd9f6fc))
+* **devices:** record the Update-Source header as the Device's last wake source ([#1479](https://github.com/PhyberApex/kuroshiro/issues/1479)) ([0b55aa0](https://github.com/PhyberApex/kuroshiro/commit/0b55aa0f80c5ee14d0c5c463f0fa273c5d30d0f3))
+* Dithering switch on Screens and Plugins ([#1477](https://github.com/PhyberApex/kuroshiro/issues/1477)) ([ce139b3](https://github.com/PhyberApex/kuroshiro/commit/ce139b34e437ed7a9b877398240164e01b61172e))
+* **firmware:** "Catch up now" gives the current official Firmware to Devices that are behind ([#1475](https://github.com/PhyberApex/kuroshiro/issues/1475)) ([b07ac88](https://github.com/PhyberApex/kuroshiro/commit/b07ac88d45c67feb13c5920072adf43b6fdf29f3))
+* **firmware:** official Firmware is synced once per folder of TRMNL's firmware bucket ([#1547](https://github.com/PhyberApex/kuroshiro/issues/1547)) ([226aac5](https://github.com/PhyberApex/kuroshiro/commit/226aac5896a2b9ab28e80f03198c48fc3983246d))
+* **mashup:** a Mashup slot raises its own Render Signal ([#1551](https://github.com/PhyberApex/kuroshiro/issues/1551)) ([8a975d0](https://github.com/PhyberApex/kuroshiro/commit/8a975d08d432553f4799a06bd99368660d9e14e5))
+* **plugins:** a bare select option is stored under the value TRMNL derives ([#1539](https://github.com/PhyberApex/kuroshiro/issues/1539)) ([82e1080](https://github.com/PhyberApex/kuroshiro/commit/82e1080a7e8dc8ac2c39edaa13282147e22c995c)), closes [#1530](https://github.com/PhyberApex/kuroshiro/issues/1530)
+* **plugins:** a copyable_webhook_url Plugin Field is not an input to fill in ([#1543](https://github.com/PhyberApex/kuroshiro/issues/1543)) ([246bf1d](https://github.com/PhyberApex/kuroshiro/commit/246bf1d1b6db3e103dab9675b3c62f1da15153dc)), closes [#1532](https://github.com/PhyberApex/kuroshiro/issues/1532)
+* **plugins:** a Data Source request is given up after ten seconds ([#1541](https://github.com/PhyberApex/kuroshiro/issues/1541)) ([4b46920](https://github.com/PhyberApex/kuroshiro/commit/4b46920f14e775696d51f3f9ec981213ad8ae6a0)), closes [#1535](https://github.com/PhyberApex/kuroshiro/issues/1535)
+* **plugins:** a Data Source requests each line its URL renders to, and a lone list or text reads as data ([#1528](https://github.com/PhyberApex/kuroshiro/issues/1528)) ([f112195](https://github.com/PhyberApex/kuroshiro/commit/f112195869dbde340a02026476592deff8e2d66f)), closes [#1522](https://github.com/PhyberApex/kuroshiro/issues/1522)
+* **plugins:** a list Plugin Field holds one value per line and reads as a list ([#1546](https://github.com/PhyberApex/kuroshiro/issues/1546)) ([e653c7e](https://github.com/PhyberApex/kuroshiro/commit/e653c7eacd8e4135b46e6e66a6ebcca6a834a714))
+* **plugins:** a Plugin Field keeps the attributes TRMNL's form builder gives it ([#1515](https://github.com/PhyberApex/kuroshiro/issues/1515)) ([9a055fb](https://github.com/PhyberApex/kuroshiro/commit/9a055fb06dd0365c4fc49a8b8d158d5348ed1ad5))
+* **plugins:** a Plugin is rendered once per Screen and told its Device as trmnl.device ([#1554](https://github.com/PhyberApex/kuroshiro/issues/1554)) ([f7578f9](https://github.com/PhyberApex/kuroshiro/commit/f7578f91f6b8e1f4b2f27e0d03c762819335b334))
+* **plugins:** a polled iCalendar feed is read as its next thirty days of events ([#1548](https://github.com/PhyberApex/kuroshiro/issues/1548)) ([d8bf75c](https://github.com/PhyberApex/kuroshiro/commit/d8bf75cb199016696b2d01240156bae369edcfe7))
+* **plugins:** a polled XML feed and CSV table are read as TRMNL reads them ([#1529](https://github.com/PhyberApex/kuroshiro/issues/1529)) ([be989b0](https://github.com/PhyberApex/kuroshiro/commit/be989b0ac47477edd33718c39fbe93b531db08bf))
+* **plugins:** a Template defines its own partials, and a Recipe's shared.liquid tops every layout ([#1511](https://github.com/PhyberApex/kuroshiro/issues/1511)) ([49c1f75](https://github.com/PhyberApex/kuroshiro/commit/49c1f75d42556ac82e6bff465b060beb1fa42249))
+* **plugins:** a transform keeps Saved State and may fetch ([#1514](https://github.com/PhyberApex/kuroshiro/issues/1514)) ([1c79685](https://github.com/PhyberApex/kuroshiro/commit/1c7968530dab691d1ec288dd896f281024b02f2a))
+* **plugins:** a transform reads its Previous Output as trmnl.previous_merge_variables ([#1555](https://github.com/PhyberApex/kuroshiro/issues/1555)) ([c192a69](https://github.com/PhyberApex/kuroshiro/commit/c192a69ca32c74a0f47e6b8d40d0121f62ee37a1))
+* **plugins:** a transform's sandbox has Node's web globals ([#1524](https://github.com/PhyberApex/kuroshiro/issues/1524)) ([b0bb7c3](https://github.com/PhyberApex/kuroshiro/commit/b0bb7c36eba744abcc6669b7bc1ed25f56e86b4c)), closes [#1519](https://github.com/PhyberApex/kuroshiro/issues/1519)
+* **plugins:** a Webhook POST in TRMNL's merge_variables envelope is read as the payload ([#1544](https://github.com/PhyberApex/kuroshiro/issues/1544)) ([1d5ba69](https://github.com/PhyberApex/kuroshiro/commit/1d5ba69c34623bb3b700329f6591a081fb7e8d79)), closes [#1533](https://github.com/PhyberApex/kuroshiro/issues/1533)
+* **plugins:** a webhook Recipe imports as a Webhook Plugin ([#1526](https://github.com/PhyberApex/kuroshiro/issues/1526)) ([d65f7d2](https://github.com/PhyberApex/kuroshiro/commit/d65f7d233e4747fe14dbb0165ba4c5f9f5b0cd33))
+* **plugins:** an OAuth Recipe imports with a token the admin pastes, refreshed before a poll ([#1552](https://github.com/PhyberApex/kuroshiro/issues/1552)) ([03a835b](https://github.com/PhyberApex/kuroshiro/commit/03a835b2c51332c7bcfcdd59ad99e0cb93650342))
+* **plugins:** each line of a Polling URL reads a list or text under data ([#1540](https://github.com/PhyberApex/kuroshiro/issues/1540)) ([0862926](https://github.com/PhyberApex/kuroshiro/commit/0862926618d24053474362808d3b787db49d2e9a)), closes [#1531](https://github.com/PhyberApex/kuroshiro/issues/1531)
+* **plugins:** keep TRMNL's no_screen_padding and dark_mode and draw a Plugin's own Screen with them ([#1516](https://github.com/PhyberApex/kuroshiro/issues/1516)) ([a854647](https://github.com/PhyberApex/kuroshiro/commit/a854647f91a0b8cf3cdd8cf2ad4eae303d0c63a6))
+* **plugins:** polling_headers in TRMNL's key=value form are read on import ([#1542](https://github.com/PhyberApex/kuroshiro/issues/1542)) ([80eb118](https://github.com/PhyberApex/kuroshiro/commit/80eb118dd0c1ce603ec07504d60ca172abe2588c)), closes [#1534](https://github.com/PhyberApex/kuroshiro/issues/1534)
+* **plugins:** read a lone Data Source at the root of the context too ([#1510](https://github.com/PhyberApex/kuroshiro/issues/1510)) ([8d23e04](https://github.com/PhyberApex/kuroshiro/commit/8d23e0413c5e718cbe3c40ce1563b5be50aac402))
+* **plugins:** run a transform as TRMNL's serverless run(input) ([#1513](https://github.com/PhyberApex/kuroshiro/issues/1513)) ([11e4fb7](https://github.com/PhyberApex/kuroshiro/commit/11e4fb7e40b57bc1812cc7e64285a497eb2a4c32))
+* **plugins:** the template reads when its data was fetched as trmnl.plugin_settings.data_fetched_utc ([#1525](https://github.com/PhyberApex/kuroshiro/issues/1525)) ([244a7c8](https://github.com/PhyberApex/kuroshiro/commit/244a7c893001d13226fc2d6d67b8ab2fe29f2b8f)), closes [#1521](https://github.com/PhyberApex/kuroshiro/issues/1521)
+* **shared:** TRMNL's custom Liquid filters, so an imported Recipe that uses one renders as on trmnl.com ([#1447](https://github.com/PhyberApex/kuroshiro/issues/1447)) ([ce5cce5](https://github.com/PhyberApex/kuroshiro/commit/ce5cce53494e59314207271b8631a6a34a57f9b6))
+* Wipe, a one-shot blank-image command on a Device ([#1481](https://github.com/PhyberApex/kuroshiro/issues/1481)) ([5c3634d](https://github.com/PhyberApex/kuroshiro/commit/5c3634d737818d2cd0a3e39aac2cf6da3cce2eae))
+
+
+### Bug Fixes
+
+* **api:** map current firmware board names to their upstream Device Models ([#1473](https://github.com/PhyberApex/kuroshiro/issues/1473)) ([25671cc](https://github.com/PhyberApex/kuroshiro/commit/25671cc7948d849c1264d86072296aa3e1f1d7e8))
+* **metrics:** accept the unit spellings official firmware sends for Sensors ([#1484](https://github.com/PhyberApex/kuroshiro/issues/1484)) ([f8dbc0a](https://github.com/PhyberApex/kuroshiro/commit/f8dbc0a194fa594d6f4ed0222ce0d904d871c5da))
+* **plugins:** import the Recipe archives TRMNL ships today ([#1508](https://github.com/PhyberApex/kuroshiro/issues/1508)) ([9d47cbf](https://github.com/PhyberApex/kuroshiro/commit/9d47cbf9850cd0441b50b1ea964d072650ee1963))
+* **shared:** make the Liquid engine's standard filters follow Ruby Liquid ([#1446](https://github.com/PhyberApex/kuroshiro/issues/1446)) ([20df7b5](https://github.com/PhyberApex/kuroshiro/commit/20df7b516d559aad193bc943e1f2911259ef05e9))
+* **shared:** render Liquid dates in the Instance Time Zone and carry it on trmnl.user ([#1449](https://github.com/PhyberApex/kuroshiro/issues/1449)) ([8274c44](https://github.com/PhyberApex/kuroshiro/commit/8274c44fafe8b47b43bc07f4b1fe195722ec175b))
+* **ui:** keep the Template plate in its rendering state until the Instance Time Zone is in ([#1453](https://github.com/PhyberApex/kuroshiro/issues/1453)) ([a80b654](https://github.com/PhyberApex/kuroshiro/commit/a80b654196d4a8d2bb2e78b05b27db90e54ee5bd))
+
+
+### Performance Improvements
+
+* **api:** render in one shared, long-lived Chromium ([#1474](https://github.com/PhyberApex/kuroshiro/issues/1474)) ([df1f890](https://github.com/PhyberApex/kuroshiro/commit/df1f89081c8b4a3a9f2caa3359d91e75896e19b2))
+
 ## [0.20.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.19.0...kuroshiro-v0.20.0) (2026-10-15)
 
 
