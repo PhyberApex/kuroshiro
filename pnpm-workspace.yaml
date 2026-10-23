@@ -67,7 +67,7 @@ catalog:
   node-cron: ^4.2.1
   pg: 8.23.1
   playwright: 1.64.1
-  puppeteer: 25.14.0
+  puppeteer: 25.15.0
   reflect-metadata: 0.2.2
   reka-ui: 2.11.0
   rxjs: 7.8.2
