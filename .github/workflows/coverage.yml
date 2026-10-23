@@ -21,8 +21,13 @@ jobs:
           cache: 'pnpm'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Cache the Playwright browsers
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-workspace.yaml') }}
       - name: Install Chromium for the UI's browser-mode tests
-        run: pnpm --filter kuroshiro-ui exec playwright install --with-deps --only-shell chromium
+        run: pnpm --filter kuroshiro-ui exec playwright install --only-shell chromium
       - name: Test
         run: pnpm run test:coverage
 
