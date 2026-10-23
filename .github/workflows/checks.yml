@@ -6,30 +6,9 @@ on:
     branches: [main, 'release/**']
 
 jobs:
-  playwright-image:
-    name: Pinned Playwright image
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    outputs:
-      name: ${{ steps.pin.outputs.name }}
-    steps:
-      - name: Checkout the workspace catalog
-        uses: actions/checkout@v7
-        with:
-          sparse-checkout: pnpm-workspace.yaml
-          sparse-checkout-cone-mode: false
-      - id: pin
-        run: echo "name=mcr.microsoft.com/playwright:v$(awk '$1 == "playwright:" { print $2 }' pnpm-workspace.yaml)-noble" >> "$GITHUB_OUTPUT"
-
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: playwright-image
-    # The image ships the browsers and their system libraries the catalog's Playwright expects,
-    # so nothing is downloaded or apt-installed on the runner.
-    container:
-      image: ${{ needs.playwright-image.outputs.name }}
-      options: --ipc=host
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -41,6 +20,15 @@ jobs:
           cache: 'pnpm'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Cache the Playwright browsers
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-workspace.yaml') }}
+      # No `--with-deps`: the runner already has the browsers' system libraries, and the
+      # apt call behind that flag has stalled on a slow Ubuntu mirror for a whole job's budget.
+      - name: Install Chromium for the UI's browser-mode tests and Firefox for its drag specs
+        run: pnpm --filter kuroshiro-ui exec playwright install --only-shell chromium firefox
       - name: Check ADR numbers
         run: pnpm run adr:check
       - name: Lint
@@ -84,12 +72,6 @@ jobs:
     name: UI against the real API
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: playwright-image
-    # The image ships the browsers and their system libraries the catalog's Playwright expects,
-    # so nothing is downloaded or apt-installed on the runner.
-    container:
-      image: ${{ needs.playwright-image.outputs.name }}
-      options: --ipc=host
     services:
       postgres:
         image: postgres:18-alpine
@@ -115,6 +97,13 @@ jobs:
           cache: 'pnpm'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Cache the Playwright browsers
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-workspace.yaml') }}
+      - name: Install Chromium
+        run: pnpm --filter kuroshiro-ui exec playwright install --only-shell chromium
       # The API converts every Screen image with `magick`, as the image has it; the runner only offers ImageMagick 6.
       - name: Install ImageMagick 7
         env:
@@ -123,14 +112,14 @@ jobs:
           curl -fsSL -o "$RUNNER_TEMP/magick.AppImage" "https://github.com/ImageMagick/ImageMagick/releases/download/$IMAGEMAGICK_VERSION/ImageMagick-$IMAGEMAGICK_VERSION-gcc-x86_64.AppImage"
           chmod +x "$RUNNER_TEMP/magick.AppImage"
           cd "$RUNNER_TEMP" && ./magick.AppImage --appimage-extract > /dev/null
-          mv "$RUNNER_TEMP/squashfs-root" /opt/imagemagick
-          printf '#!/bin/sh\nexec /opt/imagemagick/AppRun "$@"\n' > /usr/local/bin/magick
-          chmod +x /usr/local/bin/magick
+          sudo mv "$RUNNER_TEMP/squashfs-root" /opt/imagemagick
+          printf '#!/bin/sh\nexec /opt/imagemagick/AppRun "$@"\n' | sudo tee /usr/local/bin/magick > /dev/null
+          sudo chmod +x /usr/local/bin/magick
           magick -version
       - name: Drive the built UI against the real API and Postgres
         run: pnpm --filter kuroshiro-ui run test:real-api
         env:
-          KUROSHIRO_DB_HOST: postgres
+          KUROSHIRO_DB_HOST: localhost
           KUROSHIRO_DB_PORT: 5432
           KUROSHIRO_DB_USER: test
           KUROSHIRO_DB_PASSWORD: test

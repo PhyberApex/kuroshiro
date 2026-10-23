@@ -208,7 +208,7 @@ Three things Reka UI does not do for you:
 
 Baselines are the `*-chromium-linux.png` files in `__screenshots__/` folders beside their `*.shots.ts` file, and they are committed. Fonts render differently from machine to machine, so shots are only written or compared inside one pinned image, `mcr.microsoft.com/playwright:v<version>-noble`, where `<version>` is the `playwright` entry of the workspace catalog in `pnpm-workspace.yaml`. `scripts/screenshots.mjs` starts it; running a `*.shots.ts` file any other way is refused.
 
-The `checks`, `UI against the real API` and `Coverage` jobs run inside that same image too (a `playwright-image` job reads the catalog and hands the tag on), so CI never downloads a browser or apt-installs its libraries on the runner; a slow Ubuntu mirror once ate a job's whole twenty-minute budget that way.
+The other CI jobs install Chromium's headless shell and Firefox with `playwright install` on the runner, without `--with-deps`: the runner image already has the system libraries, and the apt call behind that flag once stalled on a slow Ubuntu mirror for a job's whole twenty-minute budget. The downloads are cached by `actions/cache` under a key that changes with the workspace catalog, so a run after a Playwright bump fetches them once.
 
 - The comparison is as good as exact: one grey level of one pixel is forgiven, because Chromium antialiases a rounded corner at the edge of a shot a level lighter or darker from run to run. Two levels of grey fail, so a token that changes by more than a hair is still caught.
 - A new or changed shot: run `pnpm test:screenshots:update`, look at the PNGs, commit them.

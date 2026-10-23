@@ -7,30 +7,9 @@ on:
     branches: [ main ]
 
 jobs:
-  playwright-image:
-    name: Pinned Playwright image
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    outputs:
-      name: ${{ steps.pin.outputs.name }}
-    steps:
-      - name: Checkout the workspace catalog
-        uses: actions/checkout@v7
-        with:
-          sparse-checkout: pnpm-workspace.yaml
-          sparse-checkout-cone-mode: false
-      - id: pin
-        run: echo "name=mcr.microsoft.com/playwright:v$(awk '$1 == "playwright:" { print $2 }' pnpm-workspace.yaml)-noble" >> "$GITHUB_OUTPUT"
-
   coverage:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: playwright-image
-    # The image ships the browsers and their system libraries the catalog's Playwright expects,
-    # so nothing is downloaded or apt-installed on the runner.
-    container:
-      image: ${{ needs.playwright-image.outputs.name }}
-      options: --ipc=host
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -42,6 +21,13 @@ jobs:
           cache: 'pnpm'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Cache the Playwright browsers
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-workspace.yaml') }}
+      - name: Install Chromium for the UI's browser-mode tests
+        run: pnpm --filter kuroshiro-ui exec playwright install --only-shell chromium
       - name: Test
         run: pnpm run test:coverage
 
