@@ -319,7 +319,7 @@ catalogs:
       version: 3.0.3
     multer:
       specifier: ^2.1.1
-      version: 2.4.0
+      version: 2.5.0
     node-cron:
       specifier: ^4.2.1
       version: 4.6.0
@@ -471,7 +471,7 @@ importers:
         version: 18.1.1
       multer:
         specifier: 'catalog:'
-        version: 2.4.0
+        version: 2.5.0
       node-cron:
         specifier: 'catalog:'
         version: 4.6.0
@@ -4872,6 +4872,10 @@ packages:
 
   multer@2.4.0:
     resolution: {integrity: sha512-7dqa0ZcFfzbefdTuIkzOSMvZWC0J7FLqBOjJUZvDCXShIURWKxAyTT1wHhnE5q19c7jOJf43IYYKjBmZVZmvhg==}
+    engines: {node: '>= 10.16.0'}
+
+  multer@2.5.0:
+    resolution: {integrity: sha512-BsqOzYGVq49JcW2IzoSAxeKYRevb+dGGPPWleOR8Lrlk4igwxu1/9pwSXlByhCb7MVZDrNJFC0IBP5/O5nLYRw==}
     engines: {node: '>= 10.16.0'}
 
   mute-stream@3.0.0:
@@ -10563,6 +10567,12 @@ snapshots:
   muggle-string@0.4.1: {}
 
   multer@2.4.0:
+    dependencies:
+      append-field: 1.0.0
+      busboy: 1.6.0
+      type-is: 1.6.18
+
+  multer@2.5.0:
     dependencies:
       append-field: 1.0.0
       busboy: 1.6.0
