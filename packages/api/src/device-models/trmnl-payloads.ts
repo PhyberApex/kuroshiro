@@ -2,7 +2,28 @@ import type { DeviceModel } from './entities/device-model.entity.js'
 import type { Palette } from './entities/palette.entity.js'
 import { HEX_COLOR_PATTERN } from 'kuroshiro-shared'
 
-export const TRMNL_API_URL = 'https://usetrmnl.com/api'
+const TRMNL_API_URL = 'https://usetrmnl.com/api'
+
+const TRMNL_FETCH_TIMEOUT_MS = 15_000
+
+/** The `data` array TRMNL's API answers `endpoint` with, unchecked; throws when TRMNL fails, times out or answers without one. */
+export async function fetchTrmnlList(endpoint: string): Promise<unknown[]> {
+  let res: Response
+  try {
+    res = await fetch(`${TRMNL_API_URL}/${endpoint}`, { signal: AbortSignal.timeout(TRMNL_FETCH_TIMEOUT_MS) })
+  }
+  catch (err) {
+    if (err instanceof Error && err.name === 'TimeoutError')
+      throw new Error(`TRMNL ${endpoint} request timed out`)
+    throw err
+  }
+  if (!res.ok)
+    throw new Error(`TRMNL ${endpoint} request failed: ${res.status} ${res.statusText}`)
+  const body = await res.json()
+  if (!Array.isArray(body?.data))
+    throw new TypeError(`TRMNL ${endpoint} response has no data array`)
+  return body.data
+}
 
 export interface TrmnlModelPayload {
   name: string

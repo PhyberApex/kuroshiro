@@ -36,14 +36,25 @@ function binaryResponse(status = 200): Response {
   return new Response(status === 200 ? new Uint8Array([1, 2, 3]) : null, { status })
 }
 
-const latestPayload = { url: 'https://trmnl-fw.s3.us-east-2.amazonaws.com/trmnl_og/FW1.5.6.bin', version: '1.5.6' }
-const OG_URL = 'https://trmnl-fw.s3.us-east-2.amazonaws.com/trmnl_og/FW1.5.6.bin'
-const X_URL = 'https://trmnl-fw.s3.us-east-2.amazonaws.com/trmnl_x/FW1.5.6.bin'
+const OG_URL = 'https://trmnl-fw.s3.us-east-2.amazonaws.com/trmnl_og/FW1.8.17.bin'
+const BWRY_URL = 'https://trmnl-fw.s3.us-east-2.amazonaws.com/trmnl_bwry/FW1.8.17.bin'
+const X_URL = 'https://trmnl-fw.s3.us-east-2.amazonaws.com/trmnl_x/FW1.8.17.bin'
+const FEED_URL = 'https://usetrmnl.com/api/firmware'
 
-/** TRMNL answers `latest` with `latestPayload`, and each binary URL with the status given for it, else 200. */
-function trmnlAnswers(binaryStatus: Record<string, number> = {}): void {
-  mockFetch.mockImplementation(async input => String(input).endsWith('/firmware/latest')
-    ? jsonResponse(latestPayload)
+interface FeedEntry { model: string, label?: string, chip_family?: string, latest: string, url: string }
+
+/** What `GET /api/firmware` answered on 2026-10-27. */
+const feed: FeedEntry[] = [
+  { model: 'og_png', label: 'TRMNL OG (1-bit)', chip_family: 'esp32c3', latest: '1.8.17', url: OG_URL },
+  { model: 'og_plus', label: 'TRMNL OG (2-bit)', chip_family: 'esp32c3', latest: '1.8.17', url: OG_URL },
+  { model: 'og_bwry', label: 'TRMNL OG (B/W/R/Y)', chip_family: 'esp32c3', latest: '1.8.17', url: BWRY_URL },
+  { model: 'v2', label: 'TRMNL X', chip_family: 'esp32s3', latest: '1.8.17', url: X_URL },
+]
+
+/** TRMNL answers the feed with `entries`, and each binary URL with the status given for it, else 200. */
+function trmnlAnswers(binaryStatus: Record<string, number> = {}, entries: unknown[] = feed): void {
+  mockFetch.mockImplementation(async input => String(input) === FEED_URL
+    ? jsonResponse({ data: entries })
     : binaryResponse(binaryStatus[String(input)] ?? 200))
 }
 
@@ -70,13 +81,13 @@ describe('firmwareSyncService', () => {
     })
 
     it('runs a sync immediately and schedules the daily sync at 4am', async () => {
-      mockFetch.mockResolvedValue(jsonResponse(latestPayload))
+      trmnlAnswers()
       firmwareRepo.existsBy.mockResolvedValue(true)
 
       await service.onApplicationBootstrap()
 
       await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1))
-      expect(mockFetch).toHaveBeenCalledWith('https://usetrmnl.com/api/firmware/latest', { signal: expect.any(AbortSignal) })
+      expect(mockFetch).toHaveBeenCalledWith(FEED_URL, { signal: expect.any(AbortSignal) })
       expect(cronMock.schedule).toHaveBeenCalledTimes(1)
       expect(cronMock.schedule).toHaveBeenCalledWith('0 4 * * *', expect.any(Function))
     })
@@ -104,7 +115,7 @@ describe('firmwareSyncService', () => {
   })
 
   describe('sync', () => {
-    it('stores the newest version once per folder, each compatible with that folder\'s Device Models', async () => {
+    it('stores one row per binary the feed lists, compatible with every model whose entry points at it', async () => {
       trmnlAnswers()
       autoUpdateService.applyPolicy
         .mockResolvedValueOnce([{ id: 'd1', name: 'One', apikey: 'secret' }])
@@ -112,22 +123,56 @@ describe('firmwareSyncService', () => {
 
       const result = await service.sync()
 
-      expect(mockFetch).toHaveBeenNthCalledWith(1, 'https://usetrmnl.com/api/firmware/latest', { signal: expect.any(AbortSignal) })
+      expect(mockFetch).toHaveBeenNthCalledWith(1, FEED_URL, { signal: expect.any(AbortSignal) })
       expect(mockFetch).toHaveBeenCalledWith(OG_URL)
       expect(mockFetch).toHaveBeenCalledWith(X_URL)
       expect(firmwareRepo.insert).toHaveBeenCalledTimes(2)
       expect(firmwareRepo.insert).toHaveBeenCalledWith(expect.objectContaining({
-        version: '1.5.6',
+        version: '1.8.17',
         kind: 'official-synced',
         folder: 'trmnl_og',
         checksum: expect.any(String),
         compatibleModels: ['og_png', 'og_plus'],
         deprecated: false,
       }))
-      expect(firmwareRepo.insert).toHaveBeenCalledWith(expect.objectContaining({ version: '1.5.6', folder: 'trmnl_x', compatibleModels: ['v2'] }))
+      expect(firmwareRepo.insert).toHaveBeenCalledWith(expect.objectContaining({ version: '1.8.17', folder: 'trmnl_x', compatibleModels: ['v2'] }))
       expect(autoUpdateService.applyPolicy).toHaveBeenCalledWith(expect.objectContaining({ folder: 'trmnl_og' }))
       expect(autoUpdateService.applyPolicy).toHaveBeenCalledWith(expect.objectContaining({ folder: 'trmnl_x' }))
-      expect(result).toEqual({ ranAt: expect.any(String), inserted: true, version: '1.5.6', assigned: [{ id: 'd1', name: 'One' }, { id: 'd2', name: 'Two' }] })
+      expect(result).toEqual({ ranAt: expect.any(String), inserted: true, version: '1.8.17', assigned: [{ id: 'd1', name: 'One' }, { id: 'd2', name: 'Two' }] })
+    })
+
+    it('stores each folder at the version its own entry names', async () => {
+      trmnlAnswers({}, [
+        { model: 'og_png', latest: '1.8.17', url: OG_URL },
+        { model: 'v2', latest: '1.8.16', url: 'https://trmnl-fw.s3.us-east-2.amazonaws.com/trmnl_x/FW1.8.16.bin' },
+      ])
+
+      const result = await service.sync()
+
+      expect(mockFetch).toHaveBeenCalledWith('https://trmnl-fw.s3.us-east-2.amazonaws.com/trmnl_x/FW1.8.16.bin')
+      expect(firmwareRepo.insert).toHaveBeenCalledWith(expect.objectContaining({ folder: 'trmnl_og', version: '1.8.17' }))
+      expect(firmwareRepo.insert).toHaveBeenCalledWith(expect.objectContaining({ folder: 'trmnl_x', version: '1.8.16' }))
+      expect(result).toMatchObject({ inserted: true, version: '1.8.17' })
+    })
+
+    it('syncs a model Kuroshiro has no Device Model for yet, keeping its key', async () => {
+      const newUrl = 'https://trmnl-fw.s3.us-east-2.amazonaws.com/trmnl_new/FW2.0.0.bin'
+      trmnlAnswers({}, [{ model: 'brand_new', latest: '2.0.0', url: newUrl }])
+
+      await service.sync()
+
+      expect(firmwareRepo.insert).toHaveBeenCalledWith(expect.objectContaining({ folder: 'trmnl_new', version: '2.0.0', compatibleModels: ['brand_new'] }))
+    })
+
+    it('never syncs a binary for OG B/W/R/Y Devices, and drops the model from any entry it shares', async () => {
+      trmnlAnswers({}, [...feed, { model: 'og_bwry', latest: '1.8.17', url: OG_URL }])
+
+      await service.sync()
+
+      expect(mockFetch).not.toHaveBeenCalledWith(BWRY_URL)
+      expect(firmwareRepo.insert).not.toHaveBeenCalledWith(expect.objectContaining({ folder: 'trmnl_bwry' }))
+      expect(firmwareRepo.insert).toHaveBeenCalledWith(expect.objectContaining({ folder: 'trmnl_og', compatibleModels: ['og_png', 'og_plus'] }))
+      expect(firmwareRepo.update).not.toHaveBeenCalledWith(expect.anything(), { compatibleModels: expect.arrayContaining(['og_bwry']) })
     })
 
     it('deprecates only the previous official row of the same folder', async () => {
@@ -140,20 +185,20 @@ describe('firmwareSyncService', () => {
       expect(firmwareRepo.update).not.toHaveBeenCalledWith({ kind: 'official-synced', deprecated: false }, { deprecated: true })
     })
 
-    it('skips a folder that already holds the version and still syncs the others', async () => {
+    it('skips a folder that already holds its version and still syncs the others', async () => {
       trmnlAnswers()
       firmwareRepo.existsBy.mockImplementation(async where => (where as { folder?: string }).folder === 'trmnl_og')
 
       const result = await service.sync()
 
-      expect(firmwareRepo.existsBy).toHaveBeenCalledWith({ kind: 'official-synced', folder: 'trmnl_og', version: '1.5.6' })
+      expect(firmwareRepo.existsBy).toHaveBeenCalledWith({ kind: 'official-synced', folder: 'trmnl_og', version: '1.8.17' })
       expect(mockFetch).not.toHaveBeenCalledWith(OG_URL)
       expect(firmwareRepo.insert).toHaveBeenCalledTimes(1)
       expect(firmwareRepo.insert).toHaveBeenCalledWith(expect.objectContaining({ folder: 'trmnl_x' }))
-      expect(result).toMatchObject({ inserted: true, version: '1.5.6' })
+      expect(result).toMatchObject({ inserted: true, version: '1.8.17' })
     })
 
-    it('is a no-op when every folder already holds the version', async () => {
+    it('is a no-op when every folder already holds its version', async () => {
       trmnlAnswers()
       firmwareRepo.existsBy.mockResolvedValue(true)
 
@@ -163,36 +208,21 @@ describe('firmwareSyncService', () => {
       expect(firmwareRepo.insert).not.toHaveBeenCalled()
       expect(firmwareRepo.update).not.toHaveBeenCalledWith(expect.anything(), { deprecated: true })
       expect(autoUpdateService.applyPolicy).not.toHaveBeenCalled()
-      expect(result).toEqual({ ranAt: expect.any(String), inserted: false, version: '1.5.6', assigned: [] })
+      expect(result).toEqual({ ranAt: expect.any(String), inserted: false, version: '1.8.17', assigned: [] })
     })
 
-    it('syncs nothing when a custom Firmware already holds the version', async () => {
+    it('syncs no folder at a version a custom Firmware already holds', async () => {
       trmnlAnswers()
       firmwareRepo.existsBy.mockImplementation(async where => (where as { kind?: string }).kind === 'custom')
 
       const result = await service.sync()
 
-      expect(firmwareRepo.existsBy).toHaveBeenCalledWith({ kind: 'custom', version: '1.5.6' })
+      expect(firmwareRepo.existsBy).toHaveBeenCalledWith({ kind: 'custom', version: '1.8.17' })
       expect(mockFetch).toHaveBeenCalledTimes(1)
-      expect(result).toEqual({ ranAt: expect.any(String), inserted: false, version: '1.5.6', assigned: [] })
+      expect(result).toEqual({ ranAt: expect.any(String), inserted: false, version: '1.8.17', assigned: [] })
     })
 
-    it('logs and skips a folder TRMNL has no binary of the version in, and syncs the others', async () => {
-      const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
-      trmnlAnswers({ [X_URL]: 404 })
-
-      const result = await service.sync()
-
-      expect(firmwareRepo.insert).toHaveBeenCalledTimes(1)
-      expect(firmwareRepo.insert).toHaveBeenCalledWith(expect.objectContaining({ folder: 'trmnl_og' }))
-      expect(firmwareRepo.update).not.toHaveBeenCalledWith(expect.objectContaining({ folder: 'trmnl_x', deprecated: false }), { deprecated: true })
-      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('trmnl_x'))
-      expect(result).toMatchObject({ inserted: true })
-      expect(syncRuns.record).toHaveBeenCalledWith('firmware', expect.any(Date), { ok: true })
-      warnSpy.mockRestore()
-    })
-
-    it('realigns already-synced official rows of each folder to its compatible models, even when nothing is new', async () => {
+    it('realigns already-synced official rows of each folder to the models the feed lists for it, even when nothing is new', async () => {
       trmnlAnswers()
       firmwareRepo.existsBy.mockResolvedValue(true)
 
@@ -202,14 +232,53 @@ describe('firmwareSyncService', () => {
       expect(firmwareRepo.update).toHaveBeenCalledWith({ kind: 'official-synced', folder: 'trmnl_x' }, { compatibleModels: ['v2'] })
     })
 
-    it('never syncs a binary for OG B/W/R/Y Devices', async () => {
-      trmnlAnswers()
+    it('logs and skips a malformed entry, and syncs the others', async () => {
+      const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+      trmnlAnswers({}, [
+        { model: 'og_png', latest: '1.8.17', url: OG_URL },
+        { model: 'v2', latest: '1.8.17' },
+        { model: 'v2', latest: '1.8.17', url: 'http://trmnl-fw.s3.us-east-2.amazonaws.com/trmnl_x/FW1.8.17.bin' },
+        { model: 'v2', latest: '1.8.17', url: 'https://trmnl-fw.s3.us-east-2.amazonaws.com/FW1.8.17.bin' },
+        null,
+      ])
 
       await service.sync()
 
-      expect(mockFetch).not.toHaveBeenCalledWith(expect.stringContaining('trmnl_bwry'))
-      expect(firmwareRepo.insert).not.toHaveBeenCalledWith(expect.objectContaining({ compatibleModels: expect.arrayContaining(['og_bwry']) }))
-      expect(firmwareRepo.update).not.toHaveBeenCalledWith(expect.anything(), { compatibleModels: expect.arrayContaining(['og_bwry']) })
+      expect(firmwareRepo.insert).toHaveBeenCalledTimes(1)
+      expect(firmwareRepo.insert).toHaveBeenCalledWith(expect.objectContaining({ folder: 'trmnl_og' }))
+      expect(warnSpy).toHaveBeenCalledTimes(4)
+      warnSpy.mockRestore()
+    })
+
+    it('keeps the first version named for a binary, and warns when another entry names it differently', async () => {
+      const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+      trmnlAnswers({}, [
+        { model: 'og_png', latest: '1.8.17', url: OG_URL },
+        { model: 'og_plus', latest: '1.8.16', url: OG_URL },
+      ])
+
+      await service.sync()
+
+      expect(firmwareRepo.insert).toHaveBeenCalledWith(expect.objectContaining({ folder: 'trmnl_og', version: '1.8.17', compatibleModels: ['og_png', 'og_plus'] }))
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('og_plus names 1.8.16'))
+      warnSpy.mockRestore()
+    })
+
+    it('throws, and stores nothing, when the feed lists two binaries in one folder', async () => {
+      trmnlAnswers({}, [
+        { model: 'og_png', latest: '1.8.17', url: OG_URL },
+        { model: 'og_plus', latest: '1.8.16', url: 'https://trmnl-fw.s3.us-east-2.amazonaws.com/trmnl_og/FW1.8.16.bin' },
+      ])
+
+      await expect(service.sync()).rejects.toThrow(/two binaries in trmnl_og/)
+      expect(firmwareRepo.insert).not.toHaveBeenCalled()
+    })
+
+    it('throws when the feed lists no binary left to sync', async () => {
+      trmnlAnswers({}, [{ model: 'og_bwry', latest: '1.8.17', url: BWRY_URL }])
+
+      await expect(service.sync()).rejects.toThrow(/lists no binary/)
+      expect(syncRuns.recordFailure).toHaveBeenCalled()
     })
 
     /** The downloads succeed and the trmnl_og insert then fails on `constraint`, as when another sync commits that folder's version first. */
@@ -229,7 +298,7 @@ describe('firmwareSyncService', () => {
 
       const result = await service.sync()
 
-      expect(result).toEqual({ ranAt: expect.any(String), inserted: true, version: '1.5.6', assigned: [] })
+      expect(result).toEqual({ ranAt: expect.any(String), inserted: true, version: '1.8.17', assigned: [] })
       expect(autoUpdateService.applyPolicy).toHaveBeenCalledTimes(1)
       expect(autoUpdateService.applyPolicy).toHaveBeenCalledWith(expect.objectContaining({ folder: 'trmnl_x' }))
       expect(fsMock.unlink).toHaveBeenCalledWith(fsMock.writeFile.mock.calls[0][0])
@@ -250,7 +319,7 @@ describe('firmwareSyncService', () => {
     })
 
     it('coalesces concurrent sync() calls into a single run', async () => {
-      mockFetch.mockImplementation(async () => jsonResponse(latestPayload))
+      trmnlAnswers()
       firmwareRepo.existsBy.mockResolvedValue(true)
 
       const [first, second] = await Promise.all([service.sync(), service.sync()])
@@ -266,24 +335,20 @@ describe('firmwareSyncService', () => {
       mockFetch.mockResolvedValueOnce(jsonResponse(null, { ok: false }))
       await expect(service.sync()).rejects.toThrow(/request failed/)
       expect(firmwareRepo.insert).not.toHaveBeenCalled()
+      expect(firmwareRepo.update).not.toHaveBeenCalled()
       expect(syncRuns.recordFailure).toHaveBeenCalledWith('firmware', expect.any(Date), expect.objectContaining({ message: expect.stringContaining('request failed') }))
     })
 
-    it('throws when the response is missing the version', async () => {
-      mockFetch.mockResolvedValueOnce(jsonResponse({ url: 'https://example.com/fw.bin' }))
-      await expect(service.sync()).rejects.toThrow(/missing version/)
+    it('throws when the response has no data array', async () => {
+      mockFetch.mockResolvedValueOnce(jsonResponse({ version: '1.8.17' }))
+      await expect(service.sync()).rejects.toThrow(/no data array/)
     })
 
     it('surfaces a clear error when the fetch times out', async () => {
       mockFetch.mockImplementation(async () => {
         throw new DOMException('The operation was aborted due to timeout', 'TimeoutError')
       })
-      await expect(service.sync()).rejects.toThrow(/request timed out/)
-    })
-
-    it('recognises a timeout by the error name alone', async () => {
-      mockFetch.mockRejectedValue(Object.assign(new Error('x'), { name: 'TimeoutError' }))
-      await expect(service.sync()).rejects.toThrow('TRMNL firmware/latest request timed out')
+      await expect(service.sync()).rejects.toThrow('TRMNL firmware request timed out')
     })
 
     it('rethrows any other fetch error unchanged', async () => {
@@ -292,8 +357,8 @@ describe('firmwareSyncService', () => {
       await expect(service.sync()).rejects.toBe(networkError)
     })
 
-    it('throws, and stores and assigns nothing, when downloading any folder\'s binary fails other than with a 404', async () => {
-      trmnlAnswers({ [X_URL]: 502 })
+    it.each([404, 502])('throws, and stores and assigns nothing, when downloading any advertised binary fails with a %i', async (status) => {
+      trmnlAnswers({ [X_URL]: status })
 
       await expect(service.sync()).rejects.toThrow(/Failed to download firmware binary/)
       expect(fsMock.writeFile).not.toHaveBeenCalled()

@@ -5,7 +5,7 @@ import TuckedSection from '@/components/TuckedSection.vue'
 import RelativeTime from '@/patterns/RelativeTime.vue'
 import FirmwareDeletion from './FirmwareDeletion.vue'
 import FirmwareRow from './FirmwareRow.vue'
-import { checkedNote, earlierNote, newestOfficialVersion } from './firmwareWording'
+import { checkedNote, earlierNote, feedNote, newestOfficialVersion } from './firmwareWording'
 import InstanceSection from './InstanceSection.vue'
 
 const props = defineProps<{
@@ -46,7 +46,7 @@ const earlier = computed(() => props.library.firmware.filter(firmware => firmwar
   </TuckedSection>
 
   <p class="last">
-    Kuroshiro asks TRMNL for the newest official Firmware when it starts and every day at 04:00, server time. TRMNL's update feed only carries Firmware for the TRMNL OG (1-bit), TRMNL OG (2-bit) and TRMNL X; any other Device Model, TRMNL OG (B/W/R/Y) included, needs an upload.
+    {{ feedNote(library.firmware, models) }}
   </p>
 </template>
 
