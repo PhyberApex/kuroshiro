@@ -167,7 +167,7 @@ export async function readImageSize(inputPath: string, logger: Logger): Promise<
   const output = await runMagick(['identify', '-format', '%w %h', `${format}:${inputPath}[0]`], logger)
   const [width, height] = output.trim().split(' ').map(Number)
   if (!Number.isInteger(width) || !Number.isInteger(height))
-    throw new Error(`Could not read the image size from "${output}"`)
+    throw new TypeError(`Could not read the image size from "${output}"`)
   return { width, height }
 }
 

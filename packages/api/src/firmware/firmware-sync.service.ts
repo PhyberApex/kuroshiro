@@ -182,7 +182,7 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
       throw new Error(`TRMNL firmware/latest request failed: ${res.status} ${res.statusText}`)
     const body = await res.json()
     if (typeof body?.version !== 'string')
-      throw new Error('TRMNL firmware/latest response is missing version')
+      throw new TypeError('TRMNL firmware/latest response is missing version')
     return body.version
   }
 
