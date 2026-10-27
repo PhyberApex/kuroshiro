@@ -26,15 +26,17 @@ export function headedFor({ targetOf, runningOn }: FirmwareRead) {
   }
 }
 
+const isCurrentOfficial = (firmware: FirmwareRead) => firmware.kind !== 'custom' && !firmware.deprecated
+
 /** The version Firmware Auto-Update would hand out today, had it not started with the next one. The library comes newest first. */
 export function newestOfficialVersion(firmware: FirmwareRead[]) {
-  return firmware.find(candidate => candidate.kind !== 'custom' && !candidate.deprecated)?.version
+  return firmware.find(isCurrentOfficial)?.version
 }
 
 /** The library's last line: the Device Models TRMNL's feed carries, as the current official Firmware fits them (ADR-0071). */
 export function feedNote(firmware: FirmwareRead[], models: ModelLabelled[]) {
   const asks = 'Kuroshiro asks TRMNL for the newest official Firmware when it starts and every day at 04:00, server time.'
-  const carried = [...new Set(firmware.filter(candidate => candidate.kind !== 'custom' && !candidate.deprecated).flatMap(candidate => candidate.compatibleModels))]
+  const carried = [...new Set(firmware.filter(isCurrentOfficial).flatMap(candidate => candidate.compatibleModels))]
   return carried.length === 0
     ? `${asks} Until TRMNL's update feed gives this Instance any, every Device Model needs an upload.`
     : `${asks} TRMNL's update feed gives this Instance Firmware for ${labelsOf(carried, models)}; any other Device Model, TRMNL OG (B/W/R/Y) included, needs an upload.`

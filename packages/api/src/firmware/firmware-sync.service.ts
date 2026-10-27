@@ -8,7 +8,7 @@ import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import cron from 'node-cron'
 import { Repository } from 'typeorm'
-import { TRMNL_API_URL } from '../device-models/trmnl-payloads.js'
+import { fetchTrmnlList } from '../device-models/trmnl-payloads.js'
 import { isUniqueViolation } from '../errors/unique-violation.js'
 import { SyncRunService } from '../sync-runs/sync-run.service.js'
 import { Firmware } from './entities/firmware.entity.js'
@@ -33,28 +33,46 @@ interface OfficialBinary {
   compatibleModels: string[]
 }
 
-interface TrmnlFirmwareEntry {
+/** A feed entry Kuroshiro can sync: its model, its version and where its binary is. */
+interface FeedEntry {
   model: string
-  latest: string
+  version: string
   url: string
+  folder: string
 }
 
-/** The folder `url` names its binary in, or a reason the entry can't be synced. */
-function folderOf(url: string): { folder: string } | { reason: string } {
+/** The folder `url` names its binary in, or `null` when it is not an https URL with one. */
+function folderOf(url: string): string | null {
   let parsed: URL
   try {
     parsed = new URL(url)
   }
   catch {
-    return { reason: `url "${url}" is not a URL` }
+    return null
   }
-  if (parsed.protocol !== 'https:')
-    return { reason: `url "${url}" is not https` }
-  const segments = parsed.pathname.split('/').filter(Boolean)
-  const folder = segments.at(-2)
-  if (!folder || !FOLDER_PATTERN.test(folder))
-    return { reason: `url "${url}" names no folder` }
-  return { folder }
+  const folder = parsed.pathname.split('/').filter(Boolean).at(-2)
+  return parsed.protocol === 'https:' && folder && FOLDER_PATTERN.test(folder) ? folder : null
+}
+
+/** The entry as Kuroshiro syncs it, or the reason it can't be. */
+function readFeedEntry(entry: unknown): FeedEntry | { reason: string } {
+  const { model, latest, url } = (entry ?? {}) as Record<string, unknown>
+  if (typeof model !== 'string' || model === '' || typeof latest !== 'string' || latest === '' || typeof url !== 'string')
+    return { reason: `invalid entry ${JSON.stringify(entry)}` }
+  const folder = folderOf(url)
+  if (!folder)
+    return { reason: `url "${url}" of ${model} is not an https URL in a folder` }
+  return { model, version: latest, url, folder }
+}
+
+/** Throws when two binaries share a folder, since a folder is one lineage (ADR-0065). */
+function assertOneBinaryPerFolder(binaries: OfficialBinary[]): void {
+  const folders = new Set<string>()
+  for (const { folder } of binaries) {
+    if (folders.has(folder))
+      throw new Error(`TRMNL firmware response lists two binaries in ${folder}`)
+    folders.add(folder)
+  }
 }
 
 /** The highest of `versions`, compared segment by segment as numbers. */
@@ -63,7 +81,6 @@ function newestOf(versions: string[]): string {
 }
 
 const DAILY_AT_4AM = '0 4 * * *'
-const TRMNL_FETCH_TIMEOUT_MS = 15_000
 
 @Injectable()
 export class FirmwareSyncService implements OnApplicationBootstrap {
@@ -111,7 +128,7 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
 
   private async runSync(ranAt: Date): Promise<FirmwareSyncResult> {
     this.logger.log('Syncing firmware from TRMNL')
-    const binaries = this.officialBinaries(await this.fetchFeed())
+    const binaries = this.officialBinaries(await fetchTrmnlList('firmware'))
     await this.realignOfficialCompatibility(binaries)
     const result: FirmwareSyncResult = { ranAt: ranAt.toISOString(), inserted: false, version: newestOf(binaries.map(binary => binary.version)), assigned: [] }
 
@@ -157,35 +174,29 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
    */
   private officialBinaries(entries: unknown[]): OfficialBinary[] {
     const byUrl = new Map<string, OfficialBinary>()
-    for (const entry of entries) {
-      if (!isFirmwareEntry(entry)) {
-        this.logger.warn(`Skipping invalid firmware entry: ${JSON.stringify(entry)}`)
-        continue
-      }
-      if (EXCLUDED_MODELS.includes(entry.model))
-        continue
-      const located = folderOf(entry.url)
-      if ('reason' in located) {
-        this.logger.warn(`Skipping firmware entry for ${entry.model}: ${located.reason}`)
-        continue
-      }
-      const binary = byUrl.get(entry.url)
-      if (binary)
-        binary.compatibleModels.push(entry.model)
-      else
-        byUrl.set(entry.url, { url: entry.url, folder: located.folder, version: entry.latest, compatibleModels: [entry.model] })
+    for (const entry of entries.map(readFeedEntry)) {
+      if ('reason' in entry)
+        this.logger.warn(`Skipping firmware entry: ${entry.reason}`)
+      else if (!EXCLUDED_MODELS.includes(entry.model))
+        this.addToBinary(byUrl, entry)
     }
 
     const binaries = [...byUrl.values()]
     if (binaries.length === 0)
       throw new Error('TRMNL firmware response lists no binary to sync')
-    const folders = new Set<string>()
-    for (const { folder } of binaries) {
-      if (folders.has(folder))
-        throw new Error(`TRMNL firmware response lists two binaries in ${folder}`)
-      folders.add(folder)
-    }
+    assertOneBinaryPerFolder(binaries)
     return binaries
+  }
+
+  private addToBinary(byUrl: Map<string, OfficialBinary>, { model, version, url, folder }: FeedEntry): void {
+    const binary = byUrl.get(url)
+    if (!binary) {
+      byUrl.set(url, { url, folder, version, compatibleModels: [model] })
+      return
+    }
+    if (binary.version !== version)
+      this.logger.warn(`Firmware entry for ${model} names ${version} for ${url}, which another entry names ${binary.version}; ${binary.version} kept`)
+    binary.compatibleModels.push(model)
   }
 
   /** The new row of `binary`, or `null` when another sync stored it first. */
@@ -234,35 +245,10 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
       await this.firmwareRepository.update({ kind: 'official-synced', folder }, { compatibleModels })
   }
 
-  private async fetchFeed(): Promise<unknown[]> {
-    let res: Response
-    try {
-      res = await fetch(`${TRMNL_API_URL}/firmware`, { signal: AbortSignal.timeout(TRMNL_FETCH_TIMEOUT_MS) })
-    }
-    catch (err) {
-      if (err instanceof Error && err.name === 'TimeoutError')
-        throw new Error('TRMNL firmware request timed out')
-      throw err
-    }
-    if (!res.ok)
-      throw new Error(`TRMNL firmware request failed: ${res.status} ${res.statusText}`)
-    const body = await res.json()
-    if (!Array.isArray(body?.data))
-      throw new Error('TRMNL firmware response has no data array')
-    return body.data
-  }
-
   private async downloadBinary(url: string): Promise<buffer.Buffer> {
     const res = await fetch(url)
     if (!res.ok)
       throw new Error(`Failed to download firmware binary ${url}: ${res.status} ${res.statusText}`)
     return buffer.Buffer.from(await res.arrayBuffer())
   }
-}
-
-function isFirmwareEntry(entry: unknown): entry is TrmnlFirmwareEntry {
-  if (typeof entry !== 'object' || entry === null)
-    return false
-  const { model, latest, url } = entry as Record<string, unknown>
-  return typeof model === 'string' && model !== '' && typeof latest === 'string' && latest !== '' && typeof url === 'string'
 }

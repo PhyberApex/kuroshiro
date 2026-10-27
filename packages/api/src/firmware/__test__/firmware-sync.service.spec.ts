@@ -250,6 +250,20 @@ describe('firmwareSyncService', () => {
       warnSpy.mockRestore()
     })
 
+    it('keeps the first version named for a binary, and warns when another entry names it differently', async () => {
+      const warnSpy = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+      trmnlAnswers({}, [
+        { model: 'og_png', latest: '1.8.17', url: OG_URL },
+        { model: 'og_plus', latest: '1.8.16', url: OG_URL },
+      ])
+
+      await service.sync()
+
+      expect(firmwareRepo.insert).toHaveBeenCalledWith(expect.objectContaining({ folder: 'trmnl_og', version: '1.8.17', compatibleModels: ['og_png', 'og_plus'] }))
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('og_plus names 1.8.16'))
+      warnSpy.mockRestore()
+    })
+
     it('throws, and stores nothing, when the feed lists two binaries in one folder', async () => {
       trmnlAnswers({}, [
         { model: 'og_png', latest: '1.8.17', url: OG_URL },

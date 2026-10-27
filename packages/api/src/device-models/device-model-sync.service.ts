@@ -8,10 +8,9 @@ import { SyncRunService } from '../sync-runs/sync-run.service.js'
 import { TRMNL_MODELS_SNAPSHOT, TRMNL_PALETTES_SNAPSHOT } from './data/trmnl-snapshot.js'
 import { DeviceModel } from './entities/device-model.entity.js'
 import { Palette } from './entities/palette.entity.js'
-import { toDeviceModelAttributes, toPaletteAttributes, TRMNL_API_URL, TrmnlModelPayload, TrmnlPalettePayload, validateModelPayload, validatePalettePayload } from './trmnl-payloads.js'
+import { fetchTrmnlList, toDeviceModelAttributes, toPaletteAttributes, TrmnlModelPayload, TrmnlPalettePayload, validateModelPayload, validatePalettePayload } from './trmnl-payloads.js'
 
 const DAILY_AT_4AM = '0 4 * * *'
-const TRMNL_FETCH_TIMEOUT_MS = 15_000
 
 @Injectable()
 export class DeviceModelSyncService implements OnApplicationBootstrap {
@@ -115,21 +114,7 @@ export class DeviceModelSyncService implements OnApplicationBootstrap {
   }
 
   private async fetchList<T>(endpoint: string): Promise<T[]> {
-    let res: Response
-    try {
-      res = await fetch(`${TRMNL_API_URL}/${endpoint}`, { signal: AbortSignal.timeout(TRMNL_FETCH_TIMEOUT_MS) })
-    }
-    catch (err) {
-      if (err instanceof Error && err.name === 'TimeoutError')
-        throw new Error(`TRMNL ${endpoint} request timed out`)
-      throw err
-    }
-    if (!res.ok)
-      throw new Error(`TRMNL ${endpoint} request failed: ${res.status} ${res.statusText}`)
-    const body = await res.json()
-    if (!Array.isArray(body?.data))
-      throw new Error(`TRMNL ${endpoint} response has no data array`)
-    return body.data
+    return await fetchTrmnlList(endpoint) as T[]
   }
 
   private async deprecateMissingModels(presentNames: string[]): Promise<number> {
