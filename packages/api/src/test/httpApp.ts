@@ -20,7 +20,7 @@ export async function createHttpTestApp(metadata: ModuleMetadata): Promise<HttpT
   const moduleRef = await Test.createTestingModule(metadata).compile()
   const app = moduleRef.createNestApplication<NestExpressApplication>({ logger: false, bodyParser: false })
   registerBodyParsers(app)
-  app.setGlobalPrefix('api', { exclude: ['metrics'] })
+  app.setGlobalPrefix('api', { exclude: ['metrics', 'health'] })
   registerErrorEnvelope(app)
   await app.listen(0)
   const { port } = app.getHttpServer().address() as AddressInfo

@@ -28,7 +28,7 @@ async function bootstrap() {
   else {
     logger.log(`[Migrations] No migrations to be run`)
   }
-  app.setGlobalPrefix('api', { exclude: ['metrics'] })
+  app.setGlobalPrefix('api', { exclude: ['metrics', 'health'] })
   registerErrorEnvelope(app)
   app.useGlobalInterceptors(new LoggingInterceptor())
   // Lets SIGTERM run the modules' destroy hooks, which close the shared render browser rather than orphan it (ADR-0044).

@@ -20,6 +20,7 @@ import { Device } from './devices/devices.entity.js'
 import { DevicesModule } from './devices/devices.module.js'
 import { Firmware } from './firmware/entities/firmware.entity.js'
 import { FirmwareModule } from './firmware/firmware.module.js'
+import { HealthModule } from './health/health.module.js'
 import { InstanceModule } from './instance/instance.module.js'
 import { LogEntry } from './logs/logs.entity.js'
 import { LogsModule } from './logs/logs.module.js'
@@ -95,6 +96,7 @@ const conf = config()
     AlertsModule,
     InstanceModule,
     MetricsModule,
+    HealthModule,
   ],
 })
 export class AppModule {}
