@@ -21,7 +21,7 @@ export async function fetchTrmnlList(endpoint: string): Promise<unknown[]> {
     throw new Error(`TRMNL ${endpoint} request failed: ${res.status} ${res.statusText}`)
   const body = await res.json()
   if (!Array.isArray(body?.data))
-    throw new Error(`TRMNL ${endpoint} response has no data array`)
+    throw new TypeError(`TRMNL ${endpoint} response has no data array`)
   return body.data
 }
 
