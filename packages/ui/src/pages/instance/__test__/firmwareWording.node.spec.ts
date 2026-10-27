@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildDeviceModel } from '@/testing/fixtures/device-models'
 import { buildFirmware } from '@/testing/fixtures/firmware'
-import { autoUpdateNote, catchUpOutcome, catchUpWording, checkedNote, deletionWording, earlierNote, headedFor, newestOfficialVersion, syncOutcome, whatItIs } from '../firmwareWording'
+import { autoUpdateNote, catchUpOutcome, catchUpWording, checkedNote, deletionWording, earlierNote, feedNote, headedFor, newestOfficialVersion, syncOutcome, whatItIs } from '../firmwareWording'
 
 const MODELS = [
   buildDeviceModel({ name: 'og_png', label: 'TRMNL OG (1-bit)' }),
@@ -121,6 +121,23 @@ describe('firmware wording', () => {
     it('names what replaced it', () => {
       expect(earlierNote('1.7.9')).toBe('Replaced by 1.7.9 and no longer offered as a target. A Device that already targets one keeps it.')
       expect(earlierNote(undefined)).toBe('No longer offered as a target. A Device that already targets one keeps it.')
+    })
+  })
+
+  describe('what TRMNL\'s update feed carries', () => {
+    const ASKS = 'Kuroshiro asks TRMNL for the newest official Firmware when it starts and every day at 04:00, server time.'
+
+    it('names the Device Models the current official Firmware fits, each once, by their labels', () => {
+      expect(feedNote([
+        buildFirmware({ compatibleModels: ['og_png', 'og_plus'] }),
+        buildFirmware({ compatibleModels: ['v2', 'brand_new'] }),
+        buildFirmware({ compatibleModels: ['og_plus'], deprecated: true }),
+        buildFirmware({ kind: 'custom', compatibleModels: ['inkplate_10'] }),
+      ], MODELS)).toBe(`${ASKS} TRMNL's update feed gives this Instance Firmware for TRMNL OG (1-bit), TRMNL OG, TRMNL X and brand_new; any other Device Model, TRMNL OG (B/W/R/Y) included, needs an upload.`)
+    })
+
+    it('says every Device Model needs an upload while the feed has given none', () => {
+      expect(feedNote([buildFirmware({ kind: 'custom' })], MODELS)).toBe(`${ASKS} Until TRMNL's update feed gives this Instance any, every Device Model needs an upload.`)
     })
   })
 

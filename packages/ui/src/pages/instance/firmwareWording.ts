@@ -3,9 +3,12 @@ import { listed } from '@/patterns/listed'
 
 type ModelLabelled = Pick<DeviceModelRead, 'name' | 'label'>
 
+function labelsOf(names: string[], models: ModelLabelled[]) {
+  return listed(names.map(name => models.find(model => model.name === name)?.label ?? name))
+}
+
 function fitsWhich(compatibleModels: string[], models: ModelLabelled[]) {
-  const labelOf = (name: string) => models.find(model => model.name === name)?.label ?? name
-  return compatibleModels.length === 0 ? 'Fits every Device Model' : `Fits ${listed(compatibleModels.map(labelOf))}`
+  return compatibleModels.length === 0 ? 'Fits every Device Model' : `Fits ${labelsOf(compatibleModels, models)}`
 }
 
 /** "Official · Fits TRMNL OG", "Custom · Release candidate · Fits every Device Model". */
@@ -26,6 +29,15 @@ export function headedFor({ targetOf, runningOn }: FirmwareRead) {
 /** The version Firmware Auto-Update would hand out today, had it not started with the next one. The library comes newest first. */
 export function newestOfficialVersion(firmware: FirmwareRead[]) {
   return firmware.find(candidate => candidate.kind !== 'custom' && !candidate.deprecated)?.version
+}
+
+/** The library's last line: the Device Models TRMNL's feed carries, as the current official Firmware fits them (ADR-0071). */
+export function feedNote(firmware: FirmwareRead[], models: ModelLabelled[]) {
+  const asks = 'Kuroshiro asks TRMNL for the newest official Firmware when it starts and every day at 04:00, server time.'
+  const carried = [...new Set(firmware.filter(candidate => candidate.kind !== 'custom' && !candidate.deprecated).flatMap(candidate => candidate.compatibleModels))]
+  return carried.length === 0
+    ? `${asks} Until TRMNL's update feed gives this Instance any, every Device Model needs an upload.`
+    : `${asks} TRMNL's update feed gives this Instance Firmware for ${labelsOf(carried, models)}; any other Device Model, TRMNL OG (B/W/R/Y) included, needs an upload.`
 }
 
 export function autoUpdateNote(on: boolean, newestVersion: string | undefined) {

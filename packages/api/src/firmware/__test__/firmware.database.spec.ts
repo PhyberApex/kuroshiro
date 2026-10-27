@@ -33,7 +33,19 @@ vi.mock('node-cron', () => ({ default: { schedule: vi.fn() } }))
 
 const UNKNOWN_ID = '00000000-0000-4000-8000-000000000000'
 const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
-const LATEST = { url: 'https://trmnl-fw.s3.us-east-2.amazonaws.com/trmnl_og/FW1.6.0.bin', version: '1.6.0' }
+const BUCKET = 'https://trmnl-fw.s3.us-east-2.amazonaws.com'
+
+/** TRMNL's firmware feed with the OG at `og` and the X at `x`; the B/W/R/Y entry is never synced. */
+function feed(og = '1.6.0', x = og) {
+  return {
+    data: [
+      { model: 'og_png', label: 'TRMNL OG (1-bit)', chip_family: 'esp32c3', latest: og, url: `${BUCKET}/trmnl_og/FW${og}.bin` },
+      { model: 'og_plus', label: 'TRMNL OG (2-bit)', chip_family: 'esp32c3', latest: og, url: `${BUCKET}/trmnl_og/FW${og}.bin` },
+      { model: 'og_bwry', label: 'TRMNL OG (B/W/R/Y)', chip_family: 'esp32c3', latest: og, url: `${BUCKET}/trmnl_bwry/FW${og}.bin` },
+      { model: 'v2', label: 'TRMNL X', chip_family: 'esp32s3', latest: x, url: `${BUCKET}/trmnl_x/FW${x}.bin` },
+    ],
+  }
+}
 
 const realFetch = globalThis.fetch
 const mockFetch = stubFetch()
@@ -43,8 +55,8 @@ function trmnlAnswers(answer: (url: string) => Response | Promise<Response>): vo
     String(input).startsWith('http://127.0.0.1') ? realFetch(input, init) : answer(String(input)))
 }
 
-function newestAnswer(): (url: string) => Response {
-  return url => url.endsWith('/firmware/latest') ? jsonResponse(LATEST) : new Response(new Uint8Array([1, 2, 3]))
+function newestAnswer(og?: string, x?: string): (url: string) => Response {
+  return url => url.endsWith('/api/firmware') ? jsonResponse(feed(og, x)) : new Response(new Uint8Array([1, 2, 3]))
 }
 
 describe('the Firmware reads and writes, against a real database', () => {
@@ -227,17 +239,21 @@ describe('the Firmware reads and writes, against a real database', () => {
       expect(targets.find(device => device.id === x.id)?.targetFirmware?.folder).toBe('trmnl_x')
     })
 
-    it('syncs a folder that missed a version on the next run, and leaves the others as they are', async () => {
-      trmnlAnswers(url => url.endsWith('/firmware/latest') ? jsonResponse(LATEST) : new Response(null, { status: url.includes('/trmnl_x/') ? 404 : 200 }))
-      expect(await (await sync()).json()).toMatchObject({ inserted: true })
-      expect(await firmwareRows()).toBe(1)
-
-      trmnlAnswers(newestAnswer())
-      expect(await (await sync()).json()).toMatchObject({ inserted: true })
+    it('syncs each folder at the version the feed names for it, so a folder lagging behind catches up on its own', async () => {
+      trmnlAnswers(newestAnswer('1.6.0', '1.5.0'))
+      expect(await (await sync()).json()).toMatchObject({ inserted: true, version: '1.6.0' })
       expect(await firmwareRows()).toBe(2)
+
+      trmnlAnswers(newestAnswer('1.6.0', '1.6.0'))
+      expect(await (await sync()).json()).toMatchObject({ inserted: true, version: '1.6.0' })
+      expect(await firmwareRows()).toBe(3)
 
       expect(await (await sync()).json()).toMatchObject({ inserted: false })
-      expect(await firmwareRows()).toBe(2)
+      const current = await database.getRepository(Firmware).find({ where: { deprecated: false }, order: { folder: 'ASC' } })
+      expect(current.map(({ folder, version }) => ({ folder, version }))).toEqual([
+        { folder: 'trmnl_og', version: '1.6.0' },
+        { folder: 'trmnl_x', version: '1.6.0' },
+      ])
     })
 
     it('inserts nothing when a custom Firmware already holds the version, not just the newest official one', async () => {

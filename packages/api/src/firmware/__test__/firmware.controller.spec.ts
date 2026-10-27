@@ -37,7 +37,7 @@ describe('firmwareController', () => {
   })
 
   it('maps a failed sync to 502 upstream-unreachable', async () => {
-    syncService.sync.mockRejectedValue(new Error('TRMNL firmware/latest request failed: 502 Bad Gateway'))
+    syncService.sync.mockRejectedValue(new Error('TRMNL firmware request failed: 502 Bad Gateway'))
     await expect(controller.sync()).rejects.toMatchObject({ code: 'upstream-unreachable', status: 502 })
   })
 
