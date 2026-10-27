@@ -8,13 +8,13 @@ import { HealthController } from '../health.controller.js'
 
 describe('healthController', () => {
   let http: HttpTestApp
-  let dataSource: { query: ReturnType<typeof vi.fn> }
+  let database: { query: ReturnType<typeof vi.fn> }
 
   beforeEach(async () => {
-    dataSource = { query: vi.fn() }
+    database = { query: vi.fn() }
     http = await createHttpTestApp({
       controllers: [HealthController],
-      providers: [{ provide: DataSource, useValue: dataSource }],
+      providers: [{ provide: DataSource, useValue: database }],
     })
   })
 
@@ -23,17 +23,17 @@ describe('healthController', () => {
   })
 
   it('answers 200 at /health, outside the /api prefix, when the database answers', async () => {
-    dataSource.query.mockResolvedValue([{ '?column?': 1 }])
+    database.query.mockResolvedValue([{ '?column?': 1 }])
 
     const res = await http.request('/health')
 
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({ status: 'ok', database: 'ok' })
-    expect(dataSource.query).toHaveBeenCalledWith('SELECT 1')
+    expect(database.query).toHaveBeenCalledWith('SELECT 1')
   })
 
   it('answers 503 with the bare body, not the admin error envelope, when the query throws', async () => {
-    dataSource.query.mockRejectedValue(new Error('connect ECONNREFUSED'))
+    database.query.mockRejectedValue(new Error('connect ECONNREFUSED'))
 
     const res = await http.request('/health')
 

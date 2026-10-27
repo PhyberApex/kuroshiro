@@ -18,7 +18,7 @@ export interface HealthStatus {
 @OutsideAdminApi()
 @SkipRequestLog()
 export class HealthController {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(private readonly database: DataSource) {}
 
   @Get()
   async check(): Promise<HealthStatus> {
@@ -32,7 +32,7 @@ export class HealthController {
     const timeout = new Promise<false>((resolve) => {
       timer = setTimeout(resolve, DATABASE_TIMEOUT_MS, false)
     })
-    const query = this.dataSource.query('SELECT 1').then(() => true, () => false)
+    const query = this.database.query('SELECT 1').then(() => true, () => false)
     try {
       return await Promise.race([query, timeout])
     }
