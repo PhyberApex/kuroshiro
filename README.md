@@ -237,7 +237,7 @@ We build these tags automatically:
 | latest | The newest released version                                              |
 | x.x.x  | Specific version that has been built and can be found in GitHub releases |
 
-For local hacking or deployment inspiration, check out [`docker-compose.yml`](./docker-compose.yml). It spins up everything you need—API, UI, and Postgres—so you can get started in seconds.
+For local hacking or deployment inspiration, check out [`docker-compose.yml`](./docker-compose.yml). It spins up everything you need—API, UI, and Postgres—so you can get started in seconds. For container health checks, Kubernetes probes or uptime monitors, `GET /health` answers `200` with `{ "status": "ok", "database": "ok" }` while Kuroshiro and its database are up, and `503` when the database is unreachable.
 
 ### Home Assistant add-on
 

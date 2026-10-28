@@ -9,13 +9,19 @@ import {
   Injectable,
   Logger,
 } from '@nestjs/common'
+import { Reflector } from '@nestjs/core'
 import { tap } from 'rxjs'
+import { SKIP_REQUEST_LOG } from './skip-request-log.decorator.js'
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
   private readonly logger = new Logger('HTTP')
+  private readonly reflector = new Reflector()
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    if (this.reflector.getAllAndOverride<boolean>(SKIP_REQUEST_LOG, [context.getHandler(), context.getClass()]))
+      return next.handle()
+
     const ctx = context.switchToHttp()
     const request = ctx.getRequest<Request>()
     const response = ctx.getResponse<Response>()

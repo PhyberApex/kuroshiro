@@ -26,6 +26,13 @@ services:
       - .env
     ports:
       - '80:${KUROSHIRO_PORT}'
+    # node:24-alpine ships BusyBox wget, not curl; /health answers 503 when the database is unreachable.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:${KUROSHIRO_PORT}/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     environment:
       KUROSHIRO_PORT: ${KUROSHIRO_PORT}
       KUROSHIRO_API_URL: ${KUROSHIRO_API_URL}
