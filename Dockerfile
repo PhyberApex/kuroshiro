@@ -13,7 +13,7 @@ COPY packages/shared ./packages/shared
 COPY packages/api/package.json ./packages/api/package.json
 COPY packages/site/package.json ./packages/site/package.json
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
-RUN corepack enable && pnpm install --frozen-lockfile --filter kuroshiro-ui...
+RUN npm install -g corepack && corepack enable && pnpm install --frozen-lockfile --filter kuroshiro-ui...
 RUN pnpm --filter ./packages/ui build
 
 # Stage 2: Build api
@@ -25,7 +25,7 @@ COPY packages/shared ./packages/shared
 COPY packages/ui/package.json ./packages/ui/package.json
 COPY packages/site/package.json ./packages/site/package.json
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
-RUN corepack enable && pnpm install --frozen-lockfile --filter kuroshiro-api...
+RUN npm install -g corepack && corepack enable && pnpm install --frozen-lockfile --filter kuroshiro-api...
 RUN pnpm --filter ./packages/api run build && pnpm --filter ./packages/api run build:migrations
 
 # Deploy the api's production node_modules, pinned exactly to pnpm-lock.yaml.
