@@ -1,5 +1,5 @@
 # Stage 1: Build ui
-FROM node:24-alpine AS ui-build
+FROM node:26-alpine AS ui-build
 WORKDIR /app
 # Chrome is never needed at build time (the production stage uses Alpine's chromium via
 # PUPPETEER_EXECUTABLE_PATH), and puppeteer's download crashes with SIGILL under QEMU on
@@ -17,7 +17,7 @@ RUN corepack enable && pnpm install --frozen-lockfile --filter kuroshiro-ui...
 RUN pnpm --filter ./packages/ui build
 
 # Stage 2: Build api
-FROM node:24-alpine AS api-build
+FROM node:26-alpine AS api-build
 WORKDIR /app
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 COPY packages/api ./packages/api
@@ -40,7 +40,7 @@ RUN pnpm --filter ./packages/api run build && pnpm --filter ./packages/api run b
 RUN pnpm --filter ./packages/api deploy --legacy --prod --no-optional --ignore-scripts /prod/api
 
 # Stage 3: Production image
-FROM node:24-alpine AS production
+FROM node:26-alpine AS production
 WORKDIR /app
 
 # Pupeteer fix

@@ -29,7 +29,7 @@ export function instanceApi(baseUrl: string) {
       form.set('kind', 'file')
       form.set('deviceId', deviceId)
       form.set('name', name)
-      form.set('file', new Blob([png], { type: 'image/png' }), `${name}.png`)
+      form.set('file', new Blob([new Uint8Array(png)], { type: 'image/png' }), `${name}.png`)
       return call<ScreenRead>('POST', 'screens', form)
     },
     addMashup: (deviceId: string, name: string, layout: string, pluginIds: string[]) => call<ScreenRead>('POST', 'mashup', { deviceId, name, layout, pluginIds }),
