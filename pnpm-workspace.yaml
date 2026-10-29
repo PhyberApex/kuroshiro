@@ -26,7 +26,7 @@ catalog:
   '@codemirror/search': 6.7.2
   '@codemirror/state': 6.7.6
   '@codemirror/view': 6.43.15
-  '@electric-sql/pglite': 0.5.11
+  '@electric-sql/pglite': 0.5.12
   '@fontsource-variable/archivo': 5.3.0
   '@fontsource-variable/jetbrains-mono': 5.3.0
   '@lezer/highlight': 1.2.5
