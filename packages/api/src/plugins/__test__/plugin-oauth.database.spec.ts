@@ -4,7 +4,7 @@ import type { OAuthSettings } from '../plugin-oauth.js'
 import type { PluginRenderCacheService } from '../services/plugin-render-cache.service.js'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
-import { jsonResponse, stubFetch } from '../../test/fetch.js'
+import { endlessBody, jsonResponse, stubFetch } from '../../test/fetch.js'
 import { asService } from '../../test/mockService.js'
 import { createTestDatabase } from '../../test/testDatabase.js'
 import { PluginDataSource } from '../entities/plugin-data-source.entity.js'
@@ -274,6 +274,18 @@ describe('an OAuth Plugin\'s access token, refreshed before a poll and on a 401 
     await sourceDataOf(plugin)
 
     expect(await storedToken(plugin)).toMatchObject({ oauthAccessTokenExpiresAt: null, oauthRefreshedAt: NOW })
+  })
+
+  it('stops reading a token endpoint\'s answer once it passes 5 MB and counts the refresh failed, saying so', async () => {
+    const plugin = await oauthPlugin()
+    const { body, cancelled } = endlessBody()
+    tokenEndpoint = () => new Response(body, { status: 200 })
+
+    await refresh.refresh(plugin, { scheduled: true })
+
+    expect(pollAuthorizations).toEqual([])
+    expect((await storedSource(plugin)).lastFetchError).toBe('The response is larger than 5242880 bytes.')
+    expect(cancelled()).toBe(true)
   })
 
   it('names no token of a successful answer that lacks the access token field in the fetch error', async () => {

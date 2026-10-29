@@ -2,7 +2,7 @@ import type { Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import * as http from 'node:http'
 import { afterEach, describe, expect, it } from 'vitest'
-import { downloadLimited, DownloadTooLargeError } from '../downloadLimited.js'
+import { downloadLimited, ResponseTooLargeError } from '../downloadLimited.js'
 
 let server: Server | undefined
 
@@ -54,7 +54,7 @@ describe('downloadLimited', () => {
       // read the stream instead of trusting Content-Length, this would hang.
     })
 
-    await expect(downloadLimited(url, { limitBytes: 5, timeoutMs: 1000 })).rejects.toThrow(DownloadTooLargeError)
+    await expect(downloadLimited(url, { limitBytes: 5, timeoutMs: 1000 })).rejects.toThrow(ResponseTooLargeError)
   })
 
   it('aborts a chunked body (no Content-Length) once bytes read pass the limit', async () => {
@@ -64,7 +64,7 @@ describe('downloadLimited', () => {
       res.on('close', () => clearInterval(chunk))
     })
 
-    await expect(downloadLimited(url, { limitBytes: 5, timeoutMs: 1000 })).rejects.toThrow(DownloadTooLargeError)
+    await expect(downloadLimited(url, { limitBytes: 5, timeoutMs: 1000 })).rejects.toThrow(ResponseTooLargeError)
   })
 
   it('aborts a slow body at the timeout', async () => {

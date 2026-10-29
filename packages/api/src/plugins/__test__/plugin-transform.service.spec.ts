@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { endlessBody } from '../../test/fetch.js'
 import { PluginTransformService } from '../services/plugin-transform.service.js'
 
 describe('pluginTransformService', () => {
@@ -91,17 +92,12 @@ describe('pluginTransformService', () => {
     })
 
     it('stops reading a fetched body once it passes 5 MB and fails the code\'s fetch, saying so', async () => {
-      let cancelled = false
-      const chunk = new Uint8Array(1024 * 1024).fill(97)
-      const body = new ReadableStream<Uint8Array>({
-        pull: controller => controller.enqueue(chunk),
-        cancel: () => { cancelled = true },
-      })
+      const { body, cancelled } = endlessBody()
       const fetch = vi.fn().mockResolvedValue(new Response(body))
       const transformJs = 'async function run() { try { await fetch("https://huge.example") } catch (error) { return error.message } }'
 
       expect(await service.transform(transformJs, input, { fetch })).toBe('The response is larger than 5242880 bytes.')
-      expect(cancelled).toBe(true)
+      expect(cancelled()).toBe(true)
     })
 
     it('aborts a fetch still under way when the transform runs out of time', async () => {

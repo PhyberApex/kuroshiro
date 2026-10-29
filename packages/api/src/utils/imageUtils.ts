@@ -8,7 +8,7 @@ import { execFile } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { UPLOAD_LIMITS } from '../uploads/upload-limits.js'
-import { downloadLimited, DownloadTooLargeError } from './downloadLimited.js'
+import { downloadLimited, ResponseTooLargeError } from './downloadLimited.js'
 import { resolveAppPath } from './pathHelper.js'
 
 const DOWNLOAD_TIMEOUT_MS = 30_000
@@ -42,7 +42,7 @@ export async function downloadImage(url: string, dest: string, logger: Logger, r
     download = await downloadLimited(url, { limitBytes: UPLOAD_LIMITS.imageUploadBytes, timeoutMs: DOWNLOAD_TIMEOUT_MS, request })
   }
   catch (error) {
-    if (error instanceof DownloadTooLargeError)
+    if (error instanceof ResponseTooLargeError)
       throw new Error(`The image is larger than ${error.limitBytes} bytes.`)
     throw error
   }

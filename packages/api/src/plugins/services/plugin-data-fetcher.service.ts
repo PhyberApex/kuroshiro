@@ -57,6 +57,11 @@ const REQUEST_TIMEOUT_MS = 10_000
 /** The most of a response a Data Source or a transform reads, so a host that streams without end cannot fill the heap. */
 export const RESPONSE_LIMIT_BYTES = 5 * 1024 * 1024
 
+/** The body as `response.text()` decodes it, UTF-8 with a byte order mark dropped, refused past `RESPONSE_LIMIT_BYTES`. */
+export async function textWithinLimit(response: Response): Promise<string> {
+  return new TextDecoder().decode(await readBodyLimited(response, RESPONSE_LIMIT_BYTES))
+}
+
 /** The request as given, made with `request`, given up when the host has not answered within TRMNL's time. */
 async function fetchWithinTimeout(request: Requester, url: string, init: RequestInit): Promise<Response> {
   try {
@@ -187,8 +192,6 @@ export class PluginDataFetcherService {
       await response.body?.cancel()
       throw new HttpStatusError(response.status)
     }
-    // Decoded as `response.text()` decodes it: UTF-8, a byte order mark dropped.
-    const text = new TextDecoder().decode(await readBodyLimited(response, RESPONSE_LIMIT_BYTES))
-    return parseResponseBody(text, response.headers.get('content-type'), { timeZone: this.instanceTimeZone.name, now: new Date() })
+    return parseResponseBody(await textWithinLimit(response), response.headers.get('content-type'), { timeZone: this.instanceTimeZone.name, now: new Date() })
   }
 }

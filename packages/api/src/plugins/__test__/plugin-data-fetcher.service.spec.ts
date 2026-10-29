@@ -2,7 +2,7 @@ import type { ConfigService } from '@nestjs/config'
 import { lookup } from 'node:dns/promises'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
-import { jsonResponse, stubFetch } from '../../test/fetch.js'
+import { endlessBody, jsonResponse, stubFetch } from '../../test/fetch.js'
 import { asService } from '../../test/mockService.js'
 import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
 import { PluginRendererService } from '../services/plugin-renderer.service.js'
@@ -413,17 +413,6 @@ describe('pluginDataFetcherService', () => {
   })
 
   describe('a body over 5 MB', () => {
-    /** A body that never ends, as a host streaming without end does, and whether its reader cancelled it. */
-    function endlessBody(): { body: ReadableStream<Uint8Array>, cancelled: () => boolean } {
-      let cancelled = false
-      const chunk = new Uint8Array(1024 * 1024).fill(97)
-      const body = new ReadableStream<Uint8Array>({
-        pull: controller => controller.enqueue(chunk),
-        cancel: () => { cancelled = true },
-      })
-      return { body, cancelled: () => cancelled }
-    }
-
     it('stops reading a body without a length once it passes 5 MB and fails the fetch, saying so', async () => {
       const { body, cancelled } = endlessBody()
       mockFetch.mockResolvedValue(new Response(body, { status: 200 }))

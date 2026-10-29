@@ -2,7 +2,7 @@ import type { Requester } from './ssrfGuard.js'
 import { Buffer } from 'node:buffer'
 import { parseHeaderInt } from './parseHeaderInt.js'
 
-export class DownloadTooLargeError extends Error {
+export class ResponseTooLargeError extends Error {
   constructor(readonly limitBytes: number) {
     super(`The response is larger than ${limitBytes} bytes.`)
   }
@@ -41,14 +41,14 @@ export async function downloadLimited(url: string, { limitBytes, timeoutMs, requ
 }
 
 /**
- * The body of `response`, refused with a `DownloadTooLargeError` once it passes `limitBytes`: before reading when its
+ * The body of `response`, refused with a `ResponseTooLargeError` once it passes `limitBytes`: before reading when its
  * `Content-Length` says so, otherwise the moment the bytes read so far do, the rest of the stream cancelled.
  */
 export async function readBodyLimited(response: Response, limitBytes: number): Promise<Buffer> {
   const contentLength = parseHeaderInt(response.headers.get('content-length'))
   if (contentLength !== undefined && contentLength > limitBytes) {
     await response.body?.cancel()
-    throw new DownloadTooLargeError(limitBytes)
+    throw new ResponseTooLargeError(limitBytes)
   }
   return readLimited(response.body, limitBytes)
 }
@@ -68,7 +68,7 @@ async function readLimited(body: ReadableStream<Uint8Array> | null, limitBytes: 
       total += value.byteLength
       if (total > limitBytes) {
         await reader.cancel()
-        throw new DownloadTooLargeError(limitBytes)
+        throw new ResponseTooLargeError(limitBytes)
       }
       chunks.push(Buffer.from(value))
     }

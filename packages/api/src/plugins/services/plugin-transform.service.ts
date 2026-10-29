@@ -93,6 +93,7 @@ async function fetchFor(worker: Worker, { id, request }: { id: number, request: 
   try {
     const response = await fetch(request.url, { ...request.init, signal: controller.signal })
     const read = await readBodyLimited(response, RESPONSE_LIMIT_BYTES)
+    // Copied out of the Buffer, which may be a view into Node's shared pool, so it can be transferred to the worker on its own.
     const body = read.buffer.slice(read.byteOffset, read.byteOffset + read.byteLength) as ArrayBuffer
     const fetched: FetchedResponse = { status: response.status, statusText: response.statusText, headers: [...response.headers], body, url: response.url }
     reply = { type: 'fetched', id, response: fetched }
