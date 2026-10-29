@@ -42,6 +42,51 @@ describe('dataSourceFetchOutcomeService', () => {
     })
   })
 
+  it('counts a multi-line source whose every line failed as a failed fetch, naming each line (ADR-0058)', async () => {
+    const source = makePluginDataSource({ id: 'ds-1', name: 'weather', mode: 'fetch' })
+
+    await service.recordOutcomes([source], {
+      weather: { IDX_0: { error: true, message: 'fetch failed' }, IDX_1: { error: true, message: 'HTTP error! status: 503' } },
+    })
+
+    expect(dataSourceRepo.increment).toHaveBeenCalledWith({ id: 'ds-1' }, 'fetchFailureStreak', 1)
+    expect(dataSourceRepo.update).toHaveBeenCalledWith('ds-1', {
+      lastFetchAttemptAt: expect.any(Date),
+      lastFetchError: 'IDX_0: fetch failed\nIDX_1: HTTP error! status: 503',
+    })
+  })
+
+  it('counts a multi-line source with one failed line as a failed fetch, naming only that line', async () => {
+    const source = makePluginDataSource({ id: 'ds-1', name: 'weather', mode: 'fetch' })
+
+    await service.recordOutcomes([source], {
+      weather: { IDX_0: { temp: 25 }, IDX_1: { error: true, message: 'HTTP error! status: 404' } },
+    })
+
+    expect(dataSourceRepo.increment).toHaveBeenCalledWith({ id: 'ds-1' }, 'fetchFailureStreak', 1)
+    expect(dataSourceRepo.update).toHaveBeenCalledWith('ds-1', {
+      lastFetchAttemptAt: expect.any(Date),
+      lastFetchError: 'IDX_1: HTTP error! status: 404',
+    })
+  })
+
+  it('resets the streak for a multi-line source whose every line succeeded', async () => {
+    const source = makePluginDataSource({ id: 'ds-1', name: 'weather', mode: 'fetch', fetchFailureStreak: 2 })
+
+    await service.recordOutcomes([source], { weather: { IDX_0: { temp: 25 }, IDX_1: { data: [1, 2] } } })
+
+    expect(dataSourceRepo.increment).not.toHaveBeenCalled()
+    expect(dataSourceRepo.update).toHaveBeenCalledWith('ds-1', expect.objectContaining({ fetchFailureStreak: 0, lastFetchError: null }))
+  })
+
+  it('reads a key that only looks like a line index on an ordinary response as data', async () => {
+    const source = makePluginDataSource({ id: 'ds-1', name: 'weather', mode: 'fetch' })
+
+    await service.recordOutcomes([source], { weather: { IDX_0: { error: true, message: 'upstream says so' }, temp: 25 } })
+
+    expect(dataSourceRepo.increment).not.toHaveBeenCalled()
+  })
+
   it('never touches a literal-mode source', async () => {
     const source = makePluginDataSource({ id: 'ds-1', name: 'title', mode: 'literal', fetchFailureStreak: 0 })
 

@@ -4,6 +4,27 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { PluginDataSource } from '../entities/plugin-data-source.entity.js'
 import { isFetchErrorMarker } from './plugin-data-resolver.service.js'
 
+const LINE_INDEX = /^IDX_\d+$/
+
+/**
+ * Why a fetch-mode Data Source's value is a failed fetch, or `null` when it is
+ * not one. A multi-line URL resolves to `{ IDX_0: …, IDX_1: … }` with a failed
+ * line's error marker under its index (ADR-0058), so a line failing is a failed
+ * fetch too, named by its index: the Template reads that line's marker in place
+ * of its data just as it would a lone line's.
+ */
+function fetchErrorOf(value: unknown): string | null {
+  if (isFetchErrorMarker(value))
+    return value.message
+  if (typeof value !== 'object' || value === null || Array.isArray(value))
+    return null
+  const lines = Object.entries(value)
+  if (lines.length === 0 || !lines.every(([key]) => LINE_INDEX.test(key)))
+    return null
+  const failed = lines.flatMap(([key, line]) => isFetchErrorMarker(line) ? [`${key}: ${line.message}`] : [])
+  return failed.length > 0 ? failed.join('\n') : null
+}
+
 /**
  * Records each `fetch`-mode Data Source's outcome from one scheduler tick's
  * resolved data — the sole writer of the Fetch Failure Streak columns
@@ -35,10 +56,10 @@ export class DataSourceFetchOutcomeService {
       if (source.mode !== 'fetch')
         continue
 
-      const value = resolved[source.name]
-      if (isFetchErrorMarker(value)) {
+      const fetchError = fetchErrorOf(resolved[source.name])
+      if (fetchError !== null) {
         await this.dataSourceRepository.increment({ id: source.id }, 'fetchFailureStreak', 1)
-        await this.dataSourceRepository.update(source.id, { lastFetchAttemptAt: now, lastFetchError: value.message })
+        await this.dataSourceRepository.update(source.id, { lastFetchAttemptAt: now, lastFetchError: fetchError })
       }
       else {
         await this.dataSourceRepository.update(source.id, { fetchFailureStreak: 0, lastFetchAttemptAt: now, lastFetchSucceededAt: now, lastFetchError: null })
