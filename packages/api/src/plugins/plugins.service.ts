@@ -603,7 +603,7 @@ export class PluginsService implements OnModuleInit {
   }
 
   private async requireWebhookPlugin(id: string): Promise<Plugin> {
-    const plugin = isUUID(id) ? await this.findPluginWithRelations(id, { templates: true }) : null
+    const plugin = isUUID(id) ? await this.findPluginWithRelations(id, { templates: true, fields: true }) : null
     if (!plugin)
       throw pluginNotFound(id)
     if (plugin.kind !== 'Webhook')

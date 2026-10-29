@@ -58,6 +58,7 @@ export class ScreenRenderService {
               plugin: {
                 dataSources: true,
                 templates: true,
+                fields: true,
               },
             },
           },

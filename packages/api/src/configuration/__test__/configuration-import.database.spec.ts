@@ -434,9 +434,10 @@ describe('reading and importing a Configuration Archive, against a real database
 
     expect(imported.status).toBe(201)
     expect(scheduler.schedulePlugin).toHaveBeenCalledTimes(2)
-    const scheduledById = new Map(scheduler.schedulePlugin.mock.calls.map(call => [(call[0] as { id: string }).id, call[0] as { dataSources: unknown[] }]))
+    const scheduledById = new Map(scheduler.schedulePlugin.mock.calls.map(call => [(call[0] as { id: string }).id, call[0] as { dataSources: unknown[], fields: unknown[] }]))
     expect([...scheduledById.keys()].sort()).toEqual([DOORBELL, WEATHER].sort())
     // The scheduler's timer closes over this exact object for every future tick, so it must carry the relations a tick reads, not just the bare row `save` returns.
     expect(scheduledById.get(WEATHER)?.dataSources).toEqual([expect.objectContaining({ id: WEATHER_SOURCE, name: 'forecast' })])
+    expect(scheduledById.get(WEATHER)?.fields).toEqual([expect.objectContaining({ id: WEATHER_KEY_FIELD, keyname: 'api_key', fieldType: 'password' })])
   })
 })

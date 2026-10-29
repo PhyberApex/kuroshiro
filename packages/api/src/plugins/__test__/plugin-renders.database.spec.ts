@@ -283,6 +283,23 @@ describe('what a Plugin renders from, and with which Template, against a real da
       expect(tick).toEqual(sharedRenderExpected)
     })
 
+    it('reads a list Field Value as a list on the on-demand render and in a Mashup slot, as the preview does (ADR-0064)', async () => {
+      const plugin = await createPollPlugin({ fields: [{ keyname: 'cities', name: 'Cities', fieldType: 'multi_string' }], fieldValues: { cities: 'Berlin\nParis' } })
+      const device = await addDevice('Kitchen')
+      await assignments.assign(plugin.id, device.id)
+      await addMashup(device, plugin.id, ['view--quadrant'])
+      const render = vi.spyOn(renderer, 'render')
+
+      const poll = () => display.getCurrentImage({ 'id': device.mac, 'access-token': device.apikey })
+      await poll()
+      await poll()
+      const [onDemand, mashupSlot] = render.mock.calls.filter(([markup]) => markup === '<p>{{ weather.temperature }}</p>').map(([, context]) => context)
+
+      expect(onDemand).toMatchObject({ cities: ['Berlin', 'Paris'] })
+      expect(mashupSlot).toMatchObject({ cities: ['Berlin', 'Paris'] })
+      expect((await previewData(plugin.id)).context).toMatchObject({ cities: ['Berlin', 'Paris'] })
+    })
+
     it('renders a scheduler tick once per Screen, each told its own Device and Device Model as trmnl.device (ADR-0069)', async () => {
       const plugin = await createPollPlugin({ templates: [{ layout: 'full', liquidMarkup: '{{ trmnl.device.friendly_id }} {{ trmnl.device.model }} {{ trmnl.device.width }}x{{ trmnl.device.height }} {{ trmnl.device.orientation }} {{ weather.temperature }}' }] })
       const og = await addDevice('Kitchen')
@@ -810,6 +827,21 @@ describe('what a Plugin renders from, and with which Template, against a real da
       expect(answered).toEqual(await read(plugin.id))
       expect(answered.webhook).toEqual({ ...before.webhook, payload: null, payloadReceivedAt: null })
       expect(await cachedOutput(plugin.id)).toBe('<p>Reading: </p>')
+    })
+
+    it('reads a list Field Value as a list on the render a POST and a cleared Webhook Payload make, as the preview does (ADR-0064)', async () => {
+      const plugin = await createWebhookPlugin({
+        fields: [{ keyname: 'cities', name: 'Cities', fieldType: 'multi_string' }],
+        fieldValues: { cities: 'Berlin\nParis' },
+        templates: [{ layout: 'full', liquidMarkup: '{% for c in cities %}{{ c }},{% endfor %}{{ reading }}' }],
+      })
+      await assignments.assign(plugin.id, (await addDevice('Kitchen')).id)
+
+      expect((await http.postJson(`/api/webhook/${(await read(plugin.id)).webhook?.token}`, { reading: 4 })).status).toBe(201)
+      expect(await cachedOutput(plugin.id)).toBe('Berlin,Paris,4')
+
+      expect((await http.request(`/api/plugins/${plugin.id}/webhook-payload`, { method: 'DELETE' })).status).toBe(200)
+      expect(await cachedOutput(plugin.id)).toBe('Berlin,Paris,')
     })
 
     it('regenerates the Webhook Token, answers the Plugin with the new URL, and refuses a POST to the old one', async () => {
