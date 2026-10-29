@@ -9,7 +9,7 @@ import { PluginTemplate } from '../entities/plugin-template.entity.js'
 import { Plugin } from '../entities/plugin.entity.js'
 import { WebhookIngestService } from '../services/webhook-ingest.service.js'
 
-describe('webhook POSTs that arrive together, against a real database', () => {
+describe('webhook POSTs that arrive together, against a real database (ADR-0004)', () => {
   let database: DataSource
   let ingest: WebhookIngestService
   const rendered: WebhookPayload[] = []
@@ -48,9 +48,15 @@ describe('webhook POSTs that arrive together, against a real database', () => {
     return plugin
   }
 
-  /** The Plugin as the webhook guard loads it at the start of a request. */
+  /** The Plugin as the webhook guard loads it when a request comes in. */
   function loadedByGuard(plugin: Plugin): Promise<Plugin> {
     return database.getRepository(Plugin).findOneOrFail({ where: { id: plugin.id }, relations: { templates: true } })
+  }
+
+  /** POSTs whose guards all loaded the Plugin before any of them stored a payload. */
+  async function postTogether(plugin: Plugin, ...bodies: unknown[]): Promise<void> {
+    const loaded = await Promise.all(bodies.map(() => loadedByGuard(plugin)))
+    await Promise.all(bodies.map((body, index) => ingest.ingest(loaded[index], body)))
   }
 
   async function storedPayload(plugin: Plugin): Promise<WebhookPayload> {
@@ -59,9 +65,7 @@ describe('webhook POSTs that arrive together, against a real database', () => {
 
   it('keeps both POSTs\' events under the stream Merge Strategy', async () => {
     const plugin = await createWebhookPlugin('stream', { events: ['a'] })
-    const [first, second] = await Promise.all([loadedByGuard(plugin), loadedByGuard(plugin)])
-
-    await Promise.all([ingest.ingest(first, { events: ['b'] }), ingest.ingest(second, { events: ['c'] })])
+    await postTogether(plugin, { events: ['b'] }, { events: ['c'] })
 
     expect(await storedPayload(plugin)).toEqual({ events: ['a', 'b', 'c'] })
     expect(rendered.at(-1)).toEqual({ events: ['a', 'b', 'c'] })
@@ -69,11 +73,18 @@ describe('webhook POSTs that arrive together, against a real database', () => {
 
   it('keeps both POSTs\' keys under the deep_merge Merge Strategy', async () => {
     const plugin = await createWebhookPlugin('deep_merge', { sensor: { name: 'attic' } })
-    const [first, second] = await Promise.all([loadedByGuard(plugin), loadedByGuard(plugin)])
-
-    await Promise.all([ingest.ingest(first, { sensor: { temp: 21 } }), ingest.ingest(second, { status: 'ok' })])
+    await postTogether(plugin, { sensor: { temp: 21 } }, { status: 'ok' })
 
     expect(await storedPayload(plugin)).toEqual({ sensor: { name: 'attic', temp: 21 }, status: 'ok' })
     expect(rendered.at(-1)).toEqual({ sensor: { name: 'attic', temp: 21 }, status: 'ok' })
+  })
+
+  it('stores and renders nothing for a Plugin deleted after the guard loaded it', async () => {
+    const plugin = await createWebhookPlugin('deep_merge', { sensor: { name: 'attic' } })
+    const loaded = await loadedByGuard(plugin)
+    await database.getRepository(Plugin).delete(plugin.id)
+
+    await expect(ingest.ingest(loaded, { status: 'ok' })).rejects.toThrow('Invalid webhook token')
+    expect(rendered).toEqual([])
   })
 })

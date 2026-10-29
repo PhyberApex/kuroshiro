@@ -1,5 +1,5 @@
 import type { WebhookPayload } from '../entities/plugin.entity.js'
-import { Injectable, Logger, UnprocessableEntityException } from '@nestjs/common'
+import { Injectable, Logger, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { isPlainObject } from '../../utils/json.js'
@@ -14,6 +14,9 @@ function isWebhookPayload(value: unknown): value is WebhookPayload {
 
 /** The keys TRMNL's webhook API takes beside `merge_variables`; the Merge Strategy stays the Plugin's (ADR-0004). */
 const ENVELOPE_KEYS = ['merge_variables', 'merge_strategy', 'deep_merge', 'stream_limit']
+
+/** What a POST is merged with, read again under the Plugin's lock rather than taken from the guard's copy. */
+const MERGE_SELECT = { id: true, mergeStrategy: true, streamLimit: true, webhookPayload: true } as const
 
 function parsedObject(text: string): unknown {
   try {
@@ -93,11 +96,13 @@ export class WebhookIngestService {
     }
 
     // The guard loaded the Plugin when the request came in, so a POST that arrived alongside may have stored a payload
-    // since. Merging onto the stored one, one POST at a time per Plugin, keeps what every POST sent.
+    // since. Merging onto the stored one, one POST at a time per Plugin, keeps what every POST sent; the render runs
+    // inside too, so the last one drawn is of the last payload stored.
     await this.perPlugin.run(plugin.id, async () => {
-      const stored = await this.pluginRepository.findOne({ where: { id: plugin.id }, select: { id: true, webhookPayload: true } })
-      const current = { ...plugin, webhookPayload: stored?.webhookPayload ?? null }
-      const merged = this.merge(current, payload)
+      const stored = await this.pluginRepository.findOne({ where: { id: plugin.id }, select: MERGE_SELECT })
+      if (!stored)
+        throw new UnauthorizedException('Invalid webhook token')
+      const merged = this.merge({ ...plugin, ...stored }, payload)
 
       // TypeORM's QueryDeepPartialEntity can't distribute over the WebhookPayload
       // union against a union-typed value, even though `merged`'s type already
