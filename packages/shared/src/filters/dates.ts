@@ -11,12 +11,14 @@ const EXPLICIT_OFFSET = /(?:z|[+-]\d{2}:?\d{2})$/i
 
 /**
  * liquidjs's own `date`, so these filters read the time zone and strftime table `date` does. A string that names its
- * own offset keeps it, as Ruby's `Time.parse` does, instead of being moved into the engine's zone.
+ * own offset keeps it, as Ruby's `Time.parse` does, instead of being moved into the engine's zone. `date` hands back
+ * what it cannot read as a date: a string stays itself, anything else (a missing value) renders as nothing, not "undefined".
  */
 function strftime(context: Context, value: unknown, format: string): string {
   const preserveTimezones = typeof value === 'string' && EXPLICIT_OFFSET.test(value)
   const shim = preserveTimezones ? { context: { ...context, opts: { ...context.opts, preserveTimezones } } as Context } : { context }
-  return String((filters.date as unknown as DateFilter).call(shim, value, format))
+  const formatted = (filters.date as unknown as DateFilter).call(shim, value, format)
+  return typeof formatted === 'string' ? formatted : ''
 }
 
 const isoDate = (date: Date) => date.toISOString().slice(0, 10)

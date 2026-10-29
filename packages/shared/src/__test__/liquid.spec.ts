@@ -423,6 +423,16 @@ describe('trmnl custom filters (ADR-0043, after the trmnl-liquid gem)', () => {
     expect(await renderLiquid('{{ "2025-01-11T23:30:00-05:00" | l_date: "%-d %B %H:%M", "fr" }}', {}, { timeZone: 'Asia/Tokyo' })).toBe('11 janvier 23:30')
   })
 
+  it('l_date and ordinalize render a missing value as nothing and a non-date as itself, as date does', async () => {
+    for (const filter of ['l_date: "%A"', 'ordinalize']) {
+      expect(await render(`{{ missing | ${filter} }}`)).toBe('')
+      expect(await render(`{{ nil | ${filter} }}`)).toBe('')
+      expect(await render(`{{ "" | ${filter} }}`)).toBe('')
+      expect(await render(`{{ "soon" | ${filter} }}`)).toBe('soon')
+      expect(await render(`{{ data.next | ${filter} }}`, { data: { next: {} } })).toBe('')
+    }
+  })
+
   it('l_word translates the six words trmnl-i18n ships and falls back to the input', async () => {
     expect(await render('{{ "today" | l_word: "es-ES" }}')).toBe('hoy')
     expect(await render('{{ "tomorrow" | l_word: "ko" }}')).toBe('내일')
