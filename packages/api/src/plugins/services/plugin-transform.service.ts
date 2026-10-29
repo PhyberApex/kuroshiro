@@ -1,60 +1,24 @@
+import type { FetchedResponse, ServerMessage, TransformJob, WorkerMessage } from './plugin-transform.worker.js'
+import { extname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { Worker } from 'node:worker_threads'
 import { Injectable, Logger } from '@nestjs/common'
-import { VM } from 'vm2'
 import { getErrorMessage } from '../../utils/getErrorMessage.js'
 
 const DEFAULT_TIMEOUT_MS = 5000
 
+/**
+ * The worker beside this module: the `.ts` source under test, the `.js` that `nest start` compiles beside it, and the
+ * one tsup bundles beside `main.js` under the same name.
+ */
+const WORKER_URL = new URL(`./plugin-transform.worker${extname(fileURLToPath(import.meta.url))}`, import.meta.url)
+
 export interface TransformOptions {
-  /** How long the code may take, synchronously and awaiting, before the transform fails. */
+  /** How long the code may take, synchronously and awaiting, before the transform fails and its thread is stopped. */
   timeoutMs?: number
   /** The `fetch` the code may call, guarded by the caller; without one the code has no way to the network. */
   fetch?: (url: string, init?: RequestInit) => Promise<Response>
 }
-
-/**
- * The web-standard globals Node 20 has, which TRMNL's serverless runtime leaves in reach (ADR-0055). Node's own
- * `require`, `process` and file system stay out.
- */
-const WEB_GLOBALS = {
-  AbortController,
-  AbortSignal,
-  setTimeout,
-  clearTimeout,
-  setInterval,
-  clearInterval,
-  queueMicrotask,
-  URL,
-  URLSearchParams,
-  TextEncoder,
-  TextDecoder,
-  atob,
-  btoa,
-  structuredClone,
-  performance,
-  crypto,
-  Headers,
-  Request,
-  Response,
-}
-
-/**
- * The function a transform exports, found as TRMNL's serverless runtime finds it (ADR-0051): `run`, declared or
- * exported as `module.exports = { run }` / `exports.run`, then `module.exports` itself, then a declared `transform`.
- * Without one the input passes through unchanged.
- */
-const PICK_TRANSFORM = `
-  (() => {
-    const exported = module.exports
-    const candidates = [
-      typeof run === 'function' ? run : undefined,
-      exported && typeof exported.run === 'function' ? exported.run : undefined,
-      typeof exported === 'function' ? exported : undefined,
-      typeof transform === 'function' ? transform : undefined,
-    ]
-    const picked = candidates.find(candidate => candidate !== undefined)
-    return picked ? picked(input) : input
-  })()
-`
 
 @Injectable()
 export class PluginTransformService {
@@ -62,54 +26,79 @@ export class PluginTransformService {
 
   /**
    * Runs a transform in a sandbox on its input, the fetched data laid over the template context, and answers what the
-   * transform returns, awaited when it is a promise. The sandbox has Node's web globals (ADR-0055) but no `require`
-   * and no file system, and only the `fetch` it is handed (ADR-0052).
+   * transform returns, awaited when it is a promise, as JSON reads it. The sandbox runs on a thread of its own that is
+   * terminated when the time runs out, so the bound covers code after an `await` too (ADR-0072). It has Node's web
+   * globals (ADR-0055) but no `require` and no file system, and only the `fetch` it is handed (ADR-0052).
    */
   async transform(transformJs: string, input: unknown, { timeoutMs = DEFAULT_TIMEOUT_MS, fetch }: TransformOptions = {}): Promise<unknown> {
     try {
-      const moduleObj = { exports: {} }
-      const vm = new VM({
-        timeout: timeoutMs,
-        sandbox: {
-          ...WEB_GLOBALS,
-          input,
-          data: input,
-          module: moduleObj,
-          exports: moduleObj.exports,
-          console: {
-            log: (...args: unknown[]) => this.logger.debug(`[Transform] ${args.join(' ')}`),
-          },
-          ...(fetch && { fetch }),
-        },
-      })
-
-      const result = await withinTimeout(vm.run(`${transformJs}\n;${PICK_TRANSFORM}`), timeoutMs)
+      const json = await this.runOnWorker({ transformJs, input, withFetch: fetch !== undefined }, timeoutMs, fetch)
       this.logger.debug(`Transform executed successfully`)
-      return result
+      return json === undefined ? undefined : JSON.parse(json)
     }
     catch (error) {
       this.logger.error(`Transform execution failed: ${getErrorMessage(error)}`)
       throw error
     }
   }
-}
 
-function isThenable(value: unknown): value is PromiseLike<unknown> {
-  return typeof value === 'object' && value !== null && typeof (value as { then?: unknown }).then === 'function'
-}
+  private runOnWorker(job: TransformJob, timeoutMs: number, fetch: TransformOptions['fetch']): Promise<string | undefined> {
+    const worker = new Worker(WORKER_URL, { workerData: job })
+    const fetches = new Map<number, AbortController>()
+    let timer: NodeJS.Timeout | undefined
 
-async function withinTimeout(result: unknown, timeoutMs: number): Promise<unknown> {
-  if (!(result instanceof Promise || isThenable(result)))
-    return result
-
-  let timer: NodeJS.Timeout | undefined
-  const tooLate = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`The transform did not finish within ${timeoutMs} ms.`)), timeoutMs)
-  })
-  try {
-    return await Promise.race([result, tooLate])
+    return new Promise<string | undefined>((resolve, reject) => {
+      timer = setTimeout(() => reject(new Error(`The transform did not finish within ${timeoutMs} ms.`)), timeoutMs)
+      worker.on('message', (message: WorkerMessage) => {
+        switch (message.type) {
+          case 'log':
+            this.logger.debug(`[Transform] ${message.text}`)
+            break
+          case 'fetch':
+            if (fetch)
+              this.fetchFor(worker, message.id, message.request, fetch, fetches)
+            break
+          case 'abort':
+            fetches.get(message.id)?.abort()
+            break
+          case 'done':
+            resolve(message.json)
+            break
+          case 'failed':
+            reject(Object.assign(new Error(message.message), { name: message.name }))
+            break
+        }
+      })
+      worker.on('error', reject)
+      worker.on('exit', code => reject(new Error(`The transform stopped with exit code ${code}.`)))
+    }).finally(() => {
+      clearTimeout(timer)
+      for (const controller of fetches.values())
+        controller.abort()
+      void worker.terminate()
+    })
   }
-  finally {
-    clearTimeout(timer)
+
+  /** Makes a request the transform asked for with the guarded `fetch` and answers the worker with the whole response. */
+  private async fetchFor(worker: Worker, id: number, { url, init }: { url: string, init?: RequestInit }, fetch: NonNullable<TransformOptions['fetch']>, fetches: Map<number, AbortController>): Promise<void> {
+    const controller = new AbortController()
+    fetches.set(id, controller)
+    let reply: ServerMessage
+    let transfer: ArrayBuffer[] = []
+    try {
+      const response = await fetch(url, { ...init, signal: controller.signal })
+      const body = await response.arrayBuffer()
+      const fetched: FetchedResponse = { status: response.status, statusText: response.statusText, headers: [...response.headers], body, url: response.url }
+      reply = { type: 'fetched', id, response: fetched }
+      transfer = [body]
+    }
+    catch (error) {
+      reply = { type: 'fetch-failed', id, name: error instanceof Error ? error.name : 'Error', message: getErrorMessage(error) }
+    }
+    finally {
+      fetches.delete(id)
+    }
+    if (!controller.signal.aborted)
+      worker.postMessage(reply, transfer)
   }
 }

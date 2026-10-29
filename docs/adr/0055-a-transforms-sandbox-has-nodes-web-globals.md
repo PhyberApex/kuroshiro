@@ -4,7 +4,7 @@ TRMNL runs serverless code on Node 20 (help.trmnl.com, "Serverless"), where `Abo
 
 **The sandbox hands a transform the web-standard globals Node has**: `AbortController`, `AbortSignal`, the four timer functions, `queueMicrotask`, `URL`, `URLSearchParams`, `TextEncoder`, `TextDecoder`, `atob`, `btoa`, `structuredClone`, `performance`, the Web Crypto `crypto`, `Headers`, `Request` and `Response`. They are the server's own objects, as the guarded `fetch` is. Node's `require`, `process` and the file system stay out of reach, as before.
 
-**The five seconds still bound the run.** A transform that waits on a timer waits inside the same `withinTimeout` race that bounds its awaits (ADR-0052), so a timer cannot hold a Data Source longer than its `fetch` could.
+**The five seconds still bound the run.** A transform that waits on a timer waits inside the same `withinTimeout` race that bounds its awaits (ADR-0052), so a timer cannot hold a Data Source longer than its `fetch` could. _(It did not bound CPU work after an `await`, which vm2's timeout never covers; ADR-0072 runs the transform on a thread its timeout terminates, so the bound now holds.)_
 
 Considered and rejected:
 
@@ -14,4 +14,4 @@ Considered and rejected:
 ## Consequences
 
 - `PluginTransformService` spreads the globals into the vm2 sandbox before `input`, so a transform's own names win as they did.
-- A transform can now schedule work with `setInterval`; the timeout rejects the run but the interval keeps firing in the host until the process ends. A Recipe's transform has no reason to, and a bounded run that clears its own timers is what TRMNL's runtime expects too.
+- A transform can now schedule work with `setInterval`; the timeout rejects the run but the interval keeps firing in the host until the process ends. A Recipe's transform has no reason to, and a bounded run that clears its own timers is what TRMNL's runtime expects too. _(Since ADR-0072 the timers are the transform's thread's, and end when the run does.)_
