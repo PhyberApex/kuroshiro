@@ -1,4 +1,4 @@
-import type { MergeStrategy, PluginFieldAttributes, PluginFieldOption, PluginKind } from 'kuroshiro-shared'
+import type { DataSourceMethod, MergeStrategy, PluginFieldAttributes, PluginFieldOption, PluginKind } from 'kuroshiro-shared'
 import type { JsonObject } from '../../utils/json.js'
 import type { OAuthSettings } from '../plugin-oauth.js'
 import { Buffer } from 'node:buffer'
@@ -6,7 +6,7 @@ import * as path from 'node:path'
 import { HttpStatus, Injectable, Logger } from '@nestjs/common'
 import AdmZip from 'adm-zip'
 import * as yaml from 'js-yaml'
-import { FRAMEWORK_VERSION_PATTERN, githubRepositoryOf, isReadOnlyFieldType, MERGE_STRATEGIES, recipeIdOf } from 'kuroshiro-shared'
+import { DATA_SOURCE_METHODS, FRAMEWORK_VERSION_PATTERN, githubRepositoryOf, isReadOnlyFieldType, MERGE_STRATEGIES, recipeIdOf } from 'kuroshiro-shared'
 import { ApiException } from '../../errors/api.exception.js'
 import { uploadTooLarge } from '../../uploads/limited-file-interceptor.js'
 import { UPLOAD_LIMITS } from '../../uploads/upload-limits.js'
@@ -19,6 +19,14 @@ const DOWNLOAD_TIMEOUT_MS = 30_000
 
 function importRefused(code: 'import-no-plugin' | 'import-legacy-format' | 'unprocessable', message: string): ApiException {
   return new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, code, message)
+}
+
+// The fetcher, the admin API and the editor only know GET and POST; storing any other verb would fetch with it while the Plugin reads as GET.
+function dataSourceMethodOf(raw: unknown, name: string): DataSourceMethod {
+  const method = raw === undefined || raw === null || raw === '' ? 'GET' : String(raw).toUpperCase()
+  if (!(DATA_SOURCE_METHODS as readonly string[]).includes(method))
+    throw importRefused('unprocessable', `The Data Source "${name}" uses ${method}; only GET and POST are supported.`)
+  return method as DataSourceMethod
 }
 
 function upstreamUnreachable(upstream: string, reason: string): ApiException {
@@ -451,11 +459,8 @@ export class PluginImporterService {
       return KNOWN_TEMPLATE_LAYOUT_NAMES.some(layout => filename.includes(layout))
     })
 
-    const templates = layoutEntries.map((entry) => {
-      const filename = path.basename(entry.entryName, '.liquid')
+    const templates = this.onePerLayout(layoutEntries).map(({ layout, entry }) => {
       const content = entry.getData().toString('utf8')
-      const layout = layoutFromTemplateFilename(filename)
-
       return {
         layout,
         liquidMarkup: sharedContent ? `${sharedContent}\n${content}` : content,
@@ -463,6 +468,23 @@ export class PluginImporterService {
     })
 
     return this.buildParsedPlugin(manifest, settings, templates, fallbackName, transformJs ?? undefined, forcedDataSources)
+  }
+
+  // A Plugin holds one Template per layout: a file named exactly after the layout beats one that only contains its name (`full_backup.liquid`), otherwise the first in the archive wins.
+  private onePerLayout(entries: AdmZip.IZipEntry[]): Array<{ layout: TemplateLayout, entry: AdmZip.IZipEntry }> {
+    const candidates = entries.map((entry) => {
+      const filename = path.basename(entry.entryName, '.liquid')
+      return { layout: layoutFromTemplateFilename(filename), entry, exact: KNOWN_TEMPLATE_LAYOUT_NAMES.includes(filename) }
+    })
+    const kept = new Map<TemplateLayout, AdmZip.IZipEntry>()
+    for (const { layout, entry } of [...candidates].sort((a, b) => Number(b.exact) - Number(a.exact))) {
+      const keeper = kept.get(layout)
+      if (keeper)
+        this.logger.warn(`Ignoring ${entry.entryName}: ${keeper.entryName} is already the "${layout}" template`)
+      else
+        kept.set(layout, entry)
+    }
+    return candidates.filter(({ layout, entry }) => kept.get(layout) === entry)
   }
 
   async importFromRecipe(recipeIdOrUrl: string): Promise<RecipePlugin> {
@@ -700,7 +722,7 @@ export class PluginImporterService {
     return {
       name,
       mode: 'fetch',
-      method: (entry.method || 'GET').toUpperCase(),
+      method: dataSourceMethodOf(entry.method, name),
       url: entry.endpoint.trim(),
       headers: entry.headers || {},
       body: entry.body || {},
@@ -720,7 +742,7 @@ export class PluginImporterService {
     return {
       name: 'source',
       mode: 'fetch',
-      method: (settings.method || settings.polling_verb)?.toUpperCase() || 'GET',
+      method: dataSourceMethodOf(settings.method || settings.polling_verb, 'source'),
       url: endpoint.trim(),
       headers: headersOf(settings),
       body: this.parseLegacyJsonField(settings.body, settings.polling_body, 'polling_body'),

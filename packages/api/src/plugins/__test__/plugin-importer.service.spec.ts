@@ -393,6 +393,59 @@ describe('pluginImporterService', () => {
       fs.unlinkSync(tmpPath)
     })
 
+    it('keeps the template named exactly after a layout when another filename only contains it', () => {
+      const zip = new AdmZip()
+      zip.addFile('.trmnlp.yml', Buffer.from(yaml.dump({ name: 'Backup' }), 'utf8'))
+      zip.addFile('src/full_backup.liquid', Buffer.from('Old full', 'utf8'))
+      zip.addFile('src/full.liquid', Buffer.from('Full', 'utf8'))
+      zip.addFile('src/my-quadrant-view.liquid', Buffer.from('Quad', 'utf8'))
+
+      const result = service.importFromUpload({ buffer: zip.toBuffer(), originalname: 'backup.zip' }).plugin
+
+      expect(result.templates).toEqual([
+        { layout: 'full', liquidMarkup: 'Full' },
+        { layout: 'quadrant', liquidMarkup: 'Quad' },
+      ])
+    })
+
+    it('keeps the first template of a layout when two plugins nested in one archive both have one', () => {
+      const zip = new AdmZip()
+      zip.addFile('repo-main/.trmnlp.yml', Buffer.from(yaml.dump({ name: 'Nested' }), 'utf8'))
+      zip.addFile('repo-main/first/src/full.liquid', Buffer.from('First', 'utf8'))
+      zip.addFile('repo-main/second/src/full.liquid', Buffer.from('Second', 'utf8'))
+
+      const result = service.importFromUpload({ buffer: zip.toBuffer(), originalname: 'nested.zip' }).plugin
+
+      expect(result.templates).toEqual([{ layout: 'full', liquidMarkup: 'First' }])
+    })
+
+    function zipWithSettings(settings: object): AdmZip {
+      const zip = new AdmZip()
+      zip.addFile('.trmnlp.yml', Buffer.from(yaml.dump({ name: 'Verb' }), 'utf8'))
+      zip.addFile('src/settings.yml', Buffer.from(yaml.dump(settings), 'utf8'))
+      zip.addFile('src/full.liquid', Buffer.from('Full', 'utf8'))
+      return zip
+    }
+
+    it.each([
+      ['polling_verb', { polling_url: 'https://api.example.com', polling_verb: 'PUT' }],
+      ['method', { endpoint: 'https://api.example.com', method: 'delete' }],
+      ['a data_sources entry\'s method', { data_sources: [{ name: 'air', endpoint: 'https://api.example.com', method: 'PATCH' }] }],
+    ])('refuses a Data Source whose %s is neither GET nor POST', (_where, settings) => {
+      const zip = zipWithSettings(settings)
+
+      expect(() => service.importFromUpload({ buffer: zip.toBuffer(), originalname: 'verb.zip' })).toThrow(expect.objectContaining({
+        code: 'unprocessable',
+        message: expect.stringMatching(/only GET and POST/),
+      }))
+    })
+
+    it('accepts a lower-case post as POST', () => {
+      const zip = zipWithSettings({ polling_url: 'https://api.example.com', polling_verb: 'post' })
+
+      expect(service.importFromUpload({ buffer: zip.toBuffer(), originalname: 'verb.zip' }).plugin.dataSources[0].method).toBe('POST')
+    })
+
     it('throws error for unsupported file format', async () => {
       const tmpPath = path.join(import.meta.dirname, 'test.txt')
       fs.writeFileSync(tmpPath, 'not a valid format')
