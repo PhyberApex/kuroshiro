@@ -423,14 +423,19 @@ describe('trmnl custom filters (ADR-0043, after the trmnl-liquid gem)', () => {
     expect(await renderLiquid('{{ "2025-01-11T23:30:00-05:00" | l_date: "%-d %B %H:%M", "fr" }}', {}, { timeZone: 'Asia/Tokyo' })).toBe('11 janvier 23:30')
   })
 
-  it('l_date and ordinalize render a missing value as nothing and a non-date as itself, as date does', async () => {
-    for (const filter of ['l_date: "%A"', 'ordinalize']) {
-      expect(await render(`{{ missing | ${filter} }}`)).toBe('')
-      expect(await render(`{{ nil | ${filter} }}`)).toBe('')
-      expect(await render(`{{ "" | ${filter} }}`)).toBe('')
-      expect(await render(`{{ "soon" | ${filter} }}`)).toBe('soon')
-      expect(await render(`{{ data.next | ${filter} }}`, { data: { next: {} } })).toBe('')
-    }
+  it.each([
+    ['{{ missing | l_date: "%A" }}', ''],
+    ['{{ nil | l_date: "%A" }}', ''],
+    ['{{ "" | l_date: "%A" }}', ''],
+    ['{{ data | l_date: "%A" }}', ''],
+    ['{{ "soon" | l_date: "%A" }}', 'soon'],
+    ['{{ missing | ordinalize }}', ''],
+    ['{{ nil | ordinalize }}', ''],
+    ['{{ "" | ordinalize }}', ''],
+    ['{{ data | ordinalize }}', ''],
+    ['{{ "soon" | ordinalize }}', 'soon'],
+  ])('%s renders %j, as date does for a value that is not a date', async (markup, expected) => {
+    expect(await render(markup, { data: {} })).toBe(expected)
   })
 
   it('l_word translates the six words trmnl-i18n ships and falls back to the input', async () => {

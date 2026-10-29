@@ -11,8 +11,8 @@ const EXPLICIT_OFFSET = /(?:z|[+-]\d{2}:?\d{2})$/i
 
 /**
  * liquidjs's own `date`, so these filters read the time zone and strftime table `date` does. A string that names its
- * own offset keeps it, as Ruby's `Time.parse` does, instead of being moved into the engine's zone. `date` hands back
- * what it cannot read as a date: a string stays itself, anything else (a missing value) renders as nothing, not "undefined".
+ * own offset keeps it, as Ruby's `Time.parse` does, instead of being moved into the engine's zone. A value `date` cannot
+ * read as a date comes back as `date` renders it: a string as itself, anything else (a missing value) as nothing.
  */
 function strftime(context: Context, value: unknown, format: string): string {
   const preserveTimezones = typeof value === 'string' && EXPLICIT_OFFSET.test(value)
@@ -48,15 +48,20 @@ function ordinalOf(day: number): string {
 }
 
 export const ordinalize: ContextFilter<[value: unknown, format?: string]> = function (value, format = '%A, %B <<ordinal_day>>, %Y') {
-  const day = Number(strftime(this.context, value, '%-d'))
-  return strftime(this.context, value, format.replaceAll('<<ordinal_day>>', ordinalOf(day)))
+  const day = strftime(this.context, value, '%-d')
+  if (!/^\d+$/.test(day))
+    return day
+  return strftime(this.context, value, format.replaceAll('<<ordinal_day>>', ordinalOf(Number(day))))
 }
 
 const NAMED = /%([aAbBh])/g
 
 /** TRMNL's `l_date`: strftime where the month and weekday names come from `Intl` in the given locale. */
 export const localizeDate: ContextFilter<[value: unknown, format?: string, locale?: unknown]> = function (value, format = '%b %-d, %Y', locale = 'en') {
-  const [month, weekday] = strftime(this.context, value, '%-m %w').split(' ').map(Number)
+  const monthAndWeekday = strftime(this.context, value, '%-m %w')
+  if (!/^\d+ \d$/.test(monthAndWeekday))
+    return monthAndWeekday
+  const [month, weekday] = monthAndWeekday.split(' ').map(Number)
   const name = (kind: string) => {
     const long = kind === 'A' || kind === 'B'
     const ofWeekday = kind === 'a' || kind === 'A'
