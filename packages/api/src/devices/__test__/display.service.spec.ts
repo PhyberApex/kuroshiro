@@ -555,6 +555,9 @@ describe('deviceDisplayService', () => {
       'fw-version': '1.6.0',
       'rssi': '-60',
       'model': 'og',
+      'user-agent': 'ESP32HTTPClient',
+      'update-source': 'timer',
+      'sensors': 'make=Sensirion;model=SCD41;kind=temperature;value=21.5;unit=celsius;created_at=1714000000',
       'host': 'kuroshiro.local',
       'connection': 'keep-alive',
     } as DisplayRequestHeadersDto
@@ -594,6 +597,9 @@ describe('deviceDisplayService', () => {
         'fw-version': '1.6.0',
         'rssi': '-60',
         'model': 'og',
+        'user-agent': 'ESP32HTTPClient',
+        'update-source': 'timer',
+        'sensors': 'make=Sensirion;model=SCD41;kind=temperature;value=21.5;unit=celsius;created_at=1714000000',
       },
     })
     expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', expect.any(String), expect.any(Object))
@@ -611,7 +617,7 @@ describe('deviceDisplayService', () => {
 
     await service.getCurrentImage(headers)
 
-    expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', path.join(resolveAppPath('public', 'screens', 'devices', '1'), 'evil.png'), expect.any(Object))
+    expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', path.join(resolveAppPath('public', 'screens', 'devices', '1'), 'mirror-source'), expect.any(Object))
   })
 
   it('serves the error Fallback Screen in its mirror wording when TRMNL answers without an image', async () => {

@@ -80,6 +80,8 @@ export interface TrmnlScreenResponse {
  * lowercase `id` makes `fetch` send both values joined into one header.
  */
 const FORWARDED_TRMNL_HEADERS = ['battery-voltage', 'fw-version', 'refresh-rate', 'rssi', 'user-agent', 'height', 'width', 'model', 'update-source', 'sensors'] as const satisfies ReadonlyArray<keyof DisplayRequestHeadersDto>
+// Fails to compile when the DTO gains a poll header this list does not forward
+const _everyPollHeaderForwarded: Exclude<keyof DisplayRequestHeadersDto, 'id' | 'access-token'> extends typeof FORWARDED_TRMNL_HEADERS[number] ? true : never = true
 
 function forwardedTrmnlHeaders(headers: DisplayRequestHeadersDto | undefined): Record<string, string> {
   const forwarded: Record<string, string> = {}
@@ -661,7 +663,7 @@ export class DeviceDisplayService {
       throw new Error(`Device ${device.id} has mirroring enabled but is missing a mirror MAC or API key`)
     }
     const mirrorHeaders = { 'id': device.mirrorMac, 'access-token': device.mirrorApikey, ...forwardedTrmnlHeaders(proxyHeaders) }
-    this.logger.debug(`Sending headers: ${JSON.stringify(mirrorHeaders)}`)
+    this.logger.debug(`Sending headers: ${JSON.stringify({ ...mirrorHeaders, 'access-token': '[redacted]' })}`)
     const res = await fetch(`https://usetrmnl.com/api/${proxyHeaders ? 'display' : 'current_screen'}`, {
       headers: mirrorHeaders,
     })
@@ -671,8 +673,8 @@ export class DeviceDisplayService {
       throw new Error(`TRMNL answered without an image for device ${device.id}`)
 
     const destDir = resolveAppPath('public', 'screens', 'devices', device.id)
-    // basename so a `../` in TRMNL's answer can never write outside the Device's screens folder
-    const inputPath = path.join(destDir, path.basename(response.filename))
+    // A name of our own, not TRMNL's `filename`, so its answer can never write outside the Device's screens folder; convertToPng reads the format from the file's content
+    const inputPath = path.join(destDir, 'mirror-source')
     const pngFilename = 'mirror.png'
     const outputPath = path.join(destDir, pngFilename)
 
