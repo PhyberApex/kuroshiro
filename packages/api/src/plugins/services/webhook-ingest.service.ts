@@ -1,8 +1,9 @@
 import type { WebhookPayload } from '../entities/plugin.entity.js'
-import { Injectable, Logger, UnprocessableEntityException } from '@nestjs/common'
+import { Injectable, Logger, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { isPlainObject } from '../../utils/json.js'
+import { OneAtATime } from '../../utils/oneAtATime.js'
 import { Plugin } from '../entities/plugin.entity.js'
 import { templateOfSize } from '../plugin-templates.js'
 import { PluginRefreshService } from './plugin-refresh.service.js'
@@ -13,6 +14,9 @@ function isWebhookPayload(value: unknown): value is WebhookPayload {
 
 /** The keys TRMNL's webhook API takes beside `merge_variables`; the Merge Strategy stays the Plugin's (ADR-0004). */
 const ENVELOPE_KEYS = ['merge_variables', 'merge_strategy', 'deep_merge', 'stream_limit']
+
+/** What a POST is merged with, read again under the Plugin's lock rather than taken from the guard's copy. */
+const MERGE_SELECT = { id: true, mergeStrategy: true, streamLimit: true, webhookPayload: true } as const
 
 function parsedObject(text: string): unknown {
   try {
@@ -73,6 +77,7 @@ function appendStream(stored: unknown, incoming: unknown, streamLimit: number): 
 @Injectable()
 export class WebhookIngestService {
   private readonly logger = new Logger(WebhookIngestService.name)
+  private readonly perPlugin = new OneAtATime()
 
   constructor(
     @InjectRepository(Plugin)
@@ -90,13 +95,21 @@ export class WebhookIngestService {
       throw new UnprocessableEntityException('Webhook body must be a JSON object or array')
     }
 
-    const merged = this.merge(plugin, payload)
+    // The guard loaded the Plugin when the request came in, so a POST that arrived alongside may have stored a payload
+    // since. Merging onto the stored one, one POST at a time per Plugin, keeps what every POST sent; the render runs
+    // inside too, so the last one drawn is of the last payload stored.
+    await this.perPlugin.run(plugin.id, async () => {
+      const stored = await this.pluginRepository.findOne({ where: { id: plugin.id }, select: MERGE_SELECT })
+      if (!stored)
+        throw new UnauthorizedException('Invalid webhook token')
+      const merged = this.merge({ ...plugin, ...stored }, payload)
 
-    // TypeORM's QueryDeepPartialEntity can't distribute over the WebhookPayload
-    // union against a union-typed value, even though `merged`'s type already
-    // matches the column exactly — hence the assertion rather than a real gap.
-    await this.pluginRepository.update(plugin.id, { webhookPayload: merged, payloadReceivedAt: new Date() } as Parameters<typeof this.pluginRepository.update>[1])
-    await this.pluginRefresh.refresh({ ...plugin, webhookPayload: merged })
+      // TypeORM's QueryDeepPartialEntity can't distribute over the WebhookPayload
+      // union against a union-typed value, even though `merged`'s type already
+      // matches the column exactly — hence the assertion rather than a real gap.
+      await this.pluginRepository.update(plugin.id, { webhookPayload: merged, payloadReceivedAt: new Date() } as Parameters<typeof this.pluginRepository.update>[1])
+      await this.pluginRefresh.refresh({ ...plugin, webhookPayload: merged })
+    })
 
     this.logger.debug(`Ingested webhook payload for plugin ${plugin.id} using ${plugin.mergeStrategy} merge strategy`)
 
