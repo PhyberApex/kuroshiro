@@ -90,6 +90,32 @@ describe('pluginTransformService', () => {
       await expect(service.transform('async function run() { await fetch("https://api.example.com") }', input, { fetch })).rejects.toThrow('fetch failed')
     })
 
+    it('stops reading a fetched body once it passes 5 MB and fails the code\'s fetch, saying so', async () => {
+      let cancelled = false
+      const chunk = new Uint8Array(1024 * 1024).fill(97)
+      const body = new ReadableStream<Uint8Array>({
+        pull: controller => controller.enqueue(chunk),
+        cancel: () => { cancelled = true },
+      })
+      const fetch = vi.fn().mockResolvedValue(new Response(body))
+      const transformJs = 'async function run() { try { await fetch("https://huge.example") } catch (error) { return error.message } }'
+
+      expect(await service.transform(transformJs, input, { fetch })).toBe('The response is larger than 5242880 bytes.')
+      expect(cancelled).toBe(true)
+    })
+
+    it('aborts a fetch still under way when the transform runs out of time', async () => {
+      let signal: AbortSignal | undefined
+      const fetch = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+        signal = init?.signal ?? undefined
+        return new Promise<Response>(() => {})
+      })
+
+      await expect(service.transform('async function run() { await fetch("https://slow.example") }', input, { fetch, timeoutMs: 2000 })).rejects.toThrow('The transform did not finish within 2000 ms.')
+      expect(fetch).toHaveBeenCalledOnce()
+      expect(signal?.aborted).toBe(true)
+    })
+
     it('has the web globals Node has, so a transform bounds its fetch with a timer and an AbortController', async () => {
       const fetch = vi.fn().mockImplementation((_url: string, init?: RequestInit) => new Promise<Response>((resolve, reject) => {
         init?.signal?.addEventListener('abort', () => reject(new Error('aborted')))

@@ -4,6 +4,7 @@ import type { Requester } from '../../utils/ssrfGuard.js'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
+import { readBodyLimited } from '../../utils/downloadLimited.js'
 import { isPlainObject } from '../../utils/json.js'
 import { requesterFor } from '../../utils/ssrfGuard.js'
 import { PluginRendererService } from './plugin-renderer.service.js'
@@ -52,6 +53,9 @@ export const isUnauthorized = (reason: unknown): boolean => reason instanceof Ht
 
 /** How long TRMNL gives a polled host to answer (ADR-0062). */
 const REQUEST_TIMEOUT_MS = 10_000
+
+/** The most of a response a Data Source or a transform reads, so a host that streams without end cannot fill the heap. */
+export const RESPONSE_LIMIT_BYTES = 5 * 1024 * 1024
 
 /** The request as given, made with `request`, given up when the host has not answered within TRMNL's time. */
 async function fetchWithinTimeout(request: Requester, url: string, init: RequestInit): Promise<Response> {
@@ -179,8 +183,12 @@ export class PluginDataFetcherService {
 
   /** The body read as TRMNL reads it (ADR-0059): JSON, an XML feed as an object, CSV rows, an iCalendar feed's events (ADR-0066), or the text. */
   private async parseResponse(response: Response): Promise<unknown> {
-    if (!response.ok)
+    if (!response.ok) {
+      await response.body?.cancel()
       throw new HttpStatusError(response.status)
-    return parseResponseBody(await response.text(), response.headers.get('content-type'), { timeZone: this.instanceTimeZone.name, now: new Date() })
+    }
+    // Decoded as `response.text()` decodes it: UTF-8, a byte order mark dropped.
+    const text = new TextDecoder().decode(await readBodyLimited(response, RESPONSE_LIMIT_BYTES))
+    return parseResponseBody(text, response.headers.get('content-type'), { timeZone: this.instanceTimeZone.name, now: new Date() })
   }
 }

@@ -4,7 +4,7 @@ import { parseHeaderInt } from './parseHeaderInt.js'
 
 export class DownloadTooLargeError extends Error {
   constructor(readonly limitBytes: number) {
-    super(`The download is larger than ${limitBytes} bytes.`)
+    super(`The response is larger than ${limitBytes} bytes.`)
   }
 }
 
@@ -36,14 +36,21 @@ export async function downloadLimited(url: string, { limitBytes, timeoutMs, requ
     return { status: response.status, ok: false, statusText: response.statusText, buffer: Buffer.alloc(0) }
   }
 
+  const buffer = await readBodyLimited(response, limitBytes)
+  return { status: response.status, ok: true, statusText: response.statusText, buffer }
+}
+
+/**
+ * The body of `response`, refused with a `DownloadTooLargeError` once it passes `limitBytes`: before reading when its
+ * `Content-Length` says so, otherwise the moment the bytes read so far do, the rest of the stream cancelled.
+ */
+export async function readBodyLimited(response: Response, limitBytes: number): Promise<Buffer> {
   const contentLength = parseHeaderInt(response.headers.get('content-length'))
   if (contentLength !== undefined && contentLength > limitBytes) {
     await response.body?.cancel()
     throw new DownloadTooLargeError(limitBytes)
   }
-
-  const buffer = await readLimited(response.body, limitBytes)
-  return { status: response.status, ok: true, statusText: response.statusText, buffer }
+  return readLimited(response.body, limitBytes)
 }
 
 async function readLimited(body: ReadableStream<Uint8Array> | null, limitBytes: number): Promise<Buffer> {

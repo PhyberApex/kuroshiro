@@ -412,6 +412,41 @@ describe('pluginDataFetcherService', () => {
     })
   })
 
+  describe('a body over 5 MB', () => {
+    /** A body that never ends, as a host streaming without end does, and whether its reader cancelled it. */
+    function endlessBody(): { body: ReadableStream<Uint8Array>, cancelled: () => boolean } {
+      let cancelled = false
+      const chunk = new Uint8Array(1024 * 1024).fill(97)
+      const body = new ReadableStream<Uint8Array>({
+        pull: controller => controller.enqueue(chunk),
+        cancel: () => { cancelled = true },
+      })
+      return { body, cancelled: () => cancelled }
+    }
+
+    it('stops reading a body without a length once it passes 5 MB and fails the fetch, saying so', async () => {
+      const { body, cancelled } = endlessBody()
+      mockFetch.mockResolvedValue(new Response(body, { status: 200 }))
+
+      await expect(service.fetchData('GET', 'https://huge.example/')).rejects.toThrow('The response is larger than 5242880 bytes.')
+      expect(cancelled()).toBe(true)
+    })
+
+    it('refuses a body that declares more than 5 MB before reading it, and marks only that line', async () => {
+      const { body, cancelled } = endlessBody()
+      mockRenderer.render.mockResolvedValue('https://huge.example/\nhttps://small.example/')
+      mockFetch.mockImplementation(async url => url === 'https://huge.example/'
+        ? new Response(body, { status: 200, headers: { 'content-length': String(6 * 1024 * 1024) } })
+        : jsonResponse({ ok: true }))
+
+      expect(await service.fetchData('GET', '{{ urls }}')).toEqual({
+        IDX_0: { error: true, message: 'The response is larger than 5242880 bytes.' },
+        IDX_1: { ok: true },
+      })
+      expect(cancelled()).toBe(true)
+    })
+  })
+
   it('answers an empty body as null', async () => {
     mockFetch.mockResolvedValue(new Response('', { status: 200 }))
 
