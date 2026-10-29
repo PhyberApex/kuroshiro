@@ -1,3 +1,4 @@
+import type { Requester } from './ssrfGuard.js'
 import { Buffer } from 'node:buffer'
 import { parseHeaderInt } from './parseHeaderInt.js'
 
@@ -10,6 +11,8 @@ export class DownloadTooLargeError extends Error {
 export interface DownloadLimitedOptions {
   limitBytes: number
   timeoutMs: number
+  /** Makes the request; `fetch` unless the caller guards it, as demo mode does. */
+  request?: Requester
 }
 
 export interface LimitedDownload {
@@ -25,8 +28,8 @@ export interface LimitedDownload {
  * cannot get past the limit: the body is read as a stream and the read is
  * aborted the moment the bytes seen so far pass `limitBytes`.
  */
-export async function downloadLimited(url: string, { limitBytes, timeoutMs }: DownloadLimitedOptions): Promise<LimitedDownload> {
-  const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) })
+export async function downloadLimited(url: string, { limitBytes, timeoutMs, request = fetch }: DownloadLimitedOptions): Promise<LimitedDownload> {
+  const response = await request(url, { signal: AbortSignal.timeout(timeoutMs) })
 
   if (!response.ok) {
     await response.body?.cancel()

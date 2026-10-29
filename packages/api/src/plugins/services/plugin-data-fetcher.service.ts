@@ -1,10 +1,11 @@
 import type { DataSourceLiteralValue, DataSourceMode } from 'kuroshiro-shared'
 import type { JsonObject, JsonValue } from '../../utils/json.js'
+import type { Requester } from '../../utils/ssrfGuard.js'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { isPlainObject } from '../../utils/json.js'
-import { assertPublicUrl } from '../../utils/ssrfGuard.js'
+import { requesterFor } from '../../utils/ssrfGuard.js'
 import { PluginRendererService } from './plugin-renderer.service.js'
 import { parseResponseBody } from './response-body.js'
 
@@ -52,10 +53,10 @@ export const isUnauthorized = (reason: unknown): boolean => reason instanceof Ht
 /** How long TRMNL gives a polled host to answer (ADR-0062). */
 const REQUEST_TIMEOUT_MS = 10_000
 
-/** The request as given, given up when the host has not answered within TRMNL's time. */
-async function fetchWithinTimeout(url: string, init: RequestInit): Promise<Response> {
+/** The request as given, made with `request`, given up when the host has not answered within TRMNL's time. */
+async function fetchWithinTimeout(request: Requester, url: string, init: RequestInit): Promise<Response> {
   try {
-    return await fetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) })
+    return await request(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) })
   }
   catch (error) {
     if (error instanceof DOMException && error.name === 'TimeoutError')
@@ -121,16 +122,17 @@ export class PluginDataFetcherService {
   }
 
   private async fetchOne(url: string, init: RequestInit): Promise<unknown> {
-    if (this.configService.get<boolean>('demo_mode'))
-      assertPublicUrl(url)
-    return this.parseResponse(await fetchWithinTimeout(url, init))
+    return this.parseResponse(await fetchWithinTimeout(this.requester(), url, init))
   }
 
   /** The `fetch` a transform calls (ADR-0052): the request as given, refused for an internal host in demo mode like a Data Source URL. */
   async fetchForTransform(url: string, init?: RequestInit): Promise<Response> {
-    if (this.configService.get<boolean>('demo_mode'))
-      assertPublicUrl(url)
-    return fetch(url, init)
+    return this.requester()(url, init)
+  }
+
+  /** How a request is made: in demo mode refused for an internal host, on every redirect and by every address it resolves to. */
+  private requester(): Requester {
+    return requesterFor(this.configService.get<boolean>('demo_mode'))
   }
 
   // The rendered result is never logged: a Field Value placed in a url or a header can be a secret.

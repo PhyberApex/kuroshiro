@@ -342,6 +342,15 @@ describe('imageUtils', () => {
         .toThrow('Failed to fetch image: Not Found')
     })
 
+    it('makes the request with the given request function, as demo mode guards it', async () => {
+      const request = vi.fn(async () => new Response('guarded image'))
+
+      await downloadImage('https://images.example/a.png', '/dest/image.jpg', mockLogger, request)
+
+      expect(request).toHaveBeenCalledWith('https://images.example/a.png', expect.objectContaining({ signal: expect.any(AbortSignal) }))
+      expect(mockFs.promises.writeFile).toHaveBeenCalledWith('/dest/image.jpg', Buffer.from('guarded image'))
+    })
+
     it('throws naming the limit when the image is larger than it, without reading the body', async () => {
       const url = await listen((_req, res) => {
         res.setHeader('content-length', String(UPLOAD_LIMITS.imageUploadBytes + 1))
