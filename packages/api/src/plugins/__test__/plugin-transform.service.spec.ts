@@ -36,7 +36,29 @@ describe('pluginTransformService', () => {
     })
 
     it('fails a run function that resolves too late', async () => {
-      await expect(service.transform('async function run() { await new Promise(() => {}) }', input, { timeoutMs: 20 })).rejects.toThrow('The transform did not finish within 20 ms.')
+      await expect(service.transform('async function run() { await new Promise(resolve => setTimeout(resolve, 5000)) }', input, { timeoutMs: 500 })).rejects.toThrow('The transform did not finish within 500 ms.')
+    })
+
+    it('fails a run function that awaits what never settles, without waiting out its time', async () => {
+      const started = Date.now()
+      await expect(service.transform('async function run() { await new Promise(() => {}) }', input, { timeoutMs: 10_000 })).rejects.toThrow('The transform awaited something that never settles.')
+      expect(Date.now() - started).toBeLessThan(5000)
+    })
+
+    it('fails a run function that busies itself after an await, and the server stays free meanwhile', async () => {
+      const transformJs = 'async function run() { await new Promise(resolve => setTimeout(resolve, 1)); for (;;) {} }'
+      let ticks = 0
+      const ticker = setInterval(() => ticks++, 10)
+      const started = Date.now()
+      try {
+        await expect(service.transform(transformJs, input, { timeoutMs: 1000 })).rejects.toThrow('The transform did not finish within 1000 ms.')
+      }
+      finally {
+        clearInterval(ticker)
+      }
+
+      expect(Date.now() - started).toBeLessThan(3000)
+      expect(ticks).toBeGreaterThan(10)
     })
 
     it('gives the code the fetch it is handed, and no other way to the network', async () => {
@@ -44,8 +66,28 @@ describe('pluginTransformService', () => {
       const transformJs = 'async function run() { const res = await fetch("https://dummyjson.com/quotes?limit=1", { headers: { Accept: "application/json" } }); const data = await res.json(); return { quote: data.quotes[0].quote } }'
 
       expect(await service.transform(transformJs, input, { fetch })).toEqual({ quote: 'Festina lente' })
-      expect(fetch).toHaveBeenCalledWith('https://dummyjson.com/quotes?limit=1', { headers: { Accept: 'application/json' } })
+      expect(fetch).toHaveBeenCalledWith('https://dummyjson.com/quotes?limit=1', expect.objectContaining({ headers: { accept: 'application/json' } }))
       await expect(service.transform(transformJs, input)).rejects.toThrow('fetch is not defined')
+    })
+
+    it('sends the body the code posts and hands back the status, headers and body the fetch answered', async () => {
+      const fetch = vi.fn().mockResolvedValue(new Response('{"id":7}', { status: 201, headers: { 'X-Total': '1' } }))
+      const transformJs = `
+        async function run() {
+          const res = await fetch('https://api.example.com/items', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'a' }) })
+          return { status: res.status, total: res.headers.get('x-total'), body: await res.json() }
+        }
+      `
+
+      expect(await service.transform(transformJs, input, { fetch })).toEqual({ status: 201, total: '1', body: { id: 7 } })
+      const [url, init] = fetch.mock.calls[0] as [string, RequestInit]
+      expect([url, init.method, new Headers(init.headers).get('content-type'), new TextDecoder().decode(init.body as ArrayBuffer)]).toEqual(['https://api.example.com/items', 'POST', 'application/json', '{"name":"a"}'])
+    })
+
+    it('fails the run with the error the fetch failed with', async () => {
+      const fetch = vi.fn().mockRejectedValue(new TypeError('fetch failed'))
+
+      await expect(service.transform('async function run() { await fetch("https://api.example.com") }', input, { fetch })).rejects.toThrow('fetch failed')
     })
 
     it('has the web globals Node has, so a transform bounds its fetch with a timer and an AbortController', async () => {
