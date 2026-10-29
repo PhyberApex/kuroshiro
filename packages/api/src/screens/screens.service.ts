@@ -20,7 +20,7 @@ import { fileExists } from '../utils/fileExists.js'
 import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { convertToPng, downloadImage, readImageSize } from '../utils/imageUtils.js'
 import { resolveAppPath } from '../utils/pathHelper.js'
-import { assertPublicUrl } from '../utils/ssrfGuard.js'
+import { assertPublicUrl, fetchPublic } from '../utils/ssrfGuard.js'
 import { assertUploadAllowed, deleteFileIfExists, refusingUnreadableImage, stageUpload, writeUpload } from '../utils/stagedImageUpload.js'
 import { CreateScreenDto } from './dto/create-screen.dto.js'
 import { UpdateScreenDto } from './dto/update-screen.dto.js'
@@ -173,11 +173,12 @@ export class ScreensService {
   }
 
   private async fetchKeptImage(device: Device, url: string, staged: StagedImagePaths, dither: boolean): Promise<void> {
-    if (this.configService.get<boolean>('demo_mode'))
+    const demoMode = this.configService.get<boolean>('demo_mode')
+    if (demoMode)
       assertPublicUrl(url)
     const target = await this.deviceModels.renderTargetFor(device)
     try {
-      await downloadImage(url, staged.originalPath, this.logger)
+      await downloadImage(url, staged.originalPath, this.logger, demoMode ? fetchPublic : undefined)
     }
     catch (err) {
       const reason = getErrorMessage(err)

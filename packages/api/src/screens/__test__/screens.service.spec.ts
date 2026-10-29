@@ -13,6 +13,7 @@ import { makeMulterFile } from '../../test/fs.js'
 import { createMockDeviceModelsService, primeMockDeviceModelsService } from '../../test/mockDeviceModelsService.js'
 import { asRepository, createMockRepository, createMockTransactionalRepository } from '../../test/mockRepository.js'
 import { asService } from '../../test/mockService.js'
+import { fetchPublic } from '../../utils/ssrfGuard.js'
 import { ScreensService } from '../screens.service.js'
 
 const { fileExistsMock } = vi.hoisted(() => ({ fileExistsMock: vi.fn() }))
@@ -118,6 +119,18 @@ describe('screensService', () => {
     await expect(service.refresh(SCREEN_ID)).rejects.toThrow('Requests to private IP ranges are not allowed in demo mode')
     expect(downloadImage).not.toHaveBeenCalled()
     expect(screensRepo.update).not.toHaveBeenCalled()
+  })
+
+  it('fetches a public URL under demo_mode with the guarded fetch, so its redirects are checked too', async () => {
+    mockConfigService.get.mockImplementation((key: string) => key === 'demo_mode')
+    const device = makeDevice({ id: 'dev' })
+    screensRepo.findOne.mockResolvedValue(makeScreen({ id: SCREEN_ID, type: 'external', device, fetchManual: true, externalLink: 'https://images.example/a.png' }))
+    vi.spyOn(fs.promises, 'rename').mockResolvedValue(undefined)
+    const { downloadImage } = await import('../../utils/imageUtils.js')
+
+    await service.refresh(SCREEN_ID)
+
+    expect(downloadImage).toHaveBeenCalledWith('https://images.example/a.png', expect.any(String), expect.anything(), fetchPublic)
   })
 
   it('refresh throws if not found', async () => {

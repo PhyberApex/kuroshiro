@@ -276,7 +276,7 @@ describe('editing a Screen, against a real database', () => {
 
       expect(response.status).toBe(200)
       expect(await response.json()).toMatchObject({ external: { url: 'http://b.local/b.png', fetchManual: true } })
-      expect(downloadImage).toHaveBeenCalledWith('http://b.local/b.png', expect.any(String), expect.anything())
+      expect(downloadImage).toHaveBeenCalledWith('http://b.local/b.png', expect.any(String), expect.anything(), undefined)
       expect(await fileContents(screen, 'png')).toBe('image')
       expect(await filesOfDevice()).toHaveLength(2)
     })

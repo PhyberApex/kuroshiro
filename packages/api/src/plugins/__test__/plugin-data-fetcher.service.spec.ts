@@ -1,4 +1,5 @@
 import type { ConfigService } from '@nestjs/config'
+import { lookup } from 'node:dns/promises'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { jsonResponse, stubFetch } from '../../test/fetch.js'
@@ -6,7 +7,10 @@ import { asService } from '../../test/mockService.js'
 import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
 import { PluginRendererService } from '../services/plugin-renderer.service.js'
 
+vi.mock('node:dns/promises', () => ({ lookup: vi.fn() }))
+
 const mockFetch = stubFetch()
+const mockLookup = vi.mocked(lookup as (host: string, options: { all: true }) => Promise<{ address: string, family: number }[]>)
 
 describe('pluginDataFetcherService', () => {
   let service: PluginDataFetcherService
@@ -17,6 +21,7 @@ describe('pluginDataFetcherService', () => {
     service = new PluginDataFetcherService(asService<PluginRendererService>(mockRenderer), asService<ConfigService>(mockConfigService), new InstanceTimeZone())
     vi.clearAllMocks()
     mockConfigService.get.mockReturnValue(false)
+    mockLookup.mockResolvedValue([{ address: '93.184.215.14', family: 4 }])
   })
 
   it('fetches data from a GET endpoint', async () => {
@@ -380,6 +385,33 @@ describe('pluginDataFetcherService', () => {
     })
   })
 
+  describe('in demo mode', () => {
+    beforeEach(() => {
+      mockConfigService.get.mockReturnValue(true)
+    })
+
+    it('refuses a redirect to an internal host before requesting it', async () => {
+      mockFetch.mockResolvedValueOnce(new Response(null, { status: 302, headers: { location: 'http://169.254.169.254/latest/meta-data/' } }))
+
+      await expect(service.fetchData('GET', 'https://attacker.example/r')).rejects.toThrow('not allowed in demo mode')
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('refuses a host name that resolves to an internal address', async () => {
+      mockLookup.mockResolvedValue([{ address: '127.0.0.1', family: 4 }])
+
+      await expect(service.fetchData('GET', 'http://127.0.0.1.nip.io/')).rejects.toThrow('not allowed in demo mode')
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    it('follows a redirect to a public host', async () => {
+      mockFetch.mockResolvedValueOnce(new Response(null, { status: 301, headers: { location: 'https://api.example.com/v2' } })).mockResolvedValueOnce(jsonResponse({ ok: true }))
+
+      expect(await service.fetchData('GET', 'https://api.example.com/v1')).toEqual({ ok: true })
+      expect(mockFetch).toHaveBeenLastCalledWith('https://api.example.com/v2', expect.objectContaining({ redirect: 'manual', signal: expect.any(AbortSignal) }))
+    })
+  })
+
   it('answers an empty body as null', async () => {
     mockFetch.mockResolvedValue(new Response('', { status: 200 }))
 
@@ -400,6 +432,14 @@ describe('pluginDataFetcherService', () => {
 
       await expect(service.fetchForTransform('http://127.0.0.1:9/secrets')).rejects.toThrow('not allowed in demo mode')
       expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    it('refuses a redirect to an internal host in demo mode', async () => {
+      mockConfigService.get.mockReturnValue(true)
+      mockFetch.mockResolvedValueOnce(new Response(null, { status: 302, headers: { location: 'http://169.254.169.254/latest/meta-data/' } }))
+
+      await expect(service.fetchForTransform('https://attacker.example/r')).rejects.toThrow('not allowed in demo mode')
+      expect(mockFetch).toHaveBeenCalledTimes(1)
     })
   })
 

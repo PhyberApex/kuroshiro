@@ -130,9 +130,20 @@ export function dataSourceNameProblem(entered: string, among: { plugin: string, 
 const LOCAL_NAMES = ['localhost', 'metadata.google.internal']
 const LOCAL_SUFFIXES = ['.local', '.internal', '.localhost']
 const IPV4 = /^(\d+)\.(\d+)\.\d+\.\d+$/
+// An IPv4 address mapped into IPv6, as the URL writes it: ::ffff:7f00:1 for 127.0.0.1.
+const MAPPED_IPV4 = /^::ffff:([\da-f]{1,4}):[\da-f]{1,4}$/
 
 function isPrivateIpv4(first: number, second: number) {
-  return first === 127 || first === 10 || (first === 172 && second >= 16 && second <= 31) || (first === 192 && second === 168) || (first === 169 && second === 254)
+  return first === 0 || first === 127 || first === 10 || (first === 172 && second >= 16 && second <= 31) || (first === 192 && second === 168) || (first === 169 && second === 254) || (first === 100 && second >= 64 && second <= 127)
+}
+
+function isPrivateIpv6(host: string) {
+  const mapped = MAPPED_IPV4.exec(host)
+  if (mapped) {
+    const high = Number.parseInt(mapped[1], 16)
+    return isPrivateIpv4(high >> 8, high & 0xFF)
+  }
+  return host === '::' || host === '::1' || /^f[cd]|^fe[89ab]/.test(host)
 }
 
 function isLocalHost(host: string) {
@@ -141,7 +152,7 @@ function isLocalHost(host: string) {
     return isPrivateIpv4(Number(ipv4[1]), Number(ipv4[2]))
   return LOCAL_NAMES.includes(host)
     || LOCAL_SUFFIXES.some(suffix => host.endsWith(suffix))
-    || (host.includes(':') && (host === '::1' || host.startsWith('fc') || host.startsWith('fd')))
+    || (host.includes(':') && isPrivateIpv6(host))
 }
 
 /**
