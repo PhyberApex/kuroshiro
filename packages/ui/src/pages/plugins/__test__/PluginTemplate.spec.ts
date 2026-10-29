@@ -496,12 +496,13 @@ describe('the Template section of the Plugin page', () => {
       const screen = await mountTemplate()
       await expect.poll(drawn).toContain('<p>full</p>')
 
+      // Timed from before the first keystroke, so a slow runner cannot make the pause look cut short.
+      const typingStarted = performance.now()
       await type(screen, '{Enter}{{% if rain')
       await screen.getByRole('textbox', { name: 'Location' }).fill('Marktplatz')
-      await new Promise(resolve => setTimeout(resolve, 150))
 
-      expect(strip()).toContain('Tab indents.')
       await expect.poll(strip).toContain('not closed')
+      expect(performance.now() - typingStarted).toBeGreaterThanOrEqual(700)
     })
 
     it('blocks the save, counts in the save bar, and "Show the first" chooses that Template and puts the cursor at the place', async () => {
