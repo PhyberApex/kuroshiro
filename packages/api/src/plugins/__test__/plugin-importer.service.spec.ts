@@ -6,6 +6,14 @@ import * as yaml from 'js-yaml'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { layoutFromTemplateFilename, PluginImporterService } from '../services/plugin-importer.service.js'
 
+function zipWithSettings(settings: object): AdmZip {
+  const zip = new AdmZip()
+  zip.addFile('.trmnlp.yml', Buffer.from(yaml.dump({ name: 'Verb' }), 'utf8'))
+  zip.addFile('src/settings.yml', Buffer.from(yaml.dump(settings), 'utf8'))
+  zip.addFile('src/full.liquid', Buffer.from('Full', 'utf8'))
+  return zip
+}
+
 describe('layoutFromTemplateFilename', () => {
   it('detects half_horizontal', () => {
     expect(layoutFromTemplateFilename('half_horizontal')).toBe('half_horizontal')
@@ -408,7 +416,7 @@ describe('pluginImporterService', () => {
       ])
     })
 
-    it('keeps the first template of a layout when two plugins nested in one archive both have one', () => {
+    it('keeps the first template of a layout when two Plugins nested in one archive both have one', () => {
       const zip = new AdmZip()
       zip.addFile('repo-main/.trmnlp.yml', Buffer.from(yaml.dump({ name: 'Nested' }), 'utf8'))
       zip.addFile('repo-main/first/src/full.liquid', Buffer.from('First', 'utf8'))
@@ -419,18 +427,11 @@ describe('pluginImporterService', () => {
       expect(result.templates).toEqual([{ layout: 'full', liquidMarkup: 'First' }])
     })
 
-    function zipWithSettings(settings: object): AdmZip {
-      const zip = new AdmZip()
-      zip.addFile('.trmnlp.yml', Buffer.from(yaml.dump({ name: 'Verb' }), 'utf8'))
-      zip.addFile('src/settings.yml', Buffer.from(yaml.dump(settings), 'utf8'))
-      zip.addFile('src/full.liquid', Buffer.from('Full', 'utf8'))
-      return zip
-    }
-
     it.each([
       ['polling_verb', { polling_url: 'https://api.example.com', polling_verb: 'PUT' }],
       ['method', { endpoint: 'https://api.example.com', method: 'delete' }],
       ['a data_sources entry\'s method', { data_sources: [{ name: 'air', endpoint: 'https://api.example.com', method: 'PATCH' }] }],
+      ['polling_verb, given as a map,', { polling_url: 'https://api.example.com', polling_verb: { verb: 'GET' } }],
     ])('refuses a Data Source whose %s is neither GET nor POST', (_where, settings) => {
       const zip = zipWithSettings(settings)
 

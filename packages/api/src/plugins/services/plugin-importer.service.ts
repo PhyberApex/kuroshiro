@@ -23,10 +23,12 @@ function importRefused(code: 'import-no-plugin' | 'import-legacy-format' | 'unpr
 
 // The fetcher, the admin API and the editor only know GET and POST; storing any other verb would fetch with it while the Plugin reads as GET.
 function dataSourceMethodOf(raw: unknown, name: string): DataSourceMethod {
-  const method = raw === undefined || raw === null || raw === '' ? 'GET' : String(raw).toUpperCase()
-  if (!(DATA_SOURCE_METHODS as readonly string[]).includes(method))
-    throw importRefused('unprocessable', `The Data Source "${name}" uses ${method}; only GET and POST are supported.`)
-  return method as DataSourceMethod
+  if (raw === undefined || raw === null || raw === '')
+    return 'GET'
+  const method = DATA_SOURCE_METHODS.find(known => typeof raw === 'string' && known === raw.toUpperCase())
+  if (!method)
+    throw importRefused('unprocessable', `The Data Source "${name}" uses the method ${JSON.stringify(raw)}; only GET and POST are supported.`)
+  return method
 }
 
 function upstreamUnreachable(upstream: string, reason: string): ApiException {
@@ -453,13 +455,7 @@ export class PluginImporterService {
     const sharedEntry = templateEntries.find(entry => entry.entryName.endsWith('shared.liquid'))
     const sharedContent = sharedEntry?.getData().toString('utf8').trimEnd() || null
 
-    // Process layout templates (skip shared.liquid, transform.js, etc.)
-    const layoutEntries = templateEntries.filter((entry) => {
-      const filename = path.basename(entry.entryName, '.liquid')
-      return KNOWN_TEMPLATE_LAYOUT_NAMES.some(layout => filename.includes(layout))
-    })
-
-    const templates = this.onePerLayout(layoutEntries).map(({ layout, entry }) => {
+    const templates = this.onePerSize(templateEntries).map(({ layout, entry }) => {
       const content = entry.getData().toString('utf8')
       return {
         layout,
@@ -470,21 +466,26 @@ export class PluginImporterService {
     return this.buildParsedPlugin(manifest, settings, templates, fallbackName, transformJs ?? undefined, forcedDataSources)
   }
 
-  // A Plugin holds one Template per layout: a file named exactly after the layout beats one that only contains its name (`full_backup.liquid`), otherwise the first in the archive wins.
-  private onePerLayout(entries: AdmZip.IZipEntry[]): Array<{ layout: TemplateLayout, entry: AdmZip.IZipEntry }> {
-    const candidates = entries.map((entry) => {
+  // The .liquid files naming a size (skipping shared.liquid and the like), one per size since a Plugin holds one Template of each: a file named exactly
+  // after the size beats one that only contains it (`full_backup.liquid`), otherwise the first in the archive wins.
+  private onePerSize(entries: AdmZip.IZipEntry[]): Array<{ layout: TemplateLayout, entry: AdmZip.IZipEntry }> {
+    const kept = new Map<TemplateLayout, { entry: AdmZip.IZipEntry, exact: boolean }>()
+    for (const entry of entries) {
       const filename = path.basename(entry.entryName, '.liquid')
-      return { layout: layoutFromTemplateFilename(filename), entry, exact: KNOWN_TEMPLATE_LAYOUT_NAMES.includes(filename) }
-    })
-    const kept = new Map<TemplateLayout, AdmZip.IZipEntry>()
-    for (const { layout, entry } of [...candidates].sort((a, b) => Number(b.exact) - Number(a.exact))) {
+      if (!KNOWN_TEMPLATE_LAYOUT_NAMES.some(layout => filename.includes(layout)))
+        continue
+      const layout = layoutFromTemplateFilename(filename)
+      const exact = KNOWN_TEMPLATE_LAYOUT_NAMES.includes(filename)
       const keeper = kept.get(layout)
+      if (keeper && (keeper.exact || !exact)) {
+        this.logger.warn(`Ignoring ${entry.entryName}: ${keeper.entry.entryName} is already the "${layout}" Template`)
+        continue
+      }
       if (keeper)
-        this.logger.warn(`Ignoring ${entry.entryName}: ${keeper.entryName} is already the "${layout}" template`)
-      else
-        kept.set(layout, entry)
+        this.logger.warn(`Ignoring ${keeper.entry.entryName}: ${entry.entryName} is the "${layout}" Template`)
+      kept.set(layout, { entry, exact })
     }
-    return candidates.filter(({ layout, entry }) => kept.get(layout) === entry)
+    return [...kept].map(([layout, { entry }]) => ({ layout, entry }))
   }
 
   async importFromRecipe(recipeIdOrUrl: string): Promise<RecipePlugin> {
