@@ -3,6 +3,7 @@ import { isDeepStrictEqual } from 'node:util'
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
+import { OneAtATime } from '../../utils/oneAtATime.js'
 import { Plugin } from '../entities/plugin.entity.js'
 import { accessTokenFieldOf, columnsOf, isDueForRefresh, NO_STORED_TOKEN, pastedTokensOf, refreshCredentialsOf, refreshedTokenOf, refreshRequestOf, STORED_TOKEN_SELECT, storedAccessTokenOf } from '../plugin-oauth.js'
 import { isUnauthorized, PluginDataFetcherService } from './plugin-data-fetcher.service.js'
@@ -28,7 +29,7 @@ const REPLY_LIMIT = 500
  */
 @Injectable()
 export class PluginOAuthService {
-  private readonly locks = new Map<string, Promise<unknown>>()
+  private readonly perPlugin = new OneAtATime()
 
   constructor(
     @InjectRepository(Plugin)
@@ -42,7 +43,7 @@ export class PluginOAuthService {
    * tells the retry from the first poll. A refresh that fails throws.
    */
   async withAccessToken<T>(oauth: OAuthPoll, poll: (accessToken: string, lastTry: boolean) => Promise<T>): Promise<T> {
-    const token = await this.oneAtATime(oauth.pluginId, async () => {
+    const token = await this.perPlugin.run(oauth.pluginId, async () => {
       const stored = await this.load(oauth.pluginId)
       const canRefresh = refreshCredentialsOf(oauth.fieldValues, stored) !== null
       return canRefresh && isDueForRefresh(stored, new Date()) ? this.refresh(oauth, stored) : stored
@@ -53,7 +54,7 @@ export class PluginOAuthService {
     catch (error) {
       if (!isUnauthorized(error))
         throw error
-      const refreshed = await this.oneAtATime(oauth.pluginId, async () => {
+      const refreshed = await this.perPlugin.run(oauth.pluginId, async () => {
         const stored = await this.load(oauth.pluginId)
         // Another Data Source refreshed it since this poll took its token.
         if (stored.accessToken && stored.accessToken !== token.accessToken)
@@ -61,22 +62,6 @@ export class PluginOAuthService {
         return this.refresh(oauth, stored)
       })
       return poll(refreshed.accessToken ?? '', true)
-    }
-  }
-
-  /** `work` run once the Plugin's earlier work has settled. */
-  private async oneAtATime<T>(pluginId: string | undefined, work: () => Promise<T>): Promise<T> {
-    if (!pluginId)
-      return work()
-    const current = (this.locks.get(pluginId) ?? Promise.resolve()).then(work)
-    const settled = current.catch(() => {})
-    this.locks.set(pluginId, settled)
-    try {
-      return await current
-    }
-    finally {
-      if (this.locks.get(pluginId) === settled)
-        this.locks.delete(pluginId)
     }
   }
 
