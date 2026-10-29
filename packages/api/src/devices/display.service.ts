@@ -711,7 +711,7 @@ export class DeviceDisplayService {
     // Load plugin relationship if needed
     const screenWithPlugin = await this.screenRepository.findOne({
       where: { id: screen.id },
-      relations: { plugin: { dataSources: true, templates: true } },
+      relations: { plugin: { dataSources: true, templates: true, fields: true } },
     })
 
     if (screenWithPlugin?.plugin)

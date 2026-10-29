@@ -27,7 +27,7 @@ export class WebhookPluginGuard implements CanActivate {
 
     const plugin = await this.pluginRepository.findOne({
       where: { webhookToken: token, kind: 'Webhook' },
-      relations: { templates: true },
+      relations: { templates: true, fields: true },
     })
 
     if (!plugin) {
