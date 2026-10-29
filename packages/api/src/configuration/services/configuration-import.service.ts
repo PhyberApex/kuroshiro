@@ -319,7 +319,7 @@ export class ConfigurationImportService {
     await fs.promises.writeFile(destPath, content)
   }
 
-  /** Reloads each Plugin with the relations a scheduled tick reads before scheduling: `upsertPlugin`'s own entity never gets its Data Sources relation back from `save`, and the scheduler's timer closes over whatever Plugin object it is given. */
+  /** Reloads each Plugin with the relations a scheduled tick reads before scheduling: `upsertPlugin`'s own entity never gets its Data Sources and Fields relations back from `save`, and the scheduler's timer closes over whatever Plugin object it is given. */
   private async scheduleUpsertedPlugins(pluginIds: Set<string>): Promise<void> {
     for (const id of pluginIds) {
       const plugin = await this.pluginRepository.findOne({ where: { id }, relations: { dataSources: true, templates: true, fields: true } })
