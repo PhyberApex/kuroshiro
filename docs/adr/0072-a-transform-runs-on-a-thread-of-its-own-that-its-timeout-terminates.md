@@ -1,8 +1,8 @@
 # A transform runs on a thread of its own that its timeout terminates
 
-vm2's `timeout` bounds only the synchronous part of `vm.run`; its README says so ("Timeout does NOT work on any method returned by VM"). A transform that awaits once and then spins, `await fetch(url); for (;;) {}`, returned a pending promise in time, and its continuation then ran on the server's event loop, where the `withinTimeout` race of ADR-0052 could never fire because nothing else ran. Every `/display` poll, the admin API and the scheduler stopped until the process was killed, and a Recipe imported from trmnl.com is third-party code.
+vm2's `timeout` bounds only the synchronous part of `vm.run`; its README says so ("Timeout does NOT work on any method returned by VM"). A transform that awaits once and then spins, `await fetch(url); for (;;) {}`, returned a pending promise in time, and its continuation then ran on the server's event loop, where the `withinTimeout` race of ADR-0055 could never fire because nothing else ran. Every `/display` poll, the admin API and the scheduler stopped until the process was killed, and a Recipe imported from trmnl.com is third-party code.
 
-**Each transform runs in a `worker_threads` Worker that `PluginTransformService` terminates when the run outlasts its five seconds**, so the bound covers the code after an `await`, a timer and a `setInterval` alike. Inside the thread the transform runs in the same vm2 sandbox as before, with the thread's own web globals (ADR-0055), so its timers end with the thread.
+**Each transform runs in a `worker_threads` Worker that `PluginTransformService` terminates when the run outlasts its five seconds**, so the bound covers the code after an `await`, a timer and a `setInterval` alike. The five seconds count from the thread's start, loading the sandbox included. A transform that awaits what never settles, with nothing else left to wait on, ends its thread at once and fails then rather than at the bound. Inside the thread the transform runs in the same vm2 sandbox as before, with the thread's own web globals (ADR-0055), so its timers end with the thread.
 
 **The guarded `fetch` stays on the server and is lent over messages.** The thread sends the request as plain data, the server makes it with the `fetch` ADR-0052 hands the transform and sends the whole response back, status, headers and body; an `AbortSignal` the transform passes aborts the server's request, and a terminated run aborts the requests it left open.
 
@@ -18,5 +18,6 @@ Considered and rejected:
 
 - tsup bundles `plugin-transform.worker.ts` beside `main.js` as a second entry; under test Node runs the `.ts` source as it is, so the worker imports only Node, vm2 and types.
 - The fetch the transform sees reads its headers lower-cased, as `Headers` stores them, and its `Response` is rebuilt from the server's, with the same status, headers, body and `url`.
-- A result loses what JSON cannot carry: a `Date` arrives as its ISO text and an `undefined` property is dropped, as they would be once stored.
+- A result loses what JSON cannot carry: a `Date` arrives as its ISO text, an `undefined` property or a function is dropped, as they would be once stored, and a `BigInt` or a circular result fails the Data Source.
+- A transform's error reaches the server as its name and message, without its class or stack; nothing downstream reads more.
 - ADR-0055's "the five seconds still bound the run" holds only from this decision on.

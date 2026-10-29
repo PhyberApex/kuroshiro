@@ -36,7 +36,13 @@ describe('pluginTransformService', () => {
     })
 
     it('fails a run function that resolves too late', async () => {
-      await expect(service.transform('async function run() { await new Promise(() => {}) }', input, { timeoutMs: 20 })).rejects.toThrow('The transform did not finish within 20 ms.')
+      await expect(service.transform('async function run() { await new Promise(resolve => setTimeout(resolve, 5000)) }', input, { timeoutMs: 500 })).rejects.toThrow('The transform did not finish within 500 ms.')
+    })
+
+    it('fails a run function that awaits what never settles, without waiting out its time', async () => {
+      const started = Date.now()
+      await expect(service.transform('async function run() { await new Promise(() => {}) }', input, { timeoutMs: 10_000 })).rejects.toThrow('The transform awaited something that never settles.')
+      expect(Date.now() - started).toBeLessThan(5000)
     })
 
     it('fails a run function that busies itself after an await, and the server stays free meanwhile', async () => {

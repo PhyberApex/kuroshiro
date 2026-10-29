@@ -1,4 +1,4 @@
-import type { FetchedResponse, ServerMessage, TransformJob, WorkerMessage } from './plugin-transform.worker.js'
+import type { FetchedResponse, FetchRequest, ServerMessage, TransformJob, WorkerMessage } from './plugin-transform.worker.js'
 import { extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Worker } from 'node:worker_threads'
@@ -56,7 +56,7 @@ export class PluginTransformService {
             break
           case 'fetch':
             if (fetch)
-              this.fetchFor(worker, message.id, message.request, fetch, fetches)
+              void fetchFor(worker, message, fetch, fetches)
             break
           case 'abort':
             fetches.get(message.id)?.abort()
@@ -70,35 +70,37 @@ export class PluginTransformService {
         }
       })
       worker.on('error', reject)
-      worker.on('exit', code => reject(new Error(`The transform stopped with exit code ${code}.`)))
+      // A thread that ends without answering had nothing left to wait for: the transform awaits what never settles.
+      worker.on('exit', code => reject(new Error(code === 0 ? 'The transform awaited something that never settles.' : `The transform stopped with exit code ${code}.`)))
     }).finally(() => {
       clearTimeout(timer)
+      worker.removeAllListeners('message')
       for (const controller of fetches.values())
         controller.abort()
       void worker.terminate()
     })
   }
+}
 
-  /** Makes a request the transform asked for with the guarded `fetch` and answers the worker with the whole response. */
-  private async fetchFor(worker: Worker, id: number, { url, init }: { url: string, init?: RequestInit }, fetch: NonNullable<TransformOptions['fetch']>, fetches: Map<number, AbortController>): Promise<void> {
-    const controller = new AbortController()
-    fetches.set(id, controller)
-    let reply: ServerMessage
-    let transfer: ArrayBuffer[] = []
-    try {
-      const response = await fetch(url, { ...init, signal: controller.signal })
-      const body = await response.arrayBuffer()
-      const fetched: FetchedResponse = { status: response.status, statusText: response.statusText, headers: [...response.headers], body, url: response.url }
-      reply = { type: 'fetched', id, response: fetched }
-      transfer = [body]
-    }
-    catch (error) {
-      reply = { type: 'fetch-failed', id, name: error instanceof Error ? error.name : 'Error', message: getErrorMessage(error) }
-    }
-    finally {
-      fetches.delete(id)
-    }
-    if (!controller.signal.aborted)
-      worker.postMessage(reply, transfer)
+/** Makes a request the transform asked for with the guarded `fetch` and answers the worker with the whole response. */
+async function fetchFor(worker: Worker, { id, request }: { id: number, request: FetchRequest }, fetch: NonNullable<TransformOptions['fetch']>, fetches: Map<number, AbortController>): Promise<void> {
+  const controller = new AbortController()
+  fetches.set(id, controller)
+  let reply: ServerMessage
+  let transfer: ArrayBuffer[] = []
+  try {
+    const response = await fetch(request.url, { ...request.init, signal: controller.signal })
+    const body = await response.arrayBuffer()
+    const fetched: FetchedResponse = { status: response.status, statusText: response.statusText, headers: [...response.headers], body, url: response.url }
+    reply = { type: 'fetched', id, response: fetched }
+    transfer = [body]
   }
+  catch (error) {
+    reply = { type: 'fetch-failed', id, name: error instanceof Error ? error.name : 'Error', message: getErrorMessage(error) }
+  }
+  finally {
+    fetches.delete(id)
+  }
+  if (!controller.signal.aborted)
+    worker.postMessage(reply, transfer)
 }
