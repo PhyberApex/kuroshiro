@@ -2,7 +2,7 @@ import type { Logger } from '@nestjs/common'
 import type { DeviceRenderTarget } from '../device-models/device-models.service.js'
 import type { DeviceModel } from '../device-models/entities/device-model.entity.js'
 import type { Palette } from '../device-models/entities/palette.entity.js'
-import type { DownloadLimitedOptions } from './downloadLimited.js'
+import type { Requester } from './ssrfGuard.js'
 import buffer from 'node:buffer'
 import { execFile } from 'node:child_process'
 import fs from 'node:fs'
@@ -35,7 +35,7 @@ function detectImageFormat(buf: buffer.Buffer): string {
   throw new Error('Unsupported or unrecognised image format')
 }
 
-export async function downloadImage(url: string, dest: string, logger: Logger, request?: DownloadLimitedOptions['request']) {
+export async function downloadImage(url: string, dest: string, logger: Logger, request?: Requester) {
   logger.log(`Downloading image from ${url} to ${dest}`)
   let download
   try {

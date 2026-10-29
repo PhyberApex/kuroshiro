@@ -1,3 +1,4 @@
+import type { Requester } from './ssrfGuard.js'
 import { Buffer } from 'node:buffer'
 import { parseHeaderInt } from './parseHeaderInt.js'
 
@@ -11,7 +12,7 @@ export interface DownloadLimitedOptions {
   limitBytes: number
   timeoutMs: number
   /** Makes the request; `fetch` unless the caller guards it, as demo mode does. */
-  request?: (url: string, init: RequestInit) => Promise<Response>
+  request?: Requester
 }
 
 export interface LimitedDownload {

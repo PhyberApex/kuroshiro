@@ -1,10 +1,11 @@
 import type { DataSourceLiteralValue, DataSourceMode } from 'kuroshiro-shared'
 import type { JsonObject, JsonValue } from '../../utils/json.js'
+import type { Requester } from '../../utils/ssrfGuard.js'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
 import { isPlainObject } from '../../utils/json.js'
-import { fetchPublic } from '../../utils/ssrfGuard.js'
+import { requesterFor } from '../../utils/ssrfGuard.js'
 import { PluginRendererService } from './plugin-renderer.service.js'
 import { parseResponseBody } from './response-body.js'
 
@@ -51,8 +52,6 @@ export const isUnauthorized = (reason: unknown): boolean => reason instanceof Ht
 
 /** How long TRMNL gives a polled host to answer (ADR-0062). */
 const REQUEST_TIMEOUT_MS = 10_000
-
-type Requester = (url: string, init?: RequestInit) => Promise<Response>
 
 /** The request as given, made with `request`, given up when the host has not answered within TRMNL's time. */
 async function fetchWithinTimeout(request: Requester, url: string, init: RequestInit): Promise<Response> {
@@ -123,17 +122,17 @@ export class PluginDataFetcherService {
   }
 
   private async fetchOne(url: string, init: RequestInit): Promise<unknown> {
-    return this.parseResponse(await fetchWithinTimeout(this.request(), url, init))
+    return this.parseResponse(await fetchWithinTimeout(this.requester(), url, init))
   }
 
   /** The `fetch` a transform calls (ADR-0052): the request as given, refused for an internal host in demo mode like a Data Source URL. */
   async fetchForTransform(url: string, init?: RequestInit): Promise<Response> {
-    return this.request()(url, init)
+    return this.requester()(url, init)
   }
 
   /** How a request is made: in demo mode refused for an internal host, on every redirect and by every address it resolves to. */
-  private request(): Requester {
-    return this.configService.get<boolean>('demo_mode') ? fetchPublic : fetch
+  private requester(): Requester {
+    return requesterFor(this.configService.get<boolean>('demo_mode'))
   }
 
   // The rendered result is never logged: a Field Value placed in a url or a header can be a secret.

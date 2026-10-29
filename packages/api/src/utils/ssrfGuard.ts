@@ -56,6 +56,9 @@ export async function assertPublicDestination(url: string): Promise<void> {
     throw new Error(PRIVATE_IP_MESSAGE)
 }
 
+/** How a request is made: `fetch`, or `fetchPublic` where the request has to stay off internal hosts. */
+export type Requester = (url: string, init?: RequestInit) => Promise<Response>
+
 /** As many redirects as fetch itself follows. */
 const MAX_REDIRECTS = 20
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308])
@@ -100,4 +103,9 @@ export async function fetchPublic(url: string, init: RequestInit = {}): Promise<
     currentInit = redirectedInit(currentInit, response.status, current, next)
     current = next
   }
+}
+
+/** The requester for an instance: guarded in demo mode, plain `fetch` otherwise. */
+export function requesterFor(demoMode: boolean | undefined): Requester {
+  return demoMode ? fetchPublic : fetch
 }
