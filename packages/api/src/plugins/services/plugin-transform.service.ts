@@ -3,7 +3,9 @@ import { extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Worker } from 'node:worker_threads'
 import { Injectable, Logger } from '@nestjs/common'
+import { readBodyLimited } from '../../utils/downloadLimited.js'
 import { getErrorMessage } from '../../utils/getErrorMessage.js'
+import { RESPONSE_LIMIT_BYTES } from './plugin-data-fetcher.service.js'
 
 const DEFAULT_TIMEOUT_MS = 5000
 
@@ -82,7 +84,7 @@ export class PluginTransformService {
   }
 }
 
-/** Makes a request the transform asked for with the guarded `fetch` and answers the worker with the whole response. */
+/** Makes a request the transform asked for with the guarded `fetch` and answers the worker with the whole response, its body read up to the limit a Data Source's is. */
 async function fetchFor(worker: Worker, { id, request }: { id: number, request: FetchRequest }, fetch: NonNullable<TransformOptions['fetch']>, fetches: Map<number, AbortController>): Promise<void> {
   const controller = new AbortController()
   fetches.set(id, controller)
@@ -90,7 +92,9 @@ async function fetchFor(worker: Worker, { id, request }: { id: number, request: 
   let transfer: ArrayBuffer[] = []
   try {
     const response = await fetch(request.url, { ...request.init, signal: controller.signal })
-    const body = await response.arrayBuffer()
+    const read = await readBodyLimited(response, RESPONSE_LIMIT_BYTES)
+    // Copied out of the Buffer, which may be a view into Node's shared pool, so it can be transferred to the worker on its own.
+    const body = read.buffer.slice(read.byteOffset, read.byteOffset + read.byteLength) as ArrayBuffer
     const fetched: FetchedResponse = { status: response.status, statusText: response.statusText, headers: [...response.headers], body, url: response.url }
     reply = { type: 'fetched', id, response: fetched }
     transfer = [body]

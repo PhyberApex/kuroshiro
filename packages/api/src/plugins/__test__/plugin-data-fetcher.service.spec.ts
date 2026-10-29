@@ -2,7 +2,7 @@ import type { ConfigService } from '@nestjs/config'
 import { lookup } from 'node:dns/promises'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
-import { jsonResponse, stubFetch } from '../../test/fetch.js'
+import { endlessBody, jsonResponse, stubFetch } from '../../test/fetch.js'
 import { asService } from '../../test/mockService.js'
 import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
 import { PluginRendererService } from '../services/plugin-renderer.service.js'
@@ -409,6 +409,30 @@ describe('pluginDataFetcherService', () => {
 
       expect(await service.fetchData('GET', 'https://api.example.com/v1')).toEqual({ ok: true })
       expect(mockFetch).toHaveBeenLastCalledWith('https://api.example.com/v2', expect.objectContaining({ redirect: 'manual', signal: expect.any(AbortSignal) }))
+    })
+  })
+
+  describe('a body over 5 MB', () => {
+    it('stops reading a body without a length once it passes 5 MB and fails the fetch, saying so', async () => {
+      const { body, cancelled } = endlessBody()
+      mockFetch.mockResolvedValue(new Response(body, { status: 200 }))
+
+      await expect(service.fetchData('GET', 'https://huge.example/')).rejects.toThrow('The response is larger than 5242880 bytes.')
+      expect(cancelled()).toBe(true)
+    })
+
+    it('refuses a body that declares more than 5 MB before reading it, and marks only that line', async () => {
+      const { body, cancelled } = endlessBody()
+      mockRenderer.render.mockResolvedValue('https://huge.example/\nhttps://small.example/')
+      mockFetch.mockImplementation(async url => url === 'https://huge.example/'
+        ? new Response(body, { status: 200, headers: { 'content-length': String(6 * 1024 * 1024) } })
+        : jsonResponse({ ok: true }))
+
+      expect(await service.fetchData('GET', '{{ urls }}')).toEqual({
+        IDX_0: { error: true, message: 'The response is larger than 5242880 bytes.' },
+        IDX_1: { ok: true },
+      })
+      expect(cancelled()).toBe(true)
     })
   })
 

@@ -6,7 +6,7 @@ import { Repository } from 'typeorm'
 import { OneAtATime } from '../../utils/oneAtATime.js'
 import { Plugin } from '../entities/plugin.entity.js'
 import { accessTokenFieldOf, columnsOf, isDueForRefresh, NO_STORED_TOKEN, pastedTokensOf, refreshCredentialsOf, refreshedTokenOf, refreshRequestOf, STORED_TOKEN_SELECT, storedAccessTokenOf } from '../plugin-oauth.js'
-import { isUnauthorized, PluginDataFetcherService } from './plugin-data-fetcher.service.js'
+import { isUnauthorized, PluginDataFetcherService, textWithinLimit } from './plugin-data-fetcher.service.js'
 import { PluginFieldValuesService } from './plugin-field-values.service.js'
 
 /** What a poll of an OAuth Plugin's Data Source is signed with: the Plugin, the Recipe's settings and its Field Values, secrets included. */
@@ -92,7 +92,7 @@ export class PluginOAuthService {
     if (!url)
       throw new Error('The Recipe names no token URL to refresh the access token at.')
     const response = await this.dataFetcher.fetchForTransform(url, { ...init, signal: AbortSignal.timeout(TOKEN_REQUEST_TIMEOUT_MS) })
-    const reply = await response.text()
+    const reply = await textWithinLimit(response)
     if (!response.ok)
       throw new Error(`The token endpoint answered ${response.status}: ${reply.slice(0, REPLY_LIMIT)}`)
 

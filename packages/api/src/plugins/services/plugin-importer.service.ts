@@ -10,7 +10,7 @@ import { FRAMEWORK_VERSION_PATTERN, githubRepositoryOf, isReadOnlyFieldType, MER
 import { ApiException } from '../../errors/api.exception.js'
 import { uploadTooLarge } from '../../uploads/limited-file-interceptor.js'
 import { UPLOAD_LIMITS } from '../../uploads/upload-limits.js'
-import { downloadLimited, DownloadTooLargeError } from '../../utils/downloadLimited.js'
+import { downloadLimited, ResponseTooLargeError } from '../../utils/downloadLimited.js'
 import { isPlainObject } from '../../utils/json.js'
 import { parseFieldOptions } from '../plugin-field-options.js'
 import { OAUTH_FIELDS, oauthSettingsOf, recipeFlag } from '../plugin-oauth.js'
@@ -395,7 +395,7 @@ export class PluginImporterService {
       return buffer
     }
     catch (error) {
-      if (error instanceof DownloadTooLargeError)
+      if (error instanceof ResponseTooLargeError)
         throw uploadTooLarge(error.limitBytes)
       throw upstreamUnreachable(upstream, error instanceof Error ? error.message : String(error))
     }
