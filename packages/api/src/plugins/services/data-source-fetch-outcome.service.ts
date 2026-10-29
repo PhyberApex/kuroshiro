@@ -2,9 +2,8 @@ import type { Repository } from 'typeorm'
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { PluginDataSource } from '../entities/plugin-data-source.entity.js'
+import { isLineIndexed } from './plugin-data-fetcher.service.js'
 import { isFetchErrorMarker } from './plugin-data-resolver.service.js'
-
-const LINE_INDEX = /^IDX_\d+$/
 
 /**
  * Why a fetch-mode Data Source's value is a failed fetch, or `null` when it is
@@ -16,13 +15,11 @@ const LINE_INDEX = /^IDX_\d+$/
 function fetchErrorOf(value: unknown): string | null {
   if (isFetchErrorMarker(value))
     return value.message
-  if (typeof value !== 'object' || value === null || Array.isArray(value))
+  if (!isLineIndexed(value))
     return null
-  const lines = Object.entries(value)
-  if (lines.length === 0 || !lines.every(([key]) => LINE_INDEX.test(key)))
-    return null
-  const failed = lines.flatMap(([key, line]) => isFetchErrorMarker(line) ? [`${key}: ${line.message}`] : [])
-  return failed.length > 0 ? failed.join('\n') : null
+  // On one line, as the Alert's Notification quotes it inline.
+  const failed = Object.entries(value).flatMap(([key, line]) => isFetchErrorMarker(line) ? [`${key}: ${line.message}`] : [])
+  return failed.length > 0 ? failed.join('; ') : null
 }
 
 /**

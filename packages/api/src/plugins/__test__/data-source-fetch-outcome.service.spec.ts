@@ -52,7 +52,7 @@ describe('dataSourceFetchOutcomeService', () => {
     expect(dataSourceRepo.increment).toHaveBeenCalledWith({ id: 'ds-1' }, 'fetchFailureStreak', 1)
     expect(dataSourceRepo.update).toHaveBeenCalledWith('ds-1', {
       lastFetchAttemptAt: expect.any(Date),
-      lastFetchError: 'IDX_0: fetch failed\nIDX_1: HTTP error! status: 503',
+      lastFetchError: 'IDX_0: fetch failed; IDX_1: HTTP error! status: 503',
     })
   })
 

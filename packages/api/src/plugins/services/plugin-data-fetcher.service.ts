@@ -69,6 +69,17 @@ function errorMarkerOf(reason: unknown): FetchErrorMarker {
   return { error: true, message: reason instanceof Error ? reason.message : String(reason) }
 }
 
+const LINE_KEY_PREFIX = 'IDX_'
+const LINE_KEY = new RegExp(`^${LINE_KEY_PREFIX}\\d+$`)
+
+/** Whether a Data Source's value is the `{ IDX_0: …, IDX_1: … }` a URL of several lines resolves to (ADR-0058). */
+export function isLineIndexed(value: unknown): value is Record<string, unknown> {
+  if (!isPlainObject(value))
+    return false
+  const keys = Object.keys(value)
+  return keys.length > 0 && keys.every(key => LINE_KEY.test(key))
+}
+
 /** One line's response as TRMNL lays it at `IDX_n`: a list or text under `data`, an object as it is (ADR-0061). */
 function lineDataOf(value: unknown): unknown {
   return Array.isArray(value) || typeof value === 'string' ? { data: value } : value
@@ -117,7 +128,7 @@ export class PluginDataFetcherService {
     const refused = unauthorizedThrows && responses.find(response => response.status === 'rejected' && isUnauthorized(response.reason))
     if (refused)
       throw (refused as PromiseRejectedResult).reason
-    return Object.fromEntries(responses.map((response, index) => [`IDX_${index}`, response.status === 'fulfilled' ? lineDataOf(response.value) : errorMarkerOf(response.reason)]))
+    return Object.fromEntries(responses.map((response, index) => [`${LINE_KEY_PREFIX}${index}`, response.status === 'fulfilled' ? lineDataOf(response.value) : errorMarkerOf(response.reason)]))
   }
 
   private async fetchOne(url: string, init: RequestInit): Promise<unknown> {
