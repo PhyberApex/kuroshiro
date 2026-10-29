@@ -19,3 +19,4 @@ Considered and rejected:
 - The Data Source form's Request is a textarea; its hint says "Several addresses, one per line, read as IDX_0, IDX_1 and so on."
 - A preview lists `IDX_0`, `IDX_1`, … or `data` among the names it offers, as it lists a lone object's keys.
 - The glossary's Data Source is "one or more HTTP requests, one per line of its URL" rather than one request.
+- A line that fails fails its Data Source's scheduled fetch, though the other lines still read: the Fetch Failure Streak moves (ADR-0025) and the last error names each failed line by its index, so one dead address among several opens an Alert rather than going unseen.

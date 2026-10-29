@@ -129,7 +129,7 @@ Which of the two ways a Data Source gets its value — `fetch` (performs an HTTP
 _Avoid_: Data Source Kind (collides with Plugin Kind), Data Source type, static/dynamic (Terminus's `strategy` values — those describe a whole Plugin/Recipe in Terminus, not a single Data Source, so reusing them here would be misleading)
 
 **Fetch Failure Streak**:
-The number of consecutive scheduled renders on which a `fetch`-mode Data Source's request failed, kept on the Data Source itself and reset to zero by the next successful scheduled fetch. Only scheduled renders count — editor previews, Mashup slot renders and on-demand Device renders never move it — and a `literal`-mode Data Source has none. The subject state the Data Source fetch-failure Alert Rule reads.
+The number of consecutive scheduled renders on which a `fetch`-mode Data Source's request failed (for a URL of several lines, any line's request), kept on the Data Source itself and reset to zero by the next successful scheduled fetch. Only scheduled renders count — editor previews, Mashup slot renders and on-demand Device renders never move it — and a `literal`-mode Data Source has none. The subject state the Data Source fetch-failure Alert Rule reads.
 _Avoid_: Error count, failure counter, fetch status, last error (bare — the streak carries the last error message, but the message alone is not the streak)
 
 **Recipe**:
