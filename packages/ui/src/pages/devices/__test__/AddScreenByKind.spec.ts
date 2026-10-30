@@ -346,6 +346,23 @@ describe('add Screen, by kind', () => {
       expect(faked.writes).toEqual([{ method: 'POST', path: 'screens', body: { kind: 'html', deviceId: 'kitchen', name: 'Fridge note', html: 'Milk', dither: true } }])
     })
 
+    it('adds one Screen when Ctrl S is pressed again before the first answer', async () => {
+      const faked = fakeKitchen()
+      fakeHtmlPreviewLibrary()
+      api.use(http.post(apiUrl('screens'), async () => {
+        await delay(100)
+      }))
+      const screen = await mountAddScreen('html')
+
+      await nameField(screen).fill('Fridge note')
+      await typeHtml(screen, 'Milk')
+      await userEvent.keyboard('{Control>}s{/Control}')
+      await userEvent.keyboard('{Control>}s{/Control}')
+
+      await expect.poll(() => path(screen)).toBe(OPENED_ON_THE_NEW_SCREEN)
+      expect(faked.writes).toEqual([{ method: 'POST', path: 'screens', body: { kind: 'html', deviceId: 'kitchen', name: 'Fridge note', html: 'Milk', dither: true } }])
+    })
+
     it('sends nothing without a name or without markup', async () => {
       const faked = fakeKitchen()
       fakeHtmlPreviewLibrary()
