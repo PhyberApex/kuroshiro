@@ -11,21 +11,12 @@ export function basePathOf(baseUri: string) {
 
 const barHeight = () => document.querySelector('[data-shell-bar]')?.getBoundingClientRect().height ?? 0
 
-/** The id a fragment names, or none when its percent-encoding is malformed (`#%E0%A4%A`). */
-function idNamed(hash: string) {
-  try {
-    return decodeURIComponent(hash.slice(1))
-  }
-  catch {
-    return undefined
-  }
-}
-
-/** A section named by the fragment may belong to a body that is still loading, so its element is waited for. */
+/**
+ * A section named by the fragment may belong to a body that is still loading, so its element is waited for.
+ * The router has already decoded the fragment (and left a malformed one as it was), so it is the id as it stands.
+ */
 function elementNamed(hash: string) {
-  const id = idNamed(hash)
-  if (id === undefined)
-    return Promise.resolve(null)
+  const id = hash.slice(1)
   const deadline = Date.now() + WAIT_FOR_FRAGMENT_MS
   return new Promise<Element | null>((resolve) => {
     const look = () => {

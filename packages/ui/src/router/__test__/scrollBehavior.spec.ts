@@ -1,5 +1,5 @@
 import type { RouteLocationNormalized } from 'vue-router'
-import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory } from 'vue-router'
 import { createAppRouter } from '..'
 
@@ -8,41 +8,53 @@ const router = createAppRouter(createMemoryHistory(), [
   { path: '/b', component: { render: () => null } },
 ])
 
-const at = (path: string) => router.resolve(path) as RouteLocationNormalized
+const locationOf = (path: string) => router.resolve(path) as RouteLocationNormalized
 
 function scrollFor(to: string, from: string) {
-  return router.options.scrollBehavior!(at(to), at(from), null)
+  return router.options.scrollBehavior!(locationOf(to), locationOf(from), null)
 }
 
+function addSection(id: string) {
+  const section = document.createElement('section')
+  section.id = id
+  document.body.append(section)
+}
+
+/** Past the 3 seconds the router waits for a fragment's element to render. */
+async function waitOutTheFragment(scrolls: ReturnType<typeof scrollFor>[]) {
+  await vi.advanceTimersByTimeAsync(3_100)
+  return Promise.all(scrolls)
+}
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date', 'requestAnimationFrame'] })
+})
+
 afterEach(() => {
+  vi.useRealTimers()
   document.body.replaceChildren()
 })
 
 describe('the router\'s scroll behaviour', () => {
   it('scrolls to the element the fragment names', async () => {
-    const section = document.createElement('section')
-    section.id = 'pairing'
-    document.body.append(section)
+    addSection('pairing')
 
     expect(await scrollFor('/b#pairing', '/a')).toEqual({ el: '#pairing', top: 0 })
   })
 
-  it('takes a malformed fragment for one that names nothing instead of rejecting', async () => {
-    await expect(scrollFor('/b#%E0%A4%A', '/a')).resolves.toEqual({ top: 0 })
-    await expect(scrollFor('/a#%E0%A4%A', '/a')).resolves.toBe(false)
+  it('decodes the fragment only once, so an escaped percent sign names its element', async () => {
+    addSection('100%')
+
+    expect(await scrollFor('/b#100%25', '/a')).toEqual({ el: '#100%', top: 0 })
   })
 
   it('opens a new path at the top when its fragment never names an element', async () => {
-    vi.useFakeTimers({ toFake: ['Date', 'requestAnimationFrame'] })
-    onTestFinished(() => {
-      vi.useRealTimers()
-    })
+    expect(await waitOutTheFragment([scrollFor('/b#gone', '/a'), scrollFor('/a#gone', '/a')]))
+      .toEqual([{ top: 0 }, false])
+  })
 
-    const toNewPath = scrollFor('/b#gone', '/a')
-    const onSamePath = scrollFor('/a#gone', '/a')
-    await vi.advanceTimersByTimeAsync(3_100)
-
-    expect(await toNewPath).toEqual({ top: 0 })
-    expect(await onSamePath).toBe(false)
+  it('takes a malformed fragment for one that names nothing instead of rejecting', async () => {
+    expect(await waitOutTheFragment([scrollFor('/b#%E0%A4%A', '/a'), scrollFor('/a#%E0%A4%A', '/a')]))
+      .toEqual([{ top: 0 }, false])
   })
 })
