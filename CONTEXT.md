@@ -5,7 +5,7 @@ Self-hosted BYOS (Bring Your Own Server) backend for TRMNL e-ink display devices
 ## Language
 
 **Device**:
-A TRMNL e-ink display unit, or anything speaking its firmware's protocol, registered against this server and identified by its MAC address and API key. Usually physical hardware, but a Device registered by hand or through the Device Simulator is a Device like any other.
+A TRMNL e-ink display unit, or anything speaking its firmware's protocol, registered against this server and identified by its MAC address — whatever its letter case — and API key. Usually physical hardware, but a Device registered by hand or through the Device Simulator is a Device like any other.
 _Avoid_: Display (reserve "Display" for the API response type returned to the device)
 
 **Device Model**:

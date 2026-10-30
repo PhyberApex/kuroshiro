@@ -7,6 +7,7 @@ import { FallbackScreensService } from '../device-models/fallback-screens.servic
 import generateApikey from '../utils/generateApikey.js'
 import generateFriendlyName from '../utils/generateFriendlyName.js'
 import { Device } from './devices.entity.js'
+import { findDeviceByMac, normalizeMac } from './find-device-by-mac.js'
 
 interface SetupResponse {
   status: 200
@@ -28,7 +29,7 @@ export class DeviceSetupService {
 
   async setupDevice(headers: SetupRequestHeadersDto): Promise<SetupResponse> {
     this.logger.log(`Setup request for MAC: ${headers.id}`)
-    const existing = await this.deviceRepository.findOneBy({ mac: headers.id })
+    const existing = await findDeviceByMac(this.deviceRepository, headers.id)
     const device = existing ?? this.createDevice(headers.id)
     this.logger.log(existing
       ? `Device found for MAC: ${headers.id}, returning existing credentials.`
@@ -55,6 +56,6 @@ export class DeviceSetupService {
 
   private createDevice(mac: string): Device {
     const friendlyId = generateFriendlyName()
-    return this.deviceRepository.create({ mac, friendlyId, apikey: generateApikey(), name: friendlyId })
+    return this.deviceRepository.create({ mac: normalizeMac(mac), friendlyId, apikey: generateApikey(), name: friendlyId })
   }
 }

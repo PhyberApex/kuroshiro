@@ -93,7 +93,7 @@ export class DevicesService {
     return true
   }
 
-  /** A Device that registered itself through `/api/setup` keeps the letter case it sent, so the comparison ignores it. */
+  /** A Device that registered itself through `/api/setup` before MACs were upper-cased there kept the letter case it sent, so the comparison ignores it. */
   private async isMacRegistered(mac: string): Promise<boolean> {
     return (await this.deviceRepository.findOneBy({ mac: ILike(mac) })) != null
   }
