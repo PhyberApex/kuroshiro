@@ -115,6 +115,31 @@ describe('alertSweepService', () => {
       expect(alertRepo.update).toHaveBeenCalledWith('new-alert-id', expect.objectContaining({ notifiedAt: expect.any(Date) }))
     })
 
+    it('opens an alert already marked notified, without calling the sender, when no sender is configured', async () => {
+      const device = makeDevice({ id: 'device-1', batteryVoltage: '3.0', lastSeen: new Date() }) // 0%
+      deviceRepo.find.mockResolvedValue([device])
+      alertRepo.save.mockImplementation(async input => ({ ...input, id: 'new-alert-id' }))
+      sender.isConfigured.mockReturnValue(false)
+
+      await service.sweep()
+
+      expect(sender.send).not.toHaveBeenCalled()
+      expect(alertRepo.save).toHaveBeenCalledWith(expect.objectContaining({ kind: 'device-low-battery', notifiedAt: expect.any(Date) }))
+    })
+
+    it('marks an unannounced active alert notified, without calling the sender, when no sender is configured', async () => {
+      const device = makeDevice({ id: 'device-1', batteryVoltage: '3.0', lastSeen: new Date() })
+      const existing = makeAlert({ id: 'alert-1', kind: 'device-low-battery', device, notifiedAt: null })
+      deviceRepo.find.mockResolvedValue([device])
+      alertRepo.find.mockImplementation(async options => (whereKind(options) === 'device-low-battery' ? [existing] : []))
+      sender.isConfigured.mockReturnValue(false)
+
+      await service.sweep()
+
+      expect(sender.send).not.toHaveBeenCalled()
+      expect(alertRepo.update).toHaveBeenCalledWith('alert-1', { notifiedAt: expect.any(Date) })
+    })
+
     it('does not open a second alert while one is already active for the same rule and device', async () => {
       const device = makeDevice({ id: 'device-1', batteryVoltage: '3.0', lastSeen: new Date() })
       const existing = makeAlert({ id: 'alert-1', kind: 'device-low-battery', device, notifiedAt: new Date() })

@@ -6,10 +6,12 @@ const APPRISE_FETCH_TIMEOUT_MS = 15_000
 
 /**
  * Delivers Notifications through the official `apprise-api` sidecar
- * (ADR-0022) — never throws; a missing config, a non-2xx response, a
- * timeout, or a network error all just report failure so the Alert Sweep
- * leaves the Alert's `notifiedAt`/`resolutionNotifiedAt` null and retries
- * next Sweep. The timeout matters here specifically: `AlertSweepService`
+ * (ADR-0022) — never throws; a non-2xx response, a timeout, or a network
+ * error all just report failure so the Alert Sweep leaves the Alert's
+ * `notifiedAt`/`resolutionNotifiedAt` null and retries next Sweep. A missing
+ * config also reports failure, but the Sweep checks `isConfigured()` first
+ * and stamps those itself, so nothing waits to burst out once delivery is
+ * enabled. The timeout matters here specifically: `AlertSweepService`
  * memoizes one in-flight sweep promise at a time (see its `sweeping` field),
  * so a `fetch` that hangs forever would silently wedge every future
  * scheduled Sweep — never just this one Notification.
