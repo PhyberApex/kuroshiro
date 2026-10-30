@@ -11,11 +11,12 @@ export interface FieldValuesDraft {
   values: Record<string, string>
 }
 
-/** The value of every Plugin Field that gets a row, so neither a credit nor a copyable webhook URL, which are read only. */
+/** The value of every Plugin Field that gets a row, as `fieldsWithRow` picks them, so none of a read-only type. */
 function shownValues(plugin: PluginDetail): Record<string, string> {
-  return Object.fromEntries(plugin.fields.flatMap((field) => {
+  return Object.fromEntries(plugin.fields.flatMap((field, index) => {
     const stored = plugin.fieldValues[field.keyname]
-    return isReadOnlyFieldType(field.type) || stored?.secret !== false ? [] : [[field.keyname, stored.value ?? '']]
+    const hasRow = !isReadOnlyFieldType(field.type) && field.keyname !== '' && plugin.fields.findIndex(other => other.keyname === field.keyname) === index
+    return !hasRow || stored?.secret !== false ? [] : [[field.keyname, stored.value ?? '']]
   }))
 }
 
