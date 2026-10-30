@@ -5,7 +5,7 @@ import type { FallbackScreensService } from '../../device-models/fallback-screen
 import type { FirmwareService } from '../../firmware/firmware.service.js'
 import type { ScreenRenderService } from '../../mashup/services/screen-render.service.js'
 import type { PluginRendererService } from '../../plugins/services/plugin-renderer.service.js'
-import type { MockFallbackScreensService } from '../../test/mockDeviceModelsService.js'
+import type { MockDeviceModelsService, MockFallbackScreensService } from '../../test/mockDeviceModelsService.js'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DeviceModel } from '../../device-models/entities/device-model.entity.js'
 import { Palette } from '../../device-models/entities/palette.entity.js'
@@ -27,6 +27,8 @@ describe('the one-shot commands a /display poll fires, against a real database',
   let database: DataSource
   let service: DeviceDisplayService
   let fallbackScreens: MockFallbackScreensService
+  let deviceModels: MockDeviceModelsService
+  const verifyChecksum = vi.fn<FirmwareService['verifyChecksum']>()
 
   beforeAll(async () => {
     database = await createTestDatabase()
@@ -34,8 +36,7 @@ describe('the one-shot commands a /display poll fires, against a real database',
     await database.getRepository(DeviceModel).save(OG_PLUS)
     for (const [id, version] of [[OLD_FIRMWARE_ID, '1.7.0'], [NEW_FIRMWARE_ID, '1.7.1']])
       await database.getRepository(Firmware).save({ id, version, kind: 'custom', label: version, checksum: 'abc', compatibleModels: [], deprecated: false })
-    const deviceModels = createMockDeviceModelsService()
-    primeMockDeviceModelsService(deviceModels)
+    deviceModels = createMockDeviceModelsService()
     fallbackScreens = createMockFallbackScreensService()
     service = new DeviceDisplayService(
       database.getRepository(Device),
@@ -43,7 +44,7 @@ describe('the one-shot commands a /display poll fires, against a real database',
       asService<ConfigService>({ get: () => 'http://api' }),
       asService<DeviceModelsService>(deviceModels),
       asService<FallbackScreensService>(fallbackScreens),
-      asService<FirmwareService>({ verifyChecksum: vi.fn().mockResolvedValue(true), fileUrl: (id: string) => `http://api/firmware/${id}.bin` }),
+      asService<FirmwareService>({ verifyChecksum, fileUrl: (id: string) => `http://api/firmware/${id}.bin` }),
       asService<PluginRendererService>({}),
       new DeviceSensorsService(database.getRepository(DeviceSensor)),
       createPluginTemplateContextService(),
@@ -54,6 +55,8 @@ describe('the one-shot commands a /display poll fires, against a real database',
   beforeEach(async () => {
     await database.getRepository(Device).createQueryBuilder().delete().execute()
     primeMockFallbackScreensService(fallbackScreens)
+    primeMockDeviceModelsService(deviceModels)
+    verifyChecksum.mockReset().mockResolvedValue(true)
   })
 
   afterAll(async () => {
@@ -109,5 +112,61 @@ describe('the one-shot commands a /display poll fires, against a real database',
     await service.getCurrentImage({ 'id': device.mac, 'access-token': 'old-key' })
 
     expect(await stored(device.id)).toMatchObject({ specialFunction: 'identify', updateFirmware: true, targetFirmware: expect.objectContaining({ id: NEW_FIRMWARE_ID }) })
+  })
+
+  it('keeps what an admin changed while the poll recorded the Device\'s report', async () => {
+    const device = await database.getRepository(Device).save({
+      name: 'Kitchen',
+      friendlyId: 'KITCHEN',
+      mac: 'AA:BB:CC:DD:EE:01',
+      refreshRate: 300,
+      apikey: 'old-key',
+      deviceModel: OG_PLUS,
+      specialFunction: 'none',
+      updateFirmware: true,
+      targetFirmware: await database.getRepository(Firmware).findOneByOrFail({ id: OLD_FIRMWARE_ID }),
+    })
+    verifyChecksum.mockImplementation(async () => {
+      await database.getRepository(Device).update({ id: device.id }, { name: 'Hall', apikey: 'new-key', refreshRate: 900, specialFunction: 'identify', wipe: true })
+      return true
+    })
+
+    await service.getCurrentImage({ 'id': device.mac, 'access-token': 'old-key', 'fw-version': '1.7.0', 'update-source': 'EXT0' })
+
+    expect(await stored(device.id)).toMatchObject({
+      name: 'Hall',
+      apikey: 'new-key',
+      refreshRate: 900,
+      specialFunction: 'identify',
+      wipe: true,
+      fwVersion: '1.7.0',
+      lastWakeSource: 'EXT0',
+      lastSeen: expect.any(Date),
+    })
+  })
+
+  it('stores the Device Model and Palette the poll resolved for a Device without one', async () => {
+    const device = await database.getRepository(Device).save({ name: 'Kitchen', friendlyId: 'KITCHEN', mac: 'AA:BB:CC:DD:EE:01', apikey: 'old-key', specialFunction: 'none' })
+    deviceModels.assignResolvedModel.mockImplementation(async (polled: Device) => {
+      polled.deviceModel = OG_PLUS
+      polled.palette = GRAY_4
+      return OG_PLUS
+    })
+
+    await service.getCurrentImage({ 'id': device.mac, 'access-token': 'old-key' })
+
+    expect(await stored(device.id)).toMatchObject({ deviceModel: expect.objectContaining({ name: OG_PLUS.name }), palette: expect.objectContaining({ id: GRAY_4.id }) })
+  })
+
+  it('keeps a Device Model an admin assigned while a poll could not resolve one', async () => {
+    const device = await database.getRepository(Device).save({ name: 'Kitchen', friendlyId: 'KITCHEN', mac: 'AA:BB:CC:DD:EE:01', apikey: 'old-key', specialFunction: 'none' })
+    deviceModels.assignResolvedModel.mockImplementation(async () => {
+      await database.getRepository(Device).update({ id: device.id }, { deviceModel: OG_PLUS, palette: BW })
+      return null
+    })
+
+    await service.getCurrentImage({ 'id': device.mac, 'access-token': 'old-key' })
+
+    expect(await stored(device.id)).toMatchObject({ deviceModel: expect.objectContaining({ name: OG_PLUS.name }), palette: expect.objectContaining({ id: BW.id }) })
   })
 })
