@@ -45,8 +45,8 @@ function notCheckedBecause(reason: string) {
 const save = useSaveAsChanged(async (on: boolean) => {
   const settings = await updateInstanceSettings({ firmwareAutoUpdate: on })
   savedOn.value = settings.firmwareAutoUpdate.value
-  emit('saved', settings.firmwareAutoUpdate.value)
-  return settings.firmwareAutoUpdate.value
+  emit('saved', savedOn.value)
+  return savedOn.value
 }, entered)
 
 watch(() => props.on, (on) => {
