@@ -1,5 +1,8 @@
+import type { LookupAddress } from 'node:dns'
+import type { LookupFunction } from 'node:net'
 import { lookup } from 'node:dns/promises'
 import net from 'node:net'
+import { Agent } from 'undici'
 
 const PRIVATE_HOSTNAMES = new Set(['localhost', 'metadata.google.internal'])
 const PRIVATE_HOSTNAME_SUFFIXES = ['.local', '.internal', '.localhost']
@@ -45,16 +48,34 @@ export function assertPublicUrl(url: string): void {
   assertPublicHostname(hostnameOf(url))
 }
 
-/** Refuses a URL whose host is internal as written or resolves to any private address. */
-export async function assertPublicDestination(url: string): Promise<void> {
-  const hostname = hostnameOf(url)
-  assertPublicHostname(hostname)
-  if (net.isIP(hostname) !== 0)
-    return
+/** A refusal made while connecting, told apart from the network failures fetch wraps alongside it. */
+class PrivateDestinationError extends Error {}
+
+/** The addresses a host name resolves to, refused when any one of them is private. */
+export async function resolvePublic(hostname: string): Promise<LookupAddress[]> {
   const addresses = await lookup(hostname, { all: true })
   if (addresses.some(({ address }) => isPrivateAddress(address)))
-    throw new Error(PRIVATE_IP_MESSAGE)
+    throw new PrivateDestinationError(PRIVATE_IP_MESSAGE)
+  return addresses
 }
+
+/**
+ * Resolves the host a socket is about to connect to and refuses it when private, so the address checked is the one
+ * connected to: a name answering a public address to a check and a private one to the connect has no second answer
+ * to give. The socket keeps the host name for the Host header and TLS SNI. Written as `net.connect` calls `lookup`.
+ */
+const publicLookup: LookupFunction = (hostname, options, callback) => {
+  resolvePublic(hostname).then(
+    addresses => options.all ? callback(null, addresses) : callback(null, addresses[0]!.address, addresses[0]!.family),
+    (error: NodeJS.ErrnoException) => callback(error, []),
+  )
+}
+
+/**
+ * Connects only to addresses `publicLookup` checked. undici is pinned to the major Node bundles, whose fetch it
+ * dispatches for.
+ */
+const publicAgent = new Agent({ connect: { lookup: publicLookup } })
 
 /** How a request is made: `fetch`, or `fetchPublic` where the request has to stay off internal hosts. */
 export type Requester = (url: string, init?: RequestInit) => Promise<Response>
@@ -82,15 +103,16 @@ function redirectedInit(init: RequestInit, status: number, from: URL, to: URL): 
 }
 
 /**
- * `fetch` refused for an internal destination, as demo mode needs: every host is checked and resolved before it is
- * requested, and redirects are followed here rather than by fetch so each hop is checked the same way.
+ * `fetch` refused for an internal destination, as demo mode needs: every host is checked as written, then resolved
+ * and checked as the connection is made, and redirects are followed here rather than by fetch so each hop is checked
+ * the same way.
  */
 export async function fetchPublic(url: string, init: RequestInit = {}): Promise<Response> {
   let current = new URL(url)
   let currentInit = init
   for (let hop = 0; ; hop++) {
-    await assertPublicDestination(current.href)
-    const response = await fetch(current.href, { ...currentInit, redirect: 'manual' })
+    assertPublicUrl(current.href)
+    const response = await fetchThroughPublicAgent(current.href, { ...currentInit, redirect: 'manual' })
     const location = response.headers.get('location')
     if (init.redirect === 'manual' || !REDIRECT_STATUSES.has(response.status) || location === null)
       return response
@@ -102,6 +124,18 @@ export async function fetchPublic(url: string, init: RequestInit = {}): Promise<
     const next = new URL(location, current)
     currentInit = redirectedInit(currentInit, response.status, current, next)
     current = next
+  }
+}
+
+/** `fetch` through `publicAgent`, rejecting with the refusal itself rather than fetch's "fetch failed" around it. */
+async function fetchThroughPublicAgent(url: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, { ...init, dispatcher: publicAgent } as RequestInit)
+  }
+  catch (error) {
+    if (error instanceof TypeError && error.cause instanceof PrivateDestinationError)
+      throw error.cause
+    throw error
   }
 }
 

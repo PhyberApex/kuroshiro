@@ -9,6 +9,7 @@ import { PluginRendererService } from '../services/plugin-renderer.service.js'
 
 vi.mock('node:dns/promises', () => ({ lookup: vi.fn() }))
 
+const realFetch = fetch
 const mockFetch = stubFetch()
 const mockLookup = vi.mocked(lookup as (host: string, options: { all: true }) => Promise<{ address: string, family: number }[]>)
 
@@ -397,11 +398,12 @@ describe('pluginDataFetcherService', () => {
       expect(mockFetch).toHaveBeenCalledTimes(1)
     })
 
-    it('refuses a host name that resolves to an internal address', async () => {
+    it('refuses a host name that resolves to an internal address as it connects', async () => {
       mockLookup.mockResolvedValue([{ address: '127.0.0.1', family: 4 }])
+      mockFetch.mockImplementationOnce(realFetch)
 
       await expect(service.fetchData('GET', 'http://127.0.0.1.nip.io/')).rejects.toThrow('not allowed in demo mode')
-      expect(mockFetch).not.toHaveBeenCalled()
+      expect(mockLookup).toHaveBeenCalledWith('127.0.0.1.nip.io', { all: true })
     })
 
     it('follows a redirect to a public host', async () => {
