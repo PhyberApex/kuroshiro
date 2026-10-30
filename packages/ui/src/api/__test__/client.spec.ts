@@ -159,7 +159,7 @@ describe('the API client', () => {
     expect(revoked).toHaveBeenCalledWith(clicked[0]!.href)
   })
 
-  it('takes a page answered with a 200 in place of a download for a server that is not answering, and saves nothing', async () => {
+  it('takes a 200 that is not an attachment, such as a sign-in page, for a server that is not answering, and saves nothing', async () => {
     api.use(http.get(apiUrl('config/export'), () => new HttpResponse('<h1>Sign in</h1>', { headers: { 'content-type': 'text/html' } })))
     const { clicked } = catchClickedDownloads()
 

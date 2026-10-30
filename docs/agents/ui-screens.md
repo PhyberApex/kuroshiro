@@ -635,7 +635,7 @@ export function updateDevice(deviceId: string, input: UpdateDeviceInput) {
 - Types come from `kuroshiro-shared`. Send only what the `…Input` type declares: the server refuses undeclared keys, so a read model sent back as a write is refused.
 - A page calls these functions and never `fetch`.
 - **An image the server answers to an upload** (a preview that stores nothing) is `apiSendForImage(method, path, formData)`, which answers a `Blob`; show it through `URL.createObjectURL` and revoke the address when it is replaced or the component goes (`ReplaceFile.vue`).
-- **A file the server answers** (an export) is fetched and then saved from an object URL: `apiDownloadChecked(path, query?)` from `@/api/client`, wrapped in the group's file (`exportPlugin(id)`). It rejects with an `ApiRefusal` or a `ServerUnreachable` like any other call, without saving anything. The file's name is the server's, from its `Content-Disposition`.
+- **A file the server answers** (an export) is fetched and then saved from an object URL: `apiDownloadChecked(path, query?)` from `@/api/client`, wrapped in the group's file (`exportPlugin(id)`). It rejects with an `ApiRefusal` or a `ServerUnreachable` like any other call, without saving anything; a 200 that is not a `Content-Disposition: attachment`, such as an auth proxy's sign-in page, is a `ServerUnreachable`. The file's name is the server's, from its `Content-Disposition`, and the object URL is revoked 40 seconds after the click, so a browser that reads the `Blob` late still saves it.
 
 ### Failures and their wording
 
