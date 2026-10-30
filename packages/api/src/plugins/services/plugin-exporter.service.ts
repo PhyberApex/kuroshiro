@@ -10,6 +10,11 @@ export interface PluginExportEntry {
   content: Buffer
 }
 
+/** A nullable value under its key, or no key when it is null, so an import reads it back as null rather than as ''. */
+function presentAs<K extends string>(key: K, value: string | null | undefined): Partial<Record<K, string>> {
+  return value === null || value === undefined ? {} : { [key]: value } as Record<K, string>
+}
+
 @Injectable()
 export class PluginExporterService {
   private readonly logger = new Logger(PluginExporterService.name)
@@ -20,15 +25,16 @@ export class PluginExporterService {
 
     const manifest = {
       name: plugin.name,
-      description: plugin.description || '',
-      custom_fields: (plugin.fields || []).map(field => ({
+      ...presentAs('description', plugin.description),
+      custom_fields: [...plugin.fields ?? []].sort((a, b) => a.order - b.order).map(field => ({
         keyname: field.keyname,
         field_type: field.fieldType,
         name: field.name,
-        description: field.description || '',
-        default_value: field.defaultValue || '',
+        ...presentAs('description', field.description),
+        ...presentAs('default_value', field.defaultValue),
         ...(field.options ? { options: formatFieldOptions(field.options) } : {}),
         optional: !field.required,
+        order: field.order,
         ...formatFieldAttributes(field.attributes),
       })),
     }

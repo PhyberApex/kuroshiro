@@ -109,6 +109,18 @@ describe('pluginImporterService', () => {
     expect(result.fields[0].keyname).toBe('api_key')
   })
 
+  it.each([
+    ['keeps the order every field is written with', [{ keyname: 'town', order: 3 }, { keyname: 'units', order: 7 }], [['town', 3], ['units', 7]]],
+    ['numbers the fields by their place in the file when one is written without an order', [{ keyname: 'town', order: 3 }, { keyname: 'units' }], [['town', 1], ['units', 2]]],
+  ])('%s', (_, customFields, orders) => {
+    const zip = zipWithSettings({ refresh_interval: 15 })
+    zip.addFile('.trmnlp.yml', Buffer.from(yaml.dump({ name: 'Weather', custom_fields: customFields }), 'utf8'))
+
+    const result = service.importFromUpload({ buffer: zip.toBuffer(), originalname: 'weather.zip' }).plugin
+
+    expect(result.fields.map(field => [field.keyname, field.order])).toEqual(orders)
+  })
+
   it('handles polling_headers with invalid JSON', async () => {
     const zip = new AdmZip()
 

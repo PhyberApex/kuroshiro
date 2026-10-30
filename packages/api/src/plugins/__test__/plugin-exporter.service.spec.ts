@@ -7,8 +7,8 @@ import { PluginExporterService } from '../services/plugin-exporter.service.js'
 
 interface ExportedManifest {
   name: string
-  description: string
-  custom_fields: Array<{ keyname: string, field_type: string, optional: boolean, description: string, default_value: string }>
+  description?: string
+  custom_fields: Array<{ keyname: string, field_type: string, optional: boolean, description?: string, default_value?: string, order: number }>
 }
 
 interface ExportedSettings {
@@ -93,7 +93,7 @@ describe('pluginExporterService', () => {
     const manifest = yaml.load(new AdmZip(await service.exportToZip(plugin)).getEntry('.trmnlp.yml')!.getData().toString('utf8')) as { custom_fields: Record<string, unknown>[] }
 
     expect(manifest.custom_fields[0]).toMatchObject({ keyname: 'posts', placeholder: '3', min: 1, max: 5, step: 0.5, help_text: 'Maximum 5.', group: 'Display', maxlength: 2, rows: 1 })
-    expect(Object.keys(manifest.custom_fields[1])).toEqual(['keyname', 'field_type', 'name', 'description', 'default_value', 'optional'])
+    expect(Object.keys(manifest.custom_fields[1])).toEqual(['keyname', 'field_type', 'name', 'optional', 'order'])
   })
 
   it('writes no_screen_padding and dark_mode as yes or no, as TRMNL\'s settings have them', async () => {
@@ -280,9 +280,21 @@ describe('pluginExporterService', () => {
     const manifestEntry = zip.getEntry('.trmnlp.yml')!
     const manifest = yaml.load(manifestEntry.getData().toString('utf8')) as ExportedManifest
 
-    expect(manifest.description).toBe('')
-    expect(manifest.custom_fields[0].description).toBe('')
-    expect(manifest.custom_fields[0].default_value).toBe('')
+    expect(manifest).not.toHaveProperty('description')
+    expect(manifest.custom_fields[0]).not.toHaveProperty('description')
+    expect(manifest.custom_fields[0]).not.toHaveProperty('default_value')
+  })
+
+  it('writes the Plugin Fields in their order, each with it, whatever order they were loaded in', async () => {
+    const plugin = makePlugin({
+      templates: [makePluginTemplate({ layout: 'full', liquidMarkup: 'x' })],
+      fields: [makePluginField({ keyname: 'units', order: 2 }), makePluginField({ keyname: 'town', order: 1 })],
+    })
+
+    const zip = new AdmZip(await service.exportToZip(plugin))
+    const manifest = yaml.load(zip.readAsText('.trmnlp.yml')) as ExportedManifest
+
+    expect(manifest.custom_fields.map(field => [field.keyname, field.order])).toEqual([['town', 1], ['units', 2]])
   })
   it.each(['Poll', 'Webhook'] as const)('round-trips a %s Plugin\'s Framework Version and omits it when null', async (kind) => {
     const settingsOf = async (frameworkVersion: string | null) => {
