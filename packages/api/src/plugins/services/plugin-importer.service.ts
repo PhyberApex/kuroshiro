@@ -68,6 +68,8 @@ function withFullTemplate(plugin: ParsedPlugin): ParsedPlugin {
   return { ...plugin, templates: [{ ...first, layout: 'full' }, ...others] }
 }
 
+const isWholeNumber = (value: unknown): value is number => typeof value === 'number' && Number.isInteger(value)
+
 // TRMNL writes a default under `default`, as a string, a number or a boolean; Kuroshiro's export under `default_value`.
 function defaultOf(field: CustomField): string | undefined {
   const value = field.default_value ?? field.default
@@ -105,6 +107,8 @@ interface CustomField {
   default_value?: string
   default?: string | number | boolean | null
   optional?: boolean
+  /** Kuroshiro's export writes it; TRMNL's own lists its fields in order and writes none. */
+  order?: unknown
   options?: unknown
   placeholder?: unknown
   help_text?: unknown
@@ -632,7 +636,7 @@ export class PluginImporterService {
     if (mergeStrategy !== 'stream')
       return { mergeStrategy }
     const streamLimit = settings.stream_limit
-    if (typeof streamLimit !== 'number' || !Number.isInteger(streamLimit) || streamLimit < 1) {
+    if (!isWholeNumber(streamLimit) || streamLimit < 1) {
       throw importRefused('unprocessable', 'The Merge Strategy "stream" needs a "stream_limit" that is a whole number of 1 or more.')
     }
     return { mergeStrategy, streamLimit }
@@ -680,6 +684,11 @@ export class PluginImporterService {
         ? settings.custom_fields
         : []
 
+    // An order is kept only when every field carries one, so a field written without one cannot share another's.
+    const orderOf = customFieldsSource.every(field => isWholeNumber(field.order))
+      ? (field: CustomField) => field.order as number
+      : (_field: CustomField, index: number) => index + 1
+
     return customFieldsSource.map((field, index) => {
       const options = parseFieldOptions(field.options)
       return {
@@ -690,7 +699,7 @@ export class PluginImporterService {
         defaultValue: defaultOf(field),
         ...(options ? { options } : {}),
         required: !field.optional,
-        order: index + 1,
+        order: orderOf(field, index),
         attributes: attributesOf(field),
       }
     })

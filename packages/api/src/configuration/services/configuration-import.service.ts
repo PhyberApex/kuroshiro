@@ -782,7 +782,7 @@ export class ConfigurationImportService {
   /** The Plugin with what the archive entry and its `.trmnlp` folder say of it, Data Sources, templates and Plugin Fields aside. */
   private withEntry(plugin: Plugin, entry: PluginManifestEntry, parsed: ParsedPlugin, webhookToken: string | null): Plugin {
     plugin.name = parsed.name
-    plugin.description = parsed.description
+    plugin.description = parsed.description ?? null
     plugin.kind = entry.kind
     plugin.refreshInterval = parsed.refreshInterval
     plugin.webhookToken = webhookToken
@@ -793,6 +793,11 @@ export class ConfigurationImportService {
     plugin.dither = entry.dither ?? true
     plugin.noScreenPadding = parsed.noScreenPadding ?? false
     plugin.darkMode = parsed.darkMode ?? false
+    return this.withRecipe(plugin, entry, parsed)
+  }
+
+  /** The Plugin tied to the Recipe the archive entry or its `.trmnlp` folder names, with the entry's Recipe Snapshot, or to none. */
+  private withRecipe(plugin: Plugin, entry: PluginManifestEntry, parsed: ParsedPlugin): Plugin {
     plugin.sourceRecipeId = entry.sourceRecipeId ?? parsed.sourceRecipeId ?? null
     plugin.sourceRecipeSnapshot = entry.sourceRecipeSnapshot ? { ...entry.sourceRecipeSnapshot } : null
     return plugin
@@ -902,8 +907,8 @@ export class ConfigurationImportService {
     field.keyname = parsedField.keyname
     field.fieldType = parsedField.fieldType
     field.name = parsedField.name
-    field.description = parsedField.description
-    field.defaultValue = parsedField.defaultValue
+    field.description = parsedField.description ?? null
+    field.defaultValue = parsedField.defaultValue ?? null
     field.options = parsedField.options ?? null
     field.required = parsedField.required
     field.order = parsedField.order
