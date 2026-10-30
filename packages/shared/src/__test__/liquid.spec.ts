@@ -114,6 +114,11 @@ describe('kuroshiro liquid filters', () => {
     expect(result).toBe('{"key":"value"}')
   })
 
+  it('json renders a missing value as null, as Ruby\'s to_json does', async () => {
+    expect(await renderLiquid('var items = {{ data.items | json }};', { data: {} })).toBe('var items = null;')
+    expect(await renderLiquid('{{ nil | json }}', {})).toBe('null')
+  })
+
   it('registers a fresh engine with the same filters', async () => {
     const result = await createLiquidEngine().parseAndRender('{{ n | round: 1 }}', { n: 2.25 })
 
@@ -302,7 +307,7 @@ describe('trmnl custom filters (ADR-0043, after the trmnl-liquid gem)', () => {
     expect(await render('{{ people | find_by: "name", "Ryan" | json }}', { people })).toBe('{"name":"Ryan","age":35}')
     expect(await render('{{ people | find_by: "name", "Toby", "Not Found" }}', { people })).toBe('Not Found')
     expect(await render('{{ people | find_by: "name", "Toby" }}', { people })).toBe('')
-    expect(await render('{{ people | find_by: "age", "35" | json }}', { people })).toBe('')
+    expect(await render('{{ people | find_by: "age", "35" | json }}', { people })).toBe('null')
     expect(await render('{{ objs | find_by: "ok", true | json }}', { objs: [{ ok: false }, { ok: true }] })).toBe('{"ok":true}')
   })
 
