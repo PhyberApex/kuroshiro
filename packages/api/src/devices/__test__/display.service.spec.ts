@@ -752,7 +752,7 @@ describe('deviceDisplayService', () => {
 
       expect(result.special_function).toBe('sleep')
       expect(result.action).toBe('sleep')
-      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1' }, expect.objectContaining({ specialFunction: 'none' }))
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1', specialFunction: 'sleep' }, { specialFunction: 'none' })
     })
 
     it('echoes none as the action when nothing is pending', async () => {
@@ -762,7 +762,7 @@ describe('deviceDisplayService', () => {
 
       expect(result.special_function).toBe('none')
       expect(result.action).toBe('none')
-      expect(deviceRepo.update).not.toHaveBeenCalledWith({ id: '1' }, expect.objectContaining({ specialFunction: expect.anything() }))
+      expect(deviceRepo.update).not.toHaveBeenCalledWith(expect.anything(), { specialFunction: 'none' })
     })
 
     it('acknowledges and clears the pending special function while cycling screens', async () => {
@@ -772,7 +772,7 @@ describe('deviceDisplayService', () => {
 
       expect(result.special_function).toBe('add_wifi')
       expect(result.action).toBe('add_wifi')
-      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1' }, expect.objectContaining({ specialFunction: 'none' }))
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1', specialFunction: 'add_wifi' }, { specialFunction: 'none' })
     })
 
     it('relays the upstream special function and action when proxying', async () => {
@@ -809,7 +809,7 @@ describe('deviceDisplayService', () => {
 
       expect(result.special_function).toBe('identify')
       expect(result.action).toBe('identify')
-      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1' }, expect.objectContaining({ specialFunction: 'none' }))
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1', specialFunction: 'identify' }, { specialFunction: 'none' })
     })
 
     it.each([
@@ -1088,7 +1088,7 @@ describe('deviceDisplayService', () => {
       expect(firmwareService.verifyChecksum).toHaveBeenCalledWith(targetFirmware)
       expect(result.firmware_url).toBe('http://api/firmware/fw-1.bin')
       expect(result.update_firmware).toBe(true)
-      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1' }, expect.objectContaining({ updateFirmware: false }))
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1', targetFirmware: { id: 'fw-1' } }, { updateFirmware: false })
     })
 
     it('skips serving the url and leaves the flag set when the checksum does not match', async () => {
@@ -1100,7 +1100,7 @@ describe('deviceDisplayService', () => {
 
       expect(result.firmware_url).toBe('')
       expect(result.update_firmware).toBe(false)
-      expect(deviceRepo.update).not.toHaveBeenCalledWith({ id: '1' }, expect.objectContaining({ updateFirmware: expect.anything() }))
+      expect(deviceRepo.update).not.toHaveBeenCalledWith(expect.anything(), { updateFirmware: false })
     })
 
     it('does nothing when updateFirmware is false', async () => {
@@ -1149,8 +1149,8 @@ describe('deviceDisplayService', () => {
     }
 
     it.each([
-      ['a Firmware push', { updateFirmware: true, targetFirmware }],
-      ['a Reset', { resetDevice: true }],
+      ['an OTA push', { updateFirmware: true, targetFirmware }],
+      ['a Device Reset', { resetDevice: true }],
       ['a Special Function', { specialFunction: 'sleep' }],
     ] as const)('leaves %s pending for the Device\'s retry', async (_name, pending) => {
       const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS, ...pending })
@@ -1182,10 +1182,20 @@ describe('deviceDisplayService', () => {
       expect(screenRepo.update).not.toHaveBeenCalled()
     })
 
-    it('fails the poll rather than answer a Reset the row does not record as delivered', async () => {
-      deviceRepo.findOneBy.mockResolvedValue(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, resetDevice: true, resetDeviceNewApikey: true }))
-      screenRepo.find.mockResolvedValue([])
-      configService.get.mockReturnValue('http://api')
+    it('clears a Special Function and an OTA push only while the row still holds what this poll fired', async () => {
+      primeFailingNoScreen(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, specialFunction: 'sleep', updateFirmware: true, targetFirmware }))
+      fallbackScreens.urlFor.mockResolvedValue('http://api/screens/noScreen.png')
+
+      await service.getCurrentImage(headers)
+
+      // Conditioned on what this poll fired, so the row's newer values do not match and stay as they are
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1', specialFunction: 'sleep' }, { specialFunction: 'none' })
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1', targetFirmware: { id: 'fw-1' } }, { updateFirmware: false })
+    })
+
+    it('fails the poll rather than answer a Device Reset the row does not record as delivered', async () => {
+      primeFailingNoScreen(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, resetDevice: true, resetDeviceNewApikey: true }))
+      fallbackScreens.urlFor.mockResolvedValue('http://api/screens/noScreen.png')
       deviceRepo.update.mockRejectedValue(new Error('connection lost'))
 
       await expect(service.getCurrentImage(headers)).rejects.toThrow('connection lost')

@@ -54,12 +54,19 @@ interface HeaderReport {
 }
 
 /**
- * The one-shot columns this poll consumed (a Reset, a Wipe, a Special
- * Function, a Firmware push, a rotated API key), written only once the
- * answer carrying them exists: a poll whose answer fails leaves them set, so
- * the Device's retry still gets them.
+ * What this poll fired once (a Device Reset, a Wipe, a Special Function, an
+ * OTA push, a rotated API key), written only once the answer carrying it
+ * exists: a poll whose answer fails leaves all of it pending, so the Device's
+ * retry still gets it.
  */
-type OneShotAcknowledgement = Partial<Pick<Device, 'resetDevice' | 'wipe' | 'apikey' | 'resetDeviceNewApikey' | 'specialFunction' | 'updateFirmware'>>
+interface OneShotAcknowledgement {
+  /** Written as is: the Device has been told, whatever the row says by now. */
+  delivered: Partial<Pick<Device, 'resetDevice' | 'wipe' | 'apikey' | 'resetDeviceNewApikey'>>
+  /** Cleared only while the row still holds it, so one an admin picked during the render stays pending. */
+  specialFunction: string | null
+  /** The pushed target's id; the push is cleared only while it is still the target, so one an admin reassigned during the render stays pending. */
+  firmwareId: string | null
+}
 
 interface DisplayAnswer {
   display: Display
@@ -93,27 +100,30 @@ const FORWARDED_TRMNL_HEADERS = ['battery-voltage', 'fw-version', 'refresh-rate'
 // Fails to compile when the DTO gains a poll header this list does not forward
 const _everyPollHeaderForwarded: Exclude<keyof DisplayRequestHeadersDto, 'id' | 'access-token'> extends typeof FORWARDED_TRMNL_HEADERS[number] ? true : never = true
 
-/** The one-shot flags a poll fires, and the acknowledgement that clears them; `device` itself is left as it is. */
-function consumeOneShotFlags(device: Device): Pick<HeaderReport, 'resetDevice' | 'wipe' | 'specialFunction'> & { acknowledgement: OneShotAcknowledgement } {
-  const acknowledgement: OneShotAcknowledgement = {}
+/** The one-shot flags a poll fires, given the OTA push it serves (if any), and the acknowledgement that clears them; `device` itself is left as it is. */
+function fireOneShots(device: Device, pushedFirmwareId: string | null): Pick<HeaderReport, 'resetDevice' | 'wipe' | 'specialFunction'> & { acknowledgement: OneShotAcknowledgement } {
+  const delivered: OneShotAcknowledgement['delivered'] = {}
   const resetDevice = device.resetDevice
-  if (device.resetDevice)
-    acknowledgement.resetDevice = false
-  // A Wipe fires once too, and gives way to a Reset in the same poll: a Device about to forget everything is not also asked to blank
+  if (resetDevice)
+    delivered.resetDevice = false
+  // A Wipe fires once too, and gives way to a Device Reset in the same poll: a Device about to forget everything is not also asked to blank
   const wipe = device.wipe && !resetDevice
   if (device.wipe)
-    acknowledgement.wipe = false
+    delivered.wipe = false
   // "Also give {Device} a new API key" (ADR-0039): rotated by this same poll, authenticated with the old key,
   // and stored before the answer is sent, so a Device that wipes itself and runs setup still fetches the new one.
   if (resetDevice && device.resetDeviceNewApikey)
-    acknowledgement.apikey = generateApikey()
+    delivered.apikey = generateApikey()
   if (device.resetDeviceNewApikey)
-    acknowledgement.resetDeviceNewApikey = false
+    delivered.resetDeviceNewApikey = false
   // A Special Function fires once: this response acknowledges it, the next poll gets 'none'
   const specialFunction = device.specialFunction ?? 'none'
-  if (device.specialFunction !== 'none')
-    acknowledgement.specialFunction = 'none'
-  return { resetDevice, wipe, specialFunction, acknowledgement }
+  return {
+    resetDevice,
+    wipe,
+    specialFunction,
+    acknowledgement: { delivered, specialFunction: specialFunction === 'none' ? null : specialFunction, firmwareId: pushedFirmwareId },
+  }
 }
 
 function forwardedTrmnlHeaders(headers: DisplayRequestHeadersDto | undefined): Record<string, string> {
@@ -162,13 +172,16 @@ export class DeviceDisplayService {
 
   /**
    * Written on its own, to these columns only, like `recordServed`; unlike it,
-   * a failed write fails the poll, since answering a Reset or a new API key
-   * the row no longer records would leave the Device and the row disagreeing.
+   * a failed write fails the poll, since answering a Device Reset or a new API
+   * key the row does not record would leave the Device and the row disagreeing.
    */
-  private async acknowledgeOneShots(device: Device, acknowledgement: OneShotAcknowledgement): Promise<void> {
-    if (Object.keys(acknowledgement).length === 0)
-      return
-    await this.deviceRepository.update({ id: device.id }, acknowledgement)
+  private async acknowledgeOneShots(device: Device, { delivered, specialFunction, firmwareId }: OneShotAcknowledgement): Promise<void> {
+    if (Object.keys(delivered).length > 0)
+      await this.deviceRepository.update({ id: device.id }, delivered)
+    if (specialFunction)
+      await this.deviceRepository.update({ id: device.id, specialFunction }, { specialFunction: 'none' })
+    if (firmwareId)
+      await this.deviceRepository.update({ id: device.id, targetFirmware: { id: firmwareId } }, { updateFirmware: false })
   }
 
   /**
@@ -208,7 +221,7 @@ export class DeviceDisplayService {
   /**
    * Records a polling Device's self-reported state (dimensions, firmware
    * version, sensors, …) in a single save, and works out which one-shot
-   * reset/wipe/special-function flags and OTA push this poll consumes.
+   * Device Reset, Wipe, Special Function and OTA push this poll fires.
    * Returns the fields the response builders need and the acknowledgement
    * `acknowledgeOneShots` writes once the answer is built — the save here
    * leaves those columns as they were.
@@ -219,10 +232,8 @@ export class DeviceDisplayService {
     if (!device.deviceModel)
       await this.deviceModels.assignResolvedModel(device)
     await this.deviceSensors.syncFromHeader(device, headers.sensors)
-    const { resetDevice, wipe, specialFunction, acknowledgement } = consumeOneShotFlags(device)
     const { firmwareUrl, updateFirmware } = await this.resolveFirmwarePush(device)
-    if (updateFirmware)
-      acknowledgement.updateFirmware = false
+    const { resetDevice, wipe, specialFunction, acknowledgement } = fireOneShots(device, updateFirmware ? device.targetFirmware!.id : null)
     device.lastWakeSource = headers['update-source'] ?? null
     device.lastSeen = new Date()
     await this.deviceRepository.save(device)
@@ -296,10 +307,8 @@ export class DeviceDisplayService {
     const shown = await this.pickAndRenderScreen(screens, device, now)
     if (!shown) {
       this.logger.log(`No eligible screen for device ${device.id} returning default no screen image`)
-      // Made before the Active Screen is cleared, so a fallback that cannot be made leaves the Device's Active Screen as it was
       const imageUrl = await this.fallbackImageUrl({ kind: 'noScreen' }, device)
-      await this.clearActiveScreen(device, screens)
-      await this.clearPick(device)
+      await this.moveOnFrom(device, screens)
       return {
         display: new Display({
           action: report.specialFunction,
@@ -316,8 +325,7 @@ export class DeviceDisplayService {
       }
     }
     const { screen: nextScreen, imgUrl, served, filename, renderSignal } = shown
-    await this.clearActiveScreen(device, screens)
-    await this.clearPick(device)
+    await this.moveOnFrom(device, screens)
     nextScreen.isActive = true
     nextScreen.renderSignal = renderSignal
     // A partial update, not `.save()`: rendering may just have written this Screen's
@@ -342,15 +350,21 @@ export class DeviceDisplayService {
     }
   }
 
-  private async clearActiveScreen(device: Device, screens: Screen[]): Promise<void> {
+  /**
+   * Clears the Active Screen and the Picked Screen once this poll's answer
+   * exists, before the Screen it shows (if any) is made the Active Screen: a
+   * poll whose answer cannot be made leaves Rotation where it stood.
+   */
+  private async moveOnFrom(device: Device, screens: Screen[]): Promise<void> {
     if (screens.length > 0)
       await this.screenRepository.update({ device: { id: device.id } }, { isActive: false })
+    await this.clearPick(device)
   }
 
   /**
    * A Picked Screen is tried at most once: whether this poll served it or it
-   * had lapsed, it is cleared either way, the same way a Special Function is
-   * cleared once it fires (ADR-0038).
+   * had lapsed, it is cleared either way once the answer is made, the same
+   * way a Special Function is cleared once it fires (ADR-0038).
    */
   private async clearPick(device: Device): Promise<void> {
     if (!device.pickedScreen)
