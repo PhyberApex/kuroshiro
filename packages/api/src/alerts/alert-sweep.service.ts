@@ -161,12 +161,12 @@ export class AlertSweepService implements OnApplicationBootstrap {
       // TypeORM's QueryDeepPartialEntity can't distribute over a union-typed value — see webhook-ingest.service.ts.
       await this.alertRepository.update(alert.id, { details } as Parameters<typeof this.alertRepository.update>[1])
     }
-    if (!alert.notifiedAt && !this.sender.isConfigured()) {
+    if (!alert.notifiedAt) {
+      if (this.sender.isConfigured())
+        return entryFor(rule, subject, alert, 'opened')
       await this.alertRepository.update(alert.id, { notifiedAt: new Date() })
       return undefined
     }
-    if (!alert.notifiedAt)
-      return entryFor(rule, subject, alert, 'opened')
     const lastAnnounced = alert.remindedAt && alert.remindedAt > alert.notifiedAt ? alert.remindedAt : alert.notifiedAt
     if (reminderCutoff && lastAnnounced < reminderCutoff)
       return entryFor(rule, subject, alert, 'reminded')
