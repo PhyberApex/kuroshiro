@@ -78,8 +78,8 @@ function zonedFilters(timeZone: string | undefined): Record<string, FilterImplOp
 
 /** The custom filters of TRMNL's `trmnl-liquid` gem, under its names and signatures (ADR-0043). */
 const trmnlFilters: Record<string, FilterImplOptions> = {
-  /** Ruby's `to_json`, which prints `null` for a missing value and for `nil`, which liquidjs hands over as a drop. */
-  json: (value: unknown) => JSON.stringify(toValue(value) ?? null),
+  /** Ruby's `to_json`: `null` for a missing value and for `nil` (a drop in liquidjs); any other drop serialises as itself, not its `valueOf`. */
+  json: (value: unknown) => JSON.stringify(toValue(value) == null ? null : value),
   sample: (arr: unknown[], count = 1) => {
     const shuffled = [...arr].sort(() => Math.random() - 0.5)
     return count === 1 ? shuffled[0] : shuffled.slice(0, count)

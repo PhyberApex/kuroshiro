@@ -281,6 +281,7 @@ describe('trmnl custom filters (ADR-0043, after the trmnl-liquid gem)', () => {
     expect(await render('{{ obj | json }}', { obj: { key: 'value' } })).toBe('{"key":"value"}')
     expect(await render('var items = {{ data.items | json }};', { data: {} })).toBe('var items = null;')
     expect(await render('{{ nil | json }}')).toBe('null')
+    expect(await render('{% for i in (1..1) %}{{ forloop | json }}{% endfor %}')).toMatch(/^\{"/)
   })
 
   it('parse_json parses a JSON string', async () => {
