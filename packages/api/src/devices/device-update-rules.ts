@@ -66,9 +66,12 @@ export function assertPushCanBeServed(device: Device, updateFirmware: boolean | 
     throw new ApiException(HttpStatus.CONFLICT, 'firmware-push-mirrored', 'A mirrored Device is not given Firmware.', { id: device.id })
 }
 
-/** A Device mirrors itself (proxy) when TRMNL knows it by its own MAC: TRMNL answers its polls, so nothing requested here reaches it. */
+/**
+ * A Device mirrors itself (proxy) when TRMNL knows it by its own MAC: TRMNL answers its polls, so nothing requested here reaches it.
+ * Compared without letter case: the mirror MAC is stored upper-cased, while a Device keeps the case it registered with.
+ */
 export function isProxiedDevice(device: Device): boolean {
-  return !!device.mirrorEnabled && device.mirrorMac === device.mac
+  return !!device.mirrorEnabled && device.mirrorMac?.toUpperCase() === device.mac.toUpperCase()
 }
 
 /**
