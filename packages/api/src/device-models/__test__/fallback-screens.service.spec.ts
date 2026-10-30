@@ -1,14 +1,15 @@
 import type { ConfigService } from '@nestjs/config'
 import type { FallbackScreenDevice } from '../fallback-screens.service.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { BW, GRAY_16, OG_PLUS, V2 } from '../../test/mockDeviceModelsService.js'
+import { BW, COLOR_6A, GRAY_16, OG_PLUS, V2 } from '../../test/mockDeviceModelsService.js'
 import { asService } from '../../test/mockService.js'
 import { FALLBACK_SCREEN_TEMPLATE_VERSION } from '../fallback-screen-templates.js'
 import { FallbackScreensService } from '../fallback-screens.service.js'
 
-const { statMock, renderHtmlToPng } = vi.hoisted(() => ({
+const { statMock, renderHtmlToPng, convertBlankToPng } = vi.hoisted(() => ({
   statMock: vi.fn(),
   renderHtmlToPng: vi.fn(),
+  convertBlankToPng: vi.fn(),
 }))
 
 vi.mock('node:fs', () => ({
@@ -17,16 +18,21 @@ vi.mock('node:fs', () => ({
 
 vi.mock('../render-html-to-png.js', () => ({ renderHtmlToPng }))
 
+vi.mock('../../utils/imageUtils.js', async importOriginal => ({ ...await importOriginal(), convertBlankToPng }))
+
 vi.mock('../../utils/pathHelper.js', () => ({
   resolveAppPath: (...segments: string[]) => `/app/${segments.join('/')}`,
 }))
+
+/** COLOR_6A with its red moved, as a custom Palette's edit would. */
+const RECOLOURED = { ...COLOR_6A, colors: COLOR_6A.colors!.map(color => color === '#FF0000' ? '#FF2020' : color) }
 
 const KITCHEN: FallbackScreenDevice = { name: 'Kitchen', friendlyId: '4F2A1C', sleepEndTime: 7 * 3600 }
 
 describe('fallbackScreensService', () => {
   let service: FallbackScreensService
   const target = { model: V2, palette: GRAY_16 }
-  const cacheUrl = `http://api/screens/fallback/v${FALLBACK_SCREEN_TEMPLATE_VERSION}/v2-gray-16`
+  const cacheUrl = `http://api/screens/fallback/v${FALLBACK_SCREEN_TEMPLATE_VERSION}/v2-gray-16-[0-9a-f]{8}`
   const renderedFiles = new Set<string>()
 
   /** A disk that keeps what was rendered, so a second ask for the same sheet finds its file. */
@@ -38,6 +44,9 @@ describe('fallbackScreensService', () => {
       return {}
     })
     renderHtmlToPng.mockImplementation(async (_html: string, _target: unknown, outputPath: string) => {
+      renderedFiles.add(outputPath)
+    })
+    convertBlankToPng.mockImplementation(async (outputPath: string) => {
       renderedFiles.add(outputPath)
     })
   }
@@ -121,8 +130,27 @@ describe('fallbackScreensService', () => {
     const onV2 = await service.urlFor({ kind: 'noScreen' }, KITCHEN, target)
     const onOg = await service.urlFor({ kind: 'noScreen' }, KITCHEN, { model: OG_PLUS, palette: BW })
 
-    expect(onOg).toMatch(new RegExp(`^http://api/screens/fallback/v${FALLBACK_SCREEN_TEMPLATE_VERSION}/og_plus-bw/noScreen-`))
+    expect(onOg).toMatch(new RegExp(`^http://api/screens/fallback/v${FALLBACK_SCREEN_TEMPLATE_VERSION}/og_plus-bw-[0-9a-f]{8}/noScreen-`))
     expect(onOg).not.toBe(onV2)
+  })
+
+  it('renders anew once the Palette\'s colours change', async () => {
+    const before = await service.urlFor({ kind: 'noScreen' }, KITCHEN, { model: V2, palette: COLOR_6A })
+    const after = await service.urlFor({ kind: 'noScreen' }, KITCHEN, { model: V2, palette: RECOLOURED })
+
+    expect(after).not.toBe(before)
+    expect(renderHtmlToPng).toHaveBeenCalledTimes(2)
+    expect(renderHtmlToPng.mock.calls[1][1]).toEqual({ model: V2, palette: RECOLOURED })
+  })
+
+  it('draws the Wipe once per render target and anew once the Palette\'s colours change', async () => {
+    const first = await service.wipeUrlFor({ model: V2, palette: COLOR_6A })
+    const again = await service.wipeUrlFor({ model: V2, palette: COLOR_6A })
+    const after = await service.wipeUrlFor({ model: V2, palette: RECOLOURED })
+
+    expect(again).toBe(first)
+    expect(after).not.toBe(first)
+    expect(convertBlankToPng).toHaveBeenCalledTimes(2)
   })
 
   it.each(['welcome', 'noScreen', 'sleep'] as const)('falls back to the static %s image when rendering fails', async (kind) => {

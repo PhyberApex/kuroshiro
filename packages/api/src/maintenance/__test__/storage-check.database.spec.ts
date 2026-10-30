@@ -9,6 +9,7 @@ import { DeviceModelsService } from '../../device-models/device-models.service.j
 import { DeviceModel } from '../../device-models/entities/device-model.entity.js'
 import { Palette } from '../../device-models/entities/palette.entity.js'
 import { FALLBACK_SCREEN_TEMPLATE_VERSION } from '../../device-models/fallback-screen-templates.js'
+import { fallbackRenderPairFolder } from '../../device-models/fallback-screens.service.js'
 import { PaletteSelectionService } from '../../device-models/palette-selection.service.js'
 import { Device } from '../../devices/devices.entity.js'
 import { Screen } from '../../screens/screens.entity.js'
@@ -122,7 +123,7 @@ describe('the stored-files check and its cleanup, against a real database and re
     const model = await database.getRepository(DeviceModel).save({ name: 'fallback_model', label: 'Fallback model', width: 800, height: 480, colors: 2, bitDepth: 1, scaleFactor: 1, kind: 'trmnl', paletteIds: ['fallback_palette'] })
     const palette = await database.getRepository(Palette).save({ id: 'fallback_palette', name: 'Fallback palette', kind: 'official', grays: 2, frameworkClass: 'screen--1bit' })
     device = await database.getRepository(Device).save({ ...device, deviceModel: model, palette })
-    const usedPair = `${model.name}-${palette.id}`
+    const usedPair = fallbackRenderPairFolder({ model, palette })
     const unusedPair = 'unused_model-unused_palette'
     return {
       usedPair,
