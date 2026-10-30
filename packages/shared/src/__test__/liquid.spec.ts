@@ -105,20 +105,6 @@ describe('kuroshiro liquid filters', () => {
     expect(result).toBe('✗')
   })
 
-  it('json serializes objects', async () => {
-    const template = '{{ obj | json }}'
-    const data = { obj: { key: 'value' } }
-
-    const result = await renderLiquid(template, data)
-
-    expect(result).toBe('{"key":"value"}')
-  })
-
-  it('json renders a missing value as null, as Ruby\'s to_json does', async () => {
-    expect(await renderLiquid('var items = {{ data.items | json }};', { data: {} })).toBe('var items = null;')
-    expect(await renderLiquid('{{ nil | json }}', {})).toBe('null')
-  })
-
   it('registers a fresh engine with the same filters', async () => {
     const result = await createLiquidEngine().parseAndRender('{{ n | round: 1 }}', { n: 2.25 })
 
@@ -146,6 +132,7 @@ describe('standard filters follow Ruby Liquid (ADR-0043)', () => {
     ['{{ 7 | divided_by: 2 | plus: 1 }}', '4'],
     ['{{ 1893456000 | minus: 1792093470 | divided_by: 86400 }}', '1173'],
     ['{{ 1 | divided_by: 0 }}', 'Infinity'],
+    ['{{ 0 | divided_by: 0 }}', 'NaN'],
     ['{{ 3.14159 | round: 2 }}', '3.14'],
     ['{{ 3.7 | round }}', '4'],
     ['{{ "abc" | round }}', '0'],
@@ -288,6 +275,12 @@ describe('trmnl custom filters (ADR-0043, after the trmnl-liquid gem)', () => {
   afterEach(() => {
     vi.useRealTimers()
     vi.restoreAllMocks()
+  })
+
+  it('json serializes a value as Ruby\'s to_json does, a missing one as null', async () => {
+    expect(await render('{{ obj | json }}', { obj: { key: 'value' } })).toBe('{"key":"value"}')
+    expect(await render('var items = {{ data.items | json }};', { data: {} })).toBe('var items = null;')
+    expect(await render('{{ nil | json }}')).toBe('null')
   })
 
   it('parse_json parses a JSON string', async () => {
