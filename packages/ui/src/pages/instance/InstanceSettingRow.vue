@@ -45,9 +45,16 @@ function inRange(value: number | null): value is number {
 const rangeMessage = computed(() =>
   leftOutOfRange.value && !inRange(entered.value) ? SETTING_RANGE_MESSAGES[props.settingKey] : undefined)
 
+let sends = 0
+let answered = 0
 const save = useSaveAsChanged(async (sent: number | null) => {
   const shown = sent ?? inForce.value.fallbackValue
+  const sending = ++sends
   const answer = await updateInstanceSettings({ [props.settingKey]: sent } as Partial<Record<SettingKey, number | null>>)
+  // An answer that lands after the answer to a later save is out of date.
+  if (sending < answered)
+    return
+  answered = sending
   inForce.value = answer[props.settingKey]
   if (entered.value === shown)
     entered.value = inForce.value.value
@@ -58,7 +65,8 @@ function saveEntered() {
   if (leftOutOfRange.value)
     return
   // Entering a number overrides, so the value already in force is not sent again as an override of itself.
-  if (entered.value === inForce.value.value && save.status !== 'failed')
+  // While a save is under way the value in force is about to change, so the number entered is sent after it.
+  if (entered.value === inForce.value.value && save.status !== 'failed' && save.status !== 'saving')
     return
   override.value = entered.value
   save.commit()

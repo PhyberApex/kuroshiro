@@ -2,6 +2,7 @@ import type { DeviceSummary, InstanceFacts, InstanceSettingsResponse, SettingKey
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { userEvent } from 'vitest/browser'
+import { held } from '@/pages/devices/__test__/deviceSettingsHarness'
 import { expectAccessible } from '@/testing/a11y'
 import { api, apiErrorResponse, apiUrl } from '@/testing/api/server'
 import { fakeShellReads, mountApp } from '@/testing/app'
@@ -19,10 +20,14 @@ const HALLWAY = buildDeviceSummary({ id: 'hallway', name: 'Hallway' })
 
 const words = (element: Element | null | undefined) => element?.textContent?.replace(/\s+/g, ' ').trim() ?? ''
 
-/** Answers the Instance Settings and takes their changes as the server does: a number overrides, `null` falls back. */
-function fakeSettings(initial: InstanceSettingsResponse = buildInstanceSettings()) {
+/**
+ * Answers the Instance Settings and takes their changes as the server does: a number overrides, `null` falls back.
+ * The changes are answered in the order they came, the first once `holdingFirst` settles.
+ */
+function fakeSettings(initial: InstanceSettingsResponse = buildInstanceSettings(), holdingFirst?: Promise<void>) {
   let settings = initial
   const patches: SettingsPatch[] = []
+  let answering = holdingFirst ?? Promise.resolve()
   api.use(
     http.get(apiUrl('settings'), () => HttpResponse.json(settings)),
     http.patch(apiUrl('settings'), async ({ request }) => {
@@ -31,7 +36,11 @@ function fakeSettings(initial: InstanceSettingsResponse = buildInstanceSettings(
       const changed = (Object.entries(patch) as [SettingKey, number | null][])
         .map(([key, override]) => [key, { ...settings[key], override, value: override ?? settings[key].fallbackValue }])
       settings = { ...settings, ...Object.fromEntries(changed) }
-      return HttpResponse.json(settings)
+      const answer = settings
+      const turn = answering
+      answering = turn.then(() => {})
+      await turn
+      return HttpResponse.json(answer)
     }),
   )
   return patches
@@ -258,6 +267,22 @@ describe('instance Settings', () => {
 
       await expect.poll(() => sourceOf(screen, 'Battery low'), { timeout: 5000 }).toBe('Set here · Reset to 20')
       expect(patches).toEqual([{ lowBatteryPercent: 20 }])
+    })
+
+    it('sends the number that was in force while a save is under way, and ends showing it', async () => {
+      const hold = held()
+      const patches = fakeSettings(buildInstanceSettings(), hold.promise)
+      const screen = await mountSettings()
+      await enter(screen, 'Battery low', '30')
+      await expect.poll(() => words(rowOf(screen, 'Battery low')?.querySelector('[role="status"]'))).toBe('Saving')
+
+      await enter(screen, 'Battery low', '20')
+
+      await expect.poll(() => patches, { timeout: 5000 }).toEqual([{ lowBatteryPercent: 30 }, { lowBatteryPercent: 20 }])
+      hold.release()
+      await expect.poll(() => sourceOf(screen, 'Battery low'), { timeout: 5000 }).toBe('Set here · Reset to 20')
+      await expect.element(field(screen, 'Battery low')).toHaveValue(20)
+      expect(noteOf(screen, 'Battery low')).toBe('Fires when a Device\'s battery is below 20 %, and resolves once it is back at 25 %.')
     })
   })
 
