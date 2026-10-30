@@ -7,12 +7,12 @@ interface ScreenFormsChanged {
   settle: () => void
 }
 
-const SCREEN_FORMS_CHANGED: InjectionKey<ScreenFormsChanged> = Symbol('screenFormsChanged')
+const screenFormsChangedKey: InjectionKey<ScreenFormsChanged> = Symbol('screenFormsChanged')
 
 /** Lets `AddScreenPage` hold one guard for every kind's form, kept alive, rather than only the one in view. */
 export function provideScreenFormsChanged() {
   const changedForms = reactive(new Set<symbol>())
-  provide(SCREEN_FORMS_CHANGED, {
+  provide(screenFormsChangedKey, {
     report(id, changed) {
       if (changed)
         changedForms.add(id)
@@ -26,7 +26,8 @@ export function provideScreenFormsChanged() {
 
 /** A kind's form reports its `changed` to the page in place of a guard of its own, so switching kinds keeps every one's answer. */
 export function useReportScreenFormChanged(changed: Ref<boolean>) {
-  const forms = inject(SCREEN_FORMS_CHANGED, undefined)
+  // Outside Add Screen nothing provides it, so no warning is wanted.
+  const forms = inject(screenFormsChangedKey, undefined)
   if (!forms)
     return
   const id = Symbol('screen-form')
@@ -39,6 +40,6 @@ export function useReportScreenFormChanged(changed: Ref<boolean>) {
  * including another kind's kept alive with something entered. Outside Add Screen this does nothing.
  */
 export function useSettleScreenForms() {
-  const forms = inject(SCREEN_FORMS_CHANGED, undefined)
+  const forms = inject(screenFormsChangedKey, undefined)
   return () => forms?.settle()
 }

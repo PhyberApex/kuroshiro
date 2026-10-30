@@ -698,7 +698,7 @@ A change of the path within the same route (another Plugin's page) asks too; a c
 
 For an action that counts as leaving without being a route change, take a template ref of the guard and call `leaveFor(action)`: it asks first, runs `action` unless the admin keeps editing, and does not ask again about a navigation `action` makes.
 
-Where several forms can hold changes at once and only one is shown (Add Screen's kinds, kept alive while another is chosen), one guard at the page covers them all: each form reports its `changed` with `useReportScreenFormChanged` (`addScreenChanged.ts`) instead of rendering a guard of its own. `AddFormFoot`'s `guarded` prop, false there, turns its own `UnsavedChanges` off so it is not asked about twice.
+Where several forms can hold changes at once and only one is shown (Add Screen's kinds, kept alive while another is chosen), one guard at the page covers them all: each form reports its `changed` with `useReportScreenFormChanged` (`addScreenChanged.ts`) instead of rendering a guard of its own. A save there settles every form's report (`useSettleScreenForms`) before it waits a tick and navigates, because a form kept alive with something entered would still hold `when` true after another form's write. `AddFormFoot`'s `guarded` prop, false there, turns its own `UnsavedChanges` off so it is not asked about twice.
 
 ## Tests of a page
 
