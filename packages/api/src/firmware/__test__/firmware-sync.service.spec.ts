@@ -4,9 +4,10 @@ import type { FirmwareAutoUpdateService } from '../firmware-auto-update.service.
 import { Logger } from '@nestjs/common'
 import { QueryFailedError } from 'typeorm'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { jsonResponse, stubFetch } from '../../test/fetch.js'
+import { endlessBody, jsonResponse, stubFetch } from '../../test/fetch.js'
 import { asRepository, createMockTransactionalRepository } from '../../test/mockRepository.js'
 import { asService } from '../../test/mockService.js'
+import { UPLOAD_LIMITS } from '../../uploads/upload-limits.js'
 import { FirmwareSyncService } from '../firmware-sync.service.js'
 
 function uniqueViolation(constraint: string): QueryFailedError {
@@ -124,8 +125,8 @@ describe('firmwareSyncService', () => {
       const result = await service.sync()
 
       expect(mockFetch).toHaveBeenNthCalledWith(1, FEED_URL, { signal: expect.any(AbortSignal) })
-      expect(mockFetch).toHaveBeenCalledWith(OG_URL)
-      expect(mockFetch).toHaveBeenCalledWith(X_URL)
+      expect(mockFetch).toHaveBeenCalledWith(OG_URL, { signal: expect.any(AbortSignal) })
+      expect(mockFetch).toHaveBeenCalledWith(X_URL, { signal: expect.any(AbortSignal) })
       expect(firmwareRepo.insert).toHaveBeenCalledTimes(2)
       expect(firmwareRepo.insert).toHaveBeenCalledWith(expect.objectContaining({
         version: '1.8.17',
@@ -149,7 +150,7 @@ describe('firmwareSyncService', () => {
 
       const result = await service.sync()
 
-      expect(mockFetch).toHaveBeenCalledWith('https://trmnl-fw.s3.us-east-2.amazonaws.com/trmnl_x/FW1.8.16.bin')
+      expect(mockFetch).toHaveBeenCalledWith('https://trmnl-fw.s3.us-east-2.amazonaws.com/trmnl_x/FW1.8.16.bin', { signal: expect.any(AbortSignal) })
       expect(firmwareRepo.insert).toHaveBeenCalledWith(expect.objectContaining({ folder: 'trmnl_og', version: '1.8.17' }))
       expect(firmwareRepo.insert).toHaveBeenCalledWith(expect.objectContaining({ folder: 'trmnl_x', version: '1.8.16' }))
       expect(result).toMatchObject({ inserted: true, version: '1.8.17' })
@@ -169,7 +170,7 @@ describe('firmwareSyncService', () => {
 
       await service.sync()
 
-      expect(mockFetch).not.toHaveBeenCalledWith(BWRY_URL)
+      expect(mockFetch).not.toHaveBeenCalledWith(BWRY_URL, expect.anything())
       expect(firmwareRepo.insert).not.toHaveBeenCalledWith(expect.objectContaining({ folder: 'trmnl_bwry' }))
       expect(firmwareRepo.insert).toHaveBeenCalledWith(expect.objectContaining({ folder: 'trmnl_og', compatibleModels: ['og_png', 'og_plus'] }))
       expect(firmwareRepo.update).not.toHaveBeenCalledWith(expect.anything(), { compatibleModels: expect.arrayContaining(['og_bwry']) })
@@ -192,7 +193,7 @@ describe('firmwareSyncService', () => {
       const result = await service.sync()
 
       expect(firmwareRepo.existsBy).toHaveBeenCalledWith({ kind: 'official-synced', folder: 'trmnl_og', version: '1.8.17' })
-      expect(mockFetch).not.toHaveBeenCalledWith(OG_URL)
+      expect(mockFetch).not.toHaveBeenCalledWith(OG_URL, expect.anything())
       expect(firmwareRepo.insert).toHaveBeenCalledTimes(1)
       expect(firmwareRepo.insert).toHaveBeenCalledWith(expect.objectContaining({ folder: 'trmnl_x' }))
       expect(result).toMatchObject({ inserted: true, version: '1.8.17' })
@@ -364,6 +365,41 @@ describe('firmwareSyncService', () => {
       expect(fsMock.writeFile).not.toHaveBeenCalled()
       expect(firmwareRepo.insert).not.toHaveBeenCalled()
       expect(autoUpdateService.applyPolicy).not.toHaveBeenCalled()
+    })
+
+    it('fails the sync, and stores nothing, when a binary download stalls past its timeout', async () => {
+      const timeout = new AbortController()
+      const timeoutSpy = vi.spyOn(AbortSignal, 'timeout').mockReturnValue(timeout.signal)
+      mockFetch.mockImplementation(async (input, init) => {
+        if (String(input) === FEED_URL)
+          return jsonResponse({ data: feed })
+        // Sends its headers, then never a byte of the body until the request is aborted.
+        const body = new ReadableStream<Uint8Array>({
+          start: controller => init?.signal?.addEventListener('abort', () => controller.error(init.signal?.reason)),
+        })
+        return new Response(body)
+      })
+
+      const syncing = service.sync()
+      await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledWith(OG_URL, { signal: timeout.signal }))
+      timeout.abort(new DOMException('The operation was aborted due to timeout', 'TimeoutError'))
+
+      await expect(syncing).rejects.toThrow(`Downloading firmware binary ${OG_URL} timed out`)
+      expect(timeoutSpy).toHaveBeenCalledWith(60_000)
+      expect(fsMock.writeFile).not.toHaveBeenCalled()
+      expect(firmwareRepo.insert).not.toHaveBeenCalled()
+      expect(syncRuns.recordFailure).toHaveBeenCalledWith('firmware', expect.any(Date), expect.objectContaining({ message: expect.stringContaining('timed out') }))
+      timeoutSpy.mockRestore()
+    })
+
+    it('fails the sync, and stores nothing, when a binary is larger than a firmware upload may be', async () => {
+      const { body, cancelled } = endlessBody()
+      mockFetch.mockImplementation(async input => String(input) === FEED_URL ? jsonResponse({ data: feed }) : new Response(body))
+
+      await expect(service.sync()).rejects.toThrow(`Firmware binary ${OG_URL} is larger than ${UPLOAD_LIMITS.firmwareUploadBytes} bytes`)
+      expect(cancelled()).toBe(true)
+      expect(fsMock.writeFile).not.toHaveBeenCalled()
+      expect(firmwareRepo.insert).not.toHaveBeenCalled()
     })
   })
 })
