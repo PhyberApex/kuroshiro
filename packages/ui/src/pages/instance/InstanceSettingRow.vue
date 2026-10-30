@@ -58,7 +58,8 @@ function saveEntered() {
   if (leftOutOfRange.value)
     return
   // Entering a number overrides, so the value already in force is not sent again as an override of itself.
-  if (entered.value === inForce.value.value && save.status !== 'failed')
+  // While a save is under way the value in force is about to change, so the number entered is sent after it.
+  if (entered.value === inForce.value.value && save.status !== 'failed' && save.status !== 'saving')
     return
   override.value = entered.value
   save.commit()
