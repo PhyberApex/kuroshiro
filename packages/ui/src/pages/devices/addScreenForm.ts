@@ -24,8 +24,13 @@ export function useAddScreen<Field extends string = never>(fields: readonly Fiel
 
   const hasAny = (found: Problems) => fields.some(field => found[field])
 
-  /** `refusedAt` words a refusal that is about one field, by that field: an address that gave no image. */
+  /**
+   * `refusedAt` words a refusal that is about one field, by that field: an address that gave no image.
+   * A second call while one is running does nothing: the editor's Mod-S calls this without the button's guard.
+   */
   async function create(request: () => Promise<ScreenRead>, found: Problems = {}, refusedAt: (error: unknown) => Problems = () => ({})) {
+    if (running.value)
+      return
     problems.value = found
     failure.value = undefined
     if (hasAny(found))
