@@ -3,6 +3,7 @@ import type { FallbackScreenRequest } from '../device-models/fallback-screen-tem
 import type { Plugin } from '../plugins/entities/plugin.entity.js'
 import type { RotationScreen } from '../schedule/rotation.js'
 import type { RenderOutcome } from '../screens/render-outcome.js'
+import type { Requester } from '../utils/ssrfGuard.js'
 import type { DisplayRequestHeadersDto } from './dto/display-request-headers.dto.js'
 import type { Served } from './last-served.js'
 import * as fs from 'node:fs'
@@ -830,8 +831,8 @@ export class DeviceDisplayService {
     return renderedHtml
   }
 
-  /** How an image is fetched from an address a user or TRMNL gave: kept off internal hosts, redirects included, in demo mode. */
-  private imageRequester() {
+  /** How an image is fetched from an address a user or TRMNL gave: in demo mode refused for an internal host, on every redirect too. */
+  private imageRequester(): Requester {
     return requesterFor(this.configService.get<boolean>('demo_mode'))
   }
 
