@@ -61,13 +61,13 @@ export class Device {
   palette?: Palette | null
 
   @Column('boolean', { nullable: true })
-  mirrorEnabled?: boolean
+  mirrorEnabled?: boolean | null
 
   @Column('text', { nullable: true })
-  mirrorMac?: string
+  mirrorMac?: string | null
 
   @Column('text', { nullable: true })
-  mirrorApikey?: string
+  mirrorApikey?: string | null
 
   @Column('text', { default: 'identify' })
   specialFunction?: string

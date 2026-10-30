@@ -440,4 +440,21 @@ describe('reading and importing a Configuration Archive, against a real database
     expect(scheduledById.get(WEATHER)?.dataSources).toEqual([expect.objectContaining({ id: WEATHER_SOURCE, name: 'forecast' })])
     expect(scheduledById.get(WEATHER)?.fields).toEqual([expect.objectContaining({ id: WEATHER_KEY_FIELD, keyname: 'api_key', fieldType: 'password' })])
   })
+
+  it('overwrites a mirrored Device and a Plugin from a Recipe with an archive entry that has neither', async () => {
+    await database.getRepository(Device).update({ id: KITCHEN }, { mirrorEnabled: true, mirrorMac: 'AA:BB:CC:00:00:09', mirrorApikey: 'mirror-key' })
+    await database.getRepository(Plugin).save({ id: DOORBELL, name: 'Doorbell note', kind: 'Webhook', sourceRecipeId: '150460' })
+    const archive = buildArchive({
+      manifest: manifest(),
+      plugins: [{ ...DOORBELL_ENTRY, webhookToken: 'doorbell-token' }],
+      pluginFolders: { [DOORBELL]: DOORBELL_FOLDER },
+      devices: [makeDeviceEntry({ id: KITCHEN, name: 'Kitchen', friendlyId: 'KITCHN', mac: 'AA:BB:CC:00:00:01', apikey: 'kitchen-key' })],
+    })
+
+    const imported = await http.request('/api/config/import', upload(archive))
+
+    expect(imported.status).toBe(201)
+    expect(await database.getRepository(Device).findOneBy({ id: KITCHEN })).toMatchObject({ mirrorEnabled: null, mirrorMac: null, mirrorApikey: null })
+    expect(await database.getRepository(Plugin).findOneBy({ id: DOORBELL })).toMatchObject({ sourceRecipeId: null })
+  })
 })

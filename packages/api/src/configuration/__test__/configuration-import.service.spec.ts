@@ -996,7 +996,7 @@ describe('configurationImportService', () => {
     const summary = await service.importFromZip(buffer)
 
     const device = [...backing.get('Device')!.values()][0]
-    expect(device.mirrorApikey).toBeUndefined()
+    expect(device.mirrorApikey).toBeNull()
     expect(summary.warnings).toEqual([{ kind: 'mirror-apikey-redacted', device: { id: 'device-1', name: 'Device 1' } }])
   })
 

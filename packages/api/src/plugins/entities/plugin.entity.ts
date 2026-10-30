@@ -87,7 +87,7 @@ export class Plugin {
   // Nothing reads it yet — kept so a future update-check feature (#794-adjacent)
   // doesn't need a backfill migration (ADR-0011).
   @Column('text', { nullable: true })
-  sourceRecipeId?: string
+  sourceRecipeId?: string | null
 
   // The Recipe importer's parsed output at import time — the base a future
   // Recipe Update Check (issue #1028, ADR-0030) diffs against. Only Recipe
