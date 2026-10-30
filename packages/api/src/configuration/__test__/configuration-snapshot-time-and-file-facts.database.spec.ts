@@ -86,7 +86,7 @@ describe('a Recipe Snapshot\'s age and a File Screen\'s upload facts, through Co
   }
 
   /** The archive as an instance exporting the previous schemaVersion wrote it: neither entry has the facts. */
-  function withoutReadFacts(archive: Buffer): Buffer {
+  function withoutSnapshotTimeOrFileFacts(archive: Buffer): Buffer {
     const zip = new AdmZip(archive)
     const rewrite = (name: string, strip: (entry: Record<string, unknown>) => Record<string, unknown>) => {
       const entries = JSON.parse(zip.readAsText(name)) as Record<string, unknown>[]
@@ -127,7 +127,7 @@ describe('a Recipe Snapshot\'s age and a File Screen\'s upload facts, through Co
   it('reads an archive from before schemaVersion 7 as not knowing when a Snapshot was taken or what a File Screen\'s upload was', async () => {
     const plugin = await seedRecipePlugin()
     const screen = await seedFileScreen()
-    const archive = withoutReadFacts(await exportService.exportToZip())
+    const archive = withoutSnapshotTimeOrFileFacts(await exportService.exportToZip())
 
     await importService.importFromZip(archive)
 

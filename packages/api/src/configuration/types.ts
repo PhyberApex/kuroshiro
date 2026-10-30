@@ -115,7 +115,16 @@ export interface MashupConfigurationManifestEntry {
   slots: MashupSlotManifestEntry[]
 }
 
-export interface ScreenManifestEntry {
+/** A File Screen's upload as it arrived, `fileUploadedAt` as an ISO time. Absent from an archive older than schemaVersion 7, which reads as null. */
+export interface ScreenFileFactsEntry {
+  fileOriginalName?: string | null
+  fileWidth?: number | null
+  fileHeight?: number | null
+  fileBytes?: number | null
+  fileUploadedAt?: string | null
+}
+
+export interface ScreenManifestEntry extends ScreenFileFactsEntry {
   id: string
   deviceId: string
   type: Screen['type']
@@ -126,12 +135,6 @@ export interface ScreenManifestEntry {
   fetchManual: boolean
   /** Absent from an archive older than schemaVersion 5, which reads as true. */
   dither?: boolean
-  /** A File Screen's upload facts, `fileUploadedAt` as an ISO time. Absent from an archive older than schemaVersion 7, which reads as null. */
-  fileOriginalName?: string | null
-  fileWidth?: number | null
-  fileHeight?: number | null
-  fileBytes?: number | null
-  fileUploadedAt?: string | null
   pluginId: string | null
   devicePluginId: string | null
   schedule: ScheduleManifestEntry | null

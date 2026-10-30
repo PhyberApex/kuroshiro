@@ -6,7 +6,7 @@
 // v4 (ADR-0041) adds the Plugin's frameworkVersion; an older archive reads as null.
 // v5 (ADR-0045) adds dither to every Screen and Plugin entry; an older archive reads as dithered.
 // v6 (ADR-0046) adds rotationMode to every Device entry; an older archive reads as automatic.
-// v7 adds snapshotTakenAt to every Plugin entry and a File Screen's upload facts to every Screen entry; an older archive reads them as null.
+// v7 (#1669) adds snapshotTakenAt to every Plugin entry and a File Screen's upload facts to every Screen entry; an older archive reads them as null.
 export const CONFIG_SCHEMA_VERSION = 7
 
 // The older versions Configuration Import still reads: their Plugin Variables and per-Assignment Field Values are dropped with a warning (ADR-0032).

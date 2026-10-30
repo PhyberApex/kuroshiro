@@ -18,6 +18,7 @@ import type {
   PaletteManifestEntry,
   PluginManifestEntry,
   ScheduleManifestEntry,
+  ScreenFileFactsEntry,
   ScreenManifestEntry,
 } from '../types.js'
 import { BOOLEAN_SETTING_KEYS, CONFIGURATION_REDACTION_SENTINEL, SETTING_KEYS } from 'kuroshiro-shared'
@@ -137,7 +138,7 @@ export function buildScreenEntry(screen: Screen): ScreenManifestEntry {
   }
 }
 
-function buildScreenFileFacts(screen: Screen): Pick<ScreenManifestEntry, 'fileOriginalName' | 'fileWidth' | 'fileHeight' | 'fileBytes' | 'fileUploadedAt'> {
+function buildScreenFileFacts(screen: Screen): Required<ScreenFileFactsEntry> {
   return {
     fileOriginalName: screen.fileOriginalName ?? null,
     fileWidth: screen.fileWidth ?? null,
