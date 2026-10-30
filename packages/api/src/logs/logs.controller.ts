@@ -1,5 +1,6 @@
-import type { DeviceCredentials } from '../devices/authenticate-device.js'
-import { Body, Controller, Headers, HttpCode, Logger, Post } from '@nestjs/common'
+import { Body, Controller, HttpCode, Logger, Post } from '@nestjs/common'
+import { DeviceHeaders } from '../devices/device-headers.decorator.js'
+import { DeviceCredentialsHeadersDto } from '../devices/dto/device-credentials-headers.dto.js'
 import { OutsideAdminApi } from '../errors/outside-admin-api.decorator.js'
 import { CreateLogDto } from './dto/create-log.dto.js'
 import { LogsService } from './logs.service.js'
@@ -12,7 +13,7 @@ export class LogsController {
   @Post()
   @HttpCode(204)
   @OutsideAdminApi()
-  async consumeLog(@Headers() headers: DeviceCredentials, @Body() body: CreateLogDto) {
+  async consumeLog(@DeviceHeaders(DeviceCredentialsHeadersDto) headers: DeviceCredentialsHeadersDto, @Body() body: CreateLogDto) {
     this.logger.debug(`Got log ${JSON.stringify(body)}`)
     await this.logsService.addLogToDevice(headers, body)
   }

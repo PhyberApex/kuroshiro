@@ -1,12 +1,12 @@
-import { IsNumberString, IsOptional, IsString } from 'class-validator'
+import { IsOptional, IsString } from 'class-validator'
+import { DeviceCredentialsHeadersDto } from './device-credentials-headers.dto.js'
 
-export class DisplayRequestHeadersDto {
-  @IsString()
-  id: string
-
-  @IsString()
-  'access-token': string
-
+/**
+ * `refresh-rate`, `height` and `width` carry numbers but are only checked as
+ * strings: the poll parses them leniently, and a garbled one costs the Device
+ * that value, not its image.
+ */
+export class DisplayRequestHeadersDto extends DeviceCredentialsHeadersDto {
   @IsOptional()
   @IsString()
   'battery-voltage'?: string
@@ -16,7 +16,7 @@ export class DisplayRequestHeadersDto {
   'fw-version'?: string
 
   @IsOptional()
-  @IsNumberString()
+  @IsString()
   'refresh-rate'?: string
 
   @IsOptional()
@@ -28,11 +28,11 @@ export class DisplayRequestHeadersDto {
   'user-agent'?: string
 
   @IsOptional()
-  @IsNumberString()
+  @IsString()
   height?: string
 
   @IsOptional()
-  @IsNumberString()
+  @IsString()
   width?: string
 
   @IsOptional()
