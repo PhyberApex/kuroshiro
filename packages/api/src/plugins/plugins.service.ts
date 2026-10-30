@@ -195,7 +195,7 @@ export class PluginsService implements OnModuleInit {
       oauthSettings: source.oauthSettings,
       mergeStrategy: source.mergeStrategy ?? undefined,
       streamLimit: source.streamLimit ?? undefined,
-      sourceRecipeId: source.sourceRecipeId,
+      sourceRecipeId: source.sourceRecipeId ?? undefined,
       sourceRecipeSnapshot: source.sourceRecipeSnapshot,
       dataSources: (source.dataSources || []).map(ds => ({
         name: ds.name,

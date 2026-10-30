@@ -588,8 +588,8 @@ export class ConfigurationImportService {
     device.rotationMode = entry.rotationMode ?? 'automatic'
     device.deviceModel = await this.resolveDeviceModel(repos.deviceModel, entry.deviceModelName, ref, run)
     device.palette = await this.resolvePalette(repos.palette, entry.paletteId, ref, run)
-    device.mirrorEnabled = entry.mirrorEnabled ?? undefined
-    device.mirrorMac = entry.mirrorMac ?? undefined
+    device.mirrorEnabled = entry.mirrorEnabled ?? null
+    device.mirrorMac = entry.mirrorMac ?? null
     device.mirrorApikey = this.resolveMirrorApikey(entry, device, ref, run)
     device.sleepModeEnabled = entry.sleepModeEnabled
     device.sleepStartTime = entry.sleepStartTime
@@ -709,12 +709,12 @@ export class ConfigurationImportService {
     }
   }
 
-  /** A redacted mirrorApikey keeps the target row's value when one is set, otherwise falls back to unset (ADR-0028). */
-  private resolveMirrorApikey(entry: DeviceManifestEntry, device: Device, ref: Ref, run: ImportRun): string | undefined {
+  /** A redacted mirrorApikey keeps the target row's value when one is set, otherwise clears it (ADR-0028). */
+  private resolveMirrorApikey(entry: DeviceManifestEntry, device: Device, ref: Ref, run: ImportRun): string | null {
     if (entry.mirrorApikey !== CONFIGURATION_REDACTION_SENTINEL) {
-      return entry.mirrorApikey ?? undefined
+      return entry.mirrorApikey ?? null
     }
-    return this.resolveRedactedField(Boolean(device.mirrorApikey), device.mirrorApikey, () => undefined, { kind: 'mirror-apikey-redacted', device: ref }, run)
+    return this.resolveRedactedField(Boolean(device.mirrorApikey), device.mirrorApikey ?? null, () => null, { kind: 'mirror-apikey-redacted', device: ref }, run)
   }
 
   /**
@@ -793,7 +793,7 @@ export class ConfigurationImportService {
     plugin.dither = entry.dither ?? true
     plugin.noScreenPadding = parsed.noScreenPadding ?? false
     plugin.darkMode = parsed.darkMode ?? false
-    plugin.sourceRecipeId = entry.sourceRecipeId ?? parsed.sourceRecipeId ?? undefined
+    plugin.sourceRecipeId = entry.sourceRecipeId ?? parsed.sourceRecipeId ?? null
     plugin.sourceRecipeSnapshot = entry.sourceRecipeSnapshot ? { ...entry.sourceRecipeSnapshot } : null
     return plugin
   }
