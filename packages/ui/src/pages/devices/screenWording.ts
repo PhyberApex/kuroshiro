@@ -2,7 +2,7 @@ import type { DeviceDetail, ScheduleRead, ScreenRead, ScreenState } from 'kurosh
 import { isPassedOver, SCREEN_STATE_LABELS } from '@/components/screenRows'
 import { clockTime } from '@/patterns/time'
 import { nextPollTime } from './currentScreenStory'
-import { crossesMidnight } from './scheduleEditing'
+import { crossesMidnight, dateInZone } from './scheduleEditing'
 import { scheduleHours } from './scheduleSummary'
 import { screenName } from './screenNaming'
 
@@ -73,9 +73,11 @@ function nightTheHoursBegan({ startTime, endTime }: ScheduleRead, now: Date, tim
 }
 
 function notToday({ screen, now, timezone }: ScreenAsked) {
-  if (screen.stateCause === 'dateRange' && screen.schedule)
-    return `Its Schedule only runs ${datesOf(screen.schedule)}, so Rotation passes over it.`
   const night = screen.schedule && nightTheHoursBegan(screen.schedule, now, timezone)
+  if (screen.stateCause === 'dateRange' && screen.schedule) {
+    const started = night ? `Its hours from the night of ${dayAndMonth(dateInZone(night, timezone))} run past midnight, and its` : 'Its'
+    return `${started} Schedule only runs ${datesOf(screen.schedule)}, so Rotation passes over it.`
+  }
   if (night) {
     const weekday = weekdayInZone(night, timezone)
     return `Its hours from ${weekday} night run past midnight, and its Schedule leaves out ${weekday}s, so Rotation passes over it.`
