@@ -3,7 +3,6 @@ import type { UpdateDeviceDto } from './dto/update-device.dto.js'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { isUUID } from 'class-validator'
-import { ILike } from 'typeorm'
 import { DeviceModelsService } from '../device-models/device-models.service.js'
 import { PaletteSelectionService } from '../device-models/palette-selection.service.js'
 import { ApiException } from '../errors/api.exception.js'
@@ -25,6 +24,7 @@ import {
 } from './device-update-rules.js'
 import { Device } from './devices.entity.js'
 import { CreateDeviceDto } from './dto/create-device.dto.js'
+import { findDeviceByMac } from './find-device-by-mac.js'
 
 @Injectable()
 export class DevicesService {
@@ -93,9 +93,8 @@ export class DevicesService {
     return true
   }
 
-  /** A Device that registered itself through `/api/setup` before MACs were upper-cased there kept the letter case it sent, so the comparison ignores it. */
   private async isMacRegistered(mac: string): Promise<boolean> {
-    return (await this.deviceRepository.findOneBy({ mac: ILike(mac) })) != null
+    return (await findDeviceByMac(this.deviceRepository, mac)) != null
   }
 
   private async findByIdOrNull(id: string): Promise<Device | null> {
