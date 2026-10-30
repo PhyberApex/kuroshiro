@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { isDeviceAsleep, MIN_SLEEP_REFRESH_RATE, nextSleepEnd, secondsUntilSleepEnd } from '../sleep-mode.js'
+import { isDeviceAsleep, lastSleepEnd, MIN_SLEEP_REFRESH_RATE, nextSleepEnd, secondsUntilSleepEnd } from '../sleep-mode.js'
 
 function time(hh: number, mm: number, ss = 0): Date {
   return new Date(2026, 0, 1, hh, mm, ss)
@@ -79,5 +79,61 @@ describe('secondsUntilSleepEnd across a daylight saving change', () => {
   it('agrees with nextSleepEnd', () => {
     const now = new Date(2026, 2, 29, 1, 0)
     expect(now.getTime() + secondsUntilSleepEnd(7 * 3600, now) * 1000).toBe(nextSleepEnd(7 * 3600, now).getTime())
+  })
+})
+
+describe('lastSleepEnd', () => {
+  it('is today\'s wake time once it has passed', () => {
+    expect(lastSleepEnd(7 * 3600, time(7, 0))).toEqual(time(7, 0))
+    expect(lastSleepEnd(7 * 3600, time(12, 0))).toEqual(time(7, 0))
+  })
+
+  it('is yesterday\'s wake time before today\'s', () => {
+    expect(lastSleepEnd(7 * 3600, time(6, 59))).toEqual(new Date(2025, 11, 31, 7, 0))
+  })
+})
+
+// Yesterday's wake time is a day back on the Instance Time Zone's clock, so 23 or 25 hours
+// back the day it jumps — and the moment `nextSleepEnd` named the day before.
+describe('lastSleepEnd across a daylight saving change', () => {
+  beforeEach(() => {
+    vi.stubEnv('TZ', 'Europe/Berlin')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('reaches back 23 hours the day clocks spring forward', () => {
+    expect(lastSleepEnd(7 * 3600, new Date(2026, 2, 29, 3, 30))).toEqual(new Date('2026-03-28T06:00:00Z'))
+  })
+
+  it('reaches back 25 hours the day clocks fall back', () => {
+    expect(lastSleepEnd(7 * 3600, new Date(2026, 9, 25, 3, 30))).toEqual(new Date('2026-10-24T05:00:00Z'))
+  })
+
+  it('agrees with the nextSleepEnd of a day before, even for a wake time inside the skipped hour', () => {
+    expect(lastSleepEnd(2.5 * 3600, new Date(2026, 2, 30, 1, 0))).toEqual(nextSleepEnd(2.5 * 3600, new Date(2026, 2, 29, 1, 0)))
+  })
+
+  it('is the second occurrence of a wake time inside the repeated hour once that has passed', () => {
+    expect(lastSleepEnd(2.5 * 3600, new Date('2026-10-25T01:45:00Z'))).toEqual(new Date('2026-10-25T01:30:00Z'))
+    expect(lastSleepEnd(2.5 * 3600, new Date('2026-10-25T00:45:00Z'))).toEqual(new Date('2026-10-25T00:30:00Z'))
+  })
+})
+
+// America/Santiago springs forward at midnight, so the day it does there is no 00:00 to count from.
+describe('the wake time on a day the clock skips midnight', () => {
+  beforeEach(() => {
+    vi.stubEnv('TZ', 'America/Santiago')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('still reads the wake time on the clock', () => {
+    expect(lastSleepEnd(7 * 3600, new Date(2026, 8, 6, 12, 0)).getHours()).toBe(7)
+    expect(nextSleepEnd(7 * 3600, new Date(2026, 8, 6, 2, 0)).getHours()).toBe(7)
   })
 })

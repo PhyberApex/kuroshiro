@@ -35,9 +35,7 @@ export function secondsUntilSleepEnd(sleepEndTime: number, now: Date): number {
 
 /** The next moment after `now` at which the server's clock reads `sleepEndTime`. */
 export function nextSleepEnd(sleepEndTime: number, now: Date): Date {
-  const end = new Date(now)
-  end.setHours(0, 0, 0, 0)
-  end.setSeconds(sleepEndTime)
+  const end = onDayOf(now, sleepEndTime)
   if (end > now)
     return end
   // The night clocks fall back reads each time of the repeated hour twice; past the first, the second is next.
@@ -46,6 +44,31 @@ export function nextSleepEnd(sleepEndTime: number, now: Date): Date {
     return repeated
   end.setDate(end.getDate() + 1)
   return end
+}
+
+/**
+ * The most recent moment at or before `now` at which the server's clock read
+ * `sleepEndTime`. Yesterday's is a day back on the clock, which the day it jumps
+ * for daylight saving is 23 or 25 hours.
+ */
+export function lastSleepEnd(sleepEndTime: number, now: Date): Date {
+  let end = onDayOf(now, sleepEndTime)
+  if (end > now) {
+    const yesterday = new Date(now)
+    yesterday.setDate(yesterday.getDate() - 1)
+    end = onDayOf(yesterday, sleepEndTime)
+  }
+  // The night clocks fall back reads each time of the repeated hour twice; past the second, it is the last.
+  const repeated = new Date(end.getTime() + HOUR_MS)
+  return repeated <= now && secondsOfDay(repeated) === secondsOfDay(end) ? repeated : end
+}
+
+/**
+ * The moment the server's clock reads `timeOfDay` on the day `day` falls on. Built
+ * in one step, since a time zone whose clock skips midnight has no 00:00 to start from.
+ */
+function onDayOf(day: Date, timeOfDay: number): Date {
+  return new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, timeOfDay)
 }
 
 function secondsOfDay(now: Date): number {

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeDevice } from '../../../test/fixtures.js'
 import { offlineRule } from '../offline.rule.js'
 
@@ -122,5 +122,40 @@ describe('offlineRule', () => {
       body: 'Kitchen Display (AA:BB:CC:DD:EE:FF) was last seen 2026-01-01T12:00:00.000Z.',
       type: 'success',
     })
+  })
+})
+
+// Yesterday's window end is a day back on the Instance Time Zone's clock, which on the
+// day the clock jumps for daylight saving is 23 or 25 hours back, not 24.
+describe('offlineRule across a daylight saving change', () => {
+  beforeEach(() => {
+    vi.stubEnv('TZ', 'Europe/Berlin')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  // A 05:00-07:00 window and a Device that last polled long before; the threshold is `hours`.
+  function sleptDevice(hours: number) {
+    return makeDevice({
+      refreshRate: hours * 3600,
+      sleepModeEnabled: true,
+      sleepStartTime: 5 * 3600,
+      sleepEndTime: 7 * 3600,
+      lastSeen: new Date(2026, 0, 1),
+    })
+  }
+
+  it('measures from yesterday\'s 07:00 on the day clocks spring forward', () => {
+    // 03:30 CEST is 19.5 h after 07:00 CET the day before; 24 h back would read 20.5 h.
+    const now = new Date(2026, 2, 29, 3, 30)
+    expect(offlineRule.evaluate(sleptDevice(20), { ...context(1), now }, false).active).toBe(false)
+  })
+
+  it('measures from yesterday\'s 07:00 on the day clocks fall back', () => {
+    // 03:30 CET is 21.5 h after 07:00 CEST the day before; 24 h back would read 20.5 h.
+    const now = new Date(2026, 9, 25, 3, 30)
+    expect(offlineRule.evaluate(sleptDevice(21), { ...context(1), now }, false).active).toBe(true)
   })
 })
