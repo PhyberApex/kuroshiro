@@ -149,6 +149,21 @@ describe('add Screen', () => {
       expect(faked.writes).toEqual([{ method: 'POST', path: 'screens', body: { kind: 'external', deviceId: 'kitchen', name: 'Tide table', url: 'https://tides.example/today.png', fetchManual: true, dither: true } }])
       expect(screen.getByRole('alertdialog').elements()).toEqual([])
     })
+
+    it('navigates without asking once a Screen is added through one kind while another kind\'s form holds something', async () => {
+      const faked = fakeKitchen({ plugins: PLUGINS })
+      const screen = await mountAddScreen('link')
+
+      await nameField(screen).fill('Tide table')
+      await kindOf(screen, 'Plugin').click()
+      await plugin(screen, 'Doorbell note').click()
+      await assignPlugin(screen).click()
+
+      await expect.poll(() => path(screen)).toBe(OPENED_ON_THE_NEW_SCREEN)
+      expect(faked.writes).toEqual([{ method: 'POST', path: 'plugins/doorbell/assign', body: { deviceId: 'kitchen' } }])
+      expect(screen.getByRole('alertdialog').elements()).toEqual([])
+      await openedRow(screen, 'Doorbell note')
+    })
   })
 
   describe('a Plugin', () => {
