@@ -185,6 +185,11 @@ function listsDataSources(settingsYaml: string): boolean {
   }
 }
 
+/** An ISO time from the archive as a Date, a missing one as null. */
+function toDateOrNull(isoTime: string | null | undefined): Date | null {
+  return isoTime ? new Date(isoTime) : null
+}
+
 @Injectable()
 export class ConfigurationImportService {
   private readonly logger = new Logger(ConfigurationImportService.name)
@@ -500,7 +505,7 @@ export class ConfigurationImportService {
     firmware.compatibleModels = entry.compatibleModels
     firmware.label = entry.label
     firmware.deprecated = entry.deprecated
-    firmware.uploadedAt = entry.uploadedAt ? new Date(entry.uploadedAt) : null
+    firmware.uploadedAt = toDateOrNull(entry.uploadedAt)
     await repo.save(firmware)
     this.bump(run, 'firmware', !existing)
     // The archive never carries a Firmware's file (ADR-0021), so one that is not on this disk cannot be pushed.
@@ -802,10 +807,12 @@ export class ConfigurationImportService {
     return this.withRecipe(plugin, entry, parsed)
   }
 
-  /** The Plugin tied to the Recipe the archive entry or its `.trmnlp` folder names, with the entry's Recipe Snapshot, or to none. */
+  /** The Plugin tied to the Recipe the archive entry or its `.trmnlp` folder names, with the entry's Recipe Snapshot and when it was taken, or to none. */
   private withRecipe(plugin: Plugin, entry: PluginManifestEntry, parsed: ParsedPlugin): Plugin {
     plugin.sourceRecipeId = entry.sourceRecipeId ?? parsed.sourceRecipeId ?? null
     plugin.sourceRecipeSnapshot = entry.sourceRecipeSnapshot ? { ...entry.sourceRecipeSnapshot } : null
+    // The stored time belongs to the stored Snapshot, so a replaced Snapshot never keeps it.
+    plugin.snapshotTakenAt = entry.sourceRecipeSnapshot ? toDateOrNull(entry.snapshotTakenAt) : null
     return plugin
   }
 
@@ -1005,6 +1012,11 @@ export class ConfigurationImportService {
     screen.html = entry.html
     screen.fetchManual = entry.fetchManual
     screen.dither = entry.dither ?? true
+    screen.fileOriginalName = entry.fileOriginalName ?? null
+    screen.fileWidth = entry.fileWidth ?? null
+    screen.fileHeight = entry.fileHeight ?? null
+    screen.fileBytes = entry.fileBytes ?? null
+    screen.fileUploadedAt = toDateOrNull(entry.fileUploadedAt)
     screen.plugin = entry.pluginId ? ({ id: entry.pluginId } as Plugin) : null
     screen.devicePluginId = entry.devicePluginId
     // The restored Screen's render is stale until the next poll recomputes it (ADR-0021).

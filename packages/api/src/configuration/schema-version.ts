@@ -6,12 +6,13 @@
 // v4 (ADR-0041) adds the Plugin's frameworkVersion; an older archive reads as null.
 // v5 (ADR-0045) adds dither to every Screen and Plugin entry; an older archive reads as dithered.
 // v6 (ADR-0046) adds rotationMode to every Device entry; an older archive reads as automatic.
-export const CONFIG_SCHEMA_VERSION = 6
+// v7 adds snapshotTakenAt to every Plugin entry and a File Screen's upload facts to every Screen entry; an older archive reads them as null.
+export const CONFIG_SCHEMA_VERSION = 7
 
 // The older versions Configuration Import still reads: their Plugin Variables and per-Assignment Field Values are dropped with a warning (ADR-0032).
 export const LEGACY_CONFIG_SCHEMA_VERSIONS: ReadonlySet<number> = new Set([1, 2])
 
-export const IMPORTABLE_CONFIG_SCHEMA_VERSIONS: ReadonlySet<number> = new Set([...LEGACY_CONFIG_SCHEMA_VERSIONS, 3, 4, 5, CONFIG_SCHEMA_VERSION])
+export const IMPORTABLE_CONFIG_SCHEMA_VERSIONS: ReadonlySet<number> = new Set([...LEGACY_CONFIG_SCHEMA_VERSIONS, 3, 4, 5, 6, CONFIG_SCHEMA_VERSION])
 
 // An archive older than this has no settings.json, which reads as no overridden Instance Settings.
 export const FIRST_CONFIG_SCHEMA_VERSION_WITH_SETTINGS = 2

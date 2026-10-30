@@ -51,6 +51,8 @@ export interface PluginManifestEntry {
   webhookToken: string | null
   sourceRecipeId: string | null
   sourceRecipeSnapshot: ParsedPlugin | null
+  /** When the Recipe Snapshot was taken, as an ISO time. Absent from an archive older than schemaVersion 7, which reads as null. */
+  snapshotTakenAt?: string | null
   dataSources: PluginManifestDataSource[]
   templates: PluginManifestTemplate[]
   fields: PluginManifestField[]
@@ -124,6 +126,12 @@ export interface ScreenManifestEntry {
   fetchManual: boolean
   /** Absent from an archive older than schemaVersion 5, which reads as true. */
   dither?: boolean
+  /** A File Screen's upload facts, `fileUploadedAt` as an ISO time. Absent from an archive older than schemaVersion 7, which reads as null. */
+  fileOriginalName?: string | null
+  fileWidth?: number | null
+  fileHeight?: number | null
+  fileBytes?: number | null
+  fileUploadedAt?: string | null
   pluginId: string | null
   devicePluginId: string | null
   schedule: ScheduleManifestEntry | null

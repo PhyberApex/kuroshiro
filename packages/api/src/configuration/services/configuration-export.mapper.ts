@@ -22,6 +22,7 @@ import type {
 } from '../types.js'
 import { BOOLEAN_SETTING_KEYS, CONFIGURATION_REDACTION_SENTINEL, SETTING_KEYS } from 'kuroshiro-shared'
 import { isSecretField } from '../../plugins/plugin-field-values.js'
+import { toIsoStringOrNull } from '../../utils/readModel.js'
 
 /** A shallow clone whose Data Source header *values* are replaced by the Redaction Sentinel, for `buildEntries` to write into the archive's nested `.trmnlp` — the standalone per-Plugin export/import never sees this clone (ADR-0028). */
 export function withRedactedHeaders(plugin: Plugin): Plugin {
@@ -50,6 +51,7 @@ export function buildPluginEntry(plugin: Plugin, fieldValues: StoredFieldValues,
     webhookToken: redactWebhookToken(plugin.webhookToken, redact),
     sourceRecipeId: plugin.sourceRecipeId ?? null,
     sourceRecipeSnapshot: redactSnapshotHeaders(plugin.sourceRecipeSnapshot as ParsedPlugin | null | undefined, redact),
+    snapshotTakenAt: toIsoStringOrNull(plugin.snapshotTakenAt),
     dataSources: (plugin.dataSources || []).map(ds => ({ id: ds.id, name: ds.name })),
     templates: (plugin.templates || []).map(template => ({ id: template.id, layout: template.layout })),
     fields: (plugin.fields || []).map(field => ({ id: field.id, keyname: field.keyname })),
@@ -127,10 +129,21 @@ export function buildScreenEntry(screen: Screen): ScreenManifestEntry {
     html: screen.html ?? null,
     fetchManual: screen.fetchManual,
     dither: screen.dither,
+    ...buildScreenFileFacts(screen),
     pluginId: screen.plugin?.id ?? null,
     devicePluginId: screen.devicePluginId ?? null,
     schedule: screen.schedule ? buildScheduleEntry(screen.schedule) : null,
     mashupConfiguration: screen.mashupConfiguration ? buildMashupEntry(screen.mashupConfiguration) : null,
+  }
+}
+
+function buildScreenFileFacts(screen: Screen): Pick<ScreenManifestEntry, 'fileOriginalName' | 'fileWidth' | 'fileHeight' | 'fileBytes' | 'fileUploadedAt'> {
+  return {
+    fileOriginalName: screen.fileOriginalName ?? null,
+    fileWidth: screen.fileWidth ?? null,
+    fileHeight: screen.fileHeight ?? null,
+    fileBytes: screen.fileBytes ?? null,
+    fileUploadedAt: toIsoStringOrNull(screen.fileUploadedAt),
   }
 }
 
