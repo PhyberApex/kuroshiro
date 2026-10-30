@@ -30,7 +30,7 @@ const FIRMWARE_ID = '11111111-1111-4111-8111-111111111111'
 describe('the Device write and delete against a real database', () => {
   let database: DataSource
   let http: HttpTestApp
-  const reconvertImageScreens = vi.fn().mockResolvedValue(0)
+  const redrawForRenderTarget = vi.fn().mockResolvedValue(0)
   const reconvertSleepImage = vi.fn().mockResolvedValue(undefined)
 
   beforeAll(async () => {
@@ -55,13 +55,13 @@ describe('the Device write and delete against a real database', () => {
       controllers: [DevicesController],
       providers: [
         { provide: DeviceReadsService, useValue: new DeviceReadsService(devices, database.getRepository(Screen), deviceSensors) },
-        { provide: DevicesService, useValue: new DevicesService(devices, asService<DeviceModelsService>(deviceModels), asService<PaletteSelectionService>(paletteSelection), firmware, asService<ScreensService>({ reconvertImageScreens }), asService<DeviceSleepImageService>({ reconvert: reconvertSleepImage })) },
+        { provide: DevicesService, useValue: new DevicesService(devices, asService<DeviceModelsService>(deviceModels), asService<PaletteSelectionService>(paletteSelection), firmware, asService<ScreensService>({ redrawForRenderTarget }), asService<DeviceSleepImageService>({ reconvert: reconvertSleepImage })) },
       ],
     })
   })
 
   beforeEach(async () => {
-    reconvertImageScreens.mockClear()
+    redrawForRenderTarget.mockClear()
     reconvertSleepImage.mockClear()
     await database.getRepository(Device).createQueryBuilder().delete().execute()
   })
@@ -337,7 +337,7 @@ describe('the Device write and delete against a real database', () => {
       const body = await response.json() as DeviceDetail
       expect(body.deviceModel?.name).toBe('v2')
       expect(body.palette?.id).toBe('gray-16')
-      expect(reconvertImageScreens).toHaveBeenCalledOnce()
+      expect(redrawForRenderTarget).toHaveBeenCalledOnce()
       expect(reconvertSleepImage).toHaveBeenCalledOnce()
     })
 

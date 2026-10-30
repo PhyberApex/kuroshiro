@@ -122,8 +122,8 @@ export class CustomPalettesService {
   /** A failed conversion leaves the image as it was; the Palette change stands, as a Device's own Palette change does. */
   private async reconvert(devices: Device[]): Promise<void> {
     for (const device of devices) {
-      await this.screens.reconvertImageScreens(device).catch((error: unknown) =>
-        this.logger.error(`Could not convert the images of Device ${device.id} again: ${getErrorMessage(error)}`))
+      await this.screens.redrawForRenderTarget(device).catch((error: unknown) =>
+        this.logger.error(`Could not redraw the Screens of Device ${device.id}: ${getErrorMessage(error)}`))
       await this.deviceSleepImage.reconvert(device).catch((error: unknown) =>
         this.logger.error(`Could not convert the sleep image of Device ${device.id} again: ${getErrorMessage(error)}`))
     }

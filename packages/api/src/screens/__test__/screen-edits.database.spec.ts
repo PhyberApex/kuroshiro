@@ -425,6 +425,46 @@ describe('editing a Screen, against a real database', () => {
     })
   })
 
+  describe('a change of the Device\'s render target', () => {
+    function redrawForRenderTarget(): Promise<number> {
+      return http.app.get(ScreensService).redrawForRenderTarget(device)
+    }
+
+    it('answers the next /display poll with a new filename for an HTML Screen, so the Device draws it for the new Palette or Device Model', async () => {
+      await seedScreen(1)
+      const before = await polledFilename()
+
+      await redrawForRenderTarget()
+
+      expect(await polledFilename()).not.toBe(before)
+    })
+
+    it('moves the render time of Plugin and Mashup Screens and drops their cached output and Render Signal, so they render for the new target at once', async () => {
+      const plugin = await seedPlugin('Weather')
+      const pluginScreen = await seedScreen(1, { type: 'plugin', html: null, plugin, cachedPluginOutput: '<p>cached</p>', renderSignal: 'skip' })
+      const mashupScreen = await seedScreen(2, { type: 'mashup', html: null, cachedPluginOutput: '<p>cached</p>', renderSignal: 'hold' })
+
+      await redrawForRenderTarget()
+
+      for (const screen of [await stored(pluginScreen.id), await stored(mashupScreen.id)]) {
+        expect(screen.generatedAt.getTime()).toBeGreaterThan(CREATED_AT.getTime())
+        expect(screen.cachedPluginOutput).toBeNull()
+        expect(screen.renderSignal).toBeNull()
+      }
+    })
+
+    it('leaves the Screens of another Device and an External link fetched on every poll as they were', async () => {
+      const live = await seedScreen(1, { type: 'external', html: null, externalLink: 'http://a.local/a.png' })
+      const otherDevice = await database.getRepository(Device).save({ name: 'Hall', friendlyId: 'DEF456', mac: 'AA:BB:CC:DD:EE:02', apikey: 'other-secret', refreshRate: 300 })
+      const other = await seedScreen(1, { device: otherDevice, cachedPluginOutput: '<p>cached</p>' })
+
+      await redrawForRenderTarget()
+
+      expect((await stored(live.id)).generatedAt).toEqual(CREATED_AT)
+      expect(await stored(other.id)).toMatchObject({ generatedAt: CREATED_AT, cachedPluginOutput: '<p>cached</p>' })
+    })
+  })
+
   describe('pOST /api/screens/:id/image-preview', () => {
     it('answers the converted image as image/png and stores nothing', async () => {
       const screen = await seedScreen(1, { type: 'file', html: null })

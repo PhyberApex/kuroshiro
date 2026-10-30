@@ -23,7 +23,7 @@ describe('devicesService', () => {
   let deviceModels: MockDeviceModelsService
   let paletteSelection: MockPaletteSelectionService
   let firmwareService: { findById: ReturnType<typeof vi.fn> }
-  let screensService: { reconvertImageScreens: ReturnType<typeof vi.fn> }
+  let screensService: { redrawForRenderTarget: ReturnType<typeof vi.fn> }
   let deviceSleepImage: { reconvert: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
@@ -32,7 +32,7 @@ describe('devicesService', () => {
     paletteSelection = createMockPaletteSelectionService()
     paletteSelection.supportsPalette.mockImplementation(async (model: DeviceModel, palette: Palette) => model.paletteIds.includes(palette.id))
     firmwareService = { findById: vi.fn() }
-    screensService = { reconvertImageScreens: vi.fn().mockResolvedValue(0) }
+    screensService = { redrawForRenderTarget: vi.fn().mockResolvedValue(0) }
     deviceSleepImage = { reconvert: vi.fn().mockResolvedValue(undefined) }
     service = new DevicesService(
       asRepository(repo),
@@ -122,7 +122,7 @@ describe('devicesService', () => {
       expect(deviceModels.findByName).toHaveBeenCalledWith('v2')
       expect(result.deviceModel).toBe(V2)
       expect(result.palette).toBe(GRAY_16)
-      expect(screensService.reconvertImageScreens).toHaveBeenCalledWith(result)
+      expect(screensService.redrawForRenderTarget).toHaveBeenCalledWith(result)
       expect(deviceSleepImage.reconvert).toHaveBeenCalledWith(result)
     })
 
@@ -143,14 +143,14 @@ describe('devicesService', () => {
       expect(deviceModels.findByName).not.toHaveBeenCalled()
       expect(result.deviceModel).toBe(OG_PLUS)
       expect(result.palette).toBe(BW)
-      expect(screensService.reconvertImageScreens).toHaveBeenCalledWith(result)
+      expect(screensService.redrawForRenderTarget).toHaveBeenCalledWith(result)
     })
 
     it('does not reconvert images when neither model nor palette changed', async () => {
       repo.findOneBy.mockResolvedValue(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, palette: GRAY_4 }))
       paletteSelection.findPalette.mockResolvedValue(GRAY_4)
       await service.update(DEVICE_ID, { name: 'renamed', deviceModelName: 'og_plus', paletteId: 'gray-4' })
-      expect(screensService.reconvertImageScreens).not.toHaveBeenCalled()
+      expect(screensService.redrawForRenderTarget).not.toHaveBeenCalled()
       expect(deviceSleepImage.reconvert).not.toHaveBeenCalled()
     })
 

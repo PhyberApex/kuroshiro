@@ -258,7 +258,7 @@ describe('creating, changing and deleting a custom Palette, against a real datab
     it('logs a failing image or sleep-image reconversion of one Device and goes on to the next, and the Palette change stands', async () => {
       const { device: study } = await studyOnTheCustomPalette()
       const hall = await database.getRepository(Device).save({ name: 'Hall', friendlyId: 'HALL01', mac: 'AA:BB:CC:DD:EE:02', apikey: 'key2', deviceModel: { name: 'og_bwr' }, palette: { id: 'study-panel' } })
-      const reconvertImages = vi.spyOn(screens, 'reconvertImageScreens').mockRejectedValueOnce(new Error('disk full'))
+      const reconvertImages = vi.spyOn(screens, 'redrawForRenderTarget').mockRejectedValueOnce(new Error('disk full'))
       sleepImage.reconvert.mockRejectedValueOnce(new Error('sleep image unreadable'))
       const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {})
 
@@ -267,7 +267,7 @@ describe('creating, changing and deleting a custom Palette, against a real datab
       expect(response.status).toBe(200)
       expect(reconvertImages.mock.calls.map(([device]) => device.id)).toEqual([hall.id, study.id])
       expect(sleepImage.reconvert.mock.calls.map(([device]) => device.id)).toEqual([hall.id, study.id])
-      expect(logged).toHaveBeenCalledWith(`Could not convert the images of Device ${hall.id} again: disk full`)
+      expect(logged).toHaveBeenCalledWith(`Could not redraw the Screens of Device ${hall.id}: disk full`)
       expect(logged).toHaveBeenCalledWith(`Could not convert the sleep image of Device ${hall.id} again: sleep image unreadable`)
       expect((await database.getRepository(Palette).findOneByOrFail({ id: 'study-panel' })).colors).toEqual(['#000000', '#FFFFFF'])
     })
