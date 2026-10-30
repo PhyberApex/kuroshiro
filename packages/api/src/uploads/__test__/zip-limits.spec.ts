@@ -45,4 +45,11 @@ describe('assertUnpacksWithin', () => {
     const zip = declaringSize(zipOf({ 'settings.yml': Buffer.from('name: x') }), 'settings.yml', 0xFFFF_FFF0)
     expect(refusal(zip, 25 * 1024 * 1024)).toMatchObject({ code: 'zip-unpacks-too-large' })
   })
+
+  it('counts a stored entry at its packed length, which adm-zip copies whatever size it declares', () => {
+    const zip = new AdmZip()
+    zip.addFile('photo.png', Buffer.alloc(2048, 7))
+    zip.getEntry('photo.png')!.header.method = 0
+    expect(refusal(declaringSize(zip.toBuffer(), 'photo.png', 0), 1024)).toMatchObject({ code: 'zip-unpacks-too-large' })
+  })
 })

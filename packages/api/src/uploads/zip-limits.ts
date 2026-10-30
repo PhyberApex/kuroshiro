@@ -6,12 +6,14 @@ function zipUnpacksTooLarge(limitBytes: number): ApiException {
 }
 
 /**
- * Refuses a zip whose entries together declare more than `limitBytes` once inflated, before any of them is read.
- * adm-zip inflates an entry up to the size it declares and stops there, so the declared sizes bound what reading
- * it holds in memory; a small upload of zeros that declares gigabytes truthfully would otherwise be inflated in full.
+ * Refuses a zip whose entries together would take more than `limitBytes` once read, before any of them is.
+ * adm-zip inflates a deflated entry up to the size it declares and stops there, and copies a stored one at its
+ * packed length whatever it declares, so the larger of the two bounds what reading an entry holds in memory: a
+ * small upload of zeros that truthfully declares gigabytes would otherwise be inflated in full, and many entries
+ * pointing at the same stored bytes copied once each.
  */
 export function assertUnpacksWithin(zip: AdmZip, limitBytes: number): void {
-  const declaredBytes = zip.getEntries().reduce((sum, entry) => sum + entry.header.size, 0)
-  if (declaredBytes > limitBytes)
+  const readBytes = zip.getEntries().reduce((sum, { header }) => sum + Math.max(header.size, header.compressedSize), 0)
+  if (readBytes > limitBytes)
     throw zipUnpacksTooLarge(limitBytes)
 }
