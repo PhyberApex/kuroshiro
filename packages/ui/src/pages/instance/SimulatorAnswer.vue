@@ -13,6 +13,7 @@ const outcome = computed(() => simulator.outcome)
 
 const REFUSED = { poll: 'The server refused the poll.', setup: 'The server refused setup.' }
 const UNANSWERED = { poll: 'The poll did not reach the server.', setup: 'Setup did not reach the server.' }
+const BEFORE = { poll: 'the poll', setup: 'setup' }
 </script>
 
 <template>
@@ -20,6 +21,7 @@ const UNANSWERED = { poll: 'The poll did not reach the server.', setup: 'Setup d
     <SimulatorPolled v-if="outcome.kind === 'polled'" :outcome="outcome" :panel="panel" />
     <Notice v-else-if="outcome.kind === 'refused'" :title="REFUSED[outcome.call]" :reason="outcome.reason" />
     <Notice v-else-if="outcome.kind === 'unanswered'" :title="UNANSWERED[outcome.call]" :reason="outcome.reason" />
+    <Notice v-else-if="outcome.kind === 'unread'" :title="`${outcome.deviceName} could not be read before ${BEFORE[outcome.call]}.`" :reason="outcome.reason" />
     <template v-else>
       <EmptyPlate :width="panel?.width" :height="panel?.height">
         Nothing polled yet

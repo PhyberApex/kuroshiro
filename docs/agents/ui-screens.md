@@ -272,7 +272,7 @@ The Firmware page (`FirmwarePage.vue`) is the worked example of an Instance page
 
 - `?device=` chooses the Device, otherwise the first by name, otherwise one that is not registered; choosing writes it back to the address.
 - Setup for a registered Device sends its MAC address alone, so it changes nothing; for one that is not registered it also sends the Firmware version and Model the inputs hold. Whether setup registered a Device is told by its friendly id, which the Devices did not hold before.
-- Only the call itself is "did not reach the server". A poll the server answered has been taken (the Rotation moved, what was pending is gone), so when the Device cannot be read again after it, the answer stays with a `Notice` above it and no "Shows" row (`unread` in place of `shows`).
+- Only the call itself is "did not reach the server". A poll the server answered has been taken (the Rotation moved, what was pending is gone), so when the Device cannot be read again after it, the answer stays with a `Notice` above it and no "Shows" row (`unread` in place of `shows`). The read of the chosen Device before the call (for its MAC address and API key) is no call either: when it fails nothing was sent, and the outcome is `unread`, "Kitchen could not be read before the poll." (or "before setup").
 - The browser sends its own `User-Agent`, which the server keeps as the Device's; nothing on the admin UI shows it.
 
 ## A list page
