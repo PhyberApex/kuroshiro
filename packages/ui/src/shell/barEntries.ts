@@ -27,8 +27,10 @@ export const PLUGINS_PATH = '/plugins'
 const devicePath = (device: NamedDevice) => `${DEVICES_PATH}/${device.id}`
 
 function deviceEntry(device: NamedDevice): BarEntry {
-  return device.name.length > LONGEST_NAME
-    ? { label: `${device.name.slice(0, LONGEST_NAME)}…`, fullName: device.name, to: devicePath(device) }
+  // By code points, not UTF-16 code units, so a cut never splits an emoji into a lone surrogate.
+  const characters = [...device.name]
+  return characters.length > LONGEST_NAME
+    ? { label: `${characters.slice(0, LONGEST_NAME).join('')}…`, fullName: device.name, to: devicePath(device) }
     : { label: device.name, to: devicePath(device) }
 }
 
