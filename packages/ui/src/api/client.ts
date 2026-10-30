@@ -56,6 +56,15 @@ export function imageUrl(imagePath: string) {
   return underBase(imagePath).href
 }
 
+/**
+ * The usable address of an image a Device is sent. The server builds it on the address Devices reach
+ * it at (`KUROSHIRO_API_URL`), which the admin may not, so only its path and version are kept.
+ */
+export function deviceImageUrl(address: string) {
+  const { pathname, search } = new URL(address, document.baseURI)
+  return imageUrl(pathname + search)
+}
+
 type Query = Record<string, string | number | boolean | undefined>
 
 function apiAddress(path: string, query: Query = {}) {

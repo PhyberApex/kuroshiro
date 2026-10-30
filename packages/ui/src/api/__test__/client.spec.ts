@@ -2,7 +2,7 @@ import type { InstanceFacts } from 'kuroshiro-shared'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { api, apiErrorResponse, apiUrl } from '@/testing/api/server'
-import { apiDownloadChecked, apiGet, apiSend, apiSendForImage, fieldErrorsOf, imageUrl, isRefusal, isUnreachable } from '../client'
+import { apiDownloadChecked, apiGet, apiSend, apiSendForImage, deviceImageUrl, fieldErrorsOf, imageUrl, isRefusal, isUnreachable } from '../client'
 
 const failureOf = (request: Promise<unknown>) => request.then(() => undefined, (error: unknown) => error)
 
@@ -169,5 +169,9 @@ describe('the API client', () => {
 
   it('turns the root-relative image path of a read into an address under the document base', () => {
     expect(imageUrl('/screens/devices/42/7.png?v=1759476660000')).toBe(new URL('screens/devices/42/7.png?v=1759476660000', document.baseURI).href)
+  })
+
+  it('moves an image address a Device is sent onto the document base, keeping its path and version', () => {
+    expect(deviceImageUrl('http://192.168.1.10:3000/screens/devices/42/7.png?v=1759476660000')).toBe(new URL('screens/devices/42/7.png?v=1759476660000', document.baseURI).href)
   })
 })

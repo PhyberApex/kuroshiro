@@ -2,6 +2,7 @@
 import type { DeviceModelReference } from 'kuroshiro-shared'
 import type { SimulatorOutcome } from './deviceSimulator'
 import { computed, ref } from 'vue'
+import { deviceImageUrl } from '@/api/client'
 import CodeBlock from '@/components/CodeBlock.vue'
 import Notice from '@/components/Notice.vue'
 import Plate from '@/components/Plate.vue'
@@ -31,7 +32,7 @@ const shows = computed(() => 'shows' in props.outcome ? props.outcome.shows : un
   />
   <Plate
     class="given"
-    :src="outcome.answer.image_url"
+    :src="deviceImageUrl(outcome.answer.image_url)"
     :name="shows === undefined ? 'The image this poll was given' : `The image this poll was given: ${shows}`"
     :width="panel?.width"
     :height="panel?.height"
