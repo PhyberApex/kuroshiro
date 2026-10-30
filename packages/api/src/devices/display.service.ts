@@ -159,7 +159,7 @@ export class DeviceDisplayService {
 
   async getCurrentImage(headers: DisplayRequestHeadersDto): Promise<Display> {
     this.logger.log(`Display request for MAC: ${headers.id}`)
-    this.logger.debug(`Headers: ${JSON.stringify(headers)}`)
+    this.logger.debug(`Headers: ${JSON.stringify({ ...headers, 'access-token': '[redacted]' })}`)
     const device = await authenticateDevice(this.deviceRepository, headers, this.logger)
     const { report, acknowledgement } = await this.applyHeaderReport(device, headers)
 
@@ -614,7 +614,7 @@ export class DeviceDisplayService {
 
   async getCurrentImageWithoutProgressing(headers: DeviceCredentials): Promise<DisplayScreen> {
     this.logger.log(`Current Screen request for MAC: ${headers.id}`)
-    this.logger.debug(`Headers: ${JSON.stringify(headers)}`)
+    this.logger.debug(`Headers: ${JSON.stringify({ ...headers, 'access-token': '[redacted]' })}`)
     const device = await authenticateDevice(this.deviceRepository, headers, this.logger)
     const now = new Date()
     if (device.lastServedKind === 'wipe') {
