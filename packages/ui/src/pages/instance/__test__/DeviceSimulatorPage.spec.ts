@@ -204,6 +204,17 @@ describe('the Device Simulator', () => {
       expect(fake.polls).toHaveLength(1)
     })
 
+    it('says the poll did not reach the server when the poll itself is not answered', async () => {
+      const { screen } = await openSimulator('/instance/simulator?device=kitchen')
+      api.use(http.get(apiUrl('display'), () => HttpResponse.error()))
+
+      await screen.getByRole('button', { name: 'Poll as Kitchen' }).click()
+
+      await expect.element(screen.getByText('The poll did not reach the server.')).toBeVisible()
+      await expect.element(screen.getByText('Kuroshiro\'s server is not answering.')).toBeVisible()
+      await expect.element(screen.getByText('Kitchen could not be read before the poll.')).not.toBeInTheDocument()
+    })
+
     it('says the Device could not be read, not that the poll did not reach the server, when it is gone before the poll', async () => {
       const { fake, screen } = await openSimulator('/instance/simulator?device=kitchen')
       await expect.element(screen.getByRole('button', { name: 'Poll as Kitchen' })).toBeEnabled()
