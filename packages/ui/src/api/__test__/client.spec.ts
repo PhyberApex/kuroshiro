@@ -1,10 +1,28 @@
 import type { InstanceFacts } from 'kuroshiro-shared'
 import { http, HttpResponse } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { api, apiErrorResponse, apiUrl } from '@/testing/api/server'
-import { apiGet, apiSend, apiSendForImage, fieldErrorsOf, imageUrl, isRefusal, isUnreachable } from '../client'
+import { apiDownloadChecked, apiGet, apiSend, apiSendForImage, fieldErrorsOf, imageUrl, isRefusal, isUnreachable } from '../client'
 
 const failureOf = (request: Promise<unknown>) => request.then(() => undefined, (error: unknown) => error)
+
+/** Holds back every download the client clicks, keeping the name it was given and whether its object URL was revoked by then. */
+function catchClickedDownloads() {
+  const clicked: { filename: string, href: string }[] = []
+  const revoked = vi.spyOn(URL, 'revokeObjectURL')
+  const hold = (event: MouseEvent) => {
+    if (event.target instanceof HTMLAnchorElement && event.target.hasAttribute('download')) {
+      event.preventDefault()
+      clicked.push({ filename: event.target.download, href: event.target.href })
+    }
+  }
+  document.addEventListener('click', hold, true)
+  onTestFinished(() => {
+    document.removeEventListener('click', hold, true)
+    revoked.mockRestore()
+  })
+  return { clicked, revoked }
+}
 
 describe('the API client', () => {
   it('reads an admin API path under the document base and answers the body', async () => {
@@ -120,6 +138,33 @@ describe('the API client', () => {
     api.use(http.get(apiUrl('devices'), () => new HttpResponse('<h1>Sign in</h1>', { headers: { 'content-type': 'text/html' } })))
 
     expect(isUnreachable(await failureOf(apiGet('devices')))).toBe(true)
+  })
+
+  it('saves a download under the name the server gives it, and frees its object URL only once the browser has had 40 seconds to read it', async () => {
+    api.use(http.get(apiUrl('plugins/weather/export'), () => new HttpResponse('zip', {
+      headers: { 'Content-Type': 'application/zip', 'Content-Disposition': 'attachment; filename="Weather.trmnlp.zip"' },
+    })))
+    const { clicked, revoked } = catchClickedDownloads()
+    vi.useFakeTimers({ toFake: ['setTimeout'] })
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+
+    await apiDownloadChecked('plugins/weather/export')
+
+    expect(clicked).toEqual([{ filename: 'Weather.trmnlp.zip', href: expect.stringMatching(/^blob:/) }])
+    vi.advanceTimersByTime(39_999)
+    expect(revoked).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1)
+    expect(revoked).toHaveBeenCalledWith(clicked[0]!.href)
+  })
+
+  it('takes a 200 that is not an attachment, such as a sign-in page, for a server that is not answering, and saves nothing', async () => {
+    api.use(http.get(apiUrl('config/export'), () => new HttpResponse('<h1>Sign in</h1>', { headers: { 'content-type': 'text/html' } })))
+    const { clicked } = catchClickedDownloads()
+
+    expect(isUnreachable(await failureOf(apiDownloadChecked('config/export')))).toBe(true)
+    expect(clicked).toEqual([])
   })
 
   it('turns the root-relative image path of a read into an address under the document base', () => {

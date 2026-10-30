@@ -144,24 +144,39 @@ function downloadName(headers: Headers): string {
   return /filename="([^"]*)"/.exec(disposition)?.[1] ?? ''
 }
 
+/**
+ * How long an object URL outlives the click that saves it. Some browsers read the `Blob` only
+ * after `click()` returns, and a URL revoked by then saves a failed or empty file.
+ */
+const OBJECT_URL_LIFETIME_MS = 40_000
+
 function save(blob: Blob, filename: string) {
   const link = document.createElement('a')
-  link.href = URL.createObjectURL(blob)
+  const url = URL.createObjectURL(blob)
+  link.href = url
   link.download = filename
   document.body.append(link)
   link.click()
   link.remove()
-  URL.revokeObjectURL(link.href)
+  setTimeout(() => URL.revokeObjectURL(url), OBJECT_URL_LIFETIME_MS)
+}
+
+/** Whether the server answered a file to save: every download of the API comes as a `Content-Disposition: attachment`. */
+function isAttachment(headers: Headers) {
+  return /^\s*attachment\b/i.test(headers.get('Content-Disposition') ?? '')
 }
 
 /**
  * Fetches what `GET /api/{path}` answers as a file, then has the browser save it from an
  * object URL under the name the server gives it. Rejects with an `ApiRefusal` or a
- * `ServerUnreachable`, without saving anything.
+ * `ServerUnreachable`, without saving anything. A 200 that is not an attachment, such as an auth
+ * proxy's sign-in page, is a `ServerUnreachable` as it is for {@link apiGet}.
  */
 export async function apiDownloadChecked(path: string, query?: Query): Promise<void> {
   const response = await sent(apiAddress(path, query), {})
   if (!response.ok)
     return answerOf(response)
+  if (!isAttachment(response.headers))
+    throw new ServerUnreachable()
   save(await response.blob(), downloadName(response.headers))
 }
