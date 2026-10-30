@@ -70,10 +70,10 @@ export function paletteConversion(palette: Pick<Palette, 'grays' | 'colors' | 'f
 }
 
 /**
- * A short hash of everything a palette's conversion depends on, so a file
- * named after it is never reused once the palette's colours change.
+ * A short hash of the colours a palette converts to, so a file named after
+ * it is never reused once the palette's colours change.
  */
-export function paletteConversionKey(palette: Pick<Palette, 'grays' | 'colors' | 'frameworkClass'>): string {
+export function paletteColorsHash(palette: Pick<Palette, 'grays' | 'colors' | 'frameworkClass'>): string {
   return createHash('sha256').update(JSON.stringify(paletteConversion(palette))).digest('hex').slice(0, 8)
 }
 
@@ -101,12 +101,11 @@ function runMagick(args: string[], logger: Logger): Promise<string> {
 }
 
 /** Named after the colours as well as the palette, so a custom Palette whose colours change gets a colormap of its own. */
-async function ensureColormap(paletteId: string, colors: string[], logger: Logger): Promise<string> {
-  const colorsHash = createHash('sha256').update(colors.join(',')).digest('hex').slice(0, 8)
-  const colormapPath = resolveAppPath('public', 'colormaps', `${paletteId}-${colorsHash}.png`)
+async function ensureColormap(palette: Palette, colors: string[], logger: Logger): Promise<string> {
+  const colormapPath = resolveAppPath('public', 'colormaps', `${palette.id}-${paletteColorsHash(palette)}.png`)
   if (fs.existsSync(colormapPath))
     return colormapPath
-  logger.log(`Creating colormap for palette ${paletteId} at ${colormapPath}`)
+  logger.log(`Creating colormap for palette ${palette.id} at ${colormapPath}`)
   await fs.promises.mkdir(path.dirname(colormapPath), { recursive: true })
   const swatches = colors.map(color => `xc:${color}`)
   await runMagick(['-size', '1x1', ...swatches, '+append', '-type', 'Palette', colormapPath], logger)
@@ -123,11 +122,11 @@ async function paletteOperators(palette: Palette, { dither = true }: ConversionO
   const ditherMethod = dither ? 'FloydSteinberg' : 'None'
   switch (conversion.kind) {
     case 'gray': {
-      const colormap = await ensureColormap(palette.id, grayLevelsHex(conversion.levels), logger)
+      const colormap = await ensureColormap(palette, grayLevelsHex(conversion.levels), logger)
       return ['-colorspace', 'Gray', '-dither', ditherMethod, '-remap', colormap, '-define', `png:bit-depth=${conversion.bitDepth}`, '-define', 'png:color-type=0']
     }
     case 'color': {
-      const colormap = await ensureColormap(palette.id, conversion.colors, logger)
+      const colormap = await ensureColormap(palette, conversion.colors, logger)
       // -modulate brightness,saturation: pushed colours past the thresholds the firmware
       // uses to tell red/yellow apart from gray (see docs/adr/0002-color-palette-png-format.md)
       const saturationBoost = '110,150'

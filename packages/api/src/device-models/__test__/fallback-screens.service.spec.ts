@@ -24,6 +24,9 @@ vi.mock('../../utils/pathHelper.js', () => ({
   resolveAppPath: (...segments: string[]) => `/app/${segments.join('/')}`,
 }))
 
+/** COLOR_6A with its red moved, as a custom Palette's edit would. */
+const RECOLOURED = { ...COLOR_6A, colors: COLOR_6A.colors!.map(color => color === '#FF0000' ? '#FF2020' : color) }
+
 const KITCHEN: FallbackScreenDevice = { name: 'Kitchen', friendlyId: '4F2A1C', sleepEndTime: 7 * 3600 }
 
 describe('fallbackScreensService', () => {
@@ -133,19 +136,17 @@ describe('fallbackScreensService', () => {
 
   it('renders anew once the Palette\'s colours change', async () => {
     const before = await service.urlFor({ kind: 'noScreen' }, KITCHEN, { model: V2, palette: COLOR_6A })
-    const recoloured = { ...COLOR_6A, colors: COLOR_6A.colors!.map(color => color === '#FF0000' ? '#FF2020' : color) }
-    const after = await service.urlFor({ kind: 'noScreen' }, KITCHEN, { model: V2, palette: recoloured })
+    const after = await service.urlFor({ kind: 'noScreen' }, KITCHEN, { model: V2, palette: RECOLOURED })
 
     expect(after).not.toBe(before)
     expect(renderHtmlToPng).toHaveBeenCalledTimes(2)
-    expect(renderHtmlToPng.mock.calls[1][1]).toEqual({ model: V2, palette: recoloured })
+    expect(renderHtmlToPng.mock.calls[1][1]).toEqual({ model: V2, palette: RECOLOURED })
   })
 
   it('draws the Wipe once per render target and anew once the Palette\'s colours change', async () => {
-    const recoloured = { ...COLOR_6A, colors: COLOR_6A.colors!.map(color => color === '#FF0000' ? '#FF2020' : color) }
     const first = await service.wipeUrlFor({ model: V2, palette: COLOR_6A })
     const again = await service.wipeUrlFor({ model: V2, palette: COLOR_6A })
-    const after = await service.wipeUrlFor({ model: V2, palette: recoloured })
+    const after = await service.wipeUrlFor({ model: V2, palette: RECOLOURED })
 
     expect(again).toBe(first)
     expect(after).not.toBe(first)
