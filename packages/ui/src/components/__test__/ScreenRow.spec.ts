@@ -1,7 +1,8 @@
 import type { ScreenRead } from 'kuroshiro-shared'
+import type { Ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { userEvent } from 'vitest/browser'
-import { defineComponent, h, ref } from 'vue'
+import { defineComponent, h, isRef, ref } from 'vue'
 import { expectAccessible } from '@/testing/a11y'
 import { buildScreen } from '@/testing/fixtures/screens'
 import { isFirefox, withCoarsePointer, withMotionAllowed } from '@/testing/media'
@@ -29,14 +30,15 @@ interface ListOptions {
   save?: (ids: string[]) => Promise<unknown>
   onFetch?: (name: string) => void
   force?: object
-  screens?: ScreenRead[]
+  /** A ref lets a spec hand the list new rows, as a poll does. */
+  screens?: ScreenRead[] | Ref<ScreenRead[]>
 }
 
 function listOf({ sortable = true, save = async () => {}, onFetch = () => {}, force, screens: given = SCREENS }: ListOptions = {}) {
   return defineComponent({
     emits: ['reorder'],
     setup(_, { emit }) {
-      const screens = ref(given)
+      const screens = isRef(given) ? given : ref(given)
       function takeOrder(ids: string[]) {
         const before = screens.value
         screens.value = ids.map(id => before.find(screen => screen.id === id)!)
@@ -315,6 +317,25 @@ describe('reordering screen rows', () => {
 
     expect(namesOf(screen)).toEqual(NAMES)
     await expect.element(screen.getByRole('status')).toBeEmptyDOMElement()
+  })
+
+  it('by keyboard: a lifted row stays lifted when a poll hands the list fresh rows in the same order', async () => {
+    const onReorder = vi.fn()
+    const screens = ref(SCREENS)
+    const screen = await mount(listOf({ screens }), { props: { onReorder } })
+
+    await userEvent.keyboard('{Tab}{Enter}{ArrowDown}')
+    await expect.element(screen.getByRole('status')).toHaveTextContent('Calendar, Order 2 of 4')
+    screens.value = SCREENS.map(screen => ({ ...screen, state: screen.id === 'trains' ? 'upNext' : screen.state }))
+    await expect.poll(() => rowOf(screen, 'Train departures').textContent).toContain('Up next')
+
+    expect(namesOf(screen)).toEqual(['Weather', 'Calendar', 'Weekend board', 'Train departures'])
+    await expect.element(gripOf(screen, 'Calendar')).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.keyboard('{ArrowDown}')
+    await expect.element(screen.getByRole('status')).toHaveTextContent('Calendar, Order 3 of 4')
+    await userEvent.keyboard('{Enter}')
+
+    await expect.poll(() => onReorder.mock.calls).toEqual([[['weather', 'weekend', 'calendar', 'trains']]])
   })
 
   it('by keyboard: leaving the grip of a lifted row puts it back', async () => {
