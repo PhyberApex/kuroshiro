@@ -45,7 +45,7 @@ describe('sleep Mode', () => {
     await expect.poll(() => stateOf(screen, 'Sleep Mode')).toBe('Saved')
   })
 
-  it('switches back on with the window it keeps, which the API asks for alongside, and off with its own field alone', async () => {
+  it('switches back on with the window it keeps, and off with its own field alone', async () => {
     const faked = fakeKitchenSettings({ device: asleepAt({ enabled: false, start: '22:00', end: '07:30' }) })
     const screen = await mountSettings()
 
