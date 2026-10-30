@@ -17,8 +17,10 @@ const name = useDeviceSetting(() => props.device.name, entered =>
 
 function save() {
   problem.value = deviceNameProblem(name.entered)
-  if (problem.value)
+  if (problem.value) {
+    name.withdraw()
     return
+  }
   name.entered = name.entered.trim()
   name.commit()
 }

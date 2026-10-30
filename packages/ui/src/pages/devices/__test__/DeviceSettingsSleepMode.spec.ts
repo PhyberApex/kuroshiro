@@ -58,6 +58,24 @@ describe('sleep Mode', () => {
     await expect.poll(() => rowOf(screen, 'Window')).toBeUndefined()
   })
 
+  it('forgets a refused switch once it is put back, so "Try again" does not send the change taken back', async () => {
+    const faked = fakeKitchenSettings({ device: asleepAt({}) })
+    faked.refusing = apiErrorResponse({ statusCode: 403, code: 'demo-mode' })
+    const screen = await mountSettings()
+
+    await sleepSwitch(screen).click()
+    await expect.poll(() => stateOf(screen, 'Sleep Mode')).toBe('Not saved. Not available in the demo.')
+    await expect.element(sleepSwitch(screen)).toHaveAttribute('aria-checked', 'false')
+
+    await sleepSwitch(screen).click()
+
+    await expect.poll(() => stateOf(screen, 'Sleep Mode')).toBe('')
+    await expect.element(sleepSwitch(screen)).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('button', { name: 'Try again' }).elements()).toEqual([])
+    expect(faked.writes).toEqual([{ sleepModeEnabled: false }])
+    expect(faked.device.sleep.enabled).toBe(true)
+  })
+
   it('shows the window in the server\'s timezone and says when it crosses midnight', async () => {
     fakeKitchenSettings({ device: asleepAt({}), instance: buildInstanceFacts({ timezone: 'Europe/Berlin' }) })
     const screen = await mountSettings()

@@ -50,8 +50,10 @@ watch(() => write.status, (status) => {
 
 function save(row: Row) {
   const input = mirroringInput({ on: on.value, mac: mac.value, key: key.value }, saved.value)
-  if (!input)
+  if (!input) {
+    write.withdraw()
     return
+  }
   sentBy.value = row
   keySent = input.mirrorApikey
   write.send(input)
@@ -68,8 +70,12 @@ function switchTo(next: boolean) {
 
 function saveMac() {
   macProblem.value = isMacAddress(mac.value) ? undefined : MIRROR_MAC_MESSAGE
-  if (macProblem.value)
+  if (macProblem.value) {
+    // Only the MAC's own refused save: another row's change is still on screen and still not saved.
+    if (sentBy.value === 'mac')
+      write.withdraw()
     return
+  }
   mac.value = asStoredMac(mac.value)
   save('mac')
 }
@@ -80,7 +86,14 @@ function useOwn() {
 }
 
 function saveKey() {
-  if (!key.value || key.value === keyOffered)
+  // An emptied field keeps the stored key: a refused replacement is taken back, and may be offered again.
+  if (!key.value) {
+    keyOffered = ''
+    if (sentBy.value === 'key')
+      write.withdraw()
+    return
+  }
+  if (key.value === keyOffered)
     return
   keyOffered = key.value
   save('key')
