@@ -2,7 +2,7 @@
 import type { DeviceLogLevelFilter } from 'kuroshiro-shared'
 import type { LogFilter } from './deviceLogWording'
 import { DEVICE_LOG_SEARCH_MIN_LENGTH } from 'kuroshiro-shared'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { clearDeviceLogs } from '@/api/devices'
 import { getInstanceSettings } from '@/api/instance'
@@ -49,8 +49,10 @@ watch(typed, (now) => {
     searchTimer = setTimeout(() => holdInAddress({ q: searchable(now) || undefined }), SEARCH_WAITS_MS)
 })
 // Left inside the wait, the search would land in the address of whatever page came next,
-// or, while that page still loads, call the leaving off.
+// or, while that page still loads, call the leaving off. A key pressed while it loads starts
+// a wait after the guard ran, so the page drops it again on its way out.
 onBeforeRouteLeave(() => clearTimeout(searchTimer))
+onScopeDispose(() => clearTimeout(searchTimer))
 // The address changed under the field: "Show all entries", or the browser's back button.
 watch(sought, (now) => {
   if (searchable(typed.value) !== now)
