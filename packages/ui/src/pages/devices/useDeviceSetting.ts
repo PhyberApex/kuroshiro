@@ -33,13 +33,22 @@ export function useDeviceWrite() {
       input.value = next
       save.commit()
     },
+    /**
+     * What was entered is back to what the Device has, or no longer valid: a failed save of it is forgotten,
+     * so the row says nothing and has no "Try again" that would send the change taken back. A save under way still reports.
+     */
+    withdraw() {
+      if (save.status === 'failed')
+        save.reset()
+    },
   })
 }
 
 /**
  * One setting of the Device as its row edits it. `entered` is what the control holds: it follows `saved`,
  * the value on the Device, except while a save of it is under way or has failed. `commit` sends what `toInput`
- * makes of it, and nothing when that is `undefined`: a value that did not change, or one that is not valid.
+ * makes of it, and nothing when that is `undefined`: a value that did not change, or one that is not valid;
+ * that also forgets a failed save, whose change has been taken back.
  * A control whose server form may differ from what was typed (a trimmed name) puts that form into `entered` before it commits.
  */
 export function useDeviceSetting<T>(saved: () => T, toInput: (entered: T) => UpdateDeviceInput | undefined) {
@@ -56,6 +65,8 @@ export function useDeviceSetting<T>(saved: () => T, toInput: (entered: T) => Upd
     const input = toInput(entered.value)
     if (input)
       write.send(input)
+    else
+      write.withdraw()
   }
 
   return reactive({

@@ -136,6 +136,23 @@ describe('mirroring', () => {
     expect(faked.device.mirror.mac).toBe('A4:CF:12:00:00:01')
   })
 
+  it('forgets a refused switch-off once Mirroring is switched back on, so there is nothing to try again', async () => {
+    const faked = fakeKitchenSettings({ device: MIRRORED })
+    faked.refusing = apiErrorResponse({ statusCode: 403, code: 'demo-mode' })
+    const screen = await mountSettings()
+
+    await mirroring(screen).click()
+    await expect.poll(() => stateOf(screen, 'Mirroring')).toBe('Not saved. Not available in the demo.')
+
+    await mirroring(screen).click()
+
+    await expect.poll(() => stateOf(screen, 'Mirroring')).toBe('')
+    await expect.element(mirroring(screen)).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByRole('button', { name: 'Try again' }).elements()).toEqual([])
+    expect(faked.writes).toEqual([{ mirrorEnabled: false }])
+    expect(faked.device.mirror.enabled).toBe(true)
+  })
+
   it('"Use Kitchen\'s own" fills in the Device\'s MAC address, which makes it a Proxied Device', async () => {
     const faked = fakeKitchenSettings({ device: MIRRORED })
     const screen = await mountSettings()

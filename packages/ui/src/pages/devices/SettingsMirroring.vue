@@ -50,8 +50,10 @@ watch(() => write.status, (status) => {
 
 function save(row: Row) {
   const input = mirroringInput({ on: on.value, mac: mac.value, key: key.value }, saved.value)
-  if (!input)
+  if (!input) {
+    write.withdraw()
     return
+  }
   sentBy.value = row
   keySent = input.mirrorApikey
   write.send(input)
