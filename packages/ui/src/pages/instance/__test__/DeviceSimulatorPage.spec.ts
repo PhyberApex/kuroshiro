@@ -184,8 +184,8 @@ describe('the Device Simulator', () => {
 
       await expect.element(screen.getByText('The server answered the poll, but the Device could not be read again to say what it shows.')).toBeVisible()
       await expect.element(screen.getByText('The poll did not reach the server.')).not.toBeInTheDocument()
-      await expect.element(screen.getByRole('img', { name: 'The image this poll was given' })).toBeVisible()
-      expect(summaryOf(screen)).toEqual({
+      await expect.element(screen.getByRole('img', { name: 'The image this poll was given', exact: true })).toBeVisible()
+      await expect.poll(() => summaryOf(screen)).toEqual({
         'Polls again in': '15 min',
         'Firmware': 'no update',
         'Special Function': 'none pending',

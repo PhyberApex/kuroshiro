@@ -84,8 +84,10 @@ function useDeviceSimulator(initialChoice: string) {
       const came = await made().catch((error: unknown) => ({ unanswered: whyFailed(error) }))
       if ('unanswered' in came)
         outcome.value = { kind: 'unanswered', call, reason: came.unanswered }
+      else if ('refused' in came)
+        outcome.value = { kind: 'refused', call, reason: came.refused }
       else
-        outcome.value = 'refused' in came ? { kind: 'refused', call, reason: came.refused } : await then(came.answered)
+        outcome.value = await then(came.answered)
     }
     finally {
       calling.value = undefined

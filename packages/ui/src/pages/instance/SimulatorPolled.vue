@@ -18,13 +18,15 @@ const props = defineProps<{
 const rows = computed(() => answerRows(props.outcome.answer, props.outcome.firmwareVersion))
 const asSent = computed(() => JSON.stringify(props.outcome.answer, null, 2))
 const rawOpen = ref(true)
+const UNREAD = 'The server answered the poll, but the Device could not be read again to say what it shows.'
+
 const shows = computed(() => 'shows' in props.outcome ? props.outcome.shows : undefined)
 </script>
 
 <template>
   <Notice
     v-if="'unread' in outcome"
-    title="The server answered the poll, but the Device could not be read again to say what it shows."
+    :title="UNREAD"
     :reason="outcome.unread"
   />
   <Plate
