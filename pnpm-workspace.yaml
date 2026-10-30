@@ -31,12 +31,12 @@ catalog:
   '@fontsource-variable/jetbrains-mono': 5.3.0
   '@lezer/highlight': 1.2.5
   '@nestjs/cli': 12.0.11
-  '@nestjs/common': 12.2.0
+  '@nestjs/common': 12.3.2
   '@nestjs/config': 12.0.1
-  '@nestjs/core': 12.2.0
-  '@nestjs/platform-express': 12.2.0
+  '@nestjs/core': 12.3.2
+  '@nestjs/platform-express': 12.3.2
   '@nestjs/serve-static': 12.0.0
-  '@nestjs/testing': 12.2.0
+  '@nestjs/testing': 12.3.2
   '@nestjs/typeorm': 12.0.2
   '@swc/core': 1.16.20
   '@tsconfig/node24': 24.0.5
