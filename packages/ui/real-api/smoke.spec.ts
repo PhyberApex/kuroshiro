@@ -1,10 +1,20 @@
-import type { DeviceSummary } from 'kuroshiro-shared'
-import type { Browser } from 'playwright'
+import type { DeviceDetail, DeviceSummary } from 'kuroshiro-shared'
+import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest'
 import { connectDevice } from './devicePlayer.ts'
 
 const baseUrl = inject('baseUrl')
+
+/** What a settings row says of its save: "Saving", "Saved", "Not saved. …", or nothing. */
+async function saveStateOf(page: Page, label: string) {
+  const row = page.locator('.setting-row').filter({ has: page.locator('.label').getByText(label, { exact: true }) })
+  return (await row.locator('.save-state [role="status"]').textContent())?.replace(/\s+/g, ' ').trim()
+}
+
+async function storedSleep(id: string) {
+  return (await (await fetch(new URL(`api/devices/${id}`, baseUrl))).json() as DeviceDetail).sleep
+}
 
 describe('the built UI on the real API', () => {
   let browser: Browser
@@ -81,6 +91,35 @@ describe('the built UI on the real API', () => {
       expect(image.status).toBe(200)
       expect(image.headers.get('content-type')).toBe('image/png')
     }
+  })
+
+  // The API checks a switch-on against the request, not the Device, which the page specs' fake API does not.
+  it('switches Sleep Mode off and back on, keeping its window', async () => {
+    const device = await connectDevice(baseUrl, { mac: 'A4:C1:38:5F:0B:A0' })
+    const devices = await (await fetch(new URL('api/devices', baseUrl))).json() as DeviceSummary[]
+    const { id } = devices.find(summary => summary.friendlyId === device.setup.friendly_id)!
+    const page = await browser.newPage()
+    const failures: string[] = []
+    page.on('pageerror', error => failures.push(error.message))
+    await page.goto(new URL(`devices/${id}/settings`, baseUrl).href)
+    const sleepSwitch = page.getByRole('switch', { name: 'Sleep Mode' })
+
+    // The first switch-on takes the window 23:00 to 06:00.
+    await sleepSwitch.click()
+    await expect.poll(() => saveStateOf(page, 'Sleep Mode')).toBe('Saved')
+    await page.getByLabel('Sleep Mode from').fill('22:00')
+    await page.keyboard.press('Enter')
+    await expect.poll(() => saveStateOf(page, 'Window')).toBe('Saved')
+
+    await sleepSwitch.click()
+    await expect.poll(() => saveStateOf(page, 'Sleep Mode')).toBe('Saved')
+    expect(await storedSleep(id)).toMatchObject({ enabled: false, start: '22:00', end: '06:00' })
+    await sleepSwitch.click()
+
+    await expect.poll(() => storedSleep(id)).toMatchObject({ enabled: true, start: '22:00', end: '06:00' })
+    await expect.poll(() => sleepSwitch.getAttribute('aria-checked')).toBe('true')
+    expect(failures).toEqual([])
+    await page.close()
   })
 
   it.each(['welcome', 'noScreen', 'error', 'sleep'])('serves the static %s Fallback Screen without the UI shipping it', async (kind) => {

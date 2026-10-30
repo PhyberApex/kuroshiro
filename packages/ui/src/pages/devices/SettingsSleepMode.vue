@@ -20,10 +20,11 @@ const props = defineProps<{
 const sleep = computed(() => props.device.sleep)
 const hasWindow = computed(() => Boolean(sleep.value.start && sleep.value.end))
 
+/** The API checks a switch-on against the request alone, so it carries the window it keeps, or the first one. */
 const enabled = useDeviceSetting(() => sleep.value.enabled, on =>
   on === sleep.value.enabled
     ? undefined
-    : { sleepModeEnabled: on, ...(on && !hasWindow.value ? sleepWindowInput(FIRST_SLEEP_WINDOW) : {}) })
+    : { sleepModeEnabled: on, ...(on ? sleepWindowInput(hasWindow.value ? sleep.value : FIRST_SLEEP_WINDOW) : {}) })
 
 const whileAsleep = useDeviceSetting<WhileAsleep>(() => sleep.value.whileAsleep, chosen =>
   chosen === sleep.value.whileAsleep ? undefined : { sleepScreenEnabled: chosen === 'fallback' })

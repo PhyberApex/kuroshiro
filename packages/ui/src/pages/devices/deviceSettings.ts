@@ -40,7 +40,7 @@ export function secondsOfDay(time: string) {
   return (hours ?? 0) * 3600 + (minutes ?? 0) * 60
 }
 
-export function sleepWindowInput({ start, end }: { start?: string, end?: string }): UpdateDeviceInput {
+export function sleepWindowInput({ start, end }: { start?: string | null, end?: string | null }): UpdateDeviceInput {
   return {
     ...(start ? { sleepStartTime: secondsOfDay(start) } : {}),
     ...(end ? { sleepEndTime: secondsOfDay(end) } : {}),
