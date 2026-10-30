@@ -23,11 +23,12 @@ export function isDeviceAsleep(device: SleepFields, now: Date): boolean {
 
 /**
  * Elapsed seconds until `nextSleepEnd`, so a night the clock jumps for daylight
- * saving still wakes the Device at the time the UI shows. Floored at
- * MIN_SLEEP_REFRESH_RATE so the Device never re-polls at (or before) 0.
+ * saving still wakes the Device at the time the UI shows. Rounded up so it never
+ * wakes before the window ends, and floored at MIN_SLEEP_REFRESH_RATE so the
+ * Device never re-polls at (or before) 0.
  */
 export function secondsUntilSleepEnd(sleepEndTime: number, now: Date): number {
-  const raw = Math.floor((nextSleepEnd(sleepEndTime, now).getTime() - now.getTime()) / 1000)
+  const raw = Math.ceil((nextSleepEnd(sleepEndTime, now).getTime() - now.getTime()) / 1000)
   return Math.max(MIN_SLEEP_REFRESH_RATE, raw)
 }
 

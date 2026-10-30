@@ -40,6 +40,10 @@ describe('secondsUntilSleepEnd', () => {
     expect(secondsUntilSleepEnd(6 * 3600, time(23, 0))).toBe(7 * 3600)
   })
 
+  it('rounds a part second up so the Device never wakes before the window ends', () => {
+    expect(secondsUntilSleepEnd(9 * 3600, new Date(2026, 0, 1, 8, 0, 0, 500))).toBe(3600)
+  })
+
   it('floors at the minimum right at the boundary', () => {
     expect(secondsUntilSleepEnd(9 * 3600, time(8, 59, 30))).toBe(MIN_SLEEP_REFRESH_RATE)
   })
