@@ -18,6 +18,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { Logger, NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { TRMNL_FRAMEWORK_VERSION } from 'kuroshiro-shared'
+import { IsNull } from 'typeorm'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { closeSharedBrowser } from '../../device-models/shared-browser.js'
 import { createMockDeviceSensorsService, primeMockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService.js'
@@ -238,7 +239,7 @@ describe('deviceDisplayService', () => {
       deviceModels.assignResolvedModel.mockResolvedValue(V2)
       await service.getCurrentImage({ ...headers, width: '1872', height: '1404', model: 'x' })
       expect(deviceModels.assignResolvedModel).toHaveBeenCalledWith(expect.objectContaining({ reportedModel: 'x', width: 1872, height: 1404 }))
-      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1' }, expect.objectContaining({ deviceModel: V2 }))
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1', deviceModel: IsNull() }, expect.objectContaining({ deviceModel: V2 }))
     })
 
     it('never re-resolves a device that already has a model', async () => {

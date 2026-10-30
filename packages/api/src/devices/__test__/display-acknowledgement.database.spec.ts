@@ -23,7 +23,7 @@ import { DeviceDisplayService } from '../display.service.js'
 const OLD_FIRMWARE_ID = '11111111-1111-4111-8111-111111111111'
 const NEW_FIRMWARE_ID = '22222222-2222-4222-8222-222222222222'
 
-describe('the one-shot commands a /display poll fires, against a real database', () => {
+describe('what a /display poll writes to its Device, against a real database', () => {
   let database: DataSource
   let service: DeviceDisplayService
   let fallbackScreens: MockFallbackScreensService
@@ -63,13 +63,12 @@ describe('the one-shot commands a /display poll fires, against a real database',
     await database.destroy()
   })
 
+  async function deviceWith(fields: Partial<Device>): Promise<Device> {
+    return database.getRepository(Device).save({ name: 'Kitchen', friendlyId: 'KITCHEN', mac: 'AA:BB:CC:DD:EE:01', refreshRate: 300, apikey: 'old-key', ...fields })
+  }
+
   async function pendingDevice(): Promise<Device> {
-    return database.getRepository(Device).save({
-      name: 'Kitchen',
-      friendlyId: 'KITCHEN',
-      mac: 'AA:BB:CC:DD:EE:01',
-      refreshRate: 300,
-      apikey: 'old-key',
+    return deviceWith({
       deviceModel: OG_PLUS,
       resetDevice: true,
       resetDeviceNewApikey: true,
@@ -115,12 +114,7 @@ describe('the one-shot commands a /display poll fires, against a real database',
   })
 
   it('keeps what an admin changed while the poll recorded the Device\'s report', async () => {
-    const device = await database.getRepository(Device).save({
-      name: 'Kitchen',
-      friendlyId: 'KITCHEN',
-      mac: 'AA:BB:CC:DD:EE:01',
-      refreshRate: 300,
-      apikey: 'old-key',
+    const device = await deviceWith({
       deviceModel: OG_PLUS,
       specialFunction: 'none',
       updateFirmware: true,
@@ -146,7 +140,7 @@ describe('the one-shot commands a /display poll fires, against a real database',
   })
 
   it('stores the Device Model and Palette the poll resolved for a Device without one', async () => {
-    const device = await database.getRepository(Device).save({ name: 'Kitchen', friendlyId: 'KITCHEN', mac: 'AA:BB:CC:DD:EE:01', apikey: 'old-key', specialFunction: 'none' })
+    const device = await deviceWith({ specialFunction: 'none' })
     deviceModels.assignResolvedModel.mockImplementation(async (polled: Device) => {
       polled.deviceModel = OG_PLUS
       polled.palette = GRAY_4
@@ -159,7 +153,7 @@ describe('the one-shot commands a /display poll fires, against a real database',
   })
 
   it('keeps a Device Model an admin assigned while a poll could not resolve one', async () => {
-    const device = await database.getRepository(Device).save({ name: 'Kitchen', friendlyId: 'KITCHEN', mac: 'AA:BB:CC:DD:EE:01', apikey: 'old-key', specialFunction: 'none' })
+    const device = await deviceWith({ specialFunction: 'none' })
     deviceModels.assignResolvedModel.mockImplementation(async () => {
       await database.getRepository(Device).update({ id: device.id }, { deviceModel: OG_PLUS, palette: BW })
       return null
@@ -168,5 +162,19 @@ describe('the one-shot commands a /display poll fires, against a real database',
     await service.getCurrentImage({ 'id': device.mac, 'access-token': 'old-key' })
 
     expect(await stored(device.id)).toMatchObject({ deviceModel: expect.objectContaining({ name: OG_PLUS.name }), palette: expect.objectContaining({ id: BW.id }) })
+  })
+
+  it('keeps a Device Model an admin assigned while a poll resolved another', async () => {
+    const device = await deviceWith({ specialFunction: 'none' })
+    deviceModels.assignResolvedModel.mockImplementation(async (polled: Device) => {
+      await database.getRepository(Device).update({ id: device.id }, { deviceModel: OG_PLUS, palette: BW })
+      polled.deviceModel = OG_PLUS
+      polled.palette = GRAY_4
+      return OG_PLUS
+    })
+
+    await service.getCurrentImage({ 'id': device.mac, 'access-token': 'old-key' })
+
+    expect(await stored(device.id)).toMatchObject({ palette: expect.objectContaining({ id: BW.id }) })
   })
 })

@@ -13,7 +13,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
 import { effectiveFrameworkVersion, isButtonWake, viewFull } from 'kuroshiro-shared'
-import { Repository } from 'typeorm'
+import { IsNull, Repository } from 'typeorm'
 import { DeviceModelsService } from '../device-models/device-models.service.js'
 import { FallbackScreensService } from '../device-models/fallback-screens.service.js'
 import { DeviceSensorsService } from '../device-sensors/device-sensors.service.js'
@@ -226,7 +226,8 @@ export class DeviceDisplayService {
    * response builders need and the acknowledgement `acknowledgeOneShots`
    * writes once the answer is built.
    *
-   * Written to the reported columns only, like `recordServed`: the sensor
+   * Written to the reported columns (and a Device Model this poll resolved)
+   * only, like `recordServed`: the sensor
    * sync and the firmware checksum take time, and saving the whole Device
    * loaded at the start of the poll would undo an admin's edit made meanwhile.
    */
@@ -238,7 +239,10 @@ export class DeviceDisplayService {
     await this.deviceSensors.syncFromHeader(device, headers.sensors)
     const { firmwareUrl, updateFirmware } = await this.resolveFirmwarePush(device)
     const { resetDevice, wipe, specialFunction, acknowledgement } = fireOneShots(device, updateFirmware ? device.targetFirmware!.id : null)
-    await this.deviceRepository.update({ id: device.id }, resolvedModel ? { ...reported, deviceModel: resolvedModel, palette: device.palette ?? null } : reported)
+    await this.deviceRepository.update({ id: device.id }, reported)
+    // Only onto a row still without one, so a Device Model an admin assigned meanwhile stays
+    if (resolvedModel)
+      await this.deviceRepository.update({ id: device.id, deviceModel: IsNull() }, { deviceModel: resolvedModel, palette: device.palette ?? null })
     this.logger.log(`Device info updated for MAC: ${headers.id}`)
     return { report: { resetDevice, wipe, specialFunction, firmwareUrl, updateFirmware }, acknowledgement }
   }
