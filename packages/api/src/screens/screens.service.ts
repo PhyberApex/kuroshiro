@@ -105,11 +105,18 @@ export class ScreensService {
       ...(input.html !== undefined && { html: input.html, renderSignal: null }),
       ...(input.dither !== undefined && { dither: input.dither }),
       ...(screen.type === 'external' && await this.changeExternalLink(screen, input)),
+      ...(this.changesHtmlRender(screen, input) && { generatedAt: new Date() }),
     }
     if (Object.keys(changes).length > 0)
       await this.screensRepository.update({ id }, changes)
     await this.reconvertForDither(screen, input, changes)
     return id
+  }
+
+  /** Whether the edit changes what an HTML Screen renders to; `/display` names the image after `generatedAt`, and the Device redraws only on a new name. */
+  private changesHtmlRender(screen: Screen, input: UpdateScreenDto): boolean {
+    return screen.type === 'html'
+      && ((input.html !== undefined && input.html !== screen.html) || (input.dither !== undefined && input.dither !== screen.dither))
   }
 
   /** A flip of Dithering converts a File Screen's stored image, or an External link's kept one, again from its retained original, unless the change fetched a new one. */
