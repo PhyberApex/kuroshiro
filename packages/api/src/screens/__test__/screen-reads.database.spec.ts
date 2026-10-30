@@ -108,12 +108,21 @@ describe('a Device\'s Screens, GET /api/devices/:id/screens, against a real data
     expect(screens[1]).toMatchObject({ state: 'upNext', renderSignal: null })
   })
 
-  it('carries a Screen\'s remembered Render Signal, and the Screen State it causes', async () => {
-    await addScreen(1, { renderSignal: 'skip' })
+  it('carries a Plugin Screen\'s remembered Render Signal, and the Screen State it causes', async () => {
+    await addScreen(1, { type: 'plugin', filename: null, html: null, plugin: await addPlugin('Bins'), renderSignal: 'skip' })
 
     const screens = await readScreens()
 
     expect(screens[0]).toMatchObject({ state: 'skipping', renderSignal: 'skip' })
+  })
+
+  it.each(['skip', 'hold'] as const)('reads an HTML Screen with a stored %s without it, since Rotation evaluates its Render Signal afresh on every poll', async (renderSignal) => {
+    await addScreen(1, { isActive: true })
+    await addScreen(2, { renderSignal })
+
+    const screens = await readScreens()
+
+    expect(screens[1]).toMatchObject({ state: 'upNext', renderSignal: null })
   })
 
   it('answers an empty list for a Device without Screens', async () => {
