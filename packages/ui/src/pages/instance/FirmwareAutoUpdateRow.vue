@@ -24,6 +24,8 @@ const emit = defineEmits<{
 }>()
 
 const entered = ref(props.on)
+/** Whether the server has Auto-Update on. "Catch up now" waits for it: the server finds no one behind while it is off. */
+const savedOn = ref(props.on)
 
 /** What the last "Catch up now" came to, or why it could not start. It stays until the page is left. */
 const outcome = ref<string>()
@@ -42,11 +44,13 @@ function notCheckedBecause(reason: string) {
 
 const save = useSaveAsChanged(async (on: boolean) => {
   const settings = await updateInstanceSettings({ firmwareAutoUpdate: on })
-  emit('saved', settings.firmwareAutoUpdate.value)
-  return settings.firmwareAutoUpdate.value
+  savedOn.value = settings.firmwareAutoUpdate.value
+  emit('saved', savedOn.value)
+  return savedOn.value
 }, entered)
 
 watch(() => props.on, (on) => {
+  savedOn.value = on
   if (save.status !== 'saving' && save.status !== 'failed')
     entered.value = on
 })
@@ -69,7 +73,7 @@ function switchTo(on: boolean) {
         @update:model-value="switchTo"
       />
       <span>{{ entered ? 'On' : 'Off' }}</span>
-      <FirmwareCatchUp v-if="entered" @caught-up="caughtUp" @failed="notCheckedBecause" />
+      <FirmwareCatchUp v-if="entered && savedOn" @caught-up="caughtUp" @failed="notCheckedBecause" />
     </template>
     <template #note>
       {{ autoUpdateNote(entered, newestVersion) }}

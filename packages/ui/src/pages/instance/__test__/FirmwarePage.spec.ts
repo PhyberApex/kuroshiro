@@ -143,6 +143,22 @@ describe('the Firmware page', () => {
         expect(faked.catchUps).toBe(0)
       })
 
+      it('is not offered while switching it on was not saved, and is once it is', async () => {
+        fakeFirmware()
+        const screen = await mountLoadedFirmware()
+        api.use(http.patch(apiUrl('settings'), () => apiErrorResponse({ statusCode: 500, code: 'internal' }), { once: true }))
+
+        await autoUpdate(screen).click()
+        await expect.poll(() => stateOf(screen, 'Firmware Auto-Update')).toBe('Not saved. Something went wrong on the server.')
+
+        await expect.element(autoUpdate(screen)).toBeChecked()
+        expect(catchUpButton(screen).elements()).toEqual([])
+
+        await screen.getByRole('button', { name: 'Try again' }).click()
+
+        await expect.element(catchUpButton(screen)).toBeVisible()
+      })
+
       it('confirms first, naming the Devices it would target, and says who was given the Firmware', async () => {
         const faked = fakeFirmware({ settings: AUTO_UPDATE_ON })
         const screen = await mountLoadedFirmware()
