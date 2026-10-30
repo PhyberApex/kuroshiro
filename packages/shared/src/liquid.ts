@@ -1,5 +1,5 @@
 import type { Context, Emitter, FilterImplOptions, FS, Hash, Parser, TagToken, Template, TopLevelToken } from 'liquidjs'
-import { Liquid, Tag } from 'liquidjs'
+import { Liquid, Tag, toValue } from 'liquidjs'
 import { findBy, mapToI } from './filters/collections.ts'
 import { daysAgo, localizeDate, ordinalize } from './filters/dates.ts'
 import { markdownToHtml, qrCode } from './filters/markup.ts'
@@ -78,7 +78,8 @@ function zonedFilters(timeZone: string | undefined): Record<string, FilterImplOp
 
 /** The custom filters of TRMNL's `trmnl-liquid` gem, under its names and signatures (ADR-0043). */
 const trmnlFilters: Record<string, FilterImplOptions> = {
-  json: (value: unknown) => JSON.stringify(value),
+  /** Ruby's `to_json`: `null` for a missing value and for `nil` (a drop in liquidjs); any other drop serialises as itself, not its `valueOf`. */
+  json: (value: unknown) => JSON.stringify(toValue(value) == null ? null : value),
   sample: (arr: unknown[], count = 1) => {
     const shuffled = [...arr].sort(() => Math.random() - 0.5)
     return count === 1 ? shuffled[0] : shuffled.slice(0, count)

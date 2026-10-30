@@ -105,15 +105,6 @@ describe('kuroshiro liquid filters', () => {
     expect(result).toBe('✗')
   })
 
-  it('json serializes objects', async () => {
-    const template = '{{ obj | json }}'
-    const data = { obj: { key: 'value' } }
-
-    const result = await renderLiquid(template, data)
-
-    expect(result).toBe('{"key":"value"}')
-  })
-
   it('registers a fresh engine with the same filters', async () => {
     const result = await createLiquidEngine().parseAndRender('{{ n | round: 1 }}', { n: 2.25 })
 
@@ -141,6 +132,7 @@ describe('standard filters follow Ruby Liquid (ADR-0043)', () => {
     ['{{ 7 | divided_by: 2 | plus: 1 }}', '4'],
     ['{{ 1893456000 | minus: 1792093470 | divided_by: 86400 }}', '1173'],
     ['{{ 1 | divided_by: 0 }}', 'Infinity'],
+    ['{{ 0 | divided_by: 0 }}', 'NaN'],
     ['{{ 3.14159 | round: 2 }}', '3.14'],
     ['{{ 3.7 | round }}', '4'],
     ['{{ "abc" | round }}', '0'],
@@ -285,6 +277,13 @@ describe('trmnl custom filters (ADR-0043, after the trmnl-liquid gem)', () => {
     vi.restoreAllMocks()
   })
 
+  it('json serializes a value as Ruby\'s to_json does, a missing one as null', async () => {
+    expect(await render('{{ obj | json }}', { obj: { key: 'value' } })).toBe('{"key":"value"}')
+    expect(await render('var items = {{ data.items | json }};', { data: {} })).toBe('var items = null;')
+    expect(await render('{{ nil | json }}')).toBe('null')
+    expect(await render('{% for i in (1..1) %}{{ forloop | json }}{% endfor %}')).toMatch(/^\{"/)
+  })
+
   it('parse_json parses a JSON string', async () => {
     expect(await render('{% assign parsed = data.stuff | parse_json %}{{ parsed.num }}', { data: { stuff: '{"num":5}' } })).toBe('5')
   })
@@ -302,7 +301,7 @@ describe('trmnl custom filters (ADR-0043, after the trmnl-liquid gem)', () => {
     expect(await render('{{ people | find_by: "name", "Ryan" | json }}', { people })).toBe('{"name":"Ryan","age":35}')
     expect(await render('{{ people | find_by: "name", "Toby", "Not Found" }}', { people })).toBe('Not Found')
     expect(await render('{{ people | find_by: "name", "Toby" }}', { people })).toBe('')
-    expect(await render('{{ people | find_by: "age", "35" | json }}', { people })).toBe('')
+    expect(await render('{{ people | find_by: "age", "35" | json }}', { people })).toBe('null')
     expect(await render('{{ objs | find_by: "ok", true | json }}', { objs: [{ ok: false }, { ok: true }] })).toBe('{"ok":true}')
   })
 
