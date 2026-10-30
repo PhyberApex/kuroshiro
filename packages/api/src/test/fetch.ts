@@ -1,6 +1,9 @@
 import type { Mock } from 'vitest'
 import { vi } from 'vitest'
 
+/** The global `fetch` as it was before any spec stubbed it, for a stub that has to make a real request. */
+export const realFetch = fetch
+
 export function stubFetch(): Mock<typeof fetch> {
   const mock = vi.fn<typeof fetch>()
   vi.stubGlobal('fetch', mock)

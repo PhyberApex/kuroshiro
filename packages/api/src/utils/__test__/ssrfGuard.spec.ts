@@ -3,13 +3,12 @@ import type { AddressInfo } from 'node:net'
 import { lookup } from 'node:dns/promises'
 import { createServer } from 'node:http'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { stubFetch } from '../../test/fetch.js'
+import { realFetch, stubFetch } from '../../test/fetch.js'
 import { assertPublicUrl, fetchPublic, resolvePublic } from '../ssrfGuard.js'
 
 vi.mock('node:dns/promises', () => ({ lookup: vi.fn() }))
 
 const mockLookup = vi.mocked(lookup as unknown as (host: string, options: { all: true }) => Promise<LookupAddress[]>)
-const realFetch = fetch
 const mockFetch = stubFetch()
 
 /** Answers every host name with these addresses. */
@@ -286,12 +285,18 @@ describe('fetchPublic connecting', () => {
 
   it('connects to the address it checked, never resolving the host name a second time', async () => {
     // A rebinding name: a public address (TEST-NET-1, which nothing answers) first, the internal host afterwards.
-    mockLookup.mockResolvedValueOnce([{ address: '192.0.2.1', family: 4 }])
+    let resolvedWhileFetching = false
+    mockLookup.mockImplementationOnce(async () => {
+      resolvedWhileFetching = mockFetch.mock.calls.length > 0
+      return [{ address: '192.0.2.1', family: 4 }]
+    })
     mockLookup.mockResolvedValue([{ address: '127.0.0.1', family: 4 }])
 
     await expect(fetchPublic(`http://rebind.example:${port}/`, { signal: AbortSignal.timeout(300) })).rejects.toThrow()
     expect(received).toBe(0)
+    // The one resolution is the connection's own, so the address it checked is the address connected to.
     expect(mockLookup).toHaveBeenCalledTimes(1)
+    expect(resolvedWhileFetching).toBe(true)
   })
 
   it('refuses a redirect to a host name that resolves to a private address', async () => {

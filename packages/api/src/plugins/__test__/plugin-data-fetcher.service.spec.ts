@@ -2,14 +2,13 @@ import type { ConfigService } from '@nestjs/config'
 import { lookup } from 'node:dns/promises'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
-import { endlessBody, jsonResponse, stubFetch } from '../../test/fetch.js'
+import { endlessBody, jsonResponse, realFetch, stubFetch } from '../../test/fetch.js'
 import { asService } from '../../test/mockService.js'
 import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
 import { PluginRendererService } from '../services/plugin-renderer.service.js'
 
 vi.mock('node:dns/promises', () => ({ lookup: vi.fn() }))
 
-const realFetch = fetch
 const mockFetch = stubFetch()
 const mockLookup = vi.mocked(lookup as (host: string, options: { all: true }) => Promise<{ address: string, family: number }[]>)
 

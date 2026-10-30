@@ -72,8 +72,9 @@ const publicLookup: LookupFunction = (hostname, options, callback) => {
 }
 
 /**
- * Connects only to addresses `publicLookup` checked. undici is pinned to the major Node bundles, whose fetch it
- * dispatches for.
+ * Connects only to addresses `publicLookup` checked. The global fetch dispatches through it, so undici stays on the
+ * major the Node it runs on bundles (8 in Node 26): another major fails every request with "fetch failed", which the
+ * connecting specs of fetchPublic catch.
  */
 const publicAgent = new Agent({ connect: { lookup: publicLookup } })
 
