@@ -87,6 +87,22 @@ describe('renaming a Device', () => {
     expect(screen.getByRole('button', { name: 'Try again' }).elements()).toEqual([])
     expect(faked.writes).toEqual([{ name: 'Pantry' }])
   })
+
+  it('forgets a refused name once the field is emptied, so "Try again" does not send what the field no longer holds', async () => {
+    const faked = fakeKitchenSettings()
+    faked.refusing = apiErrorResponse({ statusCode: 403, code: 'demo-mode' })
+    const screen = await mountSettings()
+
+    await enter(nameField(screen), 'Pantry')
+    await expect.poll(() => stateOf(screen, 'Name')).toBe('Not saved. Not available in the demo.')
+
+    await enter(nameField(screen), '   ')
+
+    await expect.poll(() => errorOf(screen, 'Name')).toBe('A Device needs a name.')
+    expect(stateOf(screen, 'Name')).toBe('')
+    expect(screen.getByRole('button', { name: 'Try again' }).elements()).toEqual([])
+    expect(faked.writes).toEqual([{ name: 'Pantry' }])
+  })
 })
 
 describe('the Device Model of a Device', () => {

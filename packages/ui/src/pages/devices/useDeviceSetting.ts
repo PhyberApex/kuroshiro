@@ -75,6 +75,7 @@ export function useDeviceSetting<T>(saved: () => T, toInput: (entered: T) => Upd
     reason: toRef(write, 'reason'),
     saving: computed(() => write.status === 'saving'),
     retry: write.retry,
+    withdraw: write.withdraw,
     commit,
     /** For a control that saves on change (a select, a switch, a radio row): holds the chosen value and commits it. */
     choose(chosen: T) {

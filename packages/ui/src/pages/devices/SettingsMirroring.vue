@@ -70,8 +70,10 @@ function switchTo(next: boolean) {
 
 function saveMac() {
   macProblem.value = isMacAddress(mac.value) ? undefined : MIRROR_MAC_MESSAGE
-  if (macProblem.value)
+  if (macProblem.value) {
+    write.withdraw()
     return
+  }
   mac.value = asStoredMac(mac.value)
   save('mac')
 }
