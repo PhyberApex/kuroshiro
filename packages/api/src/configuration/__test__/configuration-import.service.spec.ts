@@ -737,6 +737,24 @@ describe('configurationImportService', () => {
     expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ oauthSettings: null })
   })
 
+  it('imports a Plugin\'s Screen modifiers from its settings.yml, and turns them off for one whose settings.yml says no or sets none (ADR-0054)', async () => {
+    function withModifiers(modifiers: string) {
+      const { plugins, pluginFolders } = fieldValuePlugin({})
+      const folder = { ...pluginFolders['plugin-1'], settings: { strategy: 'polling', no_screen_padding: modifiers, dark_mode: modifiers } }
+      return buildArchive({ plugins, pluginFolders: { 'plugin-1': folder } })
+    }
+
+    await service.importFromZip(withModifiers('yes'))
+    expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ noScreenPadding: true, darkMode: true })
+
+    await service.importFromZip(withModifiers('no'))
+    expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ noScreenPadding: false, darkMode: false })
+
+    await service.importFromZip(withModifiers('yes'))
+    await service.importFromZip(buildArchive(fieldValuePlugin({})))
+    expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ noScreenPadding: false, darkMode: false })
+  })
+
   describe('an OAuth Plugin\'s refreshed token (ADR-0068)', () => {
     const OAUTH = { strategy: 'polling', oauth_enabled: 'true', oauth_token_url: 'https://oauth2.example.com/token' }
     const REFRESHED = { oauthAccessToken: 'refreshed-access', oauthRefreshToken: 'rotated-refresh', oauthRefreshedAt: new Date() }
