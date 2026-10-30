@@ -72,9 +72,12 @@ function closed(open: boolean) {
 }
 
 // The browser words this question itself; it only needs to know that there is one to ask.
+// Chrome before 119 and some Safari versions ignore preventDefault() and ask only on a non-empty returnValue.
 function askBeforeUnload(event: BeforeUnloadEvent) {
-  if (props.when)
-    event.preventDefault()
+  if (!props.when)
+    return
+  event.preventDefault()
+  event.returnValue = true
 }
 
 onMounted(() => window.addEventListener('beforeunload', askBeforeUnload))
