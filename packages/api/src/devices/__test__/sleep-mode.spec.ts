@@ -70,6 +70,12 @@ describe('secondsUntilSleepEnd across a daylight saving change', () => {
     expect(secondsUntilSleepEnd(7 * 3600, new Date(2026, 9, 24, 23, 0))).toBe(9 * 3600)
   })
 
+  it('wakes at the second occurrence of a wake time inside the repeated hour', () => {
+    const secondTwoFifteen = new Date('2026-10-25T01:15:00Z')
+    expect(secondsUntilSleepEnd(2.5 * 3600, secondTwoFifteen)).toBe(15 * 60)
+    expect(secondsUntilSleepEnd(2.5 * 3600, new Date('2026-10-25T00:15:00Z'))).toBe(15 * 60)
+  })
+
   it('agrees with nextSleepEnd', () => {
     const now = new Date(2026, 2, 29, 1, 0)
     expect(now.getTime() + secondsUntilSleepEnd(7 * 3600, now) * 1000).toBe(nextSleepEnd(7 * 3600, now).getTime())

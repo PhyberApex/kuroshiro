@@ -1,4 +1,5 @@
 export const MIN_SLEEP_REFRESH_RATE = 60
+const HOUR_MS = 3_600_000
 
 interface SleepFields {
   sleepModeEnabled: boolean
@@ -37,8 +38,13 @@ export function nextSleepEnd(sleepEndTime: number, now: Date): Date {
   const end = new Date(now)
   end.setHours(0, 0, 0, 0)
   end.setSeconds(sleepEndTime)
-  if (end <= now)
-    end.setDate(end.getDate() + 1)
+  if (end > now)
+    return end
+  // The night clocks fall back reads each time of the repeated hour twice; past the first, the second is next.
+  const repeated = new Date(end.getTime() + HOUR_MS)
+  if (repeated > now && secondsOfDay(repeated) === secondsOfDay(end))
+    return repeated
+  end.setDate(end.getDate() + 1)
   return end
 }
 
