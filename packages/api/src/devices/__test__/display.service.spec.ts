@@ -16,7 +16,7 @@ import type { TrmnlScreenResponse } from '../display.service.js'
 import type { DisplayRequestHeadersDto } from '../dto/display-request-headers.dto.js'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import { NotFoundException, UnauthorizedException } from '@nestjs/common'
+import { Logger, NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { TRMNL_FRAMEWORK_VERSION } from 'kuroshiro-shared'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { closeSharedBrowser } from '../../device-models/shared-browser.js'
@@ -161,6 +161,41 @@ describe('deviceDisplayService', () => {
   it('throws UnauthorizedException if API key is invalid', async () => {
     deviceRepo.findOneBy.mockResolvedValue(makeDevice({ ...baseDevice, apikey: 'wrong' }))
     await expect(service.getCurrentImage(headers)).rejects.toThrow(UnauthorizedException)
+  })
+
+  describe('what a poll logs', () => {
+    const secret = 'secret-device-apikey'
+
+    beforeEach(() => {
+      deviceRepo.findOneBy.mockResolvedValue(makeDevice({ ...baseDevice, apikey: secret, deviceModel: OG_PLUS }))
+      screenRepo.find.mockResolvedValue([])
+      screenRepo.findOneBy.mockResolvedValue(null)
+      configService.get.mockReturnValue('http://api')
+    })
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    function loggedLines() {
+      const levels = ['log', 'debug', 'verbose', 'warn', 'error', 'fatal'] as const
+      const spies = levels.map(level => vi.spyOn(Logger.prototype, level).mockImplementation(() => {}))
+      return () => spies.flatMap(spy => spy.mock.calls.map(call => call.map(String).join(' ')))
+    }
+
+    it('never writes the API key a /display poll sends to the log', async () => {
+      const lines = loggedLines()
+      await service.getCurrentImage({ ...headers, 'access-token': secret })
+      expect(lines().some(line => line.includes('Headers:'))).toBe(true)
+      expect(lines().filter(line => line.includes(secret))).toEqual([])
+    })
+
+    it('never writes the API key a /current_screen poll sends to the log', async () => {
+      const lines = loggedLines()
+      await service.getCurrentImageWithoutProgressing({ ...headers, 'access-token': secret })
+      expect(lines().some(line => line.includes('Headers:'))).toBe(true)
+      expect(lines().filter(line => line.includes(secret))).toEqual([])
+    })
   })
 
   describe('device report handling', () => {

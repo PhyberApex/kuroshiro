@@ -50,7 +50,7 @@ export class DeviceSetupService {
       friendly_id: device.friendlyId,
       api_key: device.apikey,
     }
-    this.logger.debug(`Returning setup: ${JSON.stringify(setupResponse)}`)
+    this.logger.debug(`Returning setup: ${JSON.stringify({ ...setupResponse, api_key: '[redacted]' })}`)
     return setupResponse
   }
 
