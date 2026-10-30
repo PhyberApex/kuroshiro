@@ -227,21 +227,24 @@ describe('a form with unsaved changes', () => {
 
   it('has the browser ask before the page is unloaded, and only while something is changed', async () => {
     const screen = await mountPage({ routes, at: '/form' })
+    // BeforeUnloadEvent has no constructor; createEvent is the only way to dispatch a real one.
+    // Chrome before 119 and some Safari versions prompt only on a non-empty returnValue, the rest on preventDefault().
     const unloading = () => {
-      const event = new Event('beforeunload', { cancelable: true })
+      const event = document.createEvent('BeforeUnloadEvent')
+      event.initEvent('beforeunload', false, true)
       window.dispatchEvent(event)
-      return event.defaultPrevented
+      return { asked: event.defaultPrevented, legacyAsked: event.returnValue !== '' }
     }
 
-    expect(unloading()).toBe(false)
+    expect(unloading()).toEqual({ asked: false, legacyAsked: false })
 
     await screen.getByRole('textbox', { name: 'HTML' }).fill('<h1>Hello</h1>')
-    expect(unloading()).toBe(true)
+    expect(unloading()).toEqual({ asked: true, legacyAsked: true })
 
     void screen.router.push('/elsewhere')
     await screen.getByRole('alertdialog').getByRole('button', { name: 'Leave' }).click()
     await expect.element(screen.getByRole('heading', { name: 'Elsewhere' })).toBeVisible()
-    expect(unloading()).toBe(false)
+    expect(unloading()).toEqual({ asked: false, legacyAsked: false })
   })
 })
 
