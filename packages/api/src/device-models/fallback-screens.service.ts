@@ -6,7 +6,7 @@ import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { toClockTime } from '../devices/sleep-mode.js'
 import { getErrorMessage } from '../utils/getErrorMessage.js'
-import { convertBlankToPng } from '../utils/imageUtils.js'
+import { convertBlankToPng, paletteConversionKey } from '../utils/imageUtils.js'
 import { resolveAppPath } from '../utils/pathHelper.js'
 import { FALLBACK_SCREEN_TEMPLATE_VERSION, fallbackScreenHtml } from './fallback-screen-templates.js'
 import { renderHtmlToPng } from './render-html-to-png.js'
@@ -19,15 +19,19 @@ export interface FallbackScreenDevice {
   sleepEndTime?: number | null
 }
 
-/** The folder a Device Model and Palette pair's Fallback Screens are cached under, below the template version. */
+/**
+ * The folder a Device Model and Palette pair's Fallback Screens are cached
+ * under, below the template version. It carries a hash of the Palette's
+ * colours, so a custom Palette whose colours change gets fresh renders.
+ */
 export function fallbackRenderPairFolder(target: DeviceRenderTarget): string {
-  return `${target.model.name}-${target.palette.id}`
+  return `${target.model.name}-${target.palette.id}-${paletteConversionKey(target.palette)}`
 }
 
 /**
  * Serves the four Fallback Screens, each drawn for one Device at its render
  * target's size and Palette on first use and cached under
- * `public/screens/fallback/v<template version>/<model>-<palette>/<kind>-<sheet hash>.png`.
+ * `public/screens/fallback/v<template version>/<model>-<palette>-<colours hash>/<kind>-<sheet hash>.png`.
  * The hash is taken over the whole sheet, so a Device's rename, a new wake
  * time or another Screen name each get a file of their own, and Devices whose
  * sheets print the same share one.
@@ -57,7 +61,7 @@ export class FallbackScreensService {
 
   /**
    * The Wipe's blank image for a render target, drawn on first use and cached
-   * under `public/screens/wipe/<model>-<palette>-<width>x<height>/wipe.png`, so a custom Device Model resized under the same name gets a fresh one. Not a Fallback Screen:
+   * under `public/screens/wipe/<model>-<palette>-<colours hash>-<width>x<height>/wipe.png`, so a custom Device Model resized under the same name, or a custom Palette recoloured, gets a fresh one. Not a Fallback Screen:
    * it prints nothing, so no template or Device fact goes into it.
    */
   async wipeUrlFor(target: DeviceRenderTarget): Promise<string> {

@@ -101,7 +101,7 @@ describe('imageUtils', () => {
       expect(mockFs.promises.mkdir).toHaveBeenCalled()
       expect(mockExecFile).toHaveBeenCalledTimes(2)
       expect(mockExecFile.mock.calls[0][0]).toBe('magick')
-      expect(mockExecFile.mock.calls[0][1]).toEqual(['-size', '1x1', 'xc:#000000', 'xc:#555555', 'xc:#aaaaaa', 'xc:#ffffff', '+append', '-type', 'Palette', expect.stringContaining('colormaps/gray-4.png')])
+      expect(mockExecFile.mock.calls[0][1]).toEqual(['-size', '1x1', 'xc:#000000', 'xc:#555555', 'xc:#aaaaaa', 'xc:#ffffff', '+append', '-type', 'Palette', expect.stringMatching(/colormaps\/gray-4-[0-9a-f]{8}\.png$/)])
     })
 
     it('creates a colormap from the palette colours for colour panels', async () => {
@@ -110,7 +110,7 @@ describe('imageUtils', () => {
 
       await convertToPng('/input.jpg', '/output.png', { model: OG_PLUS, palette: COLOR_6A }, mockLogger)
 
-      expect(mockExecFile.mock.calls[0][1]).toEqual(['-size', '1x1', 'xc:#FF0000', 'xc:#00FF00', 'xc:#0000FF', 'xc:#FFFF00', 'xc:#000000', 'xc:#FFFFFF', '+append', '-type', 'Palette', expect.stringContaining('colormaps/color-6a.png')])
+      expect(mockExecFile.mock.calls[0][1]).toEqual(['-size', '1x1', 'xc:#FF0000', 'xc:#00FF00', 'xc:#0000FF', 'xc:#FFFF00', 'xc:#000000', 'xc:#FFFFFF', '+append', '-type', 'Palette', expect.stringMatching(/colormaps\/color-6a-[0-9a-f]{8}\.png$/)])
       const args = mockExecFile.mock.calls[1][1]
       expect(args).toContain('-remap')
       expect(args).toEqual(expect.arrayContaining(['-define', 'png:color-type=3']))
@@ -153,6 +153,27 @@ describe('imageUtils', () => {
       expect(mockExecFile).toHaveBeenCalledTimes(1)
     })
 
+    it('remaps against a new colormap once a Palette\'s colours change', async () => {
+      const written = new Set<string>()
+      mockFs.existsSync.mockImplementation(file => written.has(String(file)))
+      mockExecFile.mockImplementation((_cmd: string, args: string[], cb: (...a: unknown[]) => void) => {
+        written.add(args[args.length - 1])
+        cb(null, '', '')
+      })
+      const before = makePalette({ id: 'custom-red', grays: 2, colors: ['#000000', '#FFFFFF', '#C00000'], frameworkClass: 'screen--3bwr' })
+      const after = { ...before, colors: ['#000000', '#FFFFFF', '#FF2020'] }
+
+      await convertToPng('/input.jpg', '/output.png', { model: OG_PLUS, palette: before }, mockLogger)
+      mockExecFile.mockClear()
+      await convertToPng('/input.jpg', '/output.png', { model: OG_PLUS, palette: after }, mockLogger)
+
+      expect(mockExecFile).toHaveBeenCalledTimes(2)
+      const [created, conversion] = mockExecFile.mock.calls.map(call => call[1] as string[])
+      expect(created).toEqual(expect.arrayContaining(['xc:#FF2020']))
+      expect(created).not.toContain('xc:#C00000')
+      expect(conversion[conversion.indexOf('-remap') + 1]).toBe(created[created.length - 1])
+    })
+
     it('calls ImageMagick with 2-bit gray parameters for the 4-gray palette', async () => {
       mockFs.existsSync.mockReturnValue(true)
       magickSucceeds()
@@ -165,7 +186,7 @@ describe('imageUtils', () => {
       expect(args).toEqual(expect.arrayContaining(['-background', 'white', '-alpha', 'remove', '-alpha', 'off']))
       expect(args).toEqual(expect.arrayContaining(['-resize', '800x480', '-gravity', 'Center', '-extent', '800x480']))
       expect(args).toEqual(expect.arrayContaining(['-colorspace', 'Gray', '-dither', 'FloydSteinberg', '-remap']))
-      expect(args.some((a: string) => a.includes('colormaps/gray-4.png'))).toBe(true)
+      expect(args.some((a: string) => /colormaps\/gray-4-[0-9a-f]{8}\.png$/.test(a))).toBe(true)
       expect(args).toEqual(expect.arrayContaining(['-define', 'png:bit-depth=2', '-define', 'png:color-type=0']))
       expect(args[args.length - 2]).toBe('-strip')
       expect(args[args.length - 1]).toBe('png:/output.png')

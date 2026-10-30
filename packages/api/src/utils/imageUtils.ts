@@ -5,6 +5,7 @@ import type { Palette } from '../device-models/entities/palette.entity.js'
 import type { Requester } from './ssrfGuard.js'
 import buffer from 'node:buffer'
 import { execFile } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { UPLOAD_LIMITS } from '../uploads/upload-limits.js'
@@ -68,6 +69,14 @@ export function paletteConversion(palette: Pick<Palette, 'grays' | 'colors' | 'f
   return { kind: 'gray', levels, bitDepth: Math.max(1, Math.ceil(Math.log2(levels))) }
 }
 
+/**
+ * A short hash of everything a palette's conversion depends on, so a file
+ * named after it is never reused once the palette's colours change.
+ */
+export function paletteConversionKey(palette: Pick<Palette, 'grays' | 'colors' | 'frameworkClass'>): string {
+  return createHash('sha256').update(JSON.stringify(paletteConversion(palette))).digest('hex').slice(0, 8)
+}
+
 function grayLevelsHex(levels: number): string[] {
   return Array.from({ length: levels }, (_, i) => {
     const value = Math.round((i * 255) / (levels - 1)).toString(16).padStart(2, '0')
@@ -91,8 +100,10 @@ function runMagick(args: string[], logger: Logger): Promise<string> {
   })
 }
 
+/** Named after the colours as well as the palette, so a custom Palette whose colours change gets a colormap of its own. */
 async function ensureColormap(paletteId: string, colors: string[], logger: Logger): Promise<string> {
-  const colormapPath = resolveAppPath('public', 'colormaps', `${paletteId}.png`)
+  const colorsHash = createHash('sha256').update(colors.join(',')).digest('hex').slice(0, 8)
+  const colormapPath = resolveAppPath('public', 'colormaps', `${paletteId}-${colorsHash}.png`)
   if (fs.existsSync(colormapPath))
     return colormapPath
   logger.log(`Creating colormap for palette ${paletteId} at ${colormapPath}`)
