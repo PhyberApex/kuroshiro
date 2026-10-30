@@ -31,16 +31,15 @@ export class LoggingInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       tap({
-        next: (responseBody) => {
+        // The response body is never logged: it carries Device API keys, Webhook Tokens
+        // and Data Source headers, and container logs outlive key rotation.
+        next: () => {
           const duration = Date.now() - startTime
           const statusCode = response.statusCode
 
           this.logger.debug(
             `${method} ${url} ${statusCode} - ${duration}ms`,
           )
-
-          // Optionally log response body (uncomment if needed, can be verbose)
-          this.logger.debug(`Response body: ${JSON.stringify(responseBody)}`)
         },
         error: (error) => {
           const duration = Date.now() - startTime
