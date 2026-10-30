@@ -124,6 +124,18 @@ describe('the endpoints outside the admin API behind the global pipe and filter'
     expect(handler).not.toHaveBeenCalled()
   })
 
+  it.each([
+    ['GET /api/display', () => http.request('/api/display', { headers: { 'id': '', 'access-token': 'token' } })],
+    ['GET /api/setup', () => http.request('/api/setup', { headers: { id: '  ' } })],
+  ])('refuses %s with an empty ID header as a 400 naming it', async (_route, send) => {
+    const response = await send()
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ statusCode: 400, message: ['Invalid header: id should not be empty'], error: 'Bad Request' })
+    expect(displayService.getCurrentImage).not.toHaveBeenCalled()
+    expect(setupService.setupDevice).not.toHaveBeenCalled()
+  })
+
   it('leaves a missing access-token to the Device check, which answers 401', async () => {
     displayService.getCurrentImage.mockRejectedValue(new UnauthorizedException('Invalid API key'))
 

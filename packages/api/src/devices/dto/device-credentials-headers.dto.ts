@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator'
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator'
 
 /**
  * The two headers a Device sends to prove who it is: its MAC and the API key it
@@ -7,6 +7,7 @@ import { IsOptional, IsString } from 'class-validator'
  */
 export class DeviceCredentialsHeadersDto {
   @IsString()
+  @IsNotEmpty()
   id: string
 
   @IsOptional()
