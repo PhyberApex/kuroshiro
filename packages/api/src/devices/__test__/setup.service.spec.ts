@@ -59,7 +59,7 @@ describe('deviceSetupService', () => {
 
     expect(deviceRepo.findOneBy).toHaveBeenCalledWith({ mac: 'mac' })
     expect(deviceRepo.create).toHaveBeenCalledWith({
-      mac: 'mac',
+      mac: 'MAC',
       friendlyId: 'mocked-friendly-id',
       apikey: 'mocked-api-key',
       name: 'mocked-friendly-id',
