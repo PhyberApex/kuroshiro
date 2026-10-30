@@ -17,6 +17,7 @@ import { createHttpTestApp } from '../../test/httpApp.js'
 import { createMockDeviceModelsService, primeMockDeviceModelsServiceWithAssignedModels } from '../../test/mockDeviceModelsService.js'
 import { asService } from '../../test/mockService.js'
 import { createTestDatabase } from '../../test/testDatabase.js'
+import { declaringSize } from '../../test/zip.js'
 import { UPLOAD_LIMITS } from '../../uploads/upload-limits.js'
 import { DevicePlugin } from '../entities/device-plugin.entity.js'
 import { PluginDataSource } from '../entities/plugin-data-source.entity.js'
@@ -228,6 +229,14 @@ describe('importing a Plugin, against a real database', () => {
       const refusal = await refused(await upload(content, fileName), 400)
 
       expect(refusal.code).toBe('import-not-zip')
+      expect(await listed()).toEqual([])
+    })
+
+    it('refuses with 413 zip-unpacks-too-large a .zip whose manifest declares more than an import may hold, before inflating it', async () => {
+      const bomb = declaringSize(zipOf(WEATHER_FILES), '.trmnlp.yml', 0xFFFF_FFFF)
+      const refusal = await refused(await upload(bomb, 'weather.zip'), 413)
+
+      expect(refusal).toMatchObject({ code: 'zip-unpacks-too-large', details: { limitBytes: UPLOAD_LIMITS.pluginImportBytes } })
       expect(await listed()).toEqual([])
     })
 

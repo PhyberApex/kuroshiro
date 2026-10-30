@@ -20,6 +20,7 @@ const importing = useImportPlugin({
     'import-no-plugin': true,
     'import-legacy-format': true,
     'upload-too-large': true,
+    'zip-unpacks-too-large': true,
   },
 })
 watch(file, importing.clear)

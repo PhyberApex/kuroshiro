@@ -339,6 +339,7 @@ describe('add a Plugin by importing', () => {
       ['is not a .zip inside', { statusCode: 400, code: 'import-not-zip' }, 'This file is not a .zip. A Plugin is imported from a .zip as Kuroshiro or TRMNL exports it.'],
       ['is in the legacy format', { statusCode: 422, code: 'import-legacy-format' }, 'This Plugin was exported in a format Kuroshiro no longer reads. Export it again where it came from.'],
       ['is larger than the server takes', { statusCode: 413, code: 'upload-too-large', details: { limitBytes: 1024 * 1024 } }, 'That file is larger than the 1 MB this Instance accepts.'],
+      ['unpacks to more than the server takes', { statusCode: 413, code: 'zip-unpacks-too-large', details: { limitBytes: 1024 * 1024 } }, 'That .zip unpacks to more than the 1 MB this Instance accepts.'],
     ])('says under the drop zone that the file %s, and keeps the file', async (_cause, refusal, message) => {
       const faked = fakeImporting({ answer: refuseWith(refusal) })
       const screen = await mountAddPlugin('/plugins/new?way=file')

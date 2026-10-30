@@ -14,6 +14,8 @@ import { createHttpTestApp } from '../../test/httpApp.js'
 import { createMockDeviceModelsService, primeMockDeviceModelsService } from '../../test/mockDeviceModelsService.js'
 import { asService } from '../../test/mockService.js'
 import { createTestDatabase } from '../../test/testDatabase.js'
+import { declaringSize } from '../../test/zip.js'
+import { UPLOAD_LIMITS } from '../../uploads/upload-limits.js'
 import { ConfigurationController } from '../configuration.controller.js'
 import { CONFIG_SCHEMA_VERSION, LEGACY_CONFIG_SCHEMA_VERSIONS } from '../schema-version.js'
 import { ConfigurationExportService } from '../services/configuration-export.service.js'
@@ -337,6 +339,11 @@ describe('reading and importing a Configuration Archive, against a real database
 
     it('a file that is not a zip', async () => {
       expect(await refused(Buffer.from('just some text'))).toMatchObject({ statusCode: 400, code: 'archive-not-zip' })
+    })
+
+    it('a zip whose entries declare more than an archive may unpack to, before inflating any', async () => {
+      const bomb = declaringSize(buildArchive({ manifest: manifest() }), 'devices.json', UPLOAD_LIMITS.archiveUploadBytes + 1)
+      expect(await refused(bomb)).toMatchObject({ statusCode: 413, code: 'zip-unpacks-too-large', details: { limitBytes: UPLOAD_LIMITS.archiveUploadBytes } })
     })
 
     it('a zip without a manifest', async () => {

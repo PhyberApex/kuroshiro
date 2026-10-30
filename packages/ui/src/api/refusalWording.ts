@@ -3,12 +3,17 @@ import { formatBytes } from '@/components/fileRules'
 
 type Wording = string | ((refusal: ApiError) => string)
 
-function uploadTooLarge({ details }: ApiError) {
-  const limitBytes = details?.limitBytes
-  return typeof limitBytes === 'number'
-    ? `That file is larger than the ${formatBytes(limitBytes)} this Instance accepts.`
-    : 'That file is larger than this Instance accepts.'
+/** `lead` ends in "larger than" or the like, and the sentence goes on with the limit `details.limitBytes` names, if it names one. */
+function overLimitSentence(lead: string) {
+  return ({ details }: ApiError) => {
+    const limitBytes = details?.limitBytes
+    return typeof limitBytes === 'number'
+      ? `${lead} the ${formatBytes(limitBytes)} this Instance accepts.`
+      : `${lead} this Instance accepts.`
+  }
 }
+
+const uploadTooLarge = overLimitSentence('That file is larger than')
 
 export const IMAGE_NOT_FETCHED = 'Kuroshiro could not fetch an image from this address.'
 
@@ -74,6 +79,7 @@ const REFUSAL_WORDING: Record<ApiErrorCode, Wording> = {
   'order-not-a-permutation': 'The Order has to name every Screen once.',
   'demo-mode': NOT_IN_DEMO,
   'upload-too-large': uploadTooLarge,
+  'zip-unpacks-too-large': overLimitSentence('That .zip unpacks to more than'),
   'firmware-version-taken': 'There is already a Firmware with that version.',
   'device-model-unknown': 'This Instance does not know that Device Model.',
   'palette-unknown': 'This Instance does not know that Palette.',

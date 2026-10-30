@@ -17,7 +17,7 @@ export function checkConfigurationImport(file: File) {
   return apiSend<ImportCheck>('POST', 'config/import/check', archiveForm(file))
 }
 
-/** Refused with `archive-not-zip`, `archive-not-configuration`, `archive-schema-version`, `archive-record-refused` or `upload-too-large`. */
+/** Refused with `archive-not-zip`, `archive-not-configuration`, `archive-schema-version`, `archive-record-refused`, `upload-too-large` or `zip-unpacks-too-large`. */
 export function importConfiguration(file: File) {
   return apiSend<ConfigurationImportSummary>('POST', 'config/import', archiveForm(file))
 }

@@ -27,7 +27,7 @@ export function importRecipe(input: ImportRecipeInput) {
   return apiSend<PluginImportResult>('POST', 'plugins/import-recipe', input)
 }
 
-/** Imports the Plugin a `.zip` holds. Refused with `import-not-zip`, `import-no-plugin`, `import-legacy-format` or `upload-too-large`. */
+/** Imports the Plugin a `.zip` holds. Refused with `import-not-zip`, `import-no-plugin`, `import-legacy-format`, `upload-too-large` or `zip-unpacks-too-large`. */
 export function importPluginFile(file: File, deviceId?: string) {
   const form = new FormData()
   form.append('file', file)
