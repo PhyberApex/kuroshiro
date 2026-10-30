@@ -105,7 +105,7 @@ export class ScreensService {
       ...(input.html !== undefined && { html: input.html, renderSignal: null }),
       ...(input.dither !== undefined && { dither: input.dither }),
       ...(screen.type === 'external' && await this.changeExternalLink(screen, input)),
-      ...(this.changesHtmlImage(screen, input) && { generatedAt: new Date() }),
+      ...(this.changesHtmlRender(screen, input) && { generatedAt: new Date() }),
     }
     if (Object.keys(changes).length > 0)
       await this.screensRepository.update({ id }, changes)
@@ -113,8 +113,8 @@ export class ScreensService {
     return id
   }
 
-  /** Whether the edit changes what an HTML Screen renders to, so its image goes out under a new filename and the Device draws it (ADR-0031). */
-  private changesHtmlImage(screen: Screen, input: UpdateScreenDto): boolean {
+  /** Whether the edit changes what an HTML Screen renders to; `/display` names the image after `generatedAt`, and the Device redraws only on a new name. */
+  private changesHtmlRender(screen: Screen, input: UpdateScreenDto): boolean {
     return screen.type === 'html'
       && ((input.html !== undefined && input.html !== screen.html) || (input.dither !== undefined && input.dither !== screen.dither))
   }
