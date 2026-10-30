@@ -1,6 +1,5 @@
 import type { OnApplicationBootstrap } from '@nestjs/common'
 import type { FirmwareSyncResult } from 'kuroshiro-shared'
-import type { LimitedDownload } from '../utils/downloadLimited.js'
 import buffer from 'node:buffer'
 import * as crypto from 'node:crypto'
 import * as fs from 'node:fs'
@@ -255,7 +254,7 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
    * `BINARY_DOWNLOAD_TIMEOUT_MS`, so a stalled CDN can't hold the sync open.
    */
   private async downloadBinary(url: string): Promise<buffer.Buffer> {
-    let download: LimitedDownload
+    let download
     try {
       download = await downloadLimited(url, { limitBytes: UPLOAD_LIMITS.firmwareUploadBytes, timeoutMs: BINARY_DOWNLOAD_TIMEOUT_MS })
     }

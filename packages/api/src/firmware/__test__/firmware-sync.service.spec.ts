@@ -3,7 +3,7 @@ import type { Firmware } from '../entities/firmware.entity.js'
 import type { FirmwareAutoUpdateService } from '../firmware-auto-update.service.js'
 import { Logger } from '@nestjs/common'
 import { QueryFailedError } from 'typeorm'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { endlessBody, jsonResponse, stubFetch } from '../../test/fetch.js'
 import { asRepository, createMockTransactionalRepository } from '../../test/mockRepository.js'
 import { asService } from '../../test/mockService.js'
@@ -370,6 +370,7 @@ describe('firmwareSyncService', () => {
     it('fails the sync, and stores nothing, when a binary download stalls past its timeout', async () => {
       const timeout = new AbortController()
       const timeoutSpy = vi.spyOn(AbortSignal, 'timeout').mockReturnValue(timeout.signal)
+      onTestFinished(() => timeoutSpy.mockRestore())
       mockFetch.mockImplementation(async (input, init) => {
         if (String(input) === FEED_URL)
           return jsonResponse({ data: feed })
@@ -389,7 +390,6 @@ describe('firmwareSyncService', () => {
       expect(fsMock.writeFile).not.toHaveBeenCalled()
       expect(firmwareRepo.insert).not.toHaveBeenCalled()
       expect(syncRuns.recordFailure).toHaveBeenCalledWith('firmware', expect.any(Date), expect.objectContaining({ message: expect.stringContaining('timed out') }))
-      timeoutSpy.mockRestore()
     })
 
     it('fails the sync, and stores nothing, when a binary is larger than a firmware upload may be', async () => {
