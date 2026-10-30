@@ -63,8 +63,8 @@ const shownIds = computed(() => shown.value.map(item => item.id))
 let settled: { id: string, before: string[] } | undefined
 
 // `items` is replaced whenever its owner reloads, as a poll does; only rows that changed places end a lift.
-watch(givenIds, (given, before) => {
-  if (!sameOrder(given, before)) {
+watch(givenIds, (given, previous) => {
+  if (!sameOrder(given, previous)) {
     lift.value = undefined
     landing.value = undefined
   }

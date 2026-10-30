@@ -326,7 +326,7 @@ describe('reordering screen rows', () => {
 
     await userEvent.keyboard('{Tab}{Enter}{ArrowDown}')
     await expect.element(screen.getByRole('status')).toHaveTextContent('Calendar, Order 2 of 4')
-    screens.value = SCREENS.map(screen => ({ ...screen, state: screen.id === 'trains' ? 'upNext' : screen.state }))
+    screens.value = SCREENS.map(given => ({ ...given, state: given.id === 'trains' ? 'upNext' : given.state }))
     await expect.poll(() => rowOf(screen, 'Train departures').textContent).toContain('Up next')
 
     expect(namesOf(screen)).toEqual(['Weather', 'Calendar', 'Weekend board', 'Train departures'])
