@@ -11,12 +11,25 @@ export function basePathOf(baseUri: string) {
 
 const barHeight = () => document.querySelector('[data-shell-bar]')?.getBoundingClientRect().height ?? 0
 
+/** The id a fragment names, or none when its percent-encoding is malformed (`#%E0%A4%A`). */
+function idNamed(hash: string) {
+  try {
+    return decodeURIComponent(hash.slice(1))
+  }
+  catch {
+    return undefined
+  }
+}
+
 /** A section named by the fragment may belong to a body that is still loading, so its element is waited for. */
 function elementNamed(hash: string) {
+  const id = idNamed(hash)
+  if (id === undefined)
+    return Promise.resolve(null)
   const deadline = Date.now() + WAIT_FOR_FRAGMENT_MS
   return new Promise<Element | null>((resolve) => {
     const look = () => {
-      const element = document.getElementById(decodeURIComponent(hash.slice(1)))
+      const element = document.getElementById(id)
       if (element || Date.now() > deadline)
         resolve(element)
       else
@@ -29,9 +42,10 @@ function elementNamed(hash: string) {
 const scrollBehavior: RouterScrollBehavior = async (to, from, savedPosition) => {
   if (savedPosition)
     return savedPosition
-  if (to.hash)
-    return await elementNamed(to.hash) ? { el: to.hash, top: barHeight() } : false
-  // A change of the query alone (an opened row, a search) is the same page: it stays where it is.
+  if (to.hash && await elementNamed(to.hash))
+    return { el: to.hash, top: barHeight() }
+  // A change of the query alone (an opened row, a search) is the same page: it stays where it is,
+  // and so does one whose fragment names nothing on it.
   return to.path === from.path ? false : { top: 0 }
 }
 
