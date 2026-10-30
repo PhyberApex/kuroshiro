@@ -349,17 +349,24 @@ describe('add Screen, by kind', () => {
     it('adds one Screen when Ctrl S is pressed again before the first answer', async () => {
       const faked = fakeKitchen()
       fakeHtmlPreviewLibrary()
+      let posts = 0
+      let release = () => {}
+      const held = new Promise<void>(resolve => (release = resolve))
       api.use(http.post(apiUrl('screens'), async () => {
-        await delay(100)
+        posts += 1
+        await held
       }))
       const screen = await mountAddScreen('html')
 
       await nameField(screen).fill('Fridge note')
       await typeHtml(screen, 'Milk')
       await userEvent.keyboard('{Control>}s{/Control}')
+      await expect.poll(() => posts).toBe(1)
       await userEvent.keyboard('{Control>}s{/Control}')
+      release()
 
       await expect.poll(() => path(screen)).toBe(OPENED_ON_THE_NEW_SCREEN)
+      expect(posts).toBe(1)
       expect(faked.writes).toEqual([{ method: 'POST', path: 'screens', body: { kind: 'html', deviceId: 'kitchen', name: 'Fridge note', html: 'Milk', dither: true } }])
     })
 
