@@ -1,7 +1,10 @@
 import type { ScreenRead } from 'kuroshiro-shared'
 import type { DataSource, DeepPartial } from 'typeorm'
 import type { DeviceModelsService } from '../../device-models/device-models.service.js'
+import type { FallbackScreensService } from '../../device-models/fallback-screens.service.js'
+import type { FirmwareService } from '../../firmware/firmware.service.js'
 import type { ScreenRenderService } from '../../mashup/services/screen-render.service.js'
+import type { PluginRendererService } from '../../plugins/services/plugin-renderer.service.js'
 import type { HttpTestApp } from '../../test/httpApp.js'
 import { Buffer } from 'node:buffer'
 import * as fs from 'node:fs'
@@ -9,7 +12,11 @@ import path from 'node:path'
 import { ConfigService } from '@nestjs/config'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Alert } from '../../alerts/entities/alert.entity.js'
+import { DeviceSensorsService } from '../../device-sensors/device-sensors.service.js'
+import { DeviceSensor } from '../../device-sensors/entities/device-sensor.entity.js'
 import { Device } from '../../devices/devices.entity.js'
+import { DisplayController } from '../../devices/display.controller.js'
+import { DeviceDisplayService } from '../../devices/display.service.js'
 import { MashupConfiguration } from '../../mashup/entities/mashup-configuration.entity.js'
 import { MashupSlot } from '../../mashup/entities/mashup-slot.entity.js'
 import { MashupController } from '../../mashup/mashup.controller.js'
@@ -29,7 +36,8 @@ import { PluginReadsService } from '../../plugins/services/plugin-reads.service.
 import { RecipeUpdateService } from '../../plugins/services/recipe-update.service.js'
 import { Schedule } from '../../schedule/schedule.entity.js'
 import { createHttpTestApp } from '../../test/httpApp.js'
-import { createMockDeviceModelsService, primeMockDeviceModelsService } from '../../test/mockDeviceModelsService.js'
+import { createMockDeviceModelsService, createMockFallbackScreensService, primeMockDeviceModelsService, primeMockFallbackScreensService } from '../../test/mockDeviceModelsService.js'
+import { createPluginTemplateContextService } from '../../test/mockPluginCollaborators.js'
 import { asService } from '../../test/mockService.js'
 import { createTestDatabase } from '../../test/testDatabase.js'
 import { convertToPng, downloadImage, readImageSize } from '../../utils/imageUtils.js'
@@ -65,10 +73,12 @@ describe('editing a Screen, against a real database', () => {
     database = await createTestDatabase()
     const deviceModels = createMockDeviceModelsService()
     primeMockDeviceModelsService(deviceModels)
+    const fallbackScreens = createMockFallbackScreensService()
+    primeMockFallbackScreensService(fallbackScreens)
     const fieldValues = new PluginFieldValuesService(database.getRepository(PluginFieldValue), database.getRepository(PluginField))
 
     http = await createHttpTestApp({
-      controllers: [ScreensController, DeviceScreensController, PluginAssignmentsController, MashupController, PluginsController],
+      controllers: [ScreensController, DeviceScreensController, PluginAssignmentsController, MashupController, PluginsController, DisplayController],
       providers: [
         { provide: PluginsService, useValue: {} },
         { provide: PluginReadsService, useValue: {} },
@@ -99,6 +109,21 @@ describe('editing a Screen, against a real database', () => {
             database.getRepository(MashupSlot),
             database.getRepository(Plugin),
             asService<ScreenRenderService>({ renderAfterSave: vi.fn().mockResolvedValue(undefined) }),
+          ),
+        },
+        {
+          provide: DeviceDisplayService,
+          useValue: new DeviceDisplayService(
+            database.getRepository(Device),
+            database.getRepository(Screen),
+            asService<ConfigService>({ get: () => 'http://api' }),
+            asService<DeviceModelsService>(deviceModels),
+            asService<FallbackScreensService>(fallbackScreens),
+            asService<FirmwareService>({}),
+            asService<PluginRendererService>({}),
+            new DeviceSensorsService(database.getRepository(DeviceSensor)),
+            createPluginTemplateContextService(),
+            asService<ScreenRenderService>({ renderBodyToScreenPng: vi.fn().mockResolvedValue('http://api/screen.png') }),
           ),
         },
         {
@@ -163,6 +188,12 @@ describe('editing a Screen, against a real database', () => {
     if (file)
       form.set('file', file, 'new.jpg')
     return http.request(pathname, { method, body: form })
+  }
+
+  async function polledFilename(): Promise<string> {
+    const response = await http.request('/api/display', { headers: { 'id': device.mac, 'access-token': device.apikey } })
+    expect(response.status).toBe(200)
+    return (await response.json()).filename
   }
 
   async function stored(id: string): Promise<Screen> {
@@ -257,6 +288,15 @@ describe('editing a Screen, against a real database', () => {
       await patch(screen.id, { html: '<h1>Changed</h1>' })
 
       expect((await stored(screen.id)).renderSignal).toBeNull()
+    })
+
+    it('answers the next /display poll with a new filename once an HTML Screen\'s markup changes, so the Device draws the edit', async () => {
+      const screen = await seedScreen(1)
+      const before = await polledFilename()
+
+      await patch(screen.id, { html: '<h1>Changed</h1>' })
+
+      expect(await polledFilename()).not.toBe(before)
     })
 
     it('moves an HTML Screen\'s render time when its markup changes, so the Device draws the edit', async () => {
