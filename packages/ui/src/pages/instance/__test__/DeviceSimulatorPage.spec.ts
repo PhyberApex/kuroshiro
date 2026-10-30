@@ -176,6 +176,23 @@ describe('the Device Simulator', () => {
       await expect.element(screen.getByText('Nothing polled yet')).not.toBeInTheDocument()
     })
 
+    it('keeps the answer of a poll the server took when the Device cannot be read again after it', async () => {
+      const { fake, screen } = await openSimulator('/instance/simulator?device=kitchen')
+      api.use(http.get(apiUrl('devices/:id'), () => fake.polls.length > 0 ? apiErrorResponse({ statusCode: 404, code: 'device-not-found' }) : undefined))
+
+      await screen.getByRole('button', { name: 'Poll as Kitchen' }).click()
+
+      await expect.element(screen.getByText('The server answered the poll, but the Device could not be read again to say what it shows.')).toBeVisible()
+      await expect.element(screen.getByText('The poll did not reach the server.')).not.toBeInTheDocument()
+      await expect.element(screen.getByRole('img', { name: 'The image this poll was given' })).toBeVisible()
+      expect(summaryOf(screen)).toEqual({
+        'Polls again in': '15 min',
+        'Firmware': 'no update',
+        'Special Function': 'none pending',
+      })
+      expect(fake.polls).toHaveLength(1)
+    })
+
     it('sends what was changed in "What it reports"', async () => {
       const { fake, screen } = await openSimulator('/instance/simulator?device=kitchen')
       await openReports(screen)

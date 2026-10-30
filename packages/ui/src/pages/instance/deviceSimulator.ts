@@ -21,7 +21,11 @@ export type SimulatorOutcome
     | { kind: 'registered', friendlyId: string }
     /** Setup answered a Device that was registered already: the chosen one, or the one the MAC address entered belongs to. */
     | { kind: 'known', deviceName: string, chosen: boolean }
-    | { kind: 'polled', answer: DisplayAnswer, shows: string, firmwareVersion: string | null }
+    /**
+     * The server answered a poll. `shows` is what the Device shows after it, read from the Device again;
+     * when that read failed, `unread` is why, and the answer stands without it.
+     */
+    | { kind: 'polled', answer: DisplayAnswer, firmwareVersion: string | null } & ({ shows: string } | { unread: string })
     | { kind: 'refused', call: Call, reason: string }
     | { kind: 'unanswered', call: Call, reason: string }
 
@@ -31,6 +35,8 @@ interface SetUpDevice {
   apiKey: string
   friendlyId: string
 }
+
+const whyFailed = (error: unknown) => failureReason(error) ?? 'Something went wrong.'
 
 /** The Device to poll as: the one the address names, otherwise the first by name, otherwise one that is not registered. */
 export function firstChoice(devices: DeviceSummary[], named: unknown) {
@@ -74,11 +80,12 @@ function useDeviceSimulator(initialChoice: string) {
   async function settled<T>(call: Call, made: () => Promise<DeviceCall<T>>, then: (answer: T) => Promise<SimulatorOutcome>) {
     calling.value = call
     try {
-      const came = await made()
-      outcome.value = 'refused' in came ? { kind: 'refused', call, reason: came.refused } : await then(came.answered)
-    }
-    catch (error) {
-      outcome.value = { kind: 'unanswered', call, reason: failureReason(error) ?? 'Something went wrong.' }
+      // Only the call itself can fail to reach the server: once it is answered, what `then` reads after it is no reason to say so.
+      const came = await made().catch((error: unknown) => ({ unanswered: whyFailed(error) }))
+      if ('unanswered' in came)
+        outcome.value = { kind: 'unanswered', call, reason: came.unanswered }
+      else
+        outcome.value = 'refused' in came ? { kind: 'refused', call, reason: came.refused } : await then(came.answered)
     }
     finally {
       calling.value = undefined
@@ -93,10 +100,10 @@ function useDeviceSimulator(initialChoice: string) {
   }
 
   async function polled(answer: DisplayAnswer, deviceId: string | undefined, firmwareVersion: string | null): Promise<SimulatorOutcome> {
-    const shows = await whatItShows(deviceId)
+    const read = await whatItShows(deviceId).then(shows => ({ shows }), (error: unknown) => ({ unread: whyFailed(error) }))
     void detail.reload()
     void devices.reload()
-    return { kind: 'polled', answer, shows, firmwareVersion }
+    return { kind: 'polled', answer, firmwareVersion, ...read }
   }
 
   async function poll() {
