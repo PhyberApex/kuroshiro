@@ -142,21 +142,28 @@ export class AlertSweepService implements OnApplicationBootstrap {
     return undefined
   }
 
-  private async openAlert(rule: AlertRule, subject: unknown, details: AlertDetails | undefined): Promise<DigestEntry> {
+  /** With no sender configured the Alert is created already marked notified, as `resolveAlert` does for resolutions (ADR-0022). */
+  private async openAlert(rule: AlertRule, subject: unknown, details: AlertDetails | undefined): Promise<DigestEntry | undefined> {
     const now = new Date()
-    const alert = await this.alertRepository.save(this.alertRepository.create({ kind: rule.kind, ...rule.toAlertSubject(subject), openedAt: now, details: details ?? null }))
-    return entryFor(rule, subject, alert, 'opened')
+    const configured = this.sender.isConfigured()
+    const alert = await this.alertRepository.save(this.alertRepository.create({ kind: rule.kind, ...rule.toAlertSubject(subject), openedAt: now, notifiedAt: configured ? null : now, details: details ?? null }))
+    return configured ? entryFor(rule, subject, alert, 'opened') : undefined
   }
 
   /**
    * An Alert still active rides as an opened entry until its opening Notification lands, then as a
    * Reminder (ADR-0048) whenever the later of `notifiedAt` and `remindedAt` is before
-   * `reminderCutoff` — `undefined` while the Reminder Interval is 0, i.e. off.
+   * `reminderCutoff` — `undefined` while the Reminder Interval is 0, i.e. off. One still unannounced
+   * with no sender configured (opened before `openAlert` stamped it) is marked notified instead.
    */
   private async announceStillActive(rule: AlertRule, subject: unknown, alert: Alert, reminderCutoff: Date | undefined, details?: AlertDetails): Promise<DigestEntry | undefined> {
     if (details) {
       // TypeORM's QueryDeepPartialEntity can't distribute over a union-typed value — see webhook-ingest.service.ts.
       await this.alertRepository.update(alert.id, { details } as Parameters<typeof this.alertRepository.update>[1])
+    }
+    if (!alert.notifiedAt && !this.sender.isConfigured()) {
+      await this.alertRepository.update(alert.id, { notifiedAt: new Date() })
+      return undefined
     }
     if (!alert.notifiedAt)
       return entryFor(rule, subject, alert, 'opened')
