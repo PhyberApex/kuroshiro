@@ -259,6 +259,25 @@ describe('editing a Screen, against a real database', () => {
       expect((await stored(screen.id)).renderSignal).toBeNull()
     })
 
+    it('moves an HTML Screen\'s render time when its markup or Dithering changes, so the Device draws the edit', async () => {
+      const edited = await seedScreen(1)
+      const dithered = await seedScreen(2)
+
+      await patch(edited.id, { html: '<h1>Changed</h1>' })
+      await patch(dithered.id, { dither: false })
+
+      expect((await stored(edited.id)).generatedAt.getTime()).toBeGreaterThan(CREATED_AT.getTime())
+      expect((await stored(dithered.id)).generatedAt.getTime()).toBeGreaterThan(CREATED_AT.getTime())
+    })
+
+    it('keeps an HTML Screen\'s render time when a save changes neither its markup nor its Dithering', async () => {
+      const screen = await seedScreen(1)
+
+      await patch(screen.id, { name: 'Renamed', html: '<p>Hi</p>', dither: true })
+
+      expect((await stored(screen.id)).generatedAt).toEqual(CREATED_AT)
+    })
+
     it('saves the URL of an External link fetched on every poll without fetching it', async () => {
       const screen = await seedScreen(1, { type: 'external', html: null, externalLink: 'http://a.local/a.png' })
 
