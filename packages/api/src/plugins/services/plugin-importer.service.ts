@@ -10,6 +10,7 @@ import { DATA_SOURCE_METHODS, FRAMEWORK_VERSION_PATTERN, githubRepositoryOf, isR
 import { ApiException } from '../../errors/api.exception.js'
 import { uploadTooLarge } from '../../uploads/limited-file-interceptor.js'
 import { UPLOAD_LIMITS } from '../../uploads/upload-limits.js'
+import { assertUnpacksWithin } from '../../uploads/zip-limits.js'
 import { downloadLimited, ResponseTooLargeError } from '../../utils/downloadLimited.js'
 import { isPlainObject } from '../../utils/json.js'
 import { parseFieldOptions } from '../plugin-field-options.js'
@@ -49,15 +50,18 @@ function parseYamlObject<T>(content: string, invalidMessage: string): T {
   return parsed as T
 }
 
+/** The zip `content` holds, or `null` when it is not one; refused when its entries unpack to more than a `.trmnlp` upload may hold. */
 function openZip(content: Buffer): AdmZip | null {
+  let zip: AdmZip
   try {
-    const zip = new AdmZip(content)
+    zip = new AdmZip(content)
     zip.getEntries()
-    return zip
   }
   catch {
     return null
   }
+  assertUnpacksWithin(zip, UPLOAD_LIMITS.pluginImportBytes)
+  return zip
 }
 
 /** A Plugin is rendered from its `full` Template, so an import that brings none of that size has its first one take the place. */

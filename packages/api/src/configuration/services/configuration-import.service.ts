@@ -53,6 +53,8 @@ import { Schedule } from '../../schedule/schedule.entity.js'
 import { Screen } from '../../screens/screens.entity.js'
 import { INSTANCE_SETTINGS_ID, InstanceSettings } from '../../settings/entities/instance-settings.entity.js'
 import { settingViolation } from '../../settings/setting-violation.js'
+import { UPLOAD_LIMITS } from '../../uploads/upload-limits.js'
+import { assertUnpacksWithin } from '../../uploads/zip-limits.js'
 import { fileExists } from '../../utils/fileExists.js'
 import generateApikey from '../../utils/generateApikey.js'
 import { getErrorMessage } from '../../utils/getErrorMessage.js'
@@ -393,12 +395,16 @@ export class ConfigurationImportService {
   }
 
   private openZip(buffer: Buffer): AdmZip {
+    let zip: AdmZip
     try {
-      return new AdmZip(buffer)
+      zip = new AdmZip(buffer)
+      zip.getEntries()
     }
     catch {
       throw notAZip()
     }
+    assertUnpacksWithin(zip, UPLOAD_LIMITS.archiveUploadBytes)
+    return zip
   }
 
   private readManifest(zip: AdmZip): ConfigurationManifest {

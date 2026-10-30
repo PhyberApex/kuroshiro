@@ -34,6 +34,7 @@ const wording: Record<ApiErrorCode, string> = {
   'order-not-a-permutation': 'The Order has to name every Screen once.',
   'demo-mode': 'Not available in demo mode.',
   'upload-too-large': 'That file is larger than this Instance accepts.',
+  'zip-unpacks-too-large': 'That .zip unpacks to more than this Instance accepts.',
   'firmware-version-taken': 'There is already a Firmware with that version.',
   'device-model-unknown': 'This Instance does not know that Device Model.',
   'palette-unknown': 'This Instance does not know that Palette.',
@@ -99,6 +100,7 @@ function wordingBySwitch(code: ApiErrorCode): string {
     case 'order-not-a-permutation':
     case 'demo-mode':
     case 'upload-too-large':
+    case 'zip-unpacks-too-large':
     case 'firmware-version-taken':
     case 'device-model-unknown':
     case 'palette-unknown':

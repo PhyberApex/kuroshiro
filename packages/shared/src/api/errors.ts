@@ -30,6 +30,7 @@ export const API_ERROR_CODES = [
   'order-not-a-permutation',
   'demo-mode',
   'upload-too-large',
+  'zip-unpacks-too-large',
   'firmware-version-taken',
   'device-model-unknown',
   'palette-unknown',

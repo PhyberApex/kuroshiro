@@ -166,6 +166,10 @@ describe('configuration archive wording', () => {
         title: 'This archive could not be read.',
         reason: 'That file is larger than the 50 MB this Instance accepts.',
       })
+      expect(refusalNotice(refusal('zip-unpacks-too-large', { limitBytes: 256 * 1024 * 1024 }, 413), '0.18.0')).toEqual({
+        title: 'This archive could not be read.',
+        reason: 'That .zip unpacks to more than the 256 MB this Instance accepts.',
+      })
       expect(refusalNotice(new ServerUnreachable(), '0.18.0')).toEqual({
         title: 'This archive could not be read.',
         reason: 'Kuroshiro\'s server is not answering.',
