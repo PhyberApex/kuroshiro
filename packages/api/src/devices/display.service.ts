@@ -13,7 +13,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
 import { effectiveFrameworkVersion, isButtonWake, viewFull } from 'kuroshiro-shared'
-import { Repository } from 'typeorm'
+import { IsNull, Repository } from 'typeorm'
 import { DeviceModelsService } from '../device-models/device-models.service.js'
 import { FallbackScreensService } from '../device-models/fallback-screens.service.js'
 import { DeviceSensorsService } from '../device-sensors/device-sensors.service.js'
@@ -128,6 +128,19 @@ function fireOneShots(device: Device, pushedFirmwareId: string | null): Pick<Hea
   }
 }
 
+/** What a polling Device reports about itself; a missing dimension or model keeps what was stored. */
+function reportedFields(device: Device, headers: DisplayRequestHeadersDto): Pick<Device, 'batteryVoltage' | 'fwVersion' | 'rssi' | 'userAgent' | 'width' | 'height' | 'reportedModel'> {
+  return {
+    batteryVoltage: headers['battery-voltage'],
+    fwVersion: headers['fw-version'],
+    rssi: headers.rssi,
+    userAgent: headers['user-agent'],
+    width: parseHeaderInt(headers.width) ?? device.width,
+    height: parseHeaderInt(headers.height) ?? device.height,
+    reportedModel: headers.model ?? device.reportedModel,
+  }
+}
+
 function forwardedTrmnlHeaders(headers: DisplayRequestHeadersDto | undefined): Record<string, string> {
   const forwarded: Record<string, string> = {}
   for (const name of FORWARDED_TRMNL_HEADERS) {
@@ -208,36 +221,30 @@ export class DeviceDisplayService {
 
   /**
    * Records a polling Device's self-reported state (dimensions, firmware
-   * version, sensors, …) in a single save, and works out which one-shot
-   * Device Reset, Wipe, Special Function and OTA push this poll fires.
-   * Returns the fields the response builders need and the acknowledgement
-   * `acknowledgeOneShots` writes once the answer is built — the save here
-   * leaves those columns as they were.
+   * version, sensors, …), and works out which one-shot Device Reset, Wipe,
+   * Special Function and OTA push this poll fires. Returns the fields the
+   * response builders need and the acknowledgement `acknowledgeOneShots`
+   * writes once the answer is built.
+   *
+   * Written to the reported columns (and a Device Model this poll resolved)
+   * only, like `recordServed`: the sensor
+   * sync and the firmware checksum take time, and saving the whole Device
+   * loaded at the start of the poll would undo an admin's edit made meanwhile.
    */
   private async applyHeaderReport(device: Device, headers: DisplayRequestHeadersDto): Promise<{ report: HeaderReport, acknowledgement: OneShotAcknowledgement }> {
     this.logger.log(`Updating device info for MAC: ${headers.id}`)
-    this.recordReportedFields(device, headers)
-    if (!device.deviceModel)
-      await this.deviceModels.assignResolvedModel(device)
+    const reported = { ...reportedFields(device, headers), lastWakeSource: headers['update-source'] ?? null, lastSeen: new Date() }
+    Object.assign(device, reported)
+    const resolvedModel = device.deviceModel ? null : await this.deviceModels.assignResolvedModel(device)
     await this.deviceSensors.syncFromHeader(device, headers.sensors)
     const { firmwareUrl, updateFirmware } = await this.resolveFirmwarePush(device)
     const { resetDevice, wipe, specialFunction, acknowledgement } = fireOneShots(device, updateFirmware ? device.targetFirmware!.id : null)
-    device.lastWakeSource = headers['update-source'] ?? null
-    device.lastSeen = new Date()
-    await this.deviceRepository.save(device)
+    await this.deviceRepository.update({ id: device.id }, reported)
+    // Only onto a row still without one, so a Device Model an admin assigned meanwhile stays
+    if (resolvedModel)
+      await this.deviceRepository.update({ id: device.id, deviceModel: IsNull() }, { deviceModel: resolvedModel, palette: device.palette ?? null })
     this.logger.log(`Device info updated for MAC: ${headers.id}`)
     return { report: { resetDevice, wipe, specialFunction, firmwareUrl, updateFirmware }, acknowledgement }
-  }
-
-  /** Copies what the Device reports about itself; a missing dimension or model keeps what was stored. */
-  private recordReportedFields(device: Device, headers: DisplayRequestHeadersDto): void {
-    device.batteryVoltage = headers['battery-voltage']
-    device.fwVersion = headers['fw-version']
-    device.rssi = headers.rssi
-    device.userAgent = headers['user-agent']
-    device.width = parseHeaderInt(headers.width) ?? device.width
-    device.height = parseHeaderInt(headers.height) ?? device.height
-    device.reportedModel = headers.model ?? device.reportedModel
   }
 
   /**

@@ -18,6 +18,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { Logger, NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { TRMNL_FRAMEWORK_VERSION } from 'kuroshiro-shared'
+import { IsNull } from 'typeorm'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { closeSharedBrowser } from '../../device-models/shared-browser.js'
 import { createMockDeviceSensorsService, primeMockDeviceSensorsService } from '../../device-sensors/__test__/mockDeviceSensorsService.js'
@@ -208,28 +209,28 @@ describe('deviceDisplayService', () => {
       const device = makeDevice({ ...baseDevice, width: 100, height: 200, deviceModel: OG_PLUS })
       deviceRepo.findOneBy.mockResolvedValue(device)
       await service.getCurrentImage({ ...headers, width: '1872', height: '1404', model: 'x' })
-      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ width: 1872, height: 1404, reportedModel: 'x' }))
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1' }, expect.objectContaining({ width: 1872, height: 1404, reportedModel: 'x' }))
     })
 
     it('keeps the stored dimensions when the headers are missing or unparsable', async () => {
       const device = makeDevice({ ...baseDevice, width: 800, height: 480, reportedModel: 'og', deviceModel: OG_PLUS })
       deviceRepo.findOneBy.mockResolvedValue(device)
       await service.getCurrentImage({ ...headers, width: 'abc' })
-      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ width: 800, height: 480, reportedModel: 'og' }))
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1' }, expect.objectContaining({ width: 800, height: 480, reportedModel: 'og' }))
     })
 
     it('stores the Update-Source header as sent', async () => {
       const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS })
       deviceRepo.findOneBy.mockResolvedValue(device)
       await service.getCurrentImage({ ...headers, 'update-source': 'EXT0' })
-      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ lastWakeSource: 'EXT0' }))
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1' }, expect.objectContaining({ lastWakeSource: 'EXT0' }))
     })
 
     it('leaves the wake source null when the Device sends no Update-Source', async () => {
       const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS })
       deviceRepo.findOneBy.mockResolvedValue(device)
       await service.getCurrentImage(headers)
-      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ lastWakeSource: null }))
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1' }, expect.objectContaining({ lastWakeSource: null }))
     })
 
     it('resolves and assigns a device model when the device has none', async () => {
@@ -238,7 +239,7 @@ describe('deviceDisplayService', () => {
       deviceModels.assignResolvedModel.mockResolvedValue(V2)
       await service.getCurrentImage({ ...headers, width: '1872', height: '1404', model: 'x' })
       expect(deviceModels.assignResolvedModel).toHaveBeenCalledWith(expect.objectContaining({ reportedModel: 'x', width: 1872, height: 1404 }))
-      expect(deviceRepo.save).toHaveBeenCalled()
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1', deviceModel: IsNull() }, expect.objectContaining({ deviceModel: V2 }))
     })
 
     it('never re-resolves a device that already has a model', async () => {
@@ -1194,6 +1195,13 @@ describe('deviceDisplayService', () => {
       fallbackScreens.urlFor.mockRejectedValue(new Error('Chromium crashed'))
     }
 
+    /** The poll's one write is the Device's report, which never touches a one-shot command or the API key. */
+    function expectOnlyTheReportWritten(): void {
+      expect(deviceRepo.update).toHaveBeenCalledExactlyOnceWith({ id: '1' }, expect.objectContaining({ lastSeen: expect.any(Date) }))
+      for (const column of ['apikey', 'resetDevice', 'resetDeviceNewApikey', 'wipe', 'specialFunction', 'updateFirmware', 'targetFirmware'])
+        expect(deviceRepo.update.mock.calls[0][1]).not.toHaveProperty(column)
+    }
+
     it.each([
       ['an OTA push', { updateFirmware: true, targetFirmware }],
       ['a Device Reset', { resetDevice: true }],
@@ -1205,8 +1213,7 @@ describe('deviceDisplayService', () => {
       await expect(service.getCurrentImage(headers)).rejects.toThrow('Chromium crashed')
 
       expect(device).toEqual(expect.objectContaining(pending))
-      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining(pending))
-      expect(deviceRepo.update).not.toHaveBeenCalled()
+      expectOnlyTheReportWritten()
     })
 
     it('keeps the old API key and the request for a new one', async () => {
@@ -1215,8 +1222,8 @@ describe('deviceDisplayService', () => {
 
       await expect(service.getCurrentImage(headers)).rejects.toThrow('Chromium crashed')
 
-      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ apikey: 'token', resetDevice: true, resetDeviceNewApikey: true }))
-      expect(deviceRepo.update).not.toHaveBeenCalled()
+      expect(device).toEqual(expect.objectContaining({ apikey: 'token', resetDevice: true, resetDeviceNewApikey: true }))
+      expectOnlyTheReportWritten()
     })
 
     it('keeps the Active Screen', async () => {
@@ -2531,7 +2538,11 @@ describe('deviceDisplayService', () => {
     })
 
     it('answers the Device even when the record cannot be written', async () => {
-      deviceRepo.update.mockRejectedValue(new Error('connection lost'))
+      deviceRepo.update.mockImplementation(async (_where, values) => {
+        if ('lastServedAt' in values)
+          throw new Error('connection lost')
+        return { raw: [], generatedMaps: [] }
+      })
 
       expect({ ...await poll(cases[0]) }).toEqual(cases[0].answer)
     })
@@ -2539,7 +2550,7 @@ describe('deviceDisplayService', () => {
     it.each(cases)('records $name', async (served) => {
       await poll(served)
 
-      expect(deviceRepo.update).toHaveBeenCalledExactlyOnceWith({ id: '1' }, served.record)
+      expect(deviceRepo.update).toHaveBeenLastCalledWith({ id: '1' }, served.record)
     })
   })
 })
