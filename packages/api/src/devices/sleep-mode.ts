@@ -1,4 +1,3 @@
-const DAY_SECONDS = 86400
 export const MIN_SLEEP_REFRESH_RATE = 60
 
 interface SleepFields {
@@ -23,12 +22,12 @@ export function isDeviceAsleep(device: SleepFields, now: Date): boolean {
 }
 
 /**
- * Seconds until `sleepEndTime`, wrapping past midnight, floored at
+ * Elapsed seconds until `nextSleepEnd`, so a night the clock jumps for daylight
+ * saving still wakes the Device at the time the UI shows. Floored at
  * MIN_SLEEP_REFRESH_RATE so the Device never re-polls at (or before) 0.
  */
 export function secondsUntilSleepEnd(sleepEndTime: number, now: Date): number {
-  const current = secondsOfDay(now)
-  const raw = sleepEndTime > current ? sleepEndTime - current : DAY_SECONDS - current + sleepEndTime
+  const raw = Math.floor((nextSleepEnd(sleepEndTime, now).getTime() - now.getTime()) / 1000)
   return Math.max(MIN_SLEEP_REFRESH_RATE, raw)
 }
 
