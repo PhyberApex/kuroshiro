@@ -153,6 +153,38 @@ describe('mirroring', () => {
     expect(faked.device.mirror.enabled).toBe(true)
   })
 
+  it('forgets a refused API key once its field is emptied, so "Try again" does not send it', async () => {
+    const faked = fakeKitchenSettings({ device: MIRRORED })
+    faked.refusing = apiErrorResponse({ statusCode: 403, code: 'demo-mode' })
+    const screen = await mountSettings()
+
+    await screen.getByRole('button', { name: 'Replace mirror API key' }).click()
+    await enter(key(screen), 'another-secret')
+    await expect.poll(() => stateOf(screen, 'Mirror API key')).toBe('Not saved. Not available in the demo.')
+
+    await enter(key(screen), '')
+
+    await expect.poll(() => stateOf(screen, 'Mirror API key')).toBe('')
+    expect(screen.getByRole('button', { name: 'Try again' }).elements()).toEqual([])
+    expect(faked.writes).toEqual([{ mirrorApikey: 'another-secret' }])
+  })
+
+  it('keeps a refused API key\'s "Not saved" when the MAC address is then made invalid', async () => {
+    const faked = fakeKitchenSettings({ device: MIRRORED })
+    faked.refusing = apiErrorResponse({ statusCode: 403, code: 'demo-mode' })
+    const screen = await mountSettings()
+
+    await screen.getByRole('button', { name: 'Replace mirror API key' }).click()
+    await enter(key(screen), 'another-secret')
+    await expect.poll(() => stateOf(screen, 'Mirror API key')).toBe('Not saved. Not available in the demo.')
+
+    await enter(mac(screen), 'not-a-mac')
+
+    await expect.poll(() => errorOf(screen, 'Mirror MAC address')).toBe('Enter a MAC address like A4:CF:12:00:00:00.')
+    expect(stateOf(screen, 'Mirror API key')).toBe('Not saved. Not available in the demo.')
+    expect(faked.writes).toEqual([{ mirrorApikey: 'another-secret' }])
+  })
+
   it('"Use Kitchen\'s own" fills in the Device\'s MAC address, which makes it a Proxied Device', async () => {
     const faked = fakeKitchenSettings({ device: MIRRORED })
     const screen = await mountSettings()

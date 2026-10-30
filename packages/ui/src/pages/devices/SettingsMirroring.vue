@@ -71,7 +71,9 @@ function switchTo(next: boolean) {
 function saveMac() {
   macProblem.value = isMacAddress(mac.value) ? undefined : MIRROR_MAC_MESSAGE
   if (macProblem.value) {
-    write.withdraw()
+    // Only the MAC's own refused save: another row's change is still on screen and still not saved.
+    if (sentBy.value === 'mac')
+      write.withdraw()
     return
   }
   mac.value = asStoredMac(mac.value)
@@ -84,7 +86,14 @@ function useOwn() {
 }
 
 function saveKey() {
-  if (!key.value || key.value === keyOffered)
+  // An emptied field keeps the stored key: a refused replacement is taken back, and may be offered again.
+  if (!key.value) {
+    keyOffered = ''
+    if (sentBy.value === 'key')
+      write.withdraw()
+    return
+  }
+  if (key.value === keyOffered)
     return
   keyOffered = key.value
   save('key')
