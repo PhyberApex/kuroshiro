@@ -4,6 +4,7 @@ import type { Plugin } from '../plugins/entities/plugin.entity.js'
 import type { RotationScreen } from '../schedule/rotation.js'
 import type { RenderOutcome } from '../screens/render-outcome.js'
 import type { Requester } from '../utils/ssrfGuard.js'
+import type { DeviceCredentials } from './authenticate-device.js'
 import type { DisplayRequestHeadersDto } from './dto/display-request-headers.dto.js'
 import type { Served } from './last-served.js'
 import * as fs from 'node:fs'
@@ -557,7 +558,7 @@ export class DeviceDisplayService {
     }
   }
 
-  async getCurrentImageWithoutProgressing(headers: Pick<DisplayRequestHeadersDto, 'id' | 'access-token'>): Promise<DisplayScreen> {
+  async getCurrentImageWithoutProgressing(headers: DeviceCredentials): Promise<DisplayScreen> {
     this.logger.log(`Current Screen request for MAC: ${headers.id}`)
     this.logger.debug(`Headers: ${JSON.stringify(headers)}`)
     const device = await authenticateDevice(this.deviceRepository, headers, this.logger)

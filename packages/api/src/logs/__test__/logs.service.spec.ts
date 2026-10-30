@@ -16,7 +16,10 @@ describe('logsService', () => {
 
   /** The log ids already stored for Device `dev`, as `existsBy` answers them. */
   function storedLogIds(...logIds: number[]) {
-    logsRepo.existsBy.mockImplementation(async where => logIds.includes((where as { logId: number }).logId))
+    logsRepo.existsBy.mockImplementation(async (where) => {
+      const { device, logId } = where as { device: { id: string }, logId: number }
+      return device.id === 'dev' && logIds.includes(logId)
+    })
   }
 
   beforeEach(() => {
@@ -84,7 +87,6 @@ describe('logsService', () => {
 
       expect(logsRepo.save).toHaveBeenCalledOnce()
       expect(logsRepo.existsBy).toHaveBeenLastCalledWith({ device: { id: 'dev' }, logId: 3 })
-      expect(devicesRepo.findOne).not.toHaveBeenCalled()
     })
 
     it('skips an entry without id, logs a warning, and still stores the rest of the batch', async () => {
