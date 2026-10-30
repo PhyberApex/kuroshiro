@@ -285,7 +285,7 @@ describe('pluginExporterService', () => {
     expect(manifest.custom_fields[0]).not.toHaveProperty('default_value')
   })
 
-  it('writes the Plugin Fields in their order, each with it, whatever order they were loaded in', async () => {
+  it('writes the Plugin Fields sorted by their order, each with its order, whatever order they were loaded in', async () => {
     const plugin = makePlugin({
       templates: [makePluginTemplate({ layout: 'full', liquidMarkup: 'x' })],
       fields: [makePluginField({ keyname: 'units', order: 2 }), makePluginField({ keyname: 'town', order: 1 })],
@@ -296,6 +296,7 @@ describe('pluginExporterService', () => {
 
     expect(manifest.custom_fields.map(field => [field.keyname, field.order])).toEqual([['town', 1], ['units', 2]])
   })
+
   it.each(['Poll', 'Webhook'] as const)('round-trips a %s Plugin\'s Framework Version and omits it when null', async (kind) => {
     const settingsOf = async (frameworkVersion: string | null) => {
       const plugin = makePlugin({ kind, frameworkVersion, templates: [makePluginTemplate({ layout: 'full', liquidMarkup: 'x' })] })

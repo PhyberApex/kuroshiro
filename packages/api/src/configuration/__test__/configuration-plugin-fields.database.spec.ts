@@ -72,6 +72,7 @@ describe('a Plugin\'s Fields, through Configuration Export and Import, against a
   it('restores the Fields in their order with their nulls, and the Plugin\'s null description, onto a fresh instance', async () => {
     const plugin = await seedPlugin()
     const before = await storedFields(plugin.id)
+    expect(before.map(field => field.keyname)).toEqual(['town', 'units'])
     const archive = await exportService.exportToZip()
 
     // A fresh instance has none of the Plugin's rows.
@@ -79,7 +80,6 @@ describe('a Plugin\'s Fields, through Configuration Export and Import, against a
     await importService.importFromZip(archive)
 
     expect(await storedFields(plugin.id)).toEqual(before)
-    expect(before.map(field => field.keyname)).toEqual(['town', 'units'])
     expect((await database.getRepository(Plugin).findOneByOrFail({ id: plugin.id })).description).toBeNull()
   })
 

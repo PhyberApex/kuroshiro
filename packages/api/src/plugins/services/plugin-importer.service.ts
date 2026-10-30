@@ -636,7 +636,7 @@ export class PluginImporterService {
     if (mergeStrategy !== 'stream')
       return { mergeStrategy }
     const streamLimit = settings.stream_limit
-    if (typeof streamLimit !== 'number' || !Number.isInteger(streamLimit) || streamLimit < 1) {
+    if (!isWholeNumber(streamLimit) || streamLimit < 1) {
       throw importRefused('unprocessable', 'The Merge Strategy "stream" needs a "stream_limit" that is a whole number of 1 or more.')
     }
     return { mergeStrategy, streamLimit }

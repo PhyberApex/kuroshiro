@@ -11,7 +11,7 @@ export interface PluginExportEntry {
 }
 
 /** A nullable value under its key, or no key when it is null, so an import reads it back as null rather than as ''. */
-function presentAs<K extends string>(key: K, value: string | null | undefined): Partial<Record<K, string>> {
+function keyUnlessNull<K extends string>(key: K, value: string | null | undefined): Partial<Record<K, string>> {
   return value === null || value === undefined ? {} : { [key]: value } as Record<K, string>
 }
 
@@ -25,13 +25,13 @@ export class PluginExporterService {
 
     const manifest = {
       name: plugin.name,
-      ...presentAs('description', plugin.description),
+      ...keyUnlessNull('description', plugin.description),
       custom_fields: [...plugin.fields ?? []].sort((a, b) => a.order - b.order).map(field => ({
         keyname: field.keyname,
         field_type: field.fieldType,
         name: field.name,
-        ...presentAs('description', field.description),
-        ...presentAs('default_value', field.defaultValue),
+        ...keyUnlessNull('description', field.description),
+        ...keyUnlessNull('default_value', field.defaultValue),
         ...(field.options ? { options: formatFieldOptions(field.options) } : {}),
         optional: !field.required,
         order: field.order,
