@@ -102,15 +102,14 @@ export class WebhookIngestService {
       const stored = await this.pluginRepository.findOne({ where: { id: plugin.id }, select: MERGE_SELECT })
       if (!stored)
         throw new UnauthorizedException('Invalid webhook token')
-      const merged = this.merge({ ...plugin, ...stored }, payload)
+      // The render is handed what was just stored, so its `data_fetched_utc` is this POST's time, not the guard's (ADR-0057).
+      const written = { webhookPayload: this.merge({ ...plugin, ...stored }, payload), payloadReceivedAt: new Date() }
 
       // TypeORM's QueryDeepPartialEntity can't distribute over the WebhookPayload
-      // union against a union-typed value, even though `merged`'s type already
-      // matches the column exactly — hence the assertion rather than a real gap.
-      const payloadReceivedAt = new Date()
-      await this.pluginRepository.update(plugin.id, { webhookPayload: merged, payloadReceivedAt } as Parameters<typeof this.pluginRepository.update>[1])
-      // The render's `data_fetched_utc` is the time this POST was stored, not the one the guard loaded (ADR-0057).
-      await this.pluginRefresh.refresh({ ...plugin, webhookPayload: merged, payloadReceivedAt })
+      // union against a union-typed value, even though `written`'s type already
+      // matches the columns exactly — hence the assertion rather than a real gap.
+      await this.pluginRepository.update(plugin.id, written as Parameters<typeof this.pluginRepository.update>[1])
+      await this.pluginRefresh.refresh({ ...plugin, ...written })
     })
 
     this.logger.debug(`Ingested webhook payload for plugin ${plugin.id} using ${plugin.mergeStrategy} merge strategy`)

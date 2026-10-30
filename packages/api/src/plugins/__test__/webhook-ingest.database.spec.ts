@@ -66,6 +66,10 @@ describe('webhook POSTs that arrive together, against a real database (ADR-0004)
     return (await database.getRepository(Plugin).findOneByOrFail({ id: plugin.id })).webhookPayload ?? null
   }
 
+  async function storedReceivedAt(plugin: Plugin): Promise<Date | null> {
+    return (await database.getRepository(Plugin).findOneByOrFail({ id: plugin.id })).payloadReceivedAt ?? null
+  }
+
   it('keeps both POSTs\' events under the stream Merge Strategy', async () => {
     const plugin = await createWebhookPlugin('stream', { events: ['a'] })
     await postTogether(plugin, { events: ['b'] }, { events: ['c'] })
@@ -86,10 +90,11 @@ describe('webhook POSTs that arrive together, against a real database (ADR-0004)
     const plugin = await createWebhookPlugin('standard', null)
 
     await ingest.ingest(await loadedByGuard(plugin), { status: 'ok' })
-    const first = (await database.getRepository(Plugin).findOneByOrFail({ id: plugin.id })).payloadReceivedAt
+    const first = await storedReceivedAt(plugin)
+    // So the second POST's time differs from the first's at the millisecond.
     await new Promise(resolve => setTimeout(resolve, 5))
     await ingest.ingest(await loadedByGuard(plugin), { status: 'degraded' })
-    const second = (await database.getRepository(Plugin).findOneByOrFail({ id: plugin.id })).payloadReceivedAt
+    const second = await storedReceivedAt(plugin)
 
     expect(first).toBeInstanceOf(Date)
     expect(second).not.toEqual(first)
