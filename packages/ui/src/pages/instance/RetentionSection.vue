@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { RetentionRunResult, RetentionStatus } from 'kuroshiro-shared'
+import type { Load } from '@/patterns/useLoad'
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { runRetention } from '@/api/maintenance'
@@ -8,19 +9,19 @@ import Confirmation from '@/components/Confirmation.vue'
 import { failureReason } from '@/components/failureReason'
 import Notice from '@/components/Notice.vue'
 import ResultLine from '@/components/ResultLine.vue'
+import LoadBody from '@/patterns/LoadBody.vue'
 import RelativeTime from '@/patterns/RelativeTime.vue'
+import WashBar from '@/patterns/WashBar.vue'
 import { nothingOldEnough, prunedCounts, retentionIsOff, retentionLost, retentionSentence } from './housekeepingWording'
 import { RETENTION_PATH } from './instancePaths'
 import InstanceSection from './InstanceSection.vue'
 
 const props = defineProps<{
-  status: RetentionStatus
+  /** The Retention status, loaded apart from the stored-files check so either can fail alone. */
+  retention: Load<RetentionStatus>
 }>()
 
-const emit = defineEmits<{
-  /** A Retention Run finished, so the last run is another one. */
-  ran: []
-}>()
+const SKELETON_LINE_WIDTHS = ['70%', '55%']
 
 type Step
   = | { step: 'idle' }
@@ -50,7 +51,7 @@ async function count() {
 async function run() {
   const result = await runRetention({ dryRun: false })
   state.value = { step: 'finished', result }
-  emit('ran')
+  void props.retention.reload()
 }
 
 const said = computed(() => {
@@ -75,41 +76,48 @@ const said = computed(() => {
       </RouterLink>
     </template>
     <div class="retention">
-      <p class="sentence">
-        {{ retentionSentence(status.ages) }}
-      </p>
-      <p v-if="status.lastRun" class="last-run">
-        Last Retention Run <RelativeTime :at="status.lastRun.ranAt" />: removed {{ prunedCounts(status.lastRun) }}.
-      </p>
-      <p v-else class="last-run">
-        Retention has not run since Kuroshiro was started.
-      </p>
-      <Notice
-        v-if="state.step === 'failed'"
-        title="Could not run Retention."
-        :reason="state.reason"
-        action="Try again"
-        @act="count"
-      />
-      <ResultLine :running="state.step === 'counting'">
-        <template v-if="said" #default>
-          <b v-if="state.step === 'finished'">Retention Run finished.</b>{{ ' ' }}{{ said }}
+      <LoadBody :load="retention" loading="Loading Retention" failed="Could not load Retention.">
+        <template #skeleton>
+          <WashBar v-for="width in SKELETON_LINE_WIDTHS" :key="width" :width="width" />
         </template>
-      </ResultLine>
-      <div class="run">
-        <Button :disabled="retentionIsOff(props.status.ages)" :loading="state.step === 'counting'" @click="count">
-          Run Retention now
-        </Button>
-      </div>
+        <template #default="{ data: status }">
+          <p class="sentence">
+            {{ retentionSentence(status.ages) }}
+          </p>
+          <p v-if="status.lastRun" class="last-run">
+            Last Retention Run <RelativeTime :at="status.lastRun.ranAt" />: removed {{ prunedCounts(status.lastRun) }}.
+          </p>
+          <p v-else class="last-run">
+            Retention has not run since Kuroshiro was started.
+          </p>
+          <Notice
+            v-if="state.step === 'failed'"
+            title="Could not run Retention."
+            :reason="state.reason"
+            action="Try again"
+            @act="count"
+          />
+          <ResultLine :running="state.step === 'counting'">
+            <template v-if="said" #default>
+              <b v-if="state.step === 'finished'">Retention Run finished.</b>{{ ' ' }}{{ said }}
+            </template>
+          </ResultLine>
+          <div class="run">
+            <Button :disabled="retentionIsOff(status.ages)" :loading="state.step === 'counting'" @click="count">
+              Run Retention now
+            </Button>
+          </div>
+          <Confirmation v-model:open="asking" title="Run Retention now?" confirm-label="Run Retention" :action="run">
+            <template #lost>
+              {{ retentionLost(status.ages, counted) }}
+            </template>
+            <template #stays>
+              Firing Alerts, and everything newer than the ages.
+            </template>
+          </Confirmation>
+        </template>
+      </LoadBody>
     </div>
-    <Confirmation v-model:open="asking" title="Run Retention now?" confirm-label="Run Retention" :action="run">
-      <template #lost>
-        {{ retentionLost(status.ages, counted) }}
-      </template>
-      <template #stays>
-        Firing Alerts, and everything newer than the ages.
-      </template>
-    </Confirmation>
   </InstanceSection>
 </template>
 

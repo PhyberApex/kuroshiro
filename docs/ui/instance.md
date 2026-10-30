@@ -314,7 +314,7 @@ Section heading "Retention", with the link "Change the ages" at its right, which
 - "Last Retention Run {when}: removed {n} resolved Alerts and {m} Device Log entries.", or "Retention has not run since Kuroshiro was started."
 - **"Run Retention now"** (plain), disabled while Retention is off. It first asks the server what a run would remove, showing "Counting what is old enough". With nothing to remove it says "Nothing is old enough to remove." and asks nothing. Otherwise it confirms ([render][confirm-retention]): "Run Retention now?" · Lost: "{n} resolved Alerts older than {a} days and {m} Device Log entries older than {b} days." (a half that is zero reads "No resolved Alert is old enough.") · Stays: "Firing Alerts, and everything newer than the ages." · "Run Retention". Afterwards: "**Retention Run finished.** Removed {n} resolved Alerts and {m} Device Log entries."
 
-**Loading:** "Loading Housekeeping". **Failed:** the notice "Could not load Housekeeping.", or under the Stored files heading "Could not check the stored files." with "Try again", while Retention stays usable.
+**Loading and failed:** each section has its own, so one that fails leaves the other usable. Stored files says "Checking stored files", or under its heading "Could not check the stored files." with "Try again". Retention says "Loading Retention", or under its heading the notice "Could not load Retention." with "Try again".
 
 ## Device Simulator
 
