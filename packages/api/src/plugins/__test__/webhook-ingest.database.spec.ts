@@ -13,6 +13,7 @@ describe('webhook POSTs that arrive together, against a real database (ADR-0004)
   let database: DataSource
   let ingest: WebhookIngestService
   const rendered: WebhookPayload[] = []
+  const renderedReceivedAt: (Date | null)[] = []
 
   beforeAll(async () => {
     database = await createTestDatabase()
@@ -21,6 +22,7 @@ describe('webhook POSTs that arrive together, against a real database (ADR-0004)
       refresh: async (plugin: Plugin) => {
         await new Promise(resolve => setTimeout(resolve, 5))
         rendered.push(plugin.webhookPayload ?? null)
+        renderedReceivedAt.push(plugin.payloadReceivedAt ?? null)
       },
     })
     ingest = new WebhookIngestService(database.getRepository(Plugin), refresh)
@@ -28,6 +30,7 @@ describe('webhook POSTs that arrive together, against a real database (ADR-0004)
 
   afterEach(async () => {
     rendered.length = 0
+    renderedReceivedAt.length = 0
     await database.query('TRUNCATE "plugin" CASCADE')
   })
 
@@ -77,6 +80,20 @@ describe('webhook POSTs that arrive together, against a real database (ADR-0004)
 
     expect(await storedPayload(plugin)).toEqual({ sensor: { name: 'attic', temp: 21 }, status: 'ok' })
     expect(rendered.at(-1)).toEqual({ sensor: { name: 'attic', temp: 21 }, status: 'ok' })
+  })
+
+  it('renders with the time of the POST that triggered the render, not the one the guard loaded', async () => {
+    const plugin = await createWebhookPlugin('standard', null)
+
+    await ingest.ingest(await loadedByGuard(plugin), { status: 'ok' })
+    const first = (await database.getRepository(Plugin).findOneByOrFail({ id: plugin.id })).payloadReceivedAt
+    await new Promise(resolve => setTimeout(resolve, 5))
+    await ingest.ingest(await loadedByGuard(plugin), { status: 'degraded' })
+    const second = (await database.getRepository(Plugin).findOneByOrFail({ id: plugin.id })).payloadReceivedAt
+
+    expect(first).toBeInstanceOf(Date)
+    expect(second).not.toEqual(first)
+    expect(renderedReceivedAt).toEqual([first, second])
   })
 
   it('stores and renders nothing for a Plugin deleted after the guard loaded it', async () => {
