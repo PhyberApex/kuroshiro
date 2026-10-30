@@ -51,6 +51,8 @@ export interface PluginManifestEntry {
   webhookToken: string | null
   sourceRecipeId: string | null
   sourceRecipeSnapshot: ParsedPlugin | null
+  /** When the Recipe Snapshot was taken, as an ISO time. Absent from an archive older than schemaVersion 7, which reads as null. */
+  snapshotTakenAt?: string | null
   dataSources: PluginManifestDataSource[]
   templates: PluginManifestTemplate[]
   fields: PluginManifestField[]
@@ -113,7 +115,16 @@ export interface MashupConfigurationManifestEntry {
   slots: MashupSlotManifestEntry[]
 }
 
-export interface ScreenManifestEntry {
+/** A File Screen's upload as it arrived, `fileUploadedAt` as an ISO time. Absent from an archive older than schemaVersion 7, which reads as null. */
+export interface ScreenFileFactsEntry {
+  fileOriginalName?: string | null
+  fileWidth?: number | null
+  fileHeight?: number | null
+  fileBytes?: number | null
+  fileUploadedAt?: string | null
+}
+
+export interface ScreenManifestEntry extends ScreenFileFactsEntry {
   id: string
   deviceId: string
   type: Screen['type']

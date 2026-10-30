@@ -168,6 +168,29 @@ describe('configurationExportService', () => {
     expect(pluginsJson.find((p: { id: string }) => p.id === 'plugin-2').frameworkVersion).toBeNull()
   })
 
+  it('writes when a Plugin\'s Recipe Snapshot was taken, and null when it is not known', async () => {
+    pluginRepo.find.mockResolvedValue([makePlugin({ id: 'plugin-1', snapshotTakenAt: new Date('2026-09-12T08:00:00.000Z') }), makePlugin({ id: 'plugin-2' })])
+
+    const zip = new AdmZip(await service.exportToZip())
+    const pluginsJson = JSON.parse(zip.getEntry('plugins.json')!.getData().toString('utf8'))
+
+    expect(pluginsJson.map((p: { snapshotTakenAt: string | null }) => p.snapshotTakenAt)).toEqual(['2026-09-12T08:00:00.000Z', null])
+  })
+
+  it('writes a File Screen\'s upload facts on its Screen entry, and null for a Screen without them', async () => {
+    const device = makeDevice({ id: 'device-1' })
+    screenRepo.find.mockResolvedValue([
+      makeScreen({ id: 'screen-1', device, fileOriginalName: 'Sunset.jpg', fileWidth: 4032, fileHeight: 3024, fileBytes: 2481337, fileUploadedAt: new Date('2026-09-20T17:30:00.000Z') }),
+      makeScreen({ id: 'screen-2', device, type: 'html', html: '<p>hi</p>' }),
+    ])
+
+    const zip = new AdmZip(await service.exportToZip())
+    const screensJson = JSON.parse(zip.getEntry('screens.json')!.getData().toString('utf8'))
+
+    expect(screensJson[0]).toMatchObject({ fileOriginalName: 'Sunset.jpg', fileWidth: 4032, fileHeight: 3024, fileBytes: 2481337, fileUploadedAt: '2026-09-20T17:30:00.000Z' })
+    expect(screensJson[1]).toMatchObject({ fileOriginalName: null, fileWidth: null, fileHeight: null, fileBytes: null, fileUploadedAt: null })
+  })
+
   it('redacts Data Source header values in the Recipe Snapshot, but not keys or other fields, when redact is set', async () => {
     const snapshot = {
       name: 'Daily Weather',
