@@ -47,7 +47,7 @@ describe('the Device Log against a real database', () => {
   })
 
   async function ingest(device: Device, body: unknown): Promise<Response> {
-    return http.postJson('/api/log', body, { headers: { id: device.mac } })
+    return http.postJson('/api/log', body, { headers: { 'id': device.mac, 'access-token': device.apikey } })
   }
 
   /** One entry per message, a second apart from 09:00:00 on, in the current firmware format. */
@@ -93,10 +93,30 @@ describe('the Device Log against a real database', () => {
     })
 
     it('answers an unknown Device as before, in Nest\'s own body', async () => {
-      const response = await http.postJson('/api/log', { logs: [{ id: 1 }] }, { headers: { id: 'FF:FF:FF:FF:FF:FF' } })
+      const response = await http.postJson('/api/log', { logs: [{ id: 1 }] }, { headers: { 'id': 'FF:FF:FF:FF:FF:FF', 'access-token': 'key-1' } })
 
       expect(response.status).toBe(404)
       expect(await response.json()).toEqual({ statusCode: 404, message: 'Device not found', error: 'Not Found' })
+    })
+
+    it.each([
+      ['without an access-token', { id: 'AA:BB:CC:DD:EE:01' }],
+      ['with another Device\'s access-token', { 'id': 'AA:BB:CC:DD:EE:01', 'access-token': 'key-2' }],
+    ])('answers 401 to an entry %s and stores nothing', async (_case, headers) => {
+      const response = await http.postJson('/api/log', { logs: [{ id: 1, message: 'fake' }] }, { headers })
+
+      expect(response.status).toBe(401)
+      expect(await response.json()).toEqual({ statusCode: 401, message: 'Invalid API key', error: 'Unauthorized' })
+      expect(await database.getRepository(LogEntry).count()).toBe(0)
+    })
+
+    it('stores an entry the Device sends again only once, and the same log id of another Device apart', async () => {
+      await report(kitchen, ['boot'])
+      await report(kitchen, ['boot', 'display poll'])
+      await report(bedroom, ['bedroom boot'])
+
+      expect(messagesOf(await read(kitchen))).toEqual(['display poll', 'boot'])
+      expect(messagesOf(await read(bedroom))).toEqual(['bedroom boot'])
     })
   })
 

@@ -124,15 +124,15 @@ describe('the endpoints outside the admin API behind the global pipe and filter'
     ['logs', { logs: [{ id: 1, message: 'boot', wifi_signal: -60, anything: { the: 'firmware adds' } }] }],
     ['log.logs_array', { log: { logs_array: [{ log_id: 2, free_heap_size: 1234, retry: 3 }] } }],
   ])('takes a /api/log body in the %s envelope with entry fields no DTO declares', async (_envelope, body) => {
-    const response = await http.postJson('/api/log', body, { headers: { id: '2d:34:e2:27:5b:46' } })
+    const response = await http.postJson('/api/log', body, { headers: { 'id': '2d:34:e2:27:5b:46', 'access-token': 'token' } })
 
     expect(response.status).toBe(204)
     expect(await response.text()).toBe('')
-    expect(logsService.addLogToDevice).toHaveBeenCalledWith('2d:34:e2:27:5b:46', body)
+    expect(logsService.addLogToDevice).toHaveBeenCalledWith(expect.objectContaining({ 'id': '2d:34:e2:27:5b:46', 'access-token': 'token' }), body)
   })
 
   it('refuses a /api/log body that is no log envelope in Nest\'s default body', async () => {
-    const response = await http.postJson('/api/log', { entries: [] }, { headers: { id: '2d:34:e2:27:5b:46' } })
+    const response = await http.postJson('/api/log', { entries: [] }, { headers: { 'id': '2d:34:e2:27:5b:46', 'access-token': 'token' } })
 
     expect(response.status).toBe(400)
     expect(await response.json()).toEqual({

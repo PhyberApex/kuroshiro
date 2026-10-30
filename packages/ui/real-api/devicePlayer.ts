@@ -63,7 +63,7 @@ export async function connectDevice(baseUrl: string, { mac = randomMac(), firmwa
     log: async (entries) => {
       await accepted(await fetch(endpoint('log'), {
         method: 'POST',
-        headers: { 'id': mac, 'content-type': 'application/json' },
+        headers: { 'id': mac, 'access-token': setup.api_key, 'content-type': 'application/json' },
         body: JSON.stringify({ logs: entries }),
       }))
     },
