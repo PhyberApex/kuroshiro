@@ -63,6 +63,8 @@ describe('housekeeping', () => {
 
     await expect.element(screen.getByRole('navigation', { name: 'Instance' }).getByRole('link', { name: 'Housekeeping' })).toHaveAttribute('aria-current', 'page')
     await expect.element(screen.getByText('What Kuroshiro keeps that nothing needs any more, and what removes it.')).toBeVisible()
+    // The lede shows before the check is answered; ending here would leave the check to the next test's fake.
+    await waitForTheFindings(screen)
   })
 
   describe('stored files', () => {
