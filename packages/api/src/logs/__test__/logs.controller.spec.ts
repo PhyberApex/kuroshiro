@@ -20,11 +20,11 @@ describe('logsController (unit)', () => {
     controller = new LogsController(asService<LogsService>(service))
   })
 
-  it('consumeLog calls the service', async () => {
-    const deviceHeader = { id: '2d:34:e2:27:5b:46' }
+  it('consumeLog hands the service the Device credentials and the body', async () => {
+    const headers = { 'id': '2d:34:e2:27:5b:46', 'access-token': 'token' }
     const dto: CreateLogDto = { logs: [{ id: 1 }] }
-    await controller.consumeLog(deviceHeader, dto)
-    expect(service.addLogToDevice).toHaveBeenCalledWith(deviceHeader.id, dto)
+    await controller.consumeLog(headers, dto)
+    expect(service.addLogToDevice).toHaveBeenCalledWith(headers, dto)
   })
 
   it('consumeLog answers 204 No Content', () => {

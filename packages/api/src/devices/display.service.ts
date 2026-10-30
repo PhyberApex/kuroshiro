@@ -4,11 +4,12 @@ import type { Plugin } from '../plugins/entities/plugin.entity.js'
 import type { RotationScreen } from '../schedule/rotation.js'
 import type { RenderOutcome } from '../screens/render-outcome.js'
 import type { Requester } from '../utils/ssrfGuard.js'
+import type { DeviceCredentials } from './authenticate-device.js'
 import type { DisplayRequestHeadersDto } from './dto/display-request-headers.dto.js'
 import type { Served } from './last-served.js'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import { Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common'
+import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
 import { effectiveFrameworkVersion, isButtonWake, viewFull } from 'kuroshiro-shared'
@@ -33,6 +34,7 @@ import { convertToPng, downloadImage } from '../utils/imageUtils.js'
 import { parseHeaderInt } from '../utils/parseHeaderInt.js'
 import { resolveAppPath } from '../utils/pathHelper.js'
 import { requesterFor } from '../utils/ssrfGuard.js'
+import { authenticateDevice } from './authenticate-device.js'
 import { sleepImagePath, sleepImageUrl } from './device-sleep-image.service.js'
 import { isProxiedDevice } from './device-update-rules.js'
 import { Device } from './devices.entity.js'
@@ -158,7 +160,7 @@ export class DeviceDisplayService {
   async getCurrentImage(headers: DisplayRequestHeadersDto): Promise<Display> {
     this.logger.log(`Display request for MAC: ${headers.id}`)
     this.logger.debug(`Headers: ${JSON.stringify(headers)}`)
-    const device = await this.authenticateDevice(headers)
+    const device = await authenticateDevice(this.deviceRepository, headers, this.logger)
     const { report, acknowledgement } = await this.applyHeaderReport(device, headers)
 
     const { display, served } = await this.buildWipeResponse(device, report)
@@ -197,25 +199,6 @@ export class DeviceDisplayService {
     catch (err) {
       this.logger.error(`Could not record what device ${device.id} was served: ${getErrorMessage(err)}`)
     }
-  }
-
-  /**
-   * Looks up a Device by the MAC in `headers.id` and checks its API key —
-   * the entry check shared by both poll endpoints (`getCurrentImage` and
-   * `getCurrentImageWithoutProgressing`), each of which only needs a
-   * different subset of `DisplayRequestHeadersDto`.
-   */
-  private async authenticateDevice(headers: Pick<DisplayRequestHeadersDto, 'id' | 'access-token'>): Promise<Device> {
-    const device = await this.deviceRepository.findOneBy({ mac: headers.id })
-    if (!device) {
-      this.logger.warn(`Device not found: ${headers.id}`)
-      throw new NotFoundException('Device not found')
-    }
-    if (device.apikey !== headers['access-token']) {
-      this.logger.warn(`Invalid API key for device: ${headers.id}`)
-      throw new UnauthorizedException('Invalid API key')
-    }
-    return device
   }
 
   /**
@@ -629,10 +612,10 @@ export class DeviceDisplayService {
     }
   }
 
-  async getCurrentImageWithoutProgressing(headers: Pick<DisplayRequestHeadersDto, 'id' | 'access-token'>): Promise<DisplayScreen> {
+  async getCurrentImageWithoutProgressing(headers: DeviceCredentials): Promise<DisplayScreen> {
     this.logger.log(`Current Screen request for MAC: ${headers.id}`)
     this.logger.debug(`Headers: ${JSON.stringify(headers)}`)
-    const device = await this.authenticateDevice(headers)
+    const device = await authenticateDevice(this.deviceRepository, headers, this.logger)
     const now = new Date()
     if (device.lastServedKind === 'wipe') {
       return new DisplayScreen({

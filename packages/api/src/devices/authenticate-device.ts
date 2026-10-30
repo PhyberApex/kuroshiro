@@ -1,0 +1,29 @@
+import type { Logger } from '@nestjs/common'
+import type { Repository } from 'typeorm'
+import type { Device } from './devices.entity.js'
+import { NotFoundException, UnauthorizedException } from '@nestjs/common'
+
+/** The two headers a Device sends to prove who it is: its MAC and the API key it got from `/api/setup`. */
+export interface DeviceCredentials {
+  'id': string
+  'access-token'?: string
+}
+
+/**
+ * Looks up a Device by the MAC in `credentials.id` and checks its API key —
+ * the entry check of every Device-facing endpoint after `/api/setup`: the
+ * polls (`/api/display`, `/api/current_screen`) and the Device Log ingest
+ * (`/api/log`).
+ */
+export async function authenticateDevice(devices: Repository<Device>, credentials: DeviceCredentials, logger: Logger): Promise<Device> {
+  const device = await devices.findOneBy({ mac: credentials.id })
+  if (!device) {
+    logger.warn(`Device not found: ${credentials.id}`)
+    throw new NotFoundException('Device not found')
+  }
+  if (device.apikey !== credentials['access-token']) {
+    logger.warn(`Invalid API key for device: ${credentials.id}`)
+    throw new UnauthorizedException('Invalid API key')
+  }
+  return device
+}

@@ -14,6 +14,7 @@ export interface MockRepository<T extends ObjectLiteral> {
   findOne: Mock<(options: FindOneOptions<T>) => Promise<T | null>>
   findOneBy: Mock<(where: FindOptionsWhere<T> | FindOptionsWhere<T>[]) => Promise<T | null>>
   findBy: Mock<(where: FindOptionsWhere<T> | FindOptionsWhere<T>[]) => Promise<T[]>>
+  existsBy: Mock<(where: FindOptionsWhere<T> | FindOptionsWhere<T>[]) => Promise<boolean>>
   create: Mock<(entityLike?: DeepPartial<T>) => T>
   save: Mock<(entity: T, options?: SaveOptions) => Promise<T>>
   update: Mock<(criteria: FindOptionsWhere<T> | string | string[], partialEntity: QueryDeepPartialEntity<T>) => Promise<UpdateResult>>
@@ -32,6 +33,7 @@ export function createMockRepository<T extends ObjectLiteral>(): MockRepository<
     findOne: vi.fn(),
     findOneBy: vi.fn(),
     findBy: vi.fn(),
+    existsBy: vi.fn(),
     create: vi.fn((input?: unknown) => input),
     save: vi.fn(async (input: unknown) => input),
     update: vi.fn(),

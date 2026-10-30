@@ -1,7 +1,9 @@
+import type { DeviceCredentials } from '../devices/authenticate-device.js'
 import type { JsonObject } from '../utils/json.js'
-import { Injectable, Logger, NotFoundException } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
+import { authenticateDevice } from '../devices/authenticate-device.js'
 import { Device } from '../devices/devices.entity.js'
 import { CreateLogDto } from './dto/create-log.dto.js'
 import { LogEntry } from './logs.entity.js'
@@ -39,12 +41,8 @@ export class LogsService {
     private devicesRepository: Repository<Device>,
   ) {}
 
-  async addLogToDevice(deviceMac: string, logs: CreateLogDto) {
-    const device = await this.devicesRepository.findOne({ where: { mac: deviceMac }, relations: { logs: true } })
-    if (!device) {
-      this.logger.warn(`Device not found: ${deviceMac}`)
-      throw new NotFoundException('Device not found')
-    }
+  async addLogToDevice(credentials: DeviceCredentials, logs: CreateLogDto) {
+    const device = await authenticateDevice(this.devicesRepository, credentials, this.logger)
     const entries = entriesOf(logs)
     this.logger.debug(`Checking ${entries.length} entries of payload to consume.`)
     for (const entry of entries) {
@@ -53,7 +51,7 @@ export class LogsService {
         this.logger.warn(`Log entry without id/log_id for device ${device.id}, skipping.`)
         continue
       }
-      if (device.logs.some(logEntry => logEntry.logId === logId)) {
+      if (await this.logsRepository.existsBy({ device: { id: device.id }, logId })) {
         this.logger.log(`Log entry with id: ${logId} for device ${device.id} already exists.`)
       }
       else {
