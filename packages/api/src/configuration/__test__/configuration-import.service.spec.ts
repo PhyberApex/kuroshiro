@@ -737,13 +737,20 @@ describe('configurationImportService', () => {
     expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ oauthSettings: null })
   })
 
-  it('imports a Plugin\'s Screen modifiers from its settings.yml, and turns them off for a Plugin whose settings.yml sets none (ADR-0054)', async () => {
-    const { plugins, pluginFolders } = fieldValuePlugin({})
-    const folder = { ...pluginFolders['plugin-1'], settings: { strategy: 'polling', no_screen_padding: 'yes', dark_mode: 'yes' } }
+  it('imports a Plugin\'s Screen modifiers from its settings.yml, and turns them off for one whose settings.yml says no or sets none (ADR-0054)', async () => {
+    function withModifiers(modifiers: string) {
+      const { plugins, pluginFolders } = fieldValuePlugin({})
+      const folder = { ...pluginFolders['plugin-1'], settings: { strategy: 'polling', no_screen_padding: modifiers, dark_mode: modifiers } }
+      return buildArchive({ plugins, pluginFolders: { 'plugin-1': folder } })
+    }
 
-    await service.importFromZip(buildArchive({ plugins, pluginFolders: { 'plugin-1': folder } }))
+    await service.importFromZip(withModifiers('yes'))
     expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ noScreenPadding: true, darkMode: true })
 
+    await service.importFromZip(withModifiers('no'))
+    expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ noScreenPadding: false, darkMode: false })
+
+    await service.importFromZip(withModifiers('yes'))
     await service.importFromZip(buildArchive(fieldValuePlugin({})))
     expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ noScreenPadding: false, darkMode: false })
   })
