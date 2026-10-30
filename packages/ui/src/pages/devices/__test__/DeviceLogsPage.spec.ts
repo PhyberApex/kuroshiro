@@ -1,4 +1,4 @@
-import { delay, http } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { expectAccessible } from '@/testing/a11y'
 import { api, apiErrorResponse, apiUrl } from '@/testing/api/server'
@@ -179,6 +179,19 @@ describe('filtering and searching a Device Log', () => {
     expect(screen.router.currentRoute.value.query).toEqual({})
     await expect.element(screen.getByRole('searchbox', { name: 'Search messages' })).toHaveValue('')
     await expect.element(screen.getByRole('radio', { name: 'All' })).toBeChecked()
+  })
+
+  it('drops a search still being typed when the admin leaves the page, and leaves the next page\'s address alone', async () => {
+    fakeKitchenLog()
+    api.use(http.get(apiUrl('plugins'), () => HttpResponse.json([])))
+    const screen = await mountLogs()
+    await expect.element(log(screen)).toBeVisible()
+
+    await screen.getByRole('searchbox', { name: 'Search messages' }).fill('wi')
+    await screen.router.push('/plugins')
+    await new Promise(resolve => setTimeout(resolve, 450))
+
+    expect(screen.router.currentRoute.value.fullPath).toBe('/plugins')
   })
 })
 
