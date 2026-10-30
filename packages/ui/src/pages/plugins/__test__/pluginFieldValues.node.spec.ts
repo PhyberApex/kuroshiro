@@ -24,6 +24,15 @@ describe('the Field Values of the Plugin\'s form', () => {
     expect(pluginFieldValues.read(WEATHER)).toEqual({ values: { location: 'Lindenplatz', units: '' } })
   })
 
+  it('holds nothing for a copyable webhook URL, which has no row', () => {
+    const plugin = buildPluginDetail({
+      fields: [field('location'), field('webhook_url', { type: 'copyable_webhook_url' })],
+      fieldValues: { location: { secret: false, value: 'Lindenplatz' }, webhook_url: { secret: false, value: null } },
+    })
+
+    expect(pluginFieldValues.read(plugin)).toEqual({ values: { location: 'Lindenplatz' } })
+  })
+
   describe('what a save sends', () => {
     it('is every value it holds, and null to clear one, so a password that was not replaced is left out', () => {
       expect(pluginFieldValues.toInput(pluginFieldValues.read(WEATHER))).toEqual({ fieldValues: { location: 'Lindenplatz', units: null } })

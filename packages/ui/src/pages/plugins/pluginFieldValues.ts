@@ -11,10 +11,11 @@ export interface FieldValuesDraft {
   values: Record<string, string>
 }
 
+/** The value of every Plugin Field that gets a row, so neither a credit nor a copyable webhook URL, which are read only. */
 function shownValues(plugin: PluginDetail): Record<string, string> {
   return Object.fromEntries(plugin.fields.flatMap((field) => {
     const stored = plugin.fieldValues[field.keyname]
-    return field.type === CREDIT_TYPE || stored?.secret !== false ? [] : [[field.keyname, stored.value ?? '']]
+    return isReadOnlyFieldType(field.type) || stored?.secret !== false ? [] : [[field.keyname, stored.value ?? '']]
   }))
 }
 

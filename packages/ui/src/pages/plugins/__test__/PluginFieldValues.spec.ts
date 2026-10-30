@@ -59,6 +59,16 @@ describe('the Field Values of a Plugin', () => {
       await expect.element(screen.getByText('Made by Mika from the harbour office.')).toBeVisible()
       expect(labelsOf()).toEqual(['Location'])
     })
+
+    it('opens without unsaved changes for a Plugin with a copyable webhook URL, which has no row', async () => {
+      fakeWeather([LOCATION, field('webhook_url', { label: 'Webhook URL', type: 'copyable_webhook_url' })], { location: 'Lindenplatz' })
+      const screen = await mountPlugin()
+
+      await expect.element(screen.getByRole('textbox', { name: 'Location' })).toHaveValue('Lindenplatz')
+      expect(labelsOf()).toEqual(['Location'])
+      await new Promise(resolve => setTimeout(resolve, 300))
+      await expect.element(saveBar(screen).getByRole('button', { name: 'Save Plugin' })).not.toBeInTheDocument()
+    })
   })
 
   describe('the control of each type', () => {
