@@ -50,7 +50,7 @@ describe('screensService', () => {
     unlinkMock = vi.spyOn(fs.promises, 'unlink').mockResolvedValue(undefined)
   })
 
-  describe('reconvertImageScreens', () => {
+  describe('redrawForRenderTarget', () => {
     const device = makeDevice({ id: 'dev' })
 
     it('reconverts uploads and cached external images from their original, or from the PNG when none is retained', async () => {
@@ -66,15 +66,13 @@ describe('screensService', () => {
       const renameMock = vi.spyOn(fs.promises, 'rename').mockResolvedValue(undefined)
       const { convertToPng } = await import('../../utils/imageUtils.js')
 
-      await expect(service.reconvertImageScreens(device)).resolves.toBe(3)
+      await expect(service.redrawForRenderTarget(device)).resolves.toBe(3)
 
       const sources = vi.mocked(convertToPng).mock.calls.map(call => call[0].split('/').pop())
       expect(sources).toEqual(['upload.original', 'legacy.png', 'cached.original'])
       expect(renameMock).toHaveBeenCalledWith(expect.stringContaining('tmp-upload.png'), expect.stringContaining('/upload.png'))
       expect(screensRepo.update).toHaveBeenCalledWith({ id: 'upload' }, { generatedAt: expect.any(Date) })
       expect(screensRepo.update).not.toHaveBeenCalledWith({ id: 'live' }, expect.anything())
-      expect(screensRepo.update).not.toHaveBeenCalledWith({ id: 'plugin' }, expect.anything())
-      expect(screensRepo.update).not.toHaveBeenCalledWith({ id: 'markup' }, expect.anything())
     })
 
     it('keeps going when one screen fails to convert, cleaning up its temp file', async () => {
@@ -84,7 +82,7 @@ describe('screensService', () => {
       const { convertToPng } = await import('../../utils/imageUtils.js')
       vi.mocked(convertToPng).mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce(undefined)
 
-      await expect(service.reconvertImageScreens(device)).resolves.toBe(1)
+      await expect(service.redrawForRenderTarget(device)).resolves.toBe(1)
       expect(unlinkMock).toHaveBeenCalledWith(expect.stringContaining('tmp-a.png'))
     })
 
@@ -94,10 +92,10 @@ describe('screensService', () => {
       const warned = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
       const { convertToPng } = await import('../../utils/imageUtils.js')
 
-      await expect(service.reconvertImageScreens(device)).resolves.toBe(0)
+      await expect(service.redrawForRenderTarget(device)).resolves.toBe(0)
       expect(warned).toHaveBeenCalledWith('No image to reconvert for screen gone')
       expect(convertToPng).not.toHaveBeenCalled()
-      expect(screensRepo.update).not.toHaveBeenCalled()
+      expect(screensRepo.update).not.toHaveBeenCalledWith({ id: 'gone' }, expect.anything())
       warned.mockRestore()
     })
   })

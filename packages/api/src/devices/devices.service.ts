@@ -68,7 +68,7 @@ export class DevicesService {
     assertWipeAllowed(dbDevice)
     const saved = await this.deviceRepository.save(dbDevice)
     if (renderTargetChanged(before, saved)) {
-      await this.screensService.reconvertImageScreens(saved)
+      await this.screensService.redrawForRenderTarget(saved)
       await this.deviceSleepImage.reconvert(saved)
     }
     return saved

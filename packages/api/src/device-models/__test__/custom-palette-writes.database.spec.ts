@@ -258,7 +258,7 @@ describe('creating, changing and deleting a custom Palette, against a real datab
     it('logs a failing image or sleep-image reconversion of one Device and goes on to the next, and the Palette change stands', async () => {
       const { device: study } = await studyOnTheCustomPalette()
       const hall = await database.getRepository(Device).save({ name: 'Hall', friendlyId: 'HALL01', mac: 'AA:BB:CC:DD:EE:02', apikey: 'key2', deviceModel: { name: 'og_bwr' }, palette: { id: 'study-panel' } })
-      const reconvertImages = vi.spyOn(screens, 'reconvertImageScreens').mockRejectedValueOnce(new Error('disk full'))
+      const reconvertImages = vi.spyOn(screens, 'redrawForRenderTarget').mockRejectedValueOnce(new Error('disk full'))
       sleepImage.reconvert.mockRejectedValueOnce(new Error('sleep image unreadable'))
       const logged = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {})
 

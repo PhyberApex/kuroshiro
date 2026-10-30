@@ -11,7 +11,7 @@ import { BadRequestException, HttpStatus, Injectable, Logger } from '@nestjs/com
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
 import { isUUID } from 'class-validator'
-import { Repository } from 'typeorm'
+import { In, Repository } from 'typeorm'
 import { DeviceModelsService } from '../device-models/device-models.service.js'
 import { Device } from '../devices/devices.entity.js'
 import { ApiException, ValidationException } from '../errors/api.exception.js'
@@ -36,6 +36,9 @@ const EDITABLE_FIELDS: Record<Screen['type'], ReadonlyArray<keyof UpdateScreenDt
   mashup: ['name'],
   plugin: [],
 }
+
+/** The Screens drawn from markup at poll time, which a new render target leaves with no stored image to convert. */
+const RENDERED_SCREEN_TYPES: Array<Screen['type']> = ['html', 'plugin', 'mashup']
 
 @Injectable()
 export class ScreensService {
@@ -259,11 +262,18 @@ export class ScreensService {
   }
 
   /**
-   * Regenerates every stored image of a device (uploads and cached external
-   * images) for its current model and palette, from the retained original
-   * where one exists and from the previous PNG otherwise.
+   * Has every Screen of a device drawn again for its current model and palette:
+   * regenerates each stored image (uploads and cached external images) from the
+   * retained original where one exists and from the previous PNG otherwise, and
+   * moves the render time of HTML, Plugin and Mashup Screens, dropping their
+   * cached output, so `/display` serves them under a new filename (ADR-0031).
+   * Answers how many stored images were converted.
    */
-  async reconvertImageScreens(device: Device): Promise<number> {
+  async redrawForRenderTarget(device: Device): Promise<number> {
+    await this.screensRepository.update(
+      { device: { id: device.id }, type: In(RENDERED_SCREEN_TYPES) },
+      { generatedAt: new Date(), cachedPluginOutput: null, renderSignal: null },
+    )
     const screens = await this.screensRepository.find({ where: { device: { id: device.id } } })
     const target = await this.deviceModels.renderTargetFor(device)
     let converted = 0
