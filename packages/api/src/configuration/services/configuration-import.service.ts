@@ -791,6 +791,8 @@ export class ConfigurationImportService {
     plugin.frameworkVersion = entry.frameworkVersion ?? null
     plugin.oauthSettings = parsed.oauthSettings ?? null
     plugin.dither = entry.dither ?? true
+    plugin.noScreenPadding = parsed.noScreenPadding ?? false
+    plugin.darkMode = parsed.darkMode ?? false
     plugin.sourceRecipeId = entry.sourceRecipeId ?? parsed.sourceRecipeId ?? undefined
     plugin.sourceRecipeSnapshot = entry.sourceRecipeSnapshot ? { ...entry.sourceRecipeSnapshot } : null
     return plugin
