@@ -179,6 +179,7 @@ A page under the frame renders only its body, as a list of roots:
 | Part of `pages/instance/` | Is |
 | --- | --- |
 | `InstancePageHeading` | The page's heading line: its name as an `h2` at `title-sm` on the 2 px ink rule, the `#actions` slot at its right, and `back` (`{ label: 'Firmware', to: FIRMWARE_PATH }`) for the link above the name of a page that is not in the page list. It does not rename the browser tab, which reads "Instance" |
+| `InstancePageBody` | What stands under the heading of a page whose body never waits as a whole: the `#lede` slot as the soft lede, then the default slot, the sections. The first section carries `class="first"`, which takes it to `--space-8` under the lede. Housekeeping and Configuration Archive use it |
 | `InstanceSection` | A section of a page: `title` as an `h3` at `text-lg`, weight 600, on a 1 px rule, the `#aside` slot at its right (a link, a button, a fact), and `id`, which is what a fragment names (`/instance/settings#retention`). It sets `--space-10` above itself; the first one under a lede takes `--space-8` |
 | `ReadRow` (`@/patterns/`) | A row that is read and not edited, or that holds the button of an action: `label`, the default slot, `#side` at the right and `#note` under it. It shares the Setting row's grid, and Device Settings uses it too |
 | `InstanceSettingRow` | One numeric Instance Setting (see below) |
@@ -242,13 +243,13 @@ The Firmware page (`FirmwarePage.vue`) is the worked example of an Instance page
 
 ### Housekeeping
 
-`HousekeepingPage.vue` loads the Retention status (`getRetentionStatus()`, which carries the two ages and the last Retention Run) with `LoadBody`, and starts the stored-files check beside it, so a failed check stays inside its own section.
+`HousekeepingPage.vue` loads the Retention status (`getRetentionStatus()`, which carries the two ages and the last Retention Run) and starts the stored-files check beside it, and hands each to its section, so a failed load stays inside its own section: the lede and both section headings stand whatever either answers.
 
 | Part | Is |
 | --- | --- |
 | `useStoredFiles()` (`storedFiles.ts`) | The check as one `state` (`checking`, `checked` with the `StorageCheck`, `failed` with its reason): `check()` runs it again and forgets the last clean-up; `cleanUp(findingIds, findings)` sends the ids, keeps the answer in `cleaned` with the findings it was about, and checks again, so what could not be removed is listed anew |
 | `StoredFilesSection`, `StoredFindings`, `FindingContents` | The section with "Check again", its status line and notices; the Finding rows with what is ticked, the line under them, "Clean up {n} groups" and its confirmation; and what an opened group holds |
-| `RetentionSection` | The sentence, the last run and "Run Retention now", which asks `runRetention({ dryRun: true })` first and confirms only when that counts something. It emits `ran`, on which the page reads the status again |
+| `RetentionSection` | The sentence, the last run and "Run Retention now", which asks `runRetention({ dryRun: true })` first and confirms only when that counts something. It takes the page's `useLoad` of the status and shows it with `LoadBody` under its heading, and reads the status again once a run has finished |
 | `FindingRow`, `FindingRows` (`@/components/`) | The Finding row: a checkbox (`v-model:ticked`) outside the accordion trigger, the group's name, count and size; `FindingRows` holds `v-model:open`, one row open at a time |
 | `housekeepingWording.ts` | Every sentence, with a node spec: the groups in the spec's order (`findingGroups`), what an opened group says and lists, the line under the rows, "Lost" and "Stays", what a clean-up removed and could not, and the Retention sentences |
 | `__test__/housekeepingHarness.ts` | `fakeHousekeeping({ checks, cleanup, retention, dryRun, run })` answers the four routes (each check in turn, the last one again), keeps `checked`, `cleanups` and `runs`, and holds checks or runs on `holdingChecks` and `holdingRuns`; `mountHousekeeping()` |

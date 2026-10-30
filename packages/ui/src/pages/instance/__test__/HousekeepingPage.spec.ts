@@ -349,13 +349,22 @@ describe('housekeeping', () => {
       await expect.poll(() => noticeOf(retention(screen))).toBe('Could not run Retention. Something went wrong on the server.')
       expect(dialog(screen).elements()).toEqual([])
     })
-  })
 
-  it('says it could not load Housekeeping when the Retention status does not load', async () => {
-    const { screen } = await openHousekeeping({ retention: apiErrorResponse({ statusCode: 500, code: 'internal', message: 'Internal server error' }) })
+    it('says it could not load Retention, inside its own section, while the stored files stay usable', async () => {
+      const { fake, screen } = await openHousekeeping({ retention: apiErrorResponse({ statusCode: 500, code: 'internal', message: 'Internal server error' }) })
 
-    await expect.element(screen.getByText('Could not load Housekeeping.')).toBeVisible()
-    await expect.element(screen.getByRole('button', { name: 'Try again' })).toBeVisible()
+      await expect.poll(() => noticeOf(retention(screen))).toBe('Could not load Retention. Something went wrong on the server.')
+      await expect.element(retention(screen).getByRole('link', { name: 'Change the ages' })).toBeVisible()
+      await waitForTheFindings(screen)
+      await storedFiles(screen).getByRole('button', { name: 'Check again' }).click()
+      await expect.poll(() => fake.checked).toBe(2)
+
+      fake.retention = buildRetentionStatus()
+      await retention(screen).getByRole('button', { name: 'Try again' }).click()
+
+      await expect.element(runRetention(screen)).toBeVisible()
+      expect(retention(screen).getByText('Could not load Retention.').elements()).toEqual([])
+    })
   })
 
   it('is accessible and does not overflow, with a group open', async () => {
