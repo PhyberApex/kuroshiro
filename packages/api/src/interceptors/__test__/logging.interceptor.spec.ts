@@ -44,7 +44,7 @@ describe('loggingInterceptor', () => {
     expect(debug).toHaveBeenCalledWith(expect.stringContaining('GET /x 200'))
   })
 
-  it('never logs the response body, which can carry Device and Plugin credentials', async () => {
+  it('never logs the response body, which can carry credentials', async () => {
     const levels = ['log', 'debug', 'verbose', 'warn', 'error', 'fatal'] as const
     const spies = levels.map(level => vi.spyOn(Logger.prototype, level).mockImplementation(() => {}))
     const secretNext: CallHandler = { handle: () => of({ apikey: 'secret-device-key' }) }

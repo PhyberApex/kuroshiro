@@ -31,7 +31,7 @@ export class LoggingInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       tap({
-        // The response body is never logged: it carries Device API keys, Webhook tokens
+        // The response body is never logged: it carries Device API keys, Webhook Tokens
         // and Data Source headers, and container logs outlive key rotation.
         next: () => {
           const duration = Date.now() - startTime
