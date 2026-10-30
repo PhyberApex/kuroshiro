@@ -278,11 +278,13 @@ describe('instance Settings', () => {
 
       await enter(screen, 'Battery low', '20')
 
-      await expect.poll(() => patches, { timeout: 5000 }).toEqual([{ lowBatteryPercent: 30 }, { lowBatteryPercent: 20 }])
+      await expect.poll(() => patches).toEqual([{ lowBatteryPercent: 30 }, { lowBatteryPercent: 20 }])
       hold.release()
-      await expect.poll(() => sourceOf(screen, 'Battery low'), { timeout: 5000 }).toBe('Set here · Reset to 20')
+      // Only the answer to the last save says "Saved".
+      await expect.poll(() => words(rowOf(screen, 'Battery low')?.querySelector('[role="status"]'))).toBe('Saved')
       await expect.element(field(screen, 'Battery low')).toHaveValue(20)
       expect(noteOf(screen, 'Battery low')).toBe('Fires when a Device\'s battery is below 20 %, and resolves once it is back at 25 %.')
+      await expect.poll(() => sourceOf(screen, 'Battery low')).toBe('Set here · Reset to 20')
     })
   })
 
