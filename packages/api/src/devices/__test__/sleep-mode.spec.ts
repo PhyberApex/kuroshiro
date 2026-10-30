@@ -121,3 +121,19 @@ describe('lastSleepEnd across a daylight saving change', () => {
     expect(lastSleepEnd(2.5 * 3600, new Date('2026-10-25T00:45:00Z'))).toEqual(new Date('2026-10-25T00:30:00Z'))
   })
 })
+
+// America/Santiago springs forward at midnight, so the day it does there is no 00:00 to count from.
+describe('the wake time on a day the clock skips midnight', () => {
+  beforeEach(() => {
+    vi.stubEnv('TZ', 'America/Santiago')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('still reads the wake time on the clock', () => {
+    expect(lastSleepEnd(7 * 3600, new Date(2026, 8, 6, 12, 0)).getHours()).toBe(7)
+    expect(nextSleepEnd(7 * 3600, new Date(2026, 8, 6, 2, 0)).getHours()).toBe(7)
+  })
+})

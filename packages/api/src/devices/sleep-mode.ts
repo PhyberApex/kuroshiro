@@ -63,12 +63,12 @@ export function lastSleepEnd(sleepEndTime: number, now: Date): Date {
   return repeated <= now && secondsOfDay(repeated) === secondsOfDay(end) ? repeated : end
 }
 
-/** `secondsOfDay` on the server's clock, on the day `day` falls on. */
-function onDayOf(day: Date, secondsOfDay: number): Date {
-  const moment = new Date(day)
-  moment.setHours(0, 0, 0, 0)
-  moment.setSeconds(secondsOfDay)
-  return moment
+/**
+ * The moment the server's clock reads `timeOfDay` on the day `day` falls on. Built
+ * in one step, since a time zone whose clock skips midnight has no 00:00 to start from.
+ */
+function onDayOf(day: Date, timeOfDay: number): Date {
+  return new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, timeOfDay)
 }
 
 function secondsOfDay(now: Date): number {
