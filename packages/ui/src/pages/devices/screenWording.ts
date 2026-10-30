@@ -2,6 +2,7 @@ import type { DeviceDetail, ScheduleRead, ScreenRead, ScreenState } from 'kurosh
 import { isPassedOver, SCREEN_STATE_LABELS } from '@/components/screenRows'
 import { clockTime } from '@/patterns/time'
 import { nextPollTime } from './currentScreenStory'
+import { crossesMidnight } from './scheduleEditing'
 import { scheduleHours } from './scheduleSummary'
 import { screenName } from './screenNaming'
 
@@ -53,15 +54,37 @@ function datesOf({ startDate, endDate }: ScheduleRead) {
   return startDate ? `from ${dayAndMonth(startDate)}` : `until ${dayAndMonth(endDate ?? '')}`
 }
 
+const timeInZone = (now: Date, timezone: string | undefined) => new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: timezone }).format(now)
+
+const weekdayInZone = (day: Date, timezone: string | undefined) => new Intl.DateTimeFormat('en-GB', { weekday: 'long', timeZone: timezone }).format(day)
+
+/**
+ * The night before `now`, while `now` is in the part of a Schedule's hours after midnight: the API holds such hours to the
+ * day they start on. Two hours before that midnight, so a change of clocks overnight cannot land it back on today.
+ */
+function nightTheHoursBegan({ startTime, endTime }: ScheduleRead, now: Date, timezone: string | undefined) {
+  if (!startTime || !endTime || !crossesMidnight(startTime, endTime))
+    return undefined
+  const time = timeInZone(now, timezone)
+  if (time > endTime.slice(0, 'HH:MM'.length))
+    return undefined
+  const [hours, minutes] = time.split(':').map(Number)
+  return new Date(now.getTime() - ((hours! + 2) * 60 + minutes!) * 60_000)
+}
+
 function notToday({ screen, now, timezone }: ScreenAsked) {
   if (screen.stateCause === 'dateRange' && screen.schedule)
     return `Its Schedule only runs ${datesOf(screen.schedule)}, so Rotation passes over it.`
-  const weekday = new Intl.DateTimeFormat('en-GB', { weekday: 'long', timeZone: timezone }).format(now)
-  return `Its Schedule leaves out ${weekday}s, so Rotation passes over it today.`
+  const night = screen.schedule && nightTheHoursBegan(screen.schedule, now, timezone)
+  if (night) {
+    const weekday = weekdayInZone(night, timezone)
+    return `Its hours from ${weekday} night run past midnight, and its Schedule leaves out ${weekday}s, so Rotation passes over it.`
+  }
+  return `Its Schedule leaves out ${weekdayInZone(now, timezone)}s, so Rotation passes over it today.`
 }
 
 function notThisHour({ screen, now, timezone }: ScreenAsked) {
-  const serverTime = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: timezone }).format(now)
+  const serverTime = timeInZone(now, timezone)
   return `Its Schedule runs ${screen.schedule ? scheduleHours(screen.schedule) : 'at other hours'} and it is ${serverTime}, so Rotation passes over it.`
 }
 

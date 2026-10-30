@@ -61,6 +61,14 @@ describe('why a Screen is or is not showing', () => {
     expect(whyOf(screen)).toEqual(['Its Schedule leaves out Thursdays, so Rotation passes over it today.'])
   })
 
+  it('not today, by weekday, after midnight in hours that cross it: names the day the hours began', () => {
+    const screen = buildScreen({ state: 'notToday', stateCause: 'weekday', schedule: buildSchedule({ weekdays: [4], startTime: '22:00', endTime: '02:00' }) })
+    /** Thursday 1 October 2026, 01:00 in Berlin. */
+    const now = new Date('2026-09-30T23:00:00.000Z')
+
+    expect(screenWhy({ screen, screens: SCREENS, device: kitchen(), now, timezone: 'Europe/Berlin' })).toEqual(['Its hours from Wednesday night run past midnight, and its Schedule leaves out Wednesdays, so Rotation passes over it.'])
+  })
+
   it('not today, by dates', () => {
     const screen = buildScreen({ state: 'notToday', stateCause: 'dateRange', schedule: buildSchedule({ startDate: '2026-03-01', endDate: '2026-08-31' }) })
 

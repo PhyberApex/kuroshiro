@@ -1,7 +1,7 @@
 import type { Schedule } from '../schedule.entity.js'
 import { describe, expect, it } from 'vitest'
 import { makeSchedule } from '../../test/fixtures.js'
-import { isScheduleEligible } from '../schedule-eligibility.js'
+import { isScheduleEligible, scheduleExclusion } from '../schedule-eligibility.js'
 
 function schedule(overrides: Partial<Schedule>): Schedule {
   return makeSchedule(overrides)
@@ -94,6 +94,41 @@ describe('isScheduleEligible', () => {
       })
       expect(isScheduleEligible(stored, new Date('2026-12-13T12:00:00'))).toBe(true)
       expect(isScheduleEligible(stored, new Date('2026-12-26T12:00:00'))).toBe(false)
+    })
+  })
+
+  // A window that crosses midnight belongs to the day it starts on.
+  describe('a window that crosses midnight', () => {
+    it('runs on past midnight into a weekday that is not selected', () => {
+      const fridayNight = schedule({ weekdays: [5], startTime: '22:00', endTime: '02:00' })
+      expect(isScheduleEligible(fridayNight, new Date('2026-08-21T22:00:00'))).toBe(true)
+      expect(isScheduleEligible(fridayNight, new Date('2026-08-22T01:00:00'))).toBe(true)
+      expect(isScheduleEligible(fridayNight, new Date('2026-08-22T02:00:00'))).toBe(true)
+      expect(isScheduleEligible(fridayNight, new Date('2026-08-22T22:00:00'))).toBe(false)
+    })
+
+    it('does not run in the small hours of a selected weekday, which belong to the night before', () => {
+      const fridayNight = schedule({ weekdays: [5], startTime: '22:00', endTime: '02:00' })
+      expect(scheduleExclusion(fridayNight, new Date('2026-08-21T01:00:00'))).toEqual({ state: 'notToday', stateCause: 'weekday' })
+      expect(scheduleExclusion(fridayNight, new Date('2026-08-21T12:00:00'))).toEqual({ state: 'notThisHour', stateCause: null })
+    })
+
+    it('runs on past midnight after the last day of its date range', () => {
+      const december = schedule({ startDate: '2026-12-01', endDate: '2026-12-25', startTime: '22:00', endTime: '02:00' })
+      expect(isScheduleEligible(december, new Date('2026-12-25T23:00:00'))).toBe(true)
+      expect(isScheduleEligible(december, new Date('2026-12-26T01:00:00'))).toBe(true)
+      expect(isScheduleEligible(december, new Date('2026-12-26T22:00:00'))).toBe(false)
+    })
+
+    it('does not run in the small hours of the first day of its date range', () => {
+      const december = schedule({ startDate: '2026-12-01', endDate: '2026-12-25', startTime: '22:00', endTime: '02:00' })
+      expect(scheduleExclusion(december, new Date('2026-12-01T01:00:00'))).toEqual({ state: 'notToday', stateCause: 'dateRange' })
+      expect(isScheduleEligible(december, new Date('2026-12-01T22:00:00'))).toBe(true)
+    })
+
+    it('reaches back across the start of a month and a year', () => {
+      const newYearsEve = schedule({ startDate: '2026-12-31', endDate: '2026-12-31', weekdays: [4], startTime: '22:00', endTime: '02:00' })
+      expect(isScheduleEligible(newYearsEve, new Date('2027-01-01T01:00:00'))).toBe(true)
     })
   })
 
