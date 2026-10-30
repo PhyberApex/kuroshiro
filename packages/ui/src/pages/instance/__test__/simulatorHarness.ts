@@ -7,8 +7,10 @@ import { buildDeviceDetail, buildDeviceSummary } from '@/testing/fixtures/device
 import { buildScreen } from '@/testing/fixtures/screens'
 
 const SIMULATOR = '/instance/simulator'
-/** An address the server builds for a Device: absolute, on the server's own address. */
-const served = (path: string) => new URL(path.replace(/^\/+/, ''), document.baseURI).href
+/** The address Devices reach the server at (`KUROSHIRO_API_URL`), on another host than the admin's. */
+export const DEVICE_FACING_URL = 'http://192.168.1.10:3000/'
+/** An address the server builds for a Device: absolute, on the address Devices reach it at. */
+const served = (path: string) => new URL(path.replace(/^\/+/, ''), DEVICE_FACING_URL).href
 
 const kitchenScreens = [
   buildScreen({ id: 'weather', name: 'Weather', deviceId: 'kitchen' }),

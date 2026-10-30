@@ -1,4 +1,5 @@
 import type { ApiError, ApiErrorCode, ApiErrorField } from 'kuroshiro-shared'
+import { imagePathOf } from 'kuroshiro-shared'
 import { wordRefusal } from './refusalWording'
 
 /**
@@ -54,6 +55,14 @@ function underBase(path: string) {
 /** The usable address of an image path as a read model gives it: root-relative, with its version. */
 export function imageUrl(imagePath: string) {
   return underBase(imagePath).href
+}
+
+/**
+ * The usable address of an image a Device is pointed to. The server builds it on `KUROSHIRO_API_URL`,
+ * which the admin may not reach, so only its path from `/screens/` on is kept.
+ */
+export function deviceImageUrl(address: string) {
+  return imageUrl(imagePathOf(address))
 }
 
 type Query = Record<string, string | number | boolean | undefined>

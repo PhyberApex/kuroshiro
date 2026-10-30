@@ -8,7 +8,7 @@ import { api, apiErrorResponse, apiUrl } from '@/testing/api/server'
 import { fakeScreenImages } from '@/testing/images'
 import { expectNoHorizontalOverflow } from '@/testing/overflow'
 import { freezeTime } from '@/testing/time'
-import { fakeSimulator, FIRMWARE_1_8_0, mountSimulator, PLAYED_HALLWAY, PLAYED_KITCHEN } from './simulatorHarness'
+import { DEVICE_FACING_URL, fakeSimulator, FIRMWARE_1_8_0, mountSimulator, PLAYED_HALLWAY, PLAYED_KITCHEN } from './simulatorHarness'
 
 const NOW = '2026-10-03T07:35:00.000Z'
 
@@ -152,6 +152,17 @@ describe('the Device Simulator', () => {
       await screen.getByRole('button', { name: 'Copy' }).click()
       expect(JSON.parse(written.mock.calls[0]![0])).toMatchObject({ refresh_rate: 900 })
       written.mockRestore()
+    })
+
+    it('loads the image from the admin\'s own address, and leaves the answer\'s address as the Device gets it', async () => {
+      const { screen } = await openSimulator('/instance/simulator?device=kitchen')
+
+      await screen.getByRole('button', { name: 'Poll as Kitchen' }).click()
+
+      const plate = screen.getByRole('img', { name: 'The image this poll was given: Calendar, Order 2 of 3' })
+      await expect.element(plate).toHaveAttribute('src', new URL('screens/devices/kitchen/calendar.png', document.baseURI).href)
+      const code = words(screen.getByRole('main').element().querySelector('.raw pre'))
+      expect(JSON.parse(code)).toMatchObject({ image_url: `${DEVICE_FACING_URL}screens/devices/kitchen/calendar.png` })
     })
 
     it('reads the Devices again, so the bar and the chosen Device are current', async () => {

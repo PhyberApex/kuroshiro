@@ -6,6 +6,16 @@ export function isButtonWake(wakeSource: string | null | undefined): boolean {
   return (BUTTON_WAKE_SOURCES as readonly (string | null | undefined)[]).includes(wakeSource)
 }
 
+/**
+ * The root-relative path, with its version, of an image a Device is pointed to. Every such image
+ * lives under `/screens/`, whatever address the Instance is configured with, so the path starts
+ * there: what comes before it is `KUROSHIRO_API_URL`, host and any path prefix alike.
+ */
+export function imagePathOf(imageUrl: string): string {
+  const start = imageUrl.indexOf('/screens/')
+  return start === -1 ? imageUrl : imageUrl.slice(start)
+}
+
 /** What `/api/setup` answers a Device that announces itself. */
 export interface SetupAnswer {
   status: number
