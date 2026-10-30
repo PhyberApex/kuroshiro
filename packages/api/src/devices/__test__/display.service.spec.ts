@@ -752,7 +752,7 @@ describe('deviceDisplayService', () => {
 
       expect(result.special_function).toBe('sleep')
       expect(result.action).toBe('sleep')
-      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ specialFunction: 'none' }))
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1', specialFunction: 'sleep' }, { specialFunction: 'none' })
     })
 
     it('echoes none as the action when nothing is pending', async () => {
@@ -762,7 +762,7 @@ describe('deviceDisplayService', () => {
 
       expect(result.special_function).toBe('none')
       expect(result.action).toBe('none')
-      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ specialFunction: 'none' }))
+      expect(deviceRepo.update).not.toHaveBeenCalledWith(expect.anything(), { specialFunction: 'none' })
     })
 
     it('acknowledges and clears the pending special function while cycling screens', async () => {
@@ -772,7 +772,7 @@ describe('deviceDisplayService', () => {
 
       expect(result.special_function).toBe('add_wifi')
       expect(result.action).toBe('add_wifi')
-      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ specialFunction: 'none' }))
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1', specialFunction: 'add_wifi' }, { specialFunction: 'none' })
     })
 
     it('relays the upstream special function and action when proxying', async () => {
@@ -809,7 +809,7 @@ describe('deviceDisplayService', () => {
 
       expect(result.special_function).toBe('identify')
       expect(result.action).toBe('identify')
-      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ specialFunction: 'none' }))
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1', specialFunction: 'identify' }, { specialFunction: 'none' })
     })
 
     it.each([
@@ -859,7 +859,7 @@ describe('deviceDisplayService', () => {
       const result = await service.getCurrentImage(headers)
 
       expect(result.reset_firmware).toBe(true)
-      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ resetDevice: false }))
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1' }, expect.objectContaining({ resetDevice: false }))
     })
 
     it('delivers a pending reset while cycling screens', async () => {
@@ -916,8 +916,7 @@ describe('deviceDisplayService', () => {
       const result = await service.getCurrentImage(headers)
 
       expect(result.reset_firmware).toBe(true)
-      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ resetDeviceNewApikey: false }))
-      expect(deviceRepo.save.mock.calls[0][0].apikey).not.toBe('token')
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1' }, expect.objectContaining({ resetDeviceNewApikey: false, apikey: expect.not.stringMatching(/^token$/) }))
     })
 
     it('leaves the apikey unchanged when a pending reset does not ask for a new key', async () => {
@@ -925,7 +924,7 @@ describe('deviceDisplayService', () => {
 
       await service.getCurrentImage(headers)
 
-      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ apikey: 'token' }))
+      expect(deviceRepo.update).not.toHaveBeenCalledWith({ id: '1' }, expect.objectContaining({ apikey: expect.anything() }))
     })
 
     it('does not rotate the apikey from a stray rotation flag with no reset pending', async () => {
@@ -934,7 +933,8 @@ describe('deviceDisplayService', () => {
       const result = await service.getCurrentImage(headers)
 
       expect(result.reset_firmware).toBe(false)
-      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ apikey: 'token', resetDeviceNewApikey: false }))
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1' }, expect.objectContaining({ resetDeviceNewApikey: false }))
+      expect(deviceRepo.update).not.toHaveBeenCalledWith({ id: '1' }, expect.objectContaining({ apikey: expect.anything() }))
     })
 
     it('rotates the apikey on a non-proxy mirrored Device too', async () => {
@@ -942,8 +942,7 @@ describe('deviceDisplayService', () => {
 
       await service.getCurrentImage(headers)
 
-      expect(deviceRepo.save.mock.calls[0][0].apikey).not.toBe('token')
-      expect(deviceRepo.save.mock.calls[0][0].resetDeviceNewApikey).toBe(false)
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1' }, expect.objectContaining({ resetDeviceNewApikey: false, apikey: expect.not.stringMatching(/^token$/) }))
     })
   })
 
@@ -970,7 +969,7 @@ describe('deviceDisplayService', () => {
       expect(result.filename).toBe('wipe.png')
       expect(result.refresh_rate).toBe(900)
       expect(result.reset_firmware).toBe(false)
-      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ wipe: false }))
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1' }, expect.objectContaining({ wipe: false }))
     })
 
     it('leaves the Rotation where it stood', async () => {
@@ -1017,7 +1016,7 @@ describe('deviceDisplayService', () => {
 
       expect(result.reset_firmware).toBe(true)
       expect(result.image_url).toBe('http://api/screens/devices/1/screen2.png')
-      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ wipe: false }))
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1' }, expect.objectContaining({ wipe: false }))
     })
 
     it('is served once inside a Sleep Mode window, at the normal refresh rate', async () => {
@@ -1089,7 +1088,7 @@ describe('deviceDisplayService', () => {
       expect(firmwareService.verifyChecksum).toHaveBeenCalledWith(targetFirmware)
       expect(result.firmware_url).toBe('http://api/firmware/fw-1.bin')
       expect(result.update_firmware).toBe(true)
-      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ updateFirmware: false }))
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1', targetFirmware: { id: 'fw-1' } }, { updateFirmware: false })
     })
 
     it('skips serving the url and leaves the flag set when the checksum does not match', async () => {
@@ -1101,7 +1100,7 @@ describe('deviceDisplayService', () => {
 
       expect(result.firmware_url).toBe('')
       expect(result.update_firmware).toBe(false)
-      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ updateFirmware: true }))
+      expect(deviceRepo.update).not.toHaveBeenCalledWith(expect.anything(), { updateFirmware: false })
     })
 
     it('does nothing when updateFirmware is false', async () => {
@@ -1134,6 +1133,72 @@ describe('deviceDisplayService', () => {
       expect(firmwareService.verifyChecksum).not.toHaveBeenCalled()
       expect(result.firmware_url).toBeNull()
       expect(result.update_firmware).toBe(false)
+    })
+  })
+
+  describe('a poll whose answer cannot be made', () => {
+    const targetFirmware = makeFirmware({ id: 'fw-1', version: '1.5.6', checksum: 'abc123' })
+
+    function primeFailingNoScreen(device: Device, screens: Screen[] = []) {
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      screenRepo.find.mockResolvedValue(screens)
+      configService.get.mockReturnValue('http://api')
+      firmwareService.verifyChecksum.mockResolvedValue(true)
+      firmwareService.fileUrl.mockReturnValue('http://api/firmware/fw-1.bin')
+      fallbackScreens.urlFor.mockRejectedValue(new Error('Chromium crashed'))
+    }
+
+    it.each([
+      ['an OTA push', { updateFirmware: true, targetFirmware }],
+      ['a Device Reset', { resetDevice: true }],
+      ['a Special Function', { specialFunction: 'sleep' }],
+    ] as const)('leaves %s pending for the Device\'s retry', async (_name, pending) => {
+      const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS, ...pending })
+      primeFailingNoScreen(device)
+
+      await expect(service.getCurrentImage(headers)).rejects.toThrow('Chromium crashed')
+
+      expect(device).toEqual(expect.objectContaining(pending))
+      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining(pending))
+      expect(deviceRepo.update).not.toHaveBeenCalled()
+    })
+
+    it('keeps the old API key and the request for a new one', async () => {
+      const device = makeDevice({ ...baseDevice, deviceModel: OG_PLUS, resetDevice: true, resetDeviceNewApikey: true })
+      primeFailingNoScreen(device)
+
+      await expect(service.getCurrentImage(headers)).rejects.toThrow('Chromium crashed')
+
+      expect(deviceRepo.save).toHaveBeenCalledWith(expect.objectContaining({ apikey: 'token', resetDevice: true, resetDeviceNewApikey: true }))
+      expect(deviceRepo.update).not.toHaveBeenCalled()
+    })
+
+    it('keeps the Active Screen', async () => {
+      const active = makeScreen({ id: 'screen1', order: 1, isActive: true, schedule: makeSchedule({ enabled: false }) })
+      primeFailingNoScreen(makeDevice({ ...baseDevice, deviceModel: OG_PLUS }), [active])
+
+      await expect(service.getCurrentImage(headers)).rejects.toThrow('Chromium crashed')
+
+      expect(screenRepo.update).not.toHaveBeenCalled()
+    })
+
+    it('clears a Special Function and an OTA push only while the row still holds what this poll fired', async () => {
+      primeFailingNoScreen(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, specialFunction: 'sleep', updateFirmware: true, targetFirmware }))
+      fallbackScreens.urlFor.mockResolvedValue('http://api/screens/noScreen.png')
+
+      await service.getCurrentImage(headers)
+
+      // Conditioned on what this poll fired, so the row's newer values do not match and stay as they are
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1', specialFunction: 'sleep' }, { specialFunction: 'none' })
+      expect(deviceRepo.update).toHaveBeenCalledWith({ id: '1', targetFirmware: { id: 'fw-1' } }, { updateFirmware: false })
+    })
+
+    it('fails the poll rather than answer a Device Reset the row does not record as delivered', async () => {
+      primeFailingNoScreen(makeDevice({ ...baseDevice, deviceModel: OG_PLUS, resetDevice: true, resetDeviceNewApikey: true }))
+      fallbackScreens.urlFor.mockResolvedValue('http://api/screens/noScreen.png')
+      deviceRepo.update.mockRejectedValue(new Error('connection lost'))
+
+      await expect(service.getCurrentImage(headers)).rejects.toThrow('connection lost')
     })
   })
 
