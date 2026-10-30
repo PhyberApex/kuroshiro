@@ -6,6 +6,7 @@ import { Device } from '../devices/devices.entity.js'
 import { nextRotationAt } from '../devices/next-poll.js'
 import { ApiException } from '../errors/api.exception.js'
 import { isPassedOver } from '../schedule/rotation.js'
+import { gatingRenderSignalOf } from './screen-states.js'
 import { Screen } from './screens.entity.js'
 
 /**
@@ -34,7 +35,7 @@ export class PickedScreenService {
       throw new ApiException(HttpStatus.CONFLICT, 'picked-screen-mirrored', 'A mirrored Device has no Rotation to pick in.', { deviceId })
     if (screen.isActive)
       throw new ApiException(HttpStatus.CONFLICT, 'picked-screen-active', 'The Active Screen cannot be picked.', { screenId })
-    if (isPassedOver({ id: screen.id, isActive: screen.isActive, schedule: screen.schedule, renderSignal: screen.renderSignal }, nextRotationAt(device, new Date())))
+    if (isPassedOver({ id: screen.id, isActive: screen.isActive, schedule: screen.schedule, renderSignal: gatingRenderSignalOf(screen) }, nextRotationAt(device, new Date())))
       throw new ApiException(HttpStatus.CONFLICT, 'picked-screen-ineligible', 'Rotation could not show that Screen at the next poll.', { screenId })
 
     // TypeORM's QueryDeepPartialEntity can't infer through Screen's own relations

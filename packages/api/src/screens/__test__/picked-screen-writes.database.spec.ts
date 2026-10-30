@@ -6,6 +6,7 @@ import { Alert } from '../../alerts/entities/alert.entity.js'
 import { Device } from '../../devices/devices.entity.js'
 import { PluginFieldValue } from '../../plugins/entities/plugin-field-value.entity.js'
 import { PluginField } from '../../plugins/entities/plugin-field.entity.js'
+import { Plugin } from '../../plugins/entities/plugin.entity.js'
 import { PluginFieldValuesService } from '../../plugins/services/plugin-field-values.service.js'
 import { Schedule } from '../../schedule/schedule.entity.js'
 import { createHttpTestApp } from '../../test/httpApp.js'
@@ -40,6 +41,7 @@ describe('setting and clearing a Device\'s Picked Screen, against a real databas
 
   beforeEach(async () => {
     await database.getRepository(Device).createQueryBuilder().delete().execute()
+    await database.getRepository(Plugin).createQueryBuilder().delete().execute()
     device = await database.getRepository(Device).save({ name: 'Kitchen', friendlyId: 'ABC123', mac: 'AA:BB:CC:DD:EE:01', apikey: 'device-secret', refreshRate: 300 })
     otherDevice = await database.getRepository(Device).save({ name: 'Lobby', friendlyId: 'DEF456', mac: 'AA:BB:CC:DD:EE:02', apikey: 'other-secret', refreshRate: 300 })
   })
@@ -157,14 +159,25 @@ describe('setting and clearing a Device\'s Picked Screen, against a real databas
       expect(await response.json()).toMatchObject({ statusCode: 409, code: 'picked-screen-ineligible' })
     })
 
-    it('refuses a Screen carrying a remembered skip Render Signal with 409 picked-screen-ineligible', async () => {
+    it('refuses a Plugin Screen carrying a remembered skip Render Signal with 409 picked-screen-ineligible', async () => {
       await seedScreen(1, { isActive: true })
-      const target = await seedScreen(2, { renderSignal: 'skip' })
+      const plugin = await database.getRepository(Plugin).save({ name: 'Bins' })
+      const target = await seedScreen(2, { type: 'plugin', filename: null, html: null, plugin, renderSignal: 'skip' })
 
       const response = await send('PUT', device.id, { screenId: target.id })
 
       expect(response.status).toBe(409)
       expect(await response.json()).toMatchObject({ statusCode: 409, code: 'picked-screen-ineligible' })
+    })
+
+    it('picks an HTML Screen carrying a stored skip, since Rotation evaluates its Render Signal afresh at the next poll', async () => {
+      await seedScreen(1, { isActive: true })
+      const target = await seedScreen(2, { renderSignal: 'skip' })
+
+      const response = await send('PUT', device.id, { screenId: target.id })
+
+      expect(response.status).toBe(200)
+      expect(await storedPick()).toBe(target.id)
     })
   })
 
