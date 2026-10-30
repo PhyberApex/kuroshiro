@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { isDeviceAsleep, MIN_SLEEP_REFRESH_RATE, secondsUntilSleepEnd } from '../sleep-mode.js'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { isDeviceAsleep, MIN_SLEEP_REFRESH_RATE, nextSleepEnd, secondsUntilSleepEnd } from '../sleep-mode.js'
 
 function time(hh: number, mm: number, ss = 0): Date {
   return new Date(2026, 0, 1, hh, mm, ss)
@@ -40,7 +40,44 @@ describe('secondsUntilSleepEnd', () => {
     expect(secondsUntilSleepEnd(6 * 3600, time(23, 0))).toBe(7 * 3600)
   })
 
+  it('rounds a part second up so the Device never wakes before the window ends', () => {
+    expect(secondsUntilSleepEnd(9 * 3600, new Date(2026, 0, 1, 8, 0, 0, 500))).toBe(3600)
+  })
+
   it('floors at the minimum right at the boundary', () => {
     expect(secondsUntilSleepEnd(9 * 3600, time(8, 59, 30))).toBe(MIN_SLEEP_REFRESH_RATE)
+  })
+})
+
+// The Device sleeps elapsed seconds, so on a night the Instance Time Zone's clock jumps, the
+// answer is the real gap to the wake time — the same moment `nextSleepEnd` hands the UI.
+describe('secondsUntilSleepEnd across a daylight saving change', () => {
+  beforeEach(() => {
+    vi.stubEnv('TZ', 'Europe/Berlin')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('counts the hour skipped when clocks spring forward', () => {
+    expect(secondsUntilSleepEnd(7 * 3600, new Date(2026, 2, 29, 1, 0))).toBe(5 * 3600)
+    expect(secondsUntilSleepEnd(7 * 3600, new Date(2026, 2, 28, 23, 0))).toBe(7 * 3600)
+  })
+
+  it('counts the hour repeated when clocks fall back', () => {
+    expect(secondsUntilSleepEnd(7 * 3600, new Date(2026, 9, 25, 1, 0))).toBe(7 * 3600)
+    expect(secondsUntilSleepEnd(7 * 3600, new Date(2026, 9, 24, 23, 0))).toBe(9 * 3600)
+  })
+
+  it('wakes at the second occurrence of a wake time inside the repeated hour', () => {
+    const secondTwoFifteen = new Date('2026-10-25T01:15:00Z')
+    expect(secondsUntilSleepEnd(2.5 * 3600, secondTwoFifteen)).toBe(15 * 60)
+    expect(secondsUntilSleepEnd(2.5 * 3600, new Date('2026-10-25T00:15:00Z'))).toBe(15 * 60)
+  })
+
+  it('agrees with nextSleepEnd', () => {
+    const now = new Date(2026, 2, 29, 1, 0)
+    expect(now.getTime() + secondsUntilSleepEnd(7 * 3600, now) * 1000).toBe(nextSleepEnd(7 * 3600, now).getTime())
   })
 })
