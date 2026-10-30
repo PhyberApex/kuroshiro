@@ -11,6 +11,8 @@ import { Repository } from 'typeorm'
 import { fetchTrmnlList } from '../device-models/trmnl-payloads.js'
 import { isUniqueViolation } from '../errors/unique-violation.js'
 import { SyncRunService } from '../sync-runs/sync-run.service.js'
+import { UPLOAD_LIMITS } from '../uploads/upload-limits.js'
+import { downloadLimited, ResponseTooLargeError } from '../utils/downloadLimited.js'
 import { Firmware } from './entities/firmware.entity.js'
 import { FirmwareAutoUpdateService } from './firmware-auto-update.service.js'
 import { firmwareFilePath } from './firmware-paths.js'
@@ -81,6 +83,8 @@ function newestOf(versions: string[]): string {
 }
 
 const DAILY_AT_4AM = '0 4 * * *'
+
+const BINARY_DOWNLOAD_TIMEOUT_MS = 60_000
 
 @Injectable()
 export class FirmwareSyncService implements OnApplicationBootstrap {
@@ -245,10 +249,24 @@ export class FirmwareSyncService implements OnApplicationBootstrap {
       await this.firmwareRepository.update({ kind: 'official-synced', folder }, { compatibleModels })
   }
 
+  /**
+   * The binary at `url`, refused past the firmware upload ceiling or once the download takes longer than
+   * `BINARY_DOWNLOAD_TIMEOUT_MS`, so a stalled CDN can't hold the sync open.
+   */
   private async downloadBinary(url: string): Promise<buffer.Buffer> {
-    const res = await fetch(url)
-    if (!res.ok)
-      throw new Error(`Failed to download firmware binary ${url}: ${res.status} ${res.statusText}`)
-    return buffer.Buffer.from(await res.arrayBuffer())
+    let download
+    try {
+      download = await downloadLimited(url, { limitBytes: UPLOAD_LIMITS.firmwareUploadBytes, timeoutMs: BINARY_DOWNLOAD_TIMEOUT_MS })
+    }
+    catch (err) {
+      if (err instanceof ResponseTooLargeError)
+        throw new Error(`Firmware binary ${url} is larger than ${err.limitBytes} bytes`)
+      if (err instanceof Error && err.name === 'TimeoutError')
+        throw new Error(`Downloading firmware binary ${url} timed out`)
+      throw err
+    }
+    if (!download.ok)
+      throw new Error(`Failed to download firmware binary ${url}: ${download.status} ${download.statusText}`)
+    return download.buffer
   }
 }
