@@ -1,6 +1,6 @@
 import type { Device } from '../../devices/devices.entity.js'
 import type { AlertRule } from './alert-rule.js'
-import { isDeviceAsleep } from '../../devices/sleep-mode.js'
+import { isDeviceAsleep, lastSleepEnd } from '../../devices/sleep-mode.js'
 import { deviceSubjectFields } from './alert-rule.js'
 
 const MS_PER_SECOND = 1000
@@ -16,10 +16,7 @@ const MS_PER_SECOND = 1000
 function lastSleepWindowEnd(device: Device, now: Date): Date | undefined {
   if (!device.sleepModeEnabled || device.sleepEndTime == null)
     return undefined
-  const candidate = new Date(now)
-  candidate.setHours(0, 0, 0, 0)
-  candidate.setSeconds(device.sleepEndTime)
-  return candidate <= now ? candidate : new Date(candidate.getTime() - 24 * 60 * 60 * MS_PER_SECOND)
+  return lastSleepEnd(device.sleepEndTime, now)
 }
 
 /**
