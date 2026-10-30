@@ -15,6 +15,7 @@ import type { Device } from '../devices.entity.js'
 import type { TrmnlScreenResponse } from '../display.service.js'
 import type { DisplayRequestHeadersDto } from '../dto/display-request-headers.dto.js'
 import { promises as fs } from 'node:fs'
+import path from 'node:path'
 import { NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { TRMNL_FRAMEWORK_VERSION } from 'kuroshiro-shared'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -28,6 +29,7 @@ import { createPluginTemplateContextService } from '../../test/mockPluginCollabo
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
 import { asService, injectPrivate } from '../../test/mockService.js'
 import { downloadImage } from '../../utils/imageUtils.js'
+import { resolveAppPath } from '../../utils/pathHelper.js'
 import { Display } from '../display.js'
 import { DeviceDisplayService } from '../display.service.js'
 import { DisplayScreen } from '../displayScreen.js'
@@ -543,7 +545,22 @@ describe('deviceDisplayService', () => {
       mirrorApikey: 'mirror-token',
     })
 
-    const testHeaders = { ...headers, width: '800', height: '480' }
+    // Shaped like Express's raw `req.headers`: lowercase keys, plus transport headers that are not TRMNL's
+    const testHeaders = {
+      ...headers,
+      'width': '800',
+      'height': '480',
+      'refresh-rate': '900',
+      'battery-voltage': '4.1',
+      'fw-version': '1.6.0',
+      'rssi': '-60',
+      'model': 'og',
+      'user-agent': 'ESP32HTTPClient',
+      'update-source': 'timer',
+      'sensors': 'make=Sensirion;model=SCD41;kind=temperature;value=21.5;unit=celsius;created_at=1714000000',
+      'host': 'kuroshiro.local',
+      'connection': 'keep-alive',
+    } as DisplayRequestHeadersDto
 
     deviceRepo.findOneBy.mockResolvedValue(device)
     configService.get.mockReturnValue('http://api')
@@ -569,9 +586,53 @@ describe('deviceDisplayService', () => {
     expect(result.image_url).toContain('mirror.png')
     expect(result.refresh_rate).toBe(30)
     expect(result.firmware_url).toBe('http://example.com/firmware')
+    expect(mockFetch).toHaveBeenCalledWith('https://usetrmnl.com/api/display', {
+      headers: {
+        'id': 'mac',
+        'access-token': 'mirror-token',
+        'width': '800',
+        'height': '480',
+        'refresh-rate': '900',
+        'battery-voltage': '4.1',
+        'fw-version': '1.6.0',
+        'rssi': '-60',
+        'model': 'og',
+        'user-agent': 'ESP32HTTPClient',
+        'update-source': 'timer',
+        'sensors': 'make=Sensirion;model=SCD41;kind=temperature;value=21.5;unit=celsius;created_at=1714000000',
+      },
+    })
     expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', expect.any(String), expect.any(Object))
     expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('mirror.png'), { model: OG_PLUS, palette: GRAY_4 }, expect.any(Object))
     expect(fs.unlink).toHaveBeenCalled()
+  })
+
+  it('writes the downloaded mirror image inside the Device\'s screens folder whatever filename TRMNL answers', async () => {
+    const device = makeDevice({ ...baseDevice, id: '1', mirrorEnabled: true, mirrorMac: 'different-mac', mirrorApikey: 'mirror-token' })
+    deviceRepo.findOneBy.mockResolvedValue(device)
+    configService.get.mockReturnValue('http://api')
+    mockFetch.mockResolvedValueOnce(jsonResponse({ filename: '../../../evil.png', image_url: 'http://example.com/image.jpg' }))
+
+    const { downloadImage } = await import('../../utils/imageUtils.js')
+
+    await service.getCurrentImage(headers)
+
+    expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', path.join(resolveAppPath('public', 'screens', 'devices', '1'), 'mirror-source'), expect.any(Object))
+  })
+
+  it('serves the error Fallback Screen in its mirror wording when TRMNL answers without an image', async () => {
+    const device = makeDevice({ ...baseDevice, mirrorEnabled: true, mirrorMac: 'mac', mirrorApikey: 'mirror-token' })
+    deviceRepo.findOneBy.mockResolvedValue(device)
+    configService.get.mockReturnValue('http://api')
+    mockFetch.mockResolvedValueOnce(jsonResponse({ status: 500, error: 'Device not found' }))
+
+    const { downloadImage } = await import('../../utils/imageUtils.js')
+
+    const result = await service.getCurrentImage(headers)
+
+    expect(downloadImage).not.toHaveBeenCalled()
+    expect(result.image_url).toBe('http://api/screens/error.png')
+    expect(fallbackScreens.urlFor).toHaveBeenCalledWith({ kind: 'error', cause: 'mirror' }, device, { model: OG_PLUS, palette: GRAY_4 })
   })
 
   it('serves the error Fallback Screen in its mirror wording when the mirror fetch fails', async () => {
@@ -1100,7 +1161,7 @@ describe('deviceDisplayService', () => {
 
       const result = await service.getCurrentImageWithoutProgressing(headers)
       expect(mockFetch).toHaveBeenCalledWith('https://usetrmnl.com/api/current_screen', {
-        headers: { 'access-token': 'mirror-token', 'ID': 'different-mac' },
+        headers: { 'id': 'different-mac', 'access-token': 'mirror-token' },
       })
       expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', expect.any(String), expect.any(Object))
       expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('mirror.png'), { model: OG_PLUS, palette: GRAY_4 }, expect.any(Object))
