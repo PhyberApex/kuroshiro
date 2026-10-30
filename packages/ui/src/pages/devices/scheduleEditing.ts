@@ -30,7 +30,7 @@ export function changedOfPair<Key extends string>(saved: NoInfer<Record<Key, str
 }
 
 /** The calendar day it is in a timezone, as `YYYY-MM-DD`. A Schedule's dates are the server's, so "today" is too. */
-export function dateInZone(now: Date, timezone: string) {
+export function dateInZone(now: Date, timezone: string | undefined) {
   return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: timezone }).format(now)
 }
 

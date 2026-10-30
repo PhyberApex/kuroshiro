@@ -12,16 +12,19 @@ export type ScheduleExclusion
  * the weekday, then the date range, then the hours.
  *
  * All constraints are evaluated against the server process's local timezone —
- * Devices have no timezone of their own (ADR-0009).
+ * Devices have no timezone of their own (ADR-0009). A window that crosses
+ * midnight belongs to the day it starts on, so its hours after midnight are
+ * checked against the weekday and date of the day before.
  */
 export function scheduleExclusion(schedule: Schedule | null | undefined, now: Date): ScheduleExclusion | null {
   if (!schedule)
     return null
   if (!schedule.enabled)
     return { state: 'scheduleOff', stateCause: null }
-  if (!matchesWeekday(schedule.weekdays, now))
+  const day = dayTheWindowStarted(schedule.startTime, schedule.endTime, now)
+  if (!matchesWeekday(schedule.weekdays, day))
     return { state: 'notToday', stateCause: 'weekday' }
-  if (!matchesDateRange(schedule.startDate, schedule.endDate, now))
+  if (!matchesDateRange(schedule.startDate, schedule.endDate, day))
     return { state: 'notToday', stateCause: 'dateRange' }
   if (!matchesTimeWindow(schedule.startTime, schedule.endTime, now))
     return { state: 'notThisHour', stateCause: null }
@@ -32,10 +35,19 @@ export function isScheduleEligible(schedule: Schedule | null | undefined, now: D
   return scheduleExclusion(schedule, now) === null
 }
 
-function matchesWeekday(weekdays: number[] | null | undefined, now: Date): boolean {
+/** `now`, or the day before it while `now` is in the part of a midnight-crossing window after midnight. */
+function dayTheWindowStarted(startTime: string | null | undefined, endTime: string | null | undefined, now: Date): Date {
+  if (!startTime || !endTime)
+    return now
+  if (!crossesMidnight(startTime, endTime) || clockMinutes(now) > minutesOfDay(endTime))
+    return now
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
+}
+
+function matchesWeekday(weekdays: number[] | null | undefined, day: Date): boolean {
   if (!weekdays?.length)
     return true
-  return weekdays.includes(now.getDay())
+  return weekdays.includes(day.getDay())
 }
 
 function matchesTimeWindow(startTime: string | null | undefined, endTime: string | null | undefined, now: Date): boolean {
@@ -43,23 +55,31 @@ function matchesTimeWindow(startTime: string | null | undefined, endTime: string
     return true
   const start = minutesOfDay(startTime)
   const end = minutesOfDay(endTime)
-  const current = now.getHours() * 60 + now.getMinutes()
-  // A start later than the end means the window spans midnight (e.g. 22:00–02:00).
-  return start > end
+  const current = clockMinutes(now)
+  return crossesMidnight(startTime, endTime)
     ? current >= start || current <= end
     : current >= start && current <= end
 }
 
-function matchesDateRange(startDate: string | Date | null | undefined, endDate: string | Date | null | undefined, now: Date): boolean {
+function matchesDateRange(startDate: string | Date | null | undefined, endDate: string | Date | null | undefined, day: Date): boolean {
   if (!startDate || !endDate)
     return true
-  const today = localDateString(now)
-  return today >= localDateString(startDate) && today <= localDateString(endDate)
+  const date = localDateString(day)
+  return date >= localDateString(startDate) && date <= localDateString(endDate)
 }
 
 function minutesOfDay(time: string): number {
   const [hours, minutes] = time.split(':')
   return Number(hours) * 60 + Number(minutes)
+}
+
+/** A start later than the end means the window spans midnight (e.g. 22:00–02:00). */
+function crossesMidnight(startTime: string, endTime: string): boolean {
+  return minutesOfDay(startTime) > minutesOfDay(endTime)
+}
+
+function clockMinutes(now: Date): number {
+  return now.getHours() * 60 + now.getMinutes()
 }
 
 function localDateString(value: string | Date): string {

@@ -61,6 +61,30 @@ describe('why a Screen is or is not showing', () => {
     expect(whyOf(screen)).toEqual(['Its Schedule leaves out Thursdays, so Rotation passes over it today.'])
   })
 
+  describe('not today, in hours that cross midnight', () => {
+    // Thursday 1 October 2026, 01:00 in Berlin.
+    const SMALL_HOURS = new Date('2026-09-30T23:00:00.000Z')
+    const whyAt = (screen: ScreenRead, now: Date) => screenWhy({ screen, screens: SCREENS, device: kitchen(), now, timezone: 'Europe/Berlin' })
+
+    it.each(['02:00', '02:00:00'])('after midnight, by weekday: names the day the hours began, ending at %s', (endTime) => {
+      const screen = buildScreen({ state: 'notToday', stateCause: 'weekday', schedule: buildSchedule({ weekdays: [4], startTime: '22:00', endTime }) })
+
+      expect(whyAt(screen, SMALL_HOURS)).toEqual(['Its hours from Wednesday night run past midnight, and its Schedule leaves out Wednesdays, so Rotation passes over it.'])
+    })
+
+    it('before midnight, by weekday: names today', () => {
+      const screen = buildScreen({ state: 'notToday', stateCause: 'weekday', schedule: buildSchedule({ weekdays: [5], startTime: '22:00', endTime: '02:00' }) })
+
+      expect(whyAt(screen, NOW)).toEqual(['Its Schedule leaves out Thursdays, so Rotation passes over it today.'])
+    })
+
+    it('after midnight, by dates: names the night the hours began', () => {
+      const screen = buildScreen({ state: 'notToday', stateCause: 'dateRange', schedule: buildSchedule({ startDate: '2026-10-01', endDate: '2026-10-25', startTime: '22:00', endTime: '02:00' }) })
+
+      expect(whyAt(screen, SMALL_HOURS)).toEqual(['Its hours from the night of 30 September run past midnight, and its Schedule only runs from 1 October to 25 October, so Rotation passes over it.'])
+    })
+  })
+
   it('not today, by dates', () => {
     const screen = buildScreen({ state: 'notToday', stateCause: 'dateRange', schedule: buildSchedule({ startDate: '2026-03-01', endDate: '2026-08-31' }) })
 
