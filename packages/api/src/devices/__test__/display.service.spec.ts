@@ -178,19 +178,19 @@ describe('deviceDisplayService', () => {
     })
 
     function loggedLines() {
-      const levels = ['log', 'debug', 'verbose', 'warn', 'error'] as const
+      const levels = ['log', 'debug', 'verbose', 'warn', 'error', 'fatal'] as const
       const spies = levels.map(level => vi.spyOn(Logger.prototype, level).mockImplementation(() => {}))
       return () => spies.flatMap(spy => spy.mock.calls.map(call => call.map(String).join(' ')))
     }
 
-    it('never writes the Access-Token of a /display poll to the log', async () => {
+    it('never writes the API key a /display poll sends to the log', async () => {
       const lines = loggedLines()
       await service.getCurrentImage({ ...headers, 'access-token': secret })
       expect(lines().some(line => line.includes('Headers:'))).toBe(true)
       expect(lines().filter(line => line.includes(secret))).toEqual([])
     })
 
-    it('never writes the Access-Token of a /current_screen poll to the log', async () => {
+    it('never writes the API key a /current_screen poll sends to the log', async () => {
       const lines = loggedLines()
       await service.getCurrentImageWithoutProgressing({ ...headers, 'access-token': secret })
       expect(lines().some(line => line.includes('Headers:'))).toBe(true)

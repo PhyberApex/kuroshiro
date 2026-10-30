@@ -2,7 +2,8 @@ import type { DeviceModelsService } from '../../device-models/device-models.serv
 import type { FallbackScreensService } from '../../device-models/fallback-screens.service.js'
 import type { Device } from '../devices.entity.js'
 import type { SetupRequestHeadersDto } from '../dto/setup-request-headers.dto.js'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { Logger } from '@nestjs/common'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeDevice } from '../../test/fixtures.js'
 import { createMockDeviceModelsService, createMockFallbackScreensService, OG_PLUS, primeMockDeviceModelsService, primeMockFallbackScreensService, V2 } from '../../test/mockDeviceModelsService.js'
 import { asRepository, createMockRepository } from '../../test/mockRepository.js'
@@ -37,6 +38,24 @@ describe('deviceSetupService', () => {
   })
 
   const headers: SetupRequestHeadersDto = { id: 'mac' }
+
+  describe('what a setup logs', () => {
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it('never writes the API key it hands back to the log', async () => {
+      const levels = ['log', 'debug', 'verbose', 'warn', 'error', 'fatal'] as const
+      const spies = levels.map(level => vi.spyOn(Logger.prototype, level).mockImplementation(() => {}))
+      deviceRepo.findOneBy.mockResolvedValue(makeDevice({ apikey: 'secret-device-apikey', friendlyId: 'existing-id' }))
+
+      await service.setupDevice(headers)
+
+      const lines = spies.flatMap(spy => spy.mock.calls.map(call => call.map(String).join(' ')))
+      expect(lines.some(line => line.includes('Returning setup:'))).toBe(true)
+      expect(lines.filter(line => line.includes('secret-device-apikey'))).toEqual([])
+    })
+  })
 
   it('returns existing credentials if device exists', async () => {
     const device = makeDevice({ apikey: 'existing-key', friendlyId: 'existing-id' })

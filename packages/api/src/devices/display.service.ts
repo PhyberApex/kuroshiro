@@ -138,6 +138,11 @@ function forwardedTrmnlHeaders(headers: DisplayRequestHeadersDto | undefined): R
   return forwarded
 }
 
+/** The headers as they may be logged: the Device's API key never reaches the log. */
+function withRedactedApiKey<T extends { 'access-token'?: string }>(headers: T): T {
+  return { ...headers, 'access-token': '[redacted]' }
+}
+
 @Injectable()
 export class DeviceDisplayService {
   private readonly logger = new Logger(DeviceDisplayService.name)
@@ -159,7 +164,7 @@ export class DeviceDisplayService {
 
   async getCurrentImage(headers: DisplayRequestHeadersDto): Promise<Display> {
     this.logger.log(`Display request for MAC: ${headers.id}`)
-    this.logger.debug(`Headers: ${JSON.stringify({ ...headers, 'access-token': '[redacted]' })}`)
+    this.logger.debug(`Headers: ${JSON.stringify(withRedactedApiKey(headers))}`)
     const device = await authenticateDevice(this.deviceRepository, headers, this.logger)
     const { report, acknowledgement } = await this.applyHeaderReport(device, headers)
 
@@ -614,7 +619,7 @@ export class DeviceDisplayService {
 
   async getCurrentImageWithoutProgressing(headers: DeviceCredentials): Promise<DisplayScreen> {
     this.logger.log(`Current Screen request for MAC: ${headers.id}`)
-    this.logger.debug(`Headers: ${JSON.stringify({ ...headers, 'access-token': '[redacted]' })}`)
+    this.logger.debug(`Headers: ${JSON.stringify(withRedactedApiKey(headers))}`)
     const device = await authenticateDevice(this.deviceRepository, headers, this.logger)
     const now = new Date()
     if (device.lastServedKind === 'wipe') {
@@ -702,7 +707,7 @@ export class DeviceDisplayService {
       throw new Error(`Device ${device.id} has mirroring enabled but is missing a mirror MAC or API key`)
     }
     const mirrorHeaders = { 'id': device.mirrorMac, 'access-token': device.mirrorApikey, ...forwardedTrmnlHeaders(proxyHeaders) }
-    this.logger.debug(`Sending headers: ${JSON.stringify({ ...mirrorHeaders, 'access-token': '[redacted]' })}`)
+    this.logger.debug(`Sending headers: ${JSON.stringify(withRedactedApiKey(mirrorHeaders))}`)
     const res = await fetch(`https://usetrmnl.com/api/${proxyHeaders ? 'display' : 'current_screen'}`, {
       headers: mirrorHeaders,
     })
