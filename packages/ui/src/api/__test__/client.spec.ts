@@ -171,7 +171,10 @@ describe('the API client', () => {
     expect(imageUrl('/screens/devices/42/7.png?v=1759476660000')).toBe(new URL('screens/devices/42/7.png?v=1759476660000', document.baseURI).href)
   })
 
-  it('moves an image address a Device is sent onto the document base, keeping its path and version', () => {
-    expect(deviceImageUrl('http://192.168.1.10:3000/screens/devices/42/7.png?v=1759476660000')).toBe(new URL('screens/devices/42/7.png?v=1759476660000', document.baseURI).href)
+  it.each([
+    'http://192.168.1.10:3000/screens/devices/42/7.png?v=1759476660000',
+    'https://home.example/kuroshiro/screens/devices/42/7.png?v=1759476660000',
+  ])('moves the image address %s a Device is pointed to under the document base, keeping its path and version', (address) => {
+    expect(deviceImageUrl(address)).toBe(new URL('screens/devices/42/7.png?v=1759476660000', document.baseURI).href)
   })
 })

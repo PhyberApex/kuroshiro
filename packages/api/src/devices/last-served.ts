@@ -1,5 +1,6 @@
 import type { FallbackKind, FallbackReason } from 'kuroshiro-shared'
 import type { Device } from './devices.entity.js'
+import { imagePathOf } from 'kuroshiro-shared'
 
 export type LastServedKind = 'screen' | 'fallback' | 'mirror' | 'wipe'
 export type LastServedFallback = Exclude<FallbackKind, 'welcome'>
@@ -33,15 +34,6 @@ export function servedNoScreen(screenCount: number): Served {
 
 export type LastServedRecord = Required<Pick<Device, 'lastServedAt' | 'lastServedKind' | 'lastServedScreenId' | 'lastServedFallback' | 'lastServedReason' | 'lastServedRefreshRate' | 'lastServedImagePath'>>
 
-/**
- * Every image a Device is pointed to lives under `/screens/`, whatever address
- * the Instance is configured with, so the root-relative path starts there.
- */
-function toRootRelativePath(imageUrl: string): string {
-  const start = imageUrl.indexOf('/screens/')
-  return start === -1 ? imageUrl : imageUrl.slice(start)
-}
-
 export function toLastServedRecord(served: Served, answer: { image_url: string, refresh_rate: number }, servedAt: Date): LastServedRecord {
   return {
     lastServedAt: servedAt,
@@ -50,6 +42,6 @@ export function toLastServedRecord(served: Served, answer: { image_url: string, 
     lastServedFallback: served.fallback,
     lastServedReason: served.reason,
     lastServedRefreshRate: answer.refresh_rate,
-    lastServedImagePath: toRootRelativePath(answer.image_url),
+    lastServedImagePath: imagePathOf(answer.image_url),
   }
 }
