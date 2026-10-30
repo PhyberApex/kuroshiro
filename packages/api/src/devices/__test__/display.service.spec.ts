@@ -30,6 +30,7 @@ import { asRepository, createMockRepository } from '../../test/mockRepository.js
 import { asService, injectPrivate } from '../../test/mockService.js'
 import { downloadImage } from '../../utils/imageUtils.js'
 import { resolveAppPath } from '../../utils/pathHelper.js'
+import { fetchPublic } from '../../utils/ssrfGuard.js'
 import { Display } from '../display.js'
 import { DeviceDisplayService } from '../display.service.js'
 import { DisplayScreen } from '../displayScreen.js'
@@ -533,6 +534,27 @@ describe('deviceDisplayService', () => {
     expect(fs.unlink).toHaveBeenCalledWith(expect.stringContaining('tmp-source'))
   })
 
+  describe('the request an External link Screen\'s image is fetched with', () => {
+    function pollExternalLink(demoMode: boolean) {
+      const device = makeDevice({ ...baseDevice, apikey: 'token', id: '1', mirrorEnabled: false })
+      const activeScreen = makeScreen({ id: 'screen1', order: 1, device, isActive: true, externalLink: 'http://169.254.169.254/latest/meta-data/', fetchManual: false, filename: 'test.png' })
+      deviceRepo.findOneBy.mockResolvedValue(device)
+      screenRepo.find.mockResolvedValue([activeScreen, makeScreen({ ...activeScreen, id: 'screen2', order: 2, isActive: false })])
+      configService.get.mockImplementation((key: string) => key === 'demo_mode' ? demoMode : 'http://api')
+      return service.getCurrentImage(headers)
+    }
+
+    it('is the guarded fetch under demo_mode, so a private address or a redirect to one is refused', async () => {
+      await pollExternalLink(true)
+      expect(downloadImage).toHaveBeenCalledWith('http://169.254.169.254/latest/meta-data/', expect.any(String), expect.any(Object), fetchPublic)
+    })
+
+    it('is plain fetch outside demo_mode', async () => {
+      await pollExternalLink(false)
+      expect(downloadImage).toHaveBeenCalledWith('http://169.254.169.254/latest/meta-data/', expect.any(String), expect.any(Object), fetch)
+    })
+  })
+
   it('handles mirroring with proxy when MACs are identical', async () => {
     const device = makeDevice({
       ...baseDevice,
@@ -602,7 +624,7 @@ describe('deviceDisplayService', () => {
         'sensors': 'make=Sensirion;model=SCD41;kind=temperature;value=21.5;unit=celsius;created_at=1714000000',
       },
     })
-    expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', expect.any(String), expect.any(Object))
+    expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', expect.any(String), expect.any(Object), expect.any(Function))
     expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('mirror.png'), { model: OG_PLUS, palette: GRAY_4 }, expect.any(Object))
     expect(fs.unlink).toHaveBeenCalled()
   })
@@ -617,7 +639,18 @@ describe('deviceDisplayService', () => {
 
     await service.getCurrentImage(headers)
 
-    expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', path.join(resolveAppPath('public', 'screens', 'devices', '1'), 'mirror-source'), expect.any(Object))
+    expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', path.join(resolveAppPath('public', 'screens', 'devices', '1'), 'mirror-source'), expect.any(Object), expect.any(Function))
+  })
+
+  it('fetches the mirror image with the guarded fetch under demo_mode, whatever address TRMNL answers', async () => {
+    const device = makeDevice({ ...baseDevice, id: '1', mirrorEnabled: true, mirrorMac: 'different-mac', mirrorApikey: 'mirror-token' })
+    deviceRepo.findOneBy.mockResolvedValue(device)
+    configService.get.mockImplementation((key: string) => key === 'demo_mode' ? true : 'http://api')
+    mockFetch.mockResolvedValueOnce(jsonResponse({ filename: 'mirror.png', image_url: 'http://127.0.0.1:3000/admin' }))
+
+    await service.getCurrentImage(headers)
+
+    expect(downloadImage).toHaveBeenCalledWith('http://127.0.0.1:3000/admin', expect.any(String), expect.any(Object), fetchPublic)
   })
 
   it('serves the error Fallback Screen in its mirror wording when TRMNL answers without an image', async () => {
@@ -680,7 +713,7 @@ describe('deviceDisplayService', () => {
     expect(result.filename).toBe('mirror.png')
     expect(result.image_url).toContain('mirror.png')
     expect(result.refresh_rate).toBe(device.refreshRate)
-    expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', expect.any(String), expect.any(Object))
+    expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', expect.any(String), expect.any(Object), expect.any(Function))
     expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('mirror.png'), { model: OG_PLUS, palette: GRAY_4 }, expect.any(Object))
     expect(fs.unlink).toHaveBeenCalled()
   })
@@ -1163,7 +1196,7 @@ describe('deviceDisplayService', () => {
       expect(mockFetch).toHaveBeenCalledWith('https://usetrmnl.com/api/current_screen', {
         headers: { 'id': 'different-mac', 'access-token': 'mirror-token' },
       })
-      expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', expect.any(String), expect.any(Object))
+      expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', expect.any(String), expect.any(Object), expect.any(Function))
       expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('mirror.png'), { model: OG_PLUS, palette: GRAY_4 }, expect.any(Object))
       expect(result).toBeInstanceOf(DisplayScreen)
       expect(result.filename).toContain('mirror')
@@ -1226,7 +1259,7 @@ describe('deviceDisplayService', () => {
       const { downloadImage, convertToPng } = await import('../../utils/imageUtils.js')
 
       const result = await service.getCurrentImageWithoutProgressing(headers)
-      expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', expect.any(String), expect.any(Object))
+      expect(downloadImage).toHaveBeenCalledWith('http://example.com/image.jpg', expect.any(String), expect.any(Object), expect.any(Function))
       expect(convertToPng).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('screen1.png'), { model: OG_PLUS, palette: GRAY_4 }, expect.any(Object), { dither: true })
       expect(result).toBeInstanceOf(DisplayScreen)
       expect(result.image_url).toBe('http://api/screens/devices/1/screen1.png')

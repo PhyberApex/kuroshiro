@@ -31,6 +31,7 @@ import { getErrorMessage } from '../utils/getErrorMessage.js'
 import { convertToPng, downloadImage } from '../utils/imageUtils.js'
 import { parseHeaderInt } from '../utils/parseHeaderInt.js'
 import { resolveAppPath } from '../utils/pathHelper.js'
+import { requesterFor } from '../utils/ssrfGuard.js'
 import { sleepImagePath, sleepImageUrl } from './device-sleep-image.service.js'
 import { isProxiedDevice } from './device-update-rules.js'
 import { Device } from './devices.entity.js'
@@ -678,7 +679,7 @@ export class DeviceDisplayService {
     const pngFilename = 'mirror.png'
     const outputPath = path.join(destDir, pngFilename)
 
-    await downloadImage(response.image_url, inputPath, this.logger)
+    await downloadImage(response.image_url, inputPath, this.logger, this.imageRequester())
     await convertToPng(inputPath, outputPath, await this.deviceModels.renderTargetFor(device), this.logger)
     await fs.promises.unlink(inputPath)
     this.logger.log(`Deleted original image: ${inputPath}`)
@@ -786,7 +787,7 @@ export class DeviceDisplayService {
   private async renderExternalLinkScreen(screen: Screen, device: Device): Promise<string | typeof RENDER_FAILED> {
     const inputPath = path.join(resolveAppPath('public', 'screens', 'devices', device.id), 'tmp-source')
     try {
-      await downloadImage(screen.externalLink!, inputPath, this.logger)
+      await downloadImage(screen.externalLink!, inputPath, this.logger, this.imageRequester())
       await convertToPng(inputPath, this.screenImagePath(device, screen), await this.deviceModels.renderTargetFor(device), this.logger, { dither: screen.dither })
       this.logger.log('Updating generation date on screen')
       screen.generatedAt = new Date()
@@ -827,6 +828,11 @@ export class DeviceDisplayService {
     const renderedHtml = await this.pluginRenderer.render(fullTemplate.liquidMarkup, await withTrmnlDevice(context, device, this.deviceModels))
     await this.screenRender.cachePluginOutput(screen, renderedHtml)
     return renderedHtml
+  }
+
+  /** How an image is fetched from an address a user or TRMNL gave: kept off internal hosts, redirects included, in demo mode. */
+  private imageRequester() {
+    return requesterFor(this.configService.get<boolean>('demo_mode'))
   }
 
   private screenImagePath(device: Device, screen: Screen): string {
