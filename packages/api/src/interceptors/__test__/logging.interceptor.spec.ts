@@ -44,6 +44,18 @@ describe('loggingInterceptor', () => {
     expect(debug).toHaveBeenCalledWith(expect.stringContaining('GET /x 200'))
   })
 
+  it('never logs the response body, which can carry Device and Plugin credentials', async () => {
+    const levels = ['log', 'debug', 'verbose', 'warn', 'error', 'fatal'] as const
+    const spies = levels.map(level => vi.spyOn(Logger.prototype, level).mockImplementation(() => {}))
+    const secretNext: CallHandler = { handle: () => of({ apikey: 'secret-device-key' }) }
+
+    await lastValueFrom(new LoggingInterceptor().intercept(contextFor(OrdinaryController, OrdinaryController.prototype.list), secretNext))
+
+    const logged = spies.flatMap(spy => spy.mock.calls.flat()).map(String).join('\n')
+    expect(logged).toContain('GET /x 200')
+    expect(logged).not.toContain('secret-device-key')
+  })
+
   it('does not log a request to a controller marked @SkipRequestLog()', async () => {
     const debug = vi.spyOn(Logger.prototype, 'debug').mockImplementation(() => {})
 
