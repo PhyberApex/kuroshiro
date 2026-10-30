@@ -204,6 +204,29 @@ describe('the Device Simulator', () => {
       expect(fake.polls).toHaveLength(1)
     })
 
+    it('says the poll did not reach the server when the poll itself is not answered', async () => {
+      const { screen } = await openSimulator('/instance/simulator?device=kitchen')
+      api.use(http.get(apiUrl('display'), () => HttpResponse.error()))
+
+      await screen.getByRole('button', { name: 'Poll as Kitchen' }).click()
+
+      await expect.element(screen.getByText('The poll did not reach the server.')).toBeVisible()
+      await expect.element(screen.getByText('Kuroshiro\'s server is not answering.')).toBeVisible()
+      await expect.element(screen.getByText('Kitchen could not be read before the poll.')).not.toBeInTheDocument()
+    })
+
+    it('says the Device could not be read, not that the poll did not reach the server, when it is gone before the poll', async () => {
+      const { fake, screen } = await openSimulator('/instance/simulator?device=kitchen')
+      await expect.element(screen.getByRole('button', { name: 'Poll as Kitchen' })).toBeEnabled()
+      api.use(http.get(apiUrl('devices/:id'), () => apiErrorResponse({ statusCode: 404, code: 'device-not-found' })))
+
+      await screen.getByRole('button', { name: 'Poll as Kitchen' }).click()
+
+      await expect.element(screen.getByText('Kitchen could not be read before the poll.')).toBeVisible()
+      await expect.element(screen.getByText('The poll did not reach the server.')).not.toBeInTheDocument()
+      expect(fake.polls).toHaveLength(0)
+    })
+
     it('sends what was changed in "What it reports"', async () => {
       const { fake, screen } = await openSimulator('/instance/simulator?device=kitchen')
       await openReports(screen)
@@ -282,6 +305,18 @@ describe('the Device Simulator', () => {
       await expect.element(screen.getByText('Setup answered with Kitchen\'s API key and friendly id. Nothing changed.')).toBeVisible()
       expect(fake.setups).toEqual([{ id: 'A4:C1:38:5F:0B:9D' }])
       expect(fake.devices).toHaveLength(3)
+    })
+
+    it('says the Device could not be read, not that setup did not reach the server, when it is gone before setup', async () => {
+      const { fake, screen } = await openSimulator('/instance/simulator?device=kitchen')
+      await expect.element(screen.getByRole('button', { name: 'Call setup' })).toBeEnabled()
+      api.use(http.get(apiUrl('devices/:id'), () => apiErrorResponse({ statusCode: 404, code: 'device-not-found' })))
+
+      await screen.getByRole('button', { name: 'Call setup' }).click()
+
+      await expect.element(screen.getByText('Kitchen could not be read before setup.')).toBeVisible()
+      await expect.element(screen.getByText('Setup did not reach the server.')).not.toBeInTheDocument()
+      expect(fake.setups).toHaveLength(0)
     })
 
     it('registers a Device with a MAC address nobody registered, which the bar gains, and then polls as it', async () => {
