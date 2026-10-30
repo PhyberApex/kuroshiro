@@ -210,11 +210,12 @@ describe('the Alerts page', () => {
     expect(main(screen).element().querySelector('.alert-row')).toBe(row)
 
     answer = [OFFLINE_FIRING, BATTERY_FIRING]
-    window.dispatchEvent(new Event('focus'))
-    // The second focus triggers another real fetch-then-render round trip; on a loaded CI runner under
-    // coverage, that has taken past the default 5 s poll before both rows land.
-    await expect.poll(() => rowsOf(screen, FIRING).map(({ kind }) => kind), { timeout: 15_000 })
-      .toEqual(['Alert: offline', 'Alert: battery low'])
+    // A focus is passed over while a read is still under way, and the first focus's read settles a moment after
+    // its answer arrives, so the focus is given again until the new answer shows.
+    await expect.poll(() => {
+      window.dispatchEvent(new Event('focus'))
+      return rowsOf(screen, FIRING).map(({ kind }) => kind)
+    }).toEqual(['Alert: offline', 'Alert: battery low'])
     await expect.element(screen.getByRole('banner').getByRole('link', { name: '2 Alerts firing' })).toHaveAttribute('aria-current', 'page')
   })
 
