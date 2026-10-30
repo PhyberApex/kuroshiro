@@ -1,8 +1,10 @@
 import type { LookupAddress } from 'node:dns'
+import type { AddressInfo } from 'node:net'
 import { lookup } from 'node:dns/promises'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { stubFetch } from '../../test/fetch.js'
-import { assertPublicDestination, assertPublicUrl, fetchPublic } from '../ssrfGuard.js'
+import { createServer } from 'node:http'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { realFetch, stubFetch } from '../../test/fetch.js'
+import { assertPublicUrl, fetchPublic, resolvePublic } from '../ssrfGuard.js'
 
 vi.mock('node:dns/promises', () => ({ lookup: vi.fn() }))
 
@@ -129,44 +131,37 @@ describe('assertPublicUrl', () => {
   })
 })
 
-describe('assertPublicDestination', () => {
+describe('resolvePublic', () => {
   beforeEach(() => {
     mockLookup.mockReset()
   })
 
-  it('allows a host name that resolves to public addresses only', async () => {
+  it('answers the addresses of a host name that resolves to public addresses only', async () => {
     resolvesTo('93.184.215.14', '2606:2800:21f:cb07:6820:80da:af6b:8b2c')
 
-    await expect(assertPublicDestination('https://api.example.com/data')).resolves.toBeUndefined()
+    expect(await resolvePublic('api.example.com')).toEqual([
+      { address: '93.184.215.14', family: 4 },
+      { address: '2606:2800:21f:cb07:6820:80da:af6b:8b2c', family: 6 },
+    ])
     expect(mockLookup).toHaveBeenCalledWith('api.example.com', { all: true })
   })
 
   it('rejects a public host name that resolves to loopback', async () => {
     resolvesTo('127.0.0.1')
 
-    await expect(assertPublicDestination('http://127.0.0.1.nip.io/')).rejects.toThrow(/private IP ranges/)
+    await expect(resolvePublic('127.0.0.1.nip.io')).rejects.toThrow(/private IP ranges/)
   })
 
   it('rejects a host name when any one of its addresses is private', async () => {
     resolvesTo('93.184.215.14', '10.0.0.5')
 
-    await expect(assertPublicDestination('https://split.example/')).rejects.toThrow(/private IP ranges/)
+    await expect(resolvePublic('split.example')).rejects.toThrow(/private IP ranges/)
   })
 
   it('rejects a host name that resolves to an IPv4-mapped private address', async () => {
     resolvesTo('::ffff:127.0.0.1')
 
-    await expect(assertPublicDestination('https://mapped.example/')).rejects.toThrow(/private IP ranges/)
-  })
-
-  it('does not look up an address written as an IP', async () => {
-    await expect(assertPublicDestination('http://8.8.8.8/')).resolves.toBeUndefined()
-    expect(mockLookup).not.toHaveBeenCalled()
-  })
-
-  it('rejects an internal host name without looking it up', async () => {
-    await expect(assertPublicDestination('http://localhost./data')).rejects.toThrow(/internal hosts/)
-    expect(mockLookup).not.toHaveBeenCalled()
+    await expect(resolvePublic('mapped.example')).rejects.toThrow(/private IP ranges/)
   })
 })
 
@@ -185,16 +180,13 @@ describe('fetchPublic', () => {
     expect(mockFetch).toHaveBeenCalledWith('https://api.example.com/data', expect.objectContaining({ method: 'GET', redirect: 'manual' }))
   })
 
-  it('refuses a redirect to a private address before requesting it', async () => {
-    mockFetch.mockResolvedValueOnce(redirectTo('http://169.254.169.254/latest/meta-data/'))
-
-    await expect(fetchPublic('https://attacker.example/r')).rejects.toThrow(/private IP ranges/)
-    expect(mockFetch).toHaveBeenCalledTimes(1)
+  it('refuses an internal host name without looking it up', async () => {
+    await expect(fetchPublic('http://localhost./data')).rejects.toThrow(/internal hosts/)
+    expect(mockFetch).not.toHaveBeenCalled()
   })
 
-  it('refuses a redirect to a host name that resolves to a private address', async () => {
-    mockFetch.mockResolvedValueOnce(redirectTo('https://inside.example/'))
-    mockLookup.mockImplementation(async host => [{ address: host === 'inside.example' ? '10.1.2.3' : '93.184.215.14', family: 4 }])
+  it('refuses a redirect to a private address before requesting it', async () => {
+    mockFetch.mockResolvedValueOnce(redirectTo('http://169.254.169.254/latest/meta-data/'))
 
     await expect(fetchPublic('https://attacker.example/r')).rejects.toThrow(/private IP ranges/)
     expect(mockFetch).toHaveBeenCalledTimes(1)
@@ -252,5 +244,67 @@ describe('fetchPublic', () => {
     mockFetch.mockResolvedValueOnce(redirectTo('https://api.example.com/next'))
 
     await expect(fetchPublic('https://api.example.com/', { redirect: 'error' })).rejects.toThrow(/redirect/i)
+  })
+})
+
+describe('fetchPublic connecting', () => {
+  let received = 0
+  let port = 0
+  // An internal host: the server a refused request must never reach.
+  const internal = createServer((_request, response) => {
+    received++
+    response.end('internal')
+  })
+
+  beforeAll(async () => {
+    await new Promise<void>(resolve => internal.listen(0, '127.0.0.1', resolve))
+    port = (internal.address() as AddressInfo).port
+  })
+
+  beforeEach(() => {
+    received = 0
+    mockLookup.mockReset()
+    mockFetch.mockReset()
+    mockFetch.mockImplementation(realFetch)
+  })
+
+  afterAll(async () => {
+    await new Promise(resolve => internal.close(resolve))
+  })
+
+  it('refuses a host name that resolves to a private address when connecting', async () => {
+    resolvesTo('127.0.0.1')
+
+    await expect(fetchPublic(`http://inside.example:${port}/`)).rejects.toThrow(/private IP ranges/)
+    expect(received).toBe(0)
+    // The one resolution is the connection's own, made inside the request rather than ahead of it.
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(mockLookup).toHaveBeenCalledTimes(1)
+    expect(mockLookup).toHaveBeenCalledWith('inside.example', { all: true })
+  })
+
+  it('connects to the address it checked, never resolving the host name a second time', async () => {
+    // A rebinding name: a public address (TEST-NET-1, which nothing answers) first, the internal host afterwards.
+    let resolvedWhileFetching = false
+    mockLookup.mockImplementationOnce(async () => {
+      resolvedWhileFetching = mockFetch.mock.calls.length > 0
+      return [{ address: '192.0.2.1', family: 4 }]
+    })
+    mockLookup.mockResolvedValue([{ address: '127.0.0.1', family: 4 }])
+
+    await expect(fetchPublic(`http://rebind.example:${port}/`, { signal: AbortSignal.timeout(300) })).rejects.toThrow()
+    expect(received).toBe(0)
+    // The one resolution is the connection's own, so the address it checked is the address connected to.
+    expect(mockLookup).toHaveBeenCalledTimes(1)
+    expect(resolvedWhileFetching).toBe(true)
+  })
+
+  it('refuses a redirect to a host name that resolves to a private address', async () => {
+    mockFetch.mockReset()
+    mockFetch.mockResolvedValueOnce(redirectTo(`http://inside.example:${port}/`)).mockImplementation(realFetch)
+    resolvesTo('10.1.2.3')
+
+    await expect(fetchPublic('https://attacker.example/r')).rejects.toThrow(/private IP ranges/)
+    expect(received).toBe(0)
   })
 })

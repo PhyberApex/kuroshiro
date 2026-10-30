@@ -48,6 +48,7 @@
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
     "typeorm": "catalog:",
+    "undici": "catalog:",
     "uqr": "catalog:",
     "vm2": "catalog:"
   },

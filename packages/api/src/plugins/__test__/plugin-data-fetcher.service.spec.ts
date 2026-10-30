@@ -2,7 +2,7 @@ import type { ConfigService } from '@nestjs/config'
 import { lookup } from 'node:dns/promises'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { InstanceTimeZone } from '../../instance/instance-time-zone.js'
-import { endlessBody, jsonResponse, stubFetch } from '../../test/fetch.js'
+import { endlessBody, jsonResponse, realFetch, stubFetch } from '../../test/fetch.js'
 import { asService } from '../../test/mockService.js'
 import { PluginDataFetcherService } from '../services/plugin-data-fetcher.service.js'
 import { PluginRendererService } from '../services/plugin-renderer.service.js'
@@ -397,11 +397,12 @@ describe('pluginDataFetcherService', () => {
       expect(mockFetch).toHaveBeenCalledTimes(1)
     })
 
-    it('refuses a host name that resolves to an internal address', async () => {
+    it('refuses a host name that resolves to an internal address as it connects', async () => {
       mockLookup.mockResolvedValue([{ address: '127.0.0.1', family: 4 }])
+      mockFetch.mockImplementationOnce(realFetch)
 
       await expect(service.fetchData('GET', 'http://127.0.0.1.nip.io/')).rejects.toThrow('not allowed in demo mode')
-      expect(mockFetch).not.toHaveBeenCalled()
+      expect(mockLookup).toHaveBeenCalledWith('127.0.0.1.nip.io', { all: true })
     })
 
     it('follows a redirect to a public host', async () => {
