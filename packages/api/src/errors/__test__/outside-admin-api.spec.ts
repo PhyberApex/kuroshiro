@@ -111,6 +111,39 @@ describe('the endpoints outside the admin API behind the global pipe and filter'
     expect(await response.json()).toEqual(setup)
   })
 
+  it.each([
+    ['GET /api/display', () => http.request('/api/display', { headers: { 'access-token': 'token' } }), displayService.getCurrentImage],
+    ['GET /api/current_screen', () => http.request('/api/current_screen', { headers: { 'access-token': 'token' } }), displayService.getCurrentImageWithoutProgressing],
+    ['GET /api/setup', () => http.request('/api/setup', { headers: { 'fw-version': '1.7.8' } }), setupService.setupDevice],
+    ['POST /api/log', () => http.postJson('/api/log', { logs: [] }, { headers: { 'access-token': 'token' } }), logsService.addLogToDevice],
+  ])('refuses %s without an ID header as a 400 naming it', async (_route, send, handler) => {
+    const response = await send()
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ statusCode: 400, message: ['Missing header: id'], error: 'Bad Request' })
+    expect(handler).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['GET /api/display', () => http.request('/api/display', { headers: { 'id': '', 'access-token': 'token' } })],
+    ['GET /api/setup', () => http.request('/api/setup', { headers: { id: '  ' } })],
+  ])('refuses %s with an empty ID header as a 400 naming it', async (_route, send) => {
+    const response = await send()
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ statusCode: 400, message: ['Invalid header: id should not be empty'], error: 'Bad Request' })
+    expect(displayService.getCurrentImage).not.toHaveBeenCalled()
+    expect(setupService.setupDevice).not.toHaveBeenCalled()
+  })
+
+  it('leaves a missing access-token to the Device check, which answers 401', async () => {
+    displayService.getCurrentImage.mockRejectedValue(new UnauthorizedException('Invalid API key'))
+
+    const response = await http.request('/api/display', { headers: { id: '2d:34:e2:27:5b:46' } })
+
+    expect(response.status).toBe(401)
+  })
+
   it('answers an unexpected failure of a Device-facing route in Nest\'s default body', async () => {
     setupService.setupDevice.mockRejectedValue(new Error('boom'))
 

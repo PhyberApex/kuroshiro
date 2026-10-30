@@ -1,4 +1,4 @@
-import type { DeviceCredentials } from '../devices/authenticate-device.js'
+import type { DeviceCredentialsHeadersDto } from '../devices/dto/device-credentials-headers.dto.js'
 import type { JsonObject } from '../utils/json.js'
 import { Injectable, Logger } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
@@ -41,7 +41,7 @@ export class LogsService {
     private devicesRepository: Repository<Device>,
   ) {}
 
-  async addLogToDevice(credentials: DeviceCredentials, logs: CreateLogDto) {
+  async addLogToDevice(credentials: DeviceCredentialsHeadersDto, logs: CreateLogDto) {
     const device = await authenticateDevice(this.devicesRepository, credentials, this.logger)
     const entries = entriesOf(logs)
     this.logger.debug(`Checking ${entries.length} entries of payload to consume.`)

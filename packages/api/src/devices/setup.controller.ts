@@ -1,6 +1,7 @@
-import type { SetupRequestHeadersDto } from './dto/setup-request-headers.dto.js'
-import { Controller, Get, Headers } from '@nestjs/common'
+import { Controller, Get } from '@nestjs/common'
 import { OutsideAdminApi } from '../errors/outside-admin-api.decorator.js'
+import { DeviceHeaders } from './device-headers.decorator.js'
+import { SetupRequestHeadersDto } from './dto/setup-request-headers.dto.js'
 import { DeviceSetupService } from './setup.service.js'
 import 'dotenv/config'
 
@@ -21,7 +22,7 @@ export class SetupController {
   }
 
   @Get()
-  async setupDevice(@Headers() headers: SetupRequestHeadersDto): Promise<SetupResponse> {
+  async setupDevice(@DeviceHeaders(SetupRequestHeadersDto) headers: SetupRequestHeadersDto): Promise<SetupResponse> {
     return this.deviceSetupService.setupDevice(headers)
   }
 }
