@@ -234,6 +234,15 @@ describe('the Device write and delete against a real database', () => {
         expect((await stored(device.id)).resetDeviceNewApikey).toBe(false)
       })
 
+      it('refuses it for a Device that registered with a lower-case MAC and mirrors that MAC', async () => {
+        const device = await registerDevice({ mac: 'aa:bb:cc:dd:ee:01', mirrorEnabled: true, mirrorMac: 'AA:BB:CC:DD:EE:01', mirrorApikey: 'k' })
+
+        const response = await patch(device.id, { resetDevice: true, resetDeviceNewApikey: true })
+
+        expect(response.status).toBe(409)
+        expect(await response.json()).toMatchObject({ code: 'device-reset-apikey-proxied' })
+      })
+
       it('works on a mirrored (non-proxied) Device', async () => {
         const device = await registerDevice({ mirrorEnabled: true, mirrorMac: 'AA:BB:CC:DD:EE:99', mirrorApikey: 'k' })
 
@@ -299,6 +308,16 @@ describe('the Device write and delete against a real database', () => {
         expect(response.status).toBe(409)
         expect(await response.json()).toMatchObject({ code: 'wipe-proxied', message: 'A Proxied Device cannot be wiped.' })
         expect((await stored(device.id)).wipe).toBe(false)
+      })
+
+      it('is refused for a Device that registered with a lower-case MAC and is given its own MAC as mirror MAC', async () => {
+        const device = await registerDevice({ mac: 'aa:bb:cc:dd:ee:01', mirrorEnabled: true, mirrorApikey: 'k' })
+        await patch(device.id, { mirrorMac: 'aa:bb:cc:dd:ee:01' })
+
+        const response = await patch(device.id, { wipe: true })
+
+        expect(response.status).toBe(409)
+        expect(await response.json()).toMatchObject({ code: 'wipe-proxied' })
       })
 
       it('works on a mirrored (non-proxied) Device', async () => {

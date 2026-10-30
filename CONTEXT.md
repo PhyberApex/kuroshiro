@@ -189,7 +189,7 @@ A per-Device setting that makes the Device show the image of a Device on TRMNL's
 _Avoid_: Mirror mode, sync, mirror (as a name for grouping Devices)
 
 **Proxied Device**:
-A mirrored Device whose mirror MAC is its own, so its whole poll is forwarded and TRMNL answers it — refresh rate, Firmware, Special Functions and Device Reset all come from TRMNL, and those triggered in Kuroshiro never reach the Device. Not a setting of its own: it follows from the two MACs being equal.
+A mirrored Device whose mirror MAC is its own, so its whole poll is forwarded and TRMNL answers it — refresh rate, Firmware, Special Functions and Device Reset all come from TRMNL, and those triggered in Kuroshiro never reach the Device. Not a setting of its own: it follows from the two MACs being equal, whatever their letter case.
 _Avoid_: Proxy mode, proxy mirror, passthrough
 
 **Firmware**:

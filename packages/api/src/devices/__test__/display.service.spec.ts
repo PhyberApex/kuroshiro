@@ -629,6 +629,17 @@ describe('deviceDisplayService', () => {
     expect(fs.unlink).toHaveBeenCalled()
   })
 
+  it('proxies a Device whose mirror MAC is its own MAC in another letter case', async () => {
+    const device = makeDevice({ ...baseDevice, id: '1', mirrorEnabled: true, mirrorMac: 'MAC', mirrorApikey: 'mirror-token' })
+    deviceRepo.findOneBy.mockResolvedValue(device)
+    configService.get.mockReturnValue('http://api')
+    mockFetch.mockResolvedValueOnce(jsonResponse({ filename: 'mirror.png', image_url: 'http://example.com/image.jpg' }))
+
+    await service.getCurrentImage(headers)
+
+    expect(mockFetch).toHaveBeenCalledWith('https://usetrmnl.com/api/display', expect.anything())
+  })
+
   it('writes the downloaded mirror image inside the Device\'s screens folder whatever filename TRMNL answers', async () => {
     const device = makeDevice({ ...baseDevice, id: '1', mirrorEnabled: true, mirrorMac: 'different-mac', mirrorApikey: 'mirror-token' })
     deviceRepo.findOneBy.mockResolvedValue(device)
