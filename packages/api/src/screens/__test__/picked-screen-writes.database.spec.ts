@@ -41,6 +41,7 @@ describe('setting and clearing a Device\'s Picked Screen, against a real databas
 
   beforeEach(async () => {
     await database.getRepository(Device).createQueryBuilder().delete().execute()
+    await database.getRepository(Plugin).createQueryBuilder().delete().execute()
     device = await database.getRepository(Device).save({ name: 'Kitchen', friendlyId: 'ABC123', mac: 'AA:BB:CC:DD:EE:01', apikey: 'device-secret', refreshRate: 300 })
     otherDevice = await database.getRepository(Device).save({ name: 'Lobby', friendlyId: 'DEF456', mac: 'AA:BB:CC:DD:EE:02', apikey: 'other-secret', refreshRate: 300 })
   })

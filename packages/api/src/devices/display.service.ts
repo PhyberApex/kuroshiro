@@ -25,7 +25,7 @@ import { PluginTemplateContextService } from '../plugins/services/plugin-templat
 import { withTrmnlDevice } from '../plugins/trmnl-device.js'
 import { nextEligibleScreen } from '../schedule/rotation.js'
 import { RENDER_FAILED, RENDER_HELD, RENDER_SKIPPED } from '../screens/render-outcome.js'
-import { renderSignalOf } from '../screens/screen-states.js'
+import { gatingRenderSignalOf } from '../screens/screen-states.js'
 import { Screen } from '../screens/screens.entity.js'
 import { fileExists } from '../utils/fileExists.js'
 import { fileModifiedAt } from '../utils/fileModifiedAt.js'
@@ -393,7 +393,7 @@ export class DeviceDisplayService {
       id: screen.id,
       isActive: screen.isActive,
       schedule: screen.schedule,
-      renderSignal: renderSignalOf(screen),
+      renderSignal: gatingRenderSignalOf(screen),
     }))
     const pickedScreenId = device.pickedScreen?.id ?? null
     // Manual Rotation: only a press (or a pick) moves the page on; a timer poll re-renders the Active Screen where it is.
@@ -405,7 +405,7 @@ export class DeviceDisplayService {
         return null
       const screen = byId.get(candidate.id)!
 
-      if (renderSignalOf(screen) === 'hold')
+      if (gatingRenderSignalOf(screen) === 'hold')
         return await this.holdScreen(screen, device)
 
       const outcome = await this.generateScreenImage(screen, device, true)

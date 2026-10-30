@@ -125,6 +125,14 @@ describe('a Device\'s Screens, GET /api/devices/:id/screens, against a real data
     expect(screens[1]).toMatchObject({ state: 'upNext', renderSignal: null })
   })
 
+  it('reads the Active HTML Screen\'s hold, the verdict of the poll that made it Active', async () => {
+    await addScreen(1, { isActive: true, renderSignal: 'hold' })
+
+    const screens = await readScreens()
+
+    expect(screens[0]).toMatchObject({ state: 'active', renderSignal: 'hold' })
+  })
+
   it('answers an empty list for a Device without Screens', async () => {
     expect(await readScreens()).toEqual([])
   })
