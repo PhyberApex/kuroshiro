@@ -16,11 +16,12 @@ Kuroshiro corrects liquidjs where it differs from Ruby and does not shadow a bui
 
 Every filter the gem registers exists in `packages/shared` under TRMNL's name, argument order and output: `parse_json`, `find_by`, `number_to_currency`, `number_with_delimiter` with its delimiter and separator arguments, `pluralize` including its `plural:` keyword, `days_ago`, `ordinalize`, `append_random`, `random_number`, `l_date`, `l_word`, `map_to_i`, `markdown_to_html` and `qr_code`, beside the `json`, `sample`, `where_exp` and `strip_html` already there. The gem's `{% template %}` block tag and `l_date`'s symbolic format keys are not adopted.
 
-Three places deliberately leave the gem:
+Four places deliberately leave the gem:
 
 - **`group_by` keeps liquidjs's list-of-groups shape** (`[{name, items}]`) rather than Ruby's hash keyed by value. Ruby's `g.first`/`g[0]` idiom has no clean liquidjs equivalent without breaking the shape Templates may already use, so this is documented as the one known divergence instead of overridden.
 - **`days_ago` with no zone argument renders in the Instance Time Zone**, the same zone `date` renders in, rather than the gem's UTC default, so the two never disagree by a day on one instance. An explicit IANA zone argument is honoured as upstream.
 - **`l_word` for an unknown word or locale returns the input unchanged**, where the gem renders a "Translation missing" string. The table ported is the six flat words (`today`, `tomorrow`, `updated`, `activity`, `done`, `due`) across the 27 locales `trmnl-i18n` ships; the gem's dotted per-plugin keys belong to TRMNL-hosted plugins that are not importable Recipes and are dropped.
+- **`l_date` and `ordinalize` on a value that is not a date answer as `date` does**: nothing for a missing value, the string itself for one that does not parse. The gem's `Time.parse` raises there, and a Template whose data field is absent should not fail to render for it (#1590).
 
 `number_to_currency` treats its first argument as a locale when it is one of those same 27 locales (plus `en-GB`, the example above), taking symbol and position from rails-i18n's data, and as a unit prefix otherwise, exactly the gem's rule. `random_number` ignores its input, treats one argument as `0..n`, sorts two arguments, is inclusive, and returns an integer. `parse_json` on invalid input is a render error, as upstream. `sample` keeps Kuroshiro's optional count, a superset of the gem's.
 
@@ -46,4 +47,4 @@ The editor's completion keeps two lists: TRMNL's filters marked "TRMNL" and Kuro
 - `{{ 3 | round: 2 }}` prints `3` where Ruby prints `3.0`; accepted as closer than the padded string the old override produced.
 - A Template that used liquidjs-only behaviour (float `divided_by`, `encodeURIComponent`-style `url_encode`) renders differently after #1443 lands. No such Template is known.
 - A runtime dependency added to `packages/shared` must also be a dependency of `packages/api`, or the production image fails at `require` (ADR-0033). The browser build of a file importing only the shared liquid module must keep succeeding without Node polyfills.
-- The two deliberate divergences from the gem (`days_ago`'s default zone, `l_word`'s fallback) and the one from TRMNL (`group_by`) are the complete list; anything else that differs from trmnl.com is a bug.
+- The three deliberate divergences from the gem (`days_ago`'s default zone, `l_word`'s fallback, `l_date` and `ordinalize` on a non-date) and the one from TRMNL (`group_by`) are the complete list; anything else that differs from trmnl.com is a bug.
