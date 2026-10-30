@@ -267,7 +267,7 @@ describe('creating, changing and deleting a custom Palette, against a real datab
       expect(response.status).toBe(200)
       expect(reconvertImages.mock.calls.map(([device]) => device.id)).toEqual([hall.id, study.id])
       expect(sleepImage.reconvert.mock.calls.map(([device]) => device.id)).toEqual([hall.id, study.id])
-      expect(logged).toHaveBeenCalledWith(`Could not convert the images of Device ${hall.id} again: disk full`)
+      expect(logged).toHaveBeenCalledWith(`Could not redraw the Screens of Device ${hall.id}: disk full`)
       expect(logged).toHaveBeenCalledWith(`Could not convert the sleep image of Device ${hall.id} again: sleep image unreadable`)
       expect((await database.getRepository(Palette).findOneByOrFail({ id: 'study-panel' })).colors).toEqual(['#000000', '#FFFFFF'])
     })

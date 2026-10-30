@@ -38,7 +38,7 @@ const EDITABLE_FIELDS: Record<Screen['type'], ReadonlyArray<keyof UpdateScreenDt
 }
 
 /** The Screens drawn from markup at poll time, which a new render target leaves with no stored image to convert. */
-const RENDERED_SCREEN_TYPES: Array<Screen['type']> = ['html', 'plugin', 'mashup']
+const RENDERED_SCREEN_TYPES: ReadonlyArray<Screen['type']> = ['html', 'plugin', 'mashup']
 
 @Injectable()
 export class ScreensService {
@@ -270,10 +270,19 @@ export class ScreensService {
    * Answers how many stored images were converted.
    */
   async redrawForRenderTarget(device: Device): Promise<number> {
+    await this.discardRenders(device)
+    return this.reconvertImageScreens(device)
+  }
+
+  /** Drops what the HTML, Plugin and Mashup Screens of a device were rendered to, so the next poll renders them afresh under a new filename. */
+  private async discardRenders(device: Device): Promise<void> {
     await this.screensRepository.update(
       { device: { id: device.id }, type: In(RENDERED_SCREEN_TYPES) },
       { generatedAt: new Date(), cachedPluginOutput: null, renderSignal: null },
     )
+  }
+
+  private async reconvertImageScreens(device: Device): Promise<number> {
     const screens = await this.screensRepository.find({ where: { device: { id: device.id } } })
     const target = await this.deviceModels.renderTargetFor(device)
     let converted = 0

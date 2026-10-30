@@ -123,7 +123,7 @@ export class CustomPalettesService {
   private async reconvert(devices: Device[]): Promise<void> {
     for (const device of devices) {
       await this.screens.redrawForRenderTarget(device).catch((error: unknown) =>
-        this.logger.error(`Could not convert the images of Device ${device.id} again: ${getErrorMessage(error)}`))
+        this.logger.error(`Could not redraw the Screens of Device ${device.id}: ${getErrorMessage(error)}`))
       await this.deviceSleepImage.reconvert(device).catch((error: unknown) =>
         this.logger.error(`Could not convert the sleep image of Device ${device.id} again: ${getErrorMessage(error)}`))
     }
