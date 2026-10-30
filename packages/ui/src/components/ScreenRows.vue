@@ -62,9 +62,12 @@ const shownIds = computed(() => shown.value.map(item => item.id))
 /** The last order emitted, with the one it replaced: an owner whose save was rejected hands that one back. */
 let settled: { id: string, before: string[] } | undefined
 
-watch(givenIds, (given) => {
-  lift.value = undefined
-  landing.value = undefined
+// `items` is replaced whenever its owner reloads, as a poll does; only rows that changed places end a lift.
+watch(givenIds, (given, previous) => {
+  if (!sameOrder(given, previous)) {
+    lift.value = undefined
+    landing.value = undefined
+  }
   if (settled && sameOrder(given, settled.before)) {
     sayPlace(settled.id, given)
     settled = undefined
