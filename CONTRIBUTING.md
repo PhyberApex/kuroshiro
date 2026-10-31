@@ -6,7 +6,7 @@ Thanks for wanting to make Kuroshiro better! Bug reports, ideas, questions, and 
 
 - Open an issue or join a discussion for bugs, ideas, or questions.
 - Fork, branch, and submit a pull request (PR).
-- See the [Quick Start](README.md#-quick-start-dev-mode) in the README for running Kuroshiro locally.
+- See the [Quick Start](README.md#developing-locally) in the README for running Kuroshiro locally.
 
 ## Coding guidelines
 
@@ -18,7 +18,7 @@ Thanks for wanting to make Kuroshiro better! Bug reports, ideas, questions, and 
 
 ## AI policy
 
-Kuroshiro is developed with heavy use of AI coding tools. Agents help triage issues, write specs and Architecture Decision Records, implement features, and review pull requests, all steered by a human maintainer. Nothing is merged without a human having reviewed it. The agent-facing instructions live in [`AGENTS.md`](AGENTS.md) and [`docs/agents`](docs/agents), so the same guidelines apply whether code is written by a person or a model.
+Nothing is merged into Kuroshiro without a human having reviewed it, and every change has to pass the same test suites whoever wrote it. Within that, AI coding tools are used heavily: agents help triage issues, write specs and Architecture Decision Records, implement features and review pull requests, all steered by the maintainer. The agent-facing instructions live in [`AGENTS.md`](AGENTS.md) and [`docs/agents`](docs/agents), so the same guidelines apply whether code is written by a person or a model.
 
 Contributions made with the help of LLMs or AI coding tools are welcome, as long as:
 

@@ -3,7 +3,7 @@
 Kuroshiro ships as a single Docker image that bundles the NestJS API and the Vue admin UI. Bring your own Postgres and you are set.
 
 ::: warning Alpha
-Kuroshiro is still in alpha. Breaking changes may happen, and until 1.0.0 an update might require you to wipe your data and start fresh.
+Kuroshiro is still in alpha. Breaking changes may happen before 1.0.0. Upgrades run their database migrations on start, so back up the database before updating.
 :::
 
 ## Images
