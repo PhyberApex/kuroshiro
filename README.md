@@ -1,9 +1,3 @@
-![GitHub License](https://img.shields.io/github/license/phyberapex/kuroshiro)
-[![Build and Push Next Docker Image](https://github.com/PhyberApex/kuroshiro/actions/workflows/docker-next.yml/badge.svg)](https://github.com/PhyberApex/kuroshiro/actions/workflows/docker-next.yml)
-[![GitHub Release](https://img.shields.io/github/v/release/phyberapex/kuroshiro)](https://github.com/PhyberApex/kuroshiro/releases)
-[![codecov](https://codecov.io/gh/PhyberApex/kuroshiro/graph/badge.svg?token=3J6TECLYB6)](https://codecov.io/gh/PhyberApex/kuroshiro)
-[![GitHub Repo stars](https://img.shields.io/github/stars/phyberapex/kuroshiro?style=social)](https://github.com/PhyberApex/kuroshiro/stargazers)
-
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="graphics/logo-dark.svg" />
@@ -11,54 +5,83 @@
   </picture>
 </p>
 
-# KUROSHIRO: Unleash Your TRMNL!
+# Kuroshiro
 
-**Kuroshiro** is an open-source BYOS (Bring Your Own Server) solution for the [TRMNL](https://usetrmnl.com/) ecosystem. Our goal is to give you more flexibility and control over your TRMNL experience, whether you're self-hosting for fun, learning, or customization. Kuroshiro bundles a [NestJS](https://nestjs.com/) API and a [Vue.js](https://vuejs.org/) UI into a single Docker image, ready to run alongside your own Postgres database.
+**A self-hosted server for [TRMNL](https://usetrmnl.com/) e-ink displays that imports the official Recipes. One Docker image, your Postgres, nothing else.**
+
+[![GitHub Release](https://img.shields.io/github/v/release/phyberapex/kuroshiro)](https://github.com/PhyberApex/kuroshiro/releases)
+[![Build and Push Next Docker Image](https://github.com/PhyberApex/kuroshiro/actions/workflows/docker-next.yml/badge.svg)](https://github.com/PhyberApex/kuroshiro/actions/workflows/docker-next.yml)
+[![codecov](https://codecov.io/gh/PhyberApex/kuroshiro/graph/badge.svg?token=3J6TECLYB6)](https://codecov.io/gh/PhyberApex/kuroshiro)
+![GitHub License](https://img.shields.io/github/license/phyberapex/kuroshiro)
 
 <p align="center">
-  <a href="https://phyberapex.github.io/kuroshiro/"><b>Take the tour on the showcase site</b></a> · <a href="https://kuroshiro-demo.phyberapex.de/"><b>Try the live demo</b></a>
+  <a href="https://kuroshiro-demo.phyberapex.de/"><b>Try the live demo</b></a> · <a href="https://phyberapex.github.io/kuroshiro/"><b>Take the tour</b></a> · <a href="#quick-start"><b>Quick start</b></a>
 </p>
 
----
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="packages/site/public/screenshots/device-screens-dark.png" />
+    <img src="packages/site/public/screenshots/device-screens-light.png" alt="A Device's Screens, in their Order and with their Schedules, in the Kuroshiro admin UI" />
+  </picture>
+</p>
 
-## ⚠️ Alpha Notice
+Kuroshiro is a BYOS (Bring Your Own Server) backend for the TRMNL ecosystem: point a TRMNL, an Xteink, a Kindle or any device running the open-source TRMNL firmware at it, and Kuroshiro decides what the panel shows and when. It bundles a [NestJS](https://nestjs.com/) API and a [Vue 3](https://vuejs.org/) admin UI into one container, so the whole deployment is that image plus a Postgres database.
 
-> **Heads up!** Kuroshiro is still in **alpha** and not feature complete. Things are moving fast, and breaking changes may happen. Updates might require you to wipe your data and start fresh. Until we reach version 1.0.0, backward compatibility is not guaranteed. Please keep this in mind if you decide to try it out!
+## Quick start
 
----
+```yaml
+services:
+  db:
+    image: postgres:18-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: kuroshiro
+      POSTGRES_PASSWORD: change-me
+      POSTGRES_DB: kuroshiro
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  app:
+    image: ghcr.io/phyberapex/kuroshiro:latest
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - '3000:3000'
+    environment:
+      KUROSHIRO_API_URL: http://<your-ip>:3000
+      KUROSHIRO_DB_HOST: db
+      KUROSHIRO_DB_USER: kuroshiro
+      KUROSHIRO_DB_PASSWORD: change-me
+      KUROSHIRO_DB_DB: kuroshiro
+    volumes:
+      - kuroshiro_data:/app/public/screens/devices
+      - kuroshiro_firmware:/app/public/firmware
+volumes:
+  postgres_data:
+  kuroshiro_data:
+  kuroshiro_firmware:
+```
 
-## 🤖 AI Disclaimer
+`docker compose up -d`, open `http://<your-ip>:3000`, and enter that same address as the server URL on your device's Wi-Fi setup page. The device shows up in Kuroshiro the moment it first calls in. Every option, the Home Assistant add-on and what to persist are under [Running Kuroshiro](#running-kuroshiro); the [showcase site](https://phyberapex.github.io/kuroshiro/getting-started) walks through the same setup with screenshots.
 
-> **Heads up!** Kuroshiro is developed with heavy use of AI coding tools. Issues and pull requests may be triaged, commented on, or authored by an AI agent, with a human maintainer reviewing before anything is merged. AI-assisted contributions are welcome too; see the [AI policy](CONTRIBUTING.md#ai-policy) for the ground rules.
+## What you get
 
----
+- **Recipe import.** Paste the id or URL of any [trmnl.com Recipe](https://trmnl.com/recipes) and it becomes a ready-to-use Plugin, serverless-transform Recipes included.
+- **Plugins.** Poll external APIs through multiple named Data Sources per Plugin, or accept pushed Webhooks, and render with Liquid and the TRMNL framework, previewed live as you type.
+- **Screens.** Upload images, fetch links, write HTML, or combine Plugins into Mashups with 7 layouts. Gate any Screen to a day/time Schedule.
+- **Every TRMNL panel.** All sizes and colour depths TRMNL sells, synced daily from the official model list, plus custom colour Palettes.
+- **Firmware.** Official releases sync automatically, or push a custom OTA build. A Firmware is blocked unless it fits the Device's model.
+- **Devices.** Auto-provisioning, battery, Wi-Fi, firmware version, Qwiic sensor readings, logs, Sleep Mode, Special Functions, and a Device Simulator to poll as any Device without hardware.
+- **Alerts and metrics.** A sweep watches for low battery, offline Devices and failing fetches and notifies through an [Apprise](https://github.com/caronc/apprise-api) sidecar. `/metrics` serves Prometheus gauges.
+- **Mirroring.** Show what the official TRMNL cloud would show, on a Device Kuroshiro manages.
 
-## 🌟 Why Kuroshiro?
+## Status
 
-Kuroshiro is for anyone who wants to experiment, self-host, and shape their own TRMNL experience:
-- **Self-hosted**: Your data, your rules, your server.
-- **All-in-one**: API (NestJS) + admin UI (Vue 3 + Reka UI) bundled together.
-- **Plug & Play**: Just add Postgres and go!
-- **Fun to use**: Modern, intuitive, and built for tinkerers and pros alike.
+Kuroshiro is in alpha. Breaking changes can still happen before 1.0.0, and the admin UI, API and Configuration Archive formats are not yet frozen. Upgrades run their database migrations on start, so back up the database before updating and read the [changelog](CHANGELOG.md) for anything marked breaking.
 
----
+Nothing lands in Kuroshiro without a human review. Every change runs the API suite, the admin UI in real Chromium against a faked API, an accessibility gate and screenshot baselines before it is merged. AI coding tools are used heavily in that process, and an agent may draft a first reply on an issue; a maintainer reads and answers every thread. The ground rules for contributing with or without AI tools are in the [AI policy](CONTRIBUTING.md#ai-policy).
 
-## ✨ Features at a Glance
-
-- **Auto Provisioning**: Devices set up themselves—like magic!
-- **Device Management**: Rename, reset, tweak refresh rates, and trigger one-shot Special Functions (identify, sleep, add Wi-Fi, rewind).
-- **Multi-Size Device Support**: Every panel size and colour depth TRMNL sells, synced daily from the official model list, plus admin-created custom colour palettes.
-- **Live Device Insights**: WiFi, battery, firmware version, Qwiic sensor readings (CO₂, humidity, pressure, temperature), and real-time previews.
-- **Mirroring**: See what's on your official TRMNL server, right here.
-- **Screens Galore**: Add screens via link or upload, cache them, or fetch fresh every time—then gate any of them to a day/time Schedule.
-- **Plugins**: Poll external APIs (with multiple named Data Sources per plugin) or accept pushed Webhooks, render them with Liquid, or import a Recipe straight from trmnl.com.
-- **Firmware Management**: Official releases sync automatically, or push a custom OTA build, with per-Device-Model compatibility checks so you can't flash the wrong binary.
-- **Alerts**: A periodic sweep watches for low battery Devices, offline Devices, and failing Data Source fetches, and notifies you via an [Apprise](https://github.com/caronc/apprise-api) sidecar—supporting dozens of notification channels.
-- **Device Simulator**: Poll as any Device without hardware—because why not?
-
----
-
-## ⚖️ Kuroshiro vs. the rest of the TRMNL ecosystem
+## Kuroshiro vs. the rest of the TRMNL ecosystem
 
 Kuroshiro isn't the only way to run a TRMNL: the device also works with the official [trmnl.com](https://trmnl.com/) cloud, and with a handful of open-source, self-hosted BYOS servers, [Terminus](https://github.com/usetrmnl/terminus) being TRMNL's flagship one. Here's how Kuroshiro lines up against the two in depth:
 
@@ -104,80 +127,9 @@ TRMNL keeps a [feature matrix of BYOS implementations](https://docs.trmnl.com/go
 
 The other servers' columns are TRMNL's own assessment as of October 2026; the Kuroshiro column is ours. See [`docs/adr`](./docs/adr) for the design decisions (and prior-art comparisons) behind both tables.
 
----
+## Live demo
 
-## 🌐 Live Demo
-
-Want to see Kuroshiro in action before diving in? We've got you covered! Check out our live demo at [kuroshiro-demo.phyberapex.de](https://kuroshiro-demo.phyberapex.de/) where you can:
-
-- **Explore the interface** - Navigate through device management, screen creation, and all the core features
-- **Try the Device Simulator** - Poll as a Device to see how screens render
-- **Try screen creation** - ~~Upload images~~ (This is not supported in the demo), add external links, or craft custom HTML screens
-- **See real-time updates** - Watch how the system handles device communication and screen management
-
-For a guided walk through every feature with screenshots, see the [showcase site](https://phyberapex.github.io/kuroshiro/).
-
-> **Note:** The demo will reset once a day, so you can explore freely without worrying about breaking anything. It's the perfect playground to get a feel for Kuroshiro before setting up your own instance!
-
----
-
-## 🛠️ Technology used
-
-Kuroshiro is built on a modern, robust tech stack designed for performance, developer experience, and maintainability. Here's what powers the magic under the hood:
-
-### General
-
-[![pnpm](https://img.shields.io/badge/pnpm-F69220?logo=pnpm&logoColor=fff)](https://pnpm.io/)
-![Postgres](https://img.shields.io/badge/Postgres-%23316192.svg?logo=postgresql&logoColor=white)
-[![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=fff)](https://www.docker.com/)
-[![Vitest](https://img.shields.io/badge/Vitest-6E9F18?logo=vitest&logoColor=fff)](https://vitest.dev/)
-
-**Why this foundation?** We chose **pnpm** for lightning-fast package management and efficient monorepo handling. **PostgreSQL** gives us rock-solid data reliability with advanced features for complex queries. **Docker** ensures consistent deployments across any environment, and **Vitest** provides blazing-fast testing with excellent TypeScript support.
-
-### API
-
-[![Nest](https://img.shields.io/badge/Nest.js-%23E0234E.svg?logo=nestjs&logoColor=white)](https://nestjs.com/)
-[![TypeORM](https://img.shields.io/badge/TypeORM-FE0803?logo=typeorm&logoColor=fff)](https://typeorm.io/)
-
-**The backend powerhouse:** **NestJS** brings enterprise-grade architecture with decorators, dependency injection, and built-in TypeScript support—perfect for building scalable APIs. **TypeORM** handles our database operations with elegant Active Record patterns and automatic migrations, making data management a breeze.
-
-### UI
-
-[![Vue.js](https://img.shields.io/badge/Vue.js-4FC08D?logo=vuedotjs&logoColor=fff)](https://vuejs.org/)
-[![Reka UI](https://img.shields.io/badge/Reka_UI-10B981?logoColor=fff)](https://reka-ui.com/)
-[![CodeMirror](https://img.shields.io/badge/CodeMirror-D30707?logo=codemirror&logoColor=fff)](https://codemirror.net/)
-[![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=fff)](https://vite.dev/)
-
-**Frontend excellence:** **Vue 3** delivers reactive, component-based UI development with incredible performance and developer ergonomics. **Reka UI** supplies headless, accessible primitives that Kuroshiro styles with its own design tokens, and **CodeMirror** is the editor for Liquid templates, HTML, JSON and JavaScript. **Vite** powers our build process with instant hot module replacement and optimized production builds.
-
----
-
-## 🗺️ Roadmap & Planned Features
-
-We're constantly working to make Kuroshiro even better! Here's what's on our roadmap, organized by priority:
-
-### 🔥 High Priority
-- [x] **Device Logs Viewer** - View logs directly from your TRMNL devices for better debugging and monitoring
-- [x] **Refresh Rate UI Controls** - Adjust device refresh rates directly from the web interface
-- [x] **Screen Reordering** - Drag-and-drop screens into the order you want them to play
-- [x] **Sleep Mode** - Per-Device night window that pauses rotation and lets the Device sleep through it instead of polling on its usual cadence
-
-### 🎯 Medium Priority  
-- [x] **Liquid Template Syntax** - Plugins render with Liquid, including Data Sources and Mashups; HTML Screens are still raw HTML
-- [x] **Housekeeping** - Clean up unused images and stored files, and prune old Alerts and Device Logs; Firmware has a page of its own
-- [x] **Recipes Support** - Import any TRMNL Recipe from trmnl.com straight into a Poll Plugin
-- [x] **Screen Mashups** - Combine multiple plugin screens into custom layouts (7 layouts supported!)
-- [x] **Screen Playlists** - Gate any Screen to a recurring day/time Schedule so rotation skips it outside that window
-
-### 🔮 Future Enhancements
-- [x] **System Logs Viewer** - Internal system logging and monitoring capabilities  
-- [ ] **Smart Image Caching** - Intelligent caching algorithms to optimize storage and performance
-- [ ] **Device Grouping** - Share one Schedule/rotation across multiple Devices
-- [ ] **Server-Attached Sensors** - Sensor data from a self-hosted Raspberry Pi, independent of what a Device itself reports
-
-> **Want to contribute?** Pick a feature from the roadmap and help us build it! Check out our [contribution guidelines](#-contribute--make-kuroshiro-even-better) below.
-
----
+[kuroshiro-demo.phyberapex.de](https://kuroshiro-demo.phyberapex.de/) is a furnished instance that resets once a day. Browse the Devices, poll as one with the Device Simulator, add link and HTML Screens, and watch the rotation advance. File uploads are disabled there. For a guided walk through every feature with screenshots, see the [showcase site](https://phyberapex.github.io/kuroshiro/).
 
 ## Screenshots
 
@@ -188,14 +140,6 @@ The Devices list
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="packages/site/public/screenshots/devices-dark.png" />
     <img src="packages/site/public/screenshots/devices-light.png" alt="The Devices list" />
-  </picture>
-</p>
-
-A Device's Screens, in their Order and with their Schedules
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="packages/site/public/screenshots/device-screens-dark.png" />
-    <img src="packages/site/public/screenshots/device-screens-light.png" alt="A Device's Screens, in their Order and with their Schedules" />
   </picture>
 </p>
 
@@ -223,13 +167,27 @@ The Alerts page
   </picture>
 </p>
 
+## Roadmap
+
+Done: Device Logs viewer, refresh-rate controls, drag-and-drop Screen reordering, Sleep Mode, Liquid templates, Housekeeping, Recipe import, Mashups, Screen Schedules, system logs.
+
+Next, in no fixed order:
+
+- **Device Grouping**: share one Schedule and rotation across multiple Devices
+- **Server-attached Sensors**: readings from a Raspberry Pi next to the server, independent of what a Device reports
+- **Smart image caching**: prune and reuse stored renders more cleverly
+
+Want to pick one up? Start with the [contributing guide](#contributing).
+
+## Tech stack
+
+pnpm workspace · [NestJS](https://nestjs.com/) + [TypeORM](https://typeorm.io/) on Postgres · [Vue 3](https://vuejs.org/) + [Reka UI](https://reka-ui.com/) + [CodeMirror](https://codemirror.net/) built with [Vite](https://vite.dev/) · [Vitest](https://vitest.dev/) and Playwright in real Chromium · one Docker image.
+
 ---
 
-## 🐳 Dockerized & Ready to Roll
+## Running Kuroshiro
 
-Kuroshiro is built for Docker. Just bring your own Postgres database and you're set!
-
-We build these tags automatically:
+The image is published to the GitHub Container Registry as `ghcr.io/phyberapex/kuroshiro`, in these tags:
 
 | Tag    | Content                                                                  |
 |--------|--------------------------------------------------------------------------|
@@ -237,7 +195,7 @@ We build these tags automatically:
 | latest | The newest released version                                              |
 | x.x.x  | Specific version that has been built and can be found in GitHub releases |
 
-For local hacking or deployment inspiration, check out [`docker-compose.yml`](./docker-compose.yml). It spins up everything you need—API, UI, and Postgres—so you can get started in seconds. For container health checks, Kubernetes probes or uptime monitors, `GET /health` answers `200` with `{ "status": "ok", "database": "ok" }` while Kuroshiro and its database are up, and `503` when the database is unreachable.
+For local hacking or deployment inspiration, check out [`docker-compose.yml`](./docker-compose.yml). It spins up Kuroshiro and Postgres together. For container health checks, Kubernetes probes or uptime monitors, `GET /health` answers `200` with `{ "status": "ok", "database": "ok" }` while Kuroshiro and its database are up, and `503` when the database is unreachable.
 
 ### Home Assistant add-on
 
@@ -264,7 +222,7 @@ Everything else under `/app/public` ships with the image or is a cache Kuroshiro
 
 ---
 
-## 📦 Packages
+## Packages
 
 - [`packages/api`](./packages/api) — The NestJS backend
 - [`packages/ui`](./packages/ui) — The Vue 3 + Reka UI admin UI the image serves
@@ -273,7 +231,7 @@ Everything else under `/app/public` ships with the image or is a cache Kuroshiro
 
 ---
 
-## 🚀 Quick Start (Dev Mode)
+## Developing locally
 
 1. **Clone** this repo
 2. **Install** dependencies: `pnpm install`
@@ -300,7 +258,7 @@ postgres:18-alpine
 
 ---
 
-## 🖥️ How Screens Work
+## How Screens work
 
 ### Mirroring from Official Server
 If you enable mirroring and provide the MAC and apikey, Kuroshiro fetches the current screen (`api/current_screen`) from the official server—mirroring always takes priority. If the given MAC to mirror matches with the one of the device itself we are entering "proxy-mode" where we get the current display from the actual endpoint (`display`) and forward all the headers back and forth.
@@ -334,7 +292,7 @@ Attach a Schedule to any Screen (including a Mashup) to gate when it's eligible 
 
 ---
 
-## 🔌 Plugins
+## Plugins
 
 Plugins pull outside data into a [Liquid](https://shopify.github.io/liquid/)-rendered template, in one of two ways:
 
@@ -345,13 +303,13 @@ Don't want to build a Plugin from scratch? Paste a Recipe's id or [trmnl.com/rec
 
 ---
 
-## 🔧 Firmware & Device Models
+## Firmware and Device Models
 
 Kuroshiro tracks the official TRMNL model list (synced daily, with a bundled snapshot as offline fallback) and the latest official firmware (synced daily, online only), or you can upload a custom `.bin` build of your own. The official firmware is stored once per hardware family, the way TRMNL's own API client and Terminus fetch it: the TRMNL OG build fits `og_png` and `og_plus`, the TRMNL X build fits `v2`. OG B/W/R/Y Devices get no official build until OTA on them works upstream (usetrmnl/trmnl-firmware#538). Every Firmware carries a SHA-256 checksum and an optional set of compatible Device Models, so assigning one to a Device is blocked outright if it doesn't match that Device's hardware—no accidental bricking. Pushes are always explicit: pick a Firmware in the Device's Settings, and it's served on that Device's next poll. Custom colour Palettes (admin-created, within one of TRMNL's fixed colour families) sit alongside the official ones synced from TRMNL, so you're not limited to whatever's officially curated for a given Device Model. To refresh the bundled fallback snapshot from the live TRMNL API, run `pnpm --filter kuroshiro-api snapshot:device-models`.
 
 ---
 
-## 🔔 Alerts
+## Alerts
 
 A background sweep runs every 5 minutes (and once on startup) and checks three conditions: **low battery** and **offline** for every Device (offline is skipped entirely while the Device is asleep under Sleep Mode, and for a grace period after it wakes), and **Data Source fetch failing** for every `fetch`-mode Data Source of a Poll Plugin — opens once its consecutive scheduled-render failures (its Fetch Failure Streak) reach a threshold, resolves on the next successful scheduled fetch. Each condition opens an Alert the first time it's seen and resolves it the first time it clears; low battery has a 5-point hysteresis so it won't flap right at the threshold, and the fetch-failing Rule stays active until the streak drops back to zero. See [ADR-0025](docs/adr/0025-fetch-failure-alerts-scoped-to-data-source-with-streak-on-entity.md) for why the Alert is scoped to the Data Source rather than its Plugin.
 
@@ -378,7 +336,7 @@ A daily Retention job (same 4am schedule as the Device Model and Firmware syncs)
 
 ---
 
-## 📈 Prometheus Metrics
+## Prometheus metrics
 
 `GET /metrics` answers in the Prometheus text exposition format, read from the database at scrape time — Kuroshiro keeps no history of its own, so point an external Prometheus at it for charts and long-term retention (see [ADR-0026](docs/adr/0026-metrics-are-scrape-time-reads-with-no-history-of-their-own.md)).
 
@@ -398,9 +356,9 @@ A daily Retention job (same 4am schedule as the Device Model and Firmware syncs)
 
 ---
 
-## 🤝 Contribute & Make Kuroshiro Even Better!
+## Contributing
 
-We love contributions! Bug reports, ideas, questions, and pull requests are all welcome. Before you jump in, please read the [Contributing Guide](CONTRIBUTING.md) (including our [AI policy](CONTRIBUTING.md#ai-policy)) and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
+Bug reports, ideas, questions and pull requests are all welcome. Before you jump in, please read the [Contributing Guide](CONTRIBUTING.md) (including our [AI policy](CONTRIBUTING.md#ai-policy)) and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ### Contributors
 
