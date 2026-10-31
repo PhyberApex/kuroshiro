@@ -207,8 +207,8 @@ catalogs:
       specifier: 6.43.15
       version: 6.43.15
     '@electric-sql/pglite':
-      specifier: 0.5.12
-      version: 0.5.12
+      specifier: 0.5.13
+      version: 0.5.13
     '@fontsource-variable/archivo':
       specifier: 5.3.0
       version: 5.3.0
@@ -508,7 +508,7 @@ importers:
         version: 10.0.0(@typescript-eslint/typescript-estree@8.72.0(supports-color@10.2.2)(typescript@6.0.3))(@typescript-eslint/utils@8.72.0(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3))(@vue/compiler-sfc@3.5.44)(eslint@10.13.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@6.0.3)(vitest@5.0.5)
       '@electric-sql/pglite':
         specifier: 'catalog:'
-        version: 0.5.12
+        version: 0.5.13
       '@nestjs/cli':
         specifier: 'catalog:'
         version: 12.0.11(@swc/core@1.16.20(@swc/helpers@0.5.23))(@types/node@26.6.5)(fork-ts-checker-webpack-plugin@9.1.0(typescript@6.0.3)(webpack@5.106.2(@swc/core@1.16.20(@swc/helpers@0.5.23))(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28)(uglify-js@3.19.3)))(ts-loader@9.6.2(typescript@6.0.3)(webpack@5.106.2(@swc/core@1.16.20(@swc/helpers@0.5.23))(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28)(uglify-js@3.19.3)))(tsconfig-paths-webpack-plugin@4.2.0)(webpack-node-externals@3.0.0)(webpack@5.106.2(@swc/core@1.16.20(@swc/helpers@0.5.23))(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28)(uglify-js@3.19.3))
@@ -550,7 +550,7 @@ importers:
         version: 9.0.0(@swc/core@1.16.20(@swc/helpers@0.5.23))(jiti@2.7.0)(postcss@8.5.28)(typescript@6.0.3)(yaml@2.9.1)
       typeorm-pglite:
         specifier: 'catalog:'
-        version: 0.3.4(@electric-sql/pglite@0.5.12)
+        version: 0.3.4(@electric-sql/pglite@0.5.13)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1068,8 +1068,8 @@ packages:
       oxlint:
         optional: true
 
-  '@electric-sql/pglite@0.5.12':
-    resolution: {integrity: sha512-IiAxv1ld1V9QP0AWsflliDqrGRo+20O+yXOr2fjk6YzBHsCvTPclwQhCB1uZ7eHtPrxUrSllNzWgqy/Ot76PEw==}
+  '@electric-sql/pglite@0.5.13':
+    resolution: {integrity: sha512-4rZuxK1k07w6sSpJzjMri0B9+HuXuC7V9pxVB51pR0T9KPqXg6TD0mdaEwBA9rkcL4jdht4tGDf/wYzAiGhT7g==}
 
   '@es-joy/escodegen@4.2.0':
     resolution: {integrity: sha512-jWqqS3StW6vGwJeT8yu6alS4nipOBi3kD/pR63+9hG2NfGafCJ4viDME15mVf+fyupyptcUJDXfv63gFF5Gzfg==}
@@ -6657,7 +6657,7 @@ snapshots:
     optionalDependencies:
       eslint: 10.13.0(jiti@2.7.0)(supports-color@10.2.2)
 
-  '@electric-sql/pglite@0.5.12': {}
+  '@electric-sql/pglite@0.5.13': {}
 
   '@es-joy/escodegen@4.2.0':
     dependencies:
@@ -11281,9 +11281,9 @@ snapshots:
 
   typed-query-selector@2.12.3: {}
 
-  typeorm-pglite@0.3.4(@electric-sql/pglite@0.5.12):
+  typeorm-pglite@0.3.4(@electric-sql/pglite@0.5.13):
     dependencies:
-      '@electric-sql/pglite': 0.5.12
+      '@electric-sql/pglite': 0.5.13
 
   typeorm@1.1.2(pg@8.23.1)(supports-color@10.2.2)(ts-node@10.9.2(@swc/core@1.16.20(@swc/helpers@0.5.23))(@types/node@26.6.5)(typescript@6.0.3)):
     dependencies:
