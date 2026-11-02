@@ -4,10 +4,25 @@ import { userInfo } from 'node:os'
 import { resolve } from 'node:path'
 import process from 'node:process'
 
-// The image is pinned by the Playwright version in the workspace catalog, so the browser
-// that writes a baseline is the one the installed Playwright expects, locally and in CI.
+// Microsoft re-pushes a Playwright image tag with newer Chrome patches, and a patch moves
+// sub-pixel rendering enough to fail baselines. So the image is pinned by digest too, and a
+// Playwright bump has to bring the digest of its new tag along with regenerated baselines.
+const pinnedImage = {
+  version: '1.64.1',
+  digest: 'sha256:2f05f8a734509a7b3f26a912639488ee08f58a7b292d14d62271bcff9038768f',
+}
+
 const { version } = createRequire(import.meta.url)('playwright/package.json')
-const image = `mcr.microsoft.com/playwright:v${version}-noble`
+if (version !== pinnedImage.version) {
+  console.error(
+    `playwright ${version} is installed but scripts/screenshots.mjs pins the image for ${pinnedImage.version}. `
+    + `Run \`docker buildx imagetools inspect mcr.microsoft.com/playwright:v${version}-noble\`, put its digest `
+    + `and the version into pinnedImage, then regenerate the baselines with \`pnpm test:screenshots:update\`.`,
+  )
+  process.exit(1)
+}
+
+const image = `mcr.microsoft.com/playwright:v${pinnedImage.version}-noble@${pinnedImage.digest}`
 
 const packageDir = resolve(import.meta.dirname, '..')
 const repoRoot = resolve(packageDir, '../..')
