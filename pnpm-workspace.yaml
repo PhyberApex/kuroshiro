@@ -26,7 +26,7 @@ catalog:
   '@codemirror/search': 6.7.2
   '@codemirror/state': 6.7.6
   '@codemirror/view': 6.43.15
-  '@electric-sql/pglite': 0.5.13
+  '@electric-sql/pglite': 0.5.14
   '@fontsource-variable/archivo': 5.3.0
   '@fontsource-variable/jetbrains-mono': 5.3.0
   '@lezer/highlight': 1.2.5
@@ -38,7 +38,7 @@ catalog:
   '@nestjs/serve-static': 12.1.1
   '@nestjs/testing': 12.3.2
   '@nestjs/typeorm': 12.0.2
-  '@swc/core': 1.16.20
+  '@swc/core': 1.16.21
   '@tsconfig/node24': 24.0.5
   '@types/express': 5.0.6
   '@types/js-yaml': ^4.0.9
@@ -54,7 +54,7 @@ catalog:
   class-transformer: 0.5.1
   class-validator: 0.15.1
   dotenv: 18.0.9
-  eslint: 10.13.0
+  eslint: 10.14.0
   express: 5.3.0
   fast-xml-parser: 5.11.2
   ical.js: 2.2.1
@@ -85,7 +85,7 @@ catalog:
   vitest: 5.0.5
   vm2: ^3.10.5
   vue-router: 5.4.0
-  vue-tsc: 3.3.13
+  vue-tsc: 3.3.14
   vue: 3.5.44
 
 minimumReleaseAgeExclude:

@@ -206,7 +206,7 @@ Three things Reka UI does not do for you:
 
 ## Screenshots
 
-Baselines are the `*-chromium-linux.png` files in `__screenshots__/` folders beside their `*.shots.ts` file, and they are committed. Fonts render differently from machine to machine, so shots are only written or compared inside one pinned image, `mcr.microsoft.com/playwright:v<version>-noble`, where `<version>` is the `playwright` entry of the workspace catalog in `pnpm-workspace.yaml`. `scripts/screenshots.mjs` starts it; running a `*.shots.ts` file any other way is refused.
+Baselines are the `*-chromium-linux.png` files in `__screenshots__/` folders beside their `*.shots.ts` file, and they are committed. Fonts render differently from machine to machine, so shots are only written or compared inside one pinned image, `mcr.microsoft.com/playwright:v<version>-noble`, pinned by digest in `scripts/screenshots.mjs` because Microsoft re-pushes a tag with newer Chrome patches, and a patch moves text by a pixel. The script refuses to start when the installed `playwright` (the workspace catalog in `pnpm-workspace.yaml`) is not the version the digest belongs to, and running a `*.shots.ts` file any other way is refused too.
 
 The other CI jobs install Chromium's headless shell and Firefox with `playwright install` on the runner, without `--with-deps`: the runner image already has the system libraries, and the apt call behind that flag once stalled on a slow Ubuntu mirror for a job's whole twenty-minute budget. The downloads are cached by `actions/cache` under a key that changes with the workspace catalog, so a run after a Playwright bump fetches them once.
 
@@ -215,7 +215,7 @@ The other CI jobs install Chromium's headless shell and Firefox with `playwright
 - A failing comparison writes the actual image and the diff under `packages/ui/.vitest/attachments/`; CI uploads that folder as the `ui-screenshot-diffs` artifact.
 - A new gallery section moves every section below it, and a section that lands on another fraction of a pixel is shot a pixel taller or shorter with its text antialiased differently. So a PR that adds a primitive rewrites the gallery baselines after it in the page too; say so in the description.
 - **A PR that changes a baseline says why in its description**, baseline by baseline or by group ("every section: `--space-3` grew"). A baseline that changed for no stated reason is a regression until explained.
-- Bumping `playwright` changes the image and the browser. Regenerate the baselines in the same PR and say so.
+- Bumping `playwright` changes the image and the browser. Put the new tag's digest (`docker buildx imagetools inspect mcr.microsoft.com/playwright:v<version>-noble`) into `scripts/screenshots.mjs`, regenerate the baselines in the same PR and say so.
 
 A screen's four shots are one call in a `*.shots.ts` file beside the page:
 
