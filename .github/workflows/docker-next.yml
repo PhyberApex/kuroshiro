@@ -8,6 +8,30 @@ jobs:
   checks:
     uses: ./.github/workflows/checks.yml
 
+  # A red main is otherwise only a failed run in the Actions tab and no :next image, and the next
+  # unrelated PR is the first to show it. The issue carries every failing run until it is closed.
+  report-red-main:
+    runs-on: ubuntu-latest
+    needs: checks
+    if: failure()
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      TITLE: 'Checks are red on main'
+    steps:
+      - name: Open or extend the issue for the red main
+        run: |
+          body="Checks failed on main at ${GITHUB_SHA}: ${RUN_URL}"
+          number=$(gh issue list --state open --search "\"${TITLE}\" in:title" --json number,title --jq ".[] | select(.title == \"${TITLE}\") | .number" | head -n 1)
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body "$body"
+          else
+            gh issue create --title "$TITLE" --label ready-for-human --body "$body"
+          fi
+
   build-and-push-next:
     runs-on: ubuntu-latest
     needs: checks

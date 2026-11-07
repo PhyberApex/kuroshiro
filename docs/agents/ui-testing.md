@@ -215,6 +215,7 @@ The other CI jobs install Chromium's headless shell and Firefox with `playwright
 - A failing comparison writes the actual image and the diff under `packages/ui/.vitest/attachments/`; CI uploads that folder as the `ui-screenshot-diffs` artifact.
 - A new gallery section moves every section below it, and a section that lands on another fraction of a pixel is shot a pixel taller or shorter with its text antialiased differently. So a PR that adds a primitive rewrites the gallery baselines after it in the page too; say so in the description.
 - **A PR that changes a baseline says why in its description**, baseline by baseline or by group ("every section: `--space-3` grew"). A baseline that changed for no stated reason is a regression until explained.
+- A shot that would show a value that moves with a dependency holds it still: `PluginPage.shots.ts` mocks `TRMNL_FRAMEWORK_VERSION` from `kuroshiro-shared` at `3.4.0`, since the Framework version field's placeholder names it and every TRMNL framework bump would otherwise rewrite the Plugin page's four baselines.
 - Bumping `playwright` changes the image and the browser. Put the new tag's digest (`docker buildx imagetools inspect mcr.microsoft.com/playwright:v<version>-noble`) into `scripts/screenshots.mjs`, regenerate the baselines in the same PR and say so.
 
 A screen's four shots are one call in a `*.shots.ts` file beside the page:
