@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { api, apiUrl } from '@/testing/api/server'
 import { fakeShellReads, mountApp } from '@/testing/app'
 import { arrived } from '@/testing/arrivals'
@@ -8,6 +8,13 @@ import { expectPageScreenshots } from '@/testing/screenshots'
 import { freezeTime } from '@/testing/time'
 import { dataSourceFetchFailingAlert, expectDataSourceAlertVisible, fakePreviewData, holdPreviewLibrary } from './__test__/pluginPageHarness'
 import { openPluginPage } from './pluginArrival'
+
+// The Framework version field's placeholder names the Instance's version, which every TRMNL framework bump
+// moves. The shots hold it at one version so a bump leaves these baselines alone.
+vi.mock('kuroshiro-shared', async importOriginal => ({
+  ...await importOriginal<typeof import('kuroshiro-shared')>(),
+  TRMNL_FRAMEWORK_VERSION: '3.4.0',
+}))
 
 const source = buildPluginDetail().dataSources[0]!
 
