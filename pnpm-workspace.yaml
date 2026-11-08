@@ -38,7 +38,7 @@ catalog:
   '@nestjs/serve-static': 12.1.1
   '@nestjs/testing': 12.3.3
   '@nestjs/typeorm': 12.0.2
-  '@swc/core': 1.16.21
+  '@swc/core': 1.16.22
   '@tsconfig/node24': 24.0.5
   '@types/express': 5.0.6
   '@types/js-yaml': ^4.0.9
