@@ -45,6 +45,8 @@ const { fileExists, fileModifiedAt, puppeteerPage, puppeteerLaunch } = vi.hoiste
     screenshot: vi.fn(),
     evaluate: vi.fn(),
     close: vi.fn(),
+    setRequestInterception: vi.fn(),
+    on: vi.fn(),
   },
   puppeteerLaunch: vi.fn(),
 }))

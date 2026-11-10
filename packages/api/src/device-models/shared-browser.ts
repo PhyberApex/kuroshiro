@@ -1,4 +1,6 @@
 import type { Browser, Page } from 'puppeteer'
+import type { RenderRequestPolicy } from './render-request-guard.js'
+import { guardRenderRequests } from './render-request-guard.js'
 
 /** Pages drawing at once; further renders wait their turn (ADR-0044). */
 export const MAX_CONCURRENT_PAGES = 4
@@ -7,9 +9,17 @@ let browserPromise: Promise<Browser> | null = null
 let openPages = 0
 const waiting: Array<() => void> = []
 
+/** Until the Instance sets its own (`SharedBrowserService`), loopback is refused and nothing else internal. */
+let requestPolicy: RenderRequestPolicy = { demoMode: false, apiPort: 3000, apiUrl: 'http://localhost:3000' }
+
+/** What every render page from now on may request. */
+export function setRenderRequestPolicy(policy: RenderRequestPolicy): void {
+  requestPolicy = policy
+}
+
 async function launchBrowser(): Promise<Browser> {
   const { default: puppeteer } = await import('puppeteer')
-  return puppeteer.launch({ args: ['--no-sandbox', '--disable-web-security'] })
+  return puppeteer.launch({ args: ['--no-sandbox'], ignoreDefaultArgs: ['--disable-popup-blocking'] })
 }
 
 /** The shared browser, launched on first use and relaunched once it has disconnected or crashed. */
@@ -59,7 +69,8 @@ function releaseSlot(): void {
 
 /**
  * Runs `draw` on a fresh page of the shared browser's default context (one
- * cache for the pinned framework CSS/JS). The page is closed when `draw`
+ * cache for the pinned framework CSS/JS), its requests guarded by the render
+ * request policy before `draw` loads anything. The page is closed when `draw`
  * settles, however it does, and at most {@link MAX_CONCURRENT_PAGES} are open.
  */
 export async function withSharedPage<T>(draw: (page: Page) => Promise<T>): Promise<T> {
@@ -68,6 +79,7 @@ export async function withSharedPage<T>(draw: (page: Page) => Promise<T>): Promi
     const browser = await sharedBrowser()
     const page = await browser.newPage()
     try {
+      await guardRenderRequests(page, requestPolicy)
       return await draw(page)
     }
     finally {

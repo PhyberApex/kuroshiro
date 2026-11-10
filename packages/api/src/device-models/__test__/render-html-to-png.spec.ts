@@ -12,6 +12,8 @@ const { fsMock, puppeteerPage, puppeteerLaunch, convertToPng } = vi.hoisted(() =
     screenshot: vi.fn(),
     evaluate: vi.fn(),
     close: vi.fn(),
+    setRequestInterception: vi.fn(),
+    on: vi.fn(),
   },
   puppeteerLaunch: vi.fn(),
   convertToPng: vi.fn(),

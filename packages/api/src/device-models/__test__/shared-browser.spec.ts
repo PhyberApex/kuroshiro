@@ -8,12 +8,12 @@ vi.mock('puppeteer', () => ({ default: { launch: puppeteerLaunch } }))
 const { closeSharedBrowser, withSharedPage, MAX_CONCURRENT_PAGES } = await import('../shared-browser.js')
 
 function fakeBrowser() {
-  const pages: Array<{ close: ReturnType<typeof vi.fn> }> = []
+  const pages: Array<{ close: ReturnType<typeof vi.fn>, setRequestInterception: ReturnType<typeof vi.fn>, on: ReturnType<typeof vi.fn> }> = []
   const browser = {
     connected: true,
     close: vi.fn().mockResolvedValue(undefined),
     newPage: vi.fn(async () => {
-      const page = { close: vi.fn().mockResolvedValue(undefined) }
+      const page = { close: vi.fn().mockResolvedValue(undefined), setRequestInterception: vi.fn().mockResolvedValue(undefined), on: vi.fn() }
       pages.push(page)
       return page
     }),
@@ -79,6 +79,26 @@ describe('shared browser', () => {
 
     await expect(withSharedPage(async () => {})).rejects.toThrow('no chromium')
     await expect(withSharedPage(async () => 'ok')).resolves.toBe('ok')
+  })
+
+  it('launches Chromium with web security and the popup blocker on', async () => {
+    const { browser } = fakeBrowser()
+    puppeteerLaunch.mockResolvedValue(browser)
+
+    await withSharedPage(async () => {})
+
+    expect(puppeteerLaunch.mock.calls[0][0].args).not.toContain('--disable-web-security')
+    expect(puppeteerLaunch.mock.calls[0][0].ignoreDefaultArgs).toContain('--disable-popup-blocking')
+  })
+
+  it('guards a page\'s requests before the draw loads anything into it', async () => {
+    const { browser, pages } = fakeBrowser()
+    puppeteerLaunch.mockResolvedValue(browser)
+
+    await withSharedPage(async () => {
+      expect(pages[0].setRequestInterception).toHaveBeenCalledWith(true)
+      expect(pages[0].on).toHaveBeenCalledWith('request', expect.any(Function))
+    })
   })
 
   it('closes the browser on close', async () => {
