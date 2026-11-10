@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PluginSummary, RecipeSort } from 'kuroshiro-shared'
+import type { RecipeSort } from 'kuroshiro-shared'
 import type { GalleryView } from './recipeGallery'
 import { computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -9,7 +9,7 @@ import TitleLine from '@/patterns/TitleLine.vue'
 import { useLoad } from '@/patterns/useLoad'
 import { useSearchInAddress } from '@/patterns/useSearchInAddress'
 import { useCarriedDevice } from './carriedDevice'
-import { categoryOf, categoryOptions, countLine, endLine, EVERY_CATEGORY, noMatchSentence, recipeHeadingId, searchable, sortOf, tooShort, useRecipeGallery } from './recipeGallery'
+import { categoryOf, categoryOptions, countLine, endLine, EVERY_CATEGORY, heldByRecipe, noMatchSentence, recipeHeadingId, searchable, sortOf, tooShort, useRecipeGallery } from './recipeGallery'
 import RecipeGalleryBar from './RecipeGalleryBar.vue'
 import RecipeGalleryEmpty from './RecipeGalleryEmpty.vue'
 import RecipeGalleryList from './RecipeGalleryList.vue'
@@ -37,7 +37,9 @@ const sort = computed<RecipeSort>({
   set: chosen => holdInAddress({ sort: chosen === 'install' ? undefined : chosen }),
 })
 
-const { typed, clear: clearSearch } = useSearchInAddress({ sought: () => sought.value, searchable, hold: q => holdInAddress({ q }) })
+// One or two characters search for nothing new: the grid is left as it is, whatever was searched for before.
+const searchedFor = (text: string) => tooShort(text) ? sought.value : searchable(text)
+const { typed, clear: clearSearch } = useSearchInAddress({ sought: () => sought.value, searchable: searchedFor, hold: q => holdInAddress({ q }) })
 
 function showEvery() {
   clearSearch()
@@ -50,14 +52,7 @@ const categoryChoices = computed(() => categoryOptions(categories.data ?? []))
 
 // The line about an earlier import is a courtesy: when the Plugins cannot be read it is left out.
 const plugins = useLoad(listPlugins)
-const heldBy = computed(() => {
-  const held = new Map<string, PluginSummary[]>()
-  for (const plugin of plugins.data ?? []) {
-    if (plugin.sourceRecipeId)
-      held.set(plugin.sourceRecipeId, [...held.get(plugin.sourceRecipeId) ?? [], plugin])
-  }
-  return held
-})
+const heldBy = computed(() => heldByRecipe(plugins.data ?? []))
 
 const counted = computed(() => gallery.shown
   ? countLine({ shown: gallery.shown.recipes.length, total: gallery.shown.total, filtered: gallery.filtered, sort: view.value.sort })

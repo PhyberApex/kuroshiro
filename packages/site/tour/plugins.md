@@ -15,8 +15,6 @@ A **Plugin** pulls outside data into a [Liquid](https://shopify.github.io/liquid
 
 Don't want to build a Plugin from scratch? The **Recipe Gallery** searches [trmnl.com](https://trmnl.com/recipes)'s published **Recipes** by name, category and install count without leaving Kuroshiro, and imports the one you pick in a click; an id or URL pasted into Add a Plugin works too, and is the way to reach an unlisted Recipe. Either way it becomes a ready-to-use Poll Plugin, Recipes with a serverless transform included. Nothing updates by itself: a **Recipe Update Check** downloads the Recipe again and shows what changed before anything is applied.
 
-<ThemedShot name="recipe-gallery" />
-
 ## Sensors in Templates
 
 For OG Devices with a Qwiic sensor add-on, the CO₂, humidity, pressure and temperature readings are available to every Template as `sensors.*`, with no extra setup.

@@ -4,6 +4,7 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common'
 import { RECIPE_CATEGORY_PATTERN, RECIPE_GALLERY_PAGE_SIZE, RECIPE_SEARCH_MIN_LENGTH } from 'kuroshiro-shared'
 import { ApiException } from '../../errors/api.exception.js'
 import { downloadLimited } from '../../utils/downloadLimited.js'
+import { getErrorMessage } from '../../utils/getErrorMessage.js'
 import { isPlainObject } from '../../utils/json.js'
 import { toRecipeGalleryPage } from '../recipe-gallery.mapper.js'
 
@@ -13,7 +14,7 @@ const CATEGORIES_URL = 'https://trmnl.com/api/categories'
 
 const FETCH_TIMEOUT_MS = 15_000
 /** A page of 25 Recipes, each with its Plugin Fields, measured well under 1 MiB. */
-const LIST_LIMIT_BYTES = 4 * 1024 * 1024
+const READ_LIMIT_BYTES = 4 * 1024 * 1024
 const CATEGORIES_HELD_MS = 60 * 60_000
 
 class TrmnlBusy extends Error {}
@@ -54,7 +55,7 @@ export class RecipeGalleryService {
     catch (error) {
       if (error instanceof TrmnlBusy)
         throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, 'upstream-busy', 'trmnl.com is over its request limit. Wait a minute and try again.')
-      throw upstreamUnreachable(error instanceof Error ? error.message : String(error))
+      throw upstreamUnreachable(getErrorMessage(error))
     }
     if (!isPlainObject(body) || !Array.isArray(body.data))
       throw upstreamUnreachable('what it answered is not a list of Recipes')
@@ -74,13 +75,13 @@ export class RecipeGalleryService {
       return slugs
     }
     catch (error) {
-      this.logger.warn(`TRMNL's Recipe categories could not be read: ${error instanceof Error ? error.message : String(error)}`)
+      this.logger.warn(`TRMNL's Recipe categories could not be read: ${getErrorMessage(error)}`)
       return []
     }
   }
 
   private async readJson(url: string): Promise<unknown> {
-    const { status, ok, buffer } = await downloadLimited(url, { limitBytes: LIST_LIMIT_BYTES, timeoutMs: FETCH_TIMEOUT_MS })
+    const { status, ok, buffer } = await downloadLimited(url, { limitBytes: READ_LIMIT_BYTES, timeoutMs: FETCH_TIMEOUT_MS })
     if (status === 429)
       throw new TrmnlBusy('it is over its request limit')
     if (!ok)

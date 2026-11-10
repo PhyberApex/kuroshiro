@@ -10,7 +10,7 @@ What every screen of `packages/ui` stands on: the shell, the router, the API cli
 | `reads/` | `sharedReads.ts`: the reads made once for the whole app |
 | `router/` | `routes.ts` (every route) and `index.ts` (`createAppRouter`, the scroll behaviour) |
 | `shell/` | The bar, the phone's bottom tabs, the demo line, the page column |
-| `patterns/` | The shared page patterns: `TitleLine`, `BackLink`, `LoadBody`, `LoadingLine`, `WashBar`, `MissingPage`, `RelativeTime`, `UnsavedChanges`, `PageSection`, `ReadRow`, `ChoiceBesideForm`, `AddFormFoot`, `useLoad`, `joinLoads`, `usePolling`, `useNow`, `usePageTitle`, `useNarrowWindow`, `time.ts`, `listed` |
+| `patterns/` | The shared page patterns: `TitleLine`, `BackLink`, `LoadBody`, `LoadingLine`, `WashBar`, `MissingPage`, `RelativeTime`, `UnsavedChanges`, `PageSection`, `ReadRow`, `ChoiceBesideForm`, `AddFormFoot`, `useLoad`, `joinLoads`, `useSearchInAddress`, `usePolling`, `useNow`, `usePageTitle`, `useNarrowWindow`, `time.ts`, `listed` |
 | `pages/` | One component per route, `<Name>Page.vue`, in a folder per surface (`pages/devices/`, `pages/plugins/`, `pages/instance/`). The pages at its top are the shell's own: the landing route and the unknown route |
 | `components/` | The primitives |
 

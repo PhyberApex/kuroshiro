@@ -1,7 +1,7 @@
-import type { RecipeGalleryPage, RecipeGalleryQuery, RecipeSort } from 'kuroshiro-shared'
+import type { PluginSummary, RecipeGalleryPage, RecipeGalleryQuery, RecipeSort } from 'kuroshiro-shared'
 import type { SelectOption } from '@/components/selectOption'
 import { RECIPE_CATEGORY_PATTERN, RECIPE_SEARCH_MIN_LENGTH, RECIPE_SORTS } from 'kuroshiro-shared'
-import { computed, reactive, ref, shallowRef } from 'vue'
+import { computed, reactive, ref, shallowRef, watch } from 'vue'
 import { isRefusal, isUnreachable } from '@/api/client'
 import { listRecipes } from '@/api/plugins'
 import { failureReason } from '@/components/failureReason'
@@ -65,6 +65,16 @@ export function noMatchSentence({ search, category }: Pick<GalleryView, 'search'
 
 export const installsLine = (installs: number) => `${installs.toLocaleString('en')} ${installs === 1 ? 'install' : 'installs'}`
 
+/** The Plugins imported from a Recipe, by the Recipe's id. */
+export function heldByRecipe(plugins: PluginSummary[]): Map<string, PluginSummary[]> {
+  const held = new Map<string, PluginSummary[]>()
+  for (const plugin of plugins) {
+    if (plugin.sourceRecipeId)
+      held.set(plugin.sourceRecipeId, [...held.get(plugin.sourceRecipeId) ?? [], plugin])
+  }
+  return held
+}
+
 /** The notice of a page of Recipes that could not be loaded. */
 export function failedNotice(error: unknown): { title: string, reason?: string } {
   if (isRefusal(error, 'upstream-unreachable'))
@@ -96,20 +106,27 @@ export function useRecipeGallery(view: () => GalleryView) {
 
   // What was appended and what failed belong to the first page they were asked for under; once another first page
   // has taken its place, they are forgotten, and an answer that lands after that is dropped.
-  const grown = shallowRef<{ under: RecipeGalleryPage, page: RecipeGalleryPage }>()
-  const stumble = shallowRef<{ under: RecipeGalleryPage, error: unknown }>()
+  const appended = shallowRef<{ under: RecipeGalleryPage, page: RecipeGalleryPage }>()
+  const moreFailure = shallowRef<{ under: RecipeGalleryPage, error: unknown }>()
   const loadingMore = ref(false)
-  const shown = computed(() => grown.value && grown.value.under === first.data ? grown.value.page : first.data)
-  const moreError = computed(() => stumble.value && stumble.value.under === first.data ? stumble.value.error : undefined)
+  const current = computed(() => appended.value && appended.value.under === first.data ? appended.value.page : first.data)
+  // A view whose first page failed leaves the cards of the view before it under the notice.
+  const earlier = shallowRef<RecipeGalleryPage>()
+  watch(current, (now) => {
+    if (now)
+      earlier.value = now
+  })
+  const shown = computed(() => current.value ?? (first.failure ? earlier.value : undefined))
+  const moreError = computed(() => moreFailure.value && moreFailure.value.under === first.data ? moreFailure.value.error : undefined)
 
   /** Appends the next page and answers the id of its first new Recipe, which takes the focus. */
   async function loadMore(): Promise<string | undefined> {
     const under = first.data
-    const gallery = shown.value
+    const gallery = current.value
     if (!under || !gallery?.hasMore || loadingMore.value)
       return undefined
     loadingMore.value = true
-    stumble.value = undefined
+    moreFailure.value = undefined
     try {
       const next = await listRecipes({ ...galleryQueryOf(view()), page: gallery.page + 1 })
       if (under !== first.data)
@@ -117,11 +134,11 @@ export function useRecipeGallery(view: () => GalleryView) {
       // TRMNL's order can move between two pages, so a Recipe already shown is not shown twice.
       const held = new Set(gallery.recipes.map(recipe => recipe.id))
       const added = next.recipes.filter(recipe => !held.has(recipe.id))
-      grown.value = { under, page: { ...next, recipes: [...gallery.recipes, ...added] } }
+      appended.value = { under, page: { ...next, recipes: [...gallery.recipes, ...added] } }
       return added[0]?.id
     }
     catch (error) {
-      stumble.value = { under, error }
+      moreFailure.value = { under, error }
       return undefined
     }
     finally {

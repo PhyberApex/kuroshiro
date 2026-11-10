@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { ApiRefusal, ServerUnreachable } from '@/api/client'
 import { linkTo, sentence } from '@/pages/devices/sentence'
+import { buildPluginSummary } from '@/testing/fixtures/plugins'
 import { heldFromRecipe } from '../importPlugin'
-import { categoryLabel, countLine, endLine, failedNotice, galleryQueryOf, installsLine, noMatchSentence, searchable, sortOf } from '../recipeGallery'
+import { categoryLabel, countLine, endLine, failedNotice, galleryQueryOf, heldByRecipe, installsLine, noMatchSentence, searchable, sortOf } from '../recipeGallery'
 
 const refusal = (code: ApiRefusal['code']) => new ApiRefusal({ statusCode: 502, code, message: 'The server\'s own sentence.' })
 
@@ -55,6 +56,15 @@ describe('the words of the Recipe Gallery', () => {
   it('names the Plugins already made from a Recipe', () => {
     expect(heldFromRecipe([])).toEqual([])
     expect(heldFromRecipe([{ id: 'a', name: 'Weather' }])).toEqual(sentence('You already have ', linkTo('Weather', '/plugins/a'), ' from this Recipe.'))
+  })
+})
+
+describe('the Plugins already imported', () => {
+  it('are grouped by their Recipe, and a Plugin from no Recipe is left out', () => {
+    const tonight = { ...buildPluginSummary({ id: 'a', name: 'Tonight', sourceRecipeId: '41120' }) }
+    const moon = { ...buildPluginSummary({ id: 'b', name: 'Moon', sourceRecipeId: '41120' }) }
+    const own = buildPluginSummary({ id: 'c', sourceRecipeId: null })
+    expect([...heldByRecipe([tonight, own, moon])]).toEqual([['41120', [tonight, moon]]])
   })
 })
 

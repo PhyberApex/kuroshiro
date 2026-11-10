@@ -111,6 +111,21 @@ describe('the Recipe Gallery', () => {
       await expect.element(card(screen, 'Moon Phase')).toBeVisible()
     })
 
+    it('leaves the search it holds when the field is shortened to under three characters', async () => {
+      const faked = fakeGallery({ recipes: query => HttpResponse.json(query.get('search') === 'weather' ? pageOf([RECIPES[2]!], { total: 1 }) : pageOf(RECIPES)) })
+      const screen = await mountGallery('/plugins/recipes?q=weather')
+      await expect.element(counted(screen)).toHaveTextContent('Showing 1 of 1 Recipe that matches, most installed first')
+      const asked = faked.asked.length
+
+      await searchField(screen).fill('we')
+
+      await expect.element(searchField(screen)).toHaveAccessibleDescription('A search needs three characters.')
+      await new Promise(resolve => setTimeout(resolve, 400))
+      expect(faked.asked).toHaveLength(asked)
+      expect(address(screen)).toBe('/plugins/recipes?q=weather')
+      await expect.element(card(screen, 'Weather Station')).toBeVisible()
+    })
+
     it('opens with the search, the category and the order the address holds', async () => {
       const faked = fakeGallery()
       const screen = await mountGallery('/plugins/recipes?q=weather&category=calendar&sort=newest')
@@ -374,6 +389,17 @@ describe('the Recipe Gallery', () => {
 
       await expect.element(card(screen, 'Moon Phase')).toBeVisible()
       await expect.element(screen.getByRole('alert')).not.toBeInTheDocument()
+    })
+
+    it('keeps the cards of the view before under the notice when a new order cannot be loaded', async () => {
+      fakeGallery({ recipes: query => query.get('sort') === 'newest' ? refuseWith({ statusCode: 503, code: 'upstream-busy' })() : HttpResponse.json(pageOf(RECIPES)) })
+      const screen = await mountGallery()
+      await expect.element(card(screen, 'Moon Phase')).toBeVisible()
+
+      await choose(screen, 'Order', 'Newest')
+
+      await expect.element(screen.getByRole('alert')).toHaveTextContent('trmnl.com is busy with other requests. Wait a minute and try again.')
+      await expect.element(card(screen, 'Moon Phase')).toBeVisible()
     })
 
     it('says Kuroshiro\'s server is not answering', async () => {
