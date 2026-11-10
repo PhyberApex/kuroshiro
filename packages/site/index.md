@@ -30,7 +30,7 @@ features:
     link: /tour/screens
     linkText: Screens
   - title: Plugins and Recipes
-    details: Poll external APIs through multiple named Data Sources or accept pushed Webhooks, render with Liquid, or import a Recipe straight from trmnl.com.
+    details: Poll external APIs through multiple named Data Sources or accept pushed Webhooks, render with Liquid, or browse trmnl.com's Recipe catalog in the admin UI and import one in a click.
     link: /tour/plugins
     linkText: Plugins
   - title: Alerts

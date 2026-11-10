@@ -133,8 +133,12 @@ The number of consecutive scheduled renders on which a `fetch`-mode Data Source'
 _Avoid_: Error count, failure counter, fetch status, last error (bare — the streak carries the last error message, but the message alone is not the streak)
 
 **Recipe**:
-A pre-built, TRMNL-vetted Plugin template published at trmnl.com/recipes, importable into Kuroshiro by pasting its id or page URL. A Recipe exists only as an import source — the result of importing one is a normal Poll-kind Plugin, indistinguishable from a hand-built one, carrying its source Recipe's id and a Recipe Snapshot. Nothing updates automatically; an admin runs a Recipe Update Check by hand.
+A pre-built, TRMNL-vetted Plugin template published at trmnl.com/recipes, importable into Kuroshiro from the Recipe Gallery or by pasting its id or page URL. A Recipe exists only as an import source — the result of importing one is a normal Poll-kind Plugin, indistinguishable from a hand-built one, carrying its source Recipe's id and a Recipe Snapshot. Nothing updates automatically; an admin runs a Recipe Update Check by hand.
 _Avoid_: Extension, Exchange (Terminus's terms), Plugin (the imported result — see above)
+
+**Recipe Gallery**:
+TRMNL's published Recipes, searched and ordered inside Kuroshiro: the admin UI asks Kuroshiro's API, which asks trmnl.com's public Recipe list. A browse surface only — it holds nothing, stores nothing and is never fetched on a schedule, and importing from it is the same import as pasting a Recipe's id. Shows published Recipes only; an unlisted one is reachable by id alone.
+_Avoid_: Marketplace, catalog, store, Extension Gallery (Terminus's term), Recipe browser
 
 **Recipe Snapshot**:
 The copy of a Recipe, as the importer parsed it, that an imported Plugin keeps alongside its source Recipe id. The base a Recipe Update Check diffs against, replaced wholesale every time an update is applied. A Plugin imported before snapshots existed has none.
