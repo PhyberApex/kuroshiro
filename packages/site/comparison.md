@@ -15,7 +15,7 @@ Kuroshiro isn't the only way to run a TRMNL: the device also works with the offi
 | Accounts | Single admin, no login | Multi-user accounts with email verification | Cloud account required |
 | Device models & palettes | Full official catalog synced daily, plus admin-created custom colour Palettes | Device models & palettes supported | Defines the catalog—sells the hardware |
 | Plugins | `Poll` (multiple named Data Sources, each fetched or a literal value) & `Webhook` (3 merge strategies) | "Extensions"/Exchanges, single- or multi-source polling | 1,000+ native, community & private plugins |
-| Recipe import | Imports any trmnl.com Recipe, including serverless-transform ones Terminus's importer rejects | Imports via its Extension Gallery | Native—it's the source catalog |
+| Recipe import | Browse, search and sort the trmnl.com catalog in the admin UI and import in one click, or paste an id—serverless-transform Recipes included, which Terminus's importer rejects | Imports via its Extension Gallery | Native—it's the source catalog |
 | Screen scheduling | Per-Screen day/time Schedule gates rotation eligibility | Playlist model: weekday/date windows, skip-if-stale TTL, device-grouped playlists | Playlist Scheduler, group scheduling by time of day |
 | Mashups | 7 layouts | Supported | 8 layouts |
 | Firmware | Official sync + custom OTA upload, hard-blocked unless the Firmware is compatible with the Device's model | Official sync + custom upload, no model-compatibility link | Manages its own hardware directly |
