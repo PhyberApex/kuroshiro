@@ -5,6 +5,7 @@ import { DataSource } from 'typeorm'
 import { AppModule } from './app.module.js'
 import config, { logUnknownEnvVars } from './config/config.js'
 import { migrationLogger } from './config/migration-logger.js'
+import { registerCrossSiteRefusal } from './cross-site/cross-site.guard.js'
 import { registerErrorEnvelope } from './errors/register-error-envelope.js'
 import { LoggingInterceptor } from './interceptors/logging.interceptor.js'
 import { ingressBasePathMiddleware } from './middleware/ingress-base-path.middleware.js'
@@ -30,6 +31,7 @@ async function bootstrap() {
   }
   app.setGlobalPrefix('api', { exclude: ['metrics', 'health'] })
   registerErrorEnvelope(app)
+  registerCrossSiteRefusal(app)
   app.useGlobalInterceptors(new LoggingInterceptor())
   // Lets SIGTERM run the modules' destroy hooks, which close the shared render browser rather than orphan it (ADR-0044).
   app.enableShutdownHooks()
