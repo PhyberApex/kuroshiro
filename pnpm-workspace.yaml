@@ -9,7 +9,7 @@ allowBuilds:
   vue-demi: false
 
 overrides:
-  '@vitest/mocker>msw': 3.0.3
+  '@vitest/mocker>msw': 3.0.4
 
 catalog:
   '@antfu/eslint-config': 10.0.0
