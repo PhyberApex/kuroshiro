@@ -6,7 +6,7 @@ Each call of `renderHtmlToPng` (Screen and Mashup `/display`, Fallback Screens, 
 - **A dead browser is replaced.** If it has disconnected or crashed, the next render launches a fresh one; a failed launch is retried by the next render.
 - **A render is a page in the default context.** Each render opens a new page and closes it when it finishes, whether it succeeds, returns early on a Render Signal (ADR-0031) or throws. The default context keeps the pinned framework assets in one cache.
 - **At most 4 pages draw at once.** Further renders wait in a queue. The limit is fixed, not configuration.
-- **Unchanged.** Launch args, `PUPPETEER_EXECUTABLE_PATH` in Docker, viewport, screenshot and conversion, and the device preview's own one-at-a-time guard (ADR-0040). _(Launch args changed by ADR-0073: web security and the popup blocker are on, and a render page's requests are checked.)_
+- **Unchanged.** Launch args, `PUPPETEER_EXECUTABLE_PATH` in Docker, viewport, screenshot and conversion, and the device preview's own one-at-a-time guard (ADR-0040). _(Launch args changed by ADR-0074: web security and the popup blocker are on, and a render page's requests are checked.)_
 
 ## Considered and rejected
 
