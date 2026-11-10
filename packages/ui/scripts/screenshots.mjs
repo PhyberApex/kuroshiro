@@ -8,8 +8,8 @@ import process from 'node:process'
 // sub-pixel rendering enough to fail baselines. So the image is pinned by digest too, and a
 // Playwright bump has to bring the digest of its new tag along with regenerated baselines.
 const pinnedImage = {
-  version: '1.64.1',
-  digest: 'sha256:2f05f8a734509a7b3f26a912639488ee08f58a7b292d14d62271bcff9038768f',
+  version: '1.65.0',
+  digest: 'sha256:6e3fb709361521eb27161606e6da6d2674e5e89fa16516cb37d6fdd91372273d',
 }
 
 const { version } = createRequire(import.meta.url)('playwright/package.json')
