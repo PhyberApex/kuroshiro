@@ -18,13 +18,14 @@ for (const [network, prefix] of [['0.0.0.0', 8], ['127.0.0.0', 8], ['10.0.0.0', 
 for (const [network, prefix] of [['::', 128], ['::1', 128], ['fc00::', 7], ['fe80::', 10]] as const)
   PRIVATE_ADDRESSES.addSubnet(network, prefix, 'ipv6')
 
-function isPrivateAddress(ip: string): boolean {
+/** Whether an IP address is one of the internal ranges above; a host name is not an address and is never private here. */
+export function isPrivateAddress(ip: string): boolean {
   const family = net.isIP(ip)
   return family !== 0 && PRIVATE_ADDRESSES.check(ip, family === 4 ? 'ipv4' : 'ipv6')
 }
 
 /** The host a URL names, lower-cased, without IPv6 brackets or a trailing dot. */
-function hostnameOf(url: string): string {
+export function hostnameOf(url: string): string {
   let parsed: URL
   try {
     parsed = new URL(url)
