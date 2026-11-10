@@ -19,7 +19,7 @@ export function setRenderRequestPolicy(policy: RenderRequestPolicy): void {
 
 async function launchBrowser(): Promise<Browser> {
   const { default: puppeteer } = await import('puppeteer')
-  return puppeteer.launch({ args: ['--no-sandbox'] })
+  return puppeteer.launch({ args: ['--no-sandbox'], ignoreDefaultArgs: ['--disable-popup-blocking'] })
 }
 
 /** The shared browser, launched on first use and relaunched once it has disconnected or crashed. */

@@ -11,8 +11,10 @@ const { closeSharedBrowser, withSharedPage } = await import('../shared-browser.j
 const { SharedBrowserService } = await import('../shared-browser.service.js')
 
 function configWith(values: Record<string, unknown>): ConfigService {
-  return asService<ConfigService>({ get: (key: string) => values[key] })
+  return asService<ConfigService>({ getOrThrow: (key: string) => values[key] })
 }
+
+const SELF_HOSTED = { demo_mode: false, port: 3000, api_url: 'https://kuroshiro.example.com' }
 
 function fakePage() {
   return { close: vi.fn().mockResolvedValue(undefined), setRequestInterception: vi.fn().mockResolvedValue(undefined), on: vi.fn() }
@@ -45,25 +47,25 @@ describe('sharedBrowserService', () => {
     puppeteerLaunch.mockResolvedValue(browser)
     await withSharedPage(async () => {})
 
-    await new SharedBrowserService(configWith({})).onModuleDestroy()
+    await new SharedBrowserService(configWith(SELF_HOSTED)).onModuleDestroy()
 
     expect(browser.close).toHaveBeenCalledOnce()
   })
 
   it('has render pages refuse a private address in demo mode', async () => {
-    void new SharedBrowserService(configWith({ demo_mode: true, port: 3000, api_url: 'https://kuroshiro.example.com' }))
+    void new SharedBrowserService(configWith({ ...SELF_HOSTED, demo_mode: true }))
 
     expect(await settledAs('http://10.0.0.7/')).toBe('abort')
   })
 
   it('lets render pages reach a private address on a self-hosted Instance', async () => {
-    void new SharedBrowserService(configWith({ demo_mode: false, port: 3000, api_url: 'https://kuroshiro.example.com' }))
+    void new SharedBrowserService(configWith(SELF_HOSTED))
 
     expect(await settledAs('http://10.0.0.7/')).toBe('continue')
   })
 
   it('has render pages refuse the API on the port it is configured to listen on', async () => {
-    void new SharedBrowserService(configWith({ demo_mode: false, port: 8080, api_url: 'https://kuroshiro.example.com' }))
+    void new SharedBrowserService(configWith({ ...SELF_HOSTED, port: 8080 }))
 
     expect(await settledAs('http://127.0.0.1:8080/api/devices')).toBe('abort')
     expect(await settledAs('https://kuroshiro.example.com/api/config/export')).toBe('abort')

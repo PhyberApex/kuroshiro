@@ -81,13 +81,14 @@ describe('shared browser', () => {
     await expect(withSharedPage(async () => 'ok')).resolves.toBe('ok')
   })
 
-  it('launches Chromium with web security on', async () => {
+  it('launches Chromium with web security and the popup blocker on', async () => {
     const { browser } = fakeBrowser()
     puppeteerLaunch.mockResolvedValue(browser)
 
     await withSharedPage(async () => {})
 
     expect(puppeteerLaunch.mock.calls[0][0].args).not.toContain('--disable-web-security')
+    expect(puppeteerLaunch.mock.calls[0][0].ignoreDefaultArgs).toContain('--disable-popup-blocking')
   })
 
   it('guards a page\'s requests before the draw loads anything into it', async () => {

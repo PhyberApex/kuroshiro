@@ -1,6 +1,8 @@
+import type { HTTPRequest } from 'puppeteer'
 import type { RenderRequestPolicy, Resolver } from '../render-request-guard.js'
-import { describe, expect, it } from 'vitest'
-import { renderRequestRefusal } from '../render-request-guard.js'
+import { describe, expect, it, vi } from 'vitest'
+import { asService } from '../../test/mockService.js'
+import { renderRequestRefusal, settleRenderRequest } from '../render-request-guard.js'
 
 const SELF_HOSTED: RenderRequestPolicy = { demoMode: false, apiPort: 3000, apiUrl: 'https://kuroshiro.example.com' }
 const DEMO: RenderRequestPolicy = { ...SELF_HOSTED, demoMode: true }
@@ -111,5 +113,74 @@ describe('renderRequestRefusal', () => {
     it('refuses a name that does not resolve, since no address was checked', async () => {
       expect(await refusal('https://no-such-host.example.org/', DEMO)).not.toBeNull()
     })
+  })
+})
+
+describe('settleRenderRequest', () => {
+  function pageRequest(url: string) {
+    return {
+      url: () => url,
+      method: () => 'GET',
+      headers: () => ({ accept: 'text/css' }),
+      postData: () => undefined,
+      continue: vi.fn().mockResolvedValue(undefined),
+      abort: vi.fn().mockResolvedValue(undefined),
+      respond: vi.fn().mockResolvedValue(undefined),
+    }
+  }
+
+  const css = () => new Response('.title { font-weight: bold }', { status: 200, headers: { 'content-type': 'text/css', 'content-encoding': 'gzip', 'content-length': '999' } })
+
+  it('lets a self-hosted request through to Chromium', async () => {
+    const request = pageRequest('http://10.0.0.7/')
+    const requester = vi.fn()
+
+    await settleRenderRequest(asService<HTTPRequest>(request), SELF_HOSTED, requester)
+
+    expect(request.continue).toHaveBeenCalledOnce()
+    expect(requester).not.toHaveBeenCalled()
+  })
+
+  it('aborts a refused request without making it', async () => {
+    const request = pageRequest('http://127.0.0.1:3000/api/devices')
+    const requester = vi.fn()
+
+    await settleRenderRequest(asService<HTTPRequest>(request), DEMO, requester)
+
+    expect(request.abort).toHaveBeenCalledWith('blockedbyclient')
+    expect(request.continue).not.toHaveBeenCalled()
+    expect(requester).not.toHaveBeenCalled()
+  })
+
+  it('makes a demo-mode request through the guarded fetch and answers the page with its decoded response', async () => {
+    const request = pageRequest('https://93.184.216.34/plugins.css')
+    const requester = vi.fn().mockResolvedValue(css())
+
+    await settleRenderRequest(asService<HTTPRequest>(request), DEMO, requester)
+
+    expect(requester).toHaveBeenCalledWith('https://93.184.216.34/plugins.css', expect.objectContaining({ method: 'GET', headers: { accept: 'text/css' } }))
+    expect(request.continue).not.toHaveBeenCalled()
+    const answer = request.respond.mock.calls[0][0]
+    expect(answer.status).toBe(200)
+    expect(answer.headers).toEqual({ 'content-type': 'text/css' })
+    expect(answer.body.toString()).toBe('.title { font-weight: bold }')
+  })
+
+  it('leaves a demo-mode data: address to the browser', async () => {
+    const request = pageRequest('data:text/plain,hi')
+    const requester = vi.fn()
+
+    await settleRenderRequest(asService<HTTPRequest>(request), DEMO, requester)
+
+    expect(request.continue).toHaveBeenCalledOnce()
+    expect(requester).not.toHaveBeenCalled()
+  })
+
+  it('fails when the guarded fetch refuses the address it connected to', async () => {
+    const request = pageRequest('https://93.184.216.34/')
+    const requester = vi.fn().mockRejectedValue(new Error('Requests to private IP ranges are not allowed in demo mode'))
+
+    await expect(settleRenderRequest(asService<HTTPRequest>(request), DEMO, requester)).rejects.toThrow('private IP')
+    expect(request.continue).not.toHaveBeenCalled()
   })
 })

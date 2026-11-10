@@ -1,9 +1,11 @@
 import type { LookupAddress } from 'node:dns'
 import type { HTTPRequest, Page } from 'puppeteer'
+import type { Requester } from '../utils/ssrfGuard.js'
+import buffer from 'node:buffer'
 import { lookup } from 'node:dns/promises'
 import net from 'node:net'
 import os from 'node:os'
-import { assertPublicUrl, hostnameOf, isPrivateAddress } from '../utils/ssrfGuard.js'
+import { assertPublicUrl, fetchPublic, hostnameOf, isPrivateAddress, PRIVATE_IP_MESSAGE } from '../utils/ssrfGuard.js'
 
 /**
  * What a render page may request. Template markup is third-party code (ADR-0072) and runs with JavaScript on, so
@@ -109,7 +111,7 @@ function addressRefusal(addresses: string[], port: number, policy: RenderRequest
   if (port === policy.apiPort && addresses.some(address => own.has(address)))
     return API_REFUSAL
   if (policy.demoMode && addresses.some(isPrivateAddress))
-    return 'Requests to private IP ranges are not allowed in demo mode'
+    return PRIVATE_IP_MESSAGE
   return null
 }
 
@@ -119,7 +121,7 @@ function addressRefusal(addresses: string[], port: number, policy: RenderRequest
  * demo mode, also every internal host, as written and as resolved, as the Data Source guard refuses it.
  *
  * Chromium resolves the name again to connect, so a name answering a public address here and a private one there
- * still gets through; the refusal stops every plain request, not a DNS rebinding attack.
+ * would get through: in demo mode {@link settleRenderRequest} makes the request itself instead.
  */
 export async function renderRequestRefusal(url: string, policy: RenderRequestPolicy, resolve: Resolver = resolveAll, ownAddresses: () => Set<string> = ownInterfaceAddresses): Promise<string | null> {
   const web = webUrlOf(url)
@@ -140,23 +142,48 @@ export async function renderRequestRefusal(url: string, policy: RenderRequestPol
   return addressRefusal(addresses, portOf(web), policy, ownAddresses())
 }
 
-async function settle(request: HTTPRequest, policy: RenderRequestPolicy): Promise<void> {
-  const refusal = await renderRequestRefusal(request.url(), policy)
-  if (refusal === null)
-    await request.continue()
-  else
-    await request.abort('blockedbyclient')
+/** How long the guarded fetch waits for a demo-mode render's request. */
+const DEMO_REQUEST_TIMEOUT_MS = 10_000
+
+/** Headers that describe the body as sent, which fetch has already decoded. */
+const DECODED_BODY_HEADERS = new Set(['content-encoding', 'content-length', 'transfer-encoding'])
+
+/** Makes the page's request through `requester` and answers the page with what came back. */
+async function respondThrough(request: HTTPRequest, requester: Requester): Promise<void> {
+  const response = await requester(request.url(), {
+    method: request.method(),
+    headers: request.headers(),
+    body: request.postData(),
+    signal: AbortSignal.timeout(DEMO_REQUEST_TIMEOUT_MS),
+  })
+  const headers = Object.fromEntries([...response.headers].filter(([name]) => !DECODED_BODY_HEADERS.has(name)))
+  await request.respond({ status: response.status, headers, body: buffer.Buffer.from(await response.arrayBuffer()) })
 }
 
 /**
- * Has `page` refuse every request {@link renderRequestRefusal} refuses, the document's own and its frames' alike: a
+ * Settles one request of a render page: aborted when {@link renderRequestRefusal} refuses it, else let through. In
+ * demo mode a web request is made by `requester`, the guarded fetch, which checks the address it connects to and
+ * every redirect, and the page is answered with its response, so Chromium never connects anywhere itself.
+ */
+export async function settleRenderRequest(request: HTTPRequest, policy: RenderRequestPolicy, requester: Requester = fetchPublic): Promise<void> {
+  const url = request.url()
+  if (await renderRequestRefusal(url, policy) !== null)
+    await request.abort('blockedbyclient')
+  else if (policy.demoMode && webUrlOf(url) instanceof URL)
+    await respondThrough(request, requester)
+  else
+    await request.continue()
+}
+
+/**
+ * Has `page` settle every request with {@link settleRenderRequest}, the document's own and its frames' alike: a
  * refused request fails as a network error would. Leaves the HTTP cache on, so renders keep sharing the framework
- * assets (ADR-0044).
+ * assets (ADR-0044); in demo mode, where the guarded fetch answers instead, they are fetched on every render.
  */
 export async function guardRenderRequests(page: Page, policy: RenderRequestPolicy): Promise<void> {
   await page.setRequestInterception(true)
   page.on('request', (request) => {
-    // Refused when it could not be decided; a request the page closed under has nothing left to settle.
-    settle(request, policy).catch(() => request.abort('blockedbyclient').catch(() => {}))
+    // Refused when it could not be settled; a request the page closed under has nothing left to settle.
+    settleRenderRequest(request, policy).catch(() => request.abort('blockedbyclient').catch(() => {}))
   })
 }

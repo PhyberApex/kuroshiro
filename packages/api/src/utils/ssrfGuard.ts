@@ -7,7 +7,7 @@ import { Agent } from 'undici'
 const PRIVATE_HOSTNAMES = new Set(['localhost', 'metadata.google.internal'])
 const PRIVATE_HOSTNAME_SUFFIXES = ['.local', '.internal', '.localhost']
 
-const PRIVATE_IP_MESSAGE = 'Requests to private IP ranges are not allowed in demo mode'
+export const PRIVATE_IP_MESSAGE = 'Requests to private IP ranges are not allowed in demo mode'
 
 // Addresses that reach the host itself, its private networks or its cloud metadata: "this" network, loopback,
 // RFC 1918, carrier-grade NAT and link-local (RFC 6890), and their IPv6 counterparts. A BlockList matches an

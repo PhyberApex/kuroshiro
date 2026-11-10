@@ -92,6 +92,18 @@ describe('render pages in a browser', () => {
     expect(hits).toEqual([])
   }, 30_000)
 
+  it.runIf(OWN_PRIVATE_ADDRESS)('opens no window a script asks for, which no guard would watch', async () => {
+    setRenderRequestPolicy(policy({ apiPort: 1 }))
+    const url = `http://${OWN_PRIVATE_ADDRESS}:${port}/popup`
+
+    await withSharedPage(async (page) => {
+      await page.setContent(`<html><body><a id="out" href="${url}-link" target="_blank">out</a><script>window.open('${url}'); document.getElementById('out').click()</script></body></html>`, { waitUntil: 'load' })
+      await new Promise(resolve => setTimeout(resolve, 1_000))
+    })
+
+    expect(hits).toEqual([])
+  }, 30_000)
+
   it('still loads the TRMNL framework CSS and JS', async () => {
     setRenderRequestPolicy(policy({ demoMode: true }))
     const target = { model: makeDeviceModel({ width: 800, height: 480 }), palette: makePalette() }
