@@ -47,6 +47,7 @@ const wording: Record<ApiErrorCode, string> = {
   'device-reset-apikey-proxied': 'A Proxied Device cannot be given a new API key.',
   'wipe-proxied': 'A Proxied Device cannot be wiped.',
   'upstream-unreachable': 'TRMNL did not answer.',
+  'upstream-busy': 'trmnl.com is busy with other requests.',
   'template-full-missing': 'A Plugin needs its full Template.',
   'template-invalid': 'A Template cannot be parsed.',
   'notifications-off': 'Notifications are off on this Instance.',
@@ -144,6 +145,7 @@ function wordingBySwitch(code: ApiErrorCode): string {
       return 'The server refused.'
     case 'bad-gateway':
     case 'upstream-unreachable':
+    case 'upstream-busy':
     case 'notification-failed':
     case 'service-unavailable':
     case 'internal':

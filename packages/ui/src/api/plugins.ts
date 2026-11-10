@@ -1,4 +1,4 @@
-import type { ApplyRecipeUpdateInput, CreatePluginInput, ImportGithubPluginInput, ImportRecipeInput, PluginDetail, PluginImportResult, PluginSummary, PreviewData, PreviewDataInput, RecipeUpdatePreview, UpdatePluginInput } from 'kuroshiro-shared'
+import type { ApplyRecipeUpdateInput, CreatePluginInput, ImportGithubPluginInput, ImportRecipeInput, PluginDetail, PluginImportResult, PluginSummary, PreviewData, PreviewDataInput, RecipeGalleryPage, RecipeGalleryQuery, RecipeUpdatePreview, UpdatePluginInput } from 'kuroshiro-shared'
 import { apiDownloadChecked, apiGet, apiSend } from './client'
 
 /** Every Plugin as a row of the list, by name whatever its case. */
@@ -25,6 +25,19 @@ export function createPlugin(input: CreatePluginInput) {
  */
 export function importRecipe(input: ImportRecipeInput) {
   return apiSend<PluginImportResult>('POST', 'plugins/import-recipe', input)
+}
+
+/**
+ * One page of the Recipes TRMNL publishes, read through Kuroshiro. Refused with `upstream-unreachable` when trmnl.com does
+ * not answer and `upstream-busy` when it is over its request limit.
+ */
+export function listRecipes(query: RecipeGalleryQuery) {
+  return apiGet<RecipeGalleryPage>('recipes', { ...query })
+}
+
+/** TRMNL's Recipe category slugs; none when trmnl.com could not be asked. */
+export function listRecipeCategories() {
+  return apiGet<string[]>('recipes/categories')
 }
 
 /** Imports the Plugin a `.zip` holds. Refused with `import-not-zip`, `import-no-plugin`, `import-legacy-format`, `upload-too-large` or `zip-unpacks-too-large`. */

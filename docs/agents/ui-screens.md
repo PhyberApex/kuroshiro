@@ -132,7 +132,7 @@ const { device, listed, name, path } = useDeviceFrame() // from '@/pages/devices
 
 - **It is the one list that is not whole and not `fresh`.** `useDeviceLog(deviceId, filter)` loads the first 50 with `useLoad`, keyed by the Device, the filter and the search, appends older pages by `nextCursor`, and counts what arrived since with `listDeviceLogs(id, { after: newestCursor, limit: 0 })` every 30 seconds and on focus (`usePolling`). New entries join the list only when asked for, except into an empty Device Log.
 - An answer that lands after the filter, the search or the first page has changed is dropped: copy the `firstPages` counter for any read made beside a `useLoad`.
-- The search field holds what is typed; the address holds what is searched for, 300 ms after typing stops and from `DEVICE_LOG_SEARCH_MIN_LENGTH` characters on.
+- The search field holds what is typed; the address holds what is searched for, 300 ms after typing stops and from `DEVICE_LOG_SEARCH_MIN_LENGTH` characters on. That is `useSearchInAddress({ sought, searchable, hold })` of `@/patterns/`, which the Recipe Gallery uses too: it answers `typed` for the field and `clear()` for a "Show all".
 - `RETENTION_PATH` (`pages/instance/instancePaths.ts`) is where the Retention ages are set; the age itself is `getInstanceSettings()`'s `deviceLogRetentionDays.value`, where 0 is Retention not pruning.
 
 ### The Settings page
@@ -517,7 +517,8 @@ So a section's test is "edit, press Save Plugin, assert `faked.saves`". `__test_
 | `addPlugin.ts` | The page's pure parts, and those of the two ways of building: the draft, its problems and what is sent |
 | `BuildPluginForm.vue`, `BuildWebhookMerge.vue` | "Build a Poll Plugin" and "Build a Webhook Plugin": one form, told its `kind`, so a name typed for one way stays for the other |
 | `ImportRecipeForm.vue`, `ImportFileForm.vue`, `ImportGithubForm.vue` | The three ways of importing, one form each. `ImportedBefore.vue` is the line "You already have {Plugin} from this Recipe" |
-| `importPlugin.ts` | What the three share: `useImportPlugin(wording)`, and the pure parts under it (`importTrouble`, `importArrival`, `enteredRecipe`, `importedBefore`) |
+| `importPlugin.ts` | What the three share: `useImportPlugin(wording)`, and the pure parts under it (`importTrouble`, `importArrival`, `enteredRecipe`, `importedBefore`). `RECIPE_IMPORT_WORDING` is how a Recipe's import words its trouble, here and in the Recipe Gallery, and `useImportPluginOnto(device, wording)` is `useImportPlugin` outside this page |
+| `carriedDevice.ts` | `useCarriedDevice()`: the Device the address carries, whether that is known yet, and the back link it gives; the Recipe Gallery has the same |
 
 A way's form is a `form` whose submit adds the Plugin, with an `AddPluginFoot` as its last child:
 
@@ -552,6 +553,20 @@ function add() {
 - `run` sends, and on success opens the Plugin's page with the arrival `imported`, carrying the origin, `hasTransform` and the carried Device.
 - `importing.trouble` says why nothing was imported, by where the form shows it: `entered` under the field (a code listed in `aboutEntry`, worded by the form or, with `true`, by `refusalWording.ts`), `unanswered` as a `Notice` with "Try again" (`upstream-unreachable`), `failure` for the foot (anything else, as "Not imported. …").
 - `recipeIdOf(text)` and `githubRepositoryOf(text)` of `kuroshiro-shared` read a Recipe's id and a repository's `owner/repository` exactly as the server does, so the browser refuses what the server would.
+
+### The Recipe Gallery
+
+`/plugins/recipes` ([plugins.md, "The Recipe Gallery"](../ui/plugins.md#the-recipe-gallery), ADR-0073) is `RecipeGalleryPage.vue`: TRMNL's published Recipes, read through Kuroshiro's own `GET /api/recipes` (`listRecipes(query)`) and `GET /api/recipes/categories` (`listRecipeCategories()`), since `recipes.json` sends the browser no CORS header. The address holds `?q=`, `?category=`, `?sort=` (left out for installs) and `?device=`, never the page reached by paging.
+
+| File | Holds |
+| --- | --- |
+| `recipeGallery.ts` | `useRecipeGallery(view)`: the first 25 for a view with `useLoad`, keyed by it, and `loadMore()`, which appends the next page and answers the id of its first new Recipe for the focus; what was appended or failed is dropped once another first page has taken its place. Beside it, with a node spec, the pure words: the count line, the end line, nothing matching, the orders, the categories as options, the notice of a failed load (`upstream-unreachable`, `upstream-busy`, the server not answering) |
+| `RecipeGalleryBar.vue` | The search with its "three characters" hint, the Category select (left out without categories) and the Order select |
+| `RecipeCard.vue` | One `li`, named by its heading: the screenshot in a `Plate` as an `img` of its own (`loading="lazy"`, `referrerpolicy="no-referrer"`, removed when it cannot load), the words, "You already have …", the refusal, "Import" (`useImportPluginOnto`) and "On trmnl.com" |
+| `RecipeGalleryList.vue`, `RecipeGrid.vue`, `RecipeGalleryEmpty.vue`, `RecipeGalleryLoading.vue` | The count line, the grid and "More Recipes"; the grid both share; the two empty states; the six rendering cards |
+
+- It is the first page that renders an image from outside the instance, TRMNL's bucket: a spec and a shot fake it with `fakeRecipeImages()` (`@/testing/images`). `__test__/recipeGalleryHarness.ts` has `fakeGallery(…)` and `mountGallery(at?)`.
+- It never asks again by itself, and has no `real-api/` journey: that would make CI depend on trmnl.com.
 
 ## The Alerts page and an Alert's words
 

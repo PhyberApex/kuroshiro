@@ -2,7 +2,7 @@
 import { RouterLink } from 'vue-router'
 import Button from '@/components/Button.vue'
 import EmptyState from '@/components/EmptyState.vue'
-import { addPluginPath } from './pluginPaths'
+import { addPluginPath, recipeGalleryPath } from './pluginPaths'
 </script>
 
 <template>
@@ -11,7 +11,7 @@ import { addPluginPath } from './pluginPaths'
     <template #action>
       <span class="choices">
         <Button as-child variant="primary">
-          <RouterLink :to="addPluginPath('recipe')">
+          <RouterLink :to="recipeGalleryPath()">
             Import a Recipe
           </RouterLink>
         </Button>

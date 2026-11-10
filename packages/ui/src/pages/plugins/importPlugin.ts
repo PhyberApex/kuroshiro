@@ -1,7 +1,8 @@
 import type { ApiErrorCode, PluginImportOrigin, PluginImportResult, PluginSummary } from 'kuroshiro-shared'
+import type { Ref } from 'vue'
 import type { CarriedDevice } from './addPlugin'
 import type { PluginArrival } from './pluginArrival'
-import type { Sentence } from '@/pages/devices/sentence'
+import type { Sentence, SentencePart } from '@/pages/devices/sentence'
 import { recipeIdOf } from 'kuroshiro-shared'
 import { nextTick, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -21,15 +22,25 @@ export function enteredRecipe(entered: string): { id: string, problem?: undefine
   return { problem: entered.trim() ? NOT_A_RECIPE : 'Enter a Recipe\'s address or its id.' }
 }
 
+function pluginNames(plugins: Pick<PluginSummary, 'id' | 'name'>[]): (string | SentencePart)[] {
+  return plugins.flatMap((plugin, index) => [
+    ...(index === 0 ? [] : [index === plugins.length - 1 ? ' and ' : ', ']),
+    linkTo(plugin.name, pluginPath(plugin.id)),
+  ])
+}
+
 /** The Plugins that came from the Recipe, as the sentence under the Recipe field; none, no sentence. */
 export function importedBefore(plugins: Pick<PluginSummary, 'id' | 'name'>[]): Sentence {
   if (plugins.length === 0)
     return []
-  const names = plugins.flatMap((plugin, index) => [
-    ...(index === 0 ? [] : [index === plugins.length - 1 ? ' and ' : ', ']),
-    linkTo(plugin.name, pluginPath(plugin.id)),
-  ])
-  return sentence('You already have ', ...names, ` from this Recipe. Importing makes ${plugins.length === 1 ? 'a second' : 'another'} Plugin.`)
+  return sentence('You already have ', ...pluginNames(plugins), ` from this Recipe. Importing makes ${plugins.length === 1 ? 'a second' : 'another'} Plugin.`)
+}
+
+/** The Plugins that came from a Recipe, as its card in the Recipe Gallery says it; none, no sentence. */
+export function heldFromRecipe(plugins: Pick<PluginSummary, 'id' | 'name'>[]): Sentence {
+  if (plugins.length === 0)
+    return []
+  return sentence('You already have ', ...pluginNames(plugins), ' from this Recipe.')
 }
 
 /** How one way of importing words what kept it from importing. */
@@ -76,10 +87,27 @@ export function importArrival({ origin, hasTransform, needsToken, typedByHand }:
   return { how: 'imported', origin: origin.type, name: originName(origin), hasTransform, needsToken, typedByHand, device }
 }
 
+/** How a Recipe's import words its trouble, in Add a Plugin's Recipe way and on a card of the Recipe Gallery alike. */
+export const RECIPE_IMPORT_WORDING: ImportWording = {
+  upstream: 'trmnl.com',
+  aboutEntry: {
+    'recipe-id-invalid': true,
+    'recipe-not-found': true,
+    'recipe-strategy-unsupported': true,
+    'recipe-webhook-transform': true,
+    'recipe-serverless-language': true,
+    'import-no-plugin': 'This Recipe holds no template, so there is nothing to import.',
+  },
+}
+
 /** What the forms of the three ways of importing share: the import under way, its trouble, and the Plugin's page once it worked. */
 export function useImportPlugin(wording: ImportWording) {
+  return useImportPluginOnto(useAddPluginPage().device, wording)
+}
+
+/** {@link useImportPlugin} outside Add a Plugin, with the Device the imported Plugin is assigned to handed in. */
+export function useImportPluginOnto(device: Readonly<Ref<CarriedDevice | undefined>>, wording: ImportWording) {
   const router = useRouter()
-  const { device } = useAddPluginPage()
   const importing = ref(false)
   const imported = ref(false)
   const trouble = ref<ImportTrouble>({})

@@ -4,28 +4,21 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import RadioRow from '@/components/RadioRow.vue'
 import { devicePath } from '@/pages/devices/devicePaths'
-import { possessive } from '@/pages/devices/screenNaming'
 import ChoiceBesideForm from '@/patterns/ChoiceBesideForm.vue'
 import TitleLine from '@/patterns/TitleLine.vue'
-import { useDevices } from '@/reads/sharedReads'
-import { carriedDevice, carryingSettled, chosenWay } from './addPlugin'
+import { chosenWay } from './addPlugin'
 import { addPluginOrigin } from './addPluginOrigin'
 import { provideAddPluginPage } from './addPluginPage'
 import { ADD_PLUGIN_WAYS } from './addPluginWays'
+import { useCarriedDevice } from './carriedDevice'
 import { PLUGINS_PATH } from './pluginPaths'
 
 const route = useRoute()
 const router = useRouter()
-const devices = useDevices()
 
 const ways = ADD_PLUGIN_WAYS.map(({ way, label, hint }) => ({ value: way, label, hint }))
 const chosen = computed(() => chosenWay(ADD_PLUGIN_WAYS, route.query.way))
-const device = computed(() => carriedDevice(devices.data, route.query.device))
-const settled = computed(() => carryingSettled(devices, route.query.device))
-
-const back = computed(() => device.value
-  ? { label: `${possessive(device.value.name)} Screens`, to: devicePath(device.value.id) }
-  : { label: 'All Plugins', to: PLUGINS_PATH })
+const { device, settled, back } = useCarriedDevice()
 
 provideAddPluginPage({
   device,

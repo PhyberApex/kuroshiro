@@ -1,29 +1,23 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 import { importRecipe, listPlugins } from '@/api/plugins'
 import Field from '@/components/Field.vue'
 import Notice from '@/components/Notice.vue'
 import TextInput from '@/components/TextInput.vue'
 import { useLoad } from '@/patterns/useLoad'
 import AddPluginFoot from './AddPluginFoot.vue'
+import { useAddPluginPage } from './addPluginPage'
 import ImportedBefore from './ImportedBefore.vue'
-import { enteredRecipe, useImportPlugin } from './importPlugin'
+import { enteredRecipe, RECIPE_IMPORT_WORDING, useImportPlugin } from './importPlugin'
+import { recipeGalleryPath } from './pluginPaths'
 
 const RECIPE_EXAMPLE = 'https://trmnl.com/recipes/41120'
 const entered = ref('')
 const recipe = computed(() => enteredRecipe(entered.value))
 
-const importing = useImportPlugin({
-  upstream: 'trmnl.com',
-  aboutEntry: {
-    'recipe-id-invalid': true,
-    'recipe-not-found': true,
-    'recipe-strategy-unsupported': true,
-    'recipe-webhook-transform': true,
-    'recipe-serverless-language': true,
-    'import-no-plugin': 'This Recipe holds no template, so there is nothing to import.',
-  },
-})
+const { device } = useAddPluginPage()
+const importing = useImportPlugin(RECIPE_IMPORT_WORDING)
 watch(entered, importing.clear)
 
 // The line about an earlier import is a courtesy: when the Plugins cannot be read it is left out and the import goes on.
@@ -53,7 +47,9 @@ function add() {
     </Field>
     <ImportedBefore :plugins="fromThisRecipe" />
     <p>
-      <a class="browse" href="https://trmnl.com/recipes" target="_blank" rel="noopener noreferrer">Browse Recipes on trmnl.com</a>
+      <RouterLink class="browse" :to="recipeGalleryPath(device?.id)">
+        Browse the Recipe Gallery
+      </RouterLink>
     </p>
     <Notice v-if="importing.trouble.unanswered" :title="importing.trouble.unanswered" reason="Nothing was imported." action="Try again" @act="add" />
     <AddPluginFoot button="Import Recipe" :running="importing.importing" :changed="!importing.imported && entered.trim() !== ''" :failure="importing.trouble.failure">

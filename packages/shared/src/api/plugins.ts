@@ -405,3 +405,52 @@ export interface ApplyRecipeUpdateInput {
   contentHash: string
   apply: Array<{ itemType: UpdateItemType, key: string }>
 }
+
+/** The orders the Recipe Gallery offers, in its select's order. TRMNL's `fork` is left out: forking means nothing off trmnl.com (ADR-0073). */
+export const RECIPE_SORTS = ['install', 'popularity', 'newest', 'oldest'] as const
+export type RecipeSort = typeof RECIPE_SORTS[number]
+
+/** TRMNL ignores a shorter search, so a shorter one is sent as none. */
+export const RECIPE_SEARCH_MIN_LENGTH = 3
+
+/** How many Recipes one page of the Recipe Gallery holds. */
+export const RECIPE_GALLERY_PAGE_SIZE = 25
+
+/** A category is one of TRMNL's slugs, as `GET /api/recipes/categories` lists them. */
+export const RECIPE_CATEGORY_PATTERN = /^[a-z0-9_-]+$/
+
+export interface RecipeGalleryQuery {
+  /** Matched on TRMNL's side; under `RECIPE_SEARCH_MIN_LENGTH` characters it is no search. */
+  search?: string
+  category?: string
+  /** `install` when absent. */
+  sort?: RecipeSort
+  /** From 1, which it is when absent. */
+  page?: number
+}
+
+/** One Recipe TRMNL publishes, in Kuroshiro's words. */
+export interface RecipeSummary {
+  /** What `ImportRecipeInput.recipe` takes. */
+  id: string
+  name: string
+  description: string | null
+  publishedAt: string | null
+  /** TRMNL's own absolute addresses, rendered as given. */
+  iconUrl: string | null
+  screenshotUrl: string | null
+  /** The Recipe's page on trmnl.com. */
+  recipeUrl: string | null
+  installs: number
+}
+
+/** One page of the Recipe Gallery. */
+export interface RecipeGalleryPage {
+  recipes: RecipeSummary[]
+  /** TRMNL's own count of the Recipes the search and category match. */
+  total: number
+  page: number
+  perPage: number
+  /** Whether TRMNL names a next page. */
+  hasMore: boolean
+}
