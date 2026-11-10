@@ -1,5 +1,6 @@
 import type { AddressInfo } from 'node:net'
 import type { HttpTestApp } from '../../test/httpApp.js'
+import { Buffer } from 'node:buffer'
 import { getRepositoryToken } from '@nestjs/typeorm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ConfigurationController } from '../../configuration/configuration.controller.js'
@@ -19,6 +20,7 @@ const summary = { created: {}, updated: {}, warnings: [] }
 describe('a state-changing admin API request from another site', () => {
   let http: HttpTestApp
   let ownOrigin: string
+  const exportService = { exportToZip: vi.fn() }
   const importService = { importFromZip: vi.fn(), checkZip: vi.fn() }
   const logsService = { addLogToDevice: vi.fn() }
   const ingestService = { ingest: vi.fn(), readPayload: vi.fn() }
@@ -28,7 +30,7 @@ describe('a state-changing admin API request from another site', () => {
     http = await createHttpTestApp({
       controllers: [ConfigurationController, LogsController, WebhookIngestController],
       providers: [
-        { provide: ConfigurationExportService, useValue: { exportToZip: vi.fn() } },
+        { provide: ConfigurationExportService, useValue: exportService },
         { provide: ConfigurationImportService, useValue: importService },
         { provide: LogsService, useValue: logsService },
         { provide: WebhookIngestService, useValue: ingestService },
@@ -54,6 +56,7 @@ describe('a state-changing admin API request from another site', () => {
     return http.request('/api/config/import', { method: 'POST', body, headers })
   }
 
+  // The cases are functions because the own origin is known only once the app listens.
   it.each([
     ['an Origin of another site', () => ({ origin: 'https://evil.example' })],
     ['the opaque Origin null', () => ({ origin: 'null' })],
@@ -75,6 +78,7 @@ describe('a state-changing admin API request from another site', () => {
   it.each([
     ['no Origin, as curl sends', () => ({})],
     ['the request\'s own Origin', () => ({ origin: ownOrigin })],
+    ['an Origin whose host differs from the Host only in case', () => ({ 'origin': 'https://kuroshiro.example', 'x-forwarded-host': 'Kuroshiro.Example' })],
     ['the Host a reverse proxy forwarded as its Origin', () => ({ 'origin': 'https://kuroshiro.example', 'x-forwarded-host': 'kuroshiro.example' })],
     ['Sec-Fetch-Site: same-origin', () => ({ 'sec-fetch-site': 'same-origin' })],
     ['Sec-Fetch-Site: same-origin behind a proxy that rewrote the Host', () => ({ 'sec-fetch-site': 'same-origin', 'origin': 'http://localhost:5173' })],
@@ -87,9 +91,11 @@ describe('a state-changing admin API request from another site', () => {
   })
 
   it('leaves a read alone, whatever its Origin', async () => {
+    exportService.exportToZip.mockResolvedValue(Buffer.from('zip'))
+
     const response = await http.request('/api/config/export', { headers: { 'origin': 'https://evil.example', 'sec-fetch-site': 'cross-site' } })
 
-    expect(response.status).not.toBe(403)
+    expect(response.status).toBe(200)
   })
 
   it('leaves a Device\'s /api/log alone, whatever its Origin', async () => {
