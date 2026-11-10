@@ -13,12 +13,13 @@ Everything under **Plugins** in the rebuilt admin UI except the template editor 
 |---|---|
 | `/plugins` | The Plugins list. `?q=` holds the search, `?show=problems` the filter. |
 | `/plugins/new` | Add a Plugin. `?way=recipe\|file\|github\|poll\|webhook` preselects the way; `?device=:deviceId` carries the Device the new Plugin is assigned to. |
+| `/plugins/recipes` | The Recipe Gallery. `?q=` holds the search, `?category=` the category, `?sort=` the order, `?device=:deviceId` carries the Device the imported Plugin is assigned to. The page reached by paging is not held. |
 | `/plugins/:pluginId` | The Plugin page. `?source=:name` opens that Data Source's row and scrolls to it. The sections answer to `#template`, `#data`, `#values`, `#devices` and `#recipe`. |
 | `/plugins/:pluginId/update` | The Recipe Update Check, for a Plugin imported from a Recipe only. |
 
 A Plugin that does not exist gets the whole-page empty state of the shared patterns: "No Plugin here. It may have been deleted." with "All Plugins" ([render][missing]).
 
-In the bar, "Plugins" is current on all four. A Plugin page and the Recipe Update Check carry a back link above the title ("All Plugins", and "{Plugin}").
+In the bar, "Plugins" is current on all five. A Plugin page, the Recipe Gallery and the Recipe Update Check carry a back link above the title ("All Plugins", "All Plugins", and "{Plugin}").
 
 ## The Plugins list
 
@@ -26,7 +27,7 @@ In the bar, "Plugins" is current on all four. A Plugin page and the Recipe Updat
 
 **For:** finding a Plugin and seeing whether it is healthy.
 
-- Title "Plugins". Actions on the title line: "Build a Plugin" (plain) and "Import a Recipe" (primary). Both open Add a Plugin, with the Poll way and the Recipe way preselected.
+- Title "Plugins". Actions on the title line: "Build a Plugin" (plain), which opens Add a Plugin with the Poll way preselected, and "Import a Recipe" (primary), which opens the Recipe Gallery.
 - One plain row per Plugin, ordered by name, case-insensitive. The whole row is a link to the Plugin page. No thumbnail: a Plugin has no single image, it is rendered per Device. A row, left to right:
   - **The name**, at weight 600.
   - **Kind and origin**, in `ink-soft`: "Poll Plugin" or "Webhook Plugin", with "· from a Recipe" when it was imported from one.
@@ -48,7 +49,7 @@ In the bar, "Plugins" is current on all four. A Plugin page and the Recipe Updat
   - Always: one line in `ink-soft`, "{N} Plugins, by name", followed by "· {n} with a problem" when there are any. With a search or the filter on: "{n} of {N} Plugins".
 - No counts beyond that line, no sorting control, no paging. The list is whole at any length.
 - **Nothing matches** ([render][list-none]): "No Plugin matches" · "No Plugin is called “{query}” among those with a problem." (each half only when it applies) · "Show all Plugins".
-- **Empty** ([render][list-empty]): "No Plugins yet" · "A Plugin fetches data and renders it with a template, for a Device to show as a Screen. Import one as a Recipe from TRMNL, or build your own." · "Import a Recipe" (primary) and "Build a Plugin". The title line carries no actions then.
+- **Empty** ([render][list-empty]): "No Plugins yet" · "A Plugin fetches data and renders it with a template, for a Device to show as a Screen. Import one as a Recipe from TRMNL, or build your own." · "Import a Recipe" (primary) and "Build a Plugin", each going where the title line's action of that name goes. The title line carries no actions then.
 - **Loading** ([render][list-loading]): "Loading Plugins" and four rows of `wash` bars. **Failed** ([render][list-failed]): the notice "Could not load the Plugins."
 - The list asks the server again every 30 seconds, like a Device's Screens view, so a state appears without a reload.
 
@@ -70,7 +71,7 @@ The back link reads "All Plugins". Heading: "Add a Plugin".
 
 Each form ends with its primary button, "Cancel" (back to where the admin came from) and one line in `ink-soft`. The primary button shows the loading mark while it runs. On success the new Plugin's page opens.
 
-- **Recipe.** One field, "Recipe", placeholder "https://trmnl.com/recipes/41120", hint "The address of the Recipe's page on trmnl.com, or only its id." Under it the link "Browse Recipes on trmnl.com". Button "Import Recipe". Line: "Imports as a Poll or Webhook Plugin you can edit. Nothing updates by itself afterwards."
+- **Recipe.** One field, "Recipe", placeholder "https://trmnl.com/recipes/41120", hint "The address of the Recipe's page on trmnl.com, or only its id." Under it the link "Browse the Recipe Gallery". Button "Import Recipe". Line: "Imports as a Poll or Webhook Plugin you can edit. Nothing updates by itself afterwards."
   - When a Plugin from the same Recipe exists, as soon as the id can be read from the field: "You already have {Plugin} from this Recipe. Importing makes a second Plugin." The import is still allowed.
   - Refusals, shown under the field with the problem icon:
 
@@ -100,6 +101,34 @@ Each form ends with its primary button, "Cancel" (back to where the admin came f
 **Building creates the Plugin at once**, with its name, its Plugin Kind and a starter template that shows the name, and opens its page. There is no unsaved "new Plugin" state: the Plugin page has one shape, and a Webhook-kind Plugin has its Webhook URL from the first moment.
 
 **Carrying a Device.** Add Screen on a Device links here with `?device=`. Then the back link reads "{Device}'s Screens", a line under the heading says "It is assigned to {Device} as soon as it exists, at the end of the Order.", and "Cancel" returns to that Device. The new Plugin's page opens with the line "Assigned to {Device}." and the link "Back to {Device}'s Screens".
+
+## The Recipe Gallery
+
+`/plugins/recipes` · `?q=` the search · `?category=` the category · `?sort=` the order · `?device=` the Device carried · the page is not held
+
+**For:** finding a Recipe worth having, without leaving Kuroshiro for trmnl.com. The Gallery holds nothing: it shows what trmnl.com publishes, through Kuroshiro's own API, and every Recipe in it imports the way a pasted id does.
+
+- The back link reads "All Plugins". Heading: "Recipes". Under it one line in `ink-soft`: "Ready-made Plugins published on trmnl.com. Importing one copies it into Kuroshiro; nothing updates by itself afterwards."
+- **The bar above the grid:** a search field, "Search Recipes"; a select "Category", holding "Every category" and then each of TRMNL's category slugs with its first letter capitalised; a select "Order", holding "Most installed" (chosen), "Most popular", "Newest" and "Oldest".
+- **The line under it:** "Showing {n} of {N} Recipes, most installed first", naming the order as the select has it, and "Showing {n} of {N} Recipes that match, most installed first" with a search or a category.
+- **A card**, one per Recipe: the Recipe's screenshot as a plate at the top; its name as the card's heading; its description under that in `ink-soft`, two lines at most; "{n} installs"; and at the bottom "Import" (primary) and the quiet link "On trmnl.com", which opens the Recipe's own page in a new tab. The card itself is not a link, because it carries two controls; each control's accessible name carries the Recipe ("Import {Recipe}", "{Recipe} on trmnl.com"). A Recipe whose screenshot cannot be loaded, or that has none, keeps the plate's empty look.
+- **The pictures** are TRMNL's own addresses, loaded as they scroll into view and without a referrer, so the instance's address does not travel to TRMNL's bucket. They need a browser with internet access; a card without its picture still reads.
+- **A Recipe a Plugin already holds** says so above the buttons, in Add a Plugin's words: "You already have {Plugin} from this Recipe." The import is still allowed and makes a second Plugin.
+- **Import** does what Add a Plugin's "Import Recipe" does with the same id: the button shows the loading mark, the new Plugin's page opens, and a refusal is shown in the card with the problem icon, worded as Add a Plugin words it. The list cannot say in advance which Recipes will be refused — TRMNL does not publish a Recipe's strategy — so a refusal here is an ordinary outcome, not a bug.
+- **Paging.** 25 Recipes at a time. "More Recipes" appends the next 25 below and moves focus to the first of them. At the end: "That is every Recipe that matches.", or "That is the whole catalog." with neither a search nor a category. How far the admin has paged is deliberately not kept in the address: an appended grid is not described by a page number, and restoring one would cost several calls against a request limit the whole instance shares. An address always opens at the first 25.
+- **Search** matches a Recipe on TRMNL's side, from three characters on, 300 ms after typing stops. With one or two characters typed the field's hint reads "A search needs three characters." and the grid is left as it is. The search, the category and the order are kept in the address (`?q=weather&category=calendar&sort=install`); changing any of them starts again at the first page.
+- **Carrying a Device.** Add a Plugin's "Browse the Recipe Gallery" link passes on the Device it is itself carrying, and is the only way `?device=` reaches the Gallery: a Device's Add Screen keeps its existing shortcut to Add a Plugin, and the Plugins list has no Device to carry. Then the back link reads "{Device}'s Screens", the line under the heading adds "It is assigned to {Device} as soon as it exists, at the end of the Order.", and the imported Plugin's page opens with "Assigned to {Device}." and the link "Back to {Device}'s Screens".
+- **Nothing matches:** "No Recipe matches" · "No Recipe is called “{query}”." , with "in {Category}" when one is chosen · "Show every Recipe". With neither a search nor a category: "trmnl.com published no Recipes." and "Try again".
+- **Loading:** "Loading Recipes" and six cards holding the plate in its rendering state over `wash` bars. A page that is appending shows the loading mark in "More Recipes" and keeps the cards it has.
+- **Failed,** as a notice above the grid, with the cards of an earlier load left under it:
+
+  | Cause | Notice |
+  |---|---|
+  | trmnl.com does not answer | "trmnl.com did not answer. No Recipes could be loaded." with "Try again" |
+  | trmnl.com answers that it is over its request limit | "trmnl.com is busy with other requests. Wait a minute and try again." with "Try again" |
+  | Kuroshiro's own server cannot be reached | The shared pattern's "Kuroshiro's server is not answering." |
+
+- The Gallery never asks the server again by itself. Nothing about a published Recipe changes while the admin is looking at it, so the 30-second refresh of the Device-facing views does not apply here.
 
 ## The Plugin page
 
@@ -391,7 +420,7 @@ A Data Source whose fetch failed does not make a slot fail: the Plugin renders w
 
 ## Phone
 
-Works fully below 820 px: the Plugins list with its search, filter and row menu; on the Plugin page, reading the facts and the problems, the Field Values, assigning and unassigning, the Webhook URL with "Reveal" and "Copy", clearing the Webhook Payload, and the save bar, which sits above the bottom tabs; Add a Plugin for every way; the Recipe Update Check, where a diff scrolls sideways inside its block.
+Works fully below 820 px: the Plugins list with its search, filter and row menu; on the Plugin page, reading the facts and the problems, the Field Values, assigning and unassigning, the Webhook URL with "Reveal" and "Copy", clearing the Webhook Payload, and the save bar, which sits above the bottom tabs; Add a Plugin for every way; the Recipe Gallery, whose cards go to one column and whose bar stacks; the Recipe Update Check, where a diff scrolls sideways inside its block.
 
 Only has to stay readable: the template editor, an opened Data Source and the Plugin Fields. Their forms stack to one column and can be used, but nothing is tuned for a phone.
 
@@ -411,6 +440,7 @@ Each uses the tokens and rules of [Design tokens and component inventory](https:
 | Code block | `pre` on `wash` with an optional "Copy" button | default, copied, folded |
 | Diff | `ol` of lines, each named for a screen reader ("removed", "added") | unchanged, removed, added, folded run |
 | Secret field | a password input, or dots and "Replace" | empty, typed, stored |
+| Recipe card | `li` in a `ul`, 1 px ink border, the screenshot in a `Plate` above the name, the description clamped to two lines, the actions on one row at the bottom | default, hover, focus within, already held, importing, refused |
 | Checkbox | native `input type="checkbox"`, as the Schedule editor's "All day" already uses; listed because the inventory has no entry for it | off, on, hover, focus, disabled |
 
 One icon joins the twelve: **more**, three squares in a row on the 16 px grid, for the row menu's button.
@@ -445,7 +475,7 @@ Numbers are those of the [capability inventory](https://github.com/PhyberApex/ku
 | 62 | Assign from the Device, with a shortcut to a new Plugin | [devices.md](./devices.md), Add Screen; the shortcut lands on Add a Plugin carrying the Device |
 | 63 | Unassign from the Device | [devices.md](./devices.md) |
 | 64 | A Plugin Assignment's own enable flag and order | None. Removed, as Primary journeys decided. |
-| 65 | Import a Recipe | Add a Plugin, Recipe; "Import a Recipe" on the list |
+| 65 | Import a Recipe | The Recipe Gallery, where "Import a Recipe" on the list leads; Add a Plugin, Recipe, for an id or an unlisted Recipe |
 | 66 | Recipe Update Check | Plugin page, Recipe; the Recipe Update Check page |
 
 Capability 77 (the Alerts page, where a fetch Alert links to its Plugin) belongs to the Instance spec. This spec gives it the address to link to: `/plugins/:pluginId?source=:name`.
@@ -463,7 +493,10 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 5. Building a Plugin with only a name and a Plugin Kind, with a starter template that shows the name.
 6. Options on a Plugin Field of type select (no column holds them today), and its help text on the read.
 7. In an export: the Plugin Kind, the Merge Strategy and the Stream Limit, so a Webhook-kind Plugin comes back as one.
-8. A worded reason on every import refusal. Today nearly all of them are a server error with no reason: a bad id, a Recipe TRMNL does not have, OAuth, a pushed strategy, a file or repository without a Plugin, TRMNL or GitHub not answering. A Template that cannot be parsed is not a refusal: the Plugin is imported and the editor shows the problem, so a Recipe that works on TRMNL can be brought in and fixed.
+8. A read for the Recipe Gallery: TRMNL's published Recipes for a search, a category, an order and a page, answered as Kuroshiro's own wire type (the Recipe's id, name, description, when it was published, its icon and screenshot addresses, its page on trmnl.com, its install count) with what paging needs beside it: TRMNL's body carries a `total`, which is the `{N}` of the count line, and a next-page address, whose presence is the whole of "there is more" — neither is counted locally nor guessed from a full page. It is Kuroshiro that calls trmnl.com, because `recipes.json` sends no CORS header, and it is Kuroshiro that composes TRMNL's `"{search} #{category}"` search string, whose token order is load-bearing (ADR-0073).
+9. A read for the category list TRMNL publishes, held in memory for an hour, so a failure of it costs the Gallery its category control and nothing else.
+10. Both of those refuse with a reason of their own: the existing `upstream-unreachable` when trmnl.com does not answer, and one new code for its request limit being spent, which the Gallery words as a wait rather than as a failure.
+11. A worded reason on every import refusal. Today nearly all of them are a server error with no reason: a bad id, a Recipe TRMNL does not have, OAuth, a pushed strategy, a file or repository without a Plugin, TRMNL or GitHub not answering. A Template that cannot be parsed is not a refusal: the Plugin is imported and the editor shows the problem, so a Recipe that works on TRMNL can be brought in and fixed.
 
 **To change**
 
@@ -513,6 +546,10 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 - A diff uses sign, weight and strike, no colour.
 - A row menu and one new icon join the inventory.
 - A failed Mashup slot names its Plugin and carries no seal.
+- The Recipe Gallery orders by installs, where TRMNL's own API defaults to newest, and drops TRMNL's `fork` order as meaningless off trmnl.com.
+- The Gallery is where every primary "Import a Recipe" action leads; the paste field keeps its place on Add a Plugin for an id and for an unlisted Recipe.
+- A Recipe's card carries no author's name. TRMNL's list gives a `user_id` and an HTML `author_bio` blob, no plain name; attribution arrives with the import, as the `author_bio` Plugin Field ADR-0010 already keeps.
+- A Recipe's screenshot is hot-linked from TRMNL, not proxied by Kuroshiro (ADR-0073), so the pictures need a browser with internet access.
 
 **Left undecided**
 
