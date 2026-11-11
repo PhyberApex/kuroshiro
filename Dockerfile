@@ -47,8 +47,8 @@ WORKDIR /app
 RUN apk add --no-cache chromium
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
-# Install tini
-RUN apk add --no-cache tini
+# tini reaps Chromium's children; su-exec lets the entrypoint drop root (see entrypoint.sh)
+RUN apk add --no-cache tini su-exec
 
 # Install ImageMagick
 RUN apk add --no-cache \
@@ -63,18 +63,28 @@ RUN apk add --no-cache \
 # reinstalled in this stage and cannot drift from pnpm-lock.yaml. The api's workspace
 # devDependencies (e.g. kuroshiro-shared) are bundled into dist at build time and must
 # not be reintroduced here.
+# Only /app/public is written at runtime, so only it is owned by the unprivileged `node`
+# user the app runs as; the code and node_modules stay root's and read-only to it.
 COPY --from=api-build /prod/api/node_modules ./node_modules
 COPY --from=api-build /app/packages/api/dist ./dist
 # The api reads its own version from the package.json beside dist/ (Instance facts, Configuration Archive).
 COPY --from=api-build /app/packages/api/package.json ./package.json
-COPY --from=ui-build /app/packages/ui/dist ./public
+COPY --chown=node:node --from=ui-build /app/packages/ui/dist ./public
 # The static last-resort Fallback Screens belong to the api and are served at
 # /screens/<kind>.png whatever the UI stage ships.
-COPY --from=api-build /app/packages/api/assets/screens ./public/screens
+COPY --chown=node:node --from=api-build /app/packages/api/assets/screens ./public/screens
+# The directories written at runtime exist up front and belong to `node`, so a fresh named
+# volume mounted on one (README, "Persisting data") starts out owned by `node` too.
+RUN mkdir -p public/screens/devices public/firmware public/colormaps \
+ && chown node:node public/screens/devices public/firmware public/colormaps
 
 # Copy entrypoint
 COPY entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
+
+# The app, ImageMagick and Chromium run unprivileged. Started as root instead (`--user 0`,
+# or an image built on this one), the entrypoint hands /app/public to `node` and drops to it.
+USER node
 
 # Use tini as the entrypoint
 ENTRYPOINT ["/sbin/tini", "--"]

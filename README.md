@@ -220,6 +220,20 @@ Besides the Postgres database, Kuroshiro keeps files the database points at on t
 
 Everything else under `/app/public` ships with the image or is a cache Kuroshiro redraws on demand (Fallback Screens, palette colour maps). Uploads are held in memory, so nothing needs mounting for them; an `/app/uploads` folder only exists on instances that ran an older version, and Housekeeping offers to clear it.
 
+### Running unprivileged
+
+The container runs as the `node` user (uid 1000), not as root. A named volume mounted on one of the paths above starts out owned by `node`; a bind mount has to be writable by uid 1000.
+
+**Upgrading over volumes an older, root-running image wrote:** those files are still root's, and Kuroshiro refuses to start, saying which directory it cannot write. Start the container once as root, and the entrypoint hands everything under `/app/public` to `node` before dropping to it:
+
+```
+docker run --user 0 …                      # or, in docker-compose.yml: user: "0"
+```
+
+Remove `--user 0` again afterwards, or keep it. Kuroshiro still drops to `node` before it starts. Or change the owner yourself: `docker run --rm -v <volume>:/data alpine chown -R 1000:1000 /data`.
+
+Chromium, which renders Plugin and HTML Screens, starts with its sandbox when the container allows the user namespaces it needs. Docker's default seccomp profile does not, so there Kuroshiro logs a warning and renders without the sandbox, as `node`. `--security-opt seccomp=unconfined` (compose: `security_opt: [seccomp=unconfined]`) lets the sandbox start, at the price of the rest of the default profile. ADR-0076 has the details.
+
 ---
 
 ## Packages

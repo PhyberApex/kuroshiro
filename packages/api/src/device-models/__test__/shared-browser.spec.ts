@@ -1,4 +1,5 @@
 import type { Page } from 'puppeteer'
+import { Logger } from '@nestjs/common'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { puppeteerLaunch } = vi.hoisted(() => ({ puppeteerLaunch: vi.fn() }))
@@ -23,10 +24,14 @@ function fakeBrowser() {
 
 const flush = () => new Promise(resolve => setTimeout(resolve, 0))
 
+const launchArgs = (call: number): string[] => puppeteerLaunch.mock.calls[call][0].args
+
 describe('shared browser', () => {
   beforeEach(async () => {
     await closeSharedBrowser()
+    vi.restoreAllMocks()
     vi.resetAllMocks()
+    vi.spyOn(process, 'getuid').mockReturnValue(1000)
   })
 
   it('never has more than 4 pages open; a 5th waits for one to finish', async () => {
@@ -75,7 +80,10 @@ describe('shared browser', () => {
 
   it('retries the launch after a failed one', async () => {
     const { browser } = fakeBrowser()
-    puppeteerLaunch.mockRejectedValueOnce(new Error('no chromium')).mockResolvedValueOnce(browser)
+    puppeteerLaunch
+      .mockRejectedValueOnce(new Error('no chromium'))
+      .mockRejectedValueOnce(new Error('no chromium'))
+      .mockResolvedValueOnce(browser)
 
     await expect(withSharedPage(async () => {})).rejects.toThrow('no chromium')
     await expect(withSharedPage(async () => 'ok')).resolves.toBe('ok')
@@ -89,6 +97,57 @@ describe('shared browser', () => {
 
     expect(puppeteerLaunch.mock.calls[0][0].args).not.toContain('--disable-web-security')
     expect(puppeteerLaunch.mock.calls[0][0].ignoreDefaultArgs).toContain('--disable-popup-blocking')
+  })
+
+  it('launches Chromium sandboxed when running unprivileged, only its GPU process let out', async () => {
+    const { browser } = fakeBrowser()
+    puppeteerLaunch.mockResolvedValue(browser)
+
+    await withSharedPage(async () => {})
+
+    expect(puppeteerLaunch).toHaveBeenCalledOnce()
+    expect(launchArgs(0)).not.toContain('--no-sandbox')
+    expect(launchArgs(0)).toContain('--disable-gpu-sandbox')
+  })
+
+  it('falls back to --no-sandbox, with a warning, when the sandbox cannot start', async () => {
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+    const { browser } = fakeBrowser()
+    puppeteerLaunch.mockRejectedValueOnce(new Error('No usable sandbox!')).mockResolvedValueOnce(browser)
+
+    await expect(withSharedPage(async () => 'ok')).resolves.toBe('ok')
+
+    expect(launchArgs(0)).not.toContain('--no-sandbox')
+    expect(launchArgs(1)).toContain('--no-sandbox')
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('No usable sandbox!'))
+  })
+
+  it('relaunches without trying the sandbox again once it has failed', async () => {
+    vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+    const first = fakeBrowser()
+    const second = fakeBrowser()
+    puppeteerLaunch
+      .mockRejectedValueOnce(new Error('No usable sandbox!'))
+      .mockResolvedValueOnce(first.browser)
+      .mockResolvedValueOnce(second.browser)
+
+    await withSharedPage(async () => {})
+    first.browser.connected = false
+    await withSharedPage(async () => {})
+
+    expect(puppeteerLaunch).toHaveBeenCalledTimes(3)
+    expect(launchArgs(2)).toContain('--no-sandbox')
+  })
+
+  it('launches Chromium with --no-sandbox straight away when running as root, which it refuses to sandbox', async () => {
+    vi.mocked(process.getuid!).mockReturnValue(0)
+    const { browser } = fakeBrowser()
+    puppeteerLaunch.mockResolvedValue(browser)
+
+    await withSharedPage(async () => {})
+
+    expect(puppeteerLaunch).toHaveBeenCalledOnce()
+    expect(launchArgs(0)).toContain('--no-sandbox')
   })
 
   it('guards a page\'s requests before the draw loads anything into it', async () => {
