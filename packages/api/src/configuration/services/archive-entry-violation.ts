@@ -20,7 +20,8 @@ export interface ArchiveEntryLists {
   firmware: FirmwareManifestEntry[]
 }
 
-const SCREEN_TYPES: readonly ScreenManifestEntry['type'][] = ['file', 'external', 'html', 'plugin', 'mashup']
+/** Keyed by every Screen type, so a type added to the Screen is a compile error here until the import accepts it too. */
+const SCREEN_TYPES = Object.keys({ file: true, external: true, html: true, plugin: true, mashup: true } satisfies Record<ScreenManifestEntry['type'], true>)
 
 /** A Palette's grays are a level count ImageMagick builds a colormap of, so a byte's worth bounds them. */
 const MAX_PALETTE_GRAYS = 256
@@ -28,12 +29,8 @@ const MAX_PALETTE_GRAYS = 256
 /** What is wrong with one field of an entry, or null when nothing is. */
 type FieldRule = (entry: Record<string, unknown>) => string | null
 
-function uuid(key: string): FieldRule {
-  return entry => isUUID(entry[key]) ? null : `${key} is not a UUID`
-}
-
-function uuidOrNull(key: string): FieldRule {
-  return entry => entry[key] === null || entry[key] === undefined || isUUID(entry[key]) ? null : `${key} is not a UUID`
+function uuid(key: string, { nullable = false } = {}): FieldRule {
+  return entry => (nullable && (entry[key] === null || entry[key] === undefined)) || isUUID(entry[key]) ? null : `${key} is not a UUID`
 }
 
 function oneOf(key: string, values: readonly unknown[], { nullable = false, optional = false } = {}): FieldRule {
@@ -72,25 +69,28 @@ function nested(key: string, rules: FieldRule[]): FieldRule {
       return null
     if (typeof value !== 'object' || Array.isArray(value))
       return `${key} is not an object`
-    const violation = firstViolation(value as Record<string, unknown>, rules)
+    const violation = allOf(rules)(value as Record<string, unknown>)
     return violation && `${key}.${violation}`
   }
 }
 
-function firstViolation(entry: Record<string, unknown>, rules: FieldRule[]): string | null {
-  for (const rule of rules) {
-    const violation = rule(entry)
-    if (violation)
-      return violation
+/** The first of `rules` the entry breaks. */
+function allOf(rules: FieldRule[]): FieldRule {
+  return (entry) => {
+    for (const rule of rules) {
+      const violation = rule(entry)
+      if (violation)
+        return violation
+    }
+    return null
   }
-  return null
 }
 
 const hexColors: FieldRule = (entry) => {
   const { colors } = entry
   if (colors === null)
     return null
-  return Array.isArray(colors) && colors.every(color => typeof color === 'string' && HEX_COLOR_PATTERN.test(color)) ? null : 'colors are not each a #RRGGBB hex colour'
+  return Array.isArray(colors) && colors.length > 0 && colors.every(color => typeof color === 'string' && HEX_COLOR_PATTERN.test(color)) ? null : 'colors are not each a #RRGGBB hex colour'
 }
 
 const grayLevels: FieldRule = (entry) => {
@@ -99,9 +99,10 @@ const grayLevels: FieldRule = (entry) => {
 }
 
 /**
- * The rules the admin API's own create and update requests hold a record to, for the fields an import
- * stores verbatim or builds a path from: ids are UUIDs, a Palette's colours are hex colours, an enum is one of
- * its values. A Device's `paletteId` is left alone, since it may name an official Palette, whose id is no UUID.
+ * What every record the API itself creates keeps to, for the fields an import stores verbatim or builds a path
+ * or an ImageMagick argument from: ids are UUIDs as the API generates them, a Palette's colours are hex colours
+ * as its requests require, an enum is one of its values. A Device's `paletteId` is left alone, since it may name
+ * an official Palette, whose id is no UUID.
  */
 const RULES: { [K in keyof ArchiveEntryLists]: FieldRule[] } = {
   palettes: [uuid('id'), hexColors, grayLevels, oneOf('frameworkClass', CUSTOM_PALETTE_FRAMEWORK_CLASSES)],
@@ -114,16 +115,16 @@ const RULES: { [K in keyof ArchiveEntryLists]: FieldRule[] } = {
     eachOf('templates', uuid('id')),
     eachOf('fields', uuid('id')),
   ],
-  devices: [uuid('id'), uuidOrNull('targetFirmwareId'), oneOf('rotationMode', ROTATION_MODES, { optional: true })],
+  devices: [uuid('id'), uuid('targetFirmwareId', { nullable: true }), oneOf('rotationMode', ROTATION_MODES, { optional: true })],
   assignments: [uuid('id'), uuid('deviceId'), uuid('pluginId')],
   screens: [
     uuid('id'),
     uuid('deviceId'),
-    uuidOrNull('pluginId'),
-    uuidOrNull('devicePluginId'),
+    uuid('pluginId', { nullable: true }),
+    uuid('devicePluginId', { nullable: true }),
     oneOf('type', SCREEN_TYPES),
     nested('schedule', [uuid('id')]),
-    nested('mashupConfiguration', [uuid('id'), eachOf('slots', entry => firstViolation(entry, [uuid('id'), uuid('pluginId')]))]),
+    nested('mashupConfiguration', [uuid('id'), eachOf('slots', allOf([uuid('id'), uuid('pluginId')]))]),
   ],
 }
 
@@ -134,7 +135,7 @@ const RULES: { [K in keyof ArchiveEntryLists]: FieldRule[] } = {
 export function archiveEntryViolation(lists: ArchiveEntryLists): string | null {
   for (const key of Object.keys(RULES) as Array<keyof ArchiveEntryLists>) {
     for (const entry of lists[key] as unknown as Array<Record<string, unknown>>) {
-      const violation = firstViolation(entry, RULES[key])
+      const violation = allOf(RULES[key])(entry)
       if (violation)
         return `${CONFIG_ARCHIVE_FILES[key]} entry ${JSON.stringify(entry.id)}: ${violation}`
     }

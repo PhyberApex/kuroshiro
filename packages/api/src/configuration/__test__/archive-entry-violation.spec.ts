@@ -93,6 +93,7 @@ describe('archiveEntryViolation', () => {
   })
 
   it.each([
+    ['no colours at all', []],
     ['a colour name', ['red']],
     ['a short hex colour', ['#fff']],
     ['an ImageMagick argument', ['#000000', '-write /tmp/x']],
