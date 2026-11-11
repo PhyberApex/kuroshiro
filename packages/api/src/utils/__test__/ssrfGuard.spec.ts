@@ -102,6 +102,7 @@ describe('assertPublicUrl', () => {
   describe('ipv4 reserved, benchmarking and multicast ranges', () => {
     it('rejects the IETF protocol assignments (192.0.0.0/24)', () => {
       expect(() => assertPublicUrl('http://192.0.0.1/')).toThrow(/private IP ranges/)
+      expect(() => assertPublicUrl('http://192.0.0.255/')).toThrow(/private IP ranges/)
     })
 
     it('rejects the benchmarking range (198.18.0.0/15)', () => {

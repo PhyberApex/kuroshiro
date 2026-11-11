@@ -9,8 +9,7 @@ const PRIVATE_HOSTNAME_SUFFIXES = ['.local', '.internal', '.localhost']
 
 export const PRIVATE_IP_MESSAGE = 'Requests to private IP ranges are not allowed in demo mode'
 
-// Addresses that reach the host itself, its private networks or its cloud metadata, or that are no single public
-// host: "this" network, loopback, RFC 1918, carrier-grade NAT, link-local, IETF protocol assignments, benchmarking,
+// Addresses that reach the host itself, its private networks or its cloud metadata, or that name no one public host: "this" network, loopback, RFC 1918, carrier-grade NAT, link-local, IETF protocol assignments, benchmarking,
 // multicast and reserved (which holds the limited broadcast address) per RFC 6890 and RFC 5771.
 const PRIVATE_IPV4_SUBNETS = [
   ['0.0.0.0', 8],
@@ -28,7 +27,15 @@ const PRIVATE_IPV4_SUBNETS = [
 
 // Their IPv6 counterparts: unspecified, loopback, unique local, link-local, the deprecated site-local, multicast and
 // the local-use NAT64 prefix of RFC 8215, whose embedded address sits wherever its operator chose.
-const PRIVATE_IPV6_SUBNETS = [['::', 128], ['::1', 128], ['fc00::', 7], ['fe80::', 10], ['fec0::', 10], ['ff00::', 8], ['64:ff9b:1::', 48]] as const
+const PRIVATE_IPV6_SUBNETS = [
+  ['::', 128],
+  ['::1', 128],
+  ['fc00::', 7],
+  ['fe80::', 10],
+  ['fec0::', 10],
+  ['ff00::', 8],
+  ['64:ff9b:1::', 48],
+] as const
 
 /** The 6to4 network (2002::/16, RFC 3056) that embeds an IPv4 network in its second and third groups. */
 function sixToFourNetwork(ipv4: string): string {
@@ -36,9 +43,9 @@ function sixToFourNetwork(ipv4: string): string {
   return `2002:${((a << 8) | b).toString(16)}:${((c << 8) | d).toString(16)}::`
 }
 
-// A BlockList matches an IPv4-mapped IPv6 address (::ffff:a.b.c.d) against the IPv4 subnets itself. An address
-// that embeds an IPv4 address the routes of NAT64 (64:ff9b::/96, RFC 6052) or 6to4 lead to is matched by adding
-// each IPv4 subnet again inside those prefixes, so one embedding a public IPv4 address stays allowed.
+// A BlockList matches an IPv4-mapped IPv6 address (::ffff:a.b.c.d) against the IPv4 subnets itself. NAT64
+// (64:ff9b::/96, RFC 6052) and 6to4 addresses lead to the IPv4 address they embed, so each IPv4 subnet is added
+// again inside those two prefixes: one embedding a public IPv4 address stays allowed.
 const PRIVATE_ADDRESSES = new net.BlockList()
 for (const [network, prefix] of PRIVATE_IPV4_SUBNETS) {
   PRIVATE_ADDRESSES.addSubnet(network, prefix, 'ipv4')
@@ -48,7 +55,7 @@ for (const [network, prefix] of PRIVATE_IPV4_SUBNETS) {
 for (const [network, prefix] of PRIVATE_IPV6_SUBNETS)
   PRIVATE_ADDRESSES.addSubnet(network, prefix, 'ipv6')
 
-/** Whether an IP address is one of the internal ranges above; a host name is not an address and is never private here. */
+/** Whether an IP address is in one of the ranges above; a host name is not an address and is never private here. */
 export function isPrivateAddress(ip: string): boolean {
   const family = net.isIP(ip)
   return family !== 0 && PRIVATE_ADDRESSES.check(ip, family === 4 ? 'ipv4' : 'ipv6')
