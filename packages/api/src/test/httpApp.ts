@@ -2,6 +2,7 @@ import type { INestApplication, ModuleMetadata } from '@nestjs/common'
 import type { NestExpressApplication } from '@nestjs/platform-express'
 import type { AddressInfo } from 'node:net'
 import { Test } from '@nestjs/testing'
+import { registerCrossSiteRefusal } from '../cross-site/cross-site.guard.js'
 import { registerErrorEnvelope } from '../errors/register-error-envelope.js'
 import { registerBodyParsers } from '../uploads/register-body-parsers.js'
 
@@ -12,7 +13,7 @@ export interface HttpTestApp {
 }
 
 /**
- * Boots the given controllers behind the same global pipe, filter and prefix
+ * Boots the given controllers behind the same global pipe, filter, guard and prefix
  * as `main.ts` and serves them on a free port, so a spec can assert on what
  * actually goes over the wire.
  */
@@ -22,6 +23,7 @@ export async function createHttpTestApp(metadata: ModuleMetadata): Promise<HttpT
   registerBodyParsers(app)
   app.setGlobalPrefix('api', { exclude: ['metrics', 'health'] })
   registerErrorEnvelope(app)
+  registerCrossSiteRefusal(app)
   await app.listen(0)
   const { port } = app.getHttpServer().address() as AddressInfo
   const request = (path: string, init?: RequestInit) => fetch(`http://127.0.0.1:${port}${path}`, init)

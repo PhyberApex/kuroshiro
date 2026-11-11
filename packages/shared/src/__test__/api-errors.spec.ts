@@ -74,6 +74,7 @@ const wording: Record<ApiErrorCode, string> = {
   'picked-screen-mirrored': 'A mirrored Device has no Rotation to pick in.',
   'picked-screen-active': 'The Active Screen cannot be picked.',
   'picked-screen-ineligible': 'Rotation could not show that Screen at the next poll.',
+  'cross-site-request': 'Only the admin UI itself can make changes.',
 }
 
 function wordingBySwitch(code: ApiErrorCode): string {
@@ -138,6 +139,7 @@ function wordingBySwitch(code: ApiErrorCode): string {
     case 'picked-screen-mirrored':
     case 'picked-screen-active':
     case 'picked-screen-ineligible':
+    case 'cross-site-request':
     case 'conflict':
     case 'payload-too-large':
     case 'unprocessable':

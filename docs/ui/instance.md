@@ -483,6 +483,10 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 - **A Palette's colours are shown as colours,** the one exception to black, white and the seal's red outside a Screen's image.
 - **The approved Instance template's rows are regrouped.** It drew Firmware Auto-Update as the last row of the Firmware list and "Sync now" as the button; here the switch leads the page and the button reads "Sync from TRMNL".
 
+## Requests from another site
+
+Refused, as ADR-0075 decided. With no authentication, the admin's own browser is what could carry a request in from a page of another origin: any website, or a Recipe preview's sandboxed frame, could post a Configuration Archive to `/api/config/import`. So a `POST`, `PUT`, `PATCH` or `DELETE` to the admin API answers `403` with the code `cross-site-request` (worded "Kuroshiro only takes changes from its own admin UI. Open it at its own address and try again.") when the browser's `Sec-Fetch-Site` says `cross-site` or `same-site`, or, from a browser that sends no `Sec-Fetch-Site`, when the `Origin` is `null` or names a host other than the request's `Host` or `X-Forwarded-Host`. A request with no `Origin`, as curl and scripts send, goes through, and so does every read. The routes a Device, a Webhook sender or a scraper calls (`/api/display`, `/api/current_screen`, `/api/setup`, `/api/log`, `/api/webhook/*`, `/metrics`, `/health`) are not checked. The API reads no form-encoded body either. A page that rebinds a name in DNS to the Instance is not stopped by this; a list of allowed hosts would be a separate decision.
+
 ## Open points
 
 **Decided on the agent's own call; the maintainer may want to overturn them**
@@ -509,7 +513,8 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 - **What the server reports as its timezone** when `TZ` is not set.
 - **The numbers a custom Palette's family expects.** The server accepts any number of colours for any family. The form does not say "three" for a three-ink family; whether it should is the API ticket's call.
 - **What a Device shows about a missing Firmware file.** A Device whose target Firmware has no file retries at every poll without saying so. Its Settings page belongs to [devices.md](./devices.md).
-- **Authentication.** No admin route asks for any, `/metrics` included, and `/api/setup` hands a registered Device's API key to anyone who knows its MAC address. The page says who can read the metrics; it does not say that the admin UI itself is open. That is a decision about the product, not about this page.
+- **Authentication.** No admin route asks for any, `/metrics` included, and `/api/setup` hands a registered Device's API key to anyone who knows its MAC address. The page says who can read the metrics; it does not say that the admin UI itself is open. That is a decision about the product, not about this page. What the API does refuse without authentication is in [Requests from another site](#requests-from-another-site).
+
 
 [proto]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces
 [settings-light]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/settings-light.png

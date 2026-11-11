@@ -120,6 +120,7 @@ const REFUSAL_WORDING: Record<ApiErrorCode, Wording> = {
   'picked-screen-mirrored': 'A mirrored Device has no Rotation to pick in.',
   'picked-screen-active': 'The Active Screen cannot be picked.',
   'picked-screen-ineligible': 'Rotation could not show that Screen at the next poll.',
+  'cross-site-request': 'Kuroshiro only takes changes from its own admin UI. Open it at its own address and try again.',
 }
 
 /** A code this build does not know, from a newer server, falls back on the server's own sentence. */

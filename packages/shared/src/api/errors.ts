@@ -70,6 +70,7 @@ export const API_ERROR_CODES = [
   'picked-screen-mirrored',
   'picked-screen-active',
   'picked-screen-ineligible',
+  'cross-site-request',
 ] as const
 
 export type ApiErrorCode = typeof API_ERROR_CODES[number]

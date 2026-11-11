@@ -1,6 +1,6 @@
 import type { NestExpressApplication } from '@nestjs/platform-express'
 import type { NextFunction, Request, Response } from 'express'
-import { json, urlencoded } from 'express'
+import { json } from 'express'
 import { uploadTooLarge } from './limited-file-interceptor.js'
 import { JSON_BODY_BYTES, UPLOAD_LIMITS } from './upload-limits.js'
 
@@ -15,11 +15,12 @@ function webhookJson(req: Request, res: Response, next: NextFunction): void {
 
 /**
  * Replaces Nest's default body parsers, which can't give one route its own
- * limit. Needs the app created with `bodyParser: false`.
+ * limit. Needs the app created with `bodyParser: false`. There is no
+ * urlencoded parser: no route reads a form body, and a form is what another
+ * site can post without a preflight (issue #1742).
  */
 export function registerBodyParsers(app: NestExpressApplication): void {
   const regularJson = json({ limit: JSON_BODY_BYTES })
   app.use((req: Request, res: Response, next: NextFunction) =>
     WEBHOOK_PATH.test(req.path) ? webhookJson(req, res, next) : regularJson(req, res, next))
-  app.use(urlencoded({ extended: true }))
 }
