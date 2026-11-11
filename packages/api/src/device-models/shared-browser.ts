@@ -1,5 +1,7 @@
 import type { Browser, Page } from 'puppeteer'
 import type { RenderRequestPolicy } from './render-request-guard.js'
+import process from 'node:process'
+import { Logger } from '@nestjs/common'
 import { guardRenderRequests } from './render-request-guard.js'
 
 /** Pages drawing at once; further renders wait their turn (ADR-0044). */
@@ -17,9 +19,35 @@ export function setRenderRequestPolicy(policy: RenderRequestPolicy): void {
   requestPolicy = policy
 }
 
+const logger = new Logger('SharedBrowser')
+
+/** Set once a sandboxed launch has failed; every relaunch after it skips straight to `--no-sandbox`. */
+let sandboxUnavailable = false
+
+/**
+ * The renderers, which run the third-party markup, stay sandboxed; only the GPU process is let
+ * out. Under Alpine's musl Chromium the GPU process's seccomp filter kills it on a syscall it
+ * makes (pwritev2), and Chromium gives up on every page once that has happened a few times.
+ */
+const SANDBOXED_ARGS = ['--disable-gpu-sandbox']
+const UNSANDBOXED_ARGS = ['--no-sandbox']
+
 async function launchBrowser(): Promise<Browser> {
   const { default: puppeteer } = await import('puppeteer')
-  return puppeteer.launch({ args: ['--no-sandbox'], ignoreDefaultArgs: ['--disable-popup-blocking'] })
+  const launch = (args: string[]) => puppeteer.launch({ args, ignoreDefaultArgs: ['--disable-popup-blocking'] })
+  // Chromium refuses to sandbox itself as root, so there is nothing to try there.
+  if (sandboxUnavailable || process.getuid?.() === 0)
+    return launch(UNSANDBOXED_ARGS)
+  try {
+    return await launch(SANDBOXED_ARGS)
+  }
+  catch (error) {
+    // A container whose seccomp profile denies the user namespaces the sandbox needs lands here.
+    const reason = error instanceof Error ? error.message : String(error)
+    logger.warn(`Chromium could not start sandboxed, so it renders without its sandbox: ${reason}`)
+    sandboxUnavailable = true
+    return launch(UNSANDBOXED_ARGS)
+  }
 }
 
 /** The shared browser, launched on first use and relaunched once it has disconnected or crashed. */
@@ -91,10 +119,11 @@ export async function withSharedPage<T>(draw: (page: Page) => Promise<T>): Promi
   }
 }
 
-/** Closes the shared browser, if one was launched; the next render launches a fresh one. */
+/** Closes the shared browser, if one was launched; the next render launches a fresh one, trying the sandbox again. */
 export async function closeSharedBrowser(): Promise<void> {
   const closing = browserPromise
   browserPromise = null
+  sandboxUnavailable = false
   if (!closing)
     return
   try {
