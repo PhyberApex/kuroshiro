@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { checkTemplate, createLiquidEngine, KUROSHIRO_FILTERS, renderLiquid, templateProblemOf, TRMNL_FILTERS } from '../liquid.ts'
+import { checkTemplate, createLiquidEngine, KUROSHIRO_FILTERS, LIQUID_LIMITS, renderLiquid, templateProblemOf, TRMNL_FILTERS } from '../liquid.ts'
 
 describe('kuroshiro liquid filters', () => {
   it('date_short formats dates', async () => {
@@ -197,6 +197,42 @@ describe('checkTemplate', () => {
 
   it.each(['', '  \n\t '])('refuses the empty template %j', (markup) => {
     expect(checkTemplate(markup)).toEqual({ message: 'A template cannot be empty.', line: null })
+  })
+})
+
+describe('a template is limited in what it may cost to parse and render', () => {
+  const messageOf = (markup: string) => renderLiquid(markup, {}).then(() => null, error => templateProblemOf(error).message)
+
+  it('fails a loop over a billion numbers fast with a template error', async () => {
+    const started = performance.now()
+
+    expect(await messageOf('{% for i in (1..1000000000) %}x{% endfor %}')).toMatch(/limit exceeded/)
+    expect(performance.now() - started).toBeLessThan(250)
+  })
+
+  it('fails a template that doubles a string on the memory limit', async () => {
+    const markup = `{% assign s = 'x' %}{% for i in (1..40) %}{% assign s = s | append: s %}{% endfor %}{{ s.size }}`
+
+    expect(await messageOf(markup)).toMatch(/^memory alloc limit exceeded/)
+  })
+
+  it('fails nested loops that run for too long on the render limit', async () => {
+    const markup = '{% for i in (1..3000) %}{% for j in (1..3000) %}{% endfor %}{% endfor %}'
+
+    expect(await messageOf(markup)).toMatch(/^template render limit exceeded/)
+  }, 10_000)
+
+  it('refuses a template too long to parse', () => {
+    expect(checkTemplate('x'.repeat(LIQUID_LIMITS.parseLimit + 1))?.message).toMatch(/^parse length limit exceeded/)
+  })
+
+  it('counts each render on its own, so a render after a refused one still renders', async () => {
+    await messageOf('{% for i in (1..1000000000) %}x{% endfor %}')
+    const items = Array.from({ length: 10_000 }, (_, n) => ({ n }))
+
+    const result = await renderLiquid('{% for item in items %}{{ item.n }},{% endfor %}{{ items | json | size }}', { items })
+
+    expect(result.startsWith('0,1,2,')).toBe(true)
   })
 })
 

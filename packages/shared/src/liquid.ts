@@ -206,11 +206,24 @@ function renderDefinedTemplateTag(engine: Liquid): TagClass {
 }
 
 /**
+ * What one template may cost, so a template (an imported Recipe's, or a demo visitor's) cannot hold the API's event
+ * loop or exhaust its memory; going over one fails that parse or render with an ordinary template error. Each parse and
+ * each render counts from zero.
+ * - `parseLimit`: characters of markup. A Recipe's markup is a few kilobytes; a megabyte is far beyond any of them.
+ * - `renderLimit`: milliseconds of one render. A Recipe renders in a few milliseconds; a second is already a stall
+ *   every device on the instance would feel.
+ * - `memoryLimit`: liquidjs's count of what a render allocates (characters of the strings and items of the arrays
+ *   its filters and ranges build), summed over the render. Fifty million is ten times a large polled payload run
+ *   through `json` a few times, and stops a string built by doubling long before it reaches the heap's limit.
+ */
+export const LIQUID_LIMITS = { parseLimit: 1_000_000, renderLimit: 1_000, memoryLimit: 50_000_000 } as const
+
+/**
  * `timeZone` is the IANA zone `date` and Kuroshiro's date and time filters render in (the Instance Time Zone); without
  * one they render in the running process's zone. liquidjs takes the zone only here, not per render.
  */
 export function createLiquidEngine(timeZone?: string): Liquid {
-  const engine = new Liquid({ fs: noPartials, relativeReference: false, ...(timeZone && { timezoneOffset: timeZone }) })
+  const engine = new Liquid({ fs: noPartials, relativeReference: false, ...LIQUID_LIMITS, ...(timeZone && { timezoneOffset: timeZone }) })
   Object.entries({ ...zonedFilters(timeZone), ...trmnlFilters, ...kuroshiroFilters, ...corrections }).forEach(([name, filter]) => engine.registerFilter(name, filter))
   engine.registerTag('template', TemplateTag)
   engine.registerTag('render', renderDefinedTemplateTag(engine))
