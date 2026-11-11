@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import express from 'express'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { ingressBasePathMiddleware } from '../ingress-base-path.middleware.js'
+import { ingressBasePathMiddleware, setUiAssetHeaders } from '../ingress-base-path.middleware.js'
 
 describe('the security headers the app shell is served with', () => {
   let publicDir: string
@@ -17,9 +17,11 @@ describe('the security headers the app shell is served with', () => {
     fs.writeFileSync(path.join(publicDir, 'index.html'), '<!DOCTYPE html>\n<html>\n  <head>\n    <title>Kuroshiro</title>\n  </head>\n  <body></body>\n</html>\n')
     fs.mkdirSync(path.join(publicDir, 'screens'))
     fs.writeFileSync(path.join(publicDir, 'screens', 'screen.png'), 'not really a png')
+    fs.mkdirSync(path.join(publicDir, 'assets'))
+    fs.writeFileSync(path.join(publicDir, 'assets', 'index-abc123.js'), 'export {}')
     const app = express()
     app.use(ingressBasePathMiddleware(publicDir))
-    app.use(express.static(publicDir))
+    app.use(express.static(publicDir, { setHeaders: setUiAssetHeaders }))
     server = await new Promise<Server>((resolve) => {
       const listening = app.listen(0, '127.0.0.1', () => resolve(listening))
     })
@@ -51,11 +53,19 @@ describe('the security headers the app shell is served with', () => {
     expect(await response.text()).toContain('<base href="/api/hassio_ingress/some-token/">')
   })
 
+  it('serves the UI\'s scripts with nosniff', async () => {
+    const response = await fetch(`${baseUrl}/assets/index-abc123.js`)
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff')
+  })
+
   it('leaves a screen image a Device fetches without them', async () => {
     const response = await fetch(`${baseUrl}/screens/screen.png`)
 
     expect(response.status).toBe(200)
     expect(response.headers.get('content-security-policy')).toBeNull()
     expect(response.headers.get('x-frame-options')).toBeNull()
+    expect(response.headers.get('x-content-type-options')).toBeNull()
   })
 })

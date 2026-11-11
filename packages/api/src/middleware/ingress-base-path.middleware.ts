@@ -47,10 +47,22 @@ const APP_SHELL_HEADERS = {
   'Referrer-Policy': 'same-origin',
 }
 
+const UI_ASSET_EXTENSIONS = new Set(['.js', '.css', '.html'])
+
+/**
+ * The static server's `setHeaders` hook: the UI's scripts and styles go out with `nosniff`,
+ * so a browser never runs one as another type. Screen images, which Devices fetch, are left alone.
+ */
+export function setUiAssetHeaders(res: Response, filePath: string): void {
+  if (UI_ASSET_EXTENSIONS.has(path.extname(filePath)))
+    res.setHeader('X-Content-Type-Options', 'nosniff')
+}
+
 /**
  * Injects a `<base href>` into index.html derived from the `X-Ingress-Path` header
  * Home Assistant's ingress proxy sends, so `document.baseURI` (and everything the UI
- * resolves from it) reflects the prefix the UI is actually being served under.
+ * resolves from it) reflects the prefix the UI is actually being served under, and sends
+ * it with {@link APP_SHELL_HEADERS}.
  */
 export function ingressBasePathMiddleware(publicDir: string): RequestHandler {
   const indexPath = path.join(publicDir, 'index.html')
