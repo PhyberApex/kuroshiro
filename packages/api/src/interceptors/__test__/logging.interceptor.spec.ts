@@ -18,7 +18,7 @@ class OrdinaryController {
   list() {}
 }
 
-function contextFor(controller: new () => object, handler: () => void, request = { method: 'GET', url: '/x' }): ExecutionContext {
+function contextFor(controller: new () => object, handler: () => void, request = { method: 'GET', url: '/x', path: '/x' }): ExecutionContext {
   return {
     getClass: () => controller,
     getHandler: () => handler,
@@ -56,14 +56,17 @@ describe('loggingInterceptor', () => {
     expect(logged).not.toContain('secret-device-key')
   })
 
+  // `path` is what Express derives from `url` and routes on.
   it.each([
-    '/api/webhook/secret-webhook-token',
-    '/api/webhook/secret-webhook-token?source=ci',
-    '/api/webhook/secret-webhook-token/',
-  ])('logs a webhook request to %s without its Webhook Token', async (url) => {
+    ['/api/webhook/secret-webhook-token', '/api/webhook/secret-webhook-token'],
+    ['/api/webhook/secret-webhook-token?source=ci', '/api/webhook/secret-webhook-token'],
+    ['/api/webhook/secret-webhook-token/', '/api/webhook/secret-webhook-token/'],
+    ['/API/Webhook/secret-webhook-token', '/API/Webhook/secret-webhook-token'],
+    ['http://kuroshiro.local/api/webhook/secret-webhook-token', '/api/webhook/secret-webhook-token'],
+  ])('logs a webhook request to %s without its Webhook Token', async (url, path) => {
     const debug = vi.spyOn(Logger.prototype, 'debug').mockImplementation(() => {})
 
-    await lastValueFrom(new LoggingInterceptor().intercept(contextFor(OrdinaryController, OrdinaryController.prototype.list, { method: 'POST', url }), next))
+    await lastValueFrom(new LoggingInterceptor().intercept(contextFor(OrdinaryController, OrdinaryController.prototype.list, { method: 'POST', url, path }), next))
 
     const logged = debug.mock.calls.flat().map(String).join('\n')
     expect(logged).toContain('POST /api/webhook/[redacted]')
@@ -74,7 +77,7 @@ describe('loggingInterceptor', () => {
     const debug = vi.spyOn(Logger.prototype, 'debug').mockImplementation(() => {})
     const failing: CallHandler = { handle: () => throwError(() => Object.assign(new Error('Not Found'), { status: 404 })) }
 
-    await expect(lastValueFrom(new LoggingInterceptor().intercept(contextFor(OrdinaryController, OrdinaryController.prototype.list, { method: 'GET', url: '/api/webhook/secret-webhook-token' }), failing))).rejects.toThrow('Not Found')
+    await expect(lastValueFrom(new LoggingInterceptor().intercept(contextFor(OrdinaryController, OrdinaryController.prototype.list, { method: 'GET', url: '/api/webhook/secret-webhook-token', path: '/api/webhook/secret-webhook-token' }), failing))).rejects.toThrow('Not Found')
 
     const logged = debug.mock.calls.flat().map(String).join('\n')
     expect(logged).toContain('GET /api/webhook/[redacted] 404')

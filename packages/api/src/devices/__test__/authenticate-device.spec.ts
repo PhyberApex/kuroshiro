@@ -1,8 +1,7 @@
-import type { Repository } from 'typeorm'
 import type { Device } from '../devices.entity.js'
 import { Logger, NotFoundException, UnauthorizedException } from '@nestjs/common'
-import { beforeEach, describe, expect, it } from 'vitest'
-import { createMockRepository } from '../../test/mockRepository.js'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { asRepository, createMockRepository } from '../../test/mockRepository.js'
 import { authenticateDevice } from '../authenticate-device.js'
 
 const MAC = 'AA:BB:CC:DD:EE:FF'
@@ -10,16 +9,20 @@ const API_KEY = 'right-device-api-key'
 
 describe('authenticateDevice', () => {
   let devices: ReturnType<typeof createMockRepository<Device>>
-  const logger = new Logger('test')
-  logger.warn = () => {}
+  const logger = new Logger('spec')
 
   beforeEach(() => {
+    vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
     devices = createMockRepository<Device>()
     devices.findOneBy.mockResolvedValue({ mac: MAC, apikey: API_KEY } as Device)
   })
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   function authenticate(accessToken: string | undefined) {
-    return authenticateDevice(devices as unknown as Repository<Device>, { 'id': MAC, 'access-token': accessToken }, logger)
+    return authenticateDevice(asRepository(devices), { 'id': MAC, 'access-token': accessToken }, logger)
   }
 
   it('accepts the Device API key', async () => {
