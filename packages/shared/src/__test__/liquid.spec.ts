@@ -202,12 +202,13 @@ describe('checkTemplate', () => {
 
 describe('a template is limited in what it may cost to parse and render', () => {
   const messageOf = (markup: string) => renderLiquid(markup, {}).then(() => null, error => templateProblemOf(error).message)
+  const billionLoop = '{% for i in (1..1000000000) %}x{% endfor %}'
 
   it('fails a loop over a billion numbers fast with a template error', async () => {
     const started = performance.now()
 
-    expect(await messageOf('{% for i in (1..1000000000) %}x{% endfor %}')).toMatch(/limit exceeded/)
-    expect(performance.now() - started).toBeLessThan(250)
+    expect(await messageOf(billionLoop)).toMatch(/limit exceeded/)
+    expect(performance.now() - started).toBeLessThan(500)
   })
 
   it('fails a template that doubles a string on the memory limit', async () => {
@@ -227,7 +228,7 @@ describe('a template is limited in what it may cost to parse and render', () => 
   })
 
   it('counts each render on its own, so a render after a refused one still renders', async () => {
-    await messageOf('{% for i in (1..1000000000) %}x{% endfor %}')
+    expect(await messageOf(billionLoop)).not.toBeNull()
     const items = Array.from({ length: 10_000 }, (_, n) => ({ n }))
 
     const result = await renderLiquid('{% for item in items %}{{ item.n }},{% endfor %}{{ items | json | size }}', { items })

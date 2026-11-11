@@ -206,7 +206,7 @@ function renderDefinedTemplateTag(engine: Liquid): TagClass {
 }
 
 /**
- * What one template may cost, so a template (an imported Recipe's, or a demo visitor's) cannot hold the API's event
+ * What one template may cost, so a template (an imported Recipe's, or one typed into the editor) cannot hold the API's event
  * loop or exhaust its memory; going over one fails that parse or render with an ordinary template error. Each parse and
  * each render counts from zero.
  * - `parseLimit`: characters of markup. A Recipe's markup is a few kilobytes; a megabyte is far beyond any of them.
