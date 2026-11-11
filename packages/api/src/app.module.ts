@@ -29,6 +29,7 @@ import { MashupConfiguration } from './mashup/entities/mashup-configuration.enti
 import { MashupSlot } from './mashup/entities/mashup-slot.entity.js'
 import { MashupModule } from './mashup/mashup.module.js'
 import { MetricsModule } from './metrics/metrics.module.js'
+import { setUiAssetHeaders } from './middleware/ingress-base-path.middleware.js'
 import { DevicePlugin } from './plugins/entities/device-plugin.entity.js'
 import { PluginDataSource } from './plugins/entities/plugin-data-source.entity.js'
 import { PluginFieldValue } from './plugins/entities/plugin-field-value.entity.js'
@@ -55,6 +56,7 @@ const conf = config()
     // Serve ui files
     ServeStaticModule.forRoot({
       rootPath: resolveAppPath('public'),
+      serveStaticOptions: { setHeaders: setUiAssetHeaders },
     }),
     TypeOrmModule.forRoot({
       type: 'postgres',

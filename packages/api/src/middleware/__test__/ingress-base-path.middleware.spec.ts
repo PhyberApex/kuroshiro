@@ -15,6 +15,7 @@ function makeRequest(overrides: { method?: string, path: string, header?: (name:
 
 function makeResponse() {
   const res = {
+    set: vi.fn().mockReturnThis(),
     type: vi.fn().mockReturnThis(),
     send: vi.fn().mockReturnThis(),
   }

@@ -34,9 +34,41 @@ function escapeHtmlAttribute(value: string): string {
 }
 
 /**
+ * Headers the app shell goes out with, so another site cannot frame the admin UI and
+ * clickjack its buttons. `'self'` covers Home Assistant's ingress too: the proxy serves the
+ * UI from HA's own origin, the same origin as the HA page that frames it. The policy is
+ * `frame-ancestors` alone because the Plugin preview's `srcdoc` iframe inherits the
+ * shell's CSP, and a plugin's markup loads scripts and styles from anywhere.
+ */
+const APP_SHELL_HEADERS = {
+  'Content-Security-Policy': 'frame-ancestors \'self\'',
+  'X-Frame-Options': 'SAMEORIGIN',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'same-origin',
+}
+
+const UI_ASSET_EXTENSIONS = new Set(['.js', '.css'])
+
+/**
+ * The static server's `setHeaders` hook: the UI's scripts and styles go out with `nosniff`,
+ * so a browser never runs one as another type. An HTML file gets {@link APP_SHELL_HEADERS},
+ * because ServeStatic's fallback sends index.html for any dotted path with no file behind it
+ * (`/x.y`), past the middleware below, and that page must not be frameable either.
+ * Screen images, which Devices fetch, are left alone.
+ */
+export function setUiAssetHeaders(res: Response, filePath: string): void {
+  const extension = path.extname(filePath)
+  if (extension === '.html')
+    res.set(APP_SHELL_HEADERS)
+  else if (UI_ASSET_EXTENSIONS.has(extension))
+    res.setHeader('X-Content-Type-Options', 'nosniff')
+}
+
+/**
  * Injects a `<base href>` into index.html derived from the `X-Ingress-Path` header
  * Home Assistant's ingress proxy sends, so `document.baseURI` (and everything the UI
- * resolves from it) reflects the prefix the UI is actually being served under.
+ * resolves from it) reflects the prefix the UI is actually being served under, and sends
+ * it with {@link APP_SHELL_HEADERS}.
  */
 export function ingressBasePathMiddleware(publicDir: string): RequestHandler {
   const indexPath = path.join(publicDir, 'index.html')
@@ -54,7 +86,7 @@ export function ingressBasePathMiddleware(publicDir: string): RequestHandler {
     indexHtml
       .then((html) => {
         const base = escapeHtmlAttribute(normalizeBaseHref(req.header('X-Ingress-Path')))
-        res.type('html').send(html.replace(/<head(\s[^>]*)?>/i, match => `${match}\n    <base href="${base}">`))
+        res.set(APP_SHELL_HEADERS).type('html').send(html.replace(/<head(\s[^>]*)?>/i, match => `${match}\n    <base href="${base}">`))
       })
       .catch((err) => {
         indexHtml = null
