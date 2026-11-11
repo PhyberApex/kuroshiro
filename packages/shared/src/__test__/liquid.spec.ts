@@ -217,6 +217,12 @@ describe('a template is limited in what it may cost to parse and render', () => 
     expect(await messageOf(markup)).toMatch(/^memory alloc limit exceeded/)
   })
 
+  it('fails a template that repeats `json` on a string on the memory limit', async () => {
+    const markup = `{% assign s = 'x' %}{{ s ${'| json '.repeat(30)}| size }}`
+
+    expect(await messageOf(markup)).toMatch(/^memory alloc limit exceeded/)
+  })
+
   it('fails nested loops that run for too long on the render limit', async () => {
     const markup = '{% for i in (1..3000) %}{% for j in (1..3000) %}{% endfor %}{% endfor %}'
 
