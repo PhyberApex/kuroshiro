@@ -40,6 +40,8 @@ const DOORBELL_TEMPLATE = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'
 const WEATHER_KEY_FIELD = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'
 const WEATHER_ASSIGNMENT = 'ffffffff-ffff-4fff-8fff-ffffffffffff'
 
+const PALETTE_ENTRY = { id: PALETTE, name: 'Warm red', kind: 'custom', grays: 2, colors: ['#000000', '#ffffff'], frameworkClass: 'screen--color-3bwr', grayscaleBitDepth: 1, deprecated: false }
+
 const EXPORTED_AT = '2026-09-28T19:14:00.000Z'
 
 function manifest(overrides: Record<string, unknown> = {}) {
@@ -93,7 +95,7 @@ const DOORBELL_FOLDER = {
 function redactedArchive(): Buffer {
   return buildArchive({
     manifest: manifest(),
-    palettes: [{ id: PALETTE, name: 'Warm red', kind: 'custom', grays: 2, colors: ['#000000', '#ffffff'], frameworkClass: 'screen--1bit', grayscaleBitDepth: 1, deprecated: false }],
+    palettes: [PALETTE_ENTRY],
     firmware: [{ id: FIRMWARE, version: '2.0.3', checksum: 'abc', compatibleModels: [], label: null, deprecated: false, uploadedAt: null }],
     plugins: [weatherEntry(), DOORBELL_ENTRY],
     pluginFolders: { [WEATHER]: WEATHER_FOLDER, [DOORBELL]: DOORBELL_FOLDER },
@@ -258,7 +260,7 @@ describe('reading and importing a Configuration Archive, against a real database
   function v1Archive(): Buffer {
     return buildArchive({
       manifest: { kuroshiroVersion: '0.17.1', schemaVersion: 1, exportedAt: EXPORTED_AT, containsSecrets: true },
-      palettes: [{ id: PALETTE, name: 'Warm red', kind: 'custom', grays: 2, colors: ['#000000', '#ffffff'], frameworkClass: 'screen--1bit', grayscaleBitDepth: 1, deprecated: false }],
+      palettes: [PALETTE_ENTRY],
       firmware: [],
       plugins: [
         {
@@ -408,6 +410,21 @@ describe('reading and importing a Configuration Archive, against a real database
 
       expect(refusal).toMatchObject({ statusCode: 422, code: 'archive-record-refused', details: { entity: 'Instance Settings', id: null } })
       expect(refusal.details?.reason).toContain('alertRetentionDays')
+    })
+
+    // A Palette's id names the colormap file a conversion writes, so one that climbs out of the colormaps folder must never reach the database.
+    it('a Palette whose id is a path rather than a UUID, naming it, with nothing written', async () => {
+      const refusal = await refused(buildArchive({ manifest: manifest(), palettes: [{ ...PALETTE_ENTRY, id: '../x' }] }))
+
+      expect(refusal).toMatchObject({ statusCode: 400, code: 'archive-not-configuration' })
+      expect(refusal.message).toContain('palettes.json entry "../x": id is not a UUID')
+    })
+
+    it('a Palette with a colour that is not a hex colour, naming it, with nothing written', async () => {
+      const refusal = await refused(buildArchive({ manifest: manifest(), palettes: [{ ...PALETTE_ENTRY, colors: ['#000000', 'red'] }] }))
+
+      expect(refusal).toMatchObject({ statusCode: 400, code: 'archive-not-configuration' })
+      expect(refusal.message).toContain(`palettes.json entry "${PALETTE}": colors are not each a #RRGGBB hex colour`)
     })
 
     it('a list that holds something other than records', async () => {

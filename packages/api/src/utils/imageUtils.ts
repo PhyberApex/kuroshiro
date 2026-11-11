@@ -102,7 +102,11 @@ function runMagick(args: string[], logger: Logger): Promise<string> {
 
 /** Named after the colours as well as the palette, so a custom Palette whose colours change gets a colormap of its own. */
 async function ensureColormap(palette: Palette, colors: string[], logger: Logger): Promise<string> {
-  const colormapPath = resolveAppPath('public', 'colormaps', `${palette.id}-${paletteColorsHash(palette)}.png`)
+  const colormapsDir = resolveAppPath('public', 'colormaps')
+  const colormapPath = path.join(colormapsDir, `${palette.id}-${paletteColorsHash(palette)}.png`)
+  // A Palette's id names a file, so one that names a folder instead must never pick where ImageMagick writes.
+  if (path.dirname(colormapPath) !== colormapsDir)
+    throw new Error(`Refusing to write the colormap of palette ${JSON.stringify(palette.id)} outside ${colormapsDir}`)
   if (fs.existsSync(colormapPath))
     return colormapPath
   logger.log(`Creating colormap for palette ${palette.id} at ${colormapPath}`)
