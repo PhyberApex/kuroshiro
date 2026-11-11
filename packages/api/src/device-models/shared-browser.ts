@@ -30,13 +30,14 @@ let sandboxUnavailable = false
  * makes (pwritev2), and Chromium gives up on every page once that has happened a few times.
  */
 const SANDBOXED_ARGS = ['--disable-gpu-sandbox']
+const UNSANDBOXED_ARGS = ['--no-sandbox']
 
 async function launchBrowser(): Promise<Browser> {
   const { default: puppeteer } = await import('puppeteer')
   const launch = (args: string[]) => puppeteer.launch({ args, ignoreDefaultArgs: ['--disable-popup-blocking'] })
   // Chromium refuses to sandbox itself as root, so there is nothing to try there.
   if (sandboxUnavailable || process.getuid?.() === 0)
-    return launch(['--no-sandbox'])
+    return launch(UNSANDBOXED_ARGS)
   try {
     return await launch(SANDBOXED_ARGS)
   }
@@ -45,7 +46,7 @@ async function launchBrowser(): Promise<Browser> {
     const reason = error instanceof Error ? error.message : String(error)
     logger.warn(`Chromium could not start sandboxed, so it renders without its sandbox: ${reason}`)
     sandboxUnavailable = true
-    return launch(['--no-sandbox'])
+    return launch(UNSANDBOXED_ARGS)
   }
 }
 

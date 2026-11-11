@@ -232,7 +232,7 @@ docker run --user 0 …                      # or, in docker-compose.yml: user: 
 
 Remove `--user 0` again afterwards, or keep it. Kuroshiro still drops to `node` before it starts. Or change the owner yourself: `docker run --rm -v <volume>:/data alpine chown -R 1000:1000 /data`.
 
-Chromium, which renders Plugin and HTML Screens, starts with its sandbox when the container allows the user namespaces it needs. Docker's default seccomp profile does not, so there Kuroshiro logs a warning and renders without the sandbox, as `node`. `--security-opt seccomp=unconfined` (compose: `security_opt: [seccomp=unconfined]`) lets the sandbox start, at the price of the rest of the default profile. ADR-0076 has the details.
+Chromium, which renders Plugin and HTML Screens, starts with its sandbox when the container allows the user namespaces it needs. Docker's default seccomp profile does not, so there Kuroshiro logs a warning and renders without the sandbox, as `node`. `--security-opt seccomp=unconfined` (compose: `security_opt: [seccomp=unconfined]`) lets the sandbox start, at the price of the rest of the default profile. [ADR-0076](docs/adr/0076-the-image-runs-as-node-and-chromium-sandboxes-its-renderers-where-the-container-lets-it.md) has the details.
 
 ---
 
