@@ -1,15 +1,16 @@
-import type { Server } from 'node:http'
+import type { INestApplication } from '@nestjs/common'
 import type { AddressInfo } from 'node:net'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import express from 'express'
+import { NestFactory } from '@nestjs/core'
+import { ServeStaticModule } from '@nestjs/serve-static'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { ingressBasePathMiddleware, setUiAssetHeaders } from '../ingress-base-path.middleware.js'
 
 describe('the security headers the app shell is served with', () => {
   let publicDir: string
-  let server: Server
+  let app: INestApplication
   let baseUrl: string
 
   beforeAll(async () => {
@@ -19,17 +20,20 @@ describe('the security headers the app shell is served with', () => {
     fs.writeFileSync(path.join(publicDir, 'screens', 'screen.png'), 'not really a png')
     fs.mkdirSync(path.join(publicDir, 'assets'))
     fs.writeFileSync(path.join(publicDir, 'assets', 'index-abc123.js'), 'export {}')
-    const app = express()
+    // Wired as main.ts and app.module.ts wire them: the middleware ahead of ServeStatic. Booted
+    // through NestFactory, as main.ts is, because a testing module builds ServeStatic's loader
+    // before there is an HTTP adapter and so serves no files at all.
+    app = await NestFactory.create(
+      ServeStaticModule.forRoot({ rootPath: publicDir, serveStaticOptions: { setHeaders: setUiAssetHeaders } }),
+      { logger: false },
+    )
     app.use(ingressBasePathMiddleware(publicDir))
-    app.use(express.static(publicDir, { setHeaders: setUiAssetHeaders }))
-    server = await new Promise<Server>((resolve) => {
-      const listening = app.listen(0, '127.0.0.1', () => resolve(listening))
-    })
-    baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
+    await app.listen(0)
+    baseUrl = `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}`
   })
 
   afterAll(async () => {
-    await new Promise(resolve => server.close(resolve))
+    await app.close()
     fs.rmSync(publicDir, { recursive: true, force: true })
   })
 
@@ -51,6 +55,10 @@ describe('the security headers the app shell is served with', () => {
 
     expectShellHeaders(response)
     expect(await response.text()).toContain('<base href="/api/hassio_ingress/some-token/">')
+  })
+
+  it('carries the same headers on the index.html ServeStatic falls back to for a missing dotted path', async () => {
+    expectShellHeaders(await fetch(`${baseUrl}/no-such-file.txt`))
   })
 
   it('serves the UI\'s scripts with nosniff', async () => {

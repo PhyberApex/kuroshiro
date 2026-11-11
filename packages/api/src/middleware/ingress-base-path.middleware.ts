@@ -47,14 +47,20 @@ const APP_SHELL_HEADERS = {
   'Referrer-Policy': 'same-origin',
 }
 
-const UI_ASSET_EXTENSIONS = new Set(['.js', '.css', '.html'])
+const UI_ASSET_EXTENSIONS = new Set(['.js', '.css'])
 
 /**
  * The static server's `setHeaders` hook: the UI's scripts and styles go out with `nosniff`,
- * so a browser never runs one as another type. Screen images, which Devices fetch, are left alone.
+ * so a browser never runs one as another type. An HTML file gets {@link APP_SHELL_HEADERS},
+ * because ServeStatic's fallback sends index.html for any dotted path with no file behind it
+ * (`/x.y`), past the middleware below, and that page must not be frameable either.
+ * Screen images, which Devices fetch, are left alone.
  */
 export function setUiAssetHeaders(res: Response, filePath: string): void {
-  if (UI_ASSET_EXTENSIONS.has(path.extname(filePath)))
+  const extension = path.extname(filePath)
+  if (extension === '.html')
+    res.set(APP_SHELL_HEADERS)
+  else if (UI_ASSET_EXTENSIONS.has(extension))
     res.setHeader('X-Content-Type-Options', 'nosniff')
 }
 
