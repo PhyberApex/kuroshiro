@@ -1,5 +1,6 @@
 {
   "release-type": "node",
+  "bump-minor-pre-major": true,
   "pull-request-header": ":partying_face: Preparing a new release",
   "extra-files": [
     "packages/api/package.json",
