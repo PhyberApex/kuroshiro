@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.23.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.22.0...kuroshiro-v0.23.0) (2026-11-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* **docker:** the image now runs as `node` (uid 1000). An install whose volumes or bind mounts were written by the previous (root) image stops at first start with `cannot write to /app/public/…`. Start it once as root (`--user 0`, compose `user: "0"`), and the entrypoint hands the files to `node` and drops privileges; or run `docker run --rm -v <volume>:/data alpine chown -R 1000:1000 /data` per volume (for a bind mount, `chown -R 1000:1000 <host dir>`). Images built on this one that need root, such as the Home Assistant add-on, must add `USER root` after `FROM`. See "Running unprivileged" in the README.
+
+### Features
+
+* the Recipe Gallery, browsing trmnl.com's published Recipes in the admin UI ([#1754](https://github.com/PhyberApex/kuroshiro/issues/1754)) ([4ad5d2d](https://github.com/PhyberApex/kuroshiro/commit/4ad5d2da9aa88bed596ba36a764e15836ca57dd0))
+
+
+### Bug Fixes
+
+* **api:** guard render page requests and turn web security back on ([#1753](https://github.com/PhyberApex/kuroshiro/issues/1753)) ([fbeccb1](https://github.com/PhyberApex/kuroshiro/commit/fbeccb12991338246dad2a28b5ae43cf17821586))
+* **api:** redact Webhook Tokens from the request log and compare Device API keys in constant time ([#1762](https://github.com/PhyberApex/kuroshiro/issues/1762)) ([81395b1](https://github.com/PhyberApex/kuroshiro/commit/81395b14bdef3f17c875697a43f8c84ce915039c))
+* **api:** refuse an /api/setup ID that is not a MAC address ([#1760](https://github.com/PhyberApex/kuroshiro/issues/1760)) ([461562e](https://github.com/PhyberApex/kuroshiro/commit/461562ed29d7e146d460a0b37d7cc46b6bfad278))
+* **api:** refuse cross-site state-changing requests to the admin API ([#1756](https://github.com/PhyberApex/kuroshiro/issues/1756)) ([28c9c63](https://github.com/PhyberApex/kuroshiro/commit/28c9c63301ed62c4422eba02b4ed9da8502c57de))
+* **api:** refuse NAT64, 6to4, reserved, benchmarking and multicast ranges in the demo SSRF guard ([#1761](https://github.com/PhyberApex/kuroshiro/issues/1761)) ([13845fd](https://github.com/PhyberApex/kuroshiro/commit/13845fd944db3e441f35aa7af95a9753e46896cc))
+* **api:** serve the admin UI with frame-ancestors and basic security headers ([#1763](https://github.com/PhyberApex/kuroshiro/issues/1763)) ([e0c8cfe](https://github.com/PhyberApex/kuroshiro/commit/e0c8cfe0c10fa45b898fefbbb2937c102243e892))
+* **api:** validate Configuration Archive entries, so a Palette id cannot path-traverse the colormap write ([#1759](https://github.com/PhyberApex/kuroshiro/issues/1759)) ([b595013](https://github.com/PhyberApex/kuroshiro/commit/b595013615c0a02eeb4bf791c0383a6f89c7f457))
+* **deps:** resolve patched body-parser, qs, zod, fast-uri and source-map-js ([#1736](https://github.com/PhyberApex/kuroshiro/issues/1736)) ([7d59f8c](https://github.com/PhyberApex/kuroshiro/commit/7d59f8c0ec6da56dbbc2c475e829bd8cec65b51b))
+* **docker:** run the image as an unprivileged user, and Chromium sandboxed where the container lets it ([#1757](https://github.com/PhyberApex/kuroshiro/issues/1757)) ([658984c](https://github.com/PhyberApex/kuroshiro/commit/658984c60921aee8e4ceab5d564ca9c038d3177c))
+* **shared:** set liquidjs parse, render and memory limits so a template cannot freeze the API ([#1758](https://github.com/PhyberApex/kuroshiro/issues/1758)) ([6eb9542](https://github.com/PhyberApex/kuroshiro/commit/6eb954280e500da790b6a57088fe7ea53e804c11))
+
 ## [0.22.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.21.0...kuroshiro-v0.22.0) (2026-10-31)
 
 
