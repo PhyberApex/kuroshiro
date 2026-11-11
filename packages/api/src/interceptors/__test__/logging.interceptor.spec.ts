@@ -1,6 +1,6 @@
 import type { CallHandler, ExecutionContext } from '@nestjs/common'
 import { Controller, Get, Logger } from '@nestjs/common'
-import { lastValueFrom, of } from 'rxjs'
+import { lastValueFrom, of, throwError } from 'rxjs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LoggingInterceptor } from '../logging.interceptor.js'
 import { SkipRequestLog } from '../skip-request-log.decorator.js'
@@ -18,12 +18,12 @@ class OrdinaryController {
   list() {}
 }
 
-function contextFor(controller: new () => object, handler: () => void): ExecutionContext {
+function contextFor(controller: new () => object, handler: () => void, request = { method: 'GET', url: '/x' }): ExecutionContext {
   return {
     getClass: () => controller,
     getHandler: () => handler,
     switchToHttp: () => ({
-      getRequest: () => ({ method: 'GET', url: '/x' }),
+      getRequest: () => request,
       getResponse: () => ({ statusCode: 200 }),
     }),
   } as unknown as ExecutionContext
@@ -54,6 +54,31 @@ describe('loggingInterceptor', () => {
     const logged = spies.flatMap(spy => spy.mock.calls.flat()).map(String).join('\n')
     expect(logged).toContain('GET /x 200')
     expect(logged).not.toContain('secret-device-key')
+  })
+
+  it.each([
+    '/api/webhook/secret-webhook-token',
+    '/api/webhook/secret-webhook-token?source=ci',
+    '/api/webhook/secret-webhook-token/',
+  ])('logs a webhook request to %s without its Webhook Token', async (url) => {
+    const debug = vi.spyOn(Logger.prototype, 'debug').mockImplementation(() => {})
+
+    await lastValueFrom(new LoggingInterceptor().intercept(contextFor(OrdinaryController, OrdinaryController.prototype.list, { method: 'POST', url }), next))
+
+    const logged = debug.mock.calls.flat().map(String).join('\n')
+    expect(logged).toContain('POST /api/webhook/[redacted]')
+    expect(logged).not.toContain('secret-webhook-token')
+  })
+
+  it('logs a failed webhook request without its Webhook Token', async () => {
+    const debug = vi.spyOn(Logger.prototype, 'debug').mockImplementation(() => {})
+    const failing: CallHandler = { handle: () => throwError(() => Object.assign(new Error('Not Found'), { status: 404 })) }
+
+    await expect(lastValueFrom(new LoggingInterceptor().intercept(contextFor(OrdinaryController, OrdinaryController.prototype.list, { method: 'GET', url: '/api/webhook/secret-webhook-token' }), failing))).rejects.toThrow('Not Found')
+
+    const logged = debug.mock.calls.flat().map(String).join('\n')
+    expect(logged).toContain('GET /api/webhook/[redacted] 404')
+    expect(logged).not.toContain('secret-webhook-token')
   })
 
   it('does not log a request to a controller marked @SkipRequestLog()', async () => {

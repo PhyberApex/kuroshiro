@@ -13,6 +13,19 @@ import { Reflector } from '@nestjs/core'
 import { tap } from 'rxjs'
 import { SKIP_REQUEST_LOG } from './skip-request-log.decorator.js'
 
+/**
+ * A Webhook Token is the whole credential of `/api/webhook/<token>`, so the path
+ * is logged without it. The rest of the URL goes too: the token may be followed
+ * by a slash or a query string. Express routes without letter case, so neither
+ * does this.
+ */
+const WEBHOOK_PATH = /^\/api\/webhook\/.*/is
+
+/** The request URL as the request log may hold it: with no credential in its path. */
+function redactRequestUrl(url: string): string {
+  return url.replace(WEBHOOK_PATH, '/api/webhook/[redacted]')
+}
+
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
   private readonly logger = new Logger('HTTP')
@@ -26,7 +39,8 @@ export class LoggingInterceptor implements NestInterceptor {
     const request = ctx.getRequest<Request>()
     const response = ctx.getResponse<Response>()
 
-    const { method, url } = request
+    const { method } = request
+    const url = redactRequestUrl(request.url)
     const startTime = Date.now()
 
     return next.handle().pipe(
