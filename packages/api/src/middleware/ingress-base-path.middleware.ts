@@ -34,6 +34,20 @@ function escapeHtmlAttribute(value: string): string {
 }
 
 /**
+ * Headers the app shell goes out with, so another site cannot frame the admin UI and
+ * clickjack its buttons. `'self'` covers Home Assistant's ingress too: the proxy serves the
+ * UI from HA's own origin, the same origin as the HA page that frames it. The policy is
+ * `frame-ancestors` alone because the Plugin preview's `srcdoc` iframe inherits the
+ * shell's CSP, and a plugin's markup loads scripts and styles from anywhere.
+ */
+const APP_SHELL_HEADERS = {
+  'Content-Security-Policy': 'frame-ancestors \'self\'',
+  'X-Frame-Options': 'SAMEORIGIN',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'same-origin',
+}
+
+/**
  * Injects a `<base href>` into index.html derived from the `X-Ingress-Path` header
  * Home Assistant's ingress proxy sends, so `document.baseURI` (and everything the UI
  * resolves from it) reflects the prefix the UI is actually being served under.
@@ -54,7 +68,7 @@ export function ingressBasePathMiddleware(publicDir: string): RequestHandler {
     indexHtml
       .then((html) => {
         const base = escapeHtmlAttribute(normalizeBaseHref(req.header('X-Ingress-Path')))
-        res.type('html').send(html.replace(/<head(\s[^>]*)?>/i, match => `${match}\n    <base href="${base}">`))
+        res.set(APP_SHELL_HEADERS).type('html').send(html.replace(/<head(\s[^>]*)?>/i, match => `${match}\n    <base href="${base}">`))
       })
       .catch((err) => {
         indexHtml = null
