@@ -124,15 +124,19 @@ describe('the endpoints outside the admin API behind the global pipe and filter'
     expect(handler).not.toHaveBeenCalled()
   })
 
-  it.each([
-    ['GET /api/display', () => http.request('/api/display', { headers: { 'id': '', 'access-token': 'token' } })],
-    ['GET /api/setup', () => http.request('/api/setup', { headers: { id: '  ' } })],
-  ])('refuses %s with an empty ID header as a 400 naming it', async (_route, send) => {
-    const response = await send()
+  it('refuses GET /api/display with an empty ID header as a 400 naming it', async () => {
+    const response = await http.request('/api/display', { headers: { 'id': '', 'access-token': 'token' } })
 
     expect(response.status).toBe(400)
     expect(await response.json()).toEqual({ statusCode: 400, message: ['Invalid header: id should not be empty'], error: 'Bad Request' })
     expect(displayService.getCurrentImage).not.toHaveBeenCalled()
+  })
+
+  it('refuses GET /api/setup with an empty ID header as a 400 asking for a MAC', async () => {
+    const response = await http.request('/api/setup', { headers: { id: '  ' } })
+
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ statusCode: 400, message: ['Invalid header: id must be a MAC address like AA:BB:CC:DD:EE:FF'], error: 'Bad Request' })
     expect(setupService.setupDevice).not.toHaveBeenCalled()
   })
 
