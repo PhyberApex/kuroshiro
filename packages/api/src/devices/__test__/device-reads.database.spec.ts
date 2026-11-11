@@ -140,6 +140,38 @@ describe('the Device reads against a real database', () => {
     })
   })
 
+  describe('a setup request', () => {
+    it.each([
+      ['not-a-mac', 'not-a-mac'],
+      ['a 10 kB string', 'A'.repeat(10_000)],
+      ['a MAC with a trailing character', 'AA:BB:CC:DD:EE:FF0'],
+      ['a MAC with dashes', 'AA-BB-CC-DD-EE-FF'],
+    ])('refuses an ID that is %s as a 400 and creates no Device', async (_case, id) => {
+      const response = await http.request('/api/setup', { headers: { id } })
+
+      expect(response.status).toBe(400)
+      expect(await response.json()).toEqual({ statusCode: 400, message: ['Invalid header: id must be a MAC address like AA:BB:CC:DD:EE:FF'], error: 'Bad Request' })
+      expect(await database.getRepository(Device).count()).toBe(0)
+    })
+
+    it('registers a Device that sends its MAC in lower case, stored upper-cased', async () => {
+      const response = await http.request('/api/setup', { headers: { id: 'aa:bb:cc:dd:ee:03' } })
+
+      expect(response.status).toBe(200)
+      expect(await database.getRepository(Device).find()).toEqual([expect.objectContaining({ mac: 'AA:BB:CC:DD:EE:03' })])
+    })
+
+    it('hands a registered Device its own credentials and creates no other', async () => {
+      const device = await register('Kitchen')
+
+      const response = await http.request('/api/setup', { headers: { id: device.mac } })
+
+      expect(response.status).toBe(200)
+      expect(await response.json()).toMatchObject({ api_key: device.apikey, friendly_id: device.friendlyId })
+      expect(await database.getRepository(Device).count()).toBe(1)
+    })
+  })
+
   describe('after a poll', () => {
     it('reads the Screen that poll served as the Current Screen, and the next poll from the refresh rate served', async () => {
       const device = await register('Kitchen')
