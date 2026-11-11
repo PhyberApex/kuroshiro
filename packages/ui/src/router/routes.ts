@@ -40,6 +40,7 @@ export const routes: RouteRecordRaw[] = [
 
   { path: '/plugins', component: () => import('@/pages/plugins/PluginsListPage.vue') },
   { path: '/plugins/new', component: () => import('@/pages/plugins/AddPluginPage.vue'), beforeEnter: keepAddPluginOrigin },
+  { path: '/plugins/recipes', component: () => import('@/pages/plugins/RecipeGalleryPage.vue') },
   { path: '/plugins/:pluginId', component: () => import('@/pages/plugins/PluginPage.vue') },
   { path: '/plugins/:pluginId/update', component: () => import('@/pages/plugins/RecipeUpdatePage.vue') },
 

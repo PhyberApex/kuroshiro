@@ -43,6 +43,7 @@ export const API_ERROR_CODES = [
   'device-reset-apikey-proxied',
   'wipe-proxied',
   'upstream-unreachable',
+  'upstream-busy',
   'template-full-missing',
   'template-invalid',
   'notifications-off',

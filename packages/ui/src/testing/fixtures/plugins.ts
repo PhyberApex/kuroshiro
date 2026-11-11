@@ -1,4 +1,4 @@
-import type { PluginDetail, PluginFieldRead, PluginImportResult, PluginPlace, PluginSummary, PreviewData, RecipeUpdatePreview, UpdateItem } from 'kuroshiro-shared'
+import type { PluginDetail, PluginFieldRead, PluginImportResult, PluginPlace, PluginSummary, PreviewData, RecipeGalleryPage, RecipeSummary, RecipeUpdatePreview, UpdateItem } from 'kuroshiro-shared'
 import { defineBuilder } from './defineBuilder'
 
 export const buildPluginPlace = defineBuilder<PluginPlace>(() => ({
@@ -131,4 +131,23 @@ export const buildRecipeUpdatePreview = defineBuilder<RecipeUpdatePreview>(() =>
   mode: 'three-way',
   items: [buildUpdateItem()],
   requiredFieldsLeftEmpty: [],
+}))
+
+export const buildRecipeSummary = defineBuilder<RecipeSummary>(() => ({
+  id: '41120',
+  name: 'Moon Phase',
+  description: 'Tonight\'s phase of the Moon, with moonrise and moonset',
+  publishedAt: '2025-03-14T10:00:00.000Z',
+  iconUrl: 'https://trmnl-public.s3.us-east-2.amazonaws.com/moon-phase-icon',
+  screenshotUrl: 'https://trmnl-public.s3.us-east-2.amazonaws.com/moon-phase',
+  recipeUrl: 'https://trmnl.com/recipes/moon-phase-41120',
+  installs: 2140,
+}))
+
+export const buildRecipeGalleryPage = defineBuilder<RecipeGalleryPage>(() => ({
+  recipes: [buildRecipeSummary()],
+  total: 1,
+  page: 1,
+  perPage: 25,
+  hasMore: false,
 }))

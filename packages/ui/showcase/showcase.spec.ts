@@ -116,6 +116,15 @@ describe('the showcase', () => {
       { name: 'device-settings', path: `${devicePath}/settings`, ready: page => page.getByText('Refresh rate').first().waitFor() },
       { name: 'device-logs', path: `${devicePath}/logs`, ready: page => page.getByText('display poll, served Kitchen dashboard').waitFor() },
       { name: 'plugins', path: 'plugins', ready: page => page.getByText('Tram departures').first().waitFor() },
+      {
+        name: 'recipe-gallery',
+        path: 'plugins/recipes',
+        // TRMNL's own Recipes, read live through the API. Every picture is loaded at once, so the shot waits for all of them.
+        ready: async (page) => {
+          await page.getByText(/^Showing \d+ of/).waitFor()
+          await page.evaluate('document.querySelectorAll(\'img[loading="lazy"]\').forEach(image => { image.loading = \'eager\' })')
+        },
+      },
       { name: 'plugin', path: `plugins/${plugins.weather.id}`, ready: page => page.locator('#template iframe').last().waitFor() },
       { name: 'alerts', path: 'alerts', ready: page => page.getByRole('list', { name: 'Firing Alerts' }).waitFor() },
       { name: 'instance', path: 'instance/settings', ready: page => heading(page, 'Instance') },

@@ -6,6 +6,7 @@ export const screenshots = {
   'device-settings': 'A Device\'s Settings',
   'device-logs': 'A Device\'s logs, as reported by its firmware',
   'plugins': 'The Plugins list',
+  'recipe-gallery': 'The Recipe Gallery: TRMNL\'s published Recipes, searched, filtered by category and ordered by installs',
   'plugin': 'A Plugin: its Template with a live preview, Data Sources, Field Values, Devices and source Recipe',
   'alerts': 'The Alerts page: every active Alert, plus anything resolved in the last 7 days',
   'instance': 'The Instance pages',

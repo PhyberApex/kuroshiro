@@ -16,6 +16,7 @@ import { Plugin } from './entities/plugin.entity.js'
 import { WebhookPluginGuard } from './guards/webhook-plugin.guard.js'
 import { PluginsController } from './plugins.controller.js'
 import { PluginsService } from './plugins.service.js'
+import { RecipeGalleryController } from './recipe-gallery.controller.js'
 import { DataSourceFetchOutcomeService } from './services/data-source-fetch-outcome.service.js'
 import { PluginAssignmentsService } from './services/plugin-assignments.service.js'
 import { PluginDataFetcherService } from './services/plugin-data-fetcher.service.js'
@@ -33,6 +34,7 @@ import { PluginRendererService } from './services/plugin-renderer.service.js'
 import { PluginSchedulerService } from './services/plugin-scheduler.service.js'
 import { PluginTemplateContextService } from './services/plugin-template-context.service.js'
 import { PluginTransformService } from './services/plugin-transform.service.js'
+import { RecipeGalleryService } from './services/recipe-gallery.service.js'
 import { RecipeUpdateService } from './services/recipe-update.service.js'
 import { WebhookIngestService } from './services/webhook-ingest.service.js'
 import { WebhookIngestController } from './webhook-ingest.controller.js'
@@ -55,7 +57,7 @@ import { WebhookIngestController } from './webhook-ingest.controller.js'
       Alert,
     ]),
   ],
-  controllers: [PluginsController, WebhookIngestController],
+  controllers: [PluginsController, RecipeGalleryController, WebhookIngestController],
   providers: [
     PluginsService,
     PluginReadsService,
@@ -75,6 +77,7 @@ import { WebhookIngestController } from './webhook-ingest.controller.js'
     PluginTemplateContextService,
     PluginFieldValuesService,
     PluginRefreshService,
+    RecipeGalleryService,
     RecipeUpdateService,
     WebhookIngestService,
     WebhookPluginGuard,

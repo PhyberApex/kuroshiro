@@ -2,8 +2,8 @@
 import type { DeviceLogLevelFilter } from 'kuroshiro-shared'
 import type { LogFilter } from './deviceLogWording'
 import { DEVICE_LOG_SEARCH_MIN_LENGTH } from 'kuroshiro-shared'
-import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
-import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
+import { computed, nextTick, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { clearDeviceLogs } from '@/api/devices'
 import { getInstanceSettings } from '@/api/instance'
 import Button from '@/components/Button.vue'
@@ -11,6 +11,7 @@ import Confirmation from '@/components/Confirmation.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import Notice from '@/components/Notice.vue'
 import { useLoad } from '@/patterns/useLoad'
+import { useSearchInAddress } from '@/patterns/useSearchInAddress'
 import { useDeviceFrame } from './deviceFrame'
 import { entryLineId, useDeviceLog } from './deviceLog'
 import DeviceLogBar from './DeviceLogBar.vue'
@@ -19,8 +20,6 @@ import DeviceLogFoot from './DeviceLogFoot.vue'
 import DeviceLogLoading from './DeviceLogLoading.vue'
 import { countLine, newEntriesLabel, noMatchSentence, retentionSentence } from './deviceLogWording'
 import { possessive } from './screenNaming'
-
-const SEARCH_WAITS_MS = 300
 
 const route = useRoute()
 const router = useRouter()
@@ -41,27 +40,10 @@ const sought = computed(() => typeof route.query.q === 'string' ? searchable(rou
 const filter = computed<LogFilter>(() => ({ level: level.value, q: sought.value }))
 const filtered = computed(() => level.value === 'problems' || sought.value !== '')
 
-const typed = ref(sought.value)
-let searchTimer: ReturnType<typeof setTimeout> | undefined
-watch(typed, (now) => {
-  clearTimeout(searchTimer)
-  if (searchable(now) !== sought.value)
-    searchTimer = setTimeout(() => holdInAddress({ q: searchable(now) || undefined }), SEARCH_WAITS_MS)
-})
-// Left inside the wait, the search would land in the address of whatever page came next,
-// or, while that page still loads, call the leaving off. A key pressed while it loads starts
-// a wait after the guard ran, so the page drops it again on its way out.
-onBeforeRouteLeave(() => clearTimeout(searchTimer))
-onScopeDispose(() => clearTimeout(searchTimer))
-// The address changed under the field: "Show all entries", or the browser's back button.
-watch(sought, (now) => {
-  if (searchable(typed.value) !== now)
-    typed.value = now
-})
+const { typed, clear: clearSearch } = useSearchInAddress({ sought: () => sought.value, searchable, hold: q => holdInAddress({ q }) })
 
 function showAll() {
-  clearTimeout(searchTimer)
-  typed.value = ''
+  clearSearch()
   holdInAddress({ level: undefined, q: undefined })
 }
 

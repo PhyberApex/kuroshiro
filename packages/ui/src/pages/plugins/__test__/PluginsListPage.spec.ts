@@ -108,12 +108,12 @@ describe('the Plugins list', () => {
       expect(elementsInSealColour(list).length).toBeGreaterThan(0)
     })
 
-    it('leads to the Plugin\'s page from a row, and to Add a Plugin from the title line', async () => {
+    it('leads to the Plugin\'s page from a row, and to the Recipe Gallery and Add a Plugin from the title line', async () => {
       fakePlugins()
       const screen = await mountList()
 
       await expect.element(screen.getByRole('link', { name: 'Build a Plugin' })).toHaveAttribute('href', '/plugins/new?way=poll')
-      await expect.element(screen.getByRole('link', { name: 'Import a Recipe' })).toHaveAttribute('href', '/plugins/new?way=recipe')
+      await expect.element(screen.getByRole('link', { name: 'Import a Recipe' })).toHaveAttribute('href', '/plugins/recipes')
       await expect.element(screen.getByRole('link', { name: 'Weather', exact: true })).toHaveAttribute('href', '/plugins/weather')
     })
 
@@ -214,7 +214,7 @@ describe('the Plugins list', () => {
       await expect.element(screen.getByRole('heading', { name: 'No Plugins yet' })).toBeVisible()
       await expect.element(screen.getByText('A Plugin fetches data and renders it with a template, for a Device to show as a Screen. Import one as a Recipe from TRMNL, or build your own.')).toBeVisible()
       expect(screen.getByRole('main').getByRole('link').elements().map(link => [link.textContent?.trim(), link.getAttribute('href')])).toEqual([
-        ['Import a Recipe', '/plugins/new?way=recipe'],
+        ['Import a Recipe', '/plugins/recipes'],
         ['Build a Plugin', '/plugins/new?way=poll'],
       ])
     })

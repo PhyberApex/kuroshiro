@@ -77,7 +77,7 @@ describe('add a Plugin by importing', () => {
       await expect.element(way(screen, 'Recipe')).toHaveAccessibleDescription('A ready-made Plugin from trmnl.com/recipes')
       await expect.element(recipeField(screen)).toHaveAttribute('placeholder', 'https://trmnl.com/recipes/41120')
       await expect.element(recipeField(screen)).toHaveAccessibleDescription('The address of the Recipe\'s page on trmnl.com, or only its id.')
-      await expect.element(screen.getByRole('link', { name: 'Browse Recipes on trmnl.com' })).toHaveAttribute('href', 'https://trmnl.com/recipes')
+      await expect.element(screen.getByRole('link', { name: 'Browse the Recipe Gallery' })).toHaveAttribute('href', '/plugins/recipes')
       await expect.element(screen.getByText('Imports as a Poll or Webhook Plugin you can edit. Nothing updates by itself afterwards.')).toBeVisible()
       await expect.element(screen.getByRole('combobox')).not.toBeInTheDocument()
     })
@@ -267,6 +267,13 @@ describe('add a Plugin by importing', () => {
       expect(faked.sent).toEqual([{ recipe: '41120', deviceId: 'kitchen' }])
       await expect.element(screen.getByText(/Imported from the Recipe Moon Phase\. Assigned to Kitchen\./)).toBeVisible()
       await expect.element(screen.getByRole('link', { name: 'Back to Kitchen\'s Screens' })).toHaveAttribute('href', '/devices/kitchen')
+    })
+
+    it('passes the Device the address carries on to the Recipe Gallery', async () => {
+      fakeImporting()
+      const screen = await mountAddPlugin('/plugins/new?way=recipe&device=kitchen')
+
+      await expect.element(screen.getByRole('link', { name: 'Browse the Recipe Gallery' })).toHaveAttribute('href', '/plugins/recipes?device=kitchen')
     })
 
     it('asks before leaving a Recipe that was entered', async () => {
@@ -491,16 +498,6 @@ describe('add a Plugin by importing', () => {
       expect(path(screen)).toBe('/plugins/new?way=github')
       await way(screen, 'File').click()
       expect(path(screen)).toBe('/plugins/new?way=file')
-    })
-
-    it('opens the Recipe way from "Import a Recipe" on the Plugins list', async () => {
-      fakeImporting({ plugins: [buildPluginSummary()] })
-      const screen = await mountApp({ at: '/plugins' })
-
-      await screen.getByRole('link', { name: 'Import a Recipe' }).click()
-
-      await expect.element(way(screen, 'Recipe')).toBeChecked()
-      expect(path(screen)).toBe('/plugins/new?way=recipe')
     })
   })
 

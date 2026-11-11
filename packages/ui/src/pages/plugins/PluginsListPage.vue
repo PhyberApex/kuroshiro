@@ -16,7 +16,7 @@ import { useLoad } from '@/patterns/useLoad'
 import NoPluginsYet from './NoPluginsYet.vue'
 import { useDuplicatePlugin, useExportPlugin } from './pluginActions'
 import PluginDeletion from './PluginDeletion.vue'
-import { addPluginPath } from './pluginPaths'
+import { addPluginPath, recipeGalleryPath } from './pluginPaths'
 import { countLine, hasProblem, matchingPlugins, noMatchSentence, pluginRowState } from './pluginRows'
 import PluginRows from './PluginRows.vue'
 import PluginsFilterBar from './PluginsFilterBar.vue'
@@ -94,7 +94,7 @@ const rows = computed<ShownPlugin[]>(() => shown.value.map(plugin => ({ plugin, 
         </RouterLink>
       </Button>
       <Button as-child variant="primary">
-        <RouterLink :to="addPluginPath('recipe')">
+        <RouterLink :to="recipeGalleryPath()">
           Import a Recipe
         </RouterLink>
       </Button>
