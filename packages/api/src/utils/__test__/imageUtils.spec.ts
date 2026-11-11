@@ -144,6 +144,22 @@ describe('imageUtils', () => {
       expect(args).not.toContain('FloydSteinberg')
     })
 
+    it.each([
+      ['climbs out of the colormaps folder', '../../../somewhere/x'],
+      ['names a folder inside it', 'nested/x'],
+    ])('refuses to write the colormap of a Palette whose id %s', async (_, id) => {
+      mockFs.existsSync.mockReturnValue(false)
+      magickSucceeds()
+
+      await expect(convertToPng('/input.jpg', '/output.png', { model: OG_PLUS, palette: { ...COLOR_6A, id } }, mockLogger))
+        .rejects
+        .toThrow(/colormap/i)
+
+      expect(mockFs.existsSync).not.toHaveBeenCalled()
+      expect(mockFs.promises.mkdir).not.toHaveBeenCalled()
+      expect(mockExecFile).not.toHaveBeenCalled()
+    })
+
     it('skips colormap creation if it already exists', async () => {
       mockFs.existsSync.mockReturnValue(true)
       magickSucceeds()

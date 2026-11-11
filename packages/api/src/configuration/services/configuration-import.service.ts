@@ -62,6 +62,7 @@ import { convertToPng } from '../../utils/imageUtils.js'
 import { resolveAppPath } from '../../utils/pathHelper.js'
 import { CONFIG_SCHEMA_VERSION, FIRST_CONFIG_SCHEMA_VERSION_WITH_SETTINGS, IMPORTABLE_CONFIG_SCHEMA_VERSIONS, LEGACY_CONFIG_SCHEMA_VERSIONS } from '../schema-version.js'
 import { CONFIG_ARCHIVE_FILES } from '../types.js'
+import { archiveEntryViolation } from './archive-entry-violation.js'
 import { toImportCheck } from './import-check.mapper.js'
 
 /** A file-type Screen's image, held back until the transaction commits: a rollback must not leave a written image for a row the database undid. */
@@ -219,15 +220,24 @@ export class ConfigurationImportService {
     const manifest = this.readManifest(zip)
     this.assertSchemaVersion(manifest)
 
+    const lists = {
+      plugins: this.readList<PluginManifestEntry & LegacyPluginManifestFields>(zip, CONFIG_ARCHIVE_FILES.plugins),
+      devices: this.readList<DeviceManifestEntry>(zip, CONFIG_ARCHIVE_FILES.devices),
+      screens: this.readList<ScreenManifestEntry>(zip, CONFIG_ARCHIVE_FILES.screens),
+      assignments: this.readList<AssignmentManifestEntry & LegacyAssignmentManifestFields>(zip, CONFIG_ARCHIVE_FILES.assignments),
+      palettes: this.readList<PaletteManifestEntry>(zip, CONFIG_ARCHIVE_FILES.palettes),
+      firmware: this.readList<FirmwareManifestEntry>(zip, CONFIG_ARCHIVE_FILES.firmware),
+    }
+    // Ids end up in file paths and colours in ImageMagick arguments, so an entry the API's own requests would refuse is refused before anything is written.
+    const violation = archiveEntryViolation(lists)
+    if (violation) {
+      throw notAConfigurationArchive(violation)
+    }
+
     return {
       zip,
       manifest,
-      plugins: this.readList(zip, CONFIG_ARCHIVE_FILES.plugins),
-      devices: this.readList(zip, CONFIG_ARCHIVE_FILES.devices),
-      screens: this.readList(zip, CONFIG_ARCHIVE_FILES.screens),
-      assignments: this.readList(zip, CONFIG_ARCHIVE_FILES.assignments),
-      palettes: this.readList(zip, CONFIG_ARCHIVE_FILES.palettes),
-      firmware: this.readList(zip, CONFIG_ARCHIVE_FILES.firmware),
+      ...lists,
       settings: manifest.schemaVersion < FIRST_CONFIG_SCHEMA_VERSION_WITH_SETTINGS ? {} : this.readSettings(zip),
     }
   }

@@ -10,7 +10,37 @@ import { createMockDeviceModelsService, primeMockDeviceModelsService } from '../
 import { asService } from '../../test/mockService.js'
 import { CONFIG_SCHEMA_VERSION } from '../schema-version.js'
 import { ConfigurationImportService } from '../services/configuration-import.service.js'
-import { buildArchive, makeDeviceEntry } from './archive.js'
+import { buildArchive, DEFAULT_DEVICE_ID as DEVICE_1, makeDeviceEntry } from './archive.js'
+
+// Every id the importer stores is a UUID, as the API's own requests hold it to.
+const DEVICE_2 = '00000002-0000-4000-8000-000000000002'
+const DP_1 = '00000003-0000-4000-8000-000000000003'
+const DS_1 = '00000004-0000-4000-8000-000000000004'
+const DS_2 = '00000005-0000-4000-8000-000000000005'
+const EXISTING_DEVICE_1 = '00000006-0000-4000-8000-000000000006'
+const EXISTING_PLUGIN = '00000007-0000-4000-8000-000000000007'
+const FIELD_CITY = '00000008-0000-4000-8000-000000000008'
+const FIELD_KEY = '00000009-0000-4000-8000-000000000009'
+const FIELD_REFRESH = '0000000a-0000-4000-8000-00000000000a'
+const FV_1 = '0000000b-0000-4000-8000-00000000000b'
+const MISSING_FIRMWARE = '0000000c-0000-4000-8000-00000000000c'
+const PALETTE_1 = '0000000d-0000-4000-8000-00000000000d'
+const PLUGIN_1 = '0000000e-0000-4000-8000-00000000000e'
+const PLUGIN_2 = '0000000f-0000-4000-8000-00000000000f'
+const PLUGIN_A = '00000010-0000-4000-8000-000000000010'
+const PLUGIN_B = '00000011-0000-4000-8000-000000000011'
+const PLUGIN_POLL = '00000012-0000-4000-8000-000000000012'
+const PLUGIN_WEBHOOK = '00000013-0000-4000-8000-000000000013'
+const SCREEN_1 = '00000014-0000-4000-8000-000000000014'
+const TPL_1 = '00000015-0000-4000-8000-000000000015'
+const TPL_2 = '00000016-0000-4000-8000-000000000016'
+const TPL_A = '00000017-0000-4000-8000-000000000017'
+const TPL_B = '00000018-0000-4000-8000-000000000018'
+const TPL_STORED = '00000019-0000-4000-8000-000000000019'
+const TPL_ARCHIVE = '0000001e-0000-4000-8000-00000000001e'
+const UNTOUCHED_PLUGIN = '0000001a-0000-4000-8000-00000000001a'
+const VALUE_1 = '0000001b-0000-4000-8000-00000000001b'
+const VAR_1 = '0000001c-0000-4000-8000-00000000001c'
 
 const { fsMock } = vi.hoisted(() => ({
   fsMock: {
@@ -201,18 +231,18 @@ describe('configurationImportService', () => {
   it('imports every entity on a fresh instance, then makes no changes on a second import of the same archive', async () => {
     const buffer = buildArchive({
       plugins: [{
-        id: 'plugin-1',
+        id: PLUGIN_1,
         kind: 'Poll',
         mergeStrategy: null,
         streamLimit: null,
         webhookToken: null,
         sourceRecipeId: null,
-        dataSources: [{ id: 'ds-1', name: 'source' }],
-        templates: [{ id: 'tpl-1', layout: 'full' }],
+        dataSources: [{ id: DS_1, name: 'source' }],
+        templates: [{ id: TPL_1, layout: 'full' }],
         fields: [],
       }],
       pluginFolders: {
-        'plugin-1': {
+        [PLUGIN_1]: {
           manifest: { name: 'Test Plugin', description: '', custom_fields: [] },
           settings: { refresh_interval: 15, data_sources: [{ name: 'source', endpoint: 'https://api.example.com', method: 'GET', headers: {}, body: {} }] },
           templates: { full: 'Hello' },
@@ -220,20 +250,20 @@ describe('configurationImportService', () => {
       },
       devices: [makeDeviceEntry()],
       screens: [{
-        id: 'screen-1',
-        deviceId: 'device-1',
+        id: SCREEN_1,
+        deviceId: DEVICE_1,
         type: 'plugin',
         order: 1,
         filename: null,
         externalLink: null,
         html: null,
         fetchManual: false,
-        pluginId: 'plugin-1',
-        devicePluginId: 'dp-1',
+        pluginId: PLUGIN_1,
+        devicePluginId: DP_1,
         schedule: null,
         mashupConfiguration: null,
       }],
-      assignments: [{ id: 'dp-1', deviceId: 'device-1', pluginId: 'plugin-1', order: 0, isActive: true }],
+      assignments: [{ id: DP_1, deviceId: DEVICE_1, pluginId: PLUGIN_1, order: 0, isActive: true }],
     })
 
     const first = await service.importFromZip(buffer)
@@ -252,36 +282,36 @@ describe('configurationImportService', () => {
   it('replaces the stored Template of a size whose id is not the archive\'s, keeping one Template per size', async () => {
     const archiveWithTemplate = (templateId: string, markup: string) => buildArchive({
       plugins: [{
-        id: 'plugin-1',
+        id: PLUGIN_1,
         kind: 'Poll',
         mergeStrategy: null,
         streamLimit: null,
         webhookToken: null,
         sourceRecipeId: null,
-        dataSources: [{ id: 'ds-1', name: 'source' }],
+        dataSources: [{ id: DS_1, name: 'source' }],
         templates: [{ id: templateId, layout: 'full' }],
         fields: [],
       }],
       pluginFolders: {
-        'plugin-1': {
+        [PLUGIN_1]: {
           manifest: { name: 'Test Plugin', description: '', custom_fields: [] },
           settings: { refresh_interval: 15, data_sources: [{ name: 'source', endpoint: 'https://api.example.com', method: 'GET', headers: {}, body: {} }] },
           templates: { full: markup },
         },
       },
     })
-    await service.importFromZip(archiveWithTemplate('tpl-stored', 'Stored'))
+    await service.importFromZip(archiveWithTemplate(TPL_STORED, 'Stored'))
 
-    const result = await service.importFromZip(archiveWithTemplate('tpl-archive', 'From the archive'))
+    const result = await service.importFromZip(archiveWithTemplate(TPL_ARCHIVE, 'From the archive'))
 
     expect(result.updated).toMatchObject({ templates: 1 })
-    expect([...backing.get('PluginTemplate')!.values()]).toEqual([expect.objectContaining({ id: 'tpl-stored', layout: 'full', liquidMarkup: 'From the archive' })])
+    expect([...backing.get('PluginTemplate')!.values()]).toEqual([expect.objectContaining({ id: TPL_STORED, layout: 'full', liquidMarkup: 'From the archive' })])
   })
 
   it('restores the Recipe Snapshot from the manifest entry, and falls back to null when an archive predates it', async () => {
     const snapshot = { name: 'Daily Weather', kind: 'Poll', refreshInterval: 30, dataSources: [], templates: [], fields: [], sourceRecipeId: '150460' }
     const pluginFolders = {
-      'plugin-1': {
+      [PLUGIN_1]: {
         manifest: { name: 'Test Plugin', description: '', custom_fields: [] },
         settings: { refresh_interval: 15, data_sources: [{ name: 'source', endpoint: 'https://api.example.com', method: 'GET', headers: {}, body: {} }] },
         templates: { full: 'Hello' },
@@ -290,45 +320,45 @@ describe('configurationImportService', () => {
 
     const withSnapshot = buildArchive({
       plugins: [{
-        id: 'plugin-1',
+        id: PLUGIN_1,
         kind: 'Poll',
         mergeStrategy: null,
         streamLimit: null,
         webhookToken: null,
         sourceRecipeId: '150460',
         sourceRecipeSnapshot: snapshot,
-        dataSources: [{ id: 'ds-1', name: 'source' }],
-        templates: [{ id: 'tpl-1', layout: 'full' }],
+        dataSources: [{ id: DS_1, name: 'source' }],
+        templates: [{ id: TPL_1, layout: 'full' }],
         fields: [],
       }],
       pluginFolders,
     })
 
     await service.importFromZip(withSnapshot)
-    expect(backing.get('Plugin')!.get('plugin-1')!.sourceRecipeSnapshot).toEqual(snapshot)
+    expect(backing.get('Plugin')!.get(PLUGIN_1)!.sourceRecipeSnapshot).toEqual(snapshot)
 
     const withoutSnapshotField = buildArchive({
       plugins: [{
-        id: 'plugin-2',
+        id: PLUGIN_2,
         kind: 'Poll',
         mergeStrategy: null,
         streamLimit: null,
         webhookToken: null,
         sourceRecipeId: null,
-        dataSources: [{ id: 'ds-2', name: 'source' }],
-        templates: [{ id: 'tpl-2', layout: 'full' }],
+        dataSources: [{ id: DS_2, name: 'source' }],
+        templates: [{ id: TPL_2, layout: 'full' }],
         fields: [],
       }],
-      pluginFolders: { 'plugin-2': pluginFolders['plugin-1'] },
+      pluginFolders: { [PLUGIN_2]: pluginFolders[PLUGIN_1] },
     })
 
     await service.importFromZip(withoutSnapshotField)
-    expect(backing.get('Plugin')!.get('plugin-2')!.sourceRecipeSnapshot).toBeNull()
+    expect(backing.get('Plugin')!.get(PLUGIN_2)!.sourceRecipeSnapshot).toBeNull()
   })
 
   it('re-attaches to an existing Device by mac instead of creating a duplicate, remapping Screen references onto it, and keeps the existing apikey so the hardware stays authenticated', async () => {
-    backing.get('Device')!.set('existing-device-1', {
-      id: 'existing-device-1',
+    backing.get('Device')!.set(EXISTING_DEVICE_1, {
+      id: EXISTING_DEVICE_1,
       name: 'Old Name',
       friendlyId: 'OLD1',
       mac: 'AA:BB:CC:DD:EE:FF',
@@ -339,10 +369,10 @@ describe('configurationImportService', () => {
     })
 
     const buffer = buildArchive({
-      devices: [makeDeviceEntry({ id: 'device-2', name: 'New Name', friendlyId: 'NEW1', apikey: 'new-key' })],
+      devices: [makeDeviceEntry({ id: DEVICE_2, name: 'New Name', friendlyId: 'NEW1', apikey: 'new-key' })],
       screens: [{
-        id: 'screen-1',
-        deviceId: 'device-2',
+        id: SCREEN_1,
+        deviceId: DEVICE_2,
         type: 'html',
         order: 1,
         filename: null,
@@ -360,18 +390,18 @@ describe('configurationImportService', () => {
 
     const deviceRows = [...backing.get('Device')!.values()]
     expect(deviceRows).toHaveLength(1)
-    expect(deviceRows[0].id).toBe('existing-device-1')
+    expect(deviceRows[0].id).toBe(EXISTING_DEVICE_1)
     expect(deviceRows[0].apikey).toBe('old-key')
     expect(summary.updated.devices).toBe(1)
 
     const screenRows = [...backing.get('Screen')!.values()]
-    expect((screenRows[0].device as { id: string }).id).toBe('existing-device-1')
+    expect((screenRows[0].device as { id: string }).id).toBe(EXISTING_DEVICE_1)
     expect(summary.created.screens).toBe(1)
   })
 
   it('rolls back the entire import when a later entity fails, leaving previously-processed rows from this import undone', async () => {
-    backing.get('Plugin')!.set('existing-plugin', {
-      id: 'existing-plugin',
+    backing.get('Plugin')!.set(EXISTING_PLUGIN, {
+      id: EXISTING_PLUGIN,
       name: 'Existing',
       kind: 'Webhook',
       webhookToken: 'shared-token',
@@ -381,72 +411,72 @@ describe('configurationImportService', () => {
     const buffer = buildArchive({
       plugins: [
         {
-          id: 'plugin-A',
+          id: PLUGIN_A,
           kind: 'Webhook',
           mergeStrategy: 'standard',
           streamLimit: null,
           webhookToken: 'token-A',
           sourceRecipeId: null,
           dataSources: [],
-          templates: [{ id: 'tpl-A', layout: 'full' }],
+          templates: [{ id: TPL_A, layout: 'full' }],
           fields: [],
         },
         {
-          id: 'plugin-B',
+          id: PLUGIN_B,
           kind: 'Webhook',
           mergeStrategy: 'standard',
           streamLimit: null,
           webhookToken: 'shared-token',
           sourceRecipeId: null,
           dataSources: [],
-          templates: [{ id: 'tpl-B', layout: 'full' }],
+          templates: [{ id: TPL_B, layout: 'full' }],
           fields: [],
         },
       ],
       pluginFolders: {
-        'plugin-A': { manifest: { name: 'A', custom_fields: [] }, templates: { full: 'A content' } },
-        'plugin-B': { manifest: { name: 'B', custom_fields: [] }, templates: { full: 'B content' } },
+        [PLUGIN_A]: { manifest: { name: 'A', custom_fields: [] }, templates: { full: 'A content' } },
+        [PLUGIN_B]: { manifest: { name: 'B', custom_fields: [] }, templates: { full: 'B content' } },
       },
     })
 
     await expect(service.importFromZip(buffer)).rejects.toThrow(/Webhook Token/)
 
     const pluginIds = [...backing.get('Plugin')!.values()].map(row => row.id).sort()
-    expect(pluginIds).toEqual(['existing-plugin'])
+    expect(pluginIds).toEqual([EXISTING_PLUGIN])
   })
 
   it('imports a Plugin whose src/settings.yml has no Data Sources: a Webhook-kind Plugin, and a Poll-kind Plugin that lists none', async () => {
     const entry = { sourceRecipeId: null, dataSources: [], fields: [] }
     const buffer = buildArchive({
       plugins: [
-        { ...entry, id: 'plugin-webhook', kind: 'Webhook', mergeStrategy: 'stream', streamLimit: 12, webhookToken: 'token-A', templates: [{ id: 'tpl-A', layout: 'full' }] },
-        { ...entry, id: 'plugin-poll', kind: 'Poll', mergeStrategy: null, streamLimit: null, webhookToken: null, templates: [{ id: 'tpl-B', layout: 'full' }] },
+        { ...entry, id: PLUGIN_WEBHOOK, kind: 'Webhook', mergeStrategy: 'stream', streamLimit: 12, webhookToken: 'token-A', templates: [{ id: TPL_A, layout: 'full' }] },
+        { ...entry, id: PLUGIN_POLL, kind: 'Poll', mergeStrategy: null, streamLimit: null, webhookToken: null, templates: [{ id: TPL_B, layout: 'full' }] },
       ],
       pluginFolders: {
-        'plugin-webhook': { manifest: { name: 'Doorbell', custom_fields: [] }, settings: { strategy: 'webhook', merge_strategy: 'stream', stream_limit: 12 }, templates: { full: 'A content' } },
-        'plugin-poll': { manifest: { name: 'Clock', custom_fields: [] }, settings: { strategy: 'polling', refresh_interval: 30, data_sources: [] }, templates: { full: 'B content' } },
+        [PLUGIN_WEBHOOK]: { manifest: { name: 'Doorbell', custom_fields: [] }, settings: { strategy: 'webhook', merge_strategy: 'stream', stream_limit: 12 }, templates: { full: 'A content' } },
+        [PLUGIN_POLL]: { manifest: { name: 'Clock', custom_fields: [] }, settings: { strategy: 'polling', refresh_interval: 30, data_sources: [] }, templates: { full: 'B content' } },
       },
     })
 
     const summary = await service.importFromZip(buffer)
 
     expect(summary.created.plugins).toBe(2)
-    expect(backing.get('Plugin')!.get('plugin-poll')).toMatchObject({ name: 'Clock', kind: 'Poll', refreshInterval: 30 })
-    expect(backing.get('Plugin')!.get('plugin-webhook')).toMatchObject({ name: 'Doorbell', kind: 'Webhook', mergeStrategy: 'stream', streamLimit: 12 })
+    expect(backing.get('Plugin')!.get(PLUGIN_POLL)).toMatchObject({ name: 'Clock', kind: 'Poll', refreshInterval: 30 })
+    expect(backing.get('Plugin')!.get(PLUGIN_WEBHOOK)).toMatchObject({ name: 'Doorbell', kind: 'Webhook', mergeStrategy: 'stream', streamLimit: 12 })
   })
 
   it('resolves an unknown Device Model, Palette, or Firmware reference to null with a warning instead of failing', async () => {
     const buffer = buildArchive({
-      devices: [makeDeviceEntry({ deviceModelName: 'missing_model', paletteId: 'missing-palette', targetFirmwareId: 'missing-firmware' })],
+      devices: [makeDeviceEntry({ deviceModelName: 'missing_model', paletteId: 'missing-palette', targetFirmwareId: MISSING_FIRMWARE })],
     })
 
     const summary = await service.importFromZip(buffer)
 
-    const device = { id: 'device-1', name: 'Device 1' }
+    const device = { id: DEVICE_1, name: 'Device 1' }
     expect(summary.warnings).toEqual([
       { kind: 'device-model-unknown', device, deviceModel: 'missing_model' },
       { kind: 'palette-unknown', device, paletteId: 'missing-palette' },
-      { kind: 'firmware-unknown', device, firmwareId: 'missing-firmware' },
+      { kind: 'firmware-unknown', device, firmwareId: MISSING_FIRMWARE },
     ])
 
     const deviceRows = [...backing.get('Device')!.values()]
@@ -534,7 +564,7 @@ describe('configurationImportService', () => {
 
     it('rolls back every other record the same import wrote', async () => {
       const buffer = buildArchive({
-        palettes: [{ id: 'palette-1', name: 'Warm red', kind: 'custom', grays: 2, colors: ['#000000'], frameworkClass: 'screen--1bit', grayscaleBitDepth: 1, deprecated: false }],
+        palettes: [{ id: PALETTE_1, name: 'Warm red', kind: 'custom', grays: 2, colors: ['#000000'], frameworkClass: 'screen--color-3bwr', grayscaleBitDepth: 1, deprecated: false }],
         settings: { alertRetentionDays: -5 },
       })
 
@@ -545,23 +575,23 @@ describe('configurationImportService', () => {
   })
 
   it('keeps a Data Source\'s existing header value when the archive holds the sentinel and a value exists, with no warning', async () => {
-    backing.get('Plugin')!.set('plugin-1', { id: 'plugin-1', name: 'Test Plugin', kind: 'Poll', refreshInterval: 15 })
-    backing.get('PluginDataSource')!.set('ds-1', { id: 'ds-1', name: 'source', headers: { Authorization: 'Bearer real-token' } })
+    backing.get('Plugin')!.set(PLUGIN_1, { id: PLUGIN_1, name: 'Test Plugin', kind: 'Poll', refreshInterval: 15 })
+    backing.get('PluginDataSource')!.set(DS_1, { id: DS_1, name: 'source', headers: { Authorization: 'Bearer real-token' } })
 
     const buffer = buildArchive({
       plugins: [{
-        id: 'plugin-1',
+        id: PLUGIN_1,
         kind: 'Poll',
         mergeStrategy: null,
         streamLimit: null,
         webhookToken: null,
         sourceRecipeId: null,
-        dataSources: [{ id: 'ds-1', name: 'source' }],
-        templates: [{ id: 'tpl-1', layout: 'full' }],
+        dataSources: [{ id: DS_1, name: 'source' }],
+        templates: [{ id: TPL_1, layout: 'full' }],
         fields: [],
       }],
       pluginFolders: {
-        'plugin-1': {
+        [PLUGIN_1]: {
           manifest: { name: 'Test Plugin', description: '', custom_fields: [] },
           settings: { refresh_interval: 15, data_sources: [{ name: 'source', endpoint: 'https://api.example.com', method: 'GET', headers: { Authorization: CONFIGURATION_REDACTION_SENTINEL }, body: {} }] },
           templates: { full: 'Hello' },
@@ -571,7 +601,7 @@ describe('configurationImportService', () => {
 
     const summary = await service.importFromZip(buffer)
 
-    const dataSource = [...backing.get('PluginDataSource')!.values()].find(row => row.id === 'ds-1')
+    const dataSource = [...backing.get('PluginDataSource')!.values()].find(row => row.id === DS_1)
     expect(dataSource!.headers).toEqual({ Authorization: 'Bearer real-token' })
     expect(summary.warnings).toEqual([])
   })
@@ -579,18 +609,18 @@ describe('configurationImportService', () => {
   it('drops a header and warns when the archive holds the sentinel with no existing value to keep, leaving other headers untouched', async () => {
     const buffer = buildArchive({
       plugins: [{
-        id: 'plugin-1',
+        id: PLUGIN_1,
         kind: 'Poll',
         mergeStrategy: null,
         streamLimit: null,
         webhookToken: null,
         sourceRecipeId: null,
-        dataSources: [{ id: 'ds-1', name: 'source' }],
-        templates: [{ id: 'tpl-1', layout: 'full' }],
+        dataSources: [{ id: DS_1, name: 'source' }],
+        templates: [{ id: TPL_1, layout: 'full' }],
         fields: [],
       }],
       pluginFolders: {
-        'plugin-1': {
+        [PLUGIN_1]: {
           manifest: { name: 'Test Plugin', description: '', custom_fields: [] },
           settings: { refresh_interval: 15, data_sources: [{ name: 'source', endpoint: 'https://api.example.com', method: 'GET', headers: { 'Authorization': CONFIGURATION_REDACTION_SENTINEL, 'X-Keep': 'plain' }, body: {} }] },
           templates: { full: 'Hello' },
@@ -602,27 +632,27 @@ describe('configurationImportService', () => {
 
     const dataSource = [...backing.get('PluginDataSource')!.values()][0]
     expect(dataSource.headers).toEqual({ 'X-Keep': 'plain' })
-    expect(summary.warnings).toEqual([{ kind: 'header-redacted', plugin: { id: 'plugin-1', name: 'Test Plugin' }, dataSource: 'source', header: 'Authorization' }])
+    expect(summary.warnings).toEqual([{ kind: 'header-redacted', plugin: { id: PLUGIN_1, name: 'Test Plugin' }, dataSource: 'source', header: 'Authorization' }])
   })
 
   it('keeps a Data Source\'s existing header when its current value is legitimately empty, with no warning', async () => {
-    backing.get('Plugin')!.set('plugin-1', { id: 'plugin-1', name: 'Test Plugin', kind: 'Poll', refreshInterval: 15 })
-    backing.get('PluginDataSource')!.set('ds-1', { id: 'ds-1', name: 'source', headers: { 'X-Empty': '' } })
+    backing.get('Plugin')!.set(PLUGIN_1, { id: PLUGIN_1, name: 'Test Plugin', kind: 'Poll', refreshInterval: 15 })
+    backing.get('PluginDataSource')!.set(DS_1, { id: DS_1, name: 'source', headers: { 'X-Empty': '' } })
 
     const buffer = buildArchive({
       plugins: [{
-        id: 'plugin-1',
+        id: PLUGIN_1,
         kind: 'Poll',
         mergeStrategy: null,
         streamLimit: null,
         webhookToken: null,
         sourceRecipeId: null,
-        dataSources: [{ id: 'ds-1', name: 'source' }],
-        templates: [{ id: 'tpl-1', layout: 'full' }],
+        dataSources: [{ id: DS_1, name: 'source' }],
+        templates: [{ id: TPL_1, layout: 'full' }],
         fields: [],
       }],
       pluginFolders: {
-        'plugin-1': {
+        [PLUGIN_1]: {
           manifest: { name: 'Test Plugin', description: '', custom_fields: [] },
           settings: { refresh_interval: 15, data_sources: [{ name: 'source', endpoint: 'https://api.example.com', method: 'GET', headers: { 'X-Empty': CONFIGURATION_REDACTION_SENTINEL }, body: {} }] },
           templates: { full: 'Hello' },
@@ -632,7 +662,7 @@ describe('configurationImportService', () => {
 
     const summary = await service.importFromZip(buffer)
 
-    const dataSource = [...backing.get('PluginDataSource')!.values()].find(row => row.id === 'ds-1')
+    const dataSource = [...backing.get('PluginDataSource')!.values()].find(row => row.id === DS_1)
     expect(dataSource!.headers).toEqual({ 'X-Empty': '' })
     expect(summary.warnings).toEqual([])
   })
@@ -640,20 +670,20 @@ describe('configurationImportService', () => {
   function fieldValuePlugin(fieldValues: Record<string, string>, legacy: Record<string, unknown> = {}) {
     return {
       plugins: [{
-        id: 'plugin-1',
+        id: PLUGIN_1,
         kind: 'Poll',
         mergeStrategy: null,
         streamLimit: null,
         webhookToken: null,
         sourceRecipeId: null,
         dataSources: [],
-        templates: [{ id: 'tpl-1', layout: 'full' }],
-        fields: [{ id: 'field-key', keyname: 'api_key' }, { id: 'field-city', keyname: 'city' }],
+        templates: [{ id: TPL_1, layout: 'full' }],
+        fields: [{ id: FIELD_KEY, keyname: 'api_key' }, { id: FIELD_CITY, keyname: 'city' }],
         fieldValues,
         ...legacy,
       }],
       pluginFolders: {
-        'plugin-1': {
+        [PLUGIN_1]: {
           manifest: {
             name: 'Test Plugin',
             custom_fields: [
@@ -677,7 +707,7 @@ describe('configurationImportService', () => {
     const first = await service.importFromZip(buffer)
     const second = await service.importFromZip(buffer)
 
-    expect(storedFieldValues()).toEqual({ 'field-key': 'secret', 'field-city': 'Berlin' })
+    expect(storedFieldValues()).toEqual({ [FIELD_KEY]: 'secret', [FIELD_CITY]: 'Berlin' })
     expect(first.created.fieldValues).toBe(2)
     expect(second.created.fieldValues).toBeUndefined()
     expect(second.updated.fieldValues).toBe(2)
@@ -686,73 +716,73 @@ describe('configurationImportService', () => {
   })
 
   it('keeps an existing password Field Value when the archive holds the sentinel, and warns for one that has none', async () => {
-    backing.get('Plugin')!.set('plugin-1', { id: 'plugin-1', name: 'Test Plugin', kind: 'Poll', refreshInterval: 15 })
-    backing.get('PluginField')!.set('field-key', { id: 'field-key', keyname: 'api_key' })
-    backing.get('PluginFieldValue')!.set('value-1', { id: 'value-1', value: 'real-secret', field: { id: 'field-key' }, plugin: { id: 'plugin-1' } })
+    backing.get('Plugin')!.set(PLUGIN_1, { id: PLUGIN_1, name: 'Test Plugin', kind: 'Poll', refreshInterval: 15 })
+    backing.get('PluginField')!.set(FIELD_KEY, { id: FIELD_KEY, keyname: 'api_key' })
+    backing.get('PluginFieldValue')!.set(VALUE_1, { id: VALUE_1, value: 'real-secret', field: { id: FIELD_KEY }, plugin: { id: PLUGIN_1 } })
 
     const kept = await service.importFromZip(buildArchive(fieldValuePlugin({ api_key: CONFIGURATION_REDACTION_SENTINEL, city: 'Berlin' })))
 
-    expect(storedFieldValues()).toEqual({ 'field-key': 'real-secret', 'field-city': 'Berlin' })
+    expect(storedFieldValues()).toEqual({ [FIELD_KEY]: 'real-secret', [FIELD_CITY]: 'Berlin' })
     expect(kept.warnings).toEqual([])
 
     backing.get('PluginFieldValue')!.clear()
     const dropped = await service.importFromZip(buildArchive(fieldValuePlugin({ api_key: CONFIGURATION_REDACTION_SENTINEL })))
 
     expect(storedFieldValues()).toEqual({})
-    expect(dropped.warnings).toEqual([{ kind: 'field-value-redacted', plugin: { id: 'plugin-1', name: 'Test Plugin' }, keyname: 'api_key', label: 'API key' }])
+    expect(dropped.warnings).toEqual([{ kind: 'field-value-redacted', plugin: { id: PLUGIN_1, name: 'Test Plugin' }, keyname: 'api_key', label: 'API key' }])
   })
 
   it('warns about a Field Value whose keyname the Plugin has no Plugin Field for, and drops it', async () => {
     const summary = await service.importFromZip(buildArchive(fieldValuePlugin({ town: 'Berlin' })))
 
     expect(storedFieldValues()).toEqual({})
-    expect(summary.warnings).toEqual([{ kind: 'field-value-without-field', plugin: { id: 'plugin-1', name: 'Test Plugin' }, keyname: 'town' }])
+    expect(summary.warnings).toEqual([{ kind: 'field-value-without-field', plugin: { id: PLUGIN_1, name: 'Test Plugin' }, keyname: 'town' }])
   })
 
   // A stale password Field Value must not survive an import that retypes its Plugin Field away from
   // password, even when the archive's own fieldValues has no entry for that keyname to overwrite it with.
   it('drops a stored Field Value when an import retypes its Plugin Field away from password, with no fieldValues entry to replace it', async () => {
-    backing.get('Plugin')!.set('plugin-1', { id: 'plugin-1', name: 'Test Plugin', kind: 'Poll', refreshInterval: 15 })
-    backing.get('PluginField')!.set('field-key', { id: 'field-key', keyname: 'api_key', fieldType: 'password' })
-    backing.get('PluginFieldValue')!.set('value-1', { id: 'value-1', value: 'real-secret', field: { id: 'field-key' }, plugin: { id: 'plugin-1' } })
+    backing.get('Plugin')!.set(PLUGIN_1, { id: PLUGIN_1, name: 'Test Plugin', kind: 'Poll', refreshInterval: 15 })
+    backing.get('PluginField')!.set(FIELD_KEY, { id: FIELD_KEY, keyname: 'api_key', fieldType: 'password' })
+    backing.get('PluginFieldValue')!.set(VALUE_1, { id: VALUE_1, value: 'real-secret', field: { id: FIELD_KEY }, plugin: { id: PLUGIN_1 } })
 
     const { plugins, pluginFolders } = fieldValuePlugin({ city: 'Berlin' })
-    ;(pluginFolders['plugin-1'].manifest.custom_fields as Array<{ keyname: string, field_type: string }>)
+    ;(pluginFolders[PLUGIN_1].manifest.custom_fields as Array<{ keyname: string, field_type: string }>)
       .find(field => field.keyname === 'api_key')!
       .field_type = 'string'
 
     await service.importFromZip(buildArchive({ plugins, pluginFolders }))
 
-    expect(storedFieldValues()).toEqual({ 'field-city': 'Berlin' })
+    expect(storedFieldValues()).toEqual({ [FIELD_CITY]: 'Berlin' })
   })
 
   it('imports an OAuth Plugin\'s oauth_* settings from its settings.yml, and none for a Plugin that does not sign in (ADR-0068)', async () => {
     const { plugins, pluginFolders } = fieldValuePlugin({})
-    const folder = { ...pluginFolders['plugin-1'], settings: { strategy: 'polling', oauth_enabled: 'true', oauth_token_url: 'https://oauth2.example.com/token' } }
+    const folder = { ...pluginFolders[PLUGIN_1], settings: { strategy: 'polling', oauth_enabled: 'true', oauth_token_url: 'https://oauth2.example.com/token' } }
 
-    await service.importFromZip(buildArchive({ plugins, pluginFolders: { 'plugin-1': folder } }))
-    expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ oauthSettings: { oauth_enabled: 'true', oauth_token_url: 'https://oauth2.example.com/token' } })
+    await service.importFromZip(buildArchive({ plugins, pluginFolders: { [PLUGIN_1]: folder } }))
+    expect(backing.get('Plugin')!.get(PLUGIN_1)).toMatchObject({ oauthSettings: { oauth_enabled: 'true', oauth_token_url: 'https://oauth2.example.com/token' } })
 
     await service.importFromZip(buildArchive(fieldValuePlugin({})))
-    expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ oauthSettings: null })
+    expect(backing.get('Plugin')!.get(PLUGIN_1)).toMatchObject({ oauthSettings: null })
   })
 
   it('imports a Plugin\'s Screen modifiers from its settings.yml, and turns them off for one whose settings.yml says no or sets none (ADR-0054)', async () => {
     function withModifiers(modifiers: string) {
       const { plugins, pluginFolders } = fieldValuePlugin({})
-      const folder = { ...pluginFolders['plugin-1'], settings: { strategy: 'polling', no_screen_padding: modifiers, dark_mode: modifiers } }
-      return buildArchive({ plugins, pluginFolders: { 'plugin-1': folder } })
+      const folder = { ...pluginFolders[PLUGIN_1], settings: { strategy: 'polling', no_screen_padding: modifiers, dark_mode: modifiers } }
+      return buildArchive({ plugins, pluginFolders: { [PLUGIN_1]: folder } })
     }
 
     await service.importFromZip(withModifiers('yes'))
-    expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ noScreenPadding: true, darkMode: true })
+    expect(backing.get('Plugin')!.get(PLUGIN_1)).toMatchObject({ noScreenPadding: true, darkMode: true })
 
     await service.importFromZip(withModifiers('no'))
-    expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ noScreenPadding: false, darkMode: false })
+    expect(backing.get('Plugin')!.get(PLUGIN_1)).toMatchObject({ noScreenPadding: false, darkMode: false })
 
     await service.importFromZip(withModifiers('yes'))
     await service.importFromZip(buildArchive(fieldValuePlugin({})))
-    expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ noScreenPadding: false, darkMode: false })
+    expect(backing.get('Plugin')!.get(PLUGIN_1)).toMatchObject({ noScreenPadding: false, darkMode: false })
   })
 
   describe('an OAuth Plugin\'s refreshed token (ADR-0068)', () => {
@@ -761,15 +791,15 @@ describe('configurationImportService', () => {
 
     function oauthArchive(settings: Record<string, string>, fieldValues: Record<string, string> = {}) {
       const { plugins, pluginFolders } = fieldValuePlugin(fieldValues)
-      plugins[0].fields = [...plugins[0].fields, { id: 'field-refresh', keyname: 'oauth_refresh_token' }]
-      const folder = pluginFolders['plugin-1']
+      plugins[0].fields = [...plugins[0].fields, { id: FIELD_REFRESH, keyname: 'oauth_refresh_token' }]
+      const folder = pluginFolders[PLUGIN_1]
       const manifest = { ...folder.manifest, custom_fields: [...folder.manifest.custom_fields, { keyname: 'oauth_refresh_token', field_type: 'password', name: 'OAuth refresh token' }] }
-      return buildArchive({ plugins, pluginFolders: { 'plugin-1': { ...folder, manifest, settings } } })
+      return buildArchive({ plugins, pluginFolders: { [PLUGIN_1]: { ...folder, manifest, settings } } })
     }
 
     async function importedWithRefreshedToken() {
       await service.importFromZip(oauthArchive(OAUTH, { oauth_refresh_token: 'pasted' }))
-      Object.assign(backing.get('Plugin')!.get('plugin-1')!, REFRESHED)
+      Object.assign(backing.get('Plugin')!.get(PLUGIN_1)!, REFRESHED)
     }
 
     it('is kept by an import that changes neither the OAuth settings nor the pasted tokens', async () => {
@@ -777,7 +807,7 @@ describe('configurationImportService', () => {
 
       await service.importFromZip(oauthArchive(OAUTH, { oauth_refresh_token: 'pasted' }))
 
-      expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ oauthAccessToken: 'refreshed-access' })
+      expect(backing.get('Plugin')!.get(PLUGIN_1)).toMatchObject({ oauthAccessToken: 'refreshed-access' })
     })
 
     it('is forgotten by an import that changes the OAuth settings', async () => {
@@ -785,7 +815,7 @@ describe('configurationImportService', () => {
 
       await service.importFromZip(oauthArchive({ ...OAUTH, oauth_token_url: 'https://oauth2.example.com/v2/token' }))
 
-      expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ oauthAccessToken: null, oauthRefreshToken: null, oauthRefreshedAt: null })
+      expect(backing.get('Plugin')!.get(PLUGIN_1)).toMatchObject({ oauthAccessToken: null, oauthRefreshToken: null, oauthRefreshedAt: null })
     })
 
     it('is forgotten by an import that changes a pasted token', async () => {
@@ -793,7 +823,7 @@ describe('configurationImportService', () => {
 
       await service.importFromZip(oauthArchive(OAUTH, { oauth_refresh_token: 'pasted-again' }))
 
-      expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ oauthAccessToken: null, oauthRefreshToken: null, oauthRefreshedAt: null })
+      expect(backing.get('Plugin')!.get(PLUGIN_1)).toMatchObject({ oauthAccessToken: null, oauthRefreshToken: null, oauthRefreshedAt: null })
     })
   })
 
@@ -801,7 +831,7 @@ describe('configurationImportService', () => {
     it('imports the archive entry\'s frameworkVersion', async () => {
       await service.importFromZip(buildArchive(fieldValuePlugin({}, { frameworkVersion: '3.3.1' })))
 
-      expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ frameworkVersion: '3.3.1' })
+      expect(backing.get('Plugin')!.get(PLUGIN_1)).toMatchObject({ frameworkVersion: '3.3.1' })
     })
 
     it('imports an archive from before schemaVersion 4 with null', async () => {
@@ -810,15 +840,15 @@ describe('configurationImportService', () => {
 
       await service.importFromZip(buffer)
 
-      expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ frameworkVersion: null })
+      expect(backing.get('Plugin')!.get(PLUGIN_1)).toMatchObject({ frameworkVersion: null })
     })
   })
 
   describe('dithering', () => {
     function htmlScreenEntry(extra: Record<string, unknown> = {}) {
       return {
-        id: 'screen-1',
-        deviceId: 'device-1',
+        id: SCREEN_1,
+        deviceId: DEVICE_1,
         type: 'html' as const,
         order: 1,
         filename: 'Note',
@@ -835,17 +865,17 @@ describe('configurationImportService', () => {
 
     it('imports the dither of a Screen entry, and reads a missing one as dithered', async () => {
       await service.importFromZip(buildArchive({ devices: [makeDeviceEntry()], screens: [htmlScreenEntry({ dither: false })] }))
-      expect(backing.get('Screen')!.get('screen-1')).toMatchObject({ dither: false })
+      expect(backing.get('Screen')!.get(SCREEN_1)).toMatchObject({ dither: false })
 
       backing.get('Screen')!.clear()
       await service.importFromZip(buildArchive({ devices: [makeDeviceEntry()], screens: [htmlScreenEntry()] }))
-      expect(backing.get('Screen')!.get('screen-1')).toMatchObject({ dither: true })
+      expect(backing.get('Screen')!.get(SCREEN_1)).toMatchObject({ dither: true })
     })
 
     it('imports the dither of a Plugin entry', async () => {
       await service.importFromZip(buildArchive(fieldValuePlugin({}, { dither: false })))
 
-      expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ dither: false })
+      expect(backing.get('Plugin')!.get(PLUGIN_1)).toMatchObject({ dither: false })
     })
 
     it('imports an archive from before schemaVersion 5 as dithered', async () => {
@@ -854,7 +884,7 @@ describe('configurationImportService', () => {
 
       await service.importFromZip(buffer)
 
-      expect(backing.get('Plugin')!.get('plugin-1')).toMatchObject({ dither: true })
+      expect(backing.get('Plugin')!.get(PLUGIN_1)).toMatchObject({ dither: true })
     })
   })
 
@@ -862,13 +892,13 @@ describe('configurationImportService', () => {
     it('imports the mode the manifest carries', async () => {
       await service.importFromZip(buildArchive({ devices: [makeDeviceEntry({ rotationMode: 'manual' })] }))
 
-      expect(backing.get('Device')!.get('device-1')).toMatchObject({ rotationMode: 'manual' })
+      expect(backing.get('Device')!.get(DEVICE_1)).toMatchObject({ rotationMode: 'manual' })
     })
 
     it('imports a manifest without one as automatic', async () => {
       await service.importFromZip(buildArchive({ devices: [makeDeviceEntry()] }))
 
-      expect(backing.get('Device')!.get('device-1')).toMatchObject({ rotationMode: 'automatic' })
+      expect(backing.get('Device')!.get(DEVICE_1)).toMatchObject({ rotationMode: 'automatic' })
     })
   })
 
@@ -882,8 +912,8 @@ describe('configurationImportService', () => {
         manifest: previousManifest,
         plugins: [pluginEntry],
         pluginFolders,
-        devices: [{ id: 'device-1', name: 'Device', friendlyId: 'ABC123', mac: 'AA:BB:CC:DD:EE:FF', apikey: 'key', refreshRate: 300, deviceModelName: null, paletteId: null, mirrorEnabled: null, mirrorMac: null, mirrorApikey: null, sleepModeEnabled: false, sleepStartTime: null, sleepEndTime: null, sleepScreenEnabled: false, targetFirmwareId: null }],
-        assignments: [{ id: 'dp-1', deviceId: 'device-1', pluginId: 'plugin-1', order: 0, isActive: true, fieldValues: assignmentFieldValues }],
+        devices: [{ id: DEVICE_1, name: 'Device', friendlyId: 'ABC123', mac: 'AA:BB:CC:DD:EE:FF', apikey: 'key', refreshRate: 300, deviceModelName: null, paletteId: null, mirrorEnabled: null, mirrorMac: null, mirrorApikey: null, sleepModeEnabled: false, sleepStartTime: null, sleepEndTime: null, sleepScreenEnabled: false, targetFirmwareId: null }],
+        assignments: [{ id: DP_1, deviceId: DEVICE_1, pluginId: PLUGIN_1, order: 0, isActive: true, fieldValues: assignmentFieldValues }],
       })
     }
 
@@ -897,13 +927,13 @@ describe('configurationImportService', () => {
 
     it('ignores its Plugin Variables and per-Assignment Field Values, with one warning for the Plugin that held them', async () => {
       const summary = await service.importFromZip(previousVersionArchive(
-        [{ id: 'var-1', key: 'SECRET', value: 'x', isSecret: true }],
-        [{ id: 'fv-1', fieldId: 'field-city', value: 'Tokyo' }],
+        [{ id: VAR_1, key: 'SECRET', value: 'x', isSecret: true }],
+        [{ id: FV_1, fieldId: FIELD_CITY, value: 'Tokyo' }],
       ))
 
       expect(storedFieldValues()).toEqual({})
       expect(summary.created.variables).toBeUndefined()
-      expect(summary.warnings).toEqual([{ kind: 'previous-version-values-dropped', plugin: { id: 'plugin-1', name: 'Test Plugin' } }])
+      expect(summary.warnings).toEqual([{ kind: 'previous-version-values-dropped', plugin: { id: PLUGIN_1, name: 'Test Plugin' } }])
     })
   })
 
@@ -914,19 +944,19 @@ describe('configurationImportService', () => {
       return buildArchive({
         manifest: v1Manifest,
         plugins: [{
-          id: 'plugin-1',
+          id: PLUGIN_1,
           kind: 'Poll',
           mergeStrategy: null,
           streamLimit: null,
           webhookToken: null,
           sourceRecipeId: null,
-          dataSources: [{ id: 'ds-1', name: 'forecast' }],
-          templates: [{ id: 'tpl-1', layout: 'full' }],
-          fields: [{ id: 'field-city', keyname: 'city' }],
+          dataSources: [{ id: DS_1, name: 'forecast' }],
+          templates: [{ id: TPL_1, layout: 'full' }],
+          fields: [{ id: FIELD_CITY, keyname: 'city' }],
           variables,
         }],
         pluginFolders: {
-          'plugin-1': {
+          [PLUGIN_1]: {
             manifest: {
               name: 'Test Plugin',
               description: '',
@@ -937,7 +967,7 @@ describe('configurationImportService', () => {
           },
         },
         devices: [makeDeviceEntry()],
-        assignments: [{ id: 'dp-1', deviceId: 'device-1', pluginId: 'plugin-1', order: 0, isActive: true, fieldValues: assignmentFieldValues }],
+        assignments: [{ id: DP_1, deviceId: DEVICE_1, pluginId: PLUGIN_1, order: 0, isActive: true, fieldValues: assignmentFieldValues }],
         settings: null,
       })
     }
@@ -951,12 +981,12 @@ describe('configurationImportService', () => {
 
     it('ignores its Plugin Variables and per-Assignment Field Values, with one warning for the Plugin that held them', async () => {
       const summary = await service.importFromZip(v1Archive(
-        [{ id: 'var-1', key: 'SECRET', value: 'x', isSecret: true }],
-        [{ id: 'fv-1', fieldId: 'field-city', value: 'Tokyo' }],
+        [{ id: VAR_1, key: 'SECRET', value: 'x', isSecret: true }],
+        [{ id: FV_1, fieldId: FIELD_CITY, value: 'Tokyo' }],
       ))
 
       expect(storedFieldValues()).toEqual({})
-      expect(summary.warnings).toEqual([{ kind: 'previous-version-values-dropped', plugin: { id: 'plugin-1', name: 'Test Plugin' } }])
+      expect(summary.warnings).toEqual([{ kind: 'previous-version-values-dropped', plugin: { id: PLUGIN_1, name: 'Test Plugin' } }])
     })
 
     it('reads its missing settings.json as no overridden Instance Settings, clearing the overrides here', async () => {
@@ -969,8 +999,8 @@ describe('configurationImportService', () => {
   })
 
   it('keeps an existing Device\'s mirrorApikey when the archive holds the sentinel, with no warning', async () => {
-    backing.get('Device')!.set('device-1', {
-      id: 'device-1',
+    backing.get('Device')!.set(DEVICE_1, {
+      id: DEVICE_1,
       name: 'Old',
       friendlyId: 'OLD1',
       mac: 'AA:BB:CC:DD:EE:FF',
@@ -997,12 +1027,12 @@ describe('configurationImportService', () => {
 
     const device = [...backing.get('Device')!.values()][0]
     expect(device.mirrorApikey).toBeNull()
-    expect(summary.warnings).toEqual([{ kind: 'mirror-apikey-redacted', device: { id: 'device-1', name: 'Device 1' } }])
+    expect(summary.warnings).toEqual([{ kind: 'mirror-apikey-redacted', device: { id: DEVICE_1, name: 'Device 1' } }])
   })
 
   it('keeps an existing Device\'s apikey with no warning when the archive holds the sentinel and the row exists by id', async () => {
-    backing.get('Device')!.set('device-1', {
-      id: 'device-1',
+    backing.get('Device')!.set(DEVICE_1, {
+      id: DEVICE_1,
       name: 'Old',
       friendlyId: 'OLD1',
       mac: 'AA:BB:CC:DD:EE:FF',
@@ -1022,8 +1052,8 @@ describe('configurationImportService', () => {
   })
 
   it('keeps an existing Device\'s apikey, with a warning said once, when the unredacted archive holds a different key for it', async () => {
-    backing.get('Device')!.set('device-1', {
-      id: 'device-1',
+    backing.get('Device')!.set(DEVICE_1, {
+      id: DEVICE_1,
       name: 'Old',
       friendlyId: 'OLD1',
       mac: 'AA:BB:CC:DD:EE:FF',
@@ -1061,25 +1091,25 @@ describe('configurationImportService', () => {
     expect(device.apikey).not.toBe(CONFIGURATION_REDACTION_SENTINEL)
     expect(typeof device.apikey).toBe('string')
     expect((device.apikey as string).length).toBeGreaterThan(0)
-    expect(summary.warnings).toEqual([{ kind: 'device-apikey-redacted', device: { id: 'device-1', name: 'Device 1' } }])
+    expect(summary.warnings).toEqual([{ kind: 'device-apikey-redacted', device: { id: DEVICE_1, name: 'Device 1' } }])
   })
 
   it('keeps an existing Plugin\'s webhookToken with no warning when the archive holds the sentinel', async () => {
-    backing.get('Plugin')!.set('plugin-1', { id: 'plugin-1', name: 'Existing', kind: 'Webhook', webhookToken: 'real-token', refreshInterval: 15 })
+    backing.get('Plugin')!.set(PLUGIN_1, { id: PLUGIN_1, name: 'Existing', kind: 'Webhook', webhookToken: 'real-token', refreshInterval: 15 })
 
     const buffer = buildArchive({
       plugins: [{
-        id: 'plugin-1',
+        id: PLUGIN_1,
         kind: 'Webhook',
         mergeStrategy: 'standard',
         streamLimit: null,
         webhookToken: CONFIGURATION_REDACTION_SENTINEL,
         sourceRecipeId: null,
         dataSources: [],
-        templates: [{ id: 'tpl-1', layout: 'full' }],
+        templates: [{ id: TPL_1, layout: 'full' }],
         fields: [],
       }],
-      pluginFolders: { 'plugin-1': { manifest: { name: 'Existing', custom_fields: [] }, templates: { full: 'Hello' } } },
+      pluginFolders: { [PLUGIN_1]: { manifest: { name: 'Existing', custom_fields: [] }, templates: { full: 'Hello' } } },
     })
 
     const summary = await service.importFromZip(buffer)
@@ -1092,17 +1122,17 @@ describe('configurationImportService', () => {
   it('generates a fresh webhookToken with a warning for a brand-new Plugin when the archive holds the sentinel', async () => {
     const buffer = buildArchive({
       plugins: [{
-        id: 'plugin-1',
+        id: PLUGIN_1,
         kind: 'Webhook',
         mergeStrategy: 'standard',
         streamLimit: null,
         webhookToken: CONFIGURATION_REDACTION_SENTINEL,
         sourceRecipeId: null,
         dataSources: [],
-        templates: [{ id: 'tpl-1', layout: 'full' }],
+        templates: [{ id: TPL_1, layout: 'full' }],
         fields: [],
       }],
-      pluginFolders: { 'plugin-1': { manifest: { name: 'Test', custom_fields: [] }, templates: { full: 'Hello' } } },
+      pluginFolders: { [PLUGIN_1]: { manifest: { name: 'Test', custom_fields: [] }, templates: { full: 'Hello' } } },
     })
 
     const summary = await service.importFromZip(buffer)
@@ -1111,15 +1141,15 @@ describe('configurationImportService', () => {
     expect(plugin.webhookToken).not.toBe(CONFIGURATION_REDACTION_SENTINEL)
     expect(typeof plugin.webhookToken).toBe('string')
     expect((plugin.webhookToken as string).length).toBeGreaterThan(0)
-    expect(summary.warnings).toEqual([{ kind: 'webhook-token-redacted', plugin: { id: 'plugin-1', name: 'Test' } }])
+    expect(summary.warnings).toEqual([{ kind: 'webhook-token-redacted', plugin: { id: PLUGIN_1, name: 'Test' } }])
   })
 
   it('restores a file-type Screen\'s image from the archive onto disk', async () => {
     const buffer = buildArchive({
       devices: [makeDeviceEntry()],
       screens: [{
-        id: 'screen-1',
-        deviceId: 'device-1',
+        id: SCREEN_1,
+        deviceId: DEVICE_1,
         type: 'file',
         order: 1,
         filename: 'sunset.png',
@@ -1131,34 +1161,34 @@ describe('configurationImportService', () => {
         schedule: null,
         mashupConfiguration: null,
       }],
-      screenImages: { 'screen-1': 'png-bytes' },
+      screenImages: { [SCREEN_1]: 'png-bytes' },
     })
 
     await service.importFromZip(buffer)
 
-    expect(fsMock.mkdir).toHaveBeenCalledWith(expect.stringContaining('device-1'), { recursive: true })
-    expect(fsMock.writeFile).toHaveBeenCalledWith(expect.stringContaining('screen-1.png'), Buffer.from('png-bytes'))
+    expect(fsMock.mkdir).toHaveBeenCalledWith(expect.stringContaining(DEVICE_1), { recursive: true })
+    expect(fsMock.writeFile).toHaveBeenCalledWith(expect.stringContaining(`${SCREEN_1}.png`), Buffer.from('png-bytes'))
   })
 
   describe('a Device\'s own sleep image', () => {
     it('restores it from the archive\'s retained original, reconverted for the target', async () => {
       const buffer = buildArchive({
         devices: [makeDeviceEntry()],
-        deviceSleepImages: { 'device-1': { original: 'original-bytes' } },
+        deviceSleepImages: { [DEVICE_1]: { original: 'original-bytes' } },
       })
       const { convertToPng } = await import('../../utils/imageUtils.js')
 
       const summary = await service.importFromZip(buffer)
 
       expect(vi.mocked(convertToPng)).toHaveBeenCalledWith(
-        expect.stringContaining('device-1'),
-        expect.stringContaining('device-1'),
+        expect.stringContaining(DEVICE_1),
+        expect.stringContaining(DEVICE_1),
         { model: expect.anything(), palette: expect.anything() },
         expect.anything(),
       )
       expect(fsMock.writeFile).toHaveBeenCalledWith(expect.stringContaining('sleep-image.original'), Buffer.from('original-bytes'))
       expect(fsMock.writeFile).toHaveBeenCalledWith(expect.stringContaining('sleep-image.png'), Buffer.from('converted-bytes'))
-      const device = backing.get('Device')!.get('device-1')!
+      const device = backing.get('Device')!.get(DEVICE_1)!
       expect(device.sleepImageGeneratedAt).toBeInstanceOf(Date)
       expect(summary.warnings).toEqual([])
     })
@@ -1166,14 +1196,14 @@ describe('configurationImportService', () => {
     it('restores just the once-converted PNG, like a File Screen\'s, when the archive holds no retained original', async () => {
       const buffer = buildArchive({
         devices: [makeDeviceEntry()],
-        deviceSleepImages: { 'device-1': { converted: 'converted-only-bytes' } },
+        deviceSleepImages: { [DEVICE_1]: { converted: 'converted-only-bytes' } },
       })
 
       await service.importFromZip(buffer)
 
       expect(fsMock.writeFile).toHaveBeenCalledWith(expect.stringContaining('sleep-image.png'), Buffer.from('converted-only-bytes'))
       expect(fsMock.unlink).toHaveBeenCalledWith(expect.stringContaining('sleep-image.original'))
-      const device = backing.get('Device')!.get('device-1')!
+      const device = backing.get('Device')!.get(DEVICE_1)!
       expect(device.sleepImageGeneratedAt).toBeInstanceOf(Date)
     })
 
@@ -1184,38 +1214,38 @@ describe('configurationImportService', () => {
 
       expect(fsMock.unlink).toHaveBeenCalledWith(expect.stringContaining('sleep-image.original'))
       expect(fsMock.unlink).toHaveBeenCalledWith(expect.stringContaining('sleep-image.png'))
-      const device = backing.get('Device')!.get('device-1')!
+      const device = backing.get('Device')!.get(DEVICE_1)!
       expect(device.sleepImageGeneratedAt).toBeNull()
     })
 
     it('warns and leaves the Device without one when the retained original fails to reconvert, without failing the import', async () => {
       const buffer = buildArchive({
         devices: [makeDeviceEntry()],
-        deviceSleepImages: { 'device-1': { original: 'corrupt-bytes' } },
+        deviceSleepImages: { [DEVICE_1]: { original: 'corrupt-bytes' } },
       })
       const { convertToPng } = await import('../../utils/imageUtils.js')
       vi.mocked(convertToPng).mockRejectedValueOnce(new Error('unreadable'))
 
       const summary = await service.importFromZip(buffer)
 
-      expect(summary.warnings).toEqual([{ kind: 'sleep-image-failed', device: { id: 'device-1', name: 'Device 1' } }])
+      expect(summary.warnings).toEqual([{ kind: 'sleep-image-failed', device: { id: DEVICE_1, name: 'Device 1' } }])
       expect(fsMock.unlink).toHaveBeenCalledWith(expect.stringContaining('sleep-image.original'))
       expect(fsMock.unlink).toHaveBeenCalledWith(expect.stringContaining('sleep-image.png'))
-      const device = backing.get('Device')!.get('device-1')!
+      const device = backing.get('Device')!.get(DEVICE_1)!
       expect(device.sleepImageGeneratedAt).toBeNull()
     })
 
     it('surfaces the same warning from a check, without touching the Device\'s real sleep image files', async () => {
       const buffer = buildArchive({
         devices: [makeDeviceEntry()],
-        deviceSleepImages: { 'device-1': { original: 'corrupt-bytes' } },
+        deviceSleepImages: { [DEVICE_1]: { original: 'corrupt-bytes' } },
       })
       const { convertToPng } = await import('../../utils/imageUtils.js')
       vi.mocked(convertToPng).mockRejectedValueOnce(new Error('unreadable'))
 
       const check = await service.checkZip(buffer)
 
-      expect(check.warnings).toEqual([{ kind: 'sleep-image-failed', device: { id: 'device-1', name: 'Device 1' } }])
+      expect(check.warnings).toEqual([{ kind: 'sleep-image-failed', device: { id: DEVICE_1, name: 'Device 1' } }])
       expect(fsMock.writeFile).not.toHaveBeenCalledWith(expect.stringContaining('sleep-image.original'), expect.anything())
       expect(fsMock.writeFile).not.toHaveBeenCalledWith(expect.stringContaining('sleep-image.png'), expect.anything())
       expect(fsMock.unlink).not.toHaveBeenCalledWith(expect.stringContaining('sleep-image.original'))
@@ -1226,18 +1256,18 @@ describe('configurationImportService', () => {
   describe('scheduling a Plugin an import creates or updates', () => {
     const pollArchive = (overrides: Record<string, unknown> = {}) => buildArchive({
       plugins: [{
-        id: 'plugin-1',
+        id: PLUGIN_1,
         kind: 'Poll',
         mergeStrategy: null,
         streamLimit: null,
         webhookToken: null,
         sourceRecipeId: null,
-        dataSources: [{ id: 'ds-1', name: 'source' }],
-        templates: [{ id: 'tpl-1', layout: 'full' }],
+        dataSources: [{ id: DS_1, name: 'source' }],
+        templates: [{ id: TPL_1, layout: 'full' }],
         fields: [],
       }],
       pluginFolders: {
-        'plugin-1': {
+        [PLUGIN_1]: {
           manifest: { name: 'Test Plugin', description: '', custom_fields: [] },
           settings: { refresh_interval: 15, data_sources: [{ name: 'source', endpoint: 'https://api.example.com', method: 'GET', headers: {}, body: {} }] },
           templates: { full: 'Hello' },
@@ -1250,7 +1280,7 @@ describe('configurationImportService', () => {
       await service.importFromZip(pollArchive())
 
       expect(scheduler.schedulePlugin).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
-        id: 'plugin-1',
+        id: PLUGIN_1,
         kind: 'Poll',
         refreshInterval: 15,
         templates: [expect.objectContaining({ layout: 'full' })],
@@ -1264,18 +1294,18 @@ describe('configurationImportService', () => {
 
       const buffer = buildArchive({
         plugins: [{
-          id: 'plugin-1',
+          id: PLUGIN_1,
           kind: 'Poll',
           mergeStrategy: null,
           streamLimit: null,
           webhookToken: null,
           sourceRecipeId: null,
-          dataSources: [{ id: 'ds-1', name: 'source' }],
-          templates: [{ id: 'tpl-1', layout: 'full' }],
+          dataSources: [{ id: DS_1, name: 'source' }],
+          templates: [{ id: TPL_1, layout: 'full' }],
           fields: [],
         }],
         pluginFolders: {
-          'plugin-1': {
+          [PLUGIN_1]: {
             manifest: { name: 'Test Plugin', description: '', custom_fields: [] },
             settings: { refresh_interval: 90, data_sources: [{ name: 'source', endpoint: 'https://api.example.com', method: 'GET', headers: {}, body: {} }] },
             templates: { full: 'Hello' },
@@ -1285,30 +1315,30 @@ describe('configurationImportService', () => {
 
       await service.importFromZip(buffer)
 
-      expect(scheduler.schedulePlugin).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ id: 'plugin-1', refreshInterval: 90 }))
+      expect(scheduler.schedulePlugin).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ id: PLUGIN_1, refreshInterval: 90 }))
     })
 
     it('hands a Webhook-kind Plugin to the scheduler too, which leaves it unscheduled for polling', async () => {
       const buffer = buildArchive({
         plugins: [{
-          id: 'plugin-webhook',
+          id: PLUGIN_WEBHOOK,
           kind: 'Webhook',
           mergeStrategy: 'standard',
           streamLimit: null,
           webhookToken: 'token-A',
           sourceRecipeId: null,
           dataSources: [],
-          templates: [{ id: 'tpl-A', layout: 'full' }],
+          templates: [{ id: TPL_A, layout: 'full' }],
           fields: [],
         }],
         pluginFolders: {
-          'plugin-webhook': { manifest: { name: 'Doorbell', custom_fields: [] }, settings: { strategy: 'webhook' }, templates: { full: 'Ring' } },
+          [PLUGIN_WEBHOOK]: { manifest: { name: 'Doorbell', custom_fields: [] }, settings: { strategy: 'webhook' }, templates: { full: 'Ring' } },
         },
       })
 
       await service.importFromZip(buffer)
 
-      expect(scheduler.schedulePlugin).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ id: 'plugin-webhook', kind: 'Webhook' }))
+      expect(scheduler.schedulePlugin).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ id: PLUGIN_WEBHOOK, kind: 'Webhook' }))
     })
 
     it('never schedules anything while checking an archive, since the check rolls its transaction back in full', async () => {
@@ -1319,12 +1349,12 @@ describe('configurationImportService', () => {
     })
 
     it('leaves a Plugin the archive never mentions untouched: the scheduler is not called for it', async () => {
-      backing.get('Plugin')!.set('untouched-plugin', { id: 'untouched-plugin', name: 'Untouched', kind: 'Poll', refreshInterval: 15 })
+      backing.get('Plugin')!.set(UNTOUCHED_PLUGIN, { id: UNTOUCHED_PLUGIN, name: 'Untouched', kind: 'Poll', refreshInterval: 15 })
 
       await service.importFromZip(pollArchive())
 
       for (const call of scheduler.schedulePlugin.mock.calls) {
-        expect((call[0] as { id: string }).id).not.toBe('untouched-plugin')
+        expect((call[0] as { id: string }).id).not.toBe(UNTOUCHED_PLUGIN)
       }
     })
   })

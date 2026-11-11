@@ -70,9 +70,12 @@ export function buildArchive(options: {
   return zip.toBuffer()
 }
 
+/** The id `makeDeviceEntry` gives a Device entry unless told otherwise. */
+export const DEFAULT_DEVICE_ID = '00000001-0000-4000-8000-000000000001'
+
 export function makeDeviceEntry(overrides: Record<string, unknown> = {}) {
   return {
-    id: 'device-1',
+    id: DEFAULT_DEVICE_ID,
     name: 'Device 1',
     friendlyId: 'ABC123',
     mac: 'AA:BB:CC:DD:EE:FF',
