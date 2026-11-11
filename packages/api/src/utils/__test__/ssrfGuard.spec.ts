@@ -99,6 +99,34 @@ describe('assertPublicUrl', () => {
     })
   })
 
+  describe('ipv4 reserved, benchmarking and multicast ranges', () => {
+    it('rejects the IETF protocol assignments (192.0.0.0/24)', () => {
+      expect(() => assertPublicUrl('http://192.0.0.1/')).toThrow(/private IP ranges/)
+      expect(() => assertPublicUrl('http://192.0.0.255/')).toThrow(/private IP ranges/)
+    })
+
+    it('rejects the benchmarking range (198.18.0.0/15)', () => {
+      expect(() => assertPublicUrl('http://198.18.0.1/')).toThrow(/private IP ranges/)
+      expect(() => assertPublicUrl('http://198.19.255.255/')).toThrow(/private IP ranges/)
+    })
+
+    it('rejects multicast (224.0.0.0/4)', () => {
+      expect(() => assertPublicUrl('http://224.0.0.1/')).toThrow(/private IP ranges/)
+    })
+
+    it('rejects the reserved range (240.0.0.0/4) and the limited broadcast address', () => {
+      expect(() => assertPublicUrl('http://240.0.0.1/')).toThrow(/private IP ranges/)
+      expect(() => assertPublicUrl('http://255.255.255.255/')).toThrow(/private IP ranges/)
+    })
+
+    it('allows the neighbouring addresses', () => {
+      expect(() => assertPublicUrl('http://192.0.1.0/')).not.toThrow()
+      expect(() => assertPublicUrl('http://198.17.255.255/')).not.toThrow()
+      expect(() => assertPublicUrl('http://198.20.0.0/')).not.toThrow()
+      expect(() => assertPublicUrl('http://223.255.255.255/')).not.toThrow()
+    })
+  })
+
   it('reads an IPv4 address spelled as one number, as the URL does', () => {
     expect(() => assertPublicUrl('http://2130706433/')).toThrow(/private IP ranges/)
   })
@@ -127,6 +155,37 @@ describe('assertPublicUrl', () => {
 
     it('allows a public IPv6 address', () => {
       expect(() => assertPublicUrl('http://[2001:4860:4860::8888]/data')).not.toThrow()
+    })
+
+    it('rejects a NAT64 address (64:ff9b::/96) embedding a private IPv4 address', () => {
+      expect(() => assertPublicUrl('http://[64:ff9b::127.0.0.1]/')).toThrow(/private IP ranges/)
+      expect(() => assertPublicUrl('http://[64:ff9b::a9fe:a9fe]/')).toThrow(/private IP ranges/)
+      expect(() => assertPublicUrl('http://[64:ff9b::c0a8:1]/')).toThrow(/private IP ranges/)
+    })
+
+    it('allows a NAT64 address embedding a public IPv4 address', () => {
+      expect(() => assertPublicUrl('http://[64:ff9b::8.8.8.8]/')).not.toThrow()
+    })
+
+    it('rejects the local-use NAT64 prefix (64:ff9b:1::/48) whatever it embeds', () => {
+      expect(() => assertPublicUrl('http://[64:ff9b:1::808:808]/')).toThrow(/private IP ranges/)
+    })
+
+    it('rejects a 6to4 address (2002::/16) embedding a private IPv4 address', () => {
+      expect(() => assertPublicUrl('http://[2002:7f00:1::1]/')).toThrow(/private IP ranges/)
+      expect(() => assertPublicUrl('http://[2002:a00:1::]/')).toThrow(/private IP ranges/)
+    })
+
+    it('allows a 6to4 address embedding a public IPv4 address', () => {
+      expect(() => assertPublicUrl('http://[2002:808:808::1]/')).not.toThrow()
+    })
+
+    it('rejects the deprecated site-local range (fec0::/10)', () => {
+      expect(() => assertPublicUrl('http://[fec0::1]/')).toThrow(/private IP ranges/)
+    })
+
+    it('rejects multicast (ff00::/8)', () => {
+      expect(() => assertPublicUrl('http://[ff02::1]/')).toThrow(/private IP ranges/)
     })
   })
 })
