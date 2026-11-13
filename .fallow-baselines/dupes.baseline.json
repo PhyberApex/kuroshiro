@@ -1,18 +1,27 @@
 {
   "kind": "dupes",
   "clone_groups": [
+    "packages/ui/src/components/DataSourceRow.vue:57-68|packages/ui/src/components/FindingRow.vue:60-71|packages/ui/src/components/ScreenRow.vue:153-164",
     "packages/ui/src/components/SelectCombobox.vue:28-34|packages/ui/src/components/SelectListbox.vue:20-29",
-    "packages/api/src/devices/display.service.ts:750-755|packages/api/src/mashup/services/screen-render.service.ts:125-130",
-    "packages/api/src/plugins/services/plugin-importer.service.ts:377-382|packages/api/src/plugins/services/plugin-importer.service.ts:405-410"
+    "packages/api/src/devices/display.service.ts:877-882|packages/api/src/mashup/services/screen-render.service.ts:198-203",
+    "packages/ui/src/components/TextInput.vue:4-28|packages/ui/src/components/Textarea.vue:4-24",
+    "packages/ui/src/components/DataSourceRow.vue:29-40|packages/ui/src/components/FindingRow.vue:31-42",
+    "packages/ui/src/components/FindingRow.vue:59-71|packages/ui/src/components/ScreenRow.vue:152-164"
   ],
   "clone_fingerprints": [
+    "dup:010e9726:3",
     "dup:1c24940b:2",
     "dup:c9320de8:2",
-    "dup:47ff2f72:2"
+    "dup:16bd239b:2",
+    "dup:4028f547:2",
+    "dup:2dea83fc:2"
   ],
   "normalized_clone_fingerprints": [
+    "dup:3ef90648:3",
     "dup:3d092601:2",
     "dup:27d65862:2",
-    "dup:ba989a22:2"
+    "dup:8f8a9ff7:2",
+    "dup:5a8e30ae:2",
+    "dup:149f53a1:2"
   ]
 }
