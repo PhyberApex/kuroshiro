@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.23.1](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.23.0...kuroshiro-v0.23.1) (2026-11-13)
+
+
+### Bug Fixes
+
+* **docs:** name usetrmnl/kuroshiro as the repository, image and site source ([b92f268](https://github.com/usetrmnl/kuroshiro/commit/b92f26885ea57a326b5d7367e64b025456085ac4))
+
 ## [0.23.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.22.0...kuroshiro-v0.23.0) (2026-11-11)
 
 
