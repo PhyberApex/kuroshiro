@@ -1,6 +1,6 @@
 # Prometheus Metrics
 
-`GET /metrics` answers in the Prometheus text exposition format, read from the database at scrape time. Kuroshiro keeps no history of its own, so point an external Prometheus at it for charts and long-term retention ([ADR-0026](https://github.com/PhyberApex/kuroshiro/blob/main/docs/adr/0026-metrics-are-scrape-time-reads-with-no-history-of-their-own.md)).
+`GET /metrics` answers in the Prometheus text exposition format, read from the database at scrape time. Kuroshiro keeps no history of its own, so point an external Prometheus at it for charts and long-term retention ([ADR-0026](https://github.com/usetrmnl/kuroshiro/blob/main/docs/adr/0026-metrics-are-scrape-time-reads-with-no-history-of-their-own.md)).
 
 | Metric | Labels | What it is |
 |---|---|---|

@@ -21,4 +21,4 @@ Pushes are explicit: pick a Firmware in the Device's Settings, and it is served 
 - **Housekeeping**: clean up unused images and stored files, and run Retention on demand.
 - **[Device Simulator](./simulator)**: poll as any Device from the browser.
 
-See [ADR-0014](https://github.com/PhyberApex/kuroshiro/blob/main/docs/adr/0014-firmware-push-is-manual-and-admin-assigned.md), [ADR-0015](https://github.com/PhyberApex/kuroshiro/blob/main/docs/adr/0015-firmware-compatibility-enforced-og-only-sync.md) and [ADR-0029](https://github.com/PhyberApex/kuroshiro/blob/main/docs/adr/0029-firmware-auto-update-is-a-default-policy-official-only-persisted-only.md) for how Firmware pushes were designed.
+See [ADR-0014](https://github.com/usetrmnl/kuroshiro/blob/main/docs/adr/0014-firmware-push-is-manual-and-admin-assigned.md), [ADR-0015](https://github.com/usetrmnl/kuroshiro/blob/main/docs/adr/0015-firmware-compatibility-enforced-og-only-sync.md) and [ADR-0029](https://github.com/usetrmnl/kuroshiro/blob/main/docs/adr/0029-firmware-auto-update-is-a-default-policy-official-only-persisted-only.md) for how Firmware pushes were designed.

@@ -18,7 +18,7 @@ services:
 #      - postgres_data:/var/lib/postgresql/data
   app:
     build: .
-#    image: ghcr.io/phyberapex/kuroshiro:latest
+#    image: ghcr.io/usetrmnl/kuroshiro:latest
     depends_on:
       db:
         condition: service_healthy

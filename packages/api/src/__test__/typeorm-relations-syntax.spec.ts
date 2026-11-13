@@ -4,7 +4,7 @@ import { FindOptionsUtils, TypeORMError } from 'typeorm'
 import { describe, expect, it } from 'vitest'
 
 /**
- * Regression guard for https://github.com/PhyberApex/kuroshiro/issues/722
+ * Regression guard for https://github.com/usetrmnl/kuroshiro/issues/722
  *
  * TypeORM v1 removed the string-array `relations` syntax
  * (e.g. `relations: ['plugin']`). Any repository call still using it throws

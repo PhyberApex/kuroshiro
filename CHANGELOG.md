@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.23.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.22.0...kuroshiro-v0.23.0) (2026-11-11)
+## [0.23.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.22.0...kuroshiro-v0.23.0) (2026-11-11)
 
 
 ### ⚠ BREAKING CHANGES
@@ -9,849 +9,849 @@
 
 ### Features
 
-* the Recipe Gallery, browsing trmnl.com's published Recipes in the admin UI ([#1754](https://github.com/PhyberApex/kuroshiro/issues/1754)) ([4ad5d2d](https://github.com/PhyberApex/kuroshiro/commit/4ad5d2da9aa88bed596ba36a764e15836ca57dd0))
+* the Recipe Gallery, browsing trmnl.com's published Recipes in the admin UI ([#1754](https://github.com/usetrmnl/kuroshiro/issues/1754)) ([4ad5d2d](https://github.com/usetrmnl/kuroshiro/commit/4ad5d2da9aa88bed596ba36a764e15836ca57dd0))
 
 
 ### Bug Fixes
 
-* **api:** guard render page requests and turn web security back on ([#1753](https://github.com/PhyberApex/kuroshiro/issues/1753)) ([fbeccb1](https://github.com/PhyberApex/kuroshiro/commit/fbeccb12991338246dad2a28b5ae43cf17821586))
-* **api:** redact Webhook Tokens from the request log and compare Device API keys in constant time ([#1762](https://github.com/PhyberApex/kuroshiro/issues/1762)) ([81395b1](https://github.com/PhyberApex/kuroshiro/commit/81395b14bdef3f17c875697a43f8c84ce915039c))
-* **api:** refuse an /api/setup ID that is not a MAC address ([#1760](https://github.com/PhyberApex/kuroshiro/issues/1760)) ([461562e](https://github.com/PhyberApex/kuroshiro/commit/461562ed29d7e146d460a0b37d7cc46b6bfad278))
-* **api:** refuse cross-site state-changing requests to the admin API ([#1756](https://github.com/PhyberApex/kuroshiro/issues/1756)) ([28c9c63](https://github.com/PhyberApex/kuroshiro/commit/28c9c63301ed62c4422eba02b4ed9da8502c57de))
-* **api:** refuse NAT64, 6to4, reserved, benchmarking and multicast ranges in the demo SSRF guard ([#1761](https://github.com/PhyberApex/kuroshiro/issues/1761)) ([13845fd](https://github.com/PhyberApex/kuroshiro/commit/13845fd944db3e441f35aa7af95a9753e46896cc))
-* **api:** serve the admin UI with frame-ancestors and basic security headers ([#1763](https://github.com/PhyberApex/kuroshiro/issues/1763)) ([e0c8cfe](https://github.com/PhyberApex/kuroshiro/commit/e0c8cfe0c10fa45b898fefbbb2937c102243e892))
-* **api:** validate Configuration Archive entries, so a Palette id cannot path-traverse the colormap write ([#1759](https://github.com/PhyberApex/kuroshiro/issues/1759)) ([b595013](https://github.com/PhyberApex/kuroshiro/commit/b595013615c0a02eeb4bf791c0383a6f89c7f457))
-* **deps:** resolve patched body-parser, qs, zod, fast-uri and source-map-js ([#1736](https://github.com/PhyberApex/kuroshiro/issues/1736)) ([7d59f8c](https://github.com/PhyberApex/kuroshiro/commit/7d59f8c0ec6da56dbbc2c475e829bd8cec65b51b))
-* **docker:** run the image as an unprivileged user, and Chromium sandboxed where the container lets it ([#1757](https://github.com/PhyberApex/kuroshiro/issues/1757)) ([658984c](https://github.com/PhyberApex/kuroshiro/commit/658984c60921aee8e4ceab5d564ca9c038d3177c))
-* **shared:** set liquidjs parse, render and memory limits so a template cannot freeze the API ([#1758](https://github.com/PhyberApex/kuroshiro/issues/1758)) ([6eb9542](https://github.com/PhyberApex/kuroshiro/commit/6eb954280e500da790b6a57088fe7ea53e804c11))
+* **api:** guard render page requests and turn web security back on ([#1753](https://github.com/usetrmnl/kuroshiro/issues/1753)) ([fbeccb1](https://github.com/usetrmnl/kuroshiro/commit/fbeccb12991338246dad2a28b5ae43cf17821586))
+* **api:** redact Webhook Tokens from the request log and compare Device API keys in constant time ([#1762](https://github.com/usetrmnl/kuroshiro/issues/1762)) ([81395b1](https://github.com/usetrmnl/kuroshiro/commit/81395b14bdef3f17c875697a43f8c84ce915039c))
+* **api:** refuse an /api/setup ID that is not a MAC address ([#1760](https://github.com/usetrmnl/kuroshiro/issues/1760)) ([461562e](https://github.com/usetrmnl/kuroshiro/commit/461562ed29d7e146d460a0b37d7cc46b6bfad278))
+* **api:** refuse cross-site state-changing requests to the admin API ([#1756](https://github.com/usetrmnl/kuroshiro/issues/1756)) ([28c9c63](https://github.com/usetrmnl/kuroshiro/commit/28c9c63301ed62c4422eba02b4ed9da8502c57de))
+* **api:** refuse NAT64, 6to4, reserved, benchmarking and multicast ranges in the demo SSRF guard ([#1761](https://github.com/usetrmnl/kuroshiro/issues/1761)) ([13845fd](https://github.com/usetrmnl/kuroshiro/commit/13845fd944db3e441f35aa7af95a9753e46896cc))
+* **api:** serve the admin UI with frame-ancestors and basic security headers ([#1763](https://github.com/usetrmnl/kuroshiro/issues/1763)) ([e0c8cfe](https://github.com/usetrmnl/kuroshiro/commit/e0c8cfe0c10fa45b898fefbbb2937c102243e892))
+* **api:** validate Configuration Archive entries, so a Palette id cannot path-traverse the colormap write ([#1759](https://github.com/usetrmnl/kuroshiro/issues/1759)) ([b595013](https://github.com/usetrmnl/kuroshiro/commit/b595013615c0a02eeb4bf791c0383a6f89c7f457))
+* **deps:** resolve patched body-parser, qs, zod, fast-uri and source-map-js ([#1736](https://github.com/usetrmnl/kuroshiro/issues/1736)) ([7d59f8c](https://github.com/usetrmnl/kuroshiro/commit/7d59f8c0ec6da56dbbc2c475e829bd8cec65b51b))
+* **docker:** run the image as an unprivileged user, and Chromium sandboxed where the container lets it ([#1757](https://github.com/usetrmnl/kuroshiro/issues/1757)) ([658984c](https://github.com/usetrmnl/kuroshiro/commit/658984c60921aee8e4ceab5d564ca9c038d3177c))
+* **shared:** set liquidjs parse, render and memory limits so a template cannot freeze the API ([#1758](https://github.com/usetrmnl/kuroshiro/issues/1758)) ([6eb9542](https://github.com/usetrmnl/kuroshiro/commit/6eb954280e500da790b6a57088fe7ea53e804c11))
 
-## [0.22.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.21.0...kuroshiro-v0.22.0) (2026-10-31)
+## [0.22.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.21.0...kuroshiro-v0.22.0) (2026-10-31)
 
 
 ### Features
 
-* **api:** add GET /health probe reporting process and database status ([#1576](https://github.com/PhyberApex/kuroshiro/issues/1576)) ([dc07f73](https://github.com/PhyberApex/kuroshiro/commit/dc07f73f46d6cec32fcd89a92b7097868c106ea7))
-* **firmware:** sync official Firmware from TRMNL's per-model firmware feed ([#1578](https://github.com/PhyberApex/kuroshiro/issues/1578)) ([05946a1](https://github.com/PhyberApex/kuroshiro/commit/05946a1daea119ab03c11523bbe5f0581848ec1e))
+* **api:** add GET /health probe reporting process and database status ([#1576](https://github.com/usetrmnl/kuroshiro/issues/1576)) ([dc07f73](https://github.com/usetrmnl/kuroshiro/commit/dc07f73f46d6cec32fcd89a92b7097868c106ea7))
+* **firmware:** sync official Firmware from TRMNL's per-model firmware feed ([#1578](https://github.com/usetrmnl/kuroshiro/issues/1578)) ([05946a1](https://github.com/usetrmnl/kuroshiro/commit/05946a1daea119ab03c11523bbe5f0581848ec1e))
 
 
 ### Bug Fixes
 
-* **api:** answer 400 naming the header when a Device request has no ID header ([#1679](https://github.com/PhyberApex/kuroshiro/issues/1679)) ([87c16dd](https://github.com/PhyberApex/kuroshiro/commit/87c16ddcfa264ce8097c705c6639be62253aa085))
-* **api:** bound a firmware binary download by a timeout and the firmware upload ceiling ([#1642](https://github.com/PhyberApex/kuroshiro/issues/1642)) ([5df5830](https://github.com/PhyberApex/kuroshiro/commit/5df5830b78034c04ffd2d95aab4a08a0a8a3fa70))
-* **api:** cap Data Source, transform fetch and OAuth token response bodies at 5 MB ([#1626](https://github.com/PhyberApex/kuroshiro/issues/1626)) ([4530114](https://github.com/PhyberApex/kuroshiro/commit/45301144618faae9c95df0fd8b33e5903eea7c9c))
-* **api:** carry snapshotTakenAt and a File Screen's upload facts through the Configuration Archive ([#1689](https://github.com/PhyberApex/kuroshiro/issues/1689)) ([b454fd1](https://github.com/PhyberApex/kuroshiro/commit/b454fd17a418b7c8dbedc3e4a26ba8ee2743e5aa))
-* **api:** change the filename sent to the Device when an HTML Screen's markup or Dithering changes ([#1630](https://github.com/PhyberApex/kuroshiro/issues/1630)) ([efd340e](https://github.com/PhyberApex/kuroshiro/commit/efd340ea508f671bcce179030f88d1d87250cd69))
-* **api:** check every redirect and resolved address against the demo-mode SSRF guard ([#1624](https://github.com/PhyberApex/kuroshiro/issues/1624)) ([001c475](https://github.com/PhyberApex/kuroshiro/commit/001c475c92c59f05e05c71fd14f88bfef62878e3))
-* **api:** connect a demo-mode request to the address the SSRF guard checked, closing the DNS rebinding window ([#1690](https://github.com/PhyberApex/kuroshiro/issues/1690)) ([05a6e2f](https://github.com/PhyberApex/kuroshiro/commit/05a6e2f32090812eba126e8ea57fa905b58cb461))
-* **api:** convert with a custom Palette's new colours once they change ([#1673](https://github.com/PhyberApex/kuroshiro/issues/1673)) ([509483b](https://github.com/PhyberApex/kuroshiro/commit/509483bbff3731cc2352be655ea53b643b2e2e7f))
-* **api:** count a multi-line Data Source with a failed line as a failed fetch ([#1625](https://github.com/PhyberApex/kuroshiro/issues/1625)) ([e4e145e](https://github.com/PhyberApex/kuroshiro/commit/e4e145ee52f3668074749ff7cc9f99b791688248))
-* **api:** count a Sleep Mode refresh_rate in elapsed seconds across a DST change ([#1635](https://github.com/PhyberApex/kuroshiro/issues/1635)) ([ff571da](https://github.com/PhyberApex/kuroshiro/commit/ff571da442da44997161c5ee4e39493df3fef447))
-* **api:** fetch External link and mirror images with the demo-mode guard on /display ([#1631](https://github.com/PhyberApex/kuroshiro/issues/1631)) ([9cb7e92](https://github.com/PhyberApex/kuroshiro/commit/9cb7e927e0d8ba7a00ea93096d7220ad0f1986bb))
-* **api:** find a Device by its MAC whatever letter case it sends to /api/setup and the polls ([#1676](https://github.com/PhyberApex/kuroshiro/issues/1676)) ([ecf59b7](https://github.com/PhyberApex/kuroshiro/commit/ecf59b7343bed4334cf0ddae667c14622e23e3db))
-* **api:** hold a Schedule window that crosses midnight to the weekday and date it starts on ([#1678](https://github.com/PhyberApex/kuroshiro/issues/1678)) ([e6dd939](https://github.com/PhyberApex/kuroshiro/commit/e6dd939338579ea6875440b422437cfd01b60231))
-* **api:** keep a Device's API key out of the /display, /current_screen and /setup logs ([#1677](https://github.com/PhyberApex/kuroshiro/issues/1677)) ([5ef7675](https://github.com/PhyberApex/kuroshiro/commit/5ef767535b29d9abac0d7d31f1de2c4a0fb4aeb7))
-* **api:** keep a Device's one-shot commands when its /display answer cannot be made ([#1633](https://github.com/PhyberApex/kuroshiro/issues/1633)) ([3f0996a](https://github.com/PhyberApex/kuroshiro/commit/3f0996af2d64b1cec49cf260e371cbc5eca41f7d))
-* **api:** keep a Plugin's Screen modifiers through a Configuration Archive import ([#1637](https://github.com/PhyberApex/kuroshiro/issues/1637)) ([252a9c2](https://github.com/PhyberApex/kuroshiro/commit/252a9c2c0bfad2dda79b5dfe827c598736503858))
-* **api:** keep Plugin Field order and null defaults through a .trmnlp export and a Configuration Archive ([#1682](https://github.com/PhyberApex/kuroshiro/issues/1682)) ([4c42561](https://github.com/PhyberApex/kuroshiro/commit/4c42561cd71b96480416e9e1f96d7cc189653e6f))
-* **api:** let a Configuration Archive import clear an existing Device's Mirroring and a Plugin's Recipe id ([#1638](https://github.com/PhyberApex/kuroshiro/issues/1638)) ([d594fa3](https://github.com/PhyberApex/kuroshiro/commit/d594fa3fac69948a2f5710783633b07ce0dde41c)), closes [#1599](https://github.com/PhyberApex/kuroshiro/issues/1599)
-* **api:** load a Plugin's Fields on every render path ([#1623](https://github.com/PhyberApex/kuroshiro/issues/1623)) ([5584d0b](https://github.com/PhyberApex/kuroshiro/commit/5584d0bb7ba8345a169c227a51b8e381987ca240))
-* **api:** mark an Alert notified on open while Apprise is unconfigured ([#1639](https://github.com/PhyberApex/kuroshiro/issues/1639)) ([00015cf](https://github.com/PhyberApex/kuroshiro/commit/00015cf0b8f3ea8daa288043ce7d38d3e643faa6))
-* **api:** reach back a day on the clock for an Offline Alert's last Sleep Mode window end ([#1641](https://github.com/PhyberApex/kuroshiro/issues/1641)) ([e7f576b](https://github.com/PhyberApex/kuroshiro/commit/e7f576b754b1e8b31f54f7d8082283160737bcb8))
-* **api:** read and pick an HTML Screen without its stale stored Render Signal, as Rotation does ([#1681](https://github.com/PhyberApex/kuroshiro/issues/1681)) ([28c4d8d](https://github.com/PhyberApex/kuroshiro/commit/28c4d8dda6000328617af991b4162af5d4fabecf))
-* **api:** recognise a Proxied Device whatever letter case its MAC was registered in ([#1636](https://github.com/PhyberApex/kuroshiro/issues/1636)) ([0739dad](https://github.com/PhyberApex/kuroshiro/commit/0739dad189fbeb4f1916e746d779af14a9c4950a))
-* **api:** redraw a Device's HTML, Plugin and Mashup Screens when its Palette or Device Model changes ([#1675](https://github.com/PhyberApex/kuroshiro/issues/1675)) ([b845341](https://github.com/PhyberApex/kuroshiro/commit/b845341a7fe7a3acdcc15044ce6076ce50280a00))
-* **api:** refuse an archive or .trmnlp whose zip entries unpack past the upload ceiling, before reading any ([#1684](https://github.com/PhyberApex/kuroshiro/issues/1684)) ([3628d4d](https://github.com/PhyberApex/kuroshiro/commit/3628d4d9f1150b643d7f442513c7f1bb8cfc555c))
-* **api:** refuse Data Source methods other than GET/POST and keep one Template per size on Plugin import ([#1627](https://github.com/PhyberApex/kuroshiro/issues/1627)) ([fafaae8](https://github.com/PhyberApex/kuroshiro/commit/fafaae8ac43de4967afdaa4b596756068bd45598))
-* **api:** render a Webhook POST with its own payloadReceivedAt, so data_fetched_utc is not one POST behind ([#1688](https://github.com/PhyberApex/kuroshiro/issues/1688)) ([872cb98](https://github.com/PhyberApex/kuroshiro/commit/872cb98bbc4437ac390be6dda27b4084a9b51b58))
-* **api:** require the Device's Access-Token on POST /api/log and check duplicate entries in the database ([#1634](https://github.com/PhyberApex/kuroshiro/issues/1634)) ([2088bbf](https://github.com/PhyberApex/kuroshiro/commit/2088bbff876b11926d6aa497f62160e76604bdbb))
-* **api:** run a transform on a worker thread its timeout terminates ([#1604](https://github.com/PhyberApex/kuroshiro/issues/1604)) ([207df70](https://github.com/PhyberApex/kuroshiro/commit/207df70ffab65052e2009ca3127b59f3782f8e47))
-* **api:** send a Proxied Device's mirror poll to TRMNL with one ID header ([#1629](https://github.com/PhyberApex/kuroshiro/issues/1629)) ([68e99a5](https://github.com/PhyberApex/kuroshiro/commit/68e99a5f386a5059fe38d1cdd19143c0e9baf36f))
-* **api:** serialise webhook POSTs per Plugin so concurrent merges keep every payload ([#1620](https://github.com/PhyberApex/kuroshiro/issues/1620)) ([f478451](https://github.com/PhyberApex/kuroshiro/commit/f478451646d10b7d880a3d9071321b2547a695a1))
-* **api:** stop LoggingInterceptor logging every admin response body ([#1640](https://github.com/PhyberApex/kuroshiro/issues/1640)) ([1378491](https://github.com/PhyberApex/kuroshiro/commit/137849147d9a86ca59cb86ade4eed03357f54c6e))
-* **api:** write only a polling Device's report, so an admin's edit made during the poll survives ([#1680](https://github.com/PhyberApex/kuroshiro/issues/1680)) ([c726994](https://github.com/PhyberApex/kuroshiro/commit/c726994364a712f60353334f94b545b594b46ec9))
-* **docker:** install Corepack before enabling it, node 26 images no longer bundle it ([#1581](https://github.com/PhyberApex/kuroshiro/issues/1581)) ([141c486](https://github.com/PhyberApex/kuroshiro/commit/141c48650a8e7b1f0f23662a78981cbfb30b83b6))
-* **shared:** render a missing value through the json filter as null, as TRMNL's to_json does ([#1691](https://github.com/PhyberApex/kuroshiro/issues/1691)) ([124a7dd](https://github.com/PhyberApex/kuroshiro/commit/124a7dd0ee46798d4aeb97ef003aa43db1317a9e))
-* **shared:** render nothing, not "undefined", when l_date or ordinalize gets a missing value ([#1628](https://github.com/PhyberApex/kuroshiro/issues/1628)) ([044b472](https://github.com/PhyberApex/kuroshiro/commit/044b4722c5af1d676783477bacbde351f8304d49))
-* **ui:** add one HTML Screen when Ctrl/Cmd+S is pressed again before the first answer ([#1651](https://github.com/PhyberApex/kuroshiro/issues/1651)) ([56f75d4](https://github.com/PhyberApex/kuroshiro/commit/56f75d4ae7102d22ea55eddbc9f1e39927a82c29))
-* **ui:** cut a long Device name on the bar by code points, never inside an emoji ([#1645](https://github.com/PhyberApex/kuroshiro/issues/1645)) ([4c14d4d](https://github.com/PhyberApex/kuroshiro/commit/4c14d4d89998776a6ecb8c9eb3f8a336abffd472)), closes [#1607](https://github.com/PhyberApex/kuroshiro/issues/1607)
-* **ui:** forget a refused Device setting once its change is taken back, so Try again cannot send it ([#1693](https://github.com/PhyberApex/kuroshiro/issues/1693)) ([c06068c](https://github.com/PhyberApex/kuroshiro/commit/c06068c2c16483502ff672e684dab13c704e144f))
-* **ui:** keep a Device Simulator poll's answer when the Device cannot be read again after it ([#1650](https://github.com/PhyberApex/kuroshiro/issues/1650)) ([fa43f97](https://github.com/PhyberApex/kuroshiro/commit/fa43f97f9ce107300d666f269e3ec5718b3958a3))
-* **ui:** keep a failed Retention load inside the Retention section on Housekeeping ([#1672](https://github.com/PhyberApex/kuroshiro/issues/1672)) ([6d74a42](https://github.com/PhyberApex/kuroshiro/commit/6d74a42faaebb5c89fd5cfb520aec5755a49a21f))
-* **ui:** keep a ScreenRows keyboard lift when a poll hands back the same order ([#1643](https://github.com/PhyberApex/kuroshiro/issues/1643)) ([fc81335](https://github.com/PhyberApex/kuroshiro/commit/fc81335e803c69cf59b084a3e42fc95e677755d0))
-* **ui:** load the Device Simulator plate's image from the admin's own address ([#1653](https://github.com/PhyberApex/kuroshiro/issues/1653)) ([909bdd7](https://github.com/PhyberApex/kuroshiro/commit/909bdd7a5d8d278868d77f2dff83d8d48d1e5bcf))
-* **ui:** navigate to a newly added Screen without asking "Leave without saving?" when another kind's kept-alive form holds text ([#1694](https://github.com/PhyberApex/kuroshiro/issues/1694)) ([46cc141](https://github.com/PhyberApex/kuroshiro/commit/46cc1419584ad2b6a5a9a618fb73891fe9d26abc))
-* **ui:** offer "Catch up now" only once the server has Firmware Auto-Update on ([#1655](https://github.com/PhyberApex/kuroshiro/issues/1655)) ([3bc17fb](https://github.com/PhyberApex/kuroshiro/commit/3bc17fbb6c4427f4a8533ee9c5cf927a427b0e42))
-* **ui:** open a Plugin with a copyable webhook URL Field without unsaved changes ([#1649](https://github.com/PhyberApex/kuroshiro/issues/1649)) ([184bf60](https://github.com/PhyberApex/kuroshiro/commit/184bf60d58282f2d553f411c02b1c0442813367b))
-* **ui:** refuse a non-attachment download and revoke its object URL after 40 seconds ([#1644](https://github.com/PhyberApex/kuroshiro/issues/1644)) ([33a868d](https://github.com/PhyberApex/kuroshiro/commit/33a868d9a0dd48c20dfe8a81101442ef969f92b5))
-* **ui:** say the Device could not be read, not that the call did not reach the server, when the read before a simulated poll or setup fails ([#1695](https://github.com/PhyberApex/kuroshiro/issues/1695)) ([158afa0](https://github.com/PhyberApex/kuroshiro/commit/158afa026795c72ca9beb2122748819af6e0d9c4))
-* **ui:** scroll to the top of a new path when its fragment is malformed or never names an element ([#1646](https://github.com/PhyberApex/kuroshiro/issues/1646)) ([900f2bb](https://github.com/PhyberApex/kuroshiro/commit/900f2bbb7e349126ed0073f71dd7d19e59a0b990))
-* **ui:** send an Instance Setting entered while its save is under way ([#1654](https://github.com/PhyberApex/kuroshiro/issues/1654)) ([cecde18](https://github.com/PhyberApex/kuroshiro/commit/cecde18e802ec4e67703b3cfe408b8a83f41e1ca))
-* **ui:** send the stored window when switching Sleep Mode back on ([#1648](https://github.com/PhyberApex/kuroshiro/issues/1648)) ([8fd0470](https://github.com/PhyberApex/kuroshiro/commit/8fd0470052eba791a7550f881a210d56d239726b))
-* **ui:** set returnValue too when asking before unload, for browsers that ignore preventDefault() ([#1647](https://github.com/PhyberApex/kuroshiro/issues/1647)) ([8539a1e](https://github.com/PhyberApex/kuroshiro/commit/8539a1e64f76b88318ae3c4264f034def36d00be))
-* **ui:** stop a pending Device Log search from rewriting the next page's address ([#1652](https://github.com/PhyberApex/kuroshiro/issues/1652)) ([81b16c2](https://github.com/PhyberApex/kuroshiro/commit/81b16c230bcbec1fa27bfa43b762a7daf00f3fe5))
+* **api:** answer 400 naming the header when a Device request has no ID header ([#1679](https://github.com/usetrmnl/kuroshiro/issues/1679)) ([87c16dd](https://github.com/usetrmnl/kuroshiro/commit/87c16ddcfa264ce8097c705c6639be62253aa085))
+* **api:** bound a firmware binary download by a timeout and the firmware upload ceiling ([#1642](https://github.com/usetrmnl/kuroshiro/issues/1642)) ([5df5830](https://github.com/usetrmnl/kuroshiro/commit/5df5830b78034c04ffd2d95aab4a08a0a8a3fa70))
+* **api:** cap Data Source, transform fetch and OAuth token response bodies at 5 MB ([#1626](https://github.com/usetrmnl/kuroshiro/issues/1626)) ([4530114](https://github.com/usetrmnl/kuroshiro/commit/45301144618faae9c95df0fd8b33e5903eea7c9c))
+* **api:** carry snapshotTakenAt and a File Screen's upload facts through the Configuration Archive ([#1689](https://github.com/usetrmnl/kuroshiro/issues/1689)) ([b454fd1](https://github.com/usetrmnl/kuroshiro/commit/b454fd17a418b7c8dbedc3e4a26ba8ee2743e5aa))
+* **api:** change the filename sent to the Device when an HTML Screen's markup or Dithering changes ([#1630](https://github.com/usetrmnl/kuroshiro/issues/1630)) ([efd340e](https://github.com/usetrmnl/kuroshiro/commit/efd340ea508f671bcce179030f88d1d87250cd69))
+* **api:** check every redirect and resolved address against the demo-mode SSRF guard ([#1624](https://github.com/usetrmnl/kuroshiro/issues/1624)) ([001c475](https://github.com/usetrmnl/kuroshiro/commit/001c475c92c59f05e05c71fd14f88bfef62878e3))
+* **api:** connect a demo-mode request to the address the SSRF guard checked, closing the DNS rebinding window ([#1690](https://github.com/usetrmnl/kuroshiro/issues/1690)) ([05a6e2f](https://github.com/usetrmnl/kuroshiro/commit/05a6e2f32090812eba126e8ea57fa905b58cb461))
+* **api:** convert with a custom Palette's new colours once they change ([#1673](https://github.com/usetrmnl/kuroshiro/issues/1673)) ([509483b](https://github.com/usetrmnl/kuroshiro/commit/509483bbff3731cc2352be655ea53b643b2e2e7f))
+* **api:** count a multi-line Data Source with a failed line as a failed fetch ([#1625](https://github.com/usetrmnl/kuroshiro/issues/1625)) ([e4e145e](https://github.com/usetrmnl/kuroshiro/commit/e4e145ee52f3668074749ff7cc9f99b791688248))
+* **api:** count a Sleep Mode refresh_rate in elapsed seconds across a DST change ([#1635](https://github.com/usetrmnl/kuroshiro/issues/1635)) ([ff571da](https://github.com/usetrmnl/kuroshiro/commit/ff571da442da44997161c5ee4e39493df3fef447))
+* **api:** fetch External link and mirror images with the demo-mode guard on /display ([#1631](https://github.com/usetrmnl/kuroshiro/issues/1631)) ([9cb7e92](https://github.com/usetrmnl/kuroshiro/commit/9cb7e927e0d8ba7a00ea93096d7220ad0f1986bb))
+* **api:** find a Device by its MAC whatever letter case it sends to /api/setup and the polls ([#1676](https://github.com/usetrmnl/kuroshiro/issues/1676)) ([ecf59b7](https://github.com/usetrmnl/kuroshiro/commit/ecf59b7343bed4334cf0ddae667c14622e23e3db))
+* **api:** hold a Schedule window that crosses midnight to the weekday and date it starts on ([#1678](https://github.com/usetrmnl/kuroshiro/issues/1678)) ([e6dd939](https://github.com/usetrmnl/kuroshiro/commit/e6dd939338579ea6875440b422437cfd01b60231))
+* **api:** keep a Device's API key out of the /display, /current_screen and /setup logs ([#1677](https://github.com/usetrmnl/kuroshiro/issues/1677)) ([5ef7675](https://github.com/usetrmnl/kuroshiro/commit/5ef767535b29d9abac0d7d31f1de2c4a0fb4aeb7))
+* **api:** keep a Device's one-shot commands when its /display answer cannot be made ([#1633](https://github.com/usetrmnl/kuroshiro/issues/1633)) ([3f0996a](https://github.com/usetrmnl/kuroshiro/commit/3f0996af2d64b1cec49cf260e371cbc5eca41f7d))
+* **api:** keep a Plugin's Screen modifiers through a Configuration Archive import ([#1637](https://github.com/usetrmnl/kuroshiro/issues/1637)) ([252a9c2](https://github.com/usetrmnl/kuroshiro/commit/252a9c2c0bfad2dda79b5dfe827c598736503858))
+* **api:** keep Plugin Field order and null defaults through a .trmnlp export and a Configuration Archive ([#1682](https://github.com/usetrmnl/kuroshiro/issues/1682)) ([4c42561](https://github.com/usetrmnl/kuroshiro/commit/4c42561cd71b96480416e9e1f96d7cc189653e6f))
+* **api:** let a Configuration Archive import clear an existing Device's Mirroring and a Plugin's Recipe id ([#1638](https://github.com/usetrmnl/kuroshiro/issues/1638)) ([d594fa3](https://github.com/usetrmnl/kuroshiro/commit/d594fa3fac69948a2f5710783633b07ce0dde41c)), closes [#1599](https://github.com/usetrmnl/kuroshiro/issues/1599)
+* **api:** load a Plugin's Fields on every render path ([#1623](https://github.com/usetrmnl/kuroshiro/issues/1623)) ([5584d0b](https://github.com/usetrmnl/kuroshiro/commit/5584d0bb7ba8345a169c227a51b8e381987ca240))
+* **api:** mark an Alert notified on open while Apprise is unconfigured ([#1639](https://github.com/usetrmnl/kuroshiro/issues/1639)) ([00015cf](https://github.com/usetrmnl/kuroshiro/commit/00015cf0b8f3ea8daa288043ce7d38d3e643faa6))
+* **api:** reach back a day on the clock for an Offline Alert's last Sleep Mode window end ([#1641](https://github.com/usetrmnl/kuroshiro/issues/1641)) ([e7f576b](https://github.com/usetrmnl/kuroshiro/commit/e7f576b754b1e8b31f54f7d8082283160737bcb8))
+* **api:** read and pick an HTML Screen without its stale stored Render Signal, as Rotation does ([#1681](https://github.com/usetrmnl/kuroshiro/issues/1681)) ([28c4d8d](https://github.com/usetrmnl/kuroshiro/commit/28c4d8dda6000328617af991b4162af5d4fabecf))
+* **api:** recognise a Proxied Device whatever letter case its MAC was registered in ([#1636](https://github.com/usetrmnl/kuroshiro/issues/1636)) ([0739dad](https://github.com/usetrmnl/kuroshiro/commit/0739dad189fbeb4f1916e746d779af14a9c4950a))
+* **api:** redraw a Device's HTML, Plugin and Mashup Screens when its Palette or Device Model changes ([#1675](https://github.com/usetrmnl/kuroshiro/issues/1675)) ([b845341](https://github.com/usetrmnl/kuroshiro/commit/b845341a7fe7a3acdcc15044ce6076ce50280a00))
+* **api:** refuse an archive or .trmnlp whose zip entries unpack past the upload ceiling, before reading any ([#1684](https://github.com/usetrmnl/kuroshiro/issues/1684)) ([3628d4d](https://github.com/usetrmnl/kuroshiro/commit/3628d4d9f1150b643d7f442513c7f1bb8cfc555c))
+* **api:** refuse Data Source methods other than GET/POST and keep one Template per size on Plugin import ([#1627](https://github.com/usetrmnl/kuroshiro/issues/1627)) ([fafaae8](https://github.com/usetrmnl/kuroshiro/commit/fafaae8ac43de4967afdaa4b596756068bd45598))
+* **api:** render a Webhook POST with its own payloadReceivedAt, so data_fetched_utc is not one POST behind ([#1688](https://github.com/usetrmnl/kuroshiro/issues/1688)) ([872cb98](https://github.com/usetrmnl/kuroshiro/commit/872cb98bbc4437ac390be6dda27b4084a9b51b58))
+* **api:** require the Device's Access-Token on POST /api/log and check duplicate entries in the database ([#1634](https://github.com/usetrmnl/kuroshiro/issues/1634)) ([2088bbf](https://github.com/usetrmnl/kuroshiro/commit/2088bbff876b11926d6aa497f62160e76604bdbb))
+* **api:** run a transform on a worker thread its timeout terminates ([#1604](https://github.com/usetrmnl/kuroshiro/issues/1604)) ([207df70](https://github.com/usetrmnl/kuroshiro/commit/207df70ffab65052e2009ca3127b59f3782f8e47))
+* **api:** send a Proxied Device's mirror poll to TRMNL with one ID header ([#1629](https://github.com/usetrmnl/kuroshiro/issues/1629)) ([68e99a5](https://github.com/usetrmnl/kuroshiro/commit/68e99a5f386a5059fe38d1cdd19143c0e9baf36f))
+* **api:** serialise webhook POSTs per Plugin so concurrent merges keep every payload ([#1620](https://github.com/usetrmnl/kuroshiro/issues/1620)) ([f478451](https://github.com/usetrmnl/kuroshiro/commit/f478451646d10b7d880a3d9071321b2547a695a1))
+* **api:** stop LoggingInterceptor logging every admin response body ([#1640](https://github.com/usetrmnl/kuroshiro/issues/1640)) ([1378491](https://github.com/usetrmnl/kuroshiro/commit/137849147d9a86ca59cb86ade4eed03357f54c6e))
+* **api:** write only a polling Device's report, so an admin's edit made during the poll survives ([#1680](https://github.com/usetrmnl/kuroshiro/issues/1680)) ([c726994](https://github.com/usetrmnl/kuroshiro/commit/c726994364a712f60353334f94b545b594b46ec9))
+* **docker:** install Corepack before enabling it, node 26 images no longer bundle it ([#1581](https://github.com/usetrmnl/kuroshiro/issues/1581)) ([141c486](https://github.com/usetrmnl/kuroshiro/commit/141c48650a8e7b1f0f23662a78981cbfb30b83b6))
+* **shared:** render a missing value through the json filter as null, as TRMNL's to_json does ([#1691](https://github.com/usetrmnl/kuroshiro/issues/1691)) ([124a7dd](https://github.com/usetrmnl/kuroshiro/commit/124a7dd0ee46798d4aeb97ef003aa43db1317a9e))
+* **shared:** render nothing, not "undefined", when l_date or ordinalize gets a missing value ([#1628](https://github.com/usetrmnl/kuroshiro/issues/1628)) ([044b472](https://github.com/usetrmnl/kuroshiro/commit/044b4722c5af1d676783477bacbde351f8304d49))
+* **ui:** add one HTML Screen when Ctrl/Cmd+S is pressed again before the first answer ([#1651](https://github.com/usetrmnl/kuroshiro/issues/1651)) ([56f75d4](https://github.com/usetrmnl/kuroshiro/commit/56f75d4ae7102d22ea55eddbc9f1e39927a82c29))
+* **ui:** cut a long Device name on the bar by code points, never inside an emoji ([#1645](https://github.com/usetrmnl/kuroshiro/issues/1645)) ([4c14d4d](https://github.com/usetrmnl/kuroshiro/commit/4c14d4d89998776a6ecb8c9eb3f8a336abffd472)), closes [#1607](https://github.com/usetrmnl/kuroshiro/issues/1607)
+* **ui:** forget a refused Device setting once its change is taken back, so Try again cannot send it ([#1693](https://github.com/usetrmnl/kuroshiro/issues/1693)) ([c06068c](https://github.com/usetrmnl/kuroshiro/commit/c06068c2c16483502ff672e684dab13c704e144f))
+* **ui:** keep a Device Simulator poll's answer when the Device cannot be read again after it ([#1650](https://github.com/usetrmnl/kuroshiro/issues/1650)) ([fa43f97](https://github.com/usetrmnl/kuroshiro/commit/fa43f97f9ce107300d666f269e3ec5718b3958a3))
+* **ui:** keep a failed Retention load inside the Retention section on Housekeeping ([#1672](https://github.com/usetrmnl/kuroshiro/issues/1672)) ([6d74a42](https://github.com/usetrmnl/kuroshiro/commit/6d74a42faaebb5c89fd5cfb520aec5755a49a21f))
+* **ui:** keep a ScreenRows keyboard lift when a poll hands back the same order ([#1643](https://github.com/usetrmnl/kuroshiro/issues/1643)) ([fc81335](https://github.com/usetrmnl/kuroshiro/commit/fc81335e803c69cf59b084a3e42fc95e677755d0))
+* **ui:** load the Device Simulator plate's image from the admin's own address ([#1653](https://github.com/usetrmnl/kuroshiro/issues/1653)) ([909bdd7](https://github.com/usetrmnl/kuroshiro/commit/909bdd7a5d8d278868d77f2dff83d8d48d1e5bcf))
+* **ui:** navigate to a newly added Screen without asking "Leave without saving?" when another kind's kept-alive form holds text ([#1694](https://github.com/usetrmnl/kuroshiro/issues/1694)) ([46cc141](https://github.com/usetrmnl/kuroshiro/commit/46cc1419584ad2b6a5a9a618fb73891fe9d26abc))
+* **ui:** offer "Catch up now" only once the server has Firmware Auto-Update on ([#1655](https://github.com/usetrmnl/kuroshiro/issues/1655)) ([3bc17fb](https://github.com/usetrmnl/kuroshiro/commit/3bc17fbb6c4427f4a8533ee9c5cf927a427b0e42))
+* **ui:** open a Plugin with a copyable webhook URL Field without unsaved changes ([#1649](https://github.com/usetrmnl/kuroshiro/issues/1649)) ([184bf60](https://github.com/usetrmnl/kuroshiro/commit/184bf60d58282f2d553f411c02b1c0442813367b))
+* **ui:** refuse a non-attachment download and revoke its object URL after 40 seconds ([#1644](https://github.com/usetrmnl/kuroshiro/issues/1644)) ([33a868d](https://github.com/usetrmnl/kuroshiro/commit/33a868d9a0dd48c20dfe8a81101442ef969f92b5))
+* **ui:** say the Device could not be read, not that the call did not reach the server, when the read before a simulated poll or setup fails ([#1695](https://github.com/usetrmnl/kuroshiro/issues/1695)) ([158afa0](https://github.com/usetrmnl/kuroshiro/commit/158afa026795c72ca9beb2122748819af6e0d9c4))
+* **ui:** scroll to the top of a new path when its fragment is malformed or never names an element ([#1646](https://github.com/usetrmnl/kuroshiro/issues/1646)) ([900f2bb](https://github.com/usetrmnl/kuroshiro/commit/900f2bbb7e349126ed0073f71dd7d19e59a0b990))
+* **ui:** send an Instance Setting entered while its save is under way ([#1654](https://github.com/usetrmnl/kuroshiro/issues/1654)) ([cecde18](https://github.com/usetrmnl/kuroshiro/commit/cecde18e802ec4e67703b3cfe408b8a83f41e1ca))
+* **ui:** send the stored window when switching Sleep Mode back on ([#1648](https://github.com/usetrmnl/kuroshiro/issues/1648)) ([8fd0470](https://github.com/usetrmnl/kuroshiro/commit/8fd0470052eba791a7550f881a210d56d239726b))
+* **ui:** set returnValue too when asking before unload, for browsers that ignore preventDefault() ([#1647](https://github.com/usetrmnl/kuroshiro/issues/1647)) ([8539a1e](https://github.com/usetrmnl/kuroshiro/commit/8539a1e64f76b88318ae3c4264f034def36d00be))
+* **ui:** stop a pending Device Log search from rewriting the next page's address ([#1652](https://github.com/usetrmnl/kuroshiro/issues/1652)) ([81b16c2](https://github.com/usetrmnl/kuroshiro/commit/81b16c230bcbec1fa27bfa43b762a7daf00f3fe5))
 
-## [0.21.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.20.0...kuroshiro-v0.21.0) (2026-10-22)
+## [0.21.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.20.0...kuroshiro-v0.21.0) (2026-10-22)
 
 
 ### Features
 
-* **alerts:** remind Alerts still open on a Reminder Interval ([#1490](https://github.com/PhyberApex/kuroshiro/issues/1490)) ([3663e01](https://github.com/PhyberApex/kuroshiro/commit/3663e01177b9611937890e39b42a932f5b58b573))
-* **devices:** Manual Rotation, a per-Device setting that advances only on a button press or a Picked Screen ([#1482](https://github.com/PhyberApex/kuroshiro/issues/1482)) ([11b1601](https://github.com/PhyberApex/kuroshiro/commit/11b1601a4b2f39597e961a6a8e5db4951fd9f6fc))
-* **devices:** record the Update-Source header as the Device's last wake source ([#1479](https://github.com/PhyberApex/kuroshiro/issues/1479)) ([0b55aa0](https://github.com/PhyberApex/kuroshiro/commit/0b55aa0f80c5ee14d0c5c463f0fa273c5d30d0f3))
-* Dithering switch on Screens and Plugins ([#1477](https://github.com/PhyberApex/kuroshiro/issues/1477)) ([ce139b3](https://github.com/PhyberApex/kuroshiro/commit/ce139b34e437ed7a9b877398240164e01b61172e))
-* **firmware:** "Catch up now" gives the current official Firmware to Devices that are behind ([#1475](https://github.com/PhyberApex/kuroshiro/issues/1475)) ([b07ac88](https://github.com/PhyberApex/kuroshiro/commit/b07ac88d45c67feb13c5920072adf43b6fdf29f3))
-* **firmware:** official Firmware is synced once per folder of TRMNL's firmware bucket ([#1547](https://github.com/PhyberApex/kuroshiro/issues/1547)) ([226aac5](https://github.com/PhyberApex/kuroshiro/commit/226aac5896a2b9ab28e80f03198c48fc3983246d))
-* **mashup:** a Mashup slot raises its own Render Signal ([#1551](https://github.com/PhyberApex/kuroshiro/issues/1551)) ([8a975d0](https://github.com/PhyberApex/kuroshiro/commit/8a975d08d432553f4799a06bd99368660d9e14e5))
-* **plugins:** a bare select option is stored under the value TRMNL derives ([#1539](https://github.com/PhyberApex/kuroshiro/issues/1539)) ([82e1080](https://github.com/PhyberApex/kuroshiro/commit/82e1080a7e8dc8ac2c39edaa13282147e22c995c)), closes [#1530](https://github.com/PhyberApex/kuroshiro/issues/1530)
-* **plugins:** a copyable_webhook_url Plugin Field is not an input to fill in ([#1543](https://github.com/PhyberApex/kuroshiro/issues/1543)) ([246bf1d](https://github.com/PhyberApex/kuroshiro/commit/246bf1d1b6db3e103dab9675b3c62f1da15153dc)), closes [#1532](https://github.com/PhyberApex/kuroshiro/issues/1532)
-* **plugins:** a Data Source request is given up after ten seconds ([#1541](https://github.com/PhyberApex/kuroshiro/issues/1541)) ([4b46920](https://github.com/PhyberApex/kuroshiro/commit/4b46920f14e775696d51f3f9ec981213ad8ae6a0)), closes [#1535](https://github.com/PhyberApex/kuroshiro/issues/1535)
-* **plugins:** a Data Source requests each line its URL renders to, and a lone list or text reads as data ([#1528](https://github.com/PhyberApex/kuroshiro/issues/1528)) ([f112195](https://github.com/PhyberApex/kuroshiro/commit/f112195869dbde340a02026476592deff8e2d66f)), closes [#1522](https://github.com/PhyberApex/kuroshiro/issues/1522)
-* **plugins:** a list Plugin Field holds one value per line and reads as a list ([#1546](https://github.com/PhyberApex/kuroshiro/issues/1546)) ([e653c7e](https://github.com/PhyberApex/kuroshiro/commit/e653c7eacd8e4135b46e6e66a6ebcca6a834a714))
-* **plugins:** a Plugin Field keeps the attributes TRMNL's form builder gives it ([#1515](https://github.com/PhyberApex/kuroshiro/issues/1515)) ([9a055fb](https://github.com/PhyberApex/kuroshiro/commit/9a055fb06dd0365c4fc49a8b8d158d5348ed1ad5))
-* **plugins:** a Plugin is rendered once per Screen and told its Device as trmnl.device ([#1554](https://github.com/PhyberApex/kuroshiro/issues/1554)) ([f7578f9](https://github.com/PhyberApex/kuroshiro/commit/f7578f91f6b8e1f4b2f27e0d03c762819335b334))
-* **plugins:** a polled iCalendar feed is read as its next thirty days of events ([#1548](https://github.com/PhyberApex/kuroshiro/issues/1548)) ([d8bf75c](https://github.com/PhyberApex/kuroshiro/commit/d8bf75cb199016696b2d01240156bae369edcfe7))
-* **plugins:** a polled XML feed and CSV table are read as TRMNL reads them ([#1529](https://github.com/PhyberApex/kuroshiro/issues/1529)) ([be989b0](https://github.com/PhyberApex/kuroshiro/commit/be989b0ac47477edd33718c39fbe93b531db08bf))
-* **plugins:** a Template defines its own partials, and a Recipe's shared.liquid tops every layout ([#1511](https://github.com/PhyberApex/kuroshiro/issues/1511)) ([49c1f75](https://github.com/PhyberApex/kuroshiro/commit/49c1f75d42556ac82e6bff465b060beb1fa42249))
-* **plugins:** a transform keeps Saved State and may fetch ([#1514](https://github.com/PhyberApex/kuroshiro/issues/1514)) ([1c79685](https://github.com/PhyberApex/kuroshiro/commit/1c7968530dab691d1ec288dd896f281024b02f2a))
-* **plugins:** a transform reads its Previous Output as trmnl.previous_merge_variables ([#1555](https://github.com/PhyberApex/kuroshiro/issues/1555)) ([c192a69](https://github.com/PhyberApex/kuroshiro/commit/c192a69ca32c74a0f47e6b8d40d0121f62ee37a1))
-* **plugins:** a transform's sandbox has Node's web globals ([#1524](https://github.com/PhyberApex/kuroshiro/issues/1524)) ([b0bb7c3](https://github.com/PhyberApex/kuroshiro/commit/b0bb7c36eba744abcc6669b7bc1ed25f56e86b4c)), closes [#1519](https://github.com/PhyberApex/kuroshiro/issues/1519)
-* **plugins:** a Webhook POST in TRMNL's merge_variables envelope is read as the payload ([#1544](https://github.com/PhyberApex/kuroshiro/issues/1544)) ([1d5ba69](https://github.com/PhyberApex/kuroshiro/commit/1d5ba69c34623bb3b700329f6591a081fb7e8d79)), closes [#1533](https://github.com/PhyberApex/kuroshiro/issues/1533)
-* **plugins:** a webhook Recipe imports as a Webhook Plugin ([#1526](https://github.com/PhyberApex/kuroshiro/issues/1526)) ([d65f7d2](https://github.com/PhyberApex/kuroshiro/commit/d65f7d233e4747fe14dbb0165ba4c5f9f5b0cd33))
-* **plugins:** an OAuth Recipe imports with a token the admin pastes, refreshed before a poll ([#1552](https://github.com/PhyberApex/kuroshiro/issues/1552)) ([03a835b](https://github.com/PhyberApex/kuroshiro/commit/03a835b2c51332c7bcfcdd59ad99e0cb93650342))
-* **plugins:** each line of a Polling URL reads a list or text under data ([#1540](https://github.com/PhyberApex/kuroshiro/issues/1540)) ([0862926](https://github.com/PhyberApex/kuroshiro/commit/0862926618d24053474362808d3b787db49d2e9a)), closes [#1531](https://github.com/PhyberApex/kuroshiro/issues/1531)
-* **plugins:** keep TRMNL's no_screen_padding and dark_mode and draw a Plugin's own Screen with them ([#1516](https://github.com/PhyberApex/kuroshiro/issues/1516)) ([a854647](https://github.com/PhyberApex/kuroshiro/commit/a854647f91a0b8cf3cdd8cf2ad4eae303d0c63a6))
-* **plugins:** polling_headers in TRMNL's key=value form are read on import ([#1542](https://github.com/PhyberApex/kuroshiro/issues/1542)) ([80eb118](https://github.com/PhyberApex/kuroshiro/commit/80eb118dd0c1ce603ec07504d60ca172abe2588c)), closes [#1534](https://github.com/PhyberApex/kuroshiro/issues/1534)
-* **plugins:** read a lone Data Source at the root of the context too ([#1510](https://github.com/PhyberApex/kuroshiro/issues/1510)) ([8d23e04](https://github.com/PhyberApex/kuroshiro/commit/8d23e0413c5e718cbe3c40ce1563b5be50aac402))
-* **plugins:** run a transform as TRMNL's serverless run(input) ([#1513](https://github.com/PhyberApex/kuroshiro/issues/1513)) ([11e4fb7](https://github.com/PhyberApex/kuroshiro/commit/11e4fb7e40b57bc1812cc7e64285a497eb2a4c32))
-* **plugins:** the template reads when its data was fetched as trmnl.plugin_settings.data_fetched_utc ([#1525](https://github.com/PhyberApex/kuroshiro/issues/1525)) ([244a7c8](https://github.com/PhyberApex/kuroshiro/commit/244a7c893001d13226fc2d6d67b8ab2fe29f2b8f)), closes [#1521](https://github.com/PhyberApex/kuroshiro/issues/1521)
-* **shared:** TRMNL's custom Liquid filters, so an imported Recipe that uses one renders as on trmnl.com ([#1447](https://github.com/PhyberApex/kuroshiro/issues/1447)) ([ce5cce5](https://github.com/PhyberApex/kuroshiro/commit/ce5cce53494e59314207271b8631a6a34a57f9b6))
-* Wipe, a one-shot blank-image command on a Device ([#1481](https://github.com/PhyberApex/kuroshiro/issues/1481)) ([5c3634d](https://github.com/PhyberApex/kuroshiro/commit/5c3634d737818d2cd0a3e39aac2cf6da3cce2eae))
+* **alerts:** remind Alerts still open on a Reminder Interval ([#1490](https://github.com/usetrmnl/kuroshiro/issues/1490)) ([3663e01](https://github.com/usetrmnl/kuroshiro/commit/3663e01177b9611937890e39b42a932f5b58b573))
+* **devices:** Manual Rotation, a per-Device setting that advances only on a button press or a Picked Screen ([#1482](https://github.com/usetrmnl/kuroshiro/issues/1482)) ([11b1601](https://github.com/usetrmnl/kuroshiro/commit/11b1601a4b2f39597e961a6a8e5db4951fd9f6fc))
+* **devices:** record the Update-Source header as the Device's last wake source ([#1479](https://github.com/usetrmnl/kuroshiro/issues/1479)) ([0b55aa0](https://github.com/usetrmnl/kuroshiro/commit/0b55aa0f80c5ee14d0c5c463f0fa273c5d30d0f3))
+* Dithering switch on Screens and Plugins ([#1477](https://github.com/usetrmnl/kuroshiro/issues/1477)) ([ce139b3](https://github.com/usetrmnl/kuroshiro/commit/ce139b34e437ed7a9b877398240164e01b61172e))
+* **firmware:** "Catch up now" gives the current official Firmware to Devices that are behind ([#1475](https://github.com/usetrmnl/kuroshiro/issues/1475)) ([b07ac88](https://github.com/usetrmnl/kuroshiro/commit/b07ac88d45c67feb13c5920072adf43b6fdf29f3))
+* **firmware:** official Firmware is synced once per folder of TRMNL's firmware bucket ([#1547](https://github.com/usetrmnl/kuroshiro/issues/1547)) ([226aac5](https://github.com/usetrmnl/kuroshiro/commit/226aac5896a2b9ab28e80f03198c48fc3983246d))
+* **mashup:** a Mashup slot raises its own Render Signal ([#1551](https://github.com/usetrmnl/kuroshiro/issues/1551)) ([8a975d0](https://github.com/usetrmnl/kuroshiro/commit/8a975d08d432553f4799a06bd99368660d9e14e5))
+* **plugins:** a bare select option is stored under the value TRMNL derives ([#1539](https://github.com/usetrmnl/kuroshiro/issues/1539)) ([82e1080](https://github.com/usetrmnl/kuroshiro/commit/82e1080a7e8dc8ac2c39edaa13282147e22c995c)), closes [#1530](https://github.com/usetrmnl/kuroshiro/issues/1530)
+* **plugins:** a copyable_webhook_url Plugin Field is not an input to fill in ([#1543](https://github.com/usetrmnl/kuroshiro/issues/1543)) ([246bf1d](https://github.com/usetrmnl/kuroshiro/commit/246bf1d1b6db3e103dab9675b3c62f1da15153dc)), closes [#1532](https://github.com/usetrmnl/kuroshiro/issues/1532)
+* **plugins:** a Data Source request is given up after ten seconds ([#1541](https://github.com/usetrmnl/kuroshiro/issues/1541)) ([4b46920](https://github.com/usetrmnl/kuroshiro/commit/4b46920f14e775696d51f3f9ec981213ad8ae6a0)), closes [#1535](https://github.com/usetrmnl/kuroshiro/issues/1535)
+* **plugins:** a Data Source requests each line its URL renders to, and a lone list or text reads as data ([#1528](https://github.com/usetrmnl/kuroshiro/issues/1528)) ([f112195](https://github.com/usetrmnl/kuroshiro/commit/f112195869dbde340a02026476592deff8e2d66f)), closes [#1522](https://github.com/usetrmnl/kuroshiro/issues/1522)
+* **plugins:** a list Plugin Field holds one value per line and reads as a list ([#1546](https://github.com/usetrmnl/kuroshiro/issues/1546)) ([e653c7e](https://github.com/usetrmnl/kuroshiro/commit/e653c7eacd8e4135b46e6e66a6ebcca6a834a714))
+* **plugins:** a Plugin Field keeps the attributes TRMNL's form builder gives it ([#1515](https://github.com/usetrmnl/kuroshiro/issues/1515)) ([9a055fb](https://github.com/usetrmnl/kuroshiro/commit/9a055fb06dd0365c4fc49a8b8d158d5348ed1ad5))
+* **plugins:** a Plugin is rendered once per Screen and told its Device as trmnl.device ([#1554](https://github.com/usetrmnl/kuroshiro/issues/1554)) ([f7578f9](https://github.com/usetrmnl/kuroshiro/commit/f7578f91f6b8e1f4b2f27e0d03c762819335b334))
+* **plugins:** a polled iCalendar feed is read as its next thirty days of events ([#1548](https://github.com/usetrmnl/kuroshiro/issues/1548)) ([d8bf75c](https://github.com/usetrmnl/kuroshiro/commit/d8bf75cb199016696b2d01240156bae369edcfe7))
+* **plugins:** a polled XML feed and CSV table are read as TRMNL reads them ([#1529](https://github.com/usetrmnl/kuroshiro/issues/1529)) ([be989b0](https://github.com/usetrmnl/kuroshiro/commit/be989b0ac47477edd33718c39fbe93b531db08bf))
+* **plugins:** a Template defines its own partials, and a Recipe's shared.liquid tops every layout ([#1511](https://github.com/usetrmnl/kuroshiro/issues/1511)) ([49c1f75](https://github.com/usetrmnl/kuroshiro/commit/49c1f75d42556ac82e6bff465b060beb1fa42249))
+* **plugins:** a transform keeps Saved State and may fetch ([#1514](https://github.com/usetrmnl/kuroshiro/issues/1514)) ([1c79685](https://github.com/usetrmnl/kuroshiro/commit/1c7968530dab691d1ec288dd896f281024b02f2a))
+* **plugins:** a transform reads its Previous Output as trmnl.previous_merge_variables ([#1555](https://github.com/usetrmnl/kuroshiro/issues/1555)) ([c192a69](https://github.com/usetrmnl/kuroshiro/commit/c192a69ca32c74a0f47e6b8d40d0121f62ee37a1))
+* **plugins:** a transform's sandbox has Node's web globals ([#1524](https://github.com/usetrmnl/kuroshiro/issues/1524)) ([b0bb7c3](https://github.com/usetrmnl/kuroshiro/commit/b0bb7c36eba744abcc6669b7bc1ed25f56e86b4c)), closes [#1519](https://github.com/usetrmnl/kuroshiro/issues/1519)
+* **plugins:** a Webhook POST in TRMNL's merge_variables envelope is read as the payload ([#1544](https://github.com/usetrmnl/kuroshiro/issues/1544)) ([1d5ba69](https://github.com/usetrmnl/kuroshiro/commit/1d5ba69c34623bb3b700329f6591a081fb7e8d79)), closes [#1533](https://github.com/usetrmnl/kuroshiro/issues/1533)
+* **plugins:** a webhook Recipe imports as a Webhook Plugin ([#1526](https://github.com/usetrmnl/kuroshiro/issues/1526)) ([d65f7d2](https://github.com/usetrmnl/kuroshiro/commit/d65f7d233e4747fe14dbb0165ba4c5f9f5b0cd33))
+* **plugins:** an OAuth Recipe imports with a token the admin pastes, refreshed before a poll ([#1552](https://github.com/usetrmnl/kuroshiro/issues/1552)) ([03a835b](https://github.com/usetrmnl/kuroshiro/commit/03a835b2c51332c7bcfcdd59ad99e0cb93650342))
+* **plugins:** each line of a Polling URL reads a list or text under data ([#1540](https://github.com/usetrmnl/kuroshiro/issues/1540)) ([0862926](https://github.com/usetrmnl/kuroshiro/commit/0862926618d24053474362808d3b787db49d2e9a)), closes [#1531](https://github.com/usetrmnl/kuroshiro/issues/1531)
+* **plugins:** keep TRMNL's no_screen_padding and dark_mode and draw a Plugin's own Screen with them ([#1516](https://github.com/usetrmnl/kuroshiro/issues/1516)) ([a854647](https://github.com/usetrmnl/kuroshiro/commit/a854647f91a0b8cf3cdd8cf2ad4eae303d0c63a6))
+* **plugins:** polling_headers in TRMNL's key=value form are read on import ([#1542](https://github.com/usetrmnl/kuroshiro/issues/1542)) ([80eb118](https://github.com/usetrmnl/kuroshiro/commit/80eb118dd0c1ce603ec07504d60ca172abe2588c)), closes [#1534](https://github.com/usetrmnl/kuroshiro/issues/1534)
+* **plugins:** read a lone Data Source at the root of the context too ([#1510](https://github.com/usetrmnl/kuroshiro/issues/1510)) ([8d23e04](https://github.com/usetrmnl/kuroshiro/commit/8d23e0413c5e718cbe3c40ce1563b5be50aac402))
+* **plugins:** run a transform as TRMNL's serverless run(input) ([#1513](https://github.com/usetrmnl/kuroshiro/issues/1513)) ([11e4fb7](https://github.com/usetrmnl/kuroshiro/commit/11e4fb7e40b57bc1812cc7e64285a497eb2a4c32))
+* **plugins:** the template reads when its data was fetched as trmnl.plugin_settings.data_fetched_utc ([#1525](https://github.com/usetrmnl/kuroshiro/issues/1525)) ([244a7c8](https://github.com/usetrmnl/kuroshiro/commit/244a7c893001d13226fc2d6d67b8ab2fe29f2b8f)), closes [#1521](https://github.com/usetrmnl/kuroshiro/issues/1521)
+* **shared:** TRMNL's custom Liquid filters, so an imported Recipe that uses one renders as on trmnl.com ([#1447](https://github.com/usetrmnl/kuroshiro/issues/1447)) ([ce5cce5](https://github.com/usetrmnl/kuroshiro/commit/ce5cce53494e59314207271b8631a6a34a57f9b6))
+* Wipe, a one-shot blank-image command on a Device ([#1481](https://github.com/usetrmnl/kuroshiro/issues/1481)) ([5c3634d](https://github.com/usetrmnl/kuroshiro/commit/5c3634d737818d2cd0a3e39aac2cf6da3cce2eae))
 
 
 ### Bug Fixes
 
-* **api:** map current firmware board names to their upstream Device Models ([#1473](https://github.com/PhyberApex/kuroshiro/issues/1473)) ([25671cc](https://github.com/PhyberApex/kuroshiro/commit/25671cc7948d849c1264d86072296aa3e1f1d7e8))
-* **metrics:** accept the unit spellings official firmware sends for Sensors ([#1484](https://github.com/PhyberApex/kuroshiro/issues/1484)) ([f8dbc0a](https://github.com/PhyberApex/kuroshiro/commit/f8dbc0a194fa594d6f4ed0222ce0d904d871c5da))
-* **plugins:** import the Recipe archives TRMNL ships today ([#1508](https://github.com/PhyberApex/kuroshiro/issues/1508)) ([9d47cbf](https://github.com/PhyberApex/kuroshiro/commit/9d47cbf9850cd0441b50b1ea964d072650ee1963))
-* **shared:** make the Liquid engine's standard filters follow Ruby Liquid ([#1446](https://github.com/PhyberApex/kuroshiro/issues/1446)) ([20df7b5](https://github.com/PhyberApex/kuroshiro/commit/20df7b516d559aad193bc943e1f2911259ef05e9))
-* **shared:** render Liquid dates in the Instance Time Zone and carry it on trmnl.user ([#1449](https://github.com/PhyberApex/kuroshiro/issues/1449)) ([8274c44](https://github.com/PhyberApex/kuroshiro/commit/8274c44fafe8b47b43bc07f4b1fe195722ec175b))
-* **ui:** keep the Template plate in its rendering state until the Instance Time Zone is in ([#1453](https://github.com/PhyberApex/kuroshiro/issues/1453)) ([a80b654](https://github.com/PhyberApex/kuroshiro/commit/a80b654196d4a8d2bb2e78b05b27db90e54ee5bd))
+* **api:** map current firmware board names to their upstream Device Models ([#1473](https://github.com/usetrmnl/kuroshiro/issues/1473)) ([25671cc](https://github.com/usetrmnl/kuroshiro/commit/25671cc7948d849c1264d86072296aa3e1f1d7e8))
+* **metrics:** accept the unit spellings official firmware sends for Sensors ([#1484](https://github.com/usetrmnl/kuroshiro/issues/1484)) ([f8dbc0a](https://github.com/usetrmnl/kuroshiro/commit/f8dbc0a194fa594d6f4ed0222ce0d904d871c5da))
+* **plugins:** import the Recipe archives TRMNL ships today ([#1508](https://github.com/usetrmnl/kuroshiro/issues/1508)) ([9d47cbf](https://github.com/usetrmnl/kuroshiro/commit/9d47cbf9850cd0441b50b1ea964d072650ee1963))
+* **shared:** make the Liquid engine's standard filters follow Ruby Liquid ([#1446](https://github.com/usetrmnl/kuroshiro/issues/1446)) ([20df7b5](https://github.com/usetrmnl/kuroshiro/commit/20df7b516d559aad193bc943e1f2911259ef05e9))
+* **shared:** render Liquid dates in the Instance Time Zone and carry it on trmnl.user ([#1449](https://github.com/usetrmnl/kuroshiro/issues/1449)) ([8274c44](https://github.com/usetrmnl/kuroshiro/commit/8274c44fafe8b47b43bc07f4b1fe195722ec175b))
+* **ui:** keep the Template plate in its rendering state until the Instance Time Zone is in ([#1453](https://github.com/usetrmnl/kuroshiro/issues/1453)) ([a80b654](https://github.com/usetrmnl/kuroshiro/commit/a80b654196d4a8d2bb2e78b05b27db90e54ee5bd))
 
 
 ### Performance Improvements
 
-* **api:** render in one shared, long-lived Chromium ([#1474](https://github.com/PhyberApex/kuroshiro/issues/1474)) ([df1f890](https://github.com/PhyberApex/kuroshiro/commit/df1f89081c8b4a3a9f2caa3359d91e75896e19b2))
+* **api:** render in one shared, long-lived Chromium ([#1474](https://github.com/usetrmnl/kuroshiro/issues/1474)) ([df1f890](https://github.com/usetrmnl/kuroshiro/commit/df1f89081c8b4a3a9f2caa3359d91e75896e19b2))
 
-## [0.20.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.19.0...kuroshiro-v0.20.0) (2026-10-15)
-
-
-### Features
-
-* **alerts:** batch Alert Sweep Notifications into one digest per Sweep ([#1415](https://github.com/PhyberApex/kuroshiro/issues/1415)) ([642d006](https://github.com/PhyberApex/kuroshiro/commit/642d006dd37b4e049ae37ea9e2373a85e9d9e4c4)), closes [#1383](https://github.com/PhyberApex/kuroshiro/issues/1383)
-* **api:** carry a Plugin's Framework Version through import, export and archive ([#1438](https://github.com/PhyberApex/kuroshiro/issues/1438)) ([fc69068](https://github.com/PhyberApex/kuroshiro/commit/fc690684a4c5db1e9d5dd74e8f654e50b5430486))
-* **configuration:** seed a showcase Configuration Archive on an empty demo-mode boot ([#1417](https://github.com/PhyberApex/kuroshiro/issues/1417)) ([cda54bb](https://github.com/PhyberApex/kuroshiro/commit/cda54bb8d2a0381f429ef14c7b9fd5565e90e81e)), closes [#1384](https://github.com/PhyberApex/kuroshiro/issues/1384)
-* **plugins:** give a Plugin its own Framework Version ([#1433](https://github.com/PhyberApex/kuroshiro/issues/1433)) ([509696b](https://github.com/PhyberApex/kuroshiro/commit/509696be2a2fae28f3c787ad621ad77e2c24e637))
-* **ui:** "Show next" and "Back to Order" on a Device's Screen rows ([#1414](https://github.com/PhyberApex/kuroshiro/issues/1414)) ([50aed7b](https://github.com/PhyberApex/kuroshiro/commit/50aed7bea9f41bbcd0e74cdcad5dad650e31e233))
-* **ui:** add a Plugin's own Framework Version field and draw the preview with it ([#1439](https://github.com/PhyberApex/kuroshiro/issues/1439)) ([ac6313f](https://github.com/PhyberApex/kuroshiro/commit/ac6313f7d658e87b48e2c1cea56a8afb3a75c24a))
-* **ui:** add the Sleep image row to Device Settings ([#1430](https://github.com/PhyberApex/kuroshiro/issues/1430)) ([8a88ad1](https://github.com/PhyberApex/kuroshiro/commit/8a88ad14c5e7298ca259dfba597da96306f209af))
-
-## [0.19.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.18.0...kuroshiro-v0.19.0) (2026-10-11)
+## [0.20.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.19.0...kuroshiro-v0.20.0) (2026-10-15)
 
 
 ### Features
 
-* **api,ci:** make the Alert Sweep schedule configurable, speed up the real-API CI journey ([#1370](https://github.com/PhyberApex/kuroshiro/issues/1370)) ([62972fd](https://github.com/PhyberApex/kuroshiro/commit/62972fd511efc21887ab380915894ca6ac4866cf)), closes [#1270](https://github.com/PhyberApex/kuroshiro/issues/1270)
-* **api,ui,shared:** reshape AlertSummary's subject keys to null references ([#1399](https://github.com/PhyberApex/kuroshiro/issues/1399)) ([df0cef3](https://github.com/PhyberApex/kuroshiro/commit/df0cef316153a464a04203380b2a19f390b14352))
-* **api,ui:** regenerate a Device's API key now, and stop Configuration Import from reviving an old one ([#1408](https://github.com/PhyberApex/kuroshiro/issues/1408)) ([a1e4821](https://github.com/PhyberApex/kuroshiro/commit/a1e48212c3b906be68610230c994511dc5fce2b9))
-* **api:** let a Device Reset also give the Device a new API key ([#1409](https://github.com/PhyberApex/kuroshiro/issues/1409)) ([de3e684](https://github.com/PhyberApex/kuroshiro/commit/de3e68499b38d429fcad95a74880eaedc779e38b)), closes [#1362](https://github.com/PhyberApex/kuroshiro/issues/1362)
-* **api:** set, clear and serve a Device's Picked Screen in Rotation ([#1413](https://github.com/PhyberApex/kuroshiro/issues/1413)) ([b60e215](https://github.com/PhyberApex/kuroshiro/commit/b60e215ba80fdc196a46df78e0c585044c33048f))
-* **api:** store, serve and reconvert a per-Device sleep image ([#1403](https://github.com/PhyberApex/kuroshiro/issues/1403)) ([b5d2a66](https://github.com/PhyberApex/kuroshiro/commit/b5d2a664695f332a1dace3a274cf07346ae9e15f))
-* **config:** carry each Device's own sleep image in the Configuration Archive ([#1405](https://github.com/PhyberApex/kuroshiro/issues/1405)) ([6be619a](https://github.com/PhyberApex/kuroshiro/commit/6be619a3781540efbe8238816ce0c3a6c9750ea6))
-* **shared:** pin the TRMNL framework to an exact version per Instance ([#1407](https://github.com/PhyberApex/kuroshiro/issues/1407)) ([6175414](https://github.com/PhyberApex/kuroshiro/commit/61754145ade21e5c9b20c7687438f94ea809fe7a))
-* **ui:** clear a select or on/off Field Value back to its default ([#1385](https://github.com/PhyberApex/kuroshiro/issues/1385)) ([8084f71](https://github.com/PhyberApex/kuroshiro/commit/8084f719930d00162326c14d5b38a26c0fe6972a))
-* **ui:** tilt the Active Screen's seal 4 degrees askew on the Plate ([#1391](https://github.com/PhyberApex/kuroshiro/issues/1391)) ([2913081](https://github.com/PhyberApex/kuroshiro/commit/29130816277b7e51951635391582c0458ebf3e23))
+* **alerts:** batch Alert Sweep Notifications into one digest per Sweep ([#1415](https://github.com/usetrmnl/kuroshiro/issues/1415)) ([642d006](https://github.com/usetrmnl/kuroshiro/commit/642d006dd37b4e049ae37ea9e2373a85e9d9e4c4)), closes [#1383](https://github.com/usetrmnl/kuroshiro/issues/1383)
+* **api:** carry a Plugin's Framework Version through import, export and archive ([#1438](https://github.com/usetrmnl/kuroshiro/issues/1438)) ([fc69068](https://github.com/usetrmnl/kuroshiro/commit/fc690684a4c5db1e9d5dd74e8f654e50b5430486))
+* **configuration:** seed a showcase Configuration Archive on an empty demo-mode boot ([#1417](https://github.com/usetrmnl/kuroshiro/issues/1417)) ([cda54bb](https://github.com/usetrmnl/kuroshiro/commit/cda54bb8d2a0381f429ef14c7b9fd5565e90e81e)), closes [#1384](https://github.com/usetrmnl/kuroshiro/issues/1384)
+* **plugins:** give a Plugin its own Framework Version ([#1433](https://github.com/usetrmnl/kuroshiro/issues/1433)) ([509696b](https://github.com/usetrmnl/kuroshiro/commit/509696be2a2fae28f3c787ad621ad77e2c24e637))
+* **ui:** "Show next" and "Back to Order" on a Device's Screen rows ([#1414](https://github.com/usetrmnl/kuroshiro/issues/1414)) ([50aed7b](https://github.com/usetrmnl/kuroshiro/commit/50aed7bea9f41bbcd0e74cdcad5dad650e31e233))
+* **ui:** add a Plugin's own Framework Version field and draw the preview with it ([#1439](https://github.com/usetrmnl/kuroshiro/issues/1439)) ([ac6313f](https://github.com/usetrmnl/kuroshiro/commit/ac6313f7d658e87b48e2c1cea56a8afb3a75c24a))
+* **ui:** add the Sleep image row to Device Settings ([#1430](https://github.com/usetrmnl/kuroshiro/issues/1430)) ([8a88ad1](https://github.com/usetrmnl/kuroshiro/commit/8a88ad14c5e7298ca259dfba597da96306f209af))
 
-
-### Bug Fixes
-
-* **api,ui:** carry image-fetch-failed's reason in details, not a parsed message ([#1347](https://github.com/PhyberApex/kuroshiro/issues/1347)) ([fd2b55f](https://github.com/PhyberApex/kuroshiro/commit/fd2b55f883d478f76890065c5f89a49d3cd86adc))
-* **api,ui:** read a Device's deleted Active Screen as deletedScreen, not noScreens ([#1372](https://github.com/PhyberApex/kuroshiro/issues/1372)) ([a22dc29](https://github.com/PhyberApex/kuroshiro/commit/a22dc2964202277818d3ad791d634acd0b9281c0))
-* **api:** cap GitHub/Recipe import and External link image downloads ([#1369](https://github.com/PhyberApex/kuroshiro/issues/1369)) ([0d15aea](https://github.com/PhyberApex/kuroshiro/commit/0d15aeace3187a573a2ffb7d603e6fde6583f6df)), closes [#1269](https://github.com/PhyberApex/kuroshiro/issues/1269)
-* **api:** name a Plugin Screen after its Plugin when it is the Current Screen ([#1402](https://github.com/PhyberApex/kuroshiro/issues/1402)) ([77fffc2](https://github.com/PhyberApex/kuroshiro/commit/77fffc2627a775fcfdec5339ff818bd03656af56)), closes [#1334](https://github.com/PhyberApex/kuroshiro/issues/1334)
-* **api:** run migrations exactly once, before any module touches the database ([#1400](https://github.com/PhyberApex/kuroshiro/issues/1400)) ([974108c](https://github.com/PhyberApex/kuroshiro/commit/974108c21f63fd57851da29ef40a259cc62071a3))
-* **configuration:** refuse an Instance Settings archive entry outside SETTING_BOUNDS ([#1348](https://github.com/PhyberApex/kuroshiro/issues/1348)) ([0e6785b](https://github.com/PhyberApex/kuroshiro/commit/0e6785b41a1fbda9ced193d4955bf26bf5911609))
-* **maintenance:** find and clean up stale Fallback Screen renders ([#1371](https://github.com/PhyberApex/kuroshiro/issues/1371)) ([183427d](https://github.com/PhyberApex/kuroshiro/commit/183427d37aee5006ffddc8cf30351060f9b20fd4))
-* **ui:** add a hook timeout to the browser project's coverage runs ([#1393](https://github.com/PhyberApex/kuroshiro/issues/1393)) ([a747957](https://github.com/PhyberApex/kuroshiro/commit/a747957e4c48dcf8e176361bd10920b3ac774425))
-* **ui:** ask before dropping an unsaved Palette or Add Screen form ([#1380](https://github.com/PhyberApex/kuroshiro/issues/1380)) ([7089775](https://github.com/PhyberApex/kuroshiro/commit/70897754365caac900dace7667be75c1f21b6620))
-* **ui:** drag a Screen or Plugin Field row by its grip in Firefox ([#1378](https://github.com/PhyberApex/kuroshiro/issues/1378)) ([4b93690](https://github.com/PhyberApex/kuroshiro/commit/4b93690db7e5b560c0eb2f8c375a9daa2874ac12))
-* **ui:** keep the Plugin page's Devices section from going bare while Devices load or fail ([#1389](https://github.com/PhyberApex/kuroshiro/issues/1389)) ([6e7b7ce](https://github.com/PhyberApex/kuroshiro/commit/6e7b7ce0103f27dd68309e91ce4a87e6ac558dcb))
-* **ui:** mark a custom Palette "· custom" in a Device Model's row ([#1386](https://github.com/PhyberApex/kuroshiro/issues/1386)) ([e6bee50](https://github.com/PhyberApex/kuroshiro/commit/e6bee50e0c857babe0ecae94cc08243d50243530))
-* **ui:** reach a relative time's exact time by keyboard and touch ([#1374](https://github.com/PhyberApex/kuroshiro/issues/1374)) ([2f727d4](https://github.com/PhyberApex/kuroshiro/commit/2f727d4cb12fe7ad18126e6d9df8963c2a4c50a9))
-* **ui:** report a Plugin or Configuration Archive export's failure ([#1381](https://github.com/PhyberApex/kuroshiro/issues/1381)) ([63ac075](https://github.com/PhyberApex/kuroshiro/commit/63ac075f0af3f3f0e79fc19b7ea00b516961e284)), closes [#1279](https://github.com/PhyberApex/kuroshiro/issues/1279)
-* **ui:** say a failed TRMNL sync check failed, not that it checked ([#1387](https://github.com/PhyberApex/kuroshiro/issues/1387)) ([c522b29](https://github.com/PhyberApex/kuroshiro/commit/c522b2962abc37822ef389593ffd3cf9d8feefc5)), closes [#1283](https://github.com/PhyberApex/kuroshiro/issues/1283)
-* **ui:** say an unassigned Webhook-kind Plugin keeps its Webhook URL ([#1382](https://github.com/PhyberApex/kuroshiro/issues/1382)) ([8532cd8](https://github.com/PhyberApex/kuroshiro/commit/8532cd8a1e1e94dac939cfa47eb1fe5714bbcadf)), closes [#1280](https://github.com/PhyberApex/kuroshiro/issues/1280)
-* **ui:** settle nine admin UI spec/glossary/code contradictions ([#1390](https://github.com/PhyberApex/kuroshiro/issues/1390)) ([a8ea4a2](https://github.com/PhyberApex/kuroshiro/commit/a8ea4a24a69d0f3f58bbf8d04a2e092b8992b454))
-* **ui:** show a failed-load notice when the code editor's chunk cannot be fetched ([#1377](https://github.com/PhyberApex/kuroshiro/issues/1377)) ([7dc897d](https://github.com/PhyberApex/kuroshiro/commit/7dc897d2648a656a23ea929cc17c7f3f2aa1a245))
-* **ui:** stop two UI specs racing real wall-clock time under coverage ([#1404](https://github.com/PhyberApex/kuroshiro/issues/1404)) ([1b16668](https://github.com/PhyberApex/kuroshiro/commit/1b166686a0226f0a11d57cdb57200c16154cf00a)), closes [#1359](https://github.com/PhyberApex/kuroshiro/issues/1359)
-* **ui:** widen the weekday toggle's touch target to 44 px square ([#1376](https://github.com/PhyberApex/kuroshiro/issues/1376)) ([7cd920f](https://github.com/PhyberApex/kuroshiro/commit/7cd920f53e7b524b48e30d092fe64fff0b204e07)), closes [#1275](https://github.com/PhyberApex/kuroshiro/issues/1275)
-
-## [0.18.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.17.1...kuroshiro-v0.18.0) (2026-10-09)
+## [0.19.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.18.0...kuroshiro-v0.19.0) (2026-10-11)
 
 
 ### Features
 
-* **api:** adding a Screen never changes the Active Screen, deleting closes the gap in the Order ([#1199](https://github.com/PhyberApex/kuroshiro/issues/1199)) ([64aa8ff](https://github.com/PhyberApex/kuroshiro/commit/64aa8ff506025d28ed60b0419b8f8a4e3e99b5ea))
-* **api:** Device bookkeeping (nullable last seen, the last-served record) and the Device reads ([#1195](https://github.com/PhyberApex/kuroshiro/issues/1195)) ([b44653d](https://github.com/PhyberApex/kuroshiro/commit/b44653da9168954545e85b18174bf0f40f1c5f97))
-* **api:** editing a Screen ([#1213](https://github.com/PhyberApex/kuroshiro/issues/1213)) ([955ef02](https://github.com/PhyberApex/kuroshiro/commit/955ef02dc7ef695cc713bc69920ff279fed97a75))
-* **api:** Instance facts on GET /api/instance, with the upload limits set and stated ([#1200](https://github.com/PhyberApex/kuroshiro/issues/1200)) ([a030a23](https://github.com/PhyberApex/kuroshiro/commit/a030a237b353ba732884c7bb7ebbf1727b03b06d))
-* **api:** one error envelope and one validation pipe for the admin API ([#1184](https://github.com/PhyberApex/kuroshiro/issues/1184)) ([06b2359](https://github.com/PhyberApex/kuroshiro/commit/06b23596298db047325a8557aa8a62d5eaece0b4))
-* **api:** one render context, the preview's data, Templates saved and picked by size, and the stored failed render ([#1212](https://github.com/PhyberApex/kuroshiro/issues/1212)) ([186a8cb](https://github.com/PhyberApex/kuroshiro/commit/186a8cb51bab5768ea0bc018d612ae5cd916fabc))
-* **api:** Plugin reads as read models, with the facts the Plugin screens show ([#1205](https://github.com/PhyberApex/kuroshiro/issues/1205)) ([14c3ab8](https://github.com/PhyberApex/kuroshiro/commit/14c3ab8c6ad33ae534622460d17a7278cb9eef6b))
-* **api:** save Field Values on the Plugin and feed them to every render; remove Plugin Variables ([#1190](https://github.com/PhyberApex/kuroshiro/issues/1190)) ([4586336](https://github.com/PhyberApex/kuroshiro/commit/4586336cbba5c035a7f6f1aa279a402119238ff8))
-* **api:** saving a Plugin is one transaction that keeps its Data Sources ([#1207](https://github.com/PhyberApex/kuroshiro/issues/1207)) ([efb59cd](https://github.com/PhyberApex/kuroshiro/commit/efb59cdc5c851357edba247a6498238540650278))
-* **api:** Screen State and the Screen read of a Device ([#1196](https://github.com/PhyberApex/kuroshiro/issues/1196)) ([caea958](https://github.com/PhyberApex/kuroshiro/commit/caea95817cea61b656c486badf4866c4435a626a))
-* **api:** the Alerts list filtered by Device or Plugin, with the Plugin's id on a fetch Alert ([#1201](https://github.com/PhyberApex/kuroshiro/issues/1201)) ([911daf4](https://github.com/PhyberApex/kuroshiro/commit/911daf46bf212c6373b79cdb32fbc3a2475636e5))
-* **api:** the Device Model and Palette reads and their sync ([#1211](https://github.com/PhyberApex/kuroshiro/issues/1211)) ([116b7d0](https://github.com/PhyberApex/kuroshiro/commit/116b7d031a10073409a8789d9700eb6729f97b38))
-* **api:** the Device write and delete ([#1215](https://github.com/PhyberApex/kuroshiro/issues/1215)) ([bb7f023](https://github.com/PhyberApex/kuroshiro/commit/bb7f023b5d67895b607bfb7ad04858e013a71298))
-* **api:** the Fallback Screens in the Hanko identity, per Device, with the two error wordings ([#1216](https://github.com/PhyberApex/kuroshiro/issues/1216)) ([886ccc9](https://github.com/PhyberApex/kuroshiro/commit/886ccc9447cfbc763b2d5d34823fdd4b0a4b982b)), closes [#1180](https://github.com/PhyberApex/kuroshiro/issues/1180)
-* **api:** the Firmware reads and writes, and a record of every sync with TRMNL ([#1209](https://github.com/PhyberApex/kuroshiro/issues/1209)) ([c6e26e5](https://github.com/PhyberApex/kuroshiro/commit/c6e26e5055e65f245b74b0b12aa840bfc787f89b))
-* **config:** add opt-in secret redaction to Configuration Export/Import ([#1055](https://github.com/PhyberApex/kuroshiro/issues/1055)) ([a826efc](https://github.com/PhyberApex/kuroshiro/commit/a826efc11270f68c1e1e49eea1f4f33d76735860))
-* **device-models,screens:** draw the device preview as the Device would show it ([#1342](https://github.com/PhyberApex/kuroshiro/issues/1342)) ([6971b95](https://github.com/PhyberApex/kuroshiro/commit/6971b9559c904ff5b4167665edba6c64d274b39d))
-* **firmware:** add Firmware Auto-Update Instance Setting ([#1056](https://github.com/PhyberApex/kuroshiro/issues/1056)) ([426c3cb](https://github.com/PhyberApex/kuroshiro/commit/426c3cbe6ebc5f439df946c8b8a125c04d4f916e)), closes [#1041](https://github.com/PhyberApex/kuroshiro/issues/1041)
-* **metrics:** expose Device Sensor readings and Data Source fetch failure streak ([#1309](https://github.com/PhyberApex/kuroshiro/issues/1309)) ([ad63fbe](https://github.com/PhyberApex/kuroshiro/commit/ad63fbe20a7580db646054ff25d11c297fc319f2)), closes [#1067](https://github.com/PhyberApex/kuroshiro/issues/1067)
-* **plugins:** add Recipe Update Check preview and apply endpoints ([#1058](https://github.com/PhyberApex/kuroshiro/issues/1058)) ([944779c](https://github.com/PhyberApex/kuroshiro/commit/944779c1e026f35d12f423c463f006d59aac8912))
-* **plugins:** add Recipe Update Check preview dialog to Plugin cards ([#1059](https://github.com/PhyberApex/kuroshiro/issues/1059)) ([a8edd21](https://github.com/PhyberApex/kuroshiro/commit/a8edd2141cfc54f92c24f834d98ba77f0758fe57))
-* **plugins:** import a strategy "none" Recipe as a Poll Plugin with no Data Sources ([#1326](https://github.com/PhyberApex/kuroshiro/issues/1326)) ([2d81d6f](https://github.com/PhyberApex/kuroshiro/commit/2d81d6fdd3b7b9d84ea49ece48bf068b85c77784)), closes [#1261](https://github.com/PhyberApex/kuroshiro/issues/1261)
-* **plugins:** persist an imported Recipe's parsed output as a Recipe Snapshot ([#1057](https://github.com/PhyberApex/kuroshiro/issues/1057)) ([d22dde5](https://github.com/PhyberApex/kuroshiro/commit/d22dde511ddd756e40476356bab8a2cb37c63d6a))
-* **screens:** hold Render Signal keeps a Screen's previous image in Rotation ([#1315](https://github.com/PhyberApex/kuroshiro/issues/1315)) ([0cfbdf4](https://github.com/PhyberApex/kuroshiro/commit/0cfbdf45f41b24d796821ec60ae994dbe6bd919d)), closes [#1070](https://github.com/PhyberApex/kuroshiro/issues/1070)
-* **screens:** skip Render Signal pulls a Screen out of Rotation ([#1310](https://github.com/PhyberApex/kuroshiro/issues/1310)) ([9cc6405](https://github.com/PhyberApex/kuroshiro/commit/9cc64059e7d58934cd9efda1781b1bce58427ef9))
-* **settings:** add persisted Instance Settings for Alert thresholds ([#1051](https://github.com/PhyberApex/kuroshiro/issues/1051)) ([384983f](https://github.com/PhyberApex/kuroshiro/commit/384983f1ce89c814256c17786e03707dc4942a5d))
-* **settings:** make the two Retention ages Instance Settings ([#1202](https://github.com/PhyberApex/kuroshiro/issues/1202)) ([d59b77d](https://github.com/PhyberApex/kuroshiro/commit/d59b77dedbbb4b3d5c1ec600558f608d3dc3a100))
-* **shared:** admin API wire types in packages/shared/src/api, with the mapper convention and an entity-return guard ([#1183](https://github.com/PhyberApex/kuroshiro/issues/1183)) ([38f0515](https://github.com/PhyberApex/kuroshiro/commit/38f05156ee53503e03fa106859baaaeecd112e0c))
-* **ui-next:** a Device's Screens view ([#1221](https://github.com/PhyberApex/kuroshiro/issues/1221)) ([19de4e9](https://github.com/PhyberApex/kuroshiro/commit/19de4e9d0f30528743d70c3024369121994044d8))
-* **ui-next:** Add a Plugin by building a Poll or a Webhook Plugin ([#1230](https://github.com/PhyberApex/kuroshiro/issues/1230)) ([9d86fd9](https://github.com/PhyberApex/kuroshiro/commit/9d86fd9f4f868d34f5a03b37c92f3b4cf070f5ce))
-* **ui-next:** Add a Plugin by importing a Recipe, a file or a GitHub repository ([#1233](https://github.com/PhyberApex/kuroshiro/issues/1233)) ([a681a31](https://github.com/PhyberApex/kuroshiro/commit/a681a31c06c2550a92be5753bbe61c9c04b42f53))
-* **ui-next:** Add Screen, for every kind ([#1235](https://github.com/PhyberApex/kuroshiro/issues/1235)) ([6f509e0](https://github.com/PhyberApex/kuroshiro/commit/6f509e03e9ca89ed8e8acf8ac164b4b4ab5656a6))
-* **ui-next:** an opened Screen, by kind, with its actions ([#1228](https://github.com/PhyberApex/kuroshiro/issues/1228)) ([1aa9c9a](https://github.com/PhyberApex/kuroshiro/commit/1aa9c9afcae272f12dccf1e435f7e743785816a7))
-* **ui-next:** buttons, icon button, tooltip, copy value, the loading mark and the thirteen icons ([#1197](https://github.com/PhyberApex/kuroshiro/issues/1197)) ([a0c1603](https://github.com/PhyberApex/kuroshiro/commit/a0c16035e6d213b581eda303c4c19a46c0187835))
-* **ui-next:** choices (switch, weekday toggle, segmented filter, radio row, layout picker, tabs, page list) ([#1206](https://github.com/PhyberApex/kuroshiro/issues/1206)) ([20e3e87](https://github.com/PhyberApex/kuroshiro/commit/20e3e877efb2704f287880627120ba8379d6dc11))
-* **ui-next:** Configuration Archive, export, read before import, import ([#1242](https://github.com/PhyberApex/kuroshiro/issues/1242)) ([216a321](https://github.com/PhyberApex/kuroshiro/commit/216a321cf22a5ef777d2c1a188c5655f27a5fbec))
-* **ui-next:** custom Palettes, create, edit and delete ([#1253](https://github.com/PhyberApex/kuroshiro/issues/1253)) ([f6db7f6](https://github.com/PhyberApex/kuroshiro/commit/f6db7f68d9e0b8563045c54769eb902d9d628db8))
-* **ui-next:** Data Sources on the Plugin page ([#1237](https://github.com/PhyberApex/kuroshiro/issues/1237)) ([0b6c1a5](https://github.com/PhyberApex/kuroshiro/commit/0b6c1a5d2b14ca4548c8403558f375556a0d4b4a))
-* **ui-next:** Device Logs ([#1227](https://github.com/PhyberApex/kuroshiro/issues/1227)) ([e95c712](https://github.com/PhyberApex/kuroshiro/commit/e95c712c733837f8c76717f7f968fe62114fb69b))
-* **ui-next:** Device Models and Palettes, the lists and the sync ([#1240](https://github.com/PhyberApex/kuroshiro/issues/1240)) ([0972a1f](https://github.com/PhyberApex/kuroshiro/commit/0972a1fd26290a83c8f673937b5677b1f7ed9692))
-* **ui-next:** Device Settings ([#1234](https://github.com/PhyberApex/kuroshiro/issues/1234)) ([841303a](https://github.com/PhyberApex/kuroshiro/commit/841303aa3f5454578ba6073971ad2ff23fdc27d5))
-* **ui-next:** Edit HTML, and the code editor in Add Screen's HTML kind ([#1250](https://github.com/PhyberApex/kuroshiro/issues/1250)) ([298a290](https://github.com/PhyberApex/kuroshiro/commit/298a290b89946d6ed2ea808a6502b46e4d933445))
-* **ui-next:** Field Values and Plugin Fields on the Plugin page ([#1239](https://github.com/PhyberApex/kuroshiro/issues/1239)) ([bf7ba64](https://github.com/PhyberApex/kuroshiro/commit/bf7ba64222b0b562dd1febe60a341253f0a3bc72))
-* **ui-next:** fields (inputs, field, select, checkbox, secret field, search field, file drop, inline edit) ([#1203](https://github.com/PhyberApex/kuroshiro/issues/1203)) ([4bb8a08](https://github.com/PhyberApex/kuroshiro/commit/4bb8a087b6eb021e10757fbb38c0cc5b7ab4d8e3))
-* **ui-next:** Housekeeping, the stored-files check and Retention ([#1244](https://github.com/PhyberApex/kuroshiro/issues/1244)) ([6ec700e](https://github.com/PhyberApex/kuroshiro/commit/6ec700eb7e8d29a69c14fa177e0e2713a4e8898c))
-* **ui-next:** layers and messages (confirmation, notice, empty state, row menu, tucked section, save states, save bar, result and problem lines) ([#1210](https://github.com/PhyberApex/kuroshiro/issues/1210)) ([2ac5057](https://github.com/PhyberApex/kuroshiro/commit/2ac505786810525c0a5970f2c6c450dd31a57a69))
-* **ui-next:** plate, seal, fact rows, the Screen row with its drag state, code block and two small lists ([#1214](https://github.com/PhyberApex/kuroshiro/issues/1214)) ([83d3c94](https://github.com/PhyberApex/kuroshiro/commit/83d3c9470dd8faa4fdd27d3bb560200a0dd061d0))
-* **ui-next:** the Alerts page, with the cause of a resolved Alert kept ([#1226](https://github.com/PhyberApex/kuroshiro/issues/1226)) ([e63d59c](https://github.com/PhyberApex/kuroshiro/commit/e63d59ce5ae8760e3ccac1d766b9a2e085549b85))
-* **ui-next:** the code editor in its four modes, with the preview plate and the bench ([#1219](https://github.com/PhyberApex/kuroshiro/issues/1219)) ([5ea1931](https://github.com/PhyberApex/kuroshiro/commit/5ea193141dc876a66e7a86414d34ff189bb8505a))
-* **ui-next:** the Device Simulator ([#1247](https://github.com/PhyberApex/kuroshiro/issues/1247)) ([1019b7f](https://github.com/PhyberApex/kuroshiro/commit/1019b7f42ddbb64c456afdfe88430365306abcdd))
-* **ui-next:** the Devices list and Connect a Device ([#1222](https://github.com/PhyberApex/kuroshiro/issues/1222)) ([65181db](https://github.com/PhyberApex/kuroshiro/commit/65181db0dc6783271671c28dc33894cbeb46f49a))
-* **ui-next:** the Devices section of the Plugin page, assign and unassign ([#1245](https://github.com/PhyberApex/kuroshiro/issues/1245)) ([ddda420](https://github.com/PhyberApex/kuroshiro/commit/ddda420072a1035a9f032cc1570b578f5c361eb9))
-* **ui-next:** the Firmware page, Upload Firmware and Firmware Auto-Update ([#1238](https://github.com/PhyberApex/kuroshiro/issues/1238)) ([d8fb14c](https://github.com/PhyberApex/kuroshiro/commit/d8fb14c2a2845b96ab60a252f2ce7f849da2c142))
-* **ui-next:** the Instance frame and Instance Settings with the Test Notification ([#1224](https://github.com/PhyberApex/kuroshiro/issues/1224)) ([29ee60b](https://github.com/PhyberApex/kuroshiro/commit/29ee60bd3402f0ab0a8b36c86c5e61f4bce914dd))
-* **ui-next:** the Masthead shell, the router, the API client and the shared page patterns ([#1218](https://github.com/PhyberApex/kuroshiro/issues/1218)) ([b9f103e](https://github.com/PhyberApex/kuroshiro/commit/b9f103e8151e2350dba348b604fb7611eb07157f))
-* **ui-next:** the new admin UI package, served by the image, with the tokens, the faces and the favicon ([#1188](https://github.com/PhyberApex/kuroshiro/issues/1188)) ([6676566](https://github.com/PhyberApex/kuroshiro/commit/6676566d8dd15961494cf32b39bbc444a974ae4f))
-* **ui-next:** the Plugin page frame, its one form and the save bar ([#1225](https://github.com/PhyberApex/kuroshiro/issues/1225)) ([404da7a](https://github.com/PhyberApex/kuroshiro/commit/404da7a81a629c73eb799ef568fe5385c444f438))
-* **ui-next:** the Plugins list with duplicate, export and delete ([#1223](https://github.com/PhyberApex/kuroshiro/issues/1223)) ([92d4508](https://github.com/PhyberApex/kuroshiro/commit/92d4508a5c49bc0dc87bfefe52f410db8e2b8d94))
-* **ui-next:** the Recipe Update Check page and the Plugin page's Recipe section ([#1249](https://github.com/PhyberApex/kuroshiro/issues/1249)) ([7bfd6d5](https://github.com/PhyberApex/kuroshiro/commit/7bfd6d511d45c3c40c5ab42d29fdd15d0882b6ba))
-* **ui-next:** the Schedule editor on an opened Screen ([#1232](https://github.com/PhyberApex/kuroshiro/issues/1232)) ([71a6f84](https://github.com/PhyberApex/kuroshiro/commit/71a6f84e4de5e61b3cc06ef0456fccb03bac0da9))
-* **ui-next:** the Template section of the Plugin page: the Template line, the editor and the browser preview ([#1241](https://github.com/PhyberApex/kuroshiro/issues/1241)) ([c43b14a](https://github.com/PhyberApex/kuroshiro/commit/c43b14a12a0da9c9e204834bf683083252ce41cb))
-* **ui-next:** the Template section's fetched data, the "Data" list and the full window ([#1243](https://github.com/PhyberApex/kuroshiro/issues/1243)) ([6485202](https://github.com/PhyberApex/kuroshiro/commit/648520282a0199abefc0ab1b45220b1fb9e9ecd7))
-* **ui-next:** the Webhook section of the Plugin page ([#1254](https://github.com/PhyberApex/kuroshiro/issues/1254)) ([ac5b35c](https://github.com/PhyberApex/kuroshiro/commit/ac5b35cb6ed177adaa4e520ff68d39cfbdf57a62))
-* **ui:** add a way to cancel a pending Device Reset ([#1313](https://github.com/PhyberApex/kuroshiro/issues/1313)) ([4ce91c8](https://github.com/PhyberApex/kuroshiro/commit/4ce91c8bc1d9ad5c61e9ac41fdb0acd3f704cf2c))
-* **ui:** add a way to cancel a pending Firmware push ([#1311](https://github.com/PhyberApex/kuroshiro/issues/1311)) ([279d6ed](https://github.com/PhyberApex/kuroshiro/commit/279d6ed45cc5b27169eb03b4bb199de89a0c130b))
+* **api,ci:** make the Alert Sweep schedule configurable, speed up the real-API CI journey ([#1370](https://github.com/usetrmnl/kuroshiro/issues/1370)) ([62972fd](https://github.com/usetrmnl/kuroshiro/commit/62972fd511efc21887ab380915894ca6ac4866cf)), closes [#1270](https://github.com/usetrmnl/kuroshiro/issues/1270)
+* **api,ui,shared:** reshape AlertSummary's subject keys to null references ([#1399](https://github.com/usetrmnl/kuroshiro/issues/1399)) ([df0cef3](https://github.com/usetrmnl/kuroshiro/commit/df0cef316153a464a04203380b2a19f390b14352))
+* **api,ui:** regenerate a Device's API key now, and stop Configuration Import from reviving an old one ([#1408](https://github.com/usetrmnl/kuroshiro/issues/1408)) ([a1e4821](https://github.com/usetrmnl/kuroshiro/commit/a1e48212c3b906be68610230c994511dc5fce2b9))
+* **api:** let a Device Reset also give the Device a new API key ([#1409](https://github.com/usetrmnl/kuroshiro/issues/1409)) ([de3e684](https://github.com/usetrmnl/kuroshiro/commit/de3e68499b38d429fcad95a74880eaedc779e38b)), closes [#1362](https://github.com/usetrmnl/kuroshiro/issues/1362)
+* **api:** set, clear and serve a Device's Picked Screen in Rotation ([#1413](https://github.com/usetrmnl/kuroshiro/issues/1413)) ([b60e215](https://github.com/usetrmnl/kuroshiro/commit/b60e215ba80fdc196a46df78e0c585044c33048f))
+* **api:** store, serve and reconvert a per-Device sleep image ([#1403](https://github.com/usetrmnl/kuroshiro/issues/1403)) ([b5d2a66](https://github.com/usetrmnl/kuroshiro/commit/b5d2a664695f332a1dace3a274cf07346ae9e15f))
+* **config:** carry each Device's own sleep image in the Configuration Archive ([#1405](https://github.com/usetrmnl/kuroshiro/issues/1405)) ([6be619a](https://github.com/usetrmnl/kuroshiro/commit/6be619a3781540efbe8238816ce0c3a6c9750ea6))
+* **shared:** pin the TRMNL framework to an exact version per Instance ([#1407](https://github.com/usetrmnl/kuroshiro/issues/1407)) ([6175414](https://github.com/usetrmnl/kuroshiro/commit/61754145ade21e5c9b20c7687438f94ea809fe7a))
+* **ui:** clear a select or on/off Field Value back to its default ([#1385](https://github.com/usetrmnl/kuroshiro/issues/1385)) ([8084f71](https://github.com/usetrmnl/kuroshiro/commit/8084f719930d00162326c14d5b38a26c0fe6972a))
+* **ui:** tilt the Active Screen's seal 4 degrees askew on the Plate ([#1391](https://github.com/usetrmnl/kuroshiro/issues/1391)) ([2913081](https://github.com/usetrmnl/kuroshiro/commit/29130816277b7e51951635391582c0458ebf3e23))
 
 
 ### Bug Fixes
 
-* **alerts:** mark resolution notified immediately when no sender is configured ([#1316](https://github.com/PhyberApex/kuroshiro/issues/1316)) ([4e64bee](https://github.com/PhyberApex/kuroshiro/commit/4e64bee49f32f8768b39abec05a76a21fede7a72))
-* **api:** import InstanceSettingsService as a value so AlertSweepService can be injected ([#1191](https://github.com/PhyberApex/kuroshiro/issues/1191)) ([4b1b796](https://github.com/PhyberApex/kuroshiro/commit/4b1b7960b15a0b2d62d518029b4afccb4813a18c))
-* **api:** only delete cleanup paths inside the storage folders ([#1115](https://github.com/PhyberApex/kuroshiro/issues/1115)) ([93cda9a](https://github.com/PhyberApex/kuroshiro/commit/93cda9a9174d26e4608aecda4f8bf9138c8fff3d))
-* **config:** import archives exported by 0.17.x (schemaVersion 1) ([#1364](https://github.com/PhyberApex/kuroshiro/issues/1364)) ([7295954](https://github.com/PhyberApex/kuroshiro/commit/729595499f4cde4593a0bb37df6a889baee142dc))
-* **configuration:** defer a file-type Screen's image write until an import commits ([#1322](https://github.com/PhyberApex/kuroshiro/issues/1322)) ([7f98184](https://github.com/PhyberApex/kuroshiro/commit/7f981846b9471c138f0e6c339aa55539c33b36f3))
-* **configuration:** schedule a Plugin an import creates or updates ([#1320](https://github.com/PhyberApex/kuroshiro/issues/1320)) ([e46d19e](https://github.com/PhyberApex/kuroshiro/commit/e46d19ee57d0775e9affb7d0d4a4b138a30018e2))
-* **docs:** renumber the four duplicate ADR numbers and gate it in CI ([#1308](https://github.com/PhyberApex/kuroshiro/issues/1308)) ([f55ad9f](https://github.com/PhyberApex/kuroshiro/commit/f55ad9fe00444d5e0e3fb7cfcc8b262a87cf9bb5))
-* **firmware:** stop offering the synced OG binary to B/W/R/Y Devices ([#1357](https://github.com/PhyberApex/kuroshiro/issues/1357)) ([f3d6bf6](https://github.com/PhyberApex/kuroshiro/commit/f3d6bf609facd9338608e08ea8ff98faed77d2db))
-* make pnpm dev run (shared loads under plain Node, one API port) ([#1299](https://github.com/PhyberApex/kuroshiro/issues/1299)) ([84de5aa](https://github.com/PhyberApex/kuroshiro/commit/84de5aa86c9f66a32523b2a617d90c7344c63681))
-* **mashup:** draw the failed Plugin's name in a Mashup slot instead of error.png ([#1319](https://github.com/PhyberApex/kuroshiro/issues/1319)) ([0f6f03a](https://github.com/PhyberApex/kuroshiro/commit/0f6f03a927c6a0629423fa7cfee042f2f727728a)), closes [#1119](https://github.com/PhyberApex/kuroshiro/issues/1119)
-* **mashup:** render a Mashup right after its save instead of waiting for the next poll ([#1346](https://github.com/PhyberApex/kuroshiro/issues/1346)) ([f972e9b](https://github.com/PhyberApex/kuroshiro/commit/f972e9bbc581ac7e15ca6f48281c8f4e534c13e7))
-* **mashup:** render a Webhook-kind Plugin in a Mashup slot ([#1318](https://github.com/PhyberApex/kuroshiro/issues/1318)) ([9189c55](https://github.com/PhyberApex/kuroshiro/commit/9189c550fa96b15e21b4943fb16fa034c2cd3e44)), closes [#1118](https://github.com/PhyberApex/kuroshiro/issues/1118)
-* **plugins,firmware,device-models,screens:** back four race-checked uniqueness rules with real constraints ([#1330](https://github.com/PhyberApex/kuroshiro/issues/1330)) ([8bbeee5](https://github.com/PhyberApex/kuroshiro/commit/8bbeee539dd13210afcbff66f65b6be6f35b902c))
-* **plugins:** clear a Plugin Field's stored value when it's retyped away from password ([#1324](https://github.com/PhyberApex/kuroshiro/issues/1324)) ([d54d69d](https://github.com/PhyberApex/kuroshiro/commit/d54d69d2f2c060d7e3d31fd74f3d9d4744ce224f))
-* **plugins:** drop Device Sensors from the on-demand Plugin render ([#1321](https://github.com/PhyberApex/kuroshiro/issues/1321)) ([c9eea30](https://github.com/PhyberApex/kuroshiro/commit/c9eea30e851735909476dd65d306be5359129a09))
-* **plugins:** hide password Field Values in a scheduled fetch's stored error ([#1323](https://github.com/PhyberApex/kuroshiro/issues/1323)) ([aa7786c](https://github.com/PhyberApex/kuroshiro/commit/aa7786c83f16feb366800b3a5410d31a6be5824b))
-* **plugins:** keep the newest scheduled tick's render from a two-save race ([#1345](https://github.com/PhyberApex/kuroshiro/issues/1345)) ([e673019](https://github.com/PhyberApex/kuroshiro/commit/e673019111df7b0c11f0ba8a004ce91f4368a052))
-* **plugins:** propagate transform.js failures instead of returning raw data ([#1317](https://github.com/PhyberApex/kuroshiro/issues/1317)) ([23bc996](https://github.com/PhyberApex/kuroshiro/commit/23bc9963f578247c3838d1cd8e6ac18f192f1573)), closes [#1117](https://github.com/PhyberApex/kuroshiro/issues/1117)
-* **plugins:** tick only the due Poll Plugins at boot, spread over a short window ([#1327](https://github.com/PhyberApex/kuroshiro/issues/1327)) ([c64840d](https://github.com/PhyberApex/kuroshiro/commit/c64840d39936227be3806f4d19e98b5f39fd1db1))
-* **screens:** store a File Screen's upload time apart from its render time ([#1332](https://github.com/PhyberApex/kuroshiro/issues/1332)) ([74921af](https://github.com/PhyberApex/kuroshiro/commit/74921af70d29503040fa12ecdc4bc4bbf10a32bd)), closes [#1264](https://github.com/PhyberApex/kuroshiro/issues/1264)
-* **site:** stop the hero screenshot overlapping the heading on mid-width viewports ([#1350](https://github.com/PhyberApex/kuroshiro/issues/1350)) ([c8ee3d1](https://github.com/PhyberApex/kuroshiro/commit/c8ee3d1f8f59c8282c6e7535529de227880cff54))
-* **ui:** keep the current page in view in the narrow Page List when its links widen ([#1352](https://github.com/PhyberApex/kuroshiro/issues/1352)) ([05fec2c](https://github.com/PhyberApex/kuroshiro/commit/05fec2ca09a37255527bb125d6d8475715a248aa))
-* **ui:** keep visible text inside the accessible name of cut bar links and unavailable options ([#1358](https://github.com/PhyberApex/kuroshiro/issues/1358)) ([9cb926f](https://github.com/PhyberApex/kuroshiro/commit/9cb926f5b58899787addb82dba51dde33c266c54))
-* **ui:** load stored refresh rate into the device form on mount ([#1097](https://github.com/PhyberApex/kuroshiro/issues/1097)) ([3e82308](https://github.com/PhyberApex/kuroshiro/commit/3e82308b9daaa84d5bf618d49deb594487c56649))
-* **ui:** name the cascade layer order before any stylesheet ([#1303](https://github.com/PhyberApex/kuroshiro/issues/1303)) ([c73ae46](https://github.com/PhyberApex/kuroshiro/commit/c73ae460e77c3c99a40adc85f58765369b4ed406))
-* **ui:** say TRMNL's update feed, not TRMNL, only carries OG Firmware ([#1305](https://github.com/PhyberApex/kuroshiro/issues/1305)) ([1cad293](https://github.com/PhyberApex/kuroshiro/commit/1cad2938d908c82d6ed6d0f3daa09672932b0e65))
-* warn on unknown KUROSHIRO_ variables and document what to persist ([#1300](https://github.com/PhyberApex/kuroshiro/issues/1300)) ([00a7c64](https://github.com/PhyberApex/kuroshiro/commit/00a7c6495231425a386bd8adf7c8c4feca21c28b))
+* **api,ui:** carry image-fetch-failed's reason in details, not a parsed message ([#1347](https://github.com/usetrmnl/kuroshiro/issues/1347)) ([fd2b55f](https://github.com/usetrmnl/kuroshiro/commit/fd2b55f883d478f76890065c5f89a49d3cd86adc))
+* **api,ui:** read a Device's deleted Active Screen as deletedScreen, not noScreens ([#1372](https://github.com/usetrmnl/kuroshiro/issues/1372)) ([a22dc29](https://github.com/usetrmnl/kuroshiro/commit/a22dc2964202277818d3ad791d634acd0b9281c0))
+* **api:** cap GitHub/Recipe import and External link image downloads ([#1369](https://github.com/usetrmnl/kuroshiro/issues/1369)) ([0d15aea](https://github.com/usetrmnl/kuroshiro/commit/0d15aeace3187a573a2ffb7d603e6fde6583f6df)), closes [#1269](https://github.com/usetrmnl/kuroshiro/issues/1269)
+* **api:** name a Plugin Screen after its Plugin when it is the Current Screen ([#1402](https://github.com/usetrmnl/kuroshiro/issues/1402)) ([77fffc2](https://github.com/usetrmnl/kuroshiro/commit/77fffc2627a775fcfdec5339ff818bd03656af56)), closes [#1334](https://github.com/usetrmnl/kuroshiro/issues/1334)
+* **api:** run migrations exactly once, before any module touches the database ([#1400](https://github.com/usetrmnl/kuroshiro/issues/1400)) ([974108c](https://github.com/usetrmnl/kuroshiro/commit/974108c21f63fd57851da29ef40a259cc62071a3))
+* **configuration:** refuse an Instance Settings archive entry outside SETTING_BOUNDS ([#1348](https://github.com/usetrmnl/kuroshiro/issues/1348)) ([0e6785b](https://github.com/usetrmnl/kuroshiro/commit/0e6785b41a1fbda9ced193d4955bf26bf5911609))
+* **maintenance:** find and clean up stale Fallback Screen renders ([#1371](https://github.com/usetrmnl/kuroshiro/issues/1371)) ([183427d](https://github.com/usetrmnl/kuroshiro/commit/183427d37aee5006ffddc8cf30351060f9b20fd4))
+* **ui:** add a hook timeout to the browser project's coverage runs ([#1393](https://github.com/usetrmnl/kuroshiro/issues/1393)) ([a747957](https://github.com/usetrmnl/kuroshiro/commit/a747957e4c48dcf8e176361bd10920b3ac774425))
+* **ui:** ask before dropping an unsaved Palette or Add Screen form ([#1380](https://github.com/usetrmnl/kuroshiro/issues/1380)) ([7089775](https://github.com/usetrmnl/kuroshiro/commit/70897754365caac900dace7667be75c1f21b6620))
+* **ui:** drag a Screen or Plugin Field row by its grip in Firefox ([#1378](https://github.com/usetrmnl/kuroshiro/issues/1378)) ([4b93690](https://github.com/usetrmnl/kuroshiro/commit/4b93690db7e5b560c0eb2f8c375a9daa2874ac12))
+* **ui:** keep the Plugin page's Devices section from going bare while Devices load or fail ([#1389](https://github.com/usetrmnl/kuroshiro/issues/1389)) ([6e7b7ce](https://github.com/usetrmnl/kuroshiro/commit/6e7b7ce0103f27dd68309e91ce4a87e6ac558dcb))
+* **ui:** mark a custom Palette "· custom" in a Device Model's row ([#1386](https://github.com/usetrmnl/kuroshiro/issues/1386)) ([e6bee50](https://github.com/usetrmnl/kuroshiro/commit/e6bee50e0c857babe0ecae94cc08243d50243530))
+* **ui:** reach a relative time's exact time by keyboard and touch ([#1374](https://github.com/usetrmnl/kuroshiro/issues/1374)) ([2f727d4](https://github.com/usetrmnl/kuroshiro/commit/2f727d4cb12fe7ad18126e6d9df8963c2a4c50a9))
+* **ui:** report a Plugin or Configuration Archive export's failure ([#1381](https://github.com/usetrmnl/kuroshiro/issues/1381)) ([63ac075](https://github.com/usetrmnl/kuroshiro/commit/63ac075f0af3f3f0e79fc19b7ea00b516961e284)), closes [#1279](https://github.com/usetrmnl/kuroshiro/issues/1279)
+* **ui:** say a failed TRMNL sync check failed, not that it checked ([#1387](https://github.com/usetrmnl/kuroshiro/issues/1387)) ([c522b29](https://github.com/usetrmnl/kuroshiro/commit/c522b2962abc37822ef389593ffd3cf9d8feefc5)), closes [#1283](https://github.com/usetrmnl/kuroshiro/issues/1283)
+* **ui:** say an unassigned Webhook-kind Plugin keeps its Webhook URL ([#1382](https://github.com/usetrmnl/kuroshiro/issues/1382)) ([8532cd8](https://github.com/usetrmnl/kuroshiro/commit/8532cd8a1e1e94dac939cfa47eb1fe5714bbcadf)), closes [#1280](https://github.com/usetrmnl/kuroshiro/issues/1280)
+* **ui:** settle nine admin UI spec/glossary/code contradictions ([#1390](https://github.com/usetrmnl/kuroshiro/issues/1390)) ([a8ea4a2](https://github.com/usetrmnl/kuroshiro/commit/a8ea4a24a69d0f3f58bbf8d04a2e092b8992b454))
+* **ui:** show a failed-load notice when the code editor's chunk cannot be fetched ([#1377](https://github.com/usetrmnl/kuroshiro/issues/1377)) ([7dc897d](https://github.com/usetrmnl/kuroshiro/commit/7dc897d2648a656a23ea929cc17c7f3f2aa1a245))
+* **ui:** stop two UI specs racing real wall-clock time under coverage ([#1404](https://github.com/usetrmnl/kuroshiro/issues/1404)) ([1b16668](https://github.com/usetrmnl/kuroshiro/commit/1b166686a0226f0a11d57cdb57200c16154cf00a)), closes [#1359](https://github.com/usetrmnl/kuroshiro/issues/1359)
+* **ui:** widen the weekday toggle's touch target to 44 px square ([#1376](https://github.com/usetrmnl/kuroshiro/issues/1376)) ([7cd920f](https://github.com/usetrmnl/kuroshiro/commit/7cd920f53e7b524b48e30d092fe64fff0b204e07)), closes [#1275](https://github.com/usetrmnl/kuroshiro/issues/1275)
 
-## [0.17.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.17.0...kuroshiro-v0.17.1) (2026-09-30)
-
-
-### Bug Fixes
-
-* **api:** serve GET /metrics from its controller instead of the app shell ([#1052](https://github.com/PhyberApex/kuroshiro/issues/1052)) ([a9ee234](https://github.com/PhyberApex/kuroshiro/commit/a9ee234e4fd0bbd2d7d70bab24ee195c5ef7fda4))
-
-## [0.17.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.16.0...kuroshiro-v0.17.0) (2026-09-30)
+## [0.18.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.17.1...kuroshiro-v0.18.0) (2026-10-09)
 
 
 ### Features
 
-* **maintenance:** add daily Retention job for resolved Alerts and Device Logs ([#1042](https://github.com/PhyberApex/kuroshiro/issues/1042)) ([c2bd592](https://github.com/PhyberApex/kuroshiro/commit/c2bd59250cd2c5e9d63c2d702ffe91d025d59931))
+* **api:** adding a Screen never changes the Active Screen, deleting closes the gap in the Order ([#1199](https://github.com/usetrmnl/kuroshiro/issues/1199)) ([64aa8ff](https://github.com/usetrmnl/kuroshiro/commit/64aa8ff506025d28ed60b0419b8f8a4e3e99b5ea))
+* **api:** Device bookkeeping (nullable last seen, the last-served record) and the Device reads ([#1195](https://github.com/usetrmnl/kuroshiro/issues/1195)) ([b44653d](https://github.com/usetrmnl/kuroshiro/commit/b44653da9168954545e85b18174bf0f40f1c5f97))
+* **api:** editing a Screen ([#1213](https://github.com/usetrmnl/kuroshiro/issues/1213)) ([955ef02](https://github.com/usetrmnl/kuroshiro/commit/955ef02dc7ef695cc713bc69920ff279fed97a75))
+* **api:** Instance facts on GET /api/instance, with the upload limits set and stated ([#1200](https://github.com/usetrmnl/kuroshiro/issues/1200)) ([a030a23](https://github.com/usetrmnl/kuroshiro/commit/a030a237b353ba732884c7bb7ebbf1727b03b06d))
+* **api:** one error envelope and one validation pipe for the admin API ([#1184](https://github.com/usetrmnl/kuroshiro/issues/1184)) ([06b2359](https://github.com/usetrmnl/kuroshiro/commit/06b23596298db047325a8557aa8a62d5eaece0b4))
+* **api:** one render context, the preview's data, Templates saved and picked by size, and the stored failed render ([#1212](https://github.com/usetrmnl/kuroshiro/issues/1212)) ([186a8cb](https://github.com/usetrmnl/kuroshiro/commit/186a8cb51bab5768ea0bc018d612ae5cd916fabc))
+* **api:** Plugin reads as read models, with the facts the Plugin screens show ([#1205](https://github.com/usetrmnl/kuroshiro/issues/1205)) ([14c3ab8](https://github.com/usetrmnl/kuroshiro/commit/14c3ab8c6ad33ae534622460d17a7278cb9eef6b))
+* **api:** save Field Values on the Plugin and feed them to every render; remove Plugin Variables ([#1190](https://github.com/usetrmnl/kuroshiro/issues/1190)) ([4586336](https://github.com/usetrmnl/kuroshiro/commit/4586336cbba5c035a7f6f1aa279a402119238ff8))
+* **api:** saving a Plugin is one transaction that keeps its Data Sources ([#1207](https://github.com/usetrmnl/kuroshiro/issues/1207)) ([efb59cd](https://github.com/usetrmnl/kuroshiro/commit/efb59cdc5c851357edba247a6498238540650278))
+* **api:** Screen State and the Screen read of a Device ([#1196](https://github.com/usetrmnl/kuroshiro/issues/1196)) ([caea958](https://github.com/usetrmnl/kuroshiro/commit/caea95817cea61b656c486badf4866c4435a626a))
+* **api:** the Alerts list filtered by Device or Plugin, with the Plugin's id on a fetch Alert ([#1201](https://github.com/usetrmnl/kuroshiro/issues/1201)) ([911daf4](https://github.com/usetrmnl/kuroshiro/commit/911daf46bf212c6373b79cdb32fbc3a2475636e5))
+* **api:** the Device Model and Palette reads and their sync ([#1211](https://github.com/usetrmnl/kuroshiro/issues/1211)) ([116b7d0](https://github.com/usetrmnl/kuroshiro/commit/116b7d031a10073409a8789d9700eb6729f97b38))
+* **api:** the Device write and delete ([#1215](https://github.com/usetrmnl/kuroshiro/issues/1215)) ([bb7f023](https://github.com/usetrmnl/kuroshiro/commit/bb7f023b5d67895b607bfb7ad04858e013a71298))
+* **api:** the Fallback Screens in the Hanko identity, per Device, with the two error wordings ([#1216](https://github.com/usetrmnl/kuroshiro/issues/1216)) ([886ccc9](https://github.com/usetrmnl/kuroshiro/commit/886ccc9447cfbc763b2d5d34823fdd4b0a4b982b)), closes [#1180](https://github.com/usetrmnl/kuroshiro/issues/1180)
+* **api:** the Firmware reads and writes, and a record of every sync with TRMNL ([#1209](https://github.com/usetrmnl/kuroshiro/issues/1209)) ([c6e26e5](https://github.com/usetrmnl/kuroshiro/commit/c6e26e5055e65f245b74b0b12aa840bfc787f89b))
+* **config:** add opt-in secret redaction to Configuration Export/Import ([#1055](https://github.com/usetrmnl/kuroshiro/issues/1055)) ([a826efc](https://github.com/usetrmnl/kuroshiro/commit/a826efc11270f68c1e1e49eea1f4f33d76735860))
+* **device-models,screens:** draw the device preview as the Device would show it ([#1342](https://github.com/usetrmnl/kuroshiro/issues/1342)) ([6971b95](https://github.com/usetrmnl/kuroshiro/commit/6971b9559c904ff5b4167665edba6c64d274b39d))
+* **firmware:** add Firmware Auto-Update Instance Setting ([#1056](https://github.com/usetrmnl/kuroshiro/issues/1056)) ([426c3cb](https://github.com/usetrmnl/kuroshiro/commit/426c3cbe6ebc5f439df946c8b8a125c04d4f916e)), closes [#1041](https://github.com/usetrmnl/kuroshiro/issues/1041)
+* **metrics:** expose Device Sensor readings and Data Source fetch failure streak ([#1309](https://github.com/usetrmnl/kuroshiro/issues/1309)) ([ad63fbe](https://github.com/usetrmnl/kuroshiro/commit/ad63fbe20a7580db646054ff25d11c297fc319f2)), closes [#1067](https://github.com/usetrmnl/kuroshiro/issues/1067)
+* **plugins:** add Recipe Update Check preview and apply endpoints ([#1058](https://github.com/usetrmnl/kuroshiro/issues/1058)) ([944779c](https://github.com/usetrmnl/kuroshiro/commit/944779c1e026f35d12f423c463f006d59aac8912))
+* **plugins:** add Recipe Update Check preview dialog to Plugin cards ([#1059](https://github.com/usetrmnl/kuroshiro/issues/1059)) ([a8edd21](https://github.com/usetrmnl/kuroshiro/commit/a8edd2141cfc54f92c24f834d98ba77f0758fe57))
+* **plugins:** import a strategy "none" Recipe as a Poll Plugin with no Data Sources ([#1326](https://github.com/usetrmnl/kuroshiro/issues/1326)) ([2d81d6f](https://github.com/usetrmnl/kuroshiro/commit/2d81d6fdd3b7b9d84ea49ece48bf068b85c77784)), closes [#1261](https://github.com/usetrmnl/kuroshiro/issues/1261)
+* **plugins:** persist an imported Recipe's parsed output as a Recipe Snapshot ([#1057](https://github.com/usetrmnl/kuroshiro/issues/1057)) ([d22dde5](https://github.com/usetrmnl/kuroshiro/commit/d22dde511ddd756e40476356bab8a2cb37c63d6a))
+* **screens:** hold Render Signal keeps a Screen's previous image in Rotation ([#1315](https://github.com/usetrmnl/kuroshiro/issues/1315)) ([0cfbdf4](https://github.com/usetrmnl/kuroshiro/commit/0cfbdf45f41b24d796821ec60ae994dbe6bd919d)), closes [#1070](https://github.com/usetrmnl/kuroshiro/issues/1070)
+* **screens:** skip Render Signal pulls a Screen out of Rotation ([#1310](https://github.com/usetrmnl/kuroshiro/issues/1310)) ([9cc6405](https://github.com/usetrmnl/kuroshiro/commit/9cc64059e7d58934cd9efda1781b1bce58427ef9))
+* **settings:** add persisted Instance Settings for Alert thresholds ([#1051](https://github.com/usetrmnl/kuroshiro/issues/1051)) ([384983f](https://github.com/usetrmnl/kuroshiro/commit/384983f1ce89c814256c17786e03707dc4942a5d))
+* **settings:** make the two Retention ages Instance Settings ([#1202](https://github.com/usetrmnl/kuroshiro/issues/1202)) ([d59b77d](https://github.com/usetrmnl/kuroshiro/commit/d59b77dedbbb4b3d5c1ec600558f608d3dc3a100))
+* **shared:** admin API wire types in packages/shared/src/api, with the mapper convention and an entity-return guard ([#1183](https://github.com/usetrmnl/kuroshiro/issues/1183)) ([38f0515](https://github.com/usetrmnl/kuroshiro/commit/38f05156ee53503e03fa106859baaaeecd112e0c))
+* **ui-next:** a Device's Screens view ([#1221](https://github.com/usetrmnl/kuroshiro/issues/1221)) ([19de4e9](https://github.com/usetrmnl/kuroshiro/commit/19de4e9d0f30528743d70c3024369121994044d8))
+* **ui-next:** Add a Plugin by building a Poll or a Webhook Plugin ([#1230](https://github.com/usetrmnl/kuroshiro/issues/1230)) ([9d86fd9](https://github.com/usetrmnl/kuroshiro/commit/9d86fd9f4f868d34f5a03b37c92f3b4cf070f5ce))
+* **ui-next:** Add a Plugin by importing a Recipe, a file or a GitHub repository ([#1233](https://github.com/usetrmnl/kuroshiro/issues/1233)) ([a681a31](https://github.com/usetrmnl/kuroshiro/commit/a681a31c06c2550a92be5753bbe61c9c04b42f53))
+* **ui-next:** Add Screen, for every kind ([#1235](https://github.com/usetrmnl/kuroshiro/issues/1235)) ([6f509e0](https://github.com/usetrmnl/kuroshiro/commit/6f509e03e9ca89ed8e8acf8ac164b4b4ab5656a6))
+* **ui-next:** an opened Screen, by kind, with its actions ([#1228](https://github.com/usetrmnl/kuroshiro/issues/1228)) ([1aa9c9a](https://github.com/usetrmnl/kuroshiro/commit/1aa9c9afcae272f12dccf1e435f7e743785816a7))
+* **ui-next:** buttons, icon button, tooltip, copy value, the loading mark and the thirteen icons ([#1197](https://github.com/usetrmnl/kuroshiro/issues/1197)) ([a0c1603](https://github.com/usetrmnl/kuroshiro/commit/a0c16035e6d213b581eda303c4c19a46c0187835))
+* **ui-next:** choices (switch, weekday toggle, segmented filter, radio row, layout picker, tabs, page list) ([#1206](https://github.com/usetrmnl/kuroshiro/issues/1206)) ([20e3e87](https://github.com/usetrmnl/kuroshiro/commit/20e3e877efb2704f287880627120ba8379d6dc11))
+* **ui-next:** Configuration Archive, export, read before import, import ([#1242](https://github.com/usetrmnl/kuroshiro/issues/1242)) ([216a321](https://github.com/usetrmnl/kuroshiro/commit/216a321cf22a5ef777d2c1a188c5655f27a5fbec))
+* **ui-next:** custom Palettes, create, edit and delete ([#1253](https://github.com/usetrmnl/kuroshiro/issues/1253)) ([f6db7f6](https://github.com/usetrmnl/kuroshiro/commit/f6db7f68d9e0b8563045c54769eb902d9d628db8))
+* **ui-next:** Data Sources on the Plugin page ([#1237](https://github.com/usetrmnl/kuroshiro/issues/1237)) ([0b6c1a5](https://github.com/usetrmnl/kuroshiro/commit/0b6c1a5d2b14ca4548c8403558f375556a0d4b4a))
+* **ui-next:** Device Logs ([#1227](https://github.com/usetrmnl/kuroshiro/issues/1227)) ([e95c712](https://github.com/usetrmnl/kuroshiro/commit/e95c712c733837f8c76717f7f968fe62114fb69b))
+* **ui-next:** Device Models and Palettes, the lists and the sync ([#1240](https://github.com/usetrmnl/kuroshiro/issues/1240)) ([0972a1f](https://github.com/usetrmnl/kuroshiro/commit/0972a1fd26290a83c8f673937b5677b1f7ed9692))
+* **ui-next:** Device Settings ([#1234](https://github.com/usetrmnl/kuroshiro/issues/1234)) ([841303a](https://github.com/usetrmnl/kuroshiro/commit/841303aa3f5454578ba6073971ad2ff23fdc27d5))
+* **ui-next:** Edit HTML, and the code editor in Add Screen's HTML kind ([#1250](https://github.com/usetrmnl/kuroshiro/issues/1250)) ([298a290](https://github.com/usetrmnl/kuroshiro/commit/298a290b89946d6ed2ea808a6502b46e4d933445))
+* **ui-next:** Field Values and Plugin Fields on the Plugin page ([#1239](https://github.com/usetrmnl/kuroshiro/issues/1239)) ([bf7ba64](https://github.com/usetrmnl/kuroshiro/commit/bf7ba64222b0b562dd1febe60a341253f0a3bc72))
+* **ui-next:** fields (inputs, field, select, checkbox, secret field, search field, file drop, inline edit) ([#1203](https://github.com/usetrmnl/kuroshiro/issues/1203)) ([4bb8a08](https://github.com/usetrmnl/kuroshiro/commit/4bb8a087b6eb021e10757fbb38c0cc5b7ab4d8e3))
+* **ui-next:** Housekeeping, the stored-files check and Retention ([#1244](https://github.com/usetrmnl/kuroshiro/issues/1244)) ([6ec700e](https://github.com/usetrmnl/kuroshiro/commit/6ec700eb7e8d29a69c14fa177e0e2713a4e8898c))
+* **ui-next:** layers and messages (confirmation, notice, empty state, row menu, tucked section, save states, save bar, result and problem lines) ([#1210](https://github.com/usetrmnl/kuroshiro/issues/1210)) ([2ac5057](https://github.com/usetrmnl/kuroshiro/commit/2ac505786810525c0a5970f2c6c450dd31a57a69))
+* **ui-next:** plate, seal, fact rows, the Screen row with its drag state, code block and two small lists ([#1214](https://github.com/usetrmnl/kuroshiro/issues/1214)) ([83d3c94](https://github.com/usetrmnl/kuroshiro/commit/83d3c9470dd8faa4fdd27d3bb560200a0dd061d0))
+* **ui-next:** the Alerts page, with the cause of a resolved Alert kept ([#1226](https://github.com/usetrmnl/kuroshiro/issues/1226)) ([e63d59c](https://github.com/usetrmnl/kuroshiro/commit/e63d59ce5ae8760e3ccac1d766b9a2e085549b85))
+* **ui-next:** the code editor in its four modes, with the preview plate and the bench ([#1219](https://github.com/usetrmnl/kuroshiro/issues/1219)) ([5ea1931](https://github.com/usetrmnl/kuroshiro/commit/5ea193141dc876a66e7a86414d34ff189bb8505a))
+* **ui-next:** the Device Simulator ([#1247](https://github.com/usetrmnl/kuroshiro/issues/1247)) ([1019b7f](https://github.com/usetrmnl/kuroshiro/commit/1019b7f42ddbb64c456afdfe88430365306abcdd))
+* **ui-next:** the Devices list and Connect a Device ([#1222](https://github.com/usetrmnl/kuroshiro/issues/1222)) ([65181db](https://github.com/usetrmnl/kuroshiro/commit/65181db0dc6783271671c28dc33894cbeb46f49a))
+* **ui-next:** the Devices section of the Plugin page, assign and unassign ([#1245](https://github.com/usetrmnl/kuroshiro/issues/1245)) ([ddda420](https://github.com/usetrmnl/kuroshiro/commit/ddda420072a1035a9f032cc1570b578f5c361eb9))
+* **ui-next:** the Firmware page, Upload Firmware and Firmware Auto-Update ([#1238](https://github.com/usetrmnl/kuroshiro/issues/1238)) ([d8fb14c](https://github.com/usetrmnl/kuroshiro/commit/d8fb14c2a2845b96ab60a252f2ce7f849da2c142))
+* **ui-next:** the Instance frame and Instance Settings with the Test Notification ([#1224](https://github.com/usetrmnl/kuroshiro/issues/1224)) ([29ee60b](https://github.com/usetrmnl/kuroshiro/commit/29ee60bd3402f0ab0a8b36c86c5e61f4bce914dd))
+* **ui-next:** the Masthead shell, the router, the API client and the shared page patterns ([#1218](https://github.com/usetrmnl/kuroshiro/issues/1218)) ([b9f103e](https://github.com/usetrmnl/kuroshiro/commit/b9f103e8151e2350dba348b604fb7611eb07157f))
+* **ui-next:** the new admin UI package, served by the image, with the tokens, the faces and the favicon ([#1188](https://github.com/usetrmnl/kuroshiro/issues/1188)) ([6676566](https://github.com/usetrmnl/kuroshiro/commit/6676566d8dd15961494cf32b39bbc444a974ae4f))
+* **ui-next:** the Plugin page frame, its one form and the save bar ([#1225](https://github.com/usetrmnl/kuroshiro/issues/1225)) ([404da7a](https://github.com/usetrmnl/kuroshiro/commit/404da7a81a629c73eb799ef568fe5385c444f438))
+* **ui-next:** the Plugins list with duplicate, export and delete ([#1223](https://github.com/usetrmnl/kuroshiro/issues/1223)) ([92d4508](https://github.com/usetrmnl/kuroshiro/commit/92d4508a5c49bc0dc87bfefe52f410db8e2b8d94))
+* **ui-next:** the Recipe Update Check page and the Plugin page's Recipe section ([#1249](https://github.com/usetrmnl/kuroshiro/issues/1249)) ([7bfd6d5](https://github.com/usetrmnl/kuroshiro/commit/7bfd6d511d45c3c40c5ab42d29fdd15d0882b6ba))
+* **ui-next:** the Schedule editor on an opened Screen ([#1232](https://github.com/usetrmnl/kuroshiro/issues/1232)) ([71a6f84](https://github.com/usetrmnl/kuroshiro/commit/71a6f84e4de5e61b3cc06ef0456fccb03bac0da9))
+* **ui-next:** the Template section of the Plugin page: the Template line, the editor and the browser preview ([#1241](https://github.com/usetrmnl/kuroshiro/issues/1241)) ([c43b14a](https://github.com/usetrmnl/kuroshiro/commit/c43b14a12a0da9c9e204834bf683083252ce41cb))
+* **ui-next:** the Template section's fetched data, the "Data" list and the full window ([#1243](https://github.com/usetrmnl/kuroshiro/issues/1243)) ([6485202](https://github.com/usetrmnl/kuroshiro/commit/648520282a0199abefc0ab1b45220b1fb9e9ecd7))
+* **ui-next:** the Webhook section of the Plugin page ([#1254](https://github.com/usetrmnl/kuroshiro/issues/1254)) ([ac5b35c](https://github.com/usetrmnl/kuroshiro/commit/ac5b35cb6ed177adaa4e520ff68d39cfbdf57a62))
+* **ui:** add a way to cancel a pending Device Reset ([#1313](https://github.com/usetrmnl/kuroshiro/issues/1313)) ([4ce91c8](https://github.com/usetrmnl/kuroshiro/commit/4ce91c8bc1d9ad5c61e9ac41fdb0acd3f704cf2c))
+* **ui:** add a way to cancel a pending Firmware push ([#1311](https://github.com/usetrmnl/kuroshiro/issues/1311)) ([279d6ed](https://github.com/usetrmnl/kuroshiro/commit/279d6ed45cc5b27169eb03b4bb199de89a0c130b))
 
 
 ### Bug Fixes
 
-* **docker:** satisfy pnpm 12's frozen-lockfile importer check in the build stages ([#1044](https://github.com/PhyberApex/kuroshiro/issues/1044)) ([98cc7c2](https://github.com/PhyberApex/kuroshiro/commit/98cc7c2ab32c003a94b4a439496bb459fcd6010d))
+* **alerts:** mark resolution notified immediately when no sender is configured ([#1316](https://github.com/usetrmnl/kuroshiro/issues/1316)) ([4e64bee](https://github.com/usetrmnl/kuroshiro/commit/4e64bee49f32f8768b39abec05a76a21fede7a72))
+* **api:** import InstanceSettingsService as a value so AlertSweepService can be injected ([#1191](https://github.com/usetrmnl/kuroshiro/issues/1191)) ([4b1b796](https://github.com/usetrmnl/kuroshiro/commit/4b1b7960b15a0b2d62d518029b4afccb4813a18c))
+* **api:** only delete cleanup paths inside the storage folders ([#1115](https://github.com/usetrmnl/kuroshiro/issues/1115)) ([93cda9a](https://github.com/usetrmnl/kuroshiro/commit/93cda9a9174d26e4608aecda4f8bf9138c8fff3d))
+* **config:** import archives exported by 0.17.x (schemaVersion 1) ([#1364](https://github.com/usetrmnl/kuroshiro/issues/1364)) ([7295954](https://github.com/usetrmnl/kuroshiro/commit/729595499f4cde4593a0bb37df6a889baee142dc))
+* **configuration:** defer a file-type Screen's image write until an import commits ([#1322](https://github.com/usetrmnl/kuroshiro/issues/1322)) ([7f98184](https://github.com/usetrmnl/kuroshiro/commit/7f981846b9471c138f0e6c339aa55539c33b36f3))
+* **configuration:** schedule a Plugin an import creates or updates ([#1320](https://github.com/usetrmnl/kuroshiro/issues/1320)) ([e46d19e](https://github.com/usetrmnl/kuroshiro/commit/e46d19ee57d0775e9affb7d0d4a4b138a30018e2))
+* **docs:** renumber the four duplicate ADR numbers and gate it in CI ([#1308](https://github.com/usetrmnl/kuroshiro/issues/1308)) ([f55ad9f](https://github.com/usetrmnl/kuroshiro/commit/f55ad9fe00444d5e0e3fb7cfcc8b262a87cf9bb5))
+* **firmware:** stop offering the synced OG binary to B/W/R/Y Devices ([#1357](https://github.com/usetrmnl/kuroshiro/issues/1357)) ([f3d6bf6](https://github.com/usetrmnl/kuroshiro/commit/f3d6bf609facd9338608e08ea8ff98faed77d2db))
+* make pnpm dev run (shared loads under plain Node, one API port) ([#1299](https://github.com/usetrmnl/kuroshiro/issues/1299)) ([84de5aa](https://github.com/usetrmnl/kuroshiro/commit/84de5aa86c9f66a32523b2a617d90c7344c63681))
+* **mashup:** draw the failed Plugin's name in a Mashup slot instead of error.png ([#1319](https://github.com/usetrmnl/kuroshiro/issues/1319)) ([0f6f03a](https://github.com/usetrmnl/kuroshiro/commit/0f6f03a927c6a0629423fa7cfee042f2f727728a)), closes [#1119](https://github.com/usetrmnl/kuroshiro/issues/1119)
+* **mashup:** render a Mashup right after its save instead of waiting for the next poll ([#1346](https://github.com/usetrmnl/kuroshiro/issues/1346)) ([f972e9b](https://github.com/usetrmnl/kuroshiro/commit/f972e9bbc581ac7e15ca6f48281c8f4e534c13e7))
+* **mashup:** render a Webhook-kind Plugin in a Mashup slot ([#1318](https://github.com/usetrmnl/kuroshiro/issues/1318)) ([9189c55](https://github.com/usetrmnl/kuroshiro/commit/9189c550fa96b15e21b4943fb16fa034c2cd3e44)), closes [#1118](https://github.com/usetrmnl/kuroshiro/issues/1118)
+* **plugins,firmware,device-models,screens:** back four race-checked uniqueness rules with real constraints ([#1330](https://github.com/usetrmnl/kuroshiro/issues/1330)) ([8bbeee5](https://github.com/usetrmnl/kuroshiro/commit/8bbeee539dd13210afcbff66f65b6be6f35b902c))
+* **plugins:** clear a Plugin Field's stored value when it's retyped away from password ([#1324](https://github.com/usetrmnl/kuroshiro/issues/1324)) ([d54d69d](https://github.com/usetrmnl/kuroshiro/commit/d54d69d2f2c060d7e3d31fd74f3d9d4744ce224f))
+* **plugins:** drop Device Sensors from the on-demand Plugin render ([#1321](https://github.com/usetrmnl/kuroshiro/issues/1321)) ([c9eea30](https://github.com/usetrmnl/kuroshiro/commit/c9eea30e851735909476dd65d306be5359129a09))
+* **plugins:** hide password Field Values in a scheduled fetch's stored error ([#1323](https://github.com/usetrmnl/kuroshiro/issues/1323)) ([aa7786c](https://github.com/usetrmnl/kuroshiro/commit/aa7786c83f16feb366800b3a5410d31a6be5824b))
+* **plugins:** keep the newest scheduled tick's render from a two-save race ([#1345](https://github.com/usetrmnl/kuroshiro/issues/1345)) ([e673019](https://github.com/usetrmnl/kuroshiro/commit/e673019111df7b0c11f0ba8a004ce91f4368a052))
+* **plugins:** propagate transform.js failures instead of returning raw data ([#1317](https://github.com/usetrmnl/kuroshiro/issues/1317)) ([23bc996](https://github.com/usetrmnl/kuroshiro/commit/23bc9963f578247c3838d1cd8e6ac18f192f1573)), closes [#1117](https://github.com/usetrmnl/kuroshiro/issues/1117)
+* **plugins:** tick only the due Poll Plugins at boot, spread over a short window ([#1327](https://github.com/usetrmnl/kuroshiro/issues/1327)) ([c64840d](https://github.com/usetrmnl/kuroshiro/commit/c64840d39936227be3806f4d19e98b5f39fd1db1))
+* **screens:** store a File Screen's upload time apart from its render time ([#1332](https://github.com/usetrmnl/kuroshiro/issues/1332)) ([74921af](https://github.com/usetrmnl/kuroshiro/commit/74921af70d29503040fa12ecdc4bc4bbf10a32bd)), closes [#1264](https://github.com/usetrmnl/kuroshiro/issues/1264)
+* **site:** stop the hero screenshot overlapping the heading on mid-width viewports ([#1350](https://github.com/usetrmnl/kuroshiro/issues/1350)) ([c8ee3d1](https://github.com/usetrmnl/kuroshiro/commit/c8ee3d1f8f59c8282c6e7535529de227880cff54))
+* **ui:** keep the current page in view in the narrow Page List when its links widen ([#1352](https://github.com/usetrmnl/kuroshiro/issues/1352)) ([05fec2c](https://github.com/usetrmnl/kuroshiro/commit/05fec2ca09a37255527bb125d6d8475715a248aa))
+* **ui:** keep visible text inside the accessible name of cut bar links and unavailable options ([#1358](https://github.com/usetrmnl/kuroshiro/issues/1358)) ([9cb926f](https://github.com/usetrmnl/kuroshiro/commit/9cb926f5b58899787addb82dba51dde33c266c54))
+* **ui:** load stored refresh rate into the device form on mount ([#1097](https://github.com/usetrmnl/kuroshiro/issues/1097)) ([3e82308](https://github.com/usetrmnl/kuroshiro/commit/3e82308b9daaa84d5bf618d49deb594487c56649))
+* **ui:** name the cascade layer order before any stylesheet ([#1303](https://github.com/usetrmnl/kuroshiro/issues/1303)) ([c73ae46](https://github.com/usetrmnl/kuroshiro/commit/c73ae460e77c3c99a40adc85f58765369b4ed406))
+* **ui:** say TRMNL's update feed, not TRMNL, only carries OG Firmware ([#1305](https://github.com/usetrmnl/kuroshiro/issues/1305)) ([1cad293](https://github.com/usetrmnl/kuroshiro/commit/1cad2938d908c82d6ed6d0f3daa09672932b0e65))
+* warn on unknown KUROSHIRO_ variables and document what to persist ([#1300](https://github.com/usetrmnl/kuroshiro/issues/1300)) ([00a7c64](https://github.com/usetrmnl/kuroshiro/commit/00a7c6495231425a386bd8adf7c8c4feca21c28b))
 
-## [0.16.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.15.1...kuroshiro-v0.16.0) (2026-09-30)
+## [0.17.1](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.17.0...kuroshiro-v0.17.1) (2026-09-30)
+
+
+### Bug Fixes
+
+* **api:** serve GET /metrics from its controller instead of the app shell ([#1052](https://github.com/usetrmnl/kuroshiro/issues/1052)) ([a9ee234](https://github.com/usetrmnl/kuroshiro/commit/a9ee234e4fd0bbd2d7d70bab24ee195c5ef7fda4))
+
+## [0.17.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.16.0...kuroshiro-v0.17.0) (2026-09-30)
 
 
 ### Features
 
-* **alerts:** add Data Source fetch-failing Alert Rule ([#1038](https://github.com/PhyberApex/kuroshiro/issues/1038)) ([9f923c7](https://github.com/PhyberApex/kuroshiro/commit/9f923c76ebe1f5e19cc15f3a5ad418e0c02fda62))
-* **alerts:** add read-only Alerts surface and test-notification action ([#1037](https://github.com/PhyberApex/kuroshiro/issues/1037)) ([584ced5](https://github.com/PhyberApex/kuroshiro/commit/584ced521736e30ffad6fad9cdebbdce1d95bd21))
-* **api:** expose Device battery/RSSI/last-seen and active Alerts on GET /metrics ([#1039](https://github.com/PhyberApex/kuroshiro/issues/1039)) ([93ac5af](https://github.com/PhyberApex/kuroshiro/commit/93ac5af0f7d6dbfb8fe862316f9720d1734d96ae)), closes [#1034](https://github.com/PhyberApex/kuroshiro/issues/1034)
-* **devices:** add sensor readings endpoint and Device Details card ([#1031](https://github.com/PhyberApex/kuroshiro/issues/1031)) ([52bdd41](https://github.com/PhyberApex/kuroshiro/commit/52bdd410571ee0ea31e9c68ff277455b9e33cf4a))
-
-## [0.15.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.15.0...kuroshiro-v0.15.1) (2026-09-28)
+* **maintenance:** add daily Retention job for resolved Alerts and Device Logs ([#1042](https://github.com/usetrmnl/kuroshiro/issues/1042)) ([c2bd592](https://github.com/usetrmnl/kuroshiro/commit/c2bd59250cd2c5e9d63c2d702ffe91d025d59931))
 
 
 ### Bug Fixes
 
-* **api:** accept current TRMNL firmware log payload format ([#1017](https://github.com/PhyberApex/kuroshiro/issues/1017)) ([4083522](https://github.com/PhyberApex/kuroshiro/commit/408352299d6a0a0e458deb01a527ec7bae161ab0))
+* **docker:** satisfy pnpm 12's frozen-lockfile importer check in the build stages ([#1044](https://github.com/usetrmnl/kuroshiro/issues/1044)) ([98cc7c2](https://github.com/usetrmnl/kuroshiro/commit/98cc7c2ab32c003a94b4a439496bb459fcd6010d))
 
-## [0.15.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.14.0...kuroshiro-v0.15.0) (2026-09-27)
+## [0.16.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.15.1...kuroshiro-v0.16.0) (2026-09-30)
 
 
 ### Features
 
-* **alerts:** add periodic Alert Sweep for low-battery and offline Devices ([#1010](https://github.com/PhyberApex/kuroshiro/issues/1010)) ([be85696](https://github.com/PhyberApex/kuroshiro/commit/be85696c83d42120af917222bdc2b91c094e312e))
+* **alerts:** add Data Source fetch-failing Alert Rule ([#1038](https://github.com/usetrmnl/kuroshiro/issues/1038)) ([9f923c7](https://github.com/usetrmnl/kuroshiro/commit/9f923c76ebe1f5e19cc15f3a5ad418e0c02fda62))
+* **alerts:** add read-only Alerts surface and test-notification action ([#1037](https://github.com/usetrmnl/kuroshiro/issues/1037)) ([584ced5](https://github.com/usetrmnl/kuroshiro/commit/584ced521736e30ffad6fad9cdebbdce1d95bd21))
+* **api:** expose Device battery/RSSI/last-seen and active Alerts on GET /metrics ([#1039](https://github.com/usetrmnl/kuroshiro/issues/1039)) ([93ac5af](https://github.com/usetrmnl/kuroshiro/commit/93ac5af0f7d6dbfb8fe862316f9720d1734d96ae)), closes [#1034](https://github.com/usetrmnl/kuroshiro/issues/1034)
+* **devices:** add sensor readings endpoint and Device Details card ([#1031](https://github.com/usetrmnl/kuroshiro/issues/1031)) ([52bdd41](https://github.com/usetrmnl/kuroshiro/commit/52bdd410571ee0ea31e9c68ff277455b9e33cf4a))
+
+## [0.15.1](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.15.0...kuroshiro-v0.15.1) (2026-09-28)
 
 
 ### Bug Fixes
 
-* **api:** route scheduled Poll renders through PluginDataResolverService ([#1011](https://github.com/PhyberApex/kuroshiro/issues/1011)) ([9fd7238](https://github.com/PhyberApex/kuroshiro/commit/9fd72381577d0acc4348cb5f03e4966634e8cca0)), closes [#1009](https://github.com/PhyberApex/kuroshiro/issues/1009)
+* **api:** accept current TRMNL firmware log payload format ([#1017](https://github.com/usetrmnl/kuroshiro/issues/1017)) ([4083522](https://github.com/usetrmnl/kuroshiro/commit/408352299d6a0a0e458deb01a527ec7bae161ab0))
 
-## [0.14.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.13.0...kuroshiro-v0.14.0) (2026-09-26)
+## [0.15.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.14.0...kuroshiro-v0.15.0) (2026-09-27)
 
 
 ### Features
 
-* **config:** add whole-server configuration export and import ([#993](https://github.com/PhyberApex/kuroshiro/issues/993)) ([a169997](https://github.com/PhyberApex/kuroshiro/commit/a169997646e0bf18641e8743b4ce0702e39224e0))
-* **plugins:** add plugin duplication ([#986](https://github.com/PhyberApex/kuroshiro/issues/986)) ([b4918cc](https://github.com/PhyberApex/kuroshiro/commit/b4918ccdf53c8c02a11a25e3561dfaec4ebfb05d))
-* **ui:** assign existing plugins from the device page ([#1000](https://github.com/PhyberApex/kuroshiro/issues/1000)) ([42bf19b](https://github.com/PhyberApex/kuroshiro/commit/42bf19b2fc8d02616e710c06d9d76f73c9ae6508)), closes [#992](https://github.com/PhyberApex/kuroshiro/issues/992)
+* **alerts:** add periodic Alert Sweep for low-battery and offline Devices ([#1010](https://github.com/usetrmnl/kuroshiro/issues/1010)) ([be85696](https://github.com/usetrmnl/kuroshiro/commit/be85696c83d42120af917222bdc2b91c094e312e))
 
 
 ### Bug Fixes
 
-* **plugins:** eager-load deviceAssignments in findAll and guard against duplicate assignments ([#990](https://github.com/PhyberApex/kuroshiro/issues/990)) ([35bc72c](https://github.com/PhyberApex/kuroshiro/commit/35bc72c57997384c4e3f5ed22dad43dff23f2c4e)), closes [#976](https://github.com/PhyberApex/kuroshiro/issues/976)
-* **plugins:** invalidate Screen render cache on Plugin update ([#987](https://github.com/PhyberApex/kuroshiro/issues/987)) ([3472bb4](https://github.com/PhyberApex/kuroshiro/commit/3472bb43fc2b434d019fc29f5f7017eacf957bf2))
-* **screens:** unassign linked plugin when deleting a plugin-backed screen ([#999](https://github.com/PhyberApex/kuroshiro/issues/999)) ([e13b866](https://github.com/PhyberApex/kuroshiro/commit/e13b866787b4178d65aa57adf8a974aff437bd04))
-* **ui:** show all plugins in the mashup slot picker ([#1001](https://github.com/PhyberApex/kuroshiro/issues/1001)) ([d4831cf](https://github.com/PhyberApex/kuroshiro/commit/d4831cf9d0b6655b411b195d2a1efe25a8674570))
+* **api:** route scheduled Poll renders through PluginDataResolverService ([#1011](https://github.com/usetrmnl/kuroshiro/issues/1011)) ([9fd7238](https://github.com/usetrmnl/kuroshiro/commit/9fd72381577d0acc4348cb5f03e4966634e8cca0)), closes [#1009](https://github.com/usetrmnl/kuroshiro/issues/1009)
 
-## [0.13.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.12.2...kuroshiro-v0.13.0) (2026-09-24)
+## [0.14.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.13.0...kuroshiro-v0.14.0) (2026-09-26)
 
 
 ### Features
 
-* **ui:** expose Request Body and Transform on fetch Data Sources ([#971](https://github.com/PhyberApex/kuroshiro/issues/971)) ([172a509](https://github.com/PhyberApex/kuroshiro/commit/172a5096537dcdf60c4fec18a156acfbf5f49e80))
+* **config:** add whole-server configuration export and import ([#993](https://github.com/usetrmnl/kuroshiro/issues/993)) ([a169997](https://github.com/usetrmnl/kuroshiro/commit/a169997646e0bf18641e8743b4ce0702e39224e0))
+* **plugins:** add plugin duplication ([#986](https://github.com/usetrmnl/kuroshiro/issues/986)) ([b4918cc](https://github.com/usetrmnl/kuroshiro/commit/b4918ccdf53c8c02a11a25e3561dfaec4ebfb05d))
+* **ui:** assign existing plugins from the device page ([#1000](https://github.com/usetrmnl/kuroshiro/issues/1000)) ([42bf19b](https://github.com/usetrmnl/kuroshiro/commit/42bf19b2fc8d02616e710c06d9d76f73c9ae6508)), closes [#992](https://github.com/usetrmnl/kuroshiro/issues/992)
 
 
 ### Bug Fixes
 
-* **ci:** remove flaky unused pnpm install step from docker publish workflows ([#942](https://github.com/PhyberApex/kuroshiro/issues/942)) ([2e3ca87](https://github.com/PhyberApex/kuroshiro/commit/2e3ca8796c6e861c0a93fa11537d5e77ba1110ef))
-* **docker:** deploy pnpm-lock.yaml-pinned node_modules to the production image ([#921](https://github.com/PhyberApex/kuroshiro/issues/921)) ([f17e1b9](https://github.com/PhyberApex/kuroshiro/commit/f17e1b92e2e51e929810efbf526865bbe5baf6e3))
-* **docker:** skip puppeteer Chrome downloads in the image build stages ([#974](https://github.com/PhyberApex/kuroshiro/issues/974)) ([7160a27](https://github.com/PhyberApex/kuroshiro/commit/7160a270bb60e2051522c5964d4c46bfded19c23))
+* **plugins:** eager-load deviceAssignments in findAll and guard against duplicate assignments ([#990](https://github.com/usetrmnl/kuroshiro/issues/990)) ([35bc72c](https://github.com/usetrmnl/kuroshiro/commit/35bc72c57997384c4e3f5ed22dad43dff23f2c4e)), closes [#976](https://github.com/usetrmnl/kuroshiro/issues/976)
+* **plugins:** invalidate Screen render cache on Plugin update ([#987](https://github.com/usetrmnl/kuroshiro/issues/987)) ([3472bb4](https://github.com/usetrmnl/kuroshiro/commit/3472bb43fc2b434d019fc29f5f7017eacf957bf2))
+* **screens:** unassign linked plugin when deleting a plugin-backed screen ([#999](https://github.com/usetrmnl/kuroshiro/issues/999)) ([e13b866](https://github.com/usetrmnl/kuroshiro/commit/e13b866787b4178d65aa57adf8a974aff437bd04))
+* **ui:** show all plugins in the mashup slot picker ([#1001](https://github.com/usetrmnl/kuroshiro/issues/1001)) ([d4831cf](https://github.com/usetrmnl/kuroshiro/commit/d4831cf9d0b6655b411b195d2a1efe25a8674570))
 
-## [0.12.2](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.12.1...kuroshiro-v0.12.2) (2026-09-02)
-
-
-### Bug Fixes
-
-* **ui:** serve the UI correctly under a base path (Home Assistant ingress) ([#915](https://github.com/PhyberApex/kuroshiro/issues/915)) ([f4dbc37](https://github.com/PhyberApex/kuroshiro/commit/f4dbc3776aa42663d57a0e53606d7e7634eab558)), closes [#908](https://github.com/PhyberApex/kuroshiro/issues/908)
-
-## [0.12.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.12.0...kuroshiro-v0.12.1) (2026-09-02)
-
-
-### Bug Fixes
-
-* **docker:** stop the production stage choking on the workspace devDependency ([#910](https://github.com/PhyberApex/kuroshiro/issues/910)) ([cc3db44](https://github.com/PhyberApex/kuroshiro/commit/cc3db440a83bbb645ff1b6b61261f75113b7ce8d))
-
-## [0.12.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.11.0...kuroshiro-v0.12.0) (2026-08-28)
+## [0.13.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.12.2...kuroshiro-v0.13.0) (2026-09-24)
 
 
 ### Features
 
-* **device-models:** support admin-created custom colour palettes ([#811](https://github.com/PhyberApex/kuroshiro/issues/811)) ([c05e5e2](https://github.com/PhyberApex/kuroshiro/commit/c05e5e2a0f138f6a8876989b1ba1151dc8c0f39c))
-* **devices:** add per-Device Sleep Mode with night window and dedicated sleep screen ([#822](https://github.com/PhyberApex/kuroshiro/issues/822)) ([686bbad](https://github.com/PhyberApex/kuroshiro/commit/686bbada2e6e993d7b564b9c3f5ae26dda6a55ec))
-* **devices:** ingest Qwiic sensor readings into Plugin templates ([#823](https://github.com/PhyberApex/kuroshiro/issues/823)) ([be62047](https://github.com/PhyberApex/kuroshiro/commit/be620478e2c9a921790d87c625c1138759827e50)), closes [#801](https://github.com/PhyberApex/kuroshiro/issues/801)
-* **display:** acknowledge Special Functions with action and fire them once ([#804](https://github.com/PhyberApex/kuroshiro/issues/804)) ([677ea62](https://github.com/PhyberApex/kuroshiro/commit/677ea6295d83a8582ab1ba26df263503fa3c0344))
-* **firmware:** custom OTA hosting and official-release sync ([#799](https://github.com/PhyberApex/kuroshiro/issues/799)) ([#813](https://github.com/PhyberApex/kuroshiro/issues/813)) ([82c6c13](https://github.com/PhyberApex/kuroshiro/commit/82c6c1313dacb5323946fd27241375be324861ce))
-* gate Screen Rotation on per-Screen day/time Schedules ([#809](https://github.com/PhyberApex/kuroshiro/issues/809)) ([eb67856](https://github.com/PhyberApex/kuroshiro/commit/eb67856d662bb2110ec9a6bb71f875c305de1518))
-* **plugins:** add literal Data Source mode and static Recipe import ([#821](https://github.com/PhyberApex/kuroshiro/issues/821)) ([#827](https://github.com/PhyberApex/kuroshiro/issues/827)) ([b3402d5](https://github.com/PhyberApex/kuroshiro/commit/b3402d5ee1b74b631a595a96e0a8164117cfab43))
-* **plugins:** import TRMNL Recipes as Poll plugins ([#812](https://github.com/PhyberApex/kuroshiro/issues/812)) ([96bc066](https://github.com/PhyberApex/kuroshiro/commit/96bc0665a63b1bb78ea474be673c91dec7c68875)), closes [#796](https://github.com/PhyberApex/kuroshiro/issues/796)
-* **plugins:** support multiple named data sources per Poll plugin ([#810](https://github.com/PhyberApex/kuroshiro/issues/810)) ([1155fff](https://github.com/PhyberApex/kuroshiro/commit/1155fff0b7b4f2fff19c0abc84e3707c89916c6f)), closes [#776](https://github.com/PhyberApex/kuroshiro/issues/776)
-* **plugins:** Webhook Plugin Kind with persisted payload store and fixed Merge Strategy ([#808](https://github.com/PhyberApex/kuroshiro/issues/808)) ([3cfa1d4](https://github.com/PhyberApex/kuroshiro/commit/3cfa1d43844dae5ef067766d98aaa5459616daf7))
+* **ui:** expose Request Body and Transform on fetch Data Sources ([#971](https://github.com/usetrmnl/kuroshiro/issues/971)) ([172a509](https://github.com/usetrmnl/kuroshiro/commit/172a5096537dcdf60c4fec18a156acfbf5f49e80))
 
 
 ### Bug Fixes
 
-* **api:** add type-check script and fix accumulated tsc errors ([#818](https://github.com/PhyberApex/kuroshiro/issues/818)) ([ac404c6](https://github.com/PhyberApex/kuroshiro/commit/ac404c6530a3635da7a9f6ff6325de45edbaf0fb)), closes [#815](https://github.com/PhyberApex/kuroshiro/issues/815)
-* **devices:** forward resetDevice on the cycling and mirror paths ([#825](https://github.com/PhyberApex/kuroshiro/issues/825)) ([81310fe](https://github.com/PhyberApex/kuroshiro/commit/81310fe7ff0984ac1a30c7b19d215d5f79721bb1))
-* **plugins:** stop PATCH /plugins/:id from rejecting bodies that omit kind ([#829](https://github.com/PhyberApex/kuroshiro/issues/829)) ([a971211](https://github.com/PhyberApex/kuroshiro/commit/a9712110a350b23cf46a5e7d0d55692957ab634b)), closes [#828](https://github.com/PhyberApex/kuroshiro/issues/828)
-* **types:** remove any/unsafe casts from production source, enforce ts/no-explicit-any ([#826](https://github.com/PhyberApex/kuroshiro/issues/826)) ([17f1999](https://github.com/PhyberApex/kuroshiro/commit/17f1999e551d1f0e79b3bfb8a81e4e5395823029))
-* **ui:** trigger Special Function and Reset as isolated one-shot actions ([#819](https://github.com/PhyberApex/kuroshiro/issues/819)) ([1f72f3c](https://github.com/PhyberApex/kuroshiro/commit/1f72f3ce356e7c456fa35fad32d433346c10fac6)), closes [#805](https://github.com/PhyberApex/kuroshiro/issues/805)
+* **ci:** remove flaky unused pnpm install step from docker publish workflows ([#942](https://github.com/usetrmnl/kuroshiro/issues/942)) ([2e3ca87](https://github.com/usetrmnl/kuroshiro/commit/2e3ca8796c6e861c0a93fa11537d5e77ba1110ef))
+* **docker:** deploy pnpm-lock.yaml-pinned node_modules to the production image ([#921](https://github.com/usetrmnl/kuroshiro/issues/921)) ([f17e1b9](https://github.com/usetrmnl/kuroshiro/commit/f17e1b92e2e51e929810efbf526865bbe5baf6e3))
+* **docker:** skip puppeteer Chrome downloads in the image build stages ([#974](https://github.com/usetrmnl/kuroshiro/issues/974)) ([7160a27](https://github.com/usetrmnl/kuroshiro/commit/7160a270bb60e2051522c5964d4c46bfded19c23))
 
-## [0.11.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.10.2...kuroshiro-v0.11.0) (2026-08-19)
+## [0.12.2](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.12.1...kuroshiro-v0.12.2) (2026-09-02)
+
+
+### Bug Fixes
+
+* **ui:** serve the UI correctly under a base path (Home Assistant ingress) ([#915](https://github.com/usetrmnl/kuroshiro/issues/915)) ([f4dbc37](https://github.com/usetrmnl/kuroshiro/commit/f4dbc3776aa42663d57a0e53606d7e7634eab558)), closes [#908](https://github.com/usetrmnl/kuroshiro/issues/908)
+
+## [0.12.1](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.12.0...kuroshiro-v0.12.1) (2026-09-02)
+
+
+### Bug Fixes
+
+* **docker:** stop the production stage choking on the workspace devDependency ([#910](https://github.com/usetrmnl/kuroshiro/issues/910)) ([cc3db44](https://github.com/usetrmnl/kuroshiro/commit/cc3db440a83bbb645ff1b6b61261f75113b7ce8d))
+
+## [0.12.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.11.0...kuroshiro-v0.12.0) (2026-08-28)
 
 
 ### Features
 
-* add device models and palettes as the basis for multi-size TRMNL support ([#739](https://github.com/PhyberApex/kuroshiro/issues/739)) ([0581049](https://github.com/PhyberApex/kuroshiro/commit/05810495fbec657d069577806ad0fba6d20c8ebf))
-* convert images per device palette, rotation and offsets, keep originals, and serve fallback screens per model ([#742](https://github.com/PhyberApex/kuroshiro/issues/742)) ([57016d6](https://github.com/PhyberApex/kuroshiro/commit/57016d64343cbd1cdd69bc9ba7b851d2e7bd9f4c))
-* render screens at the device model's native size inside the TRMNL screen shell ([#740](https://github.com/PhyberApex/kuroshiro/issues/740)) ([936ec91](https://github.com/PhyberApex/kuroshiro/commit/936ec91b79fbc2aa446f7edda768c97f8b55a252))
+* **device-models:** support admin-created custom colour palettes ([#811](https://github.com/usetrmnl/kuroshiro/issues/811)) ([c05e5e2](https://github.com/usetrmnl/kuroshiro/commit/c05e5e2a0f138f6a8876989b1ba1151dc8c0f39c))
+* **devices:** add per-Device Sleep Mode with night window and dedicated sleep screen ([#822](https://github.com/usetrmnl/kuroshiro/issues/822)) ([686bbad](https://github.com/usetrmnl/kuroshiro/commit/686bbada2e6e993d7b564b9c3f5ae26dda6a55ec))
+* **devices:** ingest Qwiic sensor readings into Plugin templates ([#823](https://github.com/usetrmnl/kuroshiro/issues/823)) ([be62047](https://github.com/usetrmnl/kuroshiro/commit/be620478e2c9a921790d87c625c1138759827e50)), closes [#801](https://github.com/usetrmnl/kuroshiro/issues/801)
+* **display:** acknowledge Special Functions with action and fire them once ([#804](https://github.com/usetrmnl/kuroshiro/issues/804)) ([677ea62](https://github.com/usetrmnl/kuroshiro/commit/677ea6295d83a8582ab1ba26df263503fa3c0344))
+* **firmware:** custom OTA hosting and official-release sync ([#799](https://github.com/usetrmnl/kuroshiro/issues/799)) ([#813](https://github.com/usetrmnl/kuroshiro/issues/813)) ([82c6c13](https://github.com/usetrmnl/kuroshiro/commit/82c6c1313dacb5323946fd27241375be324861ce))
+* gate Screen Rotation on per-Screen day/time Schedules ([#809](https://github.com/usetrmnl/kuroshiro/issues/809)) ([eb67856](https://github.com/usetrmnl/kuroshiro/commit/eb67856d662bb2110ec9a6bb71f875c305de1518))
+* **plugins:** add literal Data Source mode and static Recipe import ([#821](https://github.com/usetrmnl/kuroshiro/issues/821)) ([#827](https://github.com/usetrmnl/kuroshiro/issues/827)) ([b3402d5](https://github.com/usetrmnl/kuroshiro/commit/b3402d5ee1b74b631a595a96e0a8164117cfab43))
+* **plugins:** import TRMNL Recipes as Poll plugins ([#812](https://github.com/usetrmnl/kuroshiro/issues/812)) ([96bc066](https://github.com/usetrmnl/kuroshiro/commit/96bc0665a63b1bb78ea474be673c91dec7c68875)), closes [#796](https://github.com/usetrmnl/kuroshiro/issues/796)
+* **plugins:** support multiple named data sources per Poll plugin ([#810](https://github.com/usetrmnl/kuroshiro/issues/810)) ([1155fff](https://github.com/usetrmnl/kuroshiro/commit/1155fff0b7b4f2fff19c0abc84e3707c89916c6f)), closes [#776](https://github.com/usetrmnl/kuroshiro/issues/776)
+* **plugins:** Webhook Plugin Kind with persisted payload store and fixed Merge Strategy ([#808](https://github.com/usetrmnl/kuroshiro/issues/808)) ([3cfa1d4](https://github.com/usetrmnl/kuroshiro/commit/3cfa1d43844dae5ef067766d98aaa5459616daf7))
 
 
 ### Bug Fixes
 
-* **device-models:** address small follow-ups from device-model support review ([#767](https://github.com/PhyberApex/kuroshiro/issues/767)) ([782881e](https://github.com/PhyberApex/kuroshiro/commit/782881e940aa34ffadc30dacd88d77095877d22e)), closes [#757](https://github.com/PhyberApex/kuroshiro/issues/757)
-* **device-models:** make dimension-based model fallback deterministic ([#762](https://github.com/PhyberApex/kuroshiro/issues/762)) ([781745a](https://github.com/PhyberApex/kuroshiro/commit/781745aabc4beff11b2fd0473588626c5102970b)), closes [#746](https://github.com/PhyberApex/kuroshiro/issues/746)
-* **device-models:** render fallback screens natively per model instead of upscaling PNGs ([#770](https://github.com/PhyberApex/kuroshiro/issues/770)) ([4b262a3](https://github.com/PhyberApex/kuroshiro/commit/4b262a36d1e6f9c07c60414cec14508327da3686)), closes [#755](https://github.com/PhyberApex/kuroshiro/issues/755)
-* **device-models:** stop deriving screen orientation class from model.rotation ([#759](https://github.com/PhyberApex/kuroshiro/issues/759)) ([c182cf9](https://github.com/PhyberApex/kuroshiro/commit/c182cf9773088f30ecec42b2f42d04611197d635)), closes [#745](https://github.com/PhyberApex/kuroshiro/issues/745)
-* **device-models:** time out TRMNL sync fetches and coalesce concurrent runs ([#761](https://github.com/PhyberApex/kuroshiro/issues/761)) ([e0b279e](https://github.com/PhyberApex/kuroshiro/commit/e0b279e8e3ab9480d6353030c081b72a74f99553)), closes [#754](https://github.com/PhyberApex/kuroshiro/issues/754)
-* **device-models:** validate synced model/palette payloads and drop shell exec ([#765](https://github.com/PhyberApex/kuroshiro/issues/765)) ([c99ca62](https://github.com/PhyberApex/kuroshiro/commit/c99ca6235cfab74a77f27049324c81cd5379b2e8))
-* **image-utils:** boost saturation on colour palette PNGs, confirm indexed format is firmware-safe ([#773](https://github.com/PhyberApex/kuroshiro/issues/773)) ([3e333ef](https://github.com/PhyberApex/kuroshiro/commit/3e333ef375a5b76b64094557324bca3893deb04a)), closes [#756](https://github.com/PhyberApex/kuroshiro/issues/756)
-* **image-utils:** keep offset panels at full model size instead of cropping smaller ([#768](https://github.com/PhyberApex/kuroshiro/issues/768)) ([0439653](https://github.com/PhyberApex/kuroshiro/commit/0439653e33462892d9e0f6a0316e7d80761826c1)), closes [#751](https://github.com/PhyberApex/kuroshiro/issues/751)
-* **screens:** set Screen.type on create and backfill existing rows ([#764](https://github.com/PhyberApex/kuroshiro/issues/764)) ([966c2c3](https://github.com/PhyberApex/kuroshiro/commit/966c2c374ea102731d9851563fc154f5270e5c98)), closes [#747](https://github.com/PhyberApex/kuroshiro/issues/747)
-* **ui:** add real-browser viewport overflow CI check, fix plugin toolbar overflow at 375px ([#774](https://github.com/PhyberApex/kuroshiro/issues/774)) ([d0cc08d](https://github.com/PhyberApex/kuroshiro/commit/d0cc08d9af3c34cbfdf9940f461ef0e27503161f))
-* **ui:** cache-bust screen preview image URLs after reconversion ([#763](https://github.com/PhyberApex/kuroshiro/issues/763)) ([96151f2](https://github.com/PhyberApex/kuroshiro/commit/96151f273056c6f1abda445c463b00580b349714))
-* **ui:** dedupe deviceModels fetches and surface HTTP errors ([#760](https://github.com/PhyberApex/kuroshiro/issues/760)) ([5085670](https://github.com/PhyberApex/kuroshiro/commit/508567029db54b778bb5c5e7ce1a01830b088c20)), closes [#753](https://github.com/PhyberApex/kuroshiro/issues/753)
-* **ui:** fix DEFAULT_MODEL drift from the og_plus snapshot ([#766](https://github.com/PhyberApex/kuroshiro/issues/766)) ([c6bf32b](https://github.com/PhyberApex/kuroshiro/commit/c6bf32b35f87e89e349b67c531abdfbaa147fcdf))
-* **ui:** give RenderTargetPicker a real modelValue prop ([#758](https://github.com/PhyberApex/kuroshiro/issues/758)) ([c361e16](https://github.com/PhyberApex/kuroshiro/commit/c361e1689dd1491ba1c3f5aed7fb0a53913cb058)), closes [#750](https://github.com/PhyberApex/kuroshiro/issues/750)
-* **ui:** hide the tab strip on mobile and add Plugins to the nav drawer ([#772](https://github.com/PhyberApex/kuroshiro/issues/772)) ([12759ea](https://github.com/PhyberApex/kuroshiro/commit/12759ea67c8b574a16697f84e85832cda1f755e7)), closes [#736](https://github.com/PhyberApex/kuroshiro/issues/736)
-* **ui:** keep battery voltage and RSSI legible on Overview at narrow widths ([#771](https://github.com/PhyberApex/kuroshiro/issues/771)) ([4810e08](https://github.com/PhyberApex/kuroshiro/commit/4810e08b8a8390b6bb8f62a9bda2f98cd8b8d684))
-* **ui:** let card title action buttons wrap instead of overflowing on mobile ([#769](https://github.com/PhyberApex/kuroshiro/issues/769)) ([5243e1e](https://github.com/PhyberApex/kuroshiro/commit/5243e1e9af4d8ef50ce64879c55121a21b57cdb2)), closes [#733](https://github.com/PhyberApex/kuroshiro/issues/733)
+* **api:** add type-check script and fix accumulated tsc errors ([#818](https://github.com/usetrmnl/kuroshiro/issues/818)) ([ac404c6](https://github.com/usetrmnl/kuroshiro/commit/ac404c6530a3635da7a9f6ff6325de45edbaf0fb)), closes [#815](https://github.com/usetrmnl/kuroshiro/issues/815)
+* **devices:** forward resetDevice on the cycling and mirror paths ([#825](https://github.com/usetrmnl/kuroshiro/issues/825)) ([81310fe](https://github.com/usetrmnl/kuroshiro/commit/81310fe7ff0984ac1a30c7b19d215d5f79721bb1))
+* **plugins:** stop PATCH /plugins/:id from rejecting bodies that omit kind ([#829](https://github.com/usetrmnl/kuroshiro/issues/829)) ([a971211](https://github.com/usetrmnl/kuroshiro/commit/a9712110a350b23cf46a5e7d0d55692957ab634b)), closes [#828](https://github.com/usetrmnl/kuroshiro/issues/828)
+* **types:** remove any/unsafe casts from production source, enforce ts/no-explicit-any ([#826](https://github.com/usetrmnl/kuroshiro/issues/826)) ([17f1999](https://github.com/usetrmnl/kuroshiro/commit/17f1999e551d1f0e79b3bfb8a81e4e5395823029))
+* **ui:** trigger Special Function and Reset as isolated one-shot actions ([#819](https://github.com/usetrmnl/kuroshiro/issues/819)) ([1f72f3c](https://github.com/usetrmnl/kuroshiro/commit/1f72f3ce356e7c456fa35fad32d433346c10fac6)), closes [#805](https://github.com/usetrmnl/kuroshiro/issues/805)
 
-## [0.10.2](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.10.1...kuroshiro-v0.10.2) (2026-08-17)
-
-
-### Bug Fixes
-
-* **api:** pass device id instead of full entity to screen findOneBy ([#726](https://github.com/PhyberApex/kuroshiro/issues/726)) ([038af2b](https://github.com/PhyberApex/kuroshiro/commit/038af2bfdfa91d29ab00f8fbfc3a7dfcd1fc8a02))
-
-## [0.10.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.10.0...kuroshiro-v0.10.1) (2026-08-17)
-
-
-### Bug Fixes
-
-* **api:** migrate relations to TypeORM v1 object syntax ([#723](https://github.com/PhyberApex/kuroshiro/issues/723)) ([0b5823b](https://github.com/PhyberApex/kuroshiro/commit/0b5823b99dcf642c54a3804fa08b2cdca4fabb78)), closes [#722](https://github.com/PhyberApex/kuroshiro/issues/722)
-
-## [0.10.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.9.3...kuroshiro-v0.10.0) (2026-08-17)
+## [0.11.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.10.2...kuroshiro-v0.11.0) (2026-08-19)
 
 
 ### Features
 
-* Add screen reordering endpoint and drag-and-drop UI ([#675](https://github.com/PhyberApex/kuroshiro/issues/675)) ([#676](https://github.com/PhyberApex/kuroshiro/issues/676)) ([c978a2c](https://github.com/PhyberApex/kuroshiro/commit/c978a2c482e7bcf343a0f04bc39de8dee18265e1))
-* Generate missing screen images on demand for current_screen ([#673](https://github.com/PhyberApex/kuroshiro/issues/673)) ([5c4f2c1](https://github.com/PhyberApex/kuroshiro/commit/5c4f2c1ac8ab7e1a97413fcb47781ec95f4f359c))
-
-## [0.9.3](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.9.2...kuroshiro-v0.9.3) (2026-05-08)
-
-
-### Bug Fixes
-
-* **migration:** make AddPluginSystem migration idempotent ([d389ae9](https://github.com/PhyberApex/kuroshiro/commit/d389ae93cdb4cd88fc3e360957ccb7b28a85875f))
-
-## [0.9.2](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.9.1...kuroshiro-v0.9.2) (2026-05-07)
+* add device models and palettes as the basis for multi-size TRMNL support ([#739](https://github.com/usetrmnl/kuroshiro/issues/739)) ([0581049](https://github.com/usetrmnl/kuroshiro/commit/05810495fbec657d069577806ad0fba6d20c8ebf))
+* convert images per device palette, rotation and offsets, keep originals, and serve fallback screens per model ([#742](https://github.com/usetrmnl/kuroshiro/issues/742)) ([57016d6](https://github.com/usetrmnl/kuroshiro/commit/57016d64343cbd1cdd69bc9ba7b851d2e7bd9f4c))
+* render screens at the device model's native size inside the TRMNL screen shell ([#740](https://github.com/usetrmnl/kuroshiro/issues/740)) ([936ec91](https://github.com/usetrmnl/kuroshiro/commit/936ec91b79fbc2aa446f7edda768c97f8b55a252))
 
 
 ### Bug Fixes
 
-* **docker:** add packageManager pin to api package.json ([6ebcc36](https://github.com/PhyberApex/kuroshiro/commit/6ebcc361fe4be7ee97f786a5caac3a314676880e))
+* **device-models:** address small follow-ups from device-model support review ([#767](https://github.com/usetrmnl/kuroshiro/issues/767)) ([782881e](https://github.com/usetrmnl/kuroshiro/commit/782881e940aa34ffadc30dacd88d77095877d22e)), closes [#757](https://github.com/usetrmnl/kuroshiro/issues/757)
+* **device-models:** make dimension-based model fallback deterministic ([#762](https://github.com/usetrmnl/kuroshiro/issues/762)) ([781745a](https://github.com/usetrmnl/kuroshiro/commit/781745aabc4beff11b2fd0473588626c5102970b)), closes [#746](https://github.com/usetrmnl/kuroshiro/issues/746)
+* **device-models:** render fallback screens natively per model instead of upscaling PNGs ([#770](https://github.com/usetrmnl/kuroshiro/issues/770)) ([4b262a3](https://github.com/usetrmnl/kuroshiro/commit/4b262a36d1e6f9c07c60414cec14508327da3686)), closes [#755](https://github.com/usetrmnl/kuroshiro/issues/755)
+* **device-models:** stop deriving screen orientation class from model.rotation ([#759](https://github.com/usetrmnl/kuroshiro/issues/759)) ([c182cf9](https://github.com/usetrmnl/kuroshiro/commit/c182cf9773088f30ecec42b2f42d04611197d635)), closes [#745](https://github.com/usetrmnl/kuroshiro/issues/745)
+* **device-models:** time out TRMNL sync fetches and coalesce concurrent runs ([#761](https://github.com/usetrmnl/kuroshiro/issues/761)) ([e0b279e](https://github.com/usetrmnl/kuroshiro/commit/e0b279e8e3ab9480d6353030c081b72a74f99553)), closes [#754](https://github.com/usetrmnl/kuroshiro/issues/754)
+* **device-models:** validate synced model/palette payloads and drop shell exec ([#765](https://github.com/usetrmnl/kuroshiro/issues/765)) ([c99ca62](https://github.com/usetrmnl/kuroshiro/commit/c99ca6235cfab74a77f27049324c81cd5379b2e8))
+* **image-utils:** boost saturation on colour palette PNGs, confirm indexed format is firmware-safe ([#773](https://github.com/usetrmnl/kuroshiro/issues/773)) ([3e333ef](https://github.com/usetrmnl/kuroshiro/commit/3e333ef375a5b76b64094557324bca3893deb04a)), closes [#756](https://github.com/usetrmnl/kuroshiro/issues/756)
+* **image-utils:** keep offset panels at full model size instead of cropping smaller ([#768](https://github.com/usetrmnl/kuroshiro/issues/768)) ([0439653](https://github.com/usetrmnl/kuroshiro/commit/0439653e33462892d9e0f6a0316e7d80761826c1)), closes [#751](https://github.com/usetrmnl/kuroshiro/issues/751)
+* **screens:** set Screen.type on create and backfill existing rows ([#764](https://github.com/usetrmnl/kuroshiro/issues/764)) ([966c2c3](https://github.com/usetrmnl/kuroshiro/commit/966c2c374ea102731d9851563fc154f5270e5c98)), closes [#747](https://github.com/usetrmnl/kuroshiro/issues/747)
+* **ui:** add real-browser viewport overflow CI check, fix plugin toolbar overflow at 375px ([#774](https://github.com/usetrmnl/kuroshiro/issues/774)) ([d0cc08d](https://github.com/usetrmnl/kuroshiro/commit/d0cc08d9af3c34cbfdf9940f461ef0e27503161f))
+* **ui:** cache-bust screen preview image URLs after reconversion ([#763](https://github.com/usetrmnl/kuroshiro/issues/763)) ([96151f2](https://github.com/usetrmnl/kuroshiro/commit/96151f273056c6f1abda445c463b00580b349714))
+* **ui:** dedupe deviceModels fetches and surface HTTP errors ([#760](https://github.com/usetrmnl/kuroshiro/issues/760)) ([5085670](https://github.com/usetrmnl/kuroshiro/commit/508567029db54b778bb5c5e7ce1a01830b088c20)), closes [#753](https://github.com/usetrmnl/kuroshiro/issues/753)
+* **ui:** fix DEFAULT_MODEL drift from the og_plus snapshot ([#766](https://github.com/usetrmnl/kuroshiro/issues/766)) ([c6bf32b](https://github.com/usetrmnl/kuroshiro/commit/c6bf32b35f87e89e349b67c531abdfbaa147fcdf))
+* **ui:** give RenderTargetPicker a real modelValue prop ([#758](https://github.com/usetrmnl/kuroshiro/issues/758)) ([c361e16](https://github.com/usetrmnl/kuroshiro/commit/c361e1689dd1491ba1c3f5aed7fb0a53913cb058)), closes [#750](https://github.com/usetrmnl/kuroshiro/issues/750)
+* **ui:** hide the tab strip on mobile and add Plugins to the nav drawer ([#772](https://github.com/usetrmnl/kuroshiro/issues/772)) ([12759ea](https://github.com/usetrmnl/kuroshiro/commit/12759ea67c8b574a16697f84e85832cda1f755e7)), closes [#736](https://github.com/usetrmnl/kuroshiro/issues/736)
+* **ui:** keep battery voltage and RSSI legible on Overview at narrow widths ([#771](https://github.com/usetrmnl/kuroshiro/issues/771)) ([4810e08](https://github.com/usetrmnl/kuroshiro/commit/4810e08b8a8390b6bb8f62a9bda2f98cd8b8d684))
+* **ui:** let card title action buttons wrap instead of overflowing on mobile ([#769](https://github.com/usetrmnl/kuroshiro/issues/769)) ([5243e1e](https://github.com/usetrmnl/kuroshiro/commit/5243e1e9af4d8ef50ce64879c55121a21b57cdb2)), closes [#733](https://github.com/usetrmnl/kuroshiro/issues/733)
 
-## [0.9.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.9.0...kuroshiro-v0.9.1) (2026-05-07)
+## [0.10.2](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.10.1...kuroshiro-v0.10.2) (2026-08-17)
 
 
 ### Bug Fixes
 
-* **docker:** preserve pnpm version pin in production stage ([0f68cff](https://github.com/PhyberApex/kuroshiro/commit/0f68cff2b70d77744f889e1e038b47986841b950))
+* **api:** pass device id instead of full entity to screen findOneBy ([#726](https://github.com/usetrmnl/kuroshiro/issues/726)) ([038af2b](https://github.com/usetrmnl/kuroshiro/commit/038af2bfdfa91d29ab00f8fbfc3a7dfcd1fc8a02))
 
-## [0.9.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.8.2...kuroshiro-v0.9.0) (2026-05-07)
+## [0.10.1](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.10.0...kuroshiro-v0.10.1) (2026-08-17)
+
+
+### Bug Fixes
+
+* **api:** migrate relations to TypeORM v1 object syntax ([#723](https://github.com/usetrmnl/kuroshiro/issues/723)) ([0b5823b](https://github.com/usetrmnl/kuroshiro/commit/0b5823b99dcf642c54a3804fa08b2cdca4fabb78)), closes [#722](https://github.com/usetrmnl/kuroshiro/issues/722)
+
+## [0.10.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.9.3...kuroshiro-v0.10.0) (2026-08-17)
 
 
 ### Features
 
-* Add maintenance dashboard for cleanup ([#511](https://github.com/PhyberApex/kuroshiro/issues/511)) ([9ff032b](https://github.com/PhyberApex/kuroshiro/commit/9ff032b829abf37e3ac8907f6cc2e1527c4a6a19))
-* Add mashup support for combining multiple plugin screens ([#509](https://github.com/PhyberApex/kuroshiro/issues/509)) ([d668d91](https://github.com/PhyberApex/kuroshiro/commit/d668d91280580ec40e1eeda817fa20a5d8021d60))
-* Plugin System ([#496](https://github.com/PhyberApex/kuroshiro/issues/496)) ([1764b13](https://github.com/PhyberApex/kuroshiro/commit/1764b13842c037ff9914dd1f4315e06739485b40))
+* Add screen reordering endpoint and drag-and-drop UI ([#675](https://github.com/usetrmnl/kuroshiro/issues/675)) ([#676](https://github.com/usetrmnl/kuroshiro/issues/676)) ([c978a2c](https://github.com/usetrmnl/kuroshiro/commit/c978a2c482e7bcf343a0f04bc39de8dee18265e1))
+* Generate missing screen images on demand for current_screen ([#673](https://github.com/usetrmnl/kuroshiro/issues/673)) ([5c4f2c1](https://github.com/usetrmnl/kuroshiro/commit/5c4f2c1ac8ab7e1a97413fcb47781ec95f4f359c))
+
+## [0.9.3](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.9.2...kuroshiro-v0.9.3) (2026-05-08)
 
 
 ### Bug Fixes
 
-* Build issue ([a4ab986](https://github.com/PhyberApex/kuroshiro/commit/a4ab98651ea5eebdf24094c92d76386d47223268))
-* Build issue ([bcb7967](https://github.com/PhyberApex/kuroshiro/commit/bcb7967b7046de04c2be15a260adfcb85c48016c))
-* Import not working ([01e8047](https://github.com/PhyberApex/kuroshiro/commit/01e804794dfbbd7007b2bbdc15e3838f5854935e))
-* log returning mock data only ([2a9aed1](https://github.com/PhyberApex/kuroshiro/commit/2a9aed17f7184207b5a16e72fcb9f30e4583f69b))
-* **security:** block SSRF and ImageMagick format injection in demo mode ([0ea964a](https://github.com/PhyberApex/kuroshiro/commit/0ea964ae62e68190db6b9867cfea4a76d9a2a152))
-* **tests:** update specs broken by security PR constructor changes ([01108ea](https://github.com/PhyberApex/kuroshiro/commit/01108eaa70d3dfb08745e443135615f2e6402c39))
+* **migration:** make AddPluginSystem migration idempotent ([d389ae9](https://github.com/usetrmnl/kuroshiro/commit/d389ae93cdb4cd88fc3e360957ccb7b28a85875f))
 
-## [0.8.2](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.8.1...kuroshiro-v0.8.2) (2026-03-16)
+## [0.9.2](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.9.1...kuroshiro-v0.9.2) (2026-05-07)
 
 
 ### Bug Fixes
 
-* Dummy commit for release ([00454c0](https://github.com/PhyberApex/kuroshiro/commit/00454c07f53f43e8f2685b62e642a0335c36eb07))
+* **docker:** add packageManager pin to api package.json ([6ebcc36](https://github.com/usetrmnl/kuroshiro/commit/6ebcc361fe4be7ee97f786a5caac3a314676880e))
 
-## [0.8.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.8.0...kuroshiro-v0.8.1) (2026-03-15)
+## [0.9.1](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.9.0...kuroshiro-v0.9.1) (2026-05-07)
 
 
 ### Bug Fixes
 
-* Fixed test failure ([db8d070](https://github.com/PhyberApex/kuroshiro/commit/db8d070cce302c660260678acde19f0975998779))
+* **docker:** preserve pnpm version pin in production stage ([0f68cff](https://github.com/usetrmnl/kuroshiro/commit/0f68cff2b70d77744f889e1e038b47986841b950))
 
-## [0.8.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.7.0...kuroshiro-v0.8.0) (2026-03-15)
+## [0.9.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.8.2...kuroshiro-v0.9.0) (2026-05-07)
 
 
 ### Features
 
-* Redesign ([a8d0ebf](https://github.com/PhyberApex/kuroshiro/commit/a8d0ebfca4f7ead78b476c5adbfecf7fa023cadc))
+* Add maintenance dashboard for cleanup ([#511](https://github.com/usetrmnl/kuroshiro/issues/511)) ([9ff032b](https://github.com/usetrmnl/kuroshiro/commit/9ff032b829abf37e3ac8907f6cc2e1527c4a6a19))
+* Add mashup support for combining multiple plugin screens ([#509](https://github.com/usetrmnl/kuroshiro/issues/509)) ([d668d91](https://github.com/usetrmnl/kuroshiro/commit/d668d91280580ec40e1eeda817fa20a5d8021d60))
+* Plugin System ([#496](https://github.com/usetrmnl/kuroshiro/issues/496)) ([1764b13](https://github.com/usetrmnl/kuroshiro/commit/1764b13842c037ff9914dd1f4315e06739485b40))
 
 
 ### Bug Fixes
 
-* Fix migrations not working ([fd7b65a](https://github.com/PhyberApex/kuroshiro/commit/fd7b65a484effafb2375cc46346c2986a7380fdf))
-* Fix missing migration for log entries. ([57a66a4](https://github.com/PhyberApex/kuroshiro/commit/57a66a4d1ca6cc9568a4beb91472a93a9736dc9e))
+* Build issue ([a4ab986](https://github.com/usetrmnl/kuroshiro/commit/a4ab98651ea5eebdf24094c92d76386d47223268))
+* Build issue ([bcb7967](https://github.com/usetrmnl/kuroshiro/commit/bcb7967b7046de04c2be15a260adfcb85c48016c))
+* Import not working ([01e8047](https://github.com/usetrmnl/kuroshiro/commit/01e804794dfbbd7007b2bbdc15e3838f5854935e))
+* log returning mock data only ([2a9aed1](https://github.com/usetrmnl/kuroshiro/commit/2a9aed17f7184207b5a16e72fcb9f30e4583f69b))
+* **security:** block SSRF and ImageMagick format injection in demo mode ([0ea964a](https://github.com/usetrmnl/kuroshiro/commit/0ea964ae62e68190db6b9867cfea4a76d9a2a152))
+* **tests:** update specs broken by security PR constructor changes ([01108ea](https://github.com/usetrmnl/kuroshiro/commit/01108eaa70d3dfb08745e443135615f2e6402c39))
 
-## [0.7.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.6.0...kuroshiro-v0.7.0) (2026-01-05)
+## [0.8.2](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.8.1...kuroshiro-v0.8.2) (2026-03-16)
+
+
+### Bug Fixes
+
+* Dummy commit for release ([00454c0](https://github.com/usetrmnl/kuroshiro/commit/00454c07f53f43e8f2685b62e642a0335c36eb07))
+
+## [0.8.1](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.8.0...kuroshiro-v0.8.1) (2026-03-15)
+
+
+### Bug Fixes
+
+* Fixed test failure ([db8d070](https://github.com/usetrmnl/kuroshiro/commit/db8d070cce302c660260678acde19f0975998779))
+
+## [0.8.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.7.0...kuroshiro-v0.8.0) (2026-03-15)
 
 
 ### Features
 
-* Added logging interceptor to API ([b3dff0f](https://github.com/PhyberApex/kuroshiro/commit/b3dff0f1ade0f16615e7b8f0e1fbe005185a51e0))
+* Redesign ([a8d0ebf](https://github.com/usetrmnl/kuroshiro/commit/a8d0ebfca4f7ead78b476c5adbfecf7fa023cadc))
 
 
 ### Bug Fixes
 
-* API port in env file not correct ([b1d9903](https://github.com/PhyberApex/kuroshiro/commit/b1d9903e719c64739794775f7af94031b90a5708))
-* Fixed env variables not being used correctly ([b7def25](https://github.com/PhyberApex/kuroshiro/commit/b7def25be516adc4c65af8b294cda5d6b7c78746))
+* Fix migrations not working ([fd7b65a](https://github.com/usetrmnl/kuroshiro/commit/fd7b65a484effafb2375cc46346c2986a7380fdf))
+* Fix missing migration for log entries. ([57a66a4](https://github.com/usetrmnl/kuroshiro/commit/57a66a4d1ca6cc9568a4beb91472a93a9736dc9e))
 
-## [0.6.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.5.0...kuroshiro-v0.6.0) (2025-12-29)
+## [0.7.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.6.0...kuroshiro-v0.7.0) (2026-01-05)
 
 
 ### Features
 
-* Add migrations to API package ([#272](https://github.com/PhyberApex/kuroshiro/issues/272)) ([9c4b3b1](https://github.com/PhyberApex/kuroshiro/commit/9c4b3b143644e02ff3d9e1a36a3872835cea1bdf))
+* Added logging interceptor to API ([b3dff0f](https://github.com/usetrmnl/kuroshiro/commit/b3dff0f1ade0f16615e7b8f0e1fbe005185a51e0))
 
 
 ### Bug Fixes
 
-* **deps:** update dependency puppeteer to v24.32.0 ([#276](https://github.com/PhyberApex/kuroshiro/issues/276)) ([6893f6b](https://github.com/PhyberApex/kuroshiro/commit/6893f6bc3d0ca3d3be9d5dfc764c593b7483b752))
-* **deps:** update dependency typeorm to v0.3.28 ([#275](https://github.com/PhyberApex/kuroshiro/issues/275)) ([b3b03c3](https://github.com/PhyberApex/kuroshiro/commit/b3b03c3a75ffabaed6e32cb0534d58a4ab9b79b3))
-* **deps:** update dependency vuetify to v3.11.2 ([#273](https://github.com/PhyberApex/kuroshiro/issues/273)) ([e1fb986](https://github.com/PhyberApex/kuroshiro/commit/e1fb986e7ab5e213b79a3ece35d53508792c2beb))
-* Fix build issue ([#280](https://github.com/PhyberApex/kuroshiro/issues/280)) ([acf90eb](https://github.com/PhyberApex/kuroshiro/commit/acf90eb7de388d781058bdce00b7facfebbf7b82)), closes [#279](https://github.com/PhyberApex/kuroshiro/issues/279)
+* API port in env file not correct ([b1d9903](https://github.com/usetrmnl/kuroshiro/commit/b1d9903e719c64739794775f7af94031b90a5708))
+* Fixed env variables not being used correctly ([b7def25](https://github.com/usetrmnl/kuroshiro/commit/b7def25be516adc4c65af8b294cda5d6b7c78746))
 
-## [0.5.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.4.0...kuroshiro-v0.5.0) (2025-11-28)
+## [0.6.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.5.0...kuroshiro-v0.6.0) (2025-12-29)
 
 
 ### Features
 
-* Add persistence for device logs ([#269](https://github.com/PhyberApex/kuroshiro/issues/269)) ([609ad7c](https://github.com/PhyberApex/kuroshiro/commit/609ad7c26276932ae6df890fbedbe7bd067d44d8)), closes [#26](https://github.com/PhyberApex/kuroshiro/issues/26)
+* Add migrations to API package ([#272](https://github.com/usetrmnl/kuroshiro/issues/272)) ([9c4b3b1](https://github.com/usetrmnl/kuroshiro/commit/9c4b3b143644e02ff3d9e1a36a3872835cea1bdf))
 
 
 ### Bug Fixes
 
-* **deps:** update dependency @nestjs/serve-static to v5.0.4 ([#221](https://github.com/PhyberApex/kuroshiro/issues/221)) ([d8c4bb7](https://github.com/PhyberApex/kuroshiro/commit/d8c4bb7823a2de7314f95f719641083e5f92b020))
-* **deps:** update dependency @vueuse/core to v13.5.0 ([#95](https://github.com/PhyberApex/kuroshiro/issues/95)) ([1577d15](https://github.com/PhyberApex/kuroshiro/commit/1577d151b486683cdd65bf04279da659f45f04bb))
-* **deps:** update dependency @vueuse/core to v13.6.0 ([#131](https://github.com/PhyberApex/kuroshiro/issues/131)) ([84da140](https://github.com/PhyberApex/kuroshiro/commit/84da14051c91f2fe84c6ede369219fb5ee698ed4))
-* **deps:** update dependency @vueuse/core to v13.7.0 ([#161](https://github.com/PhyberApex/kuroshiro/issues/161)) ([8cc7db1](https://github.com/PhyberApex/kuroshiro/commit/8cc7db16d84b0649a8eb9356ecea2e41bfbfe4cf))
-* **deps:** update dependency @vueuse/core to v13.8.0 ([#177](https://github.com/PhyberApex/kuroshiro/issues/177)) ([7913c73](https://github.com/PhyberApex/kuroshiro/commit/7913c7342632806db75a707642b63a94fc7a8f6b))
-* **deps:** update dependency @vueuse/core to v13.9.0 ([#184](https://github.com/PhyberApex/kuroshiro/issues/184)) ([5f738b3](https://github.com/PhyberApex/kuroshiro/commit/5f738b34e9db81d668e1c3e4e9f0c540f27282af))
-* **deps:** update dependency @vueuse/core to v14 ([#248](https://github.com/PhyberApex/kuroshiro/issues/248)) ([aaf6ac9](https://github.com/PhyberApex/kuroshiro/commit/aaf6ac9db3657b248575c103a0e81f8e8e44455a))
-* **deps:** update dependency @vueuse/core to v14.1.0 ([#265](https://github.com/PhyberApex/kuroshiro/issues/265)) ([7425cfd](https://github.com/PhyberApex/kuroshiro/commit/7425cfd5f1b25c79c860e68bc7bd6700337ecd34))
-* **deps:** update dependency class-validator to v0.14.3 ([#263](https://github.com/PhyberApex/kuroshiro/issues/263)) ([988391d](https://github.com/PhyberApex/kuroshiro/commit/988391d93132fc1145e3727ea1a68aa0facea2f8))
-* **deps:** update dependency dotenv to v16.6.1 ([#83](https://github.com/PhyberApex/kuroshiro/issues/83)) ([ba7f026](https://github.com/PhyberApex/kuroshiro/commit/ba7f026115b442b5bb158925ba3ec4492f906119))
-* **deps:** update dependency dotenv to v17 ([#86](https://github.com/PhyberApex/kuroshiro/issues/86)) ([a21aa3c](https://github.com/PhyberApex/kuroshiro/commit/a21aa3c8e9615c0827845bcf6a01cd94e4352541))
-* **deps:** update dependency dotenv to v17.1.0 ([#98](https://github.com/PhyberApex/kuroshiro/issues/98)) ([7b5b7d8](https://github.com/PhyberApex/kuroshiro/commit/7b5b7d868d03b75533b909743d4c7cc3646af071))
-* **deps:** update dependency dotenv to v17.2.0 ([#105](https://github.com/PhyberApex/kuroshiro/issues/105)) ([f51b416](https://github.com/PhyberApex/kuroshiro/commit/f51b416973fbc09ff3ca38458290cc63df1d234b))
-* **deps:** update dependency dotenv to v17.2.1 ([#125](https://github.com/PhyberApex/kuroshiro/issues/125)) ([a7fa6bd](https://github.com/PhyberApex/kuroshiro/commit/a7fa6bdcb70db96689391ab9e795373020dd0bac))
-* **deps:** update dependency dotenv to v17.2.2 ([#186](https://github.com/PhyberApex/kuroshiro/issues/186)) ([c922546](https://github.com/PhyberApex/kuroshiro/commit/c922546dc6b2a60b82554372f10313c8568e7206))
-* **deps:** update dependency dotenv to v17.2.3 ([#222](https://github.com/PhyberApex/kuroshiro/issues/222)) ([d5a04c4](https://github.com/PhyberApex/kuroshiro/commit/d5a04c4b9dda7fd4314e3b900d0ea8eb18ac9a56))
-* **deps:** update dependency fs-extra to v11.3.1 ([#145](https://github.com/PhyberApex/kuroshiro/issues/145)) ([321da4d](https://github.com/PhyberApex/kuroshiro/commit/321da4defc37722657d0a88ef6426450fb6af6bf))
-* **deps:** update dependency fs-extra to v11.3.2 ([#207](https://github.com/PhyberApex/kuroshiro/issues/207)) ([6734ea3](https://github.com/PhyberApex/kuroshiro/commit/6734ea39fa7c7ba437bb958dfe2ef318abdcacb2))
-* **deps:** update dependency pg to v8.16.3 ([#84](https://github.com/PhyberApex/kuroshiro/issues/84)) ([6c1320e](https://github.com/PhyberApex/kuroshiro/commit/6c1320e42e9d12f85016a6ce9eee3fe10b1808ae))
-* **deps:** update dependency pinia to v3.0.4 ([#223](https://github.com/PhyberApex/kuroshiro/issues/223)) ([6d8618c](https://github.com/PhyberApex/kuroshiro/commit/6d8618c4795286afa4d9ce7b986f12529dfa39e3))
-* **deps:** update dependency puppeteer to v24.11.2 ([#60](https://github.com/PhyberApex/kuroshiro/issues/60)) ([4987278](https://github.com/PhyberApex/kuroshiro/commit/49872784b9813172a71b600a77b1d31eb2af533d))
-* **deps:** update dependency puppeteer to v24.12.0 ([#96](https://github.com/PhyberApex/kuroshiro/issues/96)) ([cb01638](https://github.com/PhyberApex/kuroshiro/commit/cb01638f033300800c52dbb8fd8b06c7e120ad41))
-* **deps:** update dependency puppeteer to v24.12.1 ([#103](https://github.com/PhyberApex/kuroshiro/issues/103)) ([5e0ac2b](https://github.com/PhyberApex/kuroshiro/commit/5e0ac2b59a18468d9891d9216a8c657f2cee3a43))
-* **deps:** update dependency puppeteer to v24.13.0 ([#111](https://github.com/PhyberApex/kuroshiro/issues/111)) ([b7f511b](https://github.com/PhyberApex/kuroshiro/commit/b7f511b9b1895c1aadde7aa7e708ecd11a2fa1c6))
-* **deps:** update dependency puppeteer to v24.14.0 ([#113](https://github.com/PhyberApex/kuroshiro/issues/113)) ([a76b87d](https://github.com/PhyberApex/kuroshiro/commit/a76b87da8397a8519cee738e9406e462e08eb6a1))
-* **deps:** update dependency puppeteer to v24.15.0 ([#122](https://github.com/PhyberApex/kuroshiro/issues/122)) ([ac3a5c7](https://github.com/PhyberApex/kuroshiro/commit/ac3a5c7d55779044de726ec32c71fac39a598363))
-* **deps:** update dependency puppeteer to v24.16.0 ([#146](https://github.com/PhyberApex/kuroshiro/issues/146)) ([966f4b7](https://github.com/PhyberApex/kuroshiro/commit/966f4b77069c0830e1445fd98def4990505e1eea))
-* **deps:** update dependency puppeteer to v24.16.1 ([#153](https://github.com/PhyberApex/kuroshiro/issues/153)) ([cae7f29](https://github.com/PhyberApex/kuroshiro/commit/cae7f2995f458e2416cbfd277eef345bf5c7e231))
-* **deps:** update dependency puppeteer to v24.16.2 ([#157](https://github.com/PhyberApex/kuroshiro/issues/157)) ([dbe4e58](https://github.com/PhyberApex/kuroshiro/commit/dbe4e585086b63e547fe04a7f4ea0b885e978694))
-* **deps:** update dependency puppeteer to v24.17.0 ([#166](https://github.com/PhyberApex/kuroshiro/issues/166)) ([0bab8f9](https://github.com/PhyberApex/kuroshiro/commit/0bab8f966d1a4a32a18d75406164a24ca32107ff))
-* **deps:** update dependency puppeteer to v24.17.1 ([#178](https://github.com/PhyberApex/kuroshiro/issues/178)) ([598929e](https://github.com/PhyberApex/kuroshiro/commit/598929e3c217bd92033d741e231b8b53a8a31ee7))
-* **deps:** update dependency puppeteer to v24.18.0 ([#180](https://github.com/PhyberApex/kuroshiro/issues/180)) ([4afeba6](https://github.com/PhyberApex/kuroshiro/commit/4afeba6badd67d8a938c153acfb96854fe80fa22))
-* **deps:** update dependency puppeteer to v24.19.0 ([#191](https://github.com/PhyberApex/kuroshiro/issues/191)) ([bf80670](https://github.com/PhyberApex/kuroshiro/commit/bf806706396b619bcc4e304a33e31f169b161c58))
-* **deps:** update dependency puppeteer to v24.21.0 ([#198](https://github.com/PhyberApex/kuroshiro/issues/198)) ([bc1ab24](https://github.com/PhyberApex/kuroshiro/commit/bc1ab24a13bd2b4730e020c8ffadeedfda375d78))
-* **deps:** update dependency puppeteer to v24.27.0 ([#212](https://github.com/PhyberApex/kuroshiro/issues/212)) ([91a9146](https://github.com/PhyberApex/kuroshiro/commit/91a914661b22aa0c1de6b26400bc2c14823cb4c3))
-* **deps:** update dependency puppeteer to v24.30.0 ([#238](https://github.com/PhyberApex/kuroshiro/issues/238)) ([9218e05](https://github.com/PhyberApex/kuroshiro/commit/9218e0556365eb46e52dc68044c9f56f08b08a57))
-* **deps:** update dependency puppeteer to v24.31.0 ([#259](https://github.com/PhyberApex/kuroshiro/issues/259)) ([cdf1652](https://github.com/PhyberApex/kuroshiro/commit/cdf1652a16b37dd68bd23705b536e842a221d09d))
-* **deps:** update dependency typeorm to v0.3.26 ([#162](https://github.com/PhyberApex/kuroshiro/issues/162)) ([f55d067](https://github.com/PhyberApex/kuroshiro/commit/f55d067d33992d76e4438519b6d61ee215e2432f))
-* **deps:** update dependency typeorm to v0.3.27 ([#215](https://github.com/PhyberApex/kuroshiro/issues/215)) ([f3650f2](https://github.com/PhyberApex/kuroshiro/commit/f3650f2fbc604409b1981d83c1d0058634552163))
-* **deps:** update dependency uuid to v12 ([#194](https://github.com/PhyberApex/kuroshiro/issues/194)) ([1a91a97](https://github.com/PhyberApex/kuroshiro/commit/1a91a978719507bd61e7a9c32a3426c9792f935f))
-* **deps:** update dependency uuid to v13 ([#197](https://github.com/PhyberApex/kuroshiro/issues/197)) ([fbe4fb9](https://github.com/PhyberApex/kuroshiro/commit/fbe4fb96045dbf704478efdea9746b1449a5cb9a))
-* **deps:** update dependency vite-plugin-vuetify to v2.1.2 ([#137](https://github.com/PhyberApex/kuroshiro/issues/137)) ([8122280](https://github.com/PhyberApex/kuroshiro/commit/8122280db55973702650327a8c82150a564d87d8))
-* **deps:** update dependency vue to v3.5.18 ([#120](https://github.com/PhyberApex/kuroshiro/issues/120)) ([d410071](https://github.com/PhyberApex/kuroshiro/commit/d41007184d60b849aaf6647504d39b1ae90984f0))
-* **deps:** update dependency vue to v3.5.19 ([#167](https://github.com/PhyberApex/kuroshiro/issues/167)) ([b105223](https://github.com/PhyberApex/kuroshiro/commit/b10522385d9bc10de89fecd8f85f943a42df412a))
-* **deps:** update dependency vue to v3.5.20 ([#174](https://github.com/PhyberApex/kuroshiro/issues/174)) ([de06a4d](https://github.com/PhyberApex/kuroshiro/commit/de06a4db2cc253eba1cb937d037dca6e879eb8f9))
-* **deps:** update dependency vue to v3.5.21 ([#185](https://github.com/PhyberApex/kuroshiro/issues/185)) ([4ee1ce5](https://github.com/PhyberApex/kuroshiro/commit/4ee1ce5093cbb1a3c1b5a7a3c2f79840b176b3f7))
-* **deps:** update dependency vue to v3.5.24 ([#224](https://github.com/PhyberApex/kuroshiro/issues/224)) ([e18b80c](https://github.com/PhyberApex/kuroshiro/commit/e18b80c8d6b902d85a6305655f1356ea6b3006f2))
-* **deps:** update dependency vue to v3.5.25 ([#262](https://github.com/PhyberApex/kuroshiro/issues/262)) ([2fa9a9a](https://github.com/PhyberApex/kuroshiro/commit/2fa9a9aa57177bebcae4a909bebbfcb6f3aaefa8))
-* **deps:** update dependency vue-router to v4.6.3 ([#239](https://github.com/PhyberApex/kuroshiro/issues/239)) ([fe797d9](https://github.com/PhyberApex/kuroshiro/commit/fe797d96068c3adc6a018057354666a38bce99d0))
-* **deps:** update dependency vuetify to v3.10.0 ([#199](https://github.com/PhyberApex/kuroshiro/issues/199)) ([84759b6](https://github.com/PhyberApex/kuroshiro/commit/84759b6fd138575839026b551e23838e8da1b97f))
-* **deps:** update dependency vuetify to v3.10.11 ([#235](https://github.com/PhyberApex/kuroshiro/issues/235)) ([dd9b387](https://github.com/PhyberApex/kuroshiro/commit/dd9b387c6093bf020857c6e8c3c2758b254918ce))
-* **deps:** update dependency vuetify to v3.10.9 ([#208](https://github.com/PhyberApex/kuroshiro/issues/208)) ([b66498c](https://github.com/PhyberApex/kuroshiro/commit/b66498ce6fb5fa07d7657d918dc21a572c7d3526))
-* **deps:** update dependency vuetify to v3.11.0 ([#264](https://github.com/PhyberApex/kuroshiro/issues/264)) ([da0a1ff](https://github.com/PhyberApex/kuroshiro/commit/da0a1ff1d4f9cec485ebe9064da84229a0069df8))
-* **deps:** update dependency vuetify to v3.8.11 ([#75](https://github.com/PhyberApex/kuroshiro/issues/75)) ([1ffee06](https://github.com/PhyberApex/kuroshiro/commit/1ffee06fd6308e89a2e37f37db50c519a98207bc))
-* **deps:** update dependency vuetify to v3.8.12 ([#93](https://github.com/PhyberApex/kuroshiro/issues/93)) ([72dcc59](https://github.com/PhyberApex/kuroshiro/commit/72dcc59e6d15146e77440159ef18987a2ae5c0bc))
-* **deps:** update dependency vuetify to v3.9.0 ([#101](https://github.com/PhyberApex/kuroshiro/issues/101)) ([fc4a939](https://github.com/PhyberApex/kuroshiro/commit/fc4a93977717921978c8ac3a7155e9e862b5ed10))
-* **deps:** update dependency vuetify to v3.9.2 ([#115](https://github.com/PhyberApex/kuroshiro/issues/115)) ([5cf2000](https://github.com/PhyberApex/kuroshiro/commit/5cf20006997c048dd7b57e4c6c0329ab6ed7ecc5))
-* **deps:** update dependency vuetify to v3.9.3 ([#133](https://github.com/PhyberApex/kuroshiro/issues/133)) ([181a3af](https://github.com/PhyberApex/kuroshiro/commit/181a3af44503f190ae97ef283fa5b84200b03694))
-* **deps:** update dependency vuetify to v3.9.4 ([#144](https://github.com/PhyberApex/kuroshiro/issues/144)) ([55d95e1](https://github.com/PhyberApex/kuroshiro/commit/55d95e1a98c40645091c8c4f41e2e477caf89d33))
-* **deps:** update dependency vuetify to v3.9.5 ([#156](https://github.com/PhyberApex/kuroshiro/issues/156)) ([51cea1d](https://github.com/PhyberApex/kuroshiro/commit/51cea1d31f691550c0b52233f96189b3079d7c58))
-* **deps:** update dependency vuetify to v3.9.6 ([#176](https://github.com/PhyberApex/kuroshiro/issues/176)) ([b9488a2](https://github.com/PhyberApex/kuroshiro/commit/b9488a25d08ee09a802598cb61df7a31e950b041))
-* **deps:** update dependency vuetify to v3.9.7 ([#187](https://github.com/PhyberApex/kuroshiro/issues/187)) ([dc9bd01](https://github.com/PhyberApex/kuroshiro/commit/dc9bd017614a9400b3ebecae9df12f403697b71a))
-* **deps:** update nest monorepo to v11.1.5 ([#112](https://github.com/PhyberApex/kuroshiro/issues/112)) ([83beeff](https://github.com/PhyberApex/kuroshiro/commit/83beeff6713b185beb275da67e05234e603129c0))
-* **deps:** update nest monorepo to v11.1.6 ([#147](https://github.com/PhyberApex/kuroshiro/issues/147)) ([550eacb](https://github.com/PhyberApex/kuroshiro/commit/550eacb680f35432cecf9f09f490c19e907a3c76))
-* **deps:** update nest monorepo to v11.1.8 ([#225](https://github.com/PhyberApex/kuroshiro/issues/225)) ([67d7197](https://github.com/PhyberApex/kuroshiro/commit/67d71977d52808f2457dc7b3a6fe8f24f28c8236))
-* **deps:** update nest monorepo to v11.1.9 ([#236](https://github.com/PhyberApex/kuroshiro/issues/236)) ([1347605](https://github.com/PhyberApex/kuroshiro/commit/1347605d24256be8d08e0daf91030ac9351e06ef))
+* **deps:** update dependency puppeteer to v24.32.0 ([#276](https://github.com/usetrmnl/kuroshiro/issues/276)) ([6893f6b](https://github.com/usetrmnl/kuroshiro/commit/6893f6bc3d0ca3d3be9d5dfc764c593b7483b752))
+* **deps:** update dependency typeorm to v0.3.28 ([#275](https://github.com/usetrmnl/kuroshiro/issues/275)) ([b3b03c3](https://github.com/usetrmnl/kuroshiro/commit/b3b03c3a75ffabaed6e32cb0534d58a4ab9b79b3))
+* **deps:** update dependency vuetify to v3.11.2 ([#273](https://github.com/usetrmnl/kuroshiro/issues/273)) ([e1fb986](https://github.com/usetrmnl/kuroshiro/commit/e1fb986e7ab5e213b79a3ece35d53508792c2beb))
+* Fix build issue ([#280](https://github.com/usetrmnl/kuroshiro/issues/280)) ([acf90eb](https://github.com/usetrmnl/kuroshiro/commit/acf90eb7de388d781058bdce00b7facfebbf7b82)), closes [#279](https://github.com/usetrmnl/kuroshiro/issues/279)
 
-## [0.4.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.3.2...kuroshiro-v0.4.0) (2025-06-20)
+## [0.5.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.4.0...kuroshiro-v0.5.0) (2025-11-28)
 
 
 ### Features
 
-* **device:** Allow changing of name ([#49](https://github.com/PhyberApex/kuroshiro/issues/49)) ([a98afcb](https://github.com/PhyberApex/kuroshiro/commit/a98afcb2442b2a16b58100c6ef6efd3ae4ea31bc))
+* Add persistence for device logs ([#269](https://github.com/usetrmnl/kuroshiro/issues/269)) ([609ad7c](https://github.com/usetrmnl/kuroshiro/commit/609ad7c26276932ae6df890fbedbe7bd067d44d8)), closes [#26](https://github.com/usetrmnl/kuroshiro/issues/26)
 
 
 ### Bug Fixes
 
-* **deps:** update dependency @vueuse/core to v13.4.0 ([#66](https://github.com/PhyberApex/kuroshiro/issues/66)) ([51bf575](https://github.com/PhyberApex/kuroshiro/commit/51bf575298c14c44a6fd5af26a4b635dffb92b34))
-* **deps:** update dependency pg to v8.16.1 ([#56](https://github.com/PhyberApex/kuroshiro/issues/56)) ([ff1919a](https://github.com/PhyberApex/kuroshiro/commit/ff1919aee7988e1ef6a435e11f7dd1ad3eb61d44))
-* **deps:** update dependency pg to v8.16.2 ([#67](https://github.com/PhyberApex/kuroshiro/issues/67)) ([f5201ca](https://github.com/PhyberApex/kuroshiro/commit/f5201cac42cac90937c20f4cf37034b97ca502ce))
-* **deps:** update dependency typeorm to v0.3.25 ([#68](https://github.com/PhyberApex/kuroshiro/issues/68)) ([58e2b25](https://github.com/PhyberApex/kuroshiro/commit/58e2b25f7d04440fbd00f7dd9ebcbf56ccc1e34d))
-* **deps:** update dependency vue to v3.5.17 ([#57](https://github.com/PhyberApex/kuroshiro/issues/57)) ([4260d68](https://github.com/PhyberApex/kuroshiro/commit/4260d689ab5fb2dc4ae6cfe9ca0db36d218b17c0))
-* **deps:** update dependency vuetify to v3.8.10 ([#61](https://github.com/PhyberApex/kuroshiro/issues/61)) ([577b964](https://github.com/PhyberApex/kuroshiro/commit/577b964993dc6997017ec9ad3a7010ad97fca0d6))
-* **devices:** Current screen and screen list not updating on device switch ([254a962](https://github.com/PhyberApex/kuroshiro/commit/254a96235a3a192cc755e4adcd452f0d32539fe3)), closes [#42](https://github.com/PhyberApex/kuroshiro/issues/42)
-* **display:** Change post-fix to iso date string ([#50](https://github.com/PhyberApex/kuroshiro/issues/50)) ([7db241a](https://github.com/PhyberApex/kuroshiro/commit/7db241aed0bdf2ea0759b70546cb88379ea87b1f))
-* **docker:** Fix pupeteer not working in docker ([#48](https://github.com/PhyberApex/kuroshiro/issues/48)) ([f0e694d](https://github.com/PhyberApex/kuroshiro/commit/f0e694d8cc49e4522d58bf620a46a7f0422269ba)), closes [#45](https://github.com/PhyberApex/kuroshiro/issues/45)
-* **mirror:** Fixing DeviceDetailsView not working if no screen added but mirroring enabled ([#64](https://github.com/PhyberApex/kuroshiro/issues/64)) ([611a4c6](https://github.com/PhyberApex/kuroshiro/commit/611a4c6ce06b1196b7b8fbc5418bc33b8a24e4e6)), closes [#43](https://github.com/PhyberApex/kuroshiro/issues/43)
-* **mirror:** Fixing proxy not working ([#59](https://github.com/PhyberApex/kuroshiro/issues/59)) ([7b27f6a](https://github.com/PhyberApex/kuroshiro/commit/7b27f6a24412cef9800f496afefd71a70639b503)), closes [#44](https://github.com/PhyberApex/kuroshiro/issues/44)
-* **screens:** Fixed the preview of the HTML render screens in all places ([5030d29](https://github.com/PhyberApex/kuroshiro/commit/5030d291eaf6bb0d27941007f9732cc2c5ca0886))
-* **ui:** Fix for flash screen ([a1286e8](https://github.com/PhyberApex/kuroshiro/commit/a1286e8f4d0935db168ee52bc292b5903d633deb)), closes [#46](https://github.com/PhyberApex/kuroshiro/issues/46)
+* **deps:** update dependency @nestjs/serve-static to v5.0.4 ([#221](https://github.com/usetrmnl/kuroshiro/issues/221)) ([d8c4bb7](https://github.com/usetrmnl/kuroshiro/commit/d8c4bb7823a2de7314f95f719641083e5f92b020))
+* **deps:** update dependency @vueuse/core to v13.5.0 ([#95](https://github.com/usetrmnl/kuroshiro/issues/95)) ([1577d15](https://github.com/usetrmnl/kuroshiro/commit/1577d151b486683cdd65bf04279da659f45f04bb))
+* **deps:** update dependency @vueuse/core to v13.6.0 ([#131](https://github.com/usetrmnl/kuroshiro/issues/131)) ([84da140](https://github.com/usetrmnl/kuroshiro/commit/84da14051c91f2fe84c6ede369219fb5ee698ed4))
+* **deps:** update dependency @vueuse/core to v13.7.0 ([#161](https://github.com/usetrmnl/kuroshiro/issues/161)) ([8cc7db1](https://github.com/usetrmnl/kuroshiro/commit/8cc7db16d84b0649a8eb9356ecea2e41bfbfe4cf))
+* **deps:** update dependency @vueuse/core to v13.8.0 ([#177](https://github.com/usetrmnl/kuroshiro/issues/177)) ([7913c73](https://github.com/usetrmnl/kuroshiro/commit/7913c7342632806db75a707642b63a94fc7a8f6b))
+* **deps:** update dependency @vueuse/core to v13.9.0 ([#184](https://github.com/usetrmnl/kuroshiro/issues/184)) ([5f738b3](https://github.com/usetrmnl/kuroshiro/commit/5f738b34e9db81d668e1c3e4e9f0c540f27282af))
+* **deps:** update dependency @vueuse/core to v14 ([#248](https://github.com/usetrmnl/kuroshiro/issues/248)) ([aaf6ac9](https://github.com/usetrmnl/kuroshiro/commit/aaf6ac9db3657b248575c103a0e81f8e8e44455a))
+* **deps:** update dependency @vueuse/core to v14.1.0 ([#265](https://github.com/usetrmnl/kuroshiro/issues/265)) ([7425cfd](https://github.com/usetrmnl/kuroshiro/commit/7425cfd5f1b25c79c860e68bc7bd6700337ecd34))
+* **deps:** update dependency class-validator to v0.14.3 ([#263](https://github.com/usetrmnl/kuroshiro/issues/263)) ([988391d](https://github.com/usetrmnl/kuroshiro/commit/988391d93132fc1145e3727ea1a68aa0facea2f8))
+* **deps:** update dependency dotenv to v16.6.1 ([#83](https://github.com/usetrmnl/kuroshiro/issues/83)) ([ba7f026](https://github.com/usetrmnl/kuroshiro/commit/ba7f026115b442b5bb158925ba3ec4492f906119))
+* **deps:** update dependency dotenv to v17 ([#86](https://github.com/usetrmnl/kuroshiro/issues/86)) ([a21aa3c](https://github.com/usetrmnl/kuroshiro/commit/a21aa3c8e9615c0827845bcf6a01cd94e4352541))
+* **deps:** update dependency dotenv to v17.1.0 ([#98](https://github.com/usetrmnl/kuroshiro/issues/98)) ([7b5b7d8](https://github.com/usetrmnl/kuroshiro/commit/7b5b7d868d03b75533b909743d4c7cc3646af071))
+* **deps:** update dependency dotenv to v17.2.0 ([#105](https://github.com/usetrmnl/kuroshiro/issues/105)) ([f51b416](https://github.com/usetrmnl/kuroshiro/commit/f51b416973fbc09ff3ca38458290cc63df1d234b))
+* **deps:** update dependency dotenv to v17.2.1 ([#125](https://github.com/usetrmnl/kuroshiro/issues/125)) ([a7fa6bd](https://github.com/usetrmnl/kuroshiro/commit/a7fa6bdcb70db96689391ab9e795373020dd0bac))
+* **deps:** update dependency dotenv to v17.2.2 ([#186](https://github.com/usetrmnl/kuroshiro/issues/186)) ([c922546](https://github.com/usetrmnl/kuroshiro/commit/c922546dc6b2a60b82554372f10313c8568e7206))
+* **deps:** update dependency dotenv to v17.2.3 ([#222](https://github.com/usetrmnl/kuroshiro/issues/222)) ([d5a04c4](https://github.com/usetrmnl/kuroshiro/commit/d5a04c4b9dda7fd4314e3b900d0ea8eb18ac9a56))
+* **deps:** update dependency fs-extra to v11.3.1 ([#145](https://github.com/usetrmnl/kuroshiro/issues/145)) ([321da4d](https://github.com/usetrmnl/kuroshiro/commit/321da4defc37722657d0a88ef6426450fb6af6bf))
+* **deps:** update dependency fs-extra to v11.3.2 ([#207](https://github.com/usetrmnl/kuroshiro/issues/207)) ([6734ea3](https://github.com/usetrmnl/kuroshiro/commit/6734ea39fa7c7ba437bb958dfe2ef318abdcacb2))
+* **deps:** update dependency pg to v8.16.3 ([#84](https://github.com/usetrmnl/kuroshiro/issues/84)) ([6c1320e](https://github.com/usetrmnl/kuroshiro/commit/6c1320e42e9d12f85016a6ce9eee3fe10b1808ae))
+* **deps:** update dependency pinia to v3.0.4 ([#223](https://github.com/usetrmnl/kuroshiro/issues/223)) ([6d8618c](https://github.com/usetrmnl/kuroshiro/commit/6d8618c4795286afa4d9ce7b986f12529dfa39e3))
+* **deps:** update dependency puppeteer to v24.11.2 ([#60](https://github.com/usetrmnl/kuroshiro/issues/60)) ([4987278](https://github.com/usetrmnl/kuroshiro/commit/49872784b9813172a71b600a77b1d31eb2af533d))
+* **deps:** update dependency puppeteer to v24.12.0 ([#96](https://github.com/usetrmnl/kuroshiro/issues/96)) ([cb01638](https://github.com/usetrmnl/kuroshiro/commit/cb01638f033300800c52dbb8fd8b06c7e120ad41))
+* **deps:** update dependency puppeteer to v24.12.1 ([#103](https://github.com/usetrmnl/kuroshiro/issues/103)) ([5e0ac2b](https://github.com/usetrmnl/kuroshiro/commit/5e0ac2b59a18468d9891d9216a8c657f2cee3a43))
+* **deps:** update dependency puppeteer to v24.13.0 ([#111](https://github.com/usetrmnl/kuroshiro/issues/111)) ([b7f511b](https://github.com/usetrmnl/kuroshiro/commit/b7f511b9b1895c1aadde7aa7e708ecd11a2fa1c6))
+* **deps:** update dependency puppeteer to v24.14.0 ([#113](https://github.com/usetrmnl/kuroshiro/issues/113)) ([a76b87d](https://github.com/usetrmnl/kuroshiro/commit/a76b87da8397a8519cee738e9406e462e08eb6a1))
+* **deps:** update dependency puppeteer to v24.15.0 ([#122](https://github.com/usetrmnl/kuroshiro/issues/122)) ([ac3a5c7](https://github.com/usetrmnl/kuroshiro/commit/ac3a5c7d55779044de726ec32c71fac39a598363))
+* **deps:** update dependency puppeteer to v24.16.0 ([#146](https://github.com/usetrmnl/kuroshiro/issues/146)) ([966f4b7](https://github.com/usetrmnl/kuroshiro/commit/966f4b77069c0830e1445fd98def4990505e1eea))
+* **deps:** update dependency puppeteer to v24.16.1 ([#153](https://github.com/usetrmnl/kuroshiro/issues/153)) ([cae7f29](https://github.com/usetrmnl/kuroshiro/commit/cae7f2995f458e2416cbfd277eef345bf5c7e231))
+* **deps:** update dependency puppeteer to v24.16.2 ([#157](https://github.com/usetrmnl/kuroshiro/issues/157)) ([dbe4e58](https://github.com/usetrmnl/kuroshiro/commit/dbe4e585086b63e547fe04a7f4ea0b885e978694))
+* **deps:** update dependency puppeteer to v24.17.0 ([#166](https://github.com/usetrmnl/kuroshiro/issues/166)) ([0bab8f9](https://github.com/usetrmnl/kuroshiro/commit/0bab8f966d1a4a32a18d75406164a24ca32107ff))
+* **deps:** update dependency puppeteer to v24.17.1 ([#178](https://github.com/usetrmnl/kuroshiro/issues/178)) ([598929e](https://github.com/usetrmnl/kuroshiro/commit/598929e3c217bd92033d741e231b8b53a8a31ee7))
+* **deps:** update dependency puppeteer to v24.18.0 ([#180](https://github.com/usetrmnl/kuroshiro/issues/180)) ([4afeba6](https://github.com/usetrmnl/kuroshiro/commit/4afeba6badd67d8a938c153acfb96854fe80fa22))
+* **deps:** update dependency puppeteer to v24.19.0 ([#191](https://github.com/usetrmnl/kuroshiro/issues/191)) ([bf80670](https://github.com/usetrmnl/kuroshiro/commit/bf806706396b619bcc4e304a33e31f169b161c58))
+* **deps:** update dependency puppeteer to v24.21.0 ([#198](https://github.com/usetrmnl/kuroshiro/issues/198)) ([bc1ab24](https://github.com/usetrmnl/kuroshiro/commit/bc1ab24a13bd2b4730e020c8ffadeedfda375d78))
+* **deps:** update dependency puppeteer to v24.27.0 ([#212](https://github.com/usetrmnl/kuroshiro/issues/212)) ([91a9146](https://github.com/usetrmnl/kuroshiro/commit/91a914661b22aa0c1de6b26400bc2c14823cb4c3))
+* **deps:** update dependency puppeteer to v24.30.0 ([#238](https://github.com/usetrmnl/kuroshiro/issues/238)) ([9218e05](https://github.com/usetrmnl/kuroshiro/commit/9218e0556365eb46e52dc68044c9f56f08b08a57))
+* **deps:** update dependency puppeteer to v24.31.0 ([#259](https://github.com/usetrmnl/kuroshiro/issues/259)) ([cdf1652](https://github.com/usetrmnl/kuroshiro/commit/cdf1652a16b37dd68bd23705b536e842a221d09d))
+* **deps:** update dependency typeorm to v0.3.26 ([#162](https://github.com/usetrmnl/kuroshiro/issues/162)) ([f55d067](https://github.com/usetrmnl/kuroshiro/commit/f55d067d33992d76e4438519b6d61ee215e2432f))
+* **deps:** update dependency typeorm to v0.3.27 ([#215](https://github.com/usetrmnl/kuroshiro/issues/215)) ([f3650f2](https://github.com/usetrmnl/kuroshiro/commit/f3650f2fbc604409b1981d83c1d0058634552163))
+* **deps:** update dependency uuid to v12 ([#194](https://github.com/usetrmnl/kuroshiro/issues/194)) ([1a91a97](https://github.com/usetrmnl/kuroshiro/commit/1a91a978719507bd61e7a9c32a3426c9792f935f))
+* **deps:** update dependency uuid to v13 ([#197](https://github.com/usetrmnl/kuroshiro/issues/197)) ([fbe4fb9](https://github.com/usetrmnl/kuroshiro/commit/fbe4fb96045dbf704478efdea9746b1449a5cb9a))
+* **deps:** update dependency vite-plugin-vuetify to v2.1.2 ([#137](https://github.com/usetrmnl/kuroshiro/issues/137)) ([8122280](https://github.com/usetrmnl/kuroshiro/commit/8122280db55973702650327a8c82150a564d87d8))
+* **deps:** update dependency vue to v3.5.18 ([#120](https://github.com/usetrmnl/kuroshiro/issues/120)) ([d410071](https://github.com/usetrmnl/kuroshiro/commit/d41007184d60b849aaf6647504d39b1ae90984f0))
+* **deps:** update dependency vue to v3.5.19 ([#167](https://github.com/usetrmnl/kuroshiro/issues/167)) ([b105223](https://github.com/usetrmnl/kuroshiro/commit/b10522385d9bc10de89fecd8f85f943a42df412a))
+* **deps:** update dependency vue to v3.5.20 ([#174](https://github.com/usetrmnl/kuroshiro/issues/174)) ([de06a4d](https://github.com/usetrmnl/kuroshiro/commit/de06a4db2cc253eba1cb937d037dca6e879eb8f9))
+* **deps:** update dependency vue to v3.5.21 ([#185](https://github.com/usetrmnl/kuroshiro/issues/185)) ([4ee1ce5](https://github.com/usetrmnl/kuroshiro/commit/4ee1ce5093cbb1a3c1b5a7a3c2f79840b176b3f7))
+* **deps:** update dependency vue to v3.5.24 ([#224](https://github.com/usetrmnl/kuroshiro/issues/224)) ([e18b80c](https://github.com/usetrmnl/kuroshiro/commit/e18b80c8d6b902d85a6305655f1356ea6b3006f2))
+* **deps:** update dependency vue to v3.5.25 ([#262](https://github.com/usetrmnl/kuroshiro/issues/262)) ([2fa9a9a](https://github.com/usetrmnl/kuroshiro/commit/2fa9a9aa57177bebcae4a909bebbfcb6f3aaefa8))
+* **deps:** update dependency vue-router to v4.6.3 ([#239](https://github.com/usetrmnl/kuroshiro/issues/239)) ([fe797d9](https://github.com/usetrmnl/kuroshiro/commit/fe797d96068c3adc6a018057354666a38bce99d0))
+* **deps:** update dependency vuetify to v3.10.0 ([#199](https://github.com/usetrmnl/kuroshiro/issues/199)) ([84759b6](https://github.com/usetrmnl/kuroshiro/commit/84759b6fd138575839026b551e23838e8da1b97f))
+* **deps:** update dependency vuetify to v3.10.11 ([#235](https://github.com/usetrmnl/kuroshiro/issues/235)) ([dd9b387](https://github.com/usetrmnl/kuroshiro/commit/dd9b387c6093bf020857c6e8c3c2758b254918ce))
+* **deps:** update dependency vuetify to v3.10.9 ([#208](https://github.com/usetrmnl/kuroshiro/issues/208)) ([b66498c](https://github.com/usetrmnl/kuroshiro/commit/b66498ce6fb5fa07d7657d918dc21a572c7d3526))
+* **deps:** update dependency vuetify to v3.11.0 ([#264](https://github.com/usetrmnl/kuroshiro/issues/264)) ([da0a1ff](https://github.com/usetrmnl/kuroshiro/commit/da0a1ff1d4f9cec485ebe9064da84229a0069df8))
+* **deps:** update dependency vuetify to v3.8.11 ([#75](https://github.com/usetrmnl/kuroshiro/issues/75)) ([1ffee06](https://github.com/usetrmnl/kuroshiro/commit/1ffee06fd6308e89a2e37f37db50c519a98207bc))
+* **deps:** update dependency vuetify to v3.8.12 ([#93](https://github.com/usetrmnl/kuroshiro/issues/93)) ([72dcc59](https://github.com/usetrmnl/kuroshiro/commit/72dcc59e6d15146e77440159ef18987a2ae5c0bc))
+* **deps:** update dependency vuetify to v3.9.0 ([#101](https://github.com/usetrmnl/kuroshiro/issues/101)) ([fc4a939](https://github.com/usetrmnl/kuroshiro/commit/fc4a93977717921978c8ac3a7155e9e862b5ed10))
+* **deps:** update dependency vuetify to v3.9.2 ([#115](https://github.com/usetrmnl/kuroshiro/issues/115)) ([5cf2000](https://github.com/usetrmnl/kuroshiro/commit/5cf20006997c048dd7b57e4c6c0329ab6ed7ecc5))
+* **deps:** update dependency vuetify to v3.9.3 ([#133](https://github.com/usetrmnl/kuroshiro/issues/133)) ([181a3af](https://github.com/usetrmnl/kuroshiro/commit/181a3af44503f190ae97ef283fa5b84200b03694))
+* **deps:** update dependency vuetify to v3.9.4 ([#144](https://github.com/usetrmnl/kuroshiro/issues/144)) ([55d95e1](https://github.com/usetrmnl/kuroshiro/commit/55d95e1a98c40645091c8c4f41e2e477caf89d33))
+* **deps:** update dependency vuetify to v3.9.5 ([#156](https://github.com/usetrmnl/kuroshiro/issues/156)) ([51cea1d](https://github.com/usetrmnl/kuroshiro/commit/51cea1d31f691550c0b52233f96189b3079d7c58))
+* **deps:** update dependency vuetify to v3.9.6 ([#176](https://github.com/usetrmnl/kuroshiro/issues/176)) ([b9488a2](https://github.com/usetrmnl/kuroshiro/commit/b9488a25d08ee09a802598cb61df7a31e950b041))
+* **deps:** update dependency vuetify to v3.9.7 ([#187](https://github.com/usetrmnl/kuroshiro/issues/187)) ([dc9bd01](https://github.com/usetrmnl/kuroshiro/commit/dc9bd017614a9400b3ebecae9df12f403697b71a))
+* **deps:** update nest monorepo to v11.1.5 ([#112](https://github.com/usetrmnl/kuroshiro/issues/112)) ([83beeff](https://github.com/usetrmnl/kuroshiro/commit/83beeff6713b185beb275da67e05234e603129c0))
+* **deps:** update nest monorepo to v11.1.6 ([#147](https://github.com/usetrmnl/kuroshiro/issues/147)) ([550eacb](https://github.com/usetrmnl/kuroshiro/commit/550eacb680f35432cecf9f09f490c19e907a3c76))
+* **deps:** update nest monorepo to v11.1.8 ([#225](https://github.com/usetrmnl/kuroshiro/issues/225)) ([67d7197](https://github.com/usetrmnl/kuroshiro/commit/67d71977d52808f2457dc7b3a6fe8f24f28c8236))
+* **deps:** update nest monorepo to v11.1.9 ([#236](https://github.com/usetrmnl/kuroshiro/issues/236)) ([1347605](https://github.com/usetrmnl/kuroshiro/commit/1347605d24256be8d08e0daf91030ac9351e06ef))
 
-## [0.3.2](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.3.1...kuroshiro-v0.3.2) (2025-06-17)
-
-
-### Bug Fixes
-
-* **mirror:** Fetching correct filename ([9dfbe42](https://github.com/PhyberApex/kuroshiro/commit/9dfbe42ad17bcd72bbd6dc0113f22930c83dccc4))
-
-## [0.3.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.3.0...kuroshiro-v0.3.1) (2025-06-17)
-
-
-### Bug Fixes
-
-* **mirror:** Use proper casing for headers on sending to TRMNL server for proxy device ([a0e0e98](https://github.com/PhyberApex/kuroshiro/commit/a0e0e98adec7a8688f91bf63b591fa440c7635ba))
-* **screens:** Make filename change on new render ([#37](https://github.com/PhyberApex/kuroshiro/issues/37)) ([7bfd125](https://github.com/PhyberApex/kuroshiro/commit/7bfd12592ebfef55414cc20ac481443257eff3f3)), closes [#34](https://github.com/PhyberApex/kuroshiro/issues/34)
-
-## [0.3.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.2.0...kuroshiro-v0.3.0) (2025-06-15)
+## [0.4.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.3.2...kuroshiro-v0.4.0) (2025-06-20)
 
 
 ### Features
 
-* Added demo mode ([48a95c8](https://github.com/PhyberApex/kuroshiro/commit/48a95c85e766a9fc3327df0431b999a02508b587))
-* **mirror:** Use different endpoints depending on MAC matching or not (proxy vs. mirror) ([2507ea2](https://github.com/PhyberApex/kuroshiro/commit/2507ea23068fa2eb1ad2010c424c7287877d8675))
-* **ui:** Better UX for entering of refresh rate ([75c7d72](https://github.com/PhyberApex/kuroshiro/commit/75c7d72c9c35ea1b297d9267be9d313e2d37c399))
-* **virtual-device:** Take header attributes from real device on selection in dropdown ([9e70815](https://github.com/PhyberApex/kuroshiro/commit/9e7081558ca5962d961329e0a572bcc7668342aa))
+* **device:** Allow changing of name ([#49](https://github.com/usetrmnl/kuroshiro/issues/49)) ([a98afcb](https://github.com/usetrmnl/kuroshiro/commit/a98afcb2442b2a16b58100c6ef6efd3ae4ea31bc))
 
 
 ### Bug Fixes
 
-* **api/display:** Switched to waitFor - load for headless render to boost performance ([ce32c21](https://github.com/PhyberApex/kuroshiro/commit/ce32c21cb2c7e535615dc55d544cadddd7f692a6))
-* **deps:** Remove unused dependency (jest) ([#24](https://github.com/PhyberApex/kuroshiro/issues/24)) ([9af9886](https://github.com/PhyberApex/kuroshiro/commit/9af988671a2d33b73b4e194f2550e9c897efdba5)), closes [#23](https://github.com/PhyberApex/kuroshiro/issues/23)
-* **deps:** update dependency puppeteer to v24.10.1 ([#28](https://github.com/PhyberApex/kuroshiro/issues/28)) ([4d7bdf5](https://github.com/PhyberApex/kuroshiro/commit/4d7bdf5a11c7709f7bb5baa59d4031c5d79abdba))
-* **deps:** update dependency vuetify to v3.8.9 ([#27](https://github.com/PhyberApex/kuroshiro/issues/27)) ([0f1ccdb](https://github.com/PhyberApex/kuroshiro/commit/0f1ccdb66e71e87641357b1b8e78cb0e135059d2))
-* **deps:** update nest monorepo to v11.1.3 ([#15](https://github.com/PhyberApex/kuroshiro/issues/15)) ([7989375](https://github.com/PhyberApex/kuroshiro/commit/7989375b67684f6fc3c993d84b0f9698eebcf24a))
-* **screens:** Change HTML render to align more with plugins from TRMNL ([17cb214](https://github.com/PhyberApex/kuroshiro/commit/17cb21473cd110a7599a8c688bf8505251fcb2ba))
-* **virtual-device:** Fix header pass through to TRMNL server ([7579731](https://github.com/PhyberApex/kuroshiro/commit/7579731f3ec0afcf0ddc1e608906e248dda68872))
+* **deps:** update dependency @vueuse/core to v13.4.0 ([#66](https://github.com/usetrmnl/kuroshiro/issues/66)) ([51bf575](https://github.com/usetrmnl/kuroshiro/commit/51bf575298c14c44a6fd5af26a4b635dffb92b34))
+* **deps:** update dependency pg to v8.16.1 ([#56](https://github.com/usetrmnl/kuroshiro/issues/56)) ([ff1919a](https://github.com/usetrmnl/kuroshiro/commit/ff1919aee7988e1ef6a435e11f7dd1ad3eb61d44))
+* **deps:** update dependency pg to v8.16.2 ([#67](https://github.com/usetrmnl/kuroshiro/issues/67)) ([f5201ca](https://github.com/usetrmnl/kuroshiro/commit/f5201cac42cac90937c20f4cf37034b97ca502ce))
+* **deps:** update dependency typeorm to v0.3.25 ([#68](https://github.com/usetrmnl/kuroshiro/issues/68)) ([58e2b25](https://github.com/usetrmnl/kuroshiro/commit/58e2b25f7d04440fbd00f7dd9ebcbf56ccc1e34d))
+* **deps:** update dependency vue to v3.5.17 ([#57](https://github.com/usetrmnl/kuroshiro/issues/57)) ([4260d68](https://github.com/usetrmnl/kuroshiro/commit/4260d689ab5fb2dc4ae6cfe9ca0db36d218b17c0))
+* **deps:** update dependency vuetify to v3.8.10 ([#61](https://github.com/usetrmnl/kuroshiro/issues/61)) ([577b964](https://github.com/usetrmnl/kuroshiro/commit/577b964993dc6997017ec9ad3a7010ad97fca0d6))
+* **devices:** Current screen and screen list not updating on device switch ([254a962](https://github.com/usetrmnl/kuroshiro/commit/254a96235a3a192cc755e4adcd452f0d32539fe3)), closes [#42](https://github.com/usetrmnl/kuroshiro/issues/42)
+* **display:** Change post-fix to iso date string ([#50](https://github.com/usetrmnl/kuroshiro/issues/50)) ([7db241a](https://github.com/usetrmnl/kuroshiro/commit/7db241aed0bdf2ea0759b70546cb88379ea87b1f))
+* **docker:** Fix pupeteer not working in docker ([#48](https://github.com/usetrmnl/kuroshiro/issues/48)) ([f0e694d](https://github.com/usetrmnl/kuroshiro/commit/f0e694d8cc49e4522d58bf620a46a7f0422269ba)), closes [#45](https://github.com/usetrmnl/kuroshiro/issues/45)
+* **mirror:** Fixing DeviceDetailsView not working if no screen added but mirroring enabled ([#64](https://github.com/usetrmnl/kuroshiro/issues/64)) ([611a4c6](https://github.com/usetrmnl/kuroshiro/commit/611a4c6ce06b1196b7b8fbc5418bc33b8a24e4e6)), closes [#43](https://github.com/usetrmnl/kuroshiro/issues/43)
+* **mirror:** Fixing proxy not working ([#59](https://github.com/usetrmnl/kuroshiro/issues/59)) ([7b27f6a](https://github.com/usetrmnl/kuroshiro/commit/7b27f6a24412cef9800f496afefd71a70639b503)), closes [#44](https://github.com/usetrmnl/kuroshiro/issues/44)
+* **screens:** Fixed the preview of the HTML render screens in all places ([5030d29](https://github.com/usetrmnl/kuroshiro/commit/5030d291eaf6bb0d27941007f9732cc2c5ca0886))
+* **ui:** Fix for flash screen ([a1286e8](https://github.com/usetrmnl/kuroshiro/commit/a1286e8f4d0935db168ee52bc292b5903d633deb)), closes [#46](https://github.com/usetrmnl/kuroshiro/issues/46)
 
-## [0.2.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.1.1...kuroshiro-v0.2.0) (2025-06-04)
+## [0.3.2](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.3.1...kuroshiro-v0.3.2) (2025-06-17)
+
+
+### Bug Fixes
+
+* **mirror:** Fetching correct filename ([9dfbe42](https://github.com/usetrmnl/kuroshiro/commit/9dfbe42ad17bcd72bbd6dc0113f22930c83dccc4))
+
+## [0.3.1](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.3.0...kuroshiro-v0.3.1) (2025-06-17)
+
+
+### Bug Fixes
+
+* **mirror:** Use proper casing for headers on sending to TRMNL server for proxy device ([a0e0e98](https://github.com/usetrmnl/kuroshiro/commit/a0e0e98adec7a8688f91bf63b591fa440c7635ba))
+* **screens:** Make filename change on new render ([#37](https://github.com/usetrmnl/kuroshiro/issues/37)) ([7bfd125](https://github.com/usetrmnl/kuroshiro/commit/7bfd12592ebfef55414cc20ac481443257eff3f3)), closes [#34](https://github.com/usetrmnl/kuroshiro/issues/34)
+
+## [0.3.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.2.0...kuroshiro-v0.3.0) (2025-06-15)
 
 
 ### Features
 
-* **screens:** Add functionality to render html with the TRMNL framework ([9a31305](https://github.com/PhyberApex/kuroshiro/commit/9a313054ceb52b5dfe1e6dbf2d6dc3bc5da7fc01))
-* **tools:** Added new tool "HTML preview" to help create HTML screens ([487463c](https://github.com/PhyberApex/kuroshiro/commit/487463c0f2ba0ecb08c27a21cd6455f4fac7658e))
+* Added demo mode ([48a95c8](https://github.com/usetrmnl/kuroshiro/commit/48a95c85e766a9fc3327df0431b999a02508b587))
+* **mirror:** Use different endpoints depending on MAC matching or not (proxy vs. mirror) ([2507ea2](https://github.com/usetrmnl/kuroshiro/commit/2507ea23068fa2eb1ad2010c424c7287877d8675))
+* **ui:** Better UX for entering of refresh rate ([75c7d72](https://github.com/usetrmnl/kuroshiro/commit/75c7d72c9c35ea1b297d9267be9d313e2d37c399))
+* **virtual-device:** Take header attributes from real device on selection in dropdown ([9e70815](https://github.com/usetrmnl/kuroshiro/commit/9e7081558ca5962d961329e0a572bcc7668342aa))
 
 
 ### Bug Fixes
 
-* **deps:** update dependency pinia to v3.0.3 ([#8](https://github.com/PhyberApex/kuroshiro/issues/8)) ([02a0875](https://github.com/PhyberApex/kuroshiro/commit/02a08755d464c2f0164ac05669ee6473be7aa0a1))
-* **deps:** update dependency vuetify to v3.8.8 ([#9](https://github.com/PhyberApex/kuroshiro/issues/9)) ([9826963](https://github.com/PhyberApex/kuroshiro/commit/9826963bd41e838f1195e22c51b55a09c8f5c3b8))
+* **api/display:** Switched to waitFor - load for headless render to boost performance ([ce32c21](https://github.com/usetrmnl/kuroshiro/commit/ce32c21cb2c7e535615dc55d544cadddd7f692a6))
+* **deps:** Remove unused dependency (jest) ([#24](https://github.com/usetrmnl/kuroshiro/issues/24)) ([9af9886](https://github.com/usetrmnl/kuroshiro/commit/9af988671a2d33b73b4e194f2550e9c897efdba5)), closes [#23](https://github.com/usetrmnl/kuroshiro/issues/23)
+* **deps:** update dependency puppeteer to v24.10.1 ([#28](https://github.com/usetrmnl/kuroshiro/issues/28)) ([4d7bdf5](https://github.com/usetrmnl/kuroshiro/commit/4d7bdf5a11c7709f7bb5baa59d4031c5d79abdba))
+* **deps:** update dependency vuetify to v3.8.9 ([#27](https://github.com/usetrmnl/kuroshiro/issues/27)) ([0f1ccdb](https://github.com/usetrmnl/kuroshiro/commit/0f1ccdb66e71e87641357b1b8e78cb0e135059d2))
+* **deps:** update nest monorepo to v11.1.3 ([#15](https://github.com/usetrmnl/kuroshiro/issues/15)) ([7989375](https://github.com/usetrmnl/kuroshiro/commit/7989375b67684f6fc3c993d84b0f9698eebcf24a))
+* **screens:** Change HTML render to align more with plugins from TRMNL ([17cb214](https://github.com/usetrmnl/kuroshiro/commit/17cb21473cd110a7599a8c688bf8505251fcb2ba))
+* **virtual-device:** Fix header pass through to TRMNL server ([7579731](https://github.com/usetrmnl/kuroshiro/commit/7579731f3ec0afcf0ddc1e608906e248dda68872))
 
-## [0.1.1](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.1.0...kuroshiro-v0.1.1) (2025-06-01)
-
-
-### Bug Fixes
-
-* **config:** Fix .env.example with proper values ([61a8a9c](https://github.com/PhyberApex/kuroshiro/commit/61a8a9cf1fd1473b58c6b7049975a141e064c5d2))
-* **screens:** Fix paths not working in built image and removing unused dependencies ([a555b72](https://github.com/PhyberApex/kuroshiro/commit/a555b72a6666f4158a528f53dc557759d975711b))
-
-## [0.1.0](https://github.com/PhyberApex/kuroshiro/compare/kuroshiro-v0.0.1...kuroshiro-v0.1.0) (2025-05-31)
+## [0.2.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.1.1...kuroshiro-v0.2.0) (2025-06-04)
 
 
 ### Features
 
-* Initial commit ([d9427da](https://github.com/PhyberApex/kuroshiro/commit/d9427da67ccb14b7ab8fb6ae3a6d28c84d63c73c))
-
-## [0.0.1](https://github.com/PhyberApex/kuroshiro_internal/compare/kuroshiro-v0.0.1...kuroshiro-v0.0.1) (2025-05-28)
-
-
-### Features
-
-* Add version docker ([d2ba247](https://github.com/PhyberApex/kuroshiro_internal/commit/d2ba2472d1ef0e622fc510aacb2f8ecf245031fe))
-* Add version docker ([4728c5a](https://github.com/PhyberApex/kuroshiro_internal/commit/4728c5a5d2fe5fc0dc19a6e23a468509aa85e9d7))
-* Add version docker ([5daf38f](https://github.com/PhyberApex/kuroshiro_internal/commit/5daf38f4c0960ce07a7ed3d649203c20fe778e2f))
-* Add version docker ([6797f73](https://github.com/PhyberApex/kuroshiro_internal/commit/6797f73947e92e294996447463cc8bf3cda40fec))
-* Add version docker ([b984bd1](https://github.com/PhyberApex/kuroshiro_internal/commit/b984bd13dcbce6514fbd6d74975e357b2374fedb))
-* Add version docker ([cf6e1a3](https://github.com/PhyberApex/kuroshiro_internal/commit/cf6e1a33c5bcd8b9791eab76abe1b971f372bb3b))
-* Added version info ([a0356b5](https://github.com/PhyberApex/kuroshiro_internal/commit/a0356b56b2a21fcf69f952d0d343fe454bc6bb4e))
+* **screens:** Add functionality to render html with the TRMNL framework ([9a31305](https://github.com/usetrmnl/kuroshiro/commit/9a313054ceb52b5dfe1e6dbf2d6dc3bc5da7fc01))
+* **tools:** Added new tool "HTML preview" to help create HTML screens ([487463c](https://github.com/usetrmnl/kuroshiro/commit/487463c0f2ba0ecb08c27a21cd6455f4fac7658e))
 
 
 ### Bug Fixes
 
-* Add caching to ci/cd ([24191b5](https://github.com/PhyberApex/kuroshiro_internal/commit/24191b5e1c5b49f0ecefbf74875f3a357922bbbd))
-* Added dummy tests ([ea0da2f](https://github.com/PhyberApex/kuroshiro_internal/commit/ea0da2fdc6cb019767e17a83883400f83b30f965))
-* **deps:** update dependency @vueuse/core to v13.3.0 ([#13](https://github.com/PhyberApex/kuroshiro_internal/issues/13)) ([8b376d9](https://github.com/PhyberApex/kuroshiro_internal/commit/8b376d96600d755225d8f17bda90388b38a0129c))
-* **deps:** update dependency vue to v3.5.15 ([#6](https://github.com/PhyberApex/kuroshiro_internal/issues/6)) ([df113b8](https://github.com/PhyberApex/kuroshiro_internal/commit/df113b8d314f7fb90f62539917c54b8103f257b3))
-* **deps:** update dependency vuetify to v3.8.7 ([#12](https://github.com/PhyberApex/kuroshiro_internal/issues/12)) ([bf96158](https://github.com/PhyberApex/kuroshiro_internal/commit/bf96158683d299f2d2afd7ef457be81eaa477db0))
-* **deps:** update nest monorepo to v11.1.2 ([#7](https://github.com/PhyberApex/kuroshiro_internal/issues/7)) ([726ddcf](https://github.com/PhyberApex/kuroshiro_internal/commit/726ddcf9e15cf3f039d493360cca3afcfd65c5be))
-* Fix version not being published ([0c1a169](https://github.com/PhyberApex/kuroshiro_internal/commit/0c1a169d9796ed8d70fa373e7be9109fcdb77c07))
-* Github workflow ([ef3c6ad](https://github.com/PhyberApex/kuroshiro_internal/commit/ef3c6ad3b85913bd50b6dbd29102c03ec71a1967))
-* Monorepo? ([d99d4fe](https://github.com/PhyberApex/kuroshiro_internal/commit/d99d4fe018e7f359c3a4b6a268fd933e19127c8b))
-* Monorepo? ([6937425](https://github.com/PhyberApex/kuroshiro_internal/commit/6937425f91c02976db3124b04c2c98198e1f1c8a))
-* Monorepo? ([b5b1788](https://github.com/PhyberApex/kuroshiro_internal/commit/b5b1788dc515715d68f1f4cde5ed5dacd07f8f68))
-* More CI/CD ([5179a25](https://github.com/PhyberApex/kuroshiro_internal/commit/5179a25dd02d276ccc2b5beabc043f9e74f09440))
-* More CI/CD ([274790f](https://github.com/PhyberApex/kuroshiro_internal/commit/274790fb4943c01d06afb0bb7cc686b06787ce70))
-* More CI/CD ([c7ab039](https://github.com/PhyberApex/kuroshiro_internal/commit/c7ab0391b4ad39ceb0375cbc7a70442033dd4975))
-* New work on how to release ([4e369a3](https://github.com/PhyberApex/kuroshiro_internal/commit/4e369a3eda995664366cb6b4afd9d1a66f08dd24))
-* New work on how to release ([3936dd1](https://github.com/PhyberApex/kuroshiro_internal/commit/3936dd1e2dd55bcc48e91edc3ca27abdb138610a))
-* New work on how to release ([bb54c07](https://github.com/PhyberApex/kuroshiro_internal/commit/bb54c07d6e2be8e999e871a4ee452af5a0d9ea12))
-* New work on how to release ([d58e0e4](https://github.com/PhyberApex/kuroshiro_internal/commit/d58e0e40a99885ff8be45a88d07c61072abd26f9))
-* Remove unused plugin ([971a29e](https://github.com/PhyberApex/kuroshiro_internal/commit/971a29e1a9d1ad5fc6c2d271316b43bcdc478ba2))
-* Try something Else ([3faf609](https://github.com/PhyberApex/kuroshiro_internal/commit/3faf609492aefb30910ecab233c3dd7a9c729984))
-* Workflow ([ac17aec](https://github.com/PhyberApex/kuroshiro_internal/commit/ac17aec8511da66066fbb7490321a5dfd9dc2de5))
+* **deps:** update dependency pinia to v3.0.3 ([#8](https://github.com/usetrmnl/kuroshiro/issues/8)) ([02a0875](https://github.com/usetrmnl/kuroshiro/commit/02a08755d464c2f0164ac05669ee6473be7aa0a1))
+* **deps:** update dependency vuetify to v3.8.8 ([#9](https://github.com/usetrmnl/kuroshiro/issues/9)) ([9826963](https://github.com/usetrmnl/kuroshiro/commit/9826963bd41e838f1195e22c51b55a09c8f5c3b8))
+
+## [0.1.1](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.1.0...kuroshiro-v0.1.1) (2025-06-01)
+
+
+### Bug Fixes
+
+* **config:** Fix .env.example with proper values ([61a8a9c](https://github.com/usetrmnl/kuroshiro/commit/61a8a9cf1fd1473b58c6b7049975a141e064c5d2))
+* **screens:** Fix paths not working in built image and removing unused dependencies ([a555b72](https://github.com/usetrmnl/kuroshiro/commit/a555b72a6666f4158a528f53dc557759d975711b))
+
+## [0.1.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.0.1...kuroshiro-v0.1.0) (2025-05-31)
+
+
+### Features
+
+* Initial commit ([d9427da](https://github.com/usetrmnl/kuroshiro/commit/d9427da67ccb14b7ab8fb6ae3a6d28c84d63c73c))
+
+## [0.0.1](https://github.com/usetrmnl/kuroshiro_internal/compare/kuroshiro-v0.0.1...kuroshiro-v0.0.1) (2025-05-28)
+
+
+### Features
+
+* Add version docker ([d2ba247](https://github.com/usetrmnl/kuroshiro_internal/commit/d2ba2472d1ef0e622fc510aacb2f8ecf245031fe))
+* Add version docker ([4728c5a](https://github.com/usetrmnl/kuroshiro_internal/commit/4728c5a5d2fe5fc0dc19a6e23a468509aa85e9d7))
+* Add version docker ([5daf38f](https://github.com/usetrmnl/kuroshiro_internal/commit/5daf38f4c0960ce07a7ed3d649203c20fe778e2f))
+* Add version docker ([6797f73](https://github.com/usetrmnl/kuroshiro_internal/commit/6797f73947e92e294996447463cc8bf3cda40fec))
+* Add version docker ([b984bd1](https://github.com/usetrmnl/kuroshiro_internal/commit/b984bd13dcbce6514fbd6d74975e357b2374fedb))
+* Add version docker ([cf6e1a3](https://github.com/usetrmnl/kuroshiro_internal/commit/cf6e1a33c5bcd8b9791eab76abe1b971f372bb3b))
+* Added version info ([a0356b5](https://github.com/usetrmnl/kuroshiro_internal/commit/a0356b56b2a21fcf69f952d0d343fe454bc6bb4e))
+
+
+### Bug Fixes
+
+* Add caching to ci/cd ([24191b5](https://github.com/usetrmnl/kuroshiro_internal/commit/24191b5e1c5b49f0ecefbf74875f3a357922bbbd))
+* Added dummy tests ([ea0da2f](https://github.com/usetrmnl/kuroshiro_internal/commit/ea0da2fdc6cb019767e17a83883400f83b30f965))
+* **deps:** update dependency @vueuse/core to v13.3.0 ([#13](https://github.com/usetrmnl/kuroshiro_internal/issues/13)) ([8b376d9](https://github.com/usetrmnl/kuroshiro_internal/commit/8b376d96600d755225d8f17bda90388b38a0129c))
+* **deps:** update dependency vue to v3.5.15 ([#6](https://github.com/usetrmnl/kuroshiro_internal/issues/6)) ([df113b8](https://github.com/usetrmnl/kuroshiro_internal/commit/df113b8d314f7fb90f62539917c54b8103f257b3))
+* **deps:** update dependency vuetify to v3.8.7 ([#12](https://github.com/usetrmnl/kuroshiro_internal/issues/12)) ([bf96158](https://github.com/usetrmnl/kuroshiro_internal/commit/bf96158683d299f2d2afd7ef457be81eaa477db0))
+* **deps:** update nest monorepo to v11.1.2 ([#7](https://github.com/usetrmnl/kuroshiro_internal/issues/7)) ([726ddcf](https://github.com/usetrmnl/kuroshiro_internal/commit/726ddcf9e15cf3f039d493360cca3afcfd65c5be))
+* Fix version not being published ([0c1a169](https://github.com/usetrmnl/kuroshiro_internal/commit/0c1a169d9796ed8d70fa373e7be9109fcdb77c07))
+* Github workflow ([ef3c6ad](https://github.com/usetrmnl/kuroshiro_internal/commit/ef3c6ad3b85913bd50b6dbd29102c03ec71a1967))
+* Monorepo? ([d99d4fe](https://github.com/usetrmnl/kuroshiro_internal/commit/d99d4fe018e7f359c3a4b6a268fd933e19127c8b))
+* Monorepo? ([6937425](https://github.com/usetrmnl/kuroshiro_internal/commit/6937425f91c02976db3124b04c2c98198e1f1c8a))
+* Monorepo? ([b5b1788](https://github.com/usetrmnl/kuroshiro_internal/commit/b5b1788dc515715d68f1f4cde5ed5dacd07f8f68))
+* More CI/CD ([5179a25](https://github.com/usetrmnl/kuroshiro_internal/commit/5179a25dd02d276ccc2b5beabc043f9e74f09440))
+* More CI/CD ([274790f](https://github.com/usetrmnl/kuroshiro_internal/commit/274790fb4943c01d06afb0bb7cc686b06787ce70))
+* More CI/CD ([c7ab039](https://github.com/usetrmnl/kuroshiro_internal/commit/c7ab0391b4ad39ceb0375cbc7a70442033dd4975))
+* New work on how to release ([4e369a3](https://github.com/usetrmnl/kuroshiro_internal/commit/4e369a3eda995664366cb6b4afd9d1a66f08dd24))
+* New work on how to release ([3936dd1](https://github.com/usetrmnl/kuroshiro_internal/commit/3936dd1e2dd55bcc48e91edc3ca27abdb138610a))
+* New work on how to release ([bb54c07](https://github.com/usetrmnl/kuroshiro_internal/commit/bb54c07d6e2be8e999e871a4ee452af5a0d9ea12))
+* New work on how to release ([d58e0e4](https://github.com/usetrmnl/kuroshiro_internal/commit/d58e0e40a99885ff8be45a88d07c61072abd26f9))
+* Remove unused plugin ([971a29e](https://github.com/usetrmnl/kuroshiro_internal/commit/971a29e1a9d1ad5fc6c2d271316b43bcdc478ba2))
+* Try something Else ([3faf609](https://github.com/usetrmnl/kuroshiro_internal/commit/3faf609492aefb30910ecab233c3dd7a9c729984))
+* Workflow ([ac17aec](https://github.com/usetrmnl/kuroshiro_internal/commit/ac17aec8511da66066fbb7490321a5dfd9dc2de5))
 
 ## 0.0.1 (2025-05-28)
 
 
 ### Features
 
-* Add version docker ([d2ba247](https://github.com/PhyberApex/kuroshiro_internal/commit/d2ba2472d1ef0e622fc510aacb2f8ecf245031fe))
-* Add version docker ([4728c5a](https://github.com/PhyberApex/kuroshiro_internal/commit/4728c5a5d2fe5fc0dc19a6e23a468509aa85e9d7))
-* Add version docker ([5daf38f](https://github.com/PhyberApex/kuroshiro_internal/commit/5daf38f4c0960ce07a7ed3d649203c20fe778e2f))
-* Add version docker ([6797f73](https://github.com/PhyberApex/kuroshiro_internal/commit/6797f73947e92e294996447463cc8bf3cda40fec))
-* Add version docker ([b984bd1](https://github.com/PhyberApex/kuroshiro_internal/commit/b984bd13dcbce6514fbd6d74975e357b2374fedb))
-* Add version docker ([cf6e1a3](https://github.com/PhyberApex/kuroshiro_internal/commit/cf6e1a33c5bcd8b9791eab76abe1b971f372bb3b))
-* Added version info ([a0356b5](https://github.com/PhyberApex/kuroshiro_internal/commit/a0356b56b2a21fcf69f952d0d343fe454bc6bb4e))
+* Add version docker ([d2ba247](https://github.com/usetrmnl/kuroshiro_internal/commit/d2ba2472d1ef0e622fc510aacb2f8ecf245031fe))
+* Add version docker ([4728c5a](https://github.com/usetrmnl/kuroshiro_internal/commit/4728c5a5d2fe5fc0dc19a6e23a468509aa85e9d7))
+* Add version docker ([5daf38f](https://github.com/usetrmnl/kuroshiro_internal/commit/5daf38f4c0960ce07a7ed3d649203c20fe778e2f))
+* Add version docker ([6797f73](https://github.com/usetrmnl/kuroshiro_internal/commit/6797f73947e92e294996447463cc8bf3cda40fec))
+* Add version docker ([b984bd1](https://github.com/usetrmnl/kuroshiro_internal/commit/b984bd13dcbce6514fbd6d74975e357b2374fedb))
+* Add version docker ([cf6e1a3](https://github.com/usetrmnl/kuroshiro_internal/commit/cf6e1a33c5bcd8b9791eab76abe1b971f372bb3b))
+* Added version info ([a0356b5](https://github.com/usetrmnl/kuroshiro_internal/commit/a0356b56b2a21fcf69f952d0d343fe454bc6bb4e))
 
 
 ### Bug Fixes
 
-* Add caching to ci/cd ([24191b5](https://github.com/PhyberApex/kuroshiro_internal/commit/24191b5e1c5b49f0ecefbf74875f3a357922bbbd))
-* Added dummy tests ([ea0da2f](https://github.com/PhyberApex/kuroshiro_internal/commit/ea0da2fdc6cb019767e17a83883400f83b30f965))
-* **deps:** update dependency @vueuse/core to v13.3.0 ([#13](https://github.com/PhyberApex/kuroshiro_internal/issues/13)) ([8b376d9](https://github.com/PhyberApex/kuroshiro_internal/commit/8b376d96600d755225d8f17bda90388b38a0129c))
-* **deps:** update dependency vue to v3.5.15 ([#6](https://github.com/PhyberApex/kuroshiro_internal/issues/6)) ([df113b8](https://github.com/PhyberApex/kuroshiro_internal/commit/df113b8d314f7fb90f62539917c54b8103f257b3))
-* **deps:** update dependency vuetify to v3.8.7 ([#12](https://github.com/PhyberApex/kuroshiro_internal/issues/12)) ([bf96158](https://github.com/PhyberApex/kuroshiro_internal/commit/bf96158683d299f2d2afd7ef457be81eaa477db0))
-* **deps:** update nest monorepo to v11.1.2 ([#7](https://github.com/PhyberApex/kuroshiro_internal/issues/7)) ([726ddcf](https://github.com/PhyberApex/kuroshiro_internal/commit/726ddcf9e15cf3f039d493360cca3afcfd65c5be))
-* Fix version not being published ([0c1a169](https://github.com/PhyberApex/kuroshiro_internal/commit/0c1a169d9796ed8d70fa373e7be9109fcdb77c07))
-* Github workflow ([ef3c6ad](https://github.com/PhyberApex/kuroshiro_internal/commit/ef3c6ad3b85913bd50b6dbd29102c03ec71a1967))
-* Monorepo? ([d99d4fe](https://github.com/PhyberApex/kuroshiro_internal/commit/d99d4fe018e7f359c3a4b6a268fd933e19127c8b))
-* Monorepo? ([6937425](https://github.com/PhyberApex/kuroshiro_internal/commit/6937425f91c02976db3124b04c2c98198e1f1c8a))
-* Monorepo? ([b5b1788](https://github.com/PhyberApex/kuroshiro_internal/commit/b5b1788dc515715d68f1f4cde5ed5dacd07f8f68))
-* More CI/CD ([5179a25](https://github.com/PhyberApex/kuroshiro_internal/commit/5179a25dd02d276ccc2b5beabc043f9e74f09440))
-* More CI/CD ([274790f](https://github.com/PhyberApex/kuroshiro_internal/commit/274790fb4943c01d06afb0bb7cc686b06787ce70))
-* More CI/CD ([c7ab039](https://github.com/PhyberApex/kuroshiro_internal/commit/c7ab0391b4ad39ceb0375cbc7a70442033dd4975))
-* New work on how to release ([4e369a3](https://github.com/PhyberApex/kuroshiro_internal/commit/4e369a3eda995664366cb6b4afd9d1a66f08dd24))
-* New work on how to release ([3936dd1](https://github.com/PhyberApex/kuroshiro_internal/commit/3936dd1e2dd55bcc48e91edc3ca27abdb138610a))
-* New work on how to release ([bb54c07](https://github.com/PhyberApex/kuroshiro_internal/commit/bb54c07d6e2be8e999e871a4ee452af5a0d9ea12))
-* New work on how to release ([d58e0e4](https://github.com/PhyberApex/kuroshiro_internal/commit/d58e0e40a99885ff8be45a88d07c61072abd26f9))
-* Remove unused plugin ([971a29e](https://github.com/PhyberApex/kuroshiro_internal/commit/971a29e1a9d1ad5fc6c2d271316b43bcdc478ba2))
-* Try something Else ([3faf609](https://github.com/PhyberApex/kuroshiro_internal/commit/3faf609492aefb30910ecab233c3dd7a9c729984))
-* Workflow ([ac17aec](https://github.com/PhyberApex/kuroshiro_internal/commit/ac17aec8511da66066fbb7490321a5dfd9dc2de5))
+* Add caching to ci/cd ([24191b5](https://github.com/usetrmnl/kuroshiro_internal/commit/24191b5e1c5b49f0ecefbf74875f3a357922bbbd))
+* Added dummy tests ([ea0da2f](https://github.com/usetrmnl/kuroshiro_internal/commit/ea0da2fdc6cb019767e17a83883400f83b30f965))
+* **deps:** update dependency @vueuse/core to v13.3.0 ([#13](https://github.com/usetrmnl/kuroshiro_internal/issues/13)) ([8b376d9](https://github.com/usetrmnl/kuroshiro_internal/commit/8b376d96600d755225d8f17bda90388b38a0129c))
+* **deps:** update dependency vue to v3.5.15 ([#6](https://github.com/usetrmnl/kuroshiro_internal/issues/6)) ([df113b8](https://github.com/usetrmnl/kuroshiro_internal/commit/df113b8d314f7fb90f62539917c54b8103f257b3))
+* **deps:** update dependency vuetify to v3.8.7 ([#12](https://github.com/usetrmnl/kuroshiro_internal/issues/12)) ([bf96158](https://github.com/usetrmnl/kuroshiro_internal/commit/bf96158683d299f2d2afd7ef457be81eaa477db0))
+* **deps:** update nest monorepo to v11.1.2 ([#7](https://github.com/usetrmnl/kuroshiro_internal/issues/7)) ([726ddcf](https://github.com/usetrmnl/kuroshiro_internal/commit/726ddcf9e15cf3f039d493360cca3afcfd65c5be))
+* Fix version not being published ([0c1a169](https://github.com/usetrmnl/kuroshiro_internal/commit/0c1a169d9796ed8d70fa373e7be9109fcdb77c07))
+* Github workflow ([ef3c6ad](https://github.com/usetrmnl/kuroshiro_internal/commit/ef3c6ad3b85913bd50b6dbd29102c03ec71a1967))
+* Monorepo? ([d99d4fe](https://github.com/usetrmnl/kuroshiro_internal/commit/d99d4fe018e7f359c3a4b6a268fd933e19127c8b))
+* Monorepo? ([6937425](https://github.com/usetrmnl/kuroshiro_internal/commit/6937425f91c02976db3124b04c2c98198e1f1c8a))
+* Monorepo? ([b5b1788](https://github.com/usetrmnl/kuroshiro_internal/commit/b5b1788dc515715d68f1f4cde5ed5dacd07f8f68))
+* More CI/CD ([5179a25](https://github.com/usetrmnl/kuroshiro_internal/commit/5179a25dd02d276ccc2b5beabc043f9e74f09440))
+* More CI/CD ([274790f](https://github.com/usetrmnl/kuroshiro_internal/commit/274790fb4943c01d06afb0bb7cc686b06787ce70))
+* More CI/CD ([c7ab039](https://github.com/usetrmnl/kuroshiro_internal/commit/c7ab0391b4ad39ceb0375cbc7a70442033dd4975))
+* New work on how to release ([4e369a3](https://github.com/usetrmnl/kuroshiro_internal/commit/4e369a3eda995664366cb6b4afd9d1a66f08dd24))
+* New work on how to release ([3936dd1](https://github.com/usetrmnl/kuroshiro_internal/commit/3936dd1e2dd55bcc48e91edc3ca27abdb138610a))
+* New work on how to release ([bb54c07](https://github.com/usetrmnl/kuroshiro_internal/commit/bb54c07d6e2be8e999e871a4ee452af5a0d9ea12))
+* New work on how to release ([d58e0e4](https://github.com/usetrmnl/kuroshiro_internal/commit/d58e0e40a99885ff8be45a88d07c61072abd26f9))
+* Remove unused plugin ([971a29e](https://github.com/usetrmnl/kuroshiro_internal/commit/971a29e1a9d1ad5fc6c2d271316b43bcdc478ba2))
+* Try something Else ([3faf609](https://github.com/usetrmnl/kuroshiro_internal/commit/3faf609492aefb30910ecab233c3dd7a9c729984))
+* Workflow ([ac17aec](https://github.com/usetrmnl/kuroshiro_internal/commit/ac17aec8511da66066fbb7490321a5dfd9dc2de5))
 
-## [0.3.0](https://github.com/PhyberApex/kuroshiro_internal/compare/kuroshiro-v0.2.0...kuroshiro-v0.3.0) (2025-05-27)
-
-
-### Features
-
-* Add version docker ([b984bd1](https://github.com/PhyberApex/kuroshiro_internal/commit/b984bd13dcbce6514fbd6d74975e357b2374fedb))
-
-## [0.2.0](https://github.com/PhyberApex/kuroshiro_internal/compare/kuroshiro-v0.1.0...kuroshiro-v0.2.0) (2025-05-27)
+## [0.3.0](https://github.com/usetrmnl/kuroshiro_internal/compare/kuroshiro-v0.2.0...kuroshiro-v0.3.0) (2025-05-27)
 
 
 ### Features
 
-* Add version docker ([cf6e1a3](https://github.com/PhyberApex/kuroshiro_internal/commit/cf6e1a33c5bcd8b9791eab76abe1b971f372bb3b))
+* Add version docker ([b984bd1](https://github.com/usetrmnl/kuroshiro_internal/commit/b984bd13dcbce6514fbd6d74975e357b2374fedb))
 
-## [0.1.0](https://github.com/PhyberApex/kuroshiro_internal/compare/kuroshiro-v0.0.1...kuroshiro-v0.1.0) (2025-05-27)
+## [0.2.0](https://github.com/usetrmnl/kuroshiro_internal/compare/kuroshiro-v0.1.0...kuroshiro-v0.2.0) (2025-05-27)
 
 
 ### Features
 
-* Added version info ([a0356b5](https://github.com/PhyberApex/kuroshiro_internal/commit/a0356b56b2a21fcf69f952d0d343fe454bc6bb4e))
+* Add version docker ([cf6e1a3](https://github.com/usetrmnl/kuroshiro_internal/commit/cf6e1a33c5bcd8b9791eab76abe1b971f372bb3b))
+
+## [0.1.0](https://github.com/usetrmnl/kuroshiro_internal/compare/kuroshiro-v0.0.1...kuroshiro-v0.1.0) (2025-05-27)
+
+
+### Features
+
+* Added version info ([a0356b5](https://github.com/usetrmnl/kuroshiro_internal/commit/a0356b56b2a21fcf69f952d0d343fe454bc6bb4e))
 
 
 ### Bug Fixes
 
-* Try something Else ([3faf609](https://github.com/PhyberApex/kuroshiro_internal/commit/3faf609492aefb30910ecab233c3dd7a9c729984))
+* Try something Else ([3faf609](https://github.com/usetrmnl/kuroshiro_internal/commit/3faf609492aefb30910ecab233c3dd7a9c729984))
 
 ## 0.0.1 (2025-05-27)
 
 
 ### Bug Fixes
 
-* Add caching to ci/cd ([24191b5](https://github.com/PhyberApex/kuroshiro_internal/commit/24191b5e1c5b49f0ecefbf74875f3a357922bbbd))
-* Added dummy tests ([ea0da2f](https://github.com/PhyberApex/kuroshiro_internal/commit/ea0da2fdc6cb019767e17a83883400f83b30f965))
-* **deps:** update dependency @vueuse/core to v13.3.0 ([#13](https://github.com/PhyberApex/kuroshiro_internal/issues/13)) ([8b376d9](https://github.com/PhyberApex/kuroshiro_internal/commit/8b376d96600d755225d8f17bda90388b38a0129c))
-* **deps:** update dependency vue to v3.5.15 ([#6](https://github.com/PhyberApex/kuroshiro_internal/issues/6)) ([df113b8](https://github.com/PhyberApex/kuroshiro_internal/commit/df113b8d314f7fb90f62539917c54b8103f257b3))
-* **deps:** update dependency vuetify to v3.8.7 ([#12](https://github.com/PhyberApex/kuroshiro_internal/issues/12)) ([bf96158](https://github.com/PhyberApex/kuroshiro_internal/commit/bf96158683d299f2d2afd7ef457be81eaa477db0))
-* **deps:** update nest monorepo to v11.1.2 ([#7](https://github.com/PhyberApex/kuroshiro_internal/issues/7)) ([726ddcf](https://github.com/PhyberApex/kuroshiro_internal/commit/726ddcf9e15cf3f039d493360cca3afcfd65c5be))
-* Fix version not being published ([0c1a169](https://github.com/PhyberApex/kuroshiro_internal/commit/0c1a169d9796ed8d70fa373e7be9109fcdb77c07))
-* Github workflow ([ef3c6ad](https://github.com/PhyberApex/kuroshiro_internal/commit/ef3c6ad3b85913bd50b6dbd29102c03ec71a1967))
-* Monorepo? ([d99d4fe](https://github.com/PhyberApex/kuroshiro_internal/commit/d99d4fe018e7f359c3a4b6a268fd933e19127c8b))
-* Monorepo? ([6937425](https://github.com/PhyberApex/kuroshiro_internal/commit/6937425f91c02976db3124b04c2c98198e1f1c8a))
-* Monorepo? ([b5b1788](https://github.com/PhyberApex/kuroshiro_internal/commit/b5b1788dc515715d68f1f4cde5ed5dacd07f8f68))
-* More CI/CD ([5179a25](https://github.com/PhyberApex/kuroshiro_internal/commit/5179a25dd02d276ccc2b5beabc043f9e74f09440))
-* More CI/CD ([274790f](https://github.com/PhyberApex/kuroshiro_internal/commit/274790fb4943c01d06afb0bb7cc686b06787ce70))
-* More CI/CD ([c7ab039](https://github.com/PhyberApex/kuroshiro_internal/commit/c7ab0391b4ad39ceb0375cbc7a70442033dd4975))
-* New work on how to release ([4e369a3](https://github.com/PhyberApex/kuroshiro_internal/commit/4e369a3eda995664366cb6b4afd9d1a66f08dd24))
-* New work on how to release ([3936dd1](https://github.com/PhyberApex/kuroshiro_internal/commit/3936dd1e2dd55bcc48e91edc3ca27abdb138610a))
-* New work on how to release ([bb54c07](https://github.com/PhyberApex/kuroshiro_internal/commit/bb54c07d6e2be8e999e871a4ee452af5a0d9ea12))
-* New work on how to release ([d58e0e4](https://github.com/PhyberApex/kuroshiro_internal/commit/d58e0e40a99885ff8be45a88d07c61072abd26f9))
-* Remove unused plugin ([971a29e](https://github.com/PhyberApex/kuroshiro_internal/commit/971a29e1a9d1ad5fc6c2d271316b43bcdc478ba2))
-* Workflow ([ac17aec](https://github.com/PhyberApex/kuroshiro_internal/commit/ac17aec8511da66066fbb7490321a5dfd9dc2de5))
+* Add caching to ci/cd ([24191b5](https://github.com/usetrmnl/kuroshiro_internal/commit/24191b5e1c5b49f0ecefbf74875f3a357922bbbd))
+* Added dummy tests ([ea0da2f](https://github.com/usetrmnl/kuroshiro_internal/commit/ea0da2fdc6cb019767e17a83883400f83b30f965))
+* **deps:** update dependency @vueuse/core to v13.3.0 ([#13](https://github.com/usetrmnl/kuroshiro_internal/issues/13)) ([8b376d9](https://github.com/usetrmnl/kuroshiro_internal/commit/8b376d96600d755225d8f17bda90388b38a0129c))
+* **deps:** update dependency vue to v3.5.15 ([#6](https://github.com/usetrmnl/kuroshiro_internal/issues/6)) ([df113b8](https://github.com/usetrmnl/kuroshiro_internal/commit/df113b8d314f7fb90f62539917c54b8103f257b3))
+* **deps:** update dependency vuetify to v3.8.7 ([#12](https://github.com/usetrmnl/kuroshiro_internal/issues/12)) ([bf96158](https://github.com/usetrmnl/kuroshiro_internal/commit/bf96158683d299f2d2afd7ef457be81eaa477db0))
+* **deps:** update nest monorepo to v11.1.2 ([#7](https://github.com/usetrmnl/kuroshiro_internal/issues/7)) ([726ddcf](https://github.com/usetrmnl/kuroshiro_internal/commit/726ddcf9e15cf3f039d493360cca3afcfd65c5be))
+* Fix version not being published ([0c1a169](https://github.com/usetrmnl/kuroshiro_internal/commit/0c1a169d9796ed8d70fa373e7be9109fcdb77c07))
+* Github workflow ([ef3c6ad](https://github.com/usetrmnl/kuroshiro_internal/commit/ef3c6ad3b85913bd50b6dbd29102c03ec71a1967))
+* Monorepo? ([d99d4fe](https://github.com/usetrmnl/kuroshiro_internal/commit/d99d4fe018e7f359c3a4b6a268fd933e19127c8b))
+* Monorepo? ([6937425](https://github.com/usetrmnl/kuroshiro_internal/commit/6937425f91c02976db3124b04c2c98198e1f1c8a))
+* Monorepo? ([b5b1788](https://github.com/usetrmnl/kuroshiro_internal/commit/b5b1788dc515715d68f1f4cde5ed5dacd07f8f68))
+* More CI/CD ([5179a25](https://github.com/usetrmnl/kuroshiro_internal/commit/5179a25dd02d276ccc2b5beabc043f9e74f09440))
+* More CI/CD ([274790f](https://github.com/usetrmnl/kuroshiro_internal/commit/274790fb4943c01d06afb0bb7cc686b06787ce70))
+* More CI/CD ([c7ab039](https://github.com/usetrmnl/kuroshiro_internal/commit/c7ab0391b4ad39ceb0375cbc7a70442033dd4975))
+* New work on how to release ([4e369a3](https://github.com/usetrmnl/kuroshiro_internal/commit/4e369a3eda995664366cb6b4afd9d1a66f08dd24))
+* New work on how to release ([3936dd1](https://github.com/usetrmnl/kuroshiro_internal/commit/3936dd1e2dd55bcc48e91edc3ca27abdb138610a))
+* New work on how to release ([bb54c07](https://github.com/usetrmnl/kuroshiro_internal/commit/bb54c07d6e2be8e999e871a4ee452af5a0d9ea12))
+* New work on how to release ([d58e0e4](https://github.com/usetrmnl/kuroshiro_internal/commit/d58e0e40a99885ff8be45a88d07c61072abd26f9))
+* Remove unused plugin ([971a29e](https://github.com/usetrmnl/kuroshiro_internal/commit/971a29e1a9d1ad5fc6c2d271316b43bcdc478ba2))
+* Workflow ([ac17aec](https://github.com/usetrmnl/kuroshiro_internal/commit/ac17aec8511da66066fbb7490321a5dfd9dc2de5))

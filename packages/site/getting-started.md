@@ -8,17 +8,17 @@ Kuroshiro is still in alpha. Breaking changes may happen before 1.0.0. Upgrades 
 
 ## Images
 
-The image is published to the GitHub Container Registry as `ghcr.io/phyberapex/kuroshiro`.
+The image is published to the GitHub Container Registry as `ghcr.io/usetrmnl/kuroshiro`.
 
 | Tag | Content |
 |---|---|
 | `next` | Built from the latest changes on `main` |
 | `latest` | The newest release |
-| `x.x.x` | A specific [release](https://github.com/PhyberApex/kuroshiro/releases) |
+| `x.x.x` | A specific [release](https://github.com/usetrmnl/kuroshiro/releases) |
 
 ## docker compose
 
-The repository's [`docker-compose.yml`](https://github.com/PhyberApex/kuroshiro/blob/main/docker-compose.yml) spins up Kuroshiro and Postgres together. A minimal version using the published image:
+The repository's [`docker-compose.yml`](https://github.com/usetrmnl/kuroshiro/blob/main/docker-compose.yml) spins up Kuroshiro and Postgres together. A minimal version using the published image:
 
 ```yaml
 services:
@@ -32,7 +32,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
   app:
-    image: ghcr.io/phyberapex/kuroshiro:latest
+    image: ghcr.io/usetrmnl/kuroshiro:latest
     restart: always
     depends_on:
       - db
@@ -55,7 +55,7 @@ volumes:
   kuroshiro_firmware:
 ```
 
-With a `.env` next to it, based on [`.env.example`](https://github.com/PhyberApex/kuroshiro/blob/main/.env.example):
+With a `.env` next to it, based on [`.env.example`](https://github.com/usetrmnl/kuroshiro/blob/main/.env.example):
 
 ```sh
 KUROSHIRO_DB_USER=kuroshiro
@@ -89,7 +89,7 @@ To have [Alerts](/tour/alerts) delivered, run an [apprise-api](https://github.co
 
 ## Hacking on Kuroshiro
 
-1. Clone the [repository](https://github.com/PhyberApex/kuroshiro) and run `pnpm install`.
+1. Clone the [repository](https://github.com/usetrmnl/kuroshiro) and run `pnpm install`.
 2. Copy `.env.example` to `.env` and replace `{YOUR_IP}`.
 3. Run `docker-compose up` for the full local stack, or start Postgres yourself and run `pnpm run dev`.
 

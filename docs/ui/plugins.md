@@ -2,7 +2,7 @@
 
 Everything under **Plugins** in the rebuilt admin UI except the template editor itself: the Plugins list, Add a Plugin, the Plugin page around the editor, and the Recipe Update Check. Read [README.md](./README.md) first; its shared patterns (loading, a failed load, saving, destructive actions, fresh data, time, phone) apply here and are not repeated.
 
-- **Reference.** [Primary journeys and the story each screen tells](https://github.com/PhyberApex/kuroshiro/issues/1078) set what the list and the Plugin page are for. [Plugin field values and Plugin Variables](https://github.com/PhyberApex/kuroshiro/issues/1087) and [ADR-0032](../adr/0032-field-values-belong-to-the-plugin-and-plugin-variables-are-removed.md) set what a Field Value is. The page patterns are those of [devices.md](./devices.md).
+- **Reference.** [Primary journeys and the story each screen tells](https://github.com/usetrmnl/kuroshiro/issues/1078) set what the list and the Plugin page are for. [Plugin field values and Plugin Variables](https://github.com/usetrmnl/kuroshiro/issues/1087) and [ADR-0032](../adr/0032-field-values-belong-to-the-plugin-and-plugin-variables-are-removed.md) set what a Field Value is. The page patterns are those of [devices.md](./devices.md).
 - **The template editor** is specced in [template-editor.md](./template-editor.md). This spec gives it its place on the page and says what the page hands it. The editor and preview in the drawings here are a stand-in.
 - **Drawings.** [`packages/ui/prototypes/plugin-surfaces`][proto] on the throwaway branch `prototype/plugin-surfaces`, at commit `d19583b`. Open `index.html` in a browser; `t` switches the theme, `d` the number of Devices (1, 3, none), `a` the firing Alert, `g` the number of Plugins (10, 4, none), `l` loaded, loading or failed, `c` the outcome of the Recipe Update Check. Each section below links the renders it describes.
 - **Facts.** How the server behaves today was read from `main` at `d0589c7`. Nothing was run.
@@ -200,7 +200,7 @@ A Plugin with nothing wrong has no such lines and no "all good" line either.
 
 ### Template
 
-A heading "Template", then the code editor and the live preview side by side, the full width of the column; stacked on phone, editor first. Everything inside this section is specced by [The Plugin template editor](https://github.com/PhyberApex/kuroshiro/issues/1095): the editor, the layouts a Plugin has, what the preview renders against and how a render error is shown.
+A heading "Template", then the code editor and the live preview side by side, the full width of the column; stacked on phone, editor first. Everything inside this section is specced by [The Plugin template editor](https://github.com/usetrmnl/kuroshiro/issues/1095): the editor, the layouts a Plugin has, what the preview renders against and how a render error is shown.
 
 What the page hands the editor:
 
@@ -233,7 +233,7 @@ For a Poll-kind Plugin. A heading "Data Sources" with the action "Add a Data Sou
 | Transform (Fetch) | a tucked section titled "Transform · none" or "Transform · JavaScript, {n} lines", holding a code input | Inside: "JavaScript that reshapes the response before the template sees it. It runs on this server at every fetch." |
 | Value (Literal) | code input | Hint: "JSON." Not valid JSON: "This is not valid JSON: {the parser's message}." |
 
-The code inputs are the code editor of [The Plugin template editor](https://github.com/PhyberApex/kuroshiro/issues/1095) in its JSON and JavaScript modes, a few lines high. The drawings show a mono textarea.
+The code inputs are the code editor of [The Plugin template editor](https://github.com/usetrmnl/kuroshiro/issues/1095) in its JSON and JavaScript modes, a few lines high. The drawings show a mono textarea.
 
 The story at the right says how the Data Source is doing:
 
@@ -406,7 +406,7 @@ Applying saves at once, fetches and renders the Plugin again and opens the Plugi
 
 [render][cell]
 
-[On-device fallback screens in the Hanko identity](https://github.com/PhyberApex/kuroshiro/issues/1090) handed this here. Today a failed slot shows the static `error.png`, which names nothing. It is replaced by a drawing made for the slot:
+[On-device fallback screens in the Hanko identity](https://github.com/usetrmnl/kuroshiro/issues/1090) handed this here. Today a failed slot shows the static `error.png`, which names nothing. It is replaced by a drawing made for the slot:
 
 - Paper ground, ink only, no dithering, no seal. The seal signs a whole sheet; a slot is not one.
 - Set at the slot's left, centred vertically: the problem mark (the icon's ink square with its exclamation mark), the Plugin's name in the title face, then two lines in the text face: "could not be shown." and "Next try on its next turn in Rotation."
@@ -414,7 +414,7 @@ Applying saves at once, fetches and renders the Plugin again and opens the Plugi
 - The other slots render as usual. The Mashup itself is not an error: the Device shows it, and its row on the Device's Screens view carries no fault.
 - When every slot fails, the Device still shows the Mashup with every slot saying so. The error Fallback Screen is for a Screen that could not be produced at all.
 
-The wording is kept in step with the error Fallback Screen's "{Screen} could not be shown" ([The error Fallback Screen's wording when a Screen could not be rendered](https://github.com/PhyberApex/kuroshiro/issues/1105)): the name first, then the same phrase.
+The wording is kept in step with the error Fallback Screen's "{Screen} could not be shown" ([The error Fallback Screen's wording when a Screen could not be rendered](https://github.com/usetrmnl/kuroshiro/issues/1105)): the name first, then the same phrase.
 
 A Data Source whose fetch failed does not make a slot fail: the Plugin renders with the error marker, in a slot as on its own Screen.
 
@@ -428,7 +428,7 @@ A row of the list stacks to name, kind, where it shows and its state, with the m
 
 ## Components this spec adds
 
-Each uses the tokens and rules of [Design tokens and component inventory](https://github.com/PhyberApex/kuroshiro/issues/1091).
+Each uses the tokens and rules of [Design tokens and component inventory](https://github.com/usetrmnl/kuroshiro/issues/1091).
 
 | Component | Backed by | States |
 |---|---|---|
@@ -447,7 +447,7 @@ One icon joins the twelve: **more**, three squares in a row on the 16 px grid, f
 
 ## Capability coverage
 
-Numbers are those of the [capability inventory](https://github.com/PhyberApex/kuroshiro/issues/1075).
+Numbers are those of the [capability inventory](https://github.com/usetrmnl/kuroshiro/issues/1075).
 
 | # | Capability | Home |
 |---|---|---|
@@ -482,7 +482,7 @@ Capability 77 (the Alerts page, where a fetch Alert links to its Plugin) belongs
 
 ## What this asks of the admin API
 
-A request list for [Admin API reshaping for the new screens](https://github.com/PhyberApex/kuroshiro/issues/1096), which settles the shapes. Saving Field Values and removing Plugin Variables is already its own build issue, [#1101](https://github.com/PhyberApex/kuroshiro/issues/1101); this list leans on it and does not repeat it.
+A request list for [Admin API reshaping for the new screens](https://github.com/usetrmnl/kuroshiro/issues/1096), which settles the shapes. Saving Field Values and removing Plugin Variables is already its own build issue, [#1101](https://github.com/usetrmnl/kuroshiro/issues/1101); this list leans on it and does not repeat it.
 
 **To add**
 
@@ -561,49 +561,49 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 - **GitHub import of a branch or a sub-folder.** The server reads the root of `main` only, and the form says so.
 - **A copy of a Recipe's Plugin** stays tied to the Recipe, so both offer the same Recipe Update Check. Untying it would need an action that does not exist.
 
-[proto]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces
-[list-light]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/list-light.png
-[list-problems]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/list-dark-problems.png
-[list-few]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/list-few.png
-[list-menu]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/list-menu.png
-[list-none]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/list-search-none.png
-[list-empty]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/list-empty.png
-[list-loading]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/list-loading.png
-[list-failed]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/list-failed.png
-[add-recipe]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/add-recipe.png
-[add-twice]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/add-recipe-twice.png
-[add-refused]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/add-recipe-refused.png
-[add-file]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/add-file.png
-[add-github]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/add-github.png
-[add-poll]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/add-poll-for-device.png
-[add-webhook]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/add-webhook.png
-[plugin-poll]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-poll.png
-[plugin-poll-dark]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-poll-dark.png
-[plugin-alert]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-alert.png
-[plugin-streak]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-streak.png
-[plugin-needs]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-needs-values.png
-[plugin-webhook]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-webhook.png
-[plugin-webhook-empty]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-webhook-empty.png
-[plugin-unsaved]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-unsaved.png
-[plugin-saved]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-saved.png
-[plugin-fields]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-fields.png
-[plugin-no-devices]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-no-devices.png
-[plugin-loading]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-loading.png
-[missing]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-missing.png
-[confirm-unassign]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/confirm-unassign.png
-[confirm-delete]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/confirm-delete.png
-[confirm-mashup]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/confirm-delete-in-mashup.png
-[confirm-clear]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/confirm-clear-payload.png
-[confirm-regenerate]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/confirm-regenerate.png
-[update-items]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/update-items.png
-[update-conflict]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/update-conflict-dark.png
-[update-same]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/update-same.png
-[update-nosnapshot]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/update-no-snapshot.png
-[update-running]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/update-running.png
-[update-failed]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/update-failed.png
-[cell]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/mashup-slot-failed.png
-[phone-list]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/phone-list.png
-[phone-plugin]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/phone-plugin.png
-[phone-webhook]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/phone-webhook.png
-[phone-add]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/phone-add.png
-[phone-update]: https://github.com/PhyberApex/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/phone-update.png
+[proto]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces
+[list-light]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/list-light.png
+[list-problems]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/list-dark-problems.png
+[list-few]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/list-few.png
+[list-menu]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/list-menu.png
+[list-none]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/list-search-none.png
+[list-empty]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/list-empty.png
+[list-loading]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/list-loading.png
+[list-failed]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/list-failed.png
+[add-recipe]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/add-recipe.png
+[add-twice]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/add-recipe-twice.png
+[add-refused]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/add-recipe-refused.png
+[add-file]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/add-file.png
+[add-github]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/add-github.png
+[add-poll]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/add-poll-for-device.png
+[add-webhook]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/add-webhook.png
+[plugin-poll]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-poll.png
+[plugin-poll-dark]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-poll-dark.png
+[plugin-alert]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-alert.png
+[plugin-streak]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-streak.png
+[plugin-needs]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-needs-values.png
+[plugin-webhook]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-webhook.png
+[plugin-webhook-empty]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-webhook-empty.png
+[plugin-unsaved]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-unsaved.png
+[plugin-saved]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-saved.png
+[plugin-fields]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-fields.png
+[plugin-no-devices]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-no-devices.png
+[plugin-loading]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-loading.png
+[missing]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/plugin-missing.png
+[confirm-unassign]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/confirm-unassign.png
+[confirm-delete]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/confirm-delete.png
+[confirm-mashup]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/confirm-delete-in-mashup.png
+[confirm-clear]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/confirm-clear-payload.png
+[confirm-regenerate]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/confirm-regenerate.png
+[update-items]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/update-items.png
+[update-conflict]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/update-conflict-dark.png
+[update-same]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/update-same.png
+[update-nosnapshot]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/update-no-snapshot.png
+[update-running]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/update-running.png
+[update-failed]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/update-failed.png
+[cell]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/mashup-slot-failed.png
+[phone-list]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/phone-list.png
+[phone-plugin]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/phone-plugin.png
+[phone-webhook]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/phone-webhook.png
+[phone-add]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/phone-add.png
+[phone-update]: https://github.com/usetrmnl/kuroshiro/blob/d19583b/packages/ui/prototypes/plugin-surfaces/shots/phone-update.png

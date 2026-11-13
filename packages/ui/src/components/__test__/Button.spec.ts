@@ -106,11 +106,11 @@ describe('button', () => {
   it('as a child of an anchor keeps the anchor\'s address', async () => {
     const screen = await mount(Button, {
       props: { asChild: true },
-      slots: { default: () => h('a', { href: 'https://github.com/PhyberApex/kuroshiro' }, 'Kuroshiro on GitHub') },
+      slots: { default: () => h('a', { href: 'https://github.com/usetrmnl/kuroshiro' }, 'Kuroshiro on GitHub') },
     })
 
     await expect.element(screen.getByRole('link', { name: 'Kuroshiro on GitHub' }))
-      .toHaveAttribute('href', 'https://github.com/PhyberApex/kuroshiro')
+      .toHaveAttribute('href', 'https://github.com/usetrmnl/kuroshiro')
   })
 
   it('is 32 px high, and 44 px at a coarse pointer', async () => {
