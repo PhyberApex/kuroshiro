@@ -4,7 +4,7 @@ import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
 
 /**
- * Regression guard for https://github.com/PhyberApex/kuroshiro/issues/1187
+ * Regression guard for https://github.com/usetrmnl/kuroshiro/issues/1187
  *
  * Nest resolves an undecorated constructor parameter from the class the
  * compiler emits in `design:paramtypes`. A type-only import is erased, the

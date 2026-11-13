@@ -2,7 +2,7 @@
 
 Everything under **Instance** in the rebuilt admin UI (Instance Settings, Firmware, Device Models and Palettes, Configuration Archive, Housekeeping, Device Simulator) and the Alerts page behind the bar's indicator. Read [README.md](./README.md) first; its shared patterns (loading, a failed load, saving, destructive actions, fresh data, time, phone) apply here and are not repeated.
 
-- **Reference.** [App shell and navigation](https://github.com/PhyberApex/kuroshiro/issues/1080) approved the Instance template: the pages as a list at the left of the column, the chosen page beside it. [Primary journeys and the story each screen tells](https://github.com/PhyberApex/kuroshiro/issues/1078) set that Alerts show in place and behind one indicator. The page patterns are those of [devices.md](./devices.md) and [plugins.md](./plugins.md).
+- **Reference.** [App shell and navigation](https://github.com/usetrmnl/kuroshiro/issues/1080) approved the Instance template: the pages as a list at the left of the column, the chosen page beside it. [Primary journeys and the story each screen tells](https://github.com/usetrmnl/kuroshiro/issues/1078) set that Alerts show in place and behind one indicator. The page patterns are those of [devices.md](./devices.md) and [plugins.md](./plugins.md).
 - **Drawings.** [`packages/ui/prototypes/instance-surfaces`][proto] on the throwaway branch `prototype/instance-surfaces`, at commit `f3eb076`. Open `index.html` in a browser; `t` switches the theme, `d` the number of Devices (1, 3, none), `a` the firing Alert, `l` loaded, loading or failed, `n` whether Notifications are set up, `s` the outcome of the storage check, `m` demo mode. Each section below links the renders it describes.
 - **Facts.** How the server behaves today was read from `main` at `a90b42e`. Nothing was run.
 
@@ -76,7 +76,7 @@ Under the section: "A change applies at the next Alert Sweep, within 5 minutes."
 
 ### Retention
 
-Section heading "Retention", with the link "Housekeeping" at its right. The two ages of [#1062](https://github.com/PhyberApex/kuroshiro/issues/1062); until that is built the rows show the ages without a field.
+Section heading "Retention", with the link "Housekeeping" at its right. The two ages of [#1062](https://github.com/usetrmnl/kuroshiro/issues/1062); until that is built the rows show the ages without a field.
 
 | Row | Control | Under the row | Range message |
 |---|---|---|---|
@@ -385,7 +385,7 @@ A library row stacks to the name with its date and button on one line and what i
 
 ## Components this spec adds
 
-Each uses the tokens and rules of [Design tokens and component inventory](https://github.com/PhyberApex/kuroshiro/issues/1091), and the row menu, save bar, code block and checkbox [plugins.md](./plugins.md) added.
+Each uses the tokens and rules of [Design tokens and component inventory](https://github.com/usetrmnl/kuroshiro/issues/1091), and the row menu, save bar, code block and checkbox [plugins.md](./plugins.md) added.
 
 | Component | Backed by | States |
 |---|---|---|
@@ -403,7 +403,7 @@ No icon joins the thirteen.
 
 ## Capability coverage
 
-Numbers are those of the [capability inventory](https://github.com/PhyberApex/kuroshiro/issues/1075).
+Numbers are those of the [capability inventory](https://github.com/usetrmnl/kuroshiro/issues/1075).
 
 | # | Capability | Home |
 |---|---|---|
@@ -435,7 +435,7 @@ Capability 78 (a Device's firing Alerts) is homed by [devices.md](./devices.md) 
 
 ## What this asks of the admin API
 
-A request list for [Admin API reshaping for the new screens](https://github.com/PhyberApex/kuroshiro/issues/1096), which settles the shapes. [devices.md](./devices.md) already asks for the Instance facts (server URL, timezone, demo mode) and [plugins.md](./plugins.md) for the Plugin's id on a fetch Alert; both are leaned on here.
+A request list for [Admin API reshaping for the new screens](https://github.com/usetrmnl/kuroshiro/issues/1096), which settles the shapes. [devices.md](./devices.md) already asks for the Instance facts (server URL, timezone, demo mode) and [plugins.md](./plugins.md) for the Plugin's id on a fetch Alert; both are leaned on here.
 
 **To add**
 
@@ -448,7 +448,7 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 7. On an Alert: why it fired, kept after it resolves. Today the details are overwritten on every Alert Sweep and at resolve, so a resolved fetch Alert reads a streak of 0 and no error.
 8. The findings of a storage check carry an id, the Screen's name, kind, Device and Order for a Screen, and a path below the storage folder instead of an absolute one.
 9. When the last sync with TRMNL ran, for Firmware and for Device Models, as a fact of its own. Today it is read off the newest row.
-10. The two Retention ages as Instance Settings, which is [#1062](https://github.com/PhyberApex/kuroshiro/issues/1062).
+10. The two Retention ages as Instance Settings, which is [#1062](https://github.com/usetrmnl/kuroshiro/issues/1062).
 
 **To change**
 
@@ -459,7 +459,7 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 5. Creating a custom Palette checks that the name is not taken.
 6. An import that is not a .zip, or whose files are not readable, is refused with a reason. Today it is a server error.
 7. An import hands the Poll Plugins it brought to the scheduler. Today they do not fetch until a restart or a save.
-8. The Configuration Archive carries Field Values per Plugin and redacts password Field Values, as `CONTEXT.md` and ADR-0032 describe. Today they are per Plugin Assignment and a Redacted Archive holds them as written. This rides on [#1101](https://github.com/PhyberApex/kuroshiro/issues/1101).
+8. The Configuration Archive carries Field Values per Plugin and redacts password Field Values, as `CONTEXT.md` and ADR-0032 describe. Today they are per Plugin Assignment and a Redacted Archive holds them as written. This rides on [#1101](https://github.com/usetrmnl/kuroshiro/issues/1101).
 9. A cleanup takes the ids of findings, checks each again before removing it, and deletes a Screen the way deleting a Screen does, closing the gap in the Order. Today it removes whatever paths and Screen ids it is sent, under a check that only looks for a folder name in the path.
 10. An HTML Screen that was never polled is not a Screen whose image is missing. Today it has no image yet and is listed as one.
 11. The last Retention Run survives a restart.
@@ -508,7 +508,7 @@ Refused, as ADR-0075 decided. With no authentication, the admin's own browser is
 
 **Left undecided**
 
-- **Whether reading an archive before importing is worth its endpoint.** If [Admin API reshaping for the new screens](https://github.com/PhyberApex/kuroshiro/issues/1096) declines it, step 3 becomes a confirmation that can only say what an import does in general: "Records with the same id are overwritten, the Instance Settings are replaced, nothing is deleted."
+- **Whether reading an archive before importing is worth its endpoint.** If [Admin API reshaping for the new screens](https://github.com/usetrmnl/kuroshiro/issues/1096) declines it, step 3 becomes a confirmation that can only say what an import does in general: "Records with the same id are overwritten, the Instance Settings are replaced, nothing is deleted."
 - **A size limit for an archive.** None is set in the code. The page states none.
 - **What the server reports as its timezone** when `TZ` is not set.
 - **The numbers a custom Palette's family expects.** The server accepts any number of colours for any family. The form does not say "three" for a three-ink family; whether it should is the API ticket's call.
@@ -516,52 +516,52 @@ Refused, as ADR-0075 decided. With no authentication, the admin's own browser is
 - **Authentication.** No admin route asks for any, `/metrics` included, and `/api/setup` hands a registered Device's API key to anyone who knows its MAC address. The page says who can read the metrics; it does not say that the admin UI itself is open. That is a decision about the product, not about this page. What the API does refuse without authentication is in [Requests from another site](#requests-from-another-site).
 
 
-[proto]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces
-[settings-light]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/settings-light.png
-[settings-dark]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/settings-dark-three.png
-[settings-invalid]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/settings-invalid.png
-[settings-notify-off]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/settings-notifications-off.png
-[settings-test]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/settings-test-sent.png
-[settings-loading]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/settings-loading.png
-[demo]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/demo-line.png
-[firmware-light]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/firmware-light.png
-[firmware-auto]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/firmware-dark-auto.png
-[firmware-synced]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/firmware-synced.png
-[firmware-sync-failed]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/firmware-sync-failed.png
-[firmware-empty]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/firmware-empty.png
-[firmware-failed]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/firmware-failed.png
-[firmware-upload]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/firmware-upload.png
-[confirm-firmware]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/confirm-delete-firmware.png
-[models-light]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/models-light.png
-[models-all]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/models-all-dark.png
-[models-add]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/models-add-palette.png
-[models-edit]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/models-edit-palette.png
-[confirm-palette]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/confirm-delete-palette.png
-[archive-light]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/archive-light.png
-[archive-fresh]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/archive-fresh-dark.png
-[archive-checked]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/archive-checked.png
-[archive-imported]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/archive-imported.png
-[archive-refused]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/archive-refused.png
-[housekeeping-light]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/housekeeping-light.png
-[housekeeping-screens]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/housekeeping-screens-dark.png
-[housekeeping-clean]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/housekeeping-clean.png
-[housekeeping-scanning]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/housekeeping-scanning.png
-[confirm-cleanup]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/confirm-cleanup.png
-[confirm-retention]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/confirm-retention.png
-[simulator-before]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/simulator-before.png
-[simulator-polled]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/simulator-polled.png
-[simulator-pending]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/simulator-pending-dark.png
-[simulator-new]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/simulator-new.png
-[alerts-firing]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/alerts-firing.png
-[alerts-one]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/alerts-one-dark.png
-[alerts-quiet]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/alerts-quiet.png
-[alerts-nothing]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/alerts-nothing.png
-[alerts-loading]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/alerts-loading.png
-[alerts-failed]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/alerts-failed.png
-[phone-settings]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/phone-settings.png
-[phone-firmware]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/phone-firmware.png
-[phone-models]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/phone-models.png
-[phone-archive]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/phone-archive.png
-[phone-housekeeping]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/phone-housekeeping.png
-[phone-simulator]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/phone-simulator.png
-[phone-alerts]: https://github.com/PhyberApex/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/phone-alerts.png
+[proto]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces
+[settings-light]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/settings-light.png
+[settings-dark]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/settings-dark-three.png
+[settings-invalid]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/settings-invalid.png
+[settings-notify-off]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/settings-notifications-off.png
+[settings-test]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/settings-test-sent.png
+[settings-loading]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/settings-loading.png
+[demo]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/demo-line.png
+[firmware-light]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/firmware-light.png
+[firmware-auto]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/firmware-dark-auto.png
+[firmware-synced]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/firmware-synced.png
+[firmware-sync-failed]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/firmware-sync-failed.png
+[firmware-empty]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/firmware-empty.png
+[firmware-failed]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/firmware-failed.png
+[firmware-upload]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/firmware-upload.png
+[confirm-firmware]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/confirm-delete-firmware.png
+[models-light]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/models-light.png
+[models-all]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/models-all-dark.png
+[models-add]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/models-add-palette.png
+[models-edit]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/models-edit-palette.png
+[confirm-palette]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/confirm-delete-palette.png
+[archive-light]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/archive-light.png
+[archive-fresh]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/archive-fresh-dark.png
+[archive-checked]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/archive-checked.png
+[archive-imported]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/archive-imported.png
+[archive-refused]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/archive-refused.png
+[housekeeping-light]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/housekeeping-light.png
+[housekeeping-screens]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/housekeeping-screens-dark.png
+[housekeeping-clean]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/housekeeping-clean.png
+[housekeeping-scanning]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/housekeeping-scanning.png
+[confirm-cleanup]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/confirm-cleanup.png
+[confirm-retention]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/confirm-retention.png
+[simulator-before]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/simulator-before.png
+[simulator-polled]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/simulator-polled.png
+[simulator-pending]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/simulator-pending-dark.png
+[simulator-new]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/simulator-new.png
+[alerts-firing]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/alerts-firing.png
+[alerts-one]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/alerts-one-dark.png
+[alerts-quiet]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/alerts-quiet.png
+[alerts-nothing]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/alerts-nothing.png
+[alerts-loading]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/alerts-loading.png
+[alerts-failed]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/alerts-failed.png
+[phone-settings]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/phone-settings.png
+[phone-firmware]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/phone-firmware.png
+[phone-models]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/phone-models.png
+[phone-archive]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/phone-archive.png
+[phone-housekeeping]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/phone-housekeeping.png
+[phone-simulator]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/phone-simulator.png
+[phone-alerts]: https://github.com/usetrmnl/kuroshiro/blob/f3eb076/packages/ui/prototypes/instance-surfaces/shots/phone-alerts.png

@@ -9,13 +9,13 @@
 
 **A self-hosted server for [TRMNL](https://usetrmnl.com/) e-ink displays that imports the official Recipes. One Docker image, your Postgres, nothing else.**
 
-[![GitHub Release](https://img.shields.io/github/v/release/phyberapex/kuroshiro)](https://github.com/PhyberApex/kuroshiro/releases)
-[![Build and Push Next Docker Image](https://github.com/PhyberApex/kuroshiro/actions/workflows/docker-next.yml/badge.svg)](https://github.com/PhyberApex/kuroshiro/actions/workflows/docker-next.yml)
-[![codecov](https://codecov.io/gh/PhyberApex/kuroshiro/graph/badge.svg?token=3J6TECLYB6)](https://codecov.io/gh/PhyberApex/kuroshiro)
-![GitHub License](https://img.shields.io/github/license/phyberapex/kuroshiro)
+[![GitHub Release](https://img.shields.io/github/v/release/usetrmnl/kuroshiro)](https://github.com/usetrmnl/kuroshiro/releases)
+[![Build and Push Next Docker Image](https://github.com/usetrmnl/kuroshiro/actions/workflows/docker-next.yml/badge.svg)](https://github.com/usetrmnl/kuroshiro/actions/workflows/docker-next.yml)
+[![codecov](https://codecov.io/gh/usetrmnl/kuroshiro/graph/badge.svg?token=3J6TECLYB6)](https://codecov.io/gh/usetrmnl/kuroshiro)
+![GitHub License](https://img.shields.io/github/license/usetrmnl/kuroshiro)
 
 <p align="center">
-  <a href="https://kuroshiro-demo.phyberapex.de/"><b>Try the live demo</b></a> · <a href="https://phyberapex.github.io/kuroshiro/"><b>Take the tour</b></a> · <a href="#quick-start"><b>Quick start</b></a>
+  <a href="https://kuroshiro-demo.phyberapex.de/"><b>Try the live demo</b></a> · <a href="https://usetrmnl.github.io/kuroshiro/"><b>Take the tour</b></a> · <a href="#quick-start"><b>Quick start</b></a>
 </p>
 
 <p align="center">
@@ -41,7 +41,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
   app:
-    image: ghcr.io/phyberapex/kuroshiro:latest
+    image: ghcr.io/usetrmnl/kuroshiro:latest
     restart: always
     depends_on:
       - db
@@ -62,7 +62,7 @@ volumes:
   kuroshiro_firmware:
 ```
 
-`docker compose up -d`, open `http://<your-ip>:3000`, and enter that same address as the server URL on your device's Wi-Fi setup page. The device shows up in Kuroshiro the moment it first calls in. Every option, the Home Assistant add-on and what to persist are under [Running Kuroshiro](#running-kuroshiro); the [showcase site](https://phyberapex.github.io/kuroshiro/getting-started) walks through the same setup with screenshots.
+`docker compose up -d`, open `http://<your-ip>:3000`, and enter that same address as the server URL on your device's Wi-Fi setup page. The device shows up in Kuroshiro the moment it first calls in. Every option, the Home Assistant add-on and what to persist are under [Running Kuroshiro](#running-kuroshiro); the [showcase site](https://usetrmnl.github.io/kuroshiro/getting-started) walks through the same setup with screenshots.
 
 ## What you get
 
@@ -129,11 +129,11 @@ The other servers' columns are TRMNL's own assessment as of October 2026; the Ku
 
 ## Live demo
 
-[kuroshiro-demo.phyberapex.de](https://kuroshiro-demo.phyberapex.de/) is a furnished instance that resets once a day. Browse the Devices, poll as one with the Device Simulator, add link and HTML Screens, and watch the rotation advance. File uploads are disabled there. For a guided walk through every feature with screenshots, see the [showcase site](https://phyberapex.github.io/kuroshiro/).
+[kuroshiro-demo.phyberapex.de](https://kuroshiro-demo.phyberapex.de/) is a furnished instance that resets once a day. Browse the Devices, poll as one with the Device Simulator, add link and HTML Screens, and watch the rotation advance. File uploads are disabled there. For a guided walk through every feature with screenshots, see the [showcase site](https://usetrmnl.github.io/kuroshiro/).
 
 ## Screenshots
 
-Pages of the admin UI with sample data. For a guided tour of every area, visit the [showcase site](https://phyberapex.github.io/kuroshiro/tour/).
+Pages of the admin UI with sample data. For a guided tour of every area, visit the [showcase site](https://usetrmnl.github.io/kuroshiro/tour/).
 
 The Devices list
 <p align="center">
@@ -187,7 +187,7 @@ pnpm workspace · [NestJS](https://nestjs.com/) + [TypeORM](https://typeorm.io/)
 
 ## Running Kuroshiro
 
-The image is published to the GitHub Container Registry as `ghcr.io/phyberapex/kuroshiro`, in these tags:
+The image is published to the GitHub Container Registry as `ghcr.io/usetrmnl/kuroshiro`, in these tags:
 
 | Tag    | Content                                                                  |
 |--------|--------------------------------------------------------------------------|
@@ -241,7 +241,7 @@ Chromium, which renders Plugin and HTML Screens, starts with its sandbox when th
 - [`packages/api`](./packages/api) — The NestJS backend
 - [`packages/ui`](./packages/ui) — The Vue 3 + Reka UI admin UI the image serves
 - [`packages/shared`](./packages/shared) — The admin API's request and response types, and code that is identical in the API and UI
-- [`packages/site`](./packages/site) — The [showcase site](https://phyberapex.github.io/kuroshiro/) (VitePress), deployed to GitHub Pages; run it with `pnpm --filter kuroshiro-site dev`
+- [`packages/site`](./packages/site) — The [showcase site](https://usetrmnl.github.io/kuroshiro/) (VitePress), deployed to GitHub Pages; run it with `pnpm --filter kuroshiro-site dev`
 
 ---
 
@@ -376,6 +376,6 @@ Bug reports, ideas, questions and pull requests are all welcome. Before you jump
 
 ### Contributors
 
-<a href="https://github.com/phyberapex/kuroshiro/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=phyberapex/kuroshiro" />
+<a href="https://github.com/usetrmnl/kuroshiro/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=usetrmnl/kuroshiro" />
 </a>

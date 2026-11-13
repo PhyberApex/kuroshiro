@@ -18,7 +18,7 @@ hero:
       link: /getting-started
     - theme: alt
       text: GitHub
-      link: https://github.com/PhyberApex/kuroshiro
+      link: https://github.com/usetrmnl/kuroshiro
 
 features:
   - title: Auto provisioning

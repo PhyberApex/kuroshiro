@@ -56,4 +56,4 @@ The other servers' columns are TRMNL's own assessment as of October 2026; the Ku
 
 ## Why it works the way it does
 
-Every significant design decision, including the prior-art comparisons behind the table above, is recorded as an Architecture Decision Record. Browse them in [`docs/adr`](https://github.com/PhyberApex/kuroshiro/tree/main/docs/adr) on GitHub, and the domain language they use in [`CONTEXT.md`](https://github.com/PhyberApex/kuroshiro/blob/main/CONTEXT.md).
+Every significant design decision, including the prior-art comparisons behind the table above, is recorded as an Architecture Decision Record. Browse them in [`docs/adr`](https://github.com/usetrmnl/kuroshiro/tree/main/docs/adr) on GitHub, and the domain language they use in [`CONTEXT.md`](https://github.com/usetrmnl/kuroshiro/blob/main/CONTEXT.md).

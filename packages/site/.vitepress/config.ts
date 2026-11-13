@@ -1,6 +1,6 @@
 import { defineConfig } from 'vitepress'
 
-const repository = 'https://github.com/PhyberApex/kuroshiro'
+const repository = 'https://github.com/usetrmnl/kuroshiro'
 const demo = 'https://kuroshiro-demo.phyberapex.de/'
 const base = '/kuroshiro/'
 
@@ -14,7 +14,7 @@ export default defineConfig({
     ['link', { rel: 'icon', type: 'image/svg+xml', href: `${base}favicon.svg` }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'Kuroshiro: Unleash your TRMNL' }],
-    ['meta', { property: 'og:image', content: `https://phyberapex.github.io${base}logo.png` }],
+    ['meta', { property: 'og:image', content: `https://usetrmnl.github.io${base}logo.png` }],
   ],
   themeConfig: {
     logo: { light: '/logo-light.svg', dark: '/logo-dark.svg', alt: 'Kuroshiro' },

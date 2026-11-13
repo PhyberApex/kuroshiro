@@ -1,6 +1,6 @@
 # Testing the admin UI
 
-How `packages/ui` is tested, decided in [Test strategy for the new UI](https://github.com/PhyberApex/kuroshiro/issues/1083). Everything that renders runs in real Chromium. The three specs that drag a row by its grip (`ScreenRow.spec.ts`, `DeviceScreensPage.spec.ts`, `PluginFields.spec.ts`) also run in Firefox, which has a long history of not starting a native drag from a `<button>`.
+How `packages/ui` is tested, decided in [Test strategy for the new UI](https://github.com/usetrmnl/kuroshiro/issues/1083). Everything that renders runs in real Chromium. The three specs that drag a row by its grip (`ScreenRow.spec.ts`, `DeviceScreensPage.spec.ts`, `PluginFields.spec.ts`) also run in Firefox, which has a long history of not starting a native drag from a `<button>`.
 
 All commands run from `packages/ui` (or with `pnpm --filter kuroshiro-ui <script>`).
 
@@ -246,7 +246,7 @@ Every spec file shares that one Instance. `firstRun.spec.ts` runs first, on the 
 
 `keepingAConfiguration.spec.ts` exports a Configuration Archive of the whole shared Instance and imports it back, so it overwrites every record the journeys before it made, each with itself: it changes nothing in between but its own Device's Screen, and it checks that the other Devices come back by the same ids and names. Its import always words the `device-apikeys-kept` warning, because every Device in the archive already exists here (ADR-0039).
 
-The suite holds one test per primary journey of [Primary journeys and the story each screen tells](https://github.com/PhyberApex/kuroshiro/issues/1078), plus `smoke.spec.ts`. It is not the place for broad coverage; that is the page specs' job.
+The suite holds one test per primary journey of [Primary journeys and the story each screen tells](https://github.com/usetrmnl/kuroshiro/issues/1078), plus `smoke.spec.ts`. It is not the place for broad coverage; that is the page specs' job.
 
 `builtStyles.spec.ts` guards a different class of bug than a journey does: the built UI rendering differently from how the components define it, whatever the cause (a cascade layer out of order, a CSS chunk loaded in the wrong order between lazy routes, a plugin or minifier change, a dependency bump). Every other spec and every screenshot baseline mounts a component in development mode, where `styles/index.css` is loaded first, so none of them would show this; #1303 shipped past 56 green PRs before this class of bug was caught. The spec opens the built `/plugins/new` and `/instance/settings` pages, in light and in dark, and compares a handful of layer-sensitive elements' computed styles against the tokens, read fresh from each page with a probe element (`getComputedStyle` on a `span` wearing `var(--color-ink)`, so a token's own value settles through `light-dark()` as the page sees it, not as this spec assumes), and it reruns `cssLayers.ts`'s layer-order guard against the HTML the page actually served. To cover a new layer-sensitive pattern, add a `getByRole` lookup and a computed-style comparison beside the existing ones, inside the `describe.each(THEMES)` block so both colour schemes cover it.
 

@@ -2,7 +2,7 @@
 
 Everything under **Devices** in the rebuilt admin UI: a Device's Screens view, an opened Screen of each kind, Add Screen, Edit HTML, Settings, Logs, the Devices list and Connect a Device. Read [README.md](./README.md) first; its shared patterns (loading, a failed load, saving, destructive actions, fresh data, time, phone) apply here and are not repeated.
 
-- **Reference.** The Screens view is the Plate screen approved in [Device details hero screen](https://github.com/PhyberApex/kuroshiro/issues/1081). This spec keeps it and closes what it left open.
+- **Reference.** The Screens view is the Plate screen approved in [Device details hero screen](https://github.com/usetrmnl/kuroshiro/issues/1081). This spec keeps it and closes what it left open.
 - **Drawings.** [`packages/ui/prototypes/device-surfaces`][proto] on the throwaway branch `prototype/device-surfaces`, at commit `661601a`. Open `index.html` in a browser; `t` switches the theme, `d` the number of Devices (1, 3, 7, none), `a` the firing Alert, `s` the scene, `g` whether there are Plugins, `p` simulates one poll. Each section below links the renders it describes.
 - **Facts.** How the server behaves today was read from `main` at `d0589c7`. Nothing was run on a Device.
 
@@ -23,7 +23,7 @@ Everything under **Devices** in the rebuilt admin UI: a Device's Screens view, a
 
 ## The bar and the Devices
 
-Decides the two limits [App shell and navigation](https://github.com/PhyberApex/kuroshiro/issues/1080) carried forward.
+Decides the two limits [App shell and navigation](https://github.com/usetrmnl/kuroshiro/issues/1080) carried forward.
 
 - **Order.** Devices are listed by name, case-insensitive, everywhere: the bar, the Devices list, any Device select.
 - **One to four Devices.** The bar names each Device, then "Connect a Device", as approved. A name longer than 16 characters is cut with an ellipsis; the full name is the link's tooltip and accessible name.
@@ -118,7 +118,7 @@ A heading "Screens in Order" on a 2 px ink rule, then one row per Screen. A row,
 
 This settles the precedence the glossary ticket left open: the admin's own Schedule comes before the content's Render Signal, because the Schedule is what the admin can change and because a Screen outside its Schedule is not rendered, so its Render Signal is not current. When a Schedule reason and Skipping both apply, the opened row says both.
 
-**Holding image** is not a Screen State. A Screen that raised a `hold` Render Signal still takes its turn, so it keeps its state and gains a qualifier in `ink-soft`: "Active Screen · holding image", "Up next · holding image", or "Holding image" alone when it carries no state. This replaces the chip of [#1071](https://github.com/PhyberApex/kuroshiro/issues/1071); its two labels, "Skipping" and "Holding image", are kept. A raw `html` Screen's Render Signal is evaluated afresh on every poll, so it is shown only on the Active Screen, as "Active Screen · holding image". Any other `html` Screen carries neither label and can be picked with "Show next".
+**Holding image** is not a Screen State. A Screen that raised a `hold` Render Signal still takes its turn, so it keeps its state and gains a qualifier in `ink-soft`: "Active Screen · holding image", "Up next · holding image", or "Holding image" alone when it carries no state. This replaces the chip of [#1071](https://github.com/usetrmnl/kuroshiro/issues/1071); its two labels, "Skipping" and "Holding image", are kept. A raw `html` Screen's Render Signal is evaluated afresh on every poll, so it is shown only on the Active Screen, as "Active Screen · holding image". Any other `html` Screen carries neither label and can be picked with "Show next".
 
 **Show next** (ADR-0038). An opened row whose Screen Rotation could show at the next poll, and that is neither the Active Screen nor Up next, offers "Show next". It makes the Screen the Picked Screen, which then reads "Up next · picked by hand"; picking another Screen replaces it. The picked row offers "Back to Order" instead, which clears the pick. Neither confirms. On a mirrored or Proxied Device neither is offered.
 
@@ -293,14 +293,14 @@ The form ends with the primary button, "Cancel" (back to the Screens view) and t
 | Sleep Mode | switch, "On" or "Off" | Switching it on saves with the window shown, 23:00 to 06:00 the first time. While in its window the note reads "In its window until {hh:mm}". On a mirrored Device the switch is disabled and reads "Off while Mirroring". |
 | Window | two time inputs, "{from} to {to}" | Note: "Server timezone, {Europe/Berlin}". When it crosses midnight: "This window crosses midnight." Shown only while Sleep Mode is on. |
 | While asleep | radio row | "Show the sleep Fallback Screen": "“Asleep until {hh:mm}”, or your own image." / "Keep the Current Screen": "Whatever {Device} showed last stays on." |
-| Sleep image | "Upload an image", or the image as a 120 px plate with "Replace" and "Remove" | Shown only with "Show the sleep Fallback Screen". Without one: "Optional. Without one, {Device} shows the sleep Fallback Screen." With one: "Shown instead of the sleep Fallback Screen." Same formats as a File Screen; disabled in demo mode. "Remove" confirms: Lost: "The uploaded sleep image." Stays: "Sleep Mode, which shows the sleep Fallback Screen again." This row is the home of [#1064](https://github.com/PhyberApex/kuroshiro/issues/1064) and appears once that is built. |
+| Sleep image | "Upload an image", or the image as a 120 px plate with "Replace" and "Remove" | Shown only with "Show the sleep Fallback Screen". Without one: "Optional. Without one, {Device} shows the sleep Fallback Screen." With one: "Shown instead of the sleep Fallback Screen." Same formats as a File Screen; disabled in demo mode. "Remove" confirms: Lost: "The uploaded sleep image." Stays: "Sleep Mode, which shows the sleep Fallback Screen again." This row is the home of [#1064](https://github.com/usetrmnl/kuroshiro/issues/1064) and appears once that is built. |
 
 ### Firmware
 
 | Row | Control | Notes |
 |---|---|---|
 | Reported version | the version in mono | "Not reported yet" until the first poll. |
-| Target Firmware | select, "None" then "{version} · official" or "{version} · custom · {label}", and the button "Update now" | Only Firmware that fits the Device Model and is not deprecated is listed, plus the assigned one. Under the row: "Only Firmware that fits {Device Model} is listed." Choosing saves the target and pushes nothing. "None" clears the target; while a push is pending "None" is disabled, since taking a pending push back is [Cancel a pending Firmware push](https://github.com/PhyberApex/kuroshiro/issues/1086). "Update now" queues the push; until the next poll delivers it the row reads "Goes out at the next poll, around {hh:mm}" with the loading mark and the button is disabled. On a mirrored Device the row reads "Off while Mirroring"; on a Proxied Device "Set by TRMNL". |
+| Target Firmware | select, "None" then "{version} · official" or "{version} · custom · {label}", and the button "Update now" | Only Firmware that fits the Device Model and is not deprecated is listed, plus the assigned one. Under the row: "Only Firmware that fits {Device Model} is listed." Choosing saves the target and pushes nothing. "None" clears the target; while a push is pending "None" is disabled, since taking a pending push back is [Cancel a pending Firmware push](https://github.com/usetrmnl/kuroshiro/issues/1086). "Update now" queues the push; until the next poll delivers it the row reads "Goes out at the next poll, around {hh:mm}" with the loading mark and the button is disabled. On a mirrored Device the row reads "Off while Mirroring"; on a Proxied Device "Set by TRMNL". |
 
 Under the section: "The Firmware library lives under Instance." (a link) and the state of Firmware Auto-Update: "Firmware Auto-Update is off, so {Device} only updates when you press “Update now”." or "Firmware Auto-Update is on: {Device} is given each new official Firmware by itself."
 
@@ -385,7 +385,7 @@ Works fully below 820 px: the Screens view (see the Current Screen, reorder with
 
 ## Components this spec adds
 
-Each uses the tokens and rules of [Design tokens and component inventory](https://github.com/PhyberApex/kuroshiro/issues/1091).
+Each uses the tokens and rules of [Design tokens and component inventory](https://github.com/usetrmnl/kuroshiro/issues/1091).
 
 | Component | Backed by | States |
 |---|---|---|
@@ -401,7 +401,7 @@ No new icon is needed: every icon used is one of the twelve.
 
 ## Capability coverage
 
-Numbers are those of the [capability inventory](https://github.com/PhyberApex/kuroshiro/issues/1075).
+Numbers are those of the [capability inventory](https://github.com/usetrmnl/kuroshiro/issues/1075).
 
 | # | Capability | Home |
 |---|---|---|
@@ -418,7 +418,7 @@ Numbers are those of the [capability inventory](https://github.com/PhyberApex/ku
 | 11 | Mirroring | Settings, Mirroring; the Screens view of a mirrored Device |
 | 12 | Read Device Logs | Logs |
 | 13 | Clear a Device's Logs | Logs, "Clear Logs" |
-| 14 | Change a Device's MAC or friendly id | None. Removed, as [Primary journeys](https://github.com/PhyberApex/kuroshiro/issues/1078) decided. |
+| 14 | Change a Device's MAC or friendly id | None. Removed, as [Primary journeys](https://github.com/usetrmnl/kuroshiro/issues/1078) decided. |
 | 15 | Device Model of a Device | Settings, Display |
 | 16 | Palette of a Device, custom Palettes included | Settings, Display |
 | 21 | Add an External link Screen | Add Screen, External link |
@@ -457,7 +457,7 @@ Capabilities 17 and 69 to 72 and 74 (syncing Device Models, the Firmware library
 
 ## What this asks of the admin API
 
-A request list for [Admin API reshaping for the new screens](https://github.com/PhyberApex/kuroshiro/issues/1096), which settles the shapes.
+A request list for [Admin API reshaping for the new screens](https://github.com/usetrmnl/kuroshiro/issues/1096), which settles the shapes.
 
 **To add**
 
@@ -469,7 +469,7 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 6. Converting an uploaded image for a preview without saving it, for "Replace file".
 7. Device Logs: newest first, a page size and a cursor, a level filter, a search over the message, the total and the matching count, and the level, message, source and status as fields instead of a raw string the UI has to parse.
 8. Instance facts for the UI: the address the server hands to Devices, the server's timezone name, and whether demo mode is on. The Retention ages are Instance Settings ([instance.md](./instance.md)), not Instance facts.
-9. The custom sleep image of [#1064](https://github.com/PhyberApex/kuroshiro/issues/1064).
+9. The custom sleep image of [#1064](https://github.com/usetrmnl/kuroshiro/issues/1064).
 
 **To change**
 
@@ -490,7 +490,7 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 - **An empty Device** shows the no-screen Fallback Screen, not welcome, as the glossary ticket corrected.
 - **"While asleep"** is a radio row with two named choices, not a switch.
 - **"On the panel"** is "on the Device" throughout, and "Reset" is "Device Reset".
-- **The Render Signal chip** of [#1071](https://github.com/PhyberApex/kuroshiro/issues/1071) becomes a Screen State and a qualifier. Its labels are kept; its hover explanation becomes the sentence in the opened row, which a keyboard reaches by opening the row.
+- **The Render Signal chip** of [#1071](https://github.com/usetrmnl/kuroshiro/issues/1071) becomes a Screen State and a qualifier. Its labels are kept; its hover explanation becomes the sentence in the opened row, which a keyboard reaches by opening the row.
 
 ## Open points
 
@@ -509,65 +509,65 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 
 **Left undecided**
 
-- **Cancelling a pending Device Reset.** The API would allow it today. It is a new capability, like [Cancel a pending Firmware push](https://github.com/PhyberApex/kuroshiro/issues/1086), and is not specced.
+- **Cancelling a pending Device Reset.** The API would allow it today. It is a new capability, like [Cancel a pending Firmware push](https://github.com/usetrmnl/kuroshiro/issues/1086), and is not specced.
 - **A new Device starts with a pending `identify` Special Function** (the column's default), so its first Screens view shows that fact. Whether the default should be `none` is the API ticket's call.
 - **When "no Screen can be shown" ends.** The column says to open a Screen; it does not say when the next one returns, which the server would have to work out from every Schedule.
 - **A size limit for uploads.** None is configured today, so the UI can only relay the server's refusal.
 - **The code editor** for HTML is specced in [template-editor.md](./template-editor.md).
 
-[proto]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces
-[screens-light]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-light.png
-[screens-dark]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-dark.png
-[screens-plugin]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-plugin-skipping.png
-[screens-mashup]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-mashup.png
-[screens-layout]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-mashup-change-layout.png
-[screens-replace]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-file-replace.png
-[screens-rename]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-rename.png
-[screens-many]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-many.png
-[screens-link]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-external-link.png
-[screens-dates]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-html-date-range.png
-[screens-never]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-hold-and-never-rendered.png
-[screens-mirrored]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-mirrored.png
-[screens-proxied]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-proxied.png
-[screens-mirrorfail]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-mirroring-failed.png
-[screens-offline]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-offline.png
-[screens-none]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-none.png
-[screens-empty]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-empty.png
-[screens-sleep]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-sleep.png
-[screens-loading]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-loading.png
-[screens-failed]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-failed.png
-[confirm-delete]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/confirm-delete-screen.png
-[confirm-unassign]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/confirm-unassign.png
-[confirm-schedule]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/confirm-remove-schedule.png
-[confirm-reset]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/confirm-device-reset.png
-[confirm-delete-device]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/confirm-delete-device.png
-[confirm-clear]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/confirm-clear-logs.png
-[add-plugin]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/add-plugin.png
-[add-plugin-none]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/add-plugin-none.png
-[add-mashup]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/add-mashup.png
-[add-link]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/add-link.png
-[add-file]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/add-file.png
-[add-html]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/add-html.png
-[edit-html]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/edit-html.png
-[settings-light]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/settings-light.png
-[settings-dark]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/settings-dark.png
-[settings-proxied]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/settings-proxied.png
-[logs-light]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/logs-light.png
-[logs-problems]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/logs-dark-problems.png
-[logs-search]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/logs-search.png
-[logs-none]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/logs-no-match.png
-[devices-three]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/devices-three.png
-[devices-seven]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/devices-seven-dark.png
-[device-of-seven]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/device-of-seven.png
-[connect-first]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/connect-first-run.png
-[connect-arrived]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/connect-arrived.png
-[connect-hand]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/connect-by-hand.png
-[missing]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/missing.png
-[phone-screens]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/phone-screens.png
-[phone-screens-open]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/phone-screens-open.png
-[phone-mirrored]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/phone-mirrored.png
-[phone-add]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/phone-add.png
-[phone-settings]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/phone-settings.png
-[phone-logs]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/phone-logs.png
-[phone-devices]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/phone-devices.png
-[phone-connect]: https://github.com/PhyberApex/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/phone-connect.png
+[proto]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces
+[screens-light]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-light.png
+[screens-dark]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-dark.png
+[screens-plugin]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-plugin-skipping.png
+[screens-mashup]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-mashup.png
+[screens-layout]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-mashup-change-layout.png
+[screens-replace]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-file-replace.png
+[screens-rename]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-rename.png
+[screens-many]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-many.png
+[screens-link]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-external-link.png
+[screens-dates]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-html-date-range.png
+[screens-never]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-hold-and-never-rendered.png
+[screens-mirrored]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-mirrored.png
+[screens-proxied]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-proxied.png
+[screens-mirrorfail]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-mirroring-failed.png
+[screens-offline]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-offline.png
+[screens-none]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-none.png
+[screens-empty]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-empty.png
+[screens-sleep]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-sleep.png
+[screens-loading]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-loading.png
+[screens-failed]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/screens-failed.png
+[confirm-delete]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/confirm-delete-screen.png
+[confirm-unassign]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/confirm-unassign.png
+[confirm-schedule]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/confirm-remove-schedule.png
+[confirm-reset]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/confirm-device-reset.png
+[confirm-delete-device]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/confirm-delete-device.png
+[confirm-clear]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/confirm-clear-logs.png
+[add-plugin]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/add-plugin.png
+[add-plugin-none]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/add-plugin-none.png
+[add-mashup]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/add-mashup.png
+[add-link]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/add-link.png
+[add-file]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/add-file.png
+[add-html]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/add-html.png
+[edit-html]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/edit-html.png
+[settings-light]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/settings-light.png
+[settings-dark]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/settings-dark.png
+[settings-proxied]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/settings-proxied.png
+[logs-light]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/logs-light.png
+[logs-problems]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/logs-dark-problems.png
+[logs-search]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/logs-search.png
+[logs-none]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/logs-no-match.png
+[devices-three]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/devices-three.png
+[devices-seven]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/devices-seven-dark.png
+[device-of-seven]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/device-of-seven.png
+[connect-first]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/connect-first-run.png
+[connect-arrived]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/connect-arrived.png
+[connect-hand]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/connect-by-hand.png
+[missing]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/missing.png
+[phone-screens]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/phone-screens.png
+[phone-screens-open]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/phone-screens-open.png
+[phone-mirrored]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/phone-mirrored.png
+[phone-add]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/phone-add.png
+[phone-settings]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/phone-settings.png
+[phone-logs]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/phone-logs.png
+[phone-devices]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/phone-devices.png
+[phone-connect]: https://github.com/usetrmnl/kuroshiro/blob/661601a/packages/ui/prototypes/device-surfaces/shots/phone-connect.png

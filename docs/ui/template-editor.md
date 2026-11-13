@@ -2,7 +2,7 @@
 
 The section "Template" of the Plugin page, and the code editor every other surface borrows: the editor itself, the Templates a Plugin has, the live preview and what it draws against, and how a problem is shown. Read [README.md](./README.md) first; its shared patterns apply here and are not repeated. [plugins.md](./plugins.md) gives the section its place on the Plugin page and its one save; this spec fills it.
 
-- **Reference.** [Headless component library and styling approach](https://github.com/PhyberApex/kuroshiro/issues/1076) suggested CodeMirror 6. [Plugin field values and Plugin Variables](https://github.com/PhyberApex/kuroshiro/issues/1087) set what a Field Value is.
+- **Reference.** [Headless component library and styling approach](https://github.com/usetrmnl/kuroshiro/issues/1076) suggested CodeMirror 6. [Plugin field values and Plugin Variables](https://github.com/usetrmnl/kuroshiro/issues/1087) set what a Field Value is.
 - **Drawings.** [`packages/ui/prototypes/template-editor`][proto] on the throwaway branch `prototype/template-editor`, at commit `80b8427`. It is a working prototype: the editor is CodeMirror 6, and the preview is rendered by liquidjs in the browser and drawn with TRMNL's framework, so it needs the network. Open `index.html` in a browser; `t` switches the theme, `d` the number of Devices (3, 1, none), `f` the preview's data (fetched, a failed fetch, fetching, server down), `r` whether the last scheduled render failed, `w` the full window. Each section below links the renders it describes.
 - **Facts.** How the server behaves today was read from `main` at `85868a1`. Nothing on the server was run.
 
@@ -188,7 +188,7 @@ Only has to stay readable, as [plugins.md](./plugins.md) and [devices.md](./devi
 
 ## Components this spec adds
 
-Each uses the tokens and rules of [Design tokens and component inventory](https://github.com/PhyberApex/kuroshiro/issues/1091).
+Each uses the tokens and rules of [Design tokens and component inventory](https://github.com/usetrmnl/kuroshiro/issues/1091).
 
 | Component | Backed by | States |
 |---|---|---|
@@ -201,7 +201,7 @@ The bundle of the editor and the Liquid engine is about 650 kB minified, 224 kB 
 
 ## Capability coverage
 
-Numbers are those of the [capability inventory](https://github.com/PhyberApex/kuroshiro/issues/1075).
+Numbers are those of the [capability inventory](https://github.com/usetrmnl/kuroshiro/issues/1075).
 
 | # | Capability | Home |
 |---|---|---|
@@ -215,7 +215,7 @@ The old "Show Template Help" panel has no home. Its syntax examples are replaced
 
 ## What this asks of the admin API
 
-A request list for [Admin API reshaping for the new screens](https://github.com/PhyberApex/kuroshiro/issues/1096), which settles the shapes.
+A request list for [Admin API reshaping for the new screens](https://github.com/usetrmnl/kuroshiro/issues/1096), which settles the shapes.
 
 **To add**
 
@@ -230,7 +230,7 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 2. **One Template per size, and always `full`.** An import whose files hold no `full` Template makes its first Template `full`.
 3. **A render picks a Template by size, never by position.** A Screen on its own, a scheduled render and a Webhook render use `full`. Today the scheduler and a Webhook render use whichever Template is first.
 4. **A Mashup slot renders the Template of its own size**, and `full` when the Plugin has none. Today it always renders `full`.
-5. **Every render sees the same context.** `trmnl` on a Webhook render (today it has none), and the Field Values everywhere (already [#1101](https://github.com/PhyberApex/kuroshiro/issues/1101)). Otherwise the starter template, which reads `trmnl`, shows nothing on a Webhook-kind Plugin.
+5. **Every render sees the same context.** `trmnl` on a Webhook render (today it has none), and the Field Values everywhere (already [#1101](https://github.com/usetrmnl/kuroshiro/issues/1101)). Otherwise the starter template, which reads `trmnl`, shows nothing on a Webhook-kind Plugin.
 6. **A save refuses a Template that cannot be parsed**, with Liquid's message and line, and an empty one. The browser checks first; the server is the gate.
 
 ## Departures
@@ -245,7 +245,7 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 
 **Decided on the agent's own call; the maintainer may want to overturn them**
 
-- The live preview is a browser's drawing, not the dithered image the Device gets; the dithered image is drawn on request (ADR-0040, [#1111](https://github.com/PhyberApex/kuroshiro/issues/1111)).
+- The live preview is a browser's drawing, not the dithered image the Device gets; the dithered image is drawn on request (ADR-0040, [#1111](https://github.com/usetrmnl/kuroshiro/issues/1111)).
 - Liquid runs in the browser from shared code. The alternative, a server round trip per keystroke, is slower and would make the server parse half-typed Templates.
 - A Plugin with one Template shows no size control, only one sentence and a quiet action.
 - A new Template starts as a copy of Full, not empty.
@@ -266,34 +266,34 @@ A request list for [Admin API reshaping for the new screens](https://github.com/
 - **Sensors in a scheduled render.** A scheduled render is made once for all Devices and has no Sensors, while the preview for a Device shows that Device's. A Template that reads `sensors` therefore looks better here than on the Device until the server renders per Device; the API ticket owns that.
 - **Above about 2,000 lines** the editor was not tried.
 
-[proto]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor
-[template-light]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-light.png
-[template-dark]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-dark.png
-[template-page]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-page.png
-[template-one]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-one-device.png
-[template-problem]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-problem.png
-[template-problem-dark]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-problem-dark.png
-[template-unsaved]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-unsaved.png
-[template-quadrant]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-quadrant.png
-[template-add]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-add-menu.png
-[template-removed]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-removed.png
-[template-other]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-another-model.png
-[template-hallway]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-hallway.png
-[template-none]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-no-devices.png
-[template-failed]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-fetch-failed.png
-[template-fetching]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-fetching.png
-[template-down]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-down.png
-[template-scheduled]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-scheduled-failed.png
-[template-complete]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-complete.png
-[template-search]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-search.png
-[wide-light]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/wide-light.png
-[wide-problem]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/wide-dark-problem.png
-[wide-unsaved]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/wide-unsaved.png
-[starter]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/starter.png
-[webhook]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/webhook.png
-[code-inputs]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/code-inputs.png
-[code-invalid]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/code-input-invalid.png
-[html-screen]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/html-screen.png
-[html-dark]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/html-screen-dark.png
-[phone-template]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/phone-template.png
-[phone-html]: https://github.com/PhyberApex/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/phone-html.png
+[proto]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor
+[template-light]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-light.png
+[template-dark]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-dark.png
+[template-page]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-page.png
+[template-one]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-one-device.png
+[template-problem]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-problem.png
+[template-problem-dark]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-problem-dark.png
+[template-unsaved]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-unsaved.png
+[template-quadrant]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-quadrant.png
+[template-add]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-add-menu.png
+[template-removed]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-removed.png
+[template-other]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-another-model.png
+[template-hallway]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-hallway.png
+[template-none]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-no-devices.png
+[template-failed]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-fetch-failed.png
+[template-fetching]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-fetching.png
+[template-down]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-down.png
+[template-scheduled]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-scheduled-failed.png
+[template-complete]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-complete.png
+[template-search]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/template-search.png
+[wide-light]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/wide-light.png
+[wide-problem]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/wide-dark-problem.png
+[wide-unsaved]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/wide-unsaved.png
+[starter]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/starter.png
+[webhook]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/webhook.png
+[code-inputs]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/code-inputs.png
+[code-invalid]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/code-input-invalid.png
+[html-screen]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/html-screen.png
+[html-dark]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/html-screen-dark.png
+[phone-template]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/phone-template.png
+[phone-html]: https://github.com/usetrmnl/kuroshiro/blob/80b8427/packages/ui/prototypes/template-editor/shots/phone-html.png
