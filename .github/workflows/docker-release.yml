@@ -37,6 +37,10 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
+          # A release is cut from a commit docker-next.yml already built, and a tag's run may read
+          # the cache main wrote, so arm64's emulated layers come back instead of building again.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: |
             ghcr.io/${{ steps.repo.outputs.repository }}:latest
             ghcr.io/${{ steps.repo.outputs.repository }}:${{ env.RELEASE_VERSION }}
