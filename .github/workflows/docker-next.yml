@@ -58,6 +58,9 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
+          # Written on main so the release build of this same commit can read it.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: |
             ghcr.io/${{ steps.repo.outputs.repository }}:next
             ghcr.io/${{ steps.repo.outputs.repository }}:${{ github.sha }}
