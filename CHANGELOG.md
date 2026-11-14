@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.24.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.23.1...kuroshiro-v0.24.0) (2026-11-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* **api:** a Template pointing a render page at a private address stops drawing until that host is named in KUROSHIRO_RENDER_ALLOWED_HOSTS.
+* **api:** `crypto.subtle` is no longer in a transform's reach. A transform that names it now fails where it used to run. Nothing else of ADR-0055's nineteen globals is withdrawn.
+
+### Features
+
+* **api:** build a transform's web globals inside its sandbox ([#1777](https://github.com/usetrmnl/kuroshiro/issues/1777)) ([bdaf015](https://github.com/usetrmnl/kuroshiro/commit/bdaf015806a6cff9ce5909d330e036e52e15e6a4)), closes [#1750](https://github.com/usetrmnl/kuroshiro/issues/1750)
+* **api:** refuse a private host on a render page unless an admin named it ([#1778](https://github.com/usetrmnl/kuroshiro/issues/1778)) ([36f7211](https://github.com/usetrmnl/kuroshiro/commit/36f7211e9b6cd96bc36b29c18dbc9c63b98128cc)), closes [#1776](https://github.com/usetrmnl/kuroshiro/issues/1776)
+
 ## [0.23.1](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.23.0...kuroshiro-v0.23.1) (2026-11-13)
 
 
