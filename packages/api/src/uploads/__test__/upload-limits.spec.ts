@@ -1,4 +1,4 @@
-import type { HttpTestApp } from '../../test/httpApp.js'
+import type { HttpTestApp, TestRequestInit } from '../../test/httpApp.js'
 import { Buffer } from 'node:buffer'
 import { getRepositoryToken } from '@nestjs/typeorm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -31,11 +31,40 @@ const DEVICE_ID = '0b0f5c1e-6c40-4c3e-8f7e-0d4c1f9b7a10'
 
 const answered = { id: 'x' }
 
-function multipart(bytes: number, fields: Record<string, string> = {}, filename = 'upload.bin'): FormData {
-  const form = new FormData()
-  Object.entries(fields).forEach(([name, value]) => form.append(name, value))
-  form.append('file', new Blob([new Uint8Array(bytes)]), filename)
-  return form
+const BOUNDARY = 'kuroshiro-upload-limits'
+const PADDING = new Uint8Array(64 * 1024)
+const encoder = new TextEncoder()
+
+function* multipartParts(bytes: number, fields: Record<string, string>, filename: string): Generator<Uint8Array> {
+  for (const [name, value] of Object.entries(fields))
+    yield encoder.encode(`--${BOUNDARY}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`)
+  yield encoder.encode(`--${BOUNDARY}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: application/octet-stream\r\n\r\n`)
+  for (let left = bytes; left > 0; left -= PADDING.length)
+    yield left < PADDING.length ? PADDING.subarray(0, left) : PADDING
+  yield encoder.encode(`\r\n--${BOUNDARY}--\r\n`)
+}
+
+/**
+ * The ceilings reach a quarter of a gigabyte, and a `FormData` carrying a `Blob` that
+ * size costs several times the body in memory to build and to post, which on a loaded
+ * runner is enough to lose the connection mid-upload. The padding is generated as the
+ * request goes out, so the body never exists all at once.
+ */
+function multipart(bytes: number, fields: Record<string, string> = {}, filename = 'upload.bin'): TestRequestInit {
+  const parts = multipartParts(bytes, fields, filename)
+  return {
+    headers: { 'content-type': `multipart/form-data; boundary=${BOUNDARY}` },
+    body: new ReadableStream({
+      pull(controller) {
+        const part = parts.next()
+        if (part.done)
+          controller.close()
+        else
+          controller.enqueue(part.value)
+      },
+    }),
+    duplex: 'half',
+  }
 }
 
 function jsonBody(bytes: number): string {
@@ -87,12 +116,12 @@ describe('the upload limits', () => {
 
   describe.each(uploads)('the $name', ({ path, method = 'POST', status = 201, limit, fields, filename }) => {
     it('succeeds at the limit', async () => {
-      const response = await http.request(path, { method, body: multipart(limit, fields, filename) })
+      const response = await http.request(path, { method, ...multipart(limit, fields, filename) })
       expect(response.status).toBe(status)
     })
 
     it('answers 413 upload-too-large with the limit one byte over', async () => {
-      const response = await http.request(path, { method, body: multipart(limit + 1, fields, filename) })
+      const response = await http.request(path, { method, ...multipart(limit + 1, fields, filename) })
       expect(response.status).toBe(413)
       expect(await response.json()).toEqual({
         statusCode: 413,
