@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { AccordionContent, AccordionItem } from 'reka-ui'
+import { AccordionItem } from 'reka-ui'
 import { useTemplateRef } from 'vue'
+import AccordionRowBody from './AccordionRowBody.vue'
 import AccordionRowHeading from './AccordionRowHeading.vue'
 import Icon from './Icon.vue'
+import { openFromLine } from './openFromLine'
 
 withDefaults(defineProps<{
   /** What `DataSourceRows` opens the row by. */
@@ -30,21 +32,13 @@ defineSlots<{
 
 const trigger = useTemplateRef('trigger')
 
-const CONTROLS = 'a, button, input, select, textarea, label'
-
-/** The whole line opens the row, as the name does, except where it holds a control of its own or the admin is selecting text. */
-function openFromLine(event: MouseEvent) {
-  const pressed = event.target as Element
-  if (pressed.closest(CONTROLS) || !getSelection()?.isCollapsed)
-    return
-  trigger.value?.click()
-}
+const openFromTrigger = openFromLine(() => trigger.value)
 </script>
 
 <template>
   <AccordionItem as-child :value="value" :disabled="removed">
     <li class="data-source-row" :class="{ removed }">
-      <div class="line row-line" :data-force="force" @click="openFromLine">
+      <div class="line row-line" :data-force="force" @click="openFromTrigger">
         <AccordionRowHeading :heading="heading">
           <button ref="trigger" type="button" class="trigger row-trigger">
             {{ name }}
@@ -56,13 +50,9 @@ function openFromLine(event: MouseEvent) {
         </div>
         <Icon v-if="!removed" name="chevron" class="chevron" />
       </div>
-      <AccordionContent as-child>
-        <div class="body row-body">
-          <div class="inside">
-            <slot />
-          </div>
-        </div>
-      </AccordionContent>
+      <AccordionRowBody>
+        <slot />
+      </AccordionRowBody>
     </li>
   </AccordionItem>
 </template>
@@ -141,8 +131,8 @@ function openFromLine(event: MouseEvent) {
     rotate: 180deg;
   }
 
-  .inside {
-    padding: var(--space-2) 0 var(--space-8);
+  .row-body {
+    --row-inside: var(--space-2) 0 var(--space-8);
   }
 
   /* On phone the row stacks to the name, the line and the health, with the chevron beside the name. */
