@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.24.1](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.24.0...kuroshiro-v0.24.1) (2026-11-14)
+
+
+### Performance Improvements
+
+* **ci:** cache the image layers both Docker builds share ([#1780](https://github.com/usetrmnl/kuroshiro/issues/1780)) ([893de9f](https://github.com/usetrmnl/kuroshiro/commit/893de9f4c69e30fa857a50256c3ea836e1d14c62))
+
 ## [0.24.0](https://github.com/usetrmnl/kuroshiro/compare/kuroshiro-v0.23.1...kuroshiro-v0.24.0) (2026-11-14)
 
 
