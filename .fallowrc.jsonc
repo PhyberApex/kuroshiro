@@ -22,7 +22,13 @@
   ],
   "duplicates": {
     // Migrations are immutable history and the TRMNL snapshot is generated data; neither is a refactoring target
-    "ignore": ["packages/api/src/migrations/**", "packages/api/src/device-models/data/trmnl-snapshot.ts"]
+    "ignore": [
+      "packages/api/src/migrations/**",
+      "packages/api/src/device-models/data/trmnl-snapshot.ts",
+      // The <script setup> of these two is compiler-macro boilerplate (defineOptions, defineProps, defineEmits, defineSlots, defineModel): Vue cannot hoist a macro out of a component, and the two controls differ in props and commit rule (#1771)
+      "packages/ui/src/components/TextInput.vue",
+      "packages/ui/src/components/Textarea.vue"
+    ]
   },
   "health": {
     "ignore": [
