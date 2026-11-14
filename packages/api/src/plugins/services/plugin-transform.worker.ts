@@ -3,12 +3,14 @@
  * outlasts its time, so a transform busy after an `await` stops with it instead of blocking the server. The thread
  * borrows the server's `fetch` over messages and answers the transform's result as JSON.
  *
- * Node runs this file as it is under test, stripping its types, so it imports nothing but Node and vm2, and only types
- * from elsewhere.
+ * Node runs this file as it is under test, stripping its types, so it imports nothing but Node, vm2 and the sandbox's
+ * own globals beside it, which import nothing themselves, and only types from elsewhere.
  */
 import type { MessagePort } from 'node:worker_threads'
+import buffer from 'node:buffer'
 import { parentPort, workerData } from 'node:worker_threads'
 import { VM } from 'vm2'
+import { SANDBOX_GLOBALS } from './transform-globals.ts'
 
 export interface TransformJob {
   transformJs: string
@@ -44,29 +46,34 @@ export type ServerMessage
     | { type: 'fetch-failed', id: number, name: string, message: string }
 
 /**
- * The web-standard globals Node 20 has, which TRMNL's serverless runtime leaves in reach (ADR-0055). Node's own
- * `require`, `process` and file system stay out. They are this thread's, so its timers end with it.
+ * What the sandbox cannot build for itself: the clock, the entropy, the timers and the way to the network. Each is
+ * bridged in as a plain function rather than as a host object (ADR-0077), so the sandbox holds no reference to one.
+ * The timers are this thread's, so they end with it.
  */
-const WEB_GLOBALS = {
-  AbortController,
-  AbortSignal,
-  setTimeout,
-  clearTimeout,
-  setInterval,
-  clearInterval,
-  queueMicrotask,
-  URL,
-  URLSearchParams,
-  TextEncoder,
-  TextDecoder,
-  atob,
-  btoa,
-  structuredClone,
-  performance,
-  crypto,
-  Headers,
-  Request,
-  Response,
+function bridgedGlobals(): Record<string, unknown> {
+  return {
+    setTimeout,
+    clearTimeout,
+    setInterval,
+    clearInterval,
+    queueMicrotask,
+    performance: { now: () => performance.now() },
+    crypto: {
+      randomUUID: () => crypto.randomUUID(),
+      // Filled through the sandbox's own view: a typed array from the sandbox fails the host's internal slot check.
+      getRandomValues: (array: { length: number, BYTES_PER_ELEMENT?: number, [index: number]: number }) => {
+        const width = array.BYTES_PER_ELEMENT ?? 1
+        const bytes = crypto.getRandomValues(new Uint8Array(array.length * width))
+        for (let index = 0; index < array.length; index++) {
+          let value = 0
+          for (let byte = 0; byte < width; byte++)
+            value = value * 256 + bytes[index * width + byte]
+          array[index] = value
+        }
+        return array
+      },
+    },
+  }
 }
 
 /**
@@ -96,69 +103,79 @@ const PICK_TRANSFORM = `
   })()
 `
 
-/** The server's `fetch`, reached over the port: the request goes out as plain data and the response comes back whole. */
-function fetchOverPort(port: MessagePort): (url: string, init?: RequestInit) => Promise<Response> {
+/** A request the sandbox hands out, its body base64 because an `ArrayBuffer` cannot cross the sandbox boundary. */
+interface SandboxRequest {
+  url: string
+  init: { method: string, headers: Record<string, string>, redirect: RequestRedirect, body?: string }
+}
+
+/** What the sandbox reads back, its body base64 and its headers an object the sandbox's `Headers` takes. */
+type SandboxAnswer
+  = | { status: number, statusText: string, headers: Record<string, string>, body: string, url: string }
+    | { failed: true, name: string, message: string }
+
+/**
+ * The server's `fetch`, reached over the port. Every call crosses sandbox to host and never the other way: the
+ * sandbox starts a request, registers its own abort against the id it gets back, and waits on the answer.
+ */
+function fetchBridge(port: MessagePort): Record<string, unknown> {
   let nextId = 0
-  const pending = new Map<number, { resolve: (response: Response) => void, reject: (error: unknown) => void }>()
+  const pending = new Map<number, { resolve: (answer: SandboxAnswer) => void }>()
 
   port.on('message', (message: ServerMessage) => {
     const waiting = pending.get(message.id)
     if (!waiting)
       return
     pending.delete(message.id)
-    if (message.type === 'fetched')
-      waiting.resolve(responseOf(message.response))
-    else
-      waiting.reject(Object.assign(new Error(message.message), { name: message.name }))
+    waiting.resolve(message.type === 'fetched'
+      ? {
+          status: message.response.status,
+          statusText: message.response.statusText,
+          headers: Object.fromEntries(message.response.headers),
+          body: buffer.Buffer.from(message.response.body).toString('base64'),
+          url: message.response.url,
+        }
+      : { failed: true, name: message.name, message: message.message })
   })
 
-  return async (url, init) => {
-    const signal = init?.signal
-    signal?.throwIfAborted()
-    const request = await requestOf(String(url), init)
-    const id = nextId++
-    return new Promise<Response>((resolve, reject) => {
-      pending.set(id, { resolve, reject })
+  return {
+    __fetchStart: ({ url, init }: SandboxRequest) => {
+      const id = nextId++
+      const body = init.body === undefined ? undefined : Uint8Array.from(buffer.Buffer.from(init.body, 'base64')).buffer
+      const request: FetchRequest = { url, init: { method: init.method, headers: { ...init.headers }, redirect: init.redirect, ...(body && { body }) } }
       port.postMessage({ type: 'fetch', id, request } satisfies WorkerMessage)
-      signal?.addEventListener('abort', () => {
-        if (!pending.delete(id))
-          return
-        port.postMessage({ type: 'abort', id } satisfies WorkerMessage)
-        reject(signal.reason)
-      }, { once: true })
-    })
+      return id
+    },
+    __fetchAbort: (id: number) => {
+      const waiting = pending.get(id)
+      if (!waiting)
+        return
+      pending.delete(id)
+      port.postMessage({ type: 'abort', id } satisfies WorkerMessage)
+      // Settled so nothing waits on a request that will never answer; the sandbox rejects with its own reason first.
+      waiting.resolve({ failed: true, name: 'AbortError', message: 'This operation was aborted' })
+    },
+    __fetchWait: (id: number) => new Promise<SandboxAnswer>((resolve) => {
+      pending.set(id, { resolve })
+    }),
   }
-}
-
-/** A request as the server's `fetch` takes it, read through `Request` so every kind of body arrives as bytes with its content type. */
-async function requestOf(url: string, init?: RequestInit): Promise<FetchRequest> {
-  const request = new Request(url, init)
-  const body = request.body ? await request.arrayBuffer() : undefined
-  return { url: request.url, init: { method: request.method, headers: Object.fromEntries(request.headers), redirect: request.redirect, ...(body && { body }) } }
-}
-
-const NULL_BODY_STATUSES = new Set([101, 103, 204, 205, 304])
-
-function responseOf({ status, statusText, headers, body, url }: FetchedResponse): Response {
-  const response = new Response(NULL_BODY_STATUSES.has(status) ? null : body, { status, statusText, headers })
-  Object.defineProperty(response, 'url', { value: url })
-  return response
 }
 
 async function runJob(port: MessagePort, { transformJs, input, withFetch }: TransformJob): Promise<string | undefined> {
   const moduleObj = { exports: {} }
   const vm = new VM({
     sandbox: {
-      ...WEB_GLOBALS,
+      ...bridgedGlobals(),
       input,
       data: input,
       module: moduleObj,
       exports: moduleObj.exports,
       __log: (text: unknown) => port.postMessage({ type: 'log', text: typeof text === 'string' ? text : '' } satisfies WorkerMessage),
-      ...(withFetch && { fetch: fetchOverPort(port) }),
+      ...(withFetch && fetchBridge(port)),
     },
   })
   vm.run(SANDBOX_CONSOLE)
+  vm.run(SANDBOX_GLOBALS)
   return await vm.run(`${transformJs}\n;${PICK_TRANSFORM}`) as string | undefined
 }
 
