@@ -14,7 +14,7 @@ function configWith(values: Record<string, unknown>): ConfigService {
   return asService<ConfigService>({ getOrThrow: (key: string) => values[key] })
 }
 
-const SELF_HOSTED = { demo_mode: false, port: 3000, api_url: 'https://kuroshiro.example.com' }
+const SELF_HOSTED = { demo_mode: false, port: 3000, api_url: 'https://kuroshiro.example.com', render_allowed_hosts: [] }
 
 function fakePage() {
   return { close: vi.fn().mockResolvedValue(undefined), setRequestInterception: vi.fn().mockResolvedValue(undefined), on: vi.fn() }
@@ -58,8 +58,14 @@ describe('sharedBrowserService', () => {
     expect(await settledAs('http://10.0.0.7/')).toBe('abort')
   })
 
-  it('lets render pages reach a private address on a self-hosted Instance', async () => {
+  it('has render pages refuse a private address no Instance Setting allows', async () => {
     void new SharedBrowserService(configWith(SELF_HOSTED))
+
+    expect(await settledAs('http://10.0.0.7/')).toBe('abort')
+  })
+
+  it('lets render pages reach the private addresses the Instance allows', async () => {
+    void new SharedBrowserService(configWith({ ...SELF_HOSTED, render_allowed_hosts: ['10.0.0.0/8'] }))
 
     expect(await settledAs('http://10.0.0.7/')).toBe('continue')
   })
