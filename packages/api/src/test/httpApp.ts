@@ -6,9 +6,12 @@ import { registerCrossSiteRefusal } from '../cross-site/cross-site.guard.js'
 import { registerErrorEnvelope } from '../errors/register-error-envelope.js'
 import { registerBodyParsers } from '../uploads/register-body-parsers.js'
 
+/** `duplex` is what a streamed request body goes out with, and the `RequestInit` in scope has no field for it. */
+export type TestRequestInit = RequestInit & { duplex?: 'half' }
+
 export interface HttpTestApp {
   app: INestApplication
-  request: (path: string, init?: RequestInit) => Promise<Response>
+  request: (path: string, init?: TestRequestInit) => Promise<Response>
   postJson: (path: string, body: unknown, init?: RequestInit) => Promise<Response>
 }
 
@@ -26,7 +29,7 @@ export async function createHttpTestApp(metadata: ModuleMetadata): Promise<HttpT
   registerCrossSiteRefusal(app)
   await app.listen(0)
   const { port } = app.getHttpServer().address() as AddressInfo
-  const request = (path: string, init?: RequestInit) => fetch(`http://127.0.0.1:${port}${path}`, init)
+  const request = (path: string, init?: TestRequestInit) => fetch(`http://127.0.0.1:${port}${path}`, init)
   const postJson = (path: string, body: unknown, init: RequestInit = {}) => request(path, {
     method: 'POST',
     ...init,
