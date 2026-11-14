@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { AccordionContent, AccordionItem } from 'reka-ui'
+import { AccordionItem } from 'reka-ui'
 import { useTemplateRef } from 'vue'
+import AccordionRowBody from './AccordionRowBody.vue'
 import AccordionRowHeading from './AccordionRowHeading.vue'
 import Checkbox from './Checkbox.vue'
 import Icon from './Icon.vue'
+import { openFromLine } from './openFromLine'
 
 withDefaults(defineProps<{
   /** What `FindingRows` opens the row by. */
@@ -32,21 +34,13 @@ const ticked = defineModel<boolean>('ticked', { default: false })
 
 const trigger = useTemplateRef('trigger')
 
-const CONTROLS = 'a, button, input, select, textarea, label'
-
-/** The whole line opens the row, as the name does, except the checkbox and while the admin is selecting text. */
-function openFromLine(event: MouseEvent) {
-  const pressed = event.target as Element
-  if (pressed.closest(CONTROLS) || !getSelection()?.isCollapsed)
-    return
-  trigger.value?.click()
-}
+const openFromTrigger = openFromLine(() => trigger.value)
 </script>
 
 <template>
   <AccordionItem as-child :value="value">
     <li class="finding-row">
-      <div class="line row-line" :data-force="force" @click="openFromLine">
+      <div class="line row-line" :data-force="force" @click="openFromTrigger">
         <Checkbox v-model="ticked" :aria-label="name" />
         <AccordionRowHeading :heading="heading">
           <button ref="trigger" type="button" class="trigger row-trigger">
@@ -59,13 +53,9 @@ function openFromLine(event: MouseEvent) {
         </span>
         <Icon name="chevron" class="chevron" />
       </div>
-      <AccordionContent as-child>
-        <div class="body row-body">
-          <div class="inside">
-            <slot />
-          </div>
-        </div>
-      </AccordionContent>
+      <AccordionRowBody>
+        <slot />
+      </AccordionRowBody>
     </li>
   </AccordionItem>
 </template>
@@ -128,8 +118,8 @@ function openFromLine(event: MouseEvent) {
   }
 
   /* What a group holds lines up with its name, past the checkbox. */
-  .inside {
-    padding: 0 0 var(--space-5) calc(var(--icon) + var(--space-3));
+  .row-body {
+    --row-inside: 0 0 var(--space-5) calc(var(--icon) + var(--space-3));
   }
 
   /* On phone the count and the size go under the name. */
@@ -147,8 +137,8 @@ function openFromLine(event: MouseEvent) {
       grid-area: 1 / 3;
     }
 
-    .inside {
-      padding-left: 0;
+    .row-body {
+      --row-inside: 0 0 var(--space-5);
     }
   }
 }

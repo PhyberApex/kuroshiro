@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { ScreenState } from 'kuroshiro-shared'
-import { AccordionContent, AccordionHeader, AccordionItem, AccordionTrigger } from 'reka-ui'
+import { AccordionHeader, AccordionItem, AccordionTrigger } from 'reka-ui'
 import { computed, useTemplateRef, watchEffect } from 'vue'
+import AccordionRowBody from './AccordionRowBody.vue'
 import Icon from './Icon.vue'
 import IconButton from './IconButton.vue'
+import { openFromLine } from './openFromLine'
 import { isPassedOver, SCREEN_STATE_LABELS, useScreenRows } from './screenRows'
 import Seal from './Seal.vue'
 import Tooltip from './Tooltip.vue'
@@ -48,6 +50,8 @@ const rows = useScreenRows()
 
 const row = useTemplateRef('row')
 
+const openFromTrigger = openFromLine(() => row.value?.querySelector<HTMLButtonElement>('.trigger'))
+
 const active = computed(() => props.state === 'active')
 const dimmed = computed(() => props.passedOver ?? isPassedOver(props.state))
 const order = computed(() => rows.orderOf(props.value))
@@ -58,16 +62,6 @@ watchEffect((onCleanup) => {
   if (rows.sortable.value && row.value)
     onCleanup(rows.attach(props.value, row.value))
 }, { flush: 'post' })
-
-const CONTROLS = 'a, button, input, select, textarea, label, [role="switch"]'
-
-/** The whole line opens the row, as the name does, except where it holds a control of its own or the admin is selecting text. */
-function openFromLine(event: MouseEvent) {
-  const pressed = event.target as Element
-  if (pressed.closest(CONTROLS) || !getSelection()?.isCollapsed)
-    return
-  row.value?.querySelector<HTMLButtonElement>('.trigger')?.click()
-}
 </script>
 
 <template>
@@ -86,7 +80,7 @@ function openFromLine(event: MouseEvent) {
         },
       ]"
     >
-      <div class="line row-line" :data-force="force" @click="openFromLine">
+      <div class="line row-line" :data-force="force" @click="openFromTrigger">
         <template v-if="rows.sortable.value">
           <Tooltip :text="`Move ${name} in the Order`">
             <button
@@ -152,13 +146,9 @@ function openFromLine(event: MouseEvent) {
         </div>
         <Icon name="chevron" class="chevron" />
       </div>
-      <AccordionContent as-child>
-        <div class="body row-body">
-          <div class="inside">
-            <slot />
-          </div>
-        </div>
-      </AccordionContent>
+      <AccordionRowBody>
+        <slot />
+      </AccordionRowBody>
     </li>
   </AccordionItem>
 </template>
@@ -276,12 +266,12 @@ function openFromLine(event: MouseEvent) {
     rotate: 180deg;
   }
 
-  .inside {
-    padding: var(--space-2) 0 var(--space-6);
+  .row-body {
+    --row-inside: var(--space-2) 0 var(--space-6);
   }
 
-  .screen-row.sortable .inside {
-    padding-left: calc(var(--grip-width) + var(--order-width) + 2 * var(--space-3));
+  .screen-row.sortable .row-body {
+    --row-inside: var(--space-2) 0 var(--space-6) calc(var(--grip-width) + var(--order-width) + 2 * var(--space-3));
   }
 
   /* On phone the grip and the Order give way to two move buttons, and the cells stand under the name. */
@@ -308,8 +298,8 @@ function openFromLine(event: MouseEvent) {
       margin-top: calc((1lh - var(--icon)) / 2);
     }
 
-    .screen-row.sortable .inside {
-      padding-left: 0;
+    .screen-row.sortable .row-body {
+      --row-inside: var(--space-2) 0 var(--space-6);
     }
   }
 }
