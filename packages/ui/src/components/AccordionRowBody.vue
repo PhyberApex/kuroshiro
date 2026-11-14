@@ -2,8 +2,8 @@
 import { AccordionContent } from 'reka-ui'
 
 /**
- * The body of an accordion row: what the row opens, folded and unfolded under its line. The
- * row styles `.inside` (its padding) with `:deep`.
+ * The body of an accordion row: what the row opens, folded and unfolded under its line. A row
+ * sets its own padding by giving `.row-body` a `--row-inside`.
  */
 defineSlots<{
   default: () => unknown
