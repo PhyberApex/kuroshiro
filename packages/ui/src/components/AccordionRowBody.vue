@@ -19,3 +19,9 @@ defineSlots<{
     </div>
   </AccordionContent>
 </template>
+
+<style scoped>
+.inside {
+  padding: var(--row-inside);
+}
+</style>

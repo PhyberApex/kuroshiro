@@ -131,8 +131,8 @@ const openFromTrigger = openFromLine(() => trigger.value)
     rotate: 180deg;
   }
 
-  .row-body :deep(.inside) {
-    padding: var(--space-2) 0 var(--space-8);
+  .row-body {
+    --row-inside: var(--space-2) 0 var(--space-8);
   }
 
   /* On phone the row stacks to the name, the line and the health, with the chevron beside the name. */

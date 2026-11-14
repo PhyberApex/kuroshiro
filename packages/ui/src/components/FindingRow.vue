@@ -118,8 +118,8 @@ const openFromTrigger = openFromLine(() => trigger.value)
   }
 
   /* What a group holds lines up with its name, past the checkbox. */
-  .row-body :deep(.inside) {
-    padding: 0 0 var(--space-5) calc(var(--icon) + var(--space-3));
+  .row-body {
+    --row-inside: 0 0 var(--space-5) calc(var(--icon) + var(--space-3));
   }
 
   /* On phone the count and the size go under the name. */
@@ -137,8 +137,8 @@ const openFromTrigger = openFromLine(() => trigger.value)
       grid-area: 1 / 3;
     }
 
-    .row-body :deep(.inside) {
-      padding-left: 0;
+    .row-body {
+      --row-inside: 0 0 var(--space-5);
     }
   }
 }

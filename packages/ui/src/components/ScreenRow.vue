@@ -266,12 +266,12 @@ watchEffect((onCleanup) => {
     rotate: 180deg;
   }
 
-  .row-body :deep(.inside) {
-    padding: var(--space-2) 0 var(--space-6);
+  .row-body {
+    --row-inside: var(--space-2) 0 var(--space-6);
   }
 
-  .screen-row.sortable .row-body :deep(.inside) {
-    padding-left: calc(var(--grip-width) + var(--order-width) + 2 * var(--space-3));
+  .screen-row.sortable .row-body {
+    --row-inside: var(--space-2) 0 var(--space-6) calc(var(--grip-width) + var(--order-width) + 2 * var(--space-3));
   }
 
   /* On phone the grip and the Order give way to two move buttons, and the cells stand under the name. */
@@ -298,8 +298,8 @@ watchEffect((onCleanup) => {
       margin-top: calc((1lh - var(--icon)) / 2);
     }
 
-    .screen-row.sortable .row-body :deep(.inside) {
-      padding-left: 0;
+    .screen-row.sortable .row-body {
+      --row-inside: var(--space-2) 0 var(--space-6);
     }
   }
 }
