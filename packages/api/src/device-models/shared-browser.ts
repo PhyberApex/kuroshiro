@@ -12,7 +12,7 @@ let openPages = 0
 const waiting: Array<() => void> = []
 
 /** Until the Instance sets its own (`SharedBrowserService`), loopback is refused and nothing else internal. */
-let requestPolicy: RenderRequestPolicy = { demoMode: false, apiPort: 3000, apiUrl: 'http://localhost:3000' }
+let requestPolicy: RenderRequestPolicy = { demoMode: false, apiPort: 3000, apiUrl: 'http://localhost:3000', allowedPrivateHosts: [] }
 
 /** What every render page from now on may request. */
 export function setRenderRequestPolicy(policy: RenderRequestPolicy): void {

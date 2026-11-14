@@ -234,6 +234,22 @@ Remove `--user 0` again afterwards, or keep it. Kuroshiro still drops to `node` 
 
 Chromium, which renders Plugin and HTML Screens, starts with its sandbox when the container allows the user namespaces it needs. Docker's default seccomp profile does not, so there Kuroshiro logs a warning and renders without the sandbox, as `node`. `--security-opt seccomp=unconfined` (compose: `security_opt: [seccomp=unconfined]`) lets the sandbox start, at the price of the rest of the default profile. [ADR-0076](docs/adr/0076-the-image-runs-as-node-and-chromium-sandboxes-its-renderers-where-the-container-lets-it.md) has the details.
 
+### What a Screen may reach on your network
+
+A Plugin's Template is third-party code that runs with JavaScript on in Kuroshiro's browser, so what it may request is checked before the request leaves. The admin API is always refused, and so is every private address and internal host name — `192.168.x.x`, `10.x.x.x`, `*.local`, cloud metadata — because a Recipe you imported has no business scanning your LAN on every render.
+
+Set `KUROSHIRO_RENDER_ALLOWED_HOSTS` when a Template of yours legitimately renders from a service on your network:
+
+| Variable | Default | Description |
+|---|---|---|
+| `KUROSHIRO_RENDER_ALLOWED_HOSTS` | *(empty)* | Comma-separated host names, IP addresses and CIDR ranges a Screen's Template may request despite being private. A host named here may be reached at whatever it resolves to; a range is matched against the addresses themselves. `0.0.0.0/0,::/0` allows the whole network, which is what a self-hosted Instance did before this guard applied to it. |
+
+```
+KUROSHIRO_RENDER_ALLOWED_HOSTS=homeassistant.local,192.168.1.0/24
+```
+
+An entry that is not a host name, an address or a CIDR range is ignored with a logged warning. Nothing listed here can reach the admin API: loopback, the API's port and `KUROSHIRO_API_URL` are refused first, whatever the list says. A refused request fails in the Template as a network error, which is what you'll see if a Screen that used to draw LAN data comes up blank after upgrading. On the Home Assistant add-on, set it to your Home Assistant host. [ADR-0074](docs/adr/0074-a-render-page-reaches-neither-the-api-nor-an-internal-host-no-admin-named.md) has the reasoning; a Data Source fetch is a separate path and is not affected.
+
 ---
 
 ## Packages

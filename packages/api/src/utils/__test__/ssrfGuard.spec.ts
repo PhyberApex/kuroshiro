@@ -4,7 +4,7 @@ import { lookup } from 'node:dns/promises'
 import { createServer } from 'node:http'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { realFetch, stubFetch } from '../../test/fetch.js'
-import { assertPublicUrl, fetchPublic, resolvePublic } from '../ssrfGuard.js'
+import { assertPublicUrl, fetchPublic, isHostOrRange, resolvePublic } from '../ssrfGuard.js'
 
 vi.mock('node:dns/promises', () => ({ lookup: vi.fn() }))
 
@@ -365,5 +365,41 @@ describe('fetchPublic connecting', () => {
 
     await expect(fetchPublic('https://attacker.example/r')).rejects.toThrow(/private IP ranges/)
     expect(received).toBe(0)
+  })
+})
+
+describe('isHostOrRange', () => {
+  it.each([
+    'nas',
+    'homeassistant.local',
+    'ha.example.com',
+    'a',
+    '192.168.1.50',
+    '192.168.1.0/24',
+    '10.0.0.0/8',
+    '0.0.0.0/0',
+    'fd00::1',
+    'fd00::/8',
+    '::1/128',
+  ])('accepts %s', (entry) => {
+    expect(isHostOrRange(entry)).toBe(true)
+  })
+
+  it.each([
+    '',
+    'http://nas:8123',
+    'nas:8123',
+    'nas/24',
+    'not a host',
+    '-nas',
+    'nas-',
+    'nas..local',
+    '192.168.1.0/33',
+    '::1/129',
+    '10.0.0.0/eight',
+    '10.0.0.0/-1',
+    '10.0.0.0/8/16',
+  ])('refuses %s', (entry) => {
+    expect(isHostOrRange(entry)).toBe(false)
   })
 })

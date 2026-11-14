@@ -3,6 +3,7 @@ import process from 'node:process'
 import { Logger } from '@nestjs/common'
 import { SETTING_ENV_VARS } from 'kuroshiro-shared'
 import cron from 'node-cron'
+import { isHostOrRange } from '../utils/ssrfGuard.js'
 import { ENV_VARS, RENAMED_ENV_VARS } from './env-vars.js'
 
 const DEFAULT_LOW_BATTERY_PERCENT = 20
@@ -63,6 +64,15 @@ function parseCronEnv(name: string, defaultValue: string): string {
   return raw
 }
 
+/** The hosts and ranges a comma-separated list names, each entry that names neither dropped with a logged warning. */
+function parseHostListEnv(name: string): string[] {
+  const entries = (process.env[name] ?? '').split(',').map(entry => entry.trim()).filter(entry => entry !== '')
+  entries
+    .filter(entry => !isHostOrRange(entry))
+    .forEach(entry => console.warn(`${name} lists "${entry}", which is not a host name, an IP address or a CIDR range, and it is ignored`))
+  return entries.filter(isHostOrRange)
+}
+
 export default () => {
   const lowBatteryPercent = parseIntEnv(SETTING_ENV_VARS.lowBatteryPercent, DEFAULT_LOW_BATTERY_PERCENT)
   const offlineMultiplier = parseIntEnv(SETTING_ENV_VARS.offlineMultiplier, DEFAULT_OFFLINE_MULTIPLIER)
@@ -75,6 +85,7 @@ export default () => {
     port: Number.parseInt(process.env[ENV_VARS.port] || '', 10) || 3000,
     api_url: process.env[ENV_VARS.apiUrl] || 'http://localhost:5173',
     demo_mode: process.env[ENV_VARS.demoMode] === 'true' || false,
+    render_allowed_hosts: parseHostListEnv(ENV_VARS.renderAllowedHosts),
     database: {
       host: process.env[ENV_VARS.dbHost] || 'localhost',
       port: Number.parseInt(process.env[ENV_VARS.dbPort] || '5432', 10),

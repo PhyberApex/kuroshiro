@@ -4,8 +4,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { asService } from '../../test/mockService.js'
 import { renderRequestRefusal, settleRenderRequest } from '../render-request-guard.js'
 
-const SELF_HOSTED: RenderRequestPolicy = { demoMode: false, apiPort: 3000, apiUrl: 'https://kuroshiro.example.com' }
+const SELF_HOSTED: RenderRequestPolicy = { demoMode: false, apiPort: 3000, apiUrl: 'https://kuroshiro.example.com', allowedPrivateHosts: [] }
 const DEMO: RenderRequestPolicy = { ...SELF_HOSTED, demoMode: true }
+
+/** An Instance whose admin named one LAN host, one range, one literal and the Docker network the API itself sits on. */
+const ALLOWING: RenderRequestPolicy = { ...SELF_HOSTED, allowedPrivateHosts: ['homeassistant', '10.0.0.0/24', 'fd00::1', '172.18.0.0/16'] }
 
 /** Answers each host name from a fixed table, an IP literal as itself, and fails any other name as DNS does. */
 function resolverFor(table: Record<string, string[]>): Resolver {
@@ -25,6 +28,7 @@ const DNS = resolverFor({
   'lvh.me': ['127.0.0.1'],
   'kuroshiro': ['172.18.0.5'],
   'homeassistant': ['192.168.1.20'],
+  'nas': ['10.0.0.9'],
   'rebinding.example.org': ['93.184.216.34', '10.0.0.1'],
 })
 const OWN_ADDRESSES = () => new Set(['127.0.0.1', '::1', '172.18.0.5'])
@@ -74,18 +78,68 @@ describe('renderRequestRefusal', () => {
     })
   })
 
-  describe('self-hosted', () => {
-    it('lets a private host on the network through, as a self-hosted Recipe may read the LAN', async () => {
-      expect(await refusal('http://homeassistant:8123/api/states', SELF_HOSTED)).toBeNull()
-      expect(await refusal('http://10.0.0.7/', SELF_HOSTED)).toBeNull()
+  describe('self-hosted with nothing allowed', () => {
+    it.each([
+      'http://homeassistant:8123/api/states',
+      'http://10.0.0.7/',
+      'http://192.168.1.1/',
+      'http://169.254.169.254/latest/meta-data/',
+      'http://[fd00::1]/',
+      'http://printer.local/',
+      'http://metadata.google.internal/computeMetadata/v1/',
+    ])('refuses the internal address %s', async (url) => {
+      expect(await refusal(url, SELF_HOSTED)).not.toBeNull()
     })
 
-    it('lets another port of the host\'s own non-loopback address through', async () => {
-      expect(await refusal('http://kuroshiro:8123/', SELF_HOSTED)).toBeNull()
+    it('refuses a name when any one of its addresses is private', async () => {
+      expect(await refusal('http://rebinding.example.org/', SELF_HOSTED)).not.toBeNull()
+    })
+
+    it('refuses another port of the host\'s own private address, which the API shares its network with', async () => {
+      expect(await refusal('http://kuroshiro:8123/', SELF_HOSTED)).not.toBeNull()
     })
 
     it('leaves a name that does not resolve to the browser, which fails it as well', async () => {
       expect(await refusal('https://no-such-host.example.org/', SELF_HOSTED)).toBeNull()
+    })
+  })
+
+  describe('self-hosted with an allowlist', () => {
+    it('lets an allowed name through at every address it resolves to, named or not', async () => {
+      expect(await refusal('http://homeassistant:8123/api/states', ALLOWING)).toBeNull()
+    })
+
+    it('lets a host whose addresses fall in an allowed range through', async () => {
+      expect(await refusal('http://nas:5000/', ALLOWING)).toBeNull()
+      expect(await refusal('http://10.0.0.7/', ALLOWING)).toBeNull()
+    })
+
+    it('lets an allowed address literal through', async () => {
+      expect(await refusal('http://[fd00::1]/', ALLOWING)).toBeNull()
+    })
+
+    it('lets another port of the host\'s own address through once its network is allowed', async () => {
+      expect(await refusal('http://kuroshiro:8123/', ALLOWING)).toBeNull()
+    })
+
+    it.each([
+      'http://10.0.1.5/',
+      'http://192.168.1.1/',
+      'http://[fd00::2]/',
+      'http://printer.local/',
+    ])('still refuses %s, which no entry names', async (url) => {
+      expect(await refusal(url, ALLOWING)).not.toBeNull()
+    })
+
+    it.each([
+      'http://localhost:3000/api/devices',
+      'http://127.0.0.1:3000/api/devices',
+      'http://kuroshiro:3000/api/devices',
+      'https://kuroshiro.example.com/api/config/export',
+    ])('refuses %s however the allowlist names it, as the API holds the secrets', async (url) => {
+      const naming: RenderRequestPolicy = { ...SELF_HOSTED, allowedPrivateHosts: ['localhost', '127.0.0.0/8', 'kuroshiro', '172.18.0.0/16', 'kuroshiro.example.com'] }
+
+      expect(await refusal(url, naming)).not.toBeNull()
     })
   })
 
@@ -113,6 +167,14 @@ describe('renderRequestRefusal', () => {
     it('refuses a name that does not resolve, since no address was checked', async () => {
       expect(await refusal('https://no-such-host.example.org/', DEMO)).not.toBeNull()
     })
+
+    it('refuses what the allowlist names, which a public Instance has no business reaching', async () => {
+      const allowing: RenderRequestPolicy = { ...ALLOWING, demoMode: true }
+
+      expect(await refusal('http://homeassistant:8123/api/states', allowing)).not.toBeNull()
+      expect(await refusal('http://10.0.0.7/', allowing)).not.toBeNull()
+      expect(await refusal('http://[fd00::1]/', allowing)).not.toBeNull()
+    })
   })
 })
 
@@ -135,7 +197,7 @@ describe('settleRenderRequest', () => {
     const request = pageRequest('http://10.0.0.7/')
     const requester = vi.fn()
 
-    await settleRenderRequest(asService<HTTPRequest>(request), SELF_HOSTED, requester)
+    await settleRenderRequest(asService<HTTPRequest>(request), ALLOWING, requester)
 
     expect(request.continue).toHaveBeenCalledOnce()
     expect(requester).not.toHaveBeenCalled()

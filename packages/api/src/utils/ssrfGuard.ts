@@ -7,7 +7,7 @@ import { Agent } from 'undici'
 const PRIVATE_HOSTNAMES = new Set(['localhost', 'metadata.google.internal'])
 const PRIVATE_HOSTNAME_SUFFIXES = ['.local', '.internal', '.localhost']
 
-export const PRIVATE_IP_MESSAGE = 'Requests to private IP ranges are not allowed in demo mode'
+const PRIVATE_IP_MESSAGE = 'Requests to private IP ranges are not allowed in demo mode'
 
 // Addresses that reach the host itself, its private networks or its cloud metadata, or that name no one public host: "this" network, loopback, RFC 1918, carrier-grade NAT, link-local, IETF protocol assignments, benchmarking,
 // multicast and reserved (which holds the limited broadcast address) per RFC 6890 and RFC 5771.
@@ -73,8 +73,28 @@ export function hostnameOf(url: string): string {
   return parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '').replace(/\.$/, '')
 }
 
+const HOST_NAME = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*$/i
+
+/** Whether a string names one host or one range of them: a host name, an IP address, or an address with a CIDR prefix. */
+export function isHostOrRange(entry: string): boolean {
+  const [address, prefix, ...rest] = entry.split('/')
+  if (rest.length > 0)
+    return false
+  const family = net.isIP(address ?? '')
+  if (family === 0)
+    return prefix === undefined && HOST_NAME.test(entry)
+  if (prefix === undefined)
+    return true
+  return /^\d+$/.test(prefix) && Number(prefix) <= (family === 4 ? 32 : 128)
+}
+
+/** Whether a host name is one of those that never lead anywhere public, by itself or by its suffix. */
+export function isInternalName(hostname: string): boolean {
+  return PRIVATE_HOSTNAMES.has(hostname) || PRIVATE_HOSTNAME_SUFFIXES.some(suffix => hostname.endsWith(suffix))
+}
+
 function assertPublicHostname(hostname: string): void {
-  if (PRIVATE_HOSTNAMES.has(hostname) || PRIVATE_HOSTNAME_SUFFIXES.some(s => hostname.endsWith(s)))
+  if (isInternalName(hostname))
     throw new Error(`Requests to internal hosts are not allowed in demo mode`)
 
   if (isPrivateAddress(hostname))

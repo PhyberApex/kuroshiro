@@ -20,6 +20,7 @@ const ENV_KEYS = [
   'KUROSHIRO_ALERT_RETENTION_DAYS',
   'KUROSHIRO_DEVICE_LOG_RETENTION_DAYS',
   'KUROSHIRO_ALERT_SWEEP_CRON',
+  'KUROSHIRO_RENDER_ALLOWED_HOSTS',
 ] as const
 
 describe('config', () => {
@@ -44,6 +45,7 @@ describe('config', () => {
       port: 3000,
       api_url: 'http://localhost:5173',
       demo_mode: false,
+      render_allowed_hosts: [],
       database: {
         host: 'localhost',
         port: 5432,
@@ -91,11 +93,13 @@ describe('config', () => {
     process.env.KUROSHIRO_ALERT_RETENTION_DAYS = '120'
     process.env.KUROSHIRO_DEVICE_LOG_RETENTION_DAYS = '14'
     process.env.KUROSHIRO_ALERT_SWEEP_CRON = '*/5 * * * * *'
+    process.env.KUROSHIRO_RENDER_ALLOWED_HOSTS = 'homeassistant.local, 192.168.1.0/24'
 
     expect(config()).toEqual({
       port: 8080,
       api_url: 'https://app.example.com',
       demo_mode: true,
+      render_allowed_hosts: ['homeassistant.local', '192.168.1.0/24'],
       database: {
         host: 'db.example.com',
         port: 5433,
@@ -177,6 +181,39 @@ describe('config', () => {
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('KUROSHIRO_ALERT_FETCH_FAILURES'))
 
     warnSpy.mockRestore()
+  })
+
+  it('allows no private host on a render page by default', () => {
+    expect(config().render_allowed_hosts).toEqual([])
+  })
+
+  it.each([
+    ['nas', ['nas']],
+    ['homeassistant.local', ['homeassistant.local']],
+    ['192.168.1.50', ['192.168.1.50']],
+    ['10.0.0.0/8', ['10.0.0.0/8']],
+    ['fd00::1', ['fd00::1']],
+    ['fd00::/8', ['fd00::/8']],
+    ['  nas , 10.0.0.0/8 ,, ', ['nas', '10.0.0.0/8']],
+  ])('reads the render allowlist %s as a host or a range', (raw, expected) => {
+    process.env.KUROSHIRO_RENDER_ALLOWED_HOSTS = raw
+
+    expect(config().render_allowed_hosts).toEqual(expected)
+  })
+
+  it.each([
+    'http://nas:8123',
+    '192.168.1.0/33',
+    '10.0.0.0/eight',
+    'not a host',
+    '10.0.0.0/8/16',
+  ])('drops the render allowlist entry %s and logs a warning', (entry) => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    process.env.KUROSHIRO_RENDER_ALLOWED_HOSTS = `nas,${entry}`
+
+    expect(config().render_allowed_hosts).toEqual(['nas'])
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining(entry))
+    warn.mockRestore()
   })
 
   it('defaults the Alert Sweep schedule to every 5 minutes', () => {

@@ -5,11 +5,11 @@ import buffer from 'node:buffer'
 import { lookup } from 'node:dns/promises'
 import net from 'node:net'
 import os from 'node:os'
-import { assertPublicUrl, fetchPublic, hostnameOf, isPrivateAddress, PRIVATE_IP_MESSAGE } from '../utils/ssrfGuard.js'
+import { fetchPublic, hostnameOf, isInternalName, isPrivateAddress } from '../utils/ssrfGuard.js'
 
 /**
- * What a render page may request. Template markup is third-party code (ADR-0072) and runs with JavaScript on, so
- * it must not reach the admin API, and in demo mode nothing internal at all (ADR-0052).
+ * What a render page may request. Template markup is third-party code (ADR-0072) and runs with JavaScript on, so it
+ * must not reach the admin API, nor anything internal but what an admin named (ADR-0074).
  */
 export interface RenderRequestPolicy {
   demoMode: boolean
@@ -17,6 +17,8 @@ export interface RenderRequestPolicy {
   apiPort: number
   /** The address devices are told to reach the Instance at, which may lead back to the API through a proxy. */
   apiUrl: string
+  /** Host names, address literals and CIDR ranges a render page may reach though they are internal. Empty in demo mode, whatever the Instance set. */
+  allowedPrivateHosts: string[]
 }
 
 /** How a host name is resolved: every address, as `dns.lookup` with `all` answers. */
@@ -72,6 +74,66 @@ function apiHostAndPort(apiUrl: string): string | null {
 
 const LOOPBACK_REFUSAL = 'loopback is the API\'s own host'
 const API_REFUSAL = 'the API\'s own address'
+const INTERNAL_NAME_REFUSAL = 'an internal host that is not on the render allowlist'
+const PRIVATE_ADDRESS_REFUSAL = 'a private address that is not on the render allowlist'
+
+/** Which internal destinations one request may reach. */
+interface PrivateReach {
+  /** Whether the host it names, as written, may be reached though it is internal. */
+  allowsHost: (hostname: string) => boolean
+  /** Whether every private address among those the host resolved to may be reached. */
+  allowsAddresses: (addresses: string[]) => boolean
+}
+
+const NOTHING_PRIVATE: PrivateReach = {
+  allowsHost: () => false,
+  allowsAddresses: addresses => !addresses.some(isPrivateAddress),
+}
+
+const EVERYTHING_PRIVATE: PrivateReach = {
+  allowsHost: () => true,
+  allowsAddresses: () => true,
+}
+
+function coversAddress(addresses: net.BlockList, ip: string): boolean {
+  const family = net.isIP(ip)
+  return family !== 0 && addresses.check(ip, family === 4 ? 'ipv4' : 'ipv6')
+}
+
+/** What `allowedPrivateHosts` names: `address`, `address/prefix` and a host name, each matched as written. */
+function listedReach(entries: string[]): PrivateReach {
+  const names = new Set<string>()
+  const addresses = new net.BlockList()
+  for (const entry of entries) {
+    const [address, prefix] = entry.split('/')
+    const family = net.isIP(address ?? '')
+    if (family === 0) {
+      names.add(entry.toLowerCase())
+      continue
+    }
+    const version = family === 4 ? 'ipv4' : 'ipv6'
+    if (prefix === undefined)
+      addresses.addAddress(address!, version)
+    else
+      addresses.addSubnet(address!, Number(prefix), version)
+  }
+  return {
+    allowsHost: hostname => names.has(hostname) || coversAddress(addresses, hostname),
+    allowsAddresses: resolved => resolved.filter(isPrivateAddress).every(address => coversAddress(addresses, address)),
+  }
+}
+
+/**
+ * How far into the network a request to `hostname` may reach: nowhere internal in demo mode; everywhere when the
+ * allowlist names that host, since an admin naming a LAN service cannot also be asked to name the addresses it
+ * resolves to; else only the addresses the allowlist's own ranges cover.
+ */
+function privateReach(hostname: string, policy: RenderRequestPolicy): PrivateReach {
+  if (policy.demoMode)
+    return NOTHING_PRIVATE
+  const listed = listedReach(policy.allowedPrivateHosts)
+  return listed.allowsHost(hostname) ? EVERYTHING_PRIVATE : listed
+}
 
 /** The web address a request is for, `null` for one the browser answers itself, or why it is refused. */
 function webUrlOf(url: string): URL | string | null {
@@ -88,37 +150,32 @@ function webUrlOf(url: string): URL | string | null {
 }
 
 /** Why the host a web address names, as written, is refused, or `null`. */
-function nameRefusal(url: URL, policy: RenderRequestPolicy): string | null {
-  if (isLoopbackName(hostnameOf(url.href)))
+function nameRefusal(url: URL, hostname: string, policy: RenderRequestPolicy, reach: PrivateReach): string | null {
+  if (isLoopbackName(hostname))
     return LOOPBACK_REFUSAL
   if (hostAndPort(url) === apiHostAndPort(policy.apiUrl))
     return API_REFUSAL
-  if (!policy.demoMode)
+  if (reach.allowsHost(hostname))
     return null
-  try {
-    assertPublicUrl(url.href)
-    return null
-  }
-  catch (error) {
-    return (error as Error).message
-  }
+  if (isInternalName(hostname))
+    return INTERNAL_NAME_REFUSAL
+  return isPrivateAddress(hostname) ? PRIVATE_ADDRESS_REFUSAL : null
 }
 
 /** Why connecting to `port` on the addresses a host resolved to is refused, or `null`. */
-function addressRefusal(addresses: string[], port: number, policy: RenderRequestPolicy, own: Set<string>): string | null {
+function addressRefusal(addresses: string[], port: number, policy: RenderRequestPolicy, own: Set<string>, reach: PrivateReach): string | null {
   if (addresses.some(isLoopback))
     return LOOPBACK_REFUSAL
   if (port === policy.apiPort && addresses.some(address => own.has(address)))
     return API_REFUSAL
-  if (policy.demoMode && addresses.some(isPrivateAddress))
-    return PRIVATE_IP_MESSAGE
-  return null
+  return reach.allowsAddresses(addresses) ? null : PRIVATE_ADDRESS_REFUSAL
 }
 
 /**
- * Why a render page may not make a request to `url`, or `null` when it may. Always refused: anything but the web and
- * the browser's own schemes, loopback, the API's port on the host's own addresses and the API's public address. In
- * demo mode, also every internal host, as written and as resolved, as the Data Source guard refuses it.
+ * Why a render page may not make a request to `url`, or `null` when it may. Refused: anything but the web and the
+ * browser's own schemes, loopback, the API's port on the host's own addresses, the API's public address, and every
+ * internal host, as written and as resolved, that `allowedPrivateHosts` does not name. In demo mode, also a name
+ * that does not resolve, since then no address of it was checked.
  *
  * Chromium resolves the name again to connect, so a name answering a public address here and a private one there
  * would get through: in demo mode {@link settleRenderRequest} makes the request itself instead.
@@ -127,19 +184,21 @@ export async function renderRequestRefusal(url: string, policy: RenderRequestPol
   const web = webUrlOf(url)
   if (!(web instanceof URL))
     return web
-  const refusedByName = nameRefusal(web, policy)
+  const hostname = hostnameOf(web.href)
+  const reach = privateReach(hostname, policy)
+  const refusedByName = nameRefusal(web, hostname, policy, reach)
   if (refusedByName !== null)
     return refusedByName
 
   let addresses: string[]
   try {
-    addresses = (await resolve(hostnameOf(web.href))).map(({ address }) => address)
+    addresses = (await resolve(hostname)).map(({ address }) => address)
   }
   catch {
     // The browser fails a name that does not resolve as well; in demo mode an address unchecked is refused.
     return policy.demoMode ? 'the host did not resolve' : null
   }
-  return addressRefusal(addresses, portOf(web), policy, ownAddresses())
+  return addressRefusal(addresses, portOf(web), policy, ownAddresses(), reach)
 }
 
 /** How long the guarded fetch waits for a demo-mode render's request. */

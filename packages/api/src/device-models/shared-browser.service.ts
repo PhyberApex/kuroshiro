@@ -11,6 +11,7 @@ export class SharedBrowserService implements OnModuleDestroy {
       demoMode: configService.getOrThrow<boolean>('demo_mode'),
       apiPort: configService.getOrThrow<number>('port'),
       apiUrl: configService.getOrThrow<string>('api_url'),
+      allowedPrivateHosts: configService.getOrThrow<string[]>('render_allowed_hosts'),
     })
   }
 

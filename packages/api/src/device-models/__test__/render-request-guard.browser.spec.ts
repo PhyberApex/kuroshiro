@@ -50,7 +50,7 @@ describe('render pages in a browser', () => {
   })
 
   function policy(overrides: Partial<RenderRequestPolicy> = {}): RenderRequestPolicy {
-    return { demoMode: false, apiPort: port, apiUrl: 'https://kuroshiro.example.com', ...overrides }
+    return { demoMode: false, apiPort: port, apiUrl: 'https://kuroshiro.example.com', allowedPrivateHosts: [], ...overrides }
   }
 
   it.each([false, true])('fails a script reading the API on localhost with a network error (demo mode %s)', async (demoMode) => {
@@ -65,8 +65,8 @@ describe('render pages in a browser', () => {
     expect(hits).toEqual([])
   }, 30_000)
 
-  it.runIf(OWN_PRIVATE_ADDRESS)('lets a self-hosted script read a LAN host that answers CORS, with web security on', async () => {
-    setRenderRequestPolicy(policy({ apiPort: 1 }))
+  it.runIf(OWN_PRIVATE_ADDRESS)('lets a script read a LAN host the allowlist names, which answers CORS, with web security on', async () => {
+    setRenderRequestPolicy(policy({ apiPort: 1, allowedPrivateHosts: [OWN_PRIVATE_ADDRESS!] }))
 
     const body = await withSharedPage(async (page) => {
       await page.setContent('<html><body></body></html>', { waitUntil: 'load' })
@@ -74,6 +74,18 @@ describe('render pages in a browser', () => {
     })
 
     expect(body).toContain('api-key-1234')
+  }, 30_000)
+
+  it.runIf(OWN_PRIVATE_ADDRESS)('fails a script reading a LAN host no allowlist names', async () => {
+    setRenderRequestPolicy(policy({ apiPort: 1 }))
+
+    const body = await withSharedPage(async (page) => {
+      await page.setContent('<html><body></body></html>', { waitUntil: 'load' })
+      return read(page, `http://${OWN_PRIVATE_ADDRESS}:${port}/forecast`)
+    })
+
+    expect(body).toBe('error')
+    expect(hits).toEqual([])
   }, 30_000)
 
   it.runIf(OWN_PRIVATE_ADDRESS)('draws nothing a demo-mode preview fetches or frames from a private address', async () => {
@@ -93,7 +105,7 @@ describe('render pages in a browser', () => {
   }, 30_000)
 
   it.runIf(OWN_PRIVATE_ADDRESS)('opens no window a script asks for, which no guard would watch', async () => {
-    setRenderRequestPolicy(policy({ apiPort: 1 }))
+    setRenderRequestPolicy(policy({ apiPort: 1, allowedPrivateHosts: [OWN_PRIVATE_ADDRESS!] }))
     const url = `http://${OWN_PRIVATE_ADDRESS}:${port}/popup`
 
     await withSharedPage(async (page) => {

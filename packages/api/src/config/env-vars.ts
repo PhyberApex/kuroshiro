@@ -10,6 +10,7 @@ export const ENV_VARS = {
   appriseUrl: 'KUROSHIRO_APPRISE_URL',
   appriseKey: 'KUROSHIRO_APPRISE_KEY',
   alertSweepCron: 'KUROSHIRO_ALERT_SWEEP_CRON',
+  renderAllowedHosts: 'KUROSHIRO_RENDER_ALLOWED_HOSTS',
 } as const
 
 export const RENAMED_ENV_VARS: Record<string, string> = {
